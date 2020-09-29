@@ -23,6 +23,7 @@ import (
 )
 
 type gitRepository interface {
+	CommitObject(plumbing.Hash) (*object.Commit, error)
 	CreateTag(string, plumbing.Hash, *git.CreateTagOptions) (*plumbing.Reference, error)
 	CreateRemote(*gitConfig.RemoteConfig) (*git.Remote, error)
 	DeleteRemote(string) error
@@ -33,7 +34,6 @@ type gitRepository interface {
 }
 
 type gitWorktree interface {
-	Add(string) (plumbing.Hash, error)
 	Checkout(*git.CheckoutOptions) error
 	Commit(string, *git.CommitOptions) (plumbing.Hash, error)
 }
@@ -45,8 +45,8 @@ func getGitWorktree(repository gitRepository) (gitWorktree, error) {
 func artifactPrepareVersion(config artifactPrepareVersionOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *artifactPrepareVersionCommonPipelineEnvironment) {
 	c := command.Command{}
 	// reroute command output to logging framework
-	c.Stdout(log.Entry().Writer())
-	c.Stderr(log.Entry().Writer())
+	c.Stdout(log.Writer())
+	c.Stderr(log.Writer())
 
 	// open local .git repository
 	repository, err := openGit()
@@ -58,12 +58,11 @@ func artifactPrepareVersion(config artifactPrepareVersionOptions, telemetryData 
 	if err != nil {
 		log.Entry().WithError(err).Fatal("artifactPrepareVersion failed")
 	}
-	log.Entry().Info("SUCCESS")
 }
 
 var sshAgentAuth = ssh.NewSSHAgentAuth
 
-func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *artifactPrepareVersionCommonPipelineEnvironment, artifact versioning.Artifact, runner execRunner, repository gitRepository, getWorktree func(gitRepository) (gitWorktree, error)) error {
+func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *artifactPrepareVersionCommonPipelineEnvironment, artifact versioning.Artifact, runner command.ExecRunner, repository gitRepository, getWorktree func(gitRepository) (gitWorktree, error)) error {
 
 	telemetryData.Custom1Label = "buildTool"
 	telemetryData.Custom1 = config.BuildTool
@@ -78,12 +77,14 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 		VersionField:        config.CustomVersionField,
 		VersionSection:      config.CustomVersionSection,
 		VersioningScheme:    config.CustomVersioningScheme,
+		VersionSource:       config.DockerVersionSource,
 	}
 
 	var err error
 	if artifact == nil {
 		artifact, err = versioning.GetArtifact(config.BuildTool, config.FilePath, &artifactOpts, runner)
 		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
 			return errors.Wrap(err, "failed to retrieve artifact")
 		}
 	}
@@ -97,12 +98,14 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 
 	version, err := artifact.GetVersion()
 	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.Wrap(err, "failed to retrieve version")
 	}
 	log.Entry().Infof("Version before automatic versioning: %v", version)
 
-	gitCommit, err := getGitCommitID(repository)
+	gitCommit, gitCommitMessage, err := getGitCommitID(repository)
 	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
 		return err
 	}
 	gitCommitID := gitCommit.String()
@@ -112,18 +115,20 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 	if versioningType == "cloud" || versioningType == "cloud_noTag" {
 		versioningTempl, err := versioningTemplate(artifact.VersioningScheme())
 		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
 			return errors.Wrapf(err, "failed to get versioning template for scheme '%v'", artifact.VersioningScheme())
 		}
 
 		now := time.Now()
 
-		newVersion, err = calculateNewVersion(versioningTempl, version, gitCommitID, config.IncludeCommitID, now)
+		newVersion, err = calculateNewVersion(versioningTempl, version, gitCommitID, config.IncludeCommitID, config.ShortCommitID, config.UnixTimestamp, now)
 		if err != nil {
 			return errors.Wrap(err, "failed to calculate new version")
 		}
 
 		worktree, err := getWorktree(repository)
 		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
 			return errors.Wrap(err, "failed to retrieve git worktree")
 		}
 
@@ -139,6 +144,7 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 		if newVersion != version {
 			err = artifact.SetVersion(newVersion)
 			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
 				return errors.Wrap(err, "failed to write version")
 			}
 		}
@@ -158,6 +164,8 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 
 	commonPipelineEnvironment.git.commitID = gitCommitID
 	commonPipelineEnvironment.artifactVersion = newVersion
+	commonPipelineEnvironment.originalArtifactVersion = version
+	commonPipelineEnvironment.git.commitMessage = gitCommitMessage
 
 	return nil
 }
@@ -167,17 +175,28 @@ func openGit() (gitRepository, error) {
 	return git.PlainOpen(workdir)
 }
 
-func getGitCommitID(repository gitRepository) (plumbing.Hash, error) {
+func getGitCommitID(repository gitRepository) (plumbing.Hash, string, error) {
 	commitID, err := repository.ResolveRevision(plumbing.Revision("HEAD"))
 	if err != nil {
-		return plumbing.Hash{}, errors.Wrap(err, "failed to retrieve git commit ID")
+		return plumbing.Hash{}, "", errors.Wrap(err, "failed to retrieve git commit ID")
 	}
-	return *commitID, nil
+	// ToDo not too elegant to retrieve the commit message here, must be refactored sooner than later
+	// but to quickly address https://github.com/SAP/jenkins-library/pull/1515 let's revive this
+	commitObject, err := repository.CommitObject(*commitID)
+	if err != nil {
+		return *commitID, "", errors.Wrap(err, "failed to retrieve git commit message")
+	}
+	return *commitID, commitObject.Message, nil
 }
 
 func versioningTemplate(scheme string) (string, error) {
 	// generally: timestamp acts as build number providing a proper order
 	switch scheme {
+	case "docker":
+		// from Docker documentation:
+		// A tag name must be valid ASCII and may contain lowercase and uppercase letters, digits, underscores, periods and dashes.
+		// A tag name may not start with a period or a dash and may contain a maximum of 128 characters.
+		return "{{.Version}}{{if .Timestamp}}-{{.Timestamp}}{{if .CommitID}}-{{.CommitID}}{{end}}{{end}}", nil
 	case "maven":
 		// according to https://www.mojohaus.org/versions-maven-plugin/version-rules.html
 		return "{{.Version}}{{if .Timestamp}}-{{.Timestamp}}{{if .CommitID}}_{{.CommitID}}{{end}}{{end}}", nil
@@ -191,10 +210,15 @@ func versioningTemplate(scheme string) (string, error) {
 	return "", fmt.Errorf("versioning scheme '%v' not supported", scheme)
 }
 
-func calculateNewVersion(versioningTemplate, currentVersion, commitID string, includeCommitID bool, t time.Time) (string, error) {
+func calculateNewVersion(versioningTemplate, currentVersion, commitID string, includeCommitID, shortCommitID, unixTimestamp bool, t time.Time) (string, error) {
 	tmpl, err := template.New("version").Parse(versioningTemplate)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to create version template: %v", versioningTemplate)
+	}
+
+	timestamp := t.Format("20060102150405")
+	if unixTimestamp {
+		timestamp = fmt.Sprint(t.Unix())
 	}
 
 	buf := new(bytes.Buffer)
@@ -204,11 +228,14 @@ func calculateNewVersion(versioningTemplate, currentVersion, commitID string, in
 		CommitID  string
 	}{
 		Version:   currentVersion,
-		Timestamp: t.Format("20060102150405"),
+		Timestamp: timestamp,
 	}
 
 	if includeCommitID {
 		versionParts.CommitID = commitID
+		if shortCommitID {
+			versionParts.CommitID = commitID[0:7]
+		}
 	}
 
 	err = tmpl.Execute(buf, versionParts)
@@ -264,6 +291,7 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 
 	urls := originUrls(repository)
 	if len(urls) == 0 {
+		log.SetErrorCategory(log.ErrorConfiguration)
 		return commitID, fmt.Errorf("no remote url maintained")
 	}
 	if strings.HasPrefix(urls[0], "http") {
@@ -285,6 +313,7 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 
 			pushOptions.Auth, err = sshAgentAuth("git")
 			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
 				return commitID, errors.Wrap(err, "failed to retrieve ssh authentication")
 			}
 			log.Entry().Infof("using remote '%v'", remoteURL)
@@ -294,12 +323,31 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 	} else {
 		pushOptions.Auth, err = sshAgentAuth("git")
 		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
 			return commitID, errors.Wrap(err, "failed to retrieve ssh authentication")
 		}
 	}
 
 	err = repository.Push(&pushOptions)
 	if err != nil {
+		errText := fmt.Sprint(err)
+		switch {
+		case strings.Contains(errText, "ssh: handshake failed"):
+			log.SetErrorCategory(log.ErrorConfiguration)
+		case strings.Contains(errText, "Permission"):
+			log.SetErrorCategory(log.ErrorConfiguration)
+		case strings.Contains(errText, "authorization failed"):
+			log.SetErrorCategory(log.ErrorConfiguration)
+		case strings.Contains(errText, "authentication required"):
+			log.SetErrorCategory(log.ErrorConfiguration)
+		case strings.Contains(errText, "knownhosts:"):
+			err = errors.Wrap(err, "known_hosts file seems invalid")
+			log.SetErrorCategory(log.ErrorConfiguration)
+		case strings.Contains(errText, "unable to find any valid known_hosts file"):
+			log.SetErrorCategory(log.ErrorConfiguration)
+		case strings.Contains(errText, "connection timed out"):
+			log.SetErrorCategory(log.ErrorInfrastructure)
+		}
 		return commitID, err
 	}
 
@@ -318,13 +366,8 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 }
 
 func addAndCommit(config *artifactPrepareVersionOptions, worktree gitWorktree, newVersion string, t time.Time) (plumbing.Hash, error) {
-	_, err := worktree.Add(".")
-	if err != nil {
-		return plumbing.Hash{}, errors.Wrap(err, "failed to execute 'git add .'")
-	}
-
 	//maybe more options are required: https://github.com/go-git/go-git/blob/master/_examples/commit/main.go
-	commit, err := worktree.Commit(fmt.Sprintf("update version %v", newVersion), &git.CommitOptions{Author: &object.Signature{Name: config.CommitUserName, When: t}})
+	commit, err := worktree.Commit(fmt.Sprintf("update version %v", newVersion), &git.CommitOptions{All: true, Author: &object.Signature{Name: config.CommitUserName, When: t}})
 	if err != nil {
 		return commit, errors.Wrap(err, "failed to commit new version")
 	}

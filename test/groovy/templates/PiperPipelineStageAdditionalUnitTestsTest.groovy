@@ -6,7 +6,9 @@ import org.junit.Test
 import org.junit.rules.RuleChain
 import util.*
 
+import static org.hamcrest.Matchers.anyOf
 import static org.hamcrest.Matchers.containsString
+import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.hasItems
 import static org.hamcrest.Matchers.hasItems
 import static org.hamcrest.Matchers.hasItems
@@ -32,7 +34,7 @@ class PiperPipelineStageAdditionalUnitTestsTest extends BasePiperTest {
     @Before
     void init()  {
 
-        binding.variables.env.STAGE_NAME = 'Additional Unit Tests'
+        nullScript.env.STAGE_NAME = 'Additional Unit Tests'
 
         helper.registerAllowedMethod('piperStageWrapper', [Map.class, Closure.class], {m, body ->
             assertThat(m.stageName, is('Additional Unit Tests'))
@@ -47,6 +49,10 @@ class PiperPipelineStageAdditionalUnitTestsTest extends BasePiperTest {
             stepsCalled.add('karmaExecuteTests')
         })
 
+        helper.registerAllowedMethod('npmExecuteScripts', [Map.class], {m ->
+            stepsCalled.add('npmExecuteScripts')
+        })
+
         helper.registerAllowedMethod('testsPublishResults', [Map.class], {m ->
             stepsCalled.add('testsPublishResults')
         })
@@ -57,7 +63,7 @@ class PiperPipelineStageAdditionalUnitTestsTest extends BasePiperTest {
 
         jsr.step.piperPipelineStageAdditionalUnitTests(script: nullScript, juStabUtils: utils)
 
-        assertThat(stepsCalled, not(hasItems('batsExecuteTests', 'karmaExecuteTests', 'testsPublishResults')))
+        assertThat(stepsCalled, not(anyOf(hasItem('batsExecuteTests'), hasItem('karmaExecuteTests'), hasItem('npmExecuteScripts'), hasItem('testsPublishResults'))))
     }
 
     @Test
@@ -78,5 +84,15 @@ class PiperPipelineStageAdditionalUnitTestsTest extends BasePiperTest {
         jsr.step.piperPipelineStageAdditionalUnitTests(script: nullScript, juStabUtils: utils)
 
         assertThat(stepsCalled, hasItems('batsExecuteTests', 'testsPublishResults'))
+    }
+
+    @Test
+    void testAdditionalUnitTestsWithNpm() {
+
+        nullScript.commonPipelineEnvironment.configuration = [runStep: ['Additional Unit Tests': [npmExecuteScripts: true]]]
+
+        jsr.step.piperPipelineStageAdditionalUnitTests(script: nullScript, juStabUtils: utils)
+
+        assertThat(stepsCalled, hasItems('npmExecuteScripts', 'testsPublishResults'))
     }
 }

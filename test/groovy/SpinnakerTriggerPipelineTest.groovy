@@ -1,9 +1,12 @@
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 import util.*
+
+import com.sap.piper.Utils
 
 import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
@@ -48,7 +51,6 @@ class SpinnakerTriggerPipelineTest extends BasePiperTest {
         Map credentialFileNames = [
             'spinnaker-client-certificate': 'clientCert.file',
             'spinnaker-client-key': 'clientKey.file'
-
         ]
 
         helper.registerAllowedMethod('withCredentials', [List, Closure], { l, c ->
@@ -85,6 +87,13 @@ class SpinnakerTriggerPipelineTest extends BasePiperTest {
         shellRule.setReturnValue('curl -H \'Content-Type: application/json\' -X POST -d \'{"parameters":{"param1":"val1"}}\' --verbose --cert $clientCertificate --key $clientKey https://spinnakerTest.url/pipelines/spinnakerTestApp/spinnakerTestPipeline', '{"ref": "/testRef"}')
         shellRule.setReturnValue('curl -X GET https://spinnakerTest.url/testRef --silent --cert $clientCertificate --key $clientKey', '{"status": "SUCCEEDED"}')
         shellRule.setReturnValue('curl -X GET https://spinnakerTest.url/testRef --verbose --cert $clientCertificate --key $clientKey', '{"status": "SUCCEEDED"}')
+
+        Utils.metaClass.echo = { def m -> }
+    }
+
+    @After
+    public void tearDown() {
+        Utils.metaClass = null
     }
 
     @Test
@@ -182,7 +191,8 @@ class SpinnakerTriggerPipelineTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.configuration = [
             general: [
                 spinnakerGateUrl: 'https://spinnakerTest.url',
-                spinnakerApplication: 'spinnakerTestApp'
+                spinnakerApplication: 'spinnakerTestApp',
+                verbose: true
             ],
             stages: [
                 testStage: [
@@ -193,10 +203,14 @@ class SpinnakerTriggerPipelineTest extends BasePiperTest {
         ]
 
         shellRule.setReturnValue('curl -X GET https://spinnakerTest.url/testRef --silent --cert $clientCertificate --key $clientKey', '{"status": "FAILED"}')
+        shellRule.setReturnValue('curl -X GET https://spinnakerTest.url/testRef --verbose --cert $clientCertificate --key $clientKey', '{"status": "FAILED"}')
 
+        exception.expect(hudson.AbortException)
         exception.expectMessage('Spinnaker pipeline failed with FAILED')
-        stepRule.step.spinnakerTriggerPipeline(
-            script: nullScript,
-        )
+        try {
+            stepRule.step.spinnakerTriggerPipeline(script: nullScript)
+        } finally {
+            assertThat(logginRule.log, containsString('Full Spinnaker response = '))
+        }
     }
 }

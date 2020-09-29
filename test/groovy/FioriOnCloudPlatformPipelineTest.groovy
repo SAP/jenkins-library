@@ -13,12 +13,14 @@ import static org.junit.Assert.assertThat
 
 import org.hamcrest.Matchers
 import org.junit.Assert
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
 
 import com.sap.piper.JenkinsUtils
+import com.sap.piper.Utils
 
 import util.BasePiperTest
 import util.JenkinsCredentialsRule
@@ -34,7 +36,7 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
         turn makes use of the 'sap/grunt-sapui5-bestpractice-build' plugin.
         The dependencies are resolved via npm.
 
-        In order to run the scenario the project needs to fullfill these
+        In order to run the scenario the project needs to fulfill these
         prerequisites:
 
         Build tools:
@@ -72,7 +74,7 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
     @Before
     void setup() {
         //
-        // needed since we have dockerExecute inside mtaBuild
+        // needed since we have dockerExecute inside neoDeploy
         JenkinsUtils.metaClass.static.isPluginActive = {def s -> false}
 
         //
@@ -81,30 +83,26 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
 
             it ->
 
-            // called inside mtaBuild, this file contains build config
-            it == 'mta.yaml' ||
-
             // called inside neo deploy, this file gets deployed
             it == 'test.mtar'
         })
 
         helper.registerAllowedMethod("deleteDir",[], null)
 
-        //
-        // the properties below we read out of the yaml file
-        readYamlRule.registerYaml('mta.yaml', ('''
-                                       |ID : "test"
-                                       |PATH : "."
-                                       |''' as CharSequence).stripMargin())
-
-        //
-        // we need the path variable since we extend the path in the mtaBuild step. In order
-        // to be able to extend the path we have to have some initial value.
-        binding.setVariable('PATH', '/usr/bin')
-
         binding.setVariable('scm', null)
 
         helper.registerAllowedMethod('pwd', [], { return "./" })
+
+        helper.registerAllowedMethod('mtaBuild', [Map], {
+            m ->  m.script.commonPipelineEnvironment.mtarFilePath = 'test.mtar'
+        })
+
+        Utils.metaClass.echo = { def m -> }
+    }
+
+    @After
+    public void tearDown() {
+        Utils.metaClass = null
     }
 
     @Test
@@ -127,16 +125,9 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
         )
 
         //
-        // the mta build call:
-
-        assertThat(shellRule.shell, hasItem(
-                                allOf(  containsString('mbt build'),
-                                        containsString('--mtar test.mtar'),
-                                        containsString('--platform NEO'),
-                                        containsString('--target ./'))))
-
-        //
         // the deployable is exchanged between the involved steps via this property:
+        // From the presence of this value we can conclude that mtaBuild has been called
+        // this value is set on the commonPipelineEnvironment in the corresponding mock.
         assertThat(nullScript.commonPipelineEnvironment.getMtarFilePath(), is(equalTo('test.mtar')))
 
         //

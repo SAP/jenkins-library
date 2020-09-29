@@ -12,12 +12,12 @@ func karmaExecuteTests(config karmaExecuteTestsOptions, telemetryData *telemetry
 	c := command.Command{}
 	// reroute command output to loging framework
 	// also log stdout as Karma reports into it
-	c.Stdout(log.Entry().Writer())
-	c.Stderr(log.Entry().Writer())
+	c.Stdout(log.Writer())
+	c.Stderr(log.Writer())
 	runKarma(config, &c)
 }
 
-func runKarma(config karmaExecuteTestsOptions, command execRunner) {
+func runKarma(config karmaExecuteTestsOptions, command command.ExecRunner) {
 	installCommandTokens := tokenize(config.InstallCommand)
 	command.SetDir(config.ModulePath)
 	err := command.RunExecutable(installCommandTokens[0], installCommandTokens[1:]...)

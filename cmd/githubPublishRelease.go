@@ -10,7 +10,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/google/go-github/v28/github"
+	"github.com/google/go-github/v32/github"
 	"github.com/pkg/errors"
 
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
@@ -51,7 +51,7 @@ func runGithubPublishRelease(ctx context.Context, config *githubPublishReleaseOp
 			config.AddDeltaToLastRelease = false
 			log.Entry().Debug("This is the first release.")
 		} else {
-			return errors.Wrapf(err, "Error occured when retrieving latest GitHub release (%v/%v)", config.Owner, config.Repository)
+			return errors.Wrapf(err, "Error occurred when retrieving latest GitHub release (%v/%v)", config.Owner, config.Repository)
 		}
 	}
 	publishedAt = lastRelease.GetPublishedAt()
@@ -81,6 +81,7 @@ func runGithubPublishRelease(ctx context.Context, config *githubPublishReleaseOp
 		TargetCommitish: &config.Commitish,
 		Name:            &config.Version,
 		Body:            &releaseBody,
+		Prerelease:      &config.PreRelease,
 	}
 
 	createdRelease, _, err := ghRepoClient.CreateRelease(ctx, config.Owner, config.Repository, &release)

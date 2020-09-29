@@ -25,8 +25,32 @@ func TestYAMLfileGetVersion(t *testing.T) {
 			versionField: "theversion",
 			readFile:     func(filename string) ([]byte, error) { return []byte{}, fmt.Errorf("read error") },
 		}
-		_, err := yamlfile.GetVersion()
-		assert.EqualError(t, err, "failed to read file 'my.yaml': read error")
+		version, err := yamlfile.GetVersion()
+		assert.EqualError(t, err, "failed to get key theversion: failed to read file 'my.yaml': read error")
+		assert.Equal(t, "", version)
+	})
+}
+
+func TestYAMLfileGetArtifactID(t *testing.T) {
+	t.Run("success case", func(t *testing.T) {
+		yamlfile := YAMLfile{
+			path:     "my.yaml",
+			readFile: func(filename string) ([]byte, error) { return []byte(`ID: artifact-id`), nil },
+		}
+		artifactID, err := yamlfile.GetArtifactID()
+		assert.NoError(t, err)
+		assert.Equal(t, "artifact-id", artifactID)
+	})
+
+	t.Run("error case", func(t *testing.T) {
+		yamlfile := YAMLfile{
+			path:            "my.yaml",
+			artifactIDField: "theArtifact",
+			readFile:        func(filename string) ([]byte, error) { return []byte{}, fmt.Errorf("read error") },
+		}
+		artifactID, err := yamlfile.GetArtifactID()
+		assert.EqualError(t, err, "failed to get key theArtifact: failed to read file 'my.yaml': read error")
+		assert.Equal(t, "", artifactID)
 	})
 }
 

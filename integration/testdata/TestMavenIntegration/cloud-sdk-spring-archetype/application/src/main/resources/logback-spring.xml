@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <springProfile name="!cloud">
+        <include resource="org/springframework/boot/logging/logback/base.xml"/>
+        <root level="INFO"/>
+        <logger name="org.springframework.web" level="INFO"/>
+    </springProfile>
+
+    <springProfile name="cloud">
+        <appender name="STDOUT-JSON" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="com.sap.hcp.cf.logback.encoder.JsonEncoder"/>
+        </appender>
+        <root level="INFO">
+            <appender-ref ref="STDOUT-JSON"/>
+        </root>
+    </springProfile>
+</configuration>

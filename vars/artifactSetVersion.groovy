@@ -126,21 +126,20 @@ void call(Map parameters = [:], Closure body = null) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
-        def script = checkScript(this, parameters)
+        def script = checkScript(this, parameters) ?: this
+        String stageName = parameters.stageName ?: env.STAGE_NAME
 
         def gitUtils = parameters.juStabGitUtils ?: new GitUtils()
-
         if (gitUtils.isWorkTreeDirty()) {
-                error "[${STEP_NAME}] Files in the workspace have been changed previously - aborting ${STEP_NAME}"
+            error "[${STEP_NAME}] Files in the workspace have been changed previously - aborting ${STEP_NAME}"
         }
-        if (script == null)
-            script = this
+
         // load default & individual configuration
         ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
-            .loadStepDefaults()
+            .loadStepDefaults([:], stageName)
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixin(gitCommitId: gitUtils.getGitCommitIdOrNull())
             .mixin(parameters, PARAMETER_KEYS, CONFIG_KEY_COMPATIBILITY)
             .withMandatoryProperty('buildTool')
@@ -152,7 +151,7 @@ void call(Map parameters = [:], Closure body = null) {
         GitPushMode gitPushMode = config.gitPushMode
 
         config = configHelper.addIfEmpty('timestamp', getTimestamp(config.timestampTemplate))
-                             .use()
+            .use()
 
         new Utils().pushToSWA([
             step: STEP_NAME,
@@ -185,12 +184,29 @@ void call(Map parameters = [:], Closure body = null) {
 
             def gitConfig = []
 
-            if(config.gitUserEMail) gitConfig.add("-c user.email=\"${config.gitUserEMail}\"")
-            if(config.gitUserName)  gitConfig.add("-c user.name=\"${config.gitUserName}\"")
+            if(config.gitUserEMail) {
+                gitConfig.add("-c user.email=\"${config.gitUserEMail}\"")
+            } else {
+                // in case there is no user.email configured on project level we might still
+                // be able to work in case there is a configuration available on plain git level.
+                if(sh(returnStatus: true, script: 'git config user.email') != 0) {
+                    error 'No git user.email configured. Neither via project config nor on plain git level.'
+                }
+            }
+            if(config.gitUserName) {
+                gitConfig.add("-c user.name=\"${config.gitUserName}\"")
+            } else {
+                // in case there is no user.name configured on project level we might still
+                // be able to work in case there is a configuration available on plain git level.
+                if (sh(returnStatus: true, script: 'git config user.name') != 0) {
+                    error 'No git user.name configured. Neither via project config nor on plain git level.'
+                }
+            }
             gitConfig = gitConfig.join(' ')
 
             try {
                 sh """#!/bin/bash
+                    set -e
                     git add . --update
                     git ${gitConfig} commit -m 'update version ${newVersion}'
                     git tag ${config.tagPrefix}${newVersion}"""

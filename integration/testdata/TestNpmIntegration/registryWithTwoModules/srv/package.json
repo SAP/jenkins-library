@@ -1,0 +1,9 @@
+{
+    "name": "srv",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "ci-build": "npm config get registry"
+    }
+}

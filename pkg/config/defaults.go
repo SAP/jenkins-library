@@ -17,10 +17,13 @@ type PipelineDefaults struct {
 // ReadPipelineDefaults loads defaults and returns its content
 func (d *PipelineDefaults) ReadPipelineDefaults(defaultSources []io.ReadCloser) error {
 
+	defer func() {
+		for _, def := range defaultSources {
+			def.Close()
+		}
+	}()
+
 	for _, def := range defaultSources {
-
-		defer def.Close()
-
 		var c Config
 		var err error
 

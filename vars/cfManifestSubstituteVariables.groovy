@@ -72,14 +72,15 @@ import static com.sap.piper.Prerequisites.checkScript
 void call(Map arguments = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: arguments) {
         def script = checkScript(this, arguments)  ?: this
+        String stageName = arguments.stageName ?: env.STAGE_NAME
 
         // load default & individual configuration
         Map config = ConfigurationHelper.newInstance(this)
-                                        .loadStepDefaults()
-                                        .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-                                        .mixinStageConfig(script.commonPipelineEnvironment, arguments.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
-                                        .mixin(arguments, PARAMETER_KEYS)
-                                        .use()
+            .loadStepDefaults([:], stageName)
+            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
+            .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
+            .mixin(arguments, PARAMETER_KEYS)
+            .use()
 
         String defaultManifestFileName = "manifest.yml"
         String defaultManifestVariablesFileName = "manifest-variables.yml"

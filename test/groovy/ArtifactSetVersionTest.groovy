@@ -1,3 +1,4 @@
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -5,6 +6,7 @@ import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
 import com.sap.piper.GitUtils
+import com.sap.piper.Utils
 
 import hudson.AbortException
 import util.BasePiperTest
@@ -89,20 +91,27 @@ class ArtifactSetVersionTest extends BasePiperTest {
 
         mvnExecuteRule.setReturnValue([
             'pomPath': 'pom.xml',
-            'goals': 'org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate',
-            'defines': '-Dexpression=project.version -DforceStdout -q',
+            'goals': ['org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate'],
+            'defines': ['-Dexpression=project.version', '-DforceStdout', '-q'],
         ], version)
 
         mvnExecuteRule.setReturnValue([
             'pomPath': 'snapshot/pom.xml',
-            'goals': 'org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate',
-            'defines': '-Dexpression=project.version -DforceStdout -q',
+            'goals': ['org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate'],
+            'defines': ['-Dexpression=project.version', '-DforceStdout', '-q'],
         ], version)
 
         shellRule.setReturnValue("date --utc +'%Y%m%d%H%M%S'", '20180101010203')
         shellRule.setReturnValue('git diff --quiet HEAD', 0)
 
         helper.registerAllowedMethod('fileExists', [String.class], {true})
+
+        Utils.metaClass.echo = { def m -> }
+    }
+
+    @After
+    public void tearDown() {
+        Utils.metaClass = null
     }
 
     @Test
@@ -114,8 +123,8 @@ class ArtifactSetVersionTest extends BasePiperTest {
 
         assertEquals(new JenkinsMavenExecuteRule.Execution([
             pomPath: 'pom.xml',
-            goals: 'org.codehaus.mojo:versions-maven-plugin:2.7:set',
-            defines: '-DnewVersion=1.2.3-20180101010203_testCommitId -DgenerateBackupPoms=false'
+            goals: ['org.codehaus.mojo:versions-maven-plugin:2.7:set'],
+            defines: ['-DnewVersion=1.2.3-20180101010203_testCommitId', '-DgenerateBackupPoms=false']
         ]), mvnExecuteRule.executions[1])
 
         assertThat(shellRule.shell.join(), stringContainsInOrder([
@@ -158,8 +167,8 @@ class ArtifactSetVersionTest extends BasePiperTest {
 
         assertEquals(new JenkinsMavenExecuteRule.Execution([
             pomPath: 'pom.xml',
-            goals: 'org.codehaus.mojo:versions-maven-plugin:2.7:set',
-            defines: '-DnewVersion=1.2.3-20180101010203_testCommitId -DgenerateBackupPoms=false'
+            goals: ['org.codehaus.mojo:versions-maven-plugin:2.7:set'],
+            defines: ['-DnewVersion=1.2.3-20180101010203_testCommitId', '-DgenerateBackupPoms=false']
         ]), mvnExecuteRule.executions[1])
         assertThat(((Iterable)shellRule.shell).join(), stringContainsInOrder([
             "git add .",
@@ -282,8 +291,8 @@ class ArtifactSetVersionTest extends BasePiperTest {
         assertEquals('1.2.3-20180101010203_testCommitId', environmentRule.env.getArtifactVersion())
         assertEquals(new JenkinsMavenExecuteRule.Execution([
             pomPath: 'pom.xml',
-            goals: 'org.codehaus.mojo:versions-maven-plugin:2.7:set',
-            defines: '-DnewVersion=1.2.3-20180101010203_testCommitId -DgenerateBackupPoms=false'
+            goals: ['org.codehaus.mojo:versions-maven-plugin:2.7:set'],
+            defines: ['-DnewVersion=1.2.3-20180101010203_testCommitId', '-DgenerateBackupPoms=false']
         ]), mvnExecuteRule.executions[1])
         assertThat(shellRule.shell, not(hasItem(containsString('commit'))))
     }
