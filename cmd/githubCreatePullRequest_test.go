@@ -85,7 +85,7 @@ func TestRunGithubCreatePullRequest(t *testing.T) {
 		ghIssueService := ghIssueMock{}
 
 		err := runGithubCreatePullRequest(ctx, &myGithubPROptions, &ghPRService, &ghIssueService)
-		assert.NoError(t, err, "Error occured but none expected.")
+		assert.NoError(t, err, "Error occurred but none expected.")
 
 		assert.Equal(t, myGithubPROptions.Owner, ghPRService.owner, "Owner not passed correctly")
 		assert.Equal(t, myGithubPROptions.Repository, ghPRService.repo, "Repository not passed correctly")
@@ -106,7 +106,7 @@ func TestRunGithubCreatePullRequest(t *testing.T) {
 		ghIssueService := ghIssueMock{}
 
 		err := runGithubCreatePullRequest(ctx, &myGithubPROptions, &ghPRService, &ghIssueService)
-		assert.EqualError(t, err, "Error occured when creating pull request: Authentication failed", "Wrong error returned")
+		assert.EqualError(t, err, "Error occurred when creating pull request: Authentication failed", "Wrong error returned")
 
 	})
 
@@ -115,6 +115,6 @@ func TestRunGithubCreatePullRequest(t *testing.T) {
 		ghIssueService := ghIssueMock{issueError: fmt.Errorf("Authentication failed")}
 
 		err := runGithubCreatePullRequest(ctx, &myGithubPROptions, &ghPRService, &ghIssueService)
-		assert.EqualError(t, err, "Error occured when editing pull request: Authentication failed", "Wrong error returned")
+		assert.EqualError(t, err, "Error occurred when editing pull request: Authentication failed", "Wrong error returned")
 	})
 }

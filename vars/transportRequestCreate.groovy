@@ -112,7 +112,7 @@ import hudson.AbortException
 * * a Transport Request for a Change Document on the Solution Manager (type `SOLMAN`) or
 * * a Transport Request inside an ABAP system (type`CTS`)
 *
-* The id of the transport request is availabe via [commonPipelineEnvironment.getTransportRequestId()](commonPipelineEnvironment.md)
+* The id of the transport request is available via [commonPipelineEnvironment.getTransportRequestId()](commonPipelineEnvironment.md)
 */
 @GenerateDocumentation
 void call(Map parameters = [:]) {

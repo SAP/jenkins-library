@@ -5,6 +5,15 @@ metadata:
     cli command to scan the defined sources and publish the results to a SonarQube instance."
 spec:
   inputs:
+    secrets:
+      - name: sonarTokenCredentialsId
+        type: jenkins
+        description: "Jenkins 'Secret text' credentials ID containing the token used to authenticate
+          with the Sonar Server."
+      - name: githubTokenCredentialsId
+        type: jenkins
+        description: "Jenkins 'Secret text' credentials ID containing the token used to authenticate
+          with the Github Server."
     params:
       - name: instance
         type: string
@@ -228,15 +237,6 @@ spec:
         aliases:
           - name: maven/m2Path
 
-    secrets:
-      - name: sonarTokenCredentialsId
-        type: jenkins
-        description: "Jenkins 'Secret text' credentials ID containing the token used to authenticate
-          with the Sonar Server."
-      - name: githubTokenCredentialsId
-        type: jenkins
-        description: "Jenkins 'Secret text' credentials ID containing the token used to authenticate
-          with the Github Server."
   outputs:
     resources:
       - name: influx

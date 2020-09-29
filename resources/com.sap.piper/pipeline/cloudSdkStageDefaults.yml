@@ -93,6 +93,10 @@ stages:
   whitesourceScan:
     onlyProductiveBranch: true
     stepConditions:
+      whitesourceExecuteScan:
+        configKeys:
+          - 'product'
+          - 'orgAdminUserTokenCredentialsId'
       whitesourceScan:
         configKeys:
           - 'product'
@@ -109,6 +113,23 @@ stages:
       detectScan:
         configKeys:
           - 'detectTokenCredentialsId'
+  security:
+    onlyProductiveBranch: true
+    stepConditions:
+      checkmarxExecuteScan:
+        configKeys:
+          - 'groupId'
+      detectExecuteScan:
+        configKeys:
+          - 'detectTokenCredentialsId'
+      fortifyExecuteScan:
+        configKeys:
+          - 'fortifyCredentialsId'
+      whitesourceExecuteScan:
+        configKeys:
+          - 'product'
+          - 'orgAdminUserTokenCredentialsId'
+          - 'userTokenCredentialsId'
   productionDeployment:
     onlyProductiveBranch: true
     stepConditions:
