@@ -673,6 +673,14 @@ func getNpmProjectName(modulePath string, utils whitesourceUtils) (string, error
 	return projectName, nil
 }
 
+// reinstallNodeModulesIfLsFails tests running of "npm ls".
+// If that fails, the node_modules directory is cleared and the file "package-lock.json" is removed.
+// Then "npm install" is performed. Without this, the npm whitesource plugin will consistently hang,
+// when encountering npm ls errors, even with "ignoreNpmLsErrors:true" in the configuration.
+// The consequence is that what was scanned is not guaranteed to be identical to what was built & deployed.
+// This hack/work-around that should be removed once scanning it consistently performed using the Unified Agent.
+// A possible reason for encountering "npm ls" errors in the first place is that a different node version
+// is used for whitesourceExecuteScan due to a different docker image being used compared to the build stage.
 func reinstallNodeModulesIfLsFails(modulePath string, config *ScanOptions, utils whitesourceUtils) error {
 	// No need to have output from "npm ls" in the log
 	utils.Stdout(ioutil.Discard)
