@@ -399,7 +399,7 @@ artifactDeployment:
 ### whitesourceScan
 
 The `whitesourceScan` stage has been merged into the project "Piper" stage `security`.
-To configure Whitesource please configure the step `whitesourceExecuteScan` as described [in the step documentation](https://sap.github.io/jenkins-library/steps/whitesourceExecuteScan/).
+To configure WhiteSource please configure the step `whitesourceExecuteScan` as described [in the step documentation](https://sap.github.io/jenkins-library/steps/whitesourceExecuteScan/).
 
 ### fortifyScan
 
