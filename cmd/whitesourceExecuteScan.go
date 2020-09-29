@@ -1012,7 +1012,7 @@ func aggregateVersionWideVulnerabilities(config *ScanOptions, utils whitesourceU
 	return nil
 }
 
-const wsReportTimeStampLayout = "2006-01-02 15:04:05"
+const wsReportTimeStampLayout = "20060102-150405"
 
 // outputs an slice of alerts to an excel file
 func newVulnerabilityExcelReport(alerts []ws.Alert, config *ScanOptions, utils whitesourceUtils) error {
@@ -1036,8 +1036,8 @@ func newVulnerabilityExcelReport(alerts []ws.Alert, config *ScanOptions, utils w
 		return err
 	}
 
-	fileName := fmt.Sprintf("%s/vulnerabilities-%s.xlsx", config.ReportDirectoryName,
-		utils.Now().Format(wsReportTimeStampLayout))
+	fileName := filepath.Join(config.ReportDirectoryName,
+		fmt.Sprintf("vulnerabilities-%s.xlsx", utils.Now().Format(wsReportTimeStampLayout)))
 	stream, err := utils.FileOpen(fileName, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666)
 	if err != nil {
 		return err

@@ -987,11 +987,16 @@ func TestAggregateVersionWideVulnerabilities(t *testing.T) {
 		err := aggregateVersionWideVulnerabilities(config, utils, system)
 		// assert
 		resource := filepath.Join("mock-reports", "project-names-aggregated.txt")
-		if assert.NoError(t, err) && assert.True(t, utils.HasWrittenFile(resource)) {
+		assert.NoError(t, err)
+		if assert.True(t, utils.HasWrittenFile(resource)) {
 			contents, _ := utils.FileRead(resource)
 			asString := string(contents)
 			assert.Equal(t, "mock-project - 1\n", asString)
 		}
+		reportSheet := filepath.Join("mock-reports", "vulnerabilities-20100510-001542.xlsx")
+		sheetContents, err := utils.FileRead(reportSheet)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, sheetContents)
 	})
 }
 
