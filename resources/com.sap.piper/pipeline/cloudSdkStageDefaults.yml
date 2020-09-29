@@ -118,6 +118,7 @@ stages:
         configKeys:
           - 'product'
           - 'orgAdminUserTokenCredentialsId'
+          - 'userTokenCredentialsId'
   productionDeployment:
     onlyProductiveBranch: true
     stepConditions:
