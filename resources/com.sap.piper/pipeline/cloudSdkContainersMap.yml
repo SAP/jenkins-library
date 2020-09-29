@@ -35,6 +35,8 @@ containerMaps:
     - npmExecuteScripts
   additionalUnitTests:
     - npmExecuteScripts
+  fortifyScan:
+    - fortifyExecuteScan
   npmAudit:
     - executeNpm
   endToEndTests:
@@ -52,6 +54,9 @@ containerMaps:
     - mavenExecute
   artifactDeployment:
     - nexusUpload
+  whitesourceScan:
+    - mavenExecute
+    - executeNpm
   security:
     - fortifyExecuteScan
     - detectExecuteScan
