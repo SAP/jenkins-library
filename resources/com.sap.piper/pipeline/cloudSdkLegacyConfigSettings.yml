@@ -37,6 +37,9 @@ removedOrReplacedConfigKeys:
     customMessage: "The parameter will be ignored during execution.
       This configuration option was removed in version v41, since the packages of the public SAP NPM Registry were migrated to the default public registry at npmjs.org.
       Please configure the defaultNpmRegistry parameter instead, in case a custom NPM registry configuration is required."
+  sendNotification:
+    postAction: true
+    customMessage: "Details can be found in the release notes of v43 of the pipeline: https://github.com/SAP/cloud-s4-sdk-pipeline/releases/tag/v43"
 
 removedOrReplacedSteps:
   executeMaven:
@@ -72,6 +75,10 @@ removedOrReplacedStages:
       Details can be found in the release notes as well as in the step documentation: https://sap.github.io/jenkins-library/steps/npmExecuteLint/."
   frontendUnitTests:
     newStageName: "additionalUnitTests"
+  npmAudit:
+    customMessage: "Details can be found in the release notes of v43 of the pipeline: https://github.com/SAP/cloud-s4-sdk-pipeline/releases/tag/v43"
+  s4SdkQualityChecks:
+    customMessage: "Details can be found in the release notes of v43 of the pipeline: https://github.com/SAP/cloud-s4-sdk-pipeline/releases/tag/v43"
   sonarQubeScan:
     newStageName: "compliance"
 

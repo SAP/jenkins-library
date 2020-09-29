@@ -153,30 +153,7 @@ endToEndTests:
 
 ### npmAudit
 
-This stage uses the [`npm audit`](https://docs.npmjs.com/cli/audit) command to check for known vulnerabilities in dependencies.
-
-The pipeline fails if one of the following thresholds is exceeded:
-
-* Zero vulnerabilities of category _critical_
-* Zero vulnerabilities of category _high_
-* Two vulnerabilities of category _moderate_
-
-In case you audited an advisory, and it turns out to be a false positive, you can mark it as _audited_ by adding its id to the `auditedAdvisories` in the stage configuration.
-A false positive in this case is when you are confident that your application is not affected in any way by the underlying bug or vulnerability.
-
-Example:
-
-```yaml
-npmAudit:
-  auditedAdvisories:
-    - 123
-    - 124
-    - 77
-```
-
-**Note:** Do not prefix the id with leading zeros, as this would make the number interpreted as octal.
-
-The pipeline will warn you, if an "audited advisory" is not actually detected in your project.
+This stage has been removed in v43 of the Cloud SDK pipeline.
 
 ### performanceTests
 
@@ -189,33 +166,7 @@ For details on the properties `cfTargets` and `neoTargets` see the stage `produc
 
 ### s4SdkQualityChecks
 
-| Property | Mandatory | Default Value | Description |
-| --- | --- | --- | --- |
-| `disabledChecks` | | [] | A list of checks which should not be executed. Possible values are: `checkDeploymentDescriptors` (Check for insecure options, such as `ALLOW_MOCKED_AUTH_HEADER` in deployment descriptors), `checkResilience`(Check that application is resilient to faults in the network), `checkServices` (Check that only official APIs are used), `checkFrontendCodeCoverage` (Ensures high frontend code coverage), `checkBackendCodeCoverage` (Ensures high backend code coverage) |
-| `jacocoExcludes` | | | A list of exclusions expressed as an [Ant-style pattern](http://ant.apache.org/manual/dirtasks.html#patterns) relative to the application folder. An example can be found below.|
-| `threshold` | | | This setting allows the code coverage to be stricter compared to the default values. By default, the pipeline will fail if the coverage is below 65% line coverage (`unstableCoverage`), and will be unstable if it is less than 70% (`successCoverage`). If lower numbers are configured, or this configuration is left out, the default values are applied. |
-| `customODataServices` | | | We recommend only using OData services listed in the in [SAP API Business Hub](https://api.sap.com/). Despite that for using custom business objects you can add those APIs here. |
-| `nonErpDestinations` | | | List of destination names that do not refer to ERP systems. Use this parameter to exclude specific destinations from being checked in context of ERP API whitelists. |
-| `nonErpUrls` | | | List of URLs that are not defined as destinations. Use this parameter to exclude specific URLs from being checked in context of ERP API whitelists. |
-| `codeCoverageFrontend` | | | A map containing the thresholds unstable and failing. If the code coverage is lower than what is configured in unstable, the pipeline result is unstable. If it is lower than what is configured in failing, the pipeline will fail. |
-
-Example:
-
-```yaml
-s4SdkQualityChecks:
-  disabledChecks: []
-  jacocoExcludes:
-    - '**/HelloWorld.class'
-    - '**/generated/**'
-  threshold:
-    successCoverage: 85
-    unstableCoverage: 70
-  customODataServices:
-    - 'API_myCustomODataService'
-  codeCoverageFrontend:
-    unstable: 50
-    failing: 45
-```
+This stage has been removed in v43 of the Cloud SDK pipeline.
 
 ### checkmarxScan
 
@@ -542,50 +493,15 @@ checkJMeter:
 
 ### executeNpm
 
-The executeNpm step is used for all invocations of the npm build tool. It is, for example, used for building the frontend and for executing end to end tests.
-
-| Property | Mandatory | Default Value | Description |
-| --- | --- | --- | --- |
-| `dockerImage` | | `ppiper/node-browsers:v2` | The image to be used for executing npm commands. |
-| `defaultNpmRegistry` | | | The default npm registry url to be used as the remote mirror. Bypasses the local download cache if specified.  |
+This step has been removed in v43 of the Cloud SDK pipeline.
+Please use the step [npmExecuteScripts](https://sap.github.io/jenkins-library/steps/npmExecuteScripts/) instead.
 
 ### debugReportArchive
 
-The `debugReportArchive` step can be used to create confidential (instead of redacted) debug reports.
-The difference between the redacted and the confidential debug report is, that potentially confidential information, such as the GitHub repository and branch, global extension repository and shared libraries, are included in the confidential debug report. It is the user's responsibility to make sure that the debug report does not contain any confidential information.
-
-| Property | Mandatory | Default Value | Description |
-| --- | --- | --- | --- |
-|`shareConfidentialInformation`| |`false`| If set to `true`, a confidential debug report is being generated with each build.
-
-Example:
-
-```yaml
-debugReportArchive:
-  shareConfidentialInformation: true
-```
+The documentation for the `debugReportArchive` step has been moved [here](https://sap.github.io/jenkins-library/steps/debugReportArchive/).
 
 ## Post action configuration
 
 ### sendNotification
 
-The `sendNotification` post-build action can be used to send notifications to project members in case of an unsuccessful build outcome or if the build goes back to normal.
-By default, an email is sent to the list of users who committed a change since the last non-broken build. Additionally, a set of recipients can be defined that should always receive notifications.
-
-| Property | Mandatory | Default Value | Description |
-| --- | --- | --- | --- |
-| `enabled` | | `false` | If set to `true`, notifications will be sent. |
-| `skipFeatureBranches` | | `false` | If set to `true`, notifications will only be sent for the productive branch as defined in the general configuration section. |
-| `recipients` | | | List of email addresses that should be notified in addition to the standard recipients. |
-
-Example:
-
-```yaml
-postActions:
-  sendNotification:
-    enabled: true
-    skipFeatureBranches: false
-    recipients:
-      - ryan.architect@foobar.com
-      - john.doe@foobar.com
-```
+The `sendNotification` post-build action has been removed in version v43 of the Cloud SDK pipeline.
