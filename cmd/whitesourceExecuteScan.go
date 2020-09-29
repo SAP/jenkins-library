@@ -6,6 +6,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/npm"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -638,6 +639,10 @@ func executeNpmScanForModule(modulePath string, config *ScanOptions, scan *white
 		return err
 	}
 
+	if err := reinstallNodeModulesIfLsFails(modulePath, config, utils); err != nil {
+		return err
+	}
+
 	if err := scan.appendScannedProject(projectName); err != nil {
 		return err
 	}
@@ -666,6 +671,34 @@ func getNpmProjectName(modulePath string, utils whitesourceUtils) (string, error
 	}
 
 	return projectName, nil
+}
+
+func reinstallNodeModulesIfLsFails(modulePath string, config *ScanOptions, utils whitesourceUtils) error {
+	// No need to have output from "npm ls" in the log
+	utils.Stdout(ioutil.Discard)
+	defer utils.Stdout(log.Writer())
+
+	err := utils.RunExecutable("npm", "ls")
+	if err == nil {
+		return nil
+	}
+	log.Entry().Warnf("'npm ls' failed. Re-installing NPM Node Modules")
+	err = utils.RemoveAll("node_modules")
+	if err != nil {
+		return fmt.Errorf("failed to remove node_modules directory: %w", err)
+	}
+	err = utils.MkdirAll("node_modules", os.ModePerm)
+	if err != nil {
+		return fmt.Errorf("failed to recreate node_modules directory: %w", err)
+	}
+	exists, _ := utils.FileExists("package-lock.json")
+	if exists {
+		err = utils.FileRemove("package-lock.json")
+		if err != nil {
+			return fmt.Errorf("failed to remove package-lock.json: %w", err)
+		}
+	}
+	return utils.InstallAllNPMDependencies(config, []string{modulePath})
 }
 
 // executeYarnScan generates a configuration file whitesource.config.json with appropriate values from config,
