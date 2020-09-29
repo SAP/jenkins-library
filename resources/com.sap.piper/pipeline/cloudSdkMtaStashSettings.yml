@@ -71,7 +71,7 @@ fortifyScan:
   stashes: []
 
 detect:
-  unstash: [ "SOURCE", "M2", "TARGET" ]
+  unstash: ["SOURCE", "M2", "TARGET"]
   stashes: []
 
 security:

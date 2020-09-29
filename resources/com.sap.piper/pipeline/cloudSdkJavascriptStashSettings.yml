@@ -63,11 +63,11 @@ whitesourceScan:
   stashes: []
 
 checkmarxScan:
-  unstash: [ "SOURCE" ]
+  unstash: ["SOURCE"]
   stashes: []
 
 detect:
-  unstash: [ "SOURCE" ]
+  unstash: ["SOURCE"]
   stashes: []
 
 security:
