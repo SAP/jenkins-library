@@ -3,7 +3,7 @@
 **Table of contents:**
 
 1. [Getting started](#getting-started)
-1. [Build the project](build-the-project)
+1. [Build the project](#build-the-project)
 1. [Generating step framework](#generating-step-framework)
 1. [Best practices for writing piper-go steps](#best-practices-for-writing-piper-go-steps)
 1. [Testing](#testing)
