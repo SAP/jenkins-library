@@ -24,7 +24,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func checkmarxExecuteScan(config checkmarxExecuteScanOptions, telemetryData *telemetry.CustomData, influx *checkmarxExecuteScanInflux) error {
+func checkmarxExecuteScan(config checkmarxExecuteScanOptions, telemetryData *telemetry.CustomData, influx *checkmarxExecuteScanInflux) {
 	client := &piperHttp.Client{}
 	sys, err := checkmarx.NewSystemInstance(client, config.ServerURL, config.Username, config.Password)
 	if err != nil {
@@ -33,7 +33,6 @@ func checkmarxExecuteScan(config checkmarxExecuteScanOptions, telemetryData *tel
 	if err := runScan(config, sys, "./", influx); err != nil {
 		log.Entry().WithError(err).Fatal("Failed to execute Checkmarx scan.")
 	}
-	return nil
 }
 
 func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace string, influx *checkmarxExecuteScanInflux) error {
@@ -221,7 +220,7 @@ func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx
 	if insecure {
 		if config.VulnerabilityThresholdResult == "FAILURE" {
 			log.SetErrorCategory(log.ErrorCompliance)
-			return fmt.Errorf("checkmarx scan failed, the project is not compliant. For details see the archived report.")
+			return fmt.Errorf("the project is not compliant - see report for details")
 		}
 		log.Entry().Errorf("Checkmarx scan result set to %v, some results are not meeting defined thresholds. For details see the archived report.", config.VulnerabilityThresholdResult)
 	} else {
@@ -413,6 +412,7 @@ func createAndConfigureNewProject(sys checkmarx.System, projectName, teamID, pre
 	if len(presetValue) > 0 {
 		setPresetForProject(sys, projectCreateResult.ID, projectName, presetValue, engineConfiguration)
 	} else {
+		log.SetErrorCategory(log.ErrorConfiguration)
 		return checkmarx.Project{}, errors.Wrapf(err, "preset not specified, creation of project %v failed", projectName)
 	}
 	projects, err := sys.GetProjectsByNameAndTeam(projectName, teamID)
