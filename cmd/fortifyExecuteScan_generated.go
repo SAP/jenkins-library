@@ -260,6 +260,12 @@ func fortifyExecuteScanMetadata() config.StepData {
 								Name: "fortifyCredentialsId",
 								Type: "secret",
 							},
+
+							{
+								Name:  "",
+								Paths: []string{"$(vaultBasePath)/$(vaultPipelineName)/fortify", "$(vaultBasePath)/__group/fortify"},
+								Type:  "vaultSecret",
+							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",

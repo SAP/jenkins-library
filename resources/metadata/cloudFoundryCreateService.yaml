@@ -46,6 +46,10 @@ spec:
           - name: cfCredentialsId
             type: secret
             param: username
+          - type: vaultSecret
+            paths:
+              - $(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(org)-$(space)
+              - $(vaultBasePath)/__group/cloudfoundry-$(org)-$(space)
       - name: password
         type: string
         description: Password for Cloud Foundry User
@@ -59,6 +63,10 @@ spec:
           - name: cfCredentialsId
             type: secret
             param: password
+          - type: vaultSecret
+            paths:
+              - $(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(org)-$(space)
+              - $(vaultBasePath)/__group/cloudfoundry-$(org)-$(space)
       - name: cfOrg
         type: string
         description: Cloud Foundry org

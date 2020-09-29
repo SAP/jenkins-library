@@ -323,6 +323,12 @@ func checkmarxExecuteScanMetadata() config.StepData {
 								Param: "password",
 								Type:  "secret",
 							},
+
+							{
+								Name:  "",
+								Paths: []string{"$(vaultBasePath)/$(vaultPipelineName)/checkmarx", "$(vaultBasePath)/__group/checkmarx"},
+								Type:  "vaultSecret",
+							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
@@ -392,6 +398,12 @@ func checkmarxExecuteScanMetadata() config.StepData {
 								Name:  "checkmarxCredentialsId",
 								Param: "username",
 								Type:  "secret",
+							},
+
+							{
+								Name:  "",
+								Paths: []string{"$(vaultBasePath)/$(vaultPipelineName)/checkmarx", "$(vaultBasePath)/__group/checkmarx"},
+								Type:  "vaultSecret",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},

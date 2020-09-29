@@ -126,6 +126,12 @@ func cloudFoundryCreateServiceKeyMetadata() config.StepData {
 								Param: "username",
 								Type:  "secret",
 							},
+
+							{
+								Name:  "",
+								Paths: []string{"$(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(org)-$(space)", "$(vaultBasePath)/__group/cloudfoundry-$(org)-$(space)"},
+								Type:  "vaultSecret",
+							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
@@ -139,6 +145,12 @@ func cloudFoundryCreateServiceKeyMetadata() config.StepData {
 								Name:  "cfCredentialsId",
 								Param: "password",
 								Type:  "secret",
+							},
+
+							{
+								Name:  "",
+								Paths: []string{"$(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(org)-$(space)", "$(vaultBasePath)/__group/cloudfoundry-$(org)-$(space)"},
+								Type:  "vaultSecret",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},

@@ -404,7 +404,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 
 							{
 								Name:  "",
-								Paths: []string{"$(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(space)", "$(vaultBasePath)/__group/cloudfoundry-$(space)"},
+								Paths: []string{"$(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(org)-$(space)", "$(vaultBasePath)/__group/cloudfoundry-$(org)-$(space)"},
 								Type:  "vaultSecret",
 							},
 						},
@@ -448,7 +448,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 
 							{
 								Name:  "",
-								Paths: []string{"$(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(space)", "$(vaultBasePath)/__group/cloudfoundry-$(space)"},
+								Paths: []string{"$(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(org)-$(space)", "$(vaultBasePath)/__group/cloudfoundry-$(org)-$(space)"},
 								Type:  "vaultSecret",
 							},
 						},
