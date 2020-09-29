@@ -103,7 +103,7 @@ It is recommended to use the same tools as in the `package.json` of this [exampl
 
 ##### Maven
 
-Maven unit-tests are executed as part of the [`mavenBuild`](https://sap.github.io/jenkins-library/steps/mavenBuild/) step.
+Maven unit-tests are executed as part of the [`mavenBuild`](steps/mavenBuild/) step.
 They are supposed to be placed inside of `application/src/test`.
 
 ##### Java MTA modules

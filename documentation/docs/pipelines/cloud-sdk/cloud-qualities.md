@@ -99,7 +99,7 @@ In addition to the default checks of those tools, it adds the following SAP Clou
 
 The pipeline automatically executes linting of JavaScript and Typescript files, either by running a user defined script, or by executing ESLint with a general purpose configuration.
 
-[Custom linters](https://sap.github.io/jenkins-library/extensibility/#practical-example) can be implemented by development teams, if desired.
+[Custom linters](extensibility/#practical-example) can be implemented by development teams, if desired.
 
 This allows to enforce a common coding style within a team of developers, thus making it easier to focus on the application code, rather then discussing minor style issues.
 
