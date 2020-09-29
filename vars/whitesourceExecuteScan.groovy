@@ -1,5 +1,6 @@
 import com.sap.piper.BuildTool
 import com.sap.piper.DescriptorUtils
+import com.sap.piper.DownloadCacheUtils
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.JsonUtils
 import com.sap.piper.Utils
@@ -268,7 +269,7 @@ void call(Map parameters = [:]) {
             .use()
 
         if (config.useGoStep == true && config.scanType != "unified-agent") {
-            parameters = com.sap.piper.DownloadCacheUtils.injectDownloadCacheInParameters(script, parameters, BuildTool.MTA)
+            parameters = DownloadCacheUtils.injectDownloadCacheInParameters(script, parameters, BuildTool.MTA)
 
             List credentials = [
                 [type: 'token', id: 'orgAdminUserTokenCredentialsId', env: ['PIPER_orgToken']],
