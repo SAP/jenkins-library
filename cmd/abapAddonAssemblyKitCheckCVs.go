@@ -29,15 +29,15 @@ func abapAddonAssemblyKitCheckCVs(config abapAddonAssemblyKitCheckCVsOptions, te
 
 func runAbapAddonAssemblyKitCheckCVs(config *abapAddonAssemblyKitCheckCVsOptions, telemetryData *telemetry.CustomData, client piperhttp.Sender,
 	cpe *abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment, readAdoDescriptor abaputils.ReadAddonDescriptorType) error {
-	var addonDescriptorFromCPE abaputils.AddonDescriptor
-	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptorFromCPE)
+
+	conn := new(abapbuild.Connector)
+	conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client)
+
+	log.Entry().Infof("Reading Product Version Information from addonDescriptor (aka addon.yml) file: %s", config.AddonDescriptorFileName)
 	addonDescriptor, err := readAdoDescriptor(config.AddonDescriptorFileName)
 	if err != nil {
 		return err
 	}
-	addonDescriptor = combineYAMLRepositoriesWithCPEProduct(addonDescriptor, addonDescriptorFromCPE)
-	conn := new(abapbuild.Connector)
-	conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client)
 
 	for i := range addonDescriptor.Repositories {
 		var c componentVersion
@@ -48,9 +48,24 @@ func runAbapAddonAssemblyKitCheckCVs(config *abapAddonAssemblyKitCheckCVsOptions
 		}
 		c.copyFieldsToRepo(&addonDescriptor.Repositories[i])
 	}
-	log.Entry().Info("Write the resolved versions to the CommonPipelineEnvironment")
-	toCPE, _ := json.Marshal(addonDescriptor)
-	cpe.abap.addonDescriptor = string(toCPE)
+
+	var addonDescriptorFromCPE abaputils.AddonDescriptor
+	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptorFromCPE)
+	addonDescriptor = combineYAMLRepositoriesWithCPEProduct(addonDescriptor, addonDescriptorFromCPE)
+
+	// now Software Component Versions fields are valid, but maybe Product Version was checked before, so copy that part from CPE
+	// we don't care for errors
+	// scenario 1: config.AddonDescriptor is empty since checkCVs is the first step in the pipeline, then the empty result is fine anyway
+	// scenario 2: for some reason config.AddonDescriptor is corrupt - then we insert the valid data but delete the repositories which will ensure issue is found later on
+	addonDescriptorCPE, _ := abaputils.ConstructAddonDescriptorFromJSON([]byte(config.AddonDescriptor))
+	if len(addonDescriptorCPE.AddonProduct) == 0 {
+		log.Entry().Info("No Product Version information present yet in the addonDescriptor of CommonPipelineEnvironment")
+	} else {
+		log.Entry().Infof("Information for Product Version %s taken from addonDescriptor of CommonPipelineEnvironment", addonDescriptorCPE.AddonProduct)
+	}
+	addonDescriptorCPE.SetRepositories(addonDescriptor.Repositories)
+	cpe.abap.addonDescriptor = string(addonDescriptor.AsJSON())
+	log.Entry().Info("Wrote addonDescriptor to CommonPipelineEnvironment")
 	return nil
 }
 
