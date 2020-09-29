@@ -355,7 +355,7 @@ To configure WhiteSource please configure the step `whitesourceExecuteScan` as d
 ### fortifyScan
 
 The `fortifyScan` stage has been merged into the project "Piper" stage `security`.
-To configure Whitesource please configure the step `fortifyExecuteScan` as described [in the step documentation](https://sap.github.io/jenkins-library/steps/fortifyExecuteScan/).
+To configure Fortify please configure the step `fortifyExecuteScan` as described [in the step documentation](https://sap.github.io/jenkins-library/steps/fortifyExecuteScan/).
 
 ### lint
 
