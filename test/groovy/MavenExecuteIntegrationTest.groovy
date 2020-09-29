@@ -54,12 +54,11 @@ class MavenExecuteIntegrationTest extends BasePiperTest {
     }
 
     @Test
-    void testWithSidecar() {
+    void testParameterPassing() {
         stepRule.step.mavenExecuteIntegration(
             juStabUtils: utils,
             jenkinsUtilsStub: jenkinsUtils,
             testParam: 'This is test content',
-            sidecarImage: 'some/image',
             script: nullScript,
         )
         // asserts

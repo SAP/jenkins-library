@@ -77,7 +77,7 @@ import static com.sap.piper.Prerequisites.checkScript
  * * Control locators (OPA5 declarative matchers) allow locating and interacting with UI5 controls.
  * * Does not depend on testability support in applications - works with autorefreshing views, resizing elements, animated transitions.
  * * Declarative authentications - authentication flow over OAuth2 providers, etc.
- * * Console operation, CI ready, fully configurable, no need for java (comming soon) or IDE.
+ * * Console operation, CI ready, fully configurable, no need for java (coming soon) or IDE.
  * * Covers full ui5 browser matrix - Chrome,Firefox,IE,Edge,Safari,iOS,Android.
  * * Open-source, modify to suite your specific neeeds.
  *
@@ -91,18 +91,19 @@ void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
         def script = checkScript(this, parameters) ?: this
         def utils = parameters.juStabUtils ?: new Utils()
+        String stageName = parameters.stageName ?: env.STAGE_NAME
 
         // load default & individual configuration
         Map config = ConfigurationHelper.newInstance(this)
-            .loadStepDefaults()
+            .loadStepDefaults([:], stageName)
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
+            .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .addIfEmpty('seleniumHost', isKubernetes()?'localhost':'selenium')
             .use()
 
-        new Utils().pushToSWA([
+        utils.pushToSWA([
             step: STEP_NAME,
             stepParamKey1: 'scriptMissing',
             stepParam1: parameters?.script == null

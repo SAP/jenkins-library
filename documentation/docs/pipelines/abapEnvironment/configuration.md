@@ -1,13 +1,16 @@
 # Configuration
 
-In this section, you can learn how to create a configuration in a (GitHub) repository to run an ABAP Environment Pipeline.
+In this section, you can learn how to create a configuration in a (GitHub) repository to run an ABAP Environment Pipeline. This sepcific example will create a pipeline, which executes ATC checks after creating a new ABAP Environment system. In the end, the system will be deprovisioned.
+
+You can have a look at different pipeline configurations in our [SAP-samples repository](https://github.com/SAP-samples/abap-platform-ci-cd-samples).
 
 ## 1. Prerequisites
 
 * Configure your Jenkins Server according to the [documentation](https://sap.github.io/jenkins-library/guidedtour/).
-* Create a git repository on a host reachable by the Jenkinsserver (e.g. GitHub.com). The pipeline will be configured in this repository.
-* A Cloud Foundry Organization & Space with the necessary entitlements are available
-* A Cloud Foundry User & Password with the required authorizations in the Organization and Space are available. User and Password were saved in the Jenkins Credentials Store
+* Create a git repository on a host reachable by the Jenkins server (e.g. GitHub.com). The pipeline will be configured in this repository. Create a GitHub User with read access.
+* The entitlements for the ABAP Environment system are available in the SAP Cloud Platform global account and assigned to the subaccount.
+* A Cloud Foundry Organization & Space with the allocated entitlements are available.
+* A Cloud Foundry User & Password with the required authorization ("Space Developer") in the Organization and Space are available. User and Password were saved in the Jenkins Credentials Store.
 
 ## 2. Jenkinsfile
 
@@ -75,7 +78,7 @@ Create a file `.pipeline/config.yml` where you store the configuration for the p
 
 ```yml
 general:
-  cfApiEndpoint: 'https://api.cf.sap.hana.ondemand.com'
+  cfApiEndpoint: 'https://api.cf.eu10.hana.ondemand.com'
   cfOrg: 'your-cf-org'
   cfSpace: 'yourSpace'
   cfCredentialsId: 'cfAuthentification'
@@ -95,6 +98,10 @@ steps:
 ```
 
 If one stage of the pipeline is not configured in this yml file, the stage will not be executed during the pipeline run. If the stage `Prepare System` is configured, the system will be deprovisioned in the cleanup routine - although it is necessary to configure the step `cloudFoundryDeleteService` as above.
+
+Please make sure the parameters align with the values defined in the other configuration files, e.g. the service name in the `manifest.yml` needs to be the same as the value in `general.cfServiceInstance`.
+
+The values for `cfApiEndpoint`,`cfOrg` and `cfSpace` can be found in the respective overview pages in the SAP Cloud Platform Cockpit. The Cloud Foundry credentials, saved in the Jenkins credentials store with the ID `cfCredentialsId`, must refer to a user with the required authorizations ("Space Developer") for the Cloud Foundry Organization and Space.
 
 ## 7. Create a Jenkins Pipeline
 

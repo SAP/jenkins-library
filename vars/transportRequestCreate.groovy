@@ -112,25 +112,26 @@ import hudson.AbortException
 * * a Transport Request for a Change Document on the Solution Manager (type `SOLMAN`) or
 * * a Transport Request inside an ABAP system (type`CTS`)
 *
-* The id of the transport request is availabe via [commonPipelineEnvironment.getTransportRequestId()](commonPipelineEnvironment.md)
+* The id of the transport request is available via [commonPipelineEnvironment.getTransportRequestId()](commonPipelineEnvironment.md)
 */
 @GenerateDocumentation
-void call(parameters = [:]) {
+void call(Map parameters = [:]) {
 
     def transportRequestId
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
         def script = checkScript(this, parameters) ?: this
+        String stageName = parameters.stageName ?: env.STAGE_NAME
 
         ChangeManagement cm = parameters.cmUtils ?: new ChangeManagement(script)
 
         ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
             .collectValidationFailures()
-            .loadStepDefaults()
+            .loadStepDefaults([:], stageName)
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
+            .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
 
 

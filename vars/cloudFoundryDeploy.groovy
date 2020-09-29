@@ -155,6 +155,11 @@ import static com.sap.piper.Prerequisites.checkScript
      * this defines the credentials to be used.
      */
     'dockerCredentialsId',
+    /**
+     * Toggle to activate the new go-implementation of the step. Off by default.
+     * @possibleValues true, false
+     */
+    'useGoStep',
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
@@ -202,16 +207,16 @@ void call(Map parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
+        final script = checkScript(this, parameters) ?: this
         def utils = parameters.juStabUtils ?: new Utils()
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
-
-        final script = checkScript(this, parameters) ?: this
+        String stageName = parameters.stageName ?: env.STAGE_NAME
 
         Map config = ConfigurationHelper.newInstance(this)
-            .loadStepDefaults()
+            .loadStepDefaults([:], stageName)
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixin(parameters, PARAMETER_KEYS, CONFIG_KEY_COMPATIBILITY)
             .addIfEmpty('buildTool', script.commonPipelineEnvironment.getBuildTool())
             .dependingOn('buildTool').mixin('deployTool')
@@ -221,6 +226,15 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('cloudFoundry/space')
             .withMandatoryProperty('cloudFoundry/credentialsId')
             .use()
+
+        if (config.useGoStep == true) {
+            List credentials = [
+                [type: 'usernamePassword', id: 'cfCredentialsId', env: ['PIPER_username', 'PIPER_password']],
+                [type: 'usernamePassword', id: 'dockerCredentialsId', env: ['PIPER_dockerUsername', 'PIPER_dockerPassword']]
+            ]
+            piperExecuteBin(parameters, STEP_NAME, 'metadata/cloudFoundryDeploy.yaml', credentials)
+            return
+        }
 
         utils.pushToSWA([
             step: STEP_NAME,

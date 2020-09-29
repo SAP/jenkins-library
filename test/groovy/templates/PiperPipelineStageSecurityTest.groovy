@@ -29,7 +29,7 @@ class PiperPipelineStageSecurityTest extends BasePiperTest {
 
     @Before
     void init()  {
-        binding.variables.env.STAGE_NAME = 'Security'
+        nullScript.env.STAGE_NAME = 'Security'
 
         helper.registerAllowedMethod("deleteDir", [], null)
         helper.registerAllowedMethod('piperStageWrapper', [Map.class, Closure.class], {m, body ->
@@ -51,6 +51,10 @@ class PiperPipelineStageSecurityTest extends BasePiperTest {
             stepsCalled.add('checkmarxExecuteScan')
         })
 
+        helper.registerAllowedMethod('detectExecuteScan', [Map.class], {m ->
+            stepsCalled.add('detectExecuteScan')
+        })
+
         helper.registerAllowedMethod('fortifyExecuteScan', [Map.class], {m ->
             stepsCalled.add('fortifyExecuteScan')
         })
@@ -69,6 +73,9 @@ class PiperPipelineStageSecurityTest extends BasePiperTest {
             juStabUtils: utils,
         )
         assertThat(stepsCalled, not(hasItem('whitesourceExecuteScan')))
+        assertThat(stepsCalled, not(hasItem('checkmarxExecuteScan')))
+        assertThat(stepsCalled, not(hasItem('detectExecuteScan')))
+        assertThat(stepsCalled, not(hasItem('fortifyExecuteScan')))
     }
 
     @Test
@@ -82,6 +89,7 @@ class PiperPipelineStageSecurityTest extends BasePiperTest {
 
         assertThat(stepsCalled, hasItem('whitesourceExecuteScan'))
         assertThat(stepsCalled, not(hasItem('checkmarxExecuteScan')))
+        assertThat(stepsCalled, not(hasItem('detectExecuteScan')))
         assertThat(stepsCalled, not(hasItem('fortifyExecuteScan')))
     }
 
@@ -99,6 +107,26 @@ class PiperPipelineStageSecurityTest extends BasePiperTest {
         )
 
         assertThat(stepsCalled, hasItem('checkmarxExecuteScan'))
+        assertThat(stepsCalled, not(hasItem('detectExecuteScan')))
+        assertThat(stepsCalled, not(hasItem('whitesourceExecuteScan')))
+        assertThat(stepsCalled, not(hasItem('fortifyExecuteScan')))
+    }
+
+    @Test
+    void testSecurityStageDetect() {
+
+        nullScript.commonPipelineEnvironment.configuration = [
+            runStep: [Security: [detectExecuteScan: true]]
+        ]
+
+        jsr.step.piperPipelineStageSecurity(
+            script: nullScript,
+            juStabUtils: utils,
+            detectExecuteScan: true
+        )
+
+        assertThat(stepsCalled, hasItem('detectExecuteScan'))
+        assertThat(stepsCalled, not(hasItem('checkmarxExecuteScan')))
         assertThat(stepsCalled, not(hasItem('whitesourceExecuteScan')))
         assertThat(stepsCalled, not(hasItem('fortifyExecuteScan')))
     }
@@ -117,6 +145,7 @@ class PiperPipelineStageSecurityTest extends BasePiperTest {
         )
 
         assertThat(stepsCalled, hasItem('fortifyExecuteScan'))
+        assertThat(stepsCalled, not(hasItem('detectExecuteScan')))
         assertThat(stepsCalled, not(hasItem('whitesourceExecuteScan')))
         assertThat(stepsCalled, not(hasItem('checkmarxExecuteScan')))
     }

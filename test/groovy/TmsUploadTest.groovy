@@ -1,4 +1,5 @@
 import com.sap.piper.JenkinsUtils
+import com.sap.piper.Utils
 import com.sap.piper.integration.TransportManagementService
 
 import hudson.AbortException
@@ -74,10 +75,12 @@ public class TmsUploadTest extends BasePiperTest {
                     .registerYaml("dummy.mtaext", new FileInputStream(new File("test/resources/TransportManagementService/dummy.mtaext")))
                     .registerYaml("dummy2.mtaext", new FileInputStream(new File("test/resources/TransportManagementService/dummy2.mtaext")))
                     .registerYaml("invalidDummy.mtaext", new FileInputStream(new File("test/resources/TransportManagementService/invalidDummy.mtaext")))
+        Utils.metaClass.echo = { def m -> }
     }
 
     @After
     void tearDown() {
+        Utils.metaClass = null
         calledTmsMethodsWithArgs.clear()
     }
 
@@ -192,9 +195,9 @@ public class TmsUploadTest extends BasePiperTest {
             mtaVersion: '0.0.1',
         )
 
-        assertThat(loggingRule.log, containsString("[TransportManagementService] MTA Extention Descriptor with ID 'com.sap.piper.tms.test.extension' successfully uploaded to Node 'testNode1'."))
+        assertThat(loggingRule.log, containsString("[TransportManagementService] MTA Extension Descriptor with ID 'com.sap.piper.tms.test.extension' successfully uploaded to Node 'testNode1'."))
         assertThat(calledTmsMethodsWithArgs[3], is("uploadMtaExtDescriptorToNode('${uri}', 'myToken', 1, './dummy.mtaext', '0.0.1', 'Git CommitId: testCommitId', 'Test User')"))
-        assertThat(loggingRule.log, containsString("[TransportManagementService] MTA Extention Descriptor with ID 'com.sap.piper.tms.test.another.extension' successfully uploaded to Node 'testNode2'."))
+        assertThat(loggingRule.log, containsString("[TransportManagementService] MTA Extension Descriptor with ID 'com.sap.piper.tms.test.another.extension' successfully uploaded to Node 'testNode2'."))
         assertThat(calledTmsMethodsWithArgs[5], is("uploadMtaExtDescriptorToNode('${uri}', 'myToken', 2, './dummy2.mtaext', '0.0.1', 'Git CommitId: testCommitId', 'Test User')"))
     }
 
@@ -218,7 +221,7 @@ public class TmsUploadTest extends BasePiperTest {
             mtaVersion: '1.2.2',
         )
 
-        assertThat(loggingRule.log, containsString("[TransportManagementService] MTA Extention Descriptor with ID 'com.sap.piper.tms.test.another.extension' successfully updated for Node 'testNode1'."))
+        assertThat(loggingRule.log, containsString("[TransportManagementService] MTA Extension Descriptor with ID 'com.sap.piper.tms.test.another.extension' successfully updated for Node 'testNode1'."))
         assertThat(calledTmsMethodsWithArgs[2], is("getMtaExtDescriptor('${uri}', 'myToken', 1, 'com.sap.piper.tms.test', '1.2.2')"))
         assertThat(calledTmsMethodsWithArgs[3], is("updateMtaExtDescriptor('${uri}', 'myToken', 1, 2, './dummy2.mtaext', '1.2.2', 'Git CommitId: testCommitId', 'Test User')"))
     }

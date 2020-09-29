@@ -73,17 +73,16 @@ import groovy.transform.Field
 void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters, allowBuildFailure: true) {
 
-        def script = checkScript(this, parameters)
+        def script = checkScript(this, parameters) ?: this
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
-        if (script == null)
-            script = this
+        String stageName = parameters.stageName ?: env.STAGE_NAME
 
         // load default & individual configuration
         Map config = ConfigurationHelper.newInstance(this)
-            .loadStepDefaults()
+            .loadStepDefaults([:], stageName)
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
+            .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
             .mixin([
                 artifactVersion: script.commonPipelineEnvironment.getArtifactVersion(),
                 influxPrefix: script.commonPipelineEnvironment.getGithubOrg() && script.commonPipelineEnvironment.getGithubRepo()
@@ -166,13 +165,13 @@ private void writeToInflux(config, JenkinsUtils jenkinsUtils, script){
         } catch (NullPointerException e){
             if(!e.getMessage()){
                 //TODO: catch NPEs as long as https://issues.jenkins-ci.org/browse/JENKINS-55594 is not fixed & released
-                error "[$STEP_NAME] NullPointerException occured, is the correct target defined?"
+                error "[$STEP_NAME] NullPointerException occurred, is the correct target defined?"
             }
             throw e
         }
     }
 
-    //write results into json file for archiving - also benefitial when no InfluxDB is available yet
+    //write results into json file for archiving - also beneficial when no InfluxDB is available yet
     def jsonUtils = new JsonUtils()
     writeFile file: 'jenkins_data.json', text: jsonUtils.groovyObjectToPrettyJsonString(config.customData)
     writeFile file: 'influx_data.json', text: jsonUtils.groovyObjectToPrettyJsonString(config.customDataMap)

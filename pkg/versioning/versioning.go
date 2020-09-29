@@ -87,7 +87,7 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, execR
 
 		switch buildDescriptorFilePath {
 		case "go.mod":
-			artifact = &GoMod{path: buildDescriptorFilePath}
+			artifact = &GoMod{path: buildDescriptorFilePath, fileExists: fileExists}
 			break
 		default:
 			artifact = &Versionfile{path: buildDescriptorFilePath}
@@ -137,7 +137,11 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, execR
 		}
 	case "sbt":
 		if len(buildDescriptorFilePath) == 0 {
-			buildDescriptorFilePath = "sbtDescriptor.json"
+			var err error
+			buildDescriptorFilePath, err = searchDescriptor([]string{"sbtDescriptor.json", "build.sbt"}, fileExists)
+			if err != nil {
+				return artifact, err
+			}
 		}
 		artifact = &JSONfile{
 			path:         buildDescriptorFilePath,

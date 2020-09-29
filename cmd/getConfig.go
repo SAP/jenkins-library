@@ -33,11 +33,13 @@ func ConfigCommand() *cobra.Command {
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
+			initStageName(false)
 		},
 		Run: func(cmd *cobra.Command, _ []string) {
 			err := generateConfig()
 			if err != nil {
-				log.Entry().WithField("category", "config").WithError(err).Fatal("failed to retrieve configuration")
+				log.SetErrorCategory(log.ErrorConfiguration)
+				log.Entry().WithError(err).Fatal("failed to retrieve configuration")
 			}
 		},
 	}

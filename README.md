@@ -2,6 +2,7 @@
 [![Maintainability](https://api.codeclimate.com/v1/badges/0e6a23344616e29b4ed0/maintainability)](https://codeclimate.com/github/SAP/jenkins-library/maintainability)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/0e6a23344616e29b4ed0/test_coverage)](https://codeclimate.com/github/SAP/jenkins-library/test_coverage)
 [![Go Report Card](https://goreportcard.com/badge/github.com/SAP/jenkins-library)](https://goreportcard.com/report/github.com/SAP/jenkins-library)
+[![REUSE status](https://api.reuse.software/badge/github.com/SAP/jenkins-library)](https://api.reuse.software/info/github.com/SAP/jenkins-library)
 
 # Project Piper Repository
 
@@ -27,11 +28,6 @@ Register to our [google group][google-group] in order to get updates or for aski
 Read and understand our [contribution guidelines][piper-library-contribution]
 before opening a pull request.
 
-# License
-
-Copyright (c) 2019 SAP SE or an SAP affiliate company. All rights reserved.
-This file is licensed under the Apache Software License, v. 2 except as noted
-otherwise in the [LICENSE file][piper-library-license]
 
 [piper-library-user-doc]: https://sap.github.io/jenkins-library/
 [piper-library-issues]: https://github.com/SAP/jenkins-library/issues

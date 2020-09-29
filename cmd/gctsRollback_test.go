@@ -16,7 +16,7 @@ func TestGetLastSuccessfullCommitSuccess(t *testing.T) {
 		GithubPersonalAccessToken: "3a09064f3029f5a304d69987ef8f95d1dfa6da44",
 	}
 
-	t.Run("return last successfull commit", func(t *testing.T) {
+	t.Run("return last successful commit", func(t *testing.T) {
 
 		httpClient := httpMockGcts{StatusCode: 200, ResponseBody: `
 		{
