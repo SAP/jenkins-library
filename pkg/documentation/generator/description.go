@@ -6,6 +6,15 @@ import (
 	"github.com/SAP/jenkins-library/pkg/config"
 )
 
+const configRecommendation = "We recommend to define values of [step parameters](#parameters) via [config.yml file](../configuration.md). In this case, calling the step is reduced to one simple line.<br />Calling the step can be done either via the Jenkins library step or on the [command line](../cli/index.md)."
+
+const (
+	headlineDescription     = "## Description\n\n"
+	headlineUsage           = "## Usage\n\n"
+	headlineJenkinsPipeline = "### Jenkins Pipeline\n\n"
+	headlineCommandLine     = "### Command Line\n\n"
+)
+
 // BinaryName is the name of the local binary that is used for sample generation.
 var BinaryName string = "piper"
 
@@ -21,13 +30,13 @@ func createStepName(stepData *config.StepData) string {
 func createDescriptionSection(stepData *config.StepData) string {
 	description := ""
 
-	description += "Description\n\n" + stepData.Metadata.LongDescription + "\n\n"
+	description += headlineDescription + stepData.Metadata.LongDescription + "\n\n"
 
-	description += "## Usage\n\n"
-	description += "We recommend to define values of [step parameters](#parameters) via [config.yml file](../configuration.md). In this case, calling the step is reduced to one simple line.<br />Calling the step can be done either via the Jenkins library step or on the [command line](../cli/index.md).\n\n"
-	description += "### Jenkins pipelines\n\n"
-	description += fmt.Sprintf("```library('%s')\n\ngroovy\n%v script: this\n```\n", LibraryName, stepData.Metadata.Name)
-	description += "### Command line\n\n"
+	description += headlineUsage
+	description += configRecommendation + "\n\n"
+	description += headlineJenkinsPipeline
+	description += fmt.Sprintf("```groovy\nlibrary('%s')\n\n%v script: this\n```\n\n", LibraryName, stepData.Metadata.Name)
+	description += headlineCommandLine
 	description += fmt.Sprintf("```sh\n%s %v\n```\n\n", BinaryName, stepData.Metadata.Name)
 	description += stepOutputs(stepData)
 	return description
