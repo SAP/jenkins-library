@@ -219,7 +219,7 @@ s4SdkQualityChecks:
 
 ### checkmarxScan
 
-The `checkmarxScan` stage has been merged into the project "Piper" stage security.
+The `checkmarxScan` stage has been merged into the project "Piper" stage `security`.
 To configure Checkmarx please configure the step `checkmarxExecuteScan` as described [in the step documentation](https://sap.github.io/jenkins-library/steps/checkmarxExecuteScan/).
 
 ### productionDeployment
@@ -398,12 +398,12 @@ artifactDeployment:
 
 ### whitesourceScan
 
-The `whitesourceScan` stage has been merged into the project "Piper" stage security.
+The `whitesourceScan` stage has been merged into the project "Piper" stage `security`.
 To configure Whitesource please configure the step `whitesourceExecuteScan` as described [in the step documentation](https://sap.github.io/jenkins-library/steps/whitesourceExecuteScan/).
 
 ### fortifyScan
 
-The `fortifyScan` stage has been merged into the project "Piper" stage security.
+The `fortifyScan` stage has been merged into the project "Piper" stage `security`.
 To configure Whitesource please configure the step `fortifyExecuteScan` as described [in the step documentation](https://sap.github.io/jenkins-library/steps/fortifyExecuteScan/).
 
 ### lint
