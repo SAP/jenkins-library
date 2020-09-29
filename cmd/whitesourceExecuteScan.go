@@ -394,12 +394,27 @@ func executeUAScan(config *ScanOptions, scan *whitesourceScan, utils whitesource
 // executeMTAScan executes a scan for the Java part with maven, and performs a scan for each NPM module.
 func executeMTAScan(config *ScanOptions, scan *whitesourceScan, utils whitesourceUtils) error {
 	log.Entry().Infof("Executing Whitesource scan for MTA project")
-	err := executeMavenScanForPomFile(config, scan, utils, "pom.xml")
+	pomExists, _ := utils.FileExists("pom.xml")
+	if pomExists {
+		if err := executeMavenScanForPomFile(config, scan, utils, "pom.xml"); err != nil {
+			return err
+		}
+	}
+
+	modules, err := utils.FindPackageJSONFiles(config)
 	if err != nil {
 		return err
 	}
+	if len(modules) > 0 {
+		if err := executeNpmScan(config, scan, utils); err != nil {
+			return err
+		}
+	}
 
-	return executeNpmScan(config, scan, utils)
+	if !pomExists && len(modules) == 0 {
+		return fmt.Errorf("neither Maven nor NPM modules found, no scan performed")
+	}
+	return nil
 }
 
 // executeMavenScan constructs maven parameters from the given configuration, and executes the maven goal

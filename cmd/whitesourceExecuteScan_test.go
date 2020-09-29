@@ -543,10 +543,7 @@ func TestExecuteScanMaven(t *testing.T) {
 }
 
 func TestExecuteScanMTA(t *testing.T) {
-	t.Parallel()
-	t.Run("happy path MTA", func(t *testing.T) {
-		// init
-		const pomXML = `<?xml version="1.0" encoding="UTF-8"?>
+	const pomXML = `<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -555,14 +552,17 @@ func TestExecuteScanMTA(t *testing.T) {
     <packaging>jar</packaging>
 </project>
 `
-		config := ScanOptions{
-			BuildTool:      "mta",
-			OrgToken:       "org-token",
-			UserToken:      "user-token",
-			ProductName:    "mock-product",
-			ProjectName:    "mock-project",
-			ProductVersion: "product-version",
-		}
+	config := ScanOptions{
+		BuildTool:      "mta",
+		OrgToken:       "org-token",
+		UserToken:      "user-token",
+		ProductName:    "mock-product",
+		ProjectName:    "mock-project",
+		ProductVersion: "product-version",
+	}
+	t.Parallel()
+	t.Run("happy path MTA", func(t *testing.T) {
+		// init
 		utilsMock := newWhitesourceUtilsMock()
 		utilsMock.AddFile("pom.xml", []byte(pomXML))
 		utilsMock.AddFile("package.json", []byte(`{"name":"my-module-name"}`))
@@ -602,6 +602,71 @@ func TestExecuteScanMTA(t *testing.T) {
 		assert.True(t, utilsMock.HasWrittenFile(whiteSourceConfig))
 		assert.True(t, utilsMock.HasRemovedFile(whiteSourceConfig))
 		assert.Equal(t, expectedCalls, utilsMock.Calls)
+	})
+	t.Run("MTA with only maven modules", func(t *testing.T) {
+		// init
+		utilsMock := newWhitesourceUtilsMock()
+		utilsMock.AddFile("pom.xml", []byte(pomXML))
+		scan := newWhitesourceScan(&config)
+		// test
+		err := executeScan(&config, scan, utilsMock)
+		// assert
+		require.NoError(t, err)
+		expectedCalls := []mock.ExecCall{
+			{
+				Exec: "mvn",
+				Params: []string{
+					"--file",
+					"pom.xml",
+					"-Dorg.whitesource.orgToken=org-token",
+					"-Dorg.whitesource.product=mock-product",
+					"-Dorg.whitesource.checkPolicies=true",
+					"-Dorg.whitesource.failOnError=true",
+					"-Dorg.whitesource.aggregateProjectName=mock-project",
+					"-Dorg.whitesource.aggregateModules=true",
+					"-Dorg.whitesource.userKey=user-token",
+					"-Dorg.whitesource.productVersion=product-version",
+					"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
+					"--batch-mode",
+					"org.whitesource:whitesource-maven-plugin:19.5.1:update",
+				},
+			},
+		}
+		assert.Equal(t, expectedCalls, utilsMock.Calls)
+		assert.False(t, utilsMock.HasWrittenFile(whiteSourceConfig))
+		assert.Equal(t, expectedCalls, utilsMock.Calls)
+	})
+	t.Run("MTA with only NPM modules", func(t *testing.T) {
+		// init
+		utilsMock := newWhitesourceUtilsMock()
+		utilsMock.AddFile("package.json", []byte(`{"name":"my-module-name"}`))
+		scan := newWhitesourceScan(&config)
+		// test
+		err := executeScan(&config, scan, utilsMock)
+		// assert
+		require.NoError(t, err)
+		expectedCalls := []mock.ExecCall{
+			{
+				Exec: "npx",
+				Params: []string{
+					"whitesource",
+					"run",
+				},
+			},
+		}
+		assert.Equal(t, expectedCalls, utilsMock.Calls)
+		assert.True(t, utilsMock.HasWrittenFile(whiteSourceConfig))
+		assert.True(t, utilsMock.HasRemovedFile(whiteSourceConfig))
+		assert.Equal(t, expectedCalls, utilsMock.Calls)
+	})
+	t.Run("MTA with neither Maven nor NPM modules results in error", func(t *testing.T) {
+		// init
+		utilsMock := newWhitesourceUtilsMock()
+		scan := newWhitesourceScan(&config)
+		// test
+		err := executeScan(&config, scan, utilsMock)
+		// assert
+		assert.EqualError(t, err, "neither Maven nor NPM modules found, no scan performed")
 	})
 }
 
