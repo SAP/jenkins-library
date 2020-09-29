@@ -134,6 +134,7 @@ func TestStepCommand() *cobra.Command {
 				commonPipelineEnvironment.persist(piperOsCmd.GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				influxTest.persist(piperOsCmd.GeneralConfig.EnvRootPath, "influxTest")
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
 			}
 			log.DeferExitHandler(handler)
