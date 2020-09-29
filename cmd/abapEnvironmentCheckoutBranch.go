@@ -99,7 +99,7 @@ func checkoutBranches(repositories []abaputils.Repository, pullConnectionDetails
 		if err != nil {
 			break
 		}
-		finishPullLogs()
+		finishCheckoutLogs(repo.Branch, repo.Name)
 	}
 	return err
 }
@@ -164,11 +164,15 @@ func checkCheckoutBranchRepositoryConfiguration(options abapEnvironmentCheckoutB
 	}
 	if options.Repositories != "" && options.RepositoryName != "" && options.BranchName != "" {
 		log.Entry().Info("It seems like you have specified both the repositories with their branches to be pulled as an in-line configuration as well as in the dedicated repositories configuration file.")
-		log.Entry().Info("Please note that in this case the dedicated repositories configuration file will be handled with priority.")
+		log.Entry().Info("Please note that in this case both configurations will be handled and checked out.")
 	}
 	if options.Repositories != "" && ((options.RepositoryName == "") != (options.BranchName == "")) {
-		log.Entry().Info("It seems like you have specified a dedicated repository configuration file but also an in-line configuration for the repository or branch to be pulled.")
-		log.Entry().Info("Please note that in this case the dedicated repositories configuration file will be handled only.")
+		log.Entry().Info("It seems like you have specified a dedicated repository configuration file but also a wrong in-line configuration for the repository or branch to be pulled.")
+		if options.RepositoryName != "" {
+			log.Entry().Info("Please also add the value for the branchName parameter or remove the repositoryName parameter.")
+		} else {
+			log.Entry().Info("Please also add the value for the repositoryName parameter or remove the branchName parameter.")
+		}
 	}
 	return nil
 }

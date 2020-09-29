@@ -84,13 +84,20 @@ func PrintLogs(entity PullEntity) {
 //GetRepositories for parsing  one or multiple branches and repositories from repositories file or branchName and repositoryName configuration
 func GetRepositories(config *RepositoriesConfig) ([]Repository, error) {
 	var repositories = make([]Repository, 0)
+	if reflect.DeepEqual(RepositoriesConfig{}, config) {
+		return repositories, fmt.Errorf("Failed to read repository configuration: %w", errors.New("Eror in configuration, most likely you have entered empty or wrong configuration values. Please make sure that you have correctly specified the branches in the repositories to be checked out"))
+	}
+	if config.RepositoryName == "" && config.BranchName == "" && config.Repositories == "" && len(config.RepositoryNames) == 0 {
+		return repositories, fmt.Errorf("Failed to read repository configuration: %w", errors.New("You have not specified any repository configuration to be pulled into the ABAP Environment System. Please make sure that you specified the repositories with their branches that should be pulled either in a dedicated file or via in-line configuration. For more information please read the User documentation"))
+	}
 	if config.Repositories != "" {
 		descriptor, err := ReadAddonDescriptor(config.Repositories)
 		if err != nil {
 			return repositories, err
 		}
-		if len(descriptor.Repositories) == 0 {
-			return repositories, fmt.Errorf("Failed to read repository configuration: %w", errors.New("Eror in configuration file, most likely you have entered empty or wrong configuration values. Please make sure that you have correctly specified the branches in the repositories to be checked out"))
+		err = CheckAddonDescriptorForRepositories(descriptor)
+		if err != nil {
+			return repositories, fmt.Errorf("Could not parse config file %v, %w", config.Repositories, err)
 		}
 		repositories = descriptor.Repositories
 	}
@@ -101,12 +108,6 @@ func GetRepositories(config *RepositoriesConfig) ([]Repository, error) {
 		for _, repository := range config.RepositoryNames {
 			repositories = append(repositories, Repository{Name: repository})
 		}
-	}
-	if reflect.DeepEqual(RepositoriesConfig{}, config) {
-		return repositories, fmt.Errorf("Failed to read repository configuration: %w", errors.New("Eror in configuration, most likely you have entered empty or wrong configuration values. Please make sure that you have correctly specified the branches in the repositories to be checked out"))
-	}
-	if config.RepositoryName == "" && config.BranchName == "" && config.Repositories == "" && len(config.RepositoryNames) == 0 {
-		return repositories, fmt.Errorf("Failed to read repository configuration: %w", errors.New("You have not specified any repository configuration to be pulled into the ABAP Environment System. Please make sure that you specified the repositories with their branches that should be pulled either in a dedicated file or via in-line configuration. For more information please read the User documentation"))
 	}
 	return repositories, nil
 }

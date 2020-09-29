@@ -155,11 +155,11 @@ func triggerPull(repositoryName string, pullConnectionDetails abaputils.Connecti
 }
 
 func checkPullRepositoryConfiguration(options abapEnvironmentPullGitRepoOptions) error {
-	if len(options.RepositoryNames) > 0 && len(options.Repositories) > 0 {
+	if len(options.RepositoryNames) > 0 && options.Repositories != "" {
 		log.Entry().Info("It seems like you have specified both the repositories to be pulled as an in-line configuration as well as in the dedicated repositories configuration file.")
-		log.Entry().Info("Please note that in this case the dedicated repositories configuration file will be handled with priority.")
+		log.Entry().Info("Please note that in this case both configurations file will be handled and pulled.")
 	}
-	if len(options.RepositoryNames) == 0 && len(options.Repositories) == 0 {
+	if len(options.RepositoryNames) == 0 && options.Repositories != "" {
 		return fmt.Errorf("Checking configuration failed: %w", errors.New("You have not specified any repository configuration to be pulled into the ABAP Environment System. Please make sure that you specified the repositories that should be pulled either in a dedicated file or via in-line configuration. For more information please read the User documentation"))
 	}
 	return nil

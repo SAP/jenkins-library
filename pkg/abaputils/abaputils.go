@@ -226,20 +226,26 @@ func ReadAddonDescriptor(FileName string) (AddonDescriptor, error) {
 	if err != nil {
 		return addonDescriptor, errors.New(fmt.Sprintf("Could not unmarshal %v", FileName))
 	}
-	if len(addonDescriptor.Repositories) == 0 {
-		return addonDescriptor, errors.New(fmt.Sprintf("Could not parse config file %v, please check that you have configured the file correctly", FileName))
-	}
+	return addonDescriptor, nil
+}
+
+// CheckAddonDescriptorForRepositories checks AddonDescriptor struct if it contains any repositories. If not it will return an error
+func CheckAddonDescriptorForRepositories(addonDescriptor AddonDescriptor) error {
 	//checking if parsing went wrong
+	if len(addonDescriptor.Repositories) == 0 {
+		return errors.New(fmt.Sprintf("AddonDescriptor doesn't contain any repositories"))
+	}
+	//
 	emptyRepositoryCounter := 0
 	for counter, repo := range addonDescriptor.Repositories {
 		if reflect.DeepEqual(Repository{}, repo) {
 			emptyRepositoryCounter++
 		}
 		if counter+1 == len(addonDescriptor.Repositories) && emptyRepositoryCounter == len(addonDescriptor.Repositories) {
-			return addonDescriptor, errors.New(fmt.Sprintf("Could not parse config file %v, please check that you have configured the file correctly", FileName))
+			return errors.New(fmt.Sprintf("AddonDescriptor doesn't contain any repositories"))
 		}
 	}
-	return addonDescriptor, nil
+	return nil
 }
 
 /*******************************
