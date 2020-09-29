@@ -32,10 +32,15 @@ After the confirmation, the Communication Arrangement SAP_COM_0510 (SAP Cloud Pl
 
 ## Clone Repositories
 
+If the `Prepare System` stage is not executed, we assume that a system is already configured and all Software Components are cloned.
 In this stage, the Software Components / Git repositories are pulled to the ABAP Environment system using the step abapEnvironmentPullGitRepo.
 The step can receive a list of Software Components / repositories and pulls them successively.
-Optionally you can provide a dedicated configuration file, e.g. `repositories.yml`, containing the repositories to be cloned and the branches to be switched to.
 Please refer to the Configuration section for the abapEnvironment Pipeline or the respective documentations for the abapEnvironmentCheckoutBranch and abapEnvironmentPullGitRepo steps.
+If the `Prepare System` stage is executed, the abapEnvironmentCloneGitRepo step will be performed instead.
+This step can also receive a list of Software Components / repositories and clones them successively.
+Please refer to the Configuration section for the abapEnvironment Pipeline or the respective documentations for the abapEnvironmentCloneGitRepo step.
+
+Either way you can optionally provide a dedicated configuration file, e.g. `repositories.yml`, containing the repositories to be cloned and the branches to be switched to.
 
 ## ATC
 

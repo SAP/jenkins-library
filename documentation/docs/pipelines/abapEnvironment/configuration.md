@@ -72,9 +72,14 @@ repositories:
   branch: 'master'
 ```
 
-Please note that in case that you have specified the `Prepare System` Stage that this stage will be skipped. This due to the use of the abapEnvironmentCloneGitRepo in `Prepare System` Stage which makes the `Clone Repositories` Stage obsolete.
+Please note that in case that you have specified the `Prepare System` Stage that this stage will be performed using the abapEnvironmentCloneGitRepo step.
+Please have a look at the step documentation for the [abapEnvironmentCloneGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentCloneGitRepo/) step for more details.
 
-Please have a look at the [step documentation](https://sap.github.io/jenkins-library/steps/abapEnvironmentPullGitRepo/) for more details.
+
+In case the `Prepare System` stage is not performed the abapEnvironmentCheckoutBranch and abapEnvironmentPullGitRepo steps will be used in this order.
+Please have a look at the step documentation for the [abapEnvironmentCheckoutBranch](https://sap.github.io/jenkins-library/steps/abapEnvironmentCheckoutBranch/) and [abapEnvironmentPullGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentPullGitRepo/) steps for more details.
+
+Regardless if the `Prepare System` is executed you can use the `repositories.yml` file for the `repositories` parameter in the `Clone Repositories` stage used in chapter 7 `Technical Pipeline Configuration`.
 
 ## 6. Configuration for ATC
 

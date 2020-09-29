@@ -23,11 +23,13 @@ void call(Map parameters = [:]) {
     def stageName = parameters.stageName?:env.STAGE_NAME
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
-        if (not(parameters.script.commonPipelineEnvironment.configuration.runStage?.get("Prepare System"))) {
+        if (parameters.script.commonPipelineEnvironment.configuration.runStage?.get("Prepare System")) {
+            abapEnvironmentCloneGitRepo script: parameters.script
+        }
+        else {
             abapEnvironmentCheckoutBranch script: parameters.script
             abapEnvironmentPullGitRepo script: parameters.script
         }
-        else abapEnvironmentCloneGitRepo script: parameters.script
     }
 
 }
