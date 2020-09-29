@@ -81,6 +81,17 @@ removedOrReplacedStages:
     customMessage: "Details can be found in the release notes of v43 of the pipeline: https://github.com/SAP/cloud-s4-sdk-pipeline/releases/tag/v43"
   sonarQubeScan:
     newStageName: "compliance"
+    customMessage: "Details can be found in the release notes of v43 of the pipeline: https://github.com/SAP/cloud-s4-sdk-pipeline/releases/tag/v43"
+  checkmarxScan:
+    newStageName: "security"
+    customMessage: "To configure Checkmarx please use the step configuration for checkmarxExecuteScan.
+      Details can be found in the documentation: https://sap.github.io/jenkins-library/steps/checkmarxExecuteScan/"
+  detectScan:
+    newStageName: "security"
+    customMessage: "To configure Synopsys Detect please use the step configuration for detectExecuteScan.
+      Details can be found in the documentation: https://sap.github.io/jenkins-library/steps/detectExecuteScan/"
+  additionalTools:
+    customMessage: "Details can be found in the release notes of v43 of the pipeline: https://github.com/SAP/cloud-s4-sdk-pipeline/releases/tag/v43"
 
 parameterTypeChanged:
   appUrls:
