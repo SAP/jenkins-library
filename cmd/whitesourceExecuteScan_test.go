@@ -963,7 +963,7 @@ func TestAggregateVersionWideLibraries(t *testing.T) {
 		// test
 		err := aggregateVersionWideLibraries(config, utils, system)
 		// assert
-		resource := filepath.Join("mock-reports", fmt.Sprintf("libraries-%s.csv", wsTimeNow))
+		resource := filepath.Join("mock-reports", "libraries-20100510-001542.csv")
 		if assert.NoError(t, err) && assert.True(t, utils.HasWrittenFile(resource)) {
 			contents, _ := utils.FileRead(resource)
 			asString := string(contents)
