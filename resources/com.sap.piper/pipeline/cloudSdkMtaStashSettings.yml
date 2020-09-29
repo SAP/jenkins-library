@@ -74,6 +74,10 @@ detect:
   unstash: ["SOURCE", "M2", "TARGET"]
   stashes: []
 
+security:
+  unstash: ["SOURCE", "M2", "TARGET", "NODE_MODULES", "PACKAGE_LOCK"]
+  stashes: []
+
 npmAudit:
   unstash: ["SOURCE", "PACKAGE_LOCK"]
   stashes: []
