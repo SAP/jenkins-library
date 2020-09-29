@@ -6,6 +6,12 @@ import (
 	"github.com/SAP/jenkins-library/pkg/config"
 )
 
+// BinaryName is the name of the local binary that is used for sample generation.
+var BinaryName string = "piper"
+
+// LibraryName is the id of the library in the Jenkins that is used for sample generation.
+var LibraryName string = "piper-lib-os"
+
 // Replaces the StepName placeholder with the content from the yaml
 func createStepName(stepData *config.StepData) string {
 	return stepData.Metadata.Name + "\n\n" + stepData.Metadata.Description + "\n"

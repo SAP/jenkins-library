@@ -17,6 +17,9 @@ func main() {
 
 	flag.StringVar(&metadataPath, "metadataDir", "./resources/metadata", "The directory containing the step metadata. Default points to \\'resources/metadata\\'.")
 	flag.StringVar(&docTemplatePath, "docuDir", "./documentation/docs/steps/", "The directory containing the docu stubs. Default points to \\'documentation/docs/steps/\\'.")
+	flag.StringVar(&generator.LibraryName, "libraryName", generator.LibraryName, "")
+	flag.StringVar(&generator.BinaryName, "binaryName", generator.BinaryName, "")
+
 	flag.Parse()
 
 	fmt.Println("using Metadata Directory:", metadataPath)
