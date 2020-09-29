@@ -265,6 +265,21 @@ void call(Map parameters = [:]) {
             ])
             .mixin(parameters, PARAMETER_KEYS, CONFIG_KEY_COMPATIBILITY)
             .addIfEmpty('scanType', script.commonPipelineEnvironment.getBuildTool())
+            .use()
+
+        if (config.useGoStep == true && config.scanType != "unified-agent") {
+            parameters = com.sap.piper.DownloadCacheUtils.injectDownloadCacheInParameters(script, parameters, BuildTool.MTA)
+
+            List credentials = [
+                [type: 'token', id: 'orgAdminUserTokenCredentialsId', env: ['PIPER_orgToken']],
+                [type: 'token', id: 'userTokenCredentialsId', env: ['PIPER_userToken']],
+            ]
+            piperExecuteBin(parameters, "whitesourceExecuteScan", "metadata/whitesource.yaml", credentials)
+            return
+        }
+
+        // Apply Groovy specific config handling if not using the go-step.
+        config = ConfigurationHelper.newInstance(this, config)
             .dependingOn('scanType').mixin('buildDescriptorFile')
             .dependingOn('scanType').mixin('dockerImage')
             .dependingOn('scanType').mixin('dockerWorkspace')
@@ -280,18 +295,6 @@ void call(Map parameters = [:]) {
             .addIfEmpty('whitesource/scanImage', script.commonPipelineEnvironment.containerProperties?.imageNameTag)
             .addIfEmpty('whitesource/scanImageRegistryUrl', script.commonPipelineEnvironment.containerProperties?.registryUrl)
             .use()
-
-
-        if (config.useGoStep == true && config.scanType != "unified-agent") {
-            parameters = com.sap.piper.DownloadCacheUtils.injectDownloadCacheInParameters(script, parameters, BuildTool.MTA)
-
-            List credentials = [
-                [type: 'token', id: 'orgAdminUserTokenCredentialsId', env: ['PIPER_orgToken']],
-                [type: 'token', id: 'userTokenCredentialsId', env: ['PIPER_userToken']],
-            ]
-            piperExecuteBin(parameters, "whitesourceExecuteScan", "metadata/whitesource.yaml", credentials)
-            return
-        }
 
         config.whitesource.cvssSeverityLimit = config.whitesource.cvssSeverityLimit == null ?: Integer.valueOf(config.whitesource.cvssSeverityLimit)
         config.stashContent = utils.unstashAll(config.stashContent)
