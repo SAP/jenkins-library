@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -61,25 +60,25 @@ func (sys *systemMock) FilterPresetByID(presets []checkmarx.Preset, presetID int
 func (sys *systemMock) FilterProjectByName(projects []checkmarx.Project, projectName string) checkmarx.Project {
 	return checkmarx.Project{ID: 1, Name: "Test", TeamID: "16", IsPublic: true}
 }
-func (sys *systemMock) GetProjectByID(projectID int) (bool, checkmarx.Project) {
+func (sys *systemMock) GetProjectByID(projectID int) (checkmarx.Project, error) {
 	if projectID == 17 {
-		return true, checkmarx.Project{ID: 17, Name: "Test_PR-17", TeamID: "16", IsPublic: true}
+		return checkmarx.Project{ID: 17, Name: "Test_PR-17", TeamID: "16", IsPublic: true}, nil
 	}
-	return true, checkmarx.Project{ID: 19, Name: "Test_PR-19", TeamID: "16", IsPublic: true}
+	return checkmarx.Project{ID: 19, Name: "Test_PR-19", TeamID: "16", IsPublic: true}, nil
 }
 
-func (sys *systemMock) GetProjectsByNameAndTeam(projectName, teamID string) []checkmarx.Project {
+func (sys *systemMock) GetProjectsByNameAndTeam(projectName, teamID string) ([]checkmarx.Project, error) {
 	if !sys.createProject || sys.previousPName == projectName {
 		if strings.Contains(projectName, "PR-17") {
-			return []checkmarx.Project{{ID: 17, Name: projectName, TeamID: teamID, IsPublic: true}}
+			return []checkmarx.Project{{ID: 17, Name: projectName, TeamID: teamID, IsPublic: true}}, nil
 		}
-		return []checkmarx.Project{{ID: 19, Name: projectName, TeamID: teamID, IsPublic: true}}
+		return []checkmarx.Project{{ID: 19, Name: projectName, TeamID: teamID, IsPublic: true}}, nil
 	}
 	if projectName == "Test" {
-		return []checkmarx.Project{{ID: 1, Name: projectName, TeamID: teamID, IsPublic: true}}
+		return []checkmarx.Project{{ID: 1, Name: projectName, TeamID: teamID, IsPublic: true}}, nil
 	}
 	sys.previousPName = projectName
-	return []checkmarx.Project{}
+	return []checkmarx.Project{}, fmt.Errorf("no project error")
 }
 func (sys *systemMock) FilterTeamByName(teams []checkmarx.Team, teamName string) checkmarx.Team {
 	return checkmarx.Team{ID: "16", FullName: "OpenSource/Cracks/16"}
@@ -87,41 +86,41 @@ func (sys *systemMock) FilterTeamByName(teams []checkmarx.Team, teamName string)
 func (sys *systemMock) FilterTeamByID(teams []checkmarx.Team, teamID string) checkmarx.Team {
 	return checkmarx.Team{ID: "15", FullName: "OpenSource/Cracks/15"}
 }
-func (sys *systemMock) DownloadReport(reportID int) (bool, []byte) {
-	return true, sys.response.([]byte)
+func (sys *systemMock) DownloadReport(reportID int) ([]byte, error) {
+	return sys.response.([]byte), nil
 }
-func (sys *systemMock) GetReportStatus(reportID int) checkmarx.ReportStatusResponse {
-	return checkmarx.ReportStatusResponse{Status: checkmarx.ReportStatus{ID: 2, Value: "Created"}}
+func (sys *systemMock) GetReportStatus(reportID int) (checkmarx.ReportStatusResponse, error) {
+	return checkmarx.ReportStatusResponse{Status: checkmarx.ReportStatus{ID: 2, Value: "Created"}}, nil
 }
-func (sys *systemMock) RequestNewReport(scanID int, reportType string) (bool, checkmarx.Report) {
-	return true, checkmarx.Report{ReportID: 17}
+func (sys *systemMock) RequestNewReport(scanID int, reportType string) (checkmarx.Report, error) {
+	return checkmarx.Report{ReportID: 17}, nil
 }
 func (sys *systemMock) GetResults(scanID int) checkmarx.ResultsStatistics {
 	return checkmarx.ResultsStatistics{}
 }
-func (sys *systemMock) GetScans(projectID int) (bool, []checkmarx.ScanStatus) {
-	return true, []checkmarx.ScanStatus{{IsIncremental: true}, {IsIncremental: true}, {IsIncremental: true}, {IsIncremental: false}}
+func (sys *systemMock) GetScans(projectID int) ([]checkmarx.ScanStatus, error) {
+	return []checkmarx.ScanStatus{{IsIncremental: true}, {IsIncremental: true}, {IsIncremental: true}, {IsIncremental: false}}, nil
 }
 func (sys *systemMock) GetScanStatusAndDetail(scanID int) (string, checkmarx.ScanStatusDetail) {
 	return "Finished", checkmarx.ScanStatusDetail{Stage: "Step 1 of 25", Step: "Scan something"}
 }
-func (sys *systemMock) ScanProject(projectID int, isIncrementalV, isPublicV, forceScanV bool) (bool, checkmarx.Scan) {
+func (sys *systemMock) ScanProject(projectID int, isIncrementalV, isPublicV, forceScanV bool) (checkmarx.Scan, error) {
 	sys.isIncremental = isIncrementalV
 	sys.isPublic = isPublicV
 	sys.forceScan = forceScanV
-	return true, checkmarx.Scan{ID: 16}
+	return checkmarx.Scan{ID: 16}, nil
 }
-func (sys *systemMock) UpdateProjectConfiguration(projectID int, presetID int, engineConfigurationID string) bool {
-	return true
+func (sys *systemMock) UpdateProjectConfiguration(projectID int, presetID int, engineConfigurationID string) error {
+	return nil
 }
-func (sys *systemMock) UpdateProjectExcludeSettings(projectID int, excludeFolders string, excludeFiles string) bool {
-	return true
+func (sys *systemMock) UpdateProjectExcludeSettings(projectID int, excludeFolders string, excludeFiles string) error {
+	return nil
 }
-func (sys *systemMock) UploadProjectSourceCode(projectID int, zipFile string) bool {
-	return true
+func (sys *systemMock) UploadProjectSourceCode(projectID int, zipFile string) error {
+	return nil
 }
-func (sys *systemMock) CreateProject(projectName string, teamID string) (bool, checkmarx.ProjectCreateResult) {
-	return true, checkmarx.ProjectCreateResult{ID: 20}
+func (sys *systemMock) CreateProject(projectName string, teamID string) (checkmarx.ProjectCreateResult, error) {
+	return checkmarx.ProjectCreateResult{ID: 20}, nil
 }
 func (sys *systemMock) CreateBranch(projectID int, branchName string) int {
 	return 18
@@ -129,8 +128,8 @@ func (sys *systemMock) CreateBranch(projectID int, branchName string) int {
 func (sys *systemMock) GetPresets() []checkmarx.Preset {
 	return []checkmarx.Preset{{ID: 10078, Name: "SAP Java Default", OwnerName: "16"}, {ID: 10048, Name: "SAP JS Default", OwnerName: "16"}}
 }
-func (sys *systemMock) GetProjects() []checkmarx.Project {
-	return []checkmarx.Project{{ID: 15, Name: "OtherTest", TeamID: "16"}, {ID: 1, Name: "Test", TeamID: "16"}}
+func (sys *systemMock) GetProjects() ([]checkmarx.Project, error) {
+	return []checkmarx.Project{{ID: 15, Name: "OtherTest", TeamID: "16"}, {ID: 1, Name: "Test", TeamID: "16"}}, nil
 }
 func (sys *systemMock) GetTeams() []checkmarx.Team {
 	return []checkmarx.Team{{ID: "16", FullName: "OpenSource/Cracks/16"}, {ID: "15", FullName: "OpenSource/Cracks/15"}}
@@ -153,11 +152,11 @@ func (sys *systemMockForExistingProject) FilterPresetByID(presets []checkmarx.Pr
 func (sys *systemMockForExistingProject) FilterProjectByName(projects []checkmarx.Project, projectName string) checkmarx.Project {
 	return checkmarx.Project{ID: 1, Name: "TestExisting", TeamID: "16", IsPublic: true}
 }
-func (sys *systemMockForExistingProject) GetProjectByID(projectID int) (bool, checkmarx.Project) {
-	return false, checkmarx.Project{}
+func (sys *systemMockForExistingProject) GetProjectByID(projectID int) (checkmarx.Project, error) {
+	return checkmarx.Project{}, nil
 }
-func (sys *systemMockForExistingProject) GetProjectsByNameAndTeam(projectName, teamID string) []checkmarx.Project {
-	return []checkmarx.Project{{ID: 19, Name: projectName, TeamID: teamID, IsPublic: true}}
+func (sys *systemMockForExistingProject) GetProjectsByNameAndTeam(projectName, teamID string) ([]checkmarx.Project, error) {
+	return []checkmarx.Project{{ID: 19, Name: projectName, TeamID: teamID, IsPublic: true}}, nil
 }
 func (sys *systemMockForExistingProject) FilterTeamByName(teams []checkmarx.Team, teamName string) checkmarx.Team {
 	return checkmarx.Team{ID: "16", FullName: "OpenSource/Cracks/16"}
@@ -165,42 +164,42 @@ func (sys *systemMockForExistingProject) FilterTeamByName(teams []checkmarx.Team
 func (sys *systemMockForExistingProject) FilterTeamByID(teams []checkmarx.Team, teamID string) checkmarx.Team {
 	return checkmarx.Team{ID: "15", FullName: "OpenSource/Cracks/15"}
 }
-func (sys *systemMockForExistingProject) DownloadReport(reportID int) (bool, []byte) {
-	return true, sys.response.([]byte)
+func (sys *systemMockForExistingProject) DownloadReport(reportID int) ([]byte, error) {
+	return sys.response.([]byte), nil
 }
-func (sys *systemMockForExistingProject) GetReportStatus(reportID int) checkmarx.ReportStatusResponse {
-	return checkmarx.ReportStatusResponse{Status: checkmarx.ReportStatus{ID: 2, Value: "Created"}}
+func (sys *systemMockForExistingProject) GetReportStatus(reportID int) (checkmarx.ReportStatusResponse, error) {
+	return checkmarx.ReportStatusResponse{Status: checkmarx.ReportStatus{ID: 2, Value: "Created"}}, nil
 }
-func (sys *systemMockForExistingProject) RequestNewReport(scanID int, reportType string) (bool, checkmarx.Report) {
-	return true, checkmarx.Report{ReportID: 17}
+func (sys *systemMockForExistingProject) RequestNewReport(scanID int, reportType string) (checkmarx.Report, error) {
+	return checkmarx.Report{ReportID: 17}, nil
 }
 func (sys *systemMockForExistingProject) GetResults(scanID int) checkmarx.ResultsStatistics {
 	return checkmarx.ResultsStatistics{}
 }
-func (sys *systemMockForExistingProject) GetScans(projectID int) (bool, []checkmarx.ScanStatus) {
-	return true, []checkmarx.ScanStatus{{IsIncremental: true}, {IsIncremental: true}, {IsIncremental: true}, {IsIncremental: false}}
+func (sys *systemMockForExistingProject) GetScans(projectID int) ([]checkmarx.ScanStatus, error) {
+	return []checkmarx.ScanStatus{{IsIncremental: true}, {IsIncremental: true}, {IsIncremental: true}, {IsIncremental: false}}, nil
 }
 func (sys *systemMockForExistingProject) GetScanStatusAndDetail(scanID int) (string, checkmarx.ScanStatusDetail) {
 	return "Finished", checkmarx.ScanStatusDetail{Stage: "", Step: ""}
 }
-func (sys *systemMockForExistingProject) ScanProject(projectID int, isIncrementalV, isPublicV, forceScanV bool) (bool, checkmarx.Scan) {
+func (sys *systemMockForExistingProject) ScanProject(projectID int, isIncrementalV, isPublicV, forceScanV bool) (checkmarx.Scan, error) {
 	sys.scanProjectCalled = true
 	sys.isIncremental = isIncrementalV
 	sys.isPublic = isPublicV
 	sys.forceScan = forceScanV
-	return true, checkmarx.Scan{ID: 16}
+	return checkmarx.Scan{ID: 16}, nil
 }
-func (sys *systemMockForExistingProject) UpdateProjectConfiguration(projectID int, presetID int, engineConfigurationID string) bool {
-	return true
+func (sys *systemMockForExistingProject) UpdateProjectConfiguration(projectID int, presetID int, engineConfigurationID string) error {
+	return nil
 }
-func (sys *systemMockForExistingProject) UpdateProjectExcludeSettings(projectID int, excludeFolders string, excludeFiles string) bool {
-	return true
+func (sys *systemMockForExistingProject) UpdateProjectExcludeSettings(projectID int, excludeFolders string, excludeFiles string) error {
+	return nil
 }
-func (sys *systemMockForExistingProject) UploadProjectSourceCode(projectID int, zipFile string) bool {
-	return true
+func (sys *systemMockForExistingProject) UploadProjectSourceCode(projectID int, zipFile string) error {
+	return nil
 }
-func (sys *systemMockForExistingProject) CreateProject(projectName string, teamID string) (bool, checkmarx.ProjectCreateResult) {
-	return false, checkmarx.ProjectCreateResult{}
+func (sys *systemMockForExistingProject) CreateProject(projectName string, teamID string) (checkmarx.ProjectCreateResult, error) {
+	return checkmarx.ProjectCreateResult{}, fmt.Errorf("create project error")
 }
 func (sys *systemMockForExistingProject) CreateBranch(projectID int, branchName string) int {
 	return 0
@@ -208,8 +207,8 @@ func (sys *systemMockForExistingProject) CreateBranch(projectID int, branchName 
 func (sys *systemMockForExistingProject) GetPresets() []checkmarx.Preset {
 	return []checkmarx.Preset{{ID: 10078, Name: "SAP Java Default", OwnerName: "16"}, {ID: 10048, Name: "SAP JS Default", OwnerName: "16"}}
 }
-func (sys *systemMockForExistingProject) GetProjects() []checkmarx.Project {
-	return []checkmarx.Project{{ID: 1, Name: "TestExisting", TeamID: "16"}}
+func (sys *systemMockForExistingProject) GetProjects() ([]checkmarx.Project, error) {
+	return []checkmarx.Project{{ID: 1, Name: "TestExisting", TeamID: "16"}}, nil
 }
 func (sys *systemMockForExistingProject) GetTeams() []checkmarx.Team {
 	return []checkmarx.Team{{ID: "16", FullName: "OpenSource/Cracks/16"}, {ID: "15", FullName: "OpenSource/Cracks/15"}}
@@ -291,7 +290,8 @@ func TestGetDetailedResults(t *testing.T) {
 		}
 		// clean up tmp dir
 		defer os.RemoveAll(dir)
-		result := getDetailedResults(sys, filepath.Join(dir, "abc.xml"), 2635)
+		result, err := getDetailedResults(sys, filepath.Join(dir, "abc.xml"), 2635)
+		assert.NoError(t, err, "error occured but none expected")
 		assert.Equal(t, "2", result["ProjectId"], "Project ID incorrect")
 		assert.Equal(t, "Project 1", result["ProjectName"], "Project name incorrect")
 		assert.Equal(t, 2, result["High"].(map[string]int)["Issues"], "Number of High issues incorrect")
@@ -313,7 +313,8 @@ func TestRunScan(t *testing.T) {
 
 	influx := checkmarxExecuteScanInflux{}
 
-	runScan(options, sys, workspace, &influx)
+	err = runScan(options, sys, workspace, &influx)
+	assert.NoError(t, err, "error occured but none expected")
 	assert.Equal(t, false, sys.isIncremental, "isIncremental has wrong value")
 	assert.Equal(t, true, sys.isPublic, "isPublic has wrong value")
 	assert.Equal(t, true, sys.forceScan, "forceScan has wrong value")
@@ -332,7 +333,8 @@ func TestVerifyOnly(t *testing.T) {
 
 	influx := checkmarxExecuteScanInflux{}
 
-	runScan(options, sys, workspace, &influx)
+	err = runScan(options, sys, workspace, &influx)
+	assert.NoError(t, err, "error occured but none expected")
 	assert.Equal(t, false, sys.scanProjectCalled, "ScanProject was invoked but shouldn't")
 }
 
@@ -348,7 +350,8 @@ func TestRunScanWOtherCycle(t *testing.T) {
 
 	influx := checkmarxExecuteScanInflux{}
 
-	runScan(options, sys, workspace, &influx)
+	err = runScan(options, sys, workspace, &influx)
+	assert.NoError(t, err, "error occured but none expected")
 	assert.Equal(t, true, sys.isIncremental, "isIncremental has wrong value")
 	assert.Equal(t, true, sys.isPublic, "isPublic has wrong value")
 	assert.Equal(t, true, sys.forceScan, "forceScan has wrong value")
@@ -366,7 +369,7 @@ func TestRunScanForPullRequest(t *testing.T) {
 
 	influx := checkmarxExecuteScanInflux{}
 
-	runScan(options, sys, workspace, &influx)
+	err = runScan(options, sys, workspace, &influx)
 	assert.Equal(t, true, sys.isIncremental, "isIncremental has wrong value")
 	assert.Equal(t, true, sys.isPublic, "isPublic has wrong value")
 	assert.Equal(t, true, sys.forceScan, "forceScan has wrong value")
@@ -384,59 +387,49 @@ func TestRunScanForPullRequestProjectNew(t *testing.T) {
 
 	influx := checkmarxExecuteScanInflux{}
 
-	runScan(options, sys, workspace, &influx)
+	err = runScan(options, sys, workspace, &influx)
 	assert.Equal(t, true, sys.isIncremental, "isIncremental has wrong value")
 	assert.Equal(t, true, sys.isPublic, "isPublic has wrong value")
 	assert.Equal(t, true, sys.forceScan, "forceScan has wrong value")
 }
 
 func TestRunScanHighViolationPercentage(t *testing.T) {
-	if os.Getenv("BE_CRASHER") == "1" {
-		sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?>
-		<CxXMLResults InitiatorName="admin" Owner="admin" ScanId="1000005" ProjectId="2" ProjectName="Project 1" TeamFullPathOnReportDate="CxServer" DeepLink="http://WIN2K12-TEMP/CxWebClient/ViewerMain.aspx?scanid=1000005&amp;projectid=2" ScanStart="Sunday, December 3, 2017 4:50:34 PM" Preset="Checkmarx Default" ScanTime="00h:03m:18s" LinesOfCodeScanned="6838" FilesScanned="34" ReportCreationTime="Sunday, December 3, 2017 6:13:45 PM" Team="CxServer" CheckmarxVersion="8.6.0" ScanComments="" ScanType="Incremental" SourceOrigin="LocalPath" Visibility="Public">
-		<Query id="430" categories="PCI DSS v3.2;PCI DSS (3.2) - 6.5.1 - Injection flaws - particularly SQL injection,OWASP Top 10 2013;A1-Injection,FISMA 2014;System And Information Integrity,NIST SP 800-53;SI-10 Information Input Validation (P1),OWASP Top 10 2017;A1-Injection" cweId="89" name="SQL_Injection" group="CSharp_High_Risk" Severity="High" Language="CSharp" LanguageHash="1363215419077432" LanguageChangeDate="2017-12-03T00:00:00.0000000" SeverityIndex="3" QueryPath="CSharp\Cx\CSharp High Risk\SQL Injection Version:0" QueryVersionCode="430">
-			<Result NodeId="10000050002" FileName="bookstore/Login.cs" Status="Recurrent" Line="179" Column="103" FalsePositive="False" Severity="High" AssignToUser="" state="0" Remark="" DeepLink="http://WIN2K12-TEMP/CxWebClient/ViewerMain.aspx?scanid=1000005&amp;projectid=2&amp;pathid=2" SeverityIndex="3">
-				<Path ResultId="1000005" PathId="2" SimilarityId="1765812516"/>
-			</Result>
-			<Result NodeId="10000050003" FileName="bookstore/Login.cs" Status="Recurrent" Line="180" Column="10" FalsePositive="False" Severity="High" AssignToUser="" state="0" Remark="" DeepLink="http://WIN2K12-TEMP/CxWebClient/ViewerMain.aspx?scanid=1000005&amp;projectid=2&amp;pathid=2" SeverityIndex="3">
-				<Path ResultId="1000005" PathId="2" SimilarityId="1765812516"/>
-			</Result>
-			<Result NodeId="10000050004" FileName="bookstore/Login.cs" Status="Recurrent" Line="181" Column="190" FalsePositive="True" Severity="Medium" AssignToUser="" state="0" Remark="" DeepLink="http://WIN2K12-TEMP/CxWebClient/ViewerMain.aspx?scanid=1000005&amp;projectid=2&amp;pathid=2" SeverityIndex="2">
-				<Path ResultId="1000005" PathId="2" SimilarityId="1765812516"/>
-			</Result>
-			<Result NodeId="10000050005" FileName="bookstore/Login.cs" Status="Recurrent" Line="181" Column="190" FalsePositive="True" Severity="Low" AssignToUser="" state="0" Remark="" DeepLink="http://WIN2K12-TEMP/CxWebClient/ViewerMain.aspx?scanid=1000005&amp;projectid=2&amp;pathid=2" SeverityIndex="2">
-				<Path ResultId="1000005" PathId="2" SimilarityId="1765812516"/>
-			</Result>
-			<Result NodeId="10000050006" FileName="bookstore/Login.cs" Status="Recurrent" Line="181" Column="190" FalsePositive="True" Severity="Low" AssignToUser="" state="0" Remark="" DeepLink="http://WIN2K12-TEMP/CxWebClient/ViewerMain.aspx?scanid=1000005&amp;projectid=2&amp;pathid=2" SeverityIndex="2">
-				<Path ResultId="1000005" PathId="2" SimilarityId="1765812516"/>
-			</Result>
-		</Query>
-		</CxXMLResults>`)}
-		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "percentage", VulnerabilityThresholdResult: "FAILURE", VulnerabilityThresholdHigh: 100, FullScanCycle: "10", FullScansScheduled: true, Preset: "10048", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
-		workspace, err := ioutil.TempDir("", "workspace5")
-		if err != nil {
-			t.Fatal("Failed to create temporary workspace directory")
-		}
-		// clean up tmp dir
-		defer os.RemoveAll(workspace)
-
-		influx := checkmarxExecuteScanInflux{}
-
-		runScan(options, sys, workspace, &influx)
-		return
+	sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?>
+	<CxXMLResults InitiatorName="admin" Owner="admin" ScanId="1000005" ProjectId="2" ProjectName="Project 1" TeamFullPathOnReportDate="CxServer" DeepLink="http://WIN2K12-TEMP/CxWebClient/ViewerMain.aspx?scanid=1000005&amp;projectid=2" ScanStart="Sunday, December 3, 2017 4:50:34 PM" Preset="Checkmarx Default" ScanTime="00h:03m:18s" LinesOfCodeScanned="6838" FilesScanned="34" ReportCreationTime="Sunday, December 3, 2017 6:13:45 PM" Team="CxServer" CheckmarxVersion="8.6.0" ScanComments="" ScanType="Incremental" SourceOrigin="LocalPath" Visibility="Public">
+	<Query id="430" categories="PCI DSS v3.2;PCI DSS (3.2) - 6.5.1 - Injection flaws - particularly SQL injection,OWASP Top 10 2013;A1-Injection,FISMA 2014;System And Information Integrity,NIST SP 800-53;SI-10 Information Input Validation (P1),OWASP Top 10 2017;A1-Injection" cweId="89" name="SQL_Injection" group="CSharp_High_Risk" Severity="High" Language="CSharp" LanguageHash="1363215419077432" LanguageChangeDate="2017-12-03T00:00:00.0000000" SeverityIndex="3" QueryPath="CSharp\Cx\CSharp High Risk\SQL Injection Version:0" QueryVersionCode="430">
+		<Result NodeId="10000050002" FileName="bookstore/Login.cs" Status="Recurrent" Line="179" Column="103" FalsePositive="False" Severity="High" AssignToUser="" state="0" Remark="" DeepLink="http://WIN2K12-TEMP/CxWebClient/ViewerMain.aspx?scanid=1000005&amp;projectid=2&amp;pathid=2" SeverityIndex="3">
+			<Path ResultId="1000005" PathId="2" SimilarityId="1765812516"/>
+		</Result>
+		<Result NodeId="10000050003" FileName="bookstore/Login.cs" Status="Recurrent" Line="180" Column="10" FalsePositive="False" Severity="High" AssignToUser="" state="0" Remark="" DeepLink="http://WIN2K12-TEMP/CxWebClient/ViewerMain.aspx?scanid=1000005&amp;projectid=2&amp;pathid=2" SeverityIndex="3">
+			<Path ResultId="1000005" PathId="2" SimilarityId="1765812516"/>
+		</Result>
+		<Result NodeId="10000050004" FileName="bookstore/Login.cs" Status="Recurrent" Line="181" Column="190" FalsePositive="True" Severity="Medium" AssignToUser="" state="0" Remark="" DeepLink="http://WIN2K12-TEMP/CxWebClient/ViewerMain.aspx?scanid=1000005&amp;projectid=2&amp;pathid=2" SeverityIndex="2">
+			<Path ResultId="1000005" PathId="2" SimilarityId="1765812516"/>
+		</Result>
+		<Result NodeId="10000050005" FileName="bookstore/Login.cs" Status="Recurrent" Line="181" Column="190" FalsePositive="True" Severity="Low" AssignToUser="" state="0" Remark="" DeepLink="http://WIN2K12-TEMP/CxWebClient/ViewerMain.aspx?scanid=1000005&amp;projectid=2&amp;pathid=2" SeverityIndex="2">
+			<Path ResultId="1000005" PathId="2" SimilarityId="1765812516"/>
+		</Result>
+		<Result NodeId="10000050006" FileName="bookstore/Login.cs" Status="Recurrent" Line="181" Column="190" FalsePositive="True" Severity="Low" AssignToUser="" state="0" Remark="" DeepLink="http://WIN2K12-TEMP/CxWebClient/ViewerMain.aspx?scanid=1000005&amp;projectid=2&amp;pathid=2" SeverityIndex="2">
+			<Path ResultId="1000005" PathId="2" SimilarityId="1765812516"/>
+		</Result>
+	</Query>
+	</CxXMLResults>`)}
+	options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "percentage", VulnerabilityThresholdResult: "FAILURE", VulnerabilityThresholdHigh: 100, FullScanCycle: "10", FullScansScheduled: true, Preset: "10048", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+	workspace, err := ioutil.TempDir("", "workspace5")
+	if err != nil {
+		t.Fatal("Failed to create temporary workspace directory")
 	}
-	cmd := exec.Command(os.Args[0], "-test.run=TestRunScanHighViolationPercentage")
-	cmd.Env = append(os.Environ(), "BE_CRASHER=1")
-	err := cmd.Run()
-	if e, ok := err.(*exec.ExitError); ok && !e.Success() {
-		return
-	}
-	t.Fatalf("process ran with err %v, want exit status 1", err)
+	// clean up tmp dir
+	defer os.RemoveAll(workspace)
+
+	influx := checkmarxExecuteScanInflux{}
+
+	err = runScan(options, sys, workspace, &influx)
+	assert.Contains(t, fmt.Sprint(err), "the project is not compliant", "Expected different error")
 }
 
 func TestRunScanHighViolationAbsolute(t *testing.T) {
-	if os.Getenv("BE_CRASHER") == "1" {
-		sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?>
+	sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?>
 		<CxXMLResults InitiatorName="admin" Owner="admin" ScanId="1000005" ProjectId="2" ProjectName="Project 1" TeamFullPathOnReportDate="CxServer" DeepLink="http://WIN2K12-TEMP/CxWebClient/ViewerMain.aspx?scanid=1000005&amp;projectid=2" ScanStart="Sunday, December 3, 2017 4:50:34 PM" Preset="Checkmarx Default" ScanTime="00h:03m:18s" LinesOfCodeScanned="6838" FilesScanned="34" ReportCreationTime="Sunday, December 3, 2017 6:13:45 PM" Team="CxServer" CheckmarxVersion="8.6.0" ScanComments="" ScanType="Incremental" SourceOrigin="LocalPath" Visibility="Public">
 		<Query id="430" categories="PCI DSS v3.2;PCI DSS (3.2) - 6.5.1 - Injection flaws - particularly SQL injection,OWASP Top 10 2013;A1-Injection,FISMA 2014;System And Information Integrity,NIST SP 800-53;SI-10 Information Input Validation (P1),OWASP Top 10 2017;A1-Injection" cweId="89" name="SQL_Injection" group="CSharp_High_Risk" Severity="High" Language="CSharp" LanguageHash="1363215419077432" LanguageChangeDate="2017-12-03T00:00:00.0000000" SeverityIndex="3" QueryPath="CSharp\Cx\CSharp High Risk\SQL Injection Version:0" QueryVersionCode="430">
 			<Result NodeId="10000050002" FileName="bookstore/Login.cs" Status="Recurrent" Line="179" Column="103" FalsePositive="True" Severity="High" AssignToUser="" state="0" Remark="" DeepLink="http://WIN2K12-TEMP/CxWebClient/ViewerMain.aspx?scanid=1000005&amp;projectid=2&amp;pathid=2" SeverityIndex="3">
@@ -456,26 +449,18 @@ func TestRunScanHighViolationAbsolute(t *testing.T) {
 			</Result>
 		</Query>
 		</CxXMLResults>`)}
-		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "absolute", VulnerabilityThresholdResult: "FAILURE", VulnerabilityThresholdLow: 1, FullScanCycle: "10", FullScansScheduled: true, Preset: "10048", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
-		workspace, err := ioutil.TempDir("", "workspace6")
-		if err != nil {
-			t.Fatal("Failed to create temporary workspace directory")
-		}
-		// clean up tmp dir
-		defer os.RemoveAll(workspace)
-
-		influx := checkmarxExecuteScanInflux{}
-
-		runScan(options, sys, workspace, &influx)
-		return
+	options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "absolute", VulnerabilityThresholdResult: "FAILURE", VulnerabilityThresholdLow: 1, FullScanCycle: "10", FullScansScheduled: true, Preset: "10048", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+	workspace, err := ioutil.TempDir("", "workspace6")
+	if err != nil {
+		t.Fatal("Failed to create temporary workspace directory")
 	}
-	cmd := exec.Command(os.Args[0], "-test.run=TestRunScanHighViolationAbsolute")
-	cmd.Env = append(os.Environ(), "BE_CRASHER=1")
-	err := cmd.Run()
-	if e, ok := err.(*exec.ExitError); ok && !e.Success() {
-		return
-	}
-	t.Fatalf("process ran with err %v, want exit status 1", err)
+	// clean up tmp dir
+	defer os.RemoveAll(workspace)
+
+	influx := checkmarxExecuteScanInflux{}
+
+	err = runScan(options, sys, workspace, &influx)
+	assert.Contains(t, fmt.Sprint(err), "the project is not compliant", "Expected different error")
 }
 
 func TestEnforceThresholds(t *testing.T) {
@@ -554,20 +539,20 @@ func TestEnforceThresholds(t *testing.T) {
 func TestLoadPreset(t *testing.T) {
 	sys := &systemMock{}
 	t.Run("resolve via code", func(t *testing.T) {
-		ok, preset := loadPreset(sys, "10048")
-		assert.Equal(t, true, ok, "Expected success but failed")
+		preset, err := loadPreset(sys, "10048")
+		assert.NoError(t, err, "Expected success but failed")
 		assert.Equal(t, 10048, preset.ID, "Expected result but got none")
 	})
 
 	t.Run("resolve via name", func(t *testing.T) {
-		ok, preset := loadPreset(sys, "SAP_JS_Default")
-		assert.Equal(t, true, ok, "Expected success but failed")
+		preset, err := loadPreset(sys, "SAP_JS_Default")
+		assert.NoError(t, err, "Expected success but failed")
 		assert.Equal(t, "SAP_JS_Default", preset.Name, "Expected result but got none")
 	})
 
 	t.Run("error case", func(t *testing.T) {
-		ok, preset := loadPreset(sys, "")
-		assert.Equal(t, false, ok, "Expected error but succeeded")
+		preset, err := loadPreset(sys, "")
+		assert.Contains(t, fmt.Sprint(err), "preset SAP_JS_Default not found", "Expected different error")
 		assert.Equal(t, 0, preset.ID, "Expected result but got none")
 	})
 }
