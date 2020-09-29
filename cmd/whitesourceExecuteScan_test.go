@@ -375,12 +375,6 @@ func TestExecuteScanNPM(t *testing.T) {
 		require.NoError(t, err)
 		expectedCalls := []mock.ExecCall{
 			{
-				Exec: "npm",
-				Params: []string{
-					"ls",
-				},
-			},
-			{
 				Exec: "npx",
 				Params: []string{
 					"whitesource",
@@ -390,6 +384,7 @@ func TestExecuteScanNPM(t *testing.T) {
 		}
 		assert.Equal(t, expectedCalls, utilsMock.Calls)
 		assert.True(t, utilsMock.HasWrittenFile(whiteSourceConfig))
+		assert.True(t, utilsMock.HasRemovedFile(whiteSourceConfig))
 	})
 	t.Run("no NPM modules", func(t *testing.T) {
 		// init
@@ -411,23 +406,6 @@ func TestExecuteScanNPM(t *testing.T) {
 		err := executeScan(&config, scan, utilsMock)
 		// assert
 		assert.EqualError(t, err, "failed to scan NPM module 'package.json': the file 'package.json/package.json' must configure a name")
-	})
-	t.Run("npm ls fails", func(t *testing.T) {
-		// init
-		utilsMock := newWhitesourceUtilsMock()
-		utilsMock.AddFile("package.json", []byte(`{"name":"my-module-name"}`))
-		utilsMock.AddFile(filepath.Join("app", "package.json"), []byte(`{"name":"my-app-module-name"}`))
-		utilsMock.AddFile("package-lock.json", []byte("dummy"))
-
-		utilsMock.ShouldFailOnCommand = make(map[string]error)
-		utilsMock.ShouldFailOnCommand["npm ls"] = fmt.Errorf("mock failure")
-		scan := newWhitesourceScan(&config)
-		// test
-		err := executeScan(&config, scan, utilsMock)
-		// assert
-		assert.NoError(t, err)
-		assert.Equal(t, []string{"app", ""}, utilsMock.npmInstalledModules)
-		assert.True(t, utilsMock.HasRemovedFile("package-lock.json"))
 	})
 }
 
@@ -613,12 +591,6 @@ func TestExecuteScanMTA(t *testing.T) {
 				},
 			},
 			{
-				Exec: "npm",
-				Params: []string{
-					"ls",
-				},
-			},
-			{
 				Exec: "npx",
 				Params: []string{
 					"whitesource",
@@ -628,6 +600,7 @@ func TestExecuteScanMTA(t *testing.T) {
 		}
 		assert.Equal(t, expectedCalls, utilsMock.Calls)
 		assert.True(t, utilsMock.HasWrittenFile(whiteSourceConfig))
+		assert.True(t, utilsMock.HasRemovedFile(whiteSourceConfig))
 		assert.Equal(t, expectedCalls, utilsMock.Calls)
 	})
 }
