@@ -159,6 +159,7 @@ func uploadAndScan(config checkmarxExecuteScanOptions, sys checkmarx.System, pro
 		incremental := config.Incremental
 		fullScanCycle, err := strconv.Atoi(config.FullScanCycle)
 		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
 			return errors.Wrapf(err, "invalid configuration value for fullScanCycle %v, must be a positive int", config.FullScanCycle)
 		}
 
