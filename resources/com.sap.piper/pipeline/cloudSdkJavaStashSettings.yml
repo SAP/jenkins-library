@@ -58,6 +58,10 @@ whitesourceScan:
   unstash: ["SOURCE", "M2", "NODE_MODULES", "PACKAGE_LOCK"]
   stashes: []
 
+security:
+  unstash: ["SOURCE", "M2", "TARGET", "NODE_MODULES", "PACKAGE_LOCK"]
+  stashes: []
+
 additionalTools:
   unstash: ["SOURCE", "M2", "NODE_MODULES", "GENERATED_CAP_FILES"]
   stashes: []

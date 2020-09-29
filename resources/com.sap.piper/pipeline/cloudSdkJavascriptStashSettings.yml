@@ -70,6 +70,10 @@ detect:
   unstash: ["SOURCE"]
   stashes: []
 
+security:
+  unstash: ["SOURCE", "NODE_MODULES", "PACKAGE_LOCK"]
+  stashes: []
+
 endToEndTests:
   unstash: ["SOURCE", "DEPLOYMENTARTIFACT", "NODE_MODULES", "GENERATED_CAP_FILES"]
   stashes: []
