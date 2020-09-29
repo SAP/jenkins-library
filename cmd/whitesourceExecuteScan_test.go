@@ -871,7 +871,7 @@ func TestPersisScannedProjects(t *testing.T) {
 	})
 	t.Run("write aggregated project", func(t *testing.T) {
 		// init
-		config := &ScanOptions{ProjectName: "project - 1"}
+		config := &ScanOptions{ProjectName: "project", ProductVersion: "1"}
 		utils := newWhitesourceUtilsMock()
 		scan := newWhitesourceScan(config)
 		// test
