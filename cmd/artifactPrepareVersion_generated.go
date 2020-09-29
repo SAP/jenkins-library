@@ -175,6 +175,7 @@ Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to yo
 			handler := func() {
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
 			}
 			log.DeferExitHandler(handler)
