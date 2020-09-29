@@ -129,7 +129,7 @@ func newWhitesourceUtils() *whitesourceUtilsBundle {
 type whitesourceScan struct {
 	productToken         string
 	aggregateProjectName string
-	projectVersion       string
+	productVersion       string
 	scannedProjects      map[string]ws.Project
 	scanTimes            map[string]time.Time
 }
@@ -145,14 +145,14 @@ func (s *whitesourceScan) init() {
 
 // appendScannedProject checks that no whitesource.Project is already contained in the list of scanned projects,
 // and appends a new whitesource.Project with the given name.
-func (s *whitesourceScan) appendScannedProject(projectName string) error {
+func (s *whitesourceScan) appendScannedProject(moduleName string) error {
 	s.init()
-	projectName = projectName + " - " + s.projectVersion
+	projectName := moduleName + " - " + s.productVersion
 	_, exists := s.scannedProjects[projectName]
 	if exists {
 		log.Entry().Errorf("A module with the name '%s' was already scanned. "+
-			"Your project's modules must have unique names.", projectName)
-		return fmt.Errorf("project with name '%s' was already scanned", projectName)
+			"Your project's modules must have unique names.", moduleName)
+		return fmt.Errorf("project with name '%s' was already scanned", moduleName)
 	}
 	s.scannedProjects[projectName] = ws.Project{Name: projectName}
 	s.scanTimes[projectName] = time.Now()
@@ -187,7 +187,7 @@ func (s *whitesourceScan) updateProjects(sys whitesource) error {
 func newWhitesourceScan(config *ScanOptions) *whitesourceScan {
 	return &whitesourceScan{
 		aggregateProjectName: config.ProjectName,
-		projectVersion:       config.ProductVersion,
+		productVersion:       config.ProductVersion,
 	}
 }
 
@@ -301,7 +301,7 @@ func resolveProjectIdentifiers(config *ScanOptions, scan *whitesourceScan, utils
 			config.ProductVersion = version
 		}
 	}
-	scan.projectVersion = config.ProductVersion
+	scan.productVersion = config.ProductVersion
 
 	// Get product token if user did not specify one at runtime
 	if config.ProductToken == "" {
