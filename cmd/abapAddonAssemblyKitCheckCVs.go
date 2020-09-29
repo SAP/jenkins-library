@@ -49,10 +49,6 @@ func runAbapAddonAssemblyKitCheckCVs(config *abapAddonAssemblyKitCheckCVsOptions
 		c.copyFieldsToRepo(&addonDescriptor.Repositories[i])
 	}
 
-	var addonDescriptorFromCPE abaputils.AddonDescriptor
-	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptorFromCPE)
-	addonDescriptor = combineYAMLRepositoriesWithCPEProduct(addonDescriptor, addonDescriptorFromCPE)
-
 	// now Software Component Versions fields are valid, but maybe Product Version was checked before, so copy that part from CPE
 	// we don't care for errors
 	// scenario 1: config.AddonDescriptor is empty since checkCVs is the first step in the pipeline, then the empty result is fine anyway
@@ -64,7 +60,7 @@ func runAbapAddonAssemblyKitCheckCVs(config *abapAddonAssemblyKitCheckCVsOptions
 		log.Entry().Infof("Information for Product Version %s taken from addonDescriptor of CommonPipelineEnvironment", addonDescriptorCPE.AddonProduct)
 	}
 	addonDescriptorCPE.SetRepositories(addonDescriptor.Repositories)
-	cpe.abap.addonDescriptor = string(addonDescriptor.AsJSON())
+	cpe.abap.addonDescriptor = string(addonDescriptorCPE.AsJSON())
 	log.Entry().Info("Wrote addonDescriptor to CommonPipelineEnvironment")
 	return nil
 }
