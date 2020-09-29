@@ -264,6 +264,7 @@ void call(Map parameters = [:]) {
                 style: libraryResource('piper-os.css')
             ])
             .mixin(parameters, PARAMETER_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .addIfEmpty('scanType', script.commonPipelineEnvironment.getBuildTool())
             .dependingOn('scanType').mixin('buildDescriptorFile')
             .dependingOn('scanType').mixin('dockerImage')
             .dependingOn('scanType').mixin('dockerWorkspace')
