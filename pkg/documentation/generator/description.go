@@ -15,11 +15,20 @@ const (
 	headlineCommandLine     = "### Command Line\n\n"
 )
 
-// BinaryName is the name of the local binary that is used for sample generation.
-var BinaryName string = "piper"
+// defaultBinaryName is the name of the local binary that is used for sample generation.
+var defaultBinaryName string = "piper"
 
-// LibraryName is the id of the library in the Jenkins that is used for sample generation.
-var LibraryName string = "piper-lib-os"
+// defaultLibraryName is the id of the library in the Jenkins that is used for sample generation.
+var defaultLibraryName string = "piper-lib-os"
+
+var CustomLibrarySteps = []CustomLibrary{}
+
+type CustomLibrary struct {
+	Name        string   `yaml: "name,omitempty"`
+	BinaryName  string   `yaml: "binaryName,omitempty"`
+	LibraryName string   `yaml: "libraryName,omitempty"`
+	Steps       []string `yaml: "steps,omitempty"`
+}
 
 // Replaces the StepName placeholder with the content from the yaml
 func createStepName(stepData *config.StepData) string {
@@ -28,16 +37,27 @@ func createStepName(stepData *config.StepData) string {
 
 // Replaces the Description placeholder with content from the yaml
 func createDescriptionSection(stepData *config.StepData) string {
+	libraryName, binaryName := getNames(stepData.Metadata.Name)
+
 	description := ""
-
 	description += headlineDescription + stepData.Metadata.LongDescription + "\n\n"
-
 	description += headlineUsage
 	description += configRecommendation + "\n\n"
 	description += headlineJenkinsPipeline
-	description += fmt.Sprintf("```groovy\nlibrary('%s')\n\n%v script: this\n```\n\n", LibraryName, stepData.Metadata.Name)
+	description += fmt.Sprintf("```groovy\nlibrary('%s')\n\n%v script: this\n```\n\n", libraryName, stepData.Metadata.Name)
 	description += headlineCommandLine
-	description += fmt.Sprintf("```sh\n%s %v\n```\n\n", BinaryName, stepData.Metadata.Name)
+	description += fmt.Sprintf("```sh\n%s %v\n```\n\n", binaryName, stepData.Metadata.Name)
 	description += stepOutputs(stepData)
 	return description
+}
+
+func getNames(stepName string) (string, string) {
+	for _, library := range CustomLibrarySteps {
+		for _, customStepName := range library.Steps {
+			if stepName == customStepName {
+				return library.LibraryName, library.BinaryName
+			}
+		}
+	}
+	return defaultLibraryName, defaultBinaryName
 }

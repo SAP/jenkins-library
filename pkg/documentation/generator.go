@@ -9,21 +9,31 @@ import (
 
 	generator "github.com/SAP/jenkins-library/pkg/documentation/generator"
 	"github.com/SAP/jenkins-library/pkg/generator/helper"
+	"github.com/ghodss/yaml"
 )
 
 func main() {
 	var metadataPath string
 	var docTemplatePath string
+	var customLibraryStepFile string
 
 	flag.StringVar(&metadataPath, "metadataDir", "./resources/metadata", "The directory containing the step metadata. Default points to \\'resources/metadata\\'.")
 	flag.StringVar(&docTemplatePath, "docuDir", "./documentation/docs/steps/", "The directory containing the docu stubs. Default points to \\'documentation/docs/steps/\\'.")
-	flag.StringVar(&generator.LibraryName, "libraryName", generator.LibraryName, "")
-	flag.StringVar(&generator.BinaryName, "binaryName", generator.BinaryName, "")
+	flag.StringVar(&customLibraryStepFile, "customLibraryStepFile", "", "")
 
 	flag.Parse()
 
 	fmt.Println("using Metadata Directory:", metadataPath)
 	fmt.Println("using Documentation Directory:", docTemplatePath)
+
+	if len(customLibraryStepFile) > 0 {
+		fmt.Println("Reading custom library step mapping..")
+		content, err := ioutil.ReadFile(customLibraryStepFile)
+		checkError(err)
+		err = yaml.Unmarshal(content, &generator.CustomLibrarySteps)
+		checkError(err)
+		fmt.Println(generator.CustomLibrarySteps)
+	}
 
 	metadataFiles, err := helper.MetadataFiles(metadataPath)
 	checkError(err)
