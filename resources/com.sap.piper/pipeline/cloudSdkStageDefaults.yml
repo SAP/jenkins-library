@@ -24,6 +24,13 @@ stages:
           - 'sonarTokenCredentialsId'
           - 'projectKey'
           - 'instance'
+  security:
+    stepConditions:
+      whitesourceExecuteScan:
+        configKeys:
+          - 'productName'
+          - 'orgAdminUserTokenCredentialsId'
+          - 'userTokenCredentialsId'
   frontendIntegrationTests:
     stepConditions:
       npmExecuteScripts:
@@ -86,6 +93,11 @@ stages:
   whitesourceScan:
     onlyProductiveBranch: true
     stepConditions:
+      whitesourceExecuteScan:
+        configKeys:
+          - 'productName'
+          - 'orgAdminUserTokenCredentialsId'
+          - 'userTokenCredentialsId'
       whitesourceScan:
         configKeys:
           - 'product'
@@ -102,6 +114,23 @@ stages:
       detectScan:
         configKeys:
           - 'detectTokenCredentialsId'
+  security:
+    onlyProductiveBranch: true
+    stepConditions:
+      checkmarxExecuteScan:
+        configKeys:
+          - 'groupId'
+      detectExecuteScan:
+        configKeys:
+          - 'detectTokenCredentialsId'
+      fortifyExecuteScan:
+        configKeys:
+          - 'fortifyCredentialsId'
+      whitesourceExecuteScan:
+        configKeys:
+          - 'product'
+          - 'orgAdminUserTokenCredentialsId'
+          - 'userTokenCredentialsId'
   productionDeployment:
     onlyProductiveBranch: true
     stepConditions:

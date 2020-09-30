@@ -29,6 +29,40 @@ func TestContainsString(t *testing.T) {
 	assert.False(t, ContainsString(stringList, "baz"))
 }
 
+func TestRemoveAll(t *testing.T) {
+	t.Parallel()
+	t.Run("empty array", func(t *testing.T) {
+		result, removed := RemoveAll([]string{}, "A")
+		assert.Len(t, result, 0)
+		assert.False(t, removed)
+	})
+	t.Run("two As", func(t *testing.T) {
+		result, removed := RemoveAll([]string{"A", "B", "C", "A", "C", "", "D"}, "A")
+		assert.Equal(t, []string{"B", "C", "C", "", "D"}, result)
+		assert.True(t, removed)
+	})
+	t.Run("one B", func(t *testing.T) {
+		result, removed := RemoveAll([]string{"A", "B", "C", "A", "C", "", "D"}, "B")
+		assert.Equal(t, []string{"A", "C", "A", "C", "", "D"}, result)
+		assert.True(t, removed)
+	})
+	t.Run("empty e", func(t *testing.T) {
+		result, removed := RemoveAll([]string{"A", "B", "C", "A", "C", "", "D"}, "")
+		assert.Equal(t, []string{"A", "B", "C", "A", "C", "D"}, result)
+		assert.True(t, removed)
+	})
+	t.Run("one D", func(t *testing.T) {
+		result, removed := RemoveAll([]string{"A", "B", "C", "A", "C", "", "D"}, "D")
+		assert.Equal(t, []string{"A", "B", "C", "A", "C", ""}, result)
+		assert.True(t, removed)
+	})
+	t.Run("not found", func(t *testing.T) {
+		result, removed := RemoveAll([]string{"A", "B", "C", "A", "C", "", "D"}, "X")
+		assert.Equal(t, []string{"A", "B", "C", "A", "C", "", "D"}, result)
+		assert.False(t, removed)
+	})
+}
+
 func TestPrefix(t *testing.T) {
 	// init
 	s := []string{"tree", "pie", "applejuice"}
