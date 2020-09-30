@@ -29,6 +29,13 @@ func TestCreateStepName(t *testing.T) {
 }
 
 func TestCreateDescriptionSection(t *testing.T) {
+	CustomLibrarySteps = []CustomLibrary{{
+		Name:        "TestLibrary",
+		BinaryName:  "myBinary",
+		LibraryName: "myLibrary",
+		Steps:       []string{"myCustomStep"},
+	}}
+
 	tests := []struct {
 		name  string
 		input *config.StepData
@@ -43,6 +50,16 @@ func TestCreateDescriptionSection(t *testing.T) {
 				headlineUsage + configRecommendation + "\n\n" +
 				headlineJenkinsPipeline + "```groovy\nlibrary('piper-lib-os')\n\nteststep script: this\n```" + "\n\n" +
 				headlineCommandLine + "```sh\npiper teststep\n```" + "\n\n",
+		},
+		{
+			name: "custom step description section",
+			input: &config.StepData{
+				Metadata: config.StepMetadata{Name: "myCustomStep", LongDescription: "TestDescription"},
+			},
+			want: headlineDescription + "TestDescription" + "\n\n" +
+				headlineUsage + configRecommendation + "\n\n" +
+				headlineJenkinsPipeline + "```groovy\nlibrary('myLibrary')\n\nmyCustomStep script: this\n```" + "\n\n" +
+				headlineCommandLine + "```sh\nmyBinary myCustomStep\n```" + "\n\n",
 		},
 	}
 	for _, testcase := range tests {

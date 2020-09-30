@@ -21,8 +21,10 @@ var defaultBinaryName string = "piper"
 // defaultLibraryName is the id of the library in the Jenkins that is used for sample generation.
 var defaultLibraryName string = "piper-lib-os"
 
+// CustomLibrarySteps holds a list of libraries with it's custom steps.
 var CustomLibrarySteps = []CustomLibrary{}
 
+// CustomLibrary represents a custom library with it's custom step names, binary name and library name.
 type CustomLibrary struct {
 	Name        string   `yaml: "name,omitempty"`
 	BinaryName  string   `yaml: "binaryName,omitempty"`
