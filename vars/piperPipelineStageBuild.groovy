@@ -35,7 +35,7 @@ import static com.sap.piper.Prerequisites.checkScript
 /**
  * In this stage a build is executed which typically also executes tests and code checks.
  *
- * They type of build is defined using the configuration `buildTool`, see also step [buildExecute](../steps/buildExecute.md)
+ * The type of build is defined using the configuration `buildTool`, see also step [buildExecute](../steps/buildExecute.md)
  *
  */
 @GenerateStageDocumentation(defaultStageName = 'Build')
