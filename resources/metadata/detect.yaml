@@ -21,7 +21,10 @@ spec:
     params:
       - name: apiToken
         aliases:
+          - name: blackduckToken
+          - name: detectToken
           - name: detect/apiToken
+            deprecated: true
         description: Api token to be used for connectivity with Synopsis Detect server.
         type: string
         mandatory: true

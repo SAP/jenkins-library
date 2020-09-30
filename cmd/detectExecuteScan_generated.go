@@ -130,7 +130,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "detect/apiToken"}},
+						Aliases:   []config.Alias{{Name: "blackduckToken"}, {Name: "detectToken"}, {Name: "detect/apiToken"}},
 					},
 					{
 						Name:        "codeLocation",
