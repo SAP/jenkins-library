@@ -19,10 +19,12 @@ spec:
         description: Jenkins 'Secret text' credentials ID containing the API token used to authenticate with the Synopsis Detect (formerly BlackDuck) Server.
         type: jenkins
     params:
-      - name: apiToken
+      - name: token
         aliases:
           - name: blackduckToken
           - name: detectToken
+          - name: apiToken
+            deprecated: true
           - name: detect/apiToken
             deprecated: true
         description: Api token to be used for connectivity with Synopsis Detect server.
