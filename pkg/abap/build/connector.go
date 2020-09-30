@@ -61,7 +61,7 @@ func (conn Connector) Get(appendum string) ([]byte, error) {
 	url := conn.Baseurl + appendum
 	response, err := conn.Client.SendRequest("GET", url, nil, conn.Header, nil)
 	if err != nil {
-		if response == nil {
+		if response == nil || response.Body == nil {
 			return nil, errors.Wrap(err, "Get failed")
 		}
 		defer response.Body.Close()
