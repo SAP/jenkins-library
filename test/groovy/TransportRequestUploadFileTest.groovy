@@ -75,7 +75,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         // straight forward test case for CTS
 
         thrown.expect(IllegalArgumentException)
-        thrown.expectMessage("Change document id not provided (parameter: 'changeDocumentId' or via commit history).")
+        thrown.expectMessage("Change document id not provided (parameter: 'changeDocumentId' provided to the step call or via commit history).")
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
             String getChangeDocumentId(
@@ -106,7 +106,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         }
 
         thrown.expect(IllegalArgumentException)
-        thrown.expectMessage("Transport request id not provided (parameter: 'transportRequestId' or via commit history).")
+        thrown.expectMessage("Transport request id not provided (parameter: 'transportRequestId' provided to the step call or via commit history).")
 
         stepRule.step.transportRequestUploadFile(script: nullScript, changeDocumentId: '001', applicationId: 'app', filePath: '/path', cmUtils: cm)
     }
