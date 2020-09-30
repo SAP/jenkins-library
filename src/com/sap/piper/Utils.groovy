@@ -92,7 +92,7 @@ def unstash(name, msg = "Unstash failed:") {
 def unstashAll(stashContent) {
     def unstashedContent = []
     if (stashContent) {
-        for (i = 0; i < stashContent.size(); i++) {
+        for (int i = 0; i < stashContent.size(); i++) {
             if (stashContent[i]) {
                 unstashedContent += unstash(stashContent[i])
             }
