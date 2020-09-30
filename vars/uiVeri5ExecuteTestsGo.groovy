@@ -8,7 +8,7 @@ import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
 
-@Field String STEP_NAME = getClass().getName()
+@Field String STEP_NAME = "uiVeri5ExecuteTests"
 
 @Field Set GENERAL_CONFIG_KEYS = [
     /** @see seleniumExecuteTests */
@@ -133,7 +133,7 @@ void call(Map parameters = [:]) {
             try {
                 //sh "NPM_CONFIG_PREFIX=~/.npm-global ${config.installCommand}"
                 //sh "PATH=\$PATH:~/.npm-global/bin ${config.runCommand} ${config.testOptions}"
-                sh "./piper uiVeri5ExecuteTests"
+                sh "NPM_CONFIG_PREFIX=~/.npm-global ./piper uiVeri5ExecuteTests"
             } catch (err) {
                 echo "[${STEP_NAME}] Test execution failed"
                 script.currentBuild.result = 'UNSTABLE'
