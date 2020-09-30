@@ -137,7 +137,11 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, execR
 		}
 	case "sbt":
 		if len(buildDescriptorFilePath) == 0 {
-			buildDescriptorFilePath = "sbtDescriptor.json"
+			var err error
+			buildDescriptorFilePath, err = searchDescriptor([]string{"sbtDescriptor.json", "build.sbt"}, fileExists)
+			if err != nil {
+				return artifact, err
+			}
 		}
 		artifact = &JSONfile{
 			path:         buildDescriptorFilePath,

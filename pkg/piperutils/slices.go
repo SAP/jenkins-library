@@ -4,7 +4,7 @@ import (
 	"strings"
 )
 
-//ContainsInt check whether the element is part of the slice
+//ContainsInt checks whether the element is part of the slice
 func ContainsInt(s []int, e int) bool {
 	for _, a := range s {
 		if a == e {
@@ -14,7 +14,7 @@ func ContainsInt(s []int, e int) bool {
 	return false
 }
 
-//ContainsString check whether the element is part of the slice
+//ContainsString checks whether the element is part of the slice
 func ContainsString(s []string, e string) bool {
 	for _, a := range s {
 		if a == e {
@@ -24,7 +24,7 @@ func ContainsString(s []string, e string) bool {
 	return false
 }
 
-//ContainsStringPart check wether the element is contained as part of one of the elements of the slice
+//ContainsStringPart checks whether the element is contained as part of one of the elements of the slice
 func ContainsStringPart(s []string, part string) bool {
 	for _, a := range s {
 		if strings.Contains(a, part) {
@@ -32,6 +32,18 @@ func ContainsStringPart(s []string, part string) bool {
 		}
 	}
 	return false
+}
+
+// RemoveAll removes all instances of element from the slice and returns a truncated slice as well as
+// a boolean to indicate whether at least one element was found and removed.
+func RemoveAll(s []string, e string) ([]string, bool) {
+	var r []string
+	for _, a := range s {
+		if a != e {
+			r = append(r, a)
+		}
+	}
+	return r, len(s) != len(r)
 }
 
 //Prefix adds a prefix to each element of the slice
