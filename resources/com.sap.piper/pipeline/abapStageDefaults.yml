@@ -8,5 +8,4 @@ stages:
   Integration Tests: {}
   Confirm: {}
   Publish: {}
-  Post:
-    confirmSystemDeletionWhenUnsuccessful: true
+  Post: {}
