@@ -153,10 +153,7 @@ func (b *Build) Start(phase string, inputValues Values) error {
 	}
 
 	var jBuild jsonBuild
-	err = json.Unmarshal(body, &jBuild)
-	if err != nil {
-		return err
-	}
+	json.Unmarshal(body, &jBuild)
 	b.BuildID = jBuild.Build.BuildID
 	b.RunState = jBuild.Build.RunState
 	b.ResultState = jBuild.Build.ResultState
@@ -165,6 +162,7 @@ func (b *Build) Start(phase string, inputValues Values) error {
 	b.Startedby = jBuild.Build.Startedby
 	b.StartedAt = jBuild.Build.StartedAt
 	b.FinishedAt = jBuild.Build.FinishedAt
+	fmt.Println("Hello")
 	return nil
 }
 
@@ -176,10 +174,7 @@ func (b *Build) Get() error {
 		return err
 	}
 	var jBuild jsonBuild
-	err = json.Unmarshal(body, &jBuild)
-	if err != nil {
-		return err
-	}
+	json.Unmarshal(body, &jBuild)
 	b.RunState = jBuild.Build.RunState
 	b.ResultState = jBuild.Build.ResultState
 	b.Phase = jBuild.Build.Phase
@@ -198,10 +193,7 @@ func (b *Build) getTasks() error {
 			return err
 		}
 		var jTasks jsonTasks
-		err = json.Unmarshal(body, &jTasks)
-		if err != nil {
-			return err
-		}
+		json.Unmarshal(body, &jTasks)
 		b.Tasks = jTasks.ResultTasks.Tasks
 		sort.Slice(b.Tasks, func(i, j int) bool {
 			return b.Tasks[i].TaskID < b.Tasks[j].TaskID
@@ -221,10 +213,7 @@ func (b *Build) getValues() error {
 			return err
 		}
 		var jValues jsonValues
-		err = json.Unmarshal(body, &jValues)
-		if err != nil {
-			return err
-		}
+		json.Unmarshal(body, &jValues)
 		b.Values = jValues.ResultValues.Values
 		for i := range b.Values {
 			b.Values[i].connector = b.Connector
@@ -320,10 +309,7 @@ func (t *task) getLogs() error {
 			return err
 		}
 		var jLogs jsonLogs
-		err = json.Unmarshal(body, &jLogs)
-		if err != nil {
-			return err
-		}
+		json.Unmarshal(body, &jLogs)
 		t.Logs = jLogs.ResultLogs.Logs
 	}
 	return nil
@@ -337,10 +323,7 @@ func (t *task) getResults() error {
 			return err
 		}
 		var jResults jsonResults
-		err = json.Unmarshal(body, &jResults)
-		if err != nil {
-			return err
-		}
+		json.Unmarshal(body, &jResults)
 		t.Results = jResults.ResultResults.Results
 		for i := range t.Results {
 			t.Results[i].connector = t.connector

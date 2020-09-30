@@ -19,7 +19,7 @@ func testSetup(client piperhttp.Sender, buildID string) Build {
 	return b
 }
 
-func TestSTart(t *testing.T) {
+func TestStart(t *testing.T) {
 	t.Run("Run start", func(t *testing.T) {
 		client := &ClMock{
 			Token: "MyToken",
