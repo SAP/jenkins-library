@@ -95,8 +95,9 @@ stages:
     stepConditions:
       whitesourceExecuteScan:
         configKeys:
-          - 'product'
+          - 'productName'
           - 'orgAdminUserTokenCredentialsId'
+          - 'userTokenCredentialsId'
       whitesourceScan:
         configKeys:
           - 'product'
