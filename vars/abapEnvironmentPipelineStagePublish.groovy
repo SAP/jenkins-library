@@ -18,7 +18,7 @@ void call(Map parameters = [:]) {
     def stageName = parameters.stageName?:env.STAGE_NAME
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
-        abapEnvironmentAssemblyKitPublishTargetVector(script: parameters.script, targetVectorScope: 'P')
+        abapAddonAssemblyKitPublishTargetVector(script: parameters.script, targetVectorScope: 'P')
     }
 
 }
