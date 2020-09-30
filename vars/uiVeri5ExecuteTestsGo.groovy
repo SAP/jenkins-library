@@ -133,7 +133,7 @@ void call(Map parameters = [:]) {
             try {
                 //sh "NPM_CONFIG_PREFIX=~/.npm-global ${config.installCommand}"
                 //sh "PATH=\$PATH:~/.npm-global/bin ${config.runCommand} ${config.testOptions}"
-                sh "NPM_CONFIG_PREFIX=~/.npm-global ./piper uiVeri5ExecuteTests"
+                sh "./piper uiVeri5ExecuteTests --confPath ${config.testOptions}"
             } catch (err) {
                 echo "[${STEP_NAME}] Test execution failed"
                 script.currentBuild.result = 'UNSTABLE'
