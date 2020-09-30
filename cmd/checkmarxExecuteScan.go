@@ -21,36 +21,54 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/bmatcuk/doublestar"
+	"github.com/pkg/errors"
 )
 
-func checkmarxExecuteScan(config checkmarxExecuteScanOptions, telemetryData *telemetry.CustomData, influx *checkmarxExecuteScanInflux) error {
+func checkmarxExecuteScan(config checkmarxExecuteScanOptions, telemetryData *telemetry.CustomData, influx *checkmarxExecuteScanInflux) {
 	client := &piperHttp.Client{}
 	sys, err := checkmarx.NewSystemInstance(client, config.ServerURL, config.Username, config.Password)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Failed to create Checkmarx client talking to URL %v", config.ServerURL)
 	}
-	runScan(config, sys, "./", influx)
-	return nil
+	if err := runScan(config, sys, "./", influx); err != nil {
+		log.Entry().WithError(err).Fatal("Failed to execute Checkmarx scan.")
+	}
 }
 
-func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace string, influx *checkmarxExecuteScanInflux) {
+func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace string, influx *checkmarxExecuteScanInflux) error {
 
-	team := loadTeam(sys, config.TeamName, config.TeamID)
-	project, projectName := loadExistingProject(sys, config.ProjectName, config.PullRequestName, team.ID)
+	team, err := loadTeam(sys, config.TeamName, config.TeamID)
+	if err != nil {
+		return errors.Wrap(err, "failed to load team")
+	}
+	project, projectName, err := loadExistingProject(sys, config.ProjectName, config.PullRequestName, team.ID)
+	if err != nil {
+		return errors.Wrap(err, "failed to load existing project")
+	}
 	if project.Name == projectName {
 		log.Entry().Infof("Project %v exists...", projectName)
 		if len(config.Preset) > 0 {
-			setPresetForProject(sys, project.ID, projectName, config.Preset, config.SourceEncoding)
+			err := setPresetForProject(sys, project.ID, projectName, config.Preset, config.SourceEncoding)
+			if err != nil {
+				return errors.Wrapf(err, "failed to set preset %v for project %v", config.Preset, projectName)
+			}
 		}
 	} else {
 		log.Entry().Infof("Project %v does not exist, starting to create it...", projectName)
-		project = createAndConfigureNewProject(sys, projectName, team.ID, config.Preset, config.SourceEncoding)
+		project, err = createAndConfigureNewProject(sys, projectName, team.ID, config.Preset, config.SourceEncoding)
+		if err != nil {
+			return errors.Wrapf(err, "failed to create and configure new project %v", projectName)
+		}
 	}
 
-	uploadAndScan(config, sys, project, workspace, influx)
+	err = uploadAndScan(config, sys, project, workspace, influx)
+	if err != nil {
+		return errors.Wrap(err, "failed to run scan and upload result")
+	}
+	return nil
 }
 
-func loadTeam(sys checkmarx.System, teamName, teamID string) checkmarx.Team {
+func loadTeam(sys checkmarx.System, teamName, teamID string) (checkmarx.Team, error) {
 	teams := sys.GetTeams()
 	team := checkmarx.Team{}
 	if len(teams) > 0 {
@@ -61,107 +79,122 @@ func loadTeam(sys checkmarx.System, teamName, teamID string) checkmarx.Team {
 		}
 	}
 	if len(team.ID) == 0 {
-		log.Entry().Fatalf("Failed to identify team by teamName %v as well as by checkmarxGroupId %v", teamName, teamID)
+		return team, fmt.Errorf("failed to identify team by teamName %v as well as by checkmarxGroupId %v", teamName, teamID)
 	}
-	return team
+	return team, nil
 }
 
-func loadExistingProject(sys checkmarx.System, initialProjectName, pullRequestName, teamID string) (checkmarx.Project, string) {
+func loadExistingProject(sys checkmarx.System, initialProjectName, pullRequestName, teamID string) (checkmarx.Project, string, error) {
 	var project checkmarx.Project
 	projectName := initialProjectName
 	if len(pullRequestName) > 0 {
 		projectName = fmt.Sprintf("%v_%v", initialProjectName, pullRequestName)
-		projects := sys.GetProjectsByNameAndTeam(projectName, teamID)
-		if len(projects) == 0 {
-			projects = sys.GetProjectsByNameAndTeam(initialProjectName, teamID)
-			if len(projects) > 0 {
-				ok, branchProject := sys.GetProjectByID(sys.CreateBranch(projects[0].ID, projectName))
-				if !ok {
-					log.Entry().Fatalf("Failed to create branch %v for project %v", projectName, initialProjectName)
-				}
-				project = branchProject
+		projects, err := sys.GetProjectsByNameAndTeam(projectName, teamID)
+		if err != nil || len(projects) == 0 {
+			projects, err = sys.GetProjectsByNameAndTeam(initialProjectName, teamID)
+			if err != nil || len(projects) == 0 {
+				return project, projectName, errors.Wrap(err, "no projects found")
 			}
+			branchProject, err := sys.GetProjectByID(sys.CreateBranch(projects[0].ID, projectName))
+			if err != nil {
+				return project, projectName, fmt.Errorf("failed to create branch %v for project %v", projectName, initialProjectName)
+			}
+			project = branchProject
 		} else {
 			project = projects[0]
 			log.Entry().Debugf("Loaded project with name %v", project.Name)
 		}
 	} else {
-		projects := sys.GetProjectsByNameAndTeam(projectName, teamID)
-		if len(projects) > 0 {
-			project = projects[0]
-			log.Entry().Debugf("Loaded project with name %v", project.Name)
+		projects, err := sys.GetProjectsByNameAndTeam(projectName, teamID)
+		if err != nil || len(projects) == 0 {
+			return project, projectName, errors.Wrap(err, "no projects found")
 		}
+		project = projects[0]
+		log.Entry().Debugf("Loaded project with name %v", project.Name)
 	}
-	return project, projectName
+	return project, projectName, nil
 }
 
-func zipWorkspaceFiles(workspace, filterPattern string) *os.File {
+func zipWorkspaceFiles(workspace, filterPattern string) (*os.File, error) {
 	zipFileName := filepath.Join(workspace, "workspace.zip")
 	patterns := strings.Split(strings.ReplaceAll(strings.ReplaceAll(filterPattern, ", ", ","), " ,", ","), ",")
 	sort.Strings(patterns)
 	zipFile, err := os.Create(zipFileName)
 	if err != nil {
-		log.Entry().WithError(err).Fatal("Failed to create archive of project sources")
+		return zipFile, errors.Wrap(err, "failed to create archive of project sources")
 	}
 	defer zipFile.Close()
 	zipFolder(workspace, zipFile, patterns)
-	return zipFile
+	return zipFile, nil
 }
 
-func uploadAndScan(config checkmarxExecuteScanOptions, sys checkmarx.System, project checkmarx.Project, workspace string, influx *checkmarxExecuteScanInflux) {
-	ok, previousScans := sys.GetScans(project.ID)
-	if !ok && config.VerifyOnly {
+func uploadAndScan(config checkmarxExecuteScanOptions, sys checkmarx.System, project checkmarx.Project, workspace string, influx *checkmarxExecuteScanInflux) error {
+	previousScans, err := sys.GetScans(project.ID)
+	if err != nil && config.VerifyOnly {
 		log.Entry().Warnf("Cannot load scans for project %v, verification only mode aborted", project.Name)
 	}
 	if len(previousScans) > 0 && config.VerifyOnly {
-		verifyCxProjectCompliance(config, sys, previousScans[0].ID, workspace, influx)
-	} else {
-		zipFile := zipWorkspaceFiles(workspace, config.FilterPattern)
-		sourceCodeUploaded := sys.UploadProjectSourceCode(project.ID, zipFile.Name())
-		if sourceCodeUploaded {
-			log.Entry().Debugf("Source code uploaded for project %v", project.Name)
-			err := os.Remove(zipFile.Name())
-			if err != nil {
-				log.Entry().WithError(err).Warnf("Failed to delete zipped source code for project %v", project.Name)
-			}
-
-			incremental := config.Incremental
-			fullScanCycle, err := strconv.Atoi(config.FullScanCycle)
-			if err != nil {
-				log.Entry().WithError(err).Fatalf("Invalid configuration value for fullScanCycle %v, must be a positive int", config.FullScanCycle)
-			}
-
-			if incremental && config.FullScansScheduled && fullScanCycle > 0 && (getNumCoherentIncrementalScans(sys, previousScans)+1)%fullScanCycle == 0 {
-				incremental = false
-			}
-
-			triggerScan(config, sys, project, workspace, incremental, influx)
-		} else {
-			log.Entry().Fatalf("Cannot upload source code for project %v", project.Name)
+		err := verifyCxProjectCompliance(config, sys, previousScans[0].ID, workspace, influx)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorCompliance)
+			return errors.Wrapf(err, "project %v not compliant", project.Name)
 		}
-	}
-}
-
-func triggerScan(config checkmarxExecuteScanOptions, sys checkmarx.System, project checkmarx.Project, workspace string, incremental bool, influx *checkmarxExecuteScanInflux) {
-	projectIsScanning, scan := sys.ScanProject(project.ID, incremental, true, !config.AvoidDuplicateProjectScans)
-	if projectIsScanning {
-		log.Entry().Debugf("Scanning project %v ", project.Name)
-		pollScanStatus(sys, scan)
-
-		log.Entry().Debugln("Scan finished")
-
-		verifyCxProjectCompliance(config, sys, scan.ID, workspace, influx)
 	} else {
-		log.Entry().Fatalf("Cannot scan project %v", project.Name)
+		zipFile, err := zipWorkspaceFiles(workspace, config.FilterPattern)
+		if err != nil {
+			return errors.Wrap(err, "failed to zip workspace files")
+		}
+		err = sys.UploadProjectSourceCode(project.ID, zipFile.Name())
+		if err != nil {
+			return errors.Wrapf(err, "failed to upload source code for project %v", project.Name)
+		}
+
+		log.Entry().Debugf("Source code uploaded for project %v", project.Name)
+		err = os.Remove(zipFile.Name())
+		if err != nil {
+			log.Entry().WithError(err).Warnf("Failed to delete zipped source code for project %v", project.Name)
+		}
+
+		incremental := config.Incremental
+		fullScanCycle, err := strconv.Atoi(config.FullScanCycle)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return errors.Wrapf(err, "invalid configuration value for fullScanCycle %v, must be a positive int", config.FullScanCycle)
+		}
+
+		if incremental && config.FullScansScheduled && fullScanCycle > 0 && (getNumCoherentIncrementalScans(sys, previousScans)+1)%fullScanCycle == 0 {
+			incremental = false
+		}
+
+		return triggerScan(config, sys, project, workspace, incremental, influx)
 	}
+	return nil
 }
 
-func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx.System, scanID int, workspace string, influx *checkmarxExecuteScanInflux) {
+func triggerScan(config checkmarxExecuteScanOptions, sys checkmarx.System, project checkmarx.Project, workspace string, incremental bool, influx *checkmarxExecuteScanInflux) error {
+	scan, err := sys.ScanProject(project.ID, incremental, true, !config.AvoidDuplicateProjectScans)
+	if err != nil {
+		return errors.Wrapf(err, "cannot scan project %v", project.Name)
+	}
+
+	log.Entry().Debugf("Scanning project %v ", project.Name)
+	err = pollScanStatus(sys, scan)
+	if err != nil {
+		return errors.Wrap(err, "polling scan status failed")
+	}
+
+	log.Entry().Debugln("Scan finished")
+	return verifyCxProjectCompliance(config, sys, scan.ID, workspace, influx)
+}
+
+func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx.System, scanID int, workspace string, influx *checkmarxExecuteScanInflux) error {
 	var reports []piperutils.Path
 	if config.GeneratePdfReport {
 		pdfReportName := createReportName(workspace, "CxSASTReport_%v.pdf")
-		ok := downloadAndSaveReport(sys, pdfReportName, scanID)
-		if ok {
+		err := downloadAndSaveReport(sys, pdfReportName, scanID)
+		if err != nil {
+			log.Entry().Warning("Report download failed - continue processing ...")
+		} else {
 			reports = append(reports, piperutils.Path{Target: pdfReportName, Mandatory: true})
 		}
 	} else {
@@ -169,7 +202,10 @@ func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx
 	}
 
 	xmlReportName := createReportName(workspace, "CxSASTResults_%v.xml")
-	results := getDetailedResults(sys, xmlReportName, scanID)
+	results, err := getDetailedResults(sys, xmlReportName, scanID)
+	if err != nil {
+		return errors.Wrap(err, "failed to get detailed results")
+	}
 	reports = append(reports, piperutils.Path{Target: xmlReportName})
 	links := []piperutils.Path{{Target: results["DeepLink"].(string), Name: "Checkmarx Web UI"}}
 	piperutils.PersistReportsAndLinks("checkmarxExecuteScan", workspace, reports, links)
@@ -183,12 +219,14 @@ func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx
 
 	if insecure {
 		if config.VulnerabilityThresholdResult == "FAILURE" {
-			log.Entry().Fatalln("Checkmarx scan failed, the project is not compliant. For details see the archived report.")
+			log.SetErrorCategory(log.ErrorCompliance)
+			return fmt.Errorf("the project is not compliant - see report for details")
 		}
 		log.Entry().Errorf("Checkmarx scan result set to %v, some results are not meeting defined thresholds. For details see the archived report.", config.VulnerabilityThresholdResult)
 	} else {
-		log.Entry().Infoln("Checkmarx scan finished")
+		log.Entry().Infoln("Checkmarx scan finished successfully")
 	}
+	return nil
 }
 
 func createReportName(workspace, reportFileNameTemplate string) string {
@@ -197,7 +235,7 @@ func createReportName(workspace, reportFileNameTemplate string) string {
 	return filepath.Join(workspace, fmt.Sprintf(reportFileNameTemplate, regExpFileName.ReplaceAllString(string(timeStamp), "_")))
 }
 
-func pollScanStatus(sys checkmarx.System, scan checkmarx.Scan) {
+func pollScanStatus(sys checkmarx.System, scan checkmarx.Scan) error {
 	status := "Scan phase: New"
 	pastStatus := status
 	log.Entry().Info(status)
@@ -225,11 +263,13 @@ func pollScanStatus(sys checkmarx.System, scan checkmarx.Scan) {
 		time.Sleep(10 * time.Second)
 	}
 	if status == "Canceled" {
-		log.Entry().Fatalln("Scan canceled via web interface")
+		log.SetErrorCategory(log.ErrorCustom)
+		return fmt.Errorf("scan canceled via web interface")
 	}
 	if status == "Failed" {
-		log.Entry().Fatalln("Scan failed, please check the Checkmarx UI for details")
+		return fmt.Errorf("scan failed, please check the Checkmarx UI for details")
 	}
+	return nil
 }
 
 func reportToInflux(results map[string]interface{}, influx *checkmarxExecuteScanInflux) {
@@ -279,15 +319,14 @@ func reportToInflux(results map[string]interface{}, influx *checkmarxExecuteScan
 	influx.checkmarx_data.fields.report_creation_time = results["ReportCreationTime"].(string)
 }
 
-func downloadAndSaveReport(sys checkmarx.System, reportFileName string, scanID int) bool {
-	ok, report := generateAndDownloadReport(sys, scanID, "PDF")
-	if ok {
-		log.Entry().Debugf("Saving report to file %v...", reportFileName)
-		ioutil.WriteFile(reportFileName, report, 0700)
-		return true
+func downloadAndSaveReport(sys checkmarx.System, reportFileName string, scanID int) error {
+	report, err := generateAndDownloadReport(sys, scanID, "PDF")
+	if err != nil {
+		return errors.Wrap(err, "failed to download the report")
 	}
-	log.Entry().Debugf("Failed to fetch report %v from backend...", reportFileName)
-	return false
+	log.Entry().Debugf("Saving report to file %v...", reportFileName)
+	ioutil.WriteFile(reportFileName, report, 0700)
+	return nil
 }
 
 func enforceThresholds(config checkmarxExecuteScanOptions, results map[string]interface{}) bool {
@@ -364,28 +403,30 @@ func enforceThresholds(config checkmarxExecuteScanOptions, results map[string]in
 	return insecure
 }
 
-func createAndConfigureNewProject(sys checkmarx.System, projectName, teamID, presetValue, engineConfiguration string) checkmarx.Project {
-	ok, projectCreateResult := sys.CreateProject(projectName, teamID)
-	if ok {
-		if len(presetValue) > 0 {
-			setPresetForProject(sys, projectCreateResult.ID, projectName, presetValue, engineConfiguration)
-		} else {
-			log.Entry().Fatalf("Preset not specified, creation of project %v failed", projectName)
-		}
-		projects := sys.GetProjectsByNameAndTeam(projectName, teamID)
-		if len(projects) > 0 {
-			log.Entry().Debugf("New Project %v created", projectName)
-			return projects[0]
-		}
-		log.Entry().Fatalf("Failed to load newly created project %v", projectName)
+func createAndConfigureNewProject(sys checkmarx.System, projectName, teamID, presetValue, engineConfiguration string) (checkmarx.Project, error) {
+	projectCreateResult, err := sys.CreateProject(projectName, teamID)
+	if err != nil {
+		return checkmarx.Project{}, errors.Wrapf(err, "cannot create project %v", projectName)
 	}
-	log.Entry().Fatalf("Cannot create project %v", projectName)
-	return checkmarx.Project{}
+
+	if len(presetValue) > 0 {
+		setPresetForProject(sys, projectCreateResult.ID, projectName, presetValue, engineConfiguration)
+	} else {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return checkmarx.Project{}, errors.Wrapf(err, "preset not specified, creation of project %v failed", projectName)
+	}
+	projects, err := sys.GetProjectsByNameAndTeam(projectName, teamID)
+	if err != nil || len(projects) == 0 {
+		return checkmarx.Project{}, errors.Wrapf(err, "failed to load newly created project %v", projectName)
+	}
+	log.Entry().Debugf("New Project %v created", projectName)
+	return projects[0], nil
+
 }
 
 // loadPreset finds a checkmarx.Preset that has either the ID or Name given by presetValue.
 // presetValue is not expected to be empty.
-func loadPreset(sys checkmarx.System, presetValue string) (bool, checkmarx.Preset) {
+func loadPreset(sys checkmarx.System, presetValue string) (checkmarx.Preset, error) {
 	presets := sys.GetPresets()
 	var preset checkmarx.Preset
 	presetID, err := strconv.Atoi(presetValue)
@@ -401,48 +442,53 @@ func loadPreset(sys checkmarx.System, presetValue string) (bool, checkmarx.Prese
 
 	if configuredPresetID > 0 && preset.ID == configuredPresetID || len(configuredPresetName) > 0 && preset.Name == configuredPresetName {
 		log.Entry().Infof("Loaded preset %v", preset.Name)
-		return true, preset
+		return preset, nil
 	}
 
 	log.Entry().Infof("Preset '%s' not found. Available presets are:", presetValue)
 	for _, prs := range presets {
 		log.Entry().Infof("preset id: %v, name: '%v'", prs.ID, prs.Name)
 	}
-	return false, checkmarx.Preset{}
+	return checkmarx.Preset{}, fmt.Errorf("preset %v not found", preset.Name)
 }
 
 // setPresetForProject is only called when it has already been established that the preset needs to be set.
 // It will exit via the logging framework in case the preset could be found, or the project could not be updated.
-func setPresetForProject(sys checkmarx.System, projectID int, projectName, presetValue, engineConfiguration string) {
-	ok, preset := loadPreset(sys, presetValue)
-	if ok {
-		configurationUpdated := sys.UpdateProjectConfiguration(projectID, preset.ID, engineConfiguration)
-		if configurationUpdated {
-			log.Entry().Debugf("Configuration of project %v updated", projectName)
-		} else {
-			log.Entry().Fatalf("Updating configuration of project %v failed", projectName)
-		}
-	} else {
-		log.Entry().Fatalf("Preset %v not found, configuration of project %v failed", presetValue, projectName)
+func setPresetForProject(sys checkmarx.System, projectID int, projectName, presetValue, engineConfiguration string) error {
+	preset, err := loadPreset(sys, presetValue)
+	if err != nil {
+		return errors.Wrapf(err, "preset %v not found, configuration of project %v failed", presetValue, projectName)
 	}
+
+	err = sys.UpdateProjectConfiguration(projectID, preset.ID, engineConfiguration)
+	if err != nil {
+		return errors.Wrapf(err, "updating configuration of project %v failed", projectName)
+	}
+	log.Entry().Debugf("Configuration of project %v updated", projectName)
+	return nil
 }
 
-func generateAndDownloadReport(sys checkmarx.System, scanID int, reportType string) (bool, []byte) {
-	success, report := sys.RequestNewReport(scanID, reportType)
-	if success {
-		finalStatus := 1
-		for {
-			finalStatus = sys.GetReportStatus(report.ReportID).Status.ID
-			if finalStatus != 1 {
-				break
-			}
-			time.Sleep(10 * time.Second)
-		}
-		if finalStatus == 2 {
-			return sys.DownloadReport(report.ReportID)
-		}
+func generateAndDownloadReport(sys checkmarx.System, scanID int, reportType string) ([]byte, error) {
+	report, err := sys.RequestNewReport(scanID, reportType)
+	if err != nil {
+		return []byte{}, errors.Wrap(err, "failed to request new report")
 	}
-	return false, []byte{}
+	finalStatus := 1
+	for {
+		reportStatus, err := sys.GetReportStatus(report.ReportID)
+		if err != nil {
+			return []byte{}, errors.Wrap(err, "failed to get report status")
+		}
+		finalStatus = reportStatus.Status.ID
+		if finalStatus != 1 {
+			break
+		}
+		time.Sleep(10 * time.Second)
+	}
+	if finalStatus == 2 {
+		return sys.DownloadReport(report.ReportID)
+	}
+	return []byte{}, fmt.Errorf("unexpected status %v recieved", finalStatus)
 }
 
 func getNumCoherentIncrementalScans(sys checkmarx.System, scans []checkmarx.ScanStatus) int {
@@ -456,15 +502,18 @@ func getNumCoherentIncrementalScans(sys checkmarx.System, scans []checkmarx.Scan
 	return count
 }
 
-func getDetailedResults(sys checkmarx.System, reportFileName string, scanID int) map[string]interface{} {
+func getDetailedResults(sys checkmarx.System, reportFileName string, scanID int) (map[string]interface{}, error) {
 	resultMap := map[string]interface{}{}
-	ok, data := generateAndDownloadReport(sys, scanID, "XML")
-	if ok && len(data) > 0 {
+	data, err := generateAndDownloadReport(sys, scanID, "XML")
+	if err != nil {
+		return resultMap, errors.Wrap(err, "failed to download xml report")
+	}
+	if len(data) > 0 {
 		ioutil.WriteFile(reportFileName, data, 0700)
 		var xmlResult checkmarx.DetailedResult
 		err := xml.Unmarshal(data, &xmlResult)
 		if err != nil {
-			log.Entry().Fatalf("Failed to unmarshal XML report for scan %v: %s", scanID, err)
+			return resultMap, errors.Wrapf(err, "failed to unmarshal XML report for scan %v", scanID)
 		}
 		resultMap["InitiatorName"] = xmlResult.InitiatorName
 		resultMap["Owner"] = xmlResult.Owner
@@ -525,7 +574,7 @@ func getDetailedResults(sys checkmarx.System, reportFileName string, scanID int)
 			}
 		}
 	}
-	return resultMap
+	return resultMap, nil
 }
 
 func zipFolder(source string, zipFile io.Writer, patterns []string) error {

@@ -41,7 +41,6 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
-        mandatory: false
         aliases:
           - name: maven/projectSettingsFile
       - name: globalSettingsFile
@@ -52,7 +51,6 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
-        mandatory: false
         aliases:
           - name: maven/globalSettingsFile
       - name: m2Path
@@ -63,7 +61,6 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
-        mandatory: false
         aliases:
           - name: maven/m2Path
       - name: logSuccessfulMavenTransfers
@@ -75,7 +72,6 @@ spec:
           - STAGES
           - PARAMETERS
         default: false
-        mandatory: false
         aliases:
           - name: maven/logSuccessfulMavenTransfers
 
