@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+	"github.com/bmatcuk/doublestar"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -62,6 +64,27 @@ func mockOsRename(t *testing.T, expectOld, expectNew string) func(string, string
 		assert.Regexp(t, expectOld, old)
 		assert.Equal(t, expectNew, new)
 		return nil
+	}
+}
+
+func mockOsStat(exists map[string]bool) func(name string) (os.FileInfo, error) {
+	return func(name string) (os.FileInfo, error) {
+		_, exists := exists[name]
+		if exists {
+			// Exploits the fact that FileInfo result from os.Stat() is ignored anyway
+			return nil, nil
+		}
+		return nil, errors.New("something happened")
+	}
+}
+
+func mockGlob(matchesForPatterns map[string][]string) func(pattern string) ([]string, error) {
+	return func(pattern string) ([]string, error) {
+		matches, exists := matchesForPatterns[pattern]
+		if exists {
+			return matches, nil
+		}
+		return nil, errors.New("something happened")
 	}
 }
 
@@ -139,6 +162,120 @@ func TestRunSonar(t *testing.T) {
 		// assert
 		assert.NoError(t, err)
 		assert.Contains(t, sonar.options, "-Dsonar.projectKey=piper")
+	})
+	t.Run("with binaries option", func(t *testing.T) {
+		// init
+		tmpFolder, err := ioutil.TempDir(".", "test-sonar-")
+		require.NoError(t, err)
+		defer func() { _ = os.RemoveAll(tmpFolder) }()
+		createTaskReportFile(t, tmpFolder)
+
+		sonar = sonarSettings{
+			workingDir:  tmpFolder,
+			binary:      "sonar-scanner",
+			environment: []string{},
+			options:     []string{},
+		}
+		fileUtilsExists = mockFileUtilsExists(true)
+
+		globMatches := make(map[string][]string)
+		globMatches[pomXMLPattern] = []string{"pom.xml", "application/pom.xml"}
+		doublestarGlob = mockGlob(globMatches)
+
+		existsMap := make(map[string]bool)
+		existsMap[filepath.Join("target", "classes")] = true
+		existsMap[filepath.Join("target", "test-classes")] = true
+		existsMap[filepath.Join("application", "target", "classes")] = true
+		osStat = mockOsStat(existsMap)
+
+		defer func() {
+			fileUtilsExists = FileUtils.FileExists
+			doublestarGlob = doublestar.Glob
+			osStat = os.Stat
+		}()
+		options := sonarExecuteScanOptions{
+			InferJavaBinaries: true,
+		}
+		// test
+		err = runSonar(options, &mockClient, &mockRunner)
+		// assert
+		assert.NoError(t, err)
+		assert.Contains(t, sonar.options, fmt.Sprintf("-Dsonar.java.binaries=%s,%s,%s",
+			filepath.Join("target", "classes"),
+			filepath.Join("target", "test-classes"),
+			filepath.Join("application", "target", "classes")))
+	})
+	t.Run("with binaries option already given", func(t *testing.T) {
+		// init
+		tmpFolder, err := ioutil.TempDir(".", "test-sonar-")
+		require.NoError(t, err)
+		defer func() { _ = os.RemoveAll(tmpFolder) }()
+		createTaskReportFile(t, tmpFolder)
+
+		sonar = sonarSettings{
+			workingDir:  tmpFolder,
+			binary:      "sonar-scanner",
+			environment: []string{},
+			options:     []string{},
+		}
+		fileUtilsExists = mockFileUtilsExists(true)
+
+		globMatches := make(map[string][]string)
+		globMatches[pomXMLPattern] = []string{"pom.xml"}
+		doublestarGlob = mockGlob(globMatches)
+
+		existsMap := make(map[string]bool)
+		existsMap[filepath.Join("target", "classes")] = true
+		osStat = mockOsStat(existsMap)
+
+		defer func() {
+			fileUtilsExists = FileUtils.FileExists
+			doublestarGlob = doublestar.Glob
+			osStat = os.Stat
+		}()
+		options := sonarExecuteScanOptions{
+			Options:           []string{"-Dsonar.java.binaries=user/provided"},
+			InferJavaBinaries: true,
+		}
+		// test
+		err = runSonar(options, &mockClient, &mockRunner)
+		// assert
+		assert.NoError(t, err)
+		assert.NotContains(t, sonar.options, fmt.Sprintf("-Dsonar.java.binaries=%s",
+			filepath.Join("target", "classes")))
+		assert.Contains(t, sonar.options, "-Dsonar.java.binaries=user/provided")
+	})
+	t.Run("projectKey, coverageExclusions, m2Path", func(t *testing.T) {
+		// init
+		tmpFolder, err := ioutil.TempDir(".", "test-sonar-")
+		require.NoError(t, err)
+		defer os.RemoveAll(tmpFolder)
+		createTaskReportFile(t, tmpFolder)
+
+		sonar = sonarSettings{
+			workingDir:  tmpFolder,
+			binary:      "sonar-scanner",
+			environment: []string{},
+			options:     []string{},
+		}
+		options := sonarExecuteScanOptions{
+			ProjectKey:         "mock-project-key",
+			M2Path:             "my/custom/m2", // assumed to be resolved via alias from mavenExecute
+			InferJavaLibraries: true,
+			CoverageExclusions: []string{"one", "**/two", "three**"},
+		}
+		fileUtilsExists = mockFileUtilsExists(true)
+		defer func() {
+			fileUtilsExists = FileUtils.FileExists
+		}()
+		// test
+		err = runSonar(options, &mockClient, &mockRunner)
+		// assert
+		assert.NoError(t, err)
+		assert.Contains(t, sonar.options, "-Dsonar.projectKey=mock-project-key")
+		assert.Contains(t, sonar.options, fmt.Sprintf("-Dsonar.java.libraries=%s",
+			filepath.Join("my/custom/m2", "**")))
+		assert.Contains(t, sonar.options, "-Dsonar.coverage.exclusions=one,**/two,three**")
 	})
 }
 

@@ -154,10 +154,10 @@ void call(Map parameters = [:]) {
                         Map mtaExtDescriptor = tms.getMtaExtDescriptor(uri, token, key, mtaYaml.ID, mtaVersion)
                         if(mtaExtDescriptor) {
                             def updateMtaExtDescriptorResponse = tms.updateMtaExtDescriptor(uri, token, key, mtaExtDescriptor.getAt("id"), "${workspace}/${value.get(1)}", mtaVersion, description, namedUser)
-                            echo "[TransportManagementService] MTA Extention Descriptor with ID '${updateMtaExtDescriptorResponse.mtaExtId}' successfully updated for Node '${value.get(0)}'."
+                            echo "[TransportManagementService] MTA Extension Descriptor with ID '${updateMtaExtDescriptorResponse.mtaExtId}' successfully updated for Node '${value.get(0)}'."
                         } else {
                             def uploadMtaExtDescriptorToNodeResponse = tms.uploadMtaExtDescriptorToNode(uri, token, key, "${workspace}/${value.get(1)}", mtaVersion, description, namedUser)
-                            echo "[TransportManagementService] MTA Extention Descriptor with ID '${uploadMtaExtDescriptorToNodeResponse.mtaExtId}' successfully uploaded to Node '${value.get(0)}'."
+                            echo "[TransportManagementService] MTA Extension Descriptor with ID '${uploadMtaExtDescriptorToNodeResponse.mtaExtId}' successfully uploaded to Node '${value.get(0)}'."
                         }
                     }
                 }

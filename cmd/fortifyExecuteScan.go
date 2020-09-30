@@ -17,7 +17,7 @@ import (
 
 	"github.com/bmatcuk/doublestar"
 
-	"github.com/google/go-github/v28/github"
+	"github.com/google/go-github/v32/github"
 	"github.com/google/uuid"
 
 	"github.com/piper-validation/fortify-client-go/models"
@@ -50,47 +50,60 @@ const classpathFileName = "fortify-execute-scan-cp.txt"
 func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux) {
 	auditStatus := map[string]string{}
 	sys := fortify.NewSystemInstance(config.ServerURL, config.APIEndpoint, config.AuthToken, time.Second*30)
-	c := command.Command{}
+	c := &command.Command{}
 	// reroute command output to logging framework
 	c.Stdout(log.Entry().Writer())
 	c.Stderr(log.Entry().Writer())
-	err := runFortifyScan(config, sys, &c, telemetryData, influx, auditStatus)
+
+	artifact, err := determineArtifact(config, c)
 	if err != nil {
-		log.Entry().WithError(err).Fatalf("Fortify scan and check failed")
+		log.Entry().WithError(err).Fatal()
+	}
+
+	reports, err := runFortifyScan(config, sys, c, artifact, telemetryData, influx, auditStatus)
+	piperutils.PersistReportsAndLinks("fortifyExecuteScan", config.ModulePath, reports, nil)
+	if err != nil {
+		log.Entry().WithError(err).Fatal("Fortify scan and check failed")
 	}
 }
 
-func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, command fortifyExecRunner, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux, auditStatus map[string]string) error {
-	log.Entry().Debugf("Running Fortify scan against SSC at %v", config.ServerURL)
+func determineArtifact(config fortifyExecuteScanOptions, c *command.Command) (versioning.Artifact, error) {
 	versioningOptions := versioning.Options{
 		M2Path:              config.M2Path,
 		GlobalSettingsFile:  config.GlobalSettingsFile,
 		ProjectSettingsFile: config.ProjectSettingsFile,
 	}
-	artifact, err := versioning.GetArtifact(config.BuildTool, config.BuildDescriptorFile, &versioningOptions, command)
+
+	artifact, err := versioning.GetArtifact(config.BuildTool, config.BuildDescriptorFile, &versioningOptions, c)
 	if err != nil {
-		return fmt.Errorf("unable to get artifact from descriptor %v: %w", config.BuildDescriptorFile, err)
+		return nil, fmt.Errorf("Unable to get artifact from descriptor %v: %w", config.BuildDescriptorFile, err)
 	}
+	return artifact, nil
+}
+
+func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, command fortifyExecRunner, artifact versioning.Artifact, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux, auditStatus map[string]string) ([]piperutils.Path, error) {
+	var reports []piperutils.Path
+	log.Entry().Debugf("Running Fortify scan against SSC at %v", config.ServerURL)
 	coordinates, err := artifact.GetCoordinates()
 	if err != nil {
-		return fmt.Errorf("unable to get project coordinates from descriptor %v: %w", config.BuildDescriptorFile, err)
+		return reports, fmt.Errorf("unable to get project coordinates from descriptor %v: %w", config.BuildDescriptorFile, err)
 	}
 	log.Entry().Debugf("determined project coordinates %v", coordinates)
 	fortifyProjectName, fortifyProjectVersion := versioning.DetermineProjectCoordinates(config.ProjectName, config.VersioningModel, coordinates)
 	project, err := sys.GetProjectByName(fortifyProjectName, config.AutoCreate, fortifyProjectVersion)
 	if err != nil {
-		return fmt.Errorf("Failed to load project %v: %w", fortifyProjectName, err)
+		return reports, fmt.Errorf("Failed to load project %v: %w", fortifyProjectName, err)
 	}
 	projectVersion, err := sys.GetProjectVersionDetailsByProjectIDAndVersionName(project.ID, fortifyProjectVersion, config.AutoCreate, fortifyProjectName)
 	if err != nil {
-		return fmt.Errorf("Failed to load project version %v: %w", fortifyProjectVersion, err)
+		return reports, fmt.Errorf("Failed to load project version %v: %w", fortifyProjectVersion, err)
 	}
 
 	if len(config.PullRequestName) > 0 {
 		fortifyProjectVersion = config.PullRequestName
 		projectVersion, err := sys.LookupOrCreateProjectVersionDetailsForPullRequest(project.ID, projectVersion, fortifyProjectVersion)
 		if err != nil {
-			return fmt.Errorf("Failed to lookup / create project version for pull request %v: %w", fortifyProjectVersion, err)
+			return reports, fmt.Errorf("Failed to lookup / create project version for pull request %v: %w", fortifyProjectVersion, err)
 		}
 		log.Entry().Debugf("Looked up / created project version with ID %v for PR %v", projectVersion.ID, fortifyProjectVersion)
 	} else {
@@ -100,12 +113,22 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 			pullRequestProjectName := fmt.Sprintf("PR-%v", prID)
 			err = sys.MergeProjectVersionStateOfPRIntoMaster(config.FprDownloadEndpoint, config.FprUploadEndpoint, project.ID, projectVersion.ID, pullRequestProjectName)
 			if err != nil {
-				return fmt.Errorf("Failed to merge project version state for pull request %v into project version %v of project %v: %w", pullRequestProjectName, fortifyProjectVersion, project.ID, err)
+				return reports, fmt.Errorf("Failed to merge project version state for pull request %v into project version %v of project %v: %w", pullRequestProjectName, fortifyProjectVersion, project.ID, err)
 			}
 		}
 	}
 
-	log.Entry().Debugf("Scanning and uploading to project %v with version %v and projectVersionId %v", fortifyProjectName, fortifyProjectVersion, projectVersion.ID)
+	filterSet, err := sys.GetFilterSetOfProjectVersionByTitle(projectVersion.ID, config.FilterSetTitle)
+	if filterSet == nil || err != nil {
+		return reports, fmt.Errorf("Failed to load filter set with title %v", config.FilterSetTitle)
+	}
+
+	if config.VerifyOnly {
+		log.Entry().Infof("Starting audit status check on project %v with version %v and project version ID %v", fortifyProjectName, fortifyProjectVersion, projectVersion.ID)
+		return reports, verifyFFProjectCompliance(config, sys, project, projectVersion, filterSet, influx, auditStatus)
+	}
+
+	log.Entry().Infof("Scanning and uploading to project %v with version %v and projectVersionId %v", fortifyProjectName, fortifyProjectVersion, projectVersion.ID)
 	buildLabel := fmt.Sprintf("%v/repos/%v/%v/commits/%v", config.GithubAPIURL, config.Owner, config.Repository, config.CommitID)
 
 	// Create sourceanalyzer command based on configuration
@@ -126,7 +149,6 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 
 	triggerFortifyScan(config, command, buildID, buildLabel, fortifyProjectName)
 
-	var reports []piperutils.Path
 	reports = append(reports, piperutils.Path{Target: fmt.Sprintf("%vtarget/fortify-scan.*", config.ModulePath)})
 	reports = append(reports, piperutils.Path{Target: fmt.Sprintf("%vtarget/*.fpr", config.ModulePath)})
 
@@ -145,24 +167,22 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 			reports = append(reports, piperutils.Path{Target: fmt.Sprintf("%vfortify_result.xml", config.ModulePath)})
 		}
 	}
-	piperutils.PersistReportsAndLinks("fortifyExecuteScan", config.ModulePath, reports, nil)
 	if err != nil {
-		return fmt.Errorf(message+": %w", err)
+		return reports, fmt.Errorf(message+": %w", err)
 	}
 
-	log.Entry().Debugf("Starting audit status check on project %v with version %v and project version ID %v", fortifyProjectName, fortifyProjectVersion, projectVersion.ID)
-	filterSet, err := sys.GetFilterSetOfProjectVersionByTitle(projectVersion.ID, config.FilterSetTitle)
-	if filterSet == nil || err != nil {
-		return fmt.Errorf("Failed to load filter set with title %v", config.FilterSetTitle)
-	}
-
+	log.Entry().Infof("Starting audit status check on project %v with version %v and project version ID %v", fortifyProjectName, fortifyProjectVersion, projectVersion.ID)
 	// Ensure latest FPR is processed
 	err = verifyScanResultsFinishedUploading(config, sys, projectVersion.ID, buildLabel, filterSet,
 		10*time.Second, time.Duration(config.PollingMinutes)*time.Minute)
 	if err != nil {
-		return err
+		return reports, err
 	}
 
+	return reports, verifyFFProjectCompliance(config, sys, project, projectVersion, filterSet, influx, auditStatus)
+}
+
+func verifyFFProjectCompliance(config fortifyExecuteScanOptions, sys fortify.System, project *models.Project, projectVersion *models.ProjectVersion, filterSet *models.FilterSet, influx *fortifyExecuteScanInflux, auditStatus map[string]string) error {
 	// Generate report
 	if config.Reporting {
 		resultURL := []byte(fmt.Sprintf("https://fortify.tools.sap/ssc/html/ssc/version/%v/fix/null/", projectVersion.ID))
@@ -186,8 +206,8 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 
 	log.Entry().Infof("Counted %v violations, details: %v", numberOfViolations, auditStatus)
 
-	influx.fortify_data.fields.projectName = fortifyProjectName
-	influx.fortify_data.fields.projectVersion = fortifyProjectVersion
+	influx.fortify_data.fields.projectName = *project.Name
+	influx.fortify_data.fields.projectVersion = *projectVersion.Name
 	influx.fortify_data.fields.violations = fmt.Sprintf("%v", numberOfViolations)
 	if numberOfViolations > 0 {
 		return errors.New("fortify scan failed, the project is not compliant. For details check the archived report")
@@ -366,7 +386,7 @@ func generateAndDownloadQGateReport(config fortifyExecuteScanOptions, sys fortif
 	}
 	log.Entry().Debugf("Triggered report generation of report ID %v", report.ID)
 	status := report.Status
-	for status != "Complete" && status != "Error Processing" {
+	for status == "PROCESSING" || status == "SCHED_PROCESSING" {
 		time.Sleep(10 * time.Second)
 		report, err = sys.GetReportDetails(report.ID)
 		if err != nil {

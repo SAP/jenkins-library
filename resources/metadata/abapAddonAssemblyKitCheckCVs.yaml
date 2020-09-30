@@ -1,0 +1,66 @@
+metadata:
+    name: abapAddonAssemblyKitCheckCVs
+    description: This step checks the validity of Software Component Versions.
+    longDescription: |
+      This steps takes a list of Software Component Versions from the addonDescriptorFileName and checks whether they exist or are a valid successor of an existing Software Component Version.
+      It resolves the dotted version string into version, support package level and patch level and writes it to the commonPipelineEnvironment.
+
+spec:
+  inputs:
+    secrets:
+      - name: abapAddonAssemblyKitCredentialsId
+        description: Credential stored in Jenkins for the Addon Assembly Kit as a Service (AAKaaS) system
+        type: jenkins
+    params:
+      - name: abapAddonAssemblyKitEndpoint
+        type: string
+        description: Base URL to the Addon Assembly Kit as a Service (AAKaaS) system
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: true
+      - name: username
+        type: string
+        description: User for the Addon Assembly Kit as a Service (AAKaaS) system
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+        secret: true
+      - name: password
+        type: string
+        description: Password for the Addon Assembly Kit as a Service (AAKaaS) system
+        scope:
+          - PARAMETERS
+        mandatory: true
+        secret: true
+      - name: addonDescriptorFileName
+        type: string
+        description: File name of the YAML file which describes the Product Version and corresponding Software Component Versions
+        mandatory: true
+        default: addon.yml
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: addonDescriptor
+        type: string
+        description: Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions
+        mandatory: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: abap/addonDescriptor
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: abap/addonDescriptor
