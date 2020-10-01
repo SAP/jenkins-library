@@ -80,12 +80,12 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
          * For the node based steps the docker image is specified here.
          * @parentConfigKey changeManagement
          */
-         'cts/nodeDocker/image',
+        'cts/nodeDocker/image',
         /**
          * The ABAP client. Only for `CTS`
          * @parentConfigKey changeManagement
          */
-         'client',
+        'client',
         /**
          * By default we use a standard node docker image and prepare some fiori related packages
          * before performing the deployment. For that we need to launch the image with root privileges.
@@ -93,7 +93,7 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
          * can be specified here.
          * @parentConfigKey changeManagement
          */
-         'cts/osDeployUser',
+        'cts/osDeployUser',
         /**
          * By default we use a standard node docker iamge and prepare some fiori related packages
          * performing the deployment. The additional dependencies can be provided here. In case you
@@ -102,23 +102,23 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
          *
          * @parentConfigKey changeManagement
          */
-         'cts/deployToolDependencies',
+        'cts/deployToolDependencies',
         /**
          * A list containing additional options for the npm install call. `-g`, `--global` is always assumed.
          * Can be used for e.g. providing custom registries (`--registry https://your.registry.com`) or
          * for providing the verbose flag (`--verbose`) for troubleshooting.
          * @parentConfigKey changeManagement
          */
-         'cts/npmInstallOpts',
+        'cts/npmInstallOpts',
         /**
          * The file handed over to `fiori deploy` with flag `-c --config`.
          * @parentConfigKey changeManagement
          */
-         'cts/deployConfigFile',
+        'cts/deployConfigFile',
   ]
 
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
-       /** The name of the application. `RFC` and `CTS` only. */
+        /** The name of the application. `RFC` and `CTS` only. */
         'applicationName', // RFC, CTS
         /** The id of the application. Only for `SOLMAN`.*/
         'applicationId', // SOLMAN
@@ -248,7 +248,7 @@ void call(Map parameters = [:]) {
                             configuration.changeManagement.clientOpts)
 
                         echo "[INFO] File '${configuration.filePath}' has been successfully uploaded to transport request '${configuration.transportRequestId}'" +
-                             " of change document '${configuration.changeDocumentId}'."
+                            " of change document '${configuration.changeDocumentId}'."
 
                         break
                     case BackendType.CTS:
