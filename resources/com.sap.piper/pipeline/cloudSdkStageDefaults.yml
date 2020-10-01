@@ -24,6 +24,13 @@ stages:
           - 'sonarTokenCredentialsId'
           - 'projectKey'
           - 'instance'
+  security:
+    stepConditions:
+      whitesourceExecuteScan:
+        configKeys:
+          - 'productName'
+          - 'orgAdminUserTokenCredentialsId'
+          - 'userTokenCredentialsId'
   frontendIntegrationTests:
     stepConditions:
       npmExecuteScripts:
@@ -88,8 +95,9 @@ stages:
     stepConditions:
       whitesourceExecuteScan:
         configKeys:
-          - 'product'
+          - 'productName'
           - 'orgAdminUserTokenCredentialsId'
+          - 'userTokenCredentialsId'
       whitesourceScan:
         configKeys:
           - 'product'

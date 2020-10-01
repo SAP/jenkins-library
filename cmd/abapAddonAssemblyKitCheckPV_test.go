@@ -70,7 +70,7 @@ func TestValidatePV(t *testing.T) {
 			Name:        "/DRNMSPC/PRD01",
 			VersionYAML: "3.2.1",
 		}
-		err := pv.validate()
+		err := pv.validateAndResolveVersionFields()
 		assert.NoError(t, err)
 		assert.Equal(t, "0003", pv.Version)
 		assert.Equal(t, "0002", pv.SpsLevel)
@@ -86,7 +86,7 @@ func TestValidatePV(t *testing.T) {
 			Name:        "/DRNMSPC/PRD01",
 			VersionYAML: "3.2.1",
 		}
-		err := pv.validate()
+		err := pv.validateAndResolveVersionFields()
 		assert.Error(t, err)
 		assert.Equal(t, "", pv.Version)
 		assert.Equal(t, "", pv.SpsLevel)
@@ -104,7 +104,7 @@ func TestCopyFieldsPV(t *testing.T) {
 		pv.Version = "0003"
 		pv.SpsLevel = "0002"
 		pv.PatchLevel = "0001"
-		pv.copyFieldsToRepo(&prodVers)
+		pv.transferVersionFields(&prodVers)
 		assert.Equal(t, "0003", prodVers.AddonVersion)
 		assert.Equal(t, "0002", prodVers.AddonSpsLevel)
 		assert.Equal(t, "0001", prodVers.AddonPatchLevel)
