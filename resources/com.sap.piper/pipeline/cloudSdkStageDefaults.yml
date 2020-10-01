@@ -1,12 +1,9 @@
 stages:
-  mavenExecuteStaticCodeChecks:
+  build:
     stepConditions:
       mavenExecuteStaticCodeChecks:
         filePattern: 'pom.xml'
-  lint:
-    extensionExists: true
-    stepConditions:
-      lint:
+      npmExecuteLint:
         filePattern:
           - '**/*.js'
           - '**/*.jsx'
@@ -19,12 +16,27 @@ stages:
           - 'ci-it-backend'
       mavenExecuteIntegration:
         filePattern: 'integration-tests/pom.xml'
+  compliance:
+    onlyProductiveBranch: true
+    stepConditions:
+      sonarExecuteScan:
+        configKeys:
+          - 'sonarTokenCredentialsId'
+          - 'projectKey'
+          - 'instance'
+  security:
+    stepConditions:
+      whitesourceExecuteScan:
+        configKeys:
+          - 'productName'
+          - 'orgAdminUserTokenCredentialsId'
+          - 'userTokenCredentialsId'
   frontendIntegrationTests:
     stepConditions:
       npmExecuteScripts:
         npmScripts:
           - 'ci-it-frontend'
-  frontendUnitTests:
+  additionalUnitTests:
     stepConditions:
       npmExecuteScripts:
         npmScripts:
@@ -81,6 +93,11 @@ stages:
   whitesourceScan:
     onlyProductiveBranch: true
     stepConditions:
+      whitesourceExecuteScan:
+        configKeys:
+          - 'productName'
+          - 'orgAdminUserTokenCredentialsId'
+          - 'userTokenCredentialsId'
       whitesourceScan:
         configKeys:
           - 'product'
@@ -97,6 +114,23 @@ stages:
       detectScan:
         configKeys:
           - 'detectTokenCredentialsId'
+  security:
+    onlyProductiveBranch: true
+    stepConditions:
+      checkmarxExecuteScan:
+        configKeys:
+          - 'groupId'
+      detectExecuteScan:
+        configKeys:
+          - 'detectTokenCredentialsId'
+      fortifyExecuteScan:
+        configKeys:
+          - 'fortifyCredentialsId'
+      whitesourceExecuteScan:
+        configKeys:
+          - 'product'
+          - 'orgAdminUserTokenCredentialsId'
+          - 'userTokenCredentialsId'
   productionDeployment:
     onlyProductiveBranch: true
     stepConditions:

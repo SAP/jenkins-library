@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-github/v28/github"
+	"github.com/google/go-github/v32/github"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -115,7 +115,7 @@ func TestRunGithubPublishRelease(t *testing.T) {
 			Version:               "1.0",
 		}
 		err := runGithubPublishRelease(ctx, &myGithubPublishReleaseOptions, &ghRepoClient, &ghIssueClient)
-		assert.NoError(t, err, "Error occured but none expected.")
+		assert.NoError(t, err, "Error occurred but none expected.")
 
 		assert.Equal(t, "Header\n", ghRepoClient.release.GetBody())
 		assert.Equal(t, true, ghRepoClient.release.GetPrerelease())
@@ -157,7 +157,7 @@ func TestRunGithubPublishRelease(t *testing.T) {
 		}
 		err := runGithubPublishRelease(ctx, &myGithubPublishReleaseOptions, &ghRepoClient, &ghIssueClient)
 
-		assert.NoError(t, err, "Error occured but none expected.")
+		assert.NoError(t, err, "Error occurred but none expected.")
 
 		assert.Equal(t, "Header\n\n**List of closed pull-requests since last release**\n[#1](https://github.com/TEST/test/pull/1): Pull\n\n**List of closed issues since last release**\n[#2](https://github.com/TEST/test/issues/2): Issue\n\n**Changes**\n[1.0...1.1](https://github.com/TEST/test/compare/1.0...1.1)\n", ghRepoClient.release.GetBody())
 		assert.Equal(t, "1.1", ghRepoClient.release.GetName())
@@ -183,7 +183,7 @@ func TestRunGithubPublishRelease(t *testing.T) {
 
 		err := runGithubPublishRelease(ctx, &myGithubPublishReleaseOptions, &ghRepoClient, &ghIssueClient)
 
-		assert.NoError(t, err, "Error occured but none expected.")
+		assert.NoError(t, err, "Error occurred but none expected.")
 
 		assert.Nil(t, ghRepoClient.release)
 
@@ -202,7 +202,7 @@ func TestRunGithubPublishRelease(t *testing.T) {
 		}
 		err := runGithubPublishRelease(ctx, &myGithubPublishReleaseOptions, &ghRepoClient, &ghIssueClient)
 
-		assert.Equal(t, "Error occured when retrieving latest GitHub release (TEST/test): Latest release error", fmt.Sprint(err))
+		assert.Equal(t, "Error occurred when retrieving latest GitHub release (TEST/test): Latest release error", fmt.Sprint(err))
 	})
 
 	t.Run("Error - get release no response", func(t *testing.T) {
@@ -216,7 +216,7 @@ func TestRunGithubPublishRelease(t *testing.T) {
 		}
 		err := runGithubPublishRelease(ctx, &myGithubPublishReleaseOptions, &ghRepoClient, &ghIssueClient)
 
-		assert.Equal(t, "Error occured when retrieving latest GitHub release (/test): Latest release error, no response", fmt.Sprint(err))
+		assert.Equal(t, "Error occurred when retrieving latest GitHub release (/test): Latest release error, no response", fmt.Sprint(err))
 	})
 
 	t.Run("Error - create release", func(t *testing.T) {
@@ -327,7 +327,7 @@ func TestUploadReleaseAsset(t *testing.T) {
 
 		err := uploadReleaseAsset(ctx, releaseID, &myGithubPublishReleaseOptions, &ghRepoClient)
 
-		assert.NoError(t, err, "Error occured but none expected.")
+		assert.NoError(t, err, "Error occurred but none expected.")
 
 		assert.Equal(t, "TEST", ghRepoClient.listOwner, "Owner not properly passed - list")
 		assert.Equal(t, "test", ghRepoClient.listRepo, "Repo not properly passed - list")
@@ -364,7 +364,7 @@ func TestUploadReleaseAsset(t *testing.T) {
 
 		err := uploadReleaseAsset(ctx, releaseID, &myGithubPublishReleaseOptions, &ghRepoClient)
 
-		assert.NoError(t, err, "Error occured but none expected.")
+		assert.NoError(t, err, "Error occurred but none expected.")
 
 		assert.Equal(t, int64(0), ghRepoClient.delID, "Relase ID should not be populated")
 	})
@@ -393,11 +393,11 @@ func TestIsExcluded(t *testing.T) {
 	}{
 		{issue: nil, excludeLabels: nil, expected: false},
 		{issue: &github.Issue{}, excludeLabels: nil, expected: false},
-		{issue: &github.Issue{Labels: []github.Label{{Name: &l1}}}, excludeLabels: nil, expected: false},
-		{issue: &github.Issue{Labels: []github.Label{{Name: &l1}}}, excludeLabels: []string{"label0"}, expected: false},
-		{issue: &github.Issue{Labels: []github.Label{{Name: &l1}}}, excludeLabels: []string{"label1"}, expected: true},
-		{issue: &github.Issue{Labels: []github.Label{{Name: &l1}, {Name: &l2}}}, excludeLabels: []string{}, expected: false},
-		{issue: &github.Issue{Labels: []github.Label{{Name: &l1}, {Name: &l2}}}, excludeLabels: []string{"label1"}, expected: true},
+		{issue: &github.Issue{Labels: []*github.Label{{Name: &l1}}}, excludeLabels: nil, expected: false},
+		{issue: &github.Issue{Labels: []*github.Label{{Name: &l1}}}, excludeLabels: []string{"label0"}, expected: false},
+		{issue: &github.Issue{Labels: []*github.Label{{Name: &l1}}}, excludeLabels: []string{"label1"}, expected: true},
+		{issue: &github.Issue{Labels: []*github.Label{{Name: &l1}, {Name: &l2}}}, excludeLabels: []string{}, expected: false},
+		{issue: &github.Issue{Labels: []*github.Label{{Name: &l1}, {Name: &l2}}}, excludeLabels: []string{"label1"}, expected: true},
 	}
 
 	for k, v := range tt {

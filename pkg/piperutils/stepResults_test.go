@@ -18,8 +18,8 @@ func TestPersistReportAndLinks(t *testing.T) {
 		// clean up tmp dir
 		defer os.RemoveAll(workspace)
 
-		reports := []Path{Path{Target: "testFile1.json", Mandatory: true}, Path{Target: "testFile2.json"}}
-		links := []Path{Path{Target: "https://1234568.com/test", Name: "Weblink"}}
+		reports := []Path{{Target: "testFile1.json", Mandatory: true}, {Target: "testFile2.json"}}
+		links := []Path{{Target: "https://1234568.com/test", Name: "Weblink"}}
 		PersistReportsAndLinks("checkmarxExecuteScan", workspace, reports, links)
 
 		reportsJSONPath := filepath.Join(workspace, "checkmarxExecuteScan_reports.json")

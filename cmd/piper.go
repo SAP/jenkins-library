@@ -32,6 +32,8 @@ type GeneralConfigOptions struct {
 	StepName             string
 	Verbose              bool
 	LogFormat            string
+	VaultRoleID          string
+	VaultRoleSecretID    string
 	HookConfig           HookConfiguration
 }
 
@@ -63,14 +65,17 @@ func Execute() {
 	rootCmd.AddCommand(ArtifactPrepareVersionCommand())
 	rootCmd.AddCommand(ConfigCommand())
 	rootCmd.AddCommand(ContainerSaveImageCommand())
+	rootCmd.AddCommand(CommandLineCompletionCommand())
 	rootCmd.AddCommand(VersionCommand())
 	rootCmd.AddCommand(DetectExecuteScanCommand())
 	rootCmd.AddCommand(KarmaExecuteTestsCommand())
 	rootCmd.AddCommand(SonarExecuteScanCommand())
 	rootCmd.AddCommand(KubernetesDeployCommand())
 	rootCmd.AddCommand(XsDeployCommand())
-	rootCmd.AddCommand(GithubPublishReleaseCommand())
+	rootCmd.AddCommand(GithubCheckBranchProtectionCommand())
 	rootCmd.AddCommand(GithubCreatePullRequestCommand())
+	rootCmd.AddCommand(GithubPublishReleaseCommand())
+	rootCmd.AddCommand(GithubSetCommitStatusCommand())
 	rootCmd.AddCommand(CloudFoundryDeleteServiceCommand())
 	rootCmd.AddCommand(AbapEnvironmentPullGitRepoCommand())
 	rootCmd.AddCommand(AbapEnvironmentCloneGitRepoCommand())
@@ -100,9 +105,19 @@ func Execute() {
 	rootCmd.AddCommand(JsonApplyPatchCommand())
 	rootCmd.AddCommand(KanikoExecuteCommand())
 	rootCmd.AddCommand(AbapEnvironmentAssemblePackagesCommand())
+	rootCmd.AddCommand(AbapAddonAssemblyKitCheckCVsCommand())
+	rootCmd.AddCommand(AbapAddonAssemblyKitCheckPVCommand())
+	rootCmd.AddCommand(AbapAddonAssemblyKitCreateTargetVectorCommand())
+	rootCmd.AddCommand(AbapAddonAssemblyKitPublishTargetVectorCommand())
+	rootCmd.AddCommand(AbapAddonAssemblyKitRegisterPackagesCommand())
+	rootCmd.AddCommand(AbapAddonAssemblyKitReleasePackagesCommand())
+	rootCmd.AddCommand(AbapAddonAssemblyKitReserveNextPackagesCommand())
+	rootCmd.AddCommand(CloudFoundryCreateSpaceCommand())
+	rootCmd.AddCommand(CloudFoundryDeleteSpaceCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
 		log.Entry().WithError(err).Fatal("configuration error")
 	}
 }
@@ -185,11 +200,19 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 	filters.Parameters = append(filters.Parameters, "collectTelemetryData")
 
 	resourceParams := metadata.GetResourceParameters(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
-
 	flagValues := config.AvailableFlagValues(cmd, &filters)
 
 	var myConfig config.Config
 	var stepConfig config.StepConfig
+
+	// add vault credentials so that configuration can be fetched from vault
+	if GeneralConfig.VaultRoleID == "" {
+		GeneralConfig.VaultRoleID = os.Getenv("PIPER_vaultRoleID")
+	}
+	if GeneralConfig.VaultRoleSecretID == "" {
+		GeneralConfig.VaultRoleSecretID = os.Getenv("PIPER_vaultRoleSecretID")
+	}
+	myConfig.SetVaultCredentials(GeneralConfig.VaultRoleID, GeneralConfig.VaultRoleSecretID)
 
 	if len(GeneralConfig.StepConfigJSON) != 0 {
 		// ignore config & defaults in favor of passed stepConfigJSON

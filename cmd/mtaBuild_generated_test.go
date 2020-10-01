@@ -10,7 +10,7 @@ func TestMtaBuildCommand(t *testing.T) {
 
 	testCmd := MtaBuildCommand()
 
-	// only high level testing performed - details are tested in step generation procudure
+	// only high level testing performed - details are tested in step generation procedure
 	assert.Equal(t, "mtaBuild", testCmd.Use, "command name incorrect")
 
 }

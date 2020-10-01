@@ -10,7 +10,7 @@ func TestDetectExecuteScanCommand(t *testing.T) {
 
 	testCmd := DetectExecuteScanCommand()
 
-	// only high level testing performed - details are tested in step generation procudure
+	// only high level testing performed - details are tested in step generation procedure
 	assert.Equal(t, "detectExecuteScan", testCmd.Use, "command name incorrect")
 
 }

@@ -1,0 +1,84 @@
+metadata:
+  name: cloudFoundryDeleteSpace
+  description: Deletes a space in Cloud Foundry
+  longDescription: |
+    Deletes a space in Cloud Foundry
+    Mandatory:
+    * Cloud Foundry API endpoint, Organization, Space name
+
+spec:
+  inputs:
+    secrets:
+      - name: cfCredentialsId
+        description: Jenkins credentials ID containing user and password to authenticate to the Cloud Foundry API
+        type: jenkins
+        aliases:
+          - name: cloudFoundry/credentialsId
+    resources:
+      - name: deployDescriptor
+        type: stash
+    params:
+      - name: cfApiEndpoint
+        type: string
+        description: Cloud Foundry API endpoint
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: true
+        aliases:
+          - name: cloudFoundry/apiEndpoint
+        default: "https://api.cf.eu10.hana.ondemand.com"
+      - name: username
+        type: string
+        description: User or E-Mail for CF
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+        secret: true
+        resourceRef:
+          - name: cfCredentialsId
+            type: secret
+            param: username
+      - name: password
+        type: string
+        description: Password for Cloud Foundry User
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+        secret: true
+        resourceRef:
+          - name: cfCredentialsId
+            type: secret
+            param: password
+      - name: cfOrg
+        type: string
+        description: Cloud Foundry org
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: true
+        aliases:
+          - name: cloudFoundry/org
+      - name: cfSpace
+        type: string
+        description: The name of the Cloud Foundry Space to be deleted
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: true
+        aliases:
+          - name: cloudFoundry/space
+  containers:
+    - name: cf
+      image: ppiper/cf-cli
+      imagePullPolicy: Never

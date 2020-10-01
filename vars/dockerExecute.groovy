@@ -41,6 +41,22 @@ import groovy.transform.Field
      */
     'dockerImage',
     /**
+      * The registry used for pulling the docker image, if left empty the default registry as defined by the `docker-commons-plugin` will be used.
+      */
+    'dockerRegistry',
+    /**
+      * The credentials for the docker registry. If left empty, images are pulled anonymously.
+      */
+    'dockerRegistryCredentials',
+    /**
+      * Same as `dockerRegistry`, but for the sidecar. If left empty, `dockerRegistry` is used instead.
+      */
+    'dockerSidecarRegistry',
+    /**
+      * Same as `dockerRegistryCredentials`, but for the sidecar. If left empty `dockerRegistryCredentials` is used instead.
+      */
+    'dockerSidecarRegistryCredentials',
+    /**
      * Kubernetes only:
      * Name of the container launching `dockerImage`.
      * SideCar only:
@@ -58,7 +74,7 @@ import groovy.transform.Field
      */
     'dockerVolumeBind',
     /**
-     * Set this to 'false' to bypass a docker image pull. Usefull during development process. Allows testing of images which are available in the local registry only.
+     * Set this to 'false' to bypass a docker image pull. Useful during development process. Allows testing of images which are available in the local registry only.
      */
     'dockerPullImage',
     /**
@@ -87,7 +103,7 @@ import groovy.transform.Field
      */
     'sidecarVolumeBind',
     /**
-     * Set this to 'false' to bypass a docker image pull. Usefull during development process. Allows testing of images which are available in the local registry only.
+     * Set this to 'false' to bypass a docker image pull. Useful during development process. Allows testing of images which are available in the local registry only.
      */
     'sidecarPullImage',
     /**
@@ -133,6 +149,11 @@ void call(Map parameters = [:], body) {
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
+        config = ConfigurationHelper.newInstance(this, config)
+            .addIfEmpty('dockerSidecarRegistry', config.dockerRegistry)
+            .addIfEmpty('dockerSidecarRegistryCredentials', config.dockerRegistryCredentials)
+            .use()
+
         SidecarUtils sidecarUtils = new SidecarUtils(script)
 
         new Utils().pushToSWA([
@@ -160,44 +181,32 @@ void call(Map parameters = [:], body) {
                 if (!config.dockerName) {
                     config.dockerName = UUID.randomUUID().toString()
                 }
-                if (!config.sidecarImage) {
-                    dockerExecuteOnKubernetes(
-                        script: script,
-                        containerName: config.dockerName,
-                        containerCommand: config.containerCommand,
-                        containerShell: config.containerShell,
-                        dockerImage: config.dockerImage,
-                        dockerPullImage: config.dockerPullImage,
-                        dockerEnvVars: config.dockerEnvVars,
-                        dockerWorkspace: config.dockerWorkspace,
-                        stashContent: config.stashContent,
-                        stashNoDefaultExcludes: config.stashNoDefaultExcludes,
-                    ){
-                        echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Pod"
-                        body()
-                    }
-                } else {
-                    dockerExecuteOnKubernetes(
-                        script: script,
-                        containerName: config.dockerName,
-                        containerCommand: config.containerCommand,
-                        containerShell: config.containerShell,
-                        dockerImage: config.dockerImage,
-                        dockerPullImage: config.dockerPullImage,
-                        dockerEnvVars: config.dockerEnvVars,
-                        dockerWorkspace: config.dockerWorkspace,
-                        stashContent: config.stashContent,
-                        stashNoDefaultExcludes: config.stashNoDefaultExcludes,
+                def dockerExecuteOnKubernetesParams = [
+                    script: script,
+                    containerName: config.dockerName,
+                    containerCommand: config.containerCommand,
+                    containerShell: config.containerShell,
+                    dockerImage: config.dockerImage,
+                    dockerPullImage: config.dockerPullImage,
+                    dockerEnvVars: config.dockerEnvVars,
+                    dockerWorkspace: config.dockerWorkspace,
+                    stashContent: config.stashContent,
+                    stashNoDefaultExcludes: config.stashNoDefaultExcludes,
+                ]
+
+                if (config.sidecarImage) {
+                    dockerExecuteOnKubernetesParams += [
                         containerPortMappings: config.containerPortMappings,
                         sidecarName: parameters.sidecarName,
                         sidecarImage: parameters.sidecarImage,
                         sidecarPullImage: parameters.sidecarPullImage,
                         sidecarReadyCommand: parameters.sidecarReadyCommand,
-                        sidecarEnvVars: parameters.sidecarEnvVars
-                    ) {
-                        echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Pod"
-                        body()
-                    }
+                        sidecarEnvVars: parameters.sidecarEnvVars,
+                    ]
+                }
+                dockerExecuteOnKubernetes(dockerExecuteOnKubernetesParams) {
+                    echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Pod"
+                    body()
                 }
             }
         } else {
@@ -215,7 +224,7 @@ void call(Map parameters = [:], body) {
             if (executeInsideDocker && config.dockerImage) {
                 utils.unstashAll(config.stashContent)
                 def image = docker.image(config.dockerImage)
-                if (config.dockerPullImage) image.pull()
+                if (config.dockerPullImage) pull(image, config.dockerRegistry, config.dockerRegistryCredentials)
                 else echo "[INFO][$STEP_NAME] Skipped pull of image '${config.dockerImage}'."
                 if (!config.sidecarImage) {
                     image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
@@ -226,7 +235,7 @@ void call(Map parameters = [:], body) {
                     sh "docker network create ${networkName}"
                     try {
                         def sidecarImage = docker.image(config.sidecarImage)
-                        if (config.sidecarPullImage) sidecarImage.pull()
+                        if (config.sidecarPullImage) pull(sidecarImage, config.dockerSidecarRegistry, config.dockerSidecarRegistryCredentials)
                         else echo "[INFO][$STEP_NAME] Skipped pull of image '${config.sidecarImage}'."
                         config.sidecarOptions = config.sidecarOptions ?: []
                         if (config.sidecarName)
@@ -254,6 +263,20 @@ void call(Map parameters = [:], body) {
                 body()
             }
         }
+    }
+}
+
+void pull(def dockerImage, String dockerRegistry, String dockerCredentialsId) {
+
+    // docker registry can be provided empty and will default to 'https://index.docker.io/v1/' in this case.
+    dockerRegistry = dockerRegistry ?: ''
+
+    if (dockerCredentialsId) {
+        docker.withRegistry(dockerRegistry, dockerCredentialsId) {
+            dockerImage.pull()
+        }
+    } else {
+        dockerImage.pull()
     }
 }
 
