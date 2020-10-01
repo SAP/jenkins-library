@@ -75,7 +75,7 @@ func UiVeri5ExecuteTestsCommand() *cobra.Command {
 }
 
 func addUiVeri5ExecuteTestsFlags(cmd *cobra.Command, stepConfig *uiVeri5ExecuteTestsOptions) {
-	cmd.Flags().StringVar(&stepConfig.InstallCommand, "installCommand", `npm install @ui5/uiveri5 --quiet`, "The command that is executed to install the uiveri5 test tool.")
+	cmd.Flags().StringVar(&stepConfig.InstallCommand, "installCommand", `npm install @ui5/uiveri5 --global --quiet`, "The command that is executed to install the uiveri5 test tool.")
 	cmd.Flags().StringVar(&stepConfig.ModulePath, "modulePath", `.`, "Define the path of the module to execute tests on.")
 	cmd.Flags().StringVar(&stepConfig.ConfPath, "confPath", `./conf.js`, "Define the path of the uiVeri5 conf.js.")
 	cmd.Flags().StringVar(&stepConfig.RunCommand, "runCommand", `uiveri5 --seleniumAddress='http://localhost:4444/wd/hub'`, "The command that is executed to start the tests.")
