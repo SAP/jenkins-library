@@ -321,6 +321,22 @@ func TestRunScan(t *testing.T) {
 	assert.Equal(t, true, sys.scanProjectCalled, "ScanProject was not invoked")
 }
 
+func TestRunScanCreateNewProject(t *testing.T) {
+	sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`), createProject: true}
+	options := checkmarxExecuteScanOptions{ProjectName: "TestExisting", VulnerabilityThresholdUnit: "absolute", FullScanCycle: "2", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+	workspace, err := ioutil.TempDir("", "workspace1")
+	if err != nil {
+		t.Fatal("Failed to create temporary workspace directory")
+	}
+	// clean up tmp dir
+	defer os.RemoveAll(workspace)
+
+	influx := checkmarxExecuteScanInflux{}
+
+	err = runScan(options, sys, workspace, &influx)
+	assert.NoError(t, err, "error occured but none expected")
+}
+
 func TestVerifyOnly(t *testing.T) {
 	sys := &systemMockForExistingProject{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`)}
 	options := checkmarxExecuteScanOptions{VerifyOnly: true, ProjectName: "TestExisting", VulnerabilityThresholdUnit: "absolute", FullScanCycle: "2", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
