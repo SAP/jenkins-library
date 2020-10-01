@@ -35,10 +35,6 @@ containerMaps:
     - npmExecuteScripts
   additionalUnitTests:
     - npmExecuteScripts
-  fortifyScan:
-    - fortifyExecuteScan
-  npmAudit:
-    - executeNpm
   endToEndTests:
     - mavenExecute
     - npmExecuteScripts
@@ -50,17 +46,8 @@ containerMaps:
     - checkJMeter
     - cloudFoundryDeploy
     - neoDeploy
-  s4SdkQualityChecks:
-    - mavenExecute
   artifactDeployment:
     - nexusUpload
-  whitesourceScan:
-    - mavenExecute
-    - executeNpm
-  security:
-    - fortifyExecuteScan
-    - detectExecuteScan
-    - whitesourceExecuteScan
   compliance:
     - sonarExecuteScan
   productionDeployment:
