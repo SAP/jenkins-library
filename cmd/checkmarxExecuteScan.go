@@ -93,7 +93,8 @@ func loadExistingProject(sys checkmarx.System, initialProjectName, pullRequestNa
 		if err != nil || len(projects) == 0 {
 			projects, err = sys.GetProjectsByNameAndTeam(initialProjectName, teamID)
 			if err != nil || len(projects) == 0 {
-				return project, projectName, errors.Wrap(err, "no projects found")
+				log.Entry().Infof("no projects found")
+				return project, projectName, nil
 			}
 			branchProject, err := sys.GetProjectByID(sys.CreateBranch(projects[0].ID, projectName))
 			if err != nil {
@@ -107,7 +108,8 @@ func loadExistingProject(sys checkmarx.System, initialProjectName, pullRequestNa
 	} else {
 		projects, err := sys.GetProjectsByNameAndTeam(projectName, teamID)
 		if err != nil || len(projects) == 0 {
-			return project, projectName, errors.Wrap(err, "no projects found")
+			log.Entry().Infof("no projects found")
+			return project, projectName, nil
 		}
 		project = projects[0]
 		log.Entry().Debugf("Loaded project with name %v", project.Name)
