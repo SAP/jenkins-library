@@ -1,7 +1,6 @@
 # Mapping of Go step names to their YAML metadata resource file
 stepMetadata:
   artifactPrepareVersion: versioning.yaml
-  fortifyExecuteScan: fortify.yaml
   mavenExecute: mavenExecute.yaml
   mavenExecuteStaticCodeChecks: mavenStaticCodeChecks.yaml
   mtaBuild: mtaBuild.yaml
@@ -9,8 +8,6 @@ stepMetadata:
   npmExecuteScripts: npmExecuteScripts.yaml
   npmExecuteLint: npmExecuteLint.yaml
   sonarExecuteScan: sonar.yaml
-  detectExecuteScan: detect.yaml
-  whitesourceExecuteScan: whitesource.yaml
 
 # Mapping of stages to the steps (and by extension Docker images) they use
 containerMaps:
