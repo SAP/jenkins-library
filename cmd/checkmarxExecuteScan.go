@@ -43,7 +43,7 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace
 	}
 	project, projectName, err := loadExistingProject(sys, config.ProjectName, config.PullRequestName, team.ID)
 	if err != nil {
-		return errors.Wrap(err, "failed to load existing project")
+		return errors.Wrap(err, "error when trying to load project")
 	}
 	if project.Name == projectName {
 		log.Entry().Infof("Project %v exists...", projectName)
@@ -92,8 +92,11 @@ func loadExistingProject(sys checkmarx.System, initialProjectName, pullRequestNa
 		projects, err := sys.GetProjectsByNameAndTeam(projectName, teamID)
 		if err != nil || len(projects) == 0 {
 			projects, err = sys.GetProjectsByNameAndTeam(initialProjectName, teamID)
-			if err != nil || len(projects) == 0 {
-				return project, projectName, errors.Wrap(err, "no projects found")
+			if err != nil {
+				return project, projectName, errors.Wrap(err, "failed getting projects")
+			}
+			if len(projects) == 0 {
+				return checkmarx.Project{}, projectName, nil
 			}
 			branchProject, err := sys.GetProjectByID(sys.CreateBranch(projects[0].ID, projectName))
 			if err != nil {
