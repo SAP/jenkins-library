@@ -13,7 +13,7 @@ const (
 	// SchemeMajorMinorVersion is the versioning scheme based on the major version only
 	SchemeMajorMinorVersion = `{{(split "." (split "-" .Version)._0)._0}}.{{(split "." (split "-" .Version)._0)._1}}`
 	// SchemeSemanticVersion is the versioning scheme based on the major.minor.micro version
-	SchemeSemanticVersion = `{{(split "-" .Version)._0}}`
+	SchemeSemanticVersion = `{{(split "." (split "-" .Version)._0)._0}}.{{(split "." (split "-" .Version)._0)._1}}.{{(split "." (split "-" .Version)._0)._2}}`
 	// SchemeFullVersion is the versioning scheme based on the full version
 	SchemeFullVersion = "{{.Version}}"
 )
