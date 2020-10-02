@@ -51,6 +51,10 @@ compliance:
   unstash: ['SOURCE', 'NODE_MODULES', 'DIST']
   stashes: []
 
+security:
+  unstash: ["SOURCE"]
+  stashes: []
+
 endToEndTests:
   unstash: ["SOURCE", "DEPLOYMENTARTIFACT", "NODE_MODULES", "GENERATED_CAP_FILES"]
   stashes: []

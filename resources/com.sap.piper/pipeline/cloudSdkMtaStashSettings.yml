@@ -54,6 +54,10 @@ compliance:
   unstash: ['SOURCE', 'M2', 'NODE_MODULES', 'REPORTS', 'TARGET']
   stashes: []
 
+security:
+  unstash: ["SOURCE"]
+  stashes: []
+
 additionalUnitTests:
   unstash: ["SOURCE", "NODE_MODULES"]
   stashes:
