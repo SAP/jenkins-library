@@ -41,6 +41,17 @@ func abapEnvironmentAssemblePackages(config abapEnvironmentAssemblePackagesOptio
 func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender, cpe *abapEnvironmentAssemblePackagesCommonPipelineEnvironment) error {
 	conn := new(abapbuild.Connector)
 	var connConfig abapbuild.ConnectorConfiguration
+	connConfig.CfAPIEndpoint = config.CfAPIEndpoint
+	connConfig.CfOrg = config.CfOrg
+	connConfig.CfSpace = config.CfSpace
+	connConfig.CfServiceInstance = config.CfServiceInstance
+	connConfig.CfServiceKeyName = config.CfServiceKeyName
+	connConfig.Host = config.Host
+	connConfig.Username = config.Username
+	connConfig.Password = config.Password
+	connConfig.AddonDescriptor = config.AddonDescriptor
+	connConfig.MaxRuntimeInMinutes = config.MaxRuntimeInMinutes
+
 	err := conn.InitBuildFramework(connConfig, com, client)
 	if err != nil {
 		return err
