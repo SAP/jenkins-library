@@ -29,43 +29,56 @@ func abapAddonAssemblyKitCheckPV(config abapAddonAssemblyKitCheckPVOptions, tele
 
 func runAbapAddonAssemblyKitCheckPV(config *abapAddonAssemblyKitCheckPVOptions, telemetryData *telemetry.CustomData, client piperhttp.Sender,
 	cpe *abapAddonAssemblyKitCheckPVCommonPipelineEnvironment, readAdoDescriptor abaputils.ReadAddonDescriptorType) error {
-	var addonDescriptorFromCPE abaputils.AddonDescriptor
-	json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptorFromCPE)
-	addonDescriptor, err := readAdoDescriptor(config.AddonDescriptorFileName)
-	addonDescriptor = combineYAMLRepositoriesWithCPEProduct(addonDescriptor, addonDescriptorFromCPE)
-	if err != nil {
-		return err
-	}
+
 	conn := new(abapbuild.Connector)
 	conn.InitAAKaaS(config.AbapAddonAssemblyKitEndpoint, config.Username, config.Password, client)
 
-	var p productVersion
-	p.init(addonDescriptor, *conn)
-	err = p.validate()
+	log.Entry().Infof("Reading Product Version Information from addonDescriptor (aka addon.yml) file: %s", config.AddonDescriptorFileName)
+	addonDescriptor, err := readAdoDescriptor(config.AddonDescriptorFileName)
 	if err != nil {
 		return err
 	}
-	p.copyFieldsToRepo(&addonDescriptor)
-	log.Entry().Info("Write the resolved version to the CommonPipelineEnvironment")
-	toCPE, _ := json.Marshal(addonDescriptor)
-	cpe.abap.addonDescriptor = string(toCPE)
+
+	pv := new(productVersion).init(addonDescriptor, *conn)
+	err = pv.validateAndResolveVersionFields()
+	if err != nil {
+		return err
+	}
+	pv.transferVersionFields(&addonDescriptor)
+
+	// now Product Version fields are valid, but maybe Component Versions (Repositories) were checked before, so copy that part from CPE
+	// we don't care for errors
+	// scenario 1: config.AddonDescriptor is empty since checkPV is the first step in the pipeline, then the empty result is fine anyway
+	// scenario 2: for some reason config.AddonDescriptor is corrupt - then we insert the valid data but delete the repositories which will ensure issue is found later on
+	addonDescriptorCPE, _ := abaputils.ConstructAddonDescriptorFromJSON([]byte(config.AddonDescriptor))
+	if len(addonDescriptorCPE.Repositories) == 0 {
+		log.Entry().Info("No Software Component Information present yet in the addonDescriptor of CommonPipelineEnvironment")
+	} else {
+		log.Entry().Infof("Information for %v Software Component Repositories taken from addonDescriptor of CommonPipelineEnvironment", len(addonDescriptorCPE.Repositories))
+	}
+	addonDescriptor.SetRepositories(addonDescriptorCPE.Repositories)
+	cpe.abap.addonDescriptor = string(addonDescriptor.AsJSON())
+	log.Entry().Info("Wrote addonDescriptor to CommonPipelineEnvironment")
+
 	return nil
 }
 
-func (p *productVersion) init(desc abaputils.AddonDescriptor, conn abapbuild.Connector) {
+func (p *productVersion) init(desc abaputils.AddonDescriptor, conn abapbuild.Connector) *productVersion {
 	p.Connector = conn
 	p.Name = desc.AddonProduct
 	p.VersionYAML = desc.AddonVersionYAML
+
+	return p
 }
 
-func (p *productVersion) copyFieldsToRepo(initialAddonDescriptor *abaputils.AddonDescriptor) {
+func (p *productVersion) transferVersionFields(initialAddonDescriptor *abaputils.AddonDescriptor) {
 	initialAddonDescriptor.AddonVersion = p.Version
 	initialAddonDescriptor.AddonSpsLevel = p.SpsLevel
 	initialAddonDescriptor.AddonPatchLevel = p.PatchLevel
 }
 
-func (p *productVersion) validate() error {
-	log.Entry().Infof("Validate product %s version %s and resolve version", p.Name, p.VersionYAML)
+func (p *productVersion) validateAndResolveVersionFields() error {
+	log.Entry().Infof("Validate product %s version '%s' and resolve version", p.Name, p.VersionYAML)
 	appendum := "/odata/aas_ocs_package/ValidateProductVersion?Name='" + p.Name + "'&Version='" + p.VersionYAML + "'"
 	body, err := p.Connector.Get(appendum)
 	if err != nil {
