@@ -16,17 +16,20 @@ import (
 
 // SetResourceParameter sets a resource parameter in the environment stored in the file system
 func SetResourceParameter(path, resourceName, paramName string, value interface{}) error {
+	var content []byte
+	var err error
 	paramPath := filepath.Join(path, resourceName, paramName)
 	switch typedValue := value.(type) {
 	case string:
-		return writeToDisk(paramPath, []byte(typedValue))
+		content = []byte(typedValue)
 	default:
-		valueJSON, err := json.Marshal(typedValue)
+		paramPath += ".json"
+		content, err = json.Marshal(typedValue)
 		if err != nil {
 			return errors.Wrapf(err, "failed to marshal resource parameter value %v", typedValue)
 		}
-		return writeToDisk(paramPath, valueJSON)
 	}
+	return writeToDisk(paramPath, content)
 }
 
 // GetResourceParameter reads a resource parameter from the environment stored in the file system
