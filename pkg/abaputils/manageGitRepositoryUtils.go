@@ -97,7 +97,7 @@ func GetRepositories(config *RepositoriesConfig) ([]Repository, error) {
 		}
 		err = CheckAddonDescriptorForRepositories(descriptor)
 		if err != nil {
-			return repositories, fmt.Errorf("Could not parse config file %v, %w", config.Repositories, err)
+			return repositories, fmt.Errorf("Error in config file %v, %w", config.Repositories, err)
 		}
 		repositories = descriptor.Repositories
 	}
