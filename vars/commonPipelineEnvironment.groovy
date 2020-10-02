@@ -236,11 +236,10 @@ class commonPipelineEnvironment implements Serializable {
             def param = fileName.split('/')[fileName.split('\\/').size()-1]
             if (param.endsWith(".json")){
                 param = param.replace(".json","")
-                value = script.readJSON(test: fileContent)
+                valueMap[param] = script.readJSON(test: fileContent)
             }else{
-                value = fileContent
+                valueMap[param] = fileContent
             }
-            valueMap[param] = value
         })
     }
 
