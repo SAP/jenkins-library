@@ -54,7 +54,7 @@ import hudson.AbortException
      * possible to overwrite e.g. the `containers` property or to
      * overwrite the `securityContext` property.
      * Alternate way for providing `additionalPodProperties` is via
-     * `general/jenkinsKubernetes/resources` in the project configuration.
+     * `general/jenkinsKubernetes/additionalPodProperties` in the project configuration.
      * Providing the resources map as parameter to the step call takes
      * precedence.
      * This freedom comes with great responsibility. The property
