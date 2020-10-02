@@ -223,7 +223,6 @@ class commonPipelineEnvironment implements Serializable {
     }
 
     void readFromDisk(script) {
-
         files.each({f  ->
             if (script.fileExists(f.filename)) {
                 this[f.property] = script.readFile(f.filename)
@@ -231,11 +230,17 @@ class commonPipelineEnvironment implements Serializable {
         })
 
         def customValues = script.findFiles(glob: '.pipeline/commonPipelineEnvironment/custom/*')
-
         customValues.each({f ->
+            def fileContent = script.readFile(f.getPath())
             def fileName = f.getName()
             def param = fileName.split('/')[fileName.split('\\/').size()-1]
-            valueMap[param] = script.readFile(f.getPath())
+            if (param.endsWith(".json")){
+                param = param.replace(".json","")
+                value = script.readJSON(test: fileContent)
+            }else{
+                value = fileContent
+            }
+            valueMap[param] = value
         })
     }
 
