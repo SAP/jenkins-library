@@ -109,8 +109,11 @@ func loadExistingProject(sys checkmarx.System, initialProjectName, pullRequestNa
 		}
 	} else {
 		projects, err := sys.GetProjectsByNameAndTeam(projectName, teamID)
-		if err != nil || len(projects) == 0 {
-			return project, projectName, errors.Wrap(err, "no projects found")
+		if err != nil {
+			return project, projectName, errors.Wrap(err, "failed getting projects")
+		}
+		if len(projects) == 0 {
+			return checkmarx.Project{}, projectName, nil
 		}
 		project = projects[0]
 		log.Entry().Debugf("Loaded project with name %v", project.Name)
