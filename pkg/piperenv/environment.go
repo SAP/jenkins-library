@@ -1,21 +1,32 @@
 package piperenv
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/pkg/errors"
 )
 
 // This file contains functions used to read/write pipeline environment data from/to disk.
 // The content of a written file is the value. For the custom parameters this could for example also be a JSON representation of a more complex value.
 
 // SetResourceParameter sets a resource parameter in the environment stored in the file system
-func SetResourceParameter(path, resourceName, paramName, value string) error {
+func SetResourceParameter(path, resourceName, paramName string, value interface{}) error {
 	paramPath := filepath.Join(path, resourceName, paramName)
-	return writeToDisk(paramPath, []byte(value))
+	switch typedValue := value.(type) {
+	case string:
+		return writeToDisk(paramPath, []byte(typedValue))
+	default:
+		valueJSON, err := json.Marshal(typedValue)
+		if err != nil {
+			return errors.Wrapf(err, "failed to marshal resource parameter value %v", typedValue)
+		}
+		return writeToDisk(paramPath, valueJSON)
+	}
 }
 
 // GetResourceParameter reads a resource parameter from the environment stored in the file system
