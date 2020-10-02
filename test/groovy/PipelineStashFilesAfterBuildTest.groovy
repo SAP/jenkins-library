@@ -1,11 +1,15 @@
+import org.junit.After
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
 import util.*
+import com.sap.piper.Utils
 
 import static org.hamcrest.Matchers.containsString
 import static org.junit.Assert.assertFalse
 import static org.junit.Assert.assertThat
+
 
 class PipelineStashFilesAfterBuildTest extends BasePiperTest {
     JenkinsStepRule stepRule = new JenkinsStepRule(this)
@@ -19,6 +23,16 @@ class PipelineStashFilesAfterBuildTest extends BasePiperTest {
         .around(readJsonRule)
         .around(loggingRule)
         .around(stepRule)
+
+    @Before
+    public void setup() {
+        Utils.metaClass.echo = { def m -> }
+    }
+
+    @After
+    public void tearDown() {
+        Utils.metaClass = null
+    }
 
     @Test
     void testStashAfterBuild() {

@@ -98,7 +98,9 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
     /** @see transportRequestCreate */
     'changeDocumentId',
-    /** The id of the transport request to upload the file.*/
+    /** The id of the transport request to upload the file. This parameter is only taken into account
+      * when provided via signature to the step.
+      */
     'transportRequestId'])
 
 /** Uploads a file to a Transport Request. */
@@ -175,11 +177,11 @@ void call(Map parameters = [:]) {
         if(backendType == BackendType.SOLMAN) {
             configHelper
                 .withMandatoryProperty('changeDocumentId',
-                    "Change document id not provided (parameter: \'changeDocumentId\' or via commit history).")
+                    "Change document id not provided (parameter: \'changeDocumentId\' provided to the step call or via commit history).")
         }
         configuration = configHelper
             .withMandatoryProperty('transportRequestId',
-                "Transport request id not provided (parameter: \'transportRequestId\' or via commit history).")
+                "Transport request id not provided (parameter: \'transportRequestId\' provided to the step call or via commit history).")
             .use()
 
         def uploadingMessage = ['[INFO] Uploading file ' +
