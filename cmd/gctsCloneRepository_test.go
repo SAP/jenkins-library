@@ -1,8 +1,9 @@
 package cmd
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGctsCloneRepositorySuccess(t *testing.T) {
@@ -15,7 +16,7 @@ func TestGctsCloneRepositorySuccess(t *testing.T) {
 		Password:   "testPassword",
 	}
 
-	t.Run("cloning successfull", func(t *testing.T) {
+	t.Run("cloning successful", func(t *testing.T) {
 
 		httpClient := httpMockGcts{StatusCode: 200, ResponseBody: `{
 			"result": {

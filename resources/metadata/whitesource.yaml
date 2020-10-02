@@ -19,6 +19,13 @@ metadata:
         of the supported build tools per environment please refer to the [WhiteSource Unified Agent Documentation](https://whitesource.atlassian.net/wiki/spaces/WD/pages/33718339/Unified+Agent).
 spec:
   inputs:
+    secrets:
+      - name: userTokenCredentialsId
+        description: Jenkins 'Secret text' credentials ID containing Whitesource user token.
+        type: jenkins
+      - name: orgAdminUserTokenCredentialsId
+        description: Jenkins 'Secret text' credentials ID containing Whitesource org admin token.
+        type: jenkins
     params:
       - name: buildTool
         type: string
@@ -357,12 +364,6 @@ spec:
           - STEPS
         aliases:
           - name: npm/defaultNpmRegistry
-
-    secrets:
-      - name: userTokenCredentialsId
-        type: jenkins
-      - name: orgAdminUserTokenCredentialsId
-        type: jenkins
     resources:
       - name: buildDescriptor
         type: stash

@@ -70,7 +70,7 @@ func runUnitTestsForAllRepoPackages(config *gctsExecuteABAPUnitTestsOptions, htt
 
 	log.Entry().
 		WithField("repository", config.Repository).
-		Info("all unit tests were successfull")
+		Info("all unit tests were successful")
 	return nil
 }
 

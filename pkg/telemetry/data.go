@@ -29,6 +29,7 @@ type BaseMetaData struct {
 	BuildURLHashLabel    string `json:"custom5"`
 	DurationLabel        string `json:"custom11,omitempty"`
 	ExitCodeLabel        string `json:"custom12,omitempty"`
+	ErrorCategoryLabel   string `json:"custom13,omitempty"`
 }
 
 // baseMetaData object containing the labels for the base data
@@ -39,6 +40,7 @@ var baseMetaData BaseMetaData = BaseMetaData{
 	BuildURLHashLabel:    "buildUrlHash",
 	DurationLabel:        "duration",
 	ExitCodeLabel:        "exitCode",
+	ErrorCategoryLabel:   "errorCategory",
 }
 
 // CustomData object definition containing the data that can be set by a step and it's mapping information
@@ -46,18 +48,19 @@ type CustomData struct {
 	// SWA receives the fields custom1 - custom30 and e_a, e_2 - e_30 for custom values.
 	// Piper uses the values custom11 - custom25 & e_11 - e_25 for library related reporting
 	// and custom26 - custom30 & e_26 - e_30 for step  related reporting.
-	Duration     string `json:"e_11,omitempty"`
-	ErrorCode    string `json:"e_12,omitempty"`
-	Custom1Label string `json:"custom26,omitempty"`
-	Custom2Label string `json:"custom27,omitempty"`
-	Custom3Label string `json:"custom28,omitempty"`
-	Custom4Label string `json:"custom29,omitempty"`
-	Custom5Label string `json:"custom30,omitempty"`
-	Custom1      string `json:"e_26,omitempty"`
-	Custom2      string `json:"e_27,omitempty"`
-	Custom3      string `json:"e_28,omitempty"`
-	Custom4      string `json:"e_29,omitempty"`
-	Custom5      string `json:"e_30,omitempty"`
+	Duration      string `json:"e_11,omitempty"`
+	ErrorCode     string `json:"e_12,omitempty"`
+	ErrorCategory string `json:"e_13,omitempty"`
+	Custom1Label  string `json:"custom26,omitempty"`
+	Custom2Label  string `json:"custom27,omitempty"`
+	Custom3Label  string `json:"custom28,omitempty"`
+	Custom4Label  string `json:"custom29,omitempty"`
+	Custom5Label  string `json:"custom30,omitempty"`
+	Custom1       string `json:"e_26,omitempty"`
+	Custom2       string `json:"e_27,omitempty"`
+	Custom3       string `json:"e_28,omitempty"`
+	Custom4       string `json:"e_29,omitempty"`
+	Custom5       string `json:"e_30,omitempty"`
 }
 
 // Data object definition containing all telemetry data

@@ -2,6 +2,7 @@ package mock
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"os"
 	"path/filepath"
 	"testing"
@@ -377,18 +378,29 @@ func TestFilesMockGlob(t *testing.T) {
 }
 
 func TestStat(t *testing.T) {
-	files := FilesMock{}
-	files.AddFile("tmp/dummy.txt", []byte("Hello SAP"))
-	explicitMode := os.FileMode(0700)
-	files.AddDirWithMode("bin", explicitMode)
-
+	t.Parallel()
+	t.Run("non existing file (no init)", func(t *testing.T) {
+		// init
+		files := FilesMock{}
+		// test
+		_, err := files.Stat("doesNotExist.txt")
+		assert.EqualError(t, err, "stat doesNotExist.txt: no such file or directory")
+	})
 	t.Run("non existing file", func(t *testing.T) {
+		// init
+		files := FilesMock{}
+		files.AddFile("tmp/dummy.txt", []byte("Hello SAP"))
+		// test
 		_, err := files.Stat("doesNotExist.txt")
 		assert.EqualError(t, err, "stat doesNotExist.txt: no such file or directory")
 	})
 	t.Run("check file info", func(t *testing.T) {
+		// init
+		files := FilesMock{}
+		files.AddFile("tmp/dummy.txt", []byte("Hello SAP"))
+		// test
 		info, err := files.Stat("tmp/dummy.txt")
-
+		// assert
 		if assert.NoError(t, err) {
 			// only the base name is returned.
 			assert.Equal(t, "dummy.txt", info.Name())
@@ -398,14 +410,25 @@ func TestStat(t *testing.T) {
 		}
 	})
 	t.Run("check implicit dir", func(t *testing.T) {
+		// init
+		files := FilesMock{}
+		files.AddFile("tmp/dummy.txt", []byte("Hello SAP"))
+		// test
 		info, err := files.Stat("tmp")
+		// assert
 		if assert.NoError(t, err) {
 			assert.True(t, info.IsDir())
 			assert.Equal(t, defaultDirMode, info.Mode())
 		}
 	})
 	t.Run("check explicit dir", func(t *testing.T) {
+		// init
+		files := FilesMock{}
+		explicitMode := os.FileMode(0700)
+		files.AddDirWithMode("bin", explicitMode)
+		// test
 		info, err := files.Stat("bin")
+		// assert
 		if assert.NoError(t, err) {
 			assert.True(t, info.IsDir())
 			assert.Equal(t, explicitMode, info.Mode())
@@ -503,6 +526,96 @@ func TestRelativePaths(t *testing.T) {
 		fileInfo, err := files.Stat("path/to")
 		if assert.NoError(t, err) {
 			assert.Equal(t, os.FileMode(0700), fileInfo.Mode())
+		}
+	})
+}
+
+func TestOpen(t *testing.T) {
+	filePath := filepath.Join("some", "file")
+	t.Parallel()
+	t.Run("no init without O_CREATE", func(t *testing.T) {
+		// init
+		files := FilesMock{}
+		// test
+		file, err := files.Open(filePath, 0, 0)
+		// assert
+		if assert.Error(t, err) {
+			assert.Contains(t, err.Error(), "does not exist")
+			assert.Nil(t, file)
+		}
+	})
+	t.Run("no init with O_CREATE", func(t *testing.T) {
+		// init
+		files := FilesMock{}
+		// test
+		file, err := files.Open(filePath, os.O_CREATE, 0644)
+		// assert
+		if assert.NoError(t, err) && assert.NotNil(t, file) {
+			assert.Equal(t, &files, file.files)
+			assert.Equal(t, files.Separator+filePath, file.absPath)
+			assert.NotNil(t, file.content)
+		}
+	})
+	t.Run("content is replaced without O_APPEND", func(t *testing.T) {
+		// init
+		files := FilesMock{}
+		files.AddFile(filePath, []byte("initial-content"))
+		// test
+		file, _ := files.Open(filePath, os.O_CREATE, 0644)
+		written, err := file.WriteString("hello")
+		if assert.NoError(t, err) {
+			assert.Equal(t, written, len("hello"))
+			content, err := files.FileRead(filePath)
+			if assert.NoError(t, err) {
+				assert.Equal(t, []byte("hello"), content)
+			}
+		}
+	})
+	t.Run("content is truncated with O_TRUNC an nothing written", func(t *testing.T) {
+		// init
+		files := FilesMock{}
+		files.AddFile(filePath, []byte("initial-content"))
+		// test
+		file, err := files.Open(filePath, os.O_CREATE|os.O_TRUNC, 0644)
+		require.NoError(t, err)
+		err = file.Close()
+		assert.NoError(t, err)
+		content, err := files.FileRead(filePath)
+		if assert.NoError(t, err) {
+			assert.Len(t, content, 0)
+		}
+	})
+	t.Run("content is appended", func(t *testing.T) {
+		// init
+		files := FilesMock{}
+		files.AddFile(filePath, []byte("initial-content"))
+		// test
+		file, _ := files.Open(filePath, os.O_APPEND, 0644)
+		written1, err1 := file.WriteString("-hel")
+		written2, err2 := file.WriteString("lo")
+		if assert.NoError(t, err1) && assert.NoError(t, err2) {
+			assert.Equal(t, written1+written2, len("-hello"))
+			content, err := files.FileRead(filePath)
+			if assert.NoError(t, err) {
+				assert.Equal(t, []byte("initial-content-hello"), content)
+			}
+		}
+	})
+	t.Run("cannot write to closed file", func(t *testing.T) {
+		// init
+		files := FilesMock{}
+		files.AddFile(filePath, []byte("initial-content"))
+		// test
+		file, _ := files.Open(filePath, os.O_APPEND, 0644)
+		_, err := file.WriteString("-hello")
+		assert.NoError(t, err)
+		err = file.Close()
+		assert.NoError(t, err)
+		_, err = file.WriteString("-more")
+		assert.Error(t, err)
+		content, err := files.FileRead(filePath)
+		if assert.NoError(t, err) {
+			assert.Equal(t, []byte("initial-content-hello"), content)
 		}
 	})
 }

@@ -8,6 +8,16 @@ metadata:
         Triaging is now supported by the Protecode backend and also Piper does consider this information during the analysis of the scan results though product versions are not supported by Protecode. Therefore please make sure that the `fileName` you are providing does either contain a stable version or that it does not contain one at all. By ensuring that you are able to triage CVEs globally on the upload file's name without affecting any other artifacts scanned in the same Protecode group and as such triaged vulnerabilities will be considered during the next scan and will not fail the build anymore.
 spec:
   inputs:
+    secrets:
+      - name: protecodeCredentialsId
+        description: Jenkins 'Username with password' credentials ID containing username and password to authenticate to the Protecode system.
+        type: jenkins
+      - name: dockerConfigJsonCredentialsId
+        description: Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)). You can create it like explained in the Docker Success Center in the article about [how to generate a new auth in the config.json file](https://success.docker.com/article/generate-new-auth-in-config-json-file).
+        type: jenkins
+        aliases:
+          - name: dockerCredentialsId
+            deprecated: true
     params:
       - name: excludeCVEs
         aliases:
@@ -189,14 +199,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-    secrets:
-      - name: protecodeCredentialsId
-        type: jenkins
-      - name: dockerConfigJsonCredentialsId
-        type: jenkins
-        aliases:
-          - name: dockerCredentialsId
-            deprecated: true
   outputs:
     resources:
       - name: influx

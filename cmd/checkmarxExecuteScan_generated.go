@@ -44,28 +44,28 @@ type checkmarxExecuteScanInflux struct {
 	checkmarx_data struct {
 		fields struct {
 			high_issues                          string
-			high_not_false_postive               string
+			high_not_false_positive              string
 			high_not_exploitable                 string
 			high_confirmed                       string
 			high_urgent                          string
 			high_proposed_not_exploitable        string
 			high_to_verify                       string
 			medium_issues                        string
-			medium_not_false_postive             string
+			medium_not_false_positive            string
 			medium_not_exploitable               string
 			medium_confirmed                     string
 			medium_urgent                        string
 			medium_proposed_not_exploitable      string
 			medium_to_verify                     string
 			low_issues                           string
-			low_not_false_postive                string
+			low_not_false_positive               string
 			low_not_exploitable                  string
 			low_confirmed                        string
 			low_urgent                           string
 			low_proposed_not_exploitable         string
 			low_to_verify                        string
 			information_issues                   string
-			information_not_false_postive        string
+			information_not_false_positive       string
 			information_not_exploitable          string
 			information_confirmed                string
 			information_urgent                   string
@@ -101,28 +101,28 @@ func (i *checkmarxExecuteScanInflux) persist(path, resourceName string) {
 		value       string
 	}{
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "high_issues", value: i.checkmarx_data.fields.high_issues},
-		{valType: config.InfluxField, measurement: "checkmarx_data", name: "high_not_false_postive", value: i.checkmarx_data.fields.high_not_false_postive},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "high_not_false_positive", value: i.checkmarx_data.fields.high_not_false_positive},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "high_not_exploitable", value: i.checkmarx_data.fields.high_not_exploitable},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "high_confirmed", value: i.checkmarx_data.fields.high_confirmed},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "high_urgent", value: i.checkmarx_data.fields.high_urgent},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "high_proposed_not_exploitable", value: i.checkmarx_data.fields.high_proposed_not_exploitable},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "high_to_verify", value: i.checkmarx_data.fields.high_to_verify},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "medium_issues", value: i.checkmarx_data.fields.medium_issues},
-		{valType: config.InfluxField, measurement: "checkmarx_data", name: "medium_not_false_postive", value: i.checkmarx_data.fields.medium_not_false_postive},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "medium_not_false_positive", value: i.checkmarx_data.fields.medium_not_false_positive},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "medium_not_exploitable", value: i.checkmarx_data.fields.medium_not_exploitable},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "medium_confirmed", value: i.checkmarx_data.fields.medium_confirmed},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "medium_urgent", value: i.checkmarx_data.fields.medium_urgent},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "medium_proposed_not_exploitable", value: i.checkmarx_data.fields.medium_proposed_not_exploitable},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "medium_to_verify", value: i.checkmarx_data.fields.medium_to_verify},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "low_issues", value: i.checkmarx_data.fields.low_issues},
-		{valType: config.InfluxField, measurement: "checkmarx_data", name: "low_not_false_postive", value: i.checkmarx_data.fields.low_not_false_postive},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "low_not_false_positive", value: i.checkmarx_data.fields.low_not_false_positive},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "low_not_exploitable", value: i.checkmarx_data.fields.low_not_exploitable},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "low_confirmed", value: i.checkmarx_data.fields.low_confirmed},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "low_urgent", value: i.checkmarx_data.fields.low_urgent},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "low_proposed_not_exploitable", value: i.checkmarx_data.fields.low_proposed_not_exploitable},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "low_to_verify", value: i.checkmarx_data.fields.low_to_verify},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "information_issues", value: i.checkmarx_data.fields.information_issues},
-		{valType: config.InfluxField, measurement: "checkmarx_data", name: "information_not_false_postive", value: i.checkmarx_data.fields.information_not_false_postive},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "information_not_false_positive", value: i.checkmarx_data.fields.information_not_false_positive},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "information_not_exploitable", value: i.checkmarx_data.fields.information_not_exploitable},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "information_confirmed", value: i.checkmarx_data.fields.information_confirmed},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "information_urgent", value: i.checkmarx_data.fields.information_urgent},
@@ -211,6 +211,7 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 			handler := func() {
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
 			}
 			log.DeferExitHandler(handler)

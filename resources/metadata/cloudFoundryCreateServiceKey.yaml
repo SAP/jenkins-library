@@ -7,7 +7,7 @@ spec:
   inputs:
     secrets:
       - name: cfCredentialsId
-        description: Jenkins credentials ID containing user and password to authenticate to the Cloud Foundry API
+        description: Jenkins 'Username with password' credentials ID containing user and password to authenticate to the Cloud Foundry API.
         type: jenkins
     params:
       - name: cfApiEndpoint

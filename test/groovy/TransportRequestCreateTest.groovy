@@ -5,6 +5,7 @@ import java.util.Map
 
 import org.hamcrest.Matchers
 import org.hamcrest.core.StringContains
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -14,6 +15,7 @@ import org.junit.rules.RuleChain
 import com.sap.piper.cm.BackendType
 import com.sap.piper.cm.ChangeManagement
 import com.sap.piper.cm.ChangeManagementException
+import com.sap.piper.Utils
 
 import util.BasePiperTest
 import util.JenkinsCredentialsRule
@@ -42,6 +44,7 @@ public class TransportRequestCreateTest extends BasePiperTest {
     @Before
     public void setup() {
 
+        Utils.metaClass.echo = { def m -> }
 
         nullScript.commonPipelineEnvironment.configuration = [general:
                                      [changeManagement:
@@ -60,11 +63,16 @@ public class TransportRequestCreateTest extends BasePiperTest {
                                  ]
     }
 
+    @After
+    public void tearDown() {
+        Utils.metaClass = null
+    }
+
     @Test
     public void changeIdNotProvidedSOLANTest() {
 
         thrown.expect(IllegalArgumentException)
-        thrown.expectMessage("Change document id not provided (parameter: 'changeDocumentId' or via commit history).")
+        thrown.expectMessage("Change document id not provided (parameter: 'changeDocumentId' provided to the step call or via commit history).")
         ChangeManagement cm = new ChangeManagement(nullScript) {
             String getChangeDocumentId(
                                        String from,

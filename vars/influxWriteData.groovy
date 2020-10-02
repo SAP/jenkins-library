@@ -165,13 +165,13 @@ private void writeToInflux(config, JenkinsUtils jenkinsUtils, script){
         } catch (NullPointerException e){
             if(!e.getMessage()){
                 //TODO: catch NPEs as long as https://issues.jenkins-ci.org/browse/JENKINS-55594 is not fixed & released
-                error "[$STEP_NAME] NullPointerException occured, is the correct target defined?"
+                error "[$STEP_NAME] NullPointerException occurred, is the correct target defined?"
             }
             throw e
         }
     }
 
-    //write results into json file for archiving - also benefitial when no InfluxDB is available yet
+    //write results into json file for archiving - also beneficial when no InfluxDB is available yet
     def jsonUtils = new JsonUtils()
     writeFile file: 'jenkins_data.json', text: jsonUtils.groovyObjectToPrettyJsonString(config.customData)
     writeFile file: 'influx_data.json', text: jsonUtils.groovyObjectToPrettyJsonString(config.customDataMap)

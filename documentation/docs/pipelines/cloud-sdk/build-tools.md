@@ -55,7 +55,7 @@ For Java, the default is still (as of August 2020) version 8.
 For more details, please check the [documentation of the SAP Cloud SDK for Java](https://sap.github.io/cloud-sdk/docs/java/getting-started/).
 
 In case you need to use a specific Java version to build your application, you may do so by setting another Docker image in your `.pipeline/config.yml` file.
-See [documentation of the pipeline configuration](https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/configuration.md) and look for the `dockerImage` key on where this option applies.
+See [documentation of the pipeline configuration](../configuration/) and look for the `dockerImage` key on where this option applies.
 
 In most cases, it should be suffcient to configure an image for the `mavenExecute` step like so:
 
@@ -70,7 +70,7 @@ steps:
 Each variant of the pipeline has different requirements regarding the project structure, location of reports and tooling.
 
 Stages not listed here do not have a special requirement.
-In any case, please also consult the [documentation of the pipeline configuration](https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/configuration.md), as some stages have to be activated by providing configuration values.
+In any case, please also consult the [documentation of the pipeline configuration](../configuration/), as some stages have to be activated by providing configuration values.
 
 ### Build Tool Independent Requirements
 
@@ -103,7 +103,7 @@ It is recommended to use the same tools as in the `package.json` of this [exampl
 
 ##### Maven
 
-Maven unit-tests are executed as part of the [`mavenBuild`](https://sap.github.io/jenkins-library/steps/mavenBuild/) step.
+Maven unit-tests are executed as part of the [`mavenBuild`](../../../steps/mavenBuild/) step.
 They are supposed to be placed inside of `application/src/test`.
 
 ##### Java MTA modules
@@ -238,7 +238,7 @@ This directory has to be defined as path in the `manifest.yml`.
 The project structure follows the standard structure for projects created via the _SAP Cloud Platform Business Application_ SAP Web IDE Template with some constraints.
 Please leave the basic structure of the generated project intact.
 
-Make sure to check the _Include support for continuous delivery pipeline of SAP Cloud SDK_ checkbox, which will automatically add the required files for continous delivery in your project.
+Make sure to check the _Include support for continuous delivery pipeline of SAP Cloud SDK_ checkbox, which will automatically add the required files for continuous delivery in your project.
 
 If you already created your project without this option, you'll need to copy and paste two files into the root directory of your project, and commit them to your git repository:
 

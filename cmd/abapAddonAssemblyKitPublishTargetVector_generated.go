@@ -21,7 +21,7 @@ type abapAddonAssemblyKitPublishTargetVectorOptions struct {
 	AddonDescriptor              string `json:"addonDescriptor,omitempty"`
 }
 
-// AbapAddonAssemblyKitPublishTargetVectorCommand This step triggers the publication of the Target Vector to the Service Provider Cockpit system, specified by the Scope.
+// AbapAddonAssemblyKitPublishTargetVectorCommand This step triggers the publication of the Target Vector according to the specified scope.
 func AbapAddonAssemblyKitPublishTargetVectorCommand() *cobra.Command {
 	const STEP_NAME = "abapAddonAssemblyKitPublishTargetVector"
 
@@ -31,9 +31,9 @@ func AbapAddonAssemblyKitPublishTargetVectorCommand() *cobra.Command {
 
 	var createAbapAddonAssemblyKitPublishTargetVectorCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "This step triggers the publication of the Target Vector to the Service Provider Cockpit system, specified by the Scope.",
-		Long: `This step reads the Target Vector ID from the addonDescriptor in the commonPipelineEnvironment and triggers the publication of the Target Vector to the Service Provider Cockpit system.
-With scopeTV "T" the Target Vector will be published to the test SPC and with scopeTV "P" it will be published to public SPC.`,
+		Short: "This step triggers the publication of the Target Vector according to the specified scope.",
+		Long: `This step reads the Target Vector ID from the addonDescriptor in the commonPipelineEnvironment and triggers the publication of the Target Vector.
+With targetVectorScope "T" the Target Vector will be published to the test environment and with targetVectorScope "P" it will be published to the productive environment.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -63,6 +63,7 @@ With scopeTV "T" the Target Vector will be published to the test SPC and with sc
 			telemetryData.ErrorCode = "1"
 			handler := func() {
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
 			}
 			log.DeferExitHandler(handler)
@@ -82,7 +83,7 @@ func addAbapAddonAssemblyKitPublishTargetVectorFlags(cmd *cobra.Command, stepCon
 	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitEndpoint, "abapAddonAssemblyKitEndpoint", os.Getenv("PIPER_abapAddonAssemblyKitEndpoint"), "Base URL to the Addon Assembly Kit as a Service (AAKaaS) system")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for the Addon Assembly Kit as a Service (AAKaaS) system")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for the Addon Assembly Kit as a Service (AAKaaS) system")
-	cmd.Flags().StringVar(&stepConfig.TargetVectorScope, "targetVectorScope", os.Getenv("PIPER_targetVectorScope"), "Determines whether the Target Vector is published to the public SPC('P') or the test SPC('T')")
+	cmd.Flags().StringVar(&stepConfig.TargetVectorScope, "targetVectorScope", os.Getenv("PIPER_targetVectorScope"), "Determines whether the Target Vector is published to the productive ('P') or test ('T') environment")
 	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions")
 
 	cmd.MarkFlagRequired("abapAddonAssemblyKitEndpoint")

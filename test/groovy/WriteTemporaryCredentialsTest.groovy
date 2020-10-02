@@ -1,3 +1,4 @@
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -16,6 +17,7 @@ import static org.junit.Assert.assertThat
 import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertTrue
 import static org.junit.Assert.assertFalse
+import com.sap.piper.Utils
 
 class WriteTemporaryCredentialsTest extends BasePiperTest {
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
@@ -50,6 +52,13 @@ class WriteTemporaryCredentialsTest extends BasePiperTest {
         credentialsRule.reset()
             .withCredentials('erp-credentials', 'test_user', '********')
             .withCredentials('testCred2', 'test_other', '**')
+
+        Utils.metaClass.echo = { def m -> }
+    }
+
+    @After
+    public void tearDown() {
+        Utils.metaClass = null
     }
 
     @Test
