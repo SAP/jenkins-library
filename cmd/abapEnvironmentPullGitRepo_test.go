@@ -122,7 +122,7 @@ repositories:
 		assert.NoError(t, err)
 	})
 	t.Run("Failure case: pull repos from empty file config", func(t *testing.T) {
-		expectedErrorMessage := "Something failed during the pull of the repositories: Could not parse config file repositoriesTest.yml, AddonDescriptor doesn't contain any repositories"
+		expectedErrorMessage := "Something failed during the pull of the repositories: Error in config file repositoriesTest.yml, AddonDescriptor doesn't contain any repositories"
 
 		var autils = abaputils.AUtilsMock{}
 		defer autils.Cleanup()

@@ -163,8 +163,7 @@ func checkCheckoutBranchRepositoryConfiguration(options abapEnvironmentCheckoutB
 		return fmt.Errorf("Checking configuration failed: %w", errors.New("You have not specified any repository configuration to be pulled into the ABAP Environment System. Please make sure that you specified the repositories with their branches that should be pulled either in a dedicated file or via in-line configuration. For more information please read the User documentation"))
 	}
 	if options.Repositories != "" && options.RepositoryName != "" && options.BranchName != "" {
-		log.Entry().Info("It seems like you have specified both the repositories with their branches to be pulled as an in-line configuration as well as in the dedicated repositories configuration file.")
-		log.Entry().Info("Please note that in this case both configurations will be handled and checked out.")
+		log.Entry().Info("It seems like you have specified repositories directly via the configuration parameters 'repositoryName' and 'branchName' as well as in the dedicated repositories configuration file. Please note that in this case both configurations will be handled and checked out.")
 	}
 	if options.Repositories != "" && ((options.RepositoryName == "") != (options.BranchName == "")) {
 		log.Entry().Info("It seems like you have specified a dedicated repository configuration file but also a wrong in-line configuration for the repository or branch to be pulled.")

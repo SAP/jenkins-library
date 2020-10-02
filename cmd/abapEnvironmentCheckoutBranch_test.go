@@ -123,7 +123,7 @@ repositories:
 		assert.NoError(t, err)
 	})
 	t.Run("Failure case: checkout Branches from empty file config", func(t *testing.T) {
-		expectedErrorMessage := "Something failed during the checkout: Could not parse config file repositoriesTest.yml, AddonDescriptor doesn't contain any repositories"
+		expectedErrorMessage := "Something failed during the checkout: Error in config file repositoriesTest.yml, AddonDescriptor doesn't contain any repositories"
 
 		var autils = abaputils.AUtilsMock{}
 		defer autils.Cleanup()

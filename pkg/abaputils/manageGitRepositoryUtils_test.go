@@ -139,7 +139,7 @@ repositories:
 	})
 	t.Run("Get Repositories from file config - failure case", func(t *testing.T) {
 		expectedRepositoryList := []Repository([]Repository{})
-		expectedErrorMessage := "Could not parse config file repositoriesTest.yml, AddonDescriptor doesn't contain any repositories"
+		expectedErrorMessage := "Error in config file repositoriesTest.yml, AddonDescriptor doesn't contain any repositories"
 
 		dir, err := ioutil.TempDir("", "test abap utils")
 		if err != nil {
@@ -172,7 +172,7 @@ repositories:
 	})
 	t.Run("Get Repositories from config - failure case", func(t *testing.T) {
 		expectedRepositoryList := []Repository([]Repository{})
-		expectedErrorMessage := "Could not parse config file repositoriesTest.yml, AddonDescriptor doesn't contain any repositories"
+		expectedErrorMessage := "Error in config file repositoriesTest.yml, AddonDescriptor doesn't contain any repositories"
 
 		dir, err := ioutil.TempDir("", "test  abap utils")
 		if err != nil {
