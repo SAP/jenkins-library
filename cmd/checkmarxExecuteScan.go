@@ -416,7 +416,9 @@ func createAndConfigureNewProject(sys checkmarx.System, projectName, teamID, pre
 	}
 
 	if len(presetValue) > 0 {
-		setPresetForProject(sys, projectCreateResult.ID, projectName, presetValue, engineConfiguration)
+		if err := setPresetForProject(sys, projectCreateResult.ID, projectName, presetValue, engineConfiguration); err != nil {
+			return checkmarx.Project{}, errors.Wrapf(err, "failed to set preset %v for project", presetValue)
+		}
 	} else {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return checkmarx.Project{}, errors.Wrapf(err, "preset not specified, creation of project %v failed", projectName)
@@ -426,8 +428,8 @@ func createAndConfigureNewProject(sys checkmarx.System, projectName, teamID, pre
 		return checkmarx.Project{}, errors.Wrapf(err, "failed to load newly created project %v", projectName)
 	}
 	log.Entry().Debugf("New Project %v created", projectName)
+	log.Entry().Debugf("Projects: ", projects)
 	return projects[0], nil
-
 }
 
 // loadPreset finds a checkmarx.Preset that has either the ID or Name given by presetValue.
