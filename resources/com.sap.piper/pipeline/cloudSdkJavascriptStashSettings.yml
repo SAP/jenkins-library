@@ -51,29 +51,6 @@ compliance:
   unstash: ['SOURCE', 'NODE_MODULES', 'DIST']
   stashes: []
 
-npmAudit:
-  unstash: ["SOURCE", "PACKAGE_LOCK"]
-  stashes: []
-
-s4SdkQualityChecks:
-  unstash: ["SOURCE", "DIST", "REPORTS"]
-
-whitesourceScan:
-  unstash: ["SOURCE", "NODE_MODULES", "PACKAGE_LOCK"]
-  stashes: []
-
-checkmarxScan:
-  unstash: ["SOURCE"]
-  stashes: []
-
-detect:
-  unstash: ["SOURCE"]
-  stashes: []
-
-security:
-  unstash: ["SOURCE", "NODE_MODULES", "PACKAGE_LOCK"]
-  stashes: []
-
 endToEndTests:
   unstash: ["SOURCE", "DEPLOYMENTARTIFACT", "NODE_MODULES", "GENERATED_CAP_FILES"]
   stashes: []
