@@ -58,7 +58,32 @@ func TestSetResourceParameter(t *testing.T) {
 	}
 }
 
-//TODO: add test cases for GetResourceParameter which was previously tested implicitly
+func TestGetResourceParameter(t *testing.T) {
+	type args struct {
+		path         string
+		resourceName string
+		paramName    string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{name: "default", args: args{path: "", resourceName: "", paramName: ""}, want: ""},
+	}
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			// init
+			dir, tempDirErr := ioutil.TempDir("", "")
+			require.NoError(t, tempDirErr)
+			require.DirExists(t, dir, "Failed to create temporary directory")
+			// test
+			result := GetResourceParameter(testCase.args.path, testCase.args.resourceName, testCase.args.paramName)
+			// assert
+			assert.Equal(t, testCase.want, result)
+		})
+	}
+}
 
 func TestSetParameter(t *testing.T) {
 	dir, err := ioutil.TempDir("", "")

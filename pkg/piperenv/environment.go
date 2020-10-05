@@ -17,12 +17,12 @@ import (
 // SetResourceParameter sets a resource parameter in the environment stored in the file system
 func SetResourceParameter(path, resourceName, paramName string, value interface{}) error {
 	var content []byte
-	var err error
 	paramPath := filepath.Join(path, resourceName, paramName)
 	switch typedValue := value.(type) {
 	case string:
 		content = []byte(typedValue)
 	default:
+		var err error
 		paramPath += ".json"
 		content, err = json.Marshal(typedValue)
 		if err != nil {
@@ -34,6 +34,7 @@ func SetResourceParameter(path, resourceName, paramName string, value interface{
 
 // GetResourceParameter reads a resource parameter from the environment stored in the file system
 func GetResourceParameter(path, resourceName, paramName string) string {
+	//TODO: align JSON un/marshalling, currently done in pkg/congif/stepmeta.go#getParameterValue
 	paramPath := filepath.Join(path, resourceName, paramName)
 	return readFromDisk(paramPath)
 }
