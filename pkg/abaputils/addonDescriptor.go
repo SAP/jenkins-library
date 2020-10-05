@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
+	"reflect"
 
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
@@ -86,6 +87,25 @@ func (me *AddonDescriptor) initFromYmlFile(FileName string) error {
 		return errors.New(fmt.Sprintf("Could not unmarshal %v", FileName))
 	}
 
+	return nil
+}
+
+// CheckAddonDescriptorForRepositories checks AddonDescriptor struct if it contains any repositories. If not it will return an error
+func CheckAddonDescriptorForRepositories(addonDescriptor AddonDescriptor) error {
+	//checking if parsing went wrong
+	if len(addonDescriptor.Repositories) == 0 {
+		return errors.New(fmt.Sprintf("AddonDescriptor doesn't contain any repositories"))
+	}
+	//
+	emptyRepositoryCounter := 0
+	for counter, repo := range addonDescriptor.Repositories {
+		if reflect.DeepEqual(Repository{}, repo) {
+			emptyRepositoryCounter++
+		}
+		if counter+1 == len(addonDescriptor.Repositories) && emptyRepositoryCounter == len(addonDescriptor.Repositories) {
+			return errors.New(fmt.Sprintf("AddonDescriptor doesn't contain any repositories"))
+		}
+	}
 	return nil
 }
 
