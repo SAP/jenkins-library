@@ -18,7 +18,7 @@ import static com.sap.piper.Prerequisites.checkScript
     /** The tag of the image to test. */
     'dockerImageTag',
     /**
-     * The path to the goss file to use. Default value is 'goss.yaml'.
+     * The relative path to the goss file to use. Default value is 'goss.yaml'.
      */
     'gossFile'
 ])
@@ -57,68 +57,69 @@ void call(Map parameters = [:]) {
             runOnK8S(config, dockerImageNameAndTag)
 
         }else if (dockerUtils.withDockerDaemon()){
-            runOnNode(dockerImageNameAndTag)
+            runOnNode(config, dockerImageNameAndTag)
         }else{
             error "[${STEP_NAME}] No Docker daemon available, dgoss require a runnig docker daemon"
         }
     }
 }
 
-void runOnNode(dockerImageNameAndTag){
-    def targetImage = docker.image(dockerImageNameAndTag)
-    docker.image('docker:18.06.3-dind').withRun('--privileged -it --name mydind') { c ->
-        sh "while ! docker exec mydind docker stats --no-stream; do sleep 1; done"
-        docker.image('kiwicom/dgoss').inside(""" --link ${c.id}:docker -v "${pwd()}":/src
-        -e "GOSS_FILES_STRATEGY=cp"
-        -e "DOCKER_HOST=tcp://docker:2375" """) {
+void runOnNode(config, dockerImageNameAndTag){
+    def targetImage
+
+    docker.image('aelsabbahy/goss').withRun("--name goss"){ gossc ->
+
+        docker.image(dockerImageNameAndTag).withRun("""--volumes-from goss -v "${pwd()}":"${pwd()}" """) { c ->
             sh """
-                cd /src
-                dgoss run ${dockerImageNameAndTag}
+            docker exec "${c.id}" sh -c "/goss/goss -g ${pwd()}/${config.gossFile} validate --format documentation"
             """
         }
     }
+
+
 }
 
 void runOnK8S(config, dockerImageNameAndTag) {
     stash name: '_gossfile', includes: config.gossFile
-    podTemplate(yaml:"""
+    podTemplate(
+yaml:"""
 apiVersion: v1
 kind: Pod
 metadata:
-    name: dgoss
-    labels:
-        name: dgoss
+  labels:
+    name: goss
 spec:
-    volumes:
-    - name: dind-storage
-        emptyDir: {}
-    containers:
-    - name: dind
-        image: docker:18.06.3-dind
-        securityContext:
-        privileged: true
-        volumeMounts:
-        - name: dind-storage
-            mountPath: /var/lib/docker
-    - name: goss
-        image: kiwicom/dgoss
-        env:
-        - name: DOCKER_HOST
-        value: tcp://localhost:2375
-        - name: GOSS_FILES_STRATEGY
-        value: cp
-        command:
-        - cat
-        tty: true
+  volumes:
+  - name: shared-data
+    emptyDir: {}
+  containers:
+  - name: goss
+    image: aelsabbahy/goss
+    volumeMounts:
+    - name: shared-data
+      mountPath: /shared-goss
+    command:
+    - cat
+    tty: true
+  - name: executor
+    image: ${dockerImageNameAndTag}
+    volumeMounts:
+    - name: shared-data
+      mountPath: /shared-goss
 """
     ){
         node(POD_LABEL){
             container('goss') {
                 unstash '_gossfile'
-                if (config.gossFile != "goss.yaml") {
-                    sh "cp ${config.gossFile} goss.yaml"
-                }
-                sh "dgoss run ${dockerImageNameAndTag}"
+                sh """
+                cp /goss/* /shared-goss
+                """
+            }
+            container('executor') {
+                unstash '_gossfile'
+                sh """
+                /shared-goss/goss -g ${config.gossFile} validate --format documentation
+                """
             }
         }
     }
