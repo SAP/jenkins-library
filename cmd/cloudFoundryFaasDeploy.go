@@ -7,6 +7,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/npm"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"strings"
 )
 
 func cloudFoundryFaasDeploy(config cloudFoundryFaasDeployOptions, telemetryData *telemetry.CustomData) {
@@ -73,7 +74,12 @@ func runCloudFoundryFaasDeploy(options *cloudFoundryFaasDeployOptions,
 	}
 
 	log.Entry().Info("Deploying faas project to Extension Factory Serverless Runtime")
-	xfsrtDeployScript := []string{"faas", "project", "deploy", "-y", "./deploy/values.yaml"}
+	xfsrtDeployScript := []string{"faas", "project", "deploy"}
+	if options.XfsrtValues != "" {
+		deployValues := strings.ReplaceAll(options.XfsrtValues, "\n", " ")
+		xfsrtDeployScript = append(xfsrtDeployScript, []string{"-c", fmt.Sprintf("'%s'", deployValues)}...)
+	}
+
 	if err := c.RunExecutable("xfsrt-cli", xfsrtDeployScript...); err != nil {
 		return fmt.Errorf("Failed to deploy faas project: %w", err)
 	} else {

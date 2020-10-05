@@ -21,6 +21,7 @@ type cloudFoundryFaasDeployOptions struct {
 	CfSpace              string `json:"cfSpace,omitempty"`
 	XfsrtServiceInstance string `json:"xfsrtServiceInstance,omitempty"`
 	XfsrtServiceKeyName  string `json:"xfsrtServiceKeyName,omitempty"`
+	XfsrtValues          string `json:"xfsrtValues,omitempty"`
 	DefaultNpmRegistry   string `json:"defaultNpmRegistry,omitempty"`
 }
 
@@ -52,6 +53,7 @@ func CloudFoundryFaasDeployCommand() *cobra.Command {
 			}
 			log.RegisterSecret(stepConfig.Username)
 			log.RegisterSecret(stepConfig.Password)
+			log.RegisterSecret(stepConfig.XfsrtValues)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -89,6 +91,7 @@ func addCloudFoundryFaasDeployFlags(cmd *cobra.Command, stepConfig *cloudFoundry
 	cmd.Flags().StringVar(&stepConfig.CfSpace, "cfSpace", os.Getenv("PIPER_cfSpace"), "CF Space")
 	cmd.Flags().StringVar(&stepConfig.XfsrtServiceInstance, "xfsrtServiceInstance", os.Getenv("PIPER_xfsrtServiceInstance"), "Parameter for Extension Factory serverless runtime Service Instance Name")
 	cmd.Flags().StringVar(&stepConfig.XfsrtServiceKeyName, "xfsrtServiceKeyName", os.Getenv("PIPER_xfsrtServiceKeyName"), "Parameter for Service Key name for CloudFoundry Service Key to be created")
+	cmd.Flags().StringVar(&stepConfig.XfsrtValues, "xfsrtValues", os.Getenv("PIPER_xfsrtValues"), "Deploy values as JSON string for Extension Factory serverless runtime.")
 	cmd.Flags().StringVar(&stepConfig.DefaultNpmRegistry, "defaultNpmRegistry", os.Getenv("PIPER_defaultNpmRegistry"), "Url to the npm registry that should be used for installing npm dependencies.")
 
 	cmd.MarkFlagRequired("cfApiEndpoint")
@@ -177,6 +180,20 @@ func cloudFoundryFaasDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/xfsrtServiceKeyName"}, {Name: "cloudFoundry/xfsrtServiceKey"}, {Name: "xfsrtServiceKey"}},
+					},
+					{
+						Name: "xfsrtValues",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "xfsrtValuesCredentialsId",
+								Param: "xfsrtValues",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "cloudFoundry/xfsrtValues"}},
 					},
 					{
 						Name:        "defaultNpmRegistry",

@@ -9,6 +9,9 @@ spec:
       - name: cfCredentialsId
         description: Jenkins credentials ID containing user and password to authenticate to the Cloud Foundry API
         type: jenkins
+      - name: xfsrtValuesCredentialsId
+        description: Jenkins 'Secret text' credentials ID containing deploy values for Extension Factory serverless runtime CLI
+        type: jenkins
     params:
       - name: cfApiEndpoint
         type: string
@@ -93,6 +96,22 @@ spec:
           - name: cloudFoundry/xfsrtServiceKeyName
           - name: cloudFoundry/xfsrtServiceKey
           - name: xfsrtServiceKey
+      - name: xfsrtValues
+        type: string
+        description: "Deploy values as JSON string for Extension Factory serverless runtime."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: false
+        secret: true
+        resourceRef:
+          - name: xfsrtValuesCredentialsId
+            type: secret
+            param: xfsrtValues
+        aliases:
+          - name: cloudFoundry/xfsrtValues
       - name: defaultNpmRegistry
         type: string
         description: "Url to the npm registry that should be used for installing npm dependencies."
