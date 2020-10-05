@@ -220,7 +220,7 @@ private String inferProjectName(Script script, String buildTool) {
             return mta.ID
     }
 
-    script.error "Cannot infer projectName. Project buildTool was none of the expected ones mta, maven, npm."
+    script.error "Cannot infer projectName. Project buildTool was none of the expected ones 'mta', 'maven', or 'npm'."
 }
 
 private String checkBuildTool(config) {
