@@ -86,26 +86,32 @@ yaml:"""
 apiVersion: v1
 kind: Pod
 metadata:
-  labels:
-    name: goss
+    labels:
+        name: goss
 spec:
-  volumes:
-  - name: shared-data
-    emptyDir: {}
-  containers:
-  - name: goss
-    image: aelsabbahy/goss
-    volumeMounts:
-    - name: shared-data
-      mountPath: /shared-goss
-    command:
-    - cat
-    tty: true
-  - name: executor
-    image: ${dockerImageNameAndTag}
-    volumeMounts:
-    - name: shared-data
-      mountPath: /shared-goss
+    volumes:
+        -
+            name: shared-data
+            emptyDir: {}
+    containers:
+        -
+            name: goss
+            image: aelsabbahy/goss
+            volumeMounts:
+                -
+                    name: shared-data
+                    mountPath: /shared-goss
+            command:
+                - cat
+            tty: true
+        -
+            name: executor
+            image: '${dockerImageNameAndTag}'
+            volumeMounts:
+                -
+                    name: shared-data
+                    mountPath: /shared-goss
+
 """
     ){
         node(POD_LABEL){
