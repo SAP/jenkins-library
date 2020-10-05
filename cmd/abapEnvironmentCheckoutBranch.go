@@ -192,8 +192,8 @@ func handleCheckout(repo abaputils.Repository, checkoutConnectionDetails abaputi
 	if err != nil {
 		return fmt.Errorf("Failed to poll Checkout: %w", errors.New("Status of checkout action on repository"+repo.Name+" failed on the ABAP System"))
 	}
-	const statusCheckoutFail = "E"
-	if status == statusCheckoutFail {
+	const abapStatusCheckoutFail = "E"
+	if status == abapStatusCheckoutFail {
 		return fmt.Errorf("Checkout failed: %w", errors.New("Checkout of branch "+repo.Branch+" failed on the ABAP System"))
 	}
 	finishCheckoutLogs(repo.Branch, repo.Name)
