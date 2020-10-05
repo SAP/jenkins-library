@@ -39,7 +39,7 @@ func (p *xsDeployCommonPipelineEnvironment) persist(path, resourceName string) {
 	content := []struct {
 		category string
 		name     string
-		value    string
+		value    interface{}
 	}{
 		{category: "", name: "operationId", value: p.operationID},
 	}
