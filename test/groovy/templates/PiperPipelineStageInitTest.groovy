@@ -29,6 +29,7 @@ class PiperPipelineStageInitTest extends BasePiperTest {
         .around(jsr)
 
     private List stepsCalled = []
+    private Map  stepParams = [:]
 
     @Before
     void init() {
@@ -60,6 +61,7 @@ class PiperPipelineStageInitTest extends BasePiperTest {
 
         helper.registerAllowedMethod('setupCommonPipelineEnvironment', [Map.class], { m ->
             stepsCalled.add('setupCommonPipelineEnvironment')
+            stepParams['setupCommonPipelineEnvironment'] = m
         })
 
         helper.registerAllowedMethod('piperInitRunStageConfiguration', [Map.class], { m ->
@@ -233,6 +235,18 @@ class PiperPipelineStageInitTest extends BasePiperTest {
             'artifactSetVersion',
             'pipelineStashFilesBeforeBuild'
         ))
+    }
+
+    @Test
+    void testInitForwardConfigParams() {
+        jsr.step.piperPipelineStageInit(script: nullScript, juStabUtils: utils, configFile: 'my-config.yml',
+            customDefaults: ['my-custom-defaults.yml'], customDefaultsFromFiles: ['my-custom-default-file.yml'],
+            buildTool: 'maven')
+
+        assertThat(stepsCalled, hasItems('setupCommonPipelineEnvironment'))
+        assertThat(stepParams.setupCommonPipelineEnvironment?.configFile, is('my-config.yml'))
+        assertThat(stepParams.setupCommonPipelineEnvironment?.customDefaults, is(['my-custom-defaults.yml']))
+        assertThat(stepParams.setupCommonPipelineEnvironment?.customDefaultsFromFiles, is(['my-custom-default-file.yml']))
     }
 
     @Test
