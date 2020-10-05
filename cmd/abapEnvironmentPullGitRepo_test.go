@@ -47,7 +47,7 @@ func TestPullStep(t *testing.T) {
 		assert.NoError(t, err, "Did not expect error")
 	})
 	t.Run("Run Step Failure", func(t *testing.T) {
-		expectedErrorMessage := "Something failed during the pull of the repositories: Checking configuration failed: You have not specified any repository configuration to be pulled into the ABAP Environment System. Please make sure that you specified the repositories that should be pulled either in a dedicated file or via in-line configuration. For more information please read the User documentation"
+		expectedErrorMessage := "Something failed during the pull of the repositories: Checking configuration failed: You have not specified any repository configuration to be pulled into the ABAP Environment System. Please make sure that you specified the repositories that should be pulled either in a dedicated file or via the parameter 'repositoryNames'. For more information please read the User documentation"
 
 		var autils = abaputils.AUtilsMock{}
 		defer autils.Cleanup()
@@ -307,7 +307,7 @@ func TestPullConfigChecker(t *testing.T) {
 		assert.NoError(t, err)
 	})
 	t.Run("Failure case: empty config", func(t *testing.T) {
-		errorMessage := "Checking configuration failed: You have not specified any repository configuration to be pulled into the ABAP Environment System. Please make sure that you specified the repositories that should be pulled either in a dedicated file or via in-line configuration. For more information please read the User documentation"
+		errorMessage := "Checking configuration failed: You have not specified any repository configuration to be pulled into the ABAP Environment System. Please make sure that you specified the repositories that should be pulled either in a dedicated file or via the parameter 'repositoryNames'. For more information please read the User documentation"
 		config := abapEnvironmentPullGitRepoOptions{}
 		err := checkPullRepositoryConfiguration(config)
 		assert.Equal(t, errorMessage, err.Error(), "Different error message expected")

@@ -205,7 +205,7 @@ repositories:
 	})
 	t.Run("Get Repositories from empty config - failure case", func(t *testing.T) {
 		expectedRepositoryList := []Repository([]Repository{})
-		expectedErrorMessage := "Failed to read repository configuration: You have not specified any repository configuration to be pulled into the ABAP Environment System. Please make sure that you specified the repositories with their branches that should be pulled either in a dedicated file or via in-line configuration. For more information please read the User documentation"
+		expectedErrorMessage := "Failed to read repository configuration: You have not specified any repository configuration. Please make sure that you have correctly specified it. For more information please read the User documentation"
 
 		config := RepositoriesConfig{}
 
