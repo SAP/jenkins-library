@@ -62,6 +62,23 @@ import static com.sap.piper.Prerequisites.checkScript
      * Enables the use of technical stage names.
      */
     'useTechnicalStageNames',
+    /**
+     * Optional path to the pipeline configuration file defining project specific settings.
+     */
+    'configFile',
+    /**
+     * Optional list of file names which will be extracted from library resources and which serve as source for
+     * default values for the pipeline configuration. These are merged with and override built-in defaults, with
+     * a parameter supplied by the last resource file taking precedence over the same parameter supplied in an
+     * earlier resource file or built-in default.
+     */
+    'customDefaults',
+    /**
+     * Optional list of file paths or URLs which must point to YAML content. These work exactly like
+     * `customDefaults`, but from local or remote files instead of library resources. They are merged with and
+     * take precedence over `customDefaults`.
+     */
+    'customDefaultsFromFiles'
 ])
 
 /**
@@ -84,7 +101,8 @@ void call(Map parameters = [:]) {
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], ordinal: 1, telemetryDisabled: true) {
         def scmInfo = checkout scm
 
-        setupCommonPipelineEnvironment script: script, customDefaults: parameters.customDefaults
+        setupCommonPipelineEnvironment(script: script, customDefaults: parameters.customDefaults,
+            configFile: parameters.configFile, customDefaultsFromFiles: parameters.customDefaultsFromFiles)
 
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
