@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/GoogleContainerTools/container-diff/pkg/util"
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperDocker "github.com/SAP/jenkins-library/pkg/docker"
@@ -40,19 +42,23 @@ func protecodeExecuteScan(config protecodeExecuteScanOptions, telemetryData *tel
 
 	dClient := createDockerClient(&config)
 	if err := runProtecodeScan(&config, influx, dClient); err != nil {
-		log.Entry().WithError(err).Fatal("Execution failed")
+		log.Entry().WithError(err).Fatal("Failed to execute protecode scan.")
 	}
 }
 
 func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExecuteScanInflux, dClient piperDocker.Download) error {
 	correctDockerConfigEnvVar(config)
 	var fileName, filePath string
+	var err error
 	//create client for sending api request
 	log.Entry().Debug("Create protecode client")
 	client := createClient(config)
 	if len(config.FetchURL) <= 0 {
 		log.Entry().Debugf("Get docker image: %v, %v, %v, %v", config.ScanImage, config.DockerRegistryURL, config.FilePath, config.IncludeLayers)
-		fileName, filePath = getDockerImage(dClient, config)
+		fileName, filePath, err = getDockerImage(dClient, config)
+		if err != nil {
+			return errors.Wrap(err, "failed to get Docker image")
+		}
 		if len(config.FilePath) <= 0 {
 			(*config).FilePath = filePath
 			log.Entry().Debugf("Filepath for upload image: %v", config.FilePath)
@@ -85,7 +91,7 @@ func handleArtifactVersion(artifactVersion string) string {
 	return artifactVersion
 }
 
-func getDockerImage(dClient piperDocker.Download, config *protecodeExecuteScanOptions) (string, string) {
+func getDockerImage(dClient piperDocker.Download, config *protecodeExecuteScanOptions) (string, string, error) {
 
 	cacheImagePath := filepath.Join(cachePath, cacheProtecodeImagePath)
 	deletePath := filepath.Join(cachePath, cacheProtecodePath)
@@ -95,11 +101,12 @@ func getDockerImage(dClient piperDocker.Download, config *protecodeExecuteScanOp
 
 	imageSource, err := dClient.GetImageSource()
 	if err != nil {
-		log.Entry().WithError(err).Fatal("Error during get docker image source")
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return "", "", errors.Wrap(err, "failed to get docker image")
 	}
 	image, err := dClient.DownloadImageToPath(imageSource, cacheImagePath)
 	if err != nil {
-		log.Entry().Fatalf("Error during get docker image: %v", err)
+		return "", "", errors.Wrap(err, "failed to download docker image")
 	}
 
 	var fileName string
@@ -110,14 +117,16 @@ func getDockerImage(dClient piperDocker.Download, config *protecodeExecuteScanOp
 		tarFilePath := filepath.Join(cachePath, fileName)
 		tarFile, err := os.Create(tarFilePath)
 		if err != nil {
-			log.Entry().WithError(err).Fatal("Error during create tar for the docker image")
+			log.SetErrorCategory(log.ErrorCustom)
+			return "", "", errors.Wrap(err, "failed to create tar for the docker image")
 		}
 		defer tarFile.Close()
 		if err := os.Chmod(tarFilePath, 0644); err != nil {
-			log.Entry().WithError(err).Fatal("Error during create tar for the docker image")
+			log.SetErrorCategory(log.ErrorCustom)
+			return "", "", errors.Wrap(err, "failed to set permissions on tar for the docker image")
 		}
 		if err = dClient.TarImage(tarFile, image); err != nil {
-			log.Entry().WithError(err).Fatal("Error during tar the docker image")
+			return "", "", errors.Wrap(err, "failed to tar the docker image")
 		}
 	}
 
@@ -127,7 +136,7 @@ func getDockerImage(dClient piperDocker.Download, config *protecodeExecuteScanOp
 		resultFilePath = cachePath
 	}
 
-	return fileName, resultFilePath
+	return fileName, resultFilePath, nil
 }
 
 func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.Protecode, config *protecodeExecuteScanOptions, fileName string, writeReportToFile func(resp io.ReadCloser, reportFileName string) error) error {
