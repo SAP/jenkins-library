@@ -43,7 +43,14 @@ void call(parameters = [:]) {
 
         stage('deploy') {
 
-            neoDeploy(parameters)
+            def mtaBuildCfg = parameters.script.commonPipelineEnvironment.getStepConfiguration('mtaBuild', '')
+
+            if((mtaBuildCfg.platform == 'NEO') || (mtaBuildCfg.buildTarget == 'NEO')) {
+                neoDeploy(parameters)
+            }
+            else {
+                cloudFoundryDeploy(parameters)
+            }
         }
 
         // Cut and paste lines above in order to create a pipeline from this scenario

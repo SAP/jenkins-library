@@ -71,6 +71,14 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
         .around(new JenkinsCredentialsRule(this)
         .withCredentials('CI_CREDENTIALS_ID', 'foo', 'terceSpot'))
 
+    private writeInfluxMap = [:]
+
+    class JenkinsUtilsMock extends JenkinsUtils {
+        def isJobStartedByUser() {
+            return true
+        }
+    }
+
     @Before
     void setup() {
         //
@@ -98,11 +106,18 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
         })
 
         Utils.metaClass.echo = { def m -> }
+
+        helper.registerAllowedMethod('influxWriteData', [Map.class], { m ->
+            writeInfluxMap = m
+        })
+
+        UUID.metaClass.static.randomUUID = { -> 1 }
     }
 
     @After
     public void tearDown() {
         Utils.metaClass = null
+        UUID.metaClass = null
     }
 
     @Test
@@ -111,7 +126,11 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
         nullScript
             .commonPipelineEnvironment
                 .configuration =  [steps:
-                                    [neoDeploy:
+                                    [mtaBuild:
+                                         [
+                                           platform: 'NEO'
+                                         ],
+                                     neoDeploy:
                                          [neo:
                                               [ host: 'hana.example.com',
                                                 account: 'myTestAccount',
@@ -120,9 +139,7 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
                                     ]
                                 ]
 
-        stepRule.step.fioriOnCloudPlatformPipeline(script: nullScript,
-            platform: 'NEO',
-        )
+        stepRule.step.fioriOnCloudPlatformPipeline(script: nullScript)
 
         //
         // the deployable is exchanged between the involved steps via this property:
@@ -142,4 +159,35 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
                 .hasSingleQuotedOption('source', 'test.mtar')
                 .hasArgument('synchronous'))
     }
+    
+    @Test
+    void straightForwardTestCF() {
+
+        nullScript
+            .commonPipelineEnvironment
+                .configuration =  [steps:
+                                     [mtaBuild:
+                                         [
+                                           platform: 'CF'
+                                         ],
+                                     cloudFoundryDeploy:
+                                         [ deployTool: 'mtaDeployPlugin',
+                                           cloudFoundry:
+                                              [ apiEndpoint: 'https://api.cf.hana.example.com',
+                                                org: 'testOrg',
+                                                space: 'testSpace',
+                                                credentialsId: 'CI_CREDENTIALS_ID'
+                                              ]
+                                         ]
+                                    ]
+                                ]
+
+        stepRule.step.fioriOnCloudPlatformPipeline(
+          script: nullScript,
+          jenkinsUtilsStub: new JenkinsUtilsMock()
+          )
+        
+        assertThat(shellRule.shell, hasItem(containsString('cf login -u "foo" -p \'terceSpot\' -a https://api.cf.hana.example.com -o "testOrg" -s "testSpace"')))
+    }
+
 }
