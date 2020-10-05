@@ -5,7 +5,7 @@
 Parameters that have a ResourceReference of type `vaultSecret` will be looked up from vault when all of the following things are true...
 
 * The environment variables `PIPER_vaultRoleID` and `PIPER_vaultRoleSecretID` must both be set to the Vault AppRole role ID and to the Vault AppRole secret ID. See [Vault Approle docs](https://www.vaultproject.io/docs/auth/approle)
-* `vaultAddress` ist set in the `general` section of the configuration file.
+* `vaultServerUrl` ist set in the `general` section of the configuration file.
 * The parameter must not be set by the configuration file, as a CLI Parameter or an environment variable. Any parameter that has already been set won't be resolved via vault.
 
 ## Lookup

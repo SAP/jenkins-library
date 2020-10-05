@@ -10,7 +10,7 @@ import (
 var vaultFilter = []string{
 	"vaultApproleID",
 	"vaultApproleSecreId",
-	"vaultAddress",
+	"vaultServerUrl",
 	"vaultNamespace",
 	"vaultBasePath",
 	"vaultPipelineName",
@@ -28,7 +28,7 @@ type vaultClient interface {
 }
 
 func getVaultClientFromConfig(config StepConfig, creds VaultCredentials) (vaultClient, error) {
-	address, addressOk := config.Config["vaultAddress"].(string)
+	address, addressOk := config.Config["vaultServerUrl"].(string)
 	// if vault isn't used it's not an error
 	if !addressOk || creds.AppRoleID == "" || creds.AppRoleSecretID == "" {
 		log.Entry().Info("Skipping fetching secrets from vault since it is not configured")
