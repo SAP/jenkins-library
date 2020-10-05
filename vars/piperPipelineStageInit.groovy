@@ -29,6 +29,10 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'inferBuildTool',
     /**
+     * Enables automatic inference from the build descriptor in case projectName is not configured.
+     */
+    'inferProjectName',
+    /**
      * Toggle for initialization of the stash settings for Cloud SDK Pipeline.
      * If this is set to true, the stashSettings parameter is **not** configurable.
      */
@@ -41,6 +45,10 @@ import static com.sap.piper.Prerequisites.checkScript
      * Defines the main branch for your pipeline. **Typically this is the `master` branch, which does not need to be set explicitly.** Only change this in exceptional cases
      */
     'productiveBranch',
+    /**
+     * Name of the project, e.g. used for the name of lockable resources.
+     */
+    'projectName',
     /**
      * Defines the library resource containing stage/step initialization settings. Those define conditions when certain steps/stages will be activated. **Caution: changing the default will break the standard behavior of the pipeline - thus only relevant when including `Init` stage into custom pipelines!**
      */
@@ -122,6 +130,12 @@ void call(Map parameters = [:]) {
 
         String buildTool = checkBuildTool(config)
 
+        script.commonPipelineEnvironment.projectName = config.projectName
+
+        if (!script.commonPipelineEnvironment.projectName && config.inferProjectName) {
+            script.commonPipelineEnvironment.projectName = inferProjectName(script, buildTool)
+        }
+
         if (Boolean.valueOf(env.ON_K8S) && config.containerMapResource) {
             ContainerMap.instance.initFromResource(script, config.containerMapResource, buildTool)
         }
@@ -191,6 +205,22 @@ void call(Map parameters = [:]) {
         }
         pipelineStashFilesBeforeBuild script: script
     }
+}
+
+private String inferProjectName(Script script, String buildTool) {
+    switch (buildTool) {
+        case 'maven':
+            def pom = script.readMavenPom file: 'pom.xml'
+            return "${pom.groupId}-${pom.artifactId}"
+        case 'npm':
+            Map packageJson = script.readJSON file: 'package.json'
+            return packageJson.name
+        case 'mta':
+            Map mta = script.readYaml file: 'mta.yaml'
+            return mta.ID
+    }
+
+    script.error "Cannot infer projectName. Project buildTool was none of the expected ones 'mta', 'maven', or 'npm'."
 }
 
 private String checkBuildTool(config) {
