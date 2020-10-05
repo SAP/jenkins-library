@@ -109,8 +109,11 @@ func loadExistingProject(sys checkmarx.System, initialProjectName, pullRequestNa
 		}
 	} else {
 		projects, err := sys.GetProjectsByNameAndTeam(projectName, teamID)
-		if err != nil || len(projects) == 0 {
-			return project, projectName, errors.Wrap(err, "no projects found")
+		if err != nil {
+			return project, projectName, errors.Wrap(err, "failed getting projects")
+		}
+		if len(projects) == 0 {
+			return checkmarx.Project{}, projectName, nil
 		}
 		project = projects[0]
 		log.Entry().Debugf("Loaded project with name %v", project.Name)
@@ -407,24 +410,27 @@ func enforceThresholds(config checkmarxExecuteScanOptions, results map[string]in
 }
 
 func createAndConfigureNewProject(sys checkmarx.System, projectName, teamID, presetValue, engineConfiguration string) (checkmarx.Project, error) {
+	if len(presetValue) == 0 {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return checkmarx.Project{}, fmt.Errorf("preset not specified, creation of project %v failed", projectName)
+	}
+
 	projectCreateResult, err := sys.CreateProject(projectName, teamID)
 	if err != nil {
 		return checkmarx.Project{}, errors.Wrapf(err, "cannot create project %v", projectName)
 	}
 
-	if len(presetValue) > 0 {
-		setPresetForProject(sys, projectCreateResult.ID, projectName, presetValue, engineConfiguration)
-	} else {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		return checkmarx.Project{}, errors.Wrapf(err, "preset not specified, creation of project %v failed", projectName)
+	if err := setPresetForProject(sys, projectCreateResult.ID, projectName, presetValue, engineConfiguration); err != nil {
+		return checkmarx.Project{}, errors.Wrapf(err, "failed to set preset %v for project", presetValue)
 	}
+
 	projects, err := sys.GetProjectsByNameAndTeam(projectName, teamID)
 	if err != nil || len(projects) == 0 {
 		return checkmarx.Project{}, errors.Wrapf(err, "failed to load newly created project %v", projectName)
 	}
 	log.Entry().Debugf("New Project %v created", projectName)
+	log.Entry().Debugf("Projects: %v", projects)
 	return projects[0], nil
-
 }
 
 // loadPreset finds a checkmarx.Preset that has either the ID or Name given by presetValue.
