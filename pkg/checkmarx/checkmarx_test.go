@@ -40,7 +40,11 @@ func (sm *senderMock) SendRequest(method, url string, body io.Reader, header htt
 		buf.ReadFrom(body)
 		sm.requestBody = buf.String()
 	}
-	return &http.Response{StatusCode: sm.httpStatusCode, Body: ioutil.NopCloser(strings.NewReader(sm.responseBody))}, nil
+	var httpError error
+	if sm.httpStatusCode > 399 {
+		httpError = fmt.Errorf("http error %v", sm.httpStatusCode)
+	}
+	return &http.Response{StatusCode: sm.httpStatusCode, Body: ioutil.NopCloser(strings.NewReader(sm.responseBody))}, httpError
 }
 func (sm *senderMock) UploadFile(url, file, fieldName string, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
 	sm.httpMethod = http.MethodPost
@@ -92,6 +96,20 @@ func TestSendRequest(t *testing.T) {
 		_, err := sendRequest(&sys, "error", "/test", nil, nil)
 
 		assert.Error(t, err, "Error expected but none occurred")
+	})
+}
+
+func TestSendRequestInternal(t *testing.T) {
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx_test")
+	opts := piperHttp.ClientOptions{}
+
+	t.Run("test accepted error", func(t *testing.T) {
+		myTestClient := senderMock{responseBody: `{"some": "test"}`, httpStatusCode: 404}
+		sys := SystemInstance{serverURL: "https://cx.server.com", client: &myTestClient, logger: logger}
+		myTestClient.SetOptions(opts)
+		_, err := sendRequestInternal(&sys, "GET", "/test", nil, nil, []int{404})
+
+		assert.NoError(t, err, "No error expected but error occurred")
 	})
 }
 
