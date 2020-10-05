@@ -16,13 +16,13 @@ func TestCloudFoundryFaasDeploy(t *testing.T) {
 	var telemetryData telemetry.CustomData
 
 	config := cloudFoundryFaasDeployOptions{
-		CfAPIEndpoint:             "https://api.endpoint.com",
-		CfOrg:                     "testOrg",
-		CfSpace:                   "testSpace",
-		Username:                  "testUser",
-		Password:                  "testPassword",
-		XfsRuntimeServiceInstance: "testInstance",
-		XfsRuntimeServiceKeyName:  "testKey",
+		CfAPIEndpoint:        "https://api.endpoint.com",
+		CfOrg:                "testOrg",
+		CfSpace:              "testSpace",
+		Username:             "testUser",
+		Password:             "testPassword",
+		XfsrtServiceInstance: "testInstance",
+		XfsrtServiceKeyName:  "testKey",
 	}
 	execRunner := mock.ExecMockRunner{}
 	cfUtilsMock := cloudfoundry.CfUtilsMock{}

@@ -69,7 +69,7 @@ spec:
         mandatory: true
         aliases:
           - name: cloudFoundry/space
-      - name: xfsRuntimeServiceInstance
+      - name: xfsrtServiceInstance
         type: string
         description: Parameter for Extension Factory serverless runtime Service Instance Name
         scope:
@@ -79,8 +79,8 @@ spec:
           - GENERAL
         mandatory: true
         aliases:
-          - name: cloudFoundry/xfsRuntimeServiceInstance
-      - name: xfsRuntimeServiceKeyName
+          - name: cloudFoundry/xfsrtServiceInstance
+      - name: xfsrtServiceKeyName
         type: string
         description: Parameter for Service Key name for CloudFoundry Service Key to be created
         scope:
@@ -90,9 +90,9 @@ spec:
           - GENERAL
         mandatory: true
         aliases:
-          - name: cloudFoundry/xfsRuntimeServiceKeyName
-          - name: cloudFoundry/xfsRuntimeServiceKey
-          - name: xfsRuntimeServiceKey
+          - name: cloudFoundry/xfsrtServiceKeyName
+          - name: cloudFoundry/xfsrtServiceKey
+          - name: xfsrtServiceKey
       - name: defaultNpmRegistry
         type: string
         description: "Url to the npm registry that should be used for installing npm dependencies."

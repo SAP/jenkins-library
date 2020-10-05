@@ -54,8 +54,8 @@ func runCloudFoundryFaasDeploy(options *cloudFoundryFaasDeployOptions,
 		}
 	}()
 
-	serviceInstance := options.XfsRuntimeServiceInstance
-	serviceKey := options.XfsRuntimeServiceKeyName
+	serviceInstance := options.XfsrtServiceInstance
+	serviceKey := options.XfsrtServiceKeyName
 	log.Entry().Infof("Logging into Extension Factory Serverless Runtime service instance '%s' with service key '%s'", serviceInstance, serviceKey)
 	xfsrtLoginScript := []string{"login", "-s", serviceInstance, "-b", serviceKey, "--silent"}
 	if err := c.RunExecutable("xfsrt-cli", xfsrtLoginScript...); err != nil {

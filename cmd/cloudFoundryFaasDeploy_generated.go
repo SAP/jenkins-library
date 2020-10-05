@@ -14,14 +14,14 @@ import (
 )
 
 type cloudFoundryFaasDeployOptions struct {
-	CfAPIEndpoint             string `json:"cfApiEndpoint,omitempty"`
-	Username                  string `json:"username,omitempty"`
-	Password                  string `json:"password,omitempty"`
-	CfOrg                     string `json:"cfOrg,omitempty"`
-	CfSpace                   string `json:"cfSpace,omitempty"`
-	XfsRuntimeServiceInstance string `json:"xfsRuntimeServiceInstance,omitempty"`
-	XfsRuntimeServiceKeyName  string `json:"xfsRuntimeServiceKeyName,omitempty"`
-	DefaultNpmRegistry        string `json:"defaultNpmRegistry,omitempty"`
+	CfAPIEndpoint        string `json:"cfApiEndpoint,omitempty"`
+	Username             string `json:"username,omitempty"`
+	Password             string `json:"password,omitempty"`
+	CfOrg                string `json:"cfOrg,omitempty"`
+	CfSpace              string `json:"cfSpace,omitempty"`
+	XfsrtServiceInstance string `json:"xfsrtServiceInstance,omitempty"`
+	XfsrtServiceKeyName  string `json:"xfsrtServiceKeyName,omitempty"`
+	DefaultNpmRegistry   string `json:"defaultNpmRegistry,omitempty"`
 }
 
 // CloudFoundryFaasDeployCommand cloudFoundryFaasDeploy
@@ -65,6 +65,7 @@ func CloudFoundryFaasDeployCommand() *cobra.Command {
 			telemetryData.ErrorCode = "1"
 			handler := func() {
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
 			}
 			log.DeferExitHandler(handler)
@@ -86,8 +87,8 @@ func addCloudFoundryFaasDeployFlags(cmd *cobra.Command, stepConfig *cloudFoundry
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "User Password for CF User")
 	cmd.Flags().StringVar(&stepConfig.CfOrg, "cfOrg", os.Getenv("PIPER_cfOrg"), "CF org")
 	cmd.Flags().StringVar(&stepConfig.CfSpace, "cfSpace", os.Getenv("PIPER_cfSpace"), "CF Space")
-	cmd.Flags().StringVar(&stepConfig.XfsRuntimeServiceInstance, "xfsRuntimeServiceInstance", os.Getenv("PIPER_xfsRuntimeServiceInstance"), "Parameter for Extension Factory serverless runtime Service Instance Name")
-	cmd.Flags().StringVar(&stepConfig.XfsRuntimeServiceKeyName, "xfsRuntimeServiceKeyName", os.Getenv("PIPER_xfsRuntimeServiceKeyName"), "Parameter for Service Key name for CloudFoundry Service Key to be created")
+	cmd.Flags().StringVar(&stepConfig.XfsrtServiceInstance, "xfsrtServiceInstance", os.Getenv("PIPER_xfsrtServiceInstance"), "Parameter for Extension Factory serverless runtime Service Instance Name")
+	cmd.Flags().StringVar(&stepConfig.XfsrtServiceKeyName, "xfsrtServiceKeyName", os.Getenv("PIPER_xfsrtServiceKeyName"), "Parameter for Service Key name for CloudFoundry Service Key to be created")
 	cmd.Flags().StringVar(&stepConfig.DefaultNpmRegistry, "defaultNpmRegistry", os.Getenv("PIPER_defaultNpmRegistry"), "Url to the npm registry that should be used for installing npm dependencies.")
 
 	cmd.MarkFlagRequired("cfApiEndpoint")
@@ -95,8 +96,8 @@ func addCloudFoundryFaasDeployFlags(cmd *cobra.Command, stepConfig *cloudFoundry
 	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("cfOrg")
 	cmd.MarkFlagRequired("cfSpace")
-	cmd.MarkFlagRequired("xfsRuntimeServiceInstance")
-	cmd.MarkFlagRequired("xfsRuntimeServiceKeyName")
+	cmd.MarkFlagRequired("xfsrtServiceInstance")
+	cmd.MarkFlagRequired("xfsrtServiceKeyName")
 }
 
 // retrieve step metadata
@@ -118,20 +119,32 @@ func cloudFoundryFaasDeployMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "cloudFoundry/apiEndpoint"}},
 					},
 					{
-						Name:        "username",
-						ResourceRef: []config.ResourceReference{{Name: "cfCredentialsId", Param: "username"}},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Name: "username",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "cfCredentialsId",
+								Param: "username",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "password",
-						ResourceRef: []config.ResourceReference{{Name: "cfCredentialsId", Param: "password"}},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Name: "password",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "cfCredentialsId",
+								Param: "password",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "cfOrg",
@@ -150,20 +163,20 @@ func cloudFoundryFaasDeployMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "cloudFoundry/space"}},
 					},
 					{
-						Name:        "xfsRuntimeServiceInstance",
+						Name:        "xfsrtServiceInstance",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/xfsRuntimeServiceInstance"}},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/xfsrtServiceInstance"}},
 					},
 					{
-						Name:        "xfsRuntimeServiceKeyName",
+						Name:        "xfsrtServiceKeyName",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/xfsRuntimeServiceKeyName"}, {Name: "cloudFoundry/xfsRuntimeServiceKey"}, {Name: "xfsRuntimeServiceKey"}},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/xfsrtServiceKeyName"}, {Name: "cloudFoundry/xfsrtServiceKey"}, {Name: "xfsrtServiceKey"}},
 					},
 					{
 						Name:        "defaultNpmRegistry",
