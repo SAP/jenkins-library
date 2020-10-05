@@ -92,10 +92,10 @@ func runAbapEnvironmentCheckoutBranch(options *abapEnvironmentCheckoutBranchOpti
 	return nil
 }
 
-func checkoutBranches(repositories []abaputils.Repository, pullConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (err error) {
+func checkoutBranches(repositories []abaputils.Repository, checkoutConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (err error) {
 	log.Entry().Infof("Start switching of %v branches", len(repositories))
 	for _, repo := range repositories {
-		err = handleCheckout(repo, pullConnectionDetails, client, pollIntervall)
+		err = handleCheckout(repo, checkoutConnectionDetails, client, pollIntervall)
 		if err != nil {
 			break
 		}
@@ -160,13 +160,13 @@ func triggerCheckout(repositoryName string, branchName string, checkoutConnectio
 
 func checkCheckoutBranchRepositoryConfiguration(options abapEnvironmentCheckoutBranchOptions) error {
 	if options.Repositories == "" && options.RepositoryName == "" && options.BranchName == "" {
-		return fmt.Errorf("Checking configuration failed: %w", errors.New("You have not specified any repository configuration to be pulled into the ABAP Environment System. Please make sure that you specified the repositories with their branches that should be pulled either in a dedicated file or via in-line configuration. For more information please read the User documentation"))
+		return fmt.Errorf("Checking configuration failed: %w", errors.New("You have not specified any repository or branch configuration to be checked out in the ABAP Environment System. Please make sure that you specified the repositories with their branches that should be checked out either in a dedicated file or via the parameters 'repositoryName' and 'branchName'. For more information please read the User documentation"))
 	}
 	if options.Repositories != "" && options.RepositoryName != "" && options.BranchName != "" {
 		log.Entry().Info("It seems like you have specified repositories directly via the configuration parameters 'repositoryName' and 'branchName' as well as in the dedicated repositories configuration file. Please note that in this case both configurations will be handled and checked out.")
 	}
 	if options.Repositories != "" && ((options.RepositoryName == "") != (options.BranchName == "")) {
-		log.Entry().Info("It seems like you have specified a dedicated repository configuration file but also a wrong in-line configuration for the repository or branch to be pulled.")
+		log.Entry().Info("It seems like you have specified a dedicated repository configuration file but also a wrong configuration for the parameters 'repositoryName' and 'branchName' to be checked out.")
 		if options.RepositoryName != "" {
 			log.Entry().Info("Please also add the value for the branchName parameter or remove the repositoryName parameter.")
 		} else {

@@ -159,7 +159,7 @@ func checkPullRepositoryConfiguration(options abapEnvironmentPullGitRepoOptions)
 		log.Entry().Info("It seems like you have specified repositories directly via the configuration parameter 'repositoryNames' as well as in the dedicated repositories configuration file. Please note that in this case both configurations will be handled and pulled.")
 	}
 	if len(options.RepositoryNames) == 0 && options.Repositories == "" {
-		return fmt.Errorf("Checking configuration failed: %w", errors.New("You have not specified any repository configuration to be pulled into the ABAP Environment System. Please make sure that you specified the repositories that should be pulled either in a dedicated file or via in-line configuration. For more information please read the User documentation"))
+		return fmt.Errorf("Checking configuration failed: %w", errors.New("You have not specified any repository configuration to be pulled into the ABAP Environment System. Please make sure that you specified the repositories that should be pulled either in a dedicated file or via the parameter 'repositoryNames'. For more information please read the User documentation"))
 	}
 	return nil
 }
@@ -193,9 +193,4 @@ func startPullLogs(repositoryName string) {
 func finishPullLogs() {
 	log.Entry().Info("-------------------------")
 	log.Entry().Info("All repositories were pulled successfully")
-}
-
-type repositoresConfiguration struct {
-	RepositoryName string `json:"checkvariant,omitempty"`
-	Configuration  string `json:"configuration,omitempty"`
 }
