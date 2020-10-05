@@ -178,7 +178,7 @@ func checkCheckoutBranchRepositoryConfiguration(options abapEnvironmentCheckoutB
 
 func handleCheckout(repo abaputils.Repository, checkoutConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (err error) {
 	if reflect.DeepEqual(abaputils.Repository{}, repo) {
-		return fmt.Errorf("Failed to read repository configuration: %w", errors.New("Eror in configuration, most likely you have entered empty or wrong configuration values. Please make sure that you have correctly specified the branches in the repositories to be checked out"))
+		return fmt.Errorf("Failed to read repository configuration: %w", errors.New("Error in configuration, most likely you have entered empty or wrong configuration values. Please make sure that you have correctly specified the branches in the repositories to be checked out"))
 	}
 	startCheckoutLogs(repo.Branch, repo.Name)
 
