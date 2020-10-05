@@ -132,7 +132,7 @@ void call(Map parameters = [:]) {
 
         script.commonPipelineEnvironment.projectName = config.projectName
 
-        if(!script.commonPipelineEnvironment.projectName && config.inferProjectName){
+        if (!script.commonPipelineEnvironment.projectName && config.inferProjectName) {
             script.commonPipelineEnvironment.projectName = inferProjectName(script, buildTool)
         }
 
