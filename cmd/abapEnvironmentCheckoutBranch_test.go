@@ -11,7 +11,7 @@ import (
 )
 
 func TestCheckoutBranchStep(t *testing.T) {
-	t.Run("Run Step Successful", func(t *testing.T) {
+	t.Run("Run Step Successful - repositoryName and branchName config", func(t *testing.T) {
 
 		var autils = abaputils.AUtilsMock{}
 		defer autils.Cleanup()
@@ -45,7 +45,7 @@ func TestCheckoutBranchStep(t *testing.T) {
 		err := runAbapEnvironmentCheckoutBranch(&config, nil, &autils, client)
 		assert.NoError(t, err, "Did not expect error")
 	})
-	t.Run("Run Step Failure", func(t *testing.T) {
+	t.Run("Run Step Failure - empty config", func(t *testing.T) {
 		expectedErrorMessage := "Something failed during the checkout: Checking configuration failed: You have not specified any repository or branch configuration to be checked out in the ABAP Environment System. Please make sure that you specified the repositories with their branches that should be checked out either in a dedicated file or via the parameters 'repositoryName' and 'branchName'. For more information please read the User documentation"
 
 		var autils = abaputils.AUtilsMock{}
@@ -59,9 +59,44 @@ func TestCheckoutBranchStep(t *testing.T) {
 
 		client := &abaputils.ClientMock{
 			BodyList: []string{
-				`{"d" : { "status" : "S" } }`,
-				`{"d" : { "status" : "S" } }`,
-				`{"d" : { "status" : "S" } }`,
+				`{"d" : { "status" : "E" } }`,
+				`{"d" : { "status" : "E" } }`,
+				`{"d" : { "status" : "E" } }`,
+			},
+			Token:      "myToken",
+			StatusCode: 200,
+		}
+
+		err := runAbapEnvironmentCheckoutBranch(&config, nil, &autils, client)
+		assert.EqualError(t, err, expectedErrorMessage)
+	})
+	t.Run("Run Step Failure - wrong status", func(t *testing.T) {
+		expectedErrorMessage := "Something failed during the checkout: Checkout failed: Checkout of branch testBranch failed on the ABAP System"
+
+		var autils = abaputils.AUtilsMock{}
+		defer autils.Cleanup()
+		autils.ReturnedConnectionDetailsHTTP.Password = "password"
+		autils.ReturnedConnectionDetailsHTTP.User = "user"
+		autils.ReturnedConnectionDetailsHTTP.URL = "https://example.com"
+		autils.ReturnedConnectionDetailsHTTP.XCsrfToken = "xcsrftoken"
+
+		config := abapEnvironmentCheckoutBranchOptions{
+			CfAPIEndpoint:     "https://api.endpoint.com",
+			CfOrg:             "testOrg",
+			CfSpace:           "testSpace",
+			CfServiceInstance: "testInstance",
+			CfServiceKeyName:  "testServiceKey",
+			Username:          "testUser",
+			Password:          "testPassword",
+			RepositoryName:    "testRepo1",
+			BranchName:        "testBranch",
+		}
+
+		client := &abaputils.ClientMock{
+			BodyList: []string{
+				`{"d" : { "status" : "E" } }`,
+				`{"d" : { "status" : "E" } }`,
+				`{"d" : { "status" : "E" } }`,
 			},
 			Token:      "myToken",
 			StatusCode: 200,
