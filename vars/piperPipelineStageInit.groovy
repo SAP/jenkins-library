@@ -29,12 +29,12 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'inferBuildTool',
     /**
-     * Enable automatic inference of build tool (maven, npm, mta) based on existing project files.
-     * If this is set to true, it is not required to provide the `buildTool` parameter in the `general` section of the pipeline configuration.
+     * Enables automatic inference from the build descriptor in case projectName is not configured.
      */
     'inferProjectName',
     /**
-     * Enables automatic inference from the build descriptor in case projectName is not configured.
+     * Toggle for initialization of the stash settings for Cloud SDK Pipeline.
+     * If this is set to true, the stashSettings parameter is **not** configurable.
      */
     'initCloudSdkStashSettings',
     /**
