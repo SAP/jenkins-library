@@ -94,6 +94,17 @@ func (m *ExecMockRunner) Stderr(err io.Writer) {
 	m.stderr = err
 }
 
+func (m *ExecMockRunner) Cleanup() {
+	m.Dir = nil
+	m.Env = nil
+	m.ExitCode = 0
+	m.Calls = nil
+	m.stdout = nil
+	m.stderr = nil
+	m.StdoutReturn = nil
+	m.ShouldFailOnCommand = nil
+}
+
 func (m *ShellMockRunner) SetDir(d string) {
 	m.Dir = d
 }
@@ -191,6 +202,18 @@ func (m *ShellMockRunner) Stdout(out io.Writer) {
 
 func (m *ShellMockRunner) Stderr(err io.Writer) {
 	m.stderr = err
+}
+
+func (m *ShellMockRunner) Cleanup() {
+	m.Dir = ""
+	m.Env = nil
+	m.ExitCode = 0
+	m.Calls = nil
+	m.Shell = nil
+	m.stdout = nil
+	m.stderr = nil
+	m.StdoutReturn = nil
+	m.ShouldFailOnCommand = nil
 }
 
 type StepOptions struct {
