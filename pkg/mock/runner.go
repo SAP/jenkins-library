@@ -94,6 +94,7 @@ func (m *ExecMockRunner) Stderr(err io.Writer) {
 	m.stderr = err
 }
 
+// Cleanup for ExecMockRunner
 func (m *ExecMockRunner) Cleanup() {
 	m.Dir = nil
 	m.Env = nil
@@ -204,6 +205,7 @@ func (m *ShellMockRunner) Stderr(err io.Writer) {
 	m.stderr = err
 }
 
+// Cleanup for ExecMockRunner
 func (m *ShellMockRunner) Cleanup() {
 	m.Dir = ""
 	m.Env = nil
