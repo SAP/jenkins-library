@@ -232,10 +232,10 @@ func NewSystemInstance(client piperHttp.Uploader, serverURL, username, password 
 }
 
 func sendRequest(sys *SystemInstance, method, url string, body io.Reader, header http.Header) ([]byte, error) {
-	return sendRequestInternal(sys, method, url, body, header, "200:399")
+	return sendRequestInternal(sys, method, url, body, header, []int{})
 }
 
-func sendRequestInternal(sys *SystemInstance, method, url string, body io.Reader, header http.Header, validStatusCodeRange string) ([]byte, error) {
+func sendRequestInternal(sys *SystemInstance, method, url string, body io.Reader, header http.Header, acceptedErrorCodes []int) ([]byte, error) {
 	var requestBody io.Reader
 	var requestBodyCopy io.Reader
 	if body != nil {
@@ -246,37 +246,16 @@ func sendRequestInternal(sys *SystemInstance, method, url string, body io.Reader
 		defer closer.Close()
 	}
 	response, err := sys.client.SendRequest(method, fmt.Sprintf("%v/cxrestapi%v", sys.serverURL, url), requestBody, header, nil)
-	if err != nil {
+	if err != nil && !piperutils.ContainsInt(acceptedErrorCodes, response.StatusCode) {
 		sys.recordRequestDetailsInErrorCase(requestBodyCopy, response)
 		sys.logger.Errorf("HTTP request failed with error: %s", err)
 		return nil, err
 	}
 
-	var validResponseCodeList []int
-	values := strings.Split(validStatusCodeRange, ",")
-	for _, value := range values {
-		parts := strings.Split(value, ":")
-		if len(parts) > 1 {
-			lower, _ := strconv.Atoi(parts[0])
-			upper, _ := strconv.Atoi(parts[1])
-			for i := lower; i <= upper; i++ {
-				validResponseCodeList = append(validResponseCodeList, i)
-			}
-		} else {
-			validCode, _ := strconv.Atoi(value)
-			validResponseCodeList = append(validResponseCodeList, validCode)
-		}
-	}
-
-	if piperutils.ContainsInt(validResponseCodeList, response.StatusCode) {
-		data, _ := ioutil.ReadAll(response.Body)
-		sys.logger.Debugf("Valid response body: %v", string(data))
-		defer response.Body.Close()
-		return data, nil
-	}
-	sys.recordRequestDetailsInErrorCase(requestBodyCopy, response)
-	sys.logger.Errorf("HTTP request failed with error %s", response.Status)
-	return nil, errors.Errorf("Invalid HTTP status %v with with code %v received", response.Status, response.StatusCode)
+	data, _ := ioutil.ReadAll(response.Body)
+	sys.logger.Debugf("Valid response body: %v", string(data))
+	defer response.Body.Close()
+	return data, nil
 }
 
 func (sys *SystemInstance) recordRequestDetailsInErrorCase(requestBody io.Reader, response *http.Response) {
@@ -359,9 +338,9 @@ func (sys *SystemInstance) GetProjectsByNameAndTeam(projectName, teamID string) 
 			"projectName": {projectName},
 			"teamId":      {teamID},
 		}
-		data, err = sendRequestInternal(sys, http.MethodGet, fmt.Sprintf("/projects?%v", body.Encode()), nil, header, "200:399,404")
+		data, err = sendRequestInternal(sys, http.MethodGet, fmt.Sprintf("/projects?%v", body.Encode()), nil, header, []int{404})
 	} else {
-		data, err = sendRequestInternal(sys, http.MethodGet, "/projects", nil, header, "200:399,404")
+		data, err = sendRequestInternal(sys, http.MethodGet, "/projects", nil, header, []int{404})
 	}
 	if err != nil {
 		return projects, errors.Wrapf(err, "fetching project %v failed", projectName)

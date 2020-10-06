@@ -2,12 +2,13 @@ package cmd
 
 import (
 	"fmt"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/SAP/jenkins-library/pkg/mock"
 	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
+
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/mock"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -99,7 +100,7 @@ func TestAddDetectArgs(t *testing.T) {
 			options: detectExecuteScanOptions{
 				ScanProperties:  []string{"--scan1=1", "--scan2=2"},
 				ServerURL:       "https://server.url",
-				APIToken:        "apiToken",
+				Token:           "apiToken",
 				ProjectName:     "testName",
 				Version:         "1.0",
 				VersioningModel: "major-minor",
@@ -123,7 +124,7 @@ func TestAddDetectArgs(t *testing.T) {
 			args: []string{"--testProp1=1"},
 			options: detectExecuteScanOptions{
 				ServerURL:       "https://server.url",
-				APIToken:        "apiToken",
+				Token:           "apiToken",
 				ProjectName:     "testName",
 				Version:         "1.0",
 				VersioningModel: "major-minor",
@@ -149,7 +150,7 @@ func TestAddDetectArgs(t *testing.T) {
 			args: []string{"--testProp1=1"},
 			options: detectExecuteScanOptions{
 				ServerURL:       "https://server.url",
-				APIToken:        "apiToken",
+				Token:           "apiToken",
 				ProjectName:     "testName",
 				CodeLocation:    "testLocation",
 				FailOn:          []string{"BLOCKER", "MAJOR"},

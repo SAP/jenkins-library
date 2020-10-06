@@ -32,7 +32,7 @@ func (p *abapAddonAssemblyKitReserveNextPackagesCommonPipelineEnvironment) persi
 	content := []struct {
 		category string
 		name     string
-		value    string
+		value    interface{}
 	}{
 		{category: "abap", name: "addonDescriptor", value: p.abap.addonDescriptor},
 	}
