@@ -10,7 +10,9 @@ import static com.sap.piper.Prerequisites.checkScript
     /** Pulls Software Components / Git repositories into the ABAP Environment instance */
     'abapEnvironmentPullGitRepo',
     /** Checks out a Branch in the pulled Software Component on the ABAP Environment instance */
-    'abapEnvironmentCheckoutBranch'
+    'abapEnvironmentCheckoutBranch',
+    /** Clones Software Components / Git repositories into the ABAP Environment instance and checks out the respective branches */
+    'abapEnvironmentCloneGitRepo'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
@@ -23,13 +25,16 @@ void call(Map parameters = [:]) {
     def stageName = parameters.stageName?:env.STAGE_NAME
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
-        if (parameters.script.commonPipelineEnvironment.configuration.runStage?.get("Prepare System")) {
+        /*if (parameters.script.commonPipelineEnvironment.configuration.runStage?.get("Prepare System")) {
             abapEnvironmentCloneGitRepo script: parameters.script
-        }
-        else {
+        }*/
+        if(parameters.script.commonPipelineEnvironment.getStepConfiguration('abapEnvironmentPullGitRepo', 'Clone Repositories').repositoryNames) {
             abapEnvironmentCheckoutBranch script: parameters.script
             abapEnvironmentPullGitRepo script: parameters.script
+        } else {
+            abapEnvironmentPullGitRepo script: parameters.script
         }
+        abapEnvironmentCloneGitRepo script: parameters.script
     }
 
 }
