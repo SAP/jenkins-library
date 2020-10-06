@@ -212,7 +212,7 @@ public class ChangeManagement implements Serializable {
                                 |    afterTask: replaceVersion
                                 |    configuration:
                                 |      target:
-                                |        client: ${client}
+                                |        client: ''
                                 |        auth: basic
                                 |      credentials:
                                 |        username: env:ABAP_USER
@@ -277,6 +277,8 @@ public class ChangeManagement implements Serializable {
         params += ['-p', abapPackage]
 
         params += ['-n' , applicationName]
+
+        params += ['-l', client]
 
         params += ['-f'] // failfast --> provide return code != 0 in case of any failure
 
