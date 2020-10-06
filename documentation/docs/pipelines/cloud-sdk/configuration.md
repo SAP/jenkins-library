@@ -427,33 +427,15 @@ artifactDeployment:
 
 ### whitesourceScan
 
-Configure credentials for [WhiteSource](https://www.whitesourcesoftware.com/) scans.
-The minimum required Maven WhiteSource plugin version is `18.6.2`, ensure this in the plugins section of the project `pom.xml` file.
-
-Pipeline will execute `npx whitesource run` for npm projects.
-Please ensure that all `package.json` files have a `name` and `version` configured so that it is possible to distinguish between the different packages.
-
-```xml
-<plugin>
-    <groupId>org.whitesource</groupId>
-    <artifactId>whitesource-maven-plugin</artifactId>
-    <version>18.6.2</version>
-</plugin>
-```
-
-| Property | Mandatory | Default Value | Description |
-| --- | --- | --- | --- |
-| `product` | X | | Name of your product in WhiteSource. |
-| `staticVersion` | | | Overwrites the respective version in the whitesource UI per scan with the staticVersion. Per default for every new version of a pom/package.json a new project will be created in the whitesource UI. To deactivate the creation of new projects and always have a fixed version for each project in the whitesource UI, configure the staticVersion. |
-| `credentialsId` | X | | Unique identifier of the `Secret Text` on Jenkins server that stores your organization(API Token) of WhiteSource. |
-| `whitesourceUserTokenCredentialsId` |  | | Unique identifier of the `Secret Text` on Jenkins server that stores WhiteSource `userKey` of a user. This is required only if the administrator of the WhiteSource service has enabled additional access level control. More details can be found [here](https://whitesource.atlassian.net/wiki/spaces/WD/pages/417529857/User+Level+Access+Control+in+Integrations+and+APIs).  |
-
-Please note that you can not have a `whitesource.config.json` in your project, since the Pipeline generates one from this configuration.
+The `whitesourceScan` stage has been integrated into the `security` stage.
+The WhiteSource scan is configured using the step `whitesourceExecuteScan`.
+The stage is executed in the productive branch when the parameter `productName` in the step config of `whitesourceExecuteScan` is defined.
 
 ### fortifyScan
 
-The Fortify scan is configured using the step `fortifyExecuteScan.
-The stage is executed in the productive branch when the parameter `fortifyCredentialsId` in the step config of fortifyExecuteScan is defined.
+The `fortifyScan` stage has been integrated into the `security` stage.
+The Fortify scan is configured using the step `fortifyExecuteScan`.
+The stage is executed in the productive branch when the parameter `fortifyCredentialsId` in the step config of `fortifyExecuteScan` is defined.
 
 ### lint
 
@@ -465,7 +447,7 @@ Note, the available configuration options can be found in the related [step docu
 ### compliance
 
 The stage `compliance` currently executes [SonarQube](https://www.sonarqube.org/) scans.
-The stage is executed in the productive branch when configuration for the step `sonarExecuteScane` exists.
+The stage is executed in the productive branch when configuration for the step `sonarExecuteScan` exists.
 Note, the available configuration options can be found in the related [step documentation](https://sap.github.io/jenkins-library/steps/sonarExecuteScan/#parameters).
 
 This is an optional feature for teams who prefer to use SonarQube.
