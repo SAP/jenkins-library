@@ -218,7 +218,7 @@ public class ChangeManagement implements Serializable {
                                 |        username: env:ABAP_USER
                                 |        password: env:ABAP_PASSWORD
                                 |      app:
-                                |        name: ${applicationName}
+                                |        name: ''
                                 |        description: ${desc}
                                 |        package: ''
                                 |      exclude:
@@ -275,6 +275,8 @@ public class ChangeManagement implements Serializable {
         }
 
         params += ['-p', abapPackage]
+
+        params += ['-n' , applicationName]
 
         params += ['-f'] // failfast --> provide return code != 0 in case of any failure
 
