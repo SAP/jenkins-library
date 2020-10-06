@@ -284,7 +284,7 @@ public class ChangeManagement implements Serializable {
 
         params += ['-f'] // failfast --> provide return code != 0 in case of any failure
 
-        params += ['-y'] // autoconfirm
+        params += ['-y'] // autoconfirm --> no need to press 'y' key in order to confirm the params and trigger the deployment
 
         def fioriDeployCmd = "fiori deploy ${params.join(' ')}"
         script.echo "Executing deploy command: '${fioriDeployCmd}'"
