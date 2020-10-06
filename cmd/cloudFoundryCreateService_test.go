@@ -11,12 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func cfMockCleanup(m *mock.ExecMockRunner) {
-	m.ShouldFailOnCommand = map[string]error{}
-	m.StdoutReturn = map[string]string{}
-	m.Calls = []mock.ExecCall{}
-}
-
 func TestCloudFoundryCreateService(t *testing.T) {
 
 	m := &mock.ExecMockRunner{}
@@ -24,7 +18,7 @@ func TestCloudFoundryCreateService(t *testing.T) {
 
 	var telemetryData telemetry.CustomData
 	t.Run("Create service: no broker, no config, no tags", func(t *testing.T) {
-		defer cfMockCleanup(m)
+		defer m.Cleanup()
 		config := cloudFoundryCreateServiceOptions{
 			CfAPIEndpoint:         "https://api.endpoint.com",
 			CfOrg:                 "testOrg",
@@ -44,7 +38,7 @@ func TestCloudFoundryCreateService(t *testing.T) {
 		}
 	})
 	t.Run("Create service: only tags", func(t *testing.T) {
-		defer cfMockCleanup(m)
+		defer m.Cleanup()
 
 		config := cloudFoundryCreateServiceOptions{
 			CfAPIEndpoint:         "https://api.endpoint.com",
@@ -66,7 +60,7 @@ func TestCloudFoundryCreateService(t *testing.T) {
 		}
 	})
 	t.Run("Create service: only broker", func(t *testing.T) {
-		defer cfMockCleanup(m)
+		defer m.Cleanup()
 		config := cloudFoundryCreateServiceOptions{
 			CfAPIEndpoint:         "https://api.endpoint.com",
 			CfOrg:                 "testOrg",
@@ -87,7 +81,7 @@ func TestCloudFoundryCreateService(t *testing.T) {
 		}
 	})
 	t.Run("Create service: only config", func(t *testing.T) {
-		defer cfMockCleanup(m)
+		defer m.Cleanup()
 		config := cloudFoundryCreateServiceOptions{
 			CfAPIEndpoint:         "https://api.endpoint.com",
 			CfOrg:                 "testOrg",
@@ -109,14 +103,14 @@ func TestCloudFoundryCreateService(t *testing.T) {
 	})
 
 	t.Run("Create service: failure, no config", func(t *testing.T) {
-		defer cfMockCleanup(m)
+		defer m.Cleanup()
 		config := cloudFoundryCreateServiceOptions{}
 		error := runCloudFoundryCreateService(&config, &telemetryData, cf)
 		assert.EqualError(t, error, "Error while logging in: Failed to login to Cloud Foundry: Parameters missing. Please provide the Cloud Foundry Endpoint, Org, Space, Username and Password")
 	})
 
 	t.Run("Create service: variable substitution in-line", func(t *testing.T) {
-		defer cfMockCleanup(m)
+		defer m.Cleanup()
 
 		dir, err := ioutil.TempDir("", "test variable substitution")
 		if err != nil {
@@ -169,7 +163,7 @@ func TestCloudFoundryCreateService(t *testing.T) {
 	})
 
 	t.Run("Create service: variable substitution with variable substitution manifest file", func(t *testing.T) {
-		defer cfMockCleanup(m)
+		defer m.Cleanup()
 
 		dir, err := ioutil.TempDir("", "test variable substitution")
 		if err != nil {

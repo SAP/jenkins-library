@@ -178,8 +178,7 @@ func TestDeploy(t *testing.T) {
 		defer func() {
 			fileUtilsMock.copiedFiles = nil
 			removedFiles = nil
-			s.Calls = nil
-			s.ShouldFailOnCommand = nil
+			s.Cleanup()
 		}()
 
 		s.ShouldFailOnCommand = map[string]error{"#!/bin/bash\nxs login -a https://example.org:12345 -u me -p 'secretPassword' -o myOrg -s mySpace --skip-ssl-validation\n": errors.New("Error from underlying process")}
@@ -193,8 +192,7 @@ func TestDeploy(t *testing.T) {
 		defer func() {
 			fileUtilsMock.copiedFiles = nil
 			removedFiles = nil
-			s.Calls = nil
-			s.StdoutReturn = make(map[string]string)
+			s.Cleanup()
 		}()
 
 		s.StdoutReturn = make(map[string]string)
@@ -225,8 +223,7 @@ func TestDeploy(t *testing.T) {
 		defer func() {
 			fileUtilsMock.copiedFiles = nil
 			removedFiles = nil
-			s.Calls = nil
-			s.StdoutReturn = make(map[string]string)
+			s.Cleanup()
 		}()
 
 		oldMode := myXsDeployOptions.Mode

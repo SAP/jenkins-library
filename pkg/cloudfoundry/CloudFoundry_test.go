@@ -8,19 +8,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func loginMockCleanup(m *mock.ExecMockRunner) {
-	m.ShouldFailOnCommand = map[string]error{}
-	m.StdoutReturn = map[string]string{}
-	m.Calls = []mock.ExecCall{}
-}
-
 func TestCloudFoundryLoginCheck(t *testing.T) {
 
 	m := &mock.ExecMockRunner{}
 
 	t.Run("CF Login check: logged in", func(t *testing.T) {
 
-		defer loginMockCleanup(m)
+		defer m.Cleanup()
 
 		cfconfig := LoginOptions{
 			CfAPIEndpoint: "https://api.endpoint.com",
@@ -34,7 +28,7 @@ func TestCloudFoundryLoginCheck(t *testing.T) {
 
 	t.Run("CF Login check: not logged in", func(t *testing.T) {
 
-		defer loginMockCleanup(m)
+		defer m.Cleanup()
 
 		cfconfig := LoginOptions{
 			CfAPIEndpoint: "https://api.endpoint.com",
@@ -53,7 +47,7 @@ func TestCloudFoundryLogin(t *testing.T) {
 
 	t.Run("CF Login: missing parameter", func(t *testing.T) {
 
-		defer loginMockCleanup(m)
+		defer m.Cleanup()
 
 		cfconfig := LoginOptions{}
 		cf := CFUtils{Exec: m}
@@ -62,7 +56,7 @@ func TestCloudFoundryLogin(t *testing.T) {
 	})
 	t.Run("CF Login: failure", func(t *testing.T) {
 
-		defer loginMockCleanup(m)
+		defer m.Cleanup()
 
 		m.ShouldFailOnCommand = map[string]error{"cf login .*": fmt.Errorf("wrong password or account does not exist")}
 
@@ -93,7 +87,7 @@ func TestCloudFoundryLogin(t *testing.T) {
 
 	t.Run("CF Login: success", func(t *testing.T) {
 
-		defer loginMockCleanup(m)
+		defer m.Cleanup()
 
 		m.StdoutReturn = map[string]string{"cf api:*": "Not logged in"}
 
@@ -123,7 +117,7 @@ func TestCloudFoundryLogin(t *testing.T) {
 
 	t.Run("CF Login: with additional login options", func(t *testing.T) {
 
-		defer loginMockCleanup(m)
+		defer m.Cleanup()
 
 		cfconfig := LoginOptions{
 			CfAPIEndpoint: "https://api.endpoint.com",
@@ -173,7 +167,7 @@ func TestCloudFoundryReadServiceKeyAbapEnvironment(t *testing.T) {
 
 		//given
 		m := &mock.ExecMockRunner{}
-		defer loginMockCleanup(m)
+		defer m.Cleanup()
 
 		const testURL = "testurl.com"
 		const oDataURL = "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull"

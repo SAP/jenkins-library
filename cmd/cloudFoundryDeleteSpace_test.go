@@ -36,10 +36,7 @@ func TestCloudFoundryDeleteSpace(t *testing.T) {
 
 		errorMessage := "cf login failed"
 
-		defer func() {
-			s.Calls = nil
-			s.ShouldFailOnCommand = nil
-		}()
+		defer s.Cleanup()
 
 		s.ShouldFailOnCommand = map[string]error{"yes '' | cf login -a https://api.endpoint.com -u testUser -p testPassword ": fmt.Errorf(errorMessage)}
 
