@@ -16,7 +16,7 @@ spec:
   inputs:
     secrets:
       - name: checkmarxCredentialsId
-        description: The technical user/password credential used to communicate with the Checkmarx backend
+        description: Jenkins 'Username with password' credentials ID containing username and password to communicate with the Checkmarx backend.
         type: jenkins
     resources:
       - name: checkmarx
@@ -25,7 +25,6 @@ spec:
       - name: avoidDuplicateProjectScans
         type: bool
         description: Whether duplicate scans of the same project state shall be avoided or not
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -34,7 +33,6 @@ spec:
       - name: filterPattern
         type: string
         description: The filter pattern used to zip the files relevant for scanning, patterns can be negated by setting an exclamation mark in front i.e. `!test/*.js` would avoid adding any javascript files located in the test directory
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -45,7 +43,6 @@ spec:
       - name: fullScanCycle
         type: string
         description: Indicates how often a full scan should happen between the incremental scans when activated
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -54,7 +51,6 @@ spec:
       - name: fullScansScheduled
         type: bool
         description: Whether full scans are to be scheduled or not. Should be used in relation with `incremental` and `fullScanCycle`
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -63,7 +59,6 @@ spec:
       - name: generatePdfReport
         type: bool
         description: Whether to generate a PDF report of the analysis results or not
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -72,7 +67,6 @@ spec:
       - name: incremental
         type: bool
         description: Whether incremental scans are to be applied which optimizes the scan time but might reduce detection capabilities. Therefore full scans are still required from time to time and should be scheduled via `fullScansScheduled` and `fullScanCycle`
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -94,7 +88,6 @@ spec:
       - name: preset
         type: string
         description: The preset to use for scanning, if not set explicitly the step will attempt to look up the project's setting based on the availability of `checkmarxCredentialsId`
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -134,7 +127,6 @@ spec:
       - name: sourceEncoding
         type: string
         description: The source encoding to be used, if not set explicitly the project's default will be used
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -147,7 +139,6 @@ spec:
             deprecated: true
         type: string
         description: The group ID related to your team which can be obtained via the Pipeline Syntax plugin as described in the `Details` section
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -155,7 +146,6 @@ spec:
       - name: teamName
         type: string
         description: The full name of the team to assign newly created projects to which is preferred to teamId
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -173,10 +163,17 @@ spec:
           - name: checkmarxCredentialsId
             type: secret
             param: username
+      - name: verifyOnly
+        type: bool
+        description: Whether the step shall only apply verification checks or whether it does a full scan and check cycle
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
       - name: vulnerabilityThresholdEnabled
         type: bool
         description: Whether the thresholds are enabled or not. If enabled the build will be set to `vulnerabilityThresholdResult` in case a specific threshold value is exceeded
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -185,7 +182,6 @@ spec:
       - name: vulnerabilityThresholdHigh
         type: int
         description: The specific threshold for high severity findings
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -194,7 +190,6 @@ spec:
       - name: vulnerabilityThresholdLow
         type: int
         description: The specific threshold for low severity findings
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -203,7 +198,6 @@ spec:
       - name: vulnerabilityThresholdMedium
         type: int
         description: The specific threshold for medium severity findings
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -212,7 +206,6 @@ spec:
       - name: vulnerabilityThresholdResult
         type: string
         description: The result of the build in case thresholds are enabled and exceeded
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -237,28 +230,28 @@ spec:
           - name: checkmarx_data
             fields:
               - name: high_issues
-              - name: high_not_false_postive
+              - name: high_not_false_positive
               - name: high_not_exploitable
               - name: high_confirmed
               - name: high_urgent
               - name: high_proposed_not_exploitable
               - name: high_to_verify
               - name: medium_issues
-              - name: medium_not_false_postive
+              - name: medium_not_false_positive
               - name: medium_not_exploitable
               - name: medium_confirmed
               - name: medium_urgent
               - name: medium_proposed_not_exploitable
               - name: medium_to_verify
               - name: low_issues
-              - name: low_not_false_postive
+              - name: low_not_false_positive
               - name: low_not_exploitable
               - name: low_confirmed
               - name: low_urgent
               - name: low_proposed_not_exploitable
               - name: low_to_verify
               - name: information_issues
-              - name: information_not_false_postive
+              - name: information_not_false_positive
               - name: information_not_exploitable
               - name: information_confirmed
               - name: information_urgent

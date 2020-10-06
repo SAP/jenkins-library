@@ -1,114 +1,12 @@
-package helper
+package generator
 
 import (
 	"fmt"
-	"io"
-	"io/ioutil"
-	"strings"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/stretchr/testify/assert"
 )
-
-func TestReadAndAdjustTemplate(t *testing.T) {
-
-	t.Run("Success Case", func(t *testing.T) {
-
-		tmpl, _ := configOpenDocTemplateFileMock("testStep.md")
-		content := readAndAdjustTemplate(tmpl)
-
-		cases := []struct {
-			x, y string
-		}{
-			{"{{docGenStepName .}}", "${docGenStepName}"},
-			{"{{docGenConfiguration .}}", "${docGenConfiguration}"},
-			{"{{docGenParameters .}}", "${docGenParameters}"},
-			{"{{docGenDescription .}}", "${docGenDescription}"},
-			{"", "${docJenkinsPluginDependencies}"},
-		}
-		for _, c := range cases {
-			if len(c.x) > 0 {
-				assert.Contains(t, content, c.x)
-			}
-			if len(c.y) > 0 {
-				assert.NotContains(t, content, c.y)
-			}
-		}
-	})
-}
-
-func configOpenDocTemplateFileMock(docTemplateFilePath string) (io.ReadCloser, error) {
-	meta1 := `# ${docGenStepName}
-
-	## ${docGenDescription}
-	
-	## Prerequisites
-	
-	none
-
-	## ${docJenkinsPluginDependencies}
-	
-	## ${docGenParameters}
-	
-	## ${docGenConfiguration}
-	
-	## Side effects
-	
-	none
-	
-	## Exceptions
-	
-	none
-	
-	## Example
-
-	none
-`
-	switch docTemplateFilePath {
-	case "testStep.md":
-		return ioutil.NopCloser(strings.NewReader(meta1)), nil
-	default:
-		return ioutil.NopCloser(strings.NewReader("")), fmt.Errorf("Wrong Path: %v", docTemplateFilePath)
-	}
-}
-
-func TestStepOutputs(t *testing.T) {
-	t.Run("no resources", func(t *testing.T) {
-		stepData := config.StepData{Spec: config.StepSpec{Outputs: config.StepOutputs{Resources: []config.StepResources{}}}}
-		result := stepOutputs(&stepData)
-		assert.Equal(t, "", result)
-	})
-
-	t.Run("with resources", func(t *testing.T) {
-		stepData := config.StepData{Spec: config.StepSpec{Outputs: config.StepOutputs{Resources: []config.StepResources{
-			{Name: "commonPipelineEnvironment", Type: "piperEnvironment", Parameters: []map[string]interface{}{{"name": "param1"}, {"name": "param2"}}},
-			{
-				Name: "influxName",
-				Type: "influx",
-				Parameters: []map[string]interface{}{
-					{"name": "influx1", "fields": []interface{}{
-						map[string]interface{}{"name": "1_1"},
-						map[string]interface{}{"name": "1_2"},
-					}},
-					{"name": "influx2", "fields": []interface{}{
-						map[string]interface{}{"name": "2_1"},
-						map[string]interface{}{"name": "2_2"},
-					}},
-				},
-			},
-		}}}}
-		result := stepOutputs(&stepData)
-		assert.Contains(t, result, "## Outputs")
-		assert.Contains(t, result, "| influxName |")
-		assert.Contains(t, result, "measurement `influx1`<br /><ul>")
-		assert.Contains(t, result, "measurement `influx2`<br /><ul>")
-		assert.Contains(t, result, "<li>1_1</li>")
-		assert.Contains(t, result, "<li>1_2</li>")
-		assert.Contains(t, result, "<li>2_1</li>")
-		assert.Contains(t, result, "<li>2_2</li>")
-	})
-}
 
 func TestCreateParameterOverview(t *testing.T) {
 	stepData := config.StepData{
@@ -365,7 +263,7 @@ func TestResourceReferenceDetails(t *testing.T) {
 			resourceRef: []config.ResourceReference{
 				{Name: "testCredentialId", Aliases: []config.Alias{}, Type: "secret", Param: "password"},
 			},
-			expected: "Jenkins credential id:<br />&nbsp;&nbsp;id: `testCredentialId`<br />&nbsp;&nbsp;reference to: `password`<br />",
+			expected: "Jenkins credential id:<br />&nbsp;&nbsp;id: [`testCredentialId`](#testcredentialid)<br />&nbsp;&nbsp;reference to: `password`<br />",
 		},
 		{
 			resourceRef: []config.ResourceReference{
@@ -385,126 +283,6 @@ func TestResourceReferenceDetails(t *testing.T) {
 			assert.Equal(t, test.expected, resourceReferenceDetails(test.resourceRef))
 		}
 	}
-}
-
-func TestConsolidateConditionalParameters(t *testing.T) {
-	stepData := config.StepData{
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Parameters: []config.StepParameters{
-					{Name: "dep1", Default: "val1"},
-					{Name: "test1", Default: "def1", Conditions: []config.Condition{
-						{ConditionRef: "strings-equal", Params: []config.Param{{Name: "dep1", Value: "val1"}, {Name: "dep2", Value: "val1"}}},
-					}},
-					{Name: "test1", Default: "def2", Conditions: []config.Condition{
-						{ConditionRef: "strings-equal", Params: []config.Param{{Name: "dep1", Value: "val2"}, {Name: "dep2", Value: "val2"}}},
-					}},
-				},
-			},
-		},
-	}
-
-	consolidateConditionalParameters(&stepData)
-
-	expected := config.StepData{
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Parameters: []config.StepParameters{
-					{Name: "dep1", Default: "val1"},
-					{Name: "test1", Default: []conditionDefault{
-						{key: "dep1", value: "val1", def: "def1"},
-						{key: "dep1", value: "val2", def: "def2"},
-						{key: "dep2", value: "val1", def: "def1"},
-						{key: "dep2", value: "val2", def: "def2"},
-					}},
-				},
-			},
-		},
-	}
-
-	assert.Equal(t, expected, stepData)
-
-}
-
-func TestConsolidateContextParameters(t *testing.T) {
-	stepData := config.StepData{
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{
-				Parameters: []config.StepParameters{
-					{Name: "stashContent"},
-					{Name: "dockerImage"},
-					{Name: "containerName"},
-					{Name: "dockerName"},
-				},
-				Resources: []config.StepResources{
-					{Name: "stashAlways", Type: "stash"},
-					{Name: "stash1", Type: "stash", Conditions: []config.Condition{
-						{ConditionRef: "strings-equal", Params: []config.Param{{Name: "dep1", Value: "val1"}, {Name: "dep2", Value: "val1"}}},
-					}},
-					{Name: "stash2", Type: "stash", Conditions: []config.Condition{
-						{ConditionRef: "strings-equal", Params: []config.Param{{Name: "dep1", Value: "val2"}, {Name: "dep2", Value: "val2"}}},
-					}},
-				},
-			},
-			Containers: []config.Container{
-				{Name: "IMAGE1", Image: "image1", Conditions: []config.Condition{
-					{ConditionRef: "strings-equal", Params: []config.Param{{Name: "dep1", Value: "val1"}, {Name: "dep2", Value: "val1"}}},
-				}},
-				{Name: "IMAGE2", Image: "image2", Conditions: []config.Condition{
-					{ConditionRef: "strings-equal", Params: []config.Param{{Name: "dep1", Value: "val2"}, {Name: "dep2", Value: "val2"}}},
-				}},
-			},
-		},
-	}
-
-	consolidateContextDefaults(&stepData)
-
-	expected := []config.StepParameters{
-		{Name: "stashContent", Default: []interface{}{
-			"stashAlways",
-			conditionDefault{key: "dep1", value: "val1", def: "stash1"},
-			conditionDefault{key: "dep1", value: "val2", def: "stash2"},
-			conditionDefault{key: "dep2", value: "val1", def: "stash1"},
-			conditionDefault{key: "dep2", value: "val2", def: "stash2"},
-		}},
-		{Name: "dockerImage", Default: []conditionDefault{
-			{key: "dep1", value: "val1", def: "image1"},
-			{key: "dep1", value: "val2", def: "image2"},
-			{key: "dep2", value: "val1", def: "image1"},
-			{key: "dep2", value: "val2", def: "image2"},
-		}},
-		{Name: "containerName", Default: []conditionDefault{
-			{key: "dep1", value: "val1", def: "IMAGE1"},
-			{key: "dep1", value: "val2", def: "IMAGE2"},
-			{key: "dep2", value: "val1", def: "IMAGE1"},
-			{key: "dep2", value: "val2", def: "IMAGE2"},
-		}},
-		{Name: "dockerName", Default: []conditionDefault{
-			{key: "dep1", value: "val1", def: "IMAGE1"},
-			{key: "dep1", value: "val2", def: "IMAGE2"},
-			{key: "dep2", value: "val1", def: "IMAGE1"},
-			{key: "dep2", value: "val2", def: "IMAGE2"},
-		}},
-	}
-
-	assert.Equal(t, expected, stepData.Spec.Inputs.Parameters)
-
-}
-
-func TestSetDefaultAndPossisbleValues(t *testing.T) {
-	stepData := config.StepData{
-		Spec: config.StepSpec{
-			Inputs: config.StepInputs{Parameters: []config.StepParameters{
-				{Name: "boolean", Type: "bool"},
-				{Name: "integer", Type: "int"},
-			}},
-		},
-	}
-	setDefaultAndPossisbleValues(&stepData)
-	assert.Equal(t, false, stepData.Spec.Inputs.Parameters[0].Default)
-	assert.Equal(t, 0, stepData.Spec.Inputs.Parameters[1].Default)
-	assert.Equal(t, []interface{}{true, false}, stepData.Spec.Inputs.Parameters[0].PossibleValues)
-
 }
 
 func TestSortStepParameters(t *testing.T) {

@@ -67,7 +67,7 @@ func (i *cloudFoundryDeployInflux) persist(path, resourceName string) {
 		measurement string
 		valType     string
 		name        string
-		value       string
+		value       interface{}
 	}{
 		{valType: config.InfluxField, measurement: "deployment_data", name: "artifactUrl", value: i.deployment_data.fields.artifactURL},
 		{valType: config.InfluxField, measurement: "deployment_data", name: "deployTime", value: i.deployment_data.fields.deployTime},
@@ -121,6 +121,7 @@ func CloudFoundryDeployCommand() *cobra.Command {
 				return err
 			}
 			log.RegisterSecret(stepConfig.DockerPassword)
+			log.RegisterSecret(stepConfig.DockerUsername)
 			log.RegisterSecret(stepConfig.Password)
 			log.RegisterSecret(stepConfig.Username)
 
@@ -137,6 +138,7 @@ func CloudFoundryDeployCommand() *cobra.Command {
 			handler := func() {
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
 			}
 			log.DeferExitHandler(handler)
@@ -214,12 +216,17 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "cfAppName"}, {Name: "cloudFoundry/appName"}},
 					},
 					{
-						Name:        "artifactVersion",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "artifactVersion"}},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Name: "artifactVersion",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "artifactVersion",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "cfHome",
@@ -262,12 +269,17 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "buildTool",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "buildTool"}},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Name: "buildTool",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "buildTool",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "deployType",
@@ -278,20 +290,32 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "dockerPassword",
-						ResourceRef: []config.ResourceReference{{Name: "dockerCredentialsId", Param: "password"}},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Name: "dockerPassword",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "dockerCredentialsId",
+								Param: "password",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "dockerUsername",
-						ResourceRef: []config.ResourceReference{{Name: "dockerCredentialsId", Param: "username"}},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Name: "dockerUsername",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "dockerCredentialsId",
+								Param: "username",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "keepOldInstance",
@@ -350,12 +374,17 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "cloudFoundry/mtaExtensionDescriptor"}},
 					},
 					{
-						Name:        "mtaPath",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "mtarFilePath"}},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Name: "mtaPath",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "mtarFilePath",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "org",
@@ -366,12 +395,18 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "cfOrg"}, {Name: "cloudFoundry/org"}},
 					},
 					{
-						Name:        "password",
-						ResourceRef: []config.ResourceReference{{Name: "cfCredentialsId", Param: "password"}},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Name: "password",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "cfCredentialsId",
+								Param: "password",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "smokeTestScript",
@@ -398,12 +433,18 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "cfSpace"}, {Name: "cloudFoundry/space"}},
 					},
 					{
-						Name:        "username",
-						ResourceRef: []config.ResourceReference{{Name: "cfCredentialsId", Param: "username"}},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Name: "username",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "cfCredentialsId",
+								Param: "username",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 				},
 			},

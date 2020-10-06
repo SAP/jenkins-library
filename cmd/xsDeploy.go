@@ -95,7 +95,7 @@ func (a Action) String() string {
 }
 
 const loginScript = `#!/bin/bash
-xs login -a {{.APIURL}} -u {{.User}} -p '{{.Password}}' -o {{.Org}} -s {{.Space}} {{.LoginOpts}}
+xs login -a {{.APIURL}} -u {{.Username}} -p '{{.Password}}' -o {{.Org}} -s {{.Space}} {{.LoginOpts}}
 `
 
 const logoutScript = `#!/bin/bash
@@ -272,7 +272,7 @@ func runXsDeploy(XsDeployOptions xsDeployOptions, piperEnvironment *xsDeployComm
 	}
 
 	if err != nil {
-		log.Entry().Errorf("An error occured. Stdout from underlying process: >>%s<<. Stderr from underlying process: >>%s<<", o, e)
+		log.Entry().Errorf("An error occurred. Stdout from underlying process: >>%s<<. Stderr from underlying process: >>%s<<", o, e)
 	}
 
 	if e := printStatus(XsDeployOptions, stdout); e != nil {

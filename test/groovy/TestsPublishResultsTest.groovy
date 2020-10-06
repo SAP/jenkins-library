@@ -1,3 +1,4 @@
+import org.junit.After
 import org.junit.Before
 import org.junit.Ignore
 import org.junit.Rule
@@ -10,6 +11,8 @@ import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertTrue
+
+import com.sap.piper.Utils
 
 import util.Rules
 import minimatch.Minimatch
@@ -48,9 +51,19 @@ class TestsPublishResultsTest extends BasePiperTest {
         helper.registerAllowedMethod('cucumber', [Map.class], {
             parameters -> publisherStepOptions['cucumber'] = parameters
         })
+        helper.registerAllowedMethod('publishHTML', [Map.class], {
+            parameters -> publisherStepOptions['htmlPublisher'] = parameters
+        })
         helper.registerAllowedMethod('archiveArtifacts', [Map.class], {
             parameters -> archiveStepPatterns.push(parameters.artifacts)
         })
+
+        Utils.metaClass.echo = { def m -> }
+    }
+
+    @After
+    public void tearDown() {
+        Utils.metaClass = null
     }
 
     @Test
@@ -63,11 +76,12 @@ class TestsPublishResultsTest extends BasePiperTest {
         assertTrue('DryPublisher options not empty', publisherStepOptions.cobertura == null)
         assertTrue('FindBugsPublisher options not empty', publisherStepOptions.jmeter == null)
         assertTrue('Cucumber options not empty', publisherStepOptions.cucumber == null)
+        assertTrue('HtmlPublisher options not empty', publisherStepOptions.htmlPublisher == null)
     }
 
     @Test
     void testPublishNothingWithAllDisabled() throws Exception {
-        stepRule.step.testsPublishResults(script: nullScript, junit: false, jacoco: false, cobertura: false, jmeter: false, cucumber: false)
+        stepRule.step.testsPublishResults(script: nullScript, junit: false, jacoco: false, cobertura: false, jmeter: false, cucumber: false, htmlPublisher: false)
 
         // ensure nothing is published
         assertTrue('WarningsPublisher options not empty', publisherStepOptions.junit == null)
@@ -75,6 +89,7 @@ class TestsPublishResultsTest extends BasePiperTest {
         assertTrue('DryPublisher options not empty', publisherStepOptions.cobertura == null)
         assertTrue('FindBugsPublisher options not empty', publisherStepOptions.jmeter == null)
         assertTrue('Cucumber options not empty', publisherStepOptions.cucumber == null)
+        assertTrue('HtmlPublisher options not empty', publisherStepOptions.htmlPublisher == null)
     }
 
     @Test
@@ -90,6 +105,7 @@ class TestsPublishResultsTest extends BasePiperTest {
         assertTrue('Cobertura options are not empty', publisherStepOptions.cobertura == null)
         assertTrue('JMeter options are not empty', publisherStepOptions.jmeter == null)
         assertTrue('Cucumber options not empty', publisherStepOptions.cucumber == null)
+        assertTrue('HtmlPublisher options not empty', publisherStepOptions.htmlPublisher == null)
     }
 
     @Test
@@ -103,6 +119,7 @@ class TestsPublishResultsTest extends BasePiperTest {
         assertTrue('JUnit options are not empty', publisherStepOptions.junit == null)
         assertTrue('JMeter options are not empty', publisherStepOptions.jmeter == null)
         assertTrue('Cucumber options not empty', publisherStepOptions.cucumber == null)
+        assertTrue('HtmlPublisher options not empty', publisherStepOptions.htmlPublisher == null)
 
         assertTrue('Cobertura options are empty', publisherStepOptions.cobertura != null)
         assertTrue('Cobertura default pattern is empty', publisherStepOptions.cobertura.coberturaReportFile != null)
@@ -127,6 +144,7 @@ class TestsPublishResultsTest extends BasePiperTest {
         assertTrue('JaCoCo options are not empty', publisherStepOptions.jacoco == null)
         assertTrue('Cobertura options are not empty', publisherStepOptions.cobertura == null)
         assertTrue('Cucumber options not empty', publisherStepOptions.cucumber == null)
+        assertTrue('HtmlPublisher options not empty', publisherStepOptions.htmlPublisher == null)
     }
 
     @Test
@@ -144,6 +162,7 @@ class TestsPublishResultsTest extends BasePiperTest {
         assertTrue('Cobertura options are not empty', publisherStepOptions.cobertura == null)
         assertTrue('JMeter options are not empty', publisherStepOptions.jmeter == null)
         assertTrue('Cucumber options not empty', publisherStepOptions.cucumber == null)
+        assertTrue('HtmlPublisher options not empty', publisherStepOptions.htmlPublisher == null)
     }
 
     @Test
@@ -158,6 +177,22 @@ class TestsPublishResultsTest extends BasePiperTest {
         assertTrue('JaCoCo options are not empty', publisherStepOptions.jacoco == null)
         assertTrue('Cobertura options are not empty', publisherStepOptions.cobertura == null)
         assertTrue('JMeter options are not empty', publisherStepOptions.jmeter == null)
+        assertTrue('HtmlPublisher options not empty', publisherStepOptions.htmlPublisher == null)
+    }
+
+    @Test
+    void testPublishHtmlResults() throws Exception {
+        stepRule.step.testsPublishResults(script: nullScript, htmlPublisher: [pattern: 'fancy/file/path', active: true])
+
+        assertTrue('HtmlPublisher options are empty', publisherStepOptions.htmlPublisher != null)
+        assertEquals('HtmlPublisher pattern not set correct',
+            'fancy/file/path', publisherStepOptions.htmlPublisher.target.reportFiles)
+
+        assertTrue('JUnit options are not empty', publisherStepOptions.junit == null)
+        assertTrue('JaCoCo options are not empty', publisherStepOptions.jacoco == null)
+        assertTrue('Cobertura options are not empty', publisherStepOptions.cobertura == null)
+        assertTrue('JMeter options are not empty', publisherStepOptions.jmeter == null)
+        assertTrue('Cucumber options not empty', publisherStepOptions.cucumber == null)
     }
 
     @Test

@@ -22,15 +22,15 @@ class InfluxData implements Serializable{
         return instance
     }
 
-    public static void addField(String measurement, String key, value) {
+    public static void addField(String measurement, String key, def value) {
         add(getInstance().getFields(), measurement, key, value)
     }
 
-    public static void addTag(String measurement, String key, value) {
+    public static void addTag(String measurement, String key, def value) {
         add(getInstance().getTags(), measurement, key, value)
     }
 
-    protected static void add(Map dataMap, String measurement, String field, value) {
+    protected static void add(Map dataMap, String measurement, String field, def value) {
         if (!dataMap[measurement]) dataMap[measurement] = [:]
         dataMap[measurement][field] = value
     }
@@ -56,14 +56,18 @@ class InfluxData implements Serializable{
                     def measurement = parts?.get(0)
                     def name = parts?.get(2)
                     def value
-
-                    // handle boolean values
-                    if(fileContent == 'true'){
-                        value = true
-                    }else if(fileContent == 'false'){
-                        value = false
+                    if (name.endsWith(".json")){
+                        name = name.replace(".json","")
+                        value = script.readJSON(text: fileContent)
                     }else{
-                        value = fileContent
+                        // handle boolean values
+                        if(fileContent == 'true'){
+                            value = true
+                        }else if(fileContent == 'false'){
+                            value = false
+                        }else{
+                            value = fileContent
+                        }
                     }
 
                     if(type == 'fields'){

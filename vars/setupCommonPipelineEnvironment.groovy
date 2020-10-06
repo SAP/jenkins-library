@@ -1,3 +1,5 @@
+import com.cloudbees.groovy.cps.NonCPS
+
 import static com.sap.piper.Prerequisites.checkScript
 
 import com.sap.piper.GenerateDocumentation
@@ -14,7 +16,12 @@ import groovy.transform.Field
     'collectTelemetryData',
 
     /** Credentials (username and password) used to download custom defaults if access is secured.*/
-    'customDefaultsCredentialsId'
+    'customDefaultsCredentialsId',
+
+    /** Enable automatic inference of build tool (maven, npm, mta) based on existing project files.
+     * If this is set to true, it is not required to set the build tool by hand for those cases.
+     */
+    'inferBuildTool'
 ]
 
 @Field Set STEP_CONFIG_KEYS = []
@@ -30,7 +37,10 @@ import groovy.transform.Field
     /** A list of file paths or URLs which must point to YAML content. These work exactly like
      * `customDefaults`, but from local or remote files instead of library resources. They are merged with and
      * take precedence over `customDefaults`.*/
-    'customDefaultsFromFiles'
+    'customDefaultsFromFiles',
+    /** The map returned from a Jenkins git checkout. Used to set the git information in the
+     * common pipeline environment */
+    'scmInfo'
 ]
 
 /**
@@ -89,6 +99,8 @@ void call(Map parameters = [:]) {
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .use()
 
+        inferBuildTool(script, config)
+
         (parameters.utils ?: new Utils()).pushToSWA([
             step: STEP_NAME,
             stepParamKey4: 'customDefaults',
@@ -97,6 +109,33 @@ void call(Map parameters = [:]) {
 
         InfluxData.addField('step_data', 'build_url', env.BUILD_URL)
         InfluxData.addField('pipeline_data', 'build_url', env.BUILD_URL)
+
+        def scmInfo = parameters.scmInfo
+        if (scmInfo) {
+            setGitUrlsOnCommonPipelineEnvironment(script, scmInfo.GIT_URL)
+            script.commonPipelineEnvironment.setGitCommitId(scmInfo.GIT_COMMIT)
+        }
+    }
+}
+
+
+// Infer build tool (maven, npm, mta) based on existing build descriptor files in the project root.
+private static void inferBuildTool(script, config) {
+    // For backwards compatibility, build tool inference must be enabled via inferBuildTool setting
+    boolean inferBuildTool = config?.inferBuildTool
+
+    if (inferBuildTool) {
+        boolean isMtaProject = script.fileExists('mta.yaml')
+        def isMavenProject = script.fileExists('pom.xml')
+        def isNpmProject = script.fileExists('package.json')
+
+        if (isMtaProject) {
+            script.commonPipelineEnvironment.buildTool = 'mta'
+        } else if (isMavenProject) {
+            script.commonPipelineEnvironment.buildTool = 'maven'
+        } else if (isNpmProject) {
+            script.commonPipelineEnvironment.buildTool = 'npm'
+        }
     }
 }
 
@@ -157,4 +196,60 @@ private static List copyOrDownloadCustomDefaultsIntoPipelineEnv(script, List cus
         fileList.add(fileName)
     }
     return fileList
+}
+
+/*
+ * Returns the parts of an url.
+ * Valid keys for the retured map are:
+ *   - protocol
+ *   - auth
+ *   - host
+ *   - port
+ *   - path
+ */
+@NonCPS
+/* private */ Map parseUrl(String url) {
+
+    def urlMatcher = url =~ /^((http|https|git|ssh):\/\/)?((.*)@)?([^:\/]+)(:([\d]*))?(\/?(.*))$/
+
+    return [
+        protocol: urlMatcher[0][2],
+        auth: urlMatcher[0][4],
+        host: urlMatcher[0][5],
+        port: urlMatcher[0][7],
+        path: urlMatcher[0][9],
+    ]
+}
+
+private void setGitUrlsOnCommonPipelineEnvironment(script, String gitUrl) {
+
+    Map url = parseUrl(gitUrl)
+
+    if (url.protocol in ['http', 'https']) {
+        script.commonPipelineEnvironment.setGitSshUrl("git@${url.host}:${url.path}")
+        script.commonPipelineEnvironment.setGitHttpsUrl(gitUrl)
+    } else if (url.protocol in [ null, 'ssh', 'git']) {
+        script.commonPipelineEnvironment.setGitSshUrl(gitUrl)
+        script.commonPipelineEnvironment.setGitHttpsUrl("https://${url.host}/${url.path}")
+    }
+
+    List gitPathParts = url.path.replaceAll('.git', '').split('/')
+    def gitFolder = 'N/A'
+    def gitRepo = 'N/A'
+    switch (gitPathParts.size()) {
+        case 1:
+            gitRepo = gitPathParts[0]
+            break
+        case 2:
+            gitFolder = gitPathParts[0]
+            gitRepo = gitPathParts[1]
+            break
+        case { it > 3 }:
+            gitRepo = gitPathParts[gitPathParts.size()-1]
+            gitPathParts.remove(gitPathParts.size()-1)
+            gitFolder = gitPathParts.join('/')
+            break
+    }
+    script.commonPipelineEnvironment.setGithubOrg(gitFolder)
+    script.commonPipelineEnvironment.setGithubRepo(gitRepo)
 }

@@ -1,11 +1,12 @@
 import com.sap.piper.JenkinsUtils
+import com.sap.piper.Utils
 
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
-
 
 import groovy.json.JsonSlurper
 import util.BasePiperTest
@@ -24,10 +25,11 @@ import static org.junit.Assert.assertThat
 import static org.junit.Assert.assertTrue
 import static org.junit.Assert.assertEquals
 import static org.junit.Assert.assertFalse
+import static org.junit.Assert.assertNotNull
+import static org.junit.Assert.assertNull
 
 class DockerExecuteOnKubernetesTest extends BasePiperTest {
     private ExpectedException exception = ExpectedException.none()
-    private JenkinsDockerExecuteRule dockerExecuteRule = new JenkinsDockerExecuteRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
@@ -38,7 +40,6 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         .getCommonRules(this)
         .around(new JenkinsReadYamlRule(this))
         .around(exception)
-        .around(dockerExecuteRule)
         .around(shellRule)
         .around(loggingRule)
         .around(stepRule)
@@ -64,6 +65,8 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
     def securityContext
     def inheritFrom
     def yamlMergeStrategy
+    def podSpec
+    Map resources =  [:]
     List stashList = []
 
     @Before
@@ -73,7 +76,9 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         envList = []
         portList = []
         containerCommands = []
+        resources = [:]
         bodyExecuted = false
+        podSpec = null
         JenkinsUtils.metaClass.static.isPluginActive = { def s -> new PluginMock(s).isActive() }
         helper.registerAllowedMethod('sh', [Map.class], { return whichDockerReturnValue })
         helper.registerAllowedMethod('container', [Map.class, Closure.class], { Map config, Closure body ->
@@ -91,7 +96,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             inheritFrom = options.inheritFrom
             yamlMergeStrategy = options.yamlMergeStrategy
             podNodeSelector = options.nodeSelector
-            def podSpec = new JsonSlurper().parseText(options.yaml)  // this yaml is actually json
+            podSpec = new JsonSlurper().parseText(options.yaml)  // this yaml is actually json
             def containers = podSpec.spec.containers
             securityContext = podSpec.spec.securityContext
 
@@ -106,6 +111,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
                     containerCommands.add(container.command)
                 }
                 pullImageMap.put(container.image.toString(), container.imagePullPolicy == "Always")
+                resources.put(container.name, container.resources)
             }
             body()
         })
@@ -113,6 +119,12 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             stashList.add(m)
         })
 
+        Utils.metaClass.echo = { def m -> }
+    }
+
+    @After
+    public void tearDown() {
+        Utils.metaClass = null
     }
 
     @Test
@@ -235,6 +247,164 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             }
         }
         assertTrue(envList.toString().contains('customEnvKey') && envList.toString().contains('customEnvValue'))
+        assertTrue(bodyExecuted)
+    }
+
+    @Test
+    void testDockerExecuteOnKubernetesNoResourceLimitsOnEmptyResourcesMap() throws Exception {
+
+        nullScript.commonPipelineEnvironment.configuration = [general:
+            [jenkinsKubernetes: [
+                resources: [
+                    DEFAULT: [
+                        requests: [
+                            memory: '1Gi',
+                            cpu: '0.25'
+                        ],
+                        limits: [
+                            memory: '2Gi',
+                            cpu: '1'
+                        ]
+                    ],
+                    mavenexecute: [:]
+                ]
+            ]
+        ]]
+        stepRule.step.dockerExecuteOnKubernetes(script: nullScript,
+            containerMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute'], {
+                bodyExecuted = true
+            })
+
+        assertNull(resources.mavenexecute)
+        assertTrue(bodyExecuted)
+    }
+
+    @Test
+    void testDockerExecuteOnKubernetesWithDefaultResourceLimits() throws Exception {
+
+        nullScript.commonPipelineEnvironment.configuration = [general:
+            [jenkinsKubernetes: [
+                resources: [DEFAULT: [
+                    requests: [
+                        memory: '1Gi',
+                        cpu: '0.25'
+                    ],
+                    limits: [
+                        memory: '2Gi',
+                        cpu: '1'
+                    ]
+                ]
+            ]
+        ]]]
+        stepRule.step.dockerExecuteOnKubernetes(script: nullScript,
+            containerMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute'], {
+                bodyExecuted = true
+            })
+
+        assertEquals(requests: [memory: '1Gi',cpu: '0.25'],limits: [memory: '2Gi',cpu: '1'], resources.jnlp)
+        assertEquals(requests: [memory: '1Gi',cpu: '0.25'],limits: [memory: '2Gi',cpu: '1'], resources.mavenexecute)
+        assertTrue(bodyExecuted)
+    }
+
+    @Test
+    void testDockerExecuteOnKubernetesWithSpecificResourcLimitsParametersAreTakingPrecendence() throws Exception {
+
+        // the settings here are expected to be overwritten by the parameters provided via signature
+        nullScript.commonPipelineEnvironment.configuration = [general:
+            [jenkinsKubernetes: [
+                resources: [
+                    mavenexecute: [
+                    requests: [
+                        memory: '2Gi',
+                        cpu: '0.75'
+                    ],
+                    limits: [
+                        memory: '4Gi',
+                        cpu: '2'
+                    ]
+                ]
+            ]
+        ]]]
+        stepRule.step.dockerExecuteOnKubernetes(script: nullScript,
+            containerMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute'],
+            resources: [
+                    mavenexecute: [
+                    requests: [
+                        memory: '8Gi',
+                        cpu: '2'
+                    ],
+                    limits: [
+                        memory: '16Gi',
+                        cpu: '4'
+                    ]
+                ]
+            ]) {
+                bodyExecuted = true
+            }
+
+        assertEquals(requests: [memory: '8Gi',cpu: '2'],limits: [memory: '16Gi',cpu: '4'], resources.mavenexecute)
+        assertTrue(bodyExecuted)
+    }
+
+    @Test
+    void testDockerExecuteOnKubernetesWithSpecificResourceLimits() throws Exception {
+
+        nullScript.commonPipelineEnvironment.configuration = [general:
+            [jenkinsKubernetes: [
+                resources: [
+                    DEFAULT: [
+                        requests: [
+                            memory: '1Gi',
+                            cpu: '0.25'
+                        ],
+                        limits: [
+                            memory: '2Gi',
+                            cpu: '1'
+                        ]
+                    ],
+                    mavenexecute: [
+                        requests: [
+                            memory: '2Gi',
+                            cpu: '0.75'
+                        ],
+                        limits: [
+                            memory: '4Gi',
+                            cpu: '2'
+                        ]
+                    ],
+                    jnlp: [
+                        requests: [
+                            memory: '3Gi',
+                            cpu: '0.33'
+                        ],
+                        limits: [
+                            memory: '6Gi',
+                            cpu: '3'
+                        ]
+                    ],
+                    mysidecar: [
+                        requests: [
+                            memory: '10Gi',
+                            cpu: '5.00'
+                        ],
+                        limits: [
+                            memory: '20Gi',
+                            cpu: '10'
+                        ]
+                    ]
+                ]
+            ]
+        ]]
+        stepRule.step.dockerExecuteOnKubernetes(script: nullScript,
+            containerMap: ['maven:3.5-jdk-8-alpine': 'mavenexecute'],
+            sidecarImage: 'ubuntu',
+            sidecarName: 'mysidecar') {
+                bodyExecuted = true
+            }
+            
+        assertEquals(requests: [memory: '10Gi',cpu: '5.00'],limits: [memory: '20Gi',cpu: '10'], resources.mysidecar)
+        assertEquals(requests: [memory: '3Gi',cpu: '0.33'],limits: [memory: '6Gi',cpu: '3'], resources.jnlp)
+        assertEquals(requests: [memory: '2Gi',cpu: '0.75'],limits: [memory: '4Gi',cpu: '2'], resources.mavenexecute)
         assertTrue(bodyExecuted)
     }
 
@@ -416,6 +586,89 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         ) { bodyExecuted = true }
         assertTrue(bodyExecuted)
         assertThat(namespace, is(equalTo(expectedNamespace)))
+    }
+
+    @Test
+    void testDockerExecuteWithAdditionalPodProperties() {
+        nullScript.commonPipelineEnvironment.configuration = [general: [jenkinsKubernetes: [
+            additionalPodProperties: [
+                tolerations:[
+                    [
+                        key: "key1",
+                        operator: "Equal",
+                        value: "value1",
+                        effect: "NoSchedule",
+                    ],
+                    [
+                        key: "key2",
+                        operator: "Equal",
+                        value: "value2",
+                        effect: "NoExecute",
+                    ],
+                ],
+                subdomain: 'foo',
+                shareProcessNamespace: false
+            ]
+        ]]]
+
+        stepRule.step.dockerExecuteOnKubernetes(
+            script: nullScript,
+            juStabUtils: utils,
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+        ) { bodyExecuted = true }
+        assertTrue(bodyExecuted)
+        assertEquals(
+            [
+                [
+                    "key": "key1",
+                    "operator": "Equal",
+                    "value": "value1",
+                    "effect": "NoSchedule"
+                ],
+                [
+                    "key": "key2",
+                    "operator": "Equal",
+                    "value": "value2",
+                    "effect": "NoExecute"
+                ]
+            ], podSpec.spec.tolerations)
+        assertEquals('foo', podSpec.spec.subdomain)
+        assertFalse(podSpec.spec.shareProcessNamespace)
+        assertThat(loggingRule.log, containsString('Additional pod properties found ([tolerations, subdomain, shareProcessNamespace]). Providing additional pod properties is some kind of expert mode. In case of any problems caused by these additional properties only limited support can be provided.'))
+
+    }
+
+    @Test
+    void testDockerExecuteWithAdditionalPodPropertiesContainerPropertyIsNotOverwritten() {
+        nullScript.commonPipelineEnvironment.configuration = [general: [jenkinsKubernetes: [
+            additionalPodProperties: [
+                containers:[
+                    [
+                        some: "stupid",
+                        stuff: "here",
+                    ]
+                ],
+                subdomain: 'foo',
+                shareProcessNamespace: false,
+            ]
+        ]]]
+
+        stepRule.step.dockerExecuteOnKubernetes(
+            script: nullScript,
+            juStabUtils: utils,
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+        ) { bodyExecuted = true }
+        assertTrue(bodyExecuted)
+
+        // This is not contained in the configuration above.
+        assertNotNull(podSpec.spec.containers[0].name)
+
+        // This is contained in the config above.
+        assertNull(podSpec.spec.some)
+        assertNull(podSpec.spec.stuff)
+
+        assertEquals('foo', podSpec.spec.subdomain)
+        assertFalse(podSpec.spec.shareProcessNamespace)
     }
 
     @Test

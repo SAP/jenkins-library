@@ -23,7 +23,8 @@ func runMavenStaticCodeChecks(config *mavenExecuteStaticCodeChecksOptions, telem
 	var goals []string
 
 	if !config.SpotBugs && !config.Pmd {
-		log.Entry().Fatal("Neither SpotBugs nor Pmd are configured. At least one of those tools have to be enabled")
+		log.Entry().Warnf("Neither SpotBugs nor Pmd are configured. Skipping step execution")
+		return nil
 	}
 
 	if testModulesExcludes := maven.GetTestModulesExcludes(); testModulesExcludes != nil {

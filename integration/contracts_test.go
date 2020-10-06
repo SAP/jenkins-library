@@ -65,12 +65,11 @@ func TestGenerator(t *testing.T) {
 	openMetaFile := func(name string) (io.ReadCloser, error) { return os.Open(name) }
 	fileWriter := func(filename string, data []byte, perm os.FileMode) error { return nil }
 
-	stepHelperData := helper.StepHelperData{openMetaFile, fileWriter, "piperOsCmd"}
-	docuHelperData := helper.DocuHelperData{false, "", nil, nil}
+	stepHelperData := helper.StepHelperData{OpenFile: openMetaFile, WriteFile: fileWriter, ExportPrefix: "piperOsCmd"}
 
 	metadataFiles, err := helper.MetadataFiles(dir)
 	assert.NoError(t, err)
 
-	err = helper.ProcessMetaFiles(metadataFiles, "./cmd", stepHelperData, docuHelperData)
+	err = helper.ProcessMetaFiles(metadataFiles, "./cmd", stepHelperData)
 	assert.NoError(t, err)
 }
