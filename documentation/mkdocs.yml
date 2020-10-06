@@ -49,6 +49,13 @@ nav:
         - 'Build an SAP Fiori Application and Attach It to a Transport Request on an ABAP System with Jenkins': scenarios/upload-to-transportrequest/Readme.md
     - Extensibility: extensibility.md
     - 'Library steps':
+        - abapAddonAssemblyKitCheckCVs: steps/abapAddonAssemblyKitCheckCVs.md
+        - abapAddonAssemblyKitCheckCVs: steps/abapAddonAssemblyKitCheckPV.md
+        - abapAddonAssemblyKitCreateTargetVector: steps/abapAddonAssemblyKitCreateTargetVector.md
+        - abapAddonAssemblyKitPublishTargetVector: steps/abapAddonAssemblyKitPublishTargetVector.md
+        - abapAddonAssemblyKitRegisterPackages: steps/abapAddonAssemblyKitRegisterPackages.md
+        - abapAddonAssemblyKitReleasePackages: steps/abapAddonAssemblyKitReleasePackages.md
+        - abapAddonAssemblyKitReserveNextPackages: steps/abapAddonAssemblyKitReserveNextPackages.md
         - abapEnvironmentAssemblePackages: steps/abapEnvironmentAssemblePackages.md
         - abapEnvironmentCheckoutBranch: steps/abapEnvironmentCheckoutBranch.md
         - abapEnvironmentCloneGitRepo: steps/abapEnvironmentCloneGitRepo.md
@@ -68,6 +75,7 @@ nav:
         - commonPipelineEnvironment: steps/commonPipelineEnvironment.md
         - containerExecuteStructureTests: steps/containerExecuteStructureTests.md
         - containerPushToRegistry: steps/containerPushToRegistry.md
+        - debugReportArchive: steps/debugReportArchive.md
         - detectExecuteScan: steps/detectExecuteScan.md
         - dockerExecute: steps/dockerExecute.md
         - dockerExecuteOnKubernetes: steps/dockerExecuteOnKubernetes.md
@@ -80,7 +88,10 @@ nav:
         - gctsDeploy: steps/gctsDeploy.md
         - gctsExecuteABAPUnitTests: steps/gctsExecuteABAPUnitTests.md
         - gctsRollback: steps/gctsRollback.md
+        - githubCheckBranchProtection: steps/githubCheckBranchProtection.md
+        - githubCreatePullRequest: steps/githubCreatePullRequest.md
         - githubPublishRelease: steps/githubPublishRelease.md
+        - githubSetCommitStatus: steps/githubSetCommitStatus.md
         - hadolintExecute: steps/hadolintExecute.md
         - handlePipelineStepErrors: steps/handlePipelineStepErrors.md
         - healthExecuteCheck: steps/healthExecuteCheck.md

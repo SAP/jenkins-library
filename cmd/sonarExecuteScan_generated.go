@@ -17,7 +17,7 @@ import (
 
 type sonarExecuteScanOptions struct {
 	Instance                  string   `json:"instance,omitempty"`
-	Host                      string   `json:"host,omitempty"`
+	ServerURL                 string   `json:"serverUrl,omitempty"`
 	Token                     string   `json:"token,omitempty"`
 	Organization              string   `json:"organization,omitempty"`
 	CustomTLSCertificateLinks []string `json:"customTlsCertificateLinks,omitempty"`
@@ -58,7 +58,7 @@ func (i *sonarExecuteScanInflux) persist(path, resourceName string) {
 		measurement string
 		valType     string
 		name        string
-		value       string
+		value       interface{}
 	}{
 		{valType: config.InfluxField, measurement: "step_data", name: "sonar", value: i.step_data.fields.sonar},
 	}
@@ -119,6 +119,7 @@ func SonarExecuteScanCommand() *cobra.Command {
 			handler := func() {
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
 			}
 			log.DeferExitHandler(handler)
@@ -135,8 +136,8 @@ func SonarExecuteScanCommand() *cobra.Command {
 }
 
 func addSonarExecuteScanFlags(cmd *cobra.Command, stepConfig *sonarExecuteScanOptions) {
-	cmd.Flags().StringVar(&stepConfig.Instance, "instance", `SonarCloud`, "Jenkins only: The name of the SonarQube instance defined in the Jenkins settings. DEPRECATED: use host parameter instead")
-	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "The URL to the Sonar backend.")
+	cmd.Flags().StringVar(&stepConfig.Instance, "instance", `SonarCloud`, "Jenkins only: The name of the SonarQube instance defined in the Jenkins settings. DEPRECATED: use serverUrl parameter instead")
+	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "The URL to the Sonar backend.")
 	cmd.Flags().StringVar(&stepConfig.Token, "token", os.Getenv("PIPER_token"), "Token used to authenticate with the Sonar Server.")
 	cmd.Flags().StringVar(&stepConfig.Organization, "organization", os.Getenv("PIPER_organization"), "SonarCloud.io only: Organization that the project will be assigned to in SonarCloud.io.")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List of download links to custom TLS certificates. This is required to ensure trusted connections to instances with custom certificates.")
@@ -182,20 +183,25 @@ func sonarExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "host",
+						Name:        "serverUrl",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "sonarServerUrl"}},
+						Aliases:     []config.Alias{{Name: "host"}, {Name: "sonarServerUrl"}},
 					},
 					{
-						Name:        "token",
-						ResourceRef: []config.ResourceReference{{Name: "sonarTokenCredentialsId", Param: ""}},
-						Scope:       []string{"PARAMETERS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "sonarToken"}},
+						Name: "token",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name: "sonarTokenCredentialsId",
+								Type: "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "sonarToken"}},
 					},
 					{
 						Name:        "organization",
@@ -222,12 +228,17 @@ func sonarExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "projectVersion",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "artifactVersion"}},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Name: "projectVersion",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "artifactVersion",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "projectKey",
@@ -318,28 +329,43 @@ func sonarExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "owner",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "github/owner"}},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "githubOrg"}},
+						Name: "owner",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "github/owner",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "githubOrg"}},
 					},
 					{
-						Name:        "repository",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "github/repository"}},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "githubRepo"}},
+						Name: "repository",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "github/repository",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "githubRepo"}},
 					},
 					{
-						Name:        "githubToken",
-						ResourceRef: []config.ResourceReference{{Name: "githubTokenCredentialsId", Param: ""}},
-						Scope:       []string{"PARAMETERS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Name: "githubToken",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name: "githubTokenCredentialsId",
+								Type: "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "disableInlineComments",

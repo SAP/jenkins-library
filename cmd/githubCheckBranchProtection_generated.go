@@ -66,6 +66,7 @@ It can for example be used to verify if certain status checks are mandatory. Thi
 			telemetryData.ErrorCode = "1"
 			handler := func() {
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
 			}
 			log.DeferExitHandler(handler)
@@ -83,7 +84,7 @@ It can for example be used to verify if certain status checks are mandatory. Thi
 
 func addGithubCheckBranchProtectionFlags(cmd *cobra.Command, stepConfig *githubCheckBranchProtectionOptions) {
 	cmd.Flags().StringVar(&stepConfig.APIURL, "apiUrl", `https://api.github.com`, "Set the GitHub API url.")
-	cmd.Flags().StringVar(&stepConfig.Branch, "branch", os.Getenv("PIPER_branch"), "The name of the branch for which the protection settings should be checked.")
+	cmd.Flags().StringVar(&stepConfig.Branch, "branch", `master`, "The name of the branch for which the protection settings should be checked.")
 	cmd.Flags().StringVar(&stepConfig.Owner, "owner", os.Getenv("PIPER_owner"), "Name of the GitHub organization.")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Name of the GitHub repository.")
 	cmd.Flags().StringSliceVar(&stepConfig.RequiredChecks, "requiredChecks", []string{}, "List of checks which have to be set to 'required' in the GitHub repository configuration.")
@@ -125,20 +126,30 @@ func githubCheckBranchProtectionMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "owner",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "githubOrg"}},
+						Name: "owner",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "github/owner",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{{Name: "githubOrg"}},
 					},
 					{
-						Name:        "repository",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "githubRepo"}},
+						Name: "repository",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "github/repository",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{{Name: "githubRepo"}},
 					},
 					{
 						Name:        "requiredChecks",
@@ -165,12 +176,17 @@ func githubCheckBranchProtectionMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "token",
-						ResourceRef: []config.ResourceReference{{Name: "githubTokenCredentialsId", Param: ""}},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "githubToken"}},
+						Name: "token",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name: "githubTokenCredentialsId",
+								Type: "secret",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{{Name: "githubToken"}},
 					},
 				},
 			},

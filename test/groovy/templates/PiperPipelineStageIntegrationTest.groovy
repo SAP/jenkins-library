@@ -1,5 +1,8 @@
 package templates
 
+import com.sap.piper.Utils
+
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -43,6 +46,13 @@ class PiperPipelineStageIntegrationTest extends BasePiperTest {
         helper.registerAllowedMethod('withEnv', [List.class, Closure.class], {env, body ->
             body()
         })
+
+        Utils.metaClass.echo = { m -> }
+    }
+
+    @After
+    void tearDown() {
+        Utils.metaClass = null
     }
 
     @Test

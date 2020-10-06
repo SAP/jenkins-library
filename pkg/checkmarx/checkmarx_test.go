@@ -40,7 +40,11 @@ func (sm *senderMock) SendRequest(method, url string, body io.Reader, header htt
 		buf.ReadFrom(body)
 		sm.requestBody = buf.String()
 	}
-	return &http.Response{StatusCode: sm.httpStatusCode, Body: ioutil.NopCloser(strings.NewReader(sm.responseBody))}, nil
+	var httpError error
+	if sm.httpStatusCode > 399 {
+		httpError = fmt.Errorf("http error %v", sm.httpStatusCode)
+	}
+	return &http.Response{StatusCode: sm.httpStatusCode, Body: ioutil.NopCloser(strings.NewReader(sm.responseBody))}, httpError
 }
 func (sm *senderMock) UploadFile(url, file, fieldName string, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
 	sm.httpMethod = http.MethodPost
@@ -71,7 +75,7 @@ func TestSendRequest(t *testing.T) {
 
 		_, err := sendRequest(&sys, "GET", "/test", nil, nil)
 
-		assert.NoError(t, err, "Error occured but none expected")
+		assert.NoError(t, err, "Error occurred but none expected")
 		assert.Equal(t, "https://cx.server.com/cxrestapi/test", myTestClient.urlCalled, "Called url incorrect")
 	})
 
@@ -81,7 +85,7 @@ func TestSendRequest(t *testing.T) {
 		myTestClient.SetOptions(opts)
 		_, err := sendRequest(&sys, "GET", "/test", nil, nil)
 
-		assert.Error(t, err, "Error expected but none occured")
+		assert.Error(t, err, "Error expected but none occurred")
 		assert.Equal(t, "https://cx.server.com/cxrestapi/test", myTestClient.urlCalled, "Called url incorrect")
 	})
 
@@ -91,7 +95,21 @@ func TestSendRequest(t *testing.T) {
 		myTestClient.SetOptions(opts)
 		_, err := sendRequest(&sys, "error", "/test", nil, nil)
 
-		assert.Error(t, err, "Error expected but none occured")
+		assert.Error(t, err, "Error expected but none occurred")
+	})
+}
+
+func TestSendRequestInternal(t *testing.T) {
+	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx_test")
+	opts := piperHttp.ClientOptions{}
+
+	t.Run("test accepted error", func(t *testing.T) {
+		myTestClient := senderMock{responseBody: `{"some": "test"}`, httpStatusCode: 404}
+		sys := SystemInstance{serverURL: "https://cx.server.com", client: &myTestClient, logger: logger}
+		myTestClient.SetOptions(opts)
+		_, err := sendRequestInternal(&sys, "GET", "/test", nil, nil, []int{404})
+
+		assert.NoError(t, err, "No error expected but error occurred")
 	})
 }
 
@@ -105,7 +123,7 @@ func TestGetOAuthToken(t *testing.T) {
 
 		token, err := sys.getOAuth2Token()
 
-		assert.NoError(t, err, "Error occured but none expected")
+		assert.NoError(t, err, "Error occurred but none expected")
 		assert.Equal(t, "https://cx.server.com/cxrestapi/auth/identity/connect/token", myTestClient.urlCalled, "Called url incorrect")
 		assert.Equal(t, "Bearer abcd12345", token, "Token incorrect")
 		assert.Equal(t, "client_id=resource_owner_client&client_secret=014DF517-39D1-4453-B7B3-9930C563627C&grant_type=password&password=user&scope=sast_rest_api&username=test", myTestClient.requestBody, "Request body incorrect")
@@ -118,7 +136,7 @@ func TestGetOAuthToken(t *testing.T) {
 
 		_, err := sys.getOAuth2Token()
 
-		assert.Error(t, err, "Error expected but none occured")
+		assert.Error(t, err, "Error expected but none occurred")
 		assert.Equal(t, "https://cx.server.com/cxrestapi/auth/identity/connect/token", myTestClient.urlCalled, "Called url incorrect")
 	})
 
@@ -126,7 +144,7 @@ func TestGetOAuthToken(t *testing.T) {
 		myTestClient := senderMock{responseBody: `{"token_type":"Bearer","access_token":"abcd12345","expires_in":7045634}`, httpStatusCode: 200}
 		_, err := NewSystemInstance(&myTestClient, "https://cx.server.com", "test", "user")
 
-		assert.NoError(t, err, "Error occured but none expected")
+		assert.NoError(t, err, "Error occurred but none expected")
 		assert.Equal(t, "https://cx.server.com/cxrestapi/auth/identity/connect/token", myTestClient.urlCalled, "Called url incorrect")
 		assert.Equal(t, "Bearer abcd12345", myTestClient.token, "Token incorrect")
 	})
@@ -139,7 +157,7 @@ func TestGetOAuthToken(t *testing.T) {
 
 		_, err := sys.getOAuth2Token()
 
-		assert.Error(t, err, "Error expected but none occured")
+		assert.Error(t, err, "Error expected but none occurred")
 	})
 }
 
@@ -185,7 +203,7 @@ func TestGetTeams(t *testing.T) {
 
 		teams := sys.GetTeams()
 
-		assert.Equal(t, 0, len(teams), "Error expected but none occured")
+		assert.Equal(t, 0, len(teams), "Error expected but none occurred")
 	})
 }
 
@@ -197,8 +215,9 @@ func TestGetProjects(t *testing.T) {
 		sys := SystemInstance{serverURL: "https://cx.server.com", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 
-		projects := sys.GetProjects()
+		projects, err := sys.GetProjects()
 
+		assert.NoError(t, err)
 		assert.Equal(t, "https://cx.server.com/cxrestapi/projects", myTestClient.urlCalled, "Called url incorrect")
 		assert.Equal(t, 2, len(projects), "Number of Projects incorrect")
 		assert.Equal(t, "Project1", projects[0].Name, "Project name 1 incorrect")
@@ -222,9 +241,9 @@ func TestGetProjects(t *testing.T) {
 		myTestClient.SetOptions(opts)
 		myTestClient.errorExp = true
 
-		projects := sys.GetProjects()
+		_, err := sys.GetProjects()
 
-		assert.Equal(t, 0, len(projects), "Error expected but none occured")
+		assert.Contains(t, fmt.Sprint(err), "Provoked technical error")
 	})
 }
 
@@ -236,9 +255,9 @@ func TestCreateProject(t *testing.T) {
 		sys := SystemInstance{serverURL: "https://cx.server.com", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 
-		ok, result := sys.CreateProject("TestProjectCreate", "4711")
+		result, err := sys.CreateProject("TestProjectCreate", "4711")
 
-		assert.Equal(t, true, ok, "CreateProject call not successful")
+		assert.NoError(t, err, "CreateProject call not successful")
 		assert.Equal(t, 16, result.ID, "Wrong project ID")
 		assert.Equal(t, "https://cx.server.com/cxrestapi/projects", myTestClient.urlCalled, "Called url incorrect")
 		assert.Equal(t, "POST", myTestClient.httpMethod, "HTTP method incorrect")
@@ -252,9 +271,9 @@ func TestCreateProject(t *testing.T) {
 		myTestClient.SetOptions(opts)
 		myTestClient.errorExp = true
 
-		result, _ := sys.CreateProject("Test", "13")
+		_, err := sys.CreateProject("Test", "13")
 
-		assert.Equal(t, false, result, "Error expected but none occured")
+		assert.Contains(t, fmt.Sprint(err), "", "expected a different error")
 	})
 }
 
@@ -266,9 +285,9 @@ func TestUploadProjectSourceCode(t *testing.T) {
 		sys := SystemInstance{serverURL: "https://cx.server.com", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 
-		result := sys.UploadProjectSourceCode(10415, "sources.zip")
+		err := sys.UploadProjectSourceCode(10415, "sources.zip")
 
-		assert.Equal(t, true, result, "UploadProjectSourceCode call not successful")
+		assert.NoError(t, err, "UploadProjectSourceCode call not successful")
 		assert.Equal(t, "https://cx.server.com/cxrestapi/projects/10415/sourceCode/attachments", myTestClient.urlCalled, "Called url incorrect")
 		assert.Equal(t, "POST", myTestClient.httpMethod, "HTTP method incorrect")
 		assert.Equal(t, 2, len(myTestClient.header), "HTTP header incorrect")
@@ -285,9 +304,9 @@ func TestUpdateProjectExcludeSettings(t *testing.T) {
 		sys := SystemInstance{serverURL: "https://cx.server.com", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 
-		result := sys.UpdateProjectExcludeSettings(10457, "some,test,a/b/c", "*.go")
+		err := sys.UpdateProjectExcludeSettings(10457, "some,test,a/b/c", "*.go")
 
-		assert.Equal(t, true, result, "UpdateProjectExcludeSettings call not successful")
+		assert.NoError(t, err, "UpdateProjectExcludeSettings call not successful")
 		assert.Equal(t, "https://cx.server.com/cxrestapi/projects/10457/sourceCode/excludeSettings", myTestClient.urlCalled, "Called url incorrect")
 		assert.Equal(t, "PUT", myTestClient.httpMethod, "HTTP method incorrect")
 		assert.Equal(t, 1, len(myTestClient.header), "HTTP header incorrect")
@@ -341,9 +360,9 @@ func TestUpdateProjectConfiguration(t *testing.T) {
 		sys := SystemInstance{serverURL: "https://cx.server.com", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 
-		result := sys.UpdateProjectConfiguration(12, 15, "1")
+		err := sys.UpdateProjectConfiguration(12, 15, "1")
 
-		assert.Equal(t, true, result, "UpdateProjectConfiguration call not successful")
+		assert.NoError(t, err, "UpdateProjectConfiguration call not successful")
 		assert.Equal(t, "https://cx.server.com/cxrestapi/sast/scanSettings", myTestClient.urlCalled, "Called url incorrect")
 		assert.Equal(t, "POST", myTestClient.httpMethod, "HTTP method incorrect")
 		assert.Equal(t, `{"engineConfigurationId":1,"presetId":15,"projectId":12}`, myTestClient.requestBody, "Request body incorrect")
@@ -358,9 +377,9 @@ func TestScanProject(t *testing.T) {
 		sys := SystemInstance{serverURL: "https://cx.server.com", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 
-		result, scan := sys.ScanProject(10745, false, false, false)
+		scan, err := sys.ScanProject(10745, false, false, false)
 
-		assert.Equal(t, true, result, "ScanProject call not successful")
+		assert.NoError(t, err, "ScanProject call not successful")
 		assert.Equal(t, "https://cx.server.com/cxrestapi/sast/scans", myTestClient.urlCalled, "Called url incorrect")
 		assert.Equal(t, "POST", myTestClient.httpMethod, "HTTP method incorrect")
 		assert.Equal(t, 1, scan.ID, "Scan ID incorrect")
@@ -401,9 +420,9 @@ func TestGetScans(t *testing.T) {
 		sys := SystemInstance{serverURL: "https://cx.server.com", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 
-		result, scans := sys.GetScans(10745)
+		scans, err := sys.GetScans(10745)
 
-		assert.Equal(t, true, result, "ScanProject call not successful")
+		assert.NoError(t, err, "ScanProject call not successful")
 		assert.Equal(t, "https://cx.server.com/cxrestapi/sast/scans?last=20&projectId=10745", myTestClient.urlCalled, "Called url incorrect")
 		assert.Equal(t, "GET", myTestClient.httpMethod, "HTTP method incorrect")
 		assert.Equal(t, 2, len(scans), "Incorrect number of scans")
@@ -468,12 +487,12 @@ func TestRequestNewReport(t *testing.T) {
 		sys := SystemInstance{serverURL: "https://cx.server.com", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 
-		success, result := sys.RequestNewReport(10745, "XML")
+		result, err := sys.RequestNewReport(10745, "XML")
 
+		assert.NoError(t, err, "Result status incorrect")
 		assert.Equal(t, "https://cx.server.com/cxrestapi/reports/sastScan", myTestClient.urlCalled, "Called url incorrect")
 		assert.Equal(t, `{"comment":"Scan report triggered by Piper","reportType":"XML","scanId":10745}`, myTestClient.requestBody, "Request body incorrect")
 		assert.Equal(t, "POST", myTestClient.httpMethod, "HTTP method incorrect")
-		assert.Equal(t, true, success, "Result status incorrect")
 		assert.Equal(t, 6, result.ReportID, "Report ID incorrect")
 	})
 }
@@ -496,8 +515,9 @@ func TestGetReportStatus(t *testing.T) {
 		sys := SystemInstance{serverURL: "https://cx.server.com", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 
-		result := sys.GetReportStatus(6)
+		result, err := sys.GetReportStatus(6)
 
+		assert.NoError(t, err, "error occured but none expected")
 		assert.Equal(t, "https://cx.server.com/cxrestapi/reports/sastScan/6/status", myTestClient.urlCalled, "Called url incorrect")
 		assert.Equal(t, "GET", myTestClient.httpMethod, "HTTP method incorrect")
 		assert.Equal(t, 2, result.Status.ID, "Status ID incorrect")
@@ -513,8 +533,8 @@ func TestDownloadReport(t *testing.T) {
 		sys := SystemInstance{serverURL: "https://cx.server.com", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 
-		ok, result := sys.DownloadReport(6)
-		assert.Equal(t, true, ok, "DownloadReport returned unexpected error")
+		result, err := sys.DownloadReport(6)
+		assert.NoError(t, err, "DownloadReport returned unexpected error")
 		assert.Equal(t, "https://cx.server.com/cxrestapi/reports/sastScan/6", myTestClient.urlCalled, "Called url incorrect")
 		assert.Equal(t, "GET", myTestClient.httpMethod, "HTTP method incorrect")
 		assert.Equal(t, []byte("abc"), result, "Result incorrect")
@@ -545,8 +565,8 @@ func TestGetProjectByID(t *testing.T) {
 		sys := SystemInstance{serverURL: "https://cx.server.com", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 
-		ok, result := sys.GetProjectByID(815)
-		assert.Equal(t, true, ok, "GetProjectByID returned unexpected error")
+		result, err := sys.GetProjectByID(815)
+		assert.NoError(t, err, "GetProjectByID returned unexpected error")
 		assert.Equal(t, "https://cx.server.com/cxrestapi/projects/815", myTestClient.urlCalled, "Called url incorrect")
 		assert.Equal(t, "GET", myTestClient.httpMethod, "HTTP method incorrect")
 		assert.Equal(t, 209, result.ID, "Result incorrect")
@@ -561,7 +581,8 @@ func TestGetProjectByName(t *testing.T) {
 		sys := SystemInstance{serverURL: "https://cx.server.com", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 
-		result := sys.GetProjectsByNameAndTeam("Project1_PR-18", "Test")
+		result, err := sys.GetProjectsByNameAndTeam("Project1_PR-18", "Test")
+		assert.NoError(t, err, "error occured but none expected")
 		assert.Equal(t, 1, len(result), "GetProjectByName returned unexpected error")
 		assert.Equal(t, "https://cx.server.com/cxrestapi/projects?projectName=Project1_PR-18&teamId=Test", myTestClient.urlCalled, "Called url incorrect")
 		assert.Equal(t, "GET", myTestClient.httpMethod, "HTTP method incorrect")

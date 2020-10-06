@@ -84,7 +84,7 @@ func cloneRepository(config *gctsCloneRepositoryOptions, telemetryData *telemetr
 				return errors.Wrap(httpErr, "cloning the repository failed")
 			}
 		}
-		log.Entry().Errorf("a HTTP error occured! Response body: %v", response)
+		log.Entry().Errorf("a HTTP error occurred! Response body: %v", response)
 		return errors.Wrap(httpErr, "cloning the repository failed")
 	}
 

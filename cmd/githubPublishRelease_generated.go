@@ -80,6 +80,7 @@ The result looks like
 			telemetryData.ErrorCode = "1"
 			handler := func() {
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
 			}
 			log.DeferExitHandler(handler)
@@ -188,12 +189,17 @@ func githubPublishReleaseMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "owner",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "github/owner"}},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "githubOrg"}},
+						Name: "owner",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "github/owner",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{{Name: "githubOrg"}},
 					},
 					{
 						Name:        "preRelease",
@@ -212,12 +218,17 @@ func githubPublishReleaseMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "repository",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "github/repository"}},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "githubRepo"}},
+						Name: "repository",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "github/repository",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{{Name: "githubRepo"}},
 					},
 					{
 						Name:        "serverUrl",
@@ -228,12 +239,17 @@ func githubPublishReleaseMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "githubServerUrl"}},
 					},
 					{
-						Name:        "token",
-						ResourceRef: []config.ResourceReference{{Name: "githubTokenCredentialsId", Param: ""}},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "githubToken"}},
+						Name: "token",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name: "githubTokenCredentialsId",
+								Type: "secret",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{{Name: "githubToken"}},
 					},
 					{
 						Name:        "uploadUrl",
@@ -244,12 +260,17 @@ func githubPublishReleaseMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "githubUploadUrl"}},
 					},
 					{
-						Name:        "version",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "artifactVersion"}},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Name: "version",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "artifactVersion",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 				},
 			},

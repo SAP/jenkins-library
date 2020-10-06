@@ -10,6 +10,7 @@ import static org.junit.Assert.assertThat
 
 import org.hamcrest.Matchers
 import org.hamcrest.core.IsNull
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -17,6 +18,7 @@ import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
 import com.sap.piper.PiperGoUtils
+import com.sap.piper.Utils
 
 import hudson.AbortException
 import util.BasePiperTest
@@ -72,6 +74,13 @@ class XsDeployTest extends BasePiperTest {
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, 'getConfig.* (?!--contextConfig)', '{"mode": "BG_DEPLOY", "action": "NONE", "apiUrl": "https://example.org/xs", "org": "myOrg", "space": "mySpace"}')
 
         nullScript.commonPipelineEnvironment.xsDeploymentId = null
+
+        Utils.metaClass.echo = { def m -> }
+    }
+
+    @After
+    public void tearDown() {
+        Utils.metaClass = null
     }
 
     @Test
@@ -199,7 +208,7 @@ class XsDeployTest extends BasePiperTest {
                 new CommandLineMatcher()
                     .hasProlog('./piper getConfig --stepMetadata \'.pipeline/metadata/xsDeploy.yaml\''),
                 new CommandLineMatcher()
-                    .hasProlog('#!/bin/bash ./piper xsDeploy --defaultConfig ".pipeline/additionalConfigs/default_pipeline_environment.yml" --user \\$\\{USERNAME\\} --password \\$\\{PASSWORD\\}'),
+                    .hasProlog('#!/bin/bash ./piper xsDeploy --defaultConfig ".pipeline/additionalConfigs/default_pipeline_environment.yml" --username \\$\\{USERNAME\\} --password \\$\\{PASSWORD\\}'),
                 not(new CommandLineMatcher()
                     .hasProlog('#!/bin/bash ./piper xsDeploy')
                     .hasOption('operationId', '1234'))

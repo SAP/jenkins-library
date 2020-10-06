@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"github.com/bmatcuk/doublestar"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -19,6 +18,7 @@ import (
 	StepResults "github.com/SAP/jenkins-library/pkg/piperutils"
 	SonarUtils "github.com/SAP/jenkins-library/pkg/sonar"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/bmatcuk/doublestar"
 	"github.com/pkg/errors"
 )
 
@@ -54,14 +54,21 @@ const (
 	javaLibraries       = "sonar.java.libraries="
 	coverageExclusions  = "sonar.coverage.exclusions="
 	pomXMLPattern       = "**/pom.xml"
-	jacocoReportPattern = "**/target/**/jacoco.xml"
 )
 
 func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, influx *sonarExecuteScanInflux) {
 	runner := command.Command{
 		ErrorCategoryMapping: map[string][]string{
-			"infrastructure": {
+			log.ErrorConfiguration.String(): {
+				"org.sonar.java.AnalysisException: Your project contains .java files, please provide compiled classes with sonar.java.binaries property, or exclude them from the analysis with sonar.exclusions property.",
+				"ERROR: Invalid value for *",
+				"java.lang.IllegalStateException: No files nor directories matching '*'",
+			},
+			log.ErrorInfrastructure.String(): {
+				"ERROR: SonarQube server [*] can not be reached",
 				"Caused by: java.net.SocketTimeoutException: timeout",
+				"java.lang.IllegalStateException: Fail to request *",
+				"java.lang.IllegalStateException: Fail to download plugin [*] into *",
 			},
 		},
 	}
@@ -87,8 +94,8 @@ func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, i
 }
 
 func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runner command.ExecRunner) error {
-	if len(config.Host) > 0 {
-		sonar.addEnvironment("SONAR_HOST_URL=" + config.Host)
+	if len(config.ServerURL) > 0 {
+		sonar.addEnvironment("SONAR_HOST_URL=" + config.ServerURL)
 	}
 	if len(config.Token) > 0 {
 		sonar.addEnvironment("SONAR_TOKEN=" + config.Token)
@@ -111,9 +118,6 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 	}
 	if config.InferJavaBinaries && !isInOptions(config, javaBinaries) {
 		addJavaBinaries()
-	}
-	if !isInOptions(config, coverageReportPaths) {
-		addJacocoReportPaths()
 	}
 	if err := handlePullRequest(config); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
@@ -166,17 +170,6 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 func isInOptions(config sonarExecuteScanOptions, property string) bool {
 	property = strings.TrimSuffix(property, "=")
 	return SliceUtils.ContainsStringPart(config.Options, property)
-}
-
-func addJacocoReportPaths() {
-	matches, err := doublestarGlob(jacocoReportPattern)
-	if err != nil {
-		log.Entry().Warnf("failed to glob for Jacoco report paths: %v", err)
-		return
-	}
-	if len(matches) > 0 {
-		sonar.addOption(coverageReportPaths + strings.Join(matches, ","))
-	}
 }
 
 func addJavaBinaries() {

@@ -114,7 +114,7 @@ func TestRunSonar(t *testing.T) {
 		options := sonarExecuteScanOptions{
 			CustomTLSCertificateLinks: []string{},
 			Token:                     "secret-ABC",
-			Host:                      "https://sonar.sap.com",
+			ServerURL:                 "https://sonar.sap.com",
 			Organization:              "SAP",
 			ProjectVersion:            "1.2.3",
 		}
@@ -162,34 +162,6 @@ func TestRunSonar(t *testing.T) {
 		// assert
 		assert.NoError(t, err)
 		assert.Contains(t, sonar.options, "-Dsonar.projectKey=piper")
-	})
-	t.Run("with jacoco reports", func(t *testing.T) {
-		// init
-		tmpFolder, err := ioutil.TempDir(".", "test-sonar-")
-		require.NoError(t, err)
-		defer func() { _ = os.RemoveAll(tmpFolder) }()
-		createTaskReportFile(t, tmpFolder)
-
-		sonar = sonarSettings{
-			workingDir:  tmpFolder,
-			binary:      "sonar-scanner",
-			environment: []string{},
-			options:     []string{},
-		}
-		fileUtilsExists = mockFileUtilsExists(true)
-		globMatches := make(map[string][]string)
-		globMatches[jacocoReportPattern] = []string{"target/site/jacoco.xml", "application/target/site/jacoco.xml"}
-		doublestarGlob = mockGlob(globMatches)
-		defer func() {
-			fileUtilsExists = FileUtils.FileExists
-			doublestarGlob = doublestar.Glob
-		}()
-		options := sonarExecuteScanOptions{}
-		// test
-		err = runSonar(options, &mockClient, &mockRunner)
-		// assert
-		assert.NoError(t, err)
-		assert.Contains(t, sonar.options, "-Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco.xml,application/target/site/jacoco.xml")
 	})
 	t.Run("with binaries option", func(t *testing.T) {
 		// init

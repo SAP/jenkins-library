@@ -1,0 +1,59 @@
+metadata:
+    name: abapAddonAssemblyKitReserveNextPackages
+    description: This step determines the ABAP delivery packages (name and type), which are needed to deliver Software Component Versions.
+    longDescription: |
+      This step takes the list of Software Component Versions from the addonDescriptor in the commonPipelineEnvironment and determines the ABAP delivery packages.
+      If a package does not exist yet in the package registry, it is created there. The response contains detail information for this package and a package status, which determines the next actions:
+      "P": Package was created in the registry; production can be started / continued
+      "R": Package exists and is already released; production is not needed and must be skipped
+      The steps waits until the status "P" or "R" is achieved.
+      The name, type and namespace of each package is written back to the addonDescriptor in the commonPipelineEnvironment.
+spec:
+  inputs:
+    secrets:
+      - name: abapAddonAssemblyKitCredentialsId
+        description: Credential stored in Jenkins for the Addon Assembly Kit as a Service (AAKaaS) system
+        type: jenkins
+    params:
+      - name: abapAddonAssemblyKitEndpoint
+        type: string
+        description: Base URL to the Addon Assembly Kit as a Service (AAKaaS) system
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: true
+      - name: username
+        type: string
+        description: User for the Addon Assembly Kit as a Service (AAKaaS) system
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+        secret: true
+      - name: password
+        type: string
+        description: Password for the Addon Assembly Kit as a Service (AAKaaS) system
+        scope:
+          - PARAMETERS
+        mandatory: true
+        secret: true
+      - name: addonDescriptor
+        type: string
+        description: Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions
+        mandatory: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: abap/addonDescriptor
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: abap/addonDescriptor

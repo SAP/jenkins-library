@@ -126,6 +126,7 @@ func TestGetArtifact(t *testing.T) {
 	})
 
 	t.Run("sbt", func(t *testing.T) {
+		fileExists = func(string) (bool, error) { return true, nil }
 		sbt, err := GetArtifact("sbt", "", &Options{VersionField: "theversion"}, nil)
 
 		assert.NoError(t, err)
