@@ -220,7 +220,7 @@ public class ChangeManagement implements Serializable {
                                 |      app:
                                 |        name: ${applicationName}
                                 |        description: ${desc}
-                                |        package: ${abapPackage}
+                                |        package: ''
                                 |      exclude:
                                 |      - .*\\.test.js
                                 |      - internal.md
@@ -273,6 +273,8 @@ public class ChangeManagement implements Serializable {
         if (endpoint) {
             params += ['-u', endpoint]
         }
+
+        params += ['-p', abapPackage]
 
         params += ['-f'] // failfast --> provide return code != 0 in case of any failure
 
