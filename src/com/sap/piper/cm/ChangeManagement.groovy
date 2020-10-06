@@ -278,9 +278,12 @@ public class ChangeManagement implements Serializable {
 
         // more parameters can be added when they are recognized by the fiori toolset, e.g. abap package.
 
+
         params += ['-y'] // autoconfirm
 
-        cmd << "fiori deploy ${params.join(' ')}"
+        def fioriDeployCmd = "fiori deploy ${params.join(' ')}"
+        script.echo "Executing deploy command: '${fioriDeployCmd}'"
+        cmd << fioriDeployCmd
 
         script.withCredentials([script.usernamePassword(
             credentialsId: credentialsId,
