@@ -30,7 +30,8 @@ def stashList(script, List stashes) {
         def exclude = stash.excludes
 
         if (stash?.merge == true) {
-            String lockName = "${script.commonPipelineEnvironment.configuration.stashFiles}/${stash.name}"
+            String lockingResourceGroup = script.commonPipelineEnvironment.projectName?:env.JOB_NAME
+            String lockName = "${lockingResourceGroup}/${stash.name}"
             lock(lockName) {
                 unstash stash.name
                 echo "Stash content: ${name} (include: ${include}, exclude: ${exclude})"
