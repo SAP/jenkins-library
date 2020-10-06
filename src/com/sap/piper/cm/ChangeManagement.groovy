@@ -274,7 +274,7 @@ public class ChangeManagement implements Serializable {
             params += ['-u', endpoint]
         }
 
-        params += ['-f']
+        params += ['-f'] // failfast --> provide return code != 0 in case of any failure
 
         // more parameters can be added when they are recognized by the fiori toolset, e.g. abap package.
 
