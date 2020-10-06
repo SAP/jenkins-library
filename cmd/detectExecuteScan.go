@@ -17,7 +17,13 @@ import (
 )
 
 func detectExecuteScan(config detectExecuteScanOptions, telemetryData *telemetry.CustomData) {
-	c := command.Command{}
+	c := command.Command{
+		ErrorCategoryMapping: map[string][]string{
+			log.ErrorCompliance.String(): {
+				"FAILURE_POLICY_VIOLATION - Detect found policy violations.",
+			},
+		},
+	}
 	// reroute command output to logging framework
 	c.Stdout(log.Writer())
 	c.Stderr(log.Writer())
