@@ -22,6 +22,9 @@ func detectExecuteScan(config detectExecuteScanOptions, telemetryData *telemetry
 			log.ErrorCompliance.String(): {
 				"FAILURE_POLICY_VIOLATION - Detect found policy violations.",
 			},
+			log.ErrorConfiguration.String(): {
+				"FAILURE_CONFIGURATION - Detect was unable to start due to issues with it's configuration.",
+			},
 		},
 	}
 	// reroute command output to logging framework
