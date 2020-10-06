@@ -219,7 +219,7 @@ public class ChangeManagement implements Serializable {
                                 |        password: env:ABAP_PASSWORD
                                 |      app:
                                 |        name: ''
-                                |        description: ${desc}
+                                |        description: ''
                                 |        package: ''
                                 |      exclude:
                                 |      - .*\\.test.js
@@ -279,6 +279,8 @@ public class ChangeManagement implements Serializable {
         params += ['-n' , applicationName]
 
         params += ['-l', client]
+
+        params += ['-e', "\"" + desc + "\""]
 
         params += ['-f'] // failfast --> provide return code != 0 in case of any failure
 
