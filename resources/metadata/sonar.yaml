@@ -246,6 +246,7 @@ spec:
           - name: step_data
             fields:
               - name: sonar
+                type: bool
   containers:
     - name: sonar
       image: node:lts-stretch
