@@ -60,6 +60,7 @@ func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, i
 	runner := command.Command{
 		ErrorCategoryMapping: map[string][]string{
 			log.ErrorConfiguration.String(): {
+				"You must define the following mandatory properties for '*': *",
 				"org.sonar.java.AnalysisException: Your project contains .java files, please provide compiled classes with sonar.java.binaries property, or exclude them from the analysis with sonar.exclusions property.",
 				"ERROR: Invalid value for *",
 				"java.lang.IllegalStateException: No files nor directories matching '*'",
