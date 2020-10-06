@@ -20,7 +20,7 @@ func detectExecuteScan(config detectExecuteScanOptions, telemetryData *telemetry
 	c := command.Command{
 		ErrorCategoryMapping: map[string][]string{
 			log.ErrorCompliance.String(): {
-				"Exiting with code 3 - FAILURE_POLICY_VIOLATION",
+				"FAILURE_POLICY_VIOLATION - Detect found policy violations.",
 			},
 		},
 	}
