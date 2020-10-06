@@ -31,10 +31,10 @@ void call(Map parameters = [:]) {
         if(parameters.script.commonPipelineEnvironment.getStepConfiguration('abapEnvironmentPullGitRepo', 'Clone Repositories').repositoryNames || parameters.script.commonPipelineEnvironment.configuration.runStep?.get('abapEnvironmentPullGitRepo')) {
             abapEnvironmentPullGitRepo script: parameters.script
         } 
-        if(parameters.script.commonPipelineEnvironment.configuration.runStep?.get('abapEnvironmentCloneGitRepo')?) {
+        if(parameters.script.commonPipelineEnvironment.configuration.runStep?.get('abapEnvironmentCloneGitRepo')) {
             abapEnvironmentCloneGitRepo script: parameters.script
         }
-        if(parameters.script.commonPipelineEnvironment.configuration.runStep?.get('abapEnvironmentCheckoutBranch')?) {
+        if(parameters.script.commonPipelineEnvironment.configuration.runStep?.get('abapEnvironmentCheckoutBranch')) {
             abapEnvironmentCheckoutBranch script: parameters.script
         }
     }
