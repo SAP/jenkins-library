@@ -41,8 +41,8 @@ Create a file `manifest.yml`. The pipeline will create a SAP Cloud Platform ABAP
 create-services:
 - name:   "abapEnvironmentPipeline"
   broker: "abap"
-  plan:   "16_abap_64_db"
-  parameters: "{ \"admin_email\" : \"user@example.com\", \"description\" : \"System for ABAP Pipeline\" }"
+  plan:   "standard"
+  parameters: "{ \"admin_email\" : \"user@example.com\", \"description\" : \"System for ABAP Pipeline\", \"is_development_allowed\" : true, \"sapsystemname\" : \"H02\", \"size_of_persistence\" : 4, \"size_of_runtime\" : 1 }"
 ```
 
 The example values are a suggestion. Please change them accordingly and don't forget to enter your own email address. Please be aware that creating a SAP Cloud ABAP Environment instance may incur costs.
