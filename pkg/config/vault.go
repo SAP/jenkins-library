@@ -34,9 +34,11 @@ func getVaultClientFromConfig(config StepConfig, creds VaultCredentials) (vaultC
 		log.Entry().Info("Skipping fetching secrets from vault since it is not configured")
 		return nil, nil
 	}
-
+	namespace := ""
 	// namespaces are only available in vault enterprise so using them should be optional
-	namespace := config.Config["vaultNamespace"].(string)
+	if config.Config["vaultNamespace"] != nil {
+		namespace = config.Config["vaultNamespace"].(string)
+	}
 
 	client, err := vault.NewClientWithAppRole(&api.Config{Address: address}, creds.AppRoleID, creds.AppRoleSecretID, namespace)
 	if err != nil {
