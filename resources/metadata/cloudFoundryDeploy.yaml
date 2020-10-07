@@ -298,7 +298,7 @@ spec:
             param: password
           - type: vaultSecret
             paths:
-              - $(vaultCustomBasePath)/cloudfoundry-$(cfOrg)-$(cfSpace)
+              - $(vaultPath)/cloudfoundry-$(cfOrg)-$(cfSpace)
               - $(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(cfOrg)-$(cfSpace)
               - $(vaultBasePath)/__group/cloudfoundry-$(cfOrg)-$(cfSpace)
       - name: smokeTestScript
@@ -353,7 +353,7 @@ spec:
             param: username
           - type: vaultSecret
             paths:
-              - $(vaultCustomBasePath)/cloudfoundry-$(cfOrg)-$(cfSpace)
+              - $(vaultPath)/cloudfoundry-$(cfOrg)-$(cfSpace)
               - $(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(cfOrg)-$(cfSpace)
               - $(vaultBasePath)/__group/cloudfoundry-$(cfOrg)-$(cfSpace)
   containers:

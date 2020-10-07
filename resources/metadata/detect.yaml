@@ -36,7 +36,7 @@ spec:
             type: secret
           - type: vaultSecret
             paths:
-              - $(vaultCustomBasePath)/detect
+              - $(vaultPath)/detect
               - $(vaultBasePath)/$(vaultPipelineName)/detect
               - $(vaultBasePath)/__group/detect
         scope:

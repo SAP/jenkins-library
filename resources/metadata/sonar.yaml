@@ -43,7 +43,7 @@ spec:
         resourceRef:
           - type: vaultSecret
             paths:
-            - $(vaultCustomBasePath)/sonar
+            - $(vaultPath)/sonar
             - $(vaultBasePath)/$(vaultPipelineName)/sonar
             - $(vaultBasePath)/__group/sonar
           - name: sonarTokenCredentialsId
