@@ -7,24 +7,17 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/versioning"
-	"os"
 )
 
 type testExecuteAltUtils struct {
 	exec  command.ExecRunner
 	files piperutils.FileUtils
-
-	removeAll  func(path string) error
-	fileExists func(path string) (bool, error)
 }
 
 func newTestExecuteAltUtils() *testExecuteAltUtils {
 	utils := testExecuteAltUtils{
 		exec:  &command.Command{},
 		files: &piperutils.Files{},
-
-		removeAll:  os.RemoveAll,
-		fileExists: piperutils.FileExists,
 	}
 	// Reroute command output to logging framework
 	utils.exec.Stdout(log.Writer())
@@ -61,9 +54,6 @@ func runTestExecuteAlt(config *testExecuteOptions, telemetryData *telemetry.Cust
 		// Always wrap non-descriptive errors to enrich them with context for when they appear in the log:
 		return fmt.Errorf("failed to check for important file: %w", err)
 	}
-
-	// alternatively:
-	exists, err = utils.fileExists("file.txt")
 
 	if !exists {
 		log.SetErrorCategory(log.ErrorConfiguration)
