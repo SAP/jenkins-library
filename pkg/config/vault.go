@@ -64,9 +64,8 @@ func addVaultCredentials(config *StepConfig, client vaultClient, params []StepPa
 		var secretValue *string
 		for _, vaultPath := range ref.Paths {
 			// it should be possible to configure the root path were the secret is stored
-			var err error
-			vaultPath, err = interpolation.ResolveString(vaultPath, config.Config)
-			if err != nil {
+			vaultPath, ok := interpolation.ResolveString(vaultPath, config.Config)
+			if !ok {
 				continue
 			}
 
