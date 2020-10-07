@@ -187,52 +187,6 @@ public class ChangeManagement implements Serializable {
 
         def desc = description ?: 'Deployed with Piper based on SAP Fiori tools'
 
-        /*
-            Create the config file
-
-            There are currently pull request for making more (all?) parameters configurable as
-            command line parameters. With that there would be no need for creating this file here.
-            Parameters could be provided via command line in case they are defined. If not, as a fallback,
-            parameters define in the config file can be used.
-            Currently not clear if also the credentials will be made available as command line parameters.
-            If not we have to discuss how to deal wih the credentials. One option would be to parse an existing
-            config file and either to inject the environment variables according what is defined there, or to update
-            the config wrt credentials (credentials can be configured in the config file to be retrieved from
-            environment variables).
-            Also not clear if the config file is fully optional (can be omitted). If not and no config file is present
-            we can either raise an exception (and ask the project owner for adding a config file) or add a dummy config file.
-        */
-        if (deployConfigFile != '' && !script.fileExists(deployConfigFile)) {
-
-            script.echo "Deploy config file '${deployConfigFile}' does not exists in the sources. Writing a stub file."
-
-            def deployConfig =  ("""|specVersion: '1.0'
-                                    |metadata:
-                                    |  name: ${applicationName}
-                                    |type: application
-                                    |builder:
-                                    |  customTasks:
-                                    |  - name: deploy-to-abap
-                                    |    afterTask: replaceVersion
-                                    |    configuration:
-                                    |      target:
-                                    |        client: ''
-                                    |        auth: basic
-                                    |      credentials:
-                                    |        username: ''
-                                    |        password: ''
-                                    |      app:
-                                    |        name: ''
-                                    |        description: ''
-                                    |        package: ''
-                                    |      exclude:
-                                    |      - .*\\.test.js
-                                    |      - internal.md
-                                    |""" as CharSequence).stripMargin()
-
-            script.writeFile file: deployConfigFile, text: deployConfig, encoding: 'UTF-8'
-        }
-
         if (deployToolDependencies in List) {
             deployToolDependencies = deployToolDependencies.join(' ')
         }
