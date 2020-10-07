@@ -264,11 +264,6 @@ public class ChangeManagement implements Serializable {
         Iterable params = []
 
         if (deployConfigFile) {
-            /*
-                not sure if we will manage to that optional
-                the plan is to make all parameters configurable via command line parameters. In that case it would
-                not be required anymore to have a config file at all. Open questions: credentials, excludes.
-            */
             params += ['-c', "\"" + deployConfigFile + "\""]
         } else {
             if (! script.fileExists('ui5-deploy.yaml')) {
