@@ -1,7 +1,7 @@
 package com.sap.piper
 
 enum Credential {
-    FILE('file'), TOKEN('token'), USERNAME_PASSWORD('usernamePassword'), SSH('ssh')
+    FILE('file'), TOKEN('token'), SECRET_TEXT('secretText'), USERNAME_PASSWORD('usernamePassword'), SSH('ssh')
 
     private String value
 
