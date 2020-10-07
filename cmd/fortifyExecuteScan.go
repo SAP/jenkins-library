@@ -386,7 +386,7 @@ func generateAndDownloadQGateReport(config fortifyExecuteScanOptions, sys fortif
 	}
 	log.Entry().Debugf("Triggered report generation of report ID %v", report.ID)
 	status := report.Status
-	for status != "Complete" && status != "Error Processing" {
+	for status == "PROCESSING" || status == "SCHED_PROCESSING" {
 		time.Sleep(10 * time.Second)
 		report, err = sys.GetReportDetails(report.ID)
 		if err != nil {

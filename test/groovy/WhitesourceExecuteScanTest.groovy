@@ -15,7 +15,10 @@ import org.springframework.beans.factory.annotation.Autowired
 import util.*
 
 import static org.hamcrest.Matchers.*
+import static org.junit.Assert.assertEquals
+import static org.junit.Assert.assertNotEquals
 import static org.junit.Assert.assertThat
+import static org.junit.Assert.assertTrue
 
 class WhitesourceExecuteScanTest extends BasePiperTest {
 
@@ -108,7 +111,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         def expectedEnvVars = ['env1': 'value1', 'env2': 'value2']
         def expectedOptions = '--opt1=val1 --opt2=val2 --opt3'
         def expectedWorkspace = '/path/to/workspace'
-        
+
         helper.registerAllowedMethod("readProperties", [Map], {
             def result = new Properties()
             result.putAll([
@@ -120,11 +123,11 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
             ])
             return result
         })
-        
-        nullScript.commonPipelineEnvironment.configuration =  
+
+        nullScript.commonPipelineEnvironment.configuration =
             MapUtils.merge(nullScript.commonPipelineEnvironment.configuration,
                 [steps:[whitesourceExecuteScan:[
-                    dockerImage: expectedImage, 
+                    dockerImage: expectedImage,
                     dockerOptions: expectedOptions,
                     dockerEnvVars: expectedEnvVars,
                     dockerWorkspace: expectedWorkspace
@@ -147,7 +150,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         assert expectedEnvVars.equals(dockerExecuteRule.dockerParams.dockerEnvVars)
         assert expectedWorkspace == dockerExecuteRule.dockerParams.dockerWorkspace
     }
-    
+
     @Test
     void testMaven() {
         helper.registerAllowedMethod("readProperties", [Map], {
@@ -407,7 +410,7 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         assertThat(loggingRule.log, containsString('Unstash content: buildDescriptor'))
         assertThat(errorCaught, is(true))
     }
-    
+
     @Test
     void testSbt() {
         helper.registerAllowedMethod("readProperties", [Map], {
@@ -1218,5 +1221,70 @@ class WhitesourceExecuteScanTest extends BasePiperTest {
         thrown.expect(AbortException)
         thrown.expectMessage("[whitesourceExecuteScan] Whitesource found 5 policy violations for your product")
         stepRule.step.checkViolationStatus(5)
+    }
+
+    @Test
+    void testGoStepFeatureToggleOn() {
+        String calledStep = ''
+        String usedMetadataFile = ''
+        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
+            Map parameters, String stepName,
+            String metadataFile, List credentialInfo ->
+                calledStep = stepName
+                usedMetadataFile = metadataFile
+        })
+
+        stepRule.step.whitesourceExecuteScan([
+            script      : nullScript,
+            orgToken    : 'testOrgToken',
+            productName : 'SHC - Piper',
+            projectNames: ['piper-demo - 0.0.1'],
+            useGoStep   : true,
+        ])
+
+        assertEquals('whitesourceExecuteScan', calledStep)
+        assertEquals('metadata/whitesource.yaml', usedMetadataFile)
+    }
+
+    @Test
+    void testGoStepFeatureToggleImplicitOff() {
+        String calledStep = ''
+        String usedMetadataFile = ''
+        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
+            Map parameters, String stepName,
+            String metadataFile, List credentialInfo ->
+                calledStep = stepName
+                usedMetadataFile = metadataFile
+        })
+
+        helper.registerAllowedMethod("readProperties", [Map], {
+            def result = new Properties()
+            result.putAll([
+                "apiKey"        : "b39d1328-52e2-42e3-98f0-932709daf3f0",
+                "productName"   : "SHC - Piper",
+                "checkPolicies" : "true",
+                "projectName"   : "python-test",
+                "projectVersion": "1.0.0"
+            ])
+            return result
+        })
+
+        helper.registerAllowedMethod("publishHTML", [Map.class], { m ->
+            return null
+        })
+
+        stepRule.step.whitesourceExecuteScan([
+            script                           : nullScript,
+            whitesourceRepositoryStub        : whitesourceStub,
+            whitesourceOrgAdminRepositoryStub: whitesourceOrgAdminRepositoryStub,
+            descriptorUtilsStub              : descriptorUtilsStub,
+            scanType                         : 'maven',
+            juStabUtils                      : utils,
+            orgToken                         : 'testOrgToken',
+            whitesourceProductName           : 'testProduct',
+        ])
+
+        assertEquals('', calledStep)
+        assertEquals('', usedMetadataFile)
     }
 }

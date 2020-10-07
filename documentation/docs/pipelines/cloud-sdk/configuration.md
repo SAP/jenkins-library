@@ -54,7 +54,7 @@ general:
 ### staticCodeChecks
 
 The `staticCodeChecks` stage has been integrated into the `build` stage.
-To configure static code checks, please configure the step `mavenExecuteStaticCodeChecks` as described [here](https://sap.github.io/jenkins-library/steps/mavenExecuteStaticCodeChecks/).
+To configure static code checks, please configure the step `mavenExecuteStaticCodeChecks` as described [here](../../../steps/mavenExecuteStaticCodeChecks/).
 
 ### backendIntegrationTests
 
@@ -170,37 +170,8 @@ This stage has been removed in v43 of the Cloud SDK pipeline.
 
 ### checkmarxScan
 
-[Checkmarx](https://www.checkmarx.com/) is one of the security analysis tools which is supported by the  pipeline.
-
-| Property | Mandatory | Default Value | Description |
-| --- | --- | --- | --- |
-| `groupId` | X | | Checkmarx Group ID|
-| `checkMarxProjectName` | | projectName defined in general | Name of the project on Checkmarx server.|
-| `filterPattern` | |`'!**/*.log, !**/*.lock, !**/*.json, !**/*.html, !**/Cx*, !**/test/**, !s4hana_pipeline/**, !**/unit-tests/**, !**/integration-tests/**, !**/frontend-unit-tests/**, !**/e2e-tests/**, !**/performance-tests/**, **/*.js, **/*.java, **/*.ts`| Files which needs to be skipped during scanning.|
-| `fullScansScheduled` | | `false`| Toggle to enable or disable full scan on a certain schedule.|
-| `incremental` | | `true`| Perform incremental scan with every run. If turned `false`, complete project is scanned on every submission.|
-| `vulnerabilityThresholdMedium` | |`0`| The threshold for medium level threats. If the findings are greater than this value, pipeline execution will result in failure.|
-| `vulnerabilityThresholdLow` | |`99999`| The threshold for low level threats. If the findings are greater than this value, pipeline execution will result in failure.|
-| `preset` | |`36`| Name or numerical ID of Checkmarx preset to be used when scanning this project. When a name (string) is specified, the pipeline will try to discover the corresponding numerical ID via the Checkmarx API. Please also make sure to specify **checkmarxCredentialsId and checkmarxServerUrl in such a case**. For determining available presets in your Checkmarx webclient, go to *Checkmarx -> Management -> Scan Settings -> Preset Manager*. Alternatively, you can determine the numerical ID of your targeted preset by following those guides: [Token-based Authentication](https://checkmarx.atlassian.net/wiki/spaces/KC/pages/202506366/Token-based+Authentication+v8.6.0+and+up) and [Get All Preset Details](https://checkmarx.atlassian.net/wiki/spaces/KC/pages/222036317/Get+All+Preset+Details+-+GET+sast+presets) |
-| `checkmarxCredentialsId` | | | The Credential ID to connect to Checkmarx server. The credentials must be type username with password. **This property becomes mandatory if the credentials are not configured in the Jenkins plugin itself**.|
-| `checkmarxServerUrl` | | | An URL to Checkmarx server. **This property becomes mandatory if the URL to the Checkmarx server is not configured in the Jenkins plugin itself or if the `checkmarxCredentialsId` is configured**.|
-
-Example:
-
-```yaml
-checkmarxScan:
-  groupId: <Checkmarx GroupID>
-  vulnerabilityThresholdMedium: 5
-  checkMarxProjectName: 'My_Application'
-  vulnerabilityThresholdLow: 999999
-  filterPattern: '!**/*.log, !**/*.lock, !**/*.json, !**/*.html, !**/Cx*, **/*.js, **/*.java, **/*.ts'
-  fullScansScheduled: false
-  generatePdfReport: true
-  incremental: true
-  preset: '36'
-  checkmarxCredentialsId: CHECKMARX-SCAN
-  checkmarxServerUrl: http://localhost:8089
-```
+The `checkmarxScan` stage has been merged into the project "Piper" stage `security`.
+To configure Checkmarx please configure the step `checkmarxExecuteScan` as described [in the step documentation](../../../steps/checkmarxExecuteScan/).
 
 ### productionDeployment
 
@@ -215,7 +186,7 @@ checkmarxScan:
 
 The option `cfCreateServices` is especially useful if you don't use MTA and need a way to declaratively define which services should be created in Cloud Foundry.
 The following properties can be defined for each element in the list.
-For a detailed documentation of the indivitual properties please consult the [step documentation](https://sap.github.io/jenkins-library/steps/cloudFoundryCreateService/).
+For a detailed documentation of the indivitual properties please consult the [step documentation](../../../steps/cloudFoundryCreateService/).
 
 | Property | Mandatory | Default Value | Description |
 | --- | --- | --- | --- |
@@ -378,44 +349,24 @@ artifactDeployment:
 
 ### whitesourceScan
 
-Configure credentials for [WhiteSource](https://www.whitesourcesoftware.com/) scans.
-The minimum required Maven WhiteSource plugin version is `18.6.2`, ensure this in the plugins section of the project `pom.xml` file.
-
-Pipeline will execute `npx whitesource run` for npm projects.
-Please ensure that all `package.json` files have a `name` and `version` configured so that it is possible to distinguish between the different packages.
-
-```xml
-<plugin>
-    <groupId>org.whitesource</groupId>
-    <artifactId>whitesource-maven-plugin</artifactId>
-    <version>18.6.2</version>
-</plugin>
-```
-
-| Property | Mandatory | Default Value | Description |
-| --- | --- | --- | --- |
-| `product` | X | | Name of your product in WhiteSource. |
-| `staticVersion` | | | Overwrites the respective version in the whitesource UI per scan with the staticVersion. Per default for every new version of a pom/package.json a new project will be created in the whitesource UI. To deactivate the creation of new projects and always have a fixed version for each project in the whitesource UI, configure the staticVersion. |
-| `credentialsId` | X | | Unique identifier of the `Secret Text` on Jenkins server that stores your organization(API Token) of WhiteSource. |
-| `whitesourceUserTokenCredentialsId` |  | | Unique identifier of the `Secret Text` on Jenkins server that stores WhiteSource `userKey` of a user. This is required only if the administrator of the WhiteSource service has enabled additional access level control. More details can be found [here](https://whitesource.atlassian.net/wiki/spaces/WD/pages/417529857/User+Level+Access+Control+in+Integrations+and+APIs).  |
-
-Please note that you can not have a `whitesource.config.json` in your project, since the Pipeline generates one from this configuration.
+The `whitesourceScan` stage has been merged into the project "Piper" stage `security`.
+To configure WhiteSource please configure the step `whitesourceExecuteScan` as described [in the step documentation](../../../steps/whitesourceExecuteScan/).
 
 ### fortifyScan
 
-The Fortify scan is configured using the step fortifyExecuteScan.
-The stage is executed in the productive branch when the parameter `fortifyCredentialsId` in the step config of [`fortifyExecuteScan`](https://sap.github.io/jenkins-library/steps/fortifyExecuteScan/) is defined.
+The `fortifyScan` stage has been merged into the project "Piper" stage `security`.
+To configure Fortify please configure the step `fortifyExecuteScan` as described [in the step documentation](../../../steps/fortifyExecuteScan/).
 
 ### lint
 
 The `lint` stage has been integrated into the `build` stage.
-The options for the use of linting tools remain the same and are described in the [build tools section](https://sap.github.io/jenkins-library/pipelines/cloud-sdk/build-tools/#lint).
+The options for the use of linting tools remain the same and are described in the [build tools section](../build-tools/#lint).
 
-Note, the available configuration options can be found in the related [step documentation](https://sap.github.io/jenkins-library/steps/npmExecuteLint/#parameters).
+Note, the available configuration options can be found in the related [step documentation](../../../steps/npmExecuteLint/#parameters).
 
 ### compliance
 
-The stage `compliance` executes [SonarQube](https://www.sonarqube.org/) scans, if the step [`sonarExecuteScan`](https://sap.github.io/jenkins-library/steps/sonarExecuteScan/) is configured.
+The stage `compliance` executes [SonarQube](https://www.sonarqube.org/) scans, if the step [`sonarExecuteScan`](../../../steps/sonarExecuteScan/) is configured.
 
 This is an optional feature for teams who prefer to use SonarQube.
 Note that it does some scans that are already done by the pipeline by default.
@@ -439,7 +390,7 @@ compliance:
 This stage does nothing.
 Its purpose is to be overridden if required.
 
-See the documentation for [pipeline extensibility](https://sap.github.io/jenkins-library/extensibility/) for details on how to extend a stage.
+See the documentation for [pipeline extensibility](../../../extensibility/) for details on how to extend a stage.
 The name of an extension file must be `postPipelineHook.groovy`.
 Also, the stage (and thus an extension) is only executed if a stage configuration exists, like in this example:
 
@@ -494,11 +445,11 @@ checkJMeter:
 ### executeNpm
 
 This step has been removed in v43 of the Cloud SDK pipeline.
-Please use the step [npmExecuteScripts](https://sap.github.io/jenkins-library/steps/npmExecuteScripts/) instead.
+Please use the step [npmExecuteScripts](../../../steps/npmExecuteScripts/) instead.
 
 ### debugReportArchive
 
-The documentation for the `debugReportArchive` step has been moved [here](https://sap.github.io/jenkins-library/steps/debugReportArchive/).
+The documentation for the `debugReportArchive` step has been moved [here](../../../steps/debugReportArchive/).
 
 ## Post action configuration
 

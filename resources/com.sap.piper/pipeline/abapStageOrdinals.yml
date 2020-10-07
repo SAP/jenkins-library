@@ -2,14 +2,29 @@ stages:
   Init:
     ordinal: 1
 
-  'Prepare System':
+  'Initial Checks':
     ordinal: 10
 
-  ATC:
+  'Prepare System':
     ordinal: 20
 
   'Clone Repositories':
     ordinal: 30
 
-  Post:
+  ATC:
     ordinal: 40
+
+  Build:
+    ordinal: 50
+
+  'Integration Tests':
+    ordinal: 60
+
+  Confirm:
+    ordinal: 70
+
+  Publish:
+    ordinal: 80
+
+  Post:
+    ordinal: 90

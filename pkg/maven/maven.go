@@ -75,6 +75,7 @@ func Execute(options *ExecuteOptions, command mavenExecRunner) (string, error) {
 
 	err = command.RunExecutable(mavenExecutable, parameters...)
 	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
 		commandLine := append([]string{mavenExecutable}, parameters...)
 		return "", fmt.Errorf("failed to run executable, command: '%s', error: %w", commandLine, err)
 	}
