@@ -27,6 +27,7 @@ class PiperExecuteBinTest extends BasePiperTest {
     private List withEnvArgs = []
     private List credentials = []
     private List artifacts = []
+    private int stringCredentialClassCalled = 0
 
     @Rule
     public RuleChain rules = Rules
@@ -43,6 +44,7 @@ class PiperExecuteBinTest extends BasePiperTest {
     @Before
     void init() {
         credentials = []
+        stringCredentialClassCalled = 0
 
         // Clear DebugReport to avoid left-overs from another UnitTest
         DebugReport.instance.failedBuild = [:]
@@ -86,7 +88,10 @@ class PiperExecuteBinTest extends BasePiperTest {
         })
 
         helper.registerAllowedMethod('file', [Map], { m -> return m })
-        helper.registerAllowedMethod('string', [Map], { m -> return m })
+        helper.registerAllowedMethod('string', [Map], { m ->
+            stringCredentialClassCalled += 1
+            return m
+        })
         helper.registerAllowedMethod('usernamePassword', [Map], { m -> return m })
         helper.registerAllowedMethod('withCredentials', [List, Closure], { l, c ->
             l.each {m ->
@@ -238,6 +243,45 @@ class PiperExecuteBinTest extends BasePiperTest {
         assertThat(credentials.size(), is(1))
         assertThat(credentials[0], allOf(hasEntry('credentialsId', 'credToken'), hasEntry('variable', 'PIPER_credToken')))
         assertThat(sshKey, is(['sshKey']))
+    }
+
+    @Test
+    void testPiperExecuteBinCredentialsSetAsEnum() {
+        shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/test.yaml\'', '{"sshCredentialsId":"sshKey", "fileCredentialsId":"credFile", "tokenCredentialsId":"credToken", "textCredentialsId":"credSecretText", "credentialsId":"credUsernamePassword", "dockerImage":"my.Registry/my/image:latest"}')
+
+        List sshKey = []
+        helper.registerAllowedMethod("sshagent", [List, Closure], {s, c ->
+            sshKey = s
+            c()
+        })
+
+        List stepCredentials = [
+            [type: Credential.FILE, id: 'fileCredentialsId', env: ['PIPER_credFile']],
+            [type: Credential.TOKEN, id: 'tokenCredentialsId', env: ['PIPER_credToken']],
+            [type: Credential.SECRET_TEXT, id: 'textCredentialsId', env: ['PIPER_credSecret']],
+            [type: Credential.USERNAME_PASSWORD, id: 'credentialsId', env: ['PIPER_user', 'PIPER_password']],
+            [type: Credential.SSH, id: 'sshCredentialsId'],
+        ]
+        stepRule.step.piperExecuteBin(
+            [
+                juStabUtils: utils,
+                jenkinsUtilsStub: jenkinsUtils,
+                testParam: "This is test content",
+                script: nullScript
+            ],
+            'testStep',
+            'metadata/test.yaml',
+            stepCredentials
+        )
+        // asserts
+        assertThat(credentials.size(), is(4))
+        assertThat(sshKey, is(['sshKey']))
+        assertThat(credentials[0], allOf(hasEntry('credentialsId', 'credFile'), hasEntry('variable', 'PIPER_credFile')))
+        assertThat(credentials[1], allOf(hasEntry('credentialsId', 'credToken'), hasEntry('variable', 'PIPER_credToken')))
+        assertThat(credentials[2], allOf(hasEntry('credentialsId', 'credSecretText'), hasEntry('variable', 'PIPER_credSecret')))
+        assertThat(credentials[3], allOf(hasEntry('credentialsId', 'credUsernamePassword'), hasEntry('usernameVariable', 'PIPER_user') , hasEntry('passwordVariable', 'PIPER_password')))
+        assertThat(stringCredentialClassCalled, is(2))
+
     }
 
     @Test
