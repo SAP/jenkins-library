@@ -326,7 +326,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 
 							{
 								Name:  "",
-								Paths: []string{"$(vaultBasePath)/$(vaultPipelineName)/checkmarx", "$(vaultBasePath)/__group/checkmarx"},
+								Paths: []string{"$(vaultCustomBasePath)/checkmarx", "$(vaultBasePath)/$(vaultPipelineName)/checkmarx", "$(vaultBasePath)/__group/checkmarx"},
 								Type:  "vaultSecret",
 							},
 						},
@@ -402,7 +402,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 
 							{
 								Name:  "",
-								Paths: []string{"$(vaultBasePath)/$(vaultPipelineName)/checkmarx", "$(vaultBasePath)/__group/checkmarx"},
+								Paths: []string{"$(vaultCustomBasePath)/checkmarx", "$(vaultBasePath)/$(vaultPipelineName)/checkmarx", "$(vaultBasePath)/__group/checkmarx"},
 								Type:  "vaultSecret",
 							},
 						},

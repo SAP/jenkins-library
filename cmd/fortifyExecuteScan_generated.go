@@ -263,7 +263,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 
 							{
 								Name:  "",
-								Paths: []string{"$(vaultBasePath)/$(vaultPipelineName)/fortify", "$(vaultBasePath)/__group/fortify"},
+								Paths: []string{"$(vaultCustomBasePath)/fortify", "$(vaultBasePath)/$(vaultPipelineName)/fortify", "$(vaultBasePath)/__group/fortify"},
 								Type:  "vaultSecret",
 							},
 						},

@@ -44,6 +44,7 @@ spec:
             type: secret
           - type: vaultSecret
             paths:
+              - $(vaultCustomBasePath)/fortify
               - $(vaultBasePath)/$(vaultPipelineName)/fortify
               - $(vaultBasePath)/__group/fortify
       - name: githubToken

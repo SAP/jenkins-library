@@ -129,7 +129,7 @@ func cloudFoundryCreateServiceKeyMetadata() config.StepData {
 
 							{
 								Name:  "",
-								Paths: []string{"$(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(org)-$(space)", "$(vaultBasePath)/__group/cloudfoundry-$(org)-$(space)"},
+								Paths: []string{"$(vaultCustomBasePath)/cloudfoundry-$(cfOrg)-$(cfSpace)", "$(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(cfOrg)-$(cfSpace)", "$(vaultBasePath)/__group/cloudfoundry-$(cfOrg)-$(cfSpace)"},
 								Type:  "vaultSecret",
 							},
 						},
@@ -149,7 +149,7 @@ func cloudFoundryCreateServiceKeyMetadata() config.StepData {
 
 							{
 								Name:  "",
-								Paths: []string{"$(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(org)-$(space)", "$(vaultBasePath)/__group/cloudfoundry-$(org)-$(space)"},
+								Paths: []string{"$(vaultCustomBasePath)/cloudfoundry-$(cfOrg)-$(cfSpace)", "$(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(cfOrg)-$(cfSpace)", "$(vaultBasePath)/__group/cloudfoundry-$(cfOrg)-$(cfSpace)"},
 								Type:  "vaultSecret",
 							},
 						},
