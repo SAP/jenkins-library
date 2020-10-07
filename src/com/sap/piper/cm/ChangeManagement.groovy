@@ -202,31 +202,36 @@ public class ChangeManagement implements Serializable {
             Also not clear if the config file is fully optional (can be omitted). If not and no config file is present
             we can either raise an exception (and ask the project owner for adding a config file) or add a dummy config file.
         */
-        def deployConfig =  ("""|specVersion: '1.0'
-                                |metadata:
-                                |  name: ${applicationName}
-                                |type: application
-                                |builder:
-                                |  customTasks:
-                                |  - name: deploy-to-abap
-                                |    afterTask: replaceVersion
-                                |    configuration:
-                                |      target:
-                                |        client: ''
-                                |        auth: basic
-                                |      credentials:
-                                |        username: ''
-                                |        password: ''
-                                |      app:
-                                |        name: ''
-                                |        description: ''
-                                |        package: ''
-                                |      exclude:
-                                |      - .*\\.test.js
-                                |      - internal.md
-                                |""" as CharSequence).stripMargin()
+        if (deployConfigFile != '' && !script.fileExists(deployConfigFile)) {
 
-        script.writeFile file: deployConfigFile, text: deployConfig, encoding: 'UTF-8'
+            script.echo "Deploy config file '${deployConfigFile}' does not exists in the sources. Writing a stub file."
+
+            def deployConfig =  ("""|specVersion: '1.0'
+                                    |metadata:
+                                    |  name: ${applicationName}
+                                    |type: application
+                                    |builder:
+                                    |  customTasks:
+                                    |  - name: deploy-to-abap
+                                    |    afterTask: replaceVersion
+                                    |    configuration:
+                                    |      target:
+                                    |        client: ''
+                                    |        auth: basic
+                                    |      credentials:
+                                    |        username: ''
+                                    |        password: ''
+                                    |      app:
+                                    |        name: ''
+                                    |        description: ''
+                                    |        package: ''
+                                    |      exclude:
+                                    |      - .*\\.test.js
+                                    |      - internal.md
+                                    |""" as CharSequence).stripMargin()
+
+            script.writeFile file: deployConfigFile, text: deployConfig, encoding: 'UTF-8'
+        }
 
         if (deployToolDependencies in List) {
             deployToolDependencies = deployToolDependencies.join(' ')
