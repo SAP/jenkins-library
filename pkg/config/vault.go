@@ -61,6 +61,7 @@ func addVaultCredentials(config *StepConfig, client vaultClient, params []StepPa
 		if ref == nil {
 			continue
 		}
+		var secretValue *string
 		for _, vaultPath := range ref.Paths {
 			// it should be possible to configure the root path were the secret is stored
 			var err error
@@ -69,17 +70,21 @@ func addVaultCredentials(config *StepConfig, client vaultClient, params []StepPa
 				continue
 			}
 
-			val := lookupPath(client, vaultPath, &param)
-			if val != nil {
-				config.Config[param.Name] = *val
+			secretValue = lookupPath(client, vaultPath, &param)
+			if secretValue != nil {
+				config.Config[param.Name] = *secretValue
+				log.Entry().Infof("Resolved param %s with vault path %s", param.Name, vaultPath)
 				break
 			}
+		}
+		if secretValue == nil {
+			log.Entry().Warnf("Could not resolve param %s from vault", param.Name)
 		}
 	}
 }
 
 func lookupPath(client vaultClient, path string, param *StepParameters) *string {
-	log.Entry().Debugf("Trying to resolve vault parameter %s at %s", param.Name, path)
+	log.Entry().Infof("Trying to resolve vault parameter %s at %s", param.Name, path)
 	secret, err := client.GetKvSecret(path)
 	if err != nil {
 		log.Entry().WithError(err).Warnf("Couldn't fetch secret at %s", path)
