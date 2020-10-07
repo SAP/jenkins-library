@@ -71,6 +71,7 @@ func addVaultCredentials(config *StepConfig, client vaultClient, params []StepPa
 			val := lookupPath(client, vaultPath, &param)
 			if val != nil {
 				config.Config[param.Name] = *val
+				break
 			}
 		}
 	}
