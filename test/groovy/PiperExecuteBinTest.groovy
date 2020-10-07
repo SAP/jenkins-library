@@ -1,3 +1,4 @@
+import com.sap.piper.Credential
 import com.sap.piper.DebugReport
 import com.sap.piper.JenkinsUtils
 import groovy.json.JsonSlurper
@@ -179,7 +180,7 @@ class PiperExecuteBinTest extends BasePiperTest {
     }
 
     @Test
-    void testPiperExecuteBinSomeCredentials() {
+    void testPiperExecuteBinOneCredentialNotSetInConfig() {
         shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/test.yaml\'', '{"fileCredentialsId":"credFile", "tokenCredentialsId":"credToken", "dockerImage":"my.Registry/my/image:latest"}')
 
         List stepCredentials = [
