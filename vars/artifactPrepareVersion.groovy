@@ -1,3 +1,4 @@
+import com.sap.piper.Credential
 import com.sap.piper.BuildTool
 import com.sap.piper.DownloadCacheUtils
 import groovy.transform.Field
@@ -11,8 +12,8 @@ void call(Map parameters = [:]) {
     final script = checkScript(this, parameters) ?: this
 
     List credentials = [
-        [type: 'ssh', id: 'gitSshKeyCredentialsId'],
-        [type: 'usernamePassword', id: 'gitHttpsCredentialsId', env: ['PIPER_username', 'PIPER_password']],
+        [type: Credential.SSH, id: 'gitSshKeyCredentialsId'],
+        [type: Credential.USERNAME_PASSWORD, id: 'gitHttpsCredentialsId', env: ['PIPER_username', 'PIPER_password']],
     ]
 
     // Tell dockerExecuteOnKubernetes (if used) to stash also .-folders
