@@ -38,6 +38,7 @@ func getVaultClientFromConfig(config StepConfig, creds VaultCredentials) (vaultC
 	// namespaces are only available in vault enterprise so using them should be optional
 	if config.Config["vaultNamespace"] != nil {
 		namespace = config.Config["vaultNamespace"].(string)
+		log.Entry().Debugf("Using vault namespace %s", namespace)
 	}
 
 	client, err := vault.NewClientWithAppRole(&api.Config{Address: address}, creds.AppRoleID, creds.AppRoleSecretID, namespace)
@@ -76,6 +77,7 @@ func addVaultCredentials(config *StepConfig, client vaultClient, params []StepPa
 }
 
 func lookupPath(client vaultClient, path string, param *StepParameters) *string {
+	log.Entry().Debugf("Trying to resolve vault parameter %s at %s", param.Name, path)
 	secret, err := client.GetKvSecret(path)
 	if err != nil {
 		log.Entry().WithError(err).Warnf("Couldn't fetch secret at %s", path)
