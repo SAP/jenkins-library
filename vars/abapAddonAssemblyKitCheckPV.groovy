@@ -8,5 +8,5 @@ void call(Map parameters = [:]) {
     List credentials = [
         [type: Credential.USERNAME_PASSWORD, id: 'abapAddonAssemblyKitCredentialsId', env: ['PIPER_username', 'PIPER_password']]
     ]
-        piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials, false, false, true)
+    piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials, false, false, true)
 }

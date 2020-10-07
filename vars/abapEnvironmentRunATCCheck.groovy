@@ -5,8 +5,8 @@ import groovy.transform.Field
 @Field String METADATA_FILE = 'metadata/abapEnvironmentRunATCCheck.yaml'
 
 void call(Map parameters = [:]) {
-        List credentials = [
+    List credentials = [
         [type: Credential.USERNAME_PASSWORD, id: 'abapCredentialsId', env: ['PIPER_username', 'PIPER_password']]
-        ]
-        piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials, true, false, true)
+    ]
+    piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials, true, false, true)
 }
