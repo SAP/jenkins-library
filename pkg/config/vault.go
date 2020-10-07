@@ -14,6 +14,7 @@ var vaultFilter = []string{
 	"vaultNamespace",
 	"vaultBasePath",
 	"vaultPipelineName",
+	"vaultCustomBasePath",
 }
 
 // VaultCredentials hold all the auth information needed to fetch configuration from vault

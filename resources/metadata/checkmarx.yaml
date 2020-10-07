@@ -87,6 +87,7 @@ spec:
             param: password
           - type: vaultSecret
             paths:
+              - $(vaultCustomBasePath)/checkmarx
               - $(vaultBasePath)/$(vaultPipelineName)/checkmarx
               - $(vaultBasePath)/__group/checkmarx
       - name: preset
@@ -169,6 +170,7 @@ spec:
             param: username
           - type: vaultSecret
             paths:
+              - $(vaultCustomBasePath)/checkmarx
               - $(vaultBasePath)/$(vaultPipelineName)/checkmarx
               - $(vaultBasePath)/__group/checkmarx
       - name: verifyOnly
