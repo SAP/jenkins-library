@@ -125,6 +125,7 @@ func GetHTTPResponse(requestType string, connectionDetails ConnectionDetailsHTTP
 	header["x-csrf-token"] = []string{connectionDetails.XCsrfToken}
 
 	req, err := client.SendRequest(requestType, connectionDetails.URL, bytes.NewBuffer(body), header, nil)
+	req.Close = true
 	return req, err
 }
 
