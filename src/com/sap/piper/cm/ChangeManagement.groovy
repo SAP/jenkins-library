@@ -270,7 +270,12 @@ public class ChangeManagement implements Serializable {
                 not be required anymore to have a config file at all. Open questions: credentials, excludes.
             */
             params += ['-c', "\"" + deployConfigFile + "\""]
+        } else {
+            if (! script.fileExists('ui5-deploy.yaml')) {
+                params += ['--noConfig']
+            }
         }
+
         if (transportRequestId) {
             params += ['-t', transportRequestId]
         }
