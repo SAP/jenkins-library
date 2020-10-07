@@ -274,13 +274,21 @@ public class ChangeManagement implements Serializable {
             params += ['-u', endpoint]
         }
 
-        params += ['-p', abapPackage]
+        if (abapPackage) {
+            params += ['-p', abapPackage]
+        }
 
-        params += ['-n' , applicationName]
+        if (applicationName) {
+            params += ['-n' , applicationName]
+        }
 
-        params += ['-l', client]
+        if (client) {
+            params += ['-l', client]
+        }
 
-        params += ['-e', "\"" + desc + "\""]
+        if (desc) {
+            params += ['-e', "\"" + desc + "\""]
+        }
 
         params += ['-f'] // failfast --> provide return code != 0 in case of any failure
 
