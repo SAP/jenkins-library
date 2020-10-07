@@ -79,7 +79,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 			if err != nil {
 				return errors.Wrapf(err, "failed to read registry url %v", config.ContainerRegistryURL)
 			}
-			containerImageTag := fmt.Sprintf("%v:%v", config.ContainerImageName, config.ContainerImageTag)
+			containerImageTag := fmt.Sprintf("%v:%v", config.ContainerImageName, strings.ReplaceAll(config.ContainerImageTag, "+", "-"))
 			dest = []string{"--destination", fmt.Sprintf("%v/%v", containerRegistry, containerImageTag)}
 			commonPipelineEnvironment.container.registryURL = config.ContainerRegistryURL
 			commonPipelineEnvironment.container.imageNameTag = containerImageTag

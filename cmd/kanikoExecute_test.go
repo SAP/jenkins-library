@@ -126,7 +126,7 @@ func TestRunKanikoExecute(t *testing.T) {
 		config := &kanikoExecuteOptions{
 			BuildOptions:                []string{"--skip-tls-verify-pull"},
 			ContainerImageName:          "myImage",
-			ContainerImageTag:           "tag",
+			ContainerImageTag:           "1.2.3-a+x",
 			ContainerRegistryURL:        "https://my.registry.com:50000",
 			ContainerPreparationCommand: "rm -f /kaniko/.docker/config.json",
 			CustomTLSCertificateLinks:   []string{"https://test.url/cert.crt"},
@@ -156,7 +156,7 @@ func TestRunKanikoExecute(t *testing.T) {
 
 		assert.Equal(t, "/kaniko/executor", runner.Calls[1].Exec)
 		cwd, _ := os.Getwd()
-		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", cwd, "--skip-tls-verify-pull", "--destination", "my.registry.com:50000/myImage:tag"}, runner.Calls[1].Params)
+		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", cwd, "--skip-tls-verify-pull", "--destination", "my.registry.com:50000/myImage:1.2.3-a-x"}, runner.Calls[1].Params)
 
 	})
 
