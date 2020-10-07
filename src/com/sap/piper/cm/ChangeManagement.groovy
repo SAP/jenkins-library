@@ -263,12 +263,37 @@ public class ChangeManagement implements Serializable {
 
         Iterable params = []
 
+        boolean useConfigFile = true, noConfig = false
+
+        if (!deployConfigFile) {
+            useConfigFile = false
+            noConfig = !script.fileExists('ui5-deploy.yaml')
+        } else {
+            if (script.fileExists(deployConfigFile)) {
+              // in this case we will use the config file
+              useConfigFile = true
+            } else {
+                if (deployConfigFile == 'ui5-deploy.yaml') {
+                    // in this case this is most likely provided by the piper default config and
+                    // it was not explicitly configured. Hence we assume not having a config file
+                    useConfigFile = false
+                    noConfig = true
+                } else {
+                    script.error("Configured deploy config file '${deployConfigFile}' does not exists.")
+                }
+            }
+        }
+
+        if (noConfig) {
+            params += ['--noConfig'] // no config file, but we will provide our parameters
+        }
+
+        if (useConfigFile) {
+             params += ['-c', "\"" + deployConfigFile + "\""]
+        }
+
         if (deployConfigFile) {
             params += ['-c', "\"" + deployConfigFile + "\""]
-        } else {
-            if (! script.fileExists('ui5-deploy.yaml')) {
-                params += ['--noConfig']
-            }
         }
 
         if (transportRequestId) {
