@@ -1,4 +1,5 @@
 import com.sap.piper.BashUtils
+import com.sap.piper.Credential
 import com.sap.piper.DebugReport
 import com.sap.piper.DefaultValueCache
 import com.sap.piper.JenkinsUtils
@@ -171,7 +172,7 @@ void credentialWrapper(config, List credentialInfo, body) {
                 credentialsId = config[cred.id]
             }
             if (credentialsId) {
-                switch(cred.type) {
+                switch("${cred.type}") {
                     case "file":
                         creds.add(file(credentialsId: credentialsId, variable: cred.env[0]))
                         break
