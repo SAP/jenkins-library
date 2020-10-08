@@ -1,5 +1,4 @@
 import com.sap.piper.BashUtils
-import com.sap.piper.Credential
 import com.sap.piper.DebugReport
 import com.sap.piper.DefaultValueCache
 import com.sap.piper.JenkinsUtils

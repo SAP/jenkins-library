@@ -1,9 +1,7 @@
-import com.sap.piper.Credential
+import com.sap.piper.CredentialType
 import com.sap.piper.DebugReport
-import com.sap.piper.JenkinsUtils
 import groovy.json.JsonSlurper
 import hudson.AbortException
-import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -256,11 +254,11 @@ class PiperExecuteBinTest extends BasePiperTest {
         })
 
         List stepCredentials = [
-            [type: Credential.FILE, id: 'fileCredentialsId', env: ['PIPER_credFile']],
-            [type: Credential.TOKEN, id: 'tokenCredentialsId', env: ['PIPER_credToken']],
-            [type: Credential.SECRET_TEXT, id: 'textCredentialsId', env: ['PIPER_credSecret']],
-            [type: Credential.USERNAME_PASSWORD, id: 'credentialsId', env: ['PIPER_user', 'PIPER_password']],
-            [type: Credential.SSH, id: 'sshCredentialsId'],
+                [type: CredentialType.FILE, id: 'fileCredentialsId', env: ['PIPER_credFile']],
+                [type: CredentialType.TOKEN, id: 'tokenCredentialsId', env: ['PIPER_credToken']],
+                [type: CredentialType.SECRET_TEXT, id: 'textCredentialsId', env: ['PIPER_credSecret']],
+                [type: CredentialType.USERNAME_PASSWORD, id: 'credentialsId', env: ['PIPER_user', 'PIPER_password']],
+                [type: CredentialType.SSH, id: 'sshCredentialsId'],
         ]
         stepRule.step.piperExecuteBin(
             [

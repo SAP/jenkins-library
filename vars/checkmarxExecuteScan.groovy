@@ -1,4 +1,4 @@
-import com.sap.piper.Credential
+import com.sap.piper.CredentialType
 import groovy.transform.Field
 
 @Field String STEP_NAME = getClass().getName()
@@ -7,6 +7,6 @@ import groovy.transform.Field
 //Metadata maintained in file project://resources/metadata/checkmarx.yaml
 
 void call(Map parameters = [:]) {
-    List credentials = [[type: Credential.USERNAME_PASSWORD, id: 'checkmarxCredentialsId', env: ['PIPER_username', 'PIPER_password']]]
+    List credentials = [[type: CredentialType.USERNAME_PASSWORD, id: 'checkmarxCredentialsId', env: ['PIPER_username', 'PIPER_password']]]
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials, true)
 }

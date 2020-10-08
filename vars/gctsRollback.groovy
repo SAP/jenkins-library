@@ -1,4 +1,4 @@
-import com.sap.piper.Credential
+import com.sap.piper.CredentialType
 import groovy.transform.Field
 
 @Field String STEP_NAME = getClass().getName()
@@ -6,8 +6,8 @@ import groovy.transform.Field
 
 void call(Map parameters = [:]) {
     List credentials = [
-        [type: Credential.USERNAME_PASSWORD, id: 'abapCredentialsId', env: ['PIPER_username', 'PIPER_password']],
-        [type: Credential.TOKEN, id: 'githubPersonalAccessTokenId', env: ['PIPER_githubPersonalAccessToken']]
+            [type: CredentialType.USERNAME_PASSWORD, id: 'abapCredentialsId', env: ['PIPER_username', 'PIPER_password']],
+            [type: CredentialType.TOKEN, id: 'githubPersonalAccessTokenId', env: ['PIPER_githubPersonalAccessToken']]
     ]
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
 }

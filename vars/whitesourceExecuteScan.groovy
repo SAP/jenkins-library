@@ -1,4 +1,4 @@
-import com.sap.piper.Credential
+import com.sap.piper.CredentialType
 import com.sap.piper.BuildTool
 import com.sap.piper.DescriptorUtils
 import com.sap.piper.DownloadCacheUtils
@@ -273,8 +273,8 @@ void call(Map parameters = [:]) {
             parameters = DownloadCacheUtils.injectDownloadCacheInParameters(script, parameters, BuildTool.MTA)
 
             List credentials = [
-                [type: Credential.TOKEN, id: 'orgAdminUserTokenCredentialsId', env: ['PIPER_orgToken']],
-                [type: Credential.TOKEN, id: 'userTokenCredentialsId', env: ['PIPER_userToken']],
+                    [type: CredentialType.TOKEN, id: 'orgAdminUserTokenCredentialsId', env: ['PIPER_orgToken']],
+                    [type: CredentialType.TOKEN, id: 'userTokenCredentialsId', env: ['PIPER_userToken']],
             ]
             piperExecuteBin(parameters, "whitesourceExecuteScan", "metadata/whitesource.yaml", credentials)
             return

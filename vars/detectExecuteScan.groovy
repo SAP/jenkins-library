@@ -1,5 +1,5 @@
 import com.sap.piper.BuildTool
-import com.sap.piper.Credential
+import com.sap.piper.CredentialType
 import com.sap.piper.DownloadCacheUtils
 import groovy.transform.Field
 
@@ -12,7 +12,7 @@ void call(Map parameters = [:]) {
     final script = checkScript(this, parameters) ?: this
     parameters = DownloadCacheUtils.injectDownloadCacheInParameters(script, parameters, BuildTool.MAVEN)
     List credentials = [
-        [type: Credential.TOKEN, id: 'detectTokenCredentialsId', env: ['PIPER_token']]
+        [type: CredentialType.TOKEN, id: 'detectTokenCredentialsId', env: ['PIPER_token']]
     ]
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
 }

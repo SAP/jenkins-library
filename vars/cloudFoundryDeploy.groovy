@@ -1,7 +1,7 @@
 import com.sap.piper.BashUtils
 import com.sap.piper.CfManifestUtils
 import com.sap.piper.ConfigurationHelper
-import com.sap.piper.Credential
+import com.sap.piper.CredentialType
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.Utils
@@ -235,8 +235,8 @@ void call(Map parameters = [:]) {
         if (config.useGoStep == true) {
             utils.unstashAll(["deployDescriptor"])
             List credentials = [
-                [type: Credential.USERNAME_PASSWORD, id: 'cfCredentialsId', env: ['PIPER_username', 'PIPER_password']],
-                [type: Credential.USERNAME_PASSWORD, id: 'dockerCredentialsId', env: ['PIPER_dockerUsername', 'PIPER_dockerPassword']]
+                    [type: CredentialType.USERNAME_PASSWORD, id: 'cfCredentialsId', env: ['PIPER_username', 'PIPER_password']],
+                    [type: CredentialType.USERNAME_PASSWORD, id: 'dockerCredentialsId', env: ['PIPER_dockerUsername', 'PIPER_dockerPassword']]
             ]
             piperExecuteBin(parameters, STEP_NAME, 'metadata/cloudFoundryDeploy.yaml', credentials)
             return

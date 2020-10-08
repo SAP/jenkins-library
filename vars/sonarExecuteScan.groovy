@@ -1,4 +1,4 @@
-import com.sap.piper.Credential
+import com.sap.piper.CredentialType
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.Utils
 import com.sap.piper.analytics.InfluxData
@@ -21,8 +21,8 @@ void call(Map parameters = [:]) {
         Map stepParameters = piperExecuteBin.prepareStepParameters(parameters)
 
         List credentialInfo = [
-            [type: Credential.TOKEN, id: 'sonarTokenCredentialsId', env: ['PIPER_token']],
-            [type: Credential.TOKEN, id: 'githubTokenCredentialsId', env: ['PIPER_githubToken']],
+                [type: CredentialType.TOKEN, id: 'sonarTokenCredentialsId', env: ['PIPER_token']],
+                [type: CredentialType.TOKEN, id: 'githubTokenCredentialsId', env: ['PIPER_githubToken']],
         ]
 
         withEnv([
