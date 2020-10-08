@@ -12,7 +12,8 @@ spec:
     params:
       - name: retry
         type: int
-        description: "The number of times that integration tests will be retried before failing the step.
+        description:
+          "The number of times that integration tests will be retried before failing the step.
           Note: This will consume more time for the step execution."
         scope:
           - PARAMETERS
@@ -21,7 +22,8 @@ spec:
         default: 1
       - name: forkCount
         type: string
-        description: "The number of JVM processes that are spawned to run the tests in parallel in case of
+        description:
+          "The number of JVM processes that are spawned to run the tests in parallel in case of
           using a maven based project structure.
           For more details visit the Surefire documentation at
           https://maven.apache.org/surefire/maven-surefire-plugin/test-mojo.html#forkCount."
@@ -82,4 +84,4 @@ spec:
 
   # This declaration is necessary in order to return any sidecar configuration in the context config.
   sidecars:
-    - name: ''
+    - name: ""

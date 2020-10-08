@@ -27,11 +27,13 @@ spec:
   inputs:
     secrets:
       - name: kubeConfigFileCredentialsId
+        description: Jenkins 'Secret file' credentials ID containing kubeconfig file. Details can be found in the [Kubernetes documentation](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/).
         aliases:
           - name: kubeCredentialsId
             deprecated: true
         type: jenkins
       - name: kubeTokenCredentialsId
+        description: Jenkins 'Secret text' credentials ID containing token to authenticate to Kubernetes. This is an alternative way to using a kubeconfig file. Details can be found in the [Kubernetes documentation](https://kubernetes.io/docs/reference/access-authn-authz/authentication/).
         aliases:
           - name: k8sTokenCredentialsId
             deprecated: true
@@ -45,7 +47,7 @@ spec:
       - name: additionalParameters
         aliases:
           - name: helmDeploymentParameters
-        type: '[]string'
+        type: "[]string"
         description: Defines additional parameters for \"helm install\" or \"kubectl apply\" command.
         scope:
           - PARAMETERS
@@ -89,14 +91,18 @@ spec:
           - STAGES
           - STEPS
         secret: true
+        resourceRef:
+          - name: dockerCredentialsId
+            type: secret
+            param: password
       - name: containerRegistryUrl
         aliases:
           - name: dockerRegistryUrl
         type: string
         description: http(s) url of the Container registry where the image to deploy is located.
         resourceRef:
-        - name: commonPipelineEnvironment
-          param: container/registryUrl
+          - name: commonPipelineEnvironment
+            param: container/registryUrl
         scope:
           - GENERAL
           - PARAMETERS
@@ -111,18 +117,32 @@ spec:
           - STAGES
           - STEPS
         secret: true
+        resourceRef:
+          - name: dockerCredentialsId
+            type: secret
+            param: username
       - name: containerRegistrySecret
         description: Name of the container registry secret used for pulling containers from the registry.
+        longDescription: |-
+          Name of the container registry secret used for pulling containers from the registry.
+
+          **For `deployTool: helm/helm3`:**<br />
+          If `containerRegistryUser` and `containerRegistryPassword` are provided, a secret is created on the fly and the information is passed to the helm template.<br />
+          Note: the secret will not be persisted in the Kubernetes cluster.
+
+          If neither `containerRegistryUser` nor `containerRegistryPassword` are provided, it is expected that a secret with the configured name exists in the target Kubernetes cluster.<br />
+
+          **For `deployTool: kubectl`:**<br />
+          If `createDockerRegistrySecret: true` and `containerRegistryUser` and `containerRegistryPassword` are provided, a secret with the given name will be created in the Kubernetes cluster unless a secret with the name already exists.
         type: string
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
         default: regsecret
-        secret: true
       - name: createDockerRegistrySecret
         type: bool
-        description: Toggle to turn on Regsecret creation with a \"deployTool:kubectl\" deployment.
+        description: "Only for `deployTool:kubectl`: Toggle to turn on `containerRegistrySecret` creation."
         scope:
           - PARAMETERS
           - STAGES
@@ -160,6 +180,13 @@ spec:
           - STAGES
           - STEPS
         default: 300
+      - name: helmValues
+        type: "[]string"
+        description: List of helm values as YAML file reference or URL (as per helm parameter description for `-f` / `--values`)
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: image
         aliases:
           - name: deployImage
@@ -174,8 +201,16 @@ spec:
           - STAGES
           - STEPS
       - name: ingressHosts
-        type: '[]string'
-        description: List of ingress hosts to be exposed via helm deployment.
+        type: "[]string"
+        description: (Deprecated) List of ingress hosts to be exposed via helm deployment.
+        longDescription: |-
+          **DEPRECATED**<br />
+          List of ingress hosts to be exposed via helm deployment.<br />
+          Host names are passed to helm template via ingress configuration.<br />
+          This requires a modification to the default helm template, thus it is not recommended.
+
+          Recommendation is to use custom values and pass them via parameter `helmValues`.<br />
+          Since helm supports multiple files on top of the `values.yaml`, landscape-specific attributes can be passed via a specific file.
         mandatory: false
         scope:
           - PARAMETERS
@@ -189,6 +224,10 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        secret: true
+        resourceRef:
+          - name: kubeConfigFileCredentialsId
+            type: secret
       - name: kubeContext
         type: string
         description: Defines the context to use from the \"kubeconfig\" file.
@@ -206,6 +245,9 @@ spec:
           - STAGES
           - STEPS
         secret: true
+        resourceRef:
+          - name: kubeTokenCredentialsId
+            type: secret
       - name: namespace
         aliases:
           - name: helmDeploymentNamespace
@@ -227,24 +269,33 @@ spec:
           - STAGES
           - STEPS
   containers:
-  - image: dtzar/helm-kubectl:3.1.2
-    workingDir: /config
-    conditions:
-    - conditionRef: strings-equal
-      params:
-      - name: deployTool
-        value: helm3
-  - image: dtzar/helm-kubectl:2.12.1
-    workingDir: /config
-    conditions:
-    - conditionRef: strings-equal
-      params:
-      - name: deployTool
-        value: helm
-  - image: dtzar/helm-kubectl:2.12.1
-    workingDir: /config
-    conditions:
-    - conditionRef: strings-equal
-      params:
-      - name: deployTool
-        value: kubectl
+    - image: dtzar/helm-kubectl:3.1.2
+      workingDir: /config
+      options:
+        - name: -u
+          value: "0"
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: deployTool
+              value: helm3
+    - image: dtzar/helm-kubectl:2.12.1
+      workingDir: /config
+      options:
+        - name: -u
+          value: "0"
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: deployTool
+              value: helm
+    - image: dtzar/helm-kubectl:2.12.1
+      workingDir: /config
+      options:
+        - name: -u
+          value: "0"
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: deployTool
+              value: kubectl

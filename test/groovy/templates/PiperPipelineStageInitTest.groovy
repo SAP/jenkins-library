@@ -1,5 +1,6 @@
 package templates
 
+import com.sap.piper.StageNameProvider
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -8,6 +9,7 @@ import org.junit.rules.RuleChain
 import util.*
 
 import static org.hamcrest.Matchers.hasItems
+import static org.hamcrest.Matchers.hasKey
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.isEmptyOrNullString
 import static org.hamcrest.Matchers.not
@@ -27,11 +29,13 @@ class PiperPipelineStageInitTest extends BasePiperTest {
         .around(jsr)
 
     private List stepsCalled = []
+    private Map  stepParams = [:]
 
     @Before
     void init() {
+        StageNameProvider.instance.useTechnicalStageNames = false
 
-        binding.variables.env.STAGE_NAME = 'Init'
+        nullScript.env.STAGE_NAME = 'Init'
 
         nullScript.commonPipelineEnvironment.configuration = [:]
 
@@ -57,6 +61,7 @@ class PiperPipelineStageInitTest extends BasePiperTest {
 
         helper.registerAllowedMethod('setupCommonPipelineEnvironment', [Map.class], { m ->
             stepsCalled.add('setupCommonPipelineEnvironment')
+            stepParams['setupCommonPipelineEnvironment'] = m
         })
 
         helper.registerAllowedMethod('piperInitRunStageConfiguration', [Map.class], { m ->
@@ -68,6 +73,10 @@ class PiperPipelineStageInitTest extends BasePiperTest {
             stepsCalled.add('artifactSetVersion')
         })
 
+        helper.registerAllowedMethod('artifactPrepareVersion', [Map.class], { m ->
+            stepsCalled.add('artifactPrepareVersion')
+        })
+
         helper.registerAllowedMethod('pipelineStashFilesBeforeBuild', [Map.class], { m ->
             stepsCalled.add('pipelineStashFilesBeforeBuild')
         })
@@ -75,7 +84,6 @@ class PiperPipelineStageInitTest extends BasePiperTest {
         helper.registerAllowedMethod('slackSendNotification', [Map.class], {m ->
             stepsCalled.add('slackSendNotification')
         })
-
     }
 
     @Test
@@ -136,28 +144,6 @@ class PiperPipelineStageInitTest extends BasePiperTest {
     }
 
     @Test
-    void testSetScmInfoOnCommonPipelineEnvironment() {
-        //currently supported formats
-        def scmInfoTestList = [
-            [GIT_URL: 'https://github.com/testOrg/testRepo.git', expectedSsh: 'git@github.com:testOrg/testRepo.git', expectedHttp: 'https://github.com/testOrg/testRepo.git', expectedOrg: 'testOrg', expectedRepo: 'testRepo'],
-            [GIT_URL: 'https://github.com:7777/testOrg/testRepo.git', expectedSsh: 'git@github.com:testOrg/testRepo.git', expectedHttp: 'https://github.com:7777/testOrg/testRepo.git', expectedOrg: 'testOrg', expectedRepo: 'testRepo'],
-            [GIT_URL: 'git@github.com:testOrg/testRepo.git', expectedSsh: 'git@github.com:testOrg/testRepo.git', expectedHttp: 'https://github.com/testOrg/testRepo.git', expectedOrg: 'testOrg', expectedRepo: 'testRepo'],
-            [GIT_URL: 'ssh://git@github.com/testOrg/testRepo.git', expectedSsh: 'ssh://git@github.com/testOrg/testRepo.git', expectedHttp: 'https://github.com/testOrg/testRepo.git', expectedOrg: 'testOrg', expectedRepo: 'testRepo'],
-            [GIT_URL: 'ssh://git@github.com:7777/testOrg/testRepo.git', expectedSsh: 'ssh://git@github.com:7777/testOrg/testRepo.git', expectedHttp: 'https://github.com/testOrg/testRepo.git', expectedOrg: 'testOrg', expectedRepo: 'testRepo'],
-            [GIT_URL: 'ssh://git@github.com/path/to/testOrg/testRepo.git', expectedSsh: 'ssh://git@github.com/path/to/testOrg/testRepo.git', expectedHttp: 'https://github.com/path/to/testOrg/testRepo.git', expectedOrg: 'path/to/testOrg', expectedRepo: 'testRepo'],
-            [GIT_URL: 'ssh://git@github.com/testRepo.git', expectedSsh: 'ssh://git@github.com/testRepo.git', expectedHttp: 'https://github.com/testRepo.git', expectedOrg: 'N/A', expectedRepo: 'testRepo'],
-        ]
-
-        scmInfoTestList.each {scmInfoTest ->
-            jsr.step.piperPipelineStageInit.setGitUrlsOnCommonPipelineEnvironment(nullScript, scmInfoTest.GIT_URL)
-            assertThat(nullScript.commonPipelineEnvironment.getGitSshUrl(), is(scmInfoTest.expectedSsh))
-            assertThat(nullScript.commonPipelineEnvironment.getGitHttpsUrl(), is(scmInfoTest.expectedHttp))
-            assertThat(nullScript.commonPipelineEnvironment.getGithubOrg(), is(scmInfoTest.expectedOrg))
-            assertThat(nullScript.commonPipelineEnvironment.getGithubRepo(), is(scmInfoTest.expectedRepo))
-        }
-    }
-
-    @Test
     void testPullRequestStageStepActivation() {
 
         nullScript.commonPipelineEnvironment.configuration = [
@@ -193,5 +179,58 @@ class PiperPipelineStageInitTest extends BasePiperTest {
             'slackSendNotification',
             'pipelineStashFilesBeforeBuild'
         ))
+    }
+
+    @Test
+    void testInitInferBuildTool() {
+        nullScript.commonPipelineEnvironment.configuration = [general: [inferBuildTool: true]]
+        nullScript.commonPipelineEnvironment.buildTool = 'maven'
+
+        jsr.step.piperPipelineStageInit(script: nullScript, juStabUtils: utils)
+
+        assertThat(stepsCalled, hasItems(
+            'checkout',
+            'setupCommonPipelineEnvironment',
+            'piperInitRunStageConfiguration',
+            'artifactPrepareVersion',
+            'pipelineStashFilesBeforeBuild'
+        ))
+    }
+
+    @Test
+    void testInitWithTechnicalStageNames() {
+        helper.registerAllowedMethod('piperStageWrapper', [Map.class, Closure.class], { m, body ->
+            assertThat(m.stageName, is('init'))
+            return body()
+        })
+
+        jsr.step.piperPipelineStageInit(script: nullScript, juStabUtils: utils, useTechnicalStageNames: true, buildTool: 'maven')
+
+        assertThat(stepsCalled, hasItems(
+            'checkout',
+            'setupCommonPipelineEnvironment',
+            'piperInitRunStageConfiguration',
+            'artifactSetVersion',
+            'pipelineStashFilesBeforeBuild'
+        ))
+    }
+
+    @Test
+    void testInitForwardConfigParams() {
+        jsr.step.piperPipelineStageInit(script: nullScript, juStabUtils: utils, configFile: 'my-config.yml',
+            customDefaults: ['my-custom-defaults.yml'], customDefaultsFromFiles: ['my-custom-default-file.yml'],
+            buildTool: 'maven')
+
+        assertThat(stepsCalled, hasItems('setupCommonPipelineEnvironment'))
+        assertThat(stepParams.setupCommonPipelineEnvironment?.configFile, is('my-config.yml'))
+        assertThat(stepParams.setupCommonPipelineEnvironment?.customDefaults, is(['my-custom-defaults.yml']))
+        assertThat(stepParams.setupCommonPipelineEnvironment?.customDefaultsFromFiles, is(['my-custom-default-file.yml']))
+    }
+
+    @Test
+    void testInitWithCloudSdkStashInit() {
+        jsr.step.piperPipelineStageInit(script: nullScript, juStabUtils: utils, initCloudSdkStashSettings: true, buildTool: 'maven')
+
+        assertThat(nullScript.commonPipelineEnvironment.configuration.stageStashes, hasKey('init'))
     }
 }

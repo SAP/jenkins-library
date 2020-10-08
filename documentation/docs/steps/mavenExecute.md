@@ -17,7 +17,7 @@
     ```
 
     Additionally please note that in the parameters _must not_ be [shell quoted/escaped](https://www.tldp.org/LDP/Bash-Beginners-Guide/html/sect_03_03.html).
-    What you pass in is literally passed to Maven without any shell interpreter inbetween.
+    What you pass in is literally passed to Maven without any shell interpreter in between.
 
     The old behavior is still available in version `v1.23.0` and before of project "Piper".
 

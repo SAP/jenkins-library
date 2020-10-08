@@ -10,6 +10,7 @@ import (
 	"net/http/cookiejar"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
@@ -53,7 +54,6 @@ func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telem
 	client.SetOptions(clientOptions)
 
 	var details abaputils.ConnectionDetailsHTTP
-	var abapEndpoint string
 	//If Host flag is empty read ABAP endpoint from Service Key instead. Otherwise take ABAP system endpoint from config instead
 	if err == nil {
 		details, err = autils.GetAbapCommunicationArrangementInfo(subOptions, "")
@@ -61,7 +61,6 @@ func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telem
 	var resp *http.Response
 	//Fetch Xcrsf-Token
 	if err == nil {
-		abapEndpoint = details.URL
 		credentialsOptions := piperhttp.ClientOptions{
 			Username:  details.User,
 			Password:  details.Password,
@@ -71,20 +70,22 @@ func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telem
 		details.XCsrfToken, err = fetchXcsrfToken("GET", details, nil, &client)
 	}
 	if err == nil {
-		resp, err = triggerATCrun(options, details, &client, abapEndpoint)
+		resp, err = triggerATCrun(options, details, &client)
 	}
 	if err == nil {
-		err = handleATCresults(resp, details, &client, abapEndpoint)
+		err = handleATCresults(resp, details, &client, options.AtcResultsFileName)
 	}
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 
-	log.Entry().Info("ATC run completed succesfully. The respective run results are listed above.")
+	log.Entry().Info("ATC run completed successfully. If there are any results from the respective run they will be listed in the logs above as well as being saved in the output .xml file")
 }
 
-func handleATCresults(resp *http.Response, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, abapEndpoint string) error {
+func handleATCresults(resp *http.Response, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, atcResultFileName string) error {
 	var err error
+	var abapEndpoint string
+	abapEndpoint = details.URL
 	location := resp.Header.Get("Location")
 	details.URL = abapEndpoint + location
 	location, err = pollATCRun(details, nil, client)
@@ -99,7 +100,7 @@ func handleATCresults(resp *http.Response, details abaputils.ConnectionDetailsHT
 	}
 	if err == nil {
 		defer resp.Body.Close()
-		err = parseATCResult(body)
+		err = parseATCResult(body, atcResultFileName)
 	}
 	if err != nil {
 		return fmt.Errorf("Handling ATC result failed: %w", err)
@@ -107,8 +108,9 @@ func handleATCresults(resp *http.Response, details abaputils.ConnectionDetailsHT
 	return nil
 }
 
-func triggerATCrun(config abapEnvironmentRunATCCheckOptions, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, abapEndpoint string) (*http.Response, error) {
+func triggerATCrun(config abapEnvironmentRunATCCheckOptions, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (*http.Response, error) {
 	var atcConfigyamlFile []byte
+	abapEndpoint := details.URL
 	filelocation, err := filepath.Glob(config.AtcConfig)
 	//Parse YAML ATC run configuration as body for ATC run trigger
 	if err == nil {
@@ -121,15 +123,14 @@ func triggerATCrun(config abapEnvironmentRunATCCheckOptions, details abaputils.C
 		result, err = yaml.YAMLToJSON(atcConfigyamlFile)
 		json.Unmarshal(result, &ATCConfig)
 	}
-	var packageString string
-	var softwareComponentString string
+	var checkVariantString, packageString, softwareComponentString string
 	if err == nil {
-		packageString, softwareComponentString, err = buildATCCheckBody(ATCConfig)
+		checkVariantString, packageString, softwareComponentString, err = buildATCCheckBody(ATCConfig)
 	}
 
 	//Trigger ATC run
 	var resp *http.Response
-	var bodyString = `<?xml version="1.0" encoding="UTF-8"?><atc:runparameters xmlns:atc="http://www.sap.com/adt/atc" xmlns:obj="http://www.sap.com/adt/objectset"><obj:objectSet>` + softwareComponentString + packageString + `</obj:objectSet></atc:runparameters>`
+	var bodyString = `<?xml version="1.0" encoding="UTF-8"?><atc:runparameters xmlns:atc="http://www.sap.com/adt/atc" xmlns:obj="http://www.sap.com/adt/objectset"` + checkVariantString + `><obj:objectSet>` + softwareComponentString + packageString + `</obj:objectSet></atc:runparameters>`
 	var body = []byte(bodyString)
 	if err == nil {
 		details.URL = abapEndpoint + "/sap/bc/adt/api/atc/runs?clientWait=false"
@@ -141,13 +142,18 @@ func triggerATCrun(config abapEnvironmentRunATCCheckOptions, details abaputils.C
 	return resp, nil
 }
 
-func buildATCCheckBody(ATCConfig ATCconfig) (string, string, error) {
+func buildATCCheckBody(ATCConfig ATCconfig) (checkVariantString string, packageString string, softwareComponentString string, err error) {
 	if len(ATCConfig.Objects.Package) == 0 && len(ATCConfig.Objects.SoftwareComponent) == 0 {
-		return "", "", fmt.Errorf("Error while parsing ATC run config. Please provide the packages and/or the software components to be checked! %w", errors.New("No Package or Software Component specified. Please provide either one or both of them"))
+		return "", "", "", fmt.Errorf("Error while parsing ATC run config. Please provide the packages and/or the software components to be checked! %w", errors.New("No Package or Software Component specified. Please provide either one or both of them"))
 	}
 
-	var packageString string
-	var softwareComponentString string
+	//Build Check Variant and Configuration XML Body
+	if len(ATCConfig.CheckVariant) != 0 {
+		checkVariantString += ` check_variant="` + ATCConfig.CheckVariant + `"`
+		if len(ATCConfig.Configuration) != 0 {
+			checkVariantString += ` configuration="` + ATCConfig.Configuration + `"`
+		}
+	}
 
 	//Build Package XML body
 	if len(ATCConfig.Objects.Package) != 0 {
@@ -166,19 +172,26 @@ func buildATCCheckBody(ATCConfig ATCconfig) (string, string, error) {
 		}
 		softwareComponentString += "</obj:softwarecomponents>"
 	}
-	return packageString, softwareComponentString, nil
+	return checkVariantString, packageString, softwareComponentString, nil
 }
 
-func parseATCResult(body []byte) error {
+func parseATCResult(body []byte, atcResultFileName string) (err error) {
 	if len(body) == 0 {
 		return fmt.Errorf("Parsing ATC result failed: %w", errors.New("Body is empty, can't parse empty body"))
 	}
 	parsedXML := new(Result)
 	xml.Unmarshal([]byte(body), &parsedXML)
-	err := ioutil.WriteFile("ATCResults.xml", body, 0644)
+	if len(parsedXML.Files) == 0 {
+		log.Entry().Info("There were no results from this run, most likely the checked Software Components are empty or contain no ATC findings")
+	}
+	s := string(body)
+	if strings.HasPrefix(s, "<html>") {
+		return errors.New("The Software Component could not be checked. Please make sure the respective Software Component has been cloned successfully on the system")
+	}
+	err = ioutil.WriteFile(atcResultFileName, body, 0644)
 	if err == nil {
 		var reports []piperutils.Path
-		reports = append(reports, piperutils.Path{Target: "ATCResults.xml", Name: "ATC Results", Mandatory: true})
+		reports = append(reports, piperutils.Path{Target: atcResultFileName, Name: "ATC Results", Mandatory: true})
 		piperutils.PersistReportsAndLinks("abapEnvironmentRunATCCheck", "", reports, nil)
 		for _, s := range parsedXML.Files {
 			for _, t := range s.ATCErrors {
@@ -222,6 +235,10 @@ func fetchXcsrfToken(requestType string, details abaputils.ConnectionDetailsHTTP
 		return "", fmt.Errorf("Fetching Xcsrf-Token failed: %w", err)
 	}
 	defer req.Body.Close()
+
+	// workaround until golang version 1.16 is used
+	time.Sleep(1 * time.Second)
+
 	token := req.Header.Get("X-Csrf-Token")
 	return token, err
 }
@@ -288,7 +305,9 @@ func getResultATCRun(requestType string, details abaputils.ConnectionDetailsHTTP
 
 //ATCconfig object for parsing yaml config of software components and packages
 type ATCconfig struct {
-	Objects ATCObjects `json:"atcobjects"`
+	CheckVariant  string     `json:"checkvariant,omitempty"`
+	Configuration string     `json:"configuration,omitempty"`
+	Objects       ATCObjects `json:"atcobjects"`
 }
 
 //ATCObjects in form of packages and software components to be checked

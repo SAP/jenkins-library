@@ -14,15 +14,16 @@ import (
 )
 
 type abapEnvironmentRunATCCheckOptions struct {
-	AtcConfig         string `json:"atcConfig,omitempty"`
-	CfAPIEndpoint     string `json:"cfApiEndpoint,omitempty"`
-	CfOrg             string `json:"cfOrg,omitempty"`
-	CfServiceInstance string `json:"cfServiceInstance,omitempty"`
-	CfServiceKeyName  string `json:"cfServiceKeyName,omitempty"`
-	CfSpace           string `json:"cfSpace,omitempty"`
-	Username          string `json:"username,omitempty"`
-	Password          string `json:"password,omitempty"`
-	Host              string `json:"host,omitempty"`
+	AtcConfig          string `json:"atcConfig,omitempty"`
+	CfAPIEndpoint      string `json:"cfApiEndpoint,omitempty"`
+	CfOrg              string `json:"cfOrg,omitempty"`
+	CfServiceInstance  string `json:"cfServiceInstance,omitempty"`
+	CfServiceKeyName   string `json:"cfServiceKeyName,omitempty"`
+	CfSpace            string `json:"cfSpace,omitempty"`
+	Username           string `json:"username,omitempty"`
+	Password           string `json:"password,omitempty"`
+	Host               string `json:"host,omitempty"`
+	AtcResultsFileName string `json:"atcResultsFileName,omitempty"`
 }
 
 // AbapEnvironmentRunATCCheckCommand Runs an ATC Check
@@ -58,6 +59,8 @@ Regardless of the option you chose, please make sure to provide the configuratio
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			log.RegisterSecret(stepConfig.Username)
+			log.RegisterSecret(stepConfig.Password)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -71,6 +74,7 @@ Regardless of the option you chose, please make sure to provide the configuratio
 			telemetryData.ErrorCode = "1"
 			handler := func() {
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
 			}
 			log.DeferExitHandler(handler)
@@ -96,6 +100,7 @@ func addAbapEnvironmentRunATCCheckFlags(cmd *cobra.Command, stepConfig *abapEnvi
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User or E-Mail for CF")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "User Password for CF User")
 	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP Cloud Platform ABAP Environment system")
+	cmd.Flags().StringVar(&stepConfig.AtcResultsFileName, "atcResultsFileName", `ATCResults.xml`, "Specifies output file name for the results from the ATC run")
 
 	cmd.MarkFlagRequired("atcConfig")
 	cmd.MarkFlagRequired("username")
@@ -161,25 +166,45 @@ func abapEnvironmentRunATCCheckMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "cloudFoundry/space"}},
 					},
 					{
-						Name:        "username",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Name: "username",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "abapCredentialsId",
+								Param: "username",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "password",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Name: "password",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "abapCredentialsId",
+								Param: "password",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "host",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "atcResultsFileName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},

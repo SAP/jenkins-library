@@ -1,5 +1,4 @@
 import com.sap.piper.JenkinsUtils
-import com.sap.piper.PiperGoUtils
 import com.sap.piper.Utils
 import com.sap.piper.analytics.InfluxData
 import static com.sap.piper.Prerequisites.checkScript
@@ -16,7 +15,7 @@ void call(Map parameters = [:]) {
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
         String piperGoPath = parameters.piperGoPath ?: './piper'
 
-        piperExecuteBin.prepareExecution(this, utils, parameters)
+        piperExecuteBin.prepareExecution(script, utils, parameters)
         piperExecuteBin.prepareMetadataResource(script, METADATA_FILE)
         Map stepParameters = piperExecuteBin.prepareStepParameters(parameters)
 
@@ -37,14 +36,15 @@ void call(Map parameters = [:]) {
                 config = piperExecuteBin.getStepContextConfig(script, piperGoPath, METADATA_FILE, customDefaultConfig, customConfigArg)
                 echo "Context Config: ${config}"
             }
-            // get step configuration to access `instance` & `customTlsCertificateLinks` & `owner` & `repository` & `legacyPRHandling`
+            // get step configuration to access `instance` & `customTlsCertificateLinks` & `owner` & `repository`
+            // & `legacyPRHandling` & `inferBranchName`
             // writeToDisk needs to be called here as owner and repository may come from the pipeline environment
             script.commonPipelineEnvironment.writeToDisk(script)
             Map stepConfig = readJSON(text: sh(returnStdout: true, script: "${piperGoPath} getConfig --stepMetadata '.pipeline/tmp/${METADATA_FILE}'${customDefaultConfig}${customConfigArg}"))
             echo "Step Config: ${stepConfig}"
 
             List environment = []
-            if(isPullRequest()){
+            if (isPullRequest()) {
                 checkMandatoryParameter(stepConfig, "owner")
                 checkMandatoryParameter(stepConfig, "repository")
                 if(stepConfig.legacyPRHandling) {
@@ -52,13 +52,15 @@ void call(Map parameters = [:]) {
                 }
                 environment.add("PIPER_changeId=${env.CHANGE_ID}")
                 environment.add("PIPER_changeBranch=${env.CHANGE_BRANCH}")
-                environment.add("PIPER_changeTarget=${env.CHANGE_TARGET }")
+                environment.add("PIPER_changeTarget=${env.CHANGE_TARGET}")
+            } else if (!isProductiveBranch(script) && stepConfig.inferBranchName && env.BRANCH_NAME) {
+                environment.add("PIPER_branchName=${env.BRANCH_NAME}")
             }
             try {
                 // load certificates into cacerts file
                 loadCertificates(customTlsCertificateLinks: stepConfig.customTlsCertificateLinks, verbose: stepConfig.verbose)
                 // execute step
-                piperExecuteBin.dockerWrapper(script, config){
+                piperExecuteBin.dockerWrapper(script, STEP_NAME, config){
                     if(!fileExists('.git')) utils.unstash('git')
                     piperExecuteBin.handleErrorDetails(STEP_NAME) {
                         withSonarQubeEnv(stepConfig.instance) {
@@ -97,6 +99,11 @@ private void checkMandatoryParameter(config, key){
 
 private Boolean isPullRequest(){
     return env.CHANGE_ID
+}
+
+private Boolean isProductiveBranch(Script script) {
+    def productiveBranch = script.commonPipelineEnvironment?.getStepConfiguration('', '')?.productiveBranch
+    return env.BRANCH_NAME == productiveBranch
 }
 
 private void loadCertificates(Map config) {

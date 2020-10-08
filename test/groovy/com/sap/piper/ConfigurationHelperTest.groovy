@@ -30,6 +30,8 @@ class ConfigurationHelperTest {
         def readYaml(Map m) {
            new Yaml().load(m.text)
         }
+
+        def env = [STAGE_NAME: 'test']
     }
 
     @Rule

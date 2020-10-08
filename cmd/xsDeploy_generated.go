@@ -23,7 +23,7 @@ type xsDeployOptions struct {
 	Mode                  string `json:"mode,omitempty"`
 	OperationID           string `json:"operationId,omitempty"`
 	APIURL                string `json:"apiUrl,omitempty"`
-	User                  string `json:"user,omitempty"`
+	Username              string `json:"username,omitempty"`
 	Password              string `json:"password,omitempty"`
 	Org                   string `json:"org,omitempty"`
 	Space                 string `json:"space,omitempty"`
@@ -39,7 +39,7 @@ func (p *xsDeployCommonPipelineEnvironment) persist(path, resourceName string) {
 	content := []struct {
 		category string
 		name     string
-		value    string
+		value    interface{}
 	}{
 		{category: "", name: "operationId", value: p.operationID},
 	}
@@ -84,7 +84,7 @@ func XsDeployCommand() *cobra.Command {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
-			log.RegisterSecret(stepConfig.User)
+			log.RegisterSecret(stepConfig.Username)
 			log.RegisterSecret(stepConfig.Password)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
@@ -100,6 +100,7 @@ func XsDeployCommand() *cobra.Command {
 			handler := func() {
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
 			}
 			log.DeferExitHandler(handler)
@@ -123,7 +124,7 @@ func addXsDeployFlags(cmd *cobra.Command, stepConfig *xsDeployOptions) {
 	cmd.Flags().StringVar(&stepConfig.Mode, "mode", `DEPLOY`, "Controls if there is a standard deployment or a blue green deployment. Values: 'DEPLOY', 'BG_DEPLOY'")
 	cmd.Flags().StringVar(&stepConfig.OperationID, "operationId", os.Getenv("PIPER_operationId"), "The operation ID. Used in case of bg-deploy in order to resume or abort a previously started deployment.")
 	cmd.Flags().StringVar(&stepConfig.APIURL, "apiUrl", os.Getenv("PIPER_apiUrl"), "The api url (e.g. https://example.org:12345")
-	cmd.Flags().StringVar(&stepConfig.User, "user", os.Getenv("PIPER_user"), "User")
+	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "Username")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password")
 	cmd.Flags().StringVar(&stepConfig.Org, "org", os.Getenv("PIPER_org"), "The org")
 	cmd.Flags().StringVar(&stepConfig.Space, "space", os.Getenv("PIPER_space"), "The space")
@@ -133,7 +134,7 @@ func addXsDeployFlags(cmd *cobra.Command, stepConfig *xsDeployOptions) {
 	cmd.MarkFlagRequired("mtaPath")
 	cmd.MarkFlagRequired("mode")
 	cmd.MarkFlagRequired("apiUrl")
-	cmd.MarkFlagRequired("user")
+	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("org")
 	cmd.MarkFlagRequired("space")
@@ -167,12 +168,17 @@ func xsDeployMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "deployIdLogPattern"}},
 					},
 					{
-						Name:        "mtaPath",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "mtaPath"}},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Name: "mtaPath",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "mtaPath",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "action",
@@ -191,12 +197,17 @@ func xsDeployMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "operationId",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "operationId"}},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Name: "operationId",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "operationId",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "apiUrl",
@@ -207,20 +218,32 @@ func xsDeployMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "user",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Name: "username",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "credentialsId",
+								Param: "username",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{{Name: "user"}},
 					},
 					{
-						Name:        "password",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Name: "password",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "credentialsId",
+								Param: "password",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "org",

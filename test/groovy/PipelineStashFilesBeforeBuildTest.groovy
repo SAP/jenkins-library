@@ -1,7 +1,11 @@
+import org.junit.After
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.RuleChain
 import util.*
+
+import com.sap.piper.Utils
 
 import static org.hamcrest.Matchers.containsString
 import static org.junit.Assert.*
@@ -11,6 +15,16 @@ class PipelineStashFilesBeforeBuildTest extends BasePiperTest {
     JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     //JenkinsReadJsonRule readJsonRule = new JenkinsReadJsonRule(this)
+
+    @Before
+    public void setup() {
+        Utils.metaClass.echo = { def m -> }
+    }
+
+    @After
+    public void tearDown() {
+        Utils.metaClass = null
+    }
 
     @Rule
     public RuleChain rules = Rules

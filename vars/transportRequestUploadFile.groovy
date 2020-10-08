@@ -98,24 +98,27 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
     /** @see transportRequestCreate */
     'changeDocumentId',
-    /** The id of the transport request to upload the file.*/
+    /** The id of the transport request to upload the file. This parameter is only taken into account
+      * when provided via signature to the step.
+      */
     'transportRequestId'])
 
 /** Uploads a file to a Transport Request. */
 @GenerateDocumentation
-void call(parameters = [:]) {
+void call(Map parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
         def script = checkScript(this, parameters) ?: this
+        String stageName = parameters.stageName ?: env.STAGE_NAME
 
         ChangeManagement cm = parameters.cmUtils ?: new ChangeManagement(script)
 
         ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
-            .loadStepDefaults()
+            .loadStepDefaults([:], stageName)
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
+            .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .addIfEmpty('filePath', script.commonPipelineEnvironment.getMtarFilePath())
 
@@ -174,11 +177,11 @@ void call(parameters = [:]) {
         if(backendType == BackendType.SOLMAN) {
             configHelper
                 .withMandatoryProperty('changeDocumentId',
-                    "Change document id not provided (parameter: \'changeDocumentId\' or via commit history).")
+                    "Change document id not provided (parameter: \'changeDocumentId\' provided to the step call or via commit history).")
         }
         configuration = configHelper
             .withMandatoryProperty('transportRequestId',
-                "Transport request id not provided (parameter: \'transportRequestId\' or via commit history).")
+                "Transport request id not provided (parameter: \'transportRequestId\' provided to the step call or via commit history).")
             .use()
 
         def uploadingMessage = ['[INFO] Uploading file ' +

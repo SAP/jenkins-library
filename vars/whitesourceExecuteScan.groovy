@@ -1,4 +1,6 @@
+import com.sap.piper.BuildTool
 import com.sap.piper.DescriptorUtils
+import com.sap.piper.DownloadCacheUtils
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.JsonUtils
 import com.sap.piper.Utils
@@ -7,7 +9,6 @@ import com.sap.piper.integration.WhitesourceRepository
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.WhitesourceConfigurationHelper
 import com.sap.piper.mta.MtaMultiplexer
-import groovy.text.GStringTemplateEngine
 import groovy.transform.Field
 import groovy.text.GStringTemplateEngine
 
@@ -70,7 +71,12 @@ import static com.sap.piper.Prerequisites.checkScript
      * Whether verbose output should be produced.
      * @possibleValues `true`, `false`
      */
-    'verbose'
+    'verbose',
+    /**
+     * Toggle to activate the new go-implementation of the step. Off by default.
+     * @possibleValues true, false
+     */
+    'useGoStep',
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS + [
     /**
@@ -176,7 +182,9 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field Map CONFIG_KEY_COMPATIBILITY = [
     productName                        : 'whitesourceProductName',
     productToken                       : 'whitesourceProductToken',
+    projectName                        : 'whitesourceProjectName',
     projectNames                       : 'whitesourceProjectNames',
+    productVersion                     : 'whitesourceProductVersion',
     userTokenCredentialsId             : 'whitesourceUserTokenCredentialsId',
     serviceUrl                         : 'whitesourceServiceUrl',
     agentDownloadUrl                   : 'fileAgentDownloadUrl',
@@ -186,6 +194,7 @@ import static com.sap.piper.Prerequisites.checkScript
         orgToken                                : 'orgToken',
         productName                             : 'productName',
         productToken                            : 'productToken',
+        projectName                             : 'projectName',
         projectNames                            : 'projectNames',
         productVersion                          : 'productVersion',
         serviceUrl                              : 'serviceUrl',
@@ -237,24 +246,41 @@ void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
         def script = checkScript(this, parameters) ?: this
         def utils = parameters.juStabUtils ?: new Utils()
+        String stageName = parameters.stageName ?: env.STAGE_NAME
         def descriptorUtils = parameters.descriptorUtilsStub ?: new DescriptorUtils()
         def statusCode = 1
 
         //initialize CPE for passing whiteSourceProjects
-        if(script.commonPipelineEnvironment.getValue('whitesourceProjectNames') == null) {
+        if (script.commonPipelineEnvironment.getValue('whitesourceProjectNames') == null) {
             script.commonPipelineEnvironment.setValue('whitesourceProjectNames', [])
         }
 
         // load default & individual configuration
         Map config = ConfigurationHelper.newInstance(this)
-            .loadStepDefaults(CONFIG_KEY_COMPATIBILITY)
+            .loadStepDefaults(CONFIG_KEY_COMPATIBILITY, stageName)
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixin([
-                style : libraryResource('piper-os.css')
+                style: libraryResource('piper-os.css')
             ])
             .mixin(parameters, PARAMETER_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .addIfEmpty('scanType', script.commonPipelineEnvironment.getBuildTool())
+            .use()
+
+        if (config.useGoStep == true && config.scanType != "unified-agent") {
+            parameters = DownloadCacheUtils.injectDownloadCacheInParameters(script, parameters, BuildTool.MTA)
+
+            List credentials = [
+                [type: 'token', id: 'orgAdminUserTokenCredentialsId', env: ['PIPER_orgToken']],
+                [type: 'token', id: 'userTokenCredentialsId', env: ['PIPER_userToken']],
+            ]
+            piperExecuteBin(parameters, "whitesourceExecuteScan", "metadata/whitesource.yaml", credentials)
+            return
+        }
+
+        // Apply Groovy specific config handling if not using the go-step.
+        config = ConfigurationHelper.newInstance(this, config)
             .dependingOn('scanType').mixin('buildDescriptorFile')
             .dependingOn('scanType').mixin('dockerImage')
             .dependingOn('scanType').mixin('dockerWorkspace')
@@ -280,9 +306,9 @@ void call(Map parameters = [:]) {
         script.commonPipelineEnvironment.setInfluxStepData('whitesource', false)
 
         utils.pushToSWA([
-            step: STEP_NAME,
+            step         : STEP_NAME,
             stepParamKey1: 'scanType',
-            stepParam1: config.scanType
+            stepParam1   : config.scanType
         ], config)
 
         echo "Parameters: scanType: ${config.scanType}"
@@ -290,7 +316,7 @@ void call(Map parameters = [:]) {
         def whitesourceRepository = parameters.whitesourceRepositoryStub ?: new WhitesourceRepository(this, config)
         def whitesourceOrgAdminRepository = parameters.whitesourceOrgAdminRepositoryStub ?: new WhitesourceOrgAdminRepository(this, config)
 
-        if(config.whitesource.orgAdminUserTokenCredentialsId) {
+        if (config.whitesource.orgAdminUserTokenCredentialsId) {
             statusCode = triggerWhitesourceScanWithOrgAdminUserKey(script, config, utils, descriptorUtils, parameters, whitesourceRepository, whitesourceOrgAdminRepository)
         } else {
             statusCode = triggerWhitesourceScanWithUserKey(script, config, utils, descriptorUtils, parameters, whitesourceRepository, whitesourceOrgAdminRepository)

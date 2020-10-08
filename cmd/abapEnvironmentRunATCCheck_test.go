@@ -247,15 +247,51 @@ func TestParseATCResult(t *testing.T) {
 			</file>
 		</checkstyle>`
 		body := []byte(bodyString)
-		err = parseATCResult(body)
+		err = parseATCResult(body, "ATCResults.xml")
+		assert.Equal(t, nil, err)
+	})
+	t.Run("succes case: test parsing empty XML result", func(t *testing.T) {
+		dir, err := ioutil.TempDir("", "test get result ATC run")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+		defer func() {
+			_ = os.Chdir(oldCWD)
+			_ = os.RemoveAll(dir)
+		}()
+		bodyString := `<?xml version="1.0" encoding="UTF-8"?>
+		<checkstyle>
+		</checkstyle>`
+		body := []byte(bodyString)
+		err = parseATCResult(body, "ATCResults.xml")
 		assert.Equal(t, nil, err)
 	})
 	t.Run("failure case: parsing empty xml", func(t *testing.T) {
 		var bodyString string
 		body := []byte(bodyString)
 
-		err := parseATCResult(body)
+		err := parseATCResult(body, "ATCResults.xml")
 		assert.EqualError(t, err, "Parsing ATC result failed: Body is empty, can't parse empty body")
+	})
+	t.Run("failure case: html response", func(t *testing.T) {
+		dir, err := ioutil.TempDir("", "test get result ATC run")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+		defer func() {
+			_ = os.Chdir(oldCWD)
+			_ = os.RemoveAll(dir)
+		}()
+		bodyString := `<html><head><title>HTMLTestResponse</title</head></html>`
+		body := []byte(bodyString)
+		err = parseATCResult(body, "ATCResults.xml")
+		assert.EqualError(t, err, "The Software Component could not be checked. Please make sure the respective Software Component has been cloned successfully on the system")
 	})
 }
 
@@ -263,18 +299,21 @@ func TestBuildATCCheckBody(t *testing.T) {
 	t.Run("Test build body with no software component and package", func(t *testing.T) {
 		expectedpackagestring := ""
 		expectedsoftwarecomponentstring := ""
+		expectedcheckvariantstring := ""
 
 		var err error
 		var config ATCconfig
-		var packageString, softwarecomponentString string
+		var checkVariantString, packageString, softwarecomponentString string
 
-		packageString, softwarecomponentString, err = buildATCCheckBody(config)
+		checkVariantString, packageString, softwarecomponentString, err = buildATCCheckBody(config)
 
+		assert.Equal(t, expectedcheckvariantstring, checkVariantString)
 		assert.Equal(t, expectedpackagestring, packageString)
 		assert.Equal(t, expectedsoftwarecomponentstring, softwarecomponentString)
 		assert.EqualError(t, err, "Error while parsing ATC run config. Please provide the packages and/or the software components to be checked! No Package or Software Component specified. Please provide either one or both of them")
 	})
 	t.Run("success case: Test build body with example yaml config", func(t *testing.T) {
+		expectedcheckvariantstring := ""
 		expectedpackagestring := "<obj:packages><obj:package value=\"testPackage\" includeSubpackages=\"true\"/><obj:package value=\"testPackage2\" includeSubpackages=\"false\"/></obj:packages>"
 		expectedsoftwarecomponentstring := "<obj:softwarecomponents><obj:softwarecomponent value=\"testSoftwareComponent\"/><obj:softwarecomponent value=\"testSoftwareComponent2\"/></obj:softwarecomponents>"
 
@@ -282,27 +321,31 @@ func TestBuildATCCheckBody(t *testing.T) {
 		var config ATCconfig
 
 		config = ATCconfig{
+			"",
+			"",
 			ATCObjects{
 				Package: []Package{
-					Package{Name: "testPackage", IncludeSubpackages: true},
-					Package{Name: "testPackage2", IncludeSubpackages: false},
+					{Name: "testPackage", IncludeSubpackages: true},
+					{Name: "testPackage2", IncludeSubpackages: false},
 				},
 				SoftwareComponent: []SoftwareComponent{
-					SoftwareComponent{Name: "testSoftwareComponent"},
-					SoftwareComponent{Name: "testSoftwareComponent2"},
+					{Name: "testSoftwareComponent"},
+					{Name: "testSoftwareComponent2"},
 				},
 			},
 		}
 
-		var packageString, softwarecomponentString string
+		var checkvariantString, packageString, softwarecomponentString string
 
-		packageString, softwarecomponentString, err = buildATCCheckBody(config)
+		checkvariantString, packageString, softwarecomponentString, err = buildATCCheckBody(config)
 
+		assert.Equal(t, expectedcheckvariantstring, checkvariantString)
 		assert.Equal(t, expectedpackagestring, packageString)
 		assert.Equal(t, expectedsoftwarecomponentstring, softwarecomponentString)
 		assert.Equal(t, nil, err)
 	})
 	t.Run("failure case: Test build body with example yaml config with only packages and no software components", func(t *testing.T) {
+		expectedcheckvariantstring := ""
 		expectedpackagestring := `<obj:packages><obj:package value="testPackage" includeSubpackages="true"/><obj:package value="testPackage2" includeSubpackages="false"/></obj:packages>`
 		expectedsoftwarecomponentstring := ""
 
@@ -310,24 +353,28 @@ func TestBuildATCCheckBody(t *testing.T) {
 		var config ATCconfig
 
 		config = ATCconfig{
+			"",
+			"",
 			ATCObjects{
 				Package: []Package{
-					Package{Name: "testPackage", IncludeSubpackages: true},
-					Package{Name: "testPackage2", IncludeSubpackages: false},
+					{Name: "testPackage", IncludeSubpackages: true},
+					{Name: "testPackage2", IncludeSubpackages: false},
 				},
 			},
 		}
 
-		var packageString, softwarecomponentString string
+		var checkvariantString, packageString, softwarecomponentString string
 
-		packageString, softwarecomponentString, err = buildATCCheckBody(config)
+		checkvariantString, packageString, softwarecomponentString, err = buildATCCheckBody(config)
 
+		assert.Equal(t, expectedcheckvariantstring, checkvariantString)
 		assert.Equal(t, expectedpackagestring, packageString)
 		assert.Equal(t, expectedsoftwarecomponentstring, softwarecomponentString)
 		assert.Equal(t, nil, err)
 
 	})
 	t.Run("success case: Test build body with example yaml config with no packages and only software components", func(t *testing.T) {
+		expectedcheckvariantstring := ""
 		expectedpackagestring := ""
 		expectedsoftwarecomponentstring := `<obj:softwarecomponents><obj:softwarecomponent value="testSoftwareComponent"/><obj:softwarecomponent value="testSoftwareComponent2"/></obj:softwarecomponents>`
 
@@ -335,18 +382,53 @@ func TestBuildATCCheckBody(t *testing.T) {
 		var config ATCconfig
 
 		config = ATCconfig{
+			"",
+			"",
 			ATCObjects{
 				SoftwareComponent: []SoftwareComponent{
-					SoftwareComponent{Name: "testSoftwareComponent"},
-					SoftwareComponent{Name: "testSoftwareComponent2"},
+					{Name: "testSoftwareComponent"},
+					{Name: "testSoftwareComponent2"},
 				},
 			},
 		}
 
-		var packageString, softwarecomponentString string
+		var checkvariantString, packageString, softwarecomponentString string
 
-		packageString, softwarecomponentString, err = buildATCCheckBody(config)
+		checkvariantString, packageString, softwarecomponentString, err = buildATCCheckBody(config)
 
+		assert.Equal(t, expectedcheckvariantstring, checkvariantString)
+		assert.Equal(t, expectedpackagestring, packageString)
+		assert.Equal(t, expectedsoftwarecomponentstring, softwarecomponentString)
+		assert.Equal(t, nil, err)
+	})
+	t.Run("success case: Test build body with example yaml config with check variant configuration", func(t *testing.T) {
+		expectedcheckvariantstring := ` check_variant="TestVariant" configuration="TestConfiguration"`
+		expectedpackagestring := `<obj:packages><obj:package value="testPackage" includeSubpackages="true"/><obj:package value="testPackage2" includeSubpackages="false"/></obj:packages>`
+		expectedsoftwarecomponentstring := `<obj:softwarecomponents><obj:softwarecomponent value="testSoftwareComponent"/><obj:softwarecomponent value="testSoftwareComponent2"/></obj:softwarecomponents>`
+
+		var err error
+		var config ATCconfig
+
+		config = ATCconfig{
+			"TestVariant",
+			"TestConfiguration",
+			ATCObjects{
+				SoftwareComponent: []SoftwareComponent{
+					{Name: "testSoftwareComponent"},
+					{Name: "testSoftwareComponent2"},
+				},
+				Package: []Package{
+					{Name: "testPackage", IncludeSubpackages: true},
+					{Name: "testPackage2", IncludeSubpackages: false},
+				},
+			},
+		}
+
+		var checkvariantString, packageString, softwarecomponentString string
+
+		checkvariantString, packageString, softwarecomponentString, err = buildATCCheckBody(config)
+
+		assert.Equal(t, expectedcheckvariantstring, checkvariantString)
 		assert.Equal(t, expectedpackagestring, packageString)
 		assert.Equal(t, expectedsoftwarecomponentstring, softwarecomponentString)
 		assert.Equal(t, nil, err)

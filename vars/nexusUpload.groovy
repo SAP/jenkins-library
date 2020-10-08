@@ -13,6 +13,6 @@ void call(Map parameters = [:]) {
     final script = checkScript(this, parameters) ?: this
     parameters = DownloadCacheUtils.injectDownloadCacheInParameters(script, parameters, BuildTool.MAVEN)
 
-    List credentials = [[type: 'usernamePassword', id: 'nexusCredentialsId', env: ['PIPER_user', 'PIPER_password']]]
+    List credentials = [[type: 'usernamePassword', id: 'nexusCredentialsId', env: ['PIPER_username', 'PIPER_password']]]
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
 }

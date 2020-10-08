@@ -85,7 +85,7 @@ func mtaBuild(config mtaBuildOptions,
 	httpClient := piperhttp.Client{}
 	e := command.Command{}
 
-	npmExecutorOptions := npm.ExecutorOptions{DefaultNpmRegistry: config.DefaultNpmRegistry, SapNpmRegistry: config.SapNpmRegistry, ExecRunner: &e}
+	npmExecutorOptions := npm.ExecutorOptions{DefaultNpmRegistry: config.DefaultNpmRegistry, ExecRunner: &e}
 	npmExecutor := npm.NewExecutor(npmExecutorOptions)
 
 	err := runMtaBuild(config, commonPipelineEnvironment, &e, &files, &httpClient, npmExecutor)
@@ -308,7 +308,7 @@ func setTimeStamp(mtaYamlFile string, p piperutils.FileUtils) error {
 
 func getTimestamp() string {
 	t := time.Now()
-	return fmt.Sprintf("%d%02d%02d%02d%02d%02d\n", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
+	return fmt.Sprintf("%d%02d%02d%02d%02d%02d", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
 }
 
 func createMtaYamlFile(mtaYamlFile, applicationName string, p piperutils.FileUtils) error {

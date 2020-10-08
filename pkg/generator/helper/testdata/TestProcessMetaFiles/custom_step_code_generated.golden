@@ -35,7 +35,7 @@ func (p *testStepCommonPipelineEnvironment) persist(path, resourceName string) {
 	content := []struct{
 		category string
 		name string
-		value string
+		value interface{}
 	}{
 		{category: "", name: "artifactVersion", value: p.artifactVersion},
 		{category: "git", name: "commitId", value: p.git.commitID},
@@ -71,7 +71,7 @@ func (i *testStepInfluxTest) persist(path, resourceName string) {
 		measurement string
 		valType     string
 		name        string
-		value       string
+		value       interface{}
 	}{
 		{valType: config.InfluxField, measurement: "m1" , name: "f1", value: i.m1.fields.f1},
 		{valType: config.InfluxTag, measurement: "m1" , name: "t1", value: i.m1.tags.t1},
@@ -134,6 +134,7 @@ func TestStepCommand() *cobra.Command {
 				commonPipelineEnvironment.persist(piperOsCmd.GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				influxTest.persist(piperOsCmd.GeneralConfig.EnvRootPath, "influxTest")
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
 			}
 			log.DeferExitHandler(handler)

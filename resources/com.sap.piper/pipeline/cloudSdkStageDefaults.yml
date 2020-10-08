@@ -1,4 +1,39 @@
 stages:
+  build:
+    stepConditions:
+      mavenExecuteStaticCodeChecks:
+        filePattern: 'pom.xml'
+      npmExecuteLint:
+        filePattern:
+          - '**/*.js'
+          - '**/*.jsx'
+          - '**/*.ts'
+          - '**/*.tsx'
+  backendIntegrationTests:
+    stepConditions:
+      npmExecuteScripts:
+        npmScripts:
+          - 'ci-it-backend'
+      mavenExecuteIntegration:
+        filePattern: 'integration-tests/pom.xml'
+  compliance:
+    onlyProductiveBranch: true
+    stepConditions:
+      sonarExecuteScan:
+        configKeys:
+          - 'sonarTokenCredentialsId'
+          - 'projectKey'
+          - 'instance'
+  frontendIntegrationTests:
+    stepConditions:
+      npmExecuteScripts:
+        npmScripts:
+          - 'ci-it-frontend'
+  additionalUnitTests:
+    stepConditions:
+      npmExecuteScripts:
+        npmScripts:
+          - 'ci-frontend-unit-test'
   endToEndTests:
     stepConditions:
       multicloudDeploy:
@@ -23,7 +58,31 @@ stages:
       npmExecuteEndToEndTests:
         configKeys:
           - 'appUrls'
+  performanceTests:
+    stepConditions:
+      performanceTests:
+        configKeys:
+          - 'cfTargets'
+          - 'neoTargets'
+  security:
+    onlyProductiveBranch: true
+    stepConditions:
+      checkmarxExecuteScan:
+        configKeys:
+          - 'groupId'
+      detectExecuteScan:
+        configKeys:
+          - 'detectTokenCredentialsId'
+      fortifyExecuteScan:
+        configKeys:
+          - 'fortifyCredentialsId'
+      whitesourceExecuteScan:
+        configKeys:
+          - 'productName'
+          - 'orgAdminUserTokenCredentialsId'
+          - 'userTokenCredentialsId'
   productionDeployment:
+    onlyProductiveBranch: true
     stepConditions:
       multicloudDeploy:
         configKeys:
@@ -36,6 +95,11 @@ stages:
       neoDeploy:
         configKeys:
           - 'neo/account'
+      tmsUpload:
+        configKeys:
+          - 'credentialsId'
+          - 'mtaPath'
+          - 'nodeName'
       healthExecuteCheck:
         configKeys:
           - 'testServerUrl'
@@ -45,3 +109,20 @@ stages:
       githubPublishRelease:
         configKeys:
           - 'githubTokenCredentialsId'
+  artifactDeployment:
+    onlyProductiveBranch: true
+    stepConditions:
+      artifactDeployment:
+        configKeys:
+          - 'nexus'
+  postPipelineHook:
+    stepConditions:
+      postPipelineHook:
+        configKeys:
+          - 'enabled'
+  archiveReport:
+    stepConditions:
+      archiveReport:
+        filePattern:
+          - 'mta.yaml'
+          - 'pom.xml'

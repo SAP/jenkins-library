@@ -1,11 +1,13 @@
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateStageDocumentation
+import com.sap.piper.StageNameProvider
 import com.sap.piper.Utils
 import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
+@Field String TECHNICAL_STAGE_NAME = 'endToEndTests'
 
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field STAGE_STEP_KEYS = [
@@ -47,8 +49,7 @@ void call(Map parameters = [:]) {
 
     def script = checkScript(this, parameters) ?: this
     def utils = parameters.juStabUtils ?: new Utils()
-
-    def stageName = parameters.stageName?:env.STAGE_NAME
+    def stageName = StageNameProvider.instance.getStageName(script, parameters, this)
 
     Map config = ConfigurationHelper.newInstance(this)
         .loadStepDefaults()
@@ -78,19 +79,19 @@ void call(Map parameters = [:]) {
         } else {
             if (config.cloudFoundryDeploy) {
                 durationMeasure(script: script, measurementName: 'deploy_test_cf_duration') {
-                    cloudFoundryDeploy script: script, stageName: stageName
+                    cloudFoundryDeploy script: script
                 }
             }
 
             if (config.neoDeploy) {
                 durationMeasure(script: script, measurementName: 'deploy_test_neo_duration') {
-                    neoDeploy script: script, stageName: stageName
+                    neoDeploy script: script
                 }
             }
         }
 
         if (config.healthExecuteCheck) {
-            healthExecuteCheck script: script, stageName: stageName
+            healthExecuteCheck script: script
         }
 
 
@@ -100,7 +101,7 @@ void call(Map parameters = [:]) {
         if (config.gaugeExecuteTests) {
             durationMeasure(script: script, measurementName: 'gauge_duration') {
                 publishResults = true
-                gaugeExecuteTests script: script, stageName: stageName
+                gaugeExecuteTests script: script
                 publishMap += [gauge: [archive: true]]
             }
         }
@@ -108,14 +109,14 @@ void call(Map parameters = [:]) {
         if (config.newmanExecute) {
             durationMeasure(script: script, measurementName: 'newman_duration') {
                 publishResults = true
-                newmanExecute script: script, stageName: stageName
+                newmanExecute script: script
             }
         }
 
         if (config.uiVeri5ExecuteTests) {
             durationMeasure(script: script, measurementName: 'uiveri5_duration') {
                 publishResults = true
-                uiVeri5ExecuteTests script: script, stageName: stageName
+                uiVeri5ExecuteTests script: script
             }
         }
 
@@ -126,7 +127,6 @@ void call(Map parameters = [:]) {
         }
 
         if (publishResults) {
-            publishMap.stageName = stageName
             testsPublishResults publishMap
         }
     }

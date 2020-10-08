@@ -126,21 +126,20 @@ void call(Map parameters = [:], Closure body = null) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
-        def script = checkScript(this, parameters)
+        def script = checkScript(this, parameters) ?: this
+        String stageName = parameters.stageName ?: env.STAGE_NAME
 
         def gitUtils = parameters.juStabGitUtils ?: new GitUtils()
-
         if (gitUtils.isWorkTreeDirty()) {
-                error "[${STEP_NAME}] Files in the workspace have been changed previously - aborting ${STEP_NAME}"
+            error "[${STEP_NAME}] Files in the workspace have been changed previously - aborting ${STEP_NAME}"
         }
-        if (script == null)
-            script = this
+
         // load default & individual configuration
         ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
-            .loadStepDefaults()
+            .loadStepDefaults([:], stageName)
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixin(gitCommitId: gitUtils.getGitCommitIdOrNull())
             .mixin(parameters, PARAMETER_KEYS, CONFIG_KEY_COMPATIBILITY)
             .withMandatoryProperty('buildTool')
@@ -152,7 +151,7 @@ void call(Map parameters = [:], Closure body = null) {
         GitPushMode gitPushMode = config.gitPushMode
 
         config = configHelper.addIfEmpty('timestamp', getTimestamp(config.timestampTemplate))
-                             .use()
+            .use()
 
         new Utils().pushToSWA([
             step: STEP_NAME,

@@ -20,6 +20,21 @@ none
 
 none
 
+## Pulling images in an non-anonymous way
+
+!!! warning "Credentials are stored by default unencrypted on disk"
+    When accessing a docker registry with credentials for pulling
+    images your credentials for access the docker registry
+    are stored in plain text on disk for a short amount of time.
+    There will be a corresponding log message with level "warning" in
+    the job log.
+    In order to avoid having the credentials written to disk, you
+    should configure a password helper. The log message mentioned
+    previously contains a link to a page explaining how a password helper
+    can be configured.
+    Having the credentials written to disk is not recommended.
+    In addition, we don't recommend using personalised accounts for CI but rather dedicated "technical" users.
+
 ## Example 1: Run closure inside a docker container
 
 ```groovy

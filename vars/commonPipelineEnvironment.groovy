@@ -28,7 +28,7 @@ class commonPipelineEnvironment implements Serializable {
 
     String xsDeploymentId
 
-    //GiutHub specific information
+    //GitHub specific information
     String githubOrg
     String githubRepo
 
@@ -45,7 +45,7 @@ class commonPipelineEnvironment implements Serializable {
 
     String mtarFilePath = ""
 
-    String abapRepositoryNames
+    String abapAddonDescriptor
 
     private Map valueMap = [:]
 
@@ -63,7 +63,7 @@ class commonPipelineEnvironment implements Serializable {
 
         projectName = null
 
-        abapRepositoryNames = null
+        abapAddonDescriptor = null
 
         appContainerProperties = [:]
         artifactVersion = null
@@ -172,7 +172,7 @@ class commonPipelineEnvironment implements Serializable {
             defaults = ConfigurationMerger.merge(ConfigurationLoader.defaultStepConfiguration(null, stepName), null, defaults)
             defaults = ConfigurationMerger.merge(ConfigurationLoader.defaultStageConfiguration(null, stageName), null, defaults)
         }
-        Map config = ConfigurationMerger.merge(configuration.get('general') ?: [:], null, defaults)
+        Map config = ConfigurationMerger.merge(configuration.get('general') ?: [:] as Map, null, defaults)
         config = ConfigurationMerger.merge(configuration.get('steps')?.get(stepName) ?: [:], null, config)
         config = ConfigurationMerger.merge(configuration.get('stages')?.get(stageName) ?: [:], null, config)
         return config
@@ -180,6 +180,7 @@ class commonPipelineEnvironment implements Serializable {
 
     def files = [
         [filename: '.pipeline/commonPipelineEnvironment/artifactVersion', property: 'artifactVersion'],
+        [filename: '.pipeline/commonPipelineEnvironment/buildTool', property: 'buildTool'],
         [filename: '.pipeline/commonPipelineEnvironment/originalArtifactVersion', property: 'originalArtifactVersion'],
         [filename: '.pipeline/commonPipelineEnvironment/github/owner', property: 'githubOrg'],
         [filename: '.pipeline/commonPipelineEnvironment/github/repository', property: 'githubRepo'],
@@ -187,7 +188,7 @@ class commonPipelineEnvironment implements Serializable {
         [filename: '.pipeline/commonPipelineEnvironment/git/commitId', property: 'gitCommitId'],
         [filename: '.pipeline/commonPipelineEnvironment/git/commitMessage', property: 'gitCommitMessage'],
         [filename: '.pipeline/commonPipelineEnvironment/mtarFilePath', property: 'mtarFilePath'],
-        [filename: '.pipeline/commonPipelineEnvironment/abap/repositoryNames', property: 'abapRepositoryNames'],
+        [filename: '.pipeline/commonPipelineEnvironment/abap/addonDescriptor', property: 'abapAddonDescriptor'],
     ]
 
     void writeToDisk(script) {
@@ -201,7 +202,7 @@ class commonPipelineEnvironment implements Serializable {
         containerProperties.each({key, value ->
             def fileName = ".pipeline/commonPipelineEnvironment/container/${key}"
             if (value && !script.fileExists(fileName)) {
-                if(value instanceof String) {
+                if(value in CharSequence) {
                     script.writeFile file: fileName, text: value
                 } else {
                     script.writeFile file: fileName, text: groovy.json.JsonOutput.toJson(value)
@@ -212,7 +213,7 @@ class commonPipelineEnvironment implements Serializable {
         valueMap.each({key, value ->
             def fileName = ".pipeline/commonPipelineEnvironment/custom/${key}"
             if (value && !script.fileExists(fileName)) {
-                if(value instanceof String) {
+                if(value in CharSequence) {
                     script.writeFile file: fileName, text: value
                 } else {
                     script.writeFile file: fileName, text: groovy.json.JsonOutput.toJson(value)
@@ -222,7 +223,6 @@ class commonPipelineEnvironment implements Serializable {
     }
 
     void readFromDisk(script) {
-
         files.each({f  ->
             if (script.fileExists(f.filename)) {
                 this[f.property] = script.readFile(f.filename)
@@ -230,11 +230,16 @@ class commonPipelineEnvironment implements Serializable {
         })
 
         def customValues = script.findFiles(glob: '.pipeline/commonPipelineEnvironment/custom/*')
-
         customValues.each({f ->
+            def fileContent = script.readFile(f.getPath())
             def fileName = f.getName()
             def param = fileName.split('/')[fileName.split('\\/').size()-1]
-            valueMap[param] = script.readFile(f.getPath())
+            if (param.endsWith(".json")){
+                param = param.replace(".json","")
+                valueMap[param] = script.readJSON(test: fileContent)
+            }else{
+                valueMap[param] = fileContent
+            }
         })
     }
 

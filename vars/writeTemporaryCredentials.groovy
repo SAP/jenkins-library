@@ -20,9 +20,9 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'credentials',
     /**
-     * The path to the directory where the credentials file has to be placed.
+     * The list of paths to directories where credentials files need to be placed.
      */
-    'credentialsDirectory'
+    'credentialsDirectories'
 ]
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
@@ -33,10 +33,10 @@ import static com.sap.piper.Prerequisites.checkScript
 void call(Map parameters = [:], Closure body) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
         def script = checkScript(this, parameters) ?: this
-        def stageName = parameters.stageName ?: env.STAGE_NAME
+        String stageName = parameters.stageName ?: env.STAGE_NAME
 
         Map config = ConfigurationHelper.newInstance(this)
-            .loadStepDefaults()
+            .loadStepDefaults([:], stageName)
             .mixin(ConfigurationLoader.defaultStageConfiguration(script, stageName))
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
@@ -55,13 +55,16 @@ void call(Map parameters = [:], Closure body) {
             error "[${STEP_NAME}] The execution failed, since credentials is not a list. Please provide credentials as a list of maps. For example:\n" +
                 "credentials: \n" + "  - alias: 'ERP'\n" + "    credentialId: 'erp-credentials'"
         }
-        if (!config.credentialsDirectory) {
-            error "[${STEP_NAME}] The execution failed, since no credentialsDirectory is defined. Please provide the path for the credentials file.\n"
+        if (!config.credentialsDirectories) {
+            error "[${STEP_NAME}] The execution failed, since no credentialsDirectories are defined. Please provide a list of paths for the credentials files.\n"
+        }
+        if (!(config.credentialsDirectories  instanceof List)) {
+            error "[${STEP_NAME}] The execution failed, since credentialsDirectories is not a list. Please provide credentialsDirectories as a list of paths.\n"
         }
 
         TemporaryCredentialsUtils credUtils = new TemporaryCredentialsUtils(script)
 
-        credUtils.handleTemporaryCredentials(config.credentials, config.credentialsDirectory) {
+        credUtils.handleTemporaryCredentials(config.credentials, config.credentialsDirectories) {
             body()
         }
     }
