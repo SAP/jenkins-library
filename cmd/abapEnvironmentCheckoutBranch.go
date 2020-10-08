@@ -120,6 +120,10 @@ func triggerCheckout(repositoryName string, branchName string, checkoutConnectio
 		return uriConnectionDetails, err
 	}
 	defer resp.Body.Close()
+
+	// workaround until golang version 1.16 is used
+	time.Sleep(1 * time.Second)
+
 	log.Entry().WithField("StatusCode", resp.Status).WithField("ABAP Endpoint", checkoutConnectionDetails.URL).Info("Authentication on the ABAP system was successful")
 	uriConnectionDetails.XCsrfToken = resp.Header.Get("X-Csrf-Token")
 	checkoutConnectionDetails.XCsrfToken = uriConnectionDetails.XCsrfToken
