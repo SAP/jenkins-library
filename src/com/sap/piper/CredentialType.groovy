@@ -5,7 +5,7 @@ enum CredentialType {
 
     private final String value
 
-    public CredentialType(String value) {
+    private CredentialType(String value) {
         this.value = value
     }
 
