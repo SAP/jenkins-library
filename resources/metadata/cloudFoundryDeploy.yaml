@@ -157,6 +157,7 @@ spec:
           - STAGES
           - STEPS
         mandatory: false
+        secret: true
         resourceRef:
           - name: dockerCredentialsId
             type: secret

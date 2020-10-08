@@ -121,6 +121,7 @@ func CloudFoundryDeployCommand() *cobra.Command {
 				return err
 			}
 			log.RegisterSecret(stepConfig.DockerPassword)
+			log.RegisterSecret(stepConfig.DockerUsername)
 			log.RegisterSecret(stepConfig.Password)
 			log.RegisterSecret(stepConfig.Username)
 
