@@ -300,7 +300,7 @@ spec:
             paths:
               - $(vaultPath)/cloudfoundry-$(cfOrg)-$(cfSpace)
               - $(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(cfOrg)-$(cfSpace)
-              - $(vaultBasePath)/__group/cloudfoundry-$(cfOrg)-$(cfSpace)
+              - $(vaultBasePath)/GROUP-SECRETS/cloudfoundry-$(cfOrg)-$(cfSpace)
       - name: smokeTestScript
         type: string
         description:
@@ -355,7 +355,7 @@ spec:
             paths:
               - $(vaultPath)/cloudfoundry-$(cfOrg)-$(cfSpace)
               - $(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(cfOrg)-$(cfSpace)
-              - $(vaultBasePath)/__group/cloudfoundry-$(cfOrg)-$(cfSpace)
+              - $(vaultBasePath)/GROUP-SECRETS/cloudfoundry-$(cfOrg)-$(cfSpace)
   containers:
     - name: cfDeploy
       image: ppiper/cf-cli

@@ -45,7 +45,7 @@ spec:
             paths:
             - $(vaultPath)/sonar
             - $(vaultBasePath)/$(vaultPipelineName)/sonar
-            - $(vaultBasePath)/__group/sonar
+            - $(vaultBasePath)/GROUP-SECRETS/sonar
           - name: sonarTokenCredentialsId
             type: secret
         aliases:

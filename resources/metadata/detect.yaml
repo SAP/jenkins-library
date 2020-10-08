@@ -38,7 +38,7 @@ spec:
             paths:
               - $(vaultPath)/detect
               - $(vaultBasePath)/$(vaultPipelineName)/detect
-              - $(vaultBasePath)/__group/detect
+              - $(vaultBasePath)/GROUP-SECRETS/detect
         scope:
           - PARAMETERS
           - STAGES
