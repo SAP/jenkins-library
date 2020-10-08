@@ -246,10 +246,6 @@ public class ChangeManagement implements Serializable {
              params += ['-c', "\"" + deployConfigFile + "\""]
         }
 
-        if (deployConfigFile) {
-            params += ['-c', "\"" + deployConfigFile + "\""]
-        }
-
         if (transportRequestId) {
             params += ['-t', transportRequestId]
         }
