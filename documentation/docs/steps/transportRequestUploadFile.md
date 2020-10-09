@@ -67,7 +67,7 @@ The parameters can also be provided when the step is invoked. For examples see b
 ## CTS Uploads
 
 In order to be able to upload the application, it is required to build the application, e.g. via `npmExecute`.
-The content of the app needs to be provided in a folder named `dist` in the root levvel of the project.
+The content of the app needs to be provided in a folder named `dist` in the root level of the project.
 
 For `CTS` related uploads we use a node based toolset. When running in a docker environment a standard node
 image can be used. In this case the required deploytool dependencies will be installed prior to the deploy.
