@@ -30,6 +30,10 @@ import groovy.transform.Field
      */
     'containerShell',
     /**
+     * Kubernetes only: Allows to specify additional pod properties. For more details see step `dockerExecuteOnKubernetes`
+     */
+    'additionalPodProperties',
+    /**
      * Environment variables to set in the container, e.g. [http_proxy: 'proxy:8080'].
      */
     'dockerEnvVars',
@@ -183,6 +187,7 @@ void call(Map parameters = [:], body) {
                 }
                 def dockerExecuteOnKubernetesParams = [
                     script: script,
+                    additionalPodProperties: config.additionalPodProperties,
                     containerName: config.dockerName,
                     containerCommand: config.containerCommand,
                     containerShell: config.containerShell,

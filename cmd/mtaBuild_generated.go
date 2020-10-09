@@ -38,7 +38,7 @@ func (p *mtaBuildCommonPipelineEnvironment) persist(path, resourceName string) {
 	content := []struct {
 		category string
 		name     string
-		value    string
+		value    interface{}
 	}{
 		{category: "", name: "mtarFilePath", value: p.mtarFilePath},
 	}

@@ -2,9 +2,10 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
+
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/maven"
-	"strings"
 
 	sliceUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 
@@ -16,7 +17,16 @@ import (
 )
 
 func detectExecuteScan(config detectExecuteScanOptions, telemetryData *telemetry.CustomData) {
-	c := command.Command{}
+	c := command.Command{
+		ErrorCategoryMapping: map[string][]string{
+			log.ErrorCompliance.String(): {
+				"FAILURE_POLICY_VIOLATION - Detect found policy violations.",
+			},
+			log.ErrorConfiguration.String(): {
+				"FAILURE_CONFIGURATION - Detect was unable to start due to issues with it's configuration.",
+			},
+		},
+	}
 	// reroute command output to logging framework
 	c.Stdout(log.Writer())
 	c.Stderr(log.Writer())
@@ -68,7 +78,7 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, fileUtils pip
 	args = append(args, config.ScanProperties...)
 
 	args = append(args, fmt.Sprintf("--blackduck.url=%v", config.ServerURL))
-	args = append(args, fmt.Sprintf("--blackduck.api.token=%v", config.APIToken))
+	args = append(args, fmt.Sprintf("--blackduck.api.token=%v", config.Token))
 	// ProjectNames, VersionName, GroupName etc can contain spaces and need to be escaped using double quotes in CLI
 	// Hence the string need to be surrounded by \"
 	args = append(args, fmt.Sprintf("--detect.project.name=\\\"%v\\\"", config.ProjectName))

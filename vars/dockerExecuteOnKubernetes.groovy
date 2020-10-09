@@ -33,6 +33,7 @@ import hudson.AbortException
          * @parentConfigKey jenkinsKubernetes
          */
         'inheritFrom',
+        'additionalPodProperties',
         'resources',
     /**
      * Print more detailed information into the log.
@@ -41,6 +42,26 @@ import hudson.AbortException
     'verbose'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
+
+    /**
+     * Additional pod specific configuration. Map with the properties names
+     * as key and the corresponding value as value. The value can also be
+     * a nested structure.
+     * The properties will be added to the pod spec inside node `spec` at the
+     * same level like e.g. `containers`.
+     * This property provides some kind of an expert mode. Any property
+     * which is not handled otherwise by the step can be set. It is not
+     * possible to overwrite e.g. the `containers` property or to
+     * overwrite the `securityContext` property.
+     * Alternate way for providing `additionalPodProperties` is via
+     * `general/jenkinsKubernetes/additionalPodProperties` in the project configuration.
+     * Providing the resources map as parameter to the step call takes
+     * precedence.
+     * This freedom comes with great responsibility. The property
+     * `additionalPodProperties` should only be used in case you
+     * really know what you are doing.
+     */
+    'additionalPodProperties',
     /**
      * Allows to specify start command for container created with dockerImage parameter to overwrite Piper default (`/usr/bin/tail -f /dev/null`).
      */
@@ -306,10 +327,10 @@ private String generatePodSpec(Map config) {
         metadata  : [
             lables: config.uniqueId
         ],
-        spec      : [
-            containers: containers
-        ]
+        spec      : [:]
     ]
+    podSpec.spec += getAdditionalPodProperties(config)
+    podSpec.spec.containers = getContainerList(config)
     podSpec.spec.securityContext = getSecurityContext(config)
 
     return new JsonUtils().groovyObjectToPrettyJsonString(podSpec)
@@ -353,6 +374,16 @@ chown -R ${runAsUser}:${fsGroup} ."""
         throw e
     }
     return null
+}
+
+private Map getAdditionalPodProperties(Map config) {
+    Map podProperties = config.additionalPodProperties ?: config.jenkinsKubernetes.additionalPodProperties ?: [:]
+    if(podProperties) {
+        echo "Additional pod properties found (${podProperties.keySet()})." +
+        ' Providing additional pod properties is some kind of expert mode. In case of any problems caused by these' +
+        ' additional properties only limited support can be provided.'
+    }
+    return podProperties
 }
 
 private Map getSecurityContext(Map config) {
