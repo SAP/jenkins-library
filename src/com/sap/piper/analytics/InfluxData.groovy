@@ -58,6 +58,7 @@ class InfluxData implements Serializable{
                     def value
                     if (name.endsWith(".json")){
                         name = name.replace(".json","")
+                        script.echo "found JSON content: " + fileContent
                         value = script.readJSON(text: fileContent)
                     }else{
                         // handle boolean values
