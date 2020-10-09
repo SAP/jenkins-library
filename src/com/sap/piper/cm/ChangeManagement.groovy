@@ -246,6 +246,12 @@ public class ChangeManagement implements Serializable {
              params += ['-c', "\"" + deployConfigFile + "\""]
         }
 
+        //
+        // All the parameters below encapsulated in an if statement might also be provided in a config file.
+        // In case they are empty we don't add to the command line and we trust in the config file.
+        // In case they are finally missing the fiori deploy toolset will tell us.
+        //
+
         if (transportRequestId) {
             params += ['-t', transportRequestId]
         }
