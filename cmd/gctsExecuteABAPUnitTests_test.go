@@ -17,11 +17,11 @@ func TestDiscoverySuccess(t *testing.T) {
 		Password:   "testPassword",
 	}
 
-	t.Run("discovery successfull", func(t *testing.T) {
+	t.Run("discovery successful", func(t *testing.T) {
 
 		httpClient := httpMockGcts{
 			StatusCode: 200,
-			Header:     map[string][]string{"x-csrf-token": []string{"ZegUEgfa50R7ZfGGxOtx2A=="}},
+			Header:     map[string][]string{"x-csrf-token": {"ZegUEgfa50R7ZfGGxOtx2A=="}},
 			ResponseBody: `
 				<?xml version="1.0" encoding="utf-8"?>
 				<app:service xmlns:app="http://www.w3.org/2007/app" xmlns:atom="http://www.w3.org/2005/Atom"/>
@@ -153,7 +153,7 @@ func TestGetPackageListSuccess(t *testing.T) {
 		Password:   "testPassword",
 	}
 
-	t.Run("return multiple objects sucessfully", func(t *testing.T) {
+	t.Run("return multiple objects successfully", func(t *testing.T) {
 
 		httpClient := httpMockGcts{StatusCode: 200, ResponseBody: `
 		{
@@ -234,7 +234,7 @@ func TestGetPackageListFailure(t *testing.T) {
 		Password:   "testPassword",
 	}
 
-	t.Run("http error occured", func(t *testing.T) {
+	t.Run("http error occurred", func(t *testing.T) {
 
 		httpClient := httpMockGcts{StatusCode: 500, ResponseBody: `
 		{
@@ -263,7 +263,7 @@ func TestExecuteTestsForPackageSuccess(t *testing.T) {
 	header.Add("x-csrf-token", "ZegUEgfa50R7ZfGGxOtx2A==")
 	header.Add("saml2", "disabled")
 
-	t.Run("all unit tests were successfull", func(t *testing.T) {
+	t.Run("all unit tests were successful", func(t *testing.T) {
 
 		httpClient := httpMockGcts{StatusCode: 200, ResponseBody: `
 		<?xml version="1.0" encoding="utf-8"?>

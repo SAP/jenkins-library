@@ -1,3 +1,4 @@
+import org.junit.Before
 import org.junit.After
 import org.junit.Rule
 import org.junit.Test
@@ -7,6 +8,7 @@ import org.junit.rules.RuleChain
 import com.sap.piper.cm.BackendType
 import com.sap.piper.cm.ChangeManagement
 import com.sap.piper.cm.ChangeManagementException
+import com.sap.piper.Utils
 
 import hudson.AbortException
 import util.BasePiperTest
@@ -32,9 +34,15 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
         .around(new JenkinsCredentialsRule(this)
         .withCredentials('CM', 'anonymous', '********'))
 
+    @Before
+    public void setup() {
+        Utils.metaClass.echo = { def m -> }
+    }
+
     @After
     public void tearDown() {
         cmUtilReceivedParams.clear()
+        Utils.metaClass = null
     }
 
     private Map cmUtilReceivedParams = [:]

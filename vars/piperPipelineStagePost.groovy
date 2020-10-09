@@ -50,7 +50,9 @@ void call(Map parameters = [:]) {
                 slackSendNotification script: parameters.script
             }
         }
+
         mailSendNotification script: script
+        debugReportArchive script: script
         piperPublishWarnings script: script
     }
 }

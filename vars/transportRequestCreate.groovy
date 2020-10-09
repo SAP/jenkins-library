@@ -112,7 +112,7 @@ import hudson.AbortException
 * * a Transport Request for a Change Document on the Solution Manager (type `SOLMAN`) or
 * * a Transport Request inside an ABAP system (type`CTS`)
 *
-* The id of the transport request is availabe via [commonPipelineEnvironment.getTransportRequestId()](commonPipelineEnvironment.md)
+* The id of the transport request is available via [commonPipelineEnvironment.getTransportRequestId()](commonPipelineEnvironment.md)
 */
 @GenerateDocumentation
 void call(Map parameters = [:]) {
@@ -169,7 +169,7 @@ void call(Map parameters = [:]) {
             configHelper.mixin([changeDocumentId: changeDocumentId?.trim() ?: null], ['changeDocumentId'] as Set)
                         .withMandatoryProperty('developmentSystemId')
                         .withMandatoryProperty('changeDocumentId',
-                            "Change document id not provided (parameter: \'changeDocumentId\' or via commit history).")
+                            "Change document id not provided (parameter: \'changeDocumentId\' provided to the step call or via commit history).")
         }
 
         configuration = configHelper.use()

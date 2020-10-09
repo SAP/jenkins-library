@@ -109,7 +109,7 @@ func traverse(node interface{}, replacements map[string]interface{}) (interface{
 	case []interface{}:
 		return handleSlice(t, replacements)
 	default:
-		return nil, false, fmt.Errorf("Unkown type received: '%v' (%v)", reflect.TypeOf(node), node)
+		return nil, false, fmt.Errorf("Unknown type received: '%v' (%v)", reflect.TypeOf(node), node)
 	}
 }
 

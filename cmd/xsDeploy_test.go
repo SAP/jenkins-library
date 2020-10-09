@@ -53,7 +53,7 @@ func (f *FileUtilsMock) Glob(pattern string) (matches []string, err error) {
 func TestDeploy(t *testing.T) {
 	myXsDeployOptions := xsDeployOptions{
 		APIURL:                "https://example.org:12345",
-		User:                  "me",
+		Username:              "me",
 		Password:              "secretPassword",
 		Org:                   "myOrg",
 		Space:                 "mySpace",
@@ -123,7 +123,7 @@ func TestDeploy(t *testing.T) {
 			// We copy the xs session file to the workspace in order to be able to use the file later.
 			// This happens directly after login
 			// We copy the xs session file from the workspace to the home folder in order to be able to
-			// use that file. This is important in case we rely on a login which happend e
+			// use that file. This is important in case we rely on a login which happened e
 			assert.Contains(t, fileUtilsMock.copiedFiles[0], "/.xs_session->.xs_session")
 			assert.Contains(t, fileUtilsMock.copiedFiles[1], ".xs_session->")
 			assert.Contains(t, fileUtilsMock.copiedFiles[1], "/.xs_session")

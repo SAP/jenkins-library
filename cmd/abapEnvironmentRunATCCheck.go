@@ -79,7 +79,7 @@ func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telem
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 
-	log.Entry().Info("ATC run completed succesfully. If there are any results from the respective run they will be listed in the logs above as well as being saved in the output .xml file")
+	log.Entry().Info("ATC run completed successfully. If there are any results from the respective run they will be listed in the logs above as well as being saved in the output .xml file")
 }
 
 func handleATCresults(resp *http.Response, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, atcResultFileName string) error {
@@ -186,7 +186,7 @@ func parseATCResult(body []byte, atcResultFileName string) (err error) {
 	}
 	s := string(body)
 	if strings.HasPrefix(s, "<html>") {
-		return errors.New("The Software Component could not be checked. Please make sure the respective Software Component has been cloned succesfully on the system")
+		return errors.New("The Software Component could not be checked. Please make sure the respective Software Component has been cloned successfully on the system")
 	}
 	err = ioutil.WriteFile(atcResultFileName, body, 0644)
 	if err == nil {
@@ -235,6 +235,10 @@ func fetchXcsrfToken(requestType string, details abaputils.ConnectionDetailsHTTP
 		return "", fmt.Errorf("Fetching Xcsrf-Token failed: %w", err)
 	}
 	defer req.Body.Close()
+
+	// workaround until golang version 1.16 is used
+	time.Sleep(1 * time.Second)
+
 	token := req.Header.Get("X-Csrf-Token")
 	return token, err
 }

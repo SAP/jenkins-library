@@ -10,7 +10,7 @@ func TestMavenBuildCommand(t *testing.T) {
 
 	testCmd := MavenBuildCommand()
 
-	// only high level testing performed - details are tested in step generation procudure
+	// only high level testing performed - details are tested in step generation procedure
 	assert.Equal(t, "mavenBuild", testCmd.Use, "command name incorrect")
 
 }

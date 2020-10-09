@@ -1,12 +1,9 @@
 stages:
-  mavenExecuteStaticCodeChecks:
+  build:
     stepConditions:
       mavenExecuteStaticCodeChecks:
         filePattern: 'pom.xml'
-  lint:
-    extensionExists: true
-    stepConditions:
-      lint:
+      npmExecuteLint:
         filePattern:
           - '**/*.js'
           - '**/*.jsx'
@@ -19,20 +16,24 @@ stages:
           - 'ci-it-backend'
       mavenExecuteIntegration:
         filePattern: 'integration-tests/pom.xml'
+  compliance:
+    onlyProductiveBranch: true
+    stepConditions:
+      sonarExecuteScan:
+        configKeys:
+          - 'sonarTokenCredentialsId'
+          - 'projectKey'
+          - 'instance'
   frontendIntegrationTests:
     stepConditions:
       npmExecuteScripts:
         npmScripts:
           - 'ci-it-frontend'
-  frontendUnitTests:
+  additionalUnitTests:
     stepConditions:
       npmExecuteScripts:
         npmScripts:
           - 'ci-frontend-unit-test'
-  npmAudit:
-    stepConditions:
-      npmAudit:
-        filePattern: '**/package.json'
   endToEndTests:
     stepConditions:
       multicloudDeploy:
@@ -63,40 +64,23 @@ stages:
         configKeys:
           - 'cfTargets'
           - 'neoTargets'
-  checkmarxScan:
+  security:
     onlyProductiveBranch: true
     stepConditions:
-      checkmarxScan:
+      checkmarxExecuteScan:
         configKeys:
           - 'groupId'
-  sonarQubeScan:
-    stepConditions:
-      sonarQubeScan:
+      detectExecuteScan:
         configKeys:
-          - 'projectKey'
-          - 'instance'
-  additionalTools:
-    onlyProductiveBranch: true
-    extensionExists: true
-  whitesourceScan:
-    onlyProductiveBranch: true
-    stepConditions:
-      whitesourceScan:
-        configKeys:
-          - 'product'
-          - 'credentialsId'
-  fortifyScan:
-    onlyProductiveBranch: true
-    stepConditions:
+          - 'detectTokenCredentialsId'
       fortifyExecuteScan:
         configKeys:
           - 'fortifyCredentialsId'
-  detectScan:
-    onlyProductiveBranch: true
-    stepConditions:
-      detectScan:
+      whitesourceExecuteScan:
         configKeys:
-          - 'detectTokenCredentialsId'
+          - 'productName'
+          - 'orgAdminUserTokenCredentialsId'
+          - 'userTokenCredentialsId'
   productionDeployment:
     onlyProductiveBranch: true
     stepConditions:

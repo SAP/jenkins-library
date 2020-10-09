@@ -63,7 +63,7 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
                 config.stashNoDefaultExcludes = parameters.stashNoDefaultExcludes
             }
 
-            dockerWrapper(script, config) {
+            dockerWrapper(script, stepName, config) {
                 handleErrorDetails(stepName) {
                     script.commonPipelineEnvironment.writeToDisk(script)
                     try {
@@ -149,8 +149,9 @@ static String getCustomConfigArg(def script) {
 }
 
 // reused in sonarExecuteScan
-void dockerWrapper(script, config, body) {
+void dockerWrapper(script, stepName, config, body) {
     if (config.dockerImage) {
+        echo "[INFO] executing pipeline step '${stepName}' with docker image '${config.dockerImage}'"
         Map dockerExecuteParameters = [:].plus(config)
         dockerExecuteParameters.script = script
         dockerExecute(dockerExecuteParameters) {

@@ -213,7 +213,7 @@ void call(parameters = [:]) {
                     configuration.source
                 )
 
-                lock("$STEP_NAME :${neoCommandHelper.resourceLock()}") {
+                lock("$STEP_NAME:${neoCommandHelper.resourceLock()}") {
                     deploy(script, configuration, neoCommandHelper, configuration.dockerImage, deployMode)
                 }
             }
