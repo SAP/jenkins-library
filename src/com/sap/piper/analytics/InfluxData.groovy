@@ -58,19 +58,8 @@ class InfluxData implements Serializable{
                     def value
                     if (name.endsWith(".json")){
                         name = name.replace(".json","")
-                        // net.sf.json.JSONSerializer does only handle lists and maps
-                        // http://json-lib.sourceforge.net/apidocs/net/sf/json/package-summary.html
-                        try{
-                            value = script.readJSON(text: fileContent)
-                        }catch(net.sf.json.JSONException e){
-                            // try to wrap the value in an object and read again
-                            if (e.getMessage() == "Invalid JSON String"){
-                                def JSONobject = readJSON(text: "{\"content\": ${fileContent}}")
-                                value = JSONobject.content
-                            }else{
-                                throw e
-                            }
-                        }
+                        script.echo "found JSON content: " + fileContent
+                        value = script.readJSON(text: fileContent)
                     }else{
                         // handle boolean values
                         if(fileContent == 'true'){
