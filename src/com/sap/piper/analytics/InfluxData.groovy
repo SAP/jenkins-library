@@ -65,7 +65,7 @@ class InfluxData implements Serializable{
                         }catch(net.sf.json.JSONException e){
                             // try to wrap the value in an object and read again
                             if (e.getMessage() == "Invalid JSON String"){
-                                def JSONobject = readJSON(text: "{\"content\": ${fileContent}}")
+                                def JSONobject = script.readJSON(text: "{\"content\": ${fileContent}}")
                                 value = JSONobject.content
                             }else{
                                 throw e
