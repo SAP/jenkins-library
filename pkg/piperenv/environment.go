@@ -61,7 +61,7 @@ func writeToDisk(filename string, data []byte) error {
 	//ToDo: make sure to not overwrite file but rather add another file? Create error if already existing?
 	if len(data) > 0 {
 		log.Entry().Debugf("Writing file to disk: %v", filename)
-		return ioutil.WriteFile(filename, data, 0777)
+		return ioutil.WriteFile(filename, data, 0766)
 	}
 	return nil
 }
