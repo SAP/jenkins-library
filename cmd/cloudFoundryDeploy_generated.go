@@ -67,7 +67,7 @@ func (i *cloudFoundryDeployInflux) persist(path, resourceName string) {
 		measurement string
 		valType     string
 		name        string
-		value       string
+		value       interface{}
 	}{
 		{valType: config.InfluxField, measurement: "deployment_data", name: "artifactUrl", value: i.deployment_data.fields.artifactURL},
 		{valType: config.InfluxField, measurement: "deployment_data", name: "deployTime", value: i.deployment_data.fields.deployTime},
@@ -121,6 +121,7 @@ func CloudFoundryDeployCommand() *cobra.Command {
 				return err
 			}
 			log.RegisterSecret(stepConfig.DockerPassword)
+			log.RegisterSecret(stepConfig.DockerUsername)
 			log.RegisterSecret(stepConfig.Password)
 			log.RegisterSecret(stepConfig.Username)
 

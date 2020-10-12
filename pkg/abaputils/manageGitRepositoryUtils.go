@@ -2,6 +2,7 @@ package abaputils
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"reflect"
 	"sort"
@@ -80,6 +81,37 @@ func PrintLogs(entity PullEntity) {
 	log.Entry().Info("-------------------------")
 }
 
+//GetRepositories for parsing  one or multiple branches and repositories from repositories file or branchName and repositoryName configuration
+func GetRepositories(config *RepositoriesConfig) ([]Repository, error) {
+	var repositories = make([]Repository, 0)
+	if reflect.DeepEqual(RepositoriesConfig{}, config) {
+		return repositories, fmt.Errorf("Failed to read repository configuration: %w", errors.New("Eror in configuration, most likely you have entered empty or wrong configuration values. Please make sure that you have correctly specified them. For more information please read the User documentation"))
+	}
+	if config.RepositoryName == "" && config.BranchName == "" && config.Repositories == "" && len(config.RepositoryNames) == 0 {
+		return repositories, fmt.Errorf("Failed to read repository configuration: %w", errors.New("You have not specified any repository configuration. Please make sure that you have correctly specified it. For more information please read the User documentation"))
+	}
+	if config.Repositories != "" {
+		descriptor, err := ReadAddonDescriptor(config.Repositories)
+		if err != nil {
+			return repositories, err
+		}
+		err = CheckAddonDescriptorForRepositories(descriptor)
+		if err != nil {
+			return repositories, fmt.Errorf("Error in config file %v, %w", config.Repositories, err)
+		}
+		repositories = descriptor.Repositories
+	}
+	if config.RepositoryName != "" && config.BranchName != "" {
+		repositories = append(repositories, Repository{Name: config.RepositoryName, Branch: config.BranchName})
+	}
+	if len(config.RepositoryNames) > 0 {
+		for _, repository := range config.RepositoryNames {
+			repositories = append(repositories, Repository{Name: repository})
+		}
+	}
+	return repositories, nil
+}
+
 /****************************************
  *	Structs for the A4C_A2G_GHA service *
  ****************************************/
@@ -143,4 +175,12 @@ type LogResults struct {
 	Type        string `json:"type"`
 	Description string `json:"descr"`
 	Timestamp   string `json:"timestamp"`
+}
+
+//RepositoriesConfig struct for parsing one or multiple branches and repositories configurations
+type RepositoriesConfig struct {
+	BranchName      string
+	RepositoryName  string
+	RepositoryNames []string
+	Repositories    string
 }

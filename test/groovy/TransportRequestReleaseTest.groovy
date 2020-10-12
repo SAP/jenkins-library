@@ -73,7 +73,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
         }
 
         thrown.expect(IllegalArgumentException)
-        thrown.expectMessage("Change document id not provided (parameter: 'changeDocumentId' or via commit history).")
+        thrown.expectMessage("Change document id not provided (parameter: 'changeDocumentId' provided to the step call or via commit history).")
 
         stepRule.step.transportRequestRelease(script: nullScript, transportRequestId: '001', cmUtils: cm)
     }
@@ -91,7 +91,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
         }
 
         thrown.expect(IllegalArgumentException)
-        thrown.expectMessage("Transport request id not provided (parameter: 'transportRequestId' or via commit history).")
+        thrown.expectMessage("Transport request id not provided (parameter: 'transportRequestId' provided to the step call or via commit history).")
 
         stepRule.step.transportRequestRelease(script: nullScript, changeDocumentId: '001', cmUtils: cm)
     }

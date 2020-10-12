@@ -16,7 +16,6 @@ import static com.sap.piper.Prerequisites.checkScript
 void call(Map parameters = [:]) {
     def script = checkScript(this, parameters) ?: this
     def stageName = parameters.stageName?:env.STAGE_NAME
-
     stageName = stageName.replace('Declarative: ', '')
     stageName = stageName.replace(' Actions', '')
 
@@ -25,5 +24,4 @@ void call(Map parameters = [:]) {
             cloudFoundryDeleteService script: parameters.script
         }
     }
-
 }

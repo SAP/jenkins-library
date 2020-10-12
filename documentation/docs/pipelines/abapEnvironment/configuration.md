@@ -1,8 +1,10 @@
 # Configuration
 
-In this section, you can learn how to create a configuration in a (GitHub) repository to run an ABAP Environment Pipeline. This sepcific example will create a pipeline, which executes ATC checks after creating a new ABAP Environment system. In the end, the system will be deprovisioned.
+In genereal, the ABAP Environment pipeline supports different scenarios. The idea is that only configured stages are executed and the user is able to choose the appropriate stages.
+In this section, you can learn how to create a configuration in a (GitHub) repository to run an ABAP Environment Pipeline used for testing. This sepcific example will create a pipeline, which executes ATC checks after creating a new ABAP Environment system. In the end, the system will be deprovisioned.
 
 You can have a look at different pipeline configurations in our [SAP-samples repository](https://github.com/SAP-samples/abap-platform-ci-cd-samples).
+Other scenarios (e.g. building an ABAP AddOn) will be added to the documentation soon.
 
 ## 1. Prerequisites
 
@@ -39,8 +41,8 @@ Create a file `manifest.yml`. The pipeline will create a SAP Cloud Platform ABAP
 create-services:
 - name:   "abapEnvironmentPipeline"
   broker: "abap"
-  plan:   "16_abap_64_db"
-  parameters: "{ \"admin_email\" : \"user@example.com\", \"description\" : \"System for ABAP Pipeline\" }"
+  plan:   "standard"
+  parameters: "{ \"admin_email\" : \"user@example.com\", \"description\" : \"System for ABAP Pipeline\", \"is_development_allowed\" : true, \"sapsystemname\" : \"H02\", \"size_of_persistence\" : 4, \"size_of_runtime\" : 1 }"
 ```
 
 The example values are a suggestion. Please change them accordingly and don't forget to enter your own email address. Please be aware that creating a SAP Cloud ABAP Environment instance may incur costs.
