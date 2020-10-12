@@ -1093,7 +1093,7 @@ func newLibraryCSVReport(libraries map[string][]ws.Library, config *ScanOptions,
 func persistScannedProjects(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils) error {
 	var projectNames []string
 	if config.ProjectName != "" {
-		projectNames = []string{config.ProjectName}
+		projectNames = []string{config.ProjectName + " - " + config.ProductVersion}
 	} else {
 		for _, project := range scan.ScannedProjects() {
 			projectNames = append(projectNames, project.Name)
