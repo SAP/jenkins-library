@@ -3,7 +3,6 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/npm"
 	"io"
 	"io/ioutil"
@@ -280,6 +279,21 @@ func resolveProjectIdentifiers(config *ScanOptions, scan *ws.Scan, utils whiteso
 	return scan.UpdateProjects(config.ProductToken, sys)
 }
 
+func wsMavenScanOptions(config *ScanOptions) *ws.MavenScanOptions {
+	return &ws.MavenScanOptions{
+		ScanType:                   config.ScanType,
+		OrgToken:                   config.OrgToken,
+		UserToken:                  config.UserToken,
+		ProductName:                config.ProductName,
+		ProjectName:                config.ProjectName,
+		BuildDescriptorExcludeList: config.BuildDescriptorExcludeList,
+		PomPath:                    config.BuildDescriptorFile,
+		M2Path:                     config.M2Path,
+		GlobalSettingsFile:         config.GlobalSettingsFile,
+		ProjectSettingsFile:        config.ProjectSettingsFile,
+	}
+}
+
 // executeScan executes different types of scans depending on the scanType parameter.
 // The default is to download the Unified Agent and use it to perform the scan.
 func executeScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils) error {
@@ -295,7 +309,7 @@ func executeScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils) err
 		}
 	case "maven":
 		// Execute scan with maven plugin goal
-		if err := executeMavenScan(config, scan, utils); err != nil {
+		if err := scan.ExecuteMavenScan(wsMavenScanOptions(config), utils); err != nil {
 			return err
 		}
 	case "npm":
@@ -340,7 +354,7 @@ func executeMTAScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils) 
 	log.Entry().Infof("Executing Whitesource scan for MTA project")
 	pomExists, _ := utils.FileExists("pom.xml")
 	if pomExists {
-		if err := executeMavenScanForPomFile(config, scan, utils, "pom.xml"); err != nil {
+		if err := scan.ExecuteMavenScanForPomFile(wsMavenScanOptions(config), utils, "pom.xml"); err != nil {
 			return err
 		}
 	}
@@ -359,113 +373,6 @@ func executeMTAScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils) 
 		return fmt.Errorf("neither Maven nor NPM modules found, no scan performed")
 	}
 	return nil
-}
-
-// executeMavenScan constructs maven parameters from the given configuration, and executes the maven goal
-// "org.whitesource:whitesource-maven-plugin:19.5.1:update".
-func executeMavenScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils) error {
-	log.Entry().Infof("Using Whitesource scan for Maven project")
-	pomPath := config.BuildDescriptorFile
-	if pomPath == "" {
-		pomPath = "pom.xml"
-	}
-	return executeMavenScanForPomFile(config, scan, utils, pomPath)
-}
-
-func executeMavenScanForPomFile(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, pomPath string) error {
-	pomExists, _ := utils.FileExists(pomPath)
-	if !pomExists {
-		return fmt.Errorf("for scanning with type '%s', the file '%s' must exist in the project root",
-			config.ScanType, pomPath)
-	}
-
-	defines := generateMavenWhitesourceDefines(config)
-	flags, excludes := generateMavenWhitesourceFlags(config, utils)
-	err := appendModulesThatWillBeScanned(scan, utils, excludes)
-	if err != nil {
-		return fmt.Errorf("failed to determine maven modules which will be scanned: %w", err)
-	}
-
-	_, err = maven.Execute(&maven.ExecuteOptions{
-		PomPath:             pomPath,
-		M2Path:              config.M2Path,
-		GlobalSettingsFile:  config.GlobalSettingsFile,
-		ProjectSettingsFile: config.ProjectSettingsFile,
-		Defines:             defines,
-		Flags:               flags,
-		Goals:               []string{"org.whitesource:whitesource-maven-plugin:19.5.1:update"},
-	}, utils)
-
-	return err
-}
-
-func generateMavenWhitesourceDefines(config *ScanOptions) []string {
-	defines := []string{
-		"-Dorg.whitesource.orgToken=" + config.OrgToken,
-		"-Dorg.whitesource.product=" + config.ProductName,
-		"-Dorg.whitesource.checkPolicies=true",
-		"-Dorg.whitesource.failOnError=true",
-	}
-
-	// Aggregate all modules into one WhiteSource project, if user specified the 'projectName' parameter.
-	if config.ProjectName != "" {
-		defines = append(defines, "-Dorg.whitesource.aggregateProjectName="+config.ProjectName)
-		defines = append(defines, "-Dorg.whitesource.aggregateModules=true")
-	}
-
-	if config.UserToken != "" {
-		defines = append(defines, "-Dorg.whitesource.userKey="+config.UserToken)
-	}
-
-	if config.ProductVersion != "" {
-		defines = append(defines, "-Dorg.whitesource.productVersion="+config.ProductVersion)
-	}
-
-	return defines
-}
-
-func generateMavenWhitesourceFlags(config *ScanOptions, utils whitesourceUtils) (flags []string, excludes []string) {
-	excludes = config.BuildDescriptorExcludeList
-	if len(excludes) == 0 {
-		excludes = []string{
-			filepath.Join("unit-tests", "pom.xml"),
-			filepath.Join("integration-tests", "pom.xml"),
-			filepath.Join("performance-tests", "pom.xml"),
-		}
-	}
-	// From the documentation, these are file paths to a module's pom.xml.
-	// For MTA projects, we want to support mixing paths to package.json files and pom.xml files.
-	for _, exclude := range excludes {
-		if !strings.HasSuffix(exclude, "pom.xml") {
-			continue
-		}
-		exists, _ := utils.FileExists(exclude)
-		if !exists {
-			continue
-		}
-		moduleName := filepath.Dir(exclude)
-		if moduleName != "" {
-			flags = append(flags, "-pl", "!"+moduleName)
-		}
-	}
-	return flags, excludes
-}
-
-func appendModulesThatWillBeScanned(scan *ws.Scan, utils whitesourceUtils, excludes []string) error {
-	return maven.VisitAllMavenModules(".", utils, excludes, func(info maven.ModuleInfo) error {
-		project := info.Project
-		if project.Packaging != "pom" {
-			if project.ArtifactID == "" {
-				return fmt.Errorf("artifactId missing from '%s'", info.PomXMLPath)
-			}
-
-			err := scan.AppendScannedProject(project.ArtifactID)
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	})
 }
 
 const whiteSourceConfig = "whitesource.config.json"
