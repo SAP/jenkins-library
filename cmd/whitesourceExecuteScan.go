@@ -335,12 +335,27 @@ func executeUAScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils) e
 // executeMTAScan executes a scan for the Java part with maven, and performs a scan for each NPM module.
 func executeMTAScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils) error {
 	log.Entry().Infof("Executing Whitesource scan for MTA project")
-	err := executeMavenScanForPomFile(config, scan, utils, "pom.xml")
+	pomExists, _ := utils.FileExists("pom.xml")
+	if pomExists {
+		if err := executeMavenScanForPomFile(config, scan, utils, "pom.xml"); err != nil {
+			return err
+		}
+	}
+
+	modules, err := utils.FindPackageJSONFiles(config)
 	if err != nil {
 		return err
 	}
+	if len(modules) > 0 {
+		if err := executeNpmScan(config, scan, utils); err != nil {
+			return err
+		}
+	}
 
-	return executeNpmScan(config, scan, utils)
+	if !pomExists && len(modules) == 0 {
+		return fmt.Errorf("neither Maven nor NPM modules found, no scan performed")
+	}
+	return nil
 }
 
 // executeMavenScan constructs maven parameters from the given configuration, and executes the maven goal
@@ -564,7 +579,7 @@ func executeNpmScanForModule(modulePath string, config *ScanOptions, scan *ws.Sc
 		return err
 	}
 
-	if err := reinstallNodeModulesIfLsFails(modulePath, config, utils); err != nil {
+	if err := reinstallNodeModulesIfLsFails(config, utils); err != nil {
 		return err
 	}
 
@@ -598,7 +613,15 @@ func getNpmProjectName(modulePath string, utils whitesourceUtils) (string, error
 	return projectName, nil
 }
 
-func reinstallNodeModulesIfLsFails(modulePath string, config *ScanOptions, utils whitesourceUtils) error {
+// reinstallNodeModulesIfLsFails tests running of "npm ls".
+// If that fails, the node_modules directory is cleared and the file "package-lock.json" is removed.
+// Then "npm install" is performed. Without this, the npm whitesource plugin will consistently hang,
+// when encountering npm ls errors, even with "ignoreNpmLsErrors:true" in the configuration.
+// The consequence is that what was scanned is not guaranteed to be identical to what was built & deployed.
+// This hack/work-around that should be removed once scanning it consistently performed using the Unified Agent.
+// A possible reason for encountering "npm ls" errors in the first place is that a different node version
+// is used for whitesourceExecuteScan due to a different docker image being used compared to the build stage.
+func reinstallNodeModulesIfLsFails(config *ScanOptions, utils whitesourceUtils) error {
 	// No need to have output from "npm ls" in the log
 	utils.Stdout(ioutil.Discard)
 	defer utils.Stdout(log.Writer())
@@ -623,7 +646,8 @@ func reinstallNodeModulesIfLsFails(modulePath string, config *ScanOptions, utils
 			return fmt.Errorf("failed to remove package-lock.json: %w", err)
 		}
 	}
-	return utils.InstallAllNPMDependencies(config, []string{modulePath})
+	// Passing only "package.json", because we are already inside the module's directory.
+	return utils.InstallAllNPMDependencies(config, []string{"package.json"})
 }
 
 // executeYarnScan generates a configuration file whitesource.config.json with appropriate values from config,
@@ -970,7 +994,7 @@ func aggregateVersionWideVulnerabilities(config *ScanOptions, utils whitesourceU
 	return nil
 }
 
-const wsReportTimeStampLayout = "2006-01-02 15:04:05"
+const wsReportTimeStampLayout = "20060102-150405"
 
 // outputs an slice of alerts to an excel file
 func newVulnerabilityExcelReport(alerts []ws.Alert, config *ScanOptions, utils whitesourceUtils) error {
@@ -994,8 +1018,8 @@ func newVulnerabilityExcelReport(alerts []ws.Alert, config *ScanOptions, utils w
 		return err
 	}
 
-	fileName := fmt.Sprintf("%s/vulnerabilities-%s.xlsx", config.ReportDirectoryName,
-		utils.Now().Format(wsReportTimeStampLayout))
+	fileName := filepath.Join(config.ReportDirectoryName,
+		fmt.Sprintf("vulnerabilities-%s.xlsx", utils.Now().Format(wsReportTimeStampLayout)))
 	stream, err := utils.FileOpen(fileName, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666)
 	if err != nil {
 		return err

@@ -26,6 +26,11 @@ type downloadedFile struct {
 	filePath  string
 }
 
+type npmInstall struct {
+	currentDir  string
+	packageJSON []string
+}
+
 type whitesourceUtilsMock struct {
 	*mock.FilesMock
 	*mock.ExecMockRunner
@@ -34,7 +39,7 @@ type whitesourceUtilsMock struct {
 	usedBuildDescriptorFile string
 	usedOptions             versioning.Options
 	downloadedFiles         []downloadedFile
-	npmInstalledModules     []string
+	npmInstalledModules     []npmInstall
 }
 
 func (w *whitesourceUtilsMock) DownloadFile(url, filename string, _ http.Header, _ []*http.Cookie) error {
@@ -64,8 +69,11 @@ func (w *whitesourceUtilsMock) FindPackageJSONFiles(_ *ScanOptions) ([]string, e
 	return matches, nil
 }
 
-func (w *whitesourceUtilsMock) InstallAllNPMDependencies(_ *ScanOptions, _ []string) error {
-	w.npmInstalledModules = append(w.npmInstalledModules, w.CurrentDir)
+func (w *whitesourceUtilsMock) InstallAllNPMDependencies(_ *ScanOptions, packageJSONs []string) error {
+	w.npmInstalledModules = append(w.npmInstalledModules, npmInstall{
+		currentDir:  w.CurrentDir,
+		packageJSON: packageJSONs,
+	})
 	return nil
 }
 
@@ -285,6 +293,7 @@ func TestExecuteScanNPM(t *testing.T) {
 		}
 		assert.Equal(t, expectedCalls, utilsMock.Calls)
 		assert.True(t, utilsMock.HasWrittenFile(whiteSourceConfig))
+		assert.True(t, utilsMock.HasRemovedFile(whiteSourceConfig))
 	})
 	t.Run("no NPM modules", func(t *testing.T) {
 		// init
@@ -321,7 +330,11 @@ func TestExecuteScanNPM(t *testing.T) {
 		err := executeScan(&config, scan, utilsMock)
 		// assert
 		assert.NoError(t, err)
-		assert.Equal(t, []string{"app", ""}, utilsMock.npmInstalledModules)
+		expectedNpmInstalls := []npmInstall{
+			{currentDir: "app", packageJSON: []string{"package.json"}},
+			{currentDir: "", packageJSON: []string{"package.json"}},
+		}
+		assert.Equal(t, expectedNpmInstalls, utilsMock.npmInstalledModules)
 		assert.True(t, utilsMock.HasRemovedFile("package-lock.json"))
 	})
 }
@@ -460,10 +473,7 @@ func TestExecuteScanMaven(t *testing.T) {
 }
 
 func TestExecuteScanMTA(t *testing.T) {
-	t.Parallel()
-	t.Run("happy path MTA", func(t *testing.T) {
-		// init
-		const pomXML = `<?xml version="1.0" encoding="UTF-8"?>
+	const pomXML = `<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -472,14 +482,18 @@ func TestExecuteScanMTA(t *testing.T) {
     <packaging>jar</packaging>
 </project>
 `
-		config := ScanOptions{
-			BuildTool:      "mta",
-			OrgToken:       "org-token",
-			UserToken:      "user-token",
-			ProductName:    "mock-product",
-			ProjectName:    "mock-project",
-			ProductVersion: "product-version",
-		}
+	config := ScanOptions{
+		BuildTool:      "mta",
+		OrgToken:       "org-token",
+		UserToken:      "user-token",
+		ProductName:    "mock-product",
+		ProjectName:    "mock-project",
+		ProductVersion: "product-version",
+	}
+
+	t.Parallel()
+	t.Run("happy path MTA", func(t *testing.T) {
+		// init
 		utilsMock := newWhitesourceUtilsMock()
 		utilsMock.AddFile("pom.xml", []byte(pomXML))
 		utilsMock.AddFile("package.json", []byte(`{"name":"my-module-name"}`))
@@ -523,7 +537,79 @@ func TestExecuteScanMTA(t *testing.T) {
 		}
 		assert.Equal(t, expectedCalls, utilsMock.Calls)
 		assert.True(t, utilsMock.HasWrittenFile(whiteSourceConfig))
+		assert.True(t, utilsMock.HasRemovedFile(whiteSourceConfig))
 		assert.Equal(t, expectedCalls, utilsMock.Calls)
+	})
+	t.Run("MTA with only maven modules", func(t *testing.T) {
+		// init
+		utilsMock := newWhitesourceUtilsMock()
+		utilsMock.AddFile("pom.xml", []byte(pomXML))
+		scan := newWhitesourceScan(&config)
+		// test
+		err := executeScan(&config, scan, utilsMock)
+		// assert
+		require.NoError(t, err)
+		expectedCalls := []mock.ExecCall{
+			{
+				Exec: "mvn",
+				Params: []string{
+					"--file",
+					"pom.xml",
+					"-Dorg.whitesource.orgToken=org-token",
+					"-Dorg.whitesource.product=mock-product",
+					"-Dorg.whitesource.checkPolicies=true",
+					"-Dorg.whitesource.failOnError=true",
+					"-Dorg.whitesource.aggregateProjectName=mock-project",
+					"-Dorg.whitesource.aggregateModules=true",
+					"-Dorg.whitesource.userKey=user-token",
+					"-Dorg.whitesource.productVersion=product-version",
+					"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
+					"--batch-mode",
+					"org.whitesource:whitesource-maven-plugin:19.5.1:update",
+				},
+			},
+		}
+		assert.Equal(t, expectedCalls, utilsMock.Calls)
+		assert.False(t, utilsMock.HasWrittenFile(whiteSourceConfig))
+		assert.Equal(t, expectedCalls, utilsMock.Calls)
+	})
+	t.Run("MTA with only NPM modules", func(t *testing.T) {
+		// init
+		utilsMock := newWhitesourceUtilsMock()
+		utilsMock.AddFile("package.json", []byte(`{"name":"my-module-name"}`))
+		scan := newWhitesourceScan(&config)
+		// test
+		err := executeScan(&config, scan, utilsMock)
+		// assert
+		require.NoError(t, err)
+		expectedCalls := []mock.ExecCall{
+			{
+				Exec: "npm",
+				Params: []string{
+					"ls",
+				},
+			},
+			{
+				Exec: "npx",
+				Params: []string{
+					"whitesource",
+					"run",
+				},
+			},
+		}
+		assert.Equal(t, expectedCalls, utilsMock.Calls)
+		assert.True(t, utilsMock.HasWrittenFile(whiteSourceConfig))
+		assert.True(t, utilsMock.HasRemovedFile(whiteSourceConfig))
+		assert.Equal(t, expectedCalls, utilsMock.Calls)
+	})
+	t.Run("MTA with neither Maven nor NPM modules results in error", func(t *testing.T) {
+		// init
+		utilsMock := newWhitesourceUtilsMock()
+		scan := newWhitesourceScan(&config)
+		// test
+		err := executeScan(&config, scan, utilsMock)
+		// assert
+		assert.EqualError(t, err, "neither Maven nor NPM modules found, no scan performed")
 	})
 }
 
@@ -792,7 +878,7 @@ func TestPersisScannedProjects(t *testing.T) {
 	})
 	t.Run("write aggregated project", func(t *testing.T) {
 		// init
-		config := &ScanOptions{ProjectName: "project - 1"}
+		config := &ScanOptions{ProjectName: "project", ProductVersion: "1"}
 		utils := newWhitesourceUtilsMock()
 		scan := newWhitesourceScan(config)
 		// test
@@ -819,7 +905,7 @@ func TestAggregateVersionWideLibraries(t *testing.T) {
 		// test
 		err := aggregateVersionWideLibraries(config, utils, system)
 		// assert
-		resource := filepath.Join("mock-reports", fmt.Sprintf("libraries-%s.csv", wsTimeNow))
+		resource := filepath.Join("mock-reports", "libraries-20100510-001542.csv")
 		if assert.NoError(t, err) && assert.True(t, utils.HasWrittenFile(resource)) {
 			contents, _ := utils.FileRead(resource)
 			asString := string(contents)
@@ -843,11 +929,16 @@ func TestAggregateVersionWideVulnerabilities(t *testing.T) {
 		err := aggregateVersionWideVulnerabilities(config, utils, system)
 		// assert
 		resource := filepath.Join("mock-reports", "project-names-aggregated.txt")
-		if assert.NoError(t, err) && assert.True(t, utils.HasWrittenFile(resource)) {
+		assert.NoError(t, err)
+		if assert.True(t, utils.HasWrittenFile(resource)) {
 			contents, _ := utils.FileRead(resource)
 			asString := string(contents)
 			assert.Equal(t, "mock-project - 1\n", asString)
 		}
+		reportSheet := filepath.Join("mock-reports", "vulnerabilities-20100510-001542.xlsx")
+		sheetContents, err := utils.FileRead(reportSheet)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, sheetContents)
 	})
 }
 

@@ -329,7 +329,6 @@ steps:
     neoTargets: []
     enableZeroDowntimeDeployment: false
     parallelExecution: false
-    runInCurrentWorkspace: false
   newmanExecute:
     dockerImage: 'node:lts-stretch'
     failOnError: true

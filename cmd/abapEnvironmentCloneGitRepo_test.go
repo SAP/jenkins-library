@@ -258,7 +258,7 @@ func TestCloneStepErrorMessages(t *testing.T) {
 
 		err := runAbapEnvironmentCloneGitRepo(&config, nil, &autils, client)
 		if assert.Error(t, err, "Expected error") {
-			assert.Equal(t, "Could not find filename.yaml", err.Error(), "Expected different error message")
+			assert.Equal(t, "Something failed during the clone: Could not find filename.yaml", err.Error(), "Expected different error message")
 		}
 
 	})
