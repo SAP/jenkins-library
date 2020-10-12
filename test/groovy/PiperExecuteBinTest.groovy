@@ -245,7 +245,7 @@ class PiperExecuteBinTest extends BasePiperTest {
 
     @Test
     void testPiperExecuteBinCredentialsSetAsEnum() {
-        shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/test.yaml\'', '{"sshCredentialsId":"sshKey", "fileCredentialsId":"credFile", "tokenCredentialsId":"credToken", "secretTextCredentialsId":"credSecretText", "credentialsId":"credUsernamePassword", "dockerImage":"my.Registry/my/image:latest"}')
+        shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/test.yaml\'', '{"sshCredentialsId":"sshKey", "fileCredentialsId":"cred_file", "tokenCredentialsId":"cred_token", "secretTextCredentialsId":"cred_secretText", "credentialsId":"credUsernamePassword", "dockerImage":"my.Registry/my/image:latest"}')
 
         List sshKey = []
         helper.registerAllowedMethod("sshagent", [List, Closure], {s, c ->
@@ -256,7 +256,7 @@ class PiperExecuteBinTest extends BasePiperTest {
         List stepCredentials = [[type: CredentialType.USERNAME_PASSWORD, id: 'credentialsId', env: ['PIPER_user', 'PIPER_password']]]
         for (type in CredentialType.values()) {
             if (type != CredentialType.USERNAME_PASSWORD) {
-                stepCredentials.add([type: type, id: "${type}CredentialsId", env: ["PIPER_cred_${type}".toString()]]) // to string to avoid assertion failure due to GString
+                stepCredentials.add([type: type, id: "${type}CredentialsId", env: ["PIPER_cred_${type}"]])
             }
         }
 
@@ -275,10 +275,15 @@ class PiperExecuteBinTest extends BasePiperTest {
         assertThat(credentials.size(), is(4))
         assertThat(sshKey, is(['sshKey']))
         assertThat(credentials[0], allOf(hasEntry('credentialsId', 'credUsernamePassword'), hasEntry('usernameVariable', 'PIPER_user') , hasEntry('passwordVariable', 'PIPER_password')))
-        assertThat(credentials[1], allOf(hasEntry('credentialsId', 'credFile'), hasEntry('variable', 'PIPER_cred_file')))
-        assertThat(credentials[2], allOf(hasEntry('credentialsId', 'credToken'), hasEntry('variable', 'PIPER_cred_token')))
-        assertThat(credentials[3], allOf(hasEntry('credentialsId', 'credSecretText'), hasEntry('variable', 'PIPER_cred_secretText')))
+        int index = 1
+        for (type in CredentialType.values()) {
+            if (type != CredentialType.USERNAME_PASSWORD && type != CredentialType.SSH) {
+                def credId = "cred_${type}".toString() // toString() to avoid failure due to comparison to GString
+                assertThat(credentials[index++], allOf(hasEntry('credentialsId', credId), hasEntry('variable', "PIPER_cred_${type}")))
+            }
+        }
         assertThat(stringCredentialClassCalled, is(2))
+        assertThat(sshKey, is(['sshKey']))
 
     }
 
