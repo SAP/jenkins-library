@@ -10,6 +10,7 @@ import (
 
 	generator "github.com/SAP/jenkins-library/pkg/documentation/generator"
 	"github.com/SAP/jenkins-library/pkg/generator/helper"
+	"github.com/ghodss/yaml"
 )
 
 type sliceFlags struct {
@@ -28,17 +29,31 @@ func (f *sliceFlags) Set(value string) error {
 func main() {
 	var metadataPath string
 	var docTemplatePath string
+	var customLibraryStepFile string
 	var customDefaultFiles sliceFlags
 
 	flag.StringVar(&metadataPath, "metadataDir", "./resources/metadata", "The directory containing the step metadata. Default points to \\'resources/metadata\\'.")
+	flag.StringVar(&metadataPath, "metadataDir", "./resources/metadata", "The directory containing the step metadata. Default points to \\'resources/metadata\\'.")
+	flag.StringVar(&docTemplatePath, "docuDir", "./documentation/docs/steps/", "The directory containing the docu stubs. Default points to \\'documentation/docs/steps/\\'.")
 	flag.StringVar(&docTemplatePath, "docuDir", "./documentation/docs/steps/", "The directory containing the docu stubs. Default points to \\'documentation/docs/steps/\\'.")
 	// flag.StringVar(&customDefaultPaths, "customDefaultPath", "./resources/default_pipeline_environment.yml", "Comma-separated paths to custom default configuration files.")
+	flag.StringVar(&customLibraryStepFile, "customLibraryStepFile", "", "")
 	flag.Var(&customDefaultFiles, "customDefaultFile", "Path to a custom default configuration file.")
+
 	flag.Parse()
 
 	fmt.Println("using Metadata Directory:", metadataPath)
 	fmt.Println("using Documentation Directory:", docTemplatePath)
 	fmt.Println("using Custom Default Files:", strings.Join(customDefaultFiles.list, ", "))
+
+	if len(customLibraryStepFile) > 0 {
+		fmt.Println("Reading custom library step mapping..")
+		content, err := ioutil.ReadFile(customLibraryStepFile)
+		checkError(err)
+		err = yaml.Unmarshal(content, &generator.CustomLibrarySteps)
+		checkError(err)
+		fmt.Println(generator.CustomLibrarySteps)
+	}
 
 	metadataFiles, err := helper.MetadataFiles(metadataPath)
 	checkError(err)

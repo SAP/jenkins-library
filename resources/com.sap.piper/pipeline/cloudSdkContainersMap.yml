@@ -1,7 +1,6 @@
 # Mapping of Go step names to their YAML metadata resource file
 stepMetadata:
   artifactPrepareVersion: versioning.yaml
-  fortifyExecuteScan: fortify.yaml
   mavenExecute: mavenExecute.yaml
   mavenExecuteStaticCodeChecks: mavenStaticCodeChecks.yaml
   mtaBuild: mtaBuild.yaml
@@ -33,10 +32,6 @@ containerMaps:
     - npmExecuteScripts
   additionalUnitTests:
     - npmExecuteScripts
-  fortifyScan:
-    - fortifyExecuteScan
-  npmAudit:
-    - executeNpm
   endToEndTests:
     - mavenExecute
     - npmExecuteScripts
@@ -48,13 +43,8 @@ containerMaps:
     - checkJMeter
     - cloudFoundryDeploy
     - neoDeploy
-  s4SdkQualityChecks:
-    - mavenExecute
   artifactDeployment:
     - nexusUpload
-  whitesourceScan:
-    - mavenExecute
-    - executeNpm
   compliance:
     - sonarExecuteScan
   productionDeployment:

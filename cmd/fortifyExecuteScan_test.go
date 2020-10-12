@@ -232,13 +232,13 @@ func (f *fortifyMock) GetIssueStatisticsOfProjectVersion(id int64) ([]*models.Is
 func (f *fortifyMock) GenerateQGateReport(projectID, projectVersionID, reportTemplateID int64, projectName, projectVersionName, reportFormat string) (*models.SavedReport, error) {
 	if !f.Successive {
 		f.Successive = true
-		return &models.SavedReport{Status: "Processing"}, nil
+		return &models.SavedReport{Status: "PROCESSING"}, nil
 	}
 	f.Successive = false
-	return &models.SavedReport{Status: "Complete"}, nil
+	return &models.SavedReport{Status: "PROCESS_COMPLETE"}, nil
 }
 func (f *fortifyMock) GetReportDetails(id int64) (*models.SavedReport, error) {
-	return &models.SavedReport{Status: "Complete"}, nil
+	return &models.SavedReport{Status: "PROCESS_COMPLETE"}, nil
 }
 func (f *fortifyMock) UploadResultFile(endpoint, file string, projectVersionID int64) error {
 	return nil
