@@ -662,79 +662,6 @@ func TestBlockUntilProjectIsUpdated(t *testing.T) {
 	})
 }
 
-func TestDownloadReports(t *testing.T) {
-	t.Parallel()
-	t.Run("happy path", func(t *testing.T) {
-		// init
-		config := &ScanOptions{
-			ProjectToken:              "mock-project-token",
-			ProjectName:               "mock-project",
-			ReportDirectoryName:       "report-dir",
-			VulnerabilityReportFormat: "txt",
-		}
-		utils := newWhitesourceUtilsMock()
-		system := ws.NewSystemMock("2010-05-30 00:15:00 +0100")
-		scan := newWhitesourceScan(config)
-		// test
-		paths, err := downloadReports(config, scan, utils, system)
-		// assert
-		if assert.NoError(t, err) && assert.Len(t, paths, 2) {
-			vPath := filepath.Join("report-dir", "mock-project-vulnerability-report.txt")
-			assert.True(t, utils.HasWrittenFile(vPath))
-			vContent, _ := utils.FileRead(vPath)
-			assert.Equal(t, []byte("mock-vulnerability-report"), vContent)
-
-			rPath := filepath.Join("report-dir", "mock-project-risk-report.pdf")
-			assert.True(t, utils.HasWrittenFile(rPath))
-			rContent, _ := utils.FileRead(rPath)
-			assert.Equal(t, []byte("mock-risk-report"), rContent)
-		}
-	})
-	t.Run("invalid project token", func(t *testing.T) {
-		// init
-		config := &ScanOptions{
-			ProjectToken: "<invalid>",
-			ProjectName:  "mock-project",
-		}
-		utils := newWhitesourceUtilsMock()
-		system := ws.NewSystemMock("2010-05-30 00:15:00 +0100")
-		scan := newWhitesourceScan(config)
-		// test
-		paths, err := downloadReports(config, scan, utils, system)
-		// assert
-		assert.EqualError(t, err, "no project with token '<invalid>' found in Whitesource")
-		assert.Nil(t, paths)
-	})
-	t.Run("multiple scanned projects", func(t *testing.T) {
-		// init
-		config := &ScanOptions{
-			ReportDirectoryName:       "report-dir",
-			VulnerabilityReportFormat: "txt",
-			ProductVersion:            "1",
-		}
-		utils := newWhitesourceUtilsMock()
-		system := ws.NewSystemMock("2010-05-30 00:15:00 +0100")
-		scan := newWhitesourceScan(config)
-		err := scan.AppendScannedProjectVersion("mock-project - 1")
-		require.NoError(t, err)
-		_ = scan.UpdateProjects("mock-product-token", system)
-		// test
-		paths, err := downloadReports(config, scan, utils, system)
-		// assert
-		if assert.NoError(t, err) && assert.Len(t, paths, 2) {
-			vPath := filepath.Join("report-dir", "mock-project - 1-vulnerability-report.txt")
-			assert.True(t, utils.HasWrittenFile(vPath))
-			vContent, _ := utils.FileRead(vPath)
-			assert.Equal(t, []byte("mock-vulnerability-report"), vContent)
-
-			rPath := filepath.Join("report-dir", "mock-project - 1-risk-report.pdf")
-			assert.True(t, utils.HasWrittenFile(rPath))
-			rContent, _ := utils.FileRead(rPath)
-			assert.Equal(t, []byte("mock-risk-report"), rContent)
-		}
-	})
-}
-
 func TestWriteWhitesourceConfigJSON(t *testing.T) {
 	config := &ScanOptions{
 		OrgToken:       "org-token",
@@ -830,7 +757,7 @@ func TestWriteWhitesourceConfigJSON(t *testing.T) {
 	})
 }
 
-func TestPersisScannedProjects(t *testing.T) {
+func TestPersistScannedProjects(t *testing.T) {
 	resource := filepath.Join(".pipeline", "commonPipelineEnvironment", "custom", "whitesourceProjectNames")
 
 	t.Parallel()

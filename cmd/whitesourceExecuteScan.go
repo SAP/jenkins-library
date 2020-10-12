@@ -205,7 +205,10 @@ func checkAndReportScanResults(config *ScanOptions, scan *ws.Scan, utils whiteso
 		return err
 	}
 	if config.Reporting {
-		paths, err := downloadReports(config, scan, utils, sys)
+		paths, err := scan.DownloadReports(ws.ReportOptions{
+			ReportDirectory:           config.ReportDirectoryName,
+			VulnerabilityReportFormat: config.VulnerabilityReportFormat,
+		}, utils, sys)
 		if err != nil {
 			return err
 		}
@@ -798,75 +801,6 @@ func blockUntilProjectIsUpdated(projectToken string, sys whitesource, currentTim
 		time.Sleep(timeBetweenPolls)
 	}
 	return nil
-}
-
-// downloadReports downloads a project's risk and vulnerability reports
-func downloadReports(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource) ([]piperutils.Path, error) {
-	if err := utils.MkdirAll(config.ReportDirectoryName, os.ModePerm); err != nil {
-		return nil, err
-	}
-
-	var paths []piperutils.Path
-	if config.ProjectName != "" {
-		aggregateProject := ws.Project{Token: config.ProjectToken, Name: config.ProjectName}
-		vulnPath, err := downloadVulnerabilityReport(config, aggregateProject, utils, sys)
-		if err != nil {
-			return nil, err
-		}
-		riskPath, err := downloadRiskReport(config, aggregateProject, utils, sys)
-		if err != nil {
-			return nil, err
-		}
-		paths = append(paths, *vulnPath, *riskPath)
-	} else {
-		for _, project := range scan.ScannedProjects() {
-			vulnPath, err := downloadVulnerabilityReport(config, project, utils, sys)
-			if err != nil {
-				return nil, err
-			}
-			riskPath, err := downloadRiskReport(config, project, utils, sys)
-			if err != nil {
-				return nil, err
-			}
-			paths = append(paths, *vulnPath, *riskPath)
-		}
-	}
-	return paths, nil
-}
-
-func downloadVulnerabilityReport(config *ScanOptions, project ws.Project, utils whitesourceUtils, sys whitesource) (*piperutils.Path, error) {
-	reportBytes, err := sys.GetProjectVulnerabilityReport(project.Token, config.VulnerabilityReportFormat)
-	if err != nil {
-		return nil, err
-	}
-
-	// Write report to file
-	rptFileName := fmt.Sprintf("%s-vulnerability-report.%s", project.Name, config.VulnerabilityReportFormat)
-	rptFileName = filepath.Join(config.ReportDirectoryName, rptFileName)
-	if err := utils.FileWrite(rptFileName, reportBytes, 0644); err != nil {
-		return nil, err
-	}
-
-	log.Entry().Infof("Successfully downloaded vulnerability report to %s", rptFileName)
-	pathName := fmt.Sprintf("%s Vulnerability Report", project.Name)
-	return &piperutils.Path{Name: pathName, Target: rptFileName}, nil
-}
-
-func downloadRiskReport(config *ScanOptions, project ws.Project, utils whitesourceUtils, sys whitesource) (*piperutils.Path, error) {
-	reportBytes, err := sys.GetProjectRiskReport(project.Token)
-	if err != nil {
-		return nil, err
-	}
-
-	rptFileName := fmt.Sprintf("%s-risk-report.pdf", project.Name)
-	rptFileName = filepath.Join(config.ReportDirectoryName, rptFileName)
-	if err := utils.FileWrite(rptFileName, reportBytes, 0644); err != nil {
-		return nil, err
-	}
-
-	log.Entry().Infof("Successfully downloaded risk report to %s", rptFileName)
-	pathName := fmt.Sprintf("%s PDF Risk Report", project.Name)
-	return &piperutils.Path{Name: pathName, Target: rptFileName}, nil
 }
 
 // downloadAgent downloads the unified agent jar file if one does not exist
