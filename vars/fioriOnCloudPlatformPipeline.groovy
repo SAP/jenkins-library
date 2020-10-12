@@ -48,8 +48,11 @@ void call(parameters = [:]) {
             if((mtaBuildCfg.platform == 'NEO') || (mtaBuildCfg.buildTarget == 'NEO')) {
                 neoDeploy(parameters)
             }
-            else {
+            else if((mtaBuildCfg.platform == 'CF') || (mtaBuildCfg.buildTarget == 'CF')) {
                 cloudFoundryDeploy(parameters)
+            }
+            else {
+                error "Deployment failed: no valid deployment target defined! Find details in https://sap.github.io/jenkins-library/steps/mtaBuild/#platform"
             }
         }
 

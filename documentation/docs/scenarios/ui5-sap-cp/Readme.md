@@ -1,6 +1,6 @@
 # Build and Deploy SAPUI5 or SAP Fiori Applications on SAP Cloud Platform with Jenkins
 
-Build an application based on SAPUI5 or SAP Fiori with Jenkins and deploy the build result into an SAP Cloud Platform account in the Cloud Foundry environment.
+Build an application based on SAPUI5 or SAP Fiori with Jenkins and deploy the build result into an SAP Cloud Platform account in the Cloud Foundry environment. Optionally, deploy into the NEO environment.
 
 ## Prerequisites
 
@@ -42,8 +42,7 @@ fioriOnCloudPlatformPipeline script:this
 
 ### Scenario Configuration
 
-This is a basic configuration example, which also resides in the sources of the project. Edit `.pipeline/config.yml` below the root directory. The configuration corresponds to the steps wrapped in `fioriOnCloudPlatformPipeline`. Refer to the 
-[mtaBuild](https://sap.github.io/jenkins-library/steps/mtaBuild/) and [cloudFoundryDeploy](https://sap.github.io/jenkins-library/steps/cloudFoundryDeploy/) documentation for details.
+This is a basic configuration example, which also resides in the sources of the project. Edit `.pipeline/config.yml` below the root directory. The configuration corresponds to the steps wrapped in `fioriOnCloudPlatformPipeline`. Refer to the [mtaBuild](https://sap.github.io/jenkins-library/steps/mtaBuild/) and [cloudFoundryDeploy](https://sap.github.io/jenkins-library/steps/cloudFoundryDeploy/) documentation for details.
 
 ```yaml
 steps:

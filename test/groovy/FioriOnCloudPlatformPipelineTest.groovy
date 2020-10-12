@@ -17,6 +17,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
 import com.sap.piper.JenkinsUtils
@@ -52,7 +53,8 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
             Gruntfile.js and configure default tasks (e.g. lint, clean, build)
         *   mta.yaml
     */
-
+    private ExpectedException thrown = new ExpectedException().none()
+  
     JenkinsStepRule stepRule = new JenkinsStepRule(this)
     JenkinsReadYamlRule readYamlRule = new JenkinsReadYamlRule(this)
     JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
@@ -63,6 +65,7 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
         .around(readYamlRule)
+        .around(thrown)
         .around(stepRule)
         .around(shellRule)
         .around(jlr)
@@ -121,7 +124,7 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
     }
 
     @Test
-    void straightForwardTest() {
+    void straightForwardTestNeo() {
 
         nullScript
             .commonPipelineEnvironment
@@ -190,4 +193,44 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
         assertThat(shellRule.shell, hasItem(containsString('cf login -u "foo" -p \'terceSpot\' -a https://api.cf.hana.example.com -o "testOrg" -s "testSpace"')))
     }
 
+    @Test
+    void errorNoTargetDefined() {
+
+        nullScript
+            .commonPipelineEnvironment
+                .configuration =  [steps:
+                                    [neoDeploy:
+                                         [neo:
+                                              [ host: 'hana.example.com',
+                                                account: 'myTestAccount',
+                                              ]
+                                         ]
+                                    ]
+                                ]
+
+        thrown.expect(Exception)
+        thrown.expectMessage('Deployment failed: no valid deployment target defined')
+
+        stepRule.step.fioriOnCloudPlatformPipeline(script: nullScript)
+
+    }
+    
+    @Test
+    void errorUnknownTargetDefined() {
+
+        nullScript
+            .commonPipelineEnvironment
+                .configuration =  [steps:
+                                     [mtaBuild:
+                                         [
+                                           platform: 'UNKNOWN'
+                                         ]
+                                    ]
+                                ]
+
+        thrown.expect(Exception)
+        thrown.expectMessage('Deployment failed: no valid deployment target defined')
+
+        stepRule.step.fioriOnCloudPlatformPipeline(script: nullScript)
+    }
 }
