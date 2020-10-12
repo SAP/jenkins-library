@@ -8,8 +8,8 @@ import (
 )
 
 var vaultFilter = []string{
-	"vaultApproleID",
-	"vaultApproleSecreId",
+	"vaultAppRoleID",
+	"vaultAppRoleSecreId",
 	"vaultServerUrl",
 	"vaultNamespace",
 	"vaultBasePath",
