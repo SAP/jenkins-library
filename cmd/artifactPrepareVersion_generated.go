@@ -49,7 +49,7 @@ func (p *artifactPrepareVersionCommonPipelineEnvironment) persist(path, resource
 	content := []struct {
 		category string
 		name     string
-		value    string
+		value    interface{}
 	}{
 		{category: "", name: "artifactVersion", value: p.artifactVersion},
 		{category: "", name: "originalArtifactVersion", value: p.originalArtifactVersion},

@@ -124,8 +124,8 @@ func GetHTTPResponse(requestType string, connectionDetails ConnectionDetailsHTTP
 	header["Accept"] = []string{"application/json"}
 	header["x-csrf-token"] = []string{connectionDetails.XCsrfToken}
 
-	req, err := client.SendRequest(requestType, connectionDetails.URL, bytes.NewBuffer(body), header, nil)
-	return req, err
+	httpResponse, err := client.SendRequest(requestType, connectionDetails.URL, bytes.NewBuffer(body), header, nil)
+	return httpResponse, err
 }
 
 // HandleHTTPError handles ABAP error messages which can occur when using OData services

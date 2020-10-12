@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http/cookiejar"
 	"reflect"
@@ -63,9 +64,9 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 		Password:           connectionDetails.Password,
 	})
 
-	repositories, errGetRepos := getRepositories(config)
+	repositories, errGetRepos := abaputils.GetRepositories(&abaputils.RepositoriesConfig{BranchName: config.BranchName, RepositoryName: config.RepositoryName, Repositories: config.Repositories})
 	if errGetRepos != nil {
-		return errGetRepos
+		return fmt.Errorf("Something failed during the clone: %w", errGetRepos)
 	}
 
 	log.Entry().Infof("Start cloning %v repositories", len(repositories))
@@ -109,6 +110,10 @@ func triggerClone(repositoryName string, branchName string, cloneConnectionDetai
 		return uriConnectionDetails, err
 	}
 	defer resp.Body.Close()
+
+	// workaround until golang version 1.16 is used
+	time.Sleep(1 * time.Second)
+
 	log.Entry().WithField("StatusCode", resp.Status).WithField("ABAP Endpoint", cloneConnectionDetails.URL).Info("Authentication on the ABAP system successful")
 	uriConnectionDetails.XCsrfToken = resp.Header.Get("X-Csrf-Token")
 	cloneConnectionDetails.XCsrfToken = uriConnectionDetails.XCsrfToken
@@ -150,21 +155,6 @@ func triggerClone(repositoryName string, branchName string, cloneConnectionDetai
 
 	uriConnectionDetails.URL = pollingURI + expandLog
 	return uriConnectionDetails, nil
-}
-
-func getRepositories(config *abapEnvironmentCloneGitRepoOptions) ([]abaputils.Repository, error) {
-	var repositories = make([]abaputils.Repository, 0)
-	if config.Repositories != "" {
-		descriptor, err := abaputils.ReadAddonDescriptor(config.Repositories)
-		if err != nil {
-			return nil, err
-		}
-		repositories = descriptor.Repositories
-	}
-	if config.RepositoryName != "" && config.BranchName != "" {
-		repositories = append(repositories, abaputils.Repository{Name: config.RepositoryName, Branch: config.BranchName})
-	}
-	return repositories, nil
 }
 
 func convertConfig(config *abapEnvironmentCloneGitRepoOptions) abaputils.AbapEnvironmentOptions {
