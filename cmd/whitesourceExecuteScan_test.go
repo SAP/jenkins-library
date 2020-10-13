@@ -131,6 +131,11 @@ type downloadedFile struct {
 	filePath  string
 }
 
+type npmInstall struct {
+	currentDir  string
+	packageJSON []string
+}
+
 type whitesourceUtilsMock struct {
 	*mock.FilesMock
 	*mock.ExecMockRunner
@@ -139,7 +144,7 @@ type whitesourceUtilsMock struct {
 	usedBuildDescriptorFile string
 	usedOptions             versioning.Options
 	downloadedFiles         []downloadedFile
-	npmInstalledModules     []string
+	npmInstalledModules     []npmInstall
 }
 
 func (w *whitesourceUtilsMock) DownloadFile(url, filename string, _ http.Header, _ []*http.Cookie) error {
@@ -169,8 +174,11 @@ func (w *whitesourceUtilsMock) FindPackageJSONFiles(_ *ScanOptions) ([]string, e
 	return matches, nil
 }
 
-func (w *whitesourceUtilsMock) InstallAllNPMDependencies(_ *ScanOptions, _ []string) error {
-	w.npmInstalledModules = append(w.npmInstalledModules, w.CurrentDir)
+func (w *whitesourceUtilsMock) InstallAllNPMDependencies(_ *ScanOptions, packageJSONs []string) error {
+	w.npmInstalledModules = append(w.npmInstalledModules, npmInstall{
+		currentDir:  w.CurrentDir,
+		packageJSON: packageJSONs,
+	})
 	return nil
 }
 
@@ -427,7 +435,11 @@ func TestExecuteScanNPM(t *testing.T) {
 		err := executeScan(&config, scan, utilsMock)
 		// assert
 		assert.NoError(t, err)
-		assert.Equal(t, []string{"app", ""}, utilsMock.npmInstalledModules)
+		expectedNpmInstalls := []npmInstall{
+			{currentDir: "app", packageJSON: []string{"package.json"}},
+			{currentDir: "", packageJSON: []string{"package.json"}},
+		}
+		assert.Equal(t, expectedNpmInstalls, utilsMock.npmInstalledModules)
 		assert.True(t, utilsMock.HasRemovedFile("package-lock.json"))
 	})
 }

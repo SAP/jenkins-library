@@ -116,6 +116,7 @@ func TestCloudFoundryGetAbapCommunicationInfo(t *testing.T) {
 		assert.NoError(t, err)
 	})
 }
+
 func TestHostGetAbapCommunicationInfo(t *testing.T) {
 	t.Run("HOST GetAbapCommunicationArrangementInfo - Success", func(t *testing.T) {
 
@@ -192,6 +193,7 @@ func TestHostGetAbapCommunicationInfo(t *testing.T) {
 		assert.NoError(t, err)
 	})
 }
+
 func TestReadServiceKeyAbapEnvironment(t *testing.T) {
 	t.Run("CF ReadServiceKeyAbapEnvironment - Failed to login to Cloud Foundry", func(t *testing.T) {
 
@@ -300,11 +302,62 @@ repositories:
 		assert.Equal(t, `2.1.1`, addonDescriptor.Repositories[1].VersionYAML)
 		assert.Equal(t, ``, addonDescriptor.Repositories[0].SpLevel)
 		assert.Equal(t, ``, addonDescriptor.Repositories[1].SpLevel)
-	})
 
+		err = CheckAddonDescriptorForRepositories(addonDescriptor)
+		assert.NoError(t, err)
+	})
 	t.Run("Test: file does not exist", func(t *testing.T) {
-		_, err := ReadAddonDescriptor("filename.yaml")
+		expectedErrorMessage := "AddonDescriptor doesn't contain any repositories"
+
+		addonDescriptor, err := ReadAddonDescriptor("filename.yaml")
 		assert.EqualError(t, err, fmt.Sprintf("Could not find %v", "filename.yaml"))
+		assert.Equal(t, AddonDescriptor{}, addonDescriptor)
+
+		err = CheckAddonDescriptorForRepositories(addonDescriptor)
+		assert.EqualError(t, err, expectedErrorMessage)
+	})
+	t.Run("Test: empty config - failure case", func(t *testing.T) {
+		expectedErrorMessage := "AddonDescriptor doesn't contain any repositories"
+
+		addonDescriptor, err := ReadAddonDescriptor("")
+
+		assert.EqualError(t, err, fmt.Sprintf("Could not find %v", ""))
+		assert.Equal(t, AddonDescriptor{}, addonDescriptor)
+
+		err = CheckAddonDescriptorForRepositories(addonDescriptor)
+		assert.EqualError(t, err, expectedErrorMessage)
+	})
+	t.Run("Read empty addon descriptor from wrong config - failure case", func(t *testing.T) {
+		expectedErrorMessage := "AddonDescriptor doesn't contain any repositories"
+		expectedRepositoryList := AddonDescriptor{Repositories: []Repository{{}, {}}}
+
+		dir, err := ioutil.TempDir("", "test abap utils")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+
+		defer func() {
+			_ = os.Chdir(oldCWD)
+			_ = os.RemoveAll(dir)
+		}()
+
+		manifestFileString := `
+repositories:
+- repo: 'testRepo'
+- repo: 'testRepo2'`
+
+		err = ioutil.WriteFile("repositories.yml", []byte(manifestFileString), 0644)
+
+		addonDescriptor, err := ReadAddonDescriptor("repositories.yml")
+
+		assert.Equal(t, expectedRepositoryList, addonDescriptor)
+		assert.NoError(t, err)
+
+		err = CheckAddonDescriptorForRepositories(addonDescriptor)
+		assert.EqualError(t, err, expectedErrorMessage)
 	})
 }
 
