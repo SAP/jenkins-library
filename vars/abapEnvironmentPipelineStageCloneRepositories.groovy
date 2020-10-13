@@ -32,14 +32,11 @@ void call(Map parameters = [:]) {
         .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
         .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
         .mixin(parameters, PARAMETER_KEYS)
-        .addIfEmpty('strategy', parameters.script.commonPipelineEnvironment.configuration.runStage?.get(stageName))
         .use()
 
-    piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
+        //.addIfEmpty('strategy', parameters.script.commonPipelineEnvironment.configuration.runStage?.get(stageName))
 
-        if(parameters.script.commonPipelineEnvironment.getStepConfiguration('abapEnvironmentPullGitRepo', 'Clone Repositories').repositoryNames || parameters.script.commonPipelineEnvironment.configuration.runStep?.get('abapEnvironmentPullGitRepo') && (!config.strategy)) {
-            abapEnvironmentPullGitRepo script: parameters.script
-        } 
+    piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
 
         switch (config.strategy) {
             case 'Pull':
@@ -62,7 +59,11 @@ void call(Map parameters = [:]) {
                 break
         }
 
-        /*if (parameters.script.commonPipelineEnvironment.configuration.runStage?.get("Prepare System")) {
+        /*
+        if(parameters.script.commonPipelineEnvironment.getStepConfiguration('abapEnvironmentPullGitRepo', 'Clone Repositories').repositoryNames || parameters.script.commonPipelineEnvironment.configuration.runStep?.get('abapEnvironmentPullGitRepo') && (!config.strategy)) {
+            abapEnvironmentPullGitRepo script: parameters.script
+        } 
+        if (parameters.script.commonPipelineEnvironment.configuration.runStage?.get("Prepare System")) {
             abapEnvironmentCloneGitRepo script: parameters.script
         }
         if(parameters.script.commonPipelineEnvironment.configuration.runStep?.get('abapEnvironmentCloneGitRepo')) {
