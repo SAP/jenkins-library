@@ -8,20 +8,20 @@ import (
 	"testing"
 )
 
-func newWhitesourceScan(config *MavenScanOptions) *Scan {
+func newMavenScan(config *MavenScanOptions) *Scan {
 	return &Scan{
 		AggregateProjectName: config.ProjectName,
 		ProductVersion:       "product-version",
 	}
 }
 
-type whitesourceUtilsMock struct {
+type mavenUtilsMock struct {
 	*mock.FilesMock
 	*mock.ExecMockRunner
 }
 
-func newWhitesourceUtilsMock() *whitesourceUtilsMock {
-	return &whitesourceUtilsMock{
+func newMavenUtilsMock() *mavenUtilsMock {
+	return &mavenUtilsMock{
 		FilesMock:      &mock.FilesMock{},
 		ExecMockRunner: &mock.ExecMockRunner{},
 	}
@@ -47,9 +47,9 @@ func TestExecuteScanMaven(t *testing.T) {
 			ProductName: "mock-product",
 			ProjectName: "mock-project",
 		}
-		utilsMock := newWhitesourceUtilsMock()
+		utilsMock := newMavenUtilsMock()
 		utilsMock.AddFile("pom.xml", []byte(pomXML))
-		scan := newWhitesourceScan(&config)
+		scan := newMavenScan(&config)
 		// test
 		err := scan.ExecuteMavenScan(&config, utilsMock)
 		// assert
@@ -105,10 +105,10 @@ func TestExecuteScanMaven(t *testing.T) {
 			UserToken:   "user-token",
 			ProductName: "mock-product",
 		}
-		utilsMock := newWhitesourceUtilsMock()
+		utilsMock := newMavenUtilsMock()
 		utilsMock.AddFile("pom.xml", []byte(rootPomXML))
 		utilsMock.AddFile(filepath.Join("sub", "pom.xml"), []byte(modulePomXML))
-		scan := newWhitesourceScan(&config)
+		scan := newMavenScan(&config)
 		// test
 		err := scan.ExecuteMavenScan(&config, utilsMock)
 		// assert
@@ -146,8 +146,8 @@ func TestExecuteScanMaven(t *testing.T) {
 			UserToken:   "user-token",
 			ProductName: "mock-product",
 		}
-		utilsMock := newWhitesourceUtilsMock()
-		scan := newWhitesourceScan(&config)
+		utilsMock := newMavenUtilsMock()
+		scan := newMavenScan(&config)
 		// test
 		err := scan.ExecuteMavenScan(&config, utilsMock)
 		// assert

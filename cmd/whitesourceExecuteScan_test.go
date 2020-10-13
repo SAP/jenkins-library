@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/versioning"
@@ -64,12 +63,12 @@ func (w *whitesourceUtilsMock) GetArtifactCoordinates(buildTool, buildDescriptor
 	return w.coordinates, nil
 }
 
-func (w *whitesourceUtilsMock) FindPackageJSONFiles(_ *ScanOptions) ([]string, error) {
+func (w *whitesourceUtilsMock) FindPackageJSONFiles(_ *ws.NPMScanOptions) ([]string, error) {
 	matches, _ := w.Glob("**/package.json")
 	return matches, nil
 }
 
-func (w *whitesourceUtilsMock) InstallAllNPMDependencies(_ *ScanOptions, packageJSONs []string) error {
+func (w *whitesourceUtilsMock) InstallAllNPMDependencies(_ *ws.NPMScanOptions, packageJSONs []string) error {
 	w.npmInstalledModules = append(w.npmInstalledModules, npmInstall{
 		currentDir:  w.CurrentDir,
 		packageJSON: packageJSONs,
@@ -255,89 +254,7 @@ func TestExecuteScanUA(t *testing.T) {
 	})
 }
 
-func TestExecuteScanNPM(t *testing.T) {
-	config := ScanOptions{
-		ScanType:       "npm",
-		OrgToken:       "org-token",
-		UserToken:      "user-token",
-		ProductName:    "mock-product",
-		ProjectName:    "mock-project",
-		ProductVersion: "product-version",
-	}
-
-	t.Parallel()
-
-	t.Run("happy path NPM", func(t *testing.T) {
-		// init
-		utilsMock := newWhitesourceUtilsMock()
-		utilsMock.AddFile("package.json", []byte(`{"name":"my-module-name"}`))
-		scan := newWhitesourceScan(&config)
-		// test
-		err := executeScan(&config, scan, utilsMock)
-		// assert
-		require.NoError(t, err)
-		expectedCalls := []mock.ExecCall{
-			{
-				Exec: "npm",
-				Params: []string{
-					"ls",
-				},
-			},
-			{
-				Exec: "npx",
-				Params: []string{
-					"whitesource",
-					"run",
-				},
-			},
-		}
-		assert.Equal(t, expectedCalls, utilsMock.Calls)
-		assert.True(t, utilsMock.HasWrittenFile(whiteSourceConfig))
-		assert.True(t, utilsMock.HasRemovedFile(whiteSourceConfig))
-	})
-	t.Run("no NPM modules", func(t *testing.T) {
-		// init
-		utilsMock := newWhitesourceUtilsMock()
-		scan := newWhitesourceScan(&config)
-		// test
-		err := executeScan(&config, scan, utilsMock)
-		// assert
-		assert.EqualError(t, err, "found no NPM modules to scan. Configured excludes: []")
-		assert.Len(t, utilsMock.Calls, 0)
-		assert.False(t, utilsMock.HasWrittenFile(whiteSourceConfig))
-	})
-	t.Run("package.json needs name", func(t *testing.T) {
-		// init
-		utilsMock := newWhitesourceUtilsMock()
-		utilsMock.AddFile("package.json", []byte(`{"key":"value"}`))
-		scan := newWhitesourceScan(&config)
-		// test
-		err := executeScan(&config, scan, utilsMock)
-		// assert
-		assert.EqualError(t, err, "failed to scan NPM module 'package.json': the file 'package.json/package.json' must configure a name")
-	})
-	t.Run("npm ls fails", func(t *testing.T) {
-		// init
-		utilsMock := newWhitesourceUtilsMock()
-		utilsMock.AddFile("package.json", []byte(`{"name":"my-module-name"}`))
-		utilsMock.AddFile(filepath.Join("app", "package.json"), []byte(`{"name":"my-app-module-name"}`))
-		utilsMock.AddFile("package-lock.json", []byte("dummy"))
-
-		utilsMock.ShouldFailOnCommand = make(map[string]error)
-		utilsMock.ShouldFailOnCommand["npm ls"] = fmt.Errorf("mock failure")
-		scan := newWhitesourceScan(&config)
-		// test
-		err := executeScan(&config, scan, utilsMock)
-		// assert
-		assert.NoError(t, err)
-		expectedNpmInstalls := []npmInstall{
-			{currentDir: "app", packageJSON: []string{"package.json"}},
-			{currentDir: "", packageJSON: []string{"package.json"}},
-		}
-		assert.Equal(t, expectedNpmInstalls, utilsMock.npmInstalledModules)
-		assert.True(t, utilsMock.HasRemovedFile("package-lock.json"))
-	})
-}
+const whiteSourceConfig = "whitesource.config.json"
 
 func TestExecuteScanMTA(t *testing.T) {
 	const pomXML = `<?xml version="1.0" encoding="UTF-8"?>
@@ -525,101 +442,6 @@ func TestBlockUntilProjectIsUpdated(t *testing.T) {
 		// assert
 		if assert.Error(t, err) {
 			assert.Contains(t, err.Error(), "timeout while waiting")
-		}
-	})
-}
-
-func TestWriteWhitesourceConfigJSON(t *testing.T) {
-	config := &ScanOptions{
-		OrgToken:       "org-token",
-		UserToken:      "user-token",
-		ProductName:    "mock-product",
-		ProjectName:    "mock-project",
-		ProductToken:   "mock-product-token",
-		ProductVersion: "42",
-	}
-
-	expected := make(map[string]interface{})
-	expected["apiKey"] = "org-token"
-	expected["userKey"] = "user-token"
-	expected["checkPolicies"] = true
-	expected["productName"] = "mock-product"
-	expected["projectName"] = "mock-project"
-	expected["productToken"] = "mock-product-token"
-	expected["productVer"] = "42"
-	expected["devDep"] = true
-	expected["ignoreNpmLsErrors"] = true
-
-	t.Parallel()
-
-	t.Run("write config from scratch", func(t *testing.T) {
-		// init
-		utils := newWhitesourceUtilsMock()
-		// test
-		err := writeWhitesourceConfigJSON(config, utils, true, true)
-		// assert
-		if assert.NoError(t, err) && assert.True(t, utils.HasWrittenFile(whiteSourceConfig)) {
-			contents, _ := utils.FileRead(whiteSourceConfig)
-			actual := make(map[string]interface{})
-			_ = json.Unmarshal(contents, &actual)
-			assert.Equal(t, expected, actual)
-		}
-	})
-
-	t.Run("extend and merge config", func(t *testing.T) {
-		// init
-		initial := make(map[string]interface{})
-		initial["checkPolicies"] = false
-		initial["productName"] = "mock-product"
-		initial["productVer"] = "41"
-		initial["unknown"] = "preserved"
-		encoded, _ := json.Marshal(initial)
-
-		utils := newWhitesourceUtilsMock()
-		utils.AddFile(whiteSourceConfig, encoded)
-
-		// test
-		err := writeWhitesourceConfigJSON(config, utils, true, true)
-		// assert
-		if assert.NoError(t, err) && assert.True(t, utils.HasWrittenFile(whiteSourceConfig)) {
-			contents, _ := utils.FileRead(whiteSourceConfig)
-			actual := make(map[string]interface{})
-			_ = json.Unmarshal(contents, &actual)
-
-			mergedExpected := expected
-			mergedExpected["unknown"] = "preserved"
-
-			assert.Equal(t, mergedExpected, actual)
-		}
-	})
-
-	t.Run("extend and merge config, omit productToken", func(t *testing.T) {
-		// init
-		initial := make(map[string]interface{})
-		initial["checkPolicies"] = false
-		initial["productName"] = "mock-product"
-		initial["productVer"] = "41"
-		initial["unknown"] = "preserved"
-		initial["projectToken"] = "mock-project-token"
-		encoded, _ := json.Marshal(initial)
-
-		utils := newWhitesourceUtilsMock()
-		utils.AddFile(whiteSourceConfig, encoded)
-
-		// test
-		err := writeWhitesourceConfigJSON(config, utils, true, true)
-		// assert
-		if assert.NoError(t, err) && assert.True(t, utils.HasWrittenFile(whiteSourceConfig)) {
-			contents, _ := utils.FileRead(whiteSourceConfig)
-			actual := make(map[string]interface{})
-			_ = json.Unmarshal(contents, &actual)
-
-			mergedExpected := expected
-			mergedExpected["unknown"] = "preserved"
-			mergedExpected["projectToken"] = "mock-project-token"
-			delete(mergedExpected, "productToken")
-
-			assert.Equal(t, mergedExpected, actual)
 		}
 	})
 }

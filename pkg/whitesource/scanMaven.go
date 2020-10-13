@@ -30,7 +30,7 @@ type MavenScanOptions struct {
 	ProjectSettingsFile string
 }
 
-type whitesourceUtils interface {
+type mavenUtils interface {
 	Stdout(out io.Writer)
 	Stderr(err io.Writer)
 	RunExecutable(executable string, params ...string) error
@@ -41,7 +41,7 @@ type whitesourceUtils interface {
 
 // ExecuteMavenScan constructs maven parameters from the given configuration, and executes the maven goal
 // "org.whitesource:whitesource-maven-plugin:19.5.1:update".
-func (s *Scan) ExecuteMavenScan(config *MavenScanOptions, utils whitesourceUtils) error {
+func (s *Scan) ExecuteMavenScan(config *MavenScanOptions, utils mavenUtils) error {
 	log.Entry().Infof("Using Whitesource scan for Maven project")
 	pomPath := config.PomPath
 	if pomPath == "" {
@@ -50,7 +50,9 @@ func (s *Scan) ExecuteMavenScan(config *MavenScanOptions, utils whitesourceUtils
 	return s.ExecuteMavenScanForPomFile(config, utils, pomPath)
 }
 
-func (s *Scan) ExecuteMavenScanForPomFile(config *MavenScanOptions, utils whitesourceUtils, pomPath string) error {
+// ExecuteMavenScanForPomFile constructs maven parameters from the given configuration, and executes the maven goal
+// "org.whitesource:whitesource-maven-plugin:19.5.1:update" for the given pom file.
+func (s *Scan) ExecuteMavenScanForPomFile(config *MavenScanOptions, utils mavenUtils, pomPath string) error {
 	pomExists, _ := utils.FileExists(pomPath)
 	if !pomExists {
 		return fmt.Errorf("for scanning with type '%s', the file '%s' must exist in the project root",
@@ -102,7 +104,7 @@ func (s *Scan) generateMavenWhitesourceDefines(config *MavenScanOptions) []strin
 	return defines
 }
 
-func generateMavenWhitesourceFlags(config *MavenScanOptions, utils whitesourceUtils) (flags []string, excludes []string) {
+func generateMavenWhitesourceFlags(config *MavenScanOptions, utils mavenUtils) (flags []string, excludes []string) {
 	excludes = config.BuildDescriptorExcludeList
 	if len(excludes) == 0 {
 		excludes = []string{
@@ -129,7 +131,7 @@ func generateMavenWhitesourceFlags(config *MavenScanOptions, utils whitesourceUt
 	return flags, excludes
 }
 
-func (s *Scan) appendModulesThatWillBeScanned(utils whitesourceUtils, excludes []string) error {
+func (s *Scan) appendModulesThatWillBeScanned(utils mavenUtils, excludes []string) error {
 	return maven.VisitAllMavenModules(".", utils, excludes, func(info maven.ModuleInfo) error {
 		project := info.Project
 		if project.Packaging != "pom" {
