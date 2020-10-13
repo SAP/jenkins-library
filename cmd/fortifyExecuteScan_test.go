@@ -5,8 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/fortify"
-	"github.com/SAP/jenkins-library/pkg/log"
 	"io"
 	"io/ioutil"
 	"os"
@@ -15,11 +13,47 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-github/v28/github"
+	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/fortify"
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/versioning"
+
+	"github.com/google/go-github/v32/github"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/piper-validation/fortify-client-go/models"
 )
+
+type artifactMock struct {
+	Coordinates coordinatesMock
+}
+
+type coordinatesMock struct {
+	GroupID    string
+	ArtifactID string
+	Version    string
+}
+
+func newCoordinatesMock() coordinatesMock {
+	return coordinatesMock{
+		GroupID:    "a",
+		ArtifactID: "b",
+		Version:    "1.0.0",
+	}
+}
+func (a artifactMock) VersioningScheme() string {
+	return "full"
+}
+func (a artifactMock) GetVersion() (string, error) {
+	return a.Coordinates.Version, nil
+}
+func (a artifactMock) SetVersion(v string) error {
+	a.Coordinates.Version = v
+	return nil
+}
+func (a artifactMock) GetCoordinates() (versioning.Coordinates, error) {
+	return a.Coordinates, nil
+}
 
 type fortifyMock struct {
 	Successive                       bool
@@ -28,7 +62,7 @@ type fortifyMock struct {
 }
 
 func (f *fortifyMock) GetProjectByName(name string, autoCreate bool, projectVersion string) (*models.Project, error) {
-	return &models.Project{Name: &name}, nil
+	return &models.Project{Name: &name, ID: 64}, nil
 }
 func (f *fortifyMock) GetProjectVersionDetailsByProjectIDAndVersionName(id int64, name string, autoCreate bool, projectName string) (*models.ProjectVersion, error) {
 	return &models.ProjectVersion{ID: id, Name: &name, Project: &models.Project{Name: &projectName}}, nil
@@ -142,7 +176,7 @@ func (f *fortifyMock) GetFilterSetByDisplayName(issueFilterSelectorSet *models.I
 			}
 		}
 	}
-	return nil
+	return &models.IssueFilterSelector{DisplayName: name}
 }
 func (f *fortifyMock) GetProjectIssuesByIDAndFilterSetGroupedBySelector(id int64, filter, filterSetGUID string, issueFilterSelectorSet *models.IssueFilterSelectorSet) ([]*models.ProjectVersionIssueGroup, error) {
 	if filter == "ET1:abcd" {
@@ -161,7 +195,7 @@ func (f *fortifyMock) GetProjectIssuesByIDAndFilterSetGroupedBySelector(id int64
 			{ID: &group3, TotalCount: &total3, AuditedCount: &audited3},
 		}, nil
 	}
-	if issueFilterSelectorSet != nil && issueFilterSelectorSet.FilterBySet[0].GUID == "3" {
+	if issueFilterSelectorSet != nil && issueFilterSelectorSet.FilterBySet != nil && len(issueFilterSelectorSet.FilterBySet) > 0 && issueFilterSelectorSet.FilterBySet[0].GUID == "3" {
 		group := "3"
 		total := int32(4)
 		audited := int32(0)
@@ -198,13 +232,13 @@ func (f *fortifyMock) GetIssueStatisticsOfProjectVersion(id int64) ([]*models.Is
 func (f *fortifyMock) GenerateQGateReport(projectID, projectVersionID, reportTemplateID int64, projectName, projectVersionName, reportFormat string) (*models.SavedReport, error) {
 	if !f.Successive {
 		f.Successive = true
-		return &models.SavedReport{Status: "Processing"}, nil
+		return &models.SavedReport{Status: "PROCESSING"}, nil
 	}
 	f.Successive = false
-	return &models.SavedReport{Status: "Complete"}, nil
+	return &models.SavedReport{Status: "PROCESS_COMPLETE"}, nil
 }
 func (f *fortifyMock) GetReportDetails(id int64) (*models.SavedReport, error) {
-	return &models.SavedReport{Status: "Complete"}, nil
+	return &models.SavedReport{Status: "PROCESS_COMPLETE"}, nil
 }
 func (f *fortifyMock) UploadResultFile(endpoint, file string, projectVersionID int64) error {
 	return nil
@@ -302,18 +336,65 @@ func TestParametersAreValidated(t *testing.T) {
 		{
 			nameOfRun:     "all parameters empty",
 			config:        fortifyExecuteScanOptions{},
-			expectedError: "unable to get artifact from descriptor : build tool '' not supported",
+			expectedError: "Unable to get artifact from descriptor : build tool '' not supported",
+		},
+	}
+
+	for _, data := range testData {
+		t.Run(data.nameOfRun, func(t *testing.T) {
+			_, err := determineArtifact(data.config, &command.Command{})
+			assert.EqualError(t, err, data.expectedError)
+		})
+	}
+}
+
+func TestExecutions(t *testing.T) {
+	type parameterTestData struct {
+		nameOfRun             string
+		config                fortifyExecuteScanOptions
+		expectedError         string
+		expectedReportsLength int
+		expectedReports       []string
+	}
+
+	testData := []parameterTestData{
+		{
+			nameOfRun:             "golang scan and verify",
+			config:                fortifyExecuteScanOptions{BuildTool: "golang", BuildDescriptorFile: "go.mod"},
+			expectedReportsLength: 2,
+			expectedReports:       []string{"target/fortify-scan.*", "target/*.fpr"},
+		},
+		{
+			nameOfRun:             "golang verify only",
+			config:                fortifyExecuteScanOptions{BuildTool: "golang", BuildDescriptorFile: "go.mod", VerifyOnly: true},
+			expectedReportsLength: 0,
 		},
 	}
 
 	for _, data := range testData {
 		t.Run(data.nameOfRun, func(t *testing.T) {
 			ff := fortifyMock{}
-			runner := execRunnerMock{}
+			runner := &execRunnerMock{}
+			artMock := artifactMock{Coordinates: newCoordinatesMock()}
 			influx := fortifyExecuteScanInflux{}
 			auditStatus := map[string]string{}
-			err := runFortifyScan(data.config, &ff, &runner, nil, &influx, auditStatus)
-			assert.EqualError(t, err, data.expectedError)
+			reports, _ := runFortifyScan(data.config, &ff, runner, artMock, nil, &influx, auditStatus)
+			if len(data.expectedReports) != data.expectedReportsLength {
+				assert.Fail(t, fmt.Sprintf("Wrong number of reports detected, expected %v, actual %v", data.expectedReportsLength, len(data.expectedReports)))
+			}
+			if len(data.expectedReports) > 0 {
+				for _, expectedPath := range data.expectedReports {
+					found := false
+					for _, actualPath := range reports {
+						if actualPath.Target == expectedPath {
+							found = true
+						}
+					}
+					if !found {
+						assert.Failf(t, "Expected path %s not found", expectedPath)
+					}
+				}
+			}
 		})
 	}
 }

@@ -2,12 +2,12 @@ package cmd
 
 import (
 	"fmt"
-
 	"github.com/SAP/jenkins-library/pkg/cloudfoundry"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/npm"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"strings"
 )
 
 func cloudFoundryFaasDeploy(config cloudFoundryFaasDeployOptions, telemetryData *telemetry.CustomData) {
@@ -55,8 +55,8 @@ func runCloudFoundryFaasDeploy(options *cloudFoundryFaasDeployOptions,
 		}
 	}()
 
-	serviceInstance := options.XfsRuntimeServiceInstance
-	serviceKey := options.XfsRuntimeServiceKeyName
+	serviceInstance := options.XfsrtServiceInstance
+	serviceKey := options.XfsrtServiceKeyName
 	log.Entry().Infof("Logging into Extension Factory Serverless Runtime service instance '%s' with service key '%s'", serviceInstance, serviceKey)
 	xfsrtLoginScript := []string{"login", "-s", serviceInstance, "-b", serviceKey, "--silent"}
 	if err := c.RunExecutable("xfsrt-cli", xfsrtLoginScript...); err != nil {
@@ -74,11 +74,17 @@ func runCloudFoundryFaasDeploy(options *cloudFoundryFaasDeployOptions,
 	}
 
 	log.Entry().Info("Deploying faas project to Extension Factory Serverless Runtime")
-	xfsrtDeployScript := []string{"faas", "project", "deploy", "-y", "./deploy/values.yaml"}
+	xfsrtDeployScript := []string{"faas", "project", "deploy"}
+	if options.XfsrtValues != "" {
+		deployValues := strings.ReplaceAll(options.XfsrtValues, "\n", " ")
+		xfsrtDeployScript = append(xfsrtDeployScript, []string{"-c", fmt.Sprintf("'%s'", deployValues)}...)
+	}
+
 	if err := c.RunExecutable("xfsrt-cli", xfsrtDeployScript...); err != nil {
 		return fmt.Errorf("Failed to deploy faas project: %w", err)
+	} else {
+		log.Entry().Info("Deployment successful.")
 	}
-	log.Entry().Info("Faas application is successfully deployed to Extension Factory Serverless Runtime service.")
 
 	return returnedError
 }

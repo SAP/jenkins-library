@@ -9,6 +9,9 @@ spec:
       - name: cfCredentialsId
         description: Jenkins credentials ID containing user and password to authenticate to the Cloud Foundry API
         type: jenkins
+      - name: xfsrtValuesCredentialsId
+        description: Jenkins 'Secret text' credentials ID containing deploy values for Extension Factory serverless runtime CLI
+        type: jenkins
     params:
       - name: cfApiEndpoint
         type: string
@@ -69,7 +72,7 @@ spec:
         mandatory: true
         aliases:
           - name: cloudFoundry/space
-      - name: xfsRuntimeServiceInstance
+      - name: xfsrtServiceInstance
         type: string
         description: Parameter for Extension Factory serverless runtime Service Instance Name
         scope:
@@ -79,8 +82,8 @@ spec:
           - GENERAL
         mandatory: true
         aliases:
-          - name: cloudFoundry/xfsRuntimeServiceInstance
-      - name: xfsRuntimeServiceKeyName
+          - name: cloudFoundry/xfsrtServiceInstance
+      - name: xfsrtServiceKeyName
         type: string
         description: Parameter for Service Key name for CloudFoundry Service Key to be created
         scope:
@@ -90,9 +93,25 @@ spec:
           - GENERAL
         mandatory: true
         aliases:
-          - name: cloudFoundry/xfsRuntimeServiceKeyName
-          - name: cloudFoundry/xfsRuntimeServiceKey
-          - name: xfsRuntimeServiceKey
+          - name: cloudFoundry/xfsrtServiceKeyName
+          - name: cloudFoundry/xfsrtServiceKey
+          - name: xfsrtServiceKey
+      - name: xfsrtValues
+        type: string
+        description: "Deploy values as JSON string for Extension Factory serverless runtime."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: false
+        secret: true
+        resourceRef:
+          - name: xfsrtValuesCredentialsId
+            type: secret
+            param: xfsrtValues
+        aliases:
+          - name: cloudFoundry/xfsrtValues
       - name: defaultNpmRegistry
         type: string
         description: "Url to the npm registry that should be used for installing npm dependencies."

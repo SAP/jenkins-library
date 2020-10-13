@@ -2,6 +2,7 @@ import static org.hamcrest.Matchers.hasEntry
 import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.is
 
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -17,6 +18,7 @@ import util.JenkinsStepRule
 import util.JenkinsLoggingRule
 import util.Rules
 
+import com.sap.piper.Utils
 import com.sap.piper.MapUtils
 
 class SnykExecuteTest extends BasePiperTest {
@@ -69,6 +71,13 @@ class SnykExecuteTest extends BasePiperTest {
         helper.registerAllowedMethod('archiveArtifacts', [String], {
             s -> archiveStepPatterns.push(s.toString())
         })
+
+        Utils.metaClass.echo = { def m -> }
+    }
+
+    @After
+    public void tearDown() {
+        Utils.metaClass = null
     }
 
     @Test

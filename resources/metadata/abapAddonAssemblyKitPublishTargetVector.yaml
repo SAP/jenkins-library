@@ -1,0 +1,59 @@
+metadata:
+    name: abapAddonAssemblyKitPublishTargetVector
+    description: This step triggers the publication of the Target Vector according to the specified scope.
+    longDescription: |
+      This step reads the Target Vector ID from the addonDescriptor in the commonPipelineEnvironment and triggers the publication of the Target Vector.
+      With targetVectorScope "T" the Target Vector will be published to the test environment and with targetVectorScope "P" it will be published to the productive environment.
+spec:
+  inputs:
+    secrets:
+      - name: abapAddonAssemblyKitCredentialsId
+        description: Credential stored in Jenkins for the Addon Assembly Kit as a Service (AAKaaS) system
+        type: jenkins
+    params:
+      - name: abapAddonAssemblyKitEndpoint
+        type: string
+        description: Base URL to the Addon Assembly Kit as a Service (AAKaaS) system
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: true
+      - name: username
+        type: string
+        description: User for the Addon Assembly Kit as a Service (AAKaaS) system
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+        secret: true
+      - name: password
+        type: string
+        description: Password for the Addon Assembly Kit as a Service (AAKaaS) system
+        scope:
+          - PARAMETERS
+        mandatory: true
+        secret: true
+      - name: targetVectorScope
+        type: string
+        description: Determines whether the Target Vector is published to the productive ('P') or test ('T') environment
+        possibleValues:
+          - T
+          - P
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: addonDescriptor
+        type: string
+        description: Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions
+        mandatory: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: abap/addonDescriptor
