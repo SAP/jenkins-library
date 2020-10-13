@@ -8,12 +8,13 @@ import (
 )
 
 var vaultFilter = []string{
-	"vaultApproleID",
-	"vaultApproleSecreId",
-	"vaultAddress",
+	"vaultAppRoleID",
+	"vaultAppRoleSecreId",
+	"vaultServerUrl",
 	"vaultNamespace",
 	"vaultBasePath",
 	"vaultPipelineName",
+	"vaultPath",
 }
 
 // VaultCredentials hold all the auth information needed to fetch configuration from vault
@@ -28,16 +29,18 @@ type vaultClient interface {
 }
 
 func getVaultClientFromConfig(config StepConfig, creds VaultCredentials) (vaultClient, error) {
-	address, addressOk := config.Config["vaultAddress"].(string)
-	log.Entry().Infof("config received %#v", config.Config)
+	address, addressOk := config.Config["vaultServerUrl"].(string)
 	// if vault isn't used it's not an error
 	if !addressOk || creds.AppRoleID == "" || creds.AppRoleSecretID == "" {
 		log.Entry().Info("Skipping fetching secrets from vault since it is not configured")
 		return nil, nil
 	}
-
+	namespace := ""
 	// namespaces are only available in vault enterprise so using them should be optional
-	namespace := config.Config["vaultNamespace"].(string)
+	if config.Config["vaultNamespace"] != nil {
+		namespace = config.Config["vaultNamespace"].(string)
+		log.Entry().Debugf("Using vault namespace %s", namespace)
+	}
 
 	client, err := vault.NewClientWithAppRole(&api.Config{Address: address}, creds.AppRoleID, creds.AppRoleSecretID, namespace)
 	if err != nil {
@@ -48,9 +51,8 @@ func getVaultClientFromConfig(config StepConfig, creds VaultCredentials) (vaultC
 	return &client, nil
 }
 
-func addVaultCredentials(config *StepConfig, client vaultClient, params []StepParameters) error {
+func addVaultCredentials(config *StepConfig, client vaultClient, params []StepParameters) {
 	for _, param := range params {
-
 		// we don't overwrite secrets that have already been set in any way
 		if _, ok := config.Config[param.Name].(string); ok {
 			continue
@@ -59,28 +61,53 @@ func addVaultCredentials(config *StepConfig, client vaultClient, params []StepPa
 		if ref == nil {
 			continue
 		}
+		var secretValue *string
 		for _, vaultPath := range ref.Paths {
 			// it should be possible to configure the root path were the secret is stored
-			var err error
-			vaultPath, err = interpolation.ResolveString(vaultPath, config.Config)
-			if err != nil {
-				return err
-			}
-
-			secret, err := client.GetKvSecret(vaultPath)
-			if err != nil {
-				return err
-			}
-			if secret == nil {
+			vaultPath, ok := interpolation.ResolveString(vaultPath, config.Config)
+			if !ok {
 				continue
 			}
 
-			field := secret[param.Name]
-			if field != "" {
-				log.RegisterSecret(field)
-				config.Config[param.Name] = field
+			secretValue = lookupPath(client, vaultPath, &param)
+			if secretValue != nil {
+				config.Config[param.Name] = *secretValue
+				log.Entry().Infof("Resolved param '%s' with vault path '%s'", param.Name, vaultPath)
 				break
 			}
+		}
+		if secretValue == nil {
+			log.Entry().Warnf("Could not resolve param '%s' from vault", param.Name)
+		}
+	}
+}
+
+func lookupPath(client vaultClient, path string, param *StepParameters) *string {
+	log.Entry().Infof("Trying to resolve vault parameter '%s' at '%s'", param.Name, path)
+	secret, err := client.GetKvSecret(path)
+	if err != nil {
+		log.Entry().WithError(err).Warnf("Couldn't fetch secret at '%s'", path)
+		return nil
+	}
+	if secret == nil {
+		return nil
+	}
+
+	field := secret[param.Name]
+	if field != "" {
+		log.RegisterSecret(field)
+		return &field
+	}
+
+	// try parameter aliases
+	for _, alias := range param.Aliases {
+		field := secret[param.Name]
+		if field != "" {
+			log.RegisterSecret(field)
+			if alias.Deprecated {
+				log.Entry().WithField("package", "SAP/jenkins-library/pkg/config").Warningf("DEPRECATION NOTICE: old step config key '%s' used in vault. Please switch to '%s'!", alias.Name, param.Name)
+			}
+			return &field
 		}
 	}
 	return nil
