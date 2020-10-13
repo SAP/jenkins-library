@@ -510,7 +510,7 @@ func longName(long string) string {
 }
 
 func influxType(fieldType string) string {
-	//TODO: <nil> works for all steps except cfDeploy
+	//TODO: clarify why fields are initialized with <nil> and tags are initialized with ''
 	if len(fieldType) == 0 || fieldType == "<nil>" {
 		return "string"
 	}
