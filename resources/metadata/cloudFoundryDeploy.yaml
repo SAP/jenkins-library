@@ -297,6 +297,11 @@ spec:
           - name: cfCredentialsId
             type: secret
             param: password
+          - type: vaultSecret
+            paths:
+              - $(vaultPath)/cloudfoundry-$(cfOrg)-$(cfSpace)
+              - $(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(cfOrg)-$(cfSpace)
+              - $(vaultBasePath)/GROUP-SECRETS/cloudfoundry-$(cfOrg)-$(cfSpace)
       - name: smokeTestScript
         type: string
         description:
@@ -347,6 +352,11 @@ spec:
           - name: cfCredentialsId
             type: secret
             param: username
+          - type: vaultSecret
+            paths:
+              - $(vaultPath)/cloudfoundry-$(cfOrg)-$(cfSpace)
+              - $(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(cfOrg)-$(cfSpace)
+              - $(vaultBasePath)/GROUP-SECRETS/cloudfoundry-$(cfOrg)-$(cfSpace)
   containers:
     - name: cfDeploy
       image: ppiper/cf-cli
