@@ -251,6 +251,7 @@ spec:
           - name: step_data
             fields:
               - name: sonar
+                type: bool
   containers:
     - name: sonar
       image: sonarsource/sonar-scanner-cli:4.5

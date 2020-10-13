@@ -46,7 +46,7 @@ type sonarExecuteScanOptions struct {
 type sonarExecuteScanInflux struct {
 	step_data struct {
 		fields struct {
-			sonar string
+			sonar bool
 		}
 		tags struct {
 		}
