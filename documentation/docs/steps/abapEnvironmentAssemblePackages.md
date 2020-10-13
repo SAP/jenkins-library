@@ -19,7 +19,7 @@
 * The step needs information about the packages which should be assembled present in the CommonPipelineEnvironment.
   * For each repository/component version it needs the name of the repository, the version, splevel, patchlevel, namespace, packagename, package type, the status of the package, and optional the predecessor commit id.
   * To upload this information to the CommonPipelineEnvironment run prior to this step the steps:
-    * [abapAddonAssemblyKitCheckCVs](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitCheckCVs/), 
+    * [abapAddonAssemblyKitCheckCVs](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitCheckCVs/),
     * [abapAddonAssemblyKitReserveNextPackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitCheckPV/).
   * If one of the package is already in status released, the assembly for this package will not be executed.
 * The Software Components for which packages are to be assembled need to be present in the system.
