@@ -2,7 +2,8 @@ stages:
   Init: {}
   Initial Checks: {}
   Prepare System: {}
-  Clone Repositories: {strategy:"Pull"}
+  Clone Repositories:
+    strategy: 'Pull'
   ATC: {}
   Build: {}
   Integration Tests: {}
