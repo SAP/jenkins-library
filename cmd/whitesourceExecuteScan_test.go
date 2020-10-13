@@ -25,11 +25,6 @@ type downloadedFile struct {
 	filePath  string
 }
 
-type npmInstall struct {
-	currentDir  string
-	packageJSON []string
-}
-
 type whitesourceUtilsMock struct {
 	*mock.FilesMock
 	*mock.ExecMockRunner
@@ -38,7 +33,6 @@ type whitesourceUtilsMock struct {
 	usedBuildDescriptorFile string
 	usedOptions             versioning.Options
 	downloadedFiles         []downloadedFile
-	npmInstalledModules     []npmInstall
 }
 
 func (w *whitesourceUtilsMock) DownloadFile(url, filename string, _ http.Header, _ []*http.Cookie) error {
@@ -68,11 +62,7 @@ func (w *whitesourceUtilsMock) FindPackageJSONFiles(_ *ws.NPMScanOptions) ([]str
 	return matches, nil
 }
 
-func (w *whitesourceUtilsMock) InstallAllNPMDependencies(_ *ws.NPMScanOptions, packageJSONs []string) error {
-	w.npmInstalledModules = append(w.npmInstalledModules, npmInstall{
-		currentDir:  w.CurrentDir,
-		packageJSON: packageJSONs,
-	})
+func (w *whitesourceUtilsMock) InstallAllNPMDependencies(_ *ws.NPMScanOptions, _ []string) error {
 	return nil
 }
 
