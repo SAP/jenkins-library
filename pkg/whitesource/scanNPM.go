@@ -30,8 +30,6 @@ type npmUtils interface {
 	Stderr(err io.Writer)
 	RunExecutable(executable string, params ...string) error
 
-	//	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
-
 	Chdir(path string) error
 	Getwd() (string, error)
 	MkdirAll(path string, perm os.FileMode) error
@@ -63,6 +61,8 @@ func setValueOmitIfPresent(config map[string]interface{}, key, omitIfPresent str
 	setValueAndLogChange(config, key, value)
 }
 
+// writeWhitesourceConfigJSON creates or merges the file whitesource.config.json in the current
+// directory from the given NPMScanOptions.
 func (s *Scan) writeWhitesourceConfigJSON(config *NPMScanOptions, utils npmUtils, devDep, ignoreLsErrors bool) error {
 	var npmConfig = make(map[string]interface{})
 
@@ -170,6 +170,8 @@ func (s *Scan) executeNpmScanForModule(modulePath string, config *NPMScanOptions
 	return utils.RunExecutable("npx", "whitesource", "run")
 }
 
+// getNpmProjectName tries to read a property "name" of type string from the
+// package.json file in the current directory and returns an error, if this is not possible.
 func getNpmProjectName(modulePath string, utils npmUtils) (string, error) {
 	fileContents, err := utils.FileRead("package.json")
 	if err != nil {
