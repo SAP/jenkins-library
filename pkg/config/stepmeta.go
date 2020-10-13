@@ -233,7 +233,7 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 	}
 
 	if m.HasReference("vaultSecret") {
-		contextFilters = append(contextFilters, []string{"vaultAppRoleCredentialId", "vaultAppRoleSecretCredentialId"}...)
+		contextFilters = append(contextFilters, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId"}...)
 	}
 
 	if len(contextFilters) > 0 {
