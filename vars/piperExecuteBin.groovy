@@ -156,6 +156,10 @@ void dockerWrapper(script, stepName, config, body) {
 
 // reused in sonarExecuteScan
 void credentialWrapper(config, List credentialInfo, body) {
+    if (config.containsKey('vaultAppRoleTokenCredentialsId') && config.containsKey('vaultAppRoleSecretTokenCredentialsId')) {
+        credentialInfo = [[type: 'token', id: 'vaultAppRoleTokenCredentialsId', env: ['PIPER_vaultAppRoleID']],
+                            [type: 'token', id: 'vaultAppRoleSecretTokenCredentialsId', env: ['PIPER_vaultAppRoleSecretID']]]
+    }
     if (credentialInfo.size() > 0) {
         def creds = []
         def sshCreds = []
