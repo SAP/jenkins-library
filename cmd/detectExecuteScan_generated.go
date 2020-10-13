@@ -126,6 +126,12 @@ func detectExecuteScanMetadata() config.StepData {
 								Name: "detectTokenCredentialsId",
 								Type: "secret",
 							},
+
+							{
+								Name:  "",
+								Paths: []string{"$(vaultPath)/detect", "$(vaultBasePath)/$(vaultPipelineName)/detect", "$(vaultBasePath)/GROUP-SECRETS/detect"},
+								Type:  "vaultSecret",
+							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
