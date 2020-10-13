@@ -167,8 +167,8 @@ func prepareOutputEnvironment(outputResources []config.StepResources, envRootPat
 		for _, oParam := range oResource.Parameters {
 			paramPath := path.Join(envRootPath, oResource.Name, fmt.Sprint(oParam["name"]))
 			if oParam["fields"] != nil {
-				paramFields := oParam["fields"].([]map[string]string)
-				if len(paramFields) > 0 {
+				paramFields, ok := oParam["fields"].([]map[string]string)
+				if ok && len(paramFields) > 0 {
 					paramPath = path.Join(paramPath, paramFields[0]["name"])
 				}
 			}
