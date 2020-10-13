@@ -10,6 +10,7 @@ The goal of project "Piper" is to substantially ease setting up continuous deliv
 To get you started quickly, project "Piper" offers you the following artifacts:
 
 * A set of ready-made Continuous Delivery pipelines for direct use in your project
+    * [ABAP Environment Pipeline](pipelines/abapEnvironment/introduction/)
     * [General Purpose Pipeline](stages/introduction/)
     * [SAP Cloud SDK Pipeline][cloud-sdk-pipeline]
 * [A shared library][piper-library] that contains reusable step implementations, which enable you to customize our preconfigured pipelines, or to even build your own customized ones

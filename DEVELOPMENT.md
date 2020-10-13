@@ -481,3 +481,7 @@ On initialization, it merges the provided custom default configurations with the
 
 Note, the list of configurations cached by `DefaultValueCache` is used to pass path to the (custom) default configurations of each Go step.
 It only contains the paths of configurations which are **not** provided via `customDefaults` parameter of the project configuration, since the Go layer already resolves configurations provided via `customDefaults` parameter independently.
+
+## Additional Developer Hints
+
+You can find additional hints at [documentation/developer-hints](./documentation/developer_hints)
