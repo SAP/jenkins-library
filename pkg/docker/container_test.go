@@ -1,4 +1,4 @@
-package piperutils
+package docker
 
 import (
 	"fmt"

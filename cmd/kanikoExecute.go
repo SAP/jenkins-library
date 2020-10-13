@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/docker"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -64,18 +65,18 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 	if !piperutils.ContainsString(config.BuildOptions, "--destination") {
 		dest := []string{"--no-push"}
 		if len(config.ContainerImage) > 0 {
-			containerRegistry, err := piperutils.ContainerRegistryFromImage(config.ContainerImage)
+			containerRegistry, err := docker.ContainerRegistryFromImage(config.ContainerImage)
 			if err != nil {
 				return errors.Wrapf(err, "invalid registry part in image %v", config.ContainerImage)
 			}
-			// errors are already caught with previous call to piperutils.ContainerRegistryFromImage
-			containerImageNameTag, _ := piperutils.ContainerImageNameTagFromImage(config.ContainerImage)
+			// errors are already caught with previous call to docker.ContainerRegistryFromImage
+			containerImageNameTag, _ := docker.ContainerImageNameTagFromImage(config.ContainerImage)
 			dest = []string{"--destination", config.ContainerImage}
 			commonPipelineEnvironment.container.registryURL = fmt.Sprintf("https://%v", containerRegistry)
 			commonPipelineEnvironment.container.imageNameTag = containerImageNameTag
 		}
 		if len(config.ContainerRegistryURL) > 0 && len(config.ContainerImageName) > 0 && len(config.ContainerImageTag) > 0 {
-			containerRegistry, err := piperutils.ContainerRegistryFromURL(config.ContainerRegistryURL)
+			containerRegistry, err := docker.ContainerRegistryFromURL(config.ContainerRegistryURL)
 			if err != nil {
 				return errors.Wrapf(err, "failed to read registry url %v", config.ContainerRegistryURL)
 			}
