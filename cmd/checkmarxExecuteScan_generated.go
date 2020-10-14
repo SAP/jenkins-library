@@ -43,34 +43,34 @@ type checkmarxExecuteScanOptions struct {
 type checkmarxExecuteScanInflux struct {
 	checkmarx_data struct {
 		fields struct {
-			high_issues                          string
-			high_not_false_positive              string
-			high_not_exploitable                 string
-			high_confirmed                       string
-			high_urgent                          string
-			high_proposed_not_exploitable        string
-			high_to_verify                       string
-			medium_issues                        string
-			medium_not_false_positive            string
-			medium_not_exploitable               string
-			medium_confirmed                     string
-			medium_urgent                        string
-			medium_proposed_not_exploitable      string
-			medium_to_verify                     string
-			low_issues                           string
-			low_not_false_positive               string
-			low_not_exploitable                  string
-			low_confirmed                        string
-			low_urgent                           string
-			low_proposed_not_exploitable         string
-			low_to_verify                        string
-			information_issues                   string
-			information_not_false_positive       string
-			information_not_exploitable          string
-			information_confirmed                string
-			information_urgent                   string
-			information_proposed_not_exploitable string
-			information_to_verify                string
+			high_issues                          int
+			high_not_false_positive              int
+			high_not_exploitable                 int
+			high_confirmed                       int
+			high_urgent                          int
+			high_proposed_not_exploitable        int
+			high_to_verify                       int
+			medium_issues                        int
+			medium_not_false_positive            int
+			medium_not_exploitable               int
+			medium_confirmed                     int
+			medium_urgent                        int
+			medium_proposed_not_exploitable      int
+			medium_to_verify                     int
+			low_issues                           int
+			low_not_false_positive               int
+			low_not_exploitable                  int
+			low_confirmed                        int
+			low_urgent                           int
+			low_proposed_not_exploitable         int
+			low_to_verify                        int
+			information_issues                   int
+			information_not_false_positive       int
+			information_not_exploitable          int
+			information_confirmed                int
+			information_urgent                   int
+			information_proposed_not_exploitable int
+			information_to_verify                int
 			initiator_name                       string
 			owner                                string
 			scan_id                              string
@@ -80,8 +80,8 @@ type checkmarxExecuteScanInflux struct {
 			team_full_path_on_report_date        string
 			scan_start                           string
 			scan_time                            string
-			lines_of_code_scanned                string
-			files_scanned                        string
+			lines_of_code_scanned                int
+			files_scanned                        int
 			checkmarx_version                    string
 			scan_type                            string
 			preset                               string

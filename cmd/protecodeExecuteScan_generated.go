@@ -39,12 +39,12 @@ type protecodeExecuteScanOptions struct {
 type protecodeExecuteScanInflux struct {
 	protecode_data struct {
 		fields struct {
-			historical_vulnerabilities string
-			triaged_vulnerabilities    string
-			excluded_vulnerabilities   string
-			minor_vulnerabilities      string
-			major_vulnerabilities      string
-			vulnerabilities            string
+			excluded_vulnerabilities   int
+			historical_vulnerabilities int
+			major_vulnerabilities      int
+			minor_vulnerabilities      int
+			triaged_vulnerabilities    int
+			vulnerabilities            int
 		}
 		tags struct {
 		}
@@ -58,11 +58,11 @@ func (i *protecodeExecuteScanInflux) persist(path, resourceName string) {
 		name        string
 		value       interface{}
 	}{
-		{valType: config.InfluxField, measurement: "protecode_data", name: "historical_vulnerabilities", value: i.protecode_data.fields.historical_vulnerabilities},
-		{valType: config.InfluxField, measurement: "protecode_data", name: "triaged_vulnerabilities", value: i.protecode_data.fields.triaged_vulnerabilities},
 		{valType: config.InfluxField, measurement: "protecode_data", name: "excluded_vulnerabilities", value: i.protecode_data.fields.excluded_vulnerabilities},
-		{valType: config.InfluxField, measurement: "protecode_data", name: "minor_vulnerabilities", value: i.protecode_data.fields.minor_vulnerabilities},
+		{valType: config.InfluxField, measurement: "protecode_data", name: "historical_vulnerabilities", value: i.protecode_data.fields.historical_vulnerabilities},
 		{valType: config.InfluxField, measurement: "protecode_data", name: "major_vulnerabilities", value: i.protecode_data.fields.major_vulnerabilities},
+		{valType: config.InfluxField, measurement: "protecode_data", name: "minor_vulnerabilities", value: i.protecode_data.fields.minor_vulnerabilities},
+		{valType: config.InfluxField, measurement: "protecode_data", name: "triaged_vulnerabilities", value: i.protecode_data.fields.triaged_vulnerabilities},
 		{valType: config.InfluxField, measurement: "protecode_data", name: "vulnerabilities", value: i.protecode_data.fields.vulnerabilities},
 	}
 
