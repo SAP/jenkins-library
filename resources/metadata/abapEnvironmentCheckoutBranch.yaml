@@ -59,7 +59,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        mandatory: true
       - name: host
         type: string
         description: Specifies the host address of the SAP Cloud Platform ABAP Environment system
