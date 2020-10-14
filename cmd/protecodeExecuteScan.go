@@ -214,12 +214,12 @@ func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.P
 }
 
 func setInfluxData(influx *protecodeExecuteScanInflux, result map[string]int) {
-	influx.protecode_data.fields.historical_vulnerabilities = fmt.Sprintf("%v", result["historical_vulnerabilities"])
-	influx.protecode_data.fields.triaged_vulnerabilities = fmt.Sprintf("%v", result["triaged_vulnerabilities"])
-	influx.protecode_data.fields.excluded_vulnerabilities = fmt.Sprintf("%v", result["excluded_vulnerabilities"])
-	influx.protecode_data.fields.minor_vulnerabilities = fmt.Sprintf("%v", result["minor_vulnerabilities"])
-	influx.protecode_data.fields.major_vulnerabilities = fmt.Sprintf("%v", result["major_vulnerabilities"])
-	influx.protecode_data.fields.vulnerabilities = fmt.Sprintf("%v", result["vulnerabilities"])
+	influx.protecode_data.fields.historical_vulnerabilities = result["historical_vulnerabilities"]
+	influx.protecode_data.fields.triaged_vulnerabilities = result["triaged_vulnerabilities"]
+	influx.protecode_data.fields.excluded_vulnerabilities = result["excluded_vulnerabilities"]
+	influx.protecode_data.fields.minor_vulnerabilities = result["minor_vulnerabilities"]
+	influx.protecode_data.fields.major_vulnerabilities = result["major_vulnerabilities"]
+	influx.protecode_data.fields.vulnerabilities = result["vulnerabilities"]
 }
 
 func createClient(config *protecodeExecuteScanOptions) protecode.Protecode {
