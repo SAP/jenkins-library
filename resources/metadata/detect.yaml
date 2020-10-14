@@ -34,6 +34,11 @@ spec:
         resourceRef:
           - name: detectTokenCredentialsId
             type: secret
+          - type: vaultSecret
+            paths:
+              - $(vaultPath)/detect
+              - $(vaultBasePath)/$(vaultPipelineName)/detect
+              - $(vaultBasePath)/GROUP-SECRETS/detect
         scope:
           - PARAMETERS
           - STAGES
@@ -95,7 +100,7 @@ spec:
           - --blackduck.trust.cert=true
           - --detect.report.timeout=4800
           - --logging.level.com.synopsys.integration=DEBUG
-          - --detect.maven.excluded.scopes=TEST
+          - --detect.maven.excluded.scopes=test
         scope:
           - PARAMETERS
           - STAGES
