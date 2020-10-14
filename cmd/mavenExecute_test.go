@@ -1,11 +1,34 @@
 package cmd
 
 import (
+	"errors"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
+	"net/http"
 	"os"
 	"testing"
 )
+
+type mavenMockUtils struct {
+	shouldFail     bool
+	requestedUrls  []string
+	requestedFiles []string
+	*mock.FilesMock
+	*mock.ExecMockRunner
+}
+
+func (m *mavenMockUtils) DownloadFile(_, _ string, _ http.Header, _ []*http.Cookie) error {
+	return errors.New("Test should not download files.")
+}
+
+func newMavenMockUtils() mavenMockUtils {
+	utils := mavenMockUtils{
+		shouldFail: false,
+		FilesMock: &mock.FilesMock{},
+		ExecMockRunner: &mock.ExecMockRunner{},
+	}
+	return utils
+}
 
 func TestMavenExecute(t *testing.T) {
 	t.Run("mavenExecute should write output file", func(t *testing.T) {

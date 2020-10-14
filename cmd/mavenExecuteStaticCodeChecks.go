@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
@@ -34,14 +33,13 @@ func newStaticCodeChecksUtils() mavenStaticCodeChecksUtils {
 }
 
 func mavenExecuteStaticCodeChecks(config mavenExecuteStaticCodeChecksOptions, telemetryData *telemetry.CustomData) {
-	utils := newStaticCodeChecksUtils()
-	err := runMavenStaticCodeChecks(&config, telemetryData, utils)
+	err := runMavenStaticCodeChecks(&config, telemetryData, maven.NewUtilsBundle())
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runMavenStaticCodeChecks(config *mavenExecuteStaticCodeChecksOptions, telemetryData *telemetry.CustomData, utils mavenStaticCodeChecksUtils) error {
+func runMavenStaticCodeChecks(config *mavenExecuteStaticCodeChecksOptions, telemetryData *telemetry.CustomData, utils maven.Utils) error {
 	var defines []string
 	var goals []string
 
@@ -61,7 +59,7 @@ func runMavenStaticCodeChecks(config *mavenExecuteStaticCodeChecksOptions, telem
 		}
 	}
 
-	if testModulesExcludes := maven.GetTestModulesExcludes(); testModulesExcludes != nil {
+	if testModulesExcludes := maven.GetTestModulesExcludes(utils); testModulesExcludes != nil {
 		defines = append(defines, testModulesExcludes...)
 	}
 	if config.MavenModulesExcludes != nil {

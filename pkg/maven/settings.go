@@ -14,6 +14,9 @@ var getenv = os.Getenv
 // SettingsDownloadUtils defines an interface for downloading files.
 type SettingsDownloadUtils interface {
 	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
+	FileExists(filename string) (bool, error)
+	Copy(src, dest string) (int64, error)
+	MkdirAll(path string, perm os.FileMode) error
 }
 
 // FileUtils defines the external file-related functionality needed by this package.
@@ -29,7 +32,7 @@ type FileUtils interface {
 func DownloadAndGetMavenParameters(globalSettingsFile string, projectSettingsFile string, fileUtils FileUtils, httpClient SettingsDownloadUtils) ([]string, error) {
 	mavenArgs := []string{}
 	if len(globalSettingsFile) > 0 {
-		globalSettingsFileName, err := downloadSettingsIfURL(globalSettingsFile, ".pipeline/mavenGlobalSettings.xml", fileUtils, httpClient, false)
+		globalSettingsFileName, err := downloadSettingsIfURL(globalSettingsFile, ".pipeline/mavenGlobalSettings.xml", utils, false)
 		if err != nil {
 			return nil, err
 		}
@@ -40,7 +43,7 @@ func DownloadAndGetMavenParameters(globalSettingsFile string, projectSettingsFil
 	}
 
 	if len(projectSettingsFile) > 0 {
-		projectSettingsFileName, err := downloadSettingsIfURL(projectSettingsFile, ".pipeline/mavenProjectSettings.xml", fileUtils, httpClient, false)
+		projectSettingsFileName, err := downloadSettingsIfURL(projectSettingsFile, ".pipeline/mavenProjectSettings.xml", utils, false)
 		if err != nil {
 			return nil, err
 		}
@@ -62,7 +65,7 @@ func DownloadAndCopySettingsFiles(globalSettingsFile string, projectSettingsFile
 			return err
 		}
 
-		if err := downloadAndCopySettingsFile(projectSettingsFile, destination, fileUtils, httpClient); err != nil {
+		if err := downloadAndCopySettingsFile(projectSettingsFile, destination, utils); err != nil {
 			return err
 		}
 	} else {
@@ -75,7 +78,7 @@ func DownloadAndCopySettingsFiles(globalSettingsFile string, projectSettingsFile
 		if err != nil {
 			return err
 		}
-		if err := downloadAndCopySettingsFile(globalSettingsFile, destination, fileUtils, httpClient); err != nil {
+		if err := downloadAndCopySettingsFile(globalSettingsFile, destination, utils); err != nil {
 			return err
 		}
 	} else {
@@ -86,7 +89,7 @@ func DownloadAndCopySettingsFiles(globalSettingsFile string, projectSettingsFile
 	return nil
 }
 
-func downloadAndCopySettingsFile(src string, dest string, fileUtils FileUtils, httpClient SettingsDownloadUtils) error {
+func downloadAndCopySettingsFile(src string, dest string, utils SettingsDownloadUtils) error {
 	if len(src) == 0 {
 		return fmt.Errorf("Settings file source location not provided")
 	}
@@ -98,7 +101,7 @@ func downloadAndCopySettingsFile(src string, dest string, fileUtils FileUtils, h
 	log.Entry().Debugf("Copying file \"%s\" to \"%s\"", src, dest)
 
 	if strings.HasPrefix(src, "http:") || strings.HasPrefix(src, "https:") {
-		err := downloadSettingsFromURL(src, dest, fileUtils, httpClient, true)
+		err := downloadSettingsFromURL(src, dest, utils, true)
 		if err != nil {
 			return err
 		}
@@ -108,19 +111,19 @@ func downloadAndCopySettingsFile(src string, dest string, fileUtils FileUtils, h
 
 		parent := filepath.Dir(dest)
 
-		parentFolderExists, err := fileUtils.FileExists(parent)
+		parentFolderExists, err := utils.FileExists(parent)
 
 		if err != nil {
 			return err
 		}
 
 		if !parentFolderExists {
-			if err = fileUtils.MkdirAll(parent, 0775); err != nil {
+			if err = utils.MkdirAll(parent, 0775); err != nil {
 				return err
 			}
 		}
 
-		if _, err := fileUtils.Copy(src, dest); err != nil {
+		if _, err := utils.Copy(src, dest); err != nil {
 			return err
 		}
 	}
@@ -128,10 +131,10 @@ func downloadAndCopySettingsFile(src string, dest string, fileUtils FileUtils, h
 	return nil
 }
 
-func downloadSettingsIfURL(settingsFileOption, settingsFile string, fileUtils FileUtils, httpClient SettingsDownloadUtils, overwrite bool) (string, error) {
+func downloadSettingsIfURL(settingsFileOption, settingsFile string, utils SettingsDownloadUtils, overwrite bool) (string, error) {
 	result := settingsFileOption
 	if strings.HasPrefix(settingsFileOption, "http:") || strings.HasPrefix(settingsFileOption, "https:") {
-		err := downloadSettingsFromURL(settingsFileOption, settingsFile, fileUtils, httpClient, overwrite)
+		err := downloadSettingsFromURL(settingsFileOption, settingsFile, utils, overwrite)
 		if err != nil {
 			return "", err
 		}
@@ -140,13 +143,13 @@ func downloadSettingsIfURL(settingsFileOption, settingsFile string, fileUtils Fi
 	return result, nil
 }
 
-func downloadSettingsFromURL(url, filename string, fileUtils FileUtils, httpClient SettingsDownloadUtils, overwrite bool) error {
-	exists, _ := fileUtils.FileExists(filename)
+func downloadSettingsFromURL(url, filename string, utils SettingsDownloadUtils, overwrite bool) error {
+	exists, _ := utils.FileExists(filename)
 	if exists && !overwrite {
 		log.Entry().Infof("Not downloading maven settings file, because it already exists at '%s'", filename)
 		return nil
 	}
-	err := httpClient.DownloadFile(url, filename, nil, nil)
+	err := utils.DownloadFile(url, filename, nil, nil)
 	if err != nil {
 		return fmt.Errorf("failed to download maven settings from URL '%s' to file '%s': %w",
 			url, filename, err)

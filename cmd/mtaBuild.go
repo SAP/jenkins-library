@@ -98,17 +98,17 @@ func mtaBuild(config mtaBuildOptions,
 
 func runMtaBuild(config mtaBuildOptions,
 	commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment,
-	e command.ExecRunner,
+	execRunner command.ExecRunner,
 	p piperutils.FileUtils,
-	httpClient piperhttp.Downloader,
+	downloader piperhttp.Downloader,
 	npmExecutor npm.Executor) error {
 
-	e.Stdout(log.Writer()) // not sure if using the logging framework here is a suitable approach. We handover already log formatted
-	e.Stderr(log.Writer()) // entries to a logging framework again. But this is considered to be some kind of project standard.
+	execRunner.Stdout(log.Writer()) // not sure if using the logging framework here is a suitable approach. We handover already log formatted
+	execRunner.Stderr(log.Writer()) // entries to a logging framework again. But this is considered to be some kind of project standard.
 
 	var err error
 
-	err = handleSettingsFiles(config, p, httpClient)
+	err = handleSettingsFiles(config, p, downloader)
 	if err != nil {
 		return err
 	}
@@ -182,7 +182,7 @@ func runMtaBuild(config mtaBuildOptions,
 		return fmt.Errorf("Unknown mta build tool: \"%s\"", config.MtaBuildTool)
 	}
 
-	if err = addNpmBinToPath(e); err != nil {
+	if err = addNpmBinToPath(execRunner); err != nil {
 		return err
 	}
 
@@ -191,12 +191,12 @@ func runMtaBuild(config mtaBuildOptions,
 		if err != nil {
 			return err
 		}
-		e.AppendEnv([]string{"MAVEN_OPTS=-Dmaven.repo.local=" + absolutePath})
+		execRunner.AppendEnv([]string{"MAVEN_OPTS=-Dmaven.repo.local=" + absolutePath})
 	}
 
 	log.Entry().Infof("Executing mta build call: \"%s\"", strings.Join(call, " "))
 
-	if err := e.RunExecutable(call[0], call[1:]...); err != nil {
+	if err := execRunner.RunExecutable(call[0], call[1:]...); err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
 		return err
 	}
@@ -205,7 +205,7 @@ func runMtaBuild(config mtaBuildOptions,
 
 	if config.InstallArtifacts {
 		// install maven artifacts in local maven repo because `mbt build` executes `mvn package -B`
-		err = installMavenArtifacts(e, config)
+		err = installMavenArtifacts(execRunner, downloader, p, config)
 		if err != nil {
 			return err
 		}
@@ -218,13 +218,25 @@ func runMtaBuild(config mtaBuildOptions,
 	return err
 }
 
-func installMavenArtifacts(e command.ExecRunner, config mtaBuildOptions) error {
+
+type installMavenArtifactsBundle struct {
+	piperutils.FileUtils
+	piperhttp.Downloader
+	command.ExecRunner
+}
+
+func installMavenArtifacts(execRunner command.ExecRunner, downloader piperhttp.Downloader, fileUtils piperutils.FileUtils, config mtaBuildOptions) error {
 	pomXMLExists, err := piperutils.FileExists("pom.xml")
 	if err != nil {
 		return err
 	}
 	if pomXMLExists {
-		err = maven.InstallMavenArtifacts(e, &maven.EvaluateOptions{M2Path: config.M2Path})
+		utils := installMavenArtifactsBundle {
+			ExecRunner: execRunner,
+			Downloader: downloader,
+			FileUtils:  fileUtils,
+		}
+		err = maven.InstallMavenArtifacts(&maven.EvaluateOptions{M2Path: config.M2Path}, &utils)
 		if err != nil {
 			return err
 		}
@@ -352,11 +364,21 @@ func createMtaYamlFile(mtaYamlFile, applicationName string, p piperutils.FileUti
 	return nil
 }
 
+type settingsDownloadUtilsBundle struct {
+	piperutils.FileUtils
+	piperhttp.Downloader
+}
+
 func handleSettingsFiles(config mtaBuildOptions,
 	p piperutils.FileUtils,
 	httpClient piperhttp.Downloader) error {
 
-	return downloadAndCopySettingsFiles(config.GlobalSettingsFile, config.ProjectSettingsFile, p, httpClient)
+	utils := settingsDownloadUtilsBundle{
+		FileUtils:   p,
+		Downloader: httpClient,
+	}
+
+	return downloadAndCopySettingsFiles(config.GlobalSettingsFile, config.ProjectSettingsFile, &utils)
 }
 
 func generateMta(id, applicationName, version string) (string, error) {
