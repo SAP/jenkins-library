@@ -43,6 +43,18 @@ type kanikoFileMock struct {
 	fileWriteErr     map[string]error
 }
 
+func (f *kanikoFileMock) Getwd() (string, error) {
+	panic("implement me")
+}
+
+func (f *kanikoFileMock) TempDir(dir, pattern string) (name string, err error) {
+	panic("implement me")
+}
+
+func (f *kanikoFileMock) RemoveAll(path string) error {
+	panic("implement me")
+}
+
 func (f *kanikoFileMock) FileExists(path string) (bool, error) {
 	return true, nil
 }
