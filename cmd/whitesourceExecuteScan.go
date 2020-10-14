@@ -487,7 +487,6 @@ func generateMavenWhitesourceFlags(config *ScanOptions, utils whitesourceUtils) 
 		excludes = []string{
 			filepath.Join("unit-tests", "pom.xml"),
 			filepath.Join("integration-tests", "pom.xml"),
-			filepath.Join("performance-tests", "pom.xml"),
 		}
 	}
 	// From the documentation, these are file paths to a module's pom.xml.
