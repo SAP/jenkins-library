@@ -15,7 +15,7 @@ func readAndAdjustTemplate(docFile io.ReadCloser) string {
 	contentStr := string(content)
 
 	//replace old placeholder with new ones
-	contentStr = strings.ReplaceAll(contentStr, "## ${docGenStepName}", "{{StepName .}}")
+	contentStr = strings.ReplaceAll(contentStr, "# ${docGenStepName}", "{{StepName .}}")
 	contentStr = strings.ReplaceAll(contentStr, "## ${docGenDescription}", "{{Description .}}")
 	contentStr = strings.ReplaceAll(contentStr, "## ${docGenParameters}", "{{Parameters .}}")
 	contentStr = strings.ReplaceAll(contentStr, "## ${docGenConfiguration}", "")
