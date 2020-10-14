@@ -1,9 +1,9 @@
 metadata:
   name: abapEnvironmentAssemblePackages
-  description: Assembly of installation, support package or patch in SAP Cloud Platform ABAP Environment system
+  description: "Assembly of installation, support package or patch in SAP Cloud Platform ABAP Environment system"
   longDescription: |
-    This step runs the assembly of a list of provided installations, support packages or patches in SAP Cloud
-    Platform ABAP Environment system and saves the corresponding SAR archive to the filesystem.
+    This step runs the assembly of a list of provided [installations, support packages or patches](https://help.sap.com/viewer/9043aa5d2f834ad385e1cdfdadc06b6f/LATEST/en-US/9a81f55473568c77e10000000a174cb4.html) in SAP Cloud
+    Platform ABAP Environment system and saves the corresponding [SAR archive](https://launchpad.support.sap.com/#/notes/212876) to the filesystem.
 spec:
   inputs:
     secrets:
@@ -27,7 +27,7 @@ spec:
           - name: cloudFoundry/apiEndpoint
       - name: cfOrg
         type: string
-        description: CF org
+        description: Cloud Foundry target organization
         scope:
           - PARAMETERS
           - STAGES
@@ -38,7 +38,7 @@ spec:
           - name: cloudFoundry/org
       - name: cfSpace
         type: string
-        description: CF Space
+        description: Cloud Foundry target space
         scope:
           - PARAMETERS
           - STAGES
@@ -49,7 +49,7 @@ spec:
           - name: cloudFoundry/space
       - name: cfServiceInstance
         type: string
-        description: Parameter of ServiceInstance Name to delete CloudFoundry Service
+        description: Cloud Foundry Service Instance
         scope:
           - PARAMETERS
           - STAGES
@@ -60,7 +60,7 @@ spec:
           - name: cloudFoundry/serviceInstance
       - name: cfServiceKeyName
         type: string
-        description: Parameter of CloudFoundry Service Key to be created
+        description: Cloud Foundry Service Key
         scope:
           - PARAMETERS
           - STAGES
@@ -81,7 +81,7 @@ spec:
           - STEPS
       - name: username
         type: string
-        description: User or E-Mail for CF
+        description: User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0582
         scope:
           - PARAMETERS
           - STAGES
@@ -90,7 +90,7 @@ spec:
         secret: true
       - name: password
         type: string
-        description: User Password for CF User
+        description: Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0582
         scope:
           - PARAMETERS
           - STAGES
@@ -99,7 +99,7 @@ spec:
         secret: true
       - name: addonDescriptor
         type: string
-        description: AddonDescriptor
+        description: Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions
         mandatory: true
         scope:
           - PARAMETERS
