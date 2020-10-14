@@ -628,7 +628,7 @@ func executeNpmScanForModule(modulePath string, config *ScanOptions, scan *white
 	}
 	defer func() { _ = utils.FileRemove(whiteSourceConfig) }()
 
-	projectName, err := getNpmProjectName(modulePath, utils)
+	projectName, err := getNpmProjectName(dir, utils)
 	if err != nil {
 		return err
 	}
