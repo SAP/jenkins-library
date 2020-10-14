@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -10,12 +11,13 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/docker"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
-func kanikoExecute(config kanikoExecuteOptions, telemetryData *telemetry.CustomData) {
+func kanikoExecute(config kanikoExecuteOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *kanikoExecuteCommonPipelineEnvironment) {
 	// for command execution use Command
 	c := command.Command{
 		ErrorCategoryMapping: map[string][]string{
@@ -33,13 +35,13 @@ func kanikoExecute(config kanikoExecuteOptions, telemetryData *telemetry.CustomD
 
 	fileUtils := &piperutils.Files{}
 
-	err := runKanikoExecute(&config, telemetryData, &c, client, fileUtils)
+	err := runKanikoExecute(&config, telemetryData, commonPipelineEnvironment, &c, client, fileUtils)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Kaniko execution failed")
 	}
 }
 
-func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.CustomData, execRunner command.ExecRunner, httpClient piperhttp.Sender, fileUtils piperutils.FileUtils) error {
+func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *kanikoExecuteCommonPipelineEnvironment, execRunner command.ExecRunner, httpClient piperhttp.Sender, fileUtils piperutils.FileUtils) error {
 	// backward compatibility for parameter ContainerBuildOptions
 	if len(config.ContainerBuildOptions) > 0 {
 		config.BuildOptions = strings.Split(config.ContainerBuildOptions, " ")
@@ -63,7 +65,25 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 	if !piperutils.ContainsString(config.BuildOptions, "--destination") {
 		dest := []string{"--no-push"}
 		if len(config.ContainerImage) > 0 {
+			containerRegistry, err := docker.ContainerRegistryFromImage(config.ContainerImage)
+			if err != nil {
+				return errors.Wrapf(err, "invalid registry part in image %v", config.ContainerImage)
+			}
+			// errors are already caught with previous call to docker.ContainerRegistryFromImage
+			containerImageNameTag, _ := docker.ContainerImageNameTagFromImage(config.ContainerImage)
 			dest = []string{"--destination", config.ContainerImage}
+			commonPipelineEnvironment.container.registryURL = fmt.Sprintf("https://%v", containerRegistry)
+			commonPipelineEnvironment.container.imageNameTag = containerImageNameTag
+		}
+		if len(config.ContainerRegistryURL) > 0 && len(config.ContainerImageName) > 0 && len(config.ContainerImageTag) > 0 {
+			containerRegistry, err := docker.ContainerRegistryFromURL(config.ContainerRegistryURL)
+			if err != nil {
+				return errors.Wrapf(err, "failed to read registry url %v", config.ContainerRegistryURL)
+			}
+			containerImageTag := fmt.Sprintf("%v:%v", config.ContainerImageName, strings.ReplaceAll(config.ContainerImageTag, "+", "-"))
+			dest = []string{"--destination", fmt.Sprintf("%v/%v", containerRegistry, containerImageTag)}
+			commonPipelineEnvironment.container.registryURL = config.ContainerRegistryURL
+			commonPipelineEnvironment.container.imageNameTag = containerImageTag
 		}
 		config.BuildOptions = append(config.BuildOptions, dest...)
 	}
