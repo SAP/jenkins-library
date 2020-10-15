@@ -263,13 +263,12 @@ void call(parameters = [:]) {
                     """, returnStdout: true)
 
                 filteXcsrfTokenHeader = xcsrfTokenResponse.findAll {it.contains ('X-CSRF-Token')}
+                filteXcsrfTokenHeaderString = filteXcsrfTokenHeader.toString()
 
-                println filteXcsrfTokenHeader.getClass()
-
-                echo "token header is ${filteXcsrfTokenHeader}"
-                length = filteXcsrfTokenHeader.length()
-                index = filteXcsrfTokenHeader.indexOf( '=' )
-                xcsrfToken = filteXcsrfTokenHeader.substring(index + 1, length)
+                echo "token header is ${filteXcsrfTokenHeaderString}"
+                length = filteXcsrfTokenHeaderString.length()
+                index = filteXcsrfTokenHeaderString.indexOf( '=' )
+                xcsrfToken = filteXcsrfTokenHeaderString.substring(index + 1, length)
                 echo "Retrieved xcsrf token ${xcsrfToken}"
 
                 def siteId = configuration.neo.siteId
