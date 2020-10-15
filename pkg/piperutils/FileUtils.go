@@ -28,6 +28,7 @@ type FileUtils interface {
 type Files struct {
 }
 
+// TempDir creates a temporary directory
 func (f Files) TempDir(dir, pattern string) (name string, err error) {
 	return ioutil.TempDir(dir, pattern)
 }

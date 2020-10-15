@@ -28,6 +28,7 @@ type utilsGit interface {
 // abstractedGit abstraction of git to enable tests
 var abstractedGit utilsGit = abstractionGit{}
 
+// TheGitUtils structure to provide git utilities
 type TheGitUtils struct {
 }
 
@@ -101,6 +102,7 @@ func (TheGitUtils) ChangeBranch(branchName string, worktree UtilsWorkTree) error
 	return nil
 }
 
+// GetWorktree returns the worktree of the repository
 func (TheGitUtils) GetWorktree(repository UtilsRepository) (UtilsWorkTree, error) {
 	worktree, err := repository.Worktree()
 	if err != nil {

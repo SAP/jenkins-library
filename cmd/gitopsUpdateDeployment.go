@@ -17,7 +17,7 @@ import (
 type gitopsGitUtils interface {
 	CommitSingleFile(filePath, commitMessage string, worktree gitUtil.UtilsWorkTree) (plumbing.Hash, error)
 	PushChangesToRepository(username, password string, repository gitUtil.UtilsRepository) error
-	PlainClone(username, password, serverUrl, directory string) (gitUtil.UtilsRepository, error)
+	PlainClone(username, password, serverURL, directory string) (gitUtil.UtilsRepository, error)
 	ChangeBranch(branchName string, worktree gitUtil.UtilsWorkTree) error
 	GetWorktree(repository gitUtil.UtilsRepository) (gitUtil.UtilsWorkTree, error)
 }
