@@ -159,6 +159,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        default: ["unit-tests/pom.xml","integration-tests/pom.xml"]
       - name: orgToken
         type: string
         description: "WhiteSource token identifying your organization."
