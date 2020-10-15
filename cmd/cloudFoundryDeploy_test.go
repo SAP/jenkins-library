@@ -1216,7 +1216,8 @@ func TestDefaultManifestVariableFilesHandling(t *testing.T) {
 func TestExtensionDescriptorsWithMinusE(t *testing.T) {
 
 	t.Run("ExtensionDescriptorsWithMinusE", func(t *testing.T) {
-		extDesc := handleMtaExtensionDescriptors("-e 1.yaml -e 2.yaml")
+		extDesc, extFiles := handleMtaExtensionDescriptors("-e 1.yaml -e 2.yaml")
+		_ = extFiles
 		assert.Equal(t, []string{
 			"-e",
 			"1.yaml",
@@ -1226,7 +1227,8 @@ func TestExtensionDescriptorsWithMinusE(t *testing.T) {
 	})
 
 	t.Run("ExtensionDescriptorsFirstOneWithoutMinusE", func(t *testing.T) {
-		extDesc := handleMtaExtensionDescriptors("1.yaml -e 2.yaml")
+		extDesc, extFiles := handleMtaExtensionDescriptors("1.yaml -e 2.yaml")
+		_ = extFiles
 		assert.Equal(t, []string{
 			"-e",
 			"1.yaml",
@@ -1236,7 +1238,8 @@ func TestExtensionDescriptorsWithMinusE(t *testing.T) {
 	})
 
 	t.Run("NoExtensionDescriptors", func(t *testing.T) {
-		extDesc := handleMtaExtensionDescriptors("")
+		extDesc, extFiles := handleMtaExtensionDescriptors("")
+		_ = extFiles
 		assert.Equal(t, []string{}, extDesc)
 	})
 }
@@ -1276,4 +1279,84 @@ func TestAppNameChecks(t *testing.T) {
 		assert.EqualError(t, err, "Your application name 'my_invalid_app_name' contains a '_' (underscore) which is not allowed, only letters, dashes and numbers can be used. Please change the name to fit this requirement(s). For more details please visit https://docs.cloudfoundry.org/devguide/deploy-apps/deploy-app.html#basic-settings.")
 	})
 
+}
+
+func TestMtaExtensionCredentials(t *testing.T) {
+
+	content := []byte(`'_schema-version: '3.1'
+	ID: test.ext
+	extends: test
+	parameters
+		test-credentials1: "<%= testCred1 %>"
+		test-credentials2: "<%= testCred2 %>"`)
+
+	filesMock := mock.FilesMock{}
+	filesMock.AddDir("/home/me")
+	filesMock.Chdir("/home/me")
+	filesMock.AddFile("mtaext1.mtaext", content)
+	filesMock.AddFile("mtaext2.mtaext", content)
+	filesMock.AddFile("mtaext3.mtaext", content)
+	fileUtils = &filesMock
+
+	_environ = func() []string {
+		return []string{
+			"myCredEnvVar1=******",
+			"myCredEnvVar2=++++++",
+		}
+	}
+
+	defer func() {
+		fileUtils = piperutils.Files{}
+		_environ = os.Environ
+	}()
+
+	t.Run("extension file does not exist", func(t *testing.T) {
+		err := handleMtaExtensionCredentials("mtaextDoesNotExist.mtaext", map[string]interface{}{})
+		assert.EqualError(t, err, "could not read 'mtaextDoesNotExist.mtaext'")
+	})
+
+	t.Run("credential cannot be retrieved", func(t *testing.T) {
+
+		err := handleMtaExtensionCredentials(
+			"mtaext1.mtaext",
+			map[string]interface{}{
+				"testCred1": "myCredEnvVar1NotDefined",
+				"testCred2": "myCredEnvVar2NotDefined",
+			},
+		)
+		assert.EqualError(t, err, "No credentials found for '[myCredEnvVar1NotDefined myCredEnvVar2NotDefined]'. Are these credentials maintained?")
+	})
+
+	t.Run("irrelevant credentials does not cause failures", func(t *testing.T) {
+
+		err := handleMtaExtensionCredentials(
+			"mtaext2.mtaext",
+			map[string]interface{}{
+				"testCred1":       "myCredEnvVar1",
+				"testCred2":       "myCredEnvVar2",
+				"testCredNotUsed": "myCredEnvVarWhichDoesNotExist", //<-- This here is not used.
+			},
+		)
+		assert.NoError(t, err)
+	})
+
+	t.Run("replace straight forward", func(t *testing.T) {
+		mtaFileName := "mtaext3.mtaext"
+		err := handleMtaExtensionCredentials(
+			mtaFileName,
+			map[string]interface{}{
+				"testCred1": "myCredEnvVar1",
+				"testCred2": "myCredEnvVar2",
+			},
+		)
+		if assert.NoError(t, err) {
+			b, e := fileUtils.FileRead(mtaFileName)
+			if e != nil {
+				assert.Fail(t, "Cannot read mta extension file: %v", e)
+			}
+			content := string(b)
+			assert.Contains(t, content, "test-credentials1: \"******\"")
+			assert.Contains(t, content, "test-credentials2: \"++++++\"")
+		}
+	})
 }

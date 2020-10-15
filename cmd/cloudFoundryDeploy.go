@@ -22,10 +22,13 @@ import (
 
 type cfFileUtil interface {
 	FileExists(string) (bool, error)
+	FileRename(string, string) error
+	FileRead(string) ([]byte, error)
 	FileWrite(path string, content []byte, perm os.FileMode) error
 	Getwd() (string, error)
 	Glob(string) ([]string, error)
 	Chmod(string, os.FileMode) error
+	Copy(string, string) (int64, error)
 }
 
 var _now = time.Now
@@ -35,6 +38,7 @@ var _getManifest = getManifest
 var _replaceVariables = yaml.Substitute
 var _getVarsOptions = cloudfoundry.GetVarsOptions
 var _getVarsFileOptions = cloudfoundry.GetVarsFileOptions
+var _environ = os.Environ
 var fileUtils cfFileUtil = piperutils.Files{}
 
 // for simplify mocking. Maybe we find a more elegant way (mock for CFUtils)
@@ -668,21 +672,101 @@ func deployMta(config *cloudFoundryDeployOptions, mtarFilePath string, command c
 		cfDeployParams = append(cfDeployParams, deployParams...)
 	}
 
-	cfDeployParams = append(cfDeployParams, handleMtaExtensionDescriptors(config.MtaExtensionDescriptor)...)
+	extFileParams, extFiles := handleMtaExtensionDescriptors(config.MtaExtensionDescriptor)
 
-	return cfDeploy(config, cfDeployParams, nil, nil, command)
+	for _, extFile := range extFiles {
+		_, err := fileUtils.Copy(extFile, extFile+".original")
+		if err != nil {
+			return err
+		}
+		err = handleMtaExtensionCredentials(extFile, config.MtaExtensionCredentials)
+		if err != nil {
+			return err
+		}
+	}
+
+	cfDeployParams = append(cfDeployParams, extFileParams...)
+
+	err := cfDeploy(config, cfDeployParams, nil, nil, command)
+
+	for _, extFile := range extFiles {
+		renameError := fileUtils.FileRename(extFile+".original", extFile)
+		if err == nil && renameError != nil {
+			return renameError
+		}
+	}
+
+	return err
 }
 
-func handleMtaExtensionDescriptors(mtaExtensionDescriptor string) []string {
+func handleMtaExtensionCredentials(extFile string, credentials map[string]interface{}) error {
+
+	log.Entry().Debugf("Inserting credentials into extension file '%s'", extFile)
+
+	b, err := fileUtils.FileRead(extFile)
+	if err != nil {
+		return err
+	}
+	content := string(b)
+
+	env := toMap(_environ(), "=")
+
+	updated := false
+	missingCredentials := []string{}
+	for name, credentialKey := range credentials {
+		credKey, ok := credentialKey.(string)
+		if !ok {
+			return fmt.Errorf("Cannot cast '%v' (type %T) to string", credentialKey, credentialKey)
+		}
+		pattern := "<%= " + name + " %>"
+		if strings.Contains(content, pattern) {
+			cred := env[credKey]
+			if len(cred) == 0 {
+				missingCredentials = append(missingCredentials, credKey)
+				continue
+				log.Entry().Warningf("No credentials found for '%s'. Are these credentials maintained?", credKey)
+			}
+			content = strings.Replace(content, pattern, cred, -1)
+			updated = true
+			log.Entry().Debugf("Placeholder '%s' has been replaced by credential denoted by '%s' in file '%s'", name, credKey, extFile)
+		}
+	}
+	if len(missingCredentials) > 0 {
+		return fmt.Errorf("No credentials found for '%s'. Are these credentials maintained?", missingCredentials)
+	}
+	if !updated {
+		log.Entry().Debugf("Extension file '%s' has not been updated. Seems to contain no credentials.", extFile)
+	} else {
+		err := fileUtils.FileWrite(extFile, []byte(content), 0755) // TODO revisit the octet
+		if err != nil {
+			return err
+		}
+		log.Entry().Debugf("Extension file '%s' has been updated.", extFile)
+	}
+	return nil
+}
+
+func toMap(keyValue []string, separator string) map[string]string {
+	result := map[string]string{}
+	for _, entry := range keyValue {
+		kv := strings.Split(entry, separator)
+		result[kv[0]] = strings.Join(kv[1:], separator)
+	}
+	return result
+}
+
+func handleMtaExtensionDescriptors(mtaExtensionDescriptor string) ([]string, []string) {
 	var result = []string{}
+	var extFiles = []string{}
 	for _, part := range strings.Fields(strings.Trim(mtaExtensionDescriptor, " ")) {
 		if part == "-e" || part == "" {
 			continue
 		}
 		// REVISIT: maybe check if the extension descriptor exists
 		result = append(result, "-e", part)
+		extFiles = append(extFiles, part)
 	}
-	return result
+	return result, extFiles
 }
 
 func cfDeploy(
