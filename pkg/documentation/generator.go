@@ -34,7 +34,6 @@ func main() {
 
 	flag.StringVar(&metadataPath, "metadataDir", "./resources/metadata", "The directory containing the step metadata. Default points to \\'resources/metadata\\'.")
 	flag.StringVar(&docTemplatePath, "docuDir", "./documentation/docs/steps/", "The directory containing the docu stubs. Default points to \\'documentation/docs/steps/\\'.")
-	// flag.StringVar(&customDefaultPaths, "customDefaultPath", "./resources/default_pipeline_environment.yml", "Comma-separated paths to custom default configuration files.")
 	flag.StringVar(&customLibraryStepFile, "customLibraryStepFile", "", "")
 	flag.Var(&customDefaultFiles, "customDefaultFile", "Path to a custom default configuration file.")
 
