@@ -83,7 +83,7 @@ import static com.sap.piper.Prerequisites.checkScript
      * Site ID of the SAP Fiori Launchpad site to which the SAP Fiori app has to be added
      * @parentConfigKey neo
      */
-    'siteID'
+    'siteId'
 ]
 
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
@@ -243,7 +243,7 @@ void call(parameters = [:]) {
                 usernameVariable: 'OAUTH_NEO_USERNAME')]) {
                 def bearerTokenResponse = sh(
                     script: """#!/bin/bash
-                   curl -X POST -u "${clientId}:${clientSecret}" \
+                   curl -X POST -u "${OAUTH_NEO_USERNAME}:${OAUTH_NEO_PASSWORD}" \
              \"https://oauthasservices-${account}.${host}/oauth2/api/v1/token?grant_type=client_credentials&scope=write,read\"
                 """,
                     returnStdout: true
@@ -253,7 +253,7 @@ void call(parameters = [:]) {
 
                 echo "Retrieved bearer token ${bearerToken}"
 
-                def xcsrfTokenRsponse = sh(
+                def xcsrfTokenResponse = sh(
                     script: """#!/bin/bash
                               curl -i -L \
                               -c 'cookies.jar' \
@@ -262,6 +262,23 @@ void call(parameters = [:]) {
                             \"https://sandboxportal-${account}.${host}/fiori/api/v1/csrf\" 
                     """, returnStdout: true)
 
+                filteXcsrfTokenHeader = xcsrfTokenResponse.findAll {it.contains ('X-CSRF-Token')}
+                length = filteXcsrfTokenHeader.length()
+                index = filteXcsrfTokenHeader.indexOf( '=' )
+                xcsrfToken = filteXcsrfTokenHeader.substring(index + 1, length)
+                echo "Retrieved xcsrf token ${xcsrfToken}"
+
+                def siteId = configuration.neo.siteId
+                echo "Invalidating cache for siteId: ${siteId}"
+
+                sh """#!/bin/bash
+                       curl -X POST -L \
+                       -b 'cookies.jar'  \
+                       -H "X-CSRF-Token: ${xcsrfToken}" \
+                       -H "Authorization: Bearer ${bearerToken}" \
+                       -d "{\"siteId\":\"${siteId}\"}" \
+                       \"https://sandboxportal-${account}.${host}/fiori/v1/operations/invalidateCache\" 
+                  """
             }
         }
     }
