@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"errors"
-	"github.com/SAP/jenkins-library/pkg/command"
 	gitUtil "github.com/SAP/jenkins-library/pkg/git"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/go-git/go-git/v5"
@@ -61,7 +60,7 @@ func TestErrorOnTempDir(t *testing.T) {
 
 	fileUtilities = FilesMockErrorTempDirCreation{}
 
-	var c command.ExecRunner
+	var c GitopsExecRunner
 	configuration = &commonOptions
 
 	err := runGitopsUpdateDeployment(configuration, c)
@@ -77,7 +76,7 @@ func TestErrorGitPlainClone(t *testing.T) {
 
 	gitUtilities = GitUtilsMockErrorClone{}
 
-	var c command.ExecRunner
+	var c GitopsExecRunner
 	configuration = &commonOptions
 
 	err := runGitopsUpdateDeployment(configuration, c)
@@ -93,7 +92,7 @@ func TestErrorOnInvalidURL(t *testing.T) {
 
 	gitUtilities = ValidGitUtilsMock{}
 
-	var c command.ExecRunner
+	var c GitopsExecRunner
 	configuration = &invalidURLOptions
 
 	err := runGitopsUpdateDeployment(configuration, c)
@@ -122,7 +121,7 @@ func TestRunGitopsUpdateDeployment(t *testing.T) {
 
 	gitUtilities = ValidGitUtilsMock{}
 
-	var c command.ExecRunner = &ExecRunnerMock{}
+	var c GitopsExecRunner = &ExecRunnerMock{}
 
 	configuration = &commonOptions
 
@@ -132,18 +131,6 @@ func TestRunGitopsUpdateDeployment(t *testing.T) {
 
 type ExecRunnerMock struct {
 	out io.Writer
-}
-
-func (ExecRunnerMock) SetDir(dir string) {
-	panic("implement me")
-}
-
-func (ExecRunnerMock) SetEnv(env []string) {
-	panic("implement me")
-}
-
-func (ExecRunnerMock) AppendEnv(env []string) {
-	panic("implement me")
 }
 
 func (e *ExecRunnerMock) Stdout(out io.Writer) {
@@ -163,10 +150,6 @@ func (e *ExecRunnerMock) RunExecutable(executable string, params ...string) erro
 	assert.True(test, strings.Contains(params[4], "dir1\\dir2\\depl.yaml"))
 	_, _ = e.out.Write([]byte(expectedYaml))
 	return nil
-}
-
-func (ExecRunnerMock) RunExecutableInBackground(executable string, params ...string) (command.Execution, error) {
-	panic("implement me")
 }
 
 type FilesMockErrorTempDirCreation struct{}
