@@ -36,6 +36,38 @@ func getEmptyForType(parameter config.StepParameters) interface{} {
 	}
 }
 
+func readStepConfiguration(stepMetadata config.StepData, customDefaultFiles []string, docuHelperData DocuHelperData) config.StepConfig {
+	filters := stepMetadata.GetParameterFilters()
+	filters.All = append(filters.All, "collectTelemetryData")
+	filters.General = append(filters.General, "collectTelemetryData")
+	filters.Parameters = append(filters.Parameters, "collectTelemetryData")
+
+	defaultFiles := []io.ReadCloser{}
+	for _, projectDefaultFile := range customDefaultFiles {
+		fc, _ := docuHelperData.OpenFile(projectDefaultFile)
+		defer fc.Close()
+		defaultFiles = append(defaultFiles, fc)
+	}
+
+	configuration := config.Config{}
+	stepConfiguration, err := configuration.GetStepConfig(
+		map[string]interface{}{},
+		"",
+		nil,
+		defaultFiles,
+		false,
+		filters,
+		stepMetadata.Spec.Inputs.Parameters,
+		stepMetadata.Spec.Inputs.Secrets,
+		map[string]interface{}{},
+		"",
+		stepMetadata.Metadata.Name,
+		stepMetadata.Metadata.Aliases,
+	)
+	checkError(err)
+	return stepConfiguration
+}
+
 // GenerateStepDocumentation generates step coding based on step configuration provided in yaml files
 func GenerateStepDocumentation(metadataFiles []string, customDefaultFiles []string, docuHelperData DocuHelperData) error {
 	for key := range metadataFiles {
@@ -48,40 +80,13 @@ func GenerateStepDocumentation(metadataFiles []string, customDefaultFiles []stri
 		err = stepMetadata.ReadPipelineStepData(metadataFile)
 		checkError(err)
 
-		filters := stepMetadata.GetParameterFilters()
-		filters.All = append(filters.All, "collectTelemetryData")
-		filters.General = append(filters.General, "collectTelemetryData")
-		filters.Parameters = append(filters.Parameters, "collectTelemetryData")
-
-		defaultFiles := []io.ReadCloser{}
-		for _, projectDefaultFile := range customDefaultFiles {
-			fc, _ := docuHelperData.OpenFile(projectDefaultFile)
-			defer fc.Close()
-			defaultFiles = append(defaultFiles, fc)
-		}
-
-		configuration := config.Config{}
-		stepConfiguration, err := configuration.GetStepConfig(
-			map[string]interface{}{},
-			"",
-			nil,
-			defaultFiles,
-			false,
-			filters,
-			stepMetadata.Spec.Inputs.Parameters,
-			stepMetadata.Spec.Inputs.Secrets,
-			map[string]interface{}{},
-			"",
-			stepMetadata.Metadata.Name,
-			stepMetadata.Metadata.Aliases,
-		)
-		checkError(err)
-
 		for key, parameter := range stepMetadata.Spec.Inputs.Parameters {
 			if parameter.Default == nil {
 				stepMetadata.Spec.Inputs.Parameters[key].Default = getEmptyForType(parameter)
 			}
 		}
+
+		stepConfiguration := readStepConfiguration(stepMetadata, customDefaultFiles, docuHelperData)
 
 		for key, parameter := range stepMetadata.Spec.Inputs.Parameters {
 			configValue := stepConfiguration.Config[parameter.Name]
