@@ -11,6 +11,9 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = [
+    /**
+     * This is set in the common pipeline environment by the build tool, e.g. during the mtaBuild step.
+     */
     'buildTool',
     'cloudFoundry',
         /**
