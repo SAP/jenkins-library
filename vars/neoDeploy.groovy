@@ -41,7 +41,7 @@ import static com.sap.piper.Prerequisites.checkScript
      * @mandatory for deployMode=warParams
      */
     'host',
-        /**
+    /**
      * The path to the .properties file in which all necessary deployment properties for the application are defined.
      * @parentConfigKey neo
      * @mandatory for deployMode=warPropertiesFile
@@ -59,16 +59,31 @@ import static com.sap.piper.Prerequisites.checkScript
      * @mandatory for deployMode=warParams
      */
     'runtimeVersion',
-        /**
+    /**
      * Compute unit (VM) size. Acceptable values: lite, pro, prem, prem-plus.
      * @parentConfigKey neo
      */
     'size',
-        /**
+    /**
      * String of VM arguments passed to the JVM.
      * @parentConfigKey neo
      */
-    'vmArguments'
+    'vmArguments',
+    /**
+     * Boolean to enable/disable invalidating the cache.
+     * @parentConfigKey neo
+     */
+    'invalidateCache',
+    /**
+     * UsernamePassword type credential containing client id and client secret.
+     * @parentConfigKey neo
+     */
+    'oauthCredential',
+    /**
+     * Site ID of the SAP Fiori Launchpad site to which the SAP Fiori app has to be added
+     * @parentConfigKey neo
+     */
+    'siteID'
 ]
 
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
