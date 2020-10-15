@@ -236,6 +236,37 @@ void call(parameters = [:]) {
                 }
             }
         }
+        if(configuration.neo.invalidateCache == true) {
+           def account = configuration.neo.account
+           def host = configuration.neo.host
+
+            withCredentials([usernamePassword(
+                credentialsId: configuration.neo.oauthCredentialId,
+                passwordVariable: 'OAUTH_NEO_PASSWORD',
+                usernameVariable: 'OAUTH_NEO_USERNAME')]) {
+                def bearerTokenResponse = sh(
+                    script: """#!/bin/bash
+                   curl -X POST -u "${clientId}:${clientSecret}" \
+             \"https://oauthasservices-${account}.${host}/oauth2/api/v1/token?grant_type=client_credentials&scope=write,read\"
+                """,
+                    returnStdout: true
+                )
+                def fetchBearerTokenJson = readJSON  text: bearerTokenResponse
+                 bearerToken = fetchBearerTokenJson.access_token
+
+                echo "Retrieved bearer token ${bearerToken}"
+
+                def xcsrfTokenRsponse = sh(
+                    script: """#!/bin/bash
+                              curl -i -L \
+                              -c 'cookies.jar' \
+                              -H 'X-CSRF-Token: Fetch' \
+                              -H "Authorization: Bearer ${bearerToken}" \
+                            \"https://sandboxportal-${account}.${host}/fiori/api/v1/csrf\" 
+                    """, returnStdout: true)
+
+            }
+        }
     }
 }
 
