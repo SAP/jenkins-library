@@ -36,7 +36,7 @@ func GitopsUpdateDeploymentCommand() *cobra.Command {
 	var createGitopsUpdateDeploymentCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Updates Kubernetes Deployment Manifest in an Infrastructure Git Repository",
-		Long: `This step allows you to update the deployment manifest in another repository.
+		Long: `This step allows you to update the deployment manifest for Kubernetes in a git repository.
 
 It can for example be used for GitOps scenarios where the update of the manifests triggers an update of the corresponding deployment in Kubernetes.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
@@ -86,11 +86,11 @@ It can for example be used for GitOps scenarios where the update of the manifest
 
 func addGitopsUpdateDeploymentFlags(cmd *cobra.Command, stepConfig *gitopsUpdateDeploymentOptions) {
 	cmd.Flags().StringVar(&stepConfig.BranchName, "branchName", os.Getenv("PIPER_branchName"), "The name of the branch where the changes should get pushed into.")
-	cmd.Flags().StringVar(&stepConfig.CommitMessage, "commitMessage", os.Getenv("PIPER_commitMessage"), "The commit message of the commit that will be done to do the changes.")
+	cmd.Flags().StringVar(&stepConfig.CommitMessage, "commitMessage", `Updated {{containerName}} to version {{containerImage}}`, "The commit message of the commit that will be done to do the changes.")
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", `https://github.com`, "GitHub server url to the repository.")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User name for git authentication")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password/token for git authentication.")
-	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "Path to the yaml file that shall be updated")
+	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "Relative path in the git repository to the deployment descriptor file that shall be updated")
 	cmd.Flags().StringVar(&stepConfig.ContainerName, "containerName", os.Getenv("PIPER_containerName"), "The name of the container to update")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryURL, "containerRegistryUrl", os.Getenv("PIPER_containerRegistryUrl"), "http(s) url of the Container registry where the image is located")
 	cmd.Flags().StringVar(&stepConfig.ContainerImage, "containerImage", os.Getenv("PIPER_containerImage"), "Container image name with version tag to annotate in the deployment configuration.")
