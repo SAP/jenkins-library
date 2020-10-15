@@ -75,6 +75,7 @@ func TestGetResourceParameter(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			// init
 			dir, tempDirErr := ioutil.TempDir("", "")
+			defer os.RemoveAll(dir) // clean up
 			require.NoError(t, tempDirErr)
 			require.DirExists(t, dir, "Failed to create temporary directory")
 			// test
