@@ -263,6 +263,10 @@ void call(parameters = [:]) {
                     """, returnStdout: true)
 
                 filteXcsrfTokenHeader = xcsrfTokenResponse.findAll {it.contains ('X-CSRF-Token')}
+
+                println filteXcsrfTokenHeader.getClass()
+
+                echo "token header is ${filteXcsrfTokenHeader}"
                 length = filteXcsrfTokenHeader.length()
                 index = filteXcsrfTokenHeader.indexOf( '=' )
                 xcsrfToken = filteXcsrfTokenHeader.substring(index + 1, length)
