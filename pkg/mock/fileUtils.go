@@ -146,6 +146,12 @@ func (f *FilesMock) FileExists(path string) (bool, error) {
 	return props.content != &dirContent, nil
 }
 
+// Delete removes the file denoted by <path>
+func (f *FilesMock) Delete(path string) error {
+	delete(f.files, f.toAbsPath(path))
+	return nil
+}
+
 // DirExists returns true, if the given path is a previously added directory, or a parent directory for any of the
 // previously added files.
 func (f *FilesMock) DirExists(path string) (bool, error) {

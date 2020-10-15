@@ -22,6 +22,7 @@ type FileUtils interface {
 	MkdirAll(path string, perm os.FileMode) error
 	Chmod(path string, mode os.FileMode) error
 	Glob(pattern string) (matches []string, err error)
+	Delete(path string) error
 }
 
 // Files ...
@@ -92,6 +93,11 @@ func (f Files) Copy(src, dst string) (int64, error) {
 //Chmod is a wrapper for os.Chmod().
 func (f Files) Chmod(path string, mode os.FileMode) error {
 	return os.Chmod(path, mode)
+}
+
+//Delete ...
+func (f Files) Delete(path string) error {
+	return os.Remove(path)
 }
 
 // Unzip will decompress a zip archive, moving all files and folders

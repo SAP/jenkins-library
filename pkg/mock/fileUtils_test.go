@@ -619,3 +619,12 @@ func TestOpen(t *testing.T) {
 		}
 	})
 }
+
+func TestDelete(t *testing.T) {
+	files := FilesMock{}
+	files.AddFile("someFile", []byte("initial-content"))
+	if assert.True(t, files.HasFile("someFile")) {
+		files.Delete("someFile")
+		assert.False(t, files.HasFile("someFile"))
+	}
+}

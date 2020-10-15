@@ -332,6 +332,10 @@ func (f *MtaTestFileUtilsMock) FileExists(path string) (bool, error) {
 	return false, nil
 }
 
+func (f *MtaTestFileUtilsMock) Delete(path string) error {
+	return fmt.Errorf("not implemented. func is only present in order to fullfil the interface contract. Needs to be ajusted in case it gets used.")
+}
+
 func (f *MtaTestFileUtilsMock) Copy(src, dest string) (int64, error) {
 
 	if f.copiedFiles == nil {

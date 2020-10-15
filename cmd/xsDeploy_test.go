@@ -21,6 +21,10 @@ func (f *FileUtilsMock) FileExists(path string) (bool, error) {
 	return path == "dummy.mtar" || path == ".xs_session", nil
 }
 
+func (f *FileUtilsMock) Delete(path string) error {
+	return fmt.Errorf("not implemented. func is only present in order to fullfil the interface contract. Needs to be ajusted in case it gets used.")
+}
+
 func (f *FileUtilsMock) Copy(src, dest string) (int64, error) {
 	f.copiedFiles = append(f.copiedFiles, fmt.Sprintf("%s->%s", src, dest))
 	return 0, nil
