@@ -1,6 +1,6 @@
 metadata:
   name: gitopsUpdateDeployment
-  description: Updates Kubernetes Deployment Manifest in Infrastructure Git Repo
+  description: Updates Kubernetes Deployment Manifest in an Infrastructure Git Repository
   longDescription: |
     This step allows you to update the deployment manifest in another repository.
 
