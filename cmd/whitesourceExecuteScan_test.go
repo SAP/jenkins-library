@@ -419,7 +419,7 @@ func TestExecuteScanNPM(t *testing.T) {
 		// test
 		err := executeScan(&config, scan, utilsMock)
 		// assert
-		assert.EqualError(t, err, "failed to scan NPM module 'package.json': the file 'package.json/package.json' must configure a name")
+		assert.EqualError(t, err, "failed to scan NPM module 'package.json': the file 'package.json' must configure a name")
 	})
 	t.Run("npm ls fails", func(t *testing.T) {
 		// init
