@@ -41,6 +41,11 @@ spec:
           - PARAMETERS
         secret: true
         resourceRef:
+          - type: vaultSecret
+            paths:
+            - $(vaultPath)/sonar
+            - $(vaultBasePath)/$(vaultPipelineName)/sonar
+            - $(vaultBasePath)/GROUP-SECRETS/sonar
           - name: sonarTokenCredentialsId
             type: secret
         aliases:
@@ -63,7 +68,7 @@ spec:
       - name: sonarScannerDownloadUrl
         type: string
         description: "URL to the sonar-scanner-cli archive."
-        default: "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.4.0.2170-linux.zip"
+        default: "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.5.0.2216-linux.zip"
         scope:
           - PARAMETERS
           - STAGES
@@ -246,6 +251,7 @@ spec:
           - name: step_data
             fields:
               - name: sonar
+                type: bool
   containers:
     - name: sonar
-      image: node:lts-stretch
+      image: sonarsource/sonar-scanner-cli:4.5
