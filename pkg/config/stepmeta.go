@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -234,7 +233,7 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 	}
 
 	if m.HasReference("vaultSecret") {
-		contextFilters = append(contextFilters, []string{"vaultAppRoleCredentialId", "vaultAppRoleSecretCredentialId"}...)
+		contextFilters = append(contextFilters, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId"}...)
 	}
 
 	if len(contextFilters) > 0 {
@@ -367,7 +366,7 @@ func (m *StepData) GetResourceParameters(path, name string) map[string]interface
 	for _, param := range m.Spec.Inputs.Parameters {
 		for _, res := range param.ResourceRef {
 			if res.Name == name {
-				resourceParams[param.Name] = getParameterValue(path, name, res, param)
+				resourceParams[param.Name] = getParameterValue(path, res, param)
 			}
 		}
 	}
@@ -375,8 +374,8 @@ func (m *StepData) GetResourceParameters(path, name string) map[string]interface
 	return resourceParams
 }
 
-func getParameterValue(path, name string, res ResourceReference, param StepParameters) interface{} {
-	if val := piperenv.GetParameter(filepath.Join(path, name), res.Param); len(val) > 0 {
+func getParameterValue(path string, res ResourceReference, param StepParameters) interface{} {
+	if val := piperenv.GetResourceParameter(path, res.Name, res.Param); len(val) > 0 {
 		if param.Type != "string" {
 			var unmarshalledValue interface{}
 			err := json.Unmarshal([]byte(val), &unmarshalledValue)

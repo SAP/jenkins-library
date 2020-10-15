@@ -49,7 +49,7 @@ func (p *artifactPrepareVersionCommonPipelineEnvironment) persist(path, resource
 	content := []struct {
 		category string
 		name     string
-		value    string
+		value    interface{}
 	}{
 		{category: "", name: "artifactVersion", value: p.artifactVersion},
 		{category: "", name: "originalArtifactVersion", value: p.originalArtifactVersion},
@@ -312,6 +312,12 @@ func artifactPrepareVersionMetadata() config.StepData {
 								Param: "password",
 								Type:  "secret",
 							},
+
+							{
+								Name:  "",
+								Paths: []string{"$(vaultPath)/versioning", "$(vaultBasePath)/$(vaultPipelineName)/versioning", "$(vaultBasePath)/GROUP-SECRETS/versioning"},
+								Type:  "vaultSecret",
+							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
@@ -357,6 +363,12 @@ func artifactPrepareVersionMetadata() config.StepData {
 								Name:  "gitHttpsCredentialsId",
 								Param: "username",
 								Type:  "secret",
+							},
+
+							{
+								Name:  "",
+								Paths: []string{"$(vaultPath)/versioning", "$(vaultBasePath)/$(vaultPipelineName)/versioning", "$(vaultBasePath)/GROUP-SECRETS/versioning"},
+								Type:  "vaultSecret",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},

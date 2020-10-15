@@ -35,9 +35,29 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: containerImageName
+        aliases:
+          - name: dockerImageName
+        type: string
+        description: Name of the container which will be built - will be used instead of parameter `containerImage`
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: containerImageTag
+        aliases:
+          - name: artifactVersion
+        type: string
+        description: Tag of the container which will be built - will be used instead of parameter `containerImage`
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
         resourceRef:
           - name: commonPipelineEnvironment
-            param: container/imageNameTag
+            param: artifactVersion
       - name: containerPreparationCommand
         type: string
         description: Defines the command to prepare the Kaniko container. By default the contained credentials are removed in order to allow anonymous access to container registries.
@@ -46,6 +66,19 @@ spec:
           - STAGES
           - STEPS
         default: rm -f /kaniko/.docker/config.json
+      - name: containerRegistryUrl
+        aliases:
+          - name: dockerRegistryUrl
+        type: string
+        description: http(s) url of the Container registry where the image should be pushed to - will be used instead of parameter `containerImage`
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/registryUrl
       - name: customTlsCertificateLinks
         type: "[]string"
         description: List containing download links of custom TLS certificates. This is required to ensure trusted connections to registries with custom certificates.
@@ -75,6 +108,13 @@ spec:
           - STAGES
           - STEPS
         default: Dockerfile
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: container/registryUrl
+          - name: container/imageNameTag
   containers:
     - image: gcr.io/kaniko-project/executor:debug
       command:

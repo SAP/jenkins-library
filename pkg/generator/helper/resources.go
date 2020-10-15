@@ -42,7 +42,7 @@ func (p *{{ .StepName }}{{ .Name | title}}) persist(path, resourceName string) {
 	content := []struct{
 		category string
 		name string
-		value string
+		value interface{}
 	}{
 		{{- range $notused, $param := .Parameters }}
 		{{- if not $param.Category}}
@@ -109,6 +109,7 @@ type InfluxMeasurement struct {
 // InfluxMetric defines a metric (column) in an influx measurement
 type InfluxMetric struct {
 	Name string
+	Type string
 }
 
 // InfluxMetricContent defines the content of an Inflx metric
@@ -124,12 +125,12 @@ const influxStructTemplate = `type {{ .StepName }}{{ .Name | title}} struct {
 	{{ $measurement.Name }} struct {
 		fields struct {
 			{{- range $notused, $field := $measurement.Fields }}
-			{{ $field.Name | golangName }} string
+			{{ $field.Name | golangName }} {{ $field.Type | influxType }}
 			{{- end }}
 		}
 		tags struct {
 			{{- range $notused, $tag := $measurement.Tags }}
-			{{ $tag.Name | golangName }} string
+			{{ $tag.Name | golangName }} {{ $tag.Type | influxType }}
 			{{- end }}
 		}
 	}
@@ -141,7 +142,7 @@ func (i *{{ .StepName }}{{ .Name | title}}) persist(path, resourceName string) {
 		measurement string
 		valType     string
 		name        string
-		value       string
+		value       interface{}
 	}{
 		{{- range $notused, $measurement := .Measurements }}
 		{{- range $notused, $field := $measurement.Fields }}
@@ -171,6 +172,7 @@ func (i *InfluxResource) StructString() (string, error) {
 	funcMap := template.FuncMap{
 		"title":      strings.Title,
 		"golangName": golangName,
+		"influxType": influxType,
 	}
 
 	tmpl, err := template.New("resources").Funcs(funcMap).Parse(influxStructTemplate)

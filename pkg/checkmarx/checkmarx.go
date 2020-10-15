@@ -222,6 +222,8 @@ func NewSystemInstance(client piperHttp.Uploader, serverURL, username, password 
 		return sys, errors.Wrap(err, "Error fetching oAuth token")
 	}
 
+	log.RegisterSecret(token)
+
 	options := piperHttp.ClientOptions{
 		Token:              token,
 		MaxRequestDuration: 60 * time.Second,
@@ -246,7 +248,7 @@ func sendRequestInternal(sys *SystemInstance, method, url string, body io.Reader
 		defer closer.Close()
 	}
 	response, err := sys.client.SendRequest(method, fmt.Sprintf("%v/cxrestapi%v", sys.serverURL, url), requestBody, header, nil)
-	if err != nil && !piperutils.ContainsInt(acceptedErrorCodes, response.StatusCode) {
+	if err != nil && (response == nil || !piperutils.ContainsInt(acceptedErrorCodes, response.StatusCode)) {
 		sys.recordRequestDetailsInErrorCase(requestBodyCopy, response)
 		sys.logger.Errorf("HTTP request failed with error: %s", err)
 		return nil, err

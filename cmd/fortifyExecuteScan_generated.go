@@ -94,7 +94,7 @@ func (i *fortifyExecuteScanInflux) persist(path, resourceName string) {
 		measurement string
 		valType     string
 		name        string
-		value       string
+		value       interface{}
 	}{
 		{valType: config.InfluxField, measurement: "fortify_data", name: "projectName", value: i.fortify_data.fields.projectName},
 		{valType: config.InfluxField, measurement: "fortify_data", name: "projectVersion", value: i.fortify_data.fields.projectVersion},
@@ -259,6 +259,12 @@ func fortifyExecuteScanMetadata() config.StepData {
 							{
 								Name: "fortifyCredentialsId",
 								Type: "secret",
+							},
+
+							{
+								Name:  "",
+								Paths: []string{"$(vaultPath)/fortify", "$(vaultBasePath)/$(vaultPipelineName)/fortify", "$(vaultBasePath)/GROUP-SECRETS/fortify"},
+								Type:  "vaultSecret",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
