@@ -25,7 +25,7 @@ type gitopsUpdateDeploymentOptions struct {
 	ContainerImage       string `json:"containerImage,omitempty"`
 }
 
-// GitopsUpdateDeploymentCommand Updates Kubernetes Deployment Manifest in Infrastructure Git Repo
+// GitopsUpdateDeploymentCommand Updates Kubernetes Deployment Manifest in an Infrastructure Git Repository
 func GitopsUpdateDeploymentCommand() *cobra.Command {
 	const STEP_NAME = "gitopsUpdateDeployment"
 
@@ -35,7 +35,7 @@ func GitopsUpdateDeploymentCommand() *cobra.Command {
 
 	var createGitopsUpdateDeploymentCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Updates Kubernetes Deployment Manifest in Infrastructure Git Repo",
+		Short: "Updates Kubernetes Deployment Manifest in an Infrastructure Git Repository",
 		Long: `This step allows you to update the deployment manifest in another repository.
 
 It can for example be used for GitOps scenarios where the update of the manifests triggers an update of the corresponding deployment in Kubernetes.`,
