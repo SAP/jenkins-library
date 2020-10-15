@@ -11,6 +11,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
+	"io"
 	"path/filepath"
 )
 
@@ -26,12 +27,18 @@ type GitopsFileUtils interface {
 	RemoveAll(path string) error
 }
 
+type GitopsExecRunner interface {
+	RunExecutable(executable string, params ...string) error
+	Stdout(out io.Writer)
+	Stderr(err io.Writer)
+}
+
 var gitUtilities GitopsGitUtils = gitUtil.TheGitUtils{}
 var fileUtilities GitopsFileUtils = piperutils.Files{}
 
 func gitopsUpdateDeployment(config gitopsUpdateDeploymentOptions, telemetryData *telemetry.CustomData) {
 	// for command execution use Command
-	var c command.ExecRunner = &command.Command{}
+	var c GitopsExecRunner = &command.Command{}
 	// reroute command output to logging framework
 	c.Stdout(log.Writer())
 	c.Stderr(log.Writer())
@@ -47,7 +54,7 @@ func gitopsUpdateDeployment(config gitopsUpdateDeploymentOptions, telemetryData 
 	}
 }
 
-func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command command.ExecRunner) error {
+func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command GitopsExecRunner) error {
 	temporaryFolder, tempDirError := fileUtilities.TempDir(".", "temp-")
 	if tempDirError != nil {
 		log.Entry().WithError(tempDirError).Error("Failed to create temporary directory")
@@ -95,7 +102,7 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command co
 	return nil
 }
 
-func RunKubeCtlCommand(command command.ExecRunner, patchString string, filePath string) ([]byte, error) {
+func RunKubeCtlCommand(command GitopsExecRunner, patchString string, filePath string) ([]byte, error) {
 	var kubectlOutput = bytes.Buffer{}
 	command.Stdout(&kubectlOutput)
 
