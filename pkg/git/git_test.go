@@ -8,53 +8,59 @@ import (
 	"testing"
 )
 
-var cut = TheGitUtils{}
-var test *testing.T
-
 func TestCommitSingleFileErrorAddingFile(t *testing.T) {
+	var cut = TheGitUtils{}
 	_, err := cut.CommitSingleFile(".", "message", WorktreeMockFailingAdd{})
 	assert.Error(t, err)
 	assert.Equal(t, errors.New("failed to add file"), err)
 }
 
 func TestCommitSingleFileErrorCommittingFile(t *testing.T) {
+	var cut = TheGitUtils{}
 	_, err := cut.CommitSingleFile(".", "message", WorktreeMockFailingCommit{})
 	assert.Error(t, err)
 	assert.Equal(t, errors.New("error on commit"), err)
 }
 
 func TestCommitSingleFile(t *testing.T) {
-	hash, err := cut.CommitSingleFile(".", "message", WorktreeMock{})
+	var cut = TheGitUtils{}
+	hash, err := cut.CommitSingleFile(".", "message", WorktreeMock{
+		test: t,
+	})
 	assert.NoError(t, err)
 	assert.Equal(t, plumbing.Hash([20]byte{4, 5, 6}), hash)
 }
 
 func TestPushChangesToRepository(t *testing.T) {
-	test = t
-	err := cut.PushChangesToRepository("user", "password", RepositoryMock{})
+	var cut = TheGitUtils{}
+	err := cut.PushChangesToRepository("user", "password", RepositoryMock{
+		test: t,
+	})
 	assert.NoError(t, err)
 }
 
 func TestPushChangesToRepositoryErrorPushing(t *testing.T) {
-	test = t
+	var cut = TheGitUtils{}
 	err := cut.PushChangesToRepository("user", "password", RepositoryMockError{})
 	assert.Error(t, err)
 	assert.Equal(t, errors.New("error on push commits"), err)
 }
 
 func TestPlainClone(t *testing.T) {
-	test = t
+	var cut = TheGitUtils{}
 	oldUtilsGit := abstractedGit
 	defer func() {
 		abstractedGit = oldUtilsGit
 	}()
-	abstractedGit = UtilsGitMock{}
+	abstractedGit = UtilsGitMock{
+		test: t,
+	}
 	_, err := cut.PlainClone("user", "password", "URL", "directory")
 	assert.NoError(t, err)
 }
 
 func TestPlainCloneErrorOnCloning(t *testing.T) {
-	test = t
+	var cut = TheGitUtils{}
 	oldUtilsGit := abstractedGit
 	defer func() {
 		abstractedGit = oldUtilsGit
@@ -66,38 +72,49 @@ func TestPlainCloneErrorOnCloning(t *testing.T) {
 }
 
 func TestChangeBranch(t *testing.T) {
-	test = t
-	err := cut.ChangeBranch("otherBranch", WorktreeMock{"otherBranch"})
+	var cut = TheGitUtils{}
+	err := cut.ChangeBranch("otherBranch", WorktreeMock{
+		expectedBranchName: "otherBranch",
+		test:               t,
+	})
 	assert.NoError(t, err)
 }
 
 func TestChangeBranchMaster(t *testing.T) {
-	test = t
-	err := cut.ChangeBranch("", WorktreeMock{"master"})
+	var cut = TheGitUtils{}
+	err := cut.ChangeBranch("", WorktreeMock{
+		expectedBranchName: "master",
+		test:               t,
+	})
 	assert.NoError(t, err)
 }
 
 func TestChangeBranchNewBranch(t *testing.T) {
-	test = t
+	var cut = TheGitUtils{}
 	err := cut.ChangeBranch("otherBranch", WorktreeUtilsNewBranch{})
 	assert.NoError(t, err)
 }
 
 func TestChangeBranchNewBranchCannotBeCreated(t *testing.T) {
-	test = t
+	var cut = TheGitUtils{}
 	err := cut.ChangeBranch("otherBranch", WorktreeUtilsErrorCheckout{})
 	assert.Error(t, err)
 	assert.Equal(t, errors.New("cannot checkout branch"), err)
 }
 
 func TestGetWorktree(t *testing.T) {
+	var cut = TheGitUtils{}
 	testWorktree := &git.Worktree{}
-	worktree, err := cut.GetWorktree(RepositoryMock{testWorktree})
+	worktree, err := cut.GetWorktree(RepositoryMock{
+		worktree: testWorktree,
+		test:     t,
+	})
 	assert.NoError(t, err)
 	assert.Equal(t, testWorktree, worktree)
 }
 
 func TestGetWorktreeError(t *testing.T) {
+	var cut = TheGitUtils{}
 	_, err := cut.GetWorktree(RepositoryMockError{})
 	assert.Error(t, err)
 	assert.Equal(t, errors.New("error getting worktree"), err)
@@ -105,6 +122,7 @@ func TestGetWorktreeError(t *testing.T) {
 
 type RepositoryMock struct {
 	worktree *git.Worktree
+	test     *testing.T
 }
 
 func (r RepositoryMock) Worktree() (*git.Worktree, error) {
@@ -114,8 +132,8 @@ func (r RepositoryMock) Worktree() (*git.Worktree, error) {
 	return &git.Worktree{}, nil
 }
 
-func (RepositoryMock) Push(o *git.PushOptions) error {
-	assert.Equal(test, "http-basic-auth - user:*******", o.Auth.String())
+func (r RepositoryMock) Push(o *git.PushOptions) error {
+	assert.Equal(r.test, "http-basic-auth - user:*******", o.Auth.String())
 	return nil
 }
 
@@ -159,6 +177,7 @@ func (WorktreeMockFailingCommit) Checkout(opts *git.CheckoutOptions) error {
 
 type WorktreeMock struct {
 	expectedBranchName string
+	test               *testing.T
 }
 
 func (WorktreeMock) Add(path string) (plumbing.Hash, error) {
@@ -170,8 +189,8 @@ func (WorktreeMock) Commit(msg string, opts *git.CommitOptions) (plumbing.Hash, 
 }
 
 func (w WorktreeMock) Checkout(opts *git.CheckoutOptions) error {
-	assert.Equal(test, plumbing.NewBranchReferenceName(w.expectedBranchName), opts.Branch)
-	assert.False(test, opts.Create)
+	assert.Equal(w.test, plumbing.NewBranchReferenceName(w.expectedBranchName), opts.Branch)
+	assert.False(w.test, opts.Create)
 	return nil
 }
 
@@ -206,13 +225,15 @@ func (WorktreeUtilsErrorCheckout) Checkout(opts *git.CheckoutOptions) error {
 	return errors.New("cannot checkout branch")
 }
 
-type UtilsGitMock struct{}
+type UtilsGitMock struct {
+	test *testing.T
+}
 
-func (UtilsGitMock) plainClone(path string, isBare bool, o *git.CloneOptions) (*git.Repository, error) {
-	assert.Equal(test, "directory", path)
-	assert.False(test, isBare)
-	assert.Equal(test, "http-basic-auth - user:*******", o.Auth.String())
-	assert.Equal(test, "URL", o.URL)
+func (u UtilsGitMock) plainClone(path string, isBare bool, o *git.CloneOptions) (*git.Repository, error) {
+	assert.Equal(u.test, "directory", path)
+	assert.False(u.test, isBare)
+	assert.Equal(u.test, "http-basic-auth - user:*******", o.Auth.String())
+	assert.Equal(u.test, "URL", o.URL)
 	return nil, nil
 }
 
