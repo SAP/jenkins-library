@@ -17,7 +17,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        mandatory: false
         default:
       - name: operationIdLogPattern
         type: string
@@ -27,7 +26,6 @@ spec:
           - STAGES
           - STEPS
         default: ^.*xs bg-deploy -i (.*) -a.*$
-        mandatory: false
         aliases:
           - name: deployIdLogPattern
       - name: mtaPath
@@ -54,7 +52,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        mandatory: false
       - name: mode
         type: string
         description: "Controls if there is a standard deployment or a blue green deployment. Values: 'DEPLOY', 'BG_DEPLOY'"
@@ -76,7 +73,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        mandatory: false
         resourceRef:
           - name: commonPipelineEnvironment
             param: operationId
@@ -148,7 +144,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        mandatory: false
   outputs:
     resources:
       - name: commonPipelineEnvironment
