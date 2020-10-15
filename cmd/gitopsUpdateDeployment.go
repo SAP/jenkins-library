@@ -9,17 +9,17 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"io"
 	"path/filepath"
 )
 
 type GitopsGitUtils interface {
-	CommitSingleFile(filePath, commitMessage string, repository *git.Repository) (plumbing.Hash, error)
-	PushChangesToRepository(username, password string, repository *git.Repository) error
-	PlainClone(username, password, serverUrl, directory string) (*git.Repository, error)
-	ChangeBranch(branchName string, repository *git.Repository) error
+	CommitSingleFile(filePath, commitMessage string, worktree gitUtil.UtilsWorkTree) (plumbing.Hash, error)
+	PushChangesToRepository(username, password string, repository gitUtil.UtilsRepository) error
+	PlainClone(username, password, serverUrl, directory string) (gitUtil.UtilsRepository, error)
+	ChangeBranch(branchName string, worktree gitUtil.UtilsWorkTree) error
+	GetWorktree(repository gitUtil.UtilsRepository) (gitUtil.UtilsWorkTree, error)
 }
 
 type GitopsFileUtils interface {
@@ -68,7 +68,12 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command Gi
 		return gitCloneError
 	}
 
-	changeBranchError := gitUtilities.ChangeBranch(config.BranchName, repository)
+	worktree, worktreeError := repository.Worktree()
+	if worktreeError != nil {
+		return worktreeError
+	}
+
+	changeBranchError := gitUtilities.ChangeBranch(config.BranchName, worktree)
 	if changeBranchError != nil {
 		return changeBranchError
 	}
@@ -92,7 +97,7 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command Gi
 		return fileWriteError
 	}
 
-	commit, commitError := CommitAndPushChanges(config, repository)
+	commit, commitError := CommitAndPushChanges(config, repository, worktree)
 	if commitError != nil {
 		return commitError
 	}
@@ -138,8 +143,8 @@ func BuildRegistryPlusImage(config *gitopsUpdateDeploymentOptions) (string, erro
 	return url + config.ContainerImage, nil
 }
 
-func CommitAndPushChanges(config *gitopsUpdateDeploymentOptions, repository *git.Repository) (plumbing.Hash, error) {
-	commit, commitError := gitUtilities.CommitSingleFile(config.FilePath, config.CommitMessage, repository)
+func CommitAndPushChanges(config *gitopsUpdateDeploymentOptions, repository gitUtil.UtilsRepository, worktree gitUtil.UtilsWorkTree) (plumbing.Hash, error) {
+	commit, commitError := gitUtilities.CommitSingleFile(config.FilePath, config.CommitMessage, worktree)
 	if commitError != nil {
 		return [20]byte{}, commitError
 	}

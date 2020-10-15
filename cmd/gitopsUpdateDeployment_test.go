@@ -147,7 +147,8 @@ func (e *ExecRunnerMock) RunExecutable(executable string, params ...string) erro
 	assert.Equal(test, "--output=yaml", params[2])
 	assert.Equal(test, "--patch={\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"myContainer\",\"image\":\"myregistry.com/myFancyContainer:1337\"}]}}}}", params[3])
 	assert.True(test, strings.Contains(params[4], "dir1\\dir2\\depl.yaml"))
-	_, _ = e.out.Write([]byte(expectedYaml))
+	_, err := e.out.Write([]byte(expectedYaml))
+	assert.NoError(test, err)
 	return nil
 }
 
@@ -163,41 +164,49 @@ func (FilesMockErrorTempDirCreation) RemoveAll(path string) error {
 
 type GitUtilsMockErrorClone struct{}
 
-func (c GitUtilsMockErrorClone) CommitSingleFile(filePath, commitMessage string, repository *git.Repository) (plumbing.Hash, error) {
+func (c GitUtilsMockErrorClone) CommitSingleFile(filePath, commitMessage string, worktree gitUtil.UtilsWorkTree) (plumbing.Hash, error) {
 	panic("implement me")
 }
 
-func (c GitUtilsMockErrorClone) ChangeBranch(branchName string, repository *git.Repository) error {
+func (c GitUtilsMockErrorClone) PushChangesToRepository(username, password string, repository gitUtil.UtilsRepository) error {
 	panic("implement me")
 }
 
-func (GitUtilsMockErrorClone) PushChangesToRepository(username, password string, repository *git.Repository) error {
-	panic("implement me")
-}
-
-func (GitUtilsMockErrorClone) PlainClone(username, password, serverUrl, directory string) (*git.Repository, error) {
+func (c GitUtilsMockErrorClone) PlainClone(username, password, serverUrl, directory string) (gitUtil.UtilsRepository, error) {
 	return nil, errors.New("error on clone")
+}
+
+func (c GitUtilsMockErrorClone) ChangeBranch(branchName string, worktree gitUtil.UtilsWorkTree) error {
+	panic("implement me")
+}
+
+func (c GitUtilsMockErrorClone) GetWorktree(repository gitUtil.UtilsRepository) (gitUtil.UtilsWorkTree, error) {
+	panic("implement me")
 }
 
 type ValidGitUtilsMock struct{}
 
-func (m ValidGitUtilsMock) ChangeBranch(branchName string, repository *git.Repository) error {
+func (m ValidGitUtilsMock) GetWorktree(repository gitUtil.UtilsRepository) (gitUtil.UtilsWorkTree, error) {
+	return nil, nil
+}
+
+func (m ValidGitUtilsMock) ChangeBranch(branchName string, worktree gitUtil.UtilsWorkTree) error {
 	assert.Equal(test, configuration.BranchName, branchName)
 	return nil
 }
 
-func (ValidGitUtilsMock) CommitSingleFile(filePath, commitMessage string, repository *git.Repository) (plumbing.Hash, error) {
+func (ValidGitUtilsMock) CommitSingleFile(filePath, commitMessage string, worktree gitUtil.UtilsWorkTree) (plumbing.Hash, error) {
 	matches, _ := piperutils.Files{}.Glob("*/dir1/dir2/depl.yaml")
 	fileRead, _ := piperutils.Files{}.FileRead(matches[0])
 	assert.Equal(test, expectedYaml, string(fileRead))
 	return [20]byte{123}, nil
 }
 
-func (ValidGitUtilsMock) PushChangesToRepository(username, password string, repository *git.Repository) error {
+func (ValidGitUtilsMock) PushChangesToRepository(username, password string, repository gitUtil.UtilsRepository) error {
 	return nil
 }
 
-func (ValidGitUtilsMock) PlainClone(username, password, serverUrl, directory string) (*git.Repository, error) {
+func (ValidGitUtilsMock) PlainClone(username, password, serverUrl, directory string) (gitUtil.UtilsRepository, error) {
 	filePath := filepath.Join(directory, "dir1/dir2/depl.yaml")
 	err2 := piperutils.Files{}.MkdirAll(filepath.Join(directory, "dir1/dir2"), 0755)
 	if err2 != nil {
@@ -207,7 +216,17 @@ func (ValidGitUtilsMock) PlainClone(username, password, serverUrl, directory str
 	if err != nil {
 		return nil, err
 	}
-	return &git.Repository{}, nil
+	return &RepositoryMock{}, nil
+}
+
+type RepositoryMock struct{}
+
+func (RepositoryMock) Worktree() (*git.Worktree, error) {
+	return nil, nil
+}
+
+func (RepositoryMock) Push(o *git.PushOptions) error {
+	panic("implement me")
 }
 
 var existingYaml = "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: myFancyApp\n  labels:\n    tier: application\nspec:\n  replicas: 4\n  selector:\n    matchLabels:\n      run: myContainer\n  template:\n    metadata:\n      labels:\n        run: myContainer\n    spec:\n      containers:\n      - image: myregistry.com/myFancyContainer:1336\n        name: myContainer"
