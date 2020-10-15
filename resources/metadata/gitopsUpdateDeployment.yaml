@@ -2,7 +2,7 @@ metadata:
   name: gitopsUpdateDeployment
   description: Updates Kubernetes Deployment Manifest in an Infrastructure Git Repository
   longDescription: |
-    This step allows you to update the deployment manifest in another repository.
+    This step allows you to update the deployment manifest for Kubernetes in a git repository.
 
     It can for example be used for GitOps scenarios where the update of the manifests triggers an update of the corresponding deployment in Kubernetes.
 spec:
@@ -29,6 +29,7 @@ spec:
           - STEPS
         type: string
         mandatory: true
+        default: Updated {{containerName}} to version {{containerImage}}
       - name: serverUrl
         aliases:
           - name: githubServerUrl
@@ -66,7 +67,7 @@ spec:
             type: secret
             param: password
       - name: filePath
-        description: Path to the yaml file that shall be updated
+        description: Relative path in the git repository to the deployment descriptor file that shall be updated
         scope:
           - GENERAL
           - PARAMETERS
