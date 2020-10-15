@@ -7,13 +7,6 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 )
 
-type IGitUtils interface {
-	CommitSingleFile(filePath, commitMessage string, repository *git.Repository) (plumbing.Hash, error)
-	PushChangesToRepository(username, password string, repository *git.Repository) error
-	PlainClone(username, password, serverUrl, directory string) (*git.Repository, error)
-	ChangeBranch(branchName string, repository *git.Repository) error
-}
-
 type TheGitUtils struct {
 }
 

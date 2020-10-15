@@ -17,18 +17,6 @@ type FileUtilsMock struct {
 	copiedFiles []string
 }
 
-func (f *FileUtilsMock) Getwd() (string, error) {
-	panic("implement me")
-}
-
-func (f *FileUtilsMock) TempDir(dir, pattern string) (name string, err error) {
-	panic("implement me")
-}
-
-func (f *FileUtilsMock) RemoveAll(path string) error {
-	panic("implement me")
-}
-
 func (f *FileUtilsMock) FileExists(path string) (bool, error) {
 	return path == "dummy.mtar" || path == ".xs_session", nil
 }

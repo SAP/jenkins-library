@@ -22,9 +22,6 @@ type FileUtils interface {
 	MkdirAll(path string, perm os.FileMode) error
 	Chmod(path string, mode os.FileMode) error
 	Glob(pattern string) (matches []string, err error)
-	TempDir(dir, pattern string) (name string, err error)
-	RemoveAll(path string) error
-	Getwd() (string, error)
 }
 
 // Files ...

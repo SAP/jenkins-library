@@ -324,18 +324,6 @@ type MtaTestFileUtilsMock struct {
 	copiedFiles   map[string]string
 }
 
-func (f *MtaTestFileUtilsMock) Getwd() (string, error) {
-	panic("implement me")
-}
-
-func (f *MtaTestFileUtilsMock) TempDir(dir, pattern string) (name string, err error) {
-	panic("implement me")
-}
-
-func (f *MtaTestFileUtilsMock) RemoveAll(path string) error {
-	panic("implement me")
-}
-
 func (f *MtaTestFileUtilsMock) FileExists(path string) (bool, error) {
 
 	if _, ok := f.existingFiles[path]; ok {

@@ -14,8 +14,20 @@ import (
 	"path/filepath"
 )
 
-var gitUtilities gitUtil.IGitUtils = gitUtil.TheGitUtils{}
-var fileUtilities piperutils.FileUtils = piperutils.Files{}
+type GitopsGitUtils interface {
+	CommitSingleFile(filePath, commitMessage string, repository *git.Repository) (plumbing.Hash, error)
+	PushChangesToRepository(username, password string, repository *git.Repository) error
+	PlainClone(username, password, serverUrl, directory string) (*git.Repository, error)
+	ChangeBranch(branchName string, repository *git.Repository) error
+}
+
+type GitopsFileUtils interface {
+	TempDir(dir, pattern string) (name string, err error)
+	RemoveAll(path string) error
+}
+
+var gitUtilities GitopsGitUtils = gitUtil.TheGitUtils{}
+var fileUtilities GitopsFileUtils = piperutils.Files{}
 
 func gitopsUpdateDeployment(config gitopsUpdateDeploymentOptions, telemetryData *telemetry.CustomData) {
 	// for command execution use Command
