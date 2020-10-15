@@ -237,9 +237,9 @@ spec:
             param: username
           - type: vaultSecret
             paths:
-              - $(vaultPath)/versioning
-              - $(vaultBasePath)/$(vaultPipelineName)/versioning
-              - $(vaultBasePath)/GROUP-SECRETS/versioning
+              - $(vaultPath)/githubHttpsCredential
+              - $(vaultBasePath)/$(vaultPipelineName)/githubHttpsCredential
+              - $(vaultBasePath)/GROUP-SECRETS/githubHttpsCredential
       - name: versioningTemplate
         type: string
         description: "DEPRECATED: Defines the template for the automatic version which will be created"
