@@ -13,13 +13,14 @@ spec:
         type: jenkins
     params:
       - name: branchName
-        description: Currently ignored and only the main branch is considered. The name of the branch you want the changes pulled into.
+        description: The name of the branch where the changes should get pushed into.
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
         type: string
-        mandatory: true
+        default:
+        mandatory: false
       - name: commitMessage
         description: The commit message of the commit that will be done to do the changes.
         scope:

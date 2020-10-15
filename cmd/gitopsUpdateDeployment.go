@@ -49,7 +49,10 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command co
 		return gitCloneError
 	}
 
-	// TODO: switch to branch
+	changeBranchError := gitUtilities.ChangeBranch(config.BranchName, repository)
+	if changeBranchError != nil {
+		return changeBranchError
+	}
 
 	registryImage, buildRegistryError := BuildRegistryPlusImage(config)
 	if buildRegistryError != nil {

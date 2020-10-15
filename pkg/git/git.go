@@ -11,6 +11,7 @@ type IGitUtils interface {
 	CommitSingleFile(filePath, commitMessage string, repository *git.Repository) (plumbing.Hash, error)
 	PushChangesToRepository(username, password string, repository *git.Repository) error
 	PlainClone(username, password, serverUrl, directory string) (*git.Repository, error)
+	ChangeBranch(branchName string, repository *git.Repository) error
 }
 
 type TheGitUtils struct {
@@ -65,4 +66,30 @@ func (f TheGitUtils) PlainClone(username, password, serverUrl, directory string)
 		return nil, gitCloneError
 	}
 	return repository, nil
+}
+
+// ChangeBranch checkout the provided branch.
+// It will create a new branch if the branch does not exist yet.
+// It will checkout "master" if no branch name if provided
+func (f TheGitUtils) ChangeBranch(branchName string, repository *git.Repository) error {
+	if branchName == "" {
+		branchName = "master"
+	}
+
+	workTree, _ := repository.Worktree()
+	var checkoutOptions = &git.CheckoutOptions{}
+	checkoutOptions.Branch = plumbing.NewBranchReferenceName(branchName)
+	checkoutOptions.Create = false
+	checkoutError := workTree.Checkout(checkoutOptions)
+	if checkoutError != nil {
+		// branch might not exist, try to create branch
+		checkoutOptions.Create = true
+		checkoutError = workTree.Checkout(checkoutOptions)
+		if checkoutError != nil {
+			log.Entry().WithError(checkoutError).Error("Failed to checkout branch")
+			return checkoutError
+		}
+	}
+
+	return nil
 }

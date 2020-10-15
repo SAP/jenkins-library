@@ -50,8 +50,10 @@ var invalidURLOptions = gitopsUpdateDeploymentOptions{
 }
 
 var test *testing.T
+var configuration *gitopsUpdateDeploymentOptions
 
 func TestErrorOnTempDir(t *testing.T) {
+	test = t
 
 	defer func() {
 		fileUtilities = piperutils.Files{}
@@ -60,13 +62,14 @@ func TestErrorOnTempDir(t *testing.T) {
 	fileUtilities = FilesMockErrorTempDirCreation{}
 
 	var c command.ExecRunner
-	var config = &commonOptions
+	configuration = &commonOptions
 
-	err := runGitopsUpdateDeployment(config, c)
+	err := runGitopsUpdateDeployment(configuration, c)
 	assert.Equal(t, errors.New("error appeared"), err)
 }
 
 func TestErrorGitPlainClone(t *testing.T) {
+	test = t
 
 	defer func() {
 		gitUtilities = gitUtil.TheGitUtils{}
@@ -75,13 +78,14 @@ func TestErrorGitPlainClone(t *testing.T) {
 	gitUtilities = GitUtilsMockErrorClone{}
 
 	var c command.ExecRunner
-	var config = &commonOptions
+	configuration = &commonOptions
 
-	err := runGitopsUpdateDeployment(config, c)
+	err := runGitopsUpdateDeployment(configuration, c)
 	assert.Equal(t, errors.New("error on clone"), err)
 }
 
 func TestErrorOnInvalidURL(t *testing.T) {
+	test = t
 
 	defer func() {
 		gitUtilities = gitUtil.TheGitUtils{}
@@ -90,19 +94,21 @@ func TestErrorOnInvalidURL(t *testing.T) {
 	gitUtilities = ValidGitUtilsMock{}
 
 	var c command.ExecRunner
-	var config = &invalidURLOptions
+	configuration = &invalidURLOptions
 
-	err := runGitopsUpdateDeployment(config, c)
+	err := runGitopsUpdateDeployment(configuration, c)
 	assert.Equal(t, errors.New("invalid registry url"), err)
 }
 
 func TestBuildRegistryPlusImage(t *testing.T) {
+	test = t
 	registryImage, err := BuildRegistryPlusImage(&commonOptions)
 	assert.Nil(t, err)
 	assert.Equal(t, "myregistry.com/myFancyContainer:1337", registryImage)
 }
 
 func TestBuildRegistryPlusImageWithoutRegistry(t *testing.T) {
+	test = t
 	registryImage, err := BuildRegistryPlusImage(&commonOptionsNoRegistry)
 	assert.Nil(t, err)
 	assert.Equal(t, "myFancyContainer:1337", registryImage)
@@ -118,9 +124,9 @@ func TestRunGitopsUpdateDeployment(t *testing.T) {
 
 	var c command.ExecRunner = &ExecRunnerMock{}
 
-	var config = &commonOptions
+	configuration = &commonOptions
 
-	err := runGitopsUpdateDeployment(config, c)
+	err := runGitopsUpdateDeployment(configuration, c)
 	assert.NoError(t, err)
 }
 
@@ -211,7 +217,11 @@ func (FilesMockErrorTempDirCreation) RemoveAll(path string) error {
 
 type GitUtilsMockErrorClone struct{}
 
-func (GitUtilsMockErrorClone) CommitSingleFile(filePath, commitMessage string, repository *git.Repository) (plumbing.Hash, error) {
+func (c GitUtilsMockErrorClone) CommitSingleFile(filePath, commitMessage string, repository *git.Repository) (plumbing.Hash, error) {
+	panic("implement me")
+}
+
+func (c GitUtilsMockErrorClone) ChangeBranch(branchName string, repository *git.Repository) error {
 	panic("implement me")
 }
 
@@ -225,12 +235,15 @@ func (GitUtilsMockErrorClone) PlainClone(username, password, serverUrl, director
 
 type ValidGitUtilsMock struct{}
 
+func (m ValidGitUtilsMock) ChangeBranch(branchName string, repository *git.Repository) error {
+	assert.Equal(test, configuration.BranchName, branchName)
+	return nil
+}
+
 func (ValidGitUtilsMock) CommitSingleFile(filePath, commitMessage string, repository *git.Repository) (plumbing.Hash, error) {
 	matches, _ := piperutils.Files{}.Glob("*/dir1/dir2/depl.yaml")
 	fileRead, _ := piperutils.Files{}.FileRead(matches[0])
-	if string(fileRead) != expectedYaml {
-		return [20]byte{}, errors.New("file is not that expected file")
-	}
+	assert.Equal(test, expectedYaml, string(fileRead))
 	return [20]byte{123}, nil
 }
 
