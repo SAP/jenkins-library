@@ -11,7 +11,7 @@ import (
 // Replaces the Parameters placeholder with the content from the yaml
 func createParametersSection(stepData *config.StepData) string {
 
-	var parameters = "Parameters\n\n"
+	var parameters = "## Parameters\n\n"
 
 	// sort parameters alphabetically with mandatory parameters first
 	sortStepParameters(stepData, true)
