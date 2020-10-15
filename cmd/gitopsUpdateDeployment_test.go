@@ -8,7 +8,6 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/stretchr/testify/assert"
 	"io"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -153,42 +152,6 @@ func (e *ExecRunnerMock) RunExecutable(executable string, params ...string) erro
 }
 
 type FilesMockErrorTempDirCreation struct{}
-
-func (c FilesMockErrorTempDirCreation) Getwd() (string, error) {
-	panic("implement me")
-}
-
-func (FilesMockErrorTempDirCreation) Abs(path string) (string, error) {
-	panic("implement me")
-}
-
-func (FilesMockErrorTempDirCreation) FileExists(filename string) (bool, error) {
-	panic("implement me")
-}
-
-func (FilesMockErrorTempDirCreation) Copy(src, dest string) (int64, error) {
-	panic("implement me")
-}
-
-func (FilesMockErrorTempDirCreation) FileRead(path string) ([]byte, error) {
-	panic("implement me")
-}
-
-func (FilesMockErrorTempDirCreation) FileWrite(path string, content []byte, perm os.FileMode) error {
-	panic("implement me")
-}
-
-func (FilesMockErrorTempDirCreation) MkdirAll(path string, perm os.FileMode) error {
-	panic("implement me")
-}
-
-func (FilesMockErrorTempDirCreation) Chmod(path string, mode os.FileMode) error {
-	panic("implement me")
-}
-
-func (FilesMockErrorTempDirCreation) Glob(pattern string) (matches []string, err error) {
-	panic("implement me")
-}
 
 func (FilesMockErrorTempDirCreation) TempDir(dir, pattern string) (name string, err error) {
 	return "", errors.New("error appeared")
