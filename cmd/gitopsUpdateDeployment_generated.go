@@ -38,7 +38,9 @@ func GitopsUpdateDeploymentCommand() *cobra.Command {
 		Short: "Updates Kubernetes Deployment Manifest in an Infrastructure Git Repository",
 		Long: `This step allows you to update the deployment manifest for Kubernetes in a git repository.
 
-It can for example be used for GitOps scenarios where the update of the manifests triggers an update of the corresponding deployment in Kubernetes.`,
+It can for example be used for GitOps scenarios where the update of the manifests triggers an update of the corresponding deployment in Kubernetes.
+
+As of today, it supports the update of deployment yaml files via kubectl patch. The container inside the yaml must be described within the following hirarchy: {"spec":{"template":{"spec":{"containers":[{...}]}}}}`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
