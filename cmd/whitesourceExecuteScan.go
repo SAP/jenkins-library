@@ -483,13 +483,7 @@ func generateMavenWhitesourceDefines(config *ScanOptions) []string {
 
 func generateMavenWhitesourceFlags(config *ScanOptions, utils whitesourceUtils) (flags []string, excludes []string) {
 	excludes = config.BuildDescriptorExcludeList
-	if len(excludes) == 0 {
-		excludes = []string{
-			filepath.Join("unit-tests", "pom.xml"),
-			filepath.Join("integration-tests", "pom.xml"),
-			filepath.Join("performance-tests", "pom.xml"),
-		}
-	}
+
 	// From the documentation, these are file paths to a module's pom.xml.
 	// For MTA projects, we want to support mixing paths to package.json files and pom.xml files.
 	for _, exclude := range excludes {
@@ -634,7 +628,7 @@ func executeNpmScanForModule(modulePath string, config *ScanOptions, scan *white
 	}
 	defer func() { _ = utils.FileRemove(whiteSourceConfig) }()
 
-	projectName, err := getNpmProjectName(modulePath, utils)
+	projectName, err := getNpmProjectName(dir, utils)
 	if err != nil {
 		return err
 	}
