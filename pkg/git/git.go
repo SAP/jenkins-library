@@ -64,10 +64,10 @@ func (TheGitUtils) PushChangesToRepository(username, password string, repository
 }
 
 // PlainClone Clones a non-bare repository to the provided directory
-func (TheGitUtils) PlainClone(username, password, serverUrl, directory string) (UtilsRepository, error) {
+func (TheGitUtils) PlainClone(username, password, serverURL, directory string) (UtilsRepository, error) {
 	gitCloneOptions := git.CloneOptions{
 		Auth: &http.BasicAuth{Username: username, Password: password},
-		URL:  serverUrl,
+		URL:  serverURL,
 	}
 	repository, gitCloneError := abstractedGit.plainClone(directory, false, &gitCloneOptions)
 	if gitCloneError != nil {
