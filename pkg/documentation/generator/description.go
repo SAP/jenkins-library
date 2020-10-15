@@ -34,7 +34,7 @@ type CustomLibrary struct {
 
 // Replaces the StepName placeholder with the content from the yaml
 func createStepName(stepData *config.StepData) string {
-	return stepData.Metadata.Name + "\n\n" + stepData.Metadata.Description + "\n"
+	return "# " + stepData.Metadata.Name + "\n\n" + stepData.Metadata.Description + "\n"
 }
 
 // Replaces the Description placeholder with content from the yaml

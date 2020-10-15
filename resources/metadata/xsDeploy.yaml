@@ -155,8 +155,6 @@ spec:
         type: piperEnvironment
         params:
           - name: operationId
-            fields:
-              - name: operationId
   containers:
     - name: xs
       image: ppiper/xs-cli

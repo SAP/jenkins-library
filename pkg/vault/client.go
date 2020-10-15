@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/hashicorp/vault/api"
 )
 
@@ -52,6 +53,7 @@ func NewClientWithAppRole(config *api.Config, roleID, secretID, namespace string
 		client.SetNamespace(namespace)
 	}
 
+	log.Entry().Debug("Using approle login")
 	result, err := client.Logical().Write("auth/approle/login", map[string]interface{}{
 		"role_id":   roleID,
 		"secret_id": secretID,
@@ -62,10 +64,11 @@ func NewClientWithAppRole(config *api.Config, roleID, secretID, namespace string
 	}
 
 	authInfo := result.Auth
-	if authInfo == nil {
+	if authInfo == nil || authInfo.ClientToken == "" {
 		return Client{}, fmt.Errorf("Could not obtain token from approle with role_id %s", roleID)
 	}
 
+	log.Entry().Debugf("Login to vault %s in namespace %s successfull", config.Address, namespace)
 	return NewClient(config, authInfo.ClientToken, namespace)
 }
 

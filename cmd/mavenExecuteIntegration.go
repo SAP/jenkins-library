@@ -52,6 +52,17 @@ func runMavenExecuteIntegration(config *mavenExecuteIntegrationOptions, utils ma
 		return fmt.Errorf("maven module 'integration-tests' does not exist in project structure")
 	}
 
+	if config.InstallArtifacts {
+		err := maven.InstallMavenArtifacts(utils, maven.EvaluateOptions{
+			M2Path:              config.M2Path,
+			ProjectSettingsFile: config.ProjectSettingsFile,
+			GlobalSettingsFile:  config.GlobalSettingsFile,
+		})
+		if err != nil {
+			return err
+		}
+	}
+
 	if err := validateForkCount(config.ForkCount); err != nil {
 		return err
 	}
