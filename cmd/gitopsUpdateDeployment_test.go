@@ -146,7 +146,7 @@ func (e *gitOpsExecRunnerMock) RunExecutable(executable string, params ...string
 	assert.Equal(test, "--local", params[1])
 	assert.Equal(test, "--output=yaml", params[2])
 	assert.Equal(test, "--patch={\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"myContainer\",\"image\":\"myregistry.com/myFancyContainer:1337\"}]}}}}", params[3])
-	assert.True(test, strings.Contains(params[4], "dir1\\dir2\\depl.yaml"))
+	assert.True(test, strings.Contains(params[4], filepath.Join("dir1/dir2/depl.yaml")))
 	_, err := e.out.Write([]byte(expectedYaml))
 	assert.NoError(test, err)
 	return nil
