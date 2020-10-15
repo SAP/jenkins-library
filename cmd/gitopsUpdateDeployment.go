@@ -14,7 +14,7 @@ import (
 	"path/filepath"
 )
 
-type GitopsGitUtils interface {
+type gitopsGitUtils interface {
 	CommitSingleFile(filePath, commitMessage string, worktree gitUtil.UtilsWorkTree) (plumbing.Hash, error)
 	PushChangesToRepository(username, password string, repository gitUtil.UtilsRepository) error
 	PlainClone(username, password, serverUrl, directory string) (gitUtil.UtilsRepository, error)
@@ -22,23 +22,23 @@ type GitopsGitUtils interface {
 	GetWorktree(repository gitUtil.UtilsRepository) (gitUtil.UtilsWorkTree, error)
 }
 
-type GitopsFileUtils interface {
+type gitopsFileUtils interface {
 	TempDir(dir, pattern string) (name string, err error)
 	RemoveAll(path string) error
 }
 
-type GitopsExecRunner interface {
+type gitopsExecRunner interface {
 	RunExecutable(executable string, params ...string) error
 	Stdout(out io.Writer)
 	Stderr(err io.Writer)
 }
 
-var gitUtilities GitopsGitUtils = gitUtil.TheGitUtils{}
-var fileUtilities GitopsFileUtils = piperutils.Files{}
+var gitUtilities gitopsGitUtils = gitUtil.TheGitUtils{}
+var fileUtilities gitopsFileUtils = piperutils.Files{}
 
 func gitopsUpdateDeployment(config gitopsUpdateDeploymentOptions, telemetryData *telemetry.CustomData) {
 	// for command execution use Command
-	var c GitopsExecRunner = &command.Command{}
+	var c gitopsExecRunner = &command.Command{}
 	// reroute command output to logging framework
 	c.Stdout(log.Writer())
 	c.Stderr(log.Writer())
@@ -54,7 +54,7 @@ func gitopsUpdateDeployment(config gitopsUpdateDeploymentOptions, telemetryData 
 	}
 }
 
-func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command GitopsExecRunner) error {
+func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gitopsExecRunner) error {
 	temporaryFolder, tempDirError := fileUtilities.TempDir(".", "temp-")
 	if tempDirError != nil {
 		log.Entry().WithError(tempDirError).Error("Failed to create temporary directory")
@@ -78,7 +78,7 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command Gi
 		return changeBranchError
 	}
 
-	registryImage, buildRegistryError := BuildRegistryPlusImage(config)
+	registryImage, buildRegistryError := buildRegistryPlusImage(config)
 	if buildRegistryError != nil {
 		return buildRegistryError
 	}
@@ -86,7 +86,7 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command Gi
 
 	filePath := filepath.Join(temporaryFolder, config.FilePath)
 
-	kubectlOutputBytes, err := RunKubeCtlCommand(command, patchString, filePath)
+	kubectlOutputBytes, err := runKubeCtlCommand(command, patchString, filePath)
 	if err != nil {
 		return err
 	}
@@ -97,7 +97,7 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command Gi
 		return fileWriteError
 	}
 
-	commit, commitError := CommitAndPushChanges(config, repository, worktree)
+	commit, commitError := commitAndPushChanges(config, repository, worktree)
 	if commitError != nil {
 		return commitError
 	}
@@ -107,7 +107,7 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command Gi
 	return nil
 }
 
-func RunKubeCtlCommand(command GitopsExecRunner, patchString string, filePath string) ([]byte, error) {
+func runKubeCtlCommand(command gitopsExecRunner, patchString string, filePath string) ([]byte, error) {
 	var kubectlOutput = bytes.Buffer{}
 	command.Stdout(&kubectlOutput)
 
@@ -126,7 +126,7 @@ func RunKubeCtlCommand(command GitopsExecRunner, patchString string, filePath st
 	return kubectlOutput.Bytes(), nil
 }
 
-func BuildRegistryPlusImage(config *gitopsUpdateDeploymentOptions) (string, error) {
+func buildRegistryPlusImage(config *gitopsUpdateDeploymentOptions) (string, error) {
 	registryURL := config.ContainerRegistryURL
 	if registryURL == "" {
 		return config.ContainerImage, nil
@@ -143,7 +143,7 @@ func BuildRegistryPlusImage(config *gitopsUpdateDeploymentOptions) (string, erro
 	return url + config.ContainerImage, nil
 }
 
-func CommitAndPushChanges(config *gitopsUpdateDeploymentOptions, repository gitUtil.UtilsRepository, worktree gitUtil.UtilsWorkTree) (plumbing.Hash, error) {
+func commitAndPushChanges(config *gitopsUpdateDeploymentOptions, repository gitUtil.UtilsRepository, worktree gitUtil.UtilsWorkTree) (plumbing.Hash, error) {
 	commit, commitError := gitUtilities.CommitSingleFile(config.FilePath, config.CommitMessage, worktree)
 	if commitError != nil {
 		return [20]byte{}, commitError

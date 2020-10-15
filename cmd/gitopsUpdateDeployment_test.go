@@ -57,9 +57,9 @@ func TestErrorOnTempDir(t *testing.T) {
 		fileUtilities = piperutils.Files{}
 	}()
 
-	fileUtilities = FilesMockErrorTempDirCreation{}
+	fileUtilities = filesMockErrorTempDirCreation{}
 
-	var c GitopsExecRunner
+	var c gitopsExecRunner
 	configuration = &commonOptions
 
 	err := runGitopsUpdateDeployment(configuration, c)
@@ -73,9 +73,9 @@ func TestErrorGitPlainClone(t *testing.T) {
 		gitUtilities = gitUtil.TheGitUtils{}
 	}()
 
-	gitUtilities = GitUtilsMockErrorClone{}
+	gitUtilities = gitUtilsMockErrorClone{}
 
-	var c GitopsExecRunner
+	var c gitopsExecRunner
 	configuration = &commonOptions
 
 	err := runGitopsUpdateDeployment(configuration, c)
@@ -89,9 +89,9 @@ func TestErrorOnInvalidURL(t *testing.T) {
 		gitUtilities = gitUtil.TheGitUtils{}
 	}()
 
-	gitUtilities = ValidGitUtilsMock{}
+	gitUtilities = validGitUtilsMock{}
 
-	var c GitopsExecRunner
+	var c gitopsExecRunner
 	configuration = &invalidURLOptions
 
 	err := runGitopsUpdateDeployment(configuration, c)
@@ -100,14 +100,14 @@ func TestErrorOnInvalidURL(t *testing.T) {
 
 func TestBuildRegistryPlusImage(t *testing.T) {
 	test = t
-	registryImage, err := BuildRegistryPlusImage(&commonOptions)
+	registryImage, err := buildRegistryPlusImage(&commonOptions)
 	assert.Nil(t, err)
 	assert.Equal(t, "myregistry.com/myFancyContainer:1337", registryImage)
 }
 
 func TestBuildRegistryPlusImageWithoutRegistry(t *testing.T) {
 	test = t
-	registryImage, err := BuildRegistryPlusImage(&commonOptionsNoRegistry)
+	registryImage, err := buildRegistryPlusImage(&commonOptionsNoRegistry)
 	assert.Nil(t, err)
 	assert.Equal(t, "myFancyContainer:1337", registryImage)
 }
@@ -118,9 +118,9 @@ func TestRunGitopsUpdateDeployment(t *testing.T) {
 		gitUtilities = gitUtil.TheGitUtils{}
 	}()
 
-	gitUtilities = ValidGitUtilsMock{}
+	gitUtilities = validGitUtilsMock{}
 
-	var c GitopsExecRunner = &ExecRunnerMock{}
+	var c gitopsExecRunner = &gitOpsExecRunnerMock{}
 
 	configuration = &commonOptions
 
@@ -128,19 +128,19 @@ func TestRunGitopsUpdateDeployment(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-type ExecRunnerMock struct {
+type gitOpsExecRunnerMock struct {
 	out io.Writer
 }
 
-func (e *ExecRunnerMock) Stdout(out io.Writer) {
+func (e *gitOpsExecRunnerMock) Stdout(out io.Writer) {
 	e.out = out
 }
 
-func (ExecRunnerMock) Stderr(err io.Writer) {
+func (gitOpsExecRunnerMock) Stderr(err io.Writer) {
 	panic("implement me")
 }
 
-func (e *ExecRunnerMock) RunExecutable(executable string, params ...string) error {
+func (e *gitOpsExecRunnerMock) RunExecutable(executable string, params ...string) error {
 	assert.Equal(test, "kubectl", executable)
 	assert.Equal(test, "patch", params[0])
 	assert.Equal(test, "--local", params[1])
@@ -152,61 +152,61 @@ func (e *ExecRunnerMock) RunExecutable(executable string, params ...string) erro
 	return nil
 }
 
-type FilesMockErrorTempDirCreation struct{}
+type filesMockErrorTempDirCreation struct{}
 
-func (FilesMockErrorTempDirCreation) TempDir(dir, pattern string) (name string, err error) {
+func (filesMockErrorTempDirCreation) TempDir(dir, pattern string) (name string, err error) {
 	return "", errors.New("error appeared")
 }
 
-func (FilesMockErrorTempDirCreation) RemoveAll(path string) error {
+func (filesMockErrorTempDirCreation) RemoveAll(path string) error {
 	panic("implement me")
 }
 
-type GitUtilsMockErrorClone struct{}
+type gitUtilsMockErrorClone struct{}
 
-func (c GitUtilsMockErrorClone) CommitSingleFile(filePath, commitMessage string, worktree gitUtil.UtilsWorkTree) (plumbing.Hash, error) {
+func (gitUtilsMockErrorClone) CommitSingleFile(filePath, commitMessage string, worktree gitUtil.UtilsWorkTree) (plumbing.Hash, error) {
 	panic("implement me")
 }
 
-func (c GitUtilsMockErrorClone) PushChangesToRepository(username, password string, repository gitUtil.UtilsRepository) error {
+func (gitUtilsMockErrorClone) PushChangesToRepository(username, password string, repository gitUtil.UtilsRepository) error {
 	panic("implement me")
 }
 
-func (c GitUtilsMockErrorClone) PlainClone(username, password, serverUrl, directory string) (gitUtil.UtilsRepository, error) {
+func (gitUtilsMockErrorClone) PlainClone(username, password, serverUrl, directory string) (gitUtil.UtilsRepository, error) {
 	return nil, errors.New("error on clone")
 }
 
-func (c GitUtilsMockErrorClone) ChangeBranch(branchName string, worktree gitUtil.UtilsWorkTree) error {
+func (gitUtilsMockErrorClone) ChangeBranch(branchName string, worktree gitUtil.UtilsWorkTree) error {
 	panic("implement me")
 }
 
-func (c GitUtilsMockErrorClone) GetWorktree(repository gitUtil.UtilsRepository) (gitUtil.UtilsWorkTree, error) {
+func (gitUtilsMockErrorClone) GetWorktree(repository gitUtil.UtilsRepository) (gitUtil.UtilsWorkTree, error) {
 	panic("implement me")
 }
 
-type ValidGitUtilsMock struct{}
+type validGitUtilsMock struct{}
 
-func (m ValidGitUtilsMock) GetWorktree(repository gitUtil.UtilsRepository) (gitUtil.UtilsWorkTree, error) {
+func (validGitUtilsMock) GetWorktree(repository gitUtil.UtilsRepository) (gitUtil.UtilsWorkTree, error) {
 	return nil, nil
 }
 
-func (m ValidGitUtilsMock) ChangeBranch(branchName string, worktree gitUtil.UtilsWorkTree) error {
+func (validGitUtilsMock) ChangeBranch(branchName string, worktree gitUtil.UtilsWorkTree) error {
 	assert.Equal(test, configuration.BranchName, branchName)
 	return nil
 }
 
-func (ValidGitUtilsMock) CommitSingleFile(filePath, commitMessage string, worktree gitUtil.UtilsWorkTree) (plumbing.Hash, error) {
+func (validGitUtilsMock) CommitSingleFile(filePath, commitMessage string, worktree gitUtil.UtilsWorkTree) (plumbing.Hash, error) {
 	matches, _ := piperutils.Files{}.Glob("*/dir1/dir2/depl.yaml")
 	fileRead, _ := piperutils.Files{}.FileRead(matches[0])
 	assert.Equal(test, expectedYaml, string(fileRead))
 	return [20]byte{123}, nil
 }
 
-func (ValidGitUtilsMock) PushChangesToRepository(username, password string, repository gitUtil.UtilsRepository) error {
+func (validGitUtilsMock) PushChangesToRepository(username, password string, repository gitUtil.UtilsRepository) error {
 	return nil
 }
 
-func (ValidGitUtilsMock) PlainClone(username, password, serverUrl, directory string) (gitUtil.UtilsRepository, error) {
+func (validGitUtilsMock) PlainClone(username, password, serverUrl, directory string) (gitUtil.UtilsRepository, error) {
 	filePath := filepath.Join(directory, "dir1/dir2/depl.yaml")
 	err2 := piperutils.Files{}.MkdirAll(filepath.Join(directory, "dir1/dir2"), 0755)
 	if err2 != nil {
@@ -216,16 +216,16 @@ func (ValidGitUtilsMock) PlainClone(username, password, serverUrl, directory str
 	if err != nil {
 		return nil, err
 	}
-	return &RepositoryMock{}, nil
+	return &repositoryMock{}, nil
 }
 
-type RepositoryMock struct{}
+type repositoryMock struct{}
 
-func (RepositoryMock) Worktree() (*git.Worktree, error) {
+func (repositoryMock) Worktree() (*git.Worktree, error) {
 	return nil, nil
 }
 
-func (RepositoryMock) Push(o *git.PushOptions) error {
+func (repositoryMock) Push(o *git.PushOptions) error {
 	panic("implement me")
 }
 

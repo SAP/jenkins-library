@@ -7,22 +7,26 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 )
 
+// UtilsWorkTree interface abstraction of git.Worktree to enable tests
 type UtilsWorkTree interface {
 	Add(path string) (plumbing.Hash, error)
 	Commit(msg string, opts *git.CommitOptions) (plumbing.Hash, error)
 	Checkout(opts *git.CheckoutOptions) error
 }
 
+// UtilsRepository interface abstraction of git.Repository to enable tests
 type UtilsRepository interface {
 	Worktree() (*git.Worktree, error)
 	Push(o *git.PushOptions) error
 }
 
-type UtilsGit interface {
-	PlainClone(path string, isBare bool, o *git.CloneOptions) (*git.Repository, error)
+// utilsGit interface abstraction of git to enable tests
+type utilsGit interface {
+	plainClone(path string, isBare bool, o *git.CloneOptions) (*git.Repository, error)
 }
 
-var abstractionGit UtilsGit = AbstractionGit{}
+// abstractedGit abstraction of git to enable tests
+var abstractedGit utilsGit = abstractionGit{}
 
 type TheGitUtils struct {
 }
@@ -64,7 +68,7 @@ func (TheGitUtils) PlainClone(username, password, serverUrl, directory string) (
 		Auth: &http.BasicAuth{Username: username, Password: password},
 		URL:  serverUrl,
 	}
-	repository, gitCloneError := abstractionGit.PlainClone(directory, false, &gitCloneOptions)
+	repository, gitCloneError := abstractedGit.plainClone(directory, false, &gitCloneOptions)
 	if gitCloneError != nil {
 		log.Entry().WithError(gitCloneError).Error("Failed to clone git")
 		return nil, gitCloneError
@@ -105,8 +109,8 @@ func (TheGitUtils) GetWorktree(repository UtilsRepository) (UtilsWorkTree, error
 	return worktree, err
 }
 
-type AbstractionGit struct{}
+type abstractionGit struct{}
 
-func (AbstractionGit) PlainClone(path string, isBare bool, o *git.CloneOptions) (*git.Repository, error) {
+func (abstractionGit) plainClone(path string, isBare bool, o *git.CloneOptions) (*git.Repository, error) {
 	return git.PlainClone(path, isBare, o)
 }

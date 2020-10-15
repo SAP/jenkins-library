@@ -44,22 +44,22 @@ func TestPushChangesToRepositoryErrorPushing(t *testing.T) {
 
 func TestPlainClone(t *testing.T) {
 	test = t
-	oldUtilsGit := abstractionGit
+	oldUtilsGit := abstractedGit
 	defer func() {
-		abstractionGit = oldUtilsGit
+		abstractedGit = oldUtilsGit
 	}()
-	abstractionGit = UtilsGitMock{}
+	abstractedGit = UtilsGitMock{}
 	_, err := cut.PlainClone("user", "password", "URL", "directory")
 	assert.NoError(t, err)
 }
 
 func TestPlainCloneErrorOnCloning(t *testing.T) {
 	test = t
-	oldUtilsGit := abstractionGit
+	oldUtilsGit := abstractedGit
 	defer func() {
-		abstractionGit = oldUtilsGit
+		abstractedGit = oldUtilsGit
 	}()
-	abstractionGit = UtilsGitMockError{}
+	abstractedGit = UtilsGitMockError{}
 	_, err := cut.PlainClone("user", "password", "URL", "directory")
 	assert.Error(t, err)
 	assert.Equal(t, errors.New("error during clone"), err)
@@ -208,7 +208,7 @@ func (WorktreeUtilsErrorCheckout) Checkout(opts *git.CheckoutOptions) error {
 
 type UtilsGitMock struct{}
 
-func (UtilsGitMock) PlainClone(path string, isBare bool, o *git.CloneOptions) (*git.Repository, error) {
+func (UtilsGitMock) plainClone(path string, isBare bool, o *git.CloneOptions) (*git.Repository, error) {
 	assert.Equal(test, "directory", path)
 	assert.False(test, isBare)
 	assert.Equal(test, "http-basic-auth - user:*******", o.Auth.String())
@@ -218,6 +218,6 @@ func (UtilsGitMock) PlainClone(path string, isBare bool, o *git.CloneOptions) (*
 
 type UtilsGitMockError struct{}
 
-func (UtilsGitMockError) PlainClone(path string, isBare bool, o *git.CloneOptions) (*git.Repository, error) {
+func (UtilsGitMockError) plainClone(path string, isBare bool, o *git.CloneOptions) (*git.Repository, error) {
 	return nil, errors.New("error during clone")
 }
