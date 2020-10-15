@@ -31,6 +31,19 @@ func GenerateStepDocumentation(metadataFiles []string, docuHelperData DocuHelper
 		fmt.Printf("Reading file: %v\n", configFilePath)
 		err = stepData.ReadPipelineStepData(metadataFile)
 		checkError(err)
+
+		for key, parameter := range stepData.Spec.Inputs.Parameters {
+			if parameter.Mandatory {
+				if parameter.Default == nil ||
+					parameter.Default == "" ||
+					parameter.Type == "[]string" && len(parameter.Default.([]string)) == 0 {
+					continue
+				}
+				fmt.Printf("Changing mandatory flag to '%v' for parameter '%s', default value available '%v'.\n", false, parameter.Name, parameter.Default)
+				stepData.Spec.Inputs.Parameters[key].Mandatory = false
+			}
+		}
+
 		fmt.Print("  Generate documentation.. ")
 		err = generateStepDocumentation(stepData, docuHelperData)
 		if err != nil {
