@@ -53,19 +53,23 @@ func readStepConfiguration(stepMetadata config.StepData, customDefaultFiles []st
 	return stepConfiguration
 }
 
+func readStepMetadata(metadataFilePath string, docuHelperData DocuHelperData) config.StepData {
+	stepMetadata := config.StepData{}
+	metadataFile, err := docuHelperData.OpenFile(metadataFilePath)
+	checkError(err)
+	defer metadataFile.Close()
+	fmt.Printf("Reading metadata file: %v\n", metadataFilePath)
+	err = stepMetadata.ReadPipelineStepData(metadataFile)
+	checkError(err)
+	return stepMetadata
+}
+
 // GenerateStepDocumentation generates step coding based on step configuration provided in yaml files
 func GenerateStepDocumentation(metadataFiles []string, customDefaultFiles []string, docuHelperData DocuHelperData) error {
 	for key := range metadataFiles {
-		stepMetadata := config.StepData{}
-		configFilePath := metadataFiles[key]
-		metadataFile, err := docuHelperData.OpenFile(configFilePath)
-		checkError(err)
-		defer metadataFile.Close()
-		fmt.Printf("Reading metadata file: %v\n", configFilePath)
-		err = stepMetadata.ReadPipelineStepData(metadataFile)
-		checkError(err)
+		stepMetadata := readStepMetadata(metadataFiles[key], docuHelperData)
 
-		adjustDefaultValues(&stepData)
+		adjustDefaultValues(&stepMetadata)
 
 		stepConfiguration := readStepConfiguration(stepMetadata, customDefaultFiles, docuHelperData)
 
@@ -92,11 +96,10 @@ func GenerateStepDocumentation(metadataFiles []string, customDefaultFiles []stri
 			}
 		}
 
-		adjustMandatoryFlags(&stepData)
+		adjustMandatoryFlags(&stepMetadata)
 
 		fmt.Print("  Generate documentation.. ")
-		err = generateStepDocumentation(stepMetadata, docuHelperData)
-		if err != nil {
+		if err := generateStepDocumentation(stepMetadata, docuHelperData); err != nil {
 			fmt.Println("")
 			fmt.Println(err)
 		} else {
