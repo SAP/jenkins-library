@@ -199,7 +199,7 @@ public class ChangeManagement implements Serializable {
 
         /*
             In case the configuration has been adjusted so that no deployToolDependencies are provided
-            we assume an image is used which contains already all dependencies.
+            we assume an image is used, which already contains all dependencies.
             In this case we don't invoke npm install and we run the image with the standard user
             already, since there is no need for being root. Hence we don't need to switch user also
             in the script.
