@@ -212,7 +212,7 @@ public class ChangeManagement implements Serializable {
             cmd << "npm install --global ${npmInstallOpts} ${deployToolDependencies}"
             cmd << "su ${osDeployUser}"
         } else {
-            script.echo "[INFO] no deploy dependencies provided. Skipping npm install call. Assuning docker image '${docker?.image}' contains already the dependencies for performing the deployment."
+            script.echo "[INFO] no deploy dependencies provided. Skipping npm install call. Assuming docker image '${docker?.image}' already contains the dependencies for performing the deployment."
         }
 
         Iterable params = []
