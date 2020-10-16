@@ -8,7 +8,6 @@ import (
 )
 
 func Test_adjustDefaultValues(t *testing.T) {
-
 	tests := []struct {
 		want  interface{}
 		name  string
@@ -17,13 +16,13 @@ func Test_adjustDefaultValues(t *testing.T) {
 		{want: false, name: "boolean", input: &config.StepData{Spec: config.StepSpec{Inputs: config.StepInputs{Parameters: []config.StepParameters{
 			{Name: "param", Type: "bool", Mandatory: true},
 		}}}}},
-		{want: 0, name: "integer", input: &config.StepData{Spec: config.StepSpec{Inputs: config.StepInputs{Parameters: []config.StepParameters{
+		{want: nil, name: "integer", input: &config.StepData{Spec: config.StepSpec{Inputs: config.StepInputs{Parameters: []config.StepParameters{
 			{Name: "param", Type: "int", Mandatory: true},
 		}}}}},
-		{want: "", name: "string", input: &config.StepData{Spec: config.StepSpec{Inputs: config.StepInputs{Parameters: []config.StepParameters{
+		{want: nil, name: "string", input: &config.StepData{Spec: config.StepSpec{Inputs: config.StepInputs{Parameters: []config.StepParameters{
 			{Name: "param", Type: "string", Mandatory: true},
 		}}}}},
-		{want: []string{}, name: "string array", input: &config.StepData{Spec: config.StepSpec{Inputs: config.StepInputs{Parameters: []config.StepParameters{
+		{want: nil, name: "string array", input: &config.StepData{Spec: config.StepSpec{Inputs: config.StepInputs{Parameters: []config.StepParameters{
 			{Name: "param", Type: "[]string", Mandatory: true},
 		}}}}},
 	}

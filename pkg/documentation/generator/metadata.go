@@ -22,8 +22,12 @@ func readStepMetadata(metadataFilePath string, docuHelperData DocuHelperData) co
 // adjustDefaultValues corrects the Default value according to the Type.
 func adjustDefaultValues(stepMetadata *config.StepData) {
 	for key, parameter := range stepMetadata.Spec.Inputs.Parameters {
-		typedDefault := getEmptyForType(parameter)
-		if parameter.Default != nil || parameter.Default == typedDefault {
+		var typedDefault interface{} = nil
+		if parameter.Type == "bool" {
+			typedDefault = false
+		}
+		if parameter.Default != nil ||
+			parameter.Default == typedDefault {
 			continue
 		}
 		fmt.Printf("Changing default value to '%v' for parameter '%s', was '%v'.\n", typedDefault, parameter.Name, parameter.Default)
@@ -69,20 +73,5 @@ func applyCustomDefaultValues(stepMetadata *config.StepData, stepConfiguration c
 				}
 			}
 		}
-	}
-}
-
-func getEmptyForType(parameter config.StepParameters) interface{} {
-	switch parameter.Type {
-	case "bool":
-		return false
-	case "int":
-		return 0
-	case "string":
-		return ""
-	case "[]string":
-		return []string{}
-	default:
-		return nil
 	}
 }

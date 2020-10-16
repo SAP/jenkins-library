@@ -141,7 +141,7 @@ func createParameterDetails(stepData *config.StepData) string {
 }
 
 func formatDefault(param config.StepParameters, stepParameterNames []string) string {
-	if param.Default == nil || param.Default == "" {
+	if param.Default == nil {
 		// Return environment variable for all step parameters (not for Jenkins-specific parameters) in case no default is available
 		if contains(stepParameterNames, param.Name) {
 			return fmt.Sprintf("`$PIPER_%v` (if set)", param.Name)
