@@ -85,8 +85,6 @@ system and to provide an empty list for the deploy tool dependencies (`config.ch
 
 ### Examples
 
-#### Upload based on standard node image
-
 #### Upload based on preconfigured image
 
 ```groovy
