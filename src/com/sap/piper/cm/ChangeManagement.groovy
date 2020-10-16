@@ -295,7 +295,7 @@ public class ChangeManagement implements Serializable {
                 environment variables are preserved. --> The environment variables for user and password are
                 still available after the user switch.
             */
-            def dockerEnvVars = docker.envVars ?: [:] + [ABAP_USER: script.username, ABAP_PASSWORD: script.password]
+            def dockerEnvVars = docker.envVars ?: [ABAP_USER: script.username, ABAP_PASSWORD: script.password]
 
             def dockerOptions = docker.options ?: []
             if (!noInstall) {
