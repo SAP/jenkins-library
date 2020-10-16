@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"os"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -59,7 +60,15 @@ func newUtils() *utilsBundle {
 	}
 }
 
-const mavenExecutable = "mvn"
+// GetMavenExecutable return ./mvnw if it exists
+func GetMavenExecutable() string {
+	if _, err := os.Stat("./mvnw"); err == nil {
+		return "./mvnw"
+	}
+	return "mvn"
+}
+
+var mavenExecutable = GetMavenExecutable()
 
 // Execute constructs a mvn command line from the given options, and uses the provided
 // mavenExecRunner to execute it.
