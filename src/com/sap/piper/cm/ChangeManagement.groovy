@@ -280,6 +280,7 @@ public class ChangeManagement implements Serializable {
 
         params += ['-y'] // autoconfirm --> no need to press 'y' key in order to confirm the params and trigger the deployment
 
+        // Here we provide the names of the environment variable holding username and password. Below we set these values.
         params += ['--username', 'ABAP_USER', '--password', 'ABAP_PASSWORD']
 
         def fioriDeployCmd = "fiori deploy ${params.join(' ')}"
@@ -292,11 +293,9 @@ public class ChangeManagement implements Serializable {
             usernameVariable: 'username')]) {
 
             /*
-                The config file is configured to read the credentials from the environment,
-                see above in the config file template.
                 After installing the deploy toolset we switch the user. Since we do not su with option '-l' the
-                environment variables are preserved.
-                Not clear of the credentials will also be available as command line parameters.
+                environment variables are preserved. --> The environment variables for user and password are
+                still available after the user switch.
             */
             def dockerEnvVars = docker.envVars ?: [:] + [ABAP_USER: script.username, ABAP_PASSWORD: script.password]
 
