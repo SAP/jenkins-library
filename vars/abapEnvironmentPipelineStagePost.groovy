@@ -32,7 +32,7 @@ void call(Map parameters = [:]) {
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
         if(parameters.script.commonPipelineEnvironment.configuration.runStage?.get("Prepare System")) {
 
-            if (config.confirmDeletion && parameters.currentBuild.result != 'SUCCESS') {
+            if (config.confirmDeletion && script.currentBuild.result != 'SUCCESS') {
                 input message: "Pipeline status is not successful. Once you proceed, the system will be deleted."
             }
             cloudFoundryDeleteService script: parameters.script
