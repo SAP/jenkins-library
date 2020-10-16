@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"reflect"
 	"text/template"
 
 	"github.com/SAP/jenkins-library/pkg/config"
@@ -53,17 +52,6 @@ func readStepConfiguration(stepMetadata config.StepData, customDefaultFiles []st
 	return stepConfiguration
 }
 
-func readStepMetadata(metadataFilePath string, docuHelperData DocuHelperData) config.StepData {
-	stepMetadata := config.StepData{}
-	metadataFile, err := docuHelperData.OpenFile(metadataFilePath)
-	checkError(err)
-	defer metadataFile.Close()
-	fmt.Printf("Reading metadata file: %v\n", metadataFilePath)
-	err = stepMetadata.ReadPipelineStepData(metadataFile)
-	checkError(err)
-	return stepMetadata
-}
-
 // GenerateStepDocumentation generates step coding based on step configuration provided in yaml files
 func GenerateStepDocumentation(metadataFiles []string, customDefaultFiles []string, docuHelperData DocuHelperData) error {
 	for key := range metadataFiles {
@@ -73,28 +61,7 @@ func GenerateStepDocumentation(metadataFiles []string, customDefaultFiles []stri
 
 		stepConfiguration := readStepConfiguration(stepMetadata, customDefaultFiles, docuHelperData)
 
-		for key, parameter := range stepMetadata.Spec.Inputs.Parameters {
-			configValue := stepConfiguration.Config[parameter.Name]
-			if len(parameter.Conditions) != 0 {
-				fmt.Printf("Skipping custom default values for '%s' as the parameter depends on other parameter values.\n", parameter.Name)
-				continue
-			}
-			if configValue != nil && configValue != "" {
-				switch parameter.Type {
-				case "[]string":
-					if reflect.DeepEqual(parameter.Default, configValue) {
-						continue
-					}
-					fmt.Printf("Applying custom default value '%v' for parameter '%s', was '%v'.\n", configValue, parameter.Name, parameter.Default)
-					stepMetadata.Spec.Inputs.Parameters[key].Default = configValue
-				default:
-					if parameter.Default != configValue {
-						fmt.Printf("Applying custom default value '%v' for parameter '%s', was '%v'.\n", configValue, parameter.Name, parameter.Default)
-						stepMetadata.Spec.Inputs.Parameters[key].Default = configValue
-					}
-				}
-			}
-		}
+		applyCustomDefaultValues(&stepMetadata, stepConfiguration)
 
 		adjustMandatoryFlags(&stepMetadata)
 
@@ -107,46 +74,6 @@ func GenerateStepDocumentation(metadataFiles []string, customDefaultFiles []stri
 		}
 	}
 	return nil
-}
-
-func getEmptyForType(parameter config.StepParameters) interface{} {
-	switch parameter.Type {
-	case "bool":
-		return false
-	case "int":
-		return 0
-	case "string":
-		return ""
-	case "[]string":
-		return []string{}
-	default:
-		return nil
-	}
-}
-
-func adjustDefaultValues(stepData *config.StepData) {
-	for key, parameter := range stepData.Spec.Inputs.Parameters {
-		typedDefault := getEmptyForType(parameter)
-		if parameter.Default != nil || parameter.Default == typedDefault {
-			continue
-		}
-		fmt.Printf("Changing default value to '%v' for parameter '%s', was '%v'.\n", typedDefault, parameter.Name, parameter.Default)
-		stepData.Spec.Inputs.Parameters[key].Default = typedDefault
-	}
-}
-
-func adjustMandatoryFlags(stepData *config.StepData) {
-	for key, parameter := range stepData.Spec.Inputs.Parameters {
-		if parameter.Mandatory {
-			if parameter.Default == nil ||
-				parameter.Default == "" ||
-				parameter.Type == "[]string" && len(parameter.Default.([]string)) == 0 {
-				continue
-			}
-			fmt.Printf("Changing mandatory flag to '%v' for parameter '%s', default value available '%v'.\n", false, parameter.Name, parameter.Default)
-			stepData.Spec.Inputs.Parameters[key].Mandatory = false
-		}
-	}
 }
 
 // generates the step documentation and replaces the template with the generated documentation
