@@ -263,7 +263,6 @@ void call(parameters = [:]) {
                               -H "Authorization: Bearer ${bearerToken}" \
                             \"https://sandboxportal-${account}.${host}/fiori/api/v1/csrf\"
                     """, returnStdout: true)
-                println xcsrfTokenResponse.getClass()
 
                 def xcsrfTokenHeaderMatcher=xcsrfTokenResponse =~ /(?m)^X-CSRF-Token: ([0-9A-Z]*)$/
                 echo "xxx: ${xcsrfTokenHeaderMatcher.size()}"
@@ -274,14 +273,17 @@ void call(parameters = [:]) {
                 def siteId = configuration.neo.siteId
                 echo "Invalidating cache for siteId: ${siteId}"
 
-                sh """#!/bin/bash
+               def status = sh(
+                   script: """#!/bin/bash
                        curl -X POST -L \
                        -b 'cookies.jar'  \
                        -H "X-CSRF-Token: ${xcsrfToken}" \
                        -H "Authorization: Bearer ${bearerToken}" \
                        -d "{\"siteId\":\"${siteId}\"}" \
                        \"https://sandboxportal-${account}.${host}/fiori/v1/operations/invalidateCache\"
-                  """
+                  """,
+                   returnStdout: true)
+                echo "response is ${status}"
             }
         }
     }
