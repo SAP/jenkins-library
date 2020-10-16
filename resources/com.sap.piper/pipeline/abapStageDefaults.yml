@@ -6,6 +6,7 @@ stages:
   ATC: {}
   Build: {}
   Integration Tests: {}
+    confirmDeletion: false
   Confirm: {}
   Publish: {}
   Post:
