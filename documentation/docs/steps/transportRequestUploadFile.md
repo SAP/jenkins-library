@@ -97,8 +97,8 @@ transportRequestUploadFile script: this,
                 cts: [
                     nodeDocker: [
                         image: 'docker-image-name',
-                        pullImage: true, // needs to be set to false in case the image is
-                                         // only available in the local docker cache (not recommended)
+                        pullImage: true,  // needs to be set to false in case the image is
+                                          // only available in the local docker cache (not recommended)
                     ],
                     npmInstallOpts: [],
                 deployToolDependencies: [], // empty since we use an already preconfigured image
@@ -113,7 +113,7 @@ transportRequestUploadFile script: this,
 
 ```
 
-#### Upload based on a standard node image:
+#### Upload based on a standard node image
 
 ```groovy
         transportRequestUploadFile script: this,

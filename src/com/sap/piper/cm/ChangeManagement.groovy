@@ -224,8 +224,8 @@ public class ChangeManagement implements Serializable {
             noConfig = !script.fileExists('ui5-deploy.yaml')
         } else {
             if (script.fileExists(deployConfigFile)) {
-              // in this case we will use the config file
-              useConfigFile = true
+                // in this case we will use the config file
+                useConfigFile = true
             } else {
                 if (deployConfigFile == 'ui5-deploy.yaml') {
                     // in this case this is most likely provided by the piper default config and
@@ -243,7 +243,7 @@ public class ChangeManagement implements Serializable {
         }
 
         if (useConfigFile) {
-             params += ['-c', "\"" + deployConfigFile + "\""]
+            params += ['-c', "\"" + deployConfigFile + "\""]
         }
 
         //
