@@ -291,8 +291,8 @@ public class ChangeManagement implements Serializable {
             usernameVariable: 'username')]) {
 
             /*
-                After installing the deploy toolset we switch the user. Since we do not su with option '-l' the
-                environment variables are preserved. --> The environment variables for user and password are
+                After installing the deploy toolset we switch the user. Since we do not `su` with option `-l` the
+                environment variables are preserved. Hence the environment variables for user and password are
                 still available after the user switch.
             */
             def dockerEnvVars = docker.envVars ?: [:]
