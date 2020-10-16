@@ -11,6 +11,9 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = [
+    /**
+     * This is set in the common pipeline environment by the build tool, e.g. during the mtaBuild step.
+     */
     'buildTool',
     'cloudFoundry',
         /**
@@ -192,12 +195,12 @@ import static com.sap.piper.Prerequisites.checkScript
  *     * [MTA CF CLI Plugin](https://github.com/cloudfoundry-incubator/multiapps-cli-plugin)
  *
  * !!! note
- * Due to [an incompatible change](https://github.com/cloudfoundry/cli/issues/1445) in the Cloud Foundry CLI, multiple buildpacks are not supported by this step.
- * If your `application` contains a list of `buildpacks` instead a single `buildpack`, this will be automatically re-written by the step when blue-green deployment is used.
+ *     Due to [an incompatible change](https://github.com/cloudfoundry/cli/issues/1445) in the Cloud Foundry CLI, multiple buildpacks are not supported by this step.
+ *     If your `application` contains a list of `buildpacks` instead a single `buildpack`, this will be automatically re-written by the step when blue-green deployment is used.
  *
  * !!! note
- * Cloud Foundry supports the deployment of multiple applications using a single manifest file.
- * This option is supported with Piper.
+ *     Cloud Foundry supports the deployment of multiple applications using a single manifest file.
+ *     This option is supported with Piper.
  *
  * In this case define `appName: ''` since the app name for the individual applications have to be defined via the manifest.
  * You can find details in the [Cloud Foundry Documentation](https://docs.cloudfoundry.org/devguide/deploy-apps/manifest.html#multi-apps)

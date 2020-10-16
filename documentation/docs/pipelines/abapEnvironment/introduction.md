@@ -3,7 +3,12 @@
 ![ABAP Environment Pipeline](../../images/abapPipelineOverview.png)
 
 The goal of the ABAP Environment Pipeline is to enable Continuous Integration for the SAP Cloud Platform ABAP Environment, also known as Steampunk.
-The pipeline contains several stages and supports different scenarios. The general idea is that the user can choose a subset of these stages, which fit his/her use case, for example running nightly ATC checks or building an ABAP AddOn for Steampunk. The following stages and steps are part of the pipeline:
+The pipeline contains several stages and supports different scenarios. The general idea is that the user can choose a subset of these stages, which fits her/his use case, for example running nightly ATC checks or building an ABAP AddOn for Steampunk.
+
+!!! note "Scenario: Building ABAP Add-ons for Steampunk"
+    This scenario is intended for SAP Partners, who want to offer a Software as a Service (SaaS) solution on Steampunk. This is currently the only use case for building ABAP Add-ons and, more specifically, the stages "Initial Checks", "Build", "Integration Tests", "Confirm" and "Publish". This scenario will be documented in its own section soon.
+
+The following stages and steps are part of the pipeline:
 
 | Stage                    | Steps |
 |--------------------------|-------|
@@ -37,7 +42,7 @@ In this stage, the ABAP Environment system is created. This is done with the clo
     An authorized user has to manually confirm that the ABAP Environment system is ready. This is the case when the email has been received by the initially provided administrator (as configured in the file `manifest.yml` - as described in [configuration](configuration.md)).
     Redefining the "Prepare System" stage via an extension could circumvent the manual confirmation and replace it with an optimistic wait statement - this, however, may lead to a failing pipeline in case the system is not ready in time.
 
-After the confirmation, the Communication Arrangement SAP_COM_0510 (SAP Cloud Platform ABAP Environment - Software Component Test Integration) is created using the step cloudFoundryCreateServiceKey. With the creation of the Communication Arrangement, a User and Password is created on the ABAP Environment system for the APIs that are used in the following stages.
+After the confirmation, the Communication Arrangement [SAP_COM_0510](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html) (SAP Cloud Platform ABAP Environment - Software Component Test Integration) is created using the step cloudFoundryCreateServiceKey. With the creation of the Communication Arrangement, a User and Password is created on the ABAP Environment system for the APIs that are used in the following stages.
 
 ## Clone Repositories
 
@@ -50,7 +55,7 @@ In this stage, ATC checks can be executed using abapEnvironmentRunATCCheck. The 
 
 ## Build
 
-This stage is responsible for building an ABAP AddOn for the SAP Cloud Platform ABAP Environment. The build process of the AddOn is done on a Steampunk system with the help of the ABAP Addon Assembly Kit as a Service (AAKaaS). After executing this stage successfully, the AddOn is ready to be tested.
+This stage is responsible for building an ABAP AddOn for the SAP Cloud Platform ABAP Environment. The build process of the AddOn is done on a Steampunk system (using [SAP_COM_0582](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/26b8df5435c649aa8ea7b3688ad5bb0a.html)) with the help of the ABAP Addon Assembly Kit as a Service (AAKaaS). After executing this stage successfully, the AddOn is ready to be tested.
 
 ## Integration Tests
 
