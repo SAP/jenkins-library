@@ -251,7 +251,7 @@ void call(parameters = [:]) {
                 def fetchBearerTokenJson = readJSON  text: bearerTokenResponse
                 echo "xxx bearer token ${fetchBearerTokenJson}"
 
-                 bearerToken = fetchBearerTokenJson.access_token
+                 def bearerToken = fetchBearerTokenJson.access_token
 
                 echo "Retrieved bearer token ${bearerToken}"
 
@@ -263,21 +263,13 @@ void call(parameters = [:]) {
                               -H "Authorization: Bearer ${bearerToken}" \
                             \"https://sandboxportal-${account}.${host}/fiori/api/v1/csrf\"
                     """, returnStdout: true)
-                echo "xcsrf reponse is ${xcsrfTokenResponse}"
-                sh "ls --all"
-                sh "cat cookies.jar"
+                println xcsrfTokenResponse.getClass()
 
-                def xcsrfTokenHeaderMatcher=xcsrfTokenResponse =~ /^X-CSRF-Token: ([0-9A-Z]*)$/
-                echo "pattern is ${xcsrfTokenHeaderMatcher[0]}"
+                def xcsrfTokenHeaderMatcher=xcsrfTokenResponse =~ /(?m)^X-CSRF-Token: ([0-9A-Z]*)$/
+                echo "xxx: ${xcsrfTokenHeaderMatcher.size()}"
+                 def xcsrfToken = xcsrfTokenHeaderMatcher[0][1]
 
-                filteXcsrfTokenHeader = xcsrfTokenResponse.findAll {it.contains ('X-CSRF-Token')}
-                filteXcsrfTokenHeaderString = filteXcsrfTokenHeader.toString()
-
-                echo "token header is ${filteXcsrfTokenHeaderString}"
-                length = filteXcsrfTokenHeaderString.length()
-                index = filteXcsrfTokenHeaderString.indexOf( '=' )
-                xcsrfToken = filteXcsrfTokenHeaderString.substring(index + 1, length)
-                echo "Retrieved xcsrf token ${xcsrfToken}"
+                echo "xcsrf token is $xcsrfToken"
 
                 def siteId = configuration.neo.siteId
                 echo "Invalidating cache for siteId: ${siteId}"
