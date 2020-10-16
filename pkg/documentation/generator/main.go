@@ -126,10 +126,10 @@ func getEmptyForType(parameter config.StepParameters) interface{} {
 
 func adjustDefaultValues(stepData *config.StepData) {
 	for key, parameter := range stepData.Spec.Inputs.Parameters {
-		if parameter.Default != nil {
+		typedDefault := getEmptyForType(parameter)
+		if parameter.Default != nil || parameter.Default == typedDefault {
 			continue
 		}
-		typedDefault := getEmptyForType(parameter)
 		fmt.Printf("Changing default value to '%v' for parameter '%s', was '%v'.\n", typedDefault, parameter.Name, parameter.Default)
 		stepData.Spec.Inputs.Parameters[key].Default = typedDefault
 	}
