@@ -100,7 +100,7 @@ transportRequestUploadFile script: this,
                     nodeDocker: [
                         image: 'docker-image-name',
                         pullImage: true, // needs to be set to false in case the image is
-                                         // only available in the local docker cache (not recommanded)
+                                         // only available in the local docker cache (not recommended)
                     ],
                     npmInstallOpts: [],
                 deployToolDependencies: [], // empty since we use an already preconfigured image
