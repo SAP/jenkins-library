@@ -252,6 +252,8 @@ void call(parameters = [:]) {
                     returnStdout: true
                 )
                 def fetchBearerTokenJson = readJSON  text: bearerTokenResponse
+                echo "xxx bearer token ${fetchBearerTokenJson}"
+
                  bearerToken = fetchBearerTokenJson.access_token
 
                 echo "Retrieved bearer token ${bearerToken}"
@@ -262,8 +264,14 @@ void call(parameters = [:]) {
                               -c 'cookies.jar' \
                               -H 'X-CSRF-Token: Fetch' \
                               -H "Authorization: Bearer ${bearerToken}" \
-                            \"https://sandboxportal-${account}.${host}/fiori/api/v1/csrf\" 
+                            \"https://sandboxportal-${account}.${host}/fiori/api/v1/csrf\"
                     """, returnStdout: true)
+                echo "xcsrf reponse is ${xcsrfTokenResponse}"
+                sh "ls --all"
+                sh "cat cookies.jar"
+
+                def xcsrfTokenHeaderMatcher=xcsrfTokenResponse =~ /^X-CSRF-Token: ([0-9A-Z]*)$/
+                echo "pattern is ${xcsrfTokenHeaderMatcher[0]}"
 
                 filteXcsrfTokenHeader = xcsrfTokenResponse.findAll {it.contains ('X-CSRF-Token')}
                 filteXcsrfTokenHeaderString = filteXcsrfTokenHeader.toString()
@@ -283,7 +291,7 @@ void call(parameters = [:]) {
                        -H "X-CSRF-Token: ${xcsrfToken}" \
                        -H "Authorization: Bearer ${bearerToken}" \
                        -d "{\"siteId\":\"${siteId}\"}" \
-                       \"https://sandboxportal-${account}.${host}/fiori/v1/operations/invalidateCache\" 
+                       \"https://sandboxportal-${account}.${host}/fiori/v1/operations/invalidateCache\"
                   """
             }
         }
