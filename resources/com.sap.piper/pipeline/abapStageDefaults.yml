@@ -5,7 +5,7 @@ stages:
   Clone Repositories: {}
   ATC: {}
   Build: {}
-  Integration Tests: {}
+  Integration Tests:
     confirmDeletion: false
   Confirm: {}
   Publish: {}
