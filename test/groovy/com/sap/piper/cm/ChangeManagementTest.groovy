@@ -359,7 +359,7 @@ public void testGetCommandLineWithCMClientOpts() {
     @Test
     public void testUploadFileToTransportFailesCTSExplicitlyConfiguredDeployConfigYamlDoesNotExist() {
 
-        // the file does not exist, since it was not explicity added to the files rule
+        // the file does not exist, since it was not explicitly added to the files rule
 
         thrown.expect(AbortException)
         thrown.expectMessage('Configured deploy config file \'my-deploy.yaml\' does not exists.')
