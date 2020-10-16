@@ -73,7 +73,7 @@ to be provided. The application, which is provided in the `dist` folder is zippe
 used for performing the upload.
 
 For `CTS` related uploads we use a node based toolset. When running in a docker environment a standard node
-image can be used. In this case the required deploytool dependencies will be installed prior to the deploy.
+image can be used. In this case the required deploy tool dependencies will be installed prior to the deploy.
 It is also possible to provide a docker image which already contains the required deploy tool
 dependencies (`config.changeManagement.cts.nodeDocker.image`). In this case an empty list needs to be provided
 as `config.changeManagement.cts.deployToolDependencies`. Using an already pre-configured docker image speeds-up
