@@ -272,9 +272,7 @@ public class ChangeManagement implements Serializable {
             params += ['-l', client]
         }
 
-        if (desc) {
-            params += ['-e', "\"" + desc + "\""]
-        }
+        params += ['-e', "\"" + desc + "\""]
 
         params += ['-f'] // failfast --> provide return code != 0 in case of any failure
 
