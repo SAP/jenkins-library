@@ -31,6 +31,11 @@ func GenerateStepDocumentation(metadataFiles []string, docuHelperData DocuHelper
 		fmt.Printf("Reading file: %v\n", configFilePath)
 		err = stepData.ReadPipelineStepData(metadataFile)
 		checkError(err)
+
+		adjustDefaultValues(&stepData)
+
+		adjustMandatoryFlags(&stepData)
+
 		fmt.Print("  Generate documentation.. ")
 		err = generateStepDocumentation(stepData, docuHelperData)
 		if err != nil {
@@ -41,6 +46,46 @@ func GenerateStepDocumentation(metadataFiles []string, docuHelperData DocuHelper
 		}
 	}
 	return nil
+}
+
+func getEmptyForType(parameter config.StepParameters) interface{} {
+	switch parameter.Type {
+	case "bool":
+		return false
+	case "int":
+		return 0
+	case "string":
+		return ""
+	case "[]string":
+		return []string{}
+	default:
+		return nil
+	}
+}
+
+func adjustDefaultValues(stepData *config.StepData) {
+	for key, parameter := range stepData.Spec.Inputs.Parameters {
+		if parameter.Default != nil {
+			continue
+		}
+		typedDefault := getEmptyForType(parameter)
+		fmt.Printf("Changing default value to '%v' for parameter '%s', was '%v'.\n", typedDefault, parameter.Name, parameter.Default)
+		stepData.Spec.Inputs.Parameters[key].Default = typedDefault
+	}
+}
+
+func adjustMandatoryFlags(stepData *config.StepData) {
+	for key, parameter := range stepData.Spec.Inputs.Parameters {
+		if parameter.Mandatory {
+			if parameter.Default == nil ||
+				parameter.Default == "" ||
+				parameter.Type == "[]string" && len(parameter.Default.([]string)) == 0 {
+				continue
+			}
+			fmt.Printf("Changing mandatory flag to '%v' for parameter '%s', default value available '%v'.\n", false, parameter.Name, parameter.Default)
+			stepData.Spec.Inputs.Parameters[key].Mandatory = false
+		}
+	}
 }
 
 // generates the step documentation and replaces the template with the generated documentation
