@@ -42,10 +42,6 @@ func Test_adjustMandatoryFlags(t *testing.T) {
 		name  string
 		input *config.StepData
 	}{
-		// TODO: current impl does not met expectations, but behavior is corrected by adjustDefaultValues
-		// {want: false, name: "boolean with default not set", input: &config.StepData{Spec: config.StepSpec{Inputs: config.StepInputs{Parameters: []config.StepParameters{
-		// 	{Name: "param", Type: "bool", Mandatory: true},
-		// }}}}},
 		{want: false, name: "boolean with empty default", input: &config.StepData{Spec: config.StepSpec{Inputs: config.StepInputs{Parameters: []config.StepParameters{
 			{Name: "param", Type: "bool", Mandatory: true, Default: false},
 		}}}}},
