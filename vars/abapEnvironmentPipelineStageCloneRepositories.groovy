@@ -37,7 +37,6 @@ void call(Map parameters = [:]) {
         //.addIfEmpty('strategy', parameters.script.commonPipelineEnvironment.configuration.runStage?.get(stageName))
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
-
         switch (config.strategy) {
             case 'Pull':
                 abapEnvironmentPullGitRepo script: parameters.script
@@ -58,20 +57,6 @@ void call(Map parameters = [:]) {
                 abapEnvironmentPullGitRepo script: parameters.script
                 break
         }
-
-        /*
-        if(parameters.script.commonPipelineEnvironment.getStepConfiguration('abapEnvironmentPullGitRepo', 'Clone Repositories').repositoryNames || parameters.script.commonPipelineEnvironment.configuration.runStep?.get('abapEnvironmentPullGitRepo') && (!config.strategy)) {
-            abapEnvironmentPullGitRepo script: parameters.script
-        } 
-        if (parameters.script.commonPipelineEnvironment.configuration.runStage?.get("Prepare System")) {
-            abapEnvironmentCloneGitRepo script: parameters.script
-        }
-        if(parameters.script.commonPipelineEnvironment.configuration.runStep?.get('abapEnvironmentCloneGitRepo')) {
-            abapEnvironmentCloneGitRepo script: parameters.script
-        }
-        if(parameters.script.commonPipelineEnvironment.configuration.runStep?.get('abapEnvironmentCheckoutBranch')) {
-            abapEnvironmentCheckoutBranch script: parameters.script
-        }*/
     }
 
 }
