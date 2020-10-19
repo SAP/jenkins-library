@@ -16,13 +16,6 @@ func TestBuildRegistryPlusImage(t *testing.T) {
 	t.Parallel()
 	t.Run("build full image", func(t *testing.T) {
 		registryImage, err := buildRegistryPlusImage(&gitopsUpdateDeploymentOptions{
-			BranchName:           "main",
-			CommitMessage:        "This is the commit message",
-			ServerURL:            "https://github.com",
-			Username:             "admin3",
-			Password:             "validAccessToken",
-			FilePath:             "dir1/dir2/depl.yaml",
-			ContainerName:        "myContainer",
 			ContainerRegistryURL: "https://myregistry.com/registry/containers",
 			ContainerImage:       "myFancyContainer:1337",
 		})
@@ -32,18 +25,19 @@ func TestBuildRegistryPlusImage(t *testing.T) {
 
 	t.Run("without registry", func(t *testing.T) {
 		registryImage, err := buildRegistryPlusImage(&gitopsUpdateDeploymentOptions{
-			BranchName:           "main",
-			CommitMessage:        "This is the commit message",
-			ServerURL:            "https://github.com",
-			Username:             "admin3",
-			Password:             "validAccessToken",
-			FilePath:             "dir1/dir2/depl.yaml",
-			ContainerName:        "myContainer",
 			ContainerRegistryURL: "",
 			ContainerImage:       "myFancyContainer:1337",
 		})
 		assert.NoError(t, err)
 		assert.Equal(t, "myFancyContainer:1337", registryImage)
+	})
+	t.Run("without faulty URL", func(t *testing.T) {
+		_, err := buildRegistryPlusImage(&gitopsUpdateDeploymentOptions{
+			ContainerRegistryURL: "//myregistry.com/registry/containers",
+			ContainerImage:       "myFancyContainer:1337",
+		})
+		assert.Error(t, err)
+		assert.EqualError(t, err, "invalid registry url")
 	})
 }
 
@@ -75,7 +69,7 @@ func TestRunGitopsUpdateDeployment(t *testing.T) {
 		assert.Equal(t, "patch", runnerMock.kubectlParams[0])
 		assert.Equal(t, "--local", runnerMock.kubectlParams[1])
 		assert.Equal(t, "--output=yaml", runnerMock.kubectlParams[2])
-		assert.Equal(t, "--patch={\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"myContainer\",\"image\":\"myregistry.com/myFancyContainer:1337\"}]}}}}", runnerMock.kubectlParams[3])
+		assert.Equal(t, `--patch={"spec":{"template":{"spec":{"containers":[{"name":"myContainer","image":"myregistry.com/myFancyContainer:1337"}]}}}}`, runnerMock.kubectlParams[3])
 		assert.True(t, strings.Contains(runnerMock.kubectlParams[4], filepath.Join("dir1/dir2/depl.yaml")))
 	})
 
