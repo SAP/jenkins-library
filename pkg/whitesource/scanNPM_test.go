@@ -23,7 +23,7 @@ func TestExecuteScanNPM(t *testing.T) {
 
 	t.Run("happy path NPM", func(t *testing.T) {
 		// init
-		utilsMock := newScanUtilsMock()
+		utilsMock := NewScanUtilsMock()
 		utilsMock.AddFile("package.json", []byte(`{"name":"my-module-name"}`))
 		scan := newTestScan(&config)
 		// test
@@ -51,7 +51,7 @@ func TestExecuteScanNPM(t *testing.T) {
 	})
 	t.Run("no NPM modules", func(t *testing.T) {
 		// init
-		utilsMock := newScanUtilsMock()
+		utilsMock := NewScanUtilsMock()
 		scan := newTestScan(&config)
 		// test
 		err := scan.ExecuteNpmScan(&config, utilsMock)
@@ -62,7 +62,7 @@ func TestExecuteScanNPM(t *testing.T) {
 	})
 	t.Run("package.json needs name", func(t *testing.T) {
 		// init
-		utilsMock := newScanUtilsMock()
+		utilsMock := NewScanUtilsMock()
 		utilsMock.AddFile("package.json", []byte(`{"key":"value"}`))
 		scan := newTestScan(&config)
 		// test
@@ -72,7 +72,7 @@ func TestExecuteScanNPM(t *testing.T) {
 	})
 	t.Run("npm ls fails", func(t *testing.T) {
 		// init
-		utilsMock := newScanUtilsMock()
+		utilsMock := NewScanUtilsMock()
 		utilsMock.AddFile("package.json", []byte(`{"name":"my-module-name"}`))
 		utilsMock.AddFile(filepath.Join("app", "package.json"), []byte(`{"name":"my-app-module-name"}`))
 		utilsMock.AddFile("package-lock.json", []byte("dummy"))
@@ -117,7 +117,7 @@ func TestWriteWhitesourceConfigJSON(t *testing.T) {
 
 	t.Run("write config from scratch", func(t *testing.T) {
 		// init
-		utils := newScanUtilsMock()
+		utils := NewScanUtilsMock()
 		scan := newTestScan(config)
 		// test
 		err := scan.writeWhitesourceConfigJSON(config, utils, true, true)
@@ -139,7 +139,7 @@ func TestWriteWhitesourceConfigJSON(t *testing.T) {
 		initial["unknown"] = "preserved"
 		encoded, _ := json.Marshal(initial)
 
-		utils := newScanUtilsMock()
+		utils := NewScanUtilsMock()
 		utils.AddFile(whiteSourceConfig, encoded)
 
 		scan := newTestScan(config)
@@ -169,7 +169,7 @@ func TestWriteWhitesourceConfigJSON(t *testing.T) {
 		initial["projectToken"] = "mock-project-token"
 		encoded, _ := json.Marshal(initial)
 
-		utils := newScanUtilsMock()
+		utils := NewScanUtilsMock()
 		utils.AddFile(whiteSourceConfig, encoded)
 
 		scan := newTestScan(config)

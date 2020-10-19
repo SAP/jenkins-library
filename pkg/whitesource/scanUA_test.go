@@ -23,7 +23,7 @@ func TestExecuteScanUA(t *testing.T) {
 			ConfigFilePath:   "ua.cfg",
 			M2Path:           ".pipeline/m2",
 		}
-		utilsMock := newScanUtilsMock()
+		utilsMock := NewScanUtilsMock()
 		utilsMock.AddFile("wss-generated-file.config", []byte("key=value"))
 		scan := newTestScan(&config)
 		// test
@@ -65,7 +65,7 @@ func TestExecuteScanUA(t *testing.T) {
 			AgentDownloadURL: "https://download.ua.org/agent.jar",
 			AgentFileName:    "unified-agent.jar",
 		}
-		utilsMock := newScanUtilsMock()
+		utilsMock := NewScanUtilsMock()
 		utilsMock.AddFile("wss-generated-file.config", []byte("dummy"))
 		scan := newTestScan(&config)
 		// test
@@ -83,7 +83,7 @@ func TestExecuteScanUA(t *testing.T) {
 			AgentDownloadURL: "https://download.ua.org/agent.jar",
 			AgentFileName:    "unified-agent.jar",
 		}
-		utilsMock := newScanUtilsMock()
+		utilsMock := NewScanUtilsMock()
 		utilsMock.AddFile("wss-generated-file.config", []byte("dummy"))
 		utilsMock.AddFile("unified-agent.jar", []byte("dummy"))
 		scan := newTestScan(&config)

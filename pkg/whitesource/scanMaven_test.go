@@ -28,7 +28,7 @@ func TestExecuteScanMaven(t *testing.T) {
 			ProductName: "mock-product",
 			ProjectName: "mock-project",
 		}
-		utilsMock := newScanUtilsMock()
+		utilsMock := NewScanUtilsMock()
 		utilsMock.AddFile("pom.xml", []byte(pomXML))
 		scan := newTestScan(&config)
 		// test
@@ -86,7 +86,7 @@ func TestExecuteScanMaven(t *testing.T) {
 			UserToken:   "user-token",
 			ProductName: "mock-product",
 		}
-		utilsMock := newScanUtilsMock()
+		utilsMock := NewScanUtilsMock()
 		utilsMock.AddFile("pom.xml", []byte(rootPomXML))
 		utilsMock.AddFile(filepath.Join("sub", "pom.xml"), []byte(modulePomXML))
 		scan := newTestScan(&config)
@@ -127,7 +127,7 @@ func TestExecuteScanMaven(t *testing.T) {
 			UserToken:   "user-token",
 			ProductName: "mock-product",
 		}
-		utilsMock := newScanUtilsMock()
+		utilsMock := NewScanUtilsMock()
 		scan := newTestScan(&config)
 		// test
 		err := scan.ExecuteMavenScan(&config, utilsMock)

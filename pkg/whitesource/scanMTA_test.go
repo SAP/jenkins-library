@@ -28,7 +28,7 @@ func TestExecuteScanMTA(t *testing.T) {
 	t.Parallel()
 	t.Run("happy path MTA", func(t *testing.T) {
 		// init
-		utilsMock := newScanUtilsMock()
+		utilsMock := NewScanUtilsMock()
 		utilsMock.AddFile("pom.xml", []byte(pomXML))
 		utilsMock.AddFile("package.json", []byte(`{"name":"my-module-name"}`))
 		scan := newTestScan(&config)
@@ -76,7 +76,7 @@ func TestExecuteScanMTA(t *testing.T) {
 	})
 	t.Run("MTA with only maven modules", func(t *testing.T) {
 		// init
-		utilsMock := newScanUtilsMock()
+		utilsMock := NewScanUtilsMock()
 		utilsMock.AddFile("pom.xml", []byte(pomXML))
 		scan := newTestScan(&config)
 		// test
@@ -109,7 +109,7 @@ func TestExecuteScanMTA(t *testing.T) {
 	})
 	t.Run("MTA with only NPM modules", func(t *testing.T) {
 		// init
-		utilsMock := newScanUtilsMock()
+		utilsMock := NewScanUtilsMock()
 		utilsMock.AddFile("package.json", []byte(`{"name":"my-module-name"}`))
 		scan := newTestScan(&config)
 		// test
@@ -138,7 +138,7 @@ func TestExecuteScanMTA(t *testing.T) {
 	})
 	t.Run("MTA with neither Maven nor NPM modules results in error", func(t *testing.T) {
 		// init
-		utilsMock := newScanUtilsMock()
+		utilsMock := NewScanUtilsMock()
 		scan := newTestScan(&config)
 		// test
 		err := scan.ExecuteMTAScan(&config, utilsMock)
