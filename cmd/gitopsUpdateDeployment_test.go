@@ -15,10 +15,10 @@ import (
 
 func TestErrorOnTempDir(t *testing.T) {
 	defer func() {
-		fileUtilities = piperutils.Files{}
+		gitopsUpdateDeploymentFileUtilities = piperutils.Files{}
 	}()
 
-	fileUtilities = filesMockErrorTempDirCreation{}
+	gitopsUpdateDeploymentFileUtilities = filesMockErrorTempDirCreation{}
 
 	var c gitopsExecRunner
 	var configuration = &gitopsUpdateDeploymentOptions{
@@ -39,10 +39,10 @@ func TestErrorOnTempDir(t *testing.T) {
 
 func TestErrorGitPlainClone(t *testing.T) {
 	defer func() {
-		gitUtilities = gitUtil.TheGitUtils{}
+		gitopsUpdateDeploymentGitUtilities = gitUtil.TheGitUtils{}
 	}()
 
-	gitUtilities = gitUtilsMockErrorClone{}
+	gitopsUpdateDeploymentGitUtilities = gitUtilsMockErrorClone{}
 
 	var c gitopsExecRunner
 	var configuration = &gitopsUpdateDeploymentOptions{
@@ -63,7 +63,7 @@ func TestErrorGitPlainClone(t *testing.T) {
 
 func TestErrorOnInvalidURL(t *testing.T) {
 	defer func() {
-		gitUtilities = gitUtil.TheGitUtils{}
+		gitopsUpdateDeploymentGitUtilities = gitUtil.TheGitUtils{}
 	}()
 
 	var configuration = &gitopsUpdateDeploymentOptions{
@@ -78,7 +78,7 @@ func TestErrorOnInvalidURL(t *testing.T) {
 		ContainerImage:       "myFancyContainer:1337",
 	}
 
-	gitUtilities = validGitUtilsMock{
+	gitopsUpdateDeploymentGitUtilities = validGitUtilsMock{
 		configuration: configuration,
 		test:          t,
 	}
@@ -123,7 +123,7 @@ func TestBuildRegistryPlusImageWithoutRegistry(t *testing.T) {
 
 func TestRunGitopsUpdateDeployment(t *testing.T) {
 	defer func() {
-		gitUtilities = gitUtil.TheGitUtils{}
+		gitopsUpdateDeploymentGitUtilities = gitUtil.TheGitUtils{}
 	}()
 
 	var configuration = &gitopsUpdateDeploymentOptions{
@@ -138,7 +138,7 @@ func TestRunGitopsUpdateDeployment(t *testing.T) {
 		ContainerImage:       "myFancyContainer:1337",
 	}
 
-	gitUtilities = validGitUtilsMock{
+	gitopsUpdateDeploymentGitUtilities = validGitUtilsMock{
 		configuration: configuration,
 		test:          t,
 	}

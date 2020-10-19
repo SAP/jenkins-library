@@ -33,8 +33,8 @@ type gitopsExecRunner interface {
 	Stderr(err io.Writer)
 }
 
-var gitUtilities gitopsGitUtils = gitUtil.TheGitUtils{}
-var fileUtilities gitopsFileUtils = piperutils.Files{}
+var gitopsUpdateDeploymentGitUtilities gitopsGitUtils = gitUtil.TheGitUtils{}
+var gitopsUpdateDeploymentFileUtilities gitopsFileUtils = piperutils.Files{}
 
 func gitopsUpdateDeployment(config gitopsUpdateDeploymentOptions, telemetryData *telemetry.CustomData) {
 	// for command execution use Command
@@ -55,15 +55,15 @@ func gitopsUpdateDeployment(config gitopsUpdateDeploymentOptions, telemetryData 
 }
 
 func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gitopsExecRunner) error {
-	temporaryFolder, tempDirError := fileUtilities.TempDir(".", "temp-")
+	temporaryFolder, tempDirError := gitopsUpdateDeploymentFileUtilities.TempDir(".", "temp-")
 	if tempDirError != nil {
 		log.Entry().WithError(tempDirError).Error("Failed to create temporary directory")
 		return tempDirError
 	}
 
-	defer fileUtilities.RemoveAll(temporaryFolder)
+	defer gitopsUpdateDeploymentFileUtilities.RemoveAll(temporaryFolder)
 
-	repository, gitCloneError := gitUtilities.PlainClone(config.Username, config.Password, config.ServerURL, temporaryFolder)
+	repository, gitCloneError := gitopsUpdateDeploymentGitUtilities.PlainClone(config.Username, config.Password, config.ServerURL, temporaryFolder)
 	if gitCloneError != nil {
 		return gitCloneError
 	}
@@ -73,7 +73,7 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gi
 		return worktreeError
 	}
 
-	changeBranchError := gitUtilities.ChangeBranch(config.BranchName, worktree)
+	changeBranchError := gitopsUpdateDeploymentGitUtilities.ChangeBranch(config.BranchName, worktree)
 	if changeBranchError != nil {
 		return changeBranchError
 	}
@@ -144,12 +144,12 @@ func buildRegistryPlusImage(config *gitopsUpdateDeploymentOptions) (string, erro
 }
 
 func commitAndPushChanges(config *gitopsUpdateDeploymentOptions, repository gitUtil.UtilsRepository, worktree gitUtil.UtilsWorkTree) (plumbing.Hash, error) {
-	commit, commitError := gitUtilities.CommitSingleFile(config.FilePath, config.CommitMessage, worktree)
+	commit, commitError := gitopsUpdateDeploymentGitUtilities.CommitSingleFile(config.FilePath, config.CommitMessage, worktree)
 	if commitError != nil {
 		return [20]byte{}, commitError
 	}
 
-	pushError := gitUtilities.PushChangesToRepository(config.Username, config.Password, repository)
+	pushError := gitopsUpdateDeploymentGitUtilities.PushChangesToRepository(config.Username, config.Password, repository)
 	if pushError != nil {
 		return [20]byte{}, pushError
 	}
