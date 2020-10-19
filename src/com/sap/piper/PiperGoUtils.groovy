@@ -29,12 +29,14 @@ class PiperGoUtils implements Serializable {
                 REPOSITORY_UNDER_TEST: steps.env.REPOSITORY_UNDER_TEST,
                 LIBRARY_VERSION_UNDER_TEST: steps.env.LIBRARY_VERSION_UNDER_TEST
             ]) {
-                steps.sh 'wget https://github.com/$REPOSITORY_UNDER_TEST/archive/$LIBRARY_VERSION_UNDER_TEST.tar.gz'
-                steps.sh 'tar xzf $LIBRARY_VERSION_UNDER_TEST.tar.gz'
-                steps.dir("jenkins-library-${steps.env.LIBRARY_VERSION_UNDER_TEST}") {
+                def piperTar = 'piper-go.tar.gz'
+                def piperTmp = 'piper-tmp'
+                steps.sh "wget --output-document ${piperTar} https://github.com/\${REPOSITORY_UNDER_TEST}/archive/\$LIBRARY_VERSION_UNDER_TEST.tar.gz"
+                steps.sh "PIPER_TMP=${piperTmp}; rm -rf \${PIPER_TMP} && mkdir -p \${PIPER_TMP} && tar --strip-components=1 -C \${PIPER_TMP} -xf ${piperTar}"
+                steps.dir(piperTmp) {
                     steps.sh "CGO_ENABLED=0 go build -tags release -ldflags \"-X github.com/SAP/jenkins-library/cmd.GitCommit=${steps.env.LIBRARY_VERSION_UNDER_TEST}\" -o ../piper . && chmod +x ../piper && chown 1000:999 ../piper"
                 }
-                steps.sh 'rm -rf $LIBRARY_VERSION_UNDER_TEST.tar.gz jenkins-library-$LIBRARY_VERSION_UNDER_TEST'
+                steps.sh "rm -rf ${piperTar} ${piperTmp}"
             }
         } else {
             def libraries = getLibrariesInfo()
