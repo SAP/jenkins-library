@@ -32,9 +32,6 @@ type gitopsExecRunner interface {
 	Stderr(err io.Writer)
 }
 
-var gitopsUpdateDeploymentGitUtilities gitopsGitUtils = gitUtil.TheGitUtils{}
-var gitopsUpdateDeploymentFileUtilities gitopsFileUtils = piperutils.Files{}
-
 func gitopsUpdateDeployment(config gitopsUpdateDeploymentOptions, telemetryData *telemetry.CustomData) {
 	// for command execution use Command
 	var c gitopsExecRunner = &command.Command{}
@@ -47,13 +44,13 @@ func gitopsUpdateDeployment(config gitopsUpdateDeploymentOptions, telemetryData 
 	// Example: step checkmarxExecuteScan.go
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runGitopsUpdateDeployment(&config, c)
+	err := runGitopsUpdateDeployment(&config, c, gitUtil.TheGitUtils{}, piperutils.Files{})
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gitopsExecRunner) error {
+func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gitopsExecRunner, gitopsUpdateDeploymentGitUtilities gitopsGitUtils, gitopsUpdateDeploymentFileUtilities gitopsFileUtils) error {
 	temporaryFolder, err := gitopsUpdateDeploymentFileUtilities.TempDir(".", "temp-")
 	if err != nil {
 		log.Entry().WithError(err).Error("Failed to create temporary directory")
@@ -96,7 +93,7 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gi
 		return err
 	}
 
-	commit, err := commitAndPushChanges(config, repository, worktree)
+	commit, err := commitAndPushChanges(config, repository, worktree, gitopsUpdateDeploymentGitUtilities)
 	if err != nil {
 		return err
 	}
@@ -142,7 +139,7 @@ func buildRegistryPlusImage(config *gitopsUpdateDeploymentOptions) (string, erro
 	return url + config.ContainerImage, nil
 }
 
-func commitAndPushChanges(config *gitopsUpdateDeploymentOptions, repository gitUtil.UtilsRepository, worktree gitUtil.UtilsWorkTree) (plumbing.Hash, error) {
+func commitAndPushChanges(config *gitopsUpdateDeploymentOptions, repository gitUtil.UtilsRepository, worktree gitUtil.UtilsWorkTree, gitopsUpdateDeploymentGitUtilities gitopsGitUtils) (plumbing.Hash, error) {
 	commit, err := gitopsUpdateDeploymentGitUtilities.CommitSingleFile(config.FilePath, config.CommitMessage, worktree)
 	if err != nil {
 		return [20]byte{}, err

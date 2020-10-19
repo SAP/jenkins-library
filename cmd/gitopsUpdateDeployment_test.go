@@ -14,12 +14,6 @@ import (
 )
 
 func TestErrorOnTempDir(t *testing.T) {
-	defer func() {
-		gitopsUpdateDeploymentFileUtilities = piperutils.Files{}
-	}()
-
-	gitopsUpdateDeploymentFileUtilities = filesMockErrorTempDirCreation{}
-
 	var c gitopsExecRunner
 	var configuration = &gitopsUpdateDeploymentOptions{
 		BranchName:           "main",
@@ -33,17 +27,11 @@ func TestErrorOnTempDir(t *testing.T) {
 		ContainerImage:       "myFancyContainer:1337",
 	}
 
-	err := runGitopsUpdateDeployment(configuration, c)
+	err := runGitopsUpdateDeployment(configuration, c, gitUtil.TheGitUtils{}, filesMockErrorTempDirCreation{})
 	assert.Equal(t, errors.New("error appeared"), err)
 }
 
 func TestErrorGitPlainClone(t *testing.T) {
-	defer func() {
-		gitopsUpdateDeploymentGitUtilities = gitUtil.TheGitUtils{}
-	}()
-
-	gitopsUpdateDeploymentGitUtilities = gitUtilsMockErrorClone{}
-
 	var c gitopsExecRunner
 	var configuration = &gitopsUpdateDeploymentOptions{
 		BranchName:           "main",
@@ -57,15 +45,11 @@ func TestErrorGitPlainClone(t *testing.T) {
 		ContainerImage:       "myFancyContainer:1337",
 	}
 
-	err := runGitopsUpdateDeployment(configuration, c)
+	err := runGitopsUpdateDeployment(configuration, c, gitUtilsMockErrorClone{}, piperutils.Files{})
 	assert.Equal(t, errors.New("error on clone"), err)
 }
 
 func TestErrorOnInvalidURL(t *testing.T) {
-	defer func() {
-		gitopsUpdateDeploymentGitUtilities = gitUtil.TheGitUtils{}
-	}()
-
 	var configuration = &gitopsUpdateDeploymentOptions{
 		BranchName:           "main",
 		CommitMessage:        "This is the commit message",
@@ -78,14 +62,14 @@ func TestErrorOnInvalidURL(t *testing.T) {
 		ContainerImage:       "myFancyContainer:1337",
 	}
 
-	gitopsUpdateDeploymentGitUtilities = validGitUtilsMock{
+	gitUtilsMock := validGitUtilsMock{
 		configuration: configuration,
 		test:          t,
 	}
 
 	var c gitopsExecRunner
 
-	err := runGitopsUpdateDeployment(configuration, c)
+	err := runGitopsUpdateDeployment(configuration, c, gitUtilsMock, piperutils.Files{})
 	assert.Equal(t, errors.New("invalid registry url"), err)
 }
 
@@ -122,10 +106,6 @@ func TestBuildRegistryPlusImageWithoutRegistry(t *testing.T) {
 }
 
 func TestRunGitopsUpdateDeployment(t *testing.T) {
-	defer func() {
-		gitopsUpdateDeploymentGitUtilities = gitUtil.TheGitUtils{}
-	}()
-
 	var configuration = &gitopsUpdateDeploymentOptions{
 		BranchName:           "main",
 		CommitMessage:        "This is the commit message",
@@ -138,7 +118,7 @@ func TestRunGitopsUpdateDeployment(t *testing.T) {
 		ContainerImage:       "myFancyContainer:1337",
 	}
 
-	gitopsUpdateDeploymentGitUtilities = validGitUtilsMock{
+	gitUtilsMock := validGitUtilsMock{
 		configuration: configuration,
 		test:          t,
 	}
@@ -147,7 +127,7 @@ func TestRunGitopsUpdateDeployment(t *testing.T) {
 		test: t,
 	}
 
-	err := runGitopsUpdateDeployment(configuration, c)
+	err := runGitopsUpdateDeployment(configuration, c, gitUtilsMock, piperutils.Files{})
 	assert.NoError(t, err)
 }
 
