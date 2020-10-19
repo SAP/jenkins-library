@@ -316,7 +316,7 @@ func TestRunScan(t *testing.T) {
 	err = runScan(options, sys, workspace, &influx)
 	assert.NoError(t, err, "error occured but none expected")
 	assert.Equal(t, false, sys.isIncremental, "isIncremental has wrong value")
-	assert.Equal(t, true, sys.isPublic, "isPublic has wrong value")
+	assert.Equal(t, false, sys.isPublic, "isPublic has wrong value")
 	assert.Equal(t, true, sys.forceScan, "forceScan has wrong value")
 	assert.Equal(t, true, sys.scanProjectCalled, "ScanProject was not invoked")
 }
@@ -353,7 +353,7 @@ func TestRunScanWOtherCycle(t *testing.T) {
 	err = runScan(options, sys, workspace, &influx)
 	assert.NoError(t, err, "error occured but none expected")
 	assert.Equal(t, true, sys.isIncremental, "isIncremental has wrong value")
-	assert.Equal(t, true, sys.isPublic, "isPublic has wrong value")
+	assert.Equal(t, false, sys.isPublic, "isPublic has wrong value")
 	assert.Equal(t, true, sys.forceScan, "forceScan has wrong value")
 }
 
@@ -371,7 +371,7 @@ func TestRunScanForPullRequest(t *testing.T) {
 
 	err = runScan(options, sys, workspace, &influx)
 	assert.Equal(t, true, sys.isIncremental, "isIncremental has wrong value")
-	assert.Equal(t, true, sys.isPublic, "isPublic has wrong value")
+	assert.Equal(t, false, sys.isPublic, "isPublic has wrong value")
 	assert.Equal(t, true, sys.forceScan, "forceScan has wrong value")
 }
 
@@ -389,7 +389,7 @@ func TestRunScanForPullRequestProjectNew(t *testing.T) {
 
 	err = runScan(options, sys, workspace, &influx)
 	assert.Equal(t, true, sys.isIncremental, "isIncremental has wrong value")
-	assert.Equal(t, true, sys.isPublic, "isPublic has wrong value")
+	assert.Equal(t, false, sys.isPublic, "isPublic has wrong value")
 	assert.Equal(t, true, sys.forceScan, "forceScan has wrong value")
 }
 

@@ -178,7 +178,7 @@ func uploadAndScan(config checkmarxExecuteScanOptions, sys checkmarx.System, pro
 }
 
 func triggerScan(config checkmarxExecuteScanOptions, sys checkmarx.System, project checkmarx.Project, workspace string, incremental bool, influx *checkmarxExecuteScanInflux) error {
-	scan, err := sys.ScanProject(project.ID, incremental, true, !config.AvoidDuplicateProjectScans)
+	scan, err := sys.ScanProject(project.ID, incremental, false, !config.AvoidDuplicateProjectScans)
 	if err != nil {
 		return errors.Wrapf(err, "cannot scan project %v", project.Name)
 	}
