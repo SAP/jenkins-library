@@ -2,7 +2,11 @@
 
 package whitesource
 
-import "github.com/SAP/jenkins-library/pkg/mock"
+import (
+	"github.com/SAP/jenkins-library/pkg/mock"
+	"net/http"
+	"os"
+)
 
 func newTestScan(config *ScanOptions) *Scan {
 	return &Scan{
@@ -11,37 +15,52 @@ func newTestScan(config *ScanOptions) *Scan {
 	}
 }
 
-type npmInstall struct {
+type NpmInstall struct {
 	currentDir  string
 	packageJSON []string
 }
 
-type scanUtilsMock struct {
-	*mock.FilesMock
-	*mock.ExecMockRunner
-	npmInstalledModules []npmInstall
+type DownloadedFile struct {
+	sourceURL string
+	filePath  string
 }
 
-func (m *scanUtilsMock) RemoveAll(path string) error {
+type ScanUtilsMock struct {
+	*mock.FilesMock
+	*mock.ExecMockRunner
+	NpmInstalledModules []NpmInstall
+	DownloadedFiles     []DownloadedFile
+}
+
+func (m *ScanUtilsMock) RemoveAll(path string) error {
 	// TODO: Implement in FS Mock
 	return nil
 }
 
-func (m *scanUtilsMock) FindPackageJSONFiles(_ *ScanOptions) ([]string, error) {
+func (m *ScanUtilsMock) FindPackageJSONFiles(_ *ScanOptions) ([]string, error) {
 	matches, _ := m.Glob("**/package.json")
 	return matches, nil
 }
 
-func (m *scanUtilsMock) InstallAllNPMDependencies(_ *ScanOptions, packageJSONs []string) error {
-	m.npmInstalledModules = append(m.npmInstalledModules, npmInstall{
+func (m *ScanUtilsMock) InstallAllNPMDependencies(_ *ScanOptions, packageJSONs []string) error {
+	m.NpmInstalledModules = append(m.NpmInstalledModules, NpmInstall{
 		currentDir:  m.CurrentDir,
 		packageJSON: packageJSONs,
 	})
 	return nil
 }
 
-func newScanUtilsMock() *scanUtilsMock {
-	return &scanUtilsMock{
+func (m *ScanUtilsMock) DownloadFile(url, filename string, _ http.Header, _ []*http.Cookie) error {
+	m.DownloadedFiles = append(m.DownloadedFiles, DownloadedFile{sourceURL: url, filePath: filename})
+	return nil
+}
+
+func (m *ScanUtilsMock) FileOpen(name string, flag int, perm os.FileMode) (File, error) {
+	return m.Open(name, flag, perm)
+}
+
+func newScanUtilsMock() *ScanUtilsMock {
+	return &ScanUtilsMock{
 		FilesMock:      &mock.FilesMock{},
 		ExecMockRunner: &mock.ExecMockRunner{},
 	}

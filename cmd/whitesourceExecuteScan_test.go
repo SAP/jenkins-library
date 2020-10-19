@@ -1,14 +1,10 @@
 package cmd
 
 import (
-	"fmt"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 	ws "github.com/SAP/jenkins-library/pkg/whitesource"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"net/http"
-	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -20,33 +16,12 @@ type whitesourceCoordinatesMock struct {
 	Version    string
 }
 
-type downloadedFile struct {
-	sourceURL string
-	filePath  string
-}
-
 type whitesourceUtilsMock struct {
-	*mock.FilesMock
-	*mock.ExecMockRunner
+	*ws.ScanUtilsMock
 	coordinates             whitesourceCoordinatesMock
 	usedBuildTool           string
 	usedBuildDescriptorFile string
 	usedOptions             versioning.Options
-	downloadedFiles         []downloadedFile
-}
-
-func (w *whitesourceUtilsMock) DownloadFile(url, filename string, _ http.Header, _ []*http.Cookie) error {
-	w.downloadedFiles = append(w.downloadedFiles, downloadedFile{sourceURL: url, filePath: filename})
-	return nil
-}
-
-func (w *whitesourceUtilsMock) FileOpen(name string, flag int, perm os.FileMode) (wsFile, error) {
-	return w.Open(name, flag, perm)
-}
-
-func (w *whitesourceUtilsMock) RemoveAll(path string) error {
-	// TODO: Implement in FS Mock
-	return nil
 }
 
 func (w *whitesourceUtilsMock) GetArtifactCoordinates(buildTool, buildDescriptorFile string,
@@ -55,15 +30,6 @@ func (w *whitesourceUtilsMock) GetArtifactCoordinates(buildTool, buildDescriptor
 	w.usedBuildDescriptorFile = buildDescriptorFile
 	w.usedOptions = *options
 	return w.coordinates, nil
-}
-
-func (w *whitesourceUtilsMock) FindPackageJSONFiles(_ *ws.ScanOptions) ([]string, error) {
-	matches, _ := w.Glob("**/package.json")
-	return matches, nil
-}
-
-func (w *whitesourceUtilsMock) InstallAllNPMDependencies(_ *ws.ScanOptions, _ []string) error {
-	return nil
 }
 
 const wsTimeNow = "2010-05-10 00:15:42"
@@ -75,8 +41,10 @@ func (w *whitesourceUtilsMock) Now() time.Time {
 
 func newWhitesourceUtilsMock() *whitesourceUtilsMock {
 	return &whitesourceUtilsMock{
-		FilesMock:      &mock.FilesMock{},
-		ExecMockRunner: &mock.ExecMockRunner{},
+		ScanUtilsMock: &ws.ScanUtilsMock{
+			FilesMock:      &mock.FilesMock{},
+			ExecMockRunner: &mock.ExecMockRunner{},
+		},
 		coordinates: whitesourceCoordinatesMock{
 			GroupID:    "mock-group-id",
 			ArtifactID: "mock-artifact-id",
@@ -153,94 +121,6 @@ func TestResolveProjectIdentifiers(t *testing.T) {
 		err := resolveProjectIdentifiers(&config, scan, utilsMock, systemMock)
 		// assert
 		assert.EqualError(t, err, "no product with name 'does-not-exist' found in Whitesource")
-	})
-}
-
-func TestExecuteScanUA(t *testing.T) {
-	t.Parallel()
-	t.Run("happy path UA", func(t *testing.T) {
-		// init
-		config := ScanOptions{
-			ScanType:         "unified-agent",
-			OrgToken:         "org-token",
-			UserToken:        "user-token",
-			ProductName:      "mock-product",
-			ProjectName:      "mock-project",
-			ProductVersion:   "product-version",
-			AgentDownloadURL: "https://download.ua.org/agent.jar",
-			AgentFileName:    "unified-agent.jar",
-			ConfigFilePath:   "ua.cfg",
-			M2Path:           ".pipeline/m2",
-		}
-		utilsMock := newWhitesourceUtilsMock()
-		utilsMock.AddFile("wss-generated-file.config", []byte("key=value"))
-		scan := newWhitesourceScan(&config)
-		// test
-		err := executeScan(&config, scan, utilsMock)
-		// many assert
-		require.NoError(t, err)
-
-		content, err := utilsMock.FileRead("ua.cfg")
-		require.NoError(t, err)
-		contentAsString := string(content)
-		assert.Contains(t, contentAsString, "key=value\n")
-		assert.Contains(t, contentAsString, "gradle.aggregateModules=true\n")
-		assert.Contains(t, contentAsString, "maven.aggregateModules=true\n")
-		assert.Contains(t, contentAsString, "maven.m2RepositoryPath=.pipeline/m2\n")
-		assert.Contains(t, contentAsString, "excludes=")
-
-		require.Len(t, utilsMock.Calls, 4)
-		fmt.Printf("calls: %v\n", utilsMock.Calls)
-		expectedCall := mock.ExecCall{
-			Exec: "java",
-			Params: []string{
-				"-jar",
-				config.AgentFileName,
-				"-d", ".",
-				"-c", config.ConfigFilePath,
-				"-apiKey", config.OrgToken,
-				"-userKey", config.UserToken,
-				"-project", config.ProjectName,
-				"-product", config.ProductName,
-				"-productVersion", config.ProductVersion,
-			},
-		}
-		assert.Equal(t, expectedCall, utilsMock.Calls[3])
-	})
-	t.Run("UA is downloaded", func(t *testing.T) {
-		// init
-		config := ScanOptions{
-			ScanType:         "unified-agent",
-			AgentDownloadURL: "https://download.ua.org/agent.jar",
-			AgentFileName:    "unified-agent.jar",
-		}
-		utilsMock := newWhitesourceUtilsMock()
-		utilsMock.AddFile("wss-generated-file.config", []byte("dummy"))
-		scan := newWhitesourceScan(&config)
-		// test
-		err := executeScan(&config, scan, utilsMock)
-		// many assert
-		require.NoError(t, err)
-		require.Len(t, utilsMock.downloadedFiles, 1)
-		assert.Equal(t, "https://download.ua.org/agent.jar", utilsMock.downloadedFiles[0].sourceURL)
-		assert.Equal(t, "unified-agent.jar", utilsMock.downloadedFiles[0].filePath)
-	})
-	t.Run("UA is NOT downloaded", func(t *testing.T) {
-		// init
-		config := ScanOptions{
-			ScanType:         "unified-agent",
-			AgentDownloadURL: "https://download.ua.org/agent.jar",
-			AgentFileName:    "unified-agent.jar",
-		}
-		utilsMock := newWhitesourceUtilsMock()
-		utilsMock.AddFile("wss-generated-file.config", []byte("dummy"))
-		utilsMock.AddFile("unified-agent.jar", []byte("dummy"))
-		scan := newWhitesourceScan(&config)
-		// test
-		err := executeScan(&config, scan, utilsMock)
-		// many assert
-		require.NoError(t, err)
-		assert.Len(t, utilsMock.downloadedFiles, 0)
 	})
 }
 

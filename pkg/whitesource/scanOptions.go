@@ -20,6 +20,14 @@ type ScanOptions struct {
 	GlobalSettingsFile string
 	// ProjectSettingsFile is an optional path to a local maven settings file.
 	ProjectSettingsFile string
+
 	// DefaultNpmRegistry is an optional default registry for NPM.
 	DefaultNpmRegistry string
+
+	AgentDownloadURL string
+	AgentFileName    string
+	ConfigFilePath   string
+
+	Includes string
+	Excludes string
 }

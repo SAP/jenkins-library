@@ -84,11 +84,11 @@ func TestExecuteScanNPM(t *testing.T) {
 		err := scan.ExecuteNpmScan(&config, utilsMock)
 		// assert
 		assert.NoError(t, err)
-		expectedNpmInstalls := []npmInstall{
+		expectedNpmInstalls := []NpmInstall{
 			{currentDir: "app", packageJSON: []string{"package.json"}},
 			{currentDir: "", packageJSON: []string{"package.json"}},
 		}
-		assert.Equal(t, expectedNpmInstalls, utilsMock.npmInstalledModules)
+		assert.Equal(t, expectedNpmInstalls, utilsMock.NpmInstalledModules)
 		assert.True(t, utilsMock.HasRemovedFile("package-lock.json"))
 	})
 }

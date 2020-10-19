@@ -38,13 +38,6 @@ type whitesource interface {
 	GetProjectLibraryLocations(projectToken string) ([]ws.Library, error)
 }
 
-// wsFile defines the method subset we use from os.File
-type wsFile interface {
-	io.Writer
-	io.StringWriter
-	io.Closer
-}
-
 type whitesourceUtils interface {
 	Stdout(out io.Writer)
 	Stderr(err io.Writer)
@@ -61,7 +54,7 @@ type whitesourceUtils interface {
 	FileRemove(path string) error
 	FileRename(oldPath, newPath string) error
 	RemoveAll(path string) error
-	FileOpen(name string, flag int, perm os.FileMode) (wsFile, error)
+	FileOpen(name string, flag int, perm os.FileMode) (ws.File, error)
 
 	GetArtifactCoordinates(buildTool, buildDescriptorFile string,
 		options *versioning.Options) (versioning.Coordinates, error)
@@ -79,7 +72,7 @@ type whitesourceUtilsBundle struct {
 	npmExecutor npm.Executor
 }
 
-func (w *whitesourceUtilsBundle) FileOpen(name string, flag int, perm os.FileMode) (wsFile, error) {
+func (w *whitesourceUtilsBundle) FileOpen(name string, flag int, perm os.FileMode) (ws.File, error) {
 	return os.OpenFile(name, flag, perm)
 }
 
@@ -301,6 +294,11 @@ func wsScanOptions(config *ScanOptions) *ws.ScanOptions {
 		GlobalSettingsFile:         config.GlobalSettingsFile,
 		ProjectSettingsFile:        config.ProjectSettingsFile,
 		DefaultNpmRegistry:         config.DefaultNpmRegistry,
+		AgentDownloadURL:           config.AgentDownloadURL,
+		AgentFileName:              config.AgentFileName,
+		ConfigFilePath:             config.ConfigFilePath,
+		Includes:                   config.Includes,
+		Excludes:                   config.Excludes,
 	}
 }
 
@@ -311,52 +309,36 @@ func executeScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils) err
 		config.ScanType = config.BuildTool
 	}
 
+	options := wsScanOptions(config)
+
 	switch config.ScanType {
 	case "mta":
 		// Execute scan for maven and all npm modules
-		if err := scan.ExecuteMTAScan(wsScanOptions(config), utils); err != nil {
+		if err := scan.ExecuteMTAScan(options, utils); err != nil {
 			return err
 		}
 	case "maven":
 		// Execute scan with maven plugin goal
-		if err := scan.ExecuteMavenScan(wsScanOptions(config), utils); err != nil {
+		if err := scan.ExecuteMavenScan(options, utils); err != nil {
 			return err
 		}
 	case "npm":
 		// Execute scan with in each npm module using npm.Executor
-		if err := scan.ExecuteNpmScan(wsScanOptions(config), utils); err != nil {
+		if err := scan.ExecuteNpmScan(options, utils); err != nil {
 			return err
 		}
 	case "yarn":
 		// Execute scan with whitesource yarn plugin
-		if err := scan.ExecuteYarnScan(wsScanOptions(config), utils); err != nil {
+		if err := scan.ExecuteYarnScan(options, utils); err != nil {
 			return err
 		}
 	default:
 		// Execute scan with Unified Agent jar file
-		if err := executeUAScan(config, scan, utils); err != nil {
+		if err := scan.ExecuteUAScan(options, utils); err != nil {
 			return err
 		}
 	}
 	return nil
-}
-
-// executeUAScan executes a scan with the Whitesource Unified Agent.
-func executeUAScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils) error {
-	// Download the unified agent jar file if one does not exist
-	if err := downloadAgent(config, utils); err != nil {
-		return err
-	}
-
-	// Auto generate a config file based on the working directory's contents.
-	// TODO/NOTE: Currently this scans the UA jar file as a dependency since it is downloaded beforehand
-	if err := autoGenerateWhitesourceConfig(config, utils); err != nil {
-		return err
-	}
-
-	return utils.RunExecutable("java", "-jar", config.AgentFileName, "-d", ".", "-c", config.ConfigFilePath,
-		"-apiKey", config.OrgToken, "-userKey", config.UserToken, "-project", scan.AggregateProjectName,
-		"-product", config.ProductName, "-productVersion", config.ProductVersion)
 }
 
 func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource) error {
@@ -483,71 +465,6 @@ func blockUntilProjectIsUpdated(projectToken string, sys whitesource, currentTim
 
 		time.Sleep(timeBetweenPolls)
 	}
-	return nil
-}
-
-// downloadAgent downloads the unified agent jar file if one does not exist
-func downloadAgent(config *ScanOptions, utils whitesourceUtils) error {
-	agentFile := config.AgentFileName
-	exists, err := utils.FileExists(agentFile)
-	if err != nil {
-		return fmt.Errorf("could not check whether the file '%s' exists: %w", agentFile, err)
-	}
-	if !exists {
-		err := utils.DownloadFile(config.AgentDownloadURL, agentFile, nil, nil)
-		if err != nil {
-			return fmt.Errorf("failed to download unified agent from URL '%s' to file '%s': %w",
-				config.AgentDownloadURL, agentFile, err)
-		}
-	}
-	return nil
-}
-
-// autoGenerateWhitesourceConfig
-// Auto generate a config file based on the current directory structure, renames it to user specified configFilePath
-// Generated file name will be 'wss-generated-file.config'
-func autoGenerateWhitesourceConfig(config *ScanOptions, utils whitesourceUtils) error {
-	// TODO: Should we rely on -detect, or set the parameters manually?
-	if err := utils.RunExecutable("java", "-jar", config.AgentFileName, "-d", ".", "-detect"); err != nil {
-		return err
-	}
-
-	// Rename generated config file to config.ConfigFilePath parameter
-	if err := utils.FileRename("wss-generated-file.config", config.ConfigFilePath); err != nil {
-		return err
-	}
-
-	// Append aggregateModules=true parameter to config file (consolidates multi-module projects into one)
-	f, err := utils.FileOpen(config.ConfigFilePath, os.O_APPEND|os.O_WRONLY, 0600)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = f.Close() }()
-
-	// Append additional config parameters to prevent multiple projects being generated
-	m2Path := config.M2Path
-	if m2Path == "" {
-		m2Path = ".m2"
-	}
-	cfg := fmt.Sprintf("\ngradle.aggregateModules=true\nmaven.aggregateModules=true\ngradle.localRepositoryPath=.gradle\nmaven.m2RepositoryPath=%s\nexcludes=%s",
-		m2Path,
-		config.Excludes)
-	if _, err = f.WriteString(cfg); err != nil {
-		return err
-	}
-
-	// archiveExtractionDepth=0
-	if err := utils.RunExecutable("sed", "-ir", `s/^[#]*\s*archiveExtractionDepth=.*/archiveExtractionDepth=0/`,
-		config.ConfigFilePath); err != nil {
-		return err
-	}
-
-	// config.Includes defaults to "**/*.java **/*.jar **/*.py **/*.go **/*.js **/*.ts"
-	regex := fmt.Sprintf(`s/^[#]*\s*includes=.*/includes="%s"/`, config.Includes)
-	if err := utils.RunExecutable("sed", "-ir", regex, config.ConfigFilePath); err != nil {
-		return err
-	}
-
 	return nil
 }
 
