@@ -82,6 +82,8 @@ func sonarExecuteScan(config sonarExecuteScanOptions, telemetry *telemetry.Custo
 
 	telemetry.Custom1Label = "serverURL"
 	telemetry.Custom1 = config.ServerURL
+	telemetry.Custom2Label = "serverURL from env"
+	telemetry.Custom2 = os.Getenv("SONAR_HOST_URL")
 
 	sonar = sonarSettings{
 		workingDir:  "./",
