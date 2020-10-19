@@ -60,7 +60,7 @@ func TestRunGitopsUpdateDeployment(t *testing.T) {
 		gitUtilsMock := &validGitUtilsMock{}
 
 		runnerMock := gitOpsExecRunnerMock{}
-		var c gitopsUpdateDeploymentExecRunner = &runnerMock
+		var c gitopsUpdateDeploymentExecRunner = &gitOpsExecRunnerMock{}
 
 		err := runGitopsUpdateDeployment(configuration, c, gitUtilsMock, piperutils.Files{})
 		assert.NoError(t, err)
@@ -89,14 +89,11 @@ func TestRunGitopsUpdateDeployment(t *testing.T) {
 
 		gitUtilsMock := &validGitUtilsMock{}
 
-		var c gitopsUpdateDeploymentExecRunner
-
-		err := runGitopsUpdateDeployment(configuration, c, gitUtilsMock, piperutils.Files{})
+		err := runGitopsUpdateDeployment(configuration, nil, gitUtilsMock, piperutils.Files{})
 		assert.EqualError(t, err, "invalid registry url")
 	})
 
 	t.Run("error on plane clone", func(t *testing.T) {
-		var c gitopsUpdateDeploymentExecRunner
 		var configuration = &gitopsUpdateDeploymentOptions{
 			BranchName:           "main",
 			CommitMessage:        "This is the commit message",
@@ -109,12 +106,11 @@ func TestRunGitopsUpdateDeployment(t *testing.T) {
 			ContainerImage:       "myFancyContainer:1337",
 		}
 
-		err := runGitopsUpdateDeployment(configuration, c, &gitUtilsMockErrorClone{}, piperutils.Files{})
+		err := runGitopsUpdateDeployment(configuration, nil, &gitUtilsMockErrorClone{}, piperutils.Files{})
 		assert.EqualError(t, err, "error on clone")
 	})
 
 	t.Run("error on temp dir creation", func(t *testing.T) {
-		var c gitopsUpdateDeploymentExecRunner
 		var configuration = &gitopsUpdateDeploymentOptions{
 			BranchName:           "main",
 			CommitMessage:        "This is the commit message",
@@ -127,7 +123,7 @@ func TestRunGitopsUpdateDeployment(t *testing.T) {
 			ContainerImage:       "myFancyContainer:1337",
 		}
 
-		err := runGitopsUpdateDeployment(configuration, c, &gitopsUpdateDeploymentGitUtils{}, filesMockErrorTempDirCreation{})
+		err := runGitopsUpdateDeployment(configuration, nil, &gitopsUpdateDeploymentGitUtils{}, filesMockErrorTempDirCreation{})
 		assert.EqualError(t, err, "error appeared")
 	})
 }
