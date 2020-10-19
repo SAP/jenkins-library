@@ -56,7 +56,7 @@ const (
 	pomXMLPattern       = "**/pom.xml"
 )
 
-func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, influx *sonarExecuteScanInflux) {
+func sonarExecuteScan(config sonarExecuteScanOptions, telemetry *telemetry.CustomData, influx *sonarExecuteScanInflux) {
 	runner := command.Command{
 		ErrorCategoryMapping: map[string][]string{
 			log.ErrorConfiguration.String(): {
@@ -79,6 +79,9 @@ func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, i
 
 	client := piperhttp.Client{}
 	client.SetOptions(piperhttp.ClientOptions{TransportTimeout: 20 * time.Second})
+
+	telemetry.Custom1Label = "serverURL"
+	telemetry.Custom1 = config.ServerURL
 
 	sonar = sonarSettings{
 		workingDir:  "./",
