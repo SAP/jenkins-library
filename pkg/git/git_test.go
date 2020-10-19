@@ -17,13 +17,17 @@ func TestCommit(t *testing.T) {
 	})
 
 	t.Run("error adding file", func(t *testing.T) {
-		_, err := commitSingleFile(".", "message", WorktreeMockFailingAdd{})
+		_, err := commitSingleFile(".", "message", WorktreeMockFailing{
+			failingAdd: true,
+		})
 		assert.Error(t, err)
 		assert.EqualError(t, err, "failed to add file")
 	})
 
 	t.Run("error committing file", func(t *testing.T) {
-		_, err := commitSingleFile(".", "message", WorktreeMockFailingCommit{})
+		_, err := commitSingleFile(".", "message", WorktreeMockFailing{
+			failingCommit: true,
+		})
 		assert.Error(t, err)
 		assert.EqualError(t, err, "error on commit")
 	})
@@ -89,7 +93,9 @@ func TestChangeBranch(t *testing.T) {
 	})
 
 	t.Run("error on new branch", func(t *testing.T) {
-		err := changeBranch("otherBranch", WorktreeUtilsErrorCheckout{})
+		err := changeBranch("otherBranch", WorktreeMockFailing{
+			failingCheckout: true,
+		})
 		assert.Error(t, err)
 		assert.EqualError(t, err, "cannot checkout branch")
 	})
@@ -122,32 +128,31 @@ func (RepositoryMockError) Push(o *git.PushOptions) error {
 	return errors.New("error on push commits")
 }
 
-type WorktreeMockFailingAdd struct{}
-
-func (WorktreeMockFailingAdd) Add(path string) (plumbing.Hash, error) {
-	return [20]byte{}, errors.New("failed to add file")
+type WorktreeMockFailing struct {
+	failingAdd      bool
+	failingCommit   bool
+	failingCheckout bool
 }
 
-func (WorktreeMockFailingAdd) Commit(msg string, opts *git.CommitOptions) (plumbing.Hash, error) {
-	panic("implement me")
+func (w WorktreeMockFailing) Add(path string) (plumbing.Hash, error) {
+	if w.failingAdd {
+		return [20]byte{}, errors.New("failed to add file")
+	}
+	return [20]byte{}, nil
 }
 
-func (WorktreeMockFailingAdd) Checkout(opts *git.CheckoutOptions) error {
-	panic("implement me")
+func (w WorktreeMockFailing) Commit(msg string, opts *git.CommitOptions) (plumbing.Hash, error) {
+	if w.failingCommit {
+		return [20]byte{}, errors.New("failed to add file")
+	}
+	return [20]byte{}, nil
 }
 
-type WorktreeMockFailingCommit struct{}
-
-func (WorktreeMockFailingCommit) Add(path string) (plumbing.Hash, error) {
-	return [20]byte{1, 2, 3}, nil
-}
-
-func (WorktreeMockFailingCommit) Commit(msg string, opts *git.CommitOptions) (plumbing.Hash, error) {
-	return [20]byte{}, errors.New("error on commit")
-}
-
-func (WorktreeMockFailingCommit) Checkout(opts *git.CheckoutOptions) error {
-	panic("implement me")
+func (w WorktreeMockFailing) Checkout(opts *git.CheckoutOptions) error {
+	if w.failingCheckout {
+		return errors.New("failed to add file")
+	}
+	return nil
 }
 
 type WorktreeMock struct {
@@ -185,20 +190,6 @@ func (WorktreeUtilsNewBranch) Checkout(opts *git.CheckoutOptions) error {
 		return nil
 	}
 	return errors.New("branch already exists")
-}
-
-type WorktreeUtilsErrorCheckout struct{}
-
-func (WorktreeUtilsErrorCheckout) Add(path string) (plumbing.Hash, error) {
-	panic("implement me")
-}
-
-func (WorktreeUtilsErrorCheckout) Commit(msg string, opts *git.CommitOptions) (plumbing.Hash, error) {
-	panic("implement me")
-}
-
-func (WorktreeUtilsErrorCheckout) Checkout(opts *git.CheckoutOptions) error {
-	return errors.New("cannot checkout branch")
 }
 
 type UtilsGitMock struct {
