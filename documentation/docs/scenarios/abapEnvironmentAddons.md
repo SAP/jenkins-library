@@ -3,31 +3,31 @@
 ## Introduction
 
 !!! caution "Not yet released"
-    This scenario is not yet available. It is still work in progress and will be released soon.
+    This scenario is not yet available. It is still work in progress and will be released at a later time.
 
 This scenario describes how an add-on for the SAP Cloud Platform ABAP Environment is built. It is intended for SAP partners who want to provide a Software as a Service (SaaS) solution on the SAP Cloud Platform using the ABAP Environment. Therefore, a partner contract is required. This page aims to provide an overview of the build process of the add-on.
 
-The development on SAP Cloud Platform ABAP Environment systems is done within “Software Components” (also called: “repositories”). The add-ons being built in this scenario are made up by one or multiple Software Components combined to an add-on product. The “ABAP Environment Pipeline” can be used to build and publish the add-on product. Please read on for more details about the Add-on Product and the build process.
+The development on SAP Cloud Platform ABAP Environment systems is done within “software components” (also called: “repositories”). The add-ons being built in this scenario are made up by one or multiple software components combined to an add-on product. The “ABAP Environment Pipeline” can be used to build and publish the add-on product. Please read on for more details about the Add-on Product and the build process.
 
-Of course, this tackles only one part of the product lifecycle. Once the scenario is realeased, there will be a guid with more information about the end-to-end process from development to delivery and support of a SaaS solution.
+Of course, this tackles only one part of the product lifecycle. Once the scenario is realeased, there will be a guide with more information about the end-to-end process from development to delivery and support of a SaaS solution.
 
 ## The Add-on Product
 
-The installation and maintenance of ABAP software is done / controlled via software product versions. A software product version is a „bundle" of Software Component versions made available at the same time for implementing a well-defined scope of functionality. It is the technical / delivery view on a software portfolio.
-A software product version is defined by a name and a version string. The name of a software product is a string with a maximum of 30 characters and consists of the namespace and a freely chooseble part - /NAMESPC/PRODUCT1. The version string consists of three numbers separated by a dot - 1.2.0. The numbers in the version string have a hierarchic relationship:
+The installation and maintenance of ABAP software is done / controlled via software product versions. A **software product version** is a „bundle" of software component versions made available at the same time for implementing a well-defined scope of functionality. It is the technical / delivery view on a software portfolio.
+A software product version is defined by a name and a version string. The name of a software product is a string with a maximum of 30 characters and consists of the namespace and a freely chooseble part - `/NAMESPC/PRODUCT1`. The version string consists of three numbers separated by a dot - `1.2.0`. The numbers in the version string have a hierarchic relationship:
 
-- The first number denotes the release. Release deliveries contain the complete scope of functionality. It is possible to change the Software Component version bundle in a new release.
-- The second number denotes the Support Package Stack level. A Support Package stack consists of Support Package deliveries of the contained Software Component versions. It is not possible to change the Software Component version bundle in such a delivery.
-- The third number denotes the Patch level. A Patch delivery contains Patch deliveries of the contained Software Component versions.
+- The first number denotes the release. Release deliveries contain the complete scope of functionality. It is possible to change the software component version bundle in a new release.
+- The second number denotes the Support Package Stack level. A Support Package stack consists of Support Package deliveries of the contained software component versions. It is not possible to change the software component version bundle in such a delivery.
+- The third number denotes the Patch level. A Patch delivery contains Patch deliveries of the contained software component versions.
 
 !!! note "Development on SAP Cloud Platform ABAP Environment"
-    As you may know, the development in the SAP Cloud Platform ABAP Environment is done within [Software Components](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/58480f43e0b64de782196922bc5f1ca0.html). A Software Component is self-contained, and a reduced set of [objects and features of the ABAP programming language](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/c99ba0d28a1a4747b8f47eda06c6b4f1.html) can be used.
-    The Software Component and development objects must be created in a namespace, so that clashes between software of different vendors and SAP are avoided. Therefore, a namespace must be reserved before the development can start. SAP note 105132 describes the namespace reservation process. The namespace must be reserved for the same customer number under which the “SAP CP ABAP ENVIRONMENT” tenants are licensed.
+    As you may know, the development in the SAP Cloud Platform ABAP Environment is done within [software component](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/58480f43e0b64de782196922bc5f1ca0.html). A software component is self-contained, and a reduced set of [objects and features of the ABAP programming language](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/c99ba0d28a1a4747b8f47eda06c6b4f1.html) can be used.
+    The software component and development objects must be created in a namespace, so that clashes between software of different vendors and SAP are avoided. Therefore, a namespace must be reserved before the development can start. [SAP note 105132](https://launchpad.support.sap.com/#/notes/105132) describes the namespace reservation process. The namespace must be reserved for the same customer number under which the “SAP CP ABAP ENVIRONMENT” tenants are licensed.
 
-A Software Component version is a technically distinguishable unit of software and is installed and patched as a whole. It consists of ABAP development packages and contained objects. Software Component versions are delivered via delivery packages. But Software Component versions are not individual shipment entities. They can only be delivered to customers as part of a software product version (see above).
-A Software Component version is defined by a name and a version string. The name of a Software Component is string with a maximum of characters and consists of the namespace and a freely chooseble part - /NAMESPC/COMPONENT1. The version consists of three numbers separated by a dot - 1.2.0. The numbers in the version string have a hierarchic relationship:
+A **software component version** is a technically distinguishable unit of software and is installed and patched as a whole. It consists of ABAP development packages and contained objects. Software component versions are delivered via delivery packages. But software component versions are not individual shipment entities. They can only be delivered to customers as part of a software product version (see above).
+A software component version is defined by a name and a version string. The name of a software component is string with a maximum of characters and consists of the namespace and a freely chooseble part - /NAMESPC/COMPONENT1. The version consists of three numbers separated by a dot - 1.2.0. The numbers in the version string have a hierarchic relationship:
 
-- The first number denotes the release. Release deliveries contains the whole Software Component and deliver new and enhancements of existing functionalities. They are delivered with delivery packages of type “Installation Package”.
+- The first number denotes the release. Release deliveries contains the whole software component and deliver new and enhancements of existing functionalities. They are delivered with delivery packages of type “Installation Package”.
 - The second number denotes the Support Package level. Support Package deliveries contain a larger collection of corrections and may contains smaller functional enhancements. They are delivered with delivery packages of type “Component Support Package”.
 - The third number denotes the Patch level. Patch deliveries shall only contain small corrections. They are delivered with delivery packages of type “Correction Package”. The needed type of delivery does not need to be chosen manually; it is automatically determined by the delivery production tools.
 
@@ -36,10 +36,10 @@ As explained above, the shipment of a software takes place via software product 
 - Product name
 - Product release
 - Product Support Package stack and Patch level
-- A list of contained Software Component versions with
-  - Software Component name
-  - Software Component release
-  - Delivery Package, which delivers the versions
+- A list of contained software component versions with
+    - Software component name
+    - Software component release
+    - Delivery Package, which delivers the versions
 
 ## Building the Add-on Product
 
@@ -50,7 +50,7 @@ The build process of a software product is orchestrated by a Jenkins Pipeline, t
 The pipeline consists of different steps responsible for a single task. The steps themselves are grouped thematically into different stages. For example, early in the pipeline, the ABAP Environment system needs to be created and the communication needs to be set up. This is done in the “Prepare System” stage. You can read more about the different stages in the ABAP Environment Pipeline [documentation](https://sap.github.io/jenkins-library/pipelines/abapEnvironment/introduction/).
 
 There are two central systems involved in the build process.
-First, the ABAP Environment system. It is created during the pipeline and deleted in the end. All actions related to the ABAP source code are executed on this system, e.g. running checks with the ABAP Test Cockpit (ATC) or the physical build of the Software Components. There are two communication scenarios containing the different APIs of the ABAP Environment System: [Test Integration](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html) and [Software Assembly Integration](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html).
+First, the ABAP Environment system. It is created during the pipeline and deleted in the end. All actions related to the ABAP source code are executed on this system, e.g. running checks with the ABAP Test Cockpit (ATC) or the physical build of the software components. There are two communication scenarios containing the different APIs of the ABAP Environment System: [Test Integration](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html) and [Software Assembly Integration](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html).
 Second, the Add-on Assembly Kit as a Service. This service is responsible for registering and publishing the software product. It is accessible via APIs with an S-User.
 All required API calls to both systems are built into the different pipeline steps and stages.
 
@@ -68,7 +68,7 @@ The pipeline configuration is done in a git repository (for example on GitHub). 
 
 #### Delivery Tools
 
-The communication with the delivery tools (aka Add-on Assembly Kit as a Service - AAKaaS) in the SAP backend needs a technical S-User. The creation and activation of such a user is described in SAP note 2174416. Make sure that this S-User is assigned to the customer number under which the “SAP CP ABAP ENVIRONMENT” tenants are licensed and for which the development namespace was reserved. The user and password need to be stored in the Jenkins Credentials Store.
+The communication with the delivery tools (aka Add-on Assembly Kit as a Service - AAKaaS) in the SAP backend needs a technical S-User. The creation and activation of such a user is described in [SAP note 2174416](https://launchpad.support.sap.com/#/notes/2174416). Make sure that this S-User is assigned to the customer number under which the “SAP CP ABAP ENVIRONMENT” tenants are licensed and for which the development namespace was reserved. The user and password need to be stored in the Jenkins Credentials Store.
 
 #### Cloud Foundry Access
 
@@ -107,7 +107,7 @@ A configuration file `.pipeline/config.yml` is used to provide all required valu
 
 #### Addon.yml
 
-The build process is controlled by a control file called addon.yml. This file must be created manually and must be stored in the GIT repository of the developed software. It must contain information about the to-be-delivered software product version (see above / link to above) and the contained Software Component versions (see above). Below, you see an example:
+The build process is controlled by a control file called addon.yml. This file must be created manually and must be stored in the GIT repository of the developed software. It must contain information about the to-be-delivered software product version (see above / link to above) and the contained software component versions (see above). Below, you see an example:
 
 ```YAML
 ---
@@ -127,15 +127,15 @@ Explanation of the keys:
 - `addonProduct`: this is the technical name of the add-on product
 - `addonVersion`: This is the technical version of the add-on product `<product version>.<support package stack level>.<patch level>`
 
-The section “repositories” contains one or multiple Software Component versions:
+The section “repositories” contains one or multiple software component versions:
 
-- `name`: the technical name of the Software Component
+- `name`: the technical name of the software component
 - `branch`: this is the release branch from the git repository
-- `version`: this is the technical Software Component version `<Software Component version>.<support package level>.<patch level>`
+- `version`: this is the technical software component version `<software component version>.<support package level>.<patch level>`
 
 ##### Rules:
 
-For the development and the provisioning of product-/Software Component versions, it is necessary to ensure, that there is no gaps within the version and level counters. Therefore, only a continuous increase in version numbers is allowed. The following examples show valid and invalid cases, respectively:
+For the development and the provisioning of product-/software component versions, it is necessary to ensure, that there is no gaps within the version and level counters. Therefore, only a continuous increase in version numbers is allowed. The following examples show valid and invalid cases, respectively:
 
 Valid increase:
 
