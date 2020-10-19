@@ -160,21 +160,19 @@ func (s *Scan) executeNpmScanForModule(modulePath string, config *ScanOptions, u
 func getNpmProjectName(modulePath string, utils npmUtils) (string, error) {
 	fileContents, err := utils.FileRead("package.json")
 	if err != nil {
-		return "", fmt.Errorf("could not read package.json: %w", err)
+		return "", fmt.Errorf("could not read %s: %w", modulePath, err)
 	}
 	var packageJSON = make(map[string]interface{})
 	err = json.Unmarshal(fileContents, &packageJSON)
 
 	projectNameEntry, exists := packageJSON["name"]
 	if !exists {
-		return "", fmt.Errorf("the file '%s' must configure a name",
-			filepath.Join(modulePath, "package.json"))
+		return "", fmt.Errorf("the file '%s' must configure a name", modulePath)
 	}
 
 	projectName, isString := projectNameEntry.(string)
 	if !isString {
-		return "", fmt.Errorf("the file '%s' must configure a name",
-			filepath.Join(modulePath, "package.json"))
+		return "", fmt.Errorf("the file '%s' must configure a name", modulePath)
 	}
 
 	return projectName, nil
