@@ -1,21 +1,28 @@
 package config
 
 import (
+	"io/ioutil"
+
 	"github.com/SAP/jenkins-library/pkg/config/interpolation"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/vault"
 	"github.com/hashicorp/vault/api"
 )
 
-var vaultFilter = []string{
-	"vaultAppRoleID",
-	"vaultAppRoleSecreId",
-	"vaultServerUrl",
-	"vaultNamespace",
-	"vaultBasePath",
-	"vaultPipelineName",
-	"vaultPath",
-}
+var (
+	vaultFilter = []string{
+		"vaultAppRoleID",
+		"vaultAppRoleSecreId",
+		"vaultServerUrl",
+		"vaultNamespace",
+		"vaultBasePath",
+		"vaultPipelineName",
+		"vaultPath",
+	}
+
+	// VaultSecretFileDirectory holds the directory for the current step run to temporarily store secret files fetched from vault
+	VaultSecretFileDirectory, _ = ioutil.TempDir("", "vault-secrets")
+)
 
 // VaultCredentials hold all the auth information needed to fetch configuration from vault
 type VaultCredentials struct {
@@ -51,35 +58,83 @@ func getVaultClientFromConfig(config StepConfig, creds VaultCredentials) (vaultC
 	return &client, nil
 }
 
-func addVaultCredentials(config *StepConfig, client vaultClient, params []StepParameters) {
+func resolveVaultReferences(config *StepConfig, client vaultClient, params []StepParameters) {
 	for _, param := range params {
 		// we don't overwrite secrets that have already been set in any way
 		if _, ok := config.Config[param.Name].(string); ok {
 			continue
 		}
-		ref := param.GetReference("vaultSecret")
-		if ref == nil {
+		resolveVaultSecretReferences(config, client, param)
+		resolveVaultFileReferences(config, client, param)
+	}
+}
+
+func resolveVaultSecretReferences(config *StepConfig, client vaultClient, param StepParameters) {
+	ref := param.GetReference("vaultSecret")
+	if ref == nil {
+		return
+	}
+	var secretValue *string
+	for _, vaultPath := range ref.Paths {
+		// it should be possible to configure the root path were the secret is stored
+		vaultPath, ok := interpolation.ResolveString(vaultPath, config.Config)
+		if !ok {
 			continue
 		}
-		var secretValue *string
-		for _, vaultPath := range ref.Paths {
-			// it should be possible to configure the root path were the secret is stored
-			vaultPath, ok := interpolation.ResolveString(vaultPath, config.Config)
-			if !ok {
-				continue
-			}
 
-			secretValue = lookupPath(client, vaultPath, &param)
-			if secretValue != nil {
-				config.Config[param.Name] = *secretValue
-				log.Entry().Infof("Resolved param '%s' with vault path '%s'", param.Name, vaultPath)
-				break
-			}
-		}
-		if secretValue == nil {
-			log.Entry().Warnf("Could not resolve param '%s' from vault", param.Name)
+		secretValue = lookupPath(client, vaultPath, &param)
+		if secretValue != nil {
+			config.Config[param.Name] = *secretValue
+			log.Entry().Infof("Resolved param '%s' with vault path '%s'", param.Name, vaultPath)
+			break
 		}
 	}
+	if secretValue == nil {
+		log.Entry().Warnf("Could not resolve param '%s' from vault", param.Name)
+	}
+}
+
+func resolveVaultFileReferences(config *StepConfig, client vaultClient, param StepParameters) {
+	ref := param.GetReference("vaultSecretFile")
+	if ref == nil {
+		return
+	}
+	var secretValue *string
+	for _, vaultPath := range ref.Paths {
+		// it should be possible to configure the root path were the secret is stored
+		vaultPath, ok := interpolation.ResolveString(vaultPath, config.Config)
+		if !ok {
+			continue
+		}
+
+		secretValue = lookupPath(client, vaultPath, &param)
+		if secretValue != nil {
+			log.Entry().Infof("Resolved param '%s' with vault path '%s'", param.Name, vaultPath)
+			filePath, err := createTemporarySecretFile(param.Name, *secretValue)
+			if err != nil {
+				log.Entry().WithError(err).Warnf("Couldn't create temporary secret file for '%s'", param.Name)
+				return
+			}
+			config.Config[param.Name] = filePath
+			break
+		}
+	}
+	if secretValue == nil {
+		log.Entry().Warnf("Could not resolve param '%s' from vault", param.Name)
+	}
+}
+
+func createTemporarySecretFile(namePattern string, content string) (string, error) {
+	file, err := ioutil.TempFile(VaultSecretFileDirectory, namePattern)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+	_, err = file.WriteString(content)
+	if err != nil {
+		return "", err
+	}
+	return file.Name(), nil
 }
 
 func lookupPath(client vaultClient, path string, param *StepParameters) *string {
