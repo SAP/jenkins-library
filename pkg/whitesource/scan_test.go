@@ -179,7 +179,7 @@ func TestScanTime(t *testing.T) {
 
 func TestScanUpdateProjects(t *testing.T) {
 	t.Parallel()
-	t.Run("update single project which exist", func(t *testing.T) {
+	t.Run("update single project which exists", func(t *testing.T) {
 		// init
 		scan := &Scan{ProductVersion: "1"}
 		_ = scan.AppendScannedProject("mock-project")
@@ -225,11 +225,11 @@ func TestScanUpdateProjects(t *testing.T) {
 		}
 		assert.Equal(t, expected, scan.scannedProjects)
 	})
-	t.Run("update single project which exist", func(t *testing.T) {
+	t.Run("update single project which does not exist", func(t *testing.T) {
 		// init
 		scan := &Scan{ProductVersion: "1"}
 		_ = scan.AppendScannedProject("mock-project")
-		mockSystem := &SystemMock{}
+		mockSystem := &SystemMock{} // empty mock with no products
 		// test
 		err := scan.UpdateProjects("mock-product-token", mockSystem)
 		// assert
