@@ -3,8 +3,6 @@ package cmd
 import (
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/npm"
-	"io"
-	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
@@ -39,28 +37,10 @@ type whitesource interface {
 }
 
 type whitesourceUtils interface {
-	Stdout(out io.Writer)
-	Stderr(err io.Writer)
-	RunExecutable(executable string, params ...string) error
-
-	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
-
-	Chdir(path string) error
-	Getwd() (string, error)
-	MkdirAll(path string, perm os.FileMode) error
-	FileExists(path string) (bool, error)
-	FileRead(path string) ([]byte, error)
-	FileWrite(path string, content []byte, perm os.FileMode) error
-	FileRemove(path string) error
-	FileRename(oldPath, newPath string) error
-	RemoveAll(path string) error
-	FileOpen(name string, flag int, perm os.FileMode) (ws.File, error)
+	ws.Utils
 
 	GetArtifactCoordinates(buildTool, buildDescriptorFile string,
 		options *versioning.Options) (versioning.Coordinates, error)
-
-	FindPackageJSONFiles(config *ws.ScanOptions) ([]string, error)
-	InstallAllNPMDependencies(config *ws.ScanOptions, packageJSONFiles []string) error
 
 	Now() time.Time
 }

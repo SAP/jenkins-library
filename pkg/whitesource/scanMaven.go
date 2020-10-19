@@ -4,23 +4,13 @@ import (
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/maven"
-	"io"
 	"path/filepath"
 	"strings"
 )
 
-type mavenUtils interface {
-	Stdout(out io.Writer)
-	Stderr(err io.Writer)
-	RunExecutable(executable string, params ...string) error
-
-	FileExists(path string) (bool, error)
-	FileRead(path string) ([]byte, error)
-}
-
 // ExecuteMavenScan constructs maven parameters from the given configuration, and executes the maven goal
 // "org.whitesource:whitesource-maven-plugin:19.5.1:update".
-func (s *Scan) ExecuteMavenScan(config *ScanOptions, utils mavenUtils) error {
+func (s *Scan) ExecuteMavenScan(config *ScanOptions, utils Utils) error {
 	log.Entry().Infof("Using Whitesource scan for Maven project")
 	pomPath := config.PomPath
 	if pomPath == "" {
@@ -31,7 +21,7 @@ func (s *Scan) ExecuteMavenScan(config *ScanOptions, utils mavenUtils) error {
 
 // ExecuteMavenScanForPomFile constructs maven parameters from the given configuration, and executes the maven goal
 // "org.whitesource:whitesource-maven-plugin:19.5.1:update" for the given pom file.
-func (s *Scan) ExecuteMavenScanForPomFile(config *ScanOptions, utils mavenUtils, pomPath string) error {
+func (s *Scan) ExecuteMavenScanForPomFile(config *ScanOptions, utils Utils, pomPath string) error {
 	pomExists, _ := utils.FileExists(pomPath)
 	if !pomExists {
 		return fmt.Errorf("for scanning with type '%s', the file '%s' must exist in the project root",
@@ -83,7 +73,7 @@ func (s *Scan) generateMavenWhitesourceDefines(config *ScanOptions) []string {
 	return defines
 }
 
-func generateMavenWhitesourceFlags(config *ScanOptions, utils mavenUtils) (flags []string, excludes []string) {
+func generateMavenWhitesourceFlags(config *ScanOptions, utils Utils) (flags []string, excludes []string) {
 	excludes = config.BuildDescriptorExcludeList
 	// From the documentation, these are file paths to a module's pom.xml.
 	// For MTA projects, we want to support mixing paths to package.json files and pom.xml files.
@@ -103,7 +93,7 @@ func generateMavenWhitesourceFlags(config *ScanOptions, utils mavenUtils) (flags
 	return flags, excludes
 }
 
-func (s *Scan) appendModulesThatWillBeScanned(utils mavenUtils, excludes []string) error {
+func (s *Scan) appendModulesThatWillBeScanned(utils Utils, excludes []string) error {
 	return maven.VisitAllMavenModules(".", utils, excludes, func(info maven.ModuleInfo) error {
 		project := info.Project
 		if project.Packaging != "pom" {

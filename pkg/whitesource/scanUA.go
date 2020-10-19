@@ -2,30 +2,11 @@ package whitesource
 
 import (
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 )
 
-// File defines the method subset we use from os.File
-type File interface {
-	io.Writer
-	io.StringWriter
-	io.Closer
-}
-
-type uaUtils interface {
-	RunExecutable(executable string, params ...string) error
-
-	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
-
-	FileExists(path string) (bool, error)
-	FileRename(oldPath, newPath string) error
-	FileOpen(name string, flag int, perm os.FileMode) (File, error)
-}
-
-// executeUAScan executes a scan with the Whitesource Unified Agent.
-func (s *Scan) ExecuteUAScan(config *ScanOptions, utils uaUtils) error {
+// ExecuteUAScan executes a scan with the Whitesource Unified Agent.
+func (s *Scan) ExecuteUAScan(config *ScanOptions, utils Utils) error {
 	// Download the unified agent jar file if one does not exist
 	if err := downloadAgent(config, utils); err != nil {
 		return err
@@ -43,7 +24,7 @@ func (s *Scan) ExecuteUAScan(config *ScanOptions, utils uaUtils) error {
 }
 
 // downloadAgent downloads the unified agent jar file if one does not exist
-func downloadAgent(config *ScanOptions, utils uaUtils) error {
+func downloadAgent(config *ScanOptions, utils Utils) error {
 	agentFile := config.AgentFileName
 	exists, err := utils.FileExists(agentFile)
 	if err != nil {
@@ -62,7 +43,7 @@ func downloadAgent(config *ScanOptions, utils uaUtils) error {
 // autoGenerateWhitesourceConfig
 // Auto generate a config file based on the current directory structure, renames it to user specified configFilePath
 // Generated file name will be 'wss-generated-file.config'
-func autoGenerateWhitesourceConfig(config *ScanOptions, utils uaUtils) error {
+func autoGenerateWhitesourceConfig(config *ScanOptions, utils Utils) error {
 	// TODO: Should we rely on -detect, or set the parameters manually?
 	if err := utils.RunExecutable("java", "-jar", config.AgentFileName, "-d", ".", "-detect"); err != nil {
 		return err

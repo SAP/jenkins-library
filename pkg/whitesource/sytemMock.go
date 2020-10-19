@@ -73,7 +73,7 @@ func (m *SystemMock) GetProjectVulnerabilityReport(projectToken string, format s
 	return m.VulnerabilityReport, nil
 }
 
-// GetProjectLibraryLocations returns the alerts stored in the SystemMock.
+// GetProjectAlerts returns the alerts stored in the SystemMock.
 func (m *SystemMock) GetProjectAlerts(projectToken string) ([]Alert, error) {
 	return m.Alerts, nil
 }
@@ -83,7 +83,7 @@ func (m *SystemMock) GetProjectLibraryLocations(projectToken string) ([]Library,
 	return m.Libraries, nil
 }
 
-// NewSystemMock returns a pointer to a new instance of SystemMock.1
+// NewSystemMock returns a pointer to a new instance of SystemMock.
 func NewSystemMock(lastUpdateDate string) *SystemMock {
 	const projectName = "mock-project - 1"
 	mockLibrary := Library{

@@ -4,29 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 )
-
-type npmUtils interface {
-	Stdout(out io.Writer)
-	Stderr(err io.Writer)
-	RunExecutable(executable string, params ...string) error
-
-	Chdir(path string) error
-	Getwd() (string, error)
-	MkdirAll(path string, perm os.FileMode) error
-	FileExists(path string) (bool, error)
-	FileRead(path string) ([]byte, error)
-	FileWrite(path string, content []byte, perm os.FileMode) error
-	FileRemove(path string) error
-	RemoveAll(path string) error
-
-	FindPackageJSONFiles(config *ScanOptions) ([]string, error)
-	InstallAllNPMDependencies(config *ScanOptions, packageJSONFiles []string) error
-}
 
 const whiteSourceConfig = "whitesource.config.json"
 
@@ -48,7 +29,7 @@ func setValueOmitIfPresent(config map[string]interface{}, key, omitIfPresent str
 
 // writeWhitesourceConfigJSON creates or merges the file whitesource.config.json in the current
 // directory from the given NPMScanOptions.
-func (s *Scan) writeWhitesourceConfigJSON(config *ScanOptions, utils npmUtils, devDep, ignoreLsErrors bool) error {
+func (s *Scan) writeWhitesourceConfigJSON(config *ScanOptions, utils Utils, devDep, ignoreLsErrors bool) error {
 	var npmConfig = make(map[string]interface{})
 
 	exists, _ := utils.FileExists(whiteSourceConfig)
@@ -95,7 +76,7 @@ func (s *Scan) writeWhitesourceConfigJSON(config *ScanOptions, utils npmUtils, d
 }
 
 // ExecuteNpmScan iterates over all found npm modules and performs a scan in each one.
-func (s *Scan) ExecuteNpmScan(config *ScanOptions, utils npmUtils) error {
+func (s *Scan) ExecuteNpmScan(config *ScanOptions, utils Utils) error {
 	modules, err := utils.FindPackageJSONFiles(config)
 	if err != nil {
 		return fmt.Errorf("failed to find package.json files with excludes: %w", err)
@@ -115,7 +96,7 @@ func (s *Scan) ExecuteNpmScan(config *ScanOptions, utils npmUtils) error {
 
 // executeNpmScanForModule generates a configuration file whitesource.config.json with appropriate values from config,
 // installs all dependencies if necessary, and executes the scan via "npx whitesource run".
-func (s *Scan) executeNpmScanForModule(modulePath string, config *ScanOptions, utils npmUtils) error {
+func (s *Scan) executeNpmScanForModule(modulePath string, config *ScanOptions, utils Utils) error {
 	log.Entry().Infof("Executing Whitesource scan for NPM module '%s'", modulePath)
 
 	resetDir, err := utils.Getwd()
@@ -157,7 +138,7 @@ func (s *Scan) executeNpmScanForModule(modulePath string, config *ScanOptions, u
 
 // getNpmProjectName tries to read a property "name" of type string from the
 // package.json file in the current directory and returns an error, if this is not possible.
-func getNpmProjectName(modulePath string, utils npmUtils) (string, error) {
+func getNpmProjectName(modulePath string, utils Utils) (string, error) {
 	fileContents, err := utils.FileRead("package.json")
 	if err != nil {
 		return "", fmt.Errorf("could not read %s: %w", modulePath, err)
@@ -186,7 +167,7 @@ func getNpmProjectName(modulePath string, utils npmUtils) (string, error) {
 // This hack/work-around that should be removed once scanning it consistently performed using the Unified Agent.
 // A possible reason for encountering "npm ls" errors in the first place is that a different node version
 // is used for whitesourceExecuteScan due to a different docker image being used compared to the build stage.
-func reinstallNodeModulesIfLsFails(config *ScanOptions, utils npmUtils) error {
+func reinstallNodeModulesIfLsFails(config *ScanOptions, utils Utils) error {
 	// No need to have output from "npm ls" in the log
 	utils.Stdout(ioutil.Discard)
 	defer utils.Stdout(log.Writer())
@@ -217,7 +198,7 @@ func reinstallNodeModulesIfLsFails(config *ScanOptions, utils npmUtils) error {
 
 // ExecuteYarnScan generates a configuration file whitesource.config.json with appropriate values from config,
 // installs whitesource yarn plugin and executes the scan.
-func (s *Scan) ExecuteYarnScan(config *ScanOptions, utils npmUtils) error {
+func (s *Scan) ExecuteYarnScan(config *ScanOptions, utils Utils) error {
 	// To stay compatible with what the step was doing before, trigger aggregation, although
 	// there is a great chance that it doesn't work with yarn the same way it doesn't with npm.
 	// Maybe the yarn code-path should be removed, and only npm stays.
