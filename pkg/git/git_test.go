@@ -10,7 +10,7 @@ import (
 
 func TestCommit(t *testing.T) {
 	var cut = TheGitUtils{}
-
+	t.Parallel()
 	t.Run("successful run", func(t *testing.T) {
 		hash, err := cut.CommitSingleFile(".", "message", WorktreeMock{
 			test: t,
@@ -34,7 +34,7 @@ func TestCommit(t *testing.T) {
 
 func TestPushChangesToRepository(t *testing.T) {
 	var cut = TheGitUtils{}
-
+	t.Parallel()
 	t.Run("successful push", func(t *testing.T) {
 		err := cut.PushChangesToRepository("user", "password", RepositoryMock{
 			test: t,
@@ -51,6 +51,7 @@ func TestPushChangesToRepository(t *testing.T) {
 
 func TestPlainClone(t *testing.T) {
 	var cut = TheGitUtils{}
+	t.Parallel()
 	oldUtilsGit := abstractedGit
 	defer func() {
 		abstractedGit = oldUtilsGit
@@ -74,7 +75,7 @@ func TestPlainClone(t *testing.T) {
 
 func TestChangeBranch(t *testing.T) {
 	var cut = TheGitUtils{}
-
+	t.Parallel()
 	t.Run("checkout existing branch", func(t *testing.T) {
 		err := cut.ChangeBranch("otherBranch", WorktreeMock{
 			expectedBranchName: "otherBranch",
@@ -105,7 +106,7 @@ func TestChangeBranch(t *testing.T) {
 
 func TestGetWorktree(t *testing.T) {
 	var cut = TheGitUtils{}
-
+	t.Parallel()
 	t.Run("successful get worktree", func(t *testing.T) {
 		testWorktree := &git.Worktree{}
 		worktree, err := cut.GetWorktree(RepositoryMock{

@@ -14,6 +14,7 @@ import (
 )
 
 func TestBuildRegistryPlusImage(t *testing.T) {
+	t.Parallel()
 	t.Run("build full image", func(t *testing.T) {
 		registryImage, err := buildRegistryPlusImage(&gitopsUpdateDeploymentOptions{
 			BranchName:           "main",
@@ -48,7 +49,7 @@ func TestBuildRegistryPlusImage(t *testing.T) {
 }
 
 func TestRunGitopsUpdateDeployment(t *testing.T) {
-
+	t.Parallel()
 	t.Run("successful run", func(t *testing.T) {
 		var configuration = &gitopsUpdateDeploymentOptions{
 			BranchName:           "main",
