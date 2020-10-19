@@ -55,32 +55,32 @@ func gitopsUpdateDeployment(config gitopsUpdateDeploymentOptions, telemetryData 
 }
 
 func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gitopsExecRunner) error {
-	temporaryFolder, tempDirError := gitopsUpdateDeploymentFileUtilities.TempDir(".", "temp-")
-	if tempDirError != nil {
-		log.Entry().WithError(tempDirError).Error("Failed to create temporary directory")
-		return tempDirError
+	temporaryFolder, err := gitopsUpdateDeploymentFileUtilities.TempDir(".", "temp-")
+	if err != nil {
+		log.Entry().WithError(err).Error("Failed to create temporary directory")
+		return err
 	}
 
 	defer gitopsUpdateDeploymentFileUtilities.RemoveAll(temporaryFolder)
 
-	repository, gitCloneError := gitopsUpdateDeploymentGitUtilities.PlainClone(config.Username, config.Password, config.ServerURL, temporaryFolder)
-	if gitCloneError != nil {
-		return gitCloneError
+	repository, err := gitopsUpdateDeploymentGitUtilities.PlainClone(config.Username, config.Password, config.ServerURL, temporaryFolder)
+	if err != nil {
+		return err
 	}
 
-	worktree, worktreeError := repository.Worktree()
-	if worktreeError != nil {
-		return worktreeError
+	worktree, err := repository.Worktree()
+	if err != nil {
+		return err
 	}
 
-	changeBranchError := gitopsUpdateDeploymentGitUtilities.ChangeBranch(config.BranchName, worktree)
-	if changeBranchError != nil {
-		return changeBranchError
+	err = gitopsUpdateDeploymentGitUtilities.ChangeBranch(config.BranchName, worktree)
+	if err != nil {
+		return err
 	}
 
-	registryImage, buildRegistryError := buildRegistryPlusImage(config)
-	if buildRegistryError != nil {
-		return buildRegistryError
+	registryImage, err := buildRegistryPlusImage(config)
+	if err != nil {
+		return err
 	}
 	patchString := "{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"" + config.ContainerName + "\",\"image\":\"" + registryImage + "\"}]}}}}"
 
@@ -91,15 +91,15 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gi
 		return err
 	}
 
-	fileWriteError := piperutils.Files{}.FileWrite(filePath, kubectlOutputBytes, 0755)
-	if fileWriteError != nil {
-		log.Entry().WithError(fileWriteError).Error("Failing write file step")
-		return fileWriteError
+	err = piperutils.Files{}.FileWrite(filePath, kubectlOutputBytes, 0755)
+	if err != nil {
+		log.Entry().WithError(err).Error("Failing write file step")
+		return err
 	}
 
-	commit, commitError := commitAndPushChanges(config, repository, worktree)
-	if commitError != nil {
-		return commitError
+	commit, err := commitAndPushChanges(config, repository, worktree)
+	if err != nil {
+		return err
 	}
 
 	log.Entry().Infof("Changes committed with %s", commit.String())
@@ -118,10 +118,10 @@ func runKubeCtlCommand(command gitopsExecRunner, patchString string, filePath st
 		fmt.Sprintf("--patch=%v", patchString),
 		fmt.Sprintf("--filename=%v", filePath),
 	}
-	kubectlError := command.RunExecutable("kubectl", kubeParams...)
-	if kubectlError != nil {
-		log.Entry().WithError(kubectlError).Error("Failed to apply kubectl command")
-		return nil, kubectlError
+	err := command.RunExecutable("kubectl", kubeParams...)
+	if err != nil {
+		log.Entry().WithError(err).Error("Failed to apply kubectl command")
+		return nil, err
 	}
 	return kubectlOutput.Bytes(), nil
 }
@@ -144,14 +144,14 @@ func buildRegistryPlusImage(config *gitopsUpdateDeploymentOptions) (string, erro
 }
 
 func commitAndPushChanges(config *gitopsUpdateDeploymentOptions, repository gitUtil.UtilsRepository, worktree gitUtil.UtilsWorkTree) (plumbing.Hash, error) {
-	commit, commitError := gitopsUpdateDeploymentGitUtilities.CommitSingleFile(config.FilePath, config.CommitMessage, worktree)
-	if commitError != nil {
-		return [20]byte{}, commitError
+	commit, err := gitopsUpdateDeploymentGitUtilities.CommitSingleFile(config.FilePath, config.CommitMessage, worktree)
+	if err != nil {
+		return [20]byte{}, err
 	}
 
-	pushError := gitopsUpdateDeploymentGitUtilities.PushChangesToRepository(config.Username, config.Password, repository)
-	if pushError != nil {
-		return [20]byte{}, pushError
+	err = gitopsUpdateDeploymentGitUtilities.PushChangesToRepository(config.Username, config.Password, repository)
+	if err != nil {
+		return [20]byte{}, err
 	}
 
 	return commit, nil
