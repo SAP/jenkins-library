@@ -62,10 +62,7 @@ func TestErrorOnInvalidURL(t *testing.T) {
 		ContainerImage:       "myFancyContainer:1337",
 	}
 
-	gitUtilsMock := validGitUtilsMock{
-		configuration: configuration,
-		test:          t,
-	}
+	gitUtilsMock := &validGitUtilsMock{}
 
 	var c gitopsExecRunner
 
@@ -118,22 +115,27 @@ func TestRunGitopsUpdateDeployment(t *testing.T) {
 		ContainerImage:       "myFancyContainer:1337",
 	}
 
-	gitUtilsMock := validGitUtilsMock{
-		configuration: configuration,
-		test:          t,
-	}
+	gitUtilsMock := &validGitUtilsMock{}
 
-	var c gitopsExecRunner = &gitOpsExecRunnerMock{
-		test: t,
-	}
+	runnerMock := gitOpsExecRunnerMock{}
+	var c gitopsExecRunner = &runnerMock
 
 	err := runGitopsUpdateDeployment(configuration, c, gitUtilsMock, piperutils.Files{})
 	assert.NoError(t, err)
+	assert.Equal(t, configuration.BranchName, gitUtilsMock.changedBranch)
+	assert.Equal(t, expectedYaml, gitUtilsMock.savedFile)
+	assert.Equal(t, "kubectl", runnerMock.executable)
+	assert.Equal(t, "patch", runnerMock.kubectlParams[0])
+	assert.Equal(t, "--local", runnerMock.kubectlParams[1])
+	assert.Equal(t, "--output=yaml", runnerMock.kubectlParams[2])
+	assert.Equal(t, "--patch={\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"myContainer\",\"image\":\"myregistry.com/myFancyContainer:1337\"}]}}}}", runnerMock.kubectlParams[3])
+	assert.True(t, strings.Contains(runnerMock.kubectlParams[4], filepath.Join("dir1/dir2/depl.yaml")))
 }
 
 type gitOpsExecRunnerMock struct {
-	out  io.Writer
-	test *testing.T
+	out           io.Writer
+	kubectlParams []string
+	executable    string
 }
 
 func (e *gitOpsExecRunnerMock) Stdout(out io.Writer) {
@@ -145,15 +147,10 @@ func (gitOpsExecRunnerMock) Stderr(err io.Writer) {
 }
 
 func (e *gitOpsExecRunnerMock) RunExecutable(executable string, params ...string) error {
-	assert.Equal(e.test, "kubectl", executable)
-	assert.Equal(e.test, "patch", params[0])
-	assert.Equal(e.test, "--local", params[1])
-	assert.Equal(e.test, "--output=yaml", params[2])
-	assert.Equal(e.test, "--patch={\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"myContainer\",\"image\":\"myregistry.com/myFancyContainer:1337\"}]}}}}", params[3])
-	assert.True(e.test, strings.Contains(params[4], filepath.Join("dir1/dir2/depl.yaml")))
+	e.executable = executable
+	e.kubectlParams = params
 	_, err := e.out.Write([]byte(expectedYaml))
-	assert.NoError(e.test, err)
-	return nil
+	return err
 }
 
 type filesMockErrorTempDirCreation struct{}
@@ -189,23 +186,23 @@ func (gitUtilsMockErrorClone) GetWorktree(repository gitUtil.UtilsRepository) (g
 }
 
 type validGitUtilsMock struct {
-	configuration *gitopsUpdateDeploymentOptions
-	test          *testing.T
+	savedFile     string
+	changedBranch string
 }
 
 func (validGitUtilsMock) GetWorktree(repository gitUtil.UtilsRepository) (gitUtil.UtilsWorkTree, error) {
 	return nil, nil
 }
 
-func (v validGitUtilsMock) ChangeBranch(branchName string, worktree gitUtil.UtilsWorkTree) error {
-	assert.Equal(v.test, v.configuration.BranchName, branchName)
+func (v *validGitUtilsMock) ChangeBranch(branchName string, worktree gitUtil.UtilsWorkTree) error {
+	v.changedBranch = branchName
 	return nil
 }
 
-func (v validGitUtilsMock) CommitSingleFile(filePath, commitMessage string, worktree gitUtil.UtilsWorkTree) (plumbing.Hash, error) {
+func (v *validGitUtilsMock) CommitSingleFile(filePath, commitMessage string, worktree gitUtil.UtilsWorkTree) (plumbing.Hash, error) {
 	matches, _ := piperutils.Files{}.Glob("*/dir1/dir2/depl.yaml")
 	fileRead, _ := piperutils.Files{}.FileRead(matches[0])
-	assert.Equal(v.test, expectedYaml, string(fileRead))
+	v.savedFile = string(fileRead)
 	return [20]byte{123}, nil
 }
 
