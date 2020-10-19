@@ -16,9 +16,9 @@ Of course, this tackles only one part of the product lifecycle. Once the scenari
 The installation and maintenance of ABAP software is done / controlled via software product versions. A software product version is a „bundle" of Software Component versions made available at the same time for implementing a well-defined scope of functionality. It is the technical / delivery view on a software portfolio.
 A software product version is defined by a name and a version string. The name of a software product is a string with a maximum of 30 characters and consists of the namespace and a freely chooseble part - /NAMESPC/PRODUCT1. The version string consists of three numbers separated by a dot - 1.2.0. The numbers in the version string have a hierarchic relationship:
 
-  - The first number denotes the release. Release deliveries contain the complete scope of functionality. It is possible to change the Software Component version bundle in a new release.
-  - The second number denotes the Support Package Stack level. A Support Package stack consists of Support Package deliveries of the contained Software Component versions. It is not possible to change the Software Component version bundle in such a delivery.
-  - The third number denotes the Patch level. A Patch delivery contains Patch deliveries of the contained Software Component versions.
+- The first number denotes the release. Release deliveries contain the complete scope of functionality. It is possible to change the Software Component version bundle in a new release.
+- The second number denotes the Support Package Stack level. A Support Package stack consists of Support Package deliveries of the contained Software Component versions. It is not possible to change the Software Component version bundle in such a delivery.
+- The third number denotes the Patch level. A Patch delivery contains Patch deliveries of the contained Software Component versions.
 
 !!! note "Development on SAP Cloud Platform ABAP Environment"
     As you may know, the development in the SAP Cloud Platform ABAP Environment is done within [Software Components](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/58480f43e0b64de782196922bc5f1ca0.html). A Software Component is self-contained, and a reduced set of [objects and features of the ABAP programming language](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/c99ba0d28a1a4747b8f47eda06c6b4f1.html) can be used.
@@ -26,19 +26,20 @@ A software product version is defined by a name and a version string. The name o
 
 A Software Component version is a technically distinguishable unit of software and is installed and patched as a whole. It consists of ABAP development packages and contained objects. Software Component versions are delivered via delivery packages. But Software Component versions are not individual shipment entities. They can only be delivered to customers as part of a software product version (see above).
 A Software Component version is defined by a name and a version string. The name of a Software Component is string with a maximum of characters and consists of the namespace and a freely chooseble part - /NAMESPC/COMPONENT1. The version consists of three numbers separated by a dot - 1.2.0. The numbers in the version string have a hierarchic relationship:
-  - The first number denotes the release. Release deliveries contains the whole Software Component and deliver new and enhancements of existing functionalities. They are delivered with delivery packages of type “Installation Package”.
-  - The second number denotes the Support Package level. Support Package deliveries contain a larger collection of corrections and may contains smaller functional enhancements. They are delivered with delivery packages of type “Component Support Package”.
-  - The third number denotes the Patch level. Patch deliveries shall only contain small corrections. They are delivered with delivery packages of type “Correction Package”. The needed type of delivery does not need to be chosen manually; it is automatically determined by the delivery production tools.
+
+- The first number denotes the release. Release deliveries contains the whole Software Component and deliver new and enhancements of existing functionalities. They are delivered with delivery packages of type “Installation Package”.
+- The second number denotes the Support Package level. Support Package deliveries contain a larger collection of corrections and may contains smaller functional enhancements. They are delivered with delivery packages of type “Component Support Package”.
+- The third number denotes the Patch level. Patch deliveries shall only contain small corrections. They are delivered with delivery packages of type “Correction Package”. The needed type of delivery does not need to be chosen manually; it is automatically determined by the delivery production tools.
 
 As explained above, the shipment of a software takes place via software product versions. The delivered content of a software product version is defined in a target vector, which is used by the deployment tools. The target vector is derived from the addon.yml (more on that below) and contains the following information:
 
-  - Product name
-  - Product release
-  - Product Support Package stack and Patch level
-  - A list of contained Software Component versions with
-    - Software Component name
-    - Software Component release
-    - Delivery Package, which delivers the versions
+- Product name
+- Product release
+- Product Support Package stack and Patch level
+- A list of contained Software Component versions with
+  - Software Component name
+  - Software Component release
+  - Delivery Package, which delivers the versions
 
 ## Building the Add-on Product
 
@@ -123,14 +124,14 @@ repositories:
 
 Explanation of the keys:
 
-  - `addonProduct`: this is the technical name of the add-on product
-  - `addonVersion`: This is the technical version of the add-on product `<product version>.<support package stack level>.<patch level>`
+- `addonProduct`: this is the technical name of the add-on product
+- `addonVersion`: This is the technical version of the add-on product `<product version>.<support package stack level>.<patch level>`
 
 The section “repositories” contains one or multiple Software Component versions:
 
-  - `name`: the technical name of the Software Component
-  - `branch`: this is the release branch from the git repository
-  - `version`: this is the technical Software Component version `<Software Component version>.<support package level>.<patch level>`
+- `name`: the technical name of the Software Component
+- `branch`: this is the release branch from the git repository
+- `version`: this is the technical Software Component version `<Software Component version>.<support package level>.<patch level>`
 
 ##### Rules:
 
@@ -138,19 +139,19 @@ For the development and the provisioning of product-/Software Component versions
 
 Valid increase:
 
-  - 1.0.0 to 2.0.0
-  - 1.1.2 to 2.0.0
-  - 2.0.0 to 2.0.1
-  - 2.1.0 to 2.2.0
-  - 2.1.1 to 2.1.2
+- 1.0.0 to 2.0.0
+- 1.1.2 to 2.0.0
+- 2.0.0 to 2.0.1
+- 2.1.0 to 2.2.0
+- 2.1.1 to 2.1.2
 
 Invalid increase:
 
-  - 1.0.0 to 3.0.0 (version 2.0.0 is missing; therefore, a product/component version is missing)
-  - 1.1.2 to 2.1.0 (version 2.0.0 is missing; therefore, a product/component version is missing)
-  - 2.0.0 to 2.0.2 (version 2.0.1 is missing; therefore, a patch level is missing)
-  - 2.1.0 to 2.3.0 (version 2.2.0 is missing; therefore, a support package level is missing)
-  - 2.1.1 to 2.1.3 (version 2.1.2 is missing; therefore, a patch level is missing)
+- 1.0.0 to 3.0.0 (version 2.0.0 is missing; therefore, a product/component version is missing)
+- 1.1.2 to 2.1.0 (version 2.0.0 is missing; therefore, a product/component version is missing)
+- 2.0.0 to 2.0.2 (version 2.0.1 is missing; therefore, a patch level is missing)
+- 2.1.0 to 2.3.0 (version 2.2.0 is missing; therefore, a support package level is missing)
+- 2.1.1 to 2.1.3 (version 2.1.2 is missing; therefore, a patch level is missing)
 
 #### Jenkins Job
 
