@@ -38,7 +38,7 @@ func TestBuildRegistryPlusImage(t *testing.T) {
 			ContainerImage:       "myFancyContainer:1337",
 		})
 		assert.Error(t, err)
-		assert.EqualError(t, err, "invalid registry url")
+		assert.EqualError(t, err, "registry URL could not be extracted: invalid registry url")
 	})
 }
 
@@ -90,7 +90,7 @@ func TestRunGitopsUpdateDeployment(t *testing.T) {
 		gitUtilsMock := &validGitUtilsMock{}
 
 		err := runGitopsUpdateDeployment(configuration, nil, gitUtilsMock, piperutils.Files{})
-		assert.EqualError(t, err, "invalid registry url")
+		assert.EqualError(t, err, "failed to apply kubectl command: registry URL could not be extracted: invalid registry url")
 	})
 
 	t.Run("error on plane clone", func(t *testing.T) {
@@ -107,7 +107,7 @@ func TestRunGitopsUpdateDeployment(t *testing.T) {
 		}
 
 		err := runGitopsUpdateDeployment(configuration, nil, &gitUtilsMockErrorClone{}, piperutils.Files{})
-		assert.EqualError(t, err, "error on clone")
+		assert.EqualError(t, err, "failed to plain clone repository: error on clone")
 	})
 
 	t.Run("error on temp dir creation", func(t *testing.T) {
@@ -124,7 +124,7 @@ func TestRunGitopsUpdateDeployment(t *testing.T) {
 		}
 
 		err := runGitopsUpdateDeployment(configuration, nil, &gitopsUpdateDeploymentGitUtils{}, filesMockErrorTempDirCreation{})
-		assert.EqualError(t, err, "error appeared")
+		assert.EqualError(t, err, "failed to create temporary directory: error appeared")
 	})
 }
 

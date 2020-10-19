@@ -21,7 +21,7 @@ func TestCommit(t *testing.T) {
 			failingAdd: true,
 		})
 		assert.Error(t, err)
-		assert.EqualError(t, err, "failed to add file")
+		assert.EqualError(t, err, "failed to add file to git: failed to add file")
 	})
 
 	t.Run("error committing file", func(t *testing.T) {
@@ -29,7 +29,7 @@ func TestCommit(t *testing.T) {
 			failingCommit: true,
 		})
 		assert.Error(t, err)
-		assert.EqualError(t, err, "failed to commit file")
+		assert.EqualError(t, err, "failed to commit file: failed to commit file")
 	})
 }
 
@@ -45,7 +45,7 @@ func TestPushChangesToRepository(t *testing.T) {
 	t.Run("error pushing", func(t *testing.T) {
 		err := pushChangesToRepository("user", "password", RepositoryMockError{})
 		assert.Error(t, err)
-		assert.EqualError(t, err, "error on push commits")
+		assert.EqualError(t, err, "failed to push commit: error on push commits")
 	})
 }
 
@@ -65,7 +65,7 @@ func TestPlainClone(t *testing.T) {
 		abstractedGit := UtilsGitMockError{}
 		_, err := plainClone("user", "password", "URL", "directory", abstractedGit)
 		assert.Error(t, err)
-		assert.EqualError(t, err, "error during clone")
+		assert.EqualError(t, err, "failed to clone git: error during clone")
 	})
 }
 
@@ -97,7 +97,7 @@ func TestChangeBranch(t *testing.T) {
 			failingCheckout: true,
 		})
 		assert.Error(t, err)
-		assert.EqualError(t, err, "failed to checkout branch")
+		assert.EqualError(t, err, "failed to checkout branch: failed to checkout branch")
 	})
 }
 
