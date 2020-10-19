@@ -1,10 +1,10 @@
 package git
 
 import (
-	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/pkg/errors"
 )
 
 // utilsWorkTree interface abstraction of git.Worktree to enable tests
@@ -32,16 +32,14 @@ func CommitSingleFile(filePath, commitMessage string, worktree *git.Worktree) (p
 }
 
 func commitSingleFile(filePath, commitMessage string, worktree utilsWorkTree) (plumbing.Hash, error) {
-	_, gitAddError := worktree.Add(filePath)
-	if gitAddError != nil {
-		log.Entry().WithError(gitAddError).Error("Failed to add file to git")
-		return [20]byte{}, gitAddError
+	_, err := worktree.Add(filePath)
+	if err != nil {
+		return [20]byte{}, errors.Wrap(err, "failed to add file to git")
 	}
 
-	commit, commitError := worktree.Commit(commitMessage, &git.CommitOptions{})
-	if commitError != nil {
-		log.Entry().WithError(commitError).Error("Failed to commit file")
-		return [20]byte{}, commitError
+	commit, err := worktree.Commit(commitMessage, &git.CommitOptions{})
+	if err != nil {
+		return [20]byte{}, errors.Wrap(err, "failed to commit file")
 	}
 
 	return commit, nil
@@ -56,10 +54,9 @@ func pushChangesToRepository(username, password string, repository utilsReposito
 	pushOptions := &git.PushOptions{
 		Auth: &http.BasicAuth{Username: username, Password: password},
 	}
-	pushError := repository.Push(pushOptions)
-	if pushError != nil {
-		log.Entry().WithError(pushError).Error("Failed to push commit")
-		return pushError
+	err := repository.Push(pushOptions)
+	if err != nil {
+		return errors.Wrap(err, "failed to push commit")
 	}
 	return nil
 }
@@ -75,10 +72,9 @@ func plainClone(username, password, serverURL, directory string, abstractionGit 
 		Auth: &http.BasicAuth{Username: username, Password: password},
 		URL:  serverURL,
 	}
-	repository, gitCloneError := abstractionGit.plainClone(directory, false, &gitCloneOptions)
-	if gitCloneError != nil {
-		log.Entry().WithError(gitCloneError).Error("Failed to clone git")
-		return nil, gitCloneError
+	repository, err := abstractionGit.plainClone(directory, false, &gitCloneOptions)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to clone git")
 	}
 	return repository, nil
 }
@@ -98,14 +94,13 @@ func changeBranch(branchName string, worktree utilsWorkTree) error {
 	var checkoutOptions = &git.CheckoutOptions{}
 	checkoutOptions.Branch = plumbing.NewBranchReferenceName(branchName)
 	checkoutOptions.Create = false
-	checkoutError := worktree.Checkout(checkoutOptions)
-	if checkoutError != nil {
+	err := worktree.Checkout(checkoutOptions)
+	if err != nil {
 		// branch might not exist, try to create branch
 		checkoutOptions.Create = true
-		checkoutError = worktree.Checkout(checkoutOptions)
-		if checkoutError != nil {
-			log.Entry().WithError(checkoutError).Error("Failed to checkout branch")
-			return checkoutError
+		err = worktree.Checkout(checkoutOptions)
+		if err != nil {
+			return errors.Wrap(err, "failed to checkout branch")
 		}
 	}
 

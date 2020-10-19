@@ -10,6 +10,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/pkg/errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -51,10 +52,10 @@ func (g *gitopsUpdateDeploymentGitUtils) PlainClone(username, password, serverUR
 	var err error
 	g.repository, err = gitUtil.PlainClone(username, password, serverURL, directory)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "plain clone failed")
 	}
 	g.worktree, err = g.repository.Worktree()
-	return err
+	return errors.Wrap(err, "failed to retrieve worktree")
 }
 
 func (g *gitopsUpdateDeploymentGitUtils) ChangeBranch(branchName string) error {
@@ -82,25 +83,24 @@ func gitopsUpdateDeployment(config gitopsUpdateDeploymentOptions, telemetryData 
 func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gitopsUpdateDeploymentExecRunner, gitUtils iGitopsUpdateDeploymentGitUtils, fileUtils gitopsUpdateDeploymentFileUtils) error {
 	temporaryFolder, err := fileUtils.TempDir(".", "temp-")
 	if err != nil {
-		log.Entry().WithError(err).Error("Failed to create temporary directory")
-		return err
+		return errors.Wrap(err, "failed to create temporary directory")
 	}
 
 	defer fileUtils.RemoveAll(temporaryFolder)
 
 	err = gitUtils.PlainClone(config.Username, config.Password, config.ServerURL, temporaryFolder)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to plain clone repository")
 	}
 
 	err = gitUtils.ChangeBranch(config.BranchName)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to change branch")
 	}
 
 	registryImage, err := buildRegistryPlusImage(config)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to apply kubectl command")
 	}
 	patchString := "{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"" + config.ContainerName + "\",\"image\":\"" + registryImage + "\"}]}}}}"
 
@@ -108,18 +108,17 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gi
 
 	kubectlOutputBytes, err := runKubeCtlCommand(command, patchString, filePath)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to apply kubectl command")
 	}
 
 	err = fileUtils.FileWrite(filePath, kubectlOutputBytes, 0755)
 	if err != nil {
-		log.Entry().WithError(err).Error("Failing write file step")
-		return err
+		return errors.Wrap(err, "failed to write file")
 	}
 
 	commit, err := commitAndPushChanges(config, gitUtils)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to commit and push changes")
 	}
 
 	log.Entry().Infof("Changes committed with %s", commit.String())
@@ -140,8 +139,7 @@ func runKubeCtlCommand(command gitopsUpdateDeploymentExecRunner, patchString str
 	}
 	err := command.RunExecutable("kubectl", kubeParams...)
 	if err != nil {
-		log.Entry().WithError(err).Error("Failed to apply kubectl command")
-		return nil, err
+		return nil, errors.Wrap(err, "failed to apply kubectl command")
 	}
 	return kubectlOutput.Bytes(), nil
 }
@@ -154,8 +152,7 @@ func buildRegistryPlusImage(config *gitopsUpdateDeploymentOptions) (string, erro
 
 	url, err := docker.ContainerRegistryFromURL(registryURL)
 	if err != nil {
-		log.Entry().WithError(err).Error("registry URL could not be extracted")
-		return "", err
+		return "", errors.Wrap(err, "registry URL could not be extracted")
 	}
 	if url != "" {
 		url = url + "/"
@@ -166,12 +163,12 @@ func buildRegistryPlusImage(config *gitopsUpdateDeploymentOptions) (string, erro
 func commitAndPushChanges(config *gitopsUpdateDeploymentOptions, gitUtils iGitopsUpdateDeploymentGitUtils) (plumbing.Hash, error) {
 	commit, err := gitUtils.CommitSingleFile(config.FilePath, config.CommitMessage)
 	if err != nil {
-		return [20]byte{}, err
+		return [20]byte{}, errors.Wrap(err, "committing changes failed")
 	}
 
 	err = gitUtils.PushChangesToRepository(config.Username, config.Password)
 	if err != nil {
-		return [20]byte{}, err
+		return [20]byte{}, errors.Wrap(err, "pushing changes failed")
 	}
 
 	return commit, nil
