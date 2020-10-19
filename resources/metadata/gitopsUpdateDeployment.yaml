@@ -21,7 +21,7 @@ spec:
           - STAGES
           - STEPS
         type: string
-        default:
+        default: master
         mandatory: false
       - name: commitMessage
         description: The commit message of the commit that will be done to do the changes.
