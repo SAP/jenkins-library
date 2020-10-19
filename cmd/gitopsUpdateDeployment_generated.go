@@ -40,7 +40,7 @@ func GitopsUpdateDeploymentCommand() *cobra.Command {
 
 It can for example be used for GitOps scenarios where the update of the manifests triggers an update of the corresponding deployment in Kubernetes.
 
-As of today, it supports the update of deployment yaml files via kubectl patch. The container inside the yaml must be described within the following hirarchy: {"spec":{"template":{"spec":{"containers":[{...}]}}}}`,
+As of today, it supports the update of deployment yaml files via kubectl patch. The container inside the yaml must be described within the following hierarchy: {"spec":{"template":{"spec":{"containers":[{...}]}}}}`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -87,7 +87,7 @@ As of today, it supports the update of deployment yaml files via kubectl patch. 
 }
 
 func addGitopsUpdateDeploymentFlags(cmd *cobra.Command, stepConfig *gitopsUpdateDeploymentOptions) {
-	cmd.Flags().StringVar(&stepConfig.BranchName, "branchName", os.Getenv("PIPER_branchName"), "The name of the branch where the changes should get pushed into.")
+	cmd.Flags().StringVar(&stepConfig.BranchName, "branchName", `master`, "The name of the branch where the changes should get pushed into.")
 	cmd.Flags().StringVar(&stepConfig.CommitMessage, "commitMessage", `Updated {{containerName}} to version {{containerImage}}`, "The commit message of the commit that will be done to do the changes.")
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", `https://github.com`, "GitHub server url to the repository.")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User name for git authentication")
@@ -99,6 +99,8 @@ func addGitopsUpdateDeploymentFlags(cmd *cobra.Command, stepConfig *gitopsUpdate
 
 	cmd.MarkFlagRequired("commitMessage")
 	cmd.MarkFlagRequired("serverUrl")
+	cmd.MarkFlagRequired("username")
+	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("filePath")
 	cmd.MarkFlagRequired("containerName")
 	cmd.MarkFlagRequired("containerImage")
@@ -149,7 +151,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
-						Mandatory: false,
+						Mandatory: true,
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -163,7 +165,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
-						Mandatory: false,
+						Mandatory: true,
 						Aliases:   []config.Alias{},
 					},
 					{
