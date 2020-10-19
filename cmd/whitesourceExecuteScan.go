@@ -277,8 +277,10 @@ func resolveProjectIdentifiers(config *ScanOptions, scan *ws.Scan, utils whiteso
 	return scan.UpdateProjects(config.ProductToken, sys)
 }
 
-// validateProductVersion
+// validateProductVersion makes sure that the version does not contain a dash "-".
 func validateProductVersion(version string) string {
+	// TrimLeft() removes all "-" from the beginning, unlike TrimPrefix()!
+	version = strings.TrimLeft(version, "-")
 	if strings.Contains(version, "-") {
 		version = strings.SplitN(version, "-", 1)[0]
 	}
