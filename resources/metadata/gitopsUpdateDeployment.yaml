@@ -72,7 +72,6 @@ spec:
       - name: filePath
         description: Relative path in the git repository to the deployment descriptor file that shall be updated
         scope:
-          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
@@ -81,7 +80,6 @@ spec:
       - name: containerName
         description: The name of the container to update
         scope:
-          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
