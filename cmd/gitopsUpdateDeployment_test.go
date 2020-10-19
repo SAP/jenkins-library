@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"errors"
-	gitUtil "github.com/SAP/jenkins-library/pkg/git"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -101,7 +100,7 @@ func TestRunGitopsUpdateDeployment(t *testing.T) {
 		assert.EqualError(t, err, "invalid registry url")
 	})
 
-	t.Run("error on plaine clone", func(t *testing.T) {
+	t.Run("error on plane clone", func(t *testing.T) {
 		var c gitopsExecRunner
 		var configuration = &gitopsUpdateDeploymentOptions{
 			BranchName:           "main",
@@ -115,7 +114,7 @@ func TestRunGitopsUpdateDeployment(t *testing.T) {
 			ContainerImage:       "myFancyContainer:1337",
 		}
 
-		err := runGitopsUpdateDeployment(configuration, c, gitUtilsMockErrorClone{}, piperutils.Files{})
+		err := runGitopsUpdateDeployment(configuration, c, &gitUtilsMockErrorClone{}, piperutils.Files{})
 		assert.EqualError(t, err, "error on clone")
 	})
 
@@ -133,7 +132,7 @@ func TestRunGitopsUpdateDeployment(t *testing.T) {
 			ContainerImage:       "myFancyContainer:1337",
 		}
 
-		err := runGitopsUpdateDeployment(configuration, c, gitUtil.TheGitUtils{}, filesMockErrorTempDirCreation{})
+		err := runGitopsUpdateDeployment(configuration, c, &gitUtilsRuntime{}, filesMockErrorTempDirCreation{})
 		assert.EqualError(t, err, "error appeared")
 	})
 }
@@ -171,23 +170,23 @@ func (filesMockErrorTempDirCreation) RemoveAll(path string) error {
 
 type gitUtilsMockErrorClone struct{}
 
-func (gitUtilsMockErrorClone) CommitSingleFile(filePath, commitMessage string, worktree gitUtil.UtilsWorkTree) (plumbing.Hash, error) {
+func (gitUtilsMockErrorClone) CommitSingleFile(filePath, commitMessage string) (plumbing.Hash, error) {
 	panic("implement me")
 }
 
-func (gitUtilsMockErrorClone) PushChangesToRepository(username, password string, repository gitUtil.UtilsRepository) error {
+func (gitUtilsMockErrorClone) PushChangesToRepository(username, password string) error {
 	panic("implement me")
 }
 
-func (gitUtilsMockErrorClone) PlainClone(username, password, serverUrl, directory string) (gitUtil.UtilsRepository, error) {
-	return nil, errors.New("error on clone")
+func (gitUtilsMockErrorClone) PlainClone(username, password, serverUrl, directory string) error {
+	return errors.New("error on clone")
 }
 
-func (gitUtilsMockErrorClone) ChangeBranch(branchName string, worktree gitUtil.UtilsWorkTree) error {
+func (gitUtilsMockErrorClone) ChangeBranch(branchName string) error {
 	panic("implement me")
 }
 
-func (gitUtilsMockErrorClone) GetWorktree(repository gitUtil.UtilsRepository) (gitUtil.UtilsWorkTree, error) {
+func (gitUtilsMockErrorClone) GetWorktree() (*git.Worktree, error) {
 	panic("implement me")
 }
 
@@ -196,47 +195,37 @@ type validGitUtilsMock struct {
 	changedBranch string
 }
 
-func (validGitUtilsMock) GetWorktree(repository gitUtil.UtilsRepository) (gitUtil.UtilsWorkTree, error) {
+func (validGitUtilsMock) GetWorktree() (*git.Worktree, error) {
 	return nil, nil
 }
 
-func (v *validGitUtilsMock) ChangeBranch(branchName string, worktree gitUtil.UtilsWorkTree) error {
+func (v *validGitUtilsMock) ChangeBranch(branchName string) error {
 	v.changedBranch = branchName
 	return nil
 }
 
-func (v *validGitUtilsMock) CommitSingleFile(filePath, commitMessage string, worktree gitUtil.UtilsWorkTree) (plumbing.Hash, error) {
+func (v *validGitUtilsMock) CommitSingleFile(filePath, commitMessage string) (plumbing.Hash, error) {
 	matches, _ := piperutils.Files{}.Glob("*/dir1/dir2/depl.yaml")
 	fileRead, _ := piperutils.Files{}.FileRead(matches[0])
 	v.savedFile = string(fileRead)
 	return [20]byte{123}, nil
 }
 
-func (validGitUtilsMock) PushChangesToRepository(username, password string, repository gitUtil.UtilsRepository) error {
+func (validGitUtilsMock) PushChangesToRepository(username, password string) error {
 	return nil
 }
 
-func (validGitUtilsMock) PlainClone(username, password, serverUrl, directory string) (gitUtil.UtilsRepository, error) {
+func (validGitUtilsMock) PlainClone(username, password, serverUrl, directory string) error {
 	filePath := filepath.Join(directory, "dir1/dir2/depl.yaml")
 	err := piperutils.Files{}.MkdirAll(filepath.Join(directory, "dir1/dir2"), 0755)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	err = piperutils.Files{}.FileWrite(filePath, []byte(existingYaml), 0755)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return &repositoryMock{}, nil
-}
-
-type repositoryMock struct{}
-
-func (repositoryMock) Worktree() (*git.Worktree, error) {
-	return nil, nil
-}
-
-func (repositoryMock) Push(o *git.PushOptions) error {
-	panic("implement me")
+	return nil
 }
 
 var existingYaml = "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: myFancyApp\n  labels:\n    tier: application\nspec:\n  replicas: 4\n  selector:\n    matchLabels:\n      run: myContainer\n  template:\n    metadata:\n      labels:\n        run: myContainer\n    spec:\n      containers:\n      - image: myregistry.com/myFancyContainer:1336\n        name: myContainer"

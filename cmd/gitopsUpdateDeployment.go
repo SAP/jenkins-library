@@ -8,17 +8,17 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"io"
 	"path/filepath"
 )
 
 type gitopsGitUtils interface {
-	CommitSingleFile(filePath, commitMessage string, worktree gitUtil.UtilsWorkTree) (plumbing.Hash, error)
-	PushChangesToRepository(username, password string, repository gitUtil.UtilsRepository) error
-	PlainClone(username, password, serverURL, directory string) (gitUtil.UtilsRepository, error)
-	ChangeBranch(branchName string, worktree gitUtil.UtilsWorkTree) error
-	GetWorktree(repository gitUtil.UtilsRepository) (gitUtil.UtilsWorkTree, error)
+	CommitSingleFile(filePath, commitMessage string) (plumbing.Hash, error)
+	PushChangesToRepository(username, password string) error
+	PlainClone(username, password, serverURL, directory string) error
+	ChangeBranch(branchName string) error
 }
 
 type gitopsFileUtils interface {
@@ -30,6 +30,33 @@ type gitopsExecRunner interface {
 	RunExecutable(executable string, params ...string) error
 	Stdout(out io.Writer)
 	Stderr(err io.Writer)
+}
+
+type gitUtilsRuntime struct {
+	worktree   *git.Worktree
+	repository *git.Repository
+}
+
+func (g *gitUtilsRuntime) CommitSingleFile(filePath, commitMessage string) (plumbing.Hash, error) {
+	return gitUtil.CommitSingleFile(filePath, commitMessage, g.worktree)
+}
+
+func (g *gitUtilsRuntime) PushChangesToRepository(username, password string) error {
+	return gitUtil.PushChangesToRepository(username, password, g.repository)
+}
+
+func (g *gitUtilsRuntime) PlainClone(username, password, serverURL, directory string) error {
+	var err error
+	g.repository, err = gitUtil.PlainClone(username, password, serverURL, directory)
+	if err != nil {
+		return err
+	}
+	g.worktree, err = g.repository.Worktree()
+	return err
+}
+
+func (g *gitUtilsRuntime) ChangeBranch(branchName string) error {
+	return gitUtil.ChangeBranch(branchName, g.worktree)
 }
 
 func gitopsUpdateDeployment(config gitopsUpdateDeploymentOptions, telemetryData *telemetry.CustomData) {
@@ -44,7 +71,7 @@ func gitopsUpdateDeployment(config gitopsUpdateDeploymentOptions, telemetryData 
 	// Example: step checkmarxExecuteScan.go
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runGitopsUpdateDeployment(&config, c, gitUtil.TheGitUtils{}, piperutils.Files{})
+	err := runGitopsUpdateDeployment(&config, c, &gitUtilsRuntime{}, piperutils.Files{})
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
@@ -59,17 +86,12 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gi
 
 	defer gitopsUpdateDeploymentFileUtilities.RemoveAll(temporaryFolder)
 
-	repository, err := gitopsUpdateDeploymentGitUtilities.PlainClone(config.Username, config.Password, config.ServerURL, temporaryFolder)
+	err = gitopsUpdateDeploymentGitUtilities.PlainClone(config.Username, config.Password, config.ServerURL, temporaryFolder)
 	if err != nil {
 		return err
 	}
 
-	worktree, err := repository.Worktree()
-	if err != nil {
-		return err
-	}
-
-	err = gitopsUpdateDeploymentGitUtilities.ChangeBranch(config.BranchName, worktree)
+	err = gitopsUpdateDeploymentGitUtilities.ChangeBranch(config.BranchName)
 	if err != nil {
 		return err
 	}
@@ -93,7 +115,7 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gi
 		return err
 	}
 
-	commit, err := commitAndPushChanges(config, repository, worktree, gitopsUpdateDeploymentGitUtilities)
+	commit, err := commitAndPushChanges(config, gitopsUpdateDeploymentGitUtilities)
 	if err != nil {
 		return err
 	}
@@ -139,13 +161,13 @@ func buildRegistryPlusImage(config *gitopsUpdateDeploymentOptions) (string, erro
 	return url + config.ContainerImage, nil
 }
 
-func commitAndPushChanges(config *gitopsUpdateDeploymentOptions, repository gitUtil.UtilsRepository, worktree gitUtil.UtilsWorkTree, gitopsUpdateDeploymentGitUtilities gitopsGitUtils) (plumbing.Hash, error) {
-	commit, err := gitopsUpdateDeploymentGitUtilities.CommitSingleFile(config.FilePath, config.CommitMessage, worktree)
+func commitAndPushChanges(config *gitopsUpdateDeploymentOptions, gitopsUpdateDeploymentGitUtilities gitopsGitUtils) (plumbing.Hash, error) {
+	commit, err := gitopsUpdateDeploymentGitUtilities.CommitSingleFile(config.FilePath, config.CommitMessage)
 	if err != nil {
 		return [20]byte{}, err
 	}
 
-	err = gitopsUpdateDeploymentGitUtilities.PushChangesToRepository(config.Username, config.Password, repository)
+	err = gitopsUpdateDeploymentGitUtilities.PushChangesToRepository(config.Username, config.Password)
 	if err != nil {
 		return [20]byte{}, err
 	}

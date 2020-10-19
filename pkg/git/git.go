@@ -7,15 +7,15 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 )
 
-// UtilsWorkTree interface abstraction of git.Worktree to enable tests
-type UtilsWorkTree interface {
+// utilsWorkTree interface abstraction of git.Worktree to enable tests
+type utilsWorkTree interface {
 	Add(path string) (plumbing.Hash, error)
 	Commit(msg string, opts *git.CommitOptions) (plumbing.Hash, error)
 	Checkout(opts *git.CheckoutOptions) error
 }
 
-// UtilsRepository interface abstraction of git.Repository to enable tests
-type UtilsRepository interface {
+// utilsRepository interface abstraction of git.Repository to enable tests
+type utilsRepository interface {
 	Worktree() (*git.Worktree, error)
 	Push(o *git.PushOptions) error
 }
@@ -25,16 +25,13 @@ type utilsGit interface {
 	plainClone(path string, isBare bool, o *git.CloneOptions) (*git.Repository, error)
 }
 
-// abstractedGit abstraction of git to enable tests
-var abstractedGit utilsGit = abstractionGit{}
-
-// TheGitUtils structure to provide git utilities
-type TheGitUtils struct {
-}
-
 // CommitSingleFile Commits the file located in the relative file path with the commitMessage to the given worktree.
 // In case of errors, the error is returned. In the successful case the commit is provided.
-func (TheGitUtils) CommitSingleFile(filePath, commitMessage string, worktree UtilsWorkTree) (plumbing.Hash, error) {
+func CommitSingleFile(filePath, commitMessage string, worktree *git.Worktree) (plumbing.Hash, error) {
+	return commitSingleFile(filePath, commitMessage, worktree)
+}
+
+func commitSingleFile(filePath, commitMessage string, worktree utilsWorkTree) (plumbing.Hash, error) {
 	_, gitAddError := worktree.Add(filePath)
 	if gitAddError != nil {
 		log.Entry().WithError(gitAddError).Error("Failed to add file to git")
@@ -51,7 +48,11 @@ func (TheGitUtils) CommitSingleFile(filePath, commitMessage string, worktree Uti
 }
 
 // PushChangesToRepository Pushes all committed changes in the repository to the remote repository
-func (TheGitUtils) PushChangesToRepository(username, password string, repository UtilsRepository) error {
+func PushChangesToRepository(username, password string, repository *git.Repository) error {
+	return pushChangesToRepository(username, password, repository)
+}
+
+func pushChangesToRepository(username, password string, repository utilsRepository) error {
 	pushOptions := &git.PushOptions{
 		Auth: &http.BasicAuth{Username: username, Password: password},
 	}
@@ -64,12 +65,17 @@ func (TheGitUtils) PushChangesToRepository(username, password string, repository
 }
 
 // PlainClone Clones a non-bare repository to the provided directory
-func (TheGitUtils) PlainClone(username, password, serverURL, directory string) (UtilsRepository, error) {
+func PlainClone(username, password, serverURL, directory string) (*git.Repository, error) {
+	abstractedGit := &abstractionGit{}
+	return plainClone(username, password, serverURL, directory, abstractedGit)
+}
+
+func plainClone(username, password, serverURL, directory string, abstractionGit utilsGit) (*git.Repository, error) {
 	gitCloneOptions := git.CloneOptions{
 		Auth: &http.BasicAuth{Username: username, Password: password},
 		URL:  serverURL,
 	}
-	repository, gitCloneError := abstractedGit.plainClone(directory, false, &gitCloneOptions)
+	repository, gitCloneError := abstractionGit.plainClone(directory, false, &gitCloneOptions)
 	if gitCloneError != nil {
 		log.Entry().WithError(gitCloneError).Error("Failed to clone git")
 		return nil, gitCloneError
@@ -80,7 +86,11 @@ func (TheGitUtils) PlainClone(username, password, serverURL, directory string) (
 // ChangeBranch checkout the provided branch.
 // It will create a new branch if the branch does not exist yet.
 // It will checkout "master" if no branch name if provided
-func (TheGitUtils) ChangeBranch(branchName string, worktree UtilsWorkTree) error {
+func ChangeBranch(branchName string, worktree *git.Worktree) error {
+	return changeBranch(branchName, worktree)
+}
+
+func changeBranch(branchName string, worktree utilsWorkTree) error {
 	if branchName == "" {
 		branchName = "master"
 	}
@@ -100,15 +110,6 @@ func (TheGitUtils) ChangeBranch(branchName string, worktree UtilsWorkTree) error
 	}
 
 	return nil
-}
-
-// GetWorktree returns the worktree of the repository
-func (TheGitUtils) GetWorktree(repository UtilsRepository) (UtilsWorkTree, error) {
-	worktree, err := repository.Worktree()
-	if err != nil {
-		log.Entry().WithError(err).Error("could not receive worktree from repository")
-	}
-	return worktree, err
 }
 
 type abstractionGit struct{}

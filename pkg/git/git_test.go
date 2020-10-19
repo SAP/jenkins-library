@@ -9,118 +9,89 @@ import (
 )
 
 func TestCommit(t *testing.T) {
-	var cut = TheGitUtils{}
 	t.Parallel()
 	t.Run("successful run", func(t *testing.T) {
-		hash, err := cut.CommitSingleFile(".", "message", WorktreeMock{
-			test: t,
-		})
+		hash, err := commitSingleFile(".", "message", &WorktreeMock{})
 		assert.NoError(t, err)
 		assert.Equal(t, plumbing.Hash([20]byte{4, 5, 6}), hash)
 	})
 
 	t.Run("error adding file", func(t *testing.T) {
-		_, err := cut.CommitSingleFile(".", "message", WorktreeMockFailingAdd{})
+		_, err := commitSingleFile(".", "message", WorktreeMockFailingAdd{})
 		assert.Error(t, err)
 		assert.EqualError(t, err, "failed to add file")
 	})
 
 	t.Run("error committing file", func(t *testing.T) {
-		_, err := cut.CommitSingleFile(".", "message", WorktreeMockFailingCommit{})
+		_, err := commitSingleFile(".", "message", WorktreeMockFailingCommit{})
 		assert.Error(t, err)
 		assert.EqualError(t, err, "error on commit")
 	})
 }
 
 func TestPushChangesToRepository(t *testing.T) {
-	var cut = TheGitUtils{}
 	t.Parallel()
 	t.Run("successful push", func(t *testing.T) {
-		err := cut.PushChangesToRepository("user", "password", RepositoryMock{
+		err := pushChangesToRepository("user", "password", RepositoryMock{
 			test: t,
 		})
 		assert.NoError(t, err)
 	})
 
 	t.Run("error pushing", func(t *testing.T) {
-		err := cut.PushChangesToRepository("user", "password", RepositoryMockError{})
+		err := pushChangesToRepository("user", "password", RepositoryMockError{})
 		assert.Error(t, err)
 		assert.EqualError(t, err, "error on push commits")
 	})
 }
 
 func TestPlainClone(t *testing.T) {
-	var cut = TheGitUtils{}
 	t.Parallel()
-	oldUtilsGit := abstractedGit
-	defer func() {
-		abstractedGit = oldUtilsGit
-	}()
-
 	t.Run("successful clone", func(t *testing.T) {
-		abstractedGit = UtilsGitMock{
-			test: t,
-		}
-		_, err := cut.PlainClone("user", "password", "URL", "directory")
+		abstractedGit := &UtilsGitMock{}
+		_, err := plainClone("user", "password", "URL", "directory", abstractedGit)
 		assert.NoError(t, err)
+		assert.Equal(t, "directory", abstractedGit.path)
+		assert.False(t, abstractedGit.isBare)
+		assert.Equal(t, "http-basic-auth - user:*******", abstractedGit.authString)
+		assert.Equal(t, "URL", abstractedGit.URL)
 	})
 
 	t.Run("error on cloning", func(t *testing.T) {
-		abstractedGit = UtilsGitMockError{}
-		_, err := cut.PlainClone("user", "password", "URL", "directory")
+		abstractedGit := UtilsGitMockError{}
+		_, err := plainClone("user", "password", "URL", "directory", abstractedGit)
 		assert.Error(t, err)
 		assert.EqualError(t, err, "error during clone")
 	})
 }
 
 func TestChangeBranch(t *testing.T) {
-	var cut = TheGitUtils{}
 	t.Parallel()
 	t.Run("checkout existing branch", func(t *testing.T) {
-		err := cut.ChangeBranch("otherBranch", WorktreeMock{
-			expectedBranchName: "otherBranch",
-			test:               t,
-		})
+		worktreeMock := &WorktreeMock{}
+		err := changeBranch("otherBranch", worktreeMock)
 		assert.NoError(t, err)
+		assert.Equal(t, string(plumbing.NewBranchReferenceName("otherBranch")), worktreeMock.checkedOutBranch)
+		assert.False(t, worktreeMock.create)
 	})
 
 	t.Run("empty branch defaulted to master", func(t *testing.T) {
-		err := cut.ChangeBranch("", WorktreeMock{
-			expectedBranchName: "master",
-			test:               t,
-		})
+		worktreeMock := &WorktreeMock{}
+		err := changeBranch("", worktreeMock)
 		assert.NoError(t, err)
+		assert.Equal(t, string(plumbing.NewBranchReferenceName("master")), worktreeMock.checkedOutBranch)
+		assert.False(t, worktreeMock.create)
 	})
 
 	t.Run("create new branch", func(t *testing.T) {
-		err := cut.ChangeBranch("otherBranch", WorktreeUtilsNewBranch{})
+		err := changeBranch("otherBranch", WorktreeUtilsNewBranch{})
 		assert.NoError(t, err)
 	})
 
 	t.Run("error on new branch", func(t *testing.T) {
-		err := cut.ChangeBranch("otherBranch", WorktreeUtilsErrorCheckout{})
+		err := changeBranch("otherBranch", WorktreeUtilsErrorCheckout{})
 		assert.Error(t, err)
 		assert.EqualError(t, err, "cannot checkout branch")
-	})
-}
-
-func TestGetWorktree(t *testing.T) {
-	var cut = TheGitUtils{}
-	t.Parallel()
-	t.Run("successful get worktree", func(t *testing.T) {
-		testWorktree := &git.Worktree{}
-		worktree, err := cut.GetWorktree(RepositoryMock{
-			worktree: testWorktree,
-			test:     t,
-		})
-		assert.NoError(t, err)
-		assert.Equal(t, testWorktree, worktree)
-	})
-
-	t.Run("error get worktree", func(t *testing.T) {
-		_, err := cut.GetWorktree(RepositoryMockError{})
-		assert.Error(t, err)
-		assert.EqualError(t, err, "error getting worktree")
 	})
 }
 
@@ -181,7 +152,8 @@ func (WorktreeMockFailingCommit) Checkout(opts *git.CheckoutOptions) error {
 
 type WorktreeMock struct {
 	expectedBranchName string
-	test               *testing.T
+	checkedOutBranch   string
+	create             bool
 }
 
 func (WorktreeMock) Add(path string) (plumbing.Hash, error) {
@@ -192,9 +164,9 @@ func (WorktreeMock) Commit(msg string, opts *git.CommitOptions) (plumbing.Hash, 
 	return [20]byte{4, 5, 6}, nil
 }
 
-func (w WorktreeMock) Checkout(opts *git.CheckoutOptions) error {
-	assert.Equal(w.test, plumbing.NewBranchReferenceName(w.expectedBranchName), opts.Branch)
-	assert.False(w.test, opts.Create)
+func (w *WorktreeMock) Checkout(opts *git.CheckoutOptions) error {
+	w.checkedOutBranch = string(opts.Branch)
+	w.create = opts.Create
 	return nil
 }
 
@@ -230,14 +202,17 @@ func (WorktreeUtilsErrorCheckout) Checkout(opts *git.CheckoutOptions) error {
 }
 
 type UtilsGitMock struct {
-	test *testing.T
+	path       string
+	isBare     bool
+	authString string
+	URL        string
 }
 
-func (u UtilsGitMock) plainClone(path string, isBare bool, o *git.CloneOptions) (*git.Repository, error) {
-	assert.Equal(u.test, "directory", path)
-	assert.False(u.test, isBare)
-	assert.Equal(u.test, "http-basic-auth - user:*******", o.Auth.String())
-	assert.Equal(u.test, "URL", o.URL)
+func (u *UtilsGitMock) plainClone(path string, isBare bool, o *git.CloneOptions) (*git.Repository, error) {
+	u.path = path
+	u.isBare = isBare
+	u.authString = o.Auth.String()
+	u.URL = o.URL
 	return nil, nil
 }
 
