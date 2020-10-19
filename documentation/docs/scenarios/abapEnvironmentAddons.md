@@ -94,7 +94,7 @@ The first line defines that the shared library, named “piper-lib-os” in the 
 The second line `abapEnvironmentPipeline script: this` defines that the predefined “ABAP Environment Pipeline” will be executed.
 
 #### Config.yml
-A configuration file “.pipeline/config.yml” is used to provide all required values to run the pipeline. This includes - for example - different endpoints or credential IDs of user and password values stored in the Jenkins Credentials Store. If a complex configuration is necessary, a separate configuration file is required, which will also be referenced in the config.yml file.
+A configuration file `.pipeline/config.yml` is used to provide all required values to run the pipeline. This includes - for example - different endpoints or credential IDs of user and password values stored in the Jenkins Credentials Store. If a complex configuration is necessary, a separate configuration file is required, which will also be referenced in the config.yml file.
 
 #### Addon.yml
 The build process is controlled by a control file called addon.yml. This file must be created manually and must be stored in the GIT repository of the developed software. It must contain information about the to-be-delivered software product version (see above / link to above) and the contained software component versions (see above). Below, you see an example:
@@ -123,12 +123,14 @@ The section “repositories” contains one or multiple software component versi
 
 ##### Rules:
 For the development and the provisioning of product-/software component versions, it is necessary to ensure, that there is no gaps within the version and level counters. Therefore, only a continuous increase in version numbers is allowed. The following examples show valid and invalid cases, respectively:
+
 Valid increase:
   - 1.0.0 to 2.0.0
   - 1.1.2 to 2.0.0
   - 2.0.0 to 2.0.1
   - 2.1.0 to 2.2.0
   - 2.1.1 to 2.1.2
+
 Invalid increase:
   - 1.0.0 to 3.0.0 (version 2.0.0 is missing; therefore, a product/component version is missing)
   - 1.1.2 to 2.1.0 (version 2.0.0 is missing; therefore, a product/component version is missing)
