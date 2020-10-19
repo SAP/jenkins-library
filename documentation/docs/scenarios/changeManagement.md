@@ -1,4 +1,4 @@
-# Build and Deploy Hybrid Applications with Jenkins and SAP Solution Manager
+# Build and Deploy Hybrid Applications with SAP Solution Manager
 
 Set up an agile development process with Jenkins CI, which automatically feeds changes into SAP Solution Manager.
 
