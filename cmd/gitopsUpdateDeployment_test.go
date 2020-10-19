@@ -28,7 +28,7 @@ func TestErrorOnTempDir(t *testing.T) {
 	}
 
 	err := runGitopsUpdateDeployment(configuration, c, gitUtil.TheGitUtils{}, filesMockErrorTempDirCreation{})
-	assert.Equal(t, errors.New("error appeared"), err)
+	assert.EqualError(t, err, "error appeared")
 }
 
 func TestErrorGitPlainClone(t *testing.T) {
@@ -46,7 +46,7 @@ func TestErrorGitPlainClone(t *testing.T) {
 	}
 
 	err := runGitopsUpdateDeployment(configuration, c, gitUtilsMockErrorClone{}, piperutils.Files{})
-	assert.Equal(t, errors.New("error on clone"), err)
+	assert.EqualError(t, err, "error on clone")
 }
 
 func TestErrorOnInvalidURL(t *testing.T) {
@@ -70,7 +70,7 @@ func TestErrorOnInvalidURL(t *testing.T) {
 	var c gitopsExecRunner
 
 	err := runGitopsUpdateDeployment(configuration, c, gitUtilsMock, piperutils.Files{})
-	assert.Equal(t, errors.New("invalid registry url"), err)
+	assert.EqualError(t, err, "invalid registry url")
 }
 
 func TestBuildRegistryPlusImage(t *testing.T) {

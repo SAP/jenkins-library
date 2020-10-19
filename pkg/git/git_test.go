@@ -22,13 +22,13 @@ func TestCommit(t *testing.T) {
 	t.Run("error adding file", func(t *testing.T) {
 		_, err := cut.CommitSingleFile(".", "message", WorktreeMockFailingAdd{})
 		assert.Error(t, err)
-		assert.Equal(t, errors.New("failed to add file"), err)
+		assert.EqualError(t, err, "failed to add file")
 	})
 
 	t.Run("error committing file", func(t *testing.T) {
 		_, err := cut.CommitSingleFile(".", "message", WorktreeMockFailingCommit{})
 		assert.Error(t, err)
-		assert.Equal(t, errors.New("error on commit"), err)
+		assert.EqualError(t, err, "error on commit")
 	})
 }
 
@@ -45,7 +45,7 @@ func TestPushChangesToRepository(t *testing.T) {
 	t.Run("error pushing", func(t *testing.T) {
 		err := cut.PushChangesToRepository("user", "password", RepositoryMockError{})
 		assert.Error(t, err)
-		assert.Equal(t, errors.New("error on push commits"), err)
+		assert.EqualError(t, err, "error on push commits")
 	})
 }
 
@@ -68,7 +68,7 @@ func TestPlainClone(t *testing.T) {
 		abstractedGit = UtilsGitMockError{}
 		_, err := cut.PlainClone("user", "password", "URL", "directory")
 		assert.Error(t, err)
-		assert.Equal(t, errors.New("error during clone"), err)
+		assert.EqualError(t, err, "error during clone")
 	})
 }
 
@@ -99,7 +99,7 @@ func TestChangeBranch(t *testing.T) {
 	t.Run("error on new branch", func(t *testing.T) {
 		err := cut.ChangeBranch("otherBranch", WorktreeUtilsErrorCheckout{})
 		assert.Error(t, err)
-		assert.Equal(t, errors.New("cannot checkout branch"), err)
+		assert.EqualError(t, err, "cannot checkout branch")
 	})
 }
 
@@ -119,7 +119,7 @@ func TestGetWorktree(t *testing.T) {
 	t.Run("error get worktree", func(t *testing.T) {
 		_, err := cut.GetWorktree(RepositoryMockError{})
 		assert.Error(t, err)
-		assert.Equal(t, errors.New("error getting worktree"), err)
+		assert.EqualError(t, err, "error getting worktree")
 	})
 }
 
