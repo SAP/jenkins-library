@@ -51,6 +51,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        mandatory: true
         secret: true
         resourceRef:
           - name: gitHttpsCredentialsId
@@ -63,6 +64,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        mandatory: true
         secret: true
         resourceRef:
           - name: gitHttpsCredentialsId
