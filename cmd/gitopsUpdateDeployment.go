@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/docker"
 	gitUtil "github.com/SAP/jenkins-library/pkg/git"
@@ -112,11 +111,11 @@ func runKubeCtlCommand(command gitopsExecRunner, patchString string, filePath st
 	command.Stdout(&kubectlOutput)
 
 	kubeParams := []string{
-		fmt.Sprint("patch"),
-		fmt.Sprint("--local"),
-		fmt.Sprint("--output=yaml"),
-		fmt.Sprintf("--patch=%v", patchString),
-		fmt.Sprintf("--filename=%v", filePath),
+		"patch",
+		"--local",
+		"--output=yaml",
+		"--patch=" + patchString,
+		"--filename=" + filePath,
 	}
 	err := command.RunExecutable("kubectl", kubeParams...)
 	if err != nil {
