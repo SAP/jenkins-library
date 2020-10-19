@@ -60,7 +60,7 @@ func TestRunGitopsUpdateDeployment(t *testing.T) {
 		gitUtilsMock := &validGitUtilsMock{}
 
 		runnerMock := gitOpsExecRunnerMock{}
-		var c gitopsUpdateDeploymentExecRunner = &gitOpsExecRunnerMock{}
+		var c gitopsUpdateDeploymentExecRunner = &runnerMock
 
 		err := runGitopsUpdateDeployment(configuration, c, gitUtilsMock, piperutils.Files{})
 		assert.NoError(t, err)
