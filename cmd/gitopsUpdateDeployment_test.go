@@ -85,7 +85,7 @@ func TestBuildRegistryPlusImage(t *testing.T) {
 		ContainerRegistryURL: "https://myregistry.com/registry/containers",
 		ContainerImage:       "myFancyContainer:1337",
 	})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, "myregistry.com/myFancyContainer:1337", registryImage)
 }
 
@@ -101,7 +101,7 @@ func TestBuildRegistryPlusImageWithoutRegistry(t *testing.T) {
 		ContainerRegistryURL: "",
 		ContainerImage:       "myFancyContainer:1337",
 	})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, "myFancyContainer:1337", registryImage)
 }
 
