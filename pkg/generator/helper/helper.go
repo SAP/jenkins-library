@@ -406,7 +406,7 @@ func getOutputResourceDetails(stepData *config.StepData) ([]map[string]string, e
 				if fields, ok := measurement["fields"].([]interface{}); ok {
 					for _, field := range fields {
 						if fieldParams, ok := field.(map[string]interface{}); ok {
-							influxMeasurement.Fields = append(influxMeasurement.Fields, InfluxMetric{Name: fmt.Sprintf("%v", fieldParams["name"])})
+							influxMeasurement.Fields = append(influxMeasurement.Fields, InfluxMetric{Name: fmt.Sprintf("%v", fieldParams["name"]), Type: fmt.Sprintf("%v", fieldParams["type"])})
 						}
 					}
 				}
@@ -507,6 +507,14 @@ func longName(long string) string {
 	l := strings.ReplaceAll(long, "`", "` + \"`\" + `")
 	l = strings.TrimSpace(l)
 	return l
+}
+
+func influxType(fieldType string) string {
+	//TODO: clarify why fields are initialized with <nil> and tags are initialized with ''
+	if len(fieldType) == 0 || fieldType == "<nil>" {
+		return "string"
+	}
+	return fieldType
 }
 
 func golangName(name string) string {
