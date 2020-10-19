@@ -43,6 +43,8 @@ void call(Map parameters = [:]) {
             Map stepConfig = readJSON(text: sh(returnStdout: true, script: "${piperGoPath} getConfig --stepMetadata '.pipeline/tmp/${METADATA_FILE}'${customDefaultConfig}${customConfigArg}"))
             echo "Step Config: ${stepConfig}"
 
+            utils.pushToSWA(this, script, [stepParam1: stepConfig.instance])
+            
             List environment = []
             if (isPullRequest()) {
                 checkMandatoryParameter(stepConfig, "owner")
