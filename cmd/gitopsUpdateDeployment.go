@@ -79,21 +79,21 @@ func gitopsUpdateDeployment(config gitopsUpdateDeploymentOptions, telemetryData 
 	}
 }
 
-func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gitopsUpdateDeploymentExecRunner, gitopsUpdateDeploymentGitUtilities iGitopsUpdateDeploymentGitUtils, gitopsUpdateDeploymentFileUtilities gitopsUpdateDeploymentFileUtils) error {
-	temporaryFolder, err := gitopsUpdateDeploymentFileUtilities.TempDir(".", "temp-")
+func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gitopsUpdateDeploymentExecRunner, gitUtils iGitopsUpdateDeploymentGitUtils, fileUtils gitopsUpdateDeploymentFileUtils) error {
+	temporaryFolder, err := fileUtils.TempDir(".", "temp-")
 	if err != nil {
 		log.Entry().WithError(err).Error("Failed to create temporary directory")
 		return err
 	}
 
-	defer gitopsUpdateDeploymentFileUtilities.RemoveAll(temporaryFolder)
+	defer fileUtils.RemoveAll(temporaryFolder)
 
-	err = gitopsUpdateDeploymentGitUtilities.PlainClone(config.Username, config.Password, config.ServerURL, temporaryFolder)
+	err = gitUtils.PlainClone(config.Username, config.Password, config.ServerURL, temporaryFolder)
 	if err != nil {
 		return err
 	}
 
-	err = gitopsUpdateDeploymentGitUtilities.ChangeBranch(config.BranchName)
+	err = gitUtils.ChangeBranch(config.BranchName)
 	if err != nil {
 		return err
 	}
@@ -111,13 +111,13 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gi
 		return err
 	}
 
-	err = gitopsUpdateDeploymentFileUtilities.FileWrite(filePath, kubectlOutputBytes, 0755)
+	err = fileUtils.FileWrite(filePath, kubectlOutputBytes, 0755)
 	if err != nil {
 		log.Entry().WithError(err).Error("Failing write file step")
 		return err
 	}
 
-	commit, err := commitAndPushChanges(config, gitopsUpdateDeploymentGitUtilities)
+	commit, err := commitAndPushChanges(config, gitUtils)
 	if err != nil {
 		return err
 	}
@@ -163,13 +163,13 @@ func buildRegistryPlusImage(config *gitopsUpdateDeploymentOptions) (string, erro
 	return url + config.ContainerImage, nil
 }
 
-func commitAndPushChanges(config *gitopsUpdateDeploymentOptions, gitopsUpdateDeploymentGitUtilities iGitopsUpdateDeploymentGitUtils) (plumbing.Hash, error) {
-	commit, err := gitopsUpdateDeploymentGitUtilities.CommitSingleFile(config.FilePath, config.CommitMessage)
+func commitAndPushChanges(config *gitopsUpdateDeploymentOptions, gitUtils iGitopsUpdateDeploymentGitUtils) (plumbing.Hash, error) {
+	commit, err := gitUtils.CommitSingleFile(config.FilePath, config.CommitMessage)
 	if err != nil {
 		return [20]byte{}, err
 	}
 
-	err = gitopsUpdateDeploymentGitUtilities.PushChangesToRepository(config.Username, config.Password)
+	err = gitUtils.PushChangesToRepository(config.Username, config.Password)
 	if err != nil {
 		return [20]byte{}, err
 	}
