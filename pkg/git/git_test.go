@@ -124,7 +124,7 @@ func (RepositoryMockError) Worktree() (*git.Worktree, error) {
 	return nil, errors.New("error getting worktree")
 }
 
-func (RepositoryMockError) Push(o *git.PushOptions) error {
+func (RepositoryMockError) Push(*git.PushOptions) error {
 	return errors.New("error on push commits")
 }
 
@@ -134,21 +134,21 @@ type WorktreeMockFailing struct {
 	failingCheckout bool
 }
 
-func (w WorktreeMockFailing) Add(path string) (plumbing.Hash, error) {
+func (w WorktreeMockFailing) Add(string) (plumbing.Hash, error) {
 	if w.failingAdd {
 		return [20]byte{}, errors.New("failed to add file")
 	}
 	return [20]byte{}, nil
 }
 
-func (w WorktreeMockFailing) Commit(msg string, opts *git.CommitOptions) (plumbing.Hash, error) {
+func (w WorktreeMockFailing) Commit(string, *git.CommitOptions) (plumbing.Hash, error) {
 	if w.failingCommit {
 		return [20]byte{}, errors.New("failed to commit file")
 	}
 	return [20]byte{}, nil
 }
 
-func (w WorktreeMockFailing) Checkout(opts *git.CheckoutOptions) error {
+func (w WorktreeMockFailing) Checkout(*git.CheckoutOptions) error {
 	if w.failingCheckout {
 		return errors.New("failed to checkout branch")
 	}
@@ -161,11 +161,11 @@ type WorktreeMock struct {
 	create             bool
 }
 
-func (WorktreeMock) Add(path string) (plumbing.Hash, error) {
+func (WorktreeMock) Add(string) (plumbing.Hash, error) {
 	return [20]byte{1, 2, 3}, nil
 }
 
-func (WorktreeMock) Commit(msg string, opts *git.CommitOptions) (plumbing.Hash, error) {
+func (WorktreeMock) Commit(string, *git.CommitOptions) (plumbing.Hash, error) {
 	return [20]byte{4, 5, 6}, nil
 }
 
@@ -177,11 +177,11 @@ func (w *WorktreeMock) Checkout(opts *git.CheckoutOptions) error {
 
 type WorktreeUtilsNewBranch struct{}
 
-func (WorktreeUtilsNewBranch) Add(path string) (plumbing.Hash, error) {
+func (WorktreeUtilsNewBranch) Add(string) (plumbing.Hash, error) {
 	panic("implement me")
 }
 
-func (WorktreeUtilsNewBranch) Commit(msg string, opts *git.CommitOptions) (plumbing.Hash, error) {
+func (WorktreeUtilsNewBranch) Commit(string, *git.CommitOptions) (plumbing.Hash, error) {
 	panic("implement me")
 }
 
@@ -209,6 +209,6 @@ func (u *UtilsGitMock) plainClone(path string, isBare bool, o *git.CloneOptions)
 
 type UtilsGitMockError struct{}
 
-func (UtilsGitMockError) plainClone(path string, isBare bool, o *git.CloneOptions) (*git.Repository, error) {
+func (UtilsGitMockError) plainClone(string, bool, *git.CloneOptions) (*git.Repository, error) {
 	return nil, errors.New("error during clone")
 }

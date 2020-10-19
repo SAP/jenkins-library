@@ -142,7 +142,7 @@ func (e *gitOpsExecRunnerMock) Stdout(out io.Writer) {
 	e.out = out
 }
 
-func (gitOpsExecRunnerMock) Stderr(err io.Writer) {
+func (gitOpsExecRunnerMock) Stderr(io.Writer) {
 	panic("implement me")
 }
 
@@ -155,33 +155,33 @@ func (e *gitOpsExecRunnerMock) RunExecutable(executable string, params ...string
 
 type filesMockErrorTempDirCreation struct{}
 
-func (c filesMockErrorTempDirCreation) FileWrite(path string, content []byte, perm os.FileMode) error {
+func (c filesMockErrorTempDirCreation) FileWrite(string, []byte, os.FileMode) error {
 	panic("implement me")
 }
 
-func (filesMockErrorTempDirCreation) TempDir(dir, pattern string) (name string, err error) {
+func (filesMockErrorTempDirCreation) TempDir(string, string) (name string, err error) {
 	return "", errors.New("error appeared")
 }
 
-func (filesMockErrorTempDirCreation) RemoveAll(path string) error {
+func (filesMockErrorTempDirCreation) RemoveAll(string) error {
 	panic("implement me")
 }
 
 type gitUtilsMockErrorClone struct{}
 
-func (gitUtilsMockErrorClone) CommitSingleFile(filePath, commitMessage string) (plumbing.Hash, error) {
+func (gitUtilsMockErrorClone) CommitSingleFile(string, string) (plumbing.Hash, error) {
 	panic("implement me")
 }
 
-func (gitUtilsMockErrorClone) PushChangesToRepository(username, password string) error {
+func (gitUtilsMockErrorClone) PushChangesToRepository(string, string) error {
 	panic("implement me")
 }
 
-func (gitUtilsMockErrorClone) PlainClone(username, password, serverUrl, directory string) error {
+func (gitUtilsMockErrorClone) PlainClone(string, string, string, string) error {
 	return errors.New("error on clone")
 }
 
-func (gitUtilsMockErrorClone) ChangeBranch(branchName string) error {
+func (gitUtilsMockErrorClone) ChangeBranch(string) error {
 	panic("implement me")
 }
 
@@ -203,18 +203,18 @@ func (v *validGitUtilsMock) ChangeBranch(branchName string) error {
 	return nil
 }
 
-func (v *validGitUtilsMock) CommitSingleFile(filePath, commitMessage string) (plumbing.Hash, error) {
+func (v *validGitUtilsMock) CommitSingleFile(string, string) (plumbing.Hash, error) {
 	matches, _ := piperutils.Files{}.Glob("*/dir1/dir2/depl.yaml")
 	fileRead, _ := piperutils.Files{}.FileRead(matches[0])
 	v.savedFile = string(fileRead)
 	return [20]byte{123}, nil
 }
 
-func (validGitUtilsMock) PushChangesToRepository(username, password string) error {
+func (validGitUtilsMock) PushChangesToRepository(string, string) error {
 	return nil
 }
 
-func (validGitUtilsMock) PlainClone(username, password, serverUrl, directory string) error {
+func (validGitUtilsMock) PlainClone(_, _, _, directory string) error {
 	filePath := filepath.Join(directory, "dir1/dir2/depl.yaml")
 	err := piperutils.Files{}.MkdirAll(filepath.Join(directory, "dir1/dir2"), 0755)
 	if err != nil {
