@@ -212,11 +212,11 @@ func (validGitUtilsMock) PushChangesToRepository(username, password string, repo
 
 func (validGitUtilsMock) PlainClone(username, password, serverUrl, directory string) (gitUtil.UtilsRepository, error) {
 	filePath := filepath.Join(directory, "dir1/dir2/depl.yaml")
-	err2 := piperutils.Files{}.MkdirAll(filepath.Join(directory, "dir1/dir2"), 0755)
-	if err2 != nil {
-		return nil, err2
+	err := piperutils.Files{}.MkdirAll(filepath.Join(directory, "dir1/dir2"), 0755)
+	if err != nil {
+		return nil, err
 	}
-	err := piperutils.Files{}.FileWrite(filePath, []byte(existingYaml), 0755)
+	err = piperutils.Files{}.FileWrite(filePath, []byte(existingYaml), 0755)
 	if err != nil {
 		return nil, err
 	}
