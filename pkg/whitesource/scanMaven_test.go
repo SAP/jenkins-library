@@ -8,25 +8,6 @@ import (
 	"testing"
 )
 
-func newMavenScan(config *MavenScanOptions) *Scan {
-	return &Scan{
-		AggregateProjectName: config.ProjectName,
-		ProductVersion:       "product-version",
-	}
-}
-
-type mavenUtilsMock struct {
-	*mock.FilesMock
-	*mock.ExecMockRunner
-}
-
-func newMavenUtilsMock() *mavenUtilsMock {
-	return &mavenUtilsMock{
-		FilesMock:      &mock.FilesMock{},
-		ExecMockRunner: &mock.ExecMockRunner{},
-	}
-}
-
 func TestExecuteScanMaven(t *testing.T) {
 	t.Parallel()
 	t.Run("maven modules are aggregated", func(t *testing.T) {
@@ -40,16 +21,16 @@ func TestExecuteScanMaven(t *testing.T) {
     <packaging>jar</packaging>
 </project>
 `
-		config := MavenScanOptions{
+		config := ScanOptions{
 			ScanType:    "maven",
 			OrgToken:    "org-token",
 			UserToken:   "user-token",
 			ProductName: "mock-product",
 			ProjectName: "mock-project",
 		}
-		utilsMock := newMavenUtilsMock()
+		utilsMock := newScanUtilsMock()
 		utilsMock.AddFile("pom.xml", []byte(pomXML))
-		scan := newMavenScan(&config)
+		scan := newTestScan(&config)
 		// test
 		err := scan.ExecuteMavenScan(&config, utilsMock)
 		// assert
@@ -99,16 +80,16 @@ func TestExecuteScanMaven(t *testing.T) {
     <packaging>jar</packaging>
 </project>
 `
-		config := MavenScanOptions{
+		config := ScanOptions{
 			ScanType:    "maven",
 			OrgToken:    "org-token",
 			UserToken:   "user-token",
 			ProductName: "mock-product",
 		}
-		utilsMock := newMavenUtilsMock()
+		utilsMock := newScanUtilsMock()
 		utilsMock.AddFile("pom.xml", []byte(rootPomXML))
 		utilsMock.AddFile(filepath.Join("sub", "pom.xml"), []byte(modulePomXML))
-		scan := newMavenScan(&config)
+		scan := newTestScan(&config)
 		// test
 		err := scan.ExecuteMavenScan(&config, utilsMock)
 		// assert
@@ -140,14 +121,14 @@ func TestExecuteScanMaven(t *testing.T) {
 	})
 	t.Run("pom.xml does not exist", func(t *testing.T) {
 		// init
-		config := MavenScanOptions{
+		config := ScanOptions{
 			ScanType:    "maven",
 			OrgToken:    "org-token",
 			UserToken:   "user-token",
 			ProductName: "mock-product",
 		}
-		utilsMock := newMavenUtilsMock()
-		scan := newMavenScan(&config)
+		utilsMock := newScanUtilsMock()
+		scan := newTestScan(&config)
 		// test
 		err := scan.ExecuteMavenScan(&config, utilsMock)
 		// assert

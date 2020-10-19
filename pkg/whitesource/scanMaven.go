@@ -9,27 +9,6 @@ import (
 	"strings"
 )
 
-// MavenScanOptions contains parameters needed during the scan.
-type MavenScanOptions struct {
-	// ScanType defines the type of scan. Can be "maven" or "mta" for scanning with Maven.
-	ScanType    string
-	OrgToken    string
-	UserToken   string
-	ProductName string
-	// ProjectName is an optional name for an "aggregator" project.
-	// All scanned maven modules will be reflected in the aggregate project.
-	ProjectName                string
-	BuildDescriptorExcludeList []string
-	// PomPath is the path to root build descriptor file.
-	PomPath string
-	// M2Path is the path to the local maven repository.
-	M2Path string
-	// GlobalSettingsFile is an optional path to a global maven settings file.
-	GlobalSettingsFile string
-	// ProjectSettingsFile is an optional path to a local maven settings file.
-	ProjectSettingsFile string
-}
-
 type mavenUtils interface {
 	Stdout(out io.Writer)
 	Stderr(err io.Writer)
@@ -41,7 +20,7 @@ type mavenUtils interface {
 
 // ExecuteMavenScan constructs maven parameters from the given configuration, and executes the maven goal
 // "org.whitesource:whitesource-maven-plugin:19.5.1:update".
-func (s *Scan) ExecuteMavenScan(config *MavenScanOptions, utils mavenUtils) error {
+func (s *Scan) ExecuteMavenScan(config *ScanOptions, utils mavenUtils) error {
 	log.Entry().Infof("Using Whitesource scan for Maven project")
 	pomPath := config.PomPath
 	if pomPath == "" {
@@ -52,7 +31,7 @@ func (s *Scan) ExecuteMavenScan(config *MavenScanOptions, utils mavenUtils) erro
 
 // ExecuteMavenScanForPomFile constructs maven parameters from the given configuration, and executes the maven goal
 // "org.whitesource:whitesource-maven-plugin:19.5.1:update" for the given pom file.
-func (s *Scan) ExecuteMavenScanForPomFile(config *MavenScanOptions, utils mavenUtils, pomPath string) error {
+func (s *Scan) ExecuteMavenScanForPomFile(config *ScanOptions, utils mavenUtils, pomPath string) error {
 	pomExists, _ := utils.FileExists(pomPath)
 	if !pomExists {
 		return fmt.Errorf("for scanning with type '%s', the file '%s' must exist in the project root",
@@ -79,7 +58,7 @@ func (s *Scan) ExecuteMavenScanForPomFile(config *MavenScanOptions, utils mavenU
 	return err
 }
 
-func (s *Scan) generateMavenWhitesourceDefines(config *MavenScanOptions) []string {
+func (s *Scan) generateMavenWhitesourceDefines(config *ScanOptions) []string {
 	defines := []string{
 		"-Dorg.whitesource.orgToken=" + config.OrgToken,
 		"-Dorg.whitesource.product=" + config.ProductName,
@@ -104,7 +83,7 @@ func (s *Scan) generateMavenWhitesourceDefines(config *MavenScanOptions) []strin
 	return defines
 }
 
-func generateMavenWhitesourceFlags(config *MavenScanOptions, utils mavenUtils) (flags []string, excludes []string) {
+func generateMavenWhitesourceFlags(config *ScanOptions, utils mavenUtils) (flags []string, excludes []string) {
 	excludes = config.BuildDescriptorExcludeList
 	if len(excludes) == 0 {
 		excludes = []string{

@@ -10,21 +10,6 @@ import (
 	"path/filepath"
 )
 
-// MavenScanOptions contains parameters needed during the scan.
-type NPMScanOptions struct {
-	// ScanType defines the type of scan. Can be "maven" or "mta" for scanning with Maven.
-	ScanType     string
-	OrgToken     string
-	UserToken    string
-	ProductName  string
-	ProductToken string
-	// ProjectName is an optional name for an "aggregator" project.
-	// All scanned maven modules will be reflected in the aggregate project.
-	ProjectName                string
-	BuildDescriptorExcludeList []string
-	DefaultNpmRegistry         string
-}
-
 type npmUtils interface {
 	Stdout(out io.Writer)
 	Stderr(err io.Writer)
@@ -39,8 +24,8 @@ type npmUtils interface {
 	FileRemove(path string) error
 	RemoveAll(path string) error
 
-	FindPackageJSONFiles(config *NPMScanOptions) ([]string, error)
-	InstallAllNPMDependencies(config *NPMScanOptions, packageJSONFiles []string) error
+	FindPackageJSONFiles(config *ScanOptions) ([]string, error)
+	InstallAllNPMDependencies(config *ScanOptions, packageJSONFiles []string) error
 }
 
 const whiteSourceConfig = "whitesource.config.json"
@@ -63,7 +48,7 @@ func setValueOmitIfPresent(config map[string]interface{}, key, omitIfPresent str
 
 // writeWhitesourceConfigJSON creates or merges the file whitesource.config.json in the current
 // directory from the given NPMScanOptions.
-func (s *Scan) writeWhitesourceConfigJSON(config *NPMScanOptions, utils npmUtils, devDep, ignoreLsErrors bool) error {
+func (s *Scan) writeWhitesourceConfigJSON(config *ScanOptions, utils npmUtils, devDep, ignoreLsErrors bool) error {
 	var npmConfig = make(map[string]interface{})
 
 	exists, _ := utils.FileExists(whiteSourceConfig)
@@ -110,7 +95,7 @@ func (s *Scan) writeWhitesourceConfigJSON(config *NPMScanOptions, utils npmUtils
 }
 
 // ExecuteNpmScan iterates over all found npm modules and performs a scan in each one.
-func (s *Scan) ExecuteNpmScan(config *NPMScanOptions, utils npmUtils) error {
+func (s *Scan) ExecuteNpmScan(config *ScanOptions, utils npmUtils) error {
 	modules, err := utils.FindPackageJSONFiles(config)
 	if err != nil {
 		return fmt.Errorf("failed to find package.json files with excludes: %w", err)
@@ -130,7 +115,7 @@ func (s *Scan) ExecuteNpmScan(config *NPMScanOptions, utils npmUtils) error {
 
 // executeNpmScanForModule generates a configuration file whitesource.config.json with appropriate values from config,
 // installs all dependencies if necessary, and executes the scan via "npx whitesource run".
-func (s *Scan) executeNpmScanForModule(modulePath string, config *NPMScanOptions, utils npmUtils) error {
+func (s *Scan) executeNpmScanForModule(modulePath string, config *ScanOptions, utils npmUtils) error {
 	log.Entry().Infof("Executing Whitesource scan for NPM module '%s'", modulePath)
 
 	resetDir, err := utils.Getwd()
@@ -203,7 +188,7 @@ func getNpmProjectName(modulePath string, utils npmUtils) (string, error) {
 // This hack/work-around that should be removed once scanning it consistently performed using the Unified Agent.
 // A possible reason for encountering "npm ls" errors in the first place is that a different node version
 // is used for whitesourceExecuteScan due to a different docker image being used compared to the build stage.
-func reinstallNodeModulesIfLsFails(config *NPMScanOptions, utils npmUtils) error {
+func reinstallNodeModulesIfLsFails(config *ScanOptions, utils npmUtils) error {
 	// No need to have output from "npm ls" in the log
 	utils.Stdout(ioutil.Discard)
 	defer utils.Stdout(log.Writer())
@@ -234,7 +219,7 @@ func reinstallNodeModulesIfLsFails(config *NPMScanOptions, utils npmUtils) error
 
 // ExecuteYarnScan generates a configuration file whitesource.config.json with appropriate values from config,
 // installs whitesource yarn plugin and executes the scan.
-func (s *Scan) ExecuteYarnScan(config *NPMScanOptions, utils npmUtils) error {
+func (s *Scan) ExecuteYarnScan(config *ScanOptions, utils npmUtils) error {
 	// To stay compatible with what the step was doing before, trigger aggregation, although
 	// there is a great chance that it doesn't work with yarn the same way it doesn't with npm.
 	// Maybe the yarn code-path should be removed, and only npm stays.

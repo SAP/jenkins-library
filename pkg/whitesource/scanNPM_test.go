@@ -10,51 +10,8 @@ import (
 	"testing"
 )
 
-func newNPMScan(config *NPMScanOptions) *Scan {
-	return &Scan{
-		AggregateProjectName: config.ProjectName,
-		ProductVersion:       "product-version",
-	}
-}
-
-type npmInstall struct {
-	currentDir  string
-	packageJSON []string
-}
-
-type npmUtilsMock struct {
-	*mock.FilesMock
-	*mock.ExecMockRunner
-	npmInstalledModules []npmInstall
-}
-
-func (m *npmUtilsMock) RemoveAll(path string) error {
-	// TODO: Implement in FS Mock
-	return nil
-}
-
-func (m *npmUtilsMock) FindPackageJSONFiles(_ *NPMScanOptions) ([]string, error) {
-	matches, _ := m.Glob("**/package.json")
-	return matches, nil
-}
-
-func (m *npmUtilsMock) InstallAllNPMDependencies(_ *NPMScanOptions, packageJSONs []string) error {
-	m.npmInstalledModules = append(m.npmInstalledModules, npmInstall{
-		currentDir:  m.CurrentDir,
-		packageJSON: packageJSONs,
-	})
-	return nil
-}
-
-func newNPMUtilsMock() *npmUtilsMock {
-	return &npmUtilsMock{
-		FilesMock:      &mock.FilesMock{},
-		ExecMockRunner: &mock.ExecMockRunner{},
-	}
-}
-
 func TestExecuteScanNPM(t *testing.T) {
-	config := NPMScanOptions{
+	config := ScanOptions{
 		ScanType:    "npm",
 		OrgToken:    "org-token",
 		UserToken:   "user-token",
@@ -66,9 +23,9 @@ func TestExecuteScanNPM(t *testing.T) {
 
 	t.Run("happy path NPM", func(t *testing.T) {
 		// init
-		utilsMock := newNPMUtilsMock()
+		utilsMock := newScanUtilsMock()
 		utilsMock.AddFile("package.json", []byte(`{"name":"my-module-name"}`))
-		scan := newNPMScan(&config)
+		scan := newTestScan(&config)
 		// test
 		err := scan.ExecuteNpmScan(&config, utilsMock)
 		// assert
@@ -94,8 +51,8 @@ func TestExecuteScanNPM(t *testing.T) {
 	})
 	t.Run("no NPM modules", func(t *testing.T) {
 		// init
-		utilsMock := newNPMUtilsMock()
-		scan := newNPMScan(&config)
+		utilsMock := newScanUtilsMock()
+		scan := newTestScan(&config)
 		// test
 		err := scan.ExecuteNpmScan(&config, utilsMock)
 		// assert
@@ -105,9 +62,9 @@ func TestExecuteScanNPM(t *testing.T) {
 	})
 	t.Run("package.json needs name", func(t *testing.T) {
 		// init
-		utilsMock := newNPMUtilsMock()
+		utilsMock := newScanUtilsMock()
 		utilsMock.AddFile("package.json", []byte(`{"key":"value"}`))
-		scan := newNPMScan(&config)
+		scan := newTestScan(&config)
 		// test
 		err := scan.ExecuteNpmScan(&config, utilsMock)
 		// assert
@@ -115,14 +72,14 @@ func TestExecuteScanNPM(t *testing.T) {
 	})
 	t.Run("npm ls fails", func(t *testing.T) {
 		// init
-		utilsMock := newNPMUtilsMock()
+		utilsMock := newScanUtilsMock()
 		utilsMock.AddFile("package.json", []byte(`{"name":"my-module-name"}`))
 		utilsMock.AddFile(filepath.Join("app", "package.json"), []byte(`{"name":"my-app-module-name"}`))
 		utilsMock.AddFile("package-lock.json", []byte("dummy"))
 
 		utilsMock.ShouldFailOnCommand = make(map[string]error)
 		utilsMock.ShouldFailOnCommand["npm ls"] = fmt.Errorf("mock failure")
-		scan := newNPMScan(&config)
+		scan := newTestScan(&config)
 		// test
 		err := scan.ExecuteNpmScan(&config, utilsMock)
 		// assert
@@ -137,7 +94,7 @@ func TestExecuteScanNPM(t *testing.T) {
 }
 
 func TestWriteWhitesourceConfigJSON(t *testing.T) {
-	config := &NPMScanOptions{
+	config := &ScanOptions{
 		OrgToken:     "org-token",
 		UserToken:    "user-token",
 		ProductName:  "mock-product",
@@ -160,8 +117,8 @@ func TestWriteWhitesourceConfigJSON(t *testing.T) {
 
 	t.Run("write config from scratch", func(t *testing.T) {
 		// init
-		utils := newNPMUtilsMock()
-		scan := newNPMScan(config)
+		utils := newScanUtilsMock()
+		scan := newTestScan(config)
 		// test
 		err := scan.writeWhitesourceConfigJSON(config, utils, true, true)
 		// assert
@@ -182,10 +139,10 @@ func TestWriteWhitesourceConfigJSON(t *testing.T) {
 		initial["unknown"] = "preserved"
 		encoded, _ := json.Marshal(initial)
 
-		utils := newNPMUtilsMock()
+		utils := newScanUtilsMock()
 		utils.AddFile(whiteSourceConfig, encoded)
 
-		scan := newNPMScan(config)
+		scan := newTestScan(config)
 
 		// test
 		err := scan.writeWhitesourceConfigJSON(config, utils, true, true)
@@ -212,10 +169,10 @@ func TestWriteWhitesourceConfigJSON(t *testing.T) {
 		initial["projectToken"] = "mock-project-token"
 		encoded, _ := json.Marshal(initial)
 
-		utils := newNPMUtilsMock()
+		utils := newScanUtilsMock()
 		utils.AddFile(whiteSourceConfig, encoded)
 
-		scan := newNPMScan(config)
+		scan := newTestScan(config)
 
 		// test
 		err := scan.writeWhitesourceConfigJSON(config, utils, true, true)

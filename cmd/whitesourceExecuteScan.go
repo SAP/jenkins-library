@@ -66,8 +66,8 @@ type whitesourceUtils interface {
 	GetArtifactCoordinates(buildTool, buildDescriptorFile string,
 		options *versioning.Options) (versioning.Coordinates, error)
 
-	FindPackageJSONFiles(config *ws.NPMScanOptions) ([]string, error)
-	InstallAllNPMDependencies(config *ws.NPMScanOptions, packageJSONFiles []string) error
+	FindPackageJSONFiles(config *ws.ScanOptions) ([]string, error)
+	InstallAllNPMDependencies(config *ws.ScanOptions, packageJSONFiles []string) error
 
 	Now() time.Time
 }
@@ -92,18 +92,18 @@ func (w *whitesourceUtilsBundle) GetArtifactCoordinates(buildTool, buildDescript
 	return artifact.GetCoordinates()
 }
 
-func (w *whitesourceUtilsBundle) getNpmExecutor(config *ws.NPMScanOptions) npm.Executor {
+func (w *whitesourceUtilsBundle) getNpmExecutor(config *ws.ScanOptions) npm.Executor {
 	if w.npmExecutor == nil {
 		w.npmExecutor = npm.NewExecutor(npm.ExecutorOptions{DefaultNpmRegistry: config.DefaultNpmRegistry})
 	}
 	return w.npmExecutor
 }
 
-func (w *whitesourceUtilsBundle) FindPackageJSONFiles(config *ws.NPMScanOptions) ([]string, error) {
+func (w *whitesourceUtilsBundle) FindPackageJSONFiles(config *ws.ScanOptions) ([]string, error) {
 	return w.getNpmExecutor(config).FindPackageJSONFilesWithExcludes(config.BuildDescriptorExcludeList)
 }
 
-func (w *whitesourceUtilsBundle) InstallAllNPMDependencies(config *ws.NPMScanOptions, packageJSONFiles []string) error {
+func (w *whitesourceUtilsBundle) InstallAllNPMDependencies(config *ws.ScanOptions, packageJSONFiles []string) error {
 	return w.getNpmExecutor(config).InstallAllDependencies(packageJSONFiles)
 }
 
@@ -287,23 +287,8 @@ func validateProductVersion(version string) string {
 	return version
 }
 
-func wsMavenScanOptions(config *ScanOptions) *ws.MavenScanOptions {
-	return &ws.MavenScanOptions{
-		ScanType:                   config.ScanType,
-		OrgToken:                   config.OrgToken,
-		UserToken:                  config.UserToken,
-		ProductName:                config.ProductName,
-		ProjectName:                config.ProjectName,
-		BuildDescriptorExcludeList: config.BuildDescriptorExcludeList,
-		PomPath:                    config.BuildDescriptorFile,
-		M2Path:                     config.M2Path,
-		GlobalSettingsFile:         config.GlobalSettingsFile,
-		ProjectSettingsFile:        config.ProjectSettingsFile,
-	}
-}
-
-func wsNPMScanOptions(config *ScanOptions) *ws.NPMScanOptions {
-	return &ws.NPMScanOptions{
+func wsScanOptions(config *ScanOptions) *ws.ScanOptions {
+	return &ws.ScanOptions{
 		ScanType:                   config.ScanType,
 		OrgToken:                   config.OrgToken,
 		UserToken:                  config.UserToken,
@@ -311,6 +296,10 @@ func wsNPMScanOptions(config *ScanOptions) *ws.NPMScanOptions {
 		ProductToken:               config.ProductToken,
 		ProjectName:                config.ProjectName,
 		BuildDescriptorExcludeList: config.BuildDescriptorExcludeList,
+		PomPath:                    config.BuildDescriptorFile,
+		M2Path:                     config.M2Path,
+		GlobalSettingsFile:         config.GlobalSettingsFile,
+		ProjectSettingsFile:        config.ProjectSettingsFile,
 		DefaultNpmRegistry:         config.DefaultNpmRegistry,
 	}
 }
@@ -325,22 +314,22 @@ func executeScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils) err
 	switch config.ScanType {
 	case "mta":
 		// Execute scan for maven and all npm modules
-		if err := executeMTAScan(config, scan, utils); err != nil {
+		if err := scan.ExecuteMTAScan(wsScanOptions(config), utils); err != nil {
 			return err
 		}
 	case "maven":
 		// Execute scan with maven plugin goal
-		if err := scan.ExecuteMavenScan(wsMavenScanOptions(config), utils); err != nil {
+		if err := scan.ExecuteMavenScan(wsScanOptions(config), utils); err != nil {
 			return err
 		}
 	case "npm":
 		// Execute scan with in each npm module using npm.Executor
-		if err := scan.ExecuteNpmScan(wsNPMScanOptions(config), utils); err != nil {
+		if err := scan.ExecuteNpmScan(wsScanOptions(config), utils); err != nil {
 			return err
 		}
 	case "yarn":
 		// Execute scan with whitesource yarn plugin
-		if err := scan.ExecuteYarnScan(wsNPMScanOptions(config), utils); err != nil {
+		if err := scan.ExecuteYarnScan(wsScanOptions(config), utils); err != nil {
 			return err
 		}
 	default:
@@ -368,33 +357,6 @@ func executeUAScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils) e
 	return utils.RunExecutable("java", "-jar", config.AgentFileName, "-d", ".", "-c", config.ConfigFilePath,
 		"-apiKey", config.OrgToken, "-userKey", config.UserToken, "-project", scan.AggregateProjectName,
 		"-product", config.ProductName, "-productVersion", config.ProductVersion)
-}
-
-// executeMTAScan executes a scan for the Java part with maven, and performs a scan for each NPM module.
-func executeMTAScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils) error {
-	log.Entry().Infof("Executing Whitesource scan for MTA project")
-	pomExists, _ := utils.FileExists("pom.xml")
-	if pomExists {
-		if err := scan.ExecuteMavenScanForPomFile(wsMavenScanOptions(config), utils, "pom.xml"); err != nil {
-			return err
-		}
-	}
-
-	npmOptions := wsNPMScanOptions(config)
-	modules, err := utils.FindPackageJSONFiles(npmOptions)
-	if err != nil {
-		return err
-	}
-	if len(modules) > 0 {
-		if err := scan.ExecuteNpmScan(npmOptions, utils); err != nil {
-			return err
-		}
-	}
-
-	if !pomExists && len(modules) == 0 {
-		return fmt.Errorf("neither Maven nor NPM modules found, no scan performed")
-	}
-	return nil
 }
 
 func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource) error {
