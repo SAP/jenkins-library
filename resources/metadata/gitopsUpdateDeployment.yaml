@@ -22,7 +22,6 @@ spec:
           - STEPS
         type: string
         default: master
-        mandatory: false
       - name: commitMessage
         description: The commit message of the commit that will be done to do the changes.
         scope:
