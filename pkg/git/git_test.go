@@ -29,7 +29,7 @@ func TestCommit(t *testing.T) {
 			failingCommit: true,
 		})
 		assert.Error(t, err)
-		assert.EqualError(t, err, "error on commit")
+		assert.EqualError(t, err, "failed to commit file")
 	})
 }
 
@@ -97,7 +97,7 @@ func TestChangeBranch(t *testing.T) {
 			failingCheckout: true,
 		})
 		assert.Error(t, err)
-		assert.EqualError(t, err, "cannot checkout branch")
+		assert.EqualError(t, err, "failed to checkout branch")
 	})
 }
 
@@ -143,14 +143,14 @@ func (w WorktreeMockFailing) Add(path string) (plumbing.Hash, error) {
 
 func (w WorktreeMockFailing) Commit(msg string, opts *git.CommitOptions) (plumbing.Hash, error) {
 	if w.failingCommit {
-		return [20]byte{}, errors.New("failed to add file")
+		return [20]byte{}, errors.New("failed to commit file")
 	}
 	return [20]byte{}, nil
 }
 
 func (w WorktreeMockFailing) Checkout(opts *git.CheckoutOptions) error {
 	if w.failingCheckout {
-		return errors.New("failed to add file")
+		return errors.New("failed to checkout branch")
 	}
 	return nil
 }
