@@ -271,7 +271,7 @@ spec:
               - name: owner
               - name: scan_id
               - name: project_id
-              - name: project_name
+              - name: projectName
               - name: team
               - name: team_full_path_on_report_date
               - name: scan_start
