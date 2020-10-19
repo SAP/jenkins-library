@@ -11,7 +11,7 @@ import (
 // Replaces the Parameters placeholder with the content from the yaml
 func createParametersSection(stepData *config.StepData) string {
 
-	var parameters = "Parameters\n\n"
+	var parameters = "## Parameters\n\n"
 
 	// sort parameters alphabetically with mandatory parameters first
 	sortStepParameters(stepData, true)
@@ -105,7 +105,7 @@ func createParameterDetails(stepData *config.StepData) string {
 
 		details += fmt.Sprintf("| Aliases | %v |\n", aliasList(param.Aliases))
 		details += fmt.Sprintf("| Type | `%v` |\n", param.Type)
-		details += fmt.Sprintf("| Mandatory | %v |\n", ifThenElse(param.Mandatory && param.Default == nil, "**yes**", "no"))
+		details += fmt.Sprintf("| Mandatory | %v |\n", ifThenElse(param.Mandatory, "**yes**", "no"))
 		details += fmt.Sprintf("| Default | %v |\n", formatDefault(param, stepParameterNames))
 		if param.PossibleValues != nil {
 			details += fmt.Sprintf("| Possible values | %v |\n", possibleValueList(param.PossibleValues))

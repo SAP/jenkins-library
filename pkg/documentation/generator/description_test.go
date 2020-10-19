@@ -18,7 +18,7 @@ func TestCreateStepName(t *testing.T) {
 			input: &config.StepData{
 				Metadata: config.StepMetadata{Name: "teststep", Description: "TestDescription"},
 			},
-			want: "teststep\n\nTestDescription\n",
+			want: "# teststep\n\nTestDescription\n",
 		},
 	}
 	for _, testcase := range tests {
