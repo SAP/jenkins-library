@@ -85,6 +85,11 @@ spec:
           - name: checkmarxCredentialsId
             type: secret
             param: password
+          - type: vaultSecret
+            paths:
+              - $(vaultPath)/checkmarx
+              - $(vaultBasePath)/$(vaultPipelineName)/checkmarx
+              - $(vaultBasePath)/GROUP-SECRETS/checkmarx
       - name: preset
         type: string
         description: The preset to use for scanning, if not set explicitly the step will attempt to look up the project's setting based on the availability of `checkmarxCredentialsId`
@@ -163,6 +168,11 @@ spec:
           - name: checkmarxCredentialsId
             type: secret
             param: username
+          - type: vaultSecret
+            paths:
+              - $(vaultPath)/checkmarx
+              - $(vaultBasePath)/$(vaultPipelineName)/checkmarx
+              - $(vaultBasePath)/GROUP-SECRETS/checkmarx
       - name: verifyOnly
         type: bool
         description: Whether the step shall only apply verification checks or whether it does a full scan and check cycle
@@ -261,7 +271,7 @@ spec:
               - name: owner
               - name: scan_id
               - name: project_id
-              - name: project_name
+              - name: projectName
               - name: team
               - name: team_full_path_on_report_date
               - name: scan_start

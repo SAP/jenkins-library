@@ -20,20 +20,53 @@ type DocuHelperData struct {
 
 var stepParameterNames []string
 
+func readStepConfiguration(stepMetadata config.StepData, customDefaultFiles []string, docuHelperData DocuHelperData) config.StepConfig {
+	filters := stepMetadata.GetParameterFilters()
+	filters.All = append(filters.All, "collectTelemetryData")
+	filters.General = append(filters.General, "collectTelemetryData")
+	filters.Parameters = append(filters.Parameters, "collectTelemetryData")
+
+	defaultFiles := []io.ReadCloser{}
+	for _, projectDefaultFile := range customDefaultFiles {
+		fc, _ := docuHelperData.OpenFile(projectDefaultFile)
+		defer fc.Close()
+		defaultFiles = append(defaultFiles, fc)
+	}
+
+	configuration := config.Config{}
+	stepConfiguration, err := configuration.GetStepConfig(
+		map[string]interface{}{},
+		"",
+		nil,
+		defaultFiles,
+		false,
+		filters,
+		stepMetadata.Spec.Inputs.Parameters,
+		stepMetadata.Spec.Inputs.Secrets,
+		map[string]interface{}{},
+		"",
+		stepMetadata.Metadata.Name,
+		stepMetadata.Metadata.Aliases,
+	)
+	checkError(err)
+	return stepConfiguration
+}
+
 // GenerateStepDocumentation generates step coding based on step configuration provided in yaml files
-func GenerateStepDocumentation(metadataFiles []string, docuHelperData DocuHelperData) error {
+func GenerateStepDocumentation(metadataFiles []string, customDefaultFiles []string, docuHelperData DocuHelperData) error {
 	for key := range metadataFiles {
-		stepData := config.StepData{}
-		configFilePath := metadataFiles[key]
-		metadataFile, err := docuHelperData.OpenFile(configFilePath)
-		checkError(err)
-		defer metadataFile.Close()
-		fmt.Printf("Reading file: %v\n", configFilePath)
-		err = stepData.ReadPipelineStepData(metadataFile)
-		checkError(err)
+		stepMetadata := readStepMetadata(metadataFiles[key], docuHelperData)
+
+		adjustDefaultValues(&stepMetadata)
+
+		stepConfiguration := readStepConfiguration(stepMetadata, customDefaultFiles, docuHelperData)
+
+		applyCustomDefaultValues(&stepMetadata, stepConfiguration)
+
+		adjustMandatoryFlags(&stepMetadata)
+
 		fmt.Print("  Generate documentation.. ")
-		err = generateStepDocumentation(stepData, docuHelperData)
-		if err != nil {
+		if err := generateStepDocumentation(stepMetadata, docuHelperData); err != nil {
 			fmt.Println("")
 			fmt.Println(err)
 		} else {
