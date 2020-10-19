@@ -256,43 +256,6 @@ func (f *FilesMock) FileRemove(path string) error {
 	return nil
 }
 
-// RemoveAll deletes the association of the given path with any content and records the removal of the path.
-// If the path has not been registered before, it returns an error.
-func (f *FilesMock) RemoveAll(path string) error {
-	if f.files == nil {
-		return fmt.Errorf("the file '%s' does not exist: %w", path, os.ErrNotExist)
-	}
-	absPath := f.toAbsPath(path)
-
-	dirExists, _ := f.DirExists(path)
-	if !dirExists {
-		return fmt.Errorf("the path '%s' does not exist: %w", path, os.ErrNotExist)
-	}
-
-	delete(f.files, absPath)
-	f.removedFiles = append(f.removedFiles, absPath)
-
-	// Make sure the parent directory still exists, if it only existed via this one entry
-	leaf := filepath.Base(absPath)
-	absPath = strings.TrimSuffix(absPath, f.Separator+leaf)
-	if absPath != f.Separator {
-		relPath := strings.TrimPrefix(absPath, f.Separator+f.CurrentDir+f.Separator)
-		dirExists, _ := f.DirExists(relPath)
-		if !dirExists {
-			f.AddDir(relPath)
-		}
-	}
-
-	return nil
-}
-
-//TempDir Adds a temporary directory with a "hash"
-func (f *FilesMock) TempDir(dir, pattern string) (name string, err error) {
-	path := filepath.Join(dir, pattern+"hash")
-	f.AddDir(path)
-	return path, nil
-}
-
 // FileRename changes the path under which content is associated in the virtual file system.
 // Only leaf-entries are supported as of yet.
 func (f *FilesMock) FileRename(oldPath, newPath string) error {
