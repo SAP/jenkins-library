@@ -42,8 +42,7 @@ class AbapEnvironmentPipelineStageCloneRepositoriesTest extends BasePiperTest {
     void testAbapEnvironmentPipelineStageCloneRepositoriesPull() {
 
         nullScript.commonPipelineEnvironment.configuration = [
-            runStage: ['Prepare System': true],
-            runStep: ['Checkout Branch': [strategy: 'Pull']]
+            runStage: ['Prepare System': true, strategy: 'Pull'],
         ]
 
         jsr.step.abapEnvironmentPipelineStagePrepareSystem(script: nullScript)
