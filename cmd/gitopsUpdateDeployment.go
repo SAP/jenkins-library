@@ -17,7 +17,7 @@ import (
 )
 
 type iGitopsUpdateDeploymentGitUtils interface {
-	CommitSingleFile(filePath, commitMessage string) (plumbing.Hash, error)
+	CommitSingleFile(filePath, commitMessage, author string) (plumbing.Hash, error)
 	PushChangesToRepository(username, password string) error
 	PlainClone(username, password, serverURL, directory string) error
 	ChangeBranch(branchName string) error
@@ -40,8 +40,8 @@ type gitopsUpdateDeploymentGitUtils struct {
 	repository *git.Repository
 }
 
-func (g *gitopsUpdateDeploymentGitUtils) CommitSingleFile(filePath, commitMessage string) (plumbing.Hash, error) {
-	return gitUtil.CommitSingleFile(filePath, commitMessage, g.worktree)
+func (g *gitopsUpdateDeploymentGitUtils) CommitSingleFile(filePath, commitMessage, author string) (plumbing.Hash, error) {
+	return gitUtil.CommitSingleFile(filePath, commitMessage, author, g.worktree)
 }
 
 func (g *gitopsUpdateDeploymentGitUtils) PushChangesToRepository(username, password string) error {
@@ -163,7 +163,7 @@ func buildRegistryPlusImage(config *gitopsUpdateDeploymentOptions) (string, erro
 }
 
 func commitAndPushChanges(config *gitopsUpdateDeploymentOptions, gitUtils iGitopsUpdateDeploymentGitUtils) (plumbing.Hash, error) {
-	commit, err := gitUtils.CommitSingleFile(config.FilePath, config.CommitMessage)
+	commit, err := gitUtils.CommitSingleFile(config.FilePath, config.CommitMessage, config.Username)
 	if err != nil {
 		return [20]byte{}, errors.Wrap(err, "committing changes failed")
 	}
