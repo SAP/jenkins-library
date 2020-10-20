@@ -109,7 +109,6 @@ spec:
           - name: commonPipelineEnvironment
             param: container/imageNameTag
         scope:
-          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
@@ -119,8 +118,3 @@ spec:
       options:
         - name: -u
           value: "0"
-      conditions:
-        - conditionRef: strings-equal
-          params:
-            - name: deployTool
-              value: kubectl
