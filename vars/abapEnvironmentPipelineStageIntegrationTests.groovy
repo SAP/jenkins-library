@@ -25,8 +25,8 @@ void call(Map parameters = [:]) {
         .loadStepDefaults()
         .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
         .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
-        .addIfEmpty('confirmDeletion', true)
         .mixin(parameters, PARAMETER_KEYS)
+        .addIfEmpty('confirmDeletion', true)
         .use()
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
