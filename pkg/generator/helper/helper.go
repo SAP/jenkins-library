@@ -114,7 +114,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
-				os.RemoveAll(config.VaultSecretFileDirectory)
+				config.RemoveVaultSecretFiles()
 				{{- range $notused, $oRes := .OutputResources }}
 				{{ index $oRes "name" }}.persist({{if $.ExportPrefix}}{{ $.ExportPrefix }}.{{end}}GeneralConfig.EnvRootPath, "{{ index $oRes "name" }}"){{ end }}
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())

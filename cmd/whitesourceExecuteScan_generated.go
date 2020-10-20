@@ -107,7 +107,7 @@ check and additional Free and Open Source Software Publicly Known Vulnerabilitie
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
-				os.RemoveAll(config.VaultSecretFileDirectory)
+				config.RemoveVaultSecretFiles()
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)

@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
@@ -23,7 +24,7 @@ func TestVaultConfigLoad(t *testing.T) {
 		vaultData := map[string]string{secretName: "value1"}
 
 		vaultMock.On("GetKvSecret", "team1/pipelineA").Return(vaultData, nil)
-		resolveVaultReferences(&stepConfig, vaultMock, stepParams)
+		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams)
 		assert.Equal(t, "value1", stepConfig.Config[secretName])
 	})
 
@@ -36,7 +37,7 @@ func TestVaultConfigLoad(t *testing.T) {
 		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", "$(vaultBasePath)/pipelineA")}
 		vaultData := map[string]string{secretName: "value1"}
 		vaultMock.On("GetKvSecret", "team1/pipelineA").Return(vaultData, nil)
-		resolveVaultReferences(&stepConfig, vaultMock, stepParams)
+		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams)
 
 		assert.Equal(t, "preset value", stepConfig.Config[secretName])
 	})
@@ -48,7 +49,7 @@ func TestVaultConfigLoad(t *testing.T) {
 		}}
 		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", "$(vaultBasePath)/pipelineA")}
 		vaultMock.On("GetKvSecret", "team1/pipelineA").Return(nil, fmt.Errorf("test"))
-		resolveVaultReferences(&stepConfig, vaultMock, stepParams)
+		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams)
 		assert.Len(t, stepConfig.Config, 1)
 	})
 
@@ -59,7 +60,7 @@ func TestVaultConfigLoad(t *testing.T) {
 		}}
 		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", "$(vaultBasePath)/pipelineA")}
 		vaultMock.On("GetKvSecret", "team1/pipelineA").Return(nil, nil)
-		resolveVaultReferences(&stepConfig, vaultMock, stepParams)
+		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams)
 		assert.Len(t, stepConfig.Config, 1)
 	})
 
@@ -74,7 +75,7 @@ func TestVaultConfigLoad(t *testing.T) {
 		vaultData := map[string]string{secretName: "value1"}
 		vaultMock.On("GetKvSecret", "team1/pipelineA").Return(nil, nil)
 		vaultMock.On("GetKvSecret", "team1/pipelineB").Return(vaultData, nil)
-		resolveVaultReferences(&stepConfig, vaultMock, stepParams)
+		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams)
 		assert.Equal(t, "value1", stepConfig.Config[secretName])
 	})
 
@@ -88,7 +89,7 @@ func TestVaultConfigLoad(t *testing.T) {
 		}
 		vaultData := map[string]string{secretName: "value1"}
 		vaultMock.On("GetKvSecret", "team1/pipelineA").Return(vaultData, nil)
-		resolveVaultReferences(&stepConfig, vaultMock, stepParams)
+		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams)
 		assert.Equal(t, "value1", stepConfig.Config[secretName])
 		vaultMock.AssertNotCalled(t, "GetKvSecret", "team1/pipelineB")
 	})
@@ -97,11 +98,14 @@ func TestVaultConfigLoad(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
 		stepConfig := StepConfig{Config: map[string]interface{}{}}
 		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", "$(vaultBasePath)/pipelineA")}
-		resolveVaultReferences(&stepConfig, vaultMock, stepParams)
+		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams)
 		assert.Equal(t, nil, stepConfig.Config[secretName])
 		vaultMock.AssertNotCalled(t, "GetKvSecret", mock.AnythingOfType("string"))
 	})
+}
 
+func TestVaultSecretFiles(t *testing.T) {
+	const secretName = "testSecret"
 	t.Run("Test Vault Secret File Reference", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
 		stepConfig := StepConfig{Config: map[string]interface{}{
@@ -110,13 +114,35 @@ func TestVaultConfigLoad(t *testing.T) {
 		stepParams := []StepParameters{stepParam(secretName, "vaultSecretFile", "$(vaultPath)/pipelineA")}
 		vaultData := map[string]string{secretName: "value1"}
 		vaultMock.On("GetKvSecret", "team1/pipelineA").Return(vaultData, nil)
-		resolveVaultReferences(&stepConfig, vaultMock, stepParams)
+		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams)
 		assert.NotNil(t, stepConfig.Config[secretName])
 		path := stepConfig.Config[secretName].(string)
 		contentByte, err := ioutil.ReadFile(path)
 		assert.NoError(t, err)
 		content := string(contentByte)
 		assert.Equal(t, content, "value1")
+	})
+
+	os.RemoveAll(VaultSecretFileDirectory)
+	VaultSecretFileDirectory = ""
+
+	t.Run("Test temporary secret file cleanup", func(t *testing.T) {
+		vaultMock := &mocks.VaultMock{}
+		stepConfig := StepConfig{Config: map[string]interface{}{
+			"vaultPath": "team1",
+		}}
+		stepParams := []StepParameters{stepParam(secretName, "vaultSecretFile", "$(vaultPath)/pipelineA")}
+		vaultData := map[string]string{secretName: "value1"}
+		assert.NoDirExists(t, VaultSecretFileDirectory)
+		vaultMock.On("GetKvSecret", "team1/pipelineA").Return(vaultData, nil)
+		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams)
+		assert.NotNil(t, stepConfig.Config[secretName])
+		path := stepConfig.Config[secretName].(string)
+		assert.DirExists(t, VaultSecretFileDirectory)
+		assert.FileExists(t, path)
+		RemoveVaultSecretFiles()
+		assert.NoFileExists(t, path)
+		assert.NoDirExists(t, VaultSecretFileDirectory)
 	})
 }
 
