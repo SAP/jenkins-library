@@ -28,6 +28,11 @@ type FileUtils interface {
 type Files struct {
 }
 
+// TempDir creates a temporary directory
+func (f Files) TempDir(dir, pattern string) (name string, err error) {
+	return ioutil.TempDir(dir, pattern)
+}
+
 // FileExists returns true if the file system entry for the given path exists and is not a directory.
 func (f Files) FileExists(filename string) (bool, error) {
 	info, err := os.Stat(filename)
