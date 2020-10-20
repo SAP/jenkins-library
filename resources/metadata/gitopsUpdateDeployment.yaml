@@ -108,7 +108,6 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: container/imageNameTag
-        mandatory: true
         scope:
           - PARAMETERS
           - STAGES

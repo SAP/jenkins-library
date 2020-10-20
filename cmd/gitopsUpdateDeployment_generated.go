@@ -103,7 +103,6 @@ func addGitopsUpdateDeploymentFlags(cmd *cobra.Command, stepConfig *gitopsUpdate
 	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("filePath")
 	cmd.MarkFlagRequired("containerName")
-	cmd.MarkFlagRequired("containerImage")
 }
 
 // retrieve step metadata
@@ -207,7 +206,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
-						Mandatory: true,
+						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "image"}, {Name: "containerImageNameTag"}},
 					},
 				},
