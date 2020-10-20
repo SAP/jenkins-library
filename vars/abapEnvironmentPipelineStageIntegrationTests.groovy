@@ -35,7 +35,7 @@ void call(Map parameters = [:]) {
             script.currentBuild.result = 'UNSTABLE'
         }
         if (config.confirmDeletion) {
-            input message: "Pipeline status is not successful. Once you proceed, the system will be deleted."
+            input message: "Add-on product was installed successfully? Once you proceed, the test system will be deleted."
         }
         cloudFoundryDeleteService script: parameters.script
     }
