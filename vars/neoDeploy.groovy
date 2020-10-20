@@ -236,48 +236,48 @@ void call(parameters = [:]) {
                 }
             }
         }
-        if(configuration.neo.invalidateCache == true) {
-           def account = configuration.neo.account
-           def host = configuration.neo.host
+    }
+}
 
-            withCredentials([usernamePassword(
-                credentialsId: configuration.neo.oauthCredentialId,
-                passwordVariable: 'OAUTH_NEO_PASSWORD',
-                usernameVariable: 'OAUTH_NEO_USERNAME')]) {
-                def bearerTokenResponse = sh(
-                    script: """#!/bin/bash
-                   curl -X POST -u "${OAUTH_NEO_USERNAME}:${OAUTH_NEO_PASSWORD}" \
-             \"https://oauthasservices-${account}.${host}/oauth2/api/v1/token?grant_type=client_credentials&scope=write,read\"
+private inValidateCache(configuration){
+    if(configuration.neo.invalidateCache == true) {
+        def account = configuration.neo.account
+        def host = configuration.neo.host
+
+        withCredentials([usernamePassword(
+            credentialsId: configuration.neo.oauthCredentialId,
+            passwordVariable: 'OAUTH_NEO_CLIENTSECRET',
+            usernameVariable: 'OAUTH_NEO_CLIENTID')]) {
+            def bearerTokenResponse = sh(
+                script: """#!/bin/bash
+                   curl -X POST -u "${OAUTH_NEO_CLIENTID}:${OAUTH_NEO_CLIENTSECRET}" \
+           \"https://oauthasservices-${account}.${host}/oauth2/api/v1/token?grant_type=client_credentials&scope=write,read\"
                 """,
-                    returnStdout: true
-                )
-                def fetchBearerTokenJson = readJSON  text: bearerTokenResponse
-                echo "xxx bearer token ${fetchBearerTokenJson}"
+                returnStdout: true
+            )
+            def fetchBearerTokenJson = readJSON  text: bearerTokenResponse
 
-                 def bearerToken = fetchBearerTokenJson.access_token
+            def bearerToken = fetchBearerTokenJson.access_token
 
-                echo "Retrieved bearer token ${bearerToken}"
+            echo "Retrieved bearer token."
 
-                def xcsrfTokenResponse = sh(
-                    script: """#!/bin/bash
-                              curl -i -L \
-                              -c 'cookies.jar' \
-                              -H 'X-CSRF-Token: Fetch' \
-                              -H "Authorization: Bearer ${bearerToken}" \
+            def xcsrfTokenResponse = sh(
+                script: """#!/bin/bash
+                               curl -i -L \
+                               -c 'cookies.jar' \
+                               -H 'X-CSRF-Token: Fetch' \
+                               -H "Authorization: Bearer ${bearerToken}" \
                             \"https://sandboxportal-${account}.${host}/fiori/api/v1/csrf\"
                     """, returnStdout: true)
 
-                def xcsrfTokenHeaderMatcher=xcsrfTokenResponse =~ /(?m)^X-CSRF-Token: ([0-9A-Z]*)$/
-                echo "xxx: ${xcsrfTokenHeaderMatcher.size()}"
-                 def xcsrfToken = xcsrfTokenHeaderMatcher[0][1]
+            def xcsrfTokenHeaderMatcher=xcsrfTokenResponse =~ /(?m)^X-CSRF-Token: ([0-9A-Z]*)$/
+            def xcsrfToken = xcsrfTokenHeaderMatcher[0][1]
 
-                echo "xcsrf token is $xcsrfToken"
+            def siteId = configuration.neo.siteId
+            echo "Invalidating cache for siteId: ${siteId}."
 
-                def siteId = configuration.neo.siteId
-                echo "Invalidating cache for siteId: ${siteId}"
-
-               def status = sh(
-                   script: """#!/bin/bash
+            def status = sh(
+                script: """#!/bin/bash
                        curl -X POST -L \
                        -b 'cookies.jar'  \
                        -H "X-CSRF-Token: ${xcsrfToken}" \
@@ -285,73 +285,9 @@ void call(parameters = [:]) {
                        -d "{\"siteId\":\"${siteId}\"}" \
                        \"https://sandboxportal-${account}.${host}/fiori/v1/operations/invalidateCache\"
                   """,
-                   returnStdout: true)
-                echo "response is ${status}"
-            }
+                returnStdout: true)
+            echo "Successfully invalidated the cache."
         }
-    }
-}
-
-private invalidateCache(configuration){
-    def account = configuration.neo.account
-    def host = configuration.neo.host
-
-    withCredentials([usernamePassword(
-        credentialsId: configuration.neo.oauthCredentialId,
-        passwordVariable: 'OAUTH_NEO_CLIENT_SECRET',
-        usernameVariable: 'OAUTH_NEO_CLIENT_ID')]) {
-        def bearerTokenResponse = sh(
-            script: """#!/bin/bash
-                       curl -X POST -u "${OAUTH_NEO_CLIENT_ID}:${OAUTH_NEO_CLIENT_SECRET}" \
-                            --fail \
-                            "https://oauthasservices-${account}.${host}/oauth2/api/v1/token?grant_type=client_credentials&scope=write,read"
-                    """, returnStdout: true)
-        def bearerToken = readJSON(text: bearerTokenResponse).access_token
-
-        echo "Retrieved bearer token."
-
-        def fetchXcsrfTokenResponse = sh(
-            script: """#!/bin/bash
-                       curl -i -L \
-                            -c 'cookies.jar' \
-                            -H 'X-CSRF-Token: Fetch' \
-                            -H "Authorization: Bearer ${bearerToken}" \
-                            --fail \
-                            "https://sandboxportal-${account}.${host}/fiori/api/v1/csrf"
-                    """, returnStdout: true)
-
-        def xcsrfToken = readProperties(text: fetchXcsrfTokenResponse)["X-CSRF-Token"]
-        def siteId = configuration.neo.siteId ?: ""
-
-        if(! siteId){
-            echo "Using the default site defined in Portal service and invalidating the cache."
-        }
-        else{
-            echo "Invalidating the cache for site with Id: ${siteId}."
-        }
-        def statusCode = sh(
-            script: """#!/bin/bash
-                       curl -X POST -L \
-                            -b 'cookies.jar'  \
-                            -H "X-CSRF-Token: ${xcsrfToken}" \
-                            -H "Authorization: Bearer ${bearerToken}" \
-                            -d "{\"siteId\":${siteId}}" \
-                            -so /dev/null \
-                            -w '%{response_code}' \
-                            "https://sandboxportal-${account}.${host}/fiori/v1/operations/invalidateCache"
-                    """,
-            returnStdout: true).trim()
-
-        if(! siteId && statusCode == "500") {
-            error "Invalidating the cache failed. " +
-                    "As no siteId is set, the default site defined in the portal UI is used. " +
-                    "Please verify a default site is defined in Portal service. " +
-                    "Alternatively, configure the siteId parameter for this step to invalidate the cache of that specific site."
-        }
-        else if(! statusCode == "200" || ! statusCode == "201" ){
-            error "Invalidating the cache failed with response code: ${statusCode}."
-        }
-        echo "Successfully invalidated the cache."
     }
 }
 
