@@ -14,6 +14,10 @@ Of course, this tackles only one part of the product lifecycle. Once the scenari
 ## The Add-on Product
 
 The installation and maintenance of ABAP software is done / controlled via software product versions. A **software product version** is a „bundle" of software component versions made available at the same time for implementing a well-defined scope of functionality. It is the technical / delivery view on a software portfolio.
+
+!!! caution "Initial Scope"
+    The initial scope supports an add-on product consisting of **one** software component. Furthermore, this software component can not be used in multiple add-on products
+
 A software product version is defined by a name and a version string. The name of a software product is a string with a maximum of 30 characters and consists of the namespace and a freely chooseble part - `/NAMESPC/PRODUCT1`. The version string consists of three numbers separated by a dot - `1.2.0`. The numbers in the version string have a hierarchic relationship:
 
 - The first number denotes the release. Release deliveries contain the complete scope of functionality. It is possible to change the software component version bundle in a new release.
