@@ -87,11 +87,11 @@ func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, i
 		options:     []string{},
 	}
 
-	influx.step_data.fields.sonar = "false"
+	influx.step_data.fields.sonar = false
 	if err := runSonar(config, &client, &runner); err != nil {
 		log.Entry().WithError(err).Fatal("Execution failed")
 	}
-	influx.step_data.fields.sonar = "true"
+	influx.step_data.fields.sonar = true
 }
 
 func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runner command.ExecRunner) error {

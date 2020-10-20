@@ -76,6 +76,7 @@ func Execute() {
 	rootCmd.AddCommand(GithubCreatePullRequestCommand())
 	rootCmd.AddCommand(GithubPublishReleaseCommand())
 	rootCmd.AddCommand(GithubSetCommitStatusCommand())
+	rootCmd.AddCommand(GitopsUpdateDeploymentCommand())
 	rootCmd.AddCommand(CloudFoundryDeleteServiceCommand())
 	rootCmd.AddCommand(AbapEnvironmentPullGitRepoCommand())
 	rootCmd.AddCommand(AbapEnvironmentCloneGitRepoCommand())
@@ -207,10 +208,10 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 
 	// add vault credentials so that configuration can be fetched from vault
 	if GeneralConfig.VaultRoleID == "" {
-		GeneralConfig.VaultRoleID = os.Getenv("PIPER_vaultRoleID")
+		GeneralConfig.VaultRoleID = os.Getenv("PIPER_vaultAppRoleID")
 	}
 	if GeneralConfig.VaultRoleSecretID == "" {
-		GeneralConfig.VaultRoleSecretID = os.Getenv("PIPER_vaultRoleSecretID")
+		GeneralConfig.VaultRoleSecretID = os.Getenv("PIPER_vaultAppRoleSecretID")
 	}
 	myConfig.SetVaultCredentials(GeneralConfig.VaultRoleID, GeneralConfig.VaultRoleSecretID)
 

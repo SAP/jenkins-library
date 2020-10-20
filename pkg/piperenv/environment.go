@@ -55,13 +55,13 @@ func writeToDisk(filename string, data []byte) error {
 
 	if _, err := os.Stat(filepath.Dir(filename)); os.IsNotExist(err) {
 		log.Entry().Debugf("Creating directory: %v", filepath.Dir(filename))
-		os.MkdirAll(filepath.Dir(filename), 0755)
+		os.MkdirAll(filepath.Dir(filename), 0777)
 	}
 
 	//ToDo: make sure to not overwrite file but rather add another file? Create error if already existing?
 	if len(data) > 0 {
 		log.Entry().Debugf("Writing file to disk: %v", filename)
-		return ioutil.WriteFile(filename, data, 0755)
+		return ioutil.WriteFile(filename, data, 0766)
 	}
 	return nil
 }
