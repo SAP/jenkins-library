@@ -157,6 +157,8 @@ func buildRegistryPlusImage(config *gitopsUpdateDeploymentOptions) (string, erro
 	if url != "" {
 		url = url + "/"
 	}
+	log.Entry().Info("Extracted \"" + registryURL + "\" from \"" + config.ContainerRegistryURL + "\"")
+	log.Entry().Info("ContainerImage=\"" + config.ContainerImage + "\"")
 	return url + config.ContainerImage, nil
 }
 
