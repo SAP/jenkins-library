@@ -80,7 +80,7 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'oauthCredentialId',
     /**
-     * Site ID of the SAP Fiori Launchpad site to which the SAP Fiori app has to be added
+     * Site ID of the SAP Fiori Launchpad site to which the SAP Fiori app has to be added. If not set, takes the default value from Portal service
      * @parentConfigKey neo
      */
     'siteId'
@@ -244,11 +244,11 @@ private inValidateCache(configuration){
 
         withCredentials([usernamePassword(
             credentialsId: configuration.neo.oauthCredentialId,
-            passwordVariable: 'OAUTH_NEO_CLIENTSECRET',
-            usernameVariable: 'OAUTH_NEO_CLIENTID')]) {
+            passwordVariable: 'OAUTH_NEO_CLIENT_SECRET',
+            usernameVariable: 'OAUTH_NEO_CLIENT_ID')]) {
             def bearerTokenResponse = sh(
                 script: """#!/bin/bash
-                   curl -X POST -u "${OAUTH_NEO_CLIENTID}:${OAUTH_NEO_CLIENTSECRET}" \
+                   curl -X POST -u "${OAUTH_NEO_CLIENT_ID}:${OAUTH_NEO_CLIENT_SECRET}" \
            \"https://oauthasservices-${account}.${host}/oauth2/api/v1/token?grant_type=client_credentials&scope=write,read\"
                 """,
                 returnStdout: true
@@ -271,19 +271,32 @@ private inValidateCache(configuration){
             def xcsrfTokenHeaderMatcher=xcsrfTokenResponse =~ /(?m)^X-CSRF-Token: ([0-9A-Z]*)$/
             def xcsrfToken = xcsrfTokenHeaderMatcher[0][1]
 
-            def siteId = configuration.neo.siteId
-            echo "Invalidating cache for siteId: ${siteId}."
-
-            def status = sh(
-                script: """#!/bin/bash
+            def siteId = configuration.neo.siteId ? "${configuration.neo.siteId}" : ""
+            if(siteId ==""){
+                echo "Using the default value of siteId from Portal service and invalidating the cache."
+            }
+            else{
+                echo "Invalidating the cache for site Id : ${siteId}."
+            }
+                def statusCode = sh(
+                    script: """#!/bin/bash
                        curl -X POST -L \
                        -b 'cookies.jar'  \
                        -H "X-CSRF-Token: ${xcsrfToken}" \
                        -H "Authorization: Bearer ${bearerToken}" \
-                       -d "{\"siteId\":\"${siteId}\"}" \
+                       -d "{\"siteId\":${siteId}}" \
+                       -so /dev/null \
+                       -w '%{response_code}' \
                        \"https://sandboxportal-${account}.${host}/fiori/v1/operations/invalidateCache\"
                   """,
-                returnStdout: true)
+                    returnStdout: true)
+
+                if (siteId=="" && statusCode == "500") {
+                    error "Invalidating the cache failed with status code: ${statusCode}. " +
+                        "If no siteId is set, the default set in the portal UI is used. " +
+                        "Please verify if the siteID is set to default in Portal service. " +
+                        "If not, please configure it in the portal service or configure it's value in .pipeline/config.yml file"
+                }
             echo "Successfully invalidated the cache."
         }
     }
