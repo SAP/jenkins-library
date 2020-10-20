@@ -109,6 +109,7 @@ spec:
           - name: commonPipelineEnvironment
             param: container/imageNameTag
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
