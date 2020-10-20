@@ -1,0 +1,115 @@
+metadata:
+  name: gitopsUpdateDeployment
+  description: Updates Kubernetes Deployment Manifest in an Infrastructure Git Repository
+  longDescription: |
+    This step allows you to update the deployment manifest for Kubernetes in a git repository.
+
+    It can for example be used for GitOps scenarios where the update of the manifests triggers an update of the corresponding deployment in Kubernetes.
+
+    As of today, it supports the update of deployment yaml files via kubectl patch. The container inside the yaml must be described within the following hierarchy: {"spec":{"template":{"spec":{"containers":[{...}]}}}}
+spec:
+  inputs:
+    secrets:
+      - name: gitHttpsCredentialsId
+        description: Jenkins 'Username with password' credentials ID containing username/password for http access to your git repository.
+        type: jenkins
+    params:
+      - name: branchName
+        description: The name of the branch where the changes should get pushed into.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        default: master
+      - name: commitMessage
+        description: The commit message of the commit that will be done to do the changes.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        mandatory: true
+        default: Updated {{containerName}} to version {{containerImage}}
+      - name: serverUrl
+        aliases:
+          - name: githubServerUrl
+        description: GitHub server url to the repository.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        default: https://github.com
+        mandatory: true
+      - name: username
+        type: string
+        description: User name for git authentication
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+        secret: true
+        resourceRef:
+          - name: gitHttpsCredentialsId
+            type: secret
+            param: username
+      - name: password
+        type: string
+        description: Password/token for git authentication.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+        secret: true
+        resourceRef:
+          - name: gitHttpsCredentialsId
+            type: secret
+            param: password
+      - name: filePath
+        description: Relative path in the git repository to the deployment descriptor file that shall be updated
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        mandatory: true
+      - name: containerName
+        description: The name of the container to update
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        mandatory: true
+      - name: containerRegistryUrl
+        aliases:
+          - name: dockerRegistryUrl
+        type: string
+        description: http(s) url of the Container registry where the image is located
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/registryUrl
+      - name: containerImage
+        aliases:
+          - name: image
+            deprecated: true
+          - name: containerImageNameTag
+        type: string
+        description: Container image name with version tag to annotate in the deployment configuration.
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/imageNameTag
+        mandatory: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
