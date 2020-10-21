@@ -6,6 +6,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/pkg/errors"
+	"time"
 )
 
 // utilsWorkTree interface abstraction of git.Worktree to enable tests
@@ -40,7 +41,7 @@ func commitSingleFile(filePath, commitMessage, author string, worktree utilsWork
 
 	commit, err := worktree.Commit(commitMessage, &git.CommitOptions{
 		All:    true,
-		Author: &object.Signature{Name: author},
+		Author: &object.Signature{Name: author, When: time.Now()},
 	})
 	if err != nil {
 		return [20]byte{}, errors.Wrap(err, "failed to commit file")
