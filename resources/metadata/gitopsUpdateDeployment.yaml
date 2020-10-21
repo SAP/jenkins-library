@@ -101,17 +101,17 @@ spec:
       - name: containerImage
         aliases:
           - name: image
-            deprecated: true
+            #deprecated: true
           - name: containerImageNameTag
         type: string
         description: Container image name with version tag to annotate in the deployment configuration.
-        resourceRef:
-          - name: commonPipelineEnvironment
-            param: container/imageNameTag
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/imageNameTag
   containers:
     - image: dtzar/helm-kubectl:2.12.1
       workingDir: /config
