@@ -39,6 +39,7 @@ class SeleniumExecuteTestsTest extends BasePiperTest {
             gitMap = m
         })
         helper.registerAllowedMethod('usernamePassword', [Map], { m -> return m })
+        helper.registerAllowedMethod('sshagent', [List, Closure], { l, c -> c()})
         helper.registerAllowedMethod('withCredentials', [List, Closure], { l, c ->
             l.each {m ->
                 credentials.add(m)
@@ -127,9 +128,9 @@ class SeleniumExecuteTestsTest extends BasePiperTest {
         def expectedEnvVars = ['env1': 'value1', 'env2': 'value2']
         def expectedOptions = '--opt1=val1 --opt2=val2 --opt3'
         def expectedWorkspace = '/path/to/workspace'
-        
+
         nullScript.commonPipelineEnvironment.configuration = [steps:[seleniumExecuteTests:[
-            dockerImage: expectedImage, 
+            dockerImage: expectedImage,
             dockerOptions: expectedOptions,
             dockerEnvVars: expectedEnvVars,
             dockerWorkspace: expectedWorkspace
@@ -148,7 +149,7 @@ class SeleniumExecuteTestsTest extends BasePiperTest {
             assert dockerExecuteRule.dockerParams.dockerEnvVars[key] == value
         }
     }
-    
+
     @Test
     void testExecuteSeleniumCustomBuildTool() {
         stepRule.step.seleniumExecuteTests(
