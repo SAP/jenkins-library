@@ -58,6 +58,10 @@ To configure static code checks, please configure the step `mavenExecuteStaticCo
 
 ### backendIntegrationTests
 
+The `backendIntegrationTests` stage has been integrated into the project "Piper" stage `Integration`.
+Thus, it is required to update the stage name in the stages section of your configuration to `integration`.
+The configuration parameters available for the stage remain the same.
+
 | Property | Mandatory | Default Value | Description |
 | --- | --- | --- | --- |
 | `retry` | | `1` | The number of times that integration tests will retry before aborting the build. **Note:** This will consume more time for the jenkins build. |
@@ -67,7 +71,7 @@ To configure static code checks, please configure the step `mavenExecuteStaticCo
 Example:
 
 ```yaml
-backendIntegrationTests:
+integration:
   retry: 2
   credentials:
     - alias: 'ERP'
@@ -91,7 +95,7 @@ To use this optional feature the following configuration values have to be provi
 Example:
 
 ```yaml
-backendIntegrationTests:
+integration:
   retry: 2
   credentials:
     - alias: 'ERP'
@@ -106,6 +110,10 @@ backendIntegrationTests:
 ```
 
 ### frontendIntegrationTests
+
+The `frontendIntegrationTests` stage has been integrated into the project "Piper" stage `Integration`.
+Thus, it is required to update the stage name in the stages section of your configuration to `integration`.
+The configuration parameters available for the stage remain the same.
 
 | Property | Mandatory | Default Value | Description |
 | --- | --- | --- | --- |
