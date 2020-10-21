@@ -1,6 +1,7 @@
 package sonar
 
 import (
+	"github.com/SAP/jenkins-library/pkg/log"
 	sonarAPI "github.com/magicsong/sonargo/sonar"
 	"github.com/pkg/errors"
 )
@@ -37,7 +38,7 @@ func (api *IssueService) getIssueCount(severity issueSeverity) (int, error) {
 			return -1, err
 		}
 	}
-
+	log.Entry().Debugf("using api client for '%s'", api.Host)
 	result, _, err := api.client.Issues.Search(&sonarAPI.IssuesSearchOption{
 		ComponentKeys: api.Project,
 		Severities:    severity.ToString(),

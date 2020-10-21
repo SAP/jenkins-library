@@ -167,7 +167,7 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 	}
 
 	issues := SonarUtils.IssueService{
-		Host:    config.ServerURL,
+		Host:    taskReport.ServerURL,
 		Token:   config.Token,
 		Project: taskReport.ProjectKey,
 	}
