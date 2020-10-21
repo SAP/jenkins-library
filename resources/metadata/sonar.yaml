@@ -252,6 +252,12 @@ spec:
             fields:
               - name: sonar
                 type: bool
+          - name: sonarqube_data
+            fields:
+              - name: blocker_issues
+                type: int
+              - name: critical_issues
+                type: int
   containers:
     - name: sonar
       image: sonarsource/sonar-scanner-cli:4.5

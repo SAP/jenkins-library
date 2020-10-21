@@ -51,6 +51,14 @@ type sonarExecuteScanInflux struct {
 		tags struct {
 		}
 	}
+	sonarqube_data struct {
+		fields struct {
+			blocker_issues  int
+			critical_issues int
+		}
+		tags struct {
+		}
+	}
 }
 
 func (i *sonarExecuteScanInflux) persist(path, resourceName string) {
@@ -61,6 +69,8 @@ func (i *sonarExecuteScanInflux) persist(path, resourceName string) {
 		value       interface{}
 	}{
 		{valType: config.InfluxField, measurement: "step_data", name: "sonar", value: i.step_data.fields.sonar},
+		{valType: config.InfluxField, measurement: "sonarqube_data", name: "blocker_issues", value: i.sonarqube_data.fields.blocker_issues},
+		{valType: config.InfluxField, measurement: "sonarqube_data", name: "critical_issues", value: i.sonarqube_data.fields.critical_issues},
 	}
 
 	errCount := 0

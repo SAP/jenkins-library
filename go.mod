@@ -37,6 +37,8 @@ require (
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/imdario/mergo v0.3.11 // indirect
 	github.com/magiconair/properties v1.8.4
+	github.com/magicsong/color-glog v0.0.1 // indirect
+	github.com/magicsong/sonargo v0.0.1
 	github.com/mailru/easyjson v0.7.6 // indirect
 	github.com/mitchellh/mapstructure v1.3.3 // indirect
 	github.com/mitchellh/reflectwalk v1.0.1 // indirect
