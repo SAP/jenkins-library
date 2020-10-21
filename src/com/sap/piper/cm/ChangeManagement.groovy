@@ -172,29 +172,148 @@ public class ChangeManagement implements Serializable {
     void uploadFileToTransportRequestCTS(
         Map docker,
         String transportRequestId,
-        String filePath,
         String endpoint,
-        String credentialsId,
-        String cmclientOpts = '') {
+        String client,
+        String applicationName,
+        String description,
+        String abapPackage, // "package" would be better, but this is a keyword
+        String osDeployUser,
+        def deployToolDependencies,
+        def npmInstallOpts,
+        String deployConfigFile,
+        String credentialsId) {
 
-        def args = [
-                '-tID', transportRequestId,
-                "\"$filePath\""
-            ]
+        def script = this.script
 
-        int rc = executeWithCredentials(
-            BackendType.CTS,
-            docker,
-            endpoint,
-            credentialsId,
-            'upload-file-to-transport',
-            args,
-            false,
-            cmclientOpts) as int
+        def desc = description ?: 'Deployed with Piper based on SAP Fiori tools'
 
-        if(rc != 0) {
-            throw new ChangeManagementException(
-                "Cannot upload file into transport request. Return code from  cm client: $rc.")
+        if (deployToolDependencies in List) {
+            deployToolDependencies = deployToolDependencies.join(' ')
+        }
+
+        if (npmInstallOpts in List) {
+            npmInstallOpts = npmInstallOpts.join(' ')
+        }
+
+        deployToolDependencies = deployToolDependencies.trim()
+
+        /*
+            In case the configuration has been adjusted so that no deployToolDependencies are provided
+            we assume an image is used, which already contains all dependencies.
+            In this case we don't invoke npm install and we run the image with the standard user
+            already, since there is no need for being root. Hence we don't need to switch user also
+            in the script.
+         */
+        boolean noInstall = deployToolDependencies.isEmpty()
+
+        Iterable cmd = ['#!/bin/bash -e']
+
+        if (! noInstall) {
+            cmd << "npm install --global ${npmInstallOpts} ${deployToolDependencies}"
+            cmd << "su ${osDeployUser}"
+        } else {
+            script.echo "[INFO] no deploy dependencies provided. Skipping npm install call. Assuming docker image '${docker?.image}' already contains the dependencies for performing the deployment."
+        }
+
+        Iterable params = []
+
+        boolean useConfigFile = true, noConfig = false
+
+        if (!deployConfigFile) {
+            useConfigFile = false
+            noConfig = !script.fileExists('ui5-deploy.yaml')
+        } else {
+            if (script.fileExists(deployConfigFile)) {
+                // in this case we will use the config file
+                useConfigFile = true
+            } else {
+                if (deployConfigFile == 'ui5-deploy.yaml') {
+                    // in this case this is most likely provided by the piper default config and
+                    // it was not explicitly configured. Hence we assume not having a config file
+                    useConfigFile = false
+                    noConfig = true
+                } else {
+                    script.error("Configured deploy config file '${deployConfigFile}' does not exists.")
+                }
+            }
+        }
+
+        if (noConfig) {
+            params += ['--noConfig'] // no config file, but we will provide our parameters
+        }
+
+        if (useConfigFile) {
+            params += ['-c', "\"" + deployConfigFile + "\""]
+        }
+
+        //
+        // All the parameters below encapsulated in an if statement might also be provided in a config file.
+        // In case they are empty we don't add to the command line and we trust in the config file.
+        // In case they are finally missing the fiori deploy toolset will tell us.
+        //
+
+        if (transportRequestId) {
+            params += ['-t', transportRequestId]
+        }
+
+        if (endpoint) {
+            params += ['-u', endpoint]
+        }
+
+        if (abapPackage) {
+            params += ['-p', abapPackage]
+        }
+
+        if (applicationName) {
+            params += ['-n' , applicationName]
+        }
+
+        if (client) {
+            params += ['-l', client]
+        }
+
+        params += ['-e', "\"" + desc + "\""]
+
+        params += ['-f'] // failfast --> provide return code != 0 in case of any failure
+
+        params += ['-y'] // autoconfirm --> no need to press 'y' key in order to confirm the params and trigger the deployment
+
+        // Here we provide the names of the environment variable holding username and password. Below we set these values.
+        params += ['--username', 'ABAP_USER', '--password', 'ABAP_PASSWORD']
+
+        def fioriDeployCmd = "fiori deploy ${params.join(' ')}"
+        script.echo "Executing deploy command: '${fioriDeployCmd}'"
+        cmd << fioriDeployCmd
+
+        script.withCredentials([script.usernamePassword(
+            credentialsId: credentialsId,
+            passwordVariable: 'password',
+            usernameVariable: 'username')]) {
+
+            /*
+                After installing the deploy toolset we switch the user. Since we do not `su` with option `-l` the
+                environment variables are preserved. Hence the environment variables for user and password are
+                still available after the user switch.
+            */
+            def dockerEnvVars = docker.envVars ?: [:]
+            dockerEnvVars += [ABAP_USER: script.username, ABAP_PASSWORD: script.password]
+
+            def dockerOptions = docker.options ?: []
+            if (!noInstall) {
+                // when we install globally we need to be root, after preparing that we can su node` in the bash script.
+                // in case there is already a u provided the latest (... what we set here wins).
+                dockerOptions += ['-u', '0']
+            }
+
+            script.dockerExecute(
+                script: script,
+                dockerImage: docker.image,
+                dockerOptions: dockerOptions,
+                dockerEnvVars: dockerEnvVars,
+                dockerPullImage: docker.pullImage) {
+
+                script.sh script: cmd.join('\n')
+            }
         }
     }
 
