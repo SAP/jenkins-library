@@ -101,11 +101,12 @@ spec:
       - name: containerImage
         aliases:
           - name: image
-            #deprecated: true
+            deprecated: true
           - name: containerImageNameTag
         type: string
         description: Container image name with version tag to annotate in the deployment configuration.
         scope:
+          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
