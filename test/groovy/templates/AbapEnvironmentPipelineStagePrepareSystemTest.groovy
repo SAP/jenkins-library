@@ -56,6 +56,9 @@ class AbapEnvironmentPipelineStagePrepareSystemTest extends BasePiperTest {
         ]
         jsr.step.abapEnvironmentPipelineStagePrepareSystem(script: nullScript)
 
-        assertThat(stepsCalled, not(anyOf(hasItem('cloudFoundryCreateService'), hasItem('cloudFoundryCreateServiceKey'))))
+        assertThat(stepsCalled, not(hasItem('cloudFoundryCreateService')))
+        assertThat(stepsCalled, not(hasItem('cloudFoundryCreateServiceKey')))
+        //assertThat(stepsCalled, not(hasItems('cloudFoundryCreateService', 'cloudFoundryCreateServiceKey')))
+        //assertThat(stepsCalled, not(anyOf(hasItem('cloudFoundryCreateService'), hasItem('cloudFoundryCreateServiceKey'))))
     }
 }
