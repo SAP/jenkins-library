@@ -98,11 +98,11 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: container/registryUrl
-      - name: containerImage
+      - name: containerImageNameTag
         aliases:
           - name: image
             deprecated: true
-          - name: containerImageNameTag
+          - name: containerImage
         type: string
         description: Container image name with version tag to annotate in the deployment configuration.
         scope:

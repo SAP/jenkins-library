@@ -147,7 +147,7 @@ func runKubeCtlCommand(command gitopsUpdateDeploymentExecRunner, patchString str
 func buildRegistryPlusImage(config *gitopsUpdateDeploymentOptions) (string, error) {
 	registryURL := config.ContainerRegistryURL
 	if registryURL == "" {
-		return config.ContainerImage, nil
+		return config.ContainerImageNameTag, nil
 	}
 
 	url, err := docker.ContainerRegistryFromURL(registryURL)
@@ -158,8 +158,8 @@ func buildRegistryPlusImage(config *gitopsUpdateDeploymentOptions) (string, erro
 		url = url + "/"
 	}
 	log.Entry().Debug("Extracted \"" + url + "\" from \"" + registryURL + "\"")
-	log.Entry().Debug("ContainerImage=\"" + config.ContainerImage + "\"")
-	return url + config.ContainerImage, nil
+	log.Entry().Debug("ContainerImageNameTag=\"" + config.ContainerImageNameTag + "\"")
+	return url + config.ContainerImageNameTag, nil
 }
 
 func commitAndPushChanges(config *gitopsUpdateDeploymentOptions, gitUtils iGitopsUpdateDeploymentGitUtils) (plumbing.Hash, error) {
