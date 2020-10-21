@@ -62,6 +62,8 @@ removedOrReplacedSteps:
       The extension must pass all required options to the step via parameters, it cannot be configured in your .pipeline/config.yml."
 
 removedOrReplacedStages:
+  integrationTests:
+    newStageName: "integration"
   backendIntegrationTests:
     newStageName: "integration"
   frontendIntegrationTests:
