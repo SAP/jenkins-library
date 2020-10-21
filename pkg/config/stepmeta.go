@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -65,7 +64,7 @@ type ResourceReference struct {
 	Name    string   `json:"name"`
 	Type    string   `json:"type,omitempty"`
 	Param   string   `json:"param,omitempty"`
-	Paths   []string `json:"path,omitempty"`
+	Paths   []string `json:"paths,omitempty"`
 	Aliases []Alias  `json:"aliases,omitempty"`
 }
 
@@ -232,6 +231,11 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 		contextFilters = append(contextFilters, []string{"containerName", "containerPortMappings", "dockerName", "sidecarEnvVars", "sidecarImage", "sidecarName", "sidecarOptions", "sidecarPullImage", "sidecarReadyCommand", "sidecarVolumeBind", "sidecarWorkspace"}...)
 		//ToDo: add condition param.Value and param.Name to filter as for Containers
 	}
+
+	if m.HasReference("vaultSecret") {
+		contextFilters = append(contextFilters, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId"}...)
+	}
+
 	if len(contextFilters) > 0 {
 		filters.All = append(filters.All, contextFilters...)
 		filters.General = append(filters.General, contextFilters...)
@@ -362,7 +366,7 @@ func (m *StepData) GetResourceParameters(path, name string) map[string]interface
 	for _, param := range m.Spec.Inputs.Parameters {
 		for _, res := range param.ResourceRef {
 			if res.Name == name {
-				resourceParams[param.Name] = getParameterValue(path, name, res, param)
+				resourceParams[param.Name] = getParameterValue(path, res, param)
 			}
 		}
 	}
@@ -370,8 +374,8 @@ func (m *StepData) GetResourceParameters(path, name string) map[string]interface
 	return resourceParams
 }
 
-func getParameterValue(path, name string, res ResourceReference, param StepParameters) interface{} {
-	if val := piperenv.GetParameter(filepath.Join(path, name), res.Param); len(val) > 0 {
+func getParameterValue(path string, res ResourceReference, param StepParameters) interface{} {
+	if val := piperenv.GetResourceParameter(path, res.Name, res.Param); len(val) > 0 {
 		if param.Type != "string" {
 			var unmarshalledValue interface{}
 			err := json.Unmarshal([]byte(val), &unmarshalledValue)
@@ -393,6 +397,16 @@ func (m *StepParameters) GetReference(refType string) *ResourceReference {
 		}
 	}
 	return nil
+}
+
+// HasReference checks whether StepData contains a parameter that has Reference with the given type
+func (m *StepData) HasReference(refType string) bool {
+	for _, param := range m.Spec.Inputs.Parameters {
+		if param.GetReference(refType) != nil {
+			return true
+		}
+	}
+	return false
 }
 
 // EnvVarsAsMap converts container EnvVars into a map as required by dockerExecute

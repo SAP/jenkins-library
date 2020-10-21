@@ -84,8 +84,7 @@ func writeFileMock(filename string, data []byte, perm os.FileMode) error {
 func TestProcessMetaFiles(t *testing.T) {
 
 	stepHelperData := StepHelperData{configOpenFileMock, writeFileMock, ""}
-	docuHelperData := DocuHelperData{IsGenerateDocu: false}
-	ProcessMetaFiles([]string{"test.yaml"}, "./cmd", stepHelperData, docuHelperData)
+	ProcessMetaFiles([]string{"test.yaml"}, "./cmd", stepHelperData)
 
 	t.Run("step code", func(t *testing.T) {
 		goldenFilePath := filepath.Join("testdata", t.Name()+"_generated.golden")
@@ -110,7 +109,7 @@ func TestProcessMetaFiles(t *testing.T) {
 
 	t.Run("custom step code", func(t *testing.T) {
 		stepHelperData = StepHelperData{configOpenFileMock, writeFileMock, "piperOsCmd"}
-		ProcessMetaFiles([]string{"test.yaml"}, "./cmd", stepHelperData, docuHelperData)
+		ProcessMetaFiles([]string{"test.yaml"}, "./cmd", stepHelperData)
 
 		goldenFilePath := filepath.Join("testdata", t.Name()+"_generated.golden")
 		expected, err := ioutil.ReadFile(goldenFilePath)
@@ -160,7 +159,7 @@ func TestSetDefaultParameters(t *testing.T) {
 
 		osImport, err := setDefaultParameters(&stepData)
 
-		assert.NoError(t, err, "error occured but none expected")
+		assert.NoError(t, err, "error occurred but none expected")
 
 		assert.Equal(t, true, osImport, "import of os package required")
 
@@ -194,7 +193,7 @@ func TestSetDefaultParameters(t *testing.T) {
 
 		for k, v := range stepData {
 			_, err := setDefaultParameters(&v)
-			assert.Error(t, err, fmt.Sprintf("error expected but none occured for parameter %v", k))
+			assert.Error(t, err, fmt.Sprintf("error expected but none occurred for parameter %v", k))
 		}
 	})
 }

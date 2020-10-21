@@ -5,6 +5,7 @@ import java.util.List
 import java.util.Map
 
 import org.hamcrest.Matchers
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -12,6 +13,7 @@ import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
 import com.sap.piper.JenkinsUtils
+import com.sap.piper.Utils
 import com.sap.piper.cm.BackendType
 import com.sap.piper.cm.ChangeManagement
 import com.sap.piper.cm.ChangeManagementException
@@ -57,6 +59,12 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                                          ]
                                      ]
                                  ]
+        Utils.metaClass.echo = { def m -> }
+    }
+
+    @After
+    public void tearDown() {
+        Utils.metaClass = null
     }
 
     @Test
@@ -67,7 +75,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         // straight forward test case for CTS
 
         thrown.expect(IllegalArgumentException)
-        thrown.expectMessage("Change document id not provided (parameter: 'changeDocumentId' or via commit history).")
+        thrown.expectMessage("Change document id not provided (parameter: 'changeDocumentId' provided to the step call or via commit history).")
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
             String getChangeDocumentId(
@@ -98,7 +106,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         }
 
         thrown.expect(IllegalArgumentException)
-        thrown.expectMessage("Transport request id not provided (parameter: 'transportRequestId' or via commit history).")
+        thrown.expectMessage("Transport request id not provided (parameter: 'transportRequestId' provided to the step call or via commit history).")
 
         stepRule.step.transportRequestUploadFile(script: nullScript, changeDocumentId: '001', applicationId: 'app', filePath: '/path', cmUtils: cm)
     }
@@ -156,48 +164,75 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     @Test
     public void uploadFileToTransportRequestCTSSuccessTest() {
 
-        loggingRule.expect("[INFO] Uploading file '/path' to transport request '002'.")
-        loggingRule.expect("[INFO] File '/path' has been successfully uploaded to transport request '002'.")
+        loggingRule.expect("[INFO] Uploading application 'myApp' to transport request '002'.")
+        loggingRule.expect("[INFO] Application 'myApp' has been successfully uploaded to transport request '002'.")
 
         ChangeManagement cm = new ChangeManagement(nullScript) {
             void uploadFileToTransportRequestCTS(
                                               Map docker,
                                               String transportRequestId,
-                                              String filePath,
                                               String endpoint,
-                                              String credentialsId,
-                                              String cmclientOpts) {
+                                              String client,
+                                              String appName,
+                                              String appDescription,
+                                              String abapPackage,
+                                              String osDeployUser,
+                                              def deployToolsDependencies,
+                                              def npmInstallArgs,
+                                              String deployConfigFile,
+                                              String credentialsId) {
 
                 cmUtilReceivedParams.docker = docker
                 cmUtilReceivedParams.transportRequestId = transportRequestId
-                cmUtilReceivedParams.filePath = filePath
                 cmUtilReceivedParams.endpoint = endpoint
+                cmUtilReceivedParams.client = client
+                cmUtilReceivedParams.appName = appName
+                cmUtilReceivedParams.appDescription = appDescription
+                cmUtilReceivedParams.abapPackage = abapPackage
+                cmUtilReceivedParams.osDeployUser = osDeployUser
+                cmUtilReceivedParams.deployToolDependencies = deployToolsDependencies
+                cmUtilReceivedParams.npmInstallOpts = npmInstallArgs
+                cmUtilReceivedParams.deployConfigFile = deployConfigFile
                 cmUtilReceivedParams.credentialsId = credentialsId
-                cmUtilReceivedParams.cmclientOpts = cmclientOpts
             }
         }
 
         stepRule.step.transportRequestUploadFile(script: nullScript,
-                      changeManagement: [type: 'CTS'],
+                      changeManagement: [
+                          type: 'CTS',
+                          client: '001',
+                          cts: [
+                              osDeployUser: 'node2',
+                              deployToolDependencies: ['@ui5/cli', '@sap/ux-ui5-tooling', '@ui5/logger', '@ui5/fs', '@dummy/foo'],
+                              npmInstallOpts: ['--verbose'],
+                          ]
+                      ],
+                      applicationName: 'myApp',
+                      applicationDescription: 'the description',
+                      abapPackage: 'myPackage',
                       transportRequestId: '002',
-                      filePath: '/path',
                       cmUtils: cm)
 
         assert cmUtilReceivedParams ==
             [
                 docker: [
-                    image: 'ppiper/cm-client',
+                    image: 'node',
                     options:[],
                     envVars:[:],
                     pullImage:true
                 ],
                 transportRequestId: '002',
-                filePath: '/path',
                 endpoint: 'https://example.org/cm',
+                client: '001',
+                appName: 'myApp',
+                appDescription: 'the description',
+                abapPackage: 'myPackage',
+                osDeployUser: 'node2',
+                deployToolDependencies: ['@ui5/cli', '@sap/ux-ui5-tooling', '@ui5/logger', '@ui5/fs', '@dummy/foo'],
+                npmInstallOpts: ['--verbose'],
+                deployConfigFile: 'ui5-deploy.yaml',
                 credentialsId: 'CM',
-                cmclientOpts: ''
             ]
-
     }
 
     @Test

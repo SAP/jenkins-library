@@ -4,7 +4,17 @@ Init:
   - name: "source"
     includes: "**/*"
 
+'Initial Checks':
+  unstash:
+  - source
+  stashes: []
+
 'Prepare System':
+  unstash:
+  - source
+  stashes: []
+
+'Clone Repositories':
   unstash:
   - source
   stashes: []
@@ -14,7 +24,22 @@ ATC:
   - source
   stashes: []
 
-'Clone Repositories':
+Build:
+  unstash:
+  - source
+  stashes: []
+
+'Integration Tests':
+  unstash:
+  - source
+  stashes: []
+
+Confirm:
+  unstash:
+  - source
+  stashes: []
+
+Publish:
   unstash:
   - source
   stashes: []

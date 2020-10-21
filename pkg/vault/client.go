@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/hashicorp/vault/api"
 )
 
@@ -35,6 +36,40 @@ func NewClient(config *api.Config, token, namespace string) (Client, error) {
 
 	client.SetToken(token)
 	return Client{client.Logical()}, nil
+}
+
+// NewClientWithAppRole instantiates a new client and obtains a token via the AppRole auth method
+func NewClientWithAppRole(config *api.Config, roleID, secretID, namespace string) (Client, error) {
+	if config == nil {
+		config = api.DefaultConfig()
+	}
+
+	client, err := api.NewClient(config)
+	if err != nil {
+		return Client{}, err
+	}
+
+	if namespace != "" {
+		client.SetNamespace(namespace)
+	}
+
+	log.Entry().Debug("Using approle login")
+	result, err := client.Logical().Write("auth/approle/login", map[string]interface{}{
+		"role_id":   roleID,
+		"secret_id": secretID,
+	})
+
+	if err != nil {
+		return Client{}, err
+	}
+
+	authInfo := result.Auth
+	if authInfo == nil || authInfo.ClientToken == "" {
+		return Client{}, fmt.Errorf("Could not obtain token from approle with role_id %s", roleID)
+	}
+
+	log.Entry().Debugf("Login to vault %s in namespace %s successfull", config.Address, namespace)
+	return NewClient(config, authInfo.ClientToken, namespace)
 }
 
 // GetSecret uses the given path to fetch a secret from vault

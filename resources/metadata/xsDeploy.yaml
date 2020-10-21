@@ -7,7 +7,7 @@ spec:
   inputs:
     secrets:
       - name: credentialsId
-        description: Jenkins username/password credential for accessing xs endpoint.
+        description: Jenkins 'Username with password' credentials ID containing username/password for accessing xs endpoint.
         type: jenkins
     params:
       - name: deployOpts
@@ -88,9 +88,12 @@ spec:
           - STAGES
           - STEPS
         mandatory: true
-      - name: user
+      - name: username
+        aliases:
+          - name: user
+            deprecated: true
         type: string
-        description: User
+        description: Username
         scope:
           - PARAMETERS
           - STAGES
@@ -152,8 +155,6 @@ spec:
         type: piperEnvironment
         params:
           - name: operationId
-            fields:
-              - name: operationId
   containers:
     - name: xs
       image: ppiper/xs-cli
