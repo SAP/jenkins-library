@@ -130,7 +130,7 @@ func certificateUpdate(certLinks []string, httpClient piperhttp.Sender, fileUtil
 		if err != nil {
 			return errors.Wrap(err, "error reading response")
 		}
-		response.Body.Close()
+		_ = response.Body.Close()
 		content = append(content, []byte("\n")...)
 		caCerts = append(caCerts, content...)
 	}
