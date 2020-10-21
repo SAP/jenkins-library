@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/bmatcuk/doublestar"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -10,12 +9,14 @@ import (
 	"path/filepath"
 	"testing"
 
-	piperHttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/SAP/jenkins-library/pkg/mock"
-	FileUtils "github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/bmatcuk/doublestar"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	piperHttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/mock"
+	FileUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 //TODO: extract to mock package
@@ -126,7 +127,7 @@ func TestRunSonar(t *testing.T) {
 			os.Unsetenv("PIPER_SONAR_LOAD_CERTIFICATES")
 		}()
 		// test
-		err = runSonar(options, &mockClient, &mockRunner)
+		err = runSonar(options, &mockClient, &mockRunner, &sonarExecuteScanInflux{})
 		// assert
 		assert.NoError(t, err)
 		assert.Contains(t, sonar.options, "-Dsonar.projectVersion=1.2.3")
@@ -158,7 +159,7 @@ func TestRunSonar(t *testing.T) {
 			fileUtilsExists = FileUtils.FileExists
 		}()
 		// test
-		err = runSonar(options, &mockClient, &mockRunner)
+		err = runSonar(options, &mockClient, &mockRunner, &sonarExecuteScanInflux{})
 		// assert
 		assert.NoError(t, err)
 		assert.Contains(t, sonar.options, "-Dsonar.projectKey=piper")
@@ -197,7 +198,7 @@ func TestRunSonar(t *testing.T) {
 			InferJavaBinaries: true,
 		}
 		// test
-		err = runSonar(options, &mockClient, &mockRunner)
+		err = runSonar(options, &mockClient, &mockRunner, &sonarExecuteScanInflux{})
 		// assert
 		assert.NoError(t, err)
 		assert.Contains(t, sonar.options, fmt.Sprintf("-Dsonar.java.binaries=%s,%s,%s",
@@ -238,7 +239,7 @@ func TestRunSonar(t *testing.T) {
 			InferJavaBinaries: true,
 		}
 		// test
-		err = runSonar(options, &mockClient, &mockRunner)
+		err = runSonar(options, &mockClient, &mockRunner, &sonarExecuteScanInflux{})
 		// assert
 		assert.NoError(t, err)
 		assert.NotContains(t, sonar.options, fmt.Sprintf("-Dsonar.java.binaries=%s",
@@ -269,7 +270,7 @@ func TestRunSonar(t *testing.T) {
 			fileUtilsExists = FileUtils.FileExists
 		}()
 		// test
-		err = runSonar(options, &mockClient, &mockRunner)
+		err = runSonar(options, &mockClient, &mockRunner, &sonarExecuteScanInflux{})
 		// assert
 		assert.NoError(t, err)
 		assert.Contains(t, sonar.options, "-Dsonar.projectKey=mock-project-key")

@@ -10,6 +10,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bmatcuk/doublestar"
+	"github.com/pkg/errors"
+
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -18,8 +21,6 @@ import (
 	StepResults "github.com/SAP/jenkins-library/pkg/piperutils"
 	SonarUtils "github.com/SAP/jenkins-library/pkg/sonar"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/bmatcuk/doublestar"
-	"github.com/pkg/errors"
 )
 
 type sonarSettings struct {
@@ -88,13 +89,13 @@ func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, i
 	}
 
 	influx.step_data.fields.sonar = false
-	if err := runSonar(config, &client, &runner); err != nil {
+	if err := runSonar(config, &client, &runner, influx); err != nil {
 		log.Entry().WithError(err).Fatal("Execution failed")
 	}
 	influx.step_data.fields.sonar = true
 }
 
-func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runner command.ExecRunner) error {
+func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runner command.ExecRunner, influx *sonarExecuteScanInflux) error {
 	if len(config.ServerURL) > 0 {
 		sonar.addEnvironment("SONAR_HOST_URL=" + config.ServerURL)
 	}
@@ -163,6 +164,20 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 			},
 		}
 		StepResults.PersistReportsAndLinks("sonarExecuteScan", sonar.workingDir, nil, links)
+	}
+
+	issues := SonarUtils.IssueService{
+		Host:    config.ServerURL,
+		Token:   config.Token,
+		Project: taskReport.ProjectKey,
+	}
+	influx.sonarqube_data.fields.blocker_issues, err = issues.GetNumberOfBlockerIssues()
+	if err != nil {
+		log.Entry().Warn(err)
+	}
+	influx.sonarqube_data.fields.critical_issues, err = issues.GetNumberOfCriticalIssues()
+	if err != nil {
+		log.Entry().Warn(err)
 	}
 	return nil
 }
