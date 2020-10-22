@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -208,7 +209,7 @@ func verifyFFProjectCompliance(config fortifyExecuteScanOptions, sys fortify.Sys
 
 	influx.fortify_data.fields.projectName = *project.Name
 	influx.fortify_data.fields.projectVersion = *projectVersion.Name
-	influx.fortify_data.fields.violations = fmt.Sprintf("%v", numberOfViolations)
+	influx.fortify_data.fields.violations = numberOfViolations
 	if numberOfViolations > 0 {
 		return errors.New("fortify scan failed, the project is not compliant. For details check the archived report")
 	}
@@ -253,12 +254,12 @@ func getIssueDeltaFor(config fortifyExecuteScanOptions, sys fortify.System, issu
 		if strings.Contains(config.MustAuditIssueGroups, group) {
 			totalMinusAuditedDelta += groupTotalMinusAuditedDelta
 			if group == "Corporate Security Requirements" {
-				influx.fortify_data.fields.corporateTotal = fmt.Sprintf("%v", total)
-				influx.fortify_data.fields.corporateAudited = fmt.Sprintf("%v", audited)
+				influx.fortify_data.fields.corporateTotal = total
+				influx.fortify_data.fields.corporateAudited = audited
 			}
 			if group == "Audit All" {
-				influx.fortify_data.fields.auditAllTotal = fmt.Sprintf("%v", total)
-				influx.fortify_data.fields.auditAllAudited = fmt.Sprintf("%v", audited)
+				influx.fortify_data.fields.auditAllTotal = total
+				influx.fortify_data.fields.auditAllAudited = audited
 			}
 			log.Entry().Errorf("[projectVersionId %v]: Unaudited %v detected, count %v", projectVersionID, group, totalMinusAuditedDelta)
 			logIssueURL(config, projectVersionID, folderSelector, analysisSelector)
@@ -313,9 +314,9 @@ func getSpotIssueCount(config fortifyExecuteScanOptions, sys fortify.System, spo
 		auditStatus[group] = fmt.Sprintf("%v total : %v audited %v", total, audited, flagOutput)
 	}
 
-	influx.fortify_data.fields.spotChecksTotal = fmt.Sprintf("%v", overallIssues)
-	influx.fortify_data.fields.spotChecksAudited = fmt.Sprintf("%v", overallIssuesAudited)
-	influx.fortify_data.fields.spotChecksGap = fmt.Sprintf("%v", overallDelta)
+	influx.fortify_data.fields.spotChecksTotal = overallIssues
+	influx.fortify_data.fields.spotChecksAudited = overallIssuesAudited
+	influx.fortify_data.fields.spotChecksGap = overallDelta
 
 	return overallDelta
 }
@@ -351,9 +352,9 @@ func analyseSuspiciousExploitable(config fortifyExecuteScanOptions, sys fortify.
 	if suppressedCount > 0 {
 		auditStatus["Suppressed"] = fmt.Sprintf("WARNING: Detected %v suppressed issues which could violate audit compliance!!!", suppressedCount)
 	}
-	influx.fortify_data.fields.suspicious = fmt.Sprintf("%v", suspiciousCount)
-	influx.fortify_data.fields.exploitable = fmt.Sprintf("%v", exploitableCount)
-	influx.fortify_data.fields.suppressed = fmt.Sprintf("%v", suppressedCount)
+	influx.fortify_data.fields.suspicious = suspiciousCount
+	influx.fortify_data.fields.exploitable = exploitableCount
+	influx.fortify_data.fields.suppressed, _ = strconv.Atoi(fmt.Sprint(suppressedCount))
 
 	return result
 }
