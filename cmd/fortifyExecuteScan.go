@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
-	"strconv"
 	"strings"
 	"time"
 
@@ -354,7 +353,7 @@ func analyseSuspiciousExploitable(config fortifyExecuteScanOptions, sys fortify.
 	}
 	influx.fortify_data.fields.suspicious = suspiciousCount
 	influx.fortify_data.fields.exploitable = exploitableCount
-	influx.fortify_data.fields.suppressed, _ = strconv.Atoi(fmt.Sprint(suppressedCount))
+	influx.fortify_data.fields.suppressed = int(suppressedCount)
 
 	return result
 }
