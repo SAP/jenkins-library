@@ -32,6 +32,10 @@ class AbapEnvironmentPipelineStagePrepareSystemTest extends BasePiperTest {
             assertThat(m.stageName, is('Prepare System'))
             return body()
         })
+        helper.registerAllowedMethod('input', [Map], {m ->
+            stepsCalled.add('input')
+            return null
+        })
         helper.registerAllowedMethod('cloudFoundryCreateService', [Map.class], {m -> stepsCalled.add('cloudFoundryCreateService')})
         helper.registerAllowedMethod('cloudFoundryCreateServiceKey', [Map.class], {m -> stepsCalled.add('cloudFoundryCreateServiceKey')})
     }
