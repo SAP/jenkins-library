@@ -149,7 +149,7 @@ func buildATCCheckBody(ATCConfig ATCconfig) (checkVariantString string, packageS
 
 	//Build Check Variant and Configuration XML Body
 	if len(ATCConfig.CheckVariant) != 0 {
-		checkVariantString += ` check_variant="` + ATCConfig.CheckVariant + `"`
+		checkVariantString += ` checkVariant="` + ATCConfig.CheckVariant + `"`
 		if len(ATCConfig.Configuration) != 0 {
 			checkVariantString += ` configuration="` + ATCConfig.Configuration + `"`
 		}
