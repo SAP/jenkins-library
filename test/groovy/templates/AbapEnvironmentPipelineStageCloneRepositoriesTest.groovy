@@ -55,11 +55,10 @@ class AbapEnvironmentPipelineStageCloneRepositoriesTest extends BasePiperTest {
     void testAbapEnvironmentPipelineStageCloneRepositoriesClone() {
 
         nullScript.commonPipelineEnvironment.configuration = [
-            runStage: ['Prepare System': true],
-            runStep: ['Checkout Branch': [strategy: 'Clone']]
+            runStage: ['Prepare System': true]
         ]
         
-        jsr.step.abapEnvironmentPipelineStagePrepareSystem(script: nullScript)
+        jsr.step.abapEnvironmentPipelineStagePrepareSystem(script: nullScript, strategy: 'Clone')
 
         assertThat(stepsCalled, hasItems('abapEnvironmentCloneGitRepo'))
         assertThat(stepsCalled, not(hasItems('abapEnvironmentPullGitRepo', 'abapEnvironmentCheckoutBranch')))
@@ -69,11 +68,10 @@ class AbapEnvironmentPipelineStageCloneRepositoriesTest extends BasePiperTest {
     void testAbapEnvironmentPipelineStageCloneRepositoriesCheckoutPull() {
 
         nullScript.commonPipelineEnvironment.configuration = [
-            runStage: ['Prepare System': true],
-            runStep: ['Checkout Branch': [strategy: 'CheckoutPull']]
+            runStage: ['Prepare System': true]
         ]
         
-        jsr.step.abapEnvironmentPipelineStagePrepareSystem(script: nullScript)
+        jsr.step.abapEnvironmentPipelineStagePrepareSystem(script: nullScript, strategy: 'CheckoutPull')
 
         assertThat(stepsCalled, hasItems('abapEnvironmentPullGitRepo', 'abapEnvironmentCheckoutBranch'))
         assertThat(stepsCalled, not(hasItems('abapEnvironmentCloneGitRepo')))
@@ -83,11 +81,10 @@ class AbapEnvironmentPipelineStageCloneRepositoriesTest extends BasePiperTest {
     void testAbapEnvironmentPipelineStageCloneRepositoriesPullCheckoutPull() {
 
         nullScript.commonPipelineEnvironment.configuration = [
-            runStage: ['Prepare System': true],
-            runStep: ['Checkout Branch': [strategy: 'PullCheckoutPull']]
+            runStage: ['Prepare System': true]
         ]
         
-        jsr.step.abapEnvironmentPipelineStagePrepareSystem(script: nullScript)
+        jsr.step.abapEnvironmentPipelineStagePrepareSystem(script: nullScript, strategy: 'PullCheckoutPull')
 
         assertThat(stepsCalled, hasItems('abapEnvironmentPullGitRepo', 'abapEnvironmentCheckoutBranch'))
         assertThat(stepsCalled, not(hasItems('abapEnvironmentCloneGitRepo')))
@@ -97,11 +94,10 @@ class AbapEnvironmentPipelineStageCloneRepositoriesTest extends BasePiperTest {
     void testAbapEnvironmentPipelineStageCloneRepositoriesNoStrategy() {
 
         nullScript.commonPipelineEnvironment.configuration = [
-            runStage: ['Prepare System': true],
-            runStep: ['Checkout Branch': [strategy: '']]
+            runStage: ['Prepare System': true]
         ]
         
-        jsr.step.abapEnvironmentPipelineStagePrepareSystem(script: nullScript)
+        jsr.step.abapEnvironmentPipelineStagePrepareSystem(script: nullScript, strategy: '')
 
         assertThat(stepsCalled, hasItems('abapEnvironmentPullGitRepo'))
         assertThat(stepsCalled, not(hasItems('abapEnvironmentCloneGitRepo', 'abapEnvironmentCheckoutBranch')))

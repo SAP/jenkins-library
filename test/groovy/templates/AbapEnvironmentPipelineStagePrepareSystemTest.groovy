@@ -51,7 +51,7 @@ class AbapEnvironmentPipelineStagePrepareSystemTest extends BasePiperTest {
         assertThat(stepsCalled, hasItem('cloudFoundryCreateService'))
         assertThat(stepsCalled, hasItem('cloudFoundryCreateServiceKey'))
     }
-
+    /*
     @Test
     void testAbapEnvironmentPipelineStagePrepareSystemNotExecuted() {
 
@@ -62,5 +62,5 @@ class AbapEnvironmentPipelineStagePrepareSystemTest extends BasePiperTest {
 
         assertThat(stepsCalled, not(hasItem('cloudFoundryCreateService')))
         assertThat(stepsCalled, not(hasItem('cloudFoundryCreateServiceKey')))
-    }
+    }*/
 }
