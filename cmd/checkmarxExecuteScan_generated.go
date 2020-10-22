@@ -80,8 +80,8 @@ type checkmarxExecuteScanInflux struct {
 			team_full_path_on_report_date        string
 			scan_start                           string
 			scan_time                            string
-			lines_of_code_scanned                int
-			files_scanned                        int
+			lines_of_code_scanned                string
+			files_scanned                        string
 			checkmarx_version                    string
 			scan_type                            string
 			preset                               string

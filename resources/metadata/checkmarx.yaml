@@ -305,9 +305,7 @@ spec:
               - name: scan_start
               - name: scan_time
               - name: lines_of_code_scanned
-                type: int
               - name: files_scanned
-                type: int
               - name: checkmarx_version
               - name: scan_type
               - name: preset
