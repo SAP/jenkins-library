@@ -75,7 +75,7 @@ void call(Map parameters = [:]) {
         }
 
         if(!fileExists(configuration.configurationFile) && configuration.configurationUrl) {
-            sh "curl --fail --location --output ${configuration.configurationFile} ${configuration.configurationUrl}"
+            downloadFile(configuration.configurationUrl, configuration.configurationFile)
             if(existingStashes) {
                 def stashName = 'hadolintConfiguration'
                 stash name: stashName, includes: configuration.configurationFile
@@ -119,4 +119,9 @@ void call(Map parameters = [:]) {
             }
         }
     }
+}
+
+void downloadFile(url, target, authentication){
+        def response = httpRequest url: url, authentication: authentication, timeout: 20
+        writeFile text: response.content, file: target
 }
