@@ -27,7 +27,7 @@ void call(Map parameters = [:]) {
 
     def stageName = parameters.stageName?:env.STAGE_NAME
 
-    setupCommonPipelineEnvironment(script: script, strategy: parameters.strategy)
+    //setupCommonPipelineEnvironment(script: script, strategy: parameters.strategy)
 
     Map config = ConfigurationHelper.newInstance(this)
         .loadStepDefaults()
