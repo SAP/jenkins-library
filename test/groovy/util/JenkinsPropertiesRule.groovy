@@ -38,10 +38,18 @@ class JenkinsPropertiesRule implements TestRule {
 
                 testInstance.helper.registerAllowedMethod("readProperties", [Map.class], {
                     propertyPath ->
-                        if (JenkinsPropertiesRule.this.propertyPath.contains(propertyPath.file)) {
+                        if(propertyPath.file){
+                            if (JenkinsPropertiesRule.this.propertyPath.contains(propertyPath.file)) {
                             return JenkinsPropertiesRule.this.configProperties
                         }
-
+                    }
+                        else if(propertyPath.text){
+                            def readPropertiesMap = [:]
+                            for (property in propertyPath) {
+                                readPropertiesMap[property.key] = property.value
+                        }
+                        return  readPropertiesMap
+                    }
                         throw new Exception("Could not find the properties with path $propertyPath")
                 })
 
