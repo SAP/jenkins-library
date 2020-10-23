@@ -121,7 +121,7 @@ void call(Map parameters = [:]) {
     }
 }
 
-void downloadFile(url, target, authentication){
+void downloadFile(url, target, authentication = null){
         def response = httpRequest url: url, authentication: authentication, timeout: 20
         writeFile text: response.content, file: target
 }
