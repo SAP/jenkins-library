@@ -25,6 +25,10 @@ import groovy.transform.Field
      */
     'configurationUrl',
     /**
+     * If the url provided as configurationUrl is protected, this Jenkins credential can be used to authenticate the request.
+     */
+    'configurationCredentialsId',
+    /**
      * Docker options to be set when starting the container.
      */
     'dockerOptions',
@@ -75,7 +79,7 @@ void call(Map parameters = [:]) {
         }
 
         if(!fileExists(configuration.configurationFile) && configuration.configurationUrl) {
-            downloadFile(configuration.configurationUrl, configuration.configurationFile)
+            downloadFile(configuration.configurationUrl, configuration.configurationFile, configuration.configurationCredentialsId)
             if(existingStashes) {
                 def stashName = 'hadolintConfiguration'
                 stash name: stashName, includes: configuration.configurationFile
