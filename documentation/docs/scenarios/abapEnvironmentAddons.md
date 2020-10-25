@@ -33,11 +33,11 @@ A software product version is defined by a name and a version string. The name o
 ### Software Component Version
 
 A **software component version** is a technically distinguishable unit of software and is installed and patched as a whole. It consists of ABAP development packages and contained objects. Software component versions are delivered via delivery packages. But software component versions are not individual shipment entities. They can only be delivered to customers as part of a [software product version](#software-product-version).
-A software component version is defined by a name and a version string. The name of a software component is string with a maximum of characters and consists of the [namespace](https://launchpad.support.sap.com/#/notes/84282) and a freely chooseble part - `/NAMESPC/COMPONENT1`. The version consists of three numbers separated by a dot - 1.2.0. The numbers in the version string have a hierarchic relationship:
+A software component version is defined by a name and a version string. The name of a software component is string with a maximum of characters and consists of the [namespace](https://launchpad.support.sap.com/#/notes/84282) and a freely chooseble part - /NAMESPC/COMPONENT1. The version consists of three numbers separated by a dot - 1.2.0. The numbers in the version string have a hierarchic relationship:
 
 - The first number denotes the release. Release deliveries contains the whole software component and deliver new and enhancements of existing functionalities. They are delivered with delivery packages of type [“Installation Package”](https://help.sap.com/viewer/9043aa5d2f834ad385e1cdfdadc06b6f/5.0.4.7/en-US/6082f55473568c77e10000000a174cb4.html).
 - The second number denotes the Support Package level. Support Package deliveries contain a larger collection of corrections and may contains smaller functional enhancements. They are delivered with delivery packages of type [“Component Support Package”](https://help.sap.com/viewer/9043aa5d2f834ad385e1cdfdadc06b6f/5.0.4.7/en-US/6082f55473568c77e10000000a174cb4.html).
-- The third number denotes the Patch level. Patch deliveries shall only contain small corrections. They are shipped with delivery packages of type “Correction Package”. 
+- The third number denotes the Patch level. Patch deliveries shall only contain small corrections. They are shipped with delivery packages of type “Correction Package”.
 
 **Note:** The needed type of delivery does not need to be chosen manually; it is automatically determined by the AAKaaS.
 
@@ -117,7 +117,7 @@ This file is the entry point of the pipeline. It should look like this:
 abapEnvironmentPipeline script: this
 ```
 
-The first line defines that the shared library, named “piper-lib-os” in the Jenkins Configuration, will be used. This is a reference to the [/SAP/Jenkins-library](https://github.com/SAP/jenkins-library/) of Project Piper. 
+The first line defines that the shared library, named “piper-lib-os” in the Jenkins Configuration, will be used. This is a reference to the [/SAP/Jenkins-library](https://github.com/SAP/jenkins-library/) of Project Piper.
 
 !!! note "Jenkins Library Version"
     If desired, a specific release of this library can be requested: e.g. release 1.93.0 with `@Library('piper-lib-os@v1.93.0') _`. As the library is an Open Source project, it is possible that incompatible changes are introduced. If you want to avoid this, it is recommended to use such a specific release. If no release is specified, the newest version of the Jenkins-library will be used (pulled from the master branch).
