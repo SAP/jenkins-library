@@ -1,0 +1,130 @@
+metadata:
+  name: cloudFoundryFaasDeploy
+  description: cloudFoundryFaasDeploy
+  longDescription: |
+    Deploy Function as a Service to SAP Cloud Platform
+spec:
+  inputs:
+    secrets:
+      - name: cfCredentialsId
+        description: Jenkins credentials ID containing user and password to authenticate to the Cloud Foundry API
+        type: jenkins
+      - name: xfsrtValuesCredentialsId
+        description: Jenkins 'Secret text' credentials ID containing deploy values for Extension Factory serverless runtime CLI
+        type: jenkins
+    params:
+      - name: cfApiEndpoint
+        type: string
+        description: Cloud Foundry API endpoint
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: true
+        aliases:
+          - name: cloudFoundry/apiEndpoint
+      - name: username
+        type: string
+        description: User or E-Mail for CF
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+        secret: true
+        resourceRef:
+          - name: cfCredentialsId
+            type: secret
+            param: username
+      - name: password
+        type: string
+        description: User Password for CF User
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+        secret: true
+        resourceRef:
+          - name: cfCredentialsId
+            type: secret
+            param: password
+      - name: cfOrg
+        type: string
+        description: CF org
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: true
+        aliases:
+          - name: cloudFoundry/org
+      - name: cfSpace
+        type: string
+        description: CF Space
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: true
+        aliases:
+          - name: cloudFoundry/space
+      - name: xfsrtServiceInstance
+        type: string
+        description: Parameter for Extension Factory serverless runtime Service Instance Name
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: true
+        aliases:
+          - name: cloudFoundry/xfsrtServiceInstance
+      - name: xfsrtServiceKeyName
+        type: string
+        description: Parameter for Service Key name for CloudFoundry Service Key to be created
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: true
+        aliases:
+          - name: cloudFoundry/xfsrtServiceKeyName
+          - name: cloudFoundry/xfsrtServiceKey
+          - name: xfsrtServiceKey
+      - name: xfsrtValues
+        type: string
+        description: "Deploy values as JSON string for Extension Factory serverless runtime."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: false
+        secret: true
+        resourceRef:
+          - name: xfsrtValuesCredentialsId
+            type: secret
+            param: xfsrtValues
+        aliases:
+          - name: cloudFoundry/xfsrtValues
+      - name: defaultNpmRegistry
+        type: string
+        description: "Url to the npm registry that should be used for installing npm dependencies."
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+        aliases:
+          - name: npm/defaultNpmRegistry
+        default:
+  containers:
+    - name: xfsrt
+      image: xf-serverless-rt/xfsrt-cli
+      imagePullPolicy: Never
