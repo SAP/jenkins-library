@@ -7,6 +7,7 @@ import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.not
 import static org.junit.Assert.assertThat
+
 import static org.junit.Assert.assertEquals
 
 import org.hamcrest.Matchers
@@ -24,6 +25,7 @@ import util.JenkinsScriptLoaderRule
 import util.JenkinsShellCallRule
 import util.JenkinsCredentialsRule
 import util.JenkinsDockerExecuteRule
+import util.JenkinsFileExistsRule
 import util.Rules
 
 import hudson.AbortException
@@ -35,6 +37,7 @@ public class ChangeManagementTest extends BasePiperTest {
     private JenkinsShellCallRule script = new JenkinsShellCallRule(this)
     private JenkinsLoggingRule logging = new JenkinsLoggingRule(this)
     private JenkinsDockerExecuteRule dockerExecuteRule = new JenkinsDockerExecuteRule(this)
+    private JenkinsFileExistsRule files = new JenkinsFileExistsRule(this)
 
     @Rule
     public RuleChain rules = Rules.getCommonRules(this)
@@ -43,6 +46,7 @@ public class ChangeManagementTest extends BasePiperTest {
         .around(logging)
         .around(new JenkinsCredentialsRule(this).withCredentials('me','user','password'))
         .around(dockerExecuteRule)
+        .around(files)
 
     @Test
     public void testRetrieveChangeDocumentIdOutsideGitWorkTreeTest() {
@@ -291,26 +295,183 @@ public void testGetCommandLineWithCMClientOpts() {
     }
 
     @Test
-    public void testUploadFileToTransportSucceedsCTS() {
+    public void testUploadFileToTransportSucceedsCTSDeployConfigYamlExists() {
 
-        // the regex provided below is an implicit check that the command line is fine.
-        script.setReturnValue(JenkinsShellCallRule.Type.REGEX, '-t CTS upload-file-to-transport -tID 002 "/path"', 0)
+        files.existingFiles.add('ui5-deploy.yaml')
 
         new ChangeManagement(nullScript).uploadFileToTransportRequestCTS(
             [
-                image: 'ppiper/cmclient',
+                image: 'node',
                 pullImage: true
              ],
             '002',
-            '/path',
             'https://example.org/cm',
-            'me')
+            '001',
+            'myApp',
+            'the description',
+            'aPackage',
+            'node2',
+            ['@ui5/cli', '@sap/ux-ui5-tooling', '@ui5/logger', '@ui5/fs', '@dummy/foo'],
+            ['--verbose'],
+            'ui5-deploy.yaml',
+            'me',
+        )
 
-        assert dockerExecuteRule.getDockerParams().dockerImage == 'ppiper/cmclient'
+        assert script.shell[0].contains('npm install --global --verbose @ui5/cli @sap/ux-ui5-tooling @ui5/logger @ui5/fs @dummy/foo')
+
+        assert script.shell[0].contains("fiori deploy -c \"ui5-deploy.yaml\" -t 002 -u https://example.org/cm")
+
+        assert dockerExecuteRule.getDockerParams().dockerImage == 'node'
         assert dockerExecuteRule.getDockerParams().dockerPullImage == true
+        assert dockerExecuteRule.getDockerParams().dockerEnvVars == [ABAP_USER: "user", ABAP_PASSWORD: 'password']
+        // we launch the container as root (uid 0) in order to be able to install
+        // the deploytool. Before deploying we su to another user.
+        assert dockerExecuteRule.getDockerParams().dockerOptions == ['-u', '0']
+    }
 
-        // no assert for the shell command required here, since the regex registered
-        // above to the script rule is an implicit check for the command line.
+    @Test
+    public void testUploadFileToTransportSucceedsCTSDefaultDeployConfigYamlDoesNotExist() {
+
+        // the file does not exist, since it was not explicity added to the files rule
+
+        new ChangeManagement(nullScript).uploadFileToTransportRequestCTS(
+            [
+                image: 'node',
+                pullImage: true
+             ],
+            '002',
+            'https://example.org/cm',
+            '001',
+            'myApp',
+            'the description',
+            'aPackage',
+            'node2',
+            ['@ui5/cli', '@sap/ux-ui5-tooling', '@ui5/logger', '@ui5/fs', '@dummy/foo'],
+            ['--verbose'],
+            'ui5-deploy.yaml',
+            'me',
+        )
+
+        // more details already checked with test "testUploadFileToTransportSucceedsCTSDeployConfigYamlExists"
+        assert script.shell[0].contains("fiori deploy --noConfig -t 002 -u https://example.org/cm")
+    }
+
+    @Test
+    public void testUploadFileToTransportFailsCTSExplicitlyConfiguredDeployConfigYamlDoesNotExist() {
+
+        // the file does not exist, since it was not explicitly added to the files rule
+
+        thrown.expect(AbortException)
+        thrown.expectMessage('Configured deploy config file \'my-deploy.yaml\' does not exists.')
+
+        new ChangeManagement(nullScript).uploadFileToTransportRequestCTS(
+            [
+                image: 'node',
+                pullImage: true
+             ],
+            '002',
+            'https://example.org/cm',
+            '001',
+            'myApp',
+            'the description',
+            'aPackage',
+            'node2',
+            ['@ui5/cli', '@sap/ux-ui5-tooling', '@ui5/logger', '@ui5/fs', '@dummy/foo'],
+            ['--verbose'],
+            'my-deploy.yaml',
+            'me',
+        )
+
+        // more details already checked with test "testUploadFileToTransportSucceedsCTSDeployConfigYamlExists"
+        assert script.shell[0].contains("fiori deploy --noConfig -t 002 -u https://example.org/cm")
+    }
+
+    @Test
+    public void testUploadFileToTransportSucceesCTSExplicitlyConfiguredDeployConfigYamExists() {
+
+        files.existingFiles.add('my-deploy.yaml')
+
+        new ChangeManagement(nullScript).uploadFileToTransportRequestCTS(
+            [
+                image: 'node',
+                pullImage: true
+             ],
+            '002',
+            'https://example.org/cm',
+            '001',
+            'myApp',
+            'the description',
+            'aPackage',
+            'node2',
+            ['@ui5/cli', '@sap/ux-ui5-tooling', '@ui5/logger', '@ui5/fs', '@dummy/foo'],
+            ['--verbose'],
+            'my-deploy.yaml',
+            'me',
+        )
+
+        // more details already checked with test "testUploadFileToTransportSucceedsCTSDeployConfigYamlExists"
+        assert script.shell[0].contains("fiori deploy -c \"my-deploy.yaml\" -t 002 -u https://example.org/cm")
+    }
+
+    @Test
+    public void testUploadFileToTransportSucceedsEmptyDeployToolDependenciesCTS() {
+
+        new ChangeManagement(nullScript).uploadFileToTransportRequestCTS(
+            [
+                image: 'fioriDeployImage',
+                pullImage: true
+             ],
+            '002',
+            'https://example.org/cm',
+            '001',
+            'myApp',
+            'aPackage',
+            'the description',
+            'node2',
+            [],
+            [],
+            'ui5-deploy.yaml',
+            'me',
+        )
+
+        assert ! script.shell[0].contains('npm install')
+        assert ! script.shell[0].contains('su')
+
+        assert script.shell[0].contains("fiori deploy")
+
+        assert dockerExecuteRule.getDockerParams().dockerImage == 'fioriDeployImage'
+        assert dockerExecuteRule.getDockerParams().dockerPullImage == true
+        assert dockerExecuteRule.getDockerParams().dockerEnvVars == [ABAP_USER: "user", ABAP_PASSWORD: 'password']
+        // we don't start with the root user since there is no need to install something (globally)
+        assert dockerExecuteRule.getDockerParams().dockerOptions == []
+    }
+
+    @Test
+    public void testUploadFileToTransportShellFailsCTS() {
+
+        thrown.expect(AbortException)
+        thrown.expectMessage('script returned exit code 1')
+
+        script.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*fiori deploy.*',
+            { throw new AbortException('script returned exit code 1') })
+
+        new ChangeManagement(nullScript).uploadFileToTransportRequestCTS(
+            [
+                image: 'node',
+                pullImage: true
+            ],
+            '002',
+            'https://example.org/cm',
+            '001',
+            'myApp',
+            'aPackage',
+            'the description',
+            'node',
+            '@ui5/cli @sap/ux-ui5-tooling @ui5/logger @ui5/fs',
+            [],
+            'ui5-deploy.yaml',
+            'me',
+        )
     }
 
     @Test
