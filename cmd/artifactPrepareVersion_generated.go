@@ -316,7 +316,7 @@ func artifactPrepareVersionMetadata() config.StepData {
 
 							{
 								Name:  "",
-								Paths: []string{"$(vaultPath)/versioning", "$(vaultBasePath)/$(vaultPipelineName)/versioning", "$(vaultBasePath)/GROUP-SECRETS/versioning"},
+								Paths: []string{"$(vaultPath)/gitHttpsCredential", "$(vaultBasePath)/$(vaultPipelineName)/gitHttpsCredential", "$(vaultBasePath)/GROUP-SECRETS/gitHttpsCredential"},
 								Type:  "vaultSecret",
 							},
 						},
@@ -368,7 +368,7 @@ func artifactPrepareVersionMetadata() config.StepData {
 
 							{
 								Name:  "",
-								Paths: []string{"$(vaultPath)/versioning", "$(vaultBasePath)/$(vaultPipelineName)/versioning", "$(vaultBasePath)/GROUP-SECRETS/versioning"},
+								Paths: []string{"$(vaultPath)/gitHttpsCredential", "$(vaultBasePath)/$(vaultPipelineName)/gitHttpsCredential", "$(vaultBasePath)/GROUP-SECRETS/gitHttpsCredential"},
 								Type:  "vaultSecret",
 							},
 						},
