@@ -21,16 +21,16 @@ type Product struct {
 }
 
 type Assignment struct {
-	UserAssignments  []UserAssignment  `json:"userAssignments"`
-	GroupAssignments []GroupAssignment `json:"groupAssignments"`
+	UserAssignments  []UserAssignment  `json:"userAssignments,omitempty"`
+	GroupAssignments []GroupAssignment `json:"groupAssignments,omitempty"`
 }
 
 type UserAssignment struct {
-	Email string `json:"email"`
+	Email string `json:"email,omitempty"`
 }
 
 type GroupAssignment struct {
-	Name string `json:"name"`
+	Name string `json:"name,omitempty"`
 }
 
 // Alert
@@ -76,18 +76,18 @@ type Project struct {
 
 // Request defines a request object to be sent to the WhiteSource system
 type Request struct {
-	RequestType          string     `json:"requestType,omitempty"`
-	UserKey              string     `json:"userKey,omitempty"`
-	ProductToken         string     `json:"productToken,omitempty"`
-	ProductName          string     `json:"productName,omitempty"`
-	ProjectToken         string     `json:"projectToken,omitempty"`
-	OrgToken             string     `json:"orgToken,omitempty"`
-	Format               string     `json:"format,omitempty"`
-	ProductAdmins        Assignment `json:"productAdmins,omitempty"`
-	ProductMembership    Assignment `json:"productMembership,omitempty"`
-	AlertsEmailReceivers Assignment `json:"alertsEmailReceivers,omitempty"`
-	ProductApprovers     Assignment `json:"productApprovers,omitempty"`
-	ProductIntegrators   Assignment `json:"productIntegrators,omitempty"`
+	RequestType          string      `json:"requestType,omitempty"`
+	UserKey              string      `json:"userKey,omitempty"`
+	ProductToken         string      `json:"productToken,omitempty"`
+	ProductName          string      `json:"productName,omitempty"`
+	ProjectToken         string      `json:"projectToken,omitempty"`
+	OrgToken             string      `json:"orgToken,omitempty"`
+	Format               string      `json:"format,omitempty"`
+	ProductAdmins        *Assignment `json:"productAdmins,omitempty"`
+	ProductMembership    *Assignment `json:"productMembership,omitempty"`
+	AlertsEmailReceivers *Assignment `json:"alertsEmailReceivers,omitempty"`
+	ProductApprovers     *Assignment `json:"productApprovers,omitempty"`
+	ProductIntegrators   *Assignment `json:"productIntegrators,omitempty"`
 }
 
 // System defines a WhiteSource System including respective tokens (e.g. org token, user token)
@@ -169,7 +169,7 @@ func (s *System) CreateProduct(productName string) (string, error) {
 }
 
 // SetProductAssignments assigns various types of membership to a WhiteSource Product.
-func (s *System) SetProductAssignments(productToken string, membership, admins, alertReceivers Assignment) error {
+func (s *System) SetProductAssignments(productToken string, membership, admins, alertReceivers *Assignment) error {
 	req := Request{
 		RequestType:          "setProductAssignments",
 		ProductToken:         productToken,
@@ -403,13 +403,13 @@ func (s *System) sendRequestAndDecodeJSON(req Request, result interface{}) error
 	log.Entry().Debugf("response: %v", string(respBody))
 
 	errorResponse := struct {
-		ErrorCode    string `json:"errorCode"`
+		ErrorCode    int    `json:"errorCode"`
 		ErrorMessage string `json:"errorMessage"`
 	}{}
 
 	err = json.Unmarshal(respBody, &errorResponse)
-	if err == nil && errorResponse.ErrorCode != "" {
-		return fmt.Errorf("invalid request, error code %s, message '%s'",
+	if err == nil && errorResponse.ErrorCode != 0 {
+		return fmt.Errorf("invalid request, error code %v, message '%s'",
 			errorResponse.ErrorCode, errorResponse.ErrorMessage)
 	}
 

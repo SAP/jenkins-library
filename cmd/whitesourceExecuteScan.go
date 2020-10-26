@@ -28,7 +28,7 @@ type ScanOptions = whitesourceExecuteScanOptions
 type whitesource interface {
 	GetProductByName(productName string) (ws.Product, error)
 	CreateProduct(productName string) (string, error)
-	SetProductAssignments(productToken string, membership, admins, alertReceivers ws.Assignment) error
+	SetProductAssignments(productToken string, membership, admins, alertReceivers *ws.Assignment) error
 	GetProjectsMetaInfo(productToken string) ([]ws.Project, error)
 	GetProjectToken(productToken, projectName string) (string, error)
 	GetProjectByToken(projectToken string) (ws.Project, error)
@@ -200,12 +200,12 @@ func createWhiteSourceProduct(config *ScanOptions, sys whitesource) (string, err
 		return "", fmt.Errorf("failed to create WhiteSource product: %w", err)
 	}
 
-	var membership, admins, alertReceivers ws.Assignment
+	var admins ws.Assignment
 	for _, address := range config.EmailAddressesOfInitialProductAdmins {
 		admins.UserAssignments = append(admins.UserAssignments, ws.UserAssignment{Email: address})
 	}
 
-	err = sys.SetProductAssignments(productToken, membership, admins, alertReceivers)
+	err = sys.SetProductAssignments(productToken, nil, &admins, nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to set admins on new WhiteSource product: %w", err)
 	}

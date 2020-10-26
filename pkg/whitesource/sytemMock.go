@@ -45,7 +45,7 @@ func (m *SystemMock) CreateProduct(productName string) (string, error) {
 
 // SetProductAssignments checks if the system mock contains a product with the given token and returns
 // an error depending on that, but otherwise does nothing with the provided arguments.
-func (m *SystemMock) SetProductAssignments(productToken string, _, _, _ Assignment) error {
+func (m *SystemMock) SetProductAssignments(productToken string, _, _, _ *Assignment) error {
 	for _, product := range m.Products {
 		if product.Token == productToken {
 			return nil
