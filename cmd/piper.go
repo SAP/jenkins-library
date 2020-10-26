@@ -317,6 +317,8 @@ func checkTypes(config map[string]interface{}, options interface{}) map[string]i
 
 		var typeError error = nil
 
+		originalValue := config[paramName]
+
 		switch paramValueType.Kind() {
 		case reflect.String:
 			typeError = convertValueFromString(config, optionsField, paramName, paramValueType.String())
@@ -330,7 +332,7 @@ func checkTypes(config map[string]interface{}, options interface{}) map[string]i
 				paramName, paramValueType.Kind(), optionsField.Type.Kind())
 		}
 
-		if typeError != nil {
+		if typeError != nil || strings.ToLower(fmt.Sprint(config[paramName])) != strings.ToLower(fmt.Sprint(originalValue)) {
 			typeError = fmt.Errorf("config value for '%s' is of unexpected type %s, expected %s: %w",
 				paramName, paramValueType.Kind(), optionsField.Type.Kind(), typeError)
 			log.SetErrorCategory(log.ErrorConfiguration)
