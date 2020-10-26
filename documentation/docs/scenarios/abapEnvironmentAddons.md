@@ -57,7 +57,7 @@ As explained above, the shipment of a software takes place via software product 
 
 The build process of a software product is orchestrated by a Jenkins Pipeline, the “ABAP Environment Pipeline” provided in this project. To run this pipeline, it only needs to be configured – which will be explained in the sections “Prerequisites” and “Configuration”.
 
-![ABAP Environment Pipeline](../images/abapPipelineOverview.png)
+![ABAP Environment Pipeline Build](../images/abapEnvironmentBuildPipeline.png)
 
 The pipeline consists of different steps responsible for a single task. The steps themselves are grouped thematically into different stages. For example, early in the pipeline, the ABAP Environment system needs to be created and the communication needs to be set up. This is done in the “Prepare System” stage. You can read more about the different stages in the ABAP Environment Pipeline [documentation](https://sap.github.io/jenkins-library/pipelines/abapEnvironment/introduction/).
 
