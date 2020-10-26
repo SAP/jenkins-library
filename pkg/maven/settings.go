@@ -3,7 +3,6 @@ package maven
 import (
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -16,7 +15,14 @@ type SettingsDownloadUtils interface {
 	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
 }
 
-func DownloadAndGetMavenParameters(globalSettingsFile string, projectSettingsFile string, fileUtils piperutils.FileUtils, httpClient SettingsDownloadUtils) ([]string, error) {
+type FileUtils interface {
+	FileExists(filename string) (bool, error)
+	Copy(src, dest string) (int64, error)
+	MkdirAll(path string, perm os.FileMode) error
+	Glob(pattern string) (matches []string, err error)
+}
+
+func DownloadAndGetMavenParameters(globalSettingsFile string, projectSettingsFile string, fileUtils FileUtils, httpClient SettingsDownloadUtils) ([]string, error) {
 	mavenArgs := []string{}
 	if len(globalSettingsFile) > 0 {
 		globalSettingsFileName, err := downloadSettingsIfURL(globalSettingsFile, ".pipeline/mavenGlobalSettings.xml", fileUtils, httpClient, false)
@@ -42,7 +48,7 @@ func DownloadAndGetMavenParameters(globalSettingsFile string, projectSettingsFil
 	return mavenArgs, nil
 }
 
-func DownloadAndCopySettingsFiles(globalSettingsFile string, projectSettingsFile string, fileUtils piperutils.FileUtils, httpClient SettingsDownloadUtils) error {
+func DownloadAndCopySettingsFiles(globalSettingsFile string, projectSettingsFile string, fileUtils FileUtils, httpClient SettingsDownloadUtils) error {
 	if len(projectSettingsFile) > 0 {
 		destination, err := getProjectSettingsFileDest()
 		if err != nil {
@@ -73,7 +79,7 @@ func DownloadAndCopySettingsFiles(globalSettingsFile string, projectSettingsFile
 	return nil
 }
 
-func downloadAndCopySettingsFile(src string, dest string, fileUtils piperutils.FileUtils, httpClient SettingsDownloadUtils) error {
+func downloadAndCopySettingsFile(src string, dest string, fileUtils FileUtils, httpClient SettingsDownloadUtils) error {
 	if len(src) == 0 {
 		return fmt.Errorf("Settings file source location not provided")
 	}
@@ -115,7 +121,7 @@ func downloadAndCopySettingsFile(src string, dest string, fileUtils piperutils.F
 	return nil
 }
 
-func downloadSettingsIfURL(settingsFileOption, settingsFile string, fileUtils piperutils.FileUtils, httpClient SettingsDownloadUtils, overwrite bool) (string, error) {
+func downloadSettingsIfURL(settingsFileOption, settingsFile string, fileUtils FileUtils, httpClient SettingsDownloadUtils, overwrite bool) (string, error) {
 	result := settingsFileOption
 	if strings.HasPrefix(settingsFileOption, "http:") || strings.HasPrefix(settingsFileOption, "https:") {
 		err := downloadSettingsFromURL(settingsFileOption, settingsFile, fileUtils, httpClient, overwrite)
@@ -127,7 +133,7 @@ func downloadSettingsIfURL(settingsFileOption, settingsFile string, fileUtils pi
 	return result, nil
 }
 
-func downloadSettingsFromURL(url, filename string, fileUtils piperutils.FileUtils, httpClient SettingsDownloadUtils, overwrite bool) error {
+func downloadSettingsFromURL(url, filename string, fileUtils FileUtils, httpClient SettingsDownloadUtils, overwrite bool) error {
 	exists, _ := fileUtils.FileExists(filename)
 	if exists && !overwrite {
 		log.Entry().Infof("Not downloading maven settings file, because it already exists at '%s'", filename)

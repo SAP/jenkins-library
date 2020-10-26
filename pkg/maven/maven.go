@@ -43,7 +43,7 @@ type mavenExecRunner interface {
 }
 
 type mavenUtils interface {
-	piperutils.FileUtils
+	FileUtils
 	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
 }
 
