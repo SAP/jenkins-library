@@ -204,7 +204,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 								Param: "container/imageNameTag",
 							},
 						},
-						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "image"}, {Name: "containerImage"}},

@@ -106,7 +106,6 @@ spec:
         type: string
         description: Container image name with version tag to annotate in the deployment configuration.
         scope:
-          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
