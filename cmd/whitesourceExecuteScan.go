@@ -247,7 +247,7 @@ func resolveProjectIdentifiers(config *ScanOptions, scan *ws.Scan, utils whiteso
 			product = ws.Product{}
 			product.Token, err = createWhiteSourceProduct(config, sys)
 			if err != nil {
-				return fmt.Errorf("failed to create WhiteSource product: %w", err)
+				return err
 			}
 		}
 		if err != nil {
