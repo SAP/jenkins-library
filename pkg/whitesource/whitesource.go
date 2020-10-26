@@ -20,6 +20,19 @@ type Product struct {
 	LastUpdateDate string `json:"lastUpdatedDate,omitempty"`
 }
 
+type Assignment struct {
+	UserAssignments  []UserAssignment  `json:"userAssignments"`
+	GroupAssignments []GroupAssignment `json:"groupAssignments"`
+}
+
+type UserAssignment struct {
+	Email string `json:"email"`
+}
+
+type GroupAssignment struct {
+	Name string `json:"name"`
+}
+
 // Alert
 type Alert struct {
 	Vulnerability Vulnerability `json:"vulnerability"`
@@ -63,13 +76,18 @@ type Project struct {
 
 // Request defines a request object to be sent to the WhiteSource system
 type Request struct {
-	RequestType  string `json:"requestType,omitempty"`
-	UserKey      string `json:"userKey,omitempty"`
-	ProductToken string `json:"productToken,omitempty"`
-	ProductName  string `json:"productName,omitempty"`
-	ProjectToken string `json:"projectToken,omitempty"`
-	OrgToken     string `json:"orgToken,omitempty"`
-	Format       string `json:"format,omitempty"`
+	RequestType          string     `json:"requestType,omitempty"`
+	UserKey              string     `json:"userKey,omitempty"`
+	ProductToken         string     `json:"productToken,omitempty"`
+	ProductName          string     `json:"productName,omitempty"`
+	ProjectToken         string     `json:"projectToken,omitempty"`
+	OrgToken             string     `json:"orgToken,omitempty"`
+	Format               string     `json:"format,omitempty"`
+	ProductAdmins        Assignment `json:"productAdmins,omitempty"`
+	ProductMembership    Assignment `json:"productMembership,omitempty"`
+	AlertsEmailReceivers Assignment `json:"alertsEmailReceivers,omitempty"`
+	ProductApprovers     Assignment `json:"productApprovers,omitempty"`
+	ProductIntegrators   Assignment `json:"productIntegrators,omitempty"`
 }
 
 // System defines a WhiteSource System including respective tokens (e.g. org token, user token)
@@ -79,6 +97,9 @@ type System struct {
 	serverURL  string
 	userToken  string
 }
+
+// DateTimeLayout is the layout of the time format used by the WhiteSource API.
+const DateTimeLayout = "2006-01-02 15:04:05 -0700"
 
 // NewSystem constructs a new System instance
 func NewSystem(serverURL, orgToken, userToken string) *System {
@@ -124,6 +145,45 @@ func (s *System) GetProductByName(productName string) (Product, error) {
 	}
 
 	return Product{}, fmt.Errorf("product '%v' not found in WhiteSource", productName)
+}
+
+// CreateProduct creates a new WhiteSource product and returns its product token.
+func (s *System) CreateProduct(productName string) (string, error) {
+	wsResponse := struct {
+		ProductToken string `json:"productToken"`
+	}{
+		ProductToken: "",
+	}
+
+	req := Request{
+		RequestType: "createProduct",
+		ProductName: productName,
+	}
+
+	err := s.sendRequestAndDecodeJSON(req, &wsResponse)
+	if err != nil {
+		return "", errors.Wrap(err, "WhiteSource request failed")
+	}
+
+	return wsResponse.ProductToken, nil
+}
+
+// SetProductAssignments assigns various types of membership to a WhiteSource Product.
+func (s *System) SetProductAssignments(productToken string, membership, admins, alertReceivers Assignment) error {
+	req := Request{
+		RequestType:          "setProductAssignments",
+		ProductToken:         productToken,
+		ProductMembership:    membership,
+		ProductAdmins:        admins,
+		AlertsEmailReceivers: alertReceivers,
+	}
+
+	err := s.sendRequestAndDecodeJSON(req, nil)
+	if err != nil {
+		return errors.Wrap(err, "WhiteSource request failed")
+	}
+
+	return nil
 }
 
 // GetProjectsMetaInfo retrieves the registered projects for a specific WhiteSource product
@@ -353,9 +413,11 @@ func (s *System) sendRequestAndDecodeJSON(req Request, result interface{}) error
 			errorResponse.ErrorCode, errorResponse.ErrorMessage)
 	}
 
-	err = json.Unmarshal(respBody, result)
-	if err != nil {
-		return errors.Wrap(err, "failed to parse WhiteSource response")
+	if result != nil {
+		err = json.Unmarshal(respBody, result)
+		if err != nil {
+			return errors.Wrap(err, "failed to parse WhiteSource response")
+		}
 	}
 	return nil
 }

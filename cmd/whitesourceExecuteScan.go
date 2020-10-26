@@ -27,6 +27,8 @@ type ScanOptions = whitesourceExecuteScanOptions
 // be available from the whitesource system.
 type whitesource interface {
 	GetProductByName(productName string) (ws.Product, error)
+	CreateProduct(productName string) (string, error)
+	SetProductAssignments(productToken string, membership, admins, alertReceivers ws.Assignment) error
 	GetProjectsMetaInfo(productToken string) ([]ws.Project, error)
 	GetProjectToken(productToken, projectName string) (string, error)
 	GetProjectByToken(projectToken string) (ws.Project, error)
@@ -192,6 +194,25 @@ func checkAndReportScanResults(config *ScanOptions, scan *ws.Scan, utils whiteso
 	return nil
 }
 
+func createWhiteSourceProduct(config *ScanOptions, sys whitesource) (string, error) {
+	productToken, err := sys.CreateProduct(config.ProductName)
+	if err != nil {
+		return "", fmt.Errorf("failed to create WhiteSource product: %w", err)
+	}
+
+	var membership, admins, alertReceivers ws.Assignment
+	for _, address := range config.EmailAddressesOfInitialProductAdmins {
+		admins.UserAssignments = append(admins.UserAssignments, ws.UserAssignment{Email: address})
+	}
+
+	err = sys.SetProductAssignments(productToken, membership, admins, alertReceivers)
+	if err != nil {
+		return "", fmt.Errorf("failed to set admins on new WhiteSource product: %w", err)
+	}
+
+	return productToken, nil
+}
+
 func resolveProjectIdentifiers(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource) error {
 	if scan.AggregateProjectName == "" || config.ProductVersion == "" {
 		options := &versioning.Options{
@@ -222,6 +243,10 @@ func resolveProjectIdentifiers(config *ScanOptions, scan *ws.Scan, utils whiteso
 	if config.ProductToken == "" {
 		log.Entry().Infof("Attempting to resolve product token for product '%s'..", config.ProductName)
 		product, err := sys.GetProductByName(config.ProductName)
+		if err != nil && config.CreateProductFromPipeline {
+			product = ws.Product{}
+			product.Token, err = createWhiteSourceProduct(config, sys)
+		}
 		if err != nil {
 			return err
 		}
@@ -411,8 +436,6 @@ func pollProjectStatus(projectToken string, scanTime time.Time, sys whitesource)
 	return blockUntilProjectIsUpdated(projectToken, sys, scanTime, 20*time.Second, 20*time.Second, 15*time.Minute)
 }
 
-const whitesourceDateTimeLayout = "2006-01-02 15:04:05 -0700"
-
 // blockUntilProjectIsUpdated polls the project LastUpdateDate until it is newer than the given time stamp
 // or no older than maxAge relative to the given time stamp.
 func blockUntilProjectIsUpdated(projectToken string, sys whitesource, currentTime time.Time, maxAge, timeBetweenPolls, maxWaitTime time.Duration) error {
@@ -426,7 +449,7 @@ func blockUntilProjectIsUpdated(projectToken string, sys whitesource, currentTim
 		if project.LastUpdateDate == "" {
 			log.Entry().Infof("last updated time missing from project metadata, retrying")
 		} else {
-			lastUpdatedTime, err := time.Parse(whitesourceDateTimeLayout, project.LastUpdateDate)
+			lastUpdatedTime, err := time.Parse(ws.DateTimeLayout, project.LastUpdateDate)
 			if err != nil {
 				return fmt.Errorf("failed to parse last updated time (%s) of Whitesource project: %w",
 					project.LastUpdateDate, err)
