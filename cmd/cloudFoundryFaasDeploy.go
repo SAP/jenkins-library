@@ -77,7 +77,7 @@ func runCloudFoundryFaasDeploy(options *cloudFoundryFaasDeployOptions,
 	xfsrtDeployScript := []string{"faas", "project", "deploy"}
 	if options.XfsrtValues != "" {
 		deployValues := strings.ReplaceAll(options.XfsrtValues, "\n", " ")
-		xfsrtDeployScript = append(xfsrtDeployScript, []string{"-c", fmt.Sprintf("'%s'", deployValues)}...)
+		xfsrtDeployScript = append(xfsrtDeployScript, []string{"-c", deployValues}...)
 	}
 
 	if err := c.RunExecutable("xfsrt-cli", xfsrtDeployScript...); err != nil {
