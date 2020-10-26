@@ -84,7 +84,6 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 			commonPipelineEnvironment.container.registryURL = fmt.Sprintf("https://%v", containerRegistry)
 			commonPipelineEnvironment.container.imageNameTag = containerImageNameTag
 		}
-		log.Entry().Debugf("imageNameTag=%v, registryURL=%v", commonPipelineEnvironment.container.imageNameTag, commonPipelineEnvironment.container.registryURL)
 		config.BuildOptions = append(config.BuildOptions, dest...)
 	}
 
