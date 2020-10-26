@@ -99,7 +99,7 @@ ABAP Environment systems are created in the SAP Cloud Platform Cockpit. For this
 
 Later, during the pipeline configuration, you will specify the Service Plan, which will be used for the creation of an ABAP Environment system. Please make sure, that there are enough entitlements for this [Service Plan in the Subaccount](https://help.sap.com/viewer/a96b1df8525f41f79484717368e30626/Cloud/en-US/c40cb18aeaa343389036fdcdd03c41d0.html).
 
-#### Register Add-on Product/Global Account
+#### Register Add-on Product for a Global Account
 
 The add-on product needs to be registered with SAP in order to be installable in the desired global account. More details will follow soon.
 
