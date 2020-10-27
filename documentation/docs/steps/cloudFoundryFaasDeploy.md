@@ -6,7 +6,7 @@
 
 * You have a user for the SAP Cloud Platform Cloud Foundry Environment
 * Credentials have been configured in Jenkins with a dedicated Id
-* An instance of Extension Factory Serverless Runtime(xfsrt)running in the target cf space
+* An instance of Extension Factory Serverless Runtime (xfsrt) running in the target cf space
 * Service key created for xfsrt service instance
 
 ## ${docGenParameters}
@@ -17,10 +17,9 @@
 
 ## Example
 
-* ### Deploying functions into xfsrt environment without deplyoment configuration data
+#### Deploying functions into xfsrt environment without deployment configuration data
 
-The following example deploys the functions project into xfsrt instance running in the cloud foundry space.
-
+The following example deploys the functions project into xfsrt instance running in the Cloud Foundry space.
 
 ```groovy
 cloudFoundryFaasDeploy(
@@ -33,7 +32,7 @@ cloudFoundryFaasDeploy(
 )
 ```
 
-* ### Deploying functions into xfsrt environment with deployment configuration data
+#### Deploying functions into xfsrt environment with deployment configuration data
 
 ```groovy
 cloudFoundryFaasDeploy(
@@ -43,7 +42,6 @@ cloudFoundryFaasDeploy(
     cfSpace: "<CF_SPACE>"
     xfsrtServiceInstance: "<XFSRT_SERVICE_INSTANCE_NAME>"
     xfsrtServiceKeyName: "<SERVICE-KEY>" //service key created for xfsrt instance
-    xfsrtValuesCredentialsId: "<SECRET_TEXT_CREDENTIAL_ID>" //secret text credential containing a json string(secret credential) required during the deployment.
+    xfsrtValuesCredentialsId: "<SECRET_TEXT_CREDENTIAL_ID>" //the id of a secret text credential, which contains a json string required during the deployment
 )
 ```
-
