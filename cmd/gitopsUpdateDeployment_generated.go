@@ -14,15 +14,21 @@ import (
 )
 
 type gitopsUpdateDeploymentOptions struct {
-	BranchName            string `json:"branchName,omitempty"`
-	CommitMessage         string `json:"commitMessage,omitempty"`
-	ServerURL             string `json:"serverUrl,omitempty"`
-	Username              string `json:"username,omitempty"`
-	Password              string `json:"password,omitempty"`
-	FilePath              string `json:"filePath,omitempty"`
-	ContainerName         string `json:"containerName,omitempty"`
-	ContainerRegistryURL  string `json:"containerRegistryUrl,omitempty"`
-	ContainerImageNameTag string `json:"containerImageNameTag,omitempty"`
+	BranchName                          string `json:"branchName,omitempty"`
+	CommitMessage                       string `json:"commitMessage,omitempty"`
+	ServerURL                           string `json:"serverUrl,omitempty"`
+	Username                            string `json:"username,omitempty"`
+	Password                            string `json:"password,omitempty"`
+	FilePath                            string `json:"filePath,omitempty"`
+	ContainerName                       string `json:"containerName,omitempty"`
+	ContainerRegistryURL                string `json:"containerRegistryUrl,omitempty"`
+	ContainerImageNameTag               string `json:"containerImageNameTag,omitempty"`
+	ChartPath                           string `json:"chartPath,omitempty"`
+	HelmAdditionalValueFile             string `json:"helmAdditionalValueFile,omitempty"`
+	HelmValueForRespositoryAndImageName string `json:"helmValueForRespositoryAndImageName,omitempty"`
+	HelmValueForImageVersion            string `json:"helmValueForImageVersion,omitempty"`
+	DeploymentName                      string `json:"deploymentName,omitempty"`
+	DeployTool                          string `json:"deployTool,omitempty"`
 }
 
 // GitopsUpdateDeploymentCommand Updates Kubernetes Deployment Manifest in an Infrastructure Git Repository
@@ -97,6 +103,12 @@ func addGitopsUpdateDeploymentFlags(cmd *cobra.Command, stepConfig *gitopsUpdate
 	cmd.Flags().StringVar(&stepConfig.ContainerName, "containerName", os.Getenv("PIPER_containerName"), "The name of the container to update")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryURL, "containerRegistryUrl", os.Getenv("PIPER_containerRegistryUrl"), "http(s) url of the Container registry where the image is located")
 	cmd.Flags().StringVar(&stepConfig.ContainerImageNameTag, "containerImageNameTag", os.Getenv("PIPER_containerImageNameTag"), "Container image name with version tag to annotate in the deployment configuration.")
+	cmd.Flags().StringVar(&stepConfig.ChartPath, "chartPath", os.Getenv("PIPER_chartPath"), "Defines the chart path for deployments using helm.")
+	cmd.Flags().StringVar(&stepConfig.HelmAdditionalValueFile, "helmAdditionalValueFile", os.Getenv("PIPER_helmAdditionalValueFile"), "File path to additional values that shall be used")
+	cmd.Flags().StringVar(&stepConfig.HelmValueForRespositoryAndImageName, "helmValueForRespositoryAndImageName", os.Getenv("PIPER_helmValueForRespositoryAndImageName"), "value description used in the template to specify the repository and image name of the deployment")
+	cmd.Flags().StringVar(&stepConfig.HelmValueForImageVersion, "helmValueForImageVersion", os.Getenv("PIPER_helmValueForImageVersion"), "value description used in the template to specify the version of the deployment")
+	cmd.Flags().StringVar(&stepConfig.DeploymentName, "deploymentName", os.Getenv("PIPER_deploymentName"), "Defines the name of the deployment.")
+	cmd.Flags().StringVar(&stepConfig.DeployTool, "deployTool", `kubectl`, "Defines the tool which should be used for deployment.")
 
 	cmd.MarkFlagRequired("commitMessage")
 	cmd.MarkFlagRequired("serverUrl")
@@ -104,6 +116,7 @@ func addGitopsUpdateDeploymentFlags(cmd *cobra.Command, stepConfig *gitopsUpdate
 	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("filePath")
 	cmd.MarkFlagRequired("containerName")
+	cmd.MarkFlagRequired("deployTool")
 }
 
 // retrieve step metadata
@@ -209,6 +222,54 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "image"}, {Name: "containerImage"}},
+					},
+					{
+						Name:        "chartPath",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "helmChartPath"}},
+					},
+					{
+						Name:        "helmAdditionalValueFile",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "helmValueForRespositoryAndImageName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "helmValueForImageVersion",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "deploymentName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "helmDeploymentName"}},
+					},
+					{
+						Name:        "deployTool",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
 					},
 				},
 			},
