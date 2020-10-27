@@ -243,7 +243,7 @@ func (f *fortifyMock) GetReportDetails(id int64) (*models.SavedReport, error) {
 func (f *fortifyMock) UploadResultFile(endpoint, file string, projectVersionID int64) error {
 	return nil
 }
-func (f *fortifyMock) DownloadReportFile(endpoint string, projectVersionID int64) ([]byte, error) {
+func (f *fortifyMock) DownloadReportFile(endpoint string, reportID int64) ([]byte, error) {
 	return []byte("abcd"), nil
 }
 func (f *fortifyMock) DownloadResultFile(endpoint string, projectVersionID int64) ([]byte, error) {
