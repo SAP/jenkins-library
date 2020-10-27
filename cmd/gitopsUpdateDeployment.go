@@ -98,29 +98,18 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gi
 		}
 	}()
 
-	err = gitUtils.PlainClone(config.Username, config.Password, config.ServerURL, temporaryFolder)
+	err = cloneRepositoryAndChangeBranch(config, gitUtils, temporaryFolder)
 	if err != nil {
-		return errors.Wrap(err, "failed to plain clone repository")
-	}
-
-	err = gitUtils.ChangeBranch(config.BranchName)
-	if err != nil {
-		return errors.Wrap(err, "failed to change branch")
+		return errors.Wrap(err, "repository could not get prepared")
 	}
 
 	filePath := filepath.Join(temporaryFolder, config.FilePath)
 
 	var outputBytes []byte
 	if config.DeployTool == "kubectl" {
-		registryImage, err := buildRegistryPlusImage(config)
+		outputBytes, err = executeKubectl(config, command, outputBytes, filePath)
 		if err != nil {
-			return errors.Wrap(err, "failed to apply kubectl command")
-		}
-		patchString := "{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"" + config.ContainerName + "\",\"image\":\"" + registryImage + "\"}]}}}}"
-
-		outputBytes, err = runKubeCtlCommand(command, patchString, filePath)
-		if err != nil {
-			return errors.Wrap(err, "failed to apply kubectl command")
+			return errors.Wrap(err, "error on kubectl execution")
 		}
 	} else if config.DeployTool == "helm" {
 		outputBytes, err = runHelmCommand(command, config, workingDirectory)
@@ -131,18 +120,53 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gi
 		return errors.New("deploy tool " + config.DeployTool + " is not supported")
 	}
 
-	err = fileUtils.FileWrite(filePath, outputBytes, 0755)
+	commit, err := saveChanges(config, err, fileUtils, filePath, outputBytes, gitUtils)
 	if err != nil {
-		return errors.Wrap(err, "failed to write file")
-	}
-
-	commit, err := commitAndPushChanges(config, gitUtils)
-	if err != nil {
-		return errors.Wrap(err, "failed to commit and push changes")
+		return errors.Wrap(err, "changes could not get saved")
 	}
 
 	log.Entry().Infof("Changes committed with %s", commit.String())
 
+	return nil
+}
+
+func saveChanges(config *gitopsUpdateDeploymentOptions, err error, fileUtils gitopsUpdateDeploymentFileUtils, filePath string, outputBytes []byte, gitUtils iGitopsUpdateDeploymentGitUtils) (plumbing.Hash, error) {
+	err = fileUtils.FileWrite(filePath, outputBytes, 0755)
+	if err != nil {
+		return plumbing.Hash{}, errors.Wrap(err, "failed to write file")
+	}
+
+	commit, err := commitAndPushChanges(config, gitUtils)
+	if err != nil {
+		return plumbing.Hash{}, errors.Wrap(err, "failed to commit and push changes")
+	}
+	return commit, nil
+}
+
+func executeKubectl(config *gitopsUpdateDeploymentOptions, command gitopsUpdateDeploymentExecRunner, outputBytes []byte, filePath string) ([]byte, error) {
+	registryImage, err := buildRegistryPlusImage(config)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to apply kubectl command")
+	}
+	patchString := "{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"" + config.ContainerName + "\",\"image\":\"" + registryImage + "\"}]}}}}"
+
+	outputBytes, err = runKubeCtlCommand(command, patchString, filePath)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to apply kubectl command")
+	}
+	return outputBytes, nil
+}
+
+func cloneRepositoryAndChangeBranch(config *gitopsUpdateDeploymentOptions, gitUtils iGitopsUpdateDeploymentGitUtils, temporaryFolder string) error {
+	err := gitUtils.PlainClone(config.Username, config.Password, config.ServerURL, temporaryFolder)
+	if err != nil {
+		return errors.Wrap(err, "failed to plain clone repository")
+	}
+
+	err = gitUtils.ChangeBranch(config.BranchName)
+	if err != nil {
+		return errors.Wrap(err, "failed to change branch")
+	}
 	return nil
 }
 
