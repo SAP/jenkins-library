@@ -142,7 +142,7 @@ func TestRunGitopsUpdateDeploymentWithKubectl(t *testing.T) {
 		assert.EqualError(t, err, "failed to apply kubectl command: registry URL could not be extracted: invalid registry url")
 	})
 
-	t.Run("error on plane clone", func(t *testing.T) {
+	t.Run("error on plain clone", func(t *testing.T) {
 		var configuration = &gitopsUpdateDeploymentOptions{
 			BranchName:            "main",
 			CommitMessage:         "This is the commit message",
@@ -244,6 +244,7 @@ func TestRunGitopsUpdateDeploymentWithInvalid(t *testing.T) {
 		assert.EqualError(t, err, "deploy tool invalid is not supported")
 	})
 }
+
 func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 	t.Parallel()
 	t.Run("successful run", func(t *testing.T) {
