@@ -181,7 +181,10 @@ func runKubeCtlCommand(command gitopsUpdateDeploymentExecRunner, patchString str
 }
 
 func runHelmCommand(runner gitopsUpdateDeploymentExecRunner, config *gitopsUpdateDeploymentOptions, workingDirectory string) ([]byte, error) {
-	sourceDirectory := filepath.Join(workingDirectory, config.RepositoryName)
+	chartPath, err := piperutils.Files{}.Glob(config.ChartPath)
+	log.Entry().WithError(err).Debug("chartPath[0]=" + chartPath[0])
+	additionalValueFile, err := piperutils.Files{}.Glob(config.HelmAdditionalValueFile)
+	log.Entry().WithError(err).Debug("additionalValueFile[0]=" + additionalValueFile[0])
 	var helmOutput = bytes.Buffer{}
 	runner.Stdout(&helmOutput)
 
@@ -196,8 +199,8 @@ func runHelmCommand(runner gitopsUpdateDeploymentExecRunner, config *gitopsUpdat
 	helmParams := []string{
 		"template",
 		config.DeploymentName,
-		filepath.Join(sourceDirectory, config.ChartPath),
-		"--values=" + filepath.Join(sourceDirectory, config.HelmAdditionalValueFile),
+		filepath.Join(".", chartPath[0]),
+		"--values=" + filepath.Join(".", additionalValueFile[0]),
 		"--set=" + config.HelmValueForRespositoryAndImageName + "=" + registryImage,
 		"--set=" + config.HelmValueForImageVersion + "=" + imageTag,
 	}
