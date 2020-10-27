@@ -33,8 +33,8 @@ build:
       merge: true
       includes: "s4hana_pipeline/reports/**, **/target/site/**/jacoco.xml"
 
-backendIntegrationTests:
-  unstash: ["SOURCE", "M2", "TARGET", "GENERATED_CAP_FILES"]
+integration:
+  unstash: ["SOURCE", "M2", "TARGET", "NODE_MODULES", "GENERATED_CAP_FILES"]
   stashes:
     - name: "REPORTS"
       merge: true
@@ -42,13 +42,6 @@ backendIntegrationTests:
     - name: "EXEC_FILES"
       merge: true
       includes: "**/target/**/*.exec"
-
-frontendIntegrationTests:
-  unstash: ["SOURCE", "NODE_MODULES", "GENERATED_CAP_FILES"]
-  stashes:
-    - name: "REPORTS"
-      merge: true
-      includes: "s4hana_pipeline/reports/**, **/target/site/**/jacoco.xml"
 
 compliance:
   unstash: ['SOURCE', 'M2', 'REPORTS', 'TARGET', 'EXEC_FILES']

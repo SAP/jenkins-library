@@ -131,6 +131,7 @@ func TestStepCommand() *cobra.Command {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				commonPipelineEnvironment.persist(piperOsCmd.GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				influxTest.persist(piperOsCmd.GeneralConfig.EnvRootPath, "influxTest")
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
