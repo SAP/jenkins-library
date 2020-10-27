@@ -394,7 +394,7 @@ func generateAndDownloadQGateReport(config fortifyExecuteScanOptions, sys fortif
 		}
 		status = report.Status
 	}
-	data, err := sys.DownloadReportFile(config.ReportDownloadEndpoint, projectVersion.ID)
+	data, err := sys.DownloadReportFile(config.ReportDownloadEndpoint, report.ID)
 	if err != nil {
 		return []byte{}, fmt.Errorf("Failed to download Q-Gate Report: %w", err)
 	}
