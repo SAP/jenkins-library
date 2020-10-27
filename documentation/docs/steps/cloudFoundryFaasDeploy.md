@@ -44,10 +44,10 @@
     )
     ```
 
-    Using the npm module `@sap/faas` one can easily generate an initial deployment file based on specific secret definitions. To do so run inside the project:
+    Using the `xfsrt-cli` one can easily generate an initial deployment values json string based on specific secret definitions. To do so, run inside the project:
 
     ```bash
-    faas-sdk init-values -y values.yaml
+    xfsrt-cli faas project init values -o json
     ```
 
-    This will produce a yaml file, which needs to be converted to json before writing them to the secret text credential.
+   Then the initial dummy values have to be changed to real values, and the json string added to a secret text credential.
