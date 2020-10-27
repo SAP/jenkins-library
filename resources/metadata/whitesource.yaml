@@ -322,7 +322,7 @@ spec:
       - name: productToken
         type: string
         description: "Token of the WhiteSource product to be created and used for results aggregation,
-          usually determined automatically. Can be provided as an alternative to "
+          usually determined automatically. Can optionally be provided as an alternative to `productName`."
         scope:
           - GENERAL
           - PARAMETERS
