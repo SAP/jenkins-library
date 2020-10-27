@@ -89,10 +89,9 @@ func TestRunGitopsUpdateDeploymentWithKubectl(t *testing.T) {
 
 		gitUtilsMock := &gitUtilsMock{}
 
-		runnerMock := gitOpsExecRunnerMock{}
-		var c gitopsUpdateDeploymentExecRunner = &runnerMock
+		runnerMock := &gitOpsExecRunnerMock{}
 
-		err := runGitopsUpdateDeployment(configuration, c, gitUtilsMock, filesMock{})
+		err := runGitopsUpdateDeployment(configuration, runnerMock, gitUtilsMock, filesMock{})
 		assert.NoError(t, err)
 		assert.Equal(t, configuration.BranchName, gitUtilsMock.changedBranch)
 		assert.Equal(t, expectedYaml, gitUtilsMock.savedFile)
@@ -220,6 +219,31 @@ func TestRunGitopsUpdateDeploymentWithKubectl(t *testing.T) {
 	})
 }
 
+func TestRunGitopsUpdateDeploymentWithInvalid(t *testing.T) {
+	t.Run("invalid deploy tool is not supported", func(t *testing.T) {
+		var configuration = &gitopsUpdateDeploymentOptions{
+			BranchName:                          "main",
+			CommitMessage:                       "This is the commit message",
+			ServerURL:                           "https://github.com",
+			Username:                            "admin3",
+			Password:                            "validAccessToken",
+			FilePath:                            "dir1/dir2/depl.yaml",
+			ContainerName:                       "myContainer",
+			ContainerRegistryURL:                "https://myregistry.com",
+			ContainerImageNameTag:               "registry/containers/myFancyContainer:1337",
+			DeployTool:                          "invalid",
+			HelmValueForImageVersion:            "image.version",
+			ChartPath:                           "./helm",
+			DeploymentName:                      "myFancyDeployment",
+			HelmValueForRespositoryAndImageName: "image.repositoryName",
+			HelmAdditionalValueFile:             "./helm/additionalValues.yaml",
+		}
+
+		err := runGitopsUpdateDeployment(configuration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, filesMock{})
+		assert.Error(t, err)
+		assert.EqualError(t, err, "deploy tool invalid is not supported")
+	})
+}
 func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 	t.Parallel()
 	t.Run("successful run", func(t *testing.T) {
@@ -242,11 +266,9 @@ func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 		}
 
 		gitUtilsMock := &gitUtilsMock{}
+		runnerMock := &gitOpsExecRunnerMock{}
 
-		runnerMock := gitOpsExecRunnerMock{}
-		var c gitopsUpdateDeploymentExecRunner = &runnerMock
-
-		err := runGitopsUpdateDeployment(configuration, c, gitUtilsMock, filesMock{})
+		err := runGitopsUpdateDeployment(configuration, runnerMock, gitUtilsMock, filesMock{})
 		assert.NoError(t, err)
 		assert.Equal(t, configuration.BranchName, gitUtilsMock.changedBranch)
 		assert.Equal(t, expectedYaml, gitUtilsMock.savedFile)
