@@ -63,7 +63,11 @@ removedOrReplacedSteps:
 
 removedOrReplacedStages:
   integrationTests:
-    newStageName: "backendIntegrationTests"
+    newStageName: "integration"
+  backendIntegrationTests:
+    newStageName: "integration"
+  frontendIntegrationTests:
+    newStageName: "integration"
   staticCodeChecks:
     customMessage: "Since version v32 it is required to migrate the configuration into your pom.xml file or to the configuration of the new step mavenExecuteStaticCodeChecks.
       Details can be found in the release notes as well as in the step documentation: https://sap.github.io/jenkins-library/steps/mavenExecuteStaticCodeChecks/."

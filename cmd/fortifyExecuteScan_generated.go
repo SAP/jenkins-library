@@ -72,17 +72,17 @@ type fortifyExecuteScanInflux struct {
 		fields struct {
 			projectName       string
 			projectVersion    string
-			violations        string
-			corporateTotal    string
-			corporateAudited  string
-			auditAllTotal     string
-			auditAllAudited   string
-			spotChecksTotal   string
-			spotChecksAudited string
-			spotChecksGap     string
-			suspicious        string
-			exploitable       string
-			suppressed        string
+			violations        int
+			corporateTotal    int
+			corporateAudited  int
+			auditAllTotal     int
+			auditAllAudited   int
+			spotChecksTotal   int
+			spotChecksAudited int
+			spotChecksGap     int
+			suspicious        int
+			exploitable       int
+			suppressed        int
 		}
 		tags struct {
 		}
@@ -170,6 +170,7 @@ DISCLAIMER: The step has not yet been tested on a wide variaty of projects, and 
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
