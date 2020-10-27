@@ -160,6 +160,10 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'dockerCredentialsId',
     /**
+     * Output the CloudFoundry trace logs. If not specified, takes the value of config.verbose.
+     */
+    'cfTrace',
+    /**
      * Toggle to activate the new go-implementation of the step. Off by default.
      * @possibleValues true, false
      */
@@ -230,6 +234,8 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('cloudFoundry/space')
             .withMandatoryProperty('cloudFoundry/credentialsId', null, {c -> return !c.containsKey('vaultAppRoleTokenCredentialsId') || !c.containsKey('vaultAppRoleSecretTokenCredentialsId')})
             .use()
+
+        if (config.cfTrace == null) config.cfTrace = config.verbose
 
         if (config.useGoStep == true) {
             List credentials = [
@@ -606,7 +612,7 @@ private deploy(String cfApiStatement, String cfDeployStatement, config, Closure 
 
             error "[${STEP_NAME}] ERROR: The execution of the deploy command failed, see the log for details."
         }
-        if (config.verbose) {
+        if (config.cfTrace) {
             handleCfCliLog(cfTraceFile)
         }
 
