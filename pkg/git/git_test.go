@@ -11,13 +11,16 @@ import (
 func TestCommit(t *testing.T) {
 	t.Parallel()
 	t.Run("successful run", func(t *testing.T) {
-		hash, err := commitSingleFile(".", "message", &WorktreeMock{})
+		worktreeMock := WorktreeMock{}
+		hash, err := commitSingleFile(".", "message", "user", &worktreeMock)
 		assert.NoError(t, err)
 		assert.Equal(t, plumbing.Hash([20]byte{4, 5, 6}), hash)
+		assert.Equal(t, "user", worktreeMock.author)
+		assert.True(t, worktreeMock.commitAll)
 	})
 
 	t.Run("error adding file", func(t *testing.T) {
-		_, err := commitSingleFile(".", "message", WorktreeMockFailing{
+		_, err := commitSingleFile(".", "message", "user", WorktreeMockFailing{
 			failingAdd: true,
 		})
 		assert.Error(t, err)
@@ -25,7 +28,7 @@ func TestCommit(t *testing.T) {
 	})
 
 	t.Run("error committing file", func(t *testing.T) {
-		_, err := commitSingleFile(".", "message", WorktreeMockFailing{
+		_, err := commitSingleFile(".", "message", "user", WorktreeMockFailing{
 			failingCommit: true,
 		})
 		assert.Error(t, err)
@@ -159,13 +162,17 @@ type WorktreeMock struct {
 	expectedBranchName string
 	checkedOutBranch   string
 	create             bool
+	author             string
+	commitAll          bool
 }
 
 func (WorktreeMock) Add(string) (plumbing.Hash, error) {
 	return [20]byte{1, 2, 3}, nil
 }
 
-func (WorktreeMock) Commit(string, *git.CommitOptions) (plumbing.Hash, error) {
+func (w *WorktreeMock) Commit(_ string, options *git.CommitOptions) (plumbing.Hash, error) {
+	w.author = options.Author.Name
+	w.commitAll = options.All
 	return [20]byte{4, 5, 6}, nil
 }
 
