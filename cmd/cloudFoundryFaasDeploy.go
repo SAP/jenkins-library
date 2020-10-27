@@ -82,9 +82,9 @@ func runCloudFoundryFaasDeploy(options *cloudFoundryFaasDeployOptions,
 
 	if err := c.RunExecutable("xfsrt-cli", xfsrtDeployScript...); err != nil {
 		return fmt.Errorf("Failed to deploy faas project: %w", err)
-	} else {
-		log.Entry().Info("Deployment successful.")
 	}
+
+	log.Entry().Info("Deployment successful.")
 
 	return returnedError
 }
