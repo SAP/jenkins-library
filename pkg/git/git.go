@@ -3,8 +3,10 @@ package git
 import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/pkg/errors"
+	"time"
 )
 
 // utilsWorkTree interface abstraction of git.Worktree to enable tests
@@ -27,17 +29,20 @@ type utilsGit interface {
 
 // CommitSingleFile Commits the file located in the relative file path with the commitMessage to the given worktree.
 // In case of errors, the error is returned. In the successful case the commit is provided.
-func CommitSingleFile(filePath, commitMessage string, worktree *git.Worktree) (plumbing.Hash, error) {
-	return commitSingleFile(filePath, commitMessage, worktree)
+func CommitSingleFile(filePath, commitMessage, author string, worktree *git.Worktree) (plumbing.Hash, error) {
+	return commitSingleFile(filePath, commitMessage, author, worktree)
 }
 
-func commitSingleFile(filePath, commitMessage string, worktree utilsWorkTree) (plumbing.Hash, error) {
+func commitSingleFile(filePath, commitMessage, author string, worktree utilsWorkTree) (plumbing.Hash, error) {
 	_, err := worktree.Add(filePath)
 	if err != nil {
 		return [20]byte{}, errors.Wrap(err, "failed to add file to git")
 	}
 
-	commit, err := worktree.Commit(commitMessage, &git.CommitOptions{})
+	commit, err := worktree.Commit(commitMessage, &git.CommitOptions{
+		All:    true,
+		Author: &object.Signature{Name: author, When: time.Now()},
+	})
 	if err != nil {
 		return [20]byte{}, errors.Wrap(err, "failed to commit file")
 	}
