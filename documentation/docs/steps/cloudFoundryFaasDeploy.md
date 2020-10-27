@@ -45,3 +45,11 @@ cloudFoundryFaasDeploy(
     xfsrtValuesCredentialsId: "<SECRET_TEXT_CREDENTIAL_ID>" //the id of a secret text credential, which contains a json string required during the deployment
 )
 ```
+
+Using the npm module `@sap/faas` one can easily generate an initial deployment file based on specific secret definitions. To do so run inside the project:
+
+```bash
+faas-sdk init-values -y values.yaml
+```
+
+This will produce a yaml file, which needs to be converted to json before writing them to the secret text credential.
