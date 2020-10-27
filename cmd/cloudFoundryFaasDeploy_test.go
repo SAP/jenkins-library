@@ -69,7 +69,7 @@ func TestCloudFoundryFaasDeploy(t *testing.T) {
 			assert.Equal(t, "xfsrt-cli", execRunner.Calls[0].Exec)
 			assert.Equal(t, []string{"login", "-s", "testInstance", "-b", "testKey", "--silent"}, execRunner.Calls[0].Params)
 			assert.Equal(t, "xfsrt-cli", execRunner.Calls[1].Exec)
-			assert.Equal(t, []string{"faas", "project", "deploy", "-c", fmt.Sprintf("'%s'", deployValues)}, execRunner.Calls[1].Params)
+			assert.Equal(t, []string{"faas", "project", "deploy", "-c", deployValues}, execRunner.Calls[1].Params)
 		}
 	})
 
