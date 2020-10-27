@@ -44,9 +44,17 @@ class JenkinsPropertiesRule implements TestRule {
                         }
                     }
                         else if (readPropertyType.text){
+                            // Multiline properties are not supported.
                             def propertiesMap = [:]
-                            def object = readPropertyType.text.split("=")
-                            propertiesMap.put(object[0], object[1])
+                            for (def line : new StringReader(readPropertyType.text)) {
+                                if (! line.trim()) continue
+                                entry = line.split('=')
+                                if(entry.length != 2) {
+                                    throw new RuntimeException("Invalid properties: ${readPropertyType.text}. Line '${line}' does not contain a valid key value pair ")
+                                }
+                                propertiesMap.put(entry[0], entry[1])
+
+                            }
                             return propertiesMap
                         }
 
