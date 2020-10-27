@@ -72,28 +72,27 @@ func TestBuildRegistryPlusImageWithoutTag(t *testing.T) {
 }
 
 func TestRunGitopsUpdateDeploymentWithKubectl(t *testing.T) {
+	var validConfiguration = &gitopsUpdateDeploymentOptions{
+		BranchName:            "main",
+		CommitMessage:         "This is the commit message",
+		ServerURL:             "https://github.com",
+		Username:              "admin3",
+		Password:              "validAccessToken",
+		FilePath:              "dir1/dir2/depl.yaml",
+		ContainerName:         "myContainer",
+		ContainerRegistryURL:  "https://myregistry.com/registry/containers",
+		ContainerImageNameTag: "myFancyContainer:1337",
+		DeployTool:            "kubectl",
+	}
+
 	t.Parallel()
 	t.Run("successful run", func(t *testing.T) {
-		var configuration = &gitopsUpdateDeploymentOptions{
-			BranchName:            "main",
-			CommitMessage:         "This is the commit message",
-			ServerURL:             "https://github.com",
-			Username:              "admin3",
-			Password:              "validAccessToken",
-			FilePath:              "dir1/dir2/depl.yaml",
-			ContainerName:         "myContainer",
-			ContainerRegistryURL:  "https://myregistry.com/registry/containers",
-			ContainerImageNameTag: "myFancyContainer:1337",
-			DeployTool:            "kubectl",
-		}
-
 		gitUtilsMock := &gitUtilsMock{}
-
 		runnerMock := &gitOpsExecRunnerMock{}
 
-		err := runGitopsUpdateDeployment(configuration, runnerMock, gitUtilsMock, filesMock{})
+		err := runGitopsUpdateDeployment(validConfiguration, runnerMock, gitUtilsMock, filesMock{})
 		assert.NoError(t, err)
-		assert.Equal(t, configuration.BranchName, gitUtilsMock.changedBranch)
+		assert.Equal(t, validConfiguration.BranchName, gitUtilsMock.changedBranch)
 		assert.Equal(t, expectedYaml, gitUtilsMock.savedFile)
 		assert.Equal(t, "kubectl", runnerMock.executable)
 		assert.Equal(t, "patch", runnerMock.params[0])
@@ -104,117 +103,67 @@ func TestRunGitopsUpdateDeploymentWithKubectl(t *testing.T) {
 	})
 
 	t.Run("error on kubectl execution", func(t *testing.T) {
-		var configuration = &gitopsUpdateDeploymentOptions{
-			BranchName:            "main",
-			CommitMessage:         "This is the commit message",
-			ServerURL:             "https://github.com",
-			Username:              "admin3",
-			Password:              "validAccessToken",
-			FilePath:              "dir1/dir2/depl.yaml",
-			ContainerName:         "myContainer",
-			ContainerRegistryURL:  "https://myregistry.com/registry/containers",
-			ContainerImageNameTag: "myFancyContainer:1337",
-			DeployTool:            "kubectl",
-		}
-
 		runner := &gitOpsExecRunnerMock{failOnRunExecutable: true}
 
-		err := runGitopsUpdateDeployment(configuration, runner, &gitUtilsMock{}, filesMock{})
+		err := runGitopsUpdateDeployment(validConfiguration, runner, &gitUtilsMock{}, filesMock{})
 		assert.Error(t, err)
 		assert.EqualError(t, err, "failed to apply kubectl command: failed to apply kubectl command: error happened")
 	})
 
 	t.Run("invalid URL", func(t *testing.T) {
-		var configuration = &gitopsUpdateDeploymentOptions{
-			BranchName:            "main",
-			CommitMessage:         "This is the commit message",
-			ServerURL:             "https://github.com",
-			Username:              "admin3",
-			Password:              "validAccessToken",
-			FilePath:              "dir1/dir2/depl.yaml",
-			ContainerName:         "myContainer",
-			ContainerRegistryURL:  "//myregistry.com/registry/containers",
-			ContainerImageNameTag: "myFancyContainer:1337",
-			DeployTool:            "kubectl",
-		}
+		var configuration = *validConfiguration
+		configuration.ContainerRegistryURL = "//myregistry.com/registry/containers"
 
-		err := runGitopsUpdateDeployment(configuration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, filesMock{})
+		err := runGitopsUpdateDeployment(&configuration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, filesMock{})
 		assert.EqualError(t, err, "failed to apply kubectl command: registry URL could not be extracted: invalid registry url")
 	})
 
 	t.Run("error on plain clone", func(t *testing.T) {
-		var configuration = &gitopsUpdateDeploymentOptions{
-			BranchName:            "main",
-			CommitMessage:         "This is the commit message",
-			ServerURL:             "https://github.com",
-			Username:              "admin3",
-			Password:              "validAccessToken",
-			FilePath:              "dir1/dir2/depl.yaml",
-			ContainerName:         "myContainer",
-			ContainerRegistryURL:  "https://myregistry.com/registry/containers",
-			ContainerImageNameTag: "myFancyContainer:1337",
-			DeployTool:            "kubectl",
-		}
-
 		gitUtils := &gitUtilsMock{failOnClone: true}
 
-		err := runGitopsUpdateDeployment(configuration, &gitOpsExecRunnerMock{}, gitUtils, filesMock{})
+		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, gitUtils, filesMock{})
 		assert.EqualError(t, err, "failed to plain clone repository: error on clone")
 	})
 
-	t.Run("error on temp dir creation", func(t *testing.T) {
-		var configuration = &gitopsUpdateDeploymentOptions{
-			BranchName:            "main",
-			CommitMessage:         "This is the commit message",
-			ServerURL:             "https://github.com",
-			Username:              "admin3",
-			Password:              "validAccessToken",
-			FilePath:              "dir1/dir2/depl.yaml",
-			ContainerName:         "myContainer",
-			ContainerRegistryURL:  "https://myregistry.com/registry/containers",
-			ContainerImageNameTag: "myFancyContainer:1337",
-			DeployTool:            "kubectl",
-		}
+	t.Run("error on change branch", func(t *testing.T) {
+		gitUtils := &gitUtilsMock{failOnChangeBranch: true}
 
+		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, gitUtils, filesMock{})
+		assert.EqualError(t, err, "failed to change branch: error on change branch")
+	})
+
+	t.Run("error on commit changes", func(t *testing.T) {
+		gitUtils := &gitUtilsMock{failOnCommit: true}
+
+		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, gitUtils, filesMock{})
+		assert.EqualError(t, err, "failed to commit and push changes: committing changes failed: error on commit")
+	})
+
+	t.Run("error on push commits", func(t *testing.T) {
+		gitUtils := &gitUtilsMock{failOnPush: true}
+
+		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, gitUtils, filesMock{})
+		assert.EqualError(t, err, "failed to commit and push changes: pushing changes failed: error on push")
+	})
+
+	t.Run("error on temp dir creation", func(t *testing.T) {
 		fileUtils := filesMock{onCreation: true}
 
-		err := runGitopsUpdateDeployment(configuration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, fileUtils)
+		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, fileUtils)
 		assert.EqualError(t, err, "failed to create temporary directory: error appeared")
 	})
 
 	t.Run("error on file write", func(t *testing.T) {
-		var configuration = &gitopsUpdateDeploymentOptions{
-			BranchName:            "main",
-			CommitMessage:         "This is the commit message",
-			ServerURL:             "https://github.com",
-			Username:              "admin3",
-			Password:              "validAccessToken",
-			FilePath:              "dir1/dir2/depl.yaml",
-			ContainerName:         "myContainer",
-			ContainerRegistryURL:  "https://myregistry.com/registry/containers",
-			ContainerImageNameTag: "myFancyContainer:1337",
-			DeployTool:            "kubectl",
-		}
+		fileUtils := filesMock{onWrite: true}
 
-		err := runGitopsUpdateDeployment(configuration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, filesMock{onWrite: true})
+		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, fileUtils)
 		assert.EqualError(t, err, "failed to write file: error appeared")
 	})
 
 	t.Run("error on temp dir deletion", func(t *testing.T) {
-		var configuration = &gitopsUpdateDeploymentOptions{
-			BranchName:            "main",
-			CommitMessage:         "This is the commit message",
-			ServerURL:             "https://github.com",
-			Username:              "admin3",
-			Password:              "validAccessToken",
-			FilePath:              "dir1/dir2/depl.yaml",
-			ContainerName:         "myContainer",
-			ContainerRegistryURL:  "https://myregistry.com/registry/containers",
-			ContainerImageNameTag: "myFancyContainer:1337",
-			DeployTool:            "kubectl",
-		}
+		fileUtils := filesMock{onDeletion: true}
 
-		err := runGitopsUpdateDeployment(configuration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, filesMock{onDeletion: true})
+		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, fileUtils)
 		assert.NoError(t, err)
 	})
 }
@@ -246,32 +195,32 @@ func TestRunGitopsUpdateDeploymentWithInvalid(t *testing.T) {
 }
 
 func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
+	var validConfiguration = &gitopsUpdateDeploymentOptions{
+		BranchName:                          "main",
+		CommitMessage:                       "This is the commit message",
+		ServerURL:                           "https://github.com",
+		Username:                            "admin3",
+		Password:                            "validAccessToken",
+		FilePath:                            "dir1/dir2/depl.yaml",
+		ContainerName:                       "myContainer",
+		ContainerRegistryURL:                "https://myregistry.com",
+		ContainerImageNameTag:               "registry/containers/myFancyContainer:1337",
+		DeployTool:                          "helm",
+		HelmValueForImageVersion:            "image.version",
+		ChartPath:                           "./helm",
+		DeploymentName:                      "myFancyDeployment",
+		HelmValueForRespositoryAndImageName: "image.repositoryName",
+		HelmAdditionalValueFile:             "./helm/additionalValues.yaml",
+	}
+
 	t.Parallel()
 	t.Run("successful run", func(t *testing.T) {
-		var configuration = &gitopsUpdateDeploymentOptions{
-			BranchName:                          "main",
-			CommitMessage:                       "This is the commit message",
-			ServerURL:                           "https://github.com",
-			Username:                            "admin3",
-			Password:                            "validAccessToken",
-			FilePath:                            "dir1/dir2/depl.yaml",
-			ContainerName:                       "myContainer",
-			ContainerRegistryURL:                "https://myregistry.com",
-			ContainerImageNameTag:               "registry/containers/myFancyContainer:1337",
-			DeployTool:                          "helm",
-			HelmValueForImageVersion:            "image.version",
-			ChartPath:                           "./helm",
-			DeploymentName:                      "myFancyDeployment",
-			HelmValueForRespositoryAndImageName: "image.repositoryName",
-			HelmAdditionalValueFile:             "./helm/additionalValues.yaml",
-		}
-
 		gitUtilsMock := &gitUtilsMock{}
 		runnerMock := &gitOpsExecRunnerMock{}
 
-		err := runGitopsUpdateDeployment(configuration, runnerMock, gitUtilsMock, filesMock{})
+		err := runGitopsUpdateDeployment(validConfiguration, runnerMock, gitUtilsMock, filesMock{})
 		assert.NoError(t, err)
-		assert.Equal(t, configuration.BranchName, gitUtilsMock.changedBranch)
+		assert.Equal(t, validConfiguration.BranchName, gitUtilsMock.changedBranch)
 		assert.Equal(t, expectedYaml, gitUtilsMock.savedFile)
 		assert.Equal(t, "helm", runnerMock.executable)
 		assert.Equal(t, "template", runnerMock.params[0])
@@ -283,75 +232,78 @@ func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 	})
 
 	t.Run("erroneous URL", func(t *testing.T) {
-		var configuration = &gitopsUpdateDeploymentOptions{
-			BranchName:                          "main",
-			CommitMessage:                       "This is the commit message",
-			ServerURL:                           "https://github.com",
-			Username:                            "admin3",
-			Password:                            "validAccessToken",
-			ContainerName:                       "myContainer",
-			ContainerRegistryURL:                "://myregistry.com",
-			ContainerImageNameTag:               "registry/containers/myFancyContainer:1337",
-			DeployTool:                          "helm",
-			HelmValueForImageVersion:            "image.version",
-			ChartPath:                           "./helm",
-			DeploymentName:                      "myFancyDeployment",
-			HelmValueForRespositoryAndImageName: "image.repositoryName",
-			HelmAdditionalValueFile:             "./helm/additionalValues.yaml",
-		}
+		var configuration = *validConfiguration
+		configuration.ContainerRegistryURL = "://myregistry.com"
 
-		err := runGitopsUpdateDeployment(configuration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, filesMock{})
+		err := runGitopsUpdateDeployment(&configuration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, filesMock{})
 		assert.Error(t, err)
 		assert.EqualError(t, err, `failed to apply helm command: failed to extract registry URL and image: registry URL could not be extracted: invalid registry url: parse "://myregistry.com": missing protocol scheme`)
 	})
 
 	t.Run("erroneous tag", func(t *testing.T) {
-		var configuration = &gitopsUpdateDeploymentOptions{
-			BranchName:                          "main",
-			CommitMessage:                       "This is the commit message",
-			ServerURL:                           "https://github.com",
-			Username:                            "admin3",
-			Password:                            "validAccessToken",
-			ContainerName:                       "myContainer",
-			ContainerRegistryURL:                "https://myregistry.com",
-			ContainerImageNameTag:               "registry/containers/myFancyContainer:",
-			DeployTool:                          "helm",
-			HelmValueForImageVersion:            "image.version",
-			ChartPath:                           "./helm",
-			DeploymentName:                      "myFancyDeployment",
-			HelmValueForRespositoryAndImageName: "image.repositoryName",
-			HelmAdditionalValueFile:             "./helm/additionalValues.yaml",
-		}
+		var configuration = *validConfiguration
+		configuration.ContainerImageNameTag = "registry/containers/myFancyContainer:"
 
-		err := runGitopsUpdateDeployment(configuration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, filesMock{})
+		err := runGitopsUpdateDeployment(&configuration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, filesMock{})
 		assert.Error(t, err)
 		assert.EqualError(t, err, "failed to apply helm command: failed to extract image tag: image name could not be extracted: could not extract tag from full image")
 	})
 
 	t.Run("error on helm execution", func(t *testing.T) {
-		var configuration = &gitopsUpdateDeploymentOptions{
-			BranchName:                          "main",
-			CommitMessage:                       "This is the commit message",
-			ServerURL:                           "https://github.com",
-			Username:                            "admin3",
-			Password:                            "validAccessToken",
-			FilePath:                            "dir1/dir2/depl.yaml",
-			ContainerName:                       "myContainer",
-			ContainerRegistryURL:                "https://myregistry.com",
-			ContainerImageNameTag:               "registry/containers/myFancyContainer:1337",
-			DeployTool:                          "helm",
-			HelmValueForImageVersion:            "image.version",
-			ChartPath:                           "./helm",
-			DeploymentName:                      "myFancyDeployment",
-			HelmValueForRespositoryAndImageName: "image.repositoryName",
-			HelmAdditionalValueFile:             "./helm/additionalValues.yaml",
-		}
-
 		runner := &gitOpsExecRunnerMock{failOnRunExecutable: true}
 
-		err := runGitopsUpdateDeployment(configuration, runner, &gitUtilsMock{}, filesMock{})
+		err := runGitopsUpdateDeployment(validConfiguration, runner, &gitUtilsMock{}, filesMock{})
 		assert.Error(t, err)
 		assert.EqualError(t, err, "failed to apply helm command: failed to execute helm command: error happened")
+	})
+
+	t.Run("error on plain clone", func(t *testing.T) {
+		gitUtils := &gitUtilsMock{failOnClone: true}
+
+		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, gitUtils, filesMock{})
+		assert.EqualError(t, err, "failed to plain clone repository: error on clone")
+	})
+
+	t.Run("error on change branch", func(t *testing.T) {
+		gitUtils := &gitUtilsMock{failOnChangeBranch: true}
+
+		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, gitUtils, filesMock{})
+		assert.EqualError(t, err, "failed to change branch: error on change branch")
+	})
+
+	t.Run("error on commit changes", func(t *testing.T) {
+		gitUtils := &gitUtilsMock{failOnCommit: true}
+
+		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, gitUtils, filesMock{})
+		assert.EqualError(t, err, "failed to commit and push changes: committing changes failed: error on commit")
+	})
+
+	t.Run("error on push commits", func(t *testing.T) {
+		gitUtils := &gitUtilsMock{failOnPush: true}
+
+		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, gitUtils, filesMock{})
+		assert.EqualError(t, err, "failed to commit and push changes: pushing changes failed: error on push")
+	})
+
+	t.Run("error on temp dir creation", func(t *testing.T) {
+		fileUtils := filesMock{onCreation: true}
+
+		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, fileUtils)
+		assert.EqualError(t, err, "failed to create temporary directory: error appeared")
+	})
+
+	t.Run("error on file write", func(t *testing.T) {
+		fileUtils := filesMock{onWrite: true}
+
+		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, fileUtils)
+		assert.EqualError(t, err, "failed to write file: error appeared")
+	})
+
+	t.Run("error on temp dir deletion", func(t *testing.T) {
+		fileUtils := filesMock{onDeletion: true}
+
+		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, fileUtils)
+		assert.NoError(t, err)
 	})
 }
 
@@ -412,9 +364,12 @@ func (f filesMock) RemoveAll(path string) error {
 }
 
 type gitUtilsMock struct {
-	savedFile     string
-	changedBranch string
-	failOnClone   bool
+	savedFile          string
+	changedBranch      string
+	failOnClone        bool
+	failOnChangeBranch bool
+	failOnCommit       bool
+	failOnPush         bool
 }
 
 func (gitUtilsMock) GetWorktree() (*git.Worktree, error) {
@@ -422,11 +377,17 @@ func (gitUtilsMock) GetWorktree() (*git.Worktree, error) {
 }
 
 func (v *gitUtilsMock) ChangeBranch(branchName string) error {
+	if v.failOnChangeBranch {
+		return errors.New("error on change branch")
+	}
 	v.changedBranch = branchName
 	return nil
 }
 
 func (v *gitUtilsMock) CommitSingleFile(string, string, string) (plumbing.Hash, error) {
+	if v.failOnCommit {
+		return [20]byte{}, errors.New("error on commit")
+	}
 	matches, _ := piperutils.Files{}.Glob("*/dir1/dir2/depl.yaml")
 	if len(matches) < 1 {
 		return [20]byte{}, errors.New("could not find file")
@@ -436,12 +397,15 @@ func (v *gitUtilsMock) CommitSingleFile(string, string, string) (plumbing.Hash, 
 	return [20]byte{123}, nil
 }
 
-func (gitUtilsMock) PushChangesToRepository(string, string) error {
+func (v gitUtilsMock) PushChangesToRepository(string, string) error {
+	if v.failOnPush {
+		return errors.New("error on push")
+	}
 	return nil
 }
 
-func (g gitUtilsMock) PlainClone(_, _, _, directory string) error {
-	if g.failOnClone {
+func (v gitUtilsMock) PlainClone(_, _, _, directory string) error {
+	if v.failOnClone {
 		return errors.New("error on clone")
 	}
 	filePath := filepath.Join(directory, "dir1/dir2/depl.yaml")
