@@ -50,4 +50,4 @@
     xfsrt-cli faas project init values -o json
     ```
 
-   Then the initial dummy values have to be changed to real values, and the json string added to a secret text credential.
+    Then the initial dummy values have to be changed to real values, and the json string added to a secret text credential.
