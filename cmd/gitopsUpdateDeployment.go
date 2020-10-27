@@ -120,27 +120,19 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gi
 		return errors.New("deploy tool " + config.DeployTool + " is not supported")
 	}
 
-	commit, err := saveChanges(config, err, fileUtils, filePath, outputBytes, gitUtils)
+	err = fileUtils.FileWrite(filePath, outputBytes, 0755)
 	if err != nil {
-		return errors.Wrap(err, "changes could not get saved")
+		return errors.Wrap(err, "failed to write file")
+	}
+
+	commit, err := commitAndPushChanges(config, gitUtils)
+	if err != nil {
+		return errors.Wrap(err, "failed to commit and push changes")
 	}
 
 	log.Entry().Infof("Changes committed with %s", commit.String())
 
 	return nil
-}
-
-func saveChanges(config *gitopsUpdateDeploymentOptions, err error, fileUtils gitopsUpdateDeploymentFileUtils, filePath string, outputBytes []byte, gitUtils iGitopsUpdateDeploymentGitUtils) (plumbing.Hash, error) {
-	err = fileUtils.FileWrite(filePath, outputBytes, 0755)
-	if err != nil {
-		return plumbing.Hash{}, errors.Wrap(err, "failed to write file")
-	}
-
-	commit, err := commitAndPushChanges(config, gitUtils)
-	if err != nil {
-		return plumbing.Hash{}, errors.Wrap(err, "failed to commit and push changes")
-	}
-	return commit, nil
 }
 
 func executeKubectl(config *gitopsUpdateDeploymentOptions, command gitopsUpdateDeploymentExecRunner, outputBytes []byte, filePath string) ([]byte, error) {

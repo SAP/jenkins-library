@@ -136,14 +136,14 @@ func TestRunGitopsUpdateDeploymentWithKubectl(t *testing.T) {
 		gitUtils := &gitUtilsMock{failOnCommit: true}
 
 		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, gitUtils, filesMock{})
-		assert.EqualError(t, err, "changes could not get saved: failed to commit and push changes: committing changes failed: error on commit")
+		assert.EqualError(t, err, "failed to commit and push changes: committing changes failed: error on commit")
 	})
 
 	t.Run("error on push commits", func(t *testing.T) {
 		gitUtils := &gitUtilsMock{failOnPush: true}
 
 		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, gitUtils, filesMock{})
-		assert.EqualError(t, err, "changes could not get saved: failed to commit and push changes: pushing changes failed: error on push")
+		assert.EqualError(t, err, "failed to commit and push changes: pushing changes failed: error on push")
 	})
 
 	t.Run("error on get working directory", func(t *testing.T) {
@@ -164,7 +164,7 @@ func TestRunGitopsUpdateDeploymentWithKubectl(t *testing.T) {
 		fileUtils := filesMock{failOnWrite: true}
 
 		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, fileUtils)
-		assert.EqualError(t, err, "changes could not get saved: failed to write file: error appeared")
+		assert.EqualError(t, err, "failed to write file: error appeared")
 	})
 
 	t.Run("error on temp dir deletion", func(t *testing.T) {
@@ -291,14 +291,14 @@ func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 		gitUtils := &gitUtilsMock{failOnCommit: true}
 
 		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, gitUtils, filesMock{})
-		assert.EqualError(t, err, "changes could not get saved: failed to commit and push changes: committing changes failed: error on commit")
+		assert.EqualError(t, err, "failed to commit and push changes: committing changes failed: error on commit")
 	})
 
 	t.Run("error on push commits", func(t *testing.T) {
 		gitUtils := &gitUtilsMock{failOnPush: true}
 
 		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, gitUtils, filesMock{})
-		assert.EqualError(t, err, "changes could not get saved: failed to commit and push changes: pushing changes failed: error on push")
+		assert.EqualError(t, err, "failed to commit and push changes: pushing changes failed: error on push")
 	})
 
 	t.Run("error on get working directory", func(t *testing.T) {
@@ -319,7 +319,7 @@ func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 		fileUtils := filesMock{failOnWrite: true}
 
 		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, fileUtils)
-		assert.EqualError(t, err, "changes could not get saved: failed to write file: error appeared")
+		assert.EqualError(t, err, "failed to write file: error appeared")
 	})
 
 	t.Run("error on temp dir deletion", func(t *testing.T) {
