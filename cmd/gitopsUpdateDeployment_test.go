@@ -249,6 +249,15 @@ func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 		assert.EqualError(t, err, "failed to apply helm command: failed to extract image tag: image name could not be extracted: could not extract tag from full image")
 	})
 
+	t.Run("erroneous image name", func(t *testing.T) {
+		var configuration = *validConfiguration
+		configuration.ContainerImageNameTag = ":1.0.1"
+
+		err := runGitopsUpdateDeployment(&configuration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, filesMock{})
+		assert.Error(t, err)
+		assert.EqualError(t, err, "failed to apply helm command: failed to extract registry URL and image: image name could not be extracted: could not extract image name with tag from full image: failed to parse image name: could not parse reference: :1.0.1")
+	})
+
 	t.Run("error on helm execution", func(t *testing.T) {
 		runner := &gitOpsExecRunnerMock{failOnRunExecutable: true}
 
