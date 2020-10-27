@@ -153,11 +153,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        conditions:
-          - conditionRef: strings-equal
-            params:
-              - name: deployTool
-                value: kubectl
       - name: deployTool
         type: string
         description: Defines the tool which should be used for deployment.
