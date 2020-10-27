@@ -153,6 +153,13 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: repositoryName
+        type: string
+        description: The name of the repository that is build by this pipeline
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: deployTool
         type: string
         description: Defines the tool which should be used for deployment.

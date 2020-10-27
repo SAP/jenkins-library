@@ -28,6 +28,7 @@ type gitopsUpdateDeploymentOptions struct {
 	HelmValueForRespositoryAndImageName string `json:"helmValueForRespositoryAndImageName,omitempty"`
 	HelmValueForImageVersion            string `json:"helmValueForImageVersion,omitempty"`
 	DeploymentName                      string `json:"deploymentName,omitempty"`
+	RepositoryName                      string `json:"repositoryName,omitempty"`
 	DeployTool                          string `json:"deployTool,omitempty"`
 }
 
@@ -108,6 +109,7 @@ func addGitopsUpdateDeploymentFlags(cmd *cobra.Command, stepConfig *gitopsUpdate
 	cmd.Flags().StringVar(&stepConfig.HelmValueForRespositoryAndImageName, "helmValueForRespositoryAndImageName", os.Getenv("PIPER_helmValueForRespositoryAndImageName"), "value description used in the template to specify the repository and image name of the deployment")
 	cmd.Flags().StringVar(&stepConfig.HelmValueForImageVersion, "helmValueForImageVersion", os.Getenv("PIPER_helmValueForImageVersion"), "value description used in the template to specify the version of the deployment")
 	cmd.Flags().StringVar(&stepConfig.DeploymentName, "deploymentName", os.Getenv("PIPER_deploymentName"), "Defines the name of the deployment.")
+	cmd.Flags().StringVar(&stepConfig.RepositoryName, "repositoryName", os.Getenv("PIPER_repositoryName"), "The name of the repository that is build by this pipeline")
 	cmd.Flags().StringVar(&stepConfig.DeployTool, "deployTool", `kubectl`, "Defines the tool which should be used for deployment.")
 
 	cmd.MarkFlagRequired("commitMessage")
@@ -262,6 +264,14 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "helmDeploymentName"}},
+					},
+					{
+						Name:        "repositoryName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
 						Name:        "deployTool",
