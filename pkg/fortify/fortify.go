@@ -60,7 +60,7 @@ type System interface {
 	GenerateQGateReport(projectID, projectVersionID, reportTemplateID int64, projectName, projectVersionName, reportFormat string) (*models.SavedReport, error)
 	GetReportDetails(id int64) (*models.SavedReport, error)
 	UploadResultFile(endpoint, file string, projectVersionID int64) error
-	DownloadReportFile(endpoint string, projectVersionID int64) ([]byte, error)
+	DownloadReportFile(endpoint string, reportID int64) ([]byte, error)
 	DownloadResultFile(endpoint string, projectVersionID int64) ([]byte, error)
 }
 
