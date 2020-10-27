@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -16,7 +17,19 @@ import (
 	"github.com/SAP/jenkins-library/pkg/versioning"
 )
 
-func detectExecuteScan(config detectExecuteScanOptions, telemetryData *telemetry.CustomData) {
+type detectFileUtils interface {
+	Abs(path string) (string, error)
+	FileExists(filename string) (bool, error)
+	FileRemove(filename string) error
+	Copy(src, dest string) (int64, error)
+	FileRead(path string) ([]byte, error)
+	FileWrite(path string, content []byte, perm os.FileMode) error
+	MkdirAll(path string, perm os.FileMode) error
+	Chmod(path string, mode os.FileMode) error
+	Glob(pattern string) (matches []string, err error)
+}
+
+func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData) {
 	c := command.Command{
 		ErrorCategoryMapping: map[string][]string{
 			log.ErrorCompliance.String(): {
@@ -43,10 +56,19 @@ func detectExecuteScan(config detectExecuteScanOptions, telemetryData *telemetry
 	}
 }
 
-func runDetect(config detectExecuteScanOptions, command command.ShellRunner, fileUtils piperutils.FileUtils, httpClient piperhttp.Downloader) error {
+func runDetect(config detectExecuteScanOptions, command command.ShellRunner, fileUtils detectFileUtils, httpClient piperhttp.Downloader) error {
 	// detect execution details, see https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/88440888/Sample+Synopsys+Detect+Scan+Configuration+Scenarios+for+Black+Duck
-	httpClient.DownloadFile("https://detect.synopsys.com/detect.sh", "detect.sh", nil, nil)
-	err := fileUtils.Chmod("detect.sh", 0700)
+	err := httpClient.DownloadFile("https://detect.synopsys.com/detect.sh", "detect.sh", nil, nil)
+	if err != nil {
+		return fmt.Errorf("failed to download 'detect.sh' script: %w", err)
+	}
+	defer func() {
+		err := fileUtils.FileRemove("detect.sh")
+		if err != nil {
+			log.Entry().Warnf("failed to delete 'detect.sh' script: %v", err)
+		}
+	}()
+	err = fileUtils.Chmod("detect.sh", 0700)
 	if err != nil {
 		return err
 	}
