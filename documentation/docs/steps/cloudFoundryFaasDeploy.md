@@ -17,39 +17,37 @@
 
 ## Example
 
-#### Deploying functions into xfsrt environment without deployment configuration data
+1. Deploying **without** deployment configuration data:
 
-The following example deploys the functions project into xfsrt instance running in the Cloud Foundry space.
+    ```groovy
+    cloudFoundryFaasDeploy(
+        cfCredentialsId: "<CF_LOGIN_CREDENTIAL>"
+        cfApiEndpoint: "<CF_API_ENDPOINT>"
+        cfOrg: "<CF_ORG>"
+        cfSpace: "<CF_SPACE>"
+        xfsrtServiceInstance: "<XFSRT_SERVICE_INSTANCE_NAME>"
+        xfsrtServiceKeyName: "<SERVICE-KEY>" //service key created for xfsrt instance
+    )
+    ```
 
-```groovy
-cloudFoundryFaasDeploy(
-    cfCredentialsId: "<CF_LOGIN_CREDENTIAL>"
-    cfApiEndpoint: "<CF_API_ENDPOINT>"
-    cfOrg: "<CF_ORG>"
-    cfSpace: "<CF_SPACE>"
-    xfsrtServiceInstance: "<XFSRT_SERVICE_INSTANCE_NAME>"
-    xfsrtServiceKeyName: "<SERVICE-KEY>" //service key created for xfsrt instance
-)
-```
+1. Deploying **with** deployment configuration data:
 
-#### Deploying functions into xfsrt environment with deployment configuration data
+    ```groovy
+    cloudFoundryFaasDeploy(
+        cfCredentialsId: "<CF_LOGIN_CREDENTIAL>"
+        cfApiEndpoint: "<CF_API_ENDPOINT>"
+        cfOrg: "<CF_ORG>"
+        cfSpace: "<CF_SPACE>"
+        xfsrtServiceInstance: "<XFSRT_SERVICE_INSTANCE_NAME>"
+        xfsrtServiceKeyName: "<SERVICE-KEY>" //service key created for xfsrt instance
+        xfsrtValuesCredentialsId: "<SECRET_TEXT_CREDENTIAL_ID>" //the id of a secret text credential, which contains a json string required during the deployment
+    )
+    ```
 
-```groovy
-cloudFoundryFaasDeploy(
-    cfCredentialsId: "<CF_LOGIN_CREDENTIAL>"
-    cfApiEndpoint: "<CF_API_ENDPOINT>"
-    cfOrg: "<CF_ORG>"
-    cfSpace: "<CF_SPACE>"
-    xfsrtServiceInstance: "<XFSRT_SERVICE_INSTANCE_NAME>"
-    xfsrtServiceKeyName: "<SERVICE-KEY>" //service key created for xfsrt instance
-    xfsrtValuesCredentialsId: "<SECRET_TEXT_CREDENTIAL_ID>" //the id of a secret text credential, which contains a json string required during the deployment
-)
-```
+    Using the npm module `@sap/faas` one can easily generate an initial deployment file based on specific secret definitions. To do so run inside the project:
 
-Using the npm module `@sap/faas` one can easily generate an initial deployment file based on specific secret definitions. To do so run inside the project:
+    ```bash
+    faas-sdk init-values -y values.yaml
+    ```
 
-```bash
-faas-sdk init-values -y values.yaml
-```
-
-This will produce a yaml file, which needs to be converted to json before writing them to the secret text credential.
+    This will produce a yaml file, which needs to be converted to json before writing them to the secret text credential.
