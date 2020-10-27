@@ -215,14 +215,14 @@ func buildRegistryPlusImageWithoutTag(config *gitopsUpdateDeploymentOptions) (st
 	registryURL := config.ContainerRegistryURL
 	url := ""
 	if registryURL != "" {
-		containerUrl, err := docker.ContainerRegistryFromURL(registryURL)
+		containerURL, err := docker.ContainerRegistryFromURL(registryURL)
 		if err != nil {
 			return "", errors.Wrap(err, "registry URL could not be extracted")
 		}
-		if containerUrl != "" {
-			containerUrl = containerUrl + "/"
+		if containerURL != "" {
+			containerURL = containerURL + "/"
 		}
-		url = containerUrl
+		url = containerURL
 	}
 	imageName, err := docker.ContainerImageNameFromImage(config.ContainerImageNameTag)
 	if err != nil {
