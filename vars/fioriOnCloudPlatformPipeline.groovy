@@ -43,7 +43,17 @@ void call(parameters = [:]) {
 
         stage('deploy') {
 
-            neoDeploy(parameters)
+            def mtaBuildCfg = parameters.script.commonPipelineEnvironment.getStepConfiguration('mtaBuild', '')
+
+            if((mtaBuildCfg.platform == 'NEO') || (mtaBuildCfg.buildTarget == 'NEO')) {
+                neoDeploy(parameters)
+            }
+            else if((mtaBuildCfg.platform == 'CF') || (mtaBuildCfg.buildTarget == 'CF')) {
+                cloudFoundryDeploy(parameters)
+            }
+            else {
+                error "Deployment failed: no valid deployment target defined! Find details in https://sap.github.io/jenkins-library/steps/mtaBuild/#platform"
+            }
         }
 
         // Cut and paste lines above in order to create a pipeline from this scenario

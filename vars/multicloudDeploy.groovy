@@ -13,9 +13,9 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = [
-    /** Defines the targets to deploy to Cloud Foundry.*/
+    /** Defines the targets to deploy on Cloud Foundry.*/
     'cfTargets',
-    /** Defines the targets to deploy to NEO.*/
+    /** Defines the targets to deploy on neo.*/
     'neoTargets',
     /** Executes the deployments in parallel.*/
     'parallelExecution'
@@ -35,16 +35,10 @@ import static com.sap.piper.Prerequisites.checkScript
     'cfCreateServices',
     /** Defines the deployment type.*/
     'enableZeroDowntimeDeployment',
-    /** Runs all the deployments in the current workspace.
-     *  It is recommended to use an isolated workspace while using blue-green deployment with multiple cfTargets,
-     *  since the cloudFoundryDeploy step might edit the manifest.yml file in that case.
-     *  It is also recommended in case of parallel execution and use of mtaExtensionCredentials, since the
-     *  credentials are inserted in the mtaExtensionDescriptor file.*/
-    'runInCurrentWorkspace'
 ])
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
-    /** The source file to deploy to SAP Cloud Platform. Only for NEO targets.*/
+    /** The source file to deploy to SAP Cloud Platform.*/
     'source'
 ])
 
@@ -110,7 +104,7 @@ void call(parameters = [:]) {
             // since the cloudFoundryDeploy step might edit the manifest.yml file in that case.
             // It is also required in case of parallel execution and use of mtaExtensionCredentials, since the
             // credentials are inserted in the mtaExtensionDescriptor file.
-            Boolean runInIsolatedWorkspace = config.cfTargets.size() > 1 && (deploymentType == "blue-green" || config.parallelExecution) && !config.runInCurrentWorkspace
+            Boolean runInIsolatedWorkspace = config.cfTargets.size() > 1 && (deploymentType == "blue-green" || config.parallelExecution)
 
             for (int i = 0; i < config.cfTargets.size(); i++) {
 

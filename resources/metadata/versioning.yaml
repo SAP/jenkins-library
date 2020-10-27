@@ -186,6 +186,11 @@ spec:
           - name: gitHttpsCredentialsId
             type: secret
             param: password
+          - type: vaultSecret
+            paths:
+              - $(vaultPath)/gitHttpsCredential
+              - $(vaultBasePath)/$(vaultPipelineName)/gitHttpsCredential
+              - $(vaultBasePath)/GROUP-SECRETS/gitHttpsCredential
       - name: projectSettingsFile
         aliases:
           - name: maven/projectSettingsFile
@@ -230,6 +235,11 @@ spec:
           - name: gitHttpsCredentialsId
             type: secret
             param: username
+          - type: vaultSecret
+            paths:
+              - $(vaultPath)/gitHttpsCredential
+              - $(vaultBasePath)/$(vaultPipelineName)/gitHttpsCredential
+              - $(vaultBasePath)/GROUP-SECRETS/gitHttpsCredential
       - name: versioningTemplate
         type: string
         description: "DEPRECATED: Defines the template for the automatic version which will be created"

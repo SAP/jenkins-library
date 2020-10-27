@@ -114,6 +114,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				{{- range $notused, $oRes := .OutputResources }}
 				{{ index $oRes "name" }}.persist({{if $.ExportPrefix}}{{ $.ExportPrefix }}.{{end}}GeneralConfig.EnvRootPath, "{{ index $oRes "name" }}"){{ end }}
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
@@ -406,7 +407,7 @@ func getOutputResourceDetails(stepData *config.StepData) ([]map[string]string, e
 				if fields, ok := measurement["fields"].([]interface{}); ok {
 					for _, field := range fields {
 						if fieldParams, ok := field.(map[string]interface{}); ok {
-							influxMeasurement.Fields = append(influxMeasurement.Fields, InfluxMetric{Name: fmt.Sprintf("%v", fieldParams["name"])})
+							influxMeasurement.Fields = append(influxMeasurement.Fields, InfluxMetric{Name: fmt.Sprintf("%v", fieldParams["name"]), Type: fmt.Sprintf("%v", fieldParams["type"])})
 						}
 					}
 				}
@@ -507,6 +508,14 @@ func longName(long string) string {
 	l := strings.ReplaceAll(long, "`", "` + \"`\" + `")
 	l = strings.TrimSpace(l)
 	return l
+}
+
+func influxType(fieldType string) string {
+	//TODO: clarify why fields are initialized with <nil> and tags are initialized with ''
+	if len(fieldType) == 0 || fieldType == "<nil>" {
+		return "string"
+	}
+	return fieldType
 }
 
 func golangName(name string) string {

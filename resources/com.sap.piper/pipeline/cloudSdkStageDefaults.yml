@@ -9,11 +9,12 @@ stages:
           - '**/*.jsx'
           - '**/*.ts'
           - '**/*.tsx'
-  backendIntegrationTests:
+  integration:
     stepConditions:
       npmExecuteScripts:
         npmScripts:
           - 'ci-it-backend'
+          - 'ci-it-frontend'
       mavenExecuteIntegration:
         filePattern: 'integration-tests/pom.xml'
   compliance:
@@ -24,11 +25,6 @@ stages:
           - 'sonarTokenCredentialsId'
           - 'projectKey'
           - 'instance'
-  frontendIntegrationTests:
-    stepConditions:
-      npmExecuteScripts:
-        npmScripts:
-          - 'ci-it-frontend'
   additionalUnitTests:
     stepConditions:
       npmExecuteScripts:

@@ -42,6 +42,11 @@ spec:
         resourceRef:
           - name: fortifyCredentialsId
             type: secret
+          - type: vaultSecret
+            paths:
+              - $(vaultPath)/fortify
+              - $(vaultBasePath)/$(vaultPipelineName)/fortify
+              - $(vaultBasePath)/GROUP-SECRETS/fortify
       - name: githubToken
         description: "GitHub personal access token as per
           https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line"
@@ -539,13 +544,24 @@ spec:
               - name: projectName
               - name: projectVersion
               - name: violations
+                type: int
               - name: corporateTotal
+                type: int
               - name: corporateAudited
+                type: int
               - name: auditAllTotal
+                type: int
               - name: auditAllAudited
+                type: int
               - name: spotChecksTotal
+                type: int
               - name: spotChecksAudited
+                type: int
               - name: spotChecksGap
+                type: int
               - name: suspicious
+                type: int
               - name: exploitable
+                type: int
               - name: suppressed
+                type: int
