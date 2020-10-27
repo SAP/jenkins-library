@@ -14,15 +14,15 @@ import (
 )
 
 type gitopsUpdateDeploymentOptions struct {
-	BranchName           string `json:"branchName,omitempty"`
-	CommitMessage        string `json:"commitMessage,omitempty"`
-	ServerURL            string `json:"serverUrl,omitempty"`
-	Username             string `json:"username,omitempty"`
-	Password             string `json:"password,omitempty"`
-	FilePath             string `json:"filePath,omitempty"`
-	ContainerName        string `json:"containerName,omitempty"`
-	ContainerRegistryURL string `json:"containerRegistryUrl,omitempty"`
-	ContainerImage       string `json:"containerImage,omitempty"`
+	BranchName            string `json:"branchName,omitempty"`
+	CommitMessage         string `json:"commitMessage,omitempty"`
+	ServerURL             string `json:"serverUrl,omitempty"`
+	Username              string `json:"username,omitempty"`
+	Password              string `json:"password,omitempty"`
+	FilePath              string `json:"filePath,omitempty"`
+	ContainerName         string `json:"containerName,omitempty"`
+	ContainerRegistryURL  string `json:"containerRegistryUrl,omitempty"`
+	ContainerImageNameTag string `json:"containerImageNameTag,omitempty"`
 }
 
 // GitopsUpdateDeploymentCommand Updates Kubernetes Deployment Manifest in an Infrastructure Git Repository
@@ -96,7 +96,7 @@ func addGitopsUpdateDeploymentFlags(cmd *cobra.Command, stepConfig *gitopsUpdate
 	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "Relative path in the git repository to the deployment descriptor file that shall be updated")
 	cmd.Flags().StringVar(&stepConfig.ContainerName, "containerName", os.Getenv("PIPER_containerName"), "The name of the container to update")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryURL, "containerRegistryUrl", os.Getenv("PIPER_containerRegistryUrl"), "http(s) url of the Container registry where the image is located")
-	cmd.Flags().StringVar(&stepConfig.ContainerImage, "containerImage", os.Getenv("PIPER_containerImage"), "Container image name with version tag to annotate in the deployment configuration.")
+	cmd.Flags().StringVar(&stepConfig.ContainerImageNameTag, "containerImageNameTag", os.Getenv("PIPER_containerImageNameTag"), "Container image name with version tag to annotate in the deployment configuration.")
 
 	cmd.MarkFlagRequired("commitMessage")
 	cmd.MarkFlagRequired("serverUrl")
@@ -104,7 +104,6 @@ func addGitopsUpdateDeploymentFlags(cmd *cobra.Command, stepConfig *gitopsUpdate
 	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("filePath")
 	cmd.MarkFlagRequired("containerName")
-	cmd.MarkFlagRequired("containerImage")
 }
 
 // retrieve step metadata
@@ -199,7 +198,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Aliases:   []config.Alias{{Name: "dockerRegistryUrl"}},
 					},
 					{
-						Name: "containerImage",
+						Name: "containerImageNameTag",
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "commonPipelineEnvironment",
@@ -208,8 +207,8 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "image"}, {Name: "containerImageNameTag"}},
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "image"}, {Name: "containerImage"}},
 					},
 				},
 			},
