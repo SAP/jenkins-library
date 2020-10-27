@@ -93,7 +93,7 @@ func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, t
 }
 
 func pullRepositories(repositories []abaputils.Repository, pullConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (err error) {
-	log.Entry().Infof("Start cloning %v repositories", len(repositories))
+	log.Entry().Infof("Start pulling %v repositories", len(repositories))
 	for _, repo := range repositories {
 		err = handlePull(repo, pullConnectionDetails, client, pollIntervall)
 		if err != nil {
@@ -121,7 +121,7 @@ func triggerPull(repositoryName string, pullConnectionDetails abaputils.Connecti
 	// workaround until golang version 1.16 is used
 	time.Sleep(1 * time.Second)
 
-	log.Entry().WithField("StatusCode", resp.Status).WithField("ABAP Endpoint", pullConnectionDetails.URL).Info("Authentication on the ABAP system successful")
+	log.Entry().WithField("StatusCode", resp.Status).WithField("ABAP Endpoint", pullConnectionDetails.URL).Debug("Authentication on the ABAP system successful")
 	uriConnectionDetails.XCsrfToken = resp.Header.Get("X-Csrf-Token")
 	pullConnectionDetails.XCsrfToken = uriConnectionDetails.XCsrfToken
 
@@ -136,7 +136,7 @@ func triggerPull(repositoryName string, pullConnectionDetails abaputils.Connecti
 		return uriConnectionDetails, err
 	}
 	defer resp.Body.Close()
-	log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repositoryName).Info("Triggered Pull of Repository / Software Component")
+	log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repositoryName).Debug("Triggered Pull of Repository / Software Component")
 
 	// Parse Response
 	var body abaputils.PullEntity
@@ -169,7 +169,7 @@ func checkPullRepositoryConfiguration(options abapEnvironmentPullGitRepoOptions)
 }
 
 func handlePull(repo abaputils.Repository, pullConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (err error) {
-	startPullLogs(repo.Branch)
+	startPullLogs(repo.Name)
 
 	uriConnectionDetails, err := triggerPull(repo.Name, pullConnectionDetails, client)
 	if err != nil {

@@ -131,6 +131,7 @@ func triggerATCrun(config abapEnvironmentRunATCCheckOptions, details abaputils.C
 	//Trigger ATC run
 	var resp *http.Response
 	var bodyString = `<?xml version="1.0" encoding="UTF-8"?><atc:runparameters xmlns:atc="http://www.sap.com/adt/atc" xmlns:obj="http://www.sap.com/adt/objectset"` + checkVariantString + `><obj:objectSet>` + softwareComponentString + packageString + `</obj:objectSet></atc:runparameters>`
+	log.Entry().Debugf("Request Body: %s", bodyString)
 	var body = []byte(bodyString)
 	if err == nil {
 		details.URL = abapEndpoint + "/sap/bc/adt/api/atc/runs?clientWait=false"
@@ -150,6 +151,7 @@ func buildATCCheckBody(ATCConfig ATCconfig) (checkVariantString string, packageS
 	//Build Check Variant and Configuration XML Body
 	if len(ATCConfig.CheckVariant) != 0 {
 		checkVariantString += ` check_variant="` + ATCConfig.CheckVariant + `"`
+		log.Entry().Infof("ATC Check Variant: %s", ATCConfig.CheckVariant)
 		if len(ATCConfig.Configuration) != 0 {
 			checkVariantString += ` configuration="` + ATCConfig.Configuration + `"`
 		}
@@ -223,7 +225,7 @@ func runATC(requestType string, details abaputils.ConnectionDetailsHTTP, body []
 
 func fetchXcsrfToken(requestType string, details abaputils.ConnectionDetailsHTTP, body []byte, client piperhttp.Sender) (string, error) {
 
-	log.Entry().WithField("ABAP Endpoint: ", details.URL).Info("Fetching Xcrsf-Token")
+	log.Entry().WithField("ABAP Endpoint: ", details.URL).Debug("Fetching Xcrsf-Token")
 
 	details.URL += "/sap/bc/adt/api/atc/runs/00000000000000000000000000000000"
 	details.XCsrfToken = "fetch"
