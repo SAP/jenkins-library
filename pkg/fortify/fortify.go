@@ -60,7 +60,7 @@ type System interface {
 	GenerateQGateReport(projectID, projectVersionID, reportTemplateID int64, projectName, projectVersionName, reportFormat string) (*models.SavedReport, error)
 	GetReportDetails(id int64) (*models.SavedReport, error)
 	UploadResultFile(endpoint, file string, projectVersionID int64) error
-	DownloadReportFile(endpoint string, projectVersionID int64) ([]byte, error)
+	DownloadReportFile(endpoint string, reportID int64) ([]byte, error)
 	DownloadResultFile(endpoint string, projectVersionID int64) ([]byte, error)
 }
 
@@ -677,7 +677,7 @@ func (sys *SystemInstance) uploadResultFileContent(endpoint, file string, fileCo
 }
 
 // DownloadFile downloads a file from Fortify backend
-func (sys *SystemInstance) downloadFile(endpoint, method, acceptType, tokenType string, projectVersionID int64) ([]byte, error) {
+func (sys *SystemInstance) downloadFile(endpoint, method, acceptType, tokenType string, fileID int64) ([]byte, error) {
 	token, err := sys.getFileToken(tokenType)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error fetching file token")
@@ -690,7 +690,7 @@ func (sys *SystemInstance) downloadFile(endpoint, method, acceptType, tokenType 
 	header.Add("Accept", acceptType)
 	header.Add("Content-Type", "application/form-data")
 	body := url.Values{
-		"id":  {fmt.Sprintf("%v", projectVersionID)},
+		"id":  {fmt.Sprintf("%v", fileID)},
 		"mat": {token.Token},
 	}
 	var response *http.Response
@@ -711,8 +711,8 @@ func (sys *SystemInstance) downloadFile(endpoint, method, acceptType, tokenType 
 }
 
 // DownloadReportFile downloads a report file from Fortify backend
-func (sys *SystemInstance) DownloadReportFile(endpoint string, projectVersionID int64) ([]byte, error) {
-	data, err := sys.downloadFile(endpoint, http.MethodGet, "application/octet-stream", "REPORT_FILE", projectVersionID)
+func (sys *SystemInstance) DownloadReportFile(endpoint string, reportID int64) ([]byte, error) {
+	data, err := sys.downloadFile(endpoint, http.MethodGet, "application/octet-stream", "REPORT_FILE", reportID)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error downloading report file")
 	}
