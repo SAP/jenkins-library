@@ -241,6 +241,19 @@ class commonPipelineEnvironment implements Serializable {
                 valueMap[param] = fileContent
             }
         })
+
+        def containerValues = script.findFiles(glob: '.pipeline/commonPipelineEnvironment/container/*')
+        containerValues.each({f ->
+            def fileContent = script.readFile(f.getPath())
+            def fileName = f.getName()
+            def param = fileName.split('/')[fileName.split('\\/').size()-1]
+            if (param.endsWith(".json")){
+                param = param.replace(".json","")
+                containerProperties[param] = script.readJSON(test: fileContent)
+            }else{
+                containerProperties[param] = fileContent
+            }
+        })
     }
 
     List getCustomDefaults() {
