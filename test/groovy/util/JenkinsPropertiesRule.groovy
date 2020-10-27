@@ -40,9 +40,10 @@ class JenkinsPropertiesRule implements TestRule {
                     readPropertyType ->
                         if(readPropertyType.file){
                             if (JenkinsPropertiesRule.this.propertyPath.contains(readPropertyType.file)) {
-                            return JenkinsPropertiesRule.this.configProperties
+                                return JenkinsPropertiesRule.this.configProperties
+                            }
+                            throw new Exception("Could not find the properties with path $readPropertyType")
                         }
-                    }
                         else if (readPropertyType.text){
                             // Multiline properties are not supported.
                             def propertiesMap = [:]
@@ -57,8 +58,7 @@ class JenkinsPropertiesRule implements TestRule {
                             }
                             return propertiesMap
                         }
-
-                        throw new Exception("Could not find the properties with path $readPropertyType")
+                        throw new Exception("neither 'text' nor 'file' argument was provided to 'readProperties'")
                 })
 
                 base.evaluate()
