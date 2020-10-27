@@ -63,6 +63,7 @@ import static com.sap.piper.Prerequisites.checkScript
          * Note: variables defined via `manifestVariables` always win over conflicting variables defined via any file given
          * by `manifestVariablesFiles` - no matter what is declared before. This is the same behavior as can be
          * observed when using `cf push --var` in combination with `cf push --vars-file`.
+         * @parentConfigKey cloudFoundry
          */
         'manifestVariables',
         /**
