@@ -210,14 +210,14 @@ private static List copyOrDownloadCustomDefaultsIntoPipelineEnv(script, List cus
 @NonCPS
 /* private */ Map parseUrl(String url) {
 
-    def urlMatcher = url =~ /^((http|https|git|ssh):\/\/)?((.*)@)?([^:\/]+)(:([\d]*))?(\/?(.*))$/
+    def uri = new URI(url)
 
     return [
-        protocol: urlMatcher[0][2],
-        auth: urlMatcher[0][4],
-        host: urlMatcher[0][5],
-        port: urlMatcher[0][7],
-        path: urlMatcher[0][9],
+        protocol: uri.getScheme(),
+        auth: uri.getAuthority(),
+        host: uri.getHost(),
+        port: uri.getPort(),
+        path: uri.getPath().substring(1),
     ]
 }
 
