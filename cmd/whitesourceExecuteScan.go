@@ -86,7 +86,7 @@ func (w *whitesourceUtilsBundle) Now() time.Time {
 	return time.Now()
 }
 
-func newWhitesourceUtils() *whitesourceUtilsBundle {
+func newWhitesourceUtils(config *ScanOptions) *whitesourceUtilsBundle {
 	utils := whitesourceUtilsBundle{
 		Client:  &piperhttp.Client{},
 		Command: &command.Command{},
@@ -95,6 +95,8 @@ func newWhitesourceUtils() *whitesourceUtilsBundle {
 	// Reroute cmd output to logging framework
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
+	// Configure HTTP Client
+	utils.SetOptions(piperhttp.ClientOptions{TransportTimeout: time.Duration(config.Timeout) * time.Second})
 	return &utils
 }
 
@@ -106,9 +108,10 @@ func newWhitesourceScan(config *ScanOptions) *ws.Scan {
 }
 
 func whitesourceExecuteScan(config ScanOptions, _ *telemetry.CustomData) {
-	utils := newWhitesourceUtils()
+	utils := newWhitesourceUtils(&config)
 	scan := newWhitesourceScan(&config)
-	sys := ws.NewSystem(config.ServiceURL, config.OrgToken, config.UserToken)
+	sys := ws.NewSystem(config.ServiceURL, config.OrgToken, config.UserToken,
+		time.Duration(config.Timeout)*time.Second)
 	err := runWhitesourceExecuteScan(&config, scan, utils, sys)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")

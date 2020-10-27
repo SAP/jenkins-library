@@ -2,14 +2,13 @@ package whitesource
 
 import (
 	"bytes"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"testing"
-
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/stretchr/testify/assert"
 )
 
 type whitesourceMockClient struct {

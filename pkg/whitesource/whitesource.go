@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -102,12 +103,14 @@ type System struct {
 const DateTimeLayout = "2006-01-02 15:04:05 -0700"
 
 // NewSystem constructs a new System instance
-func NewSystem(serverURL, orgToken, userToken string) *System {
+func NewSystem(serverURL, orgToken, userToken string, timeout time.Duration) *System {
+	httpClient := &piperhttp.Client{}
+	httpClient.SetOptions(piperhttp.ClientOptions{TransportTimeout: timeout})
 	return &System{
 		serverURL:  serverURL,
 		orgToken:   orgToken,
 		userToken:  userToken,
-		httpClient: &piperhttp.Client{},
+		httpClient: httpClient,
 	}
 }
 

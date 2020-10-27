@@ -77,13 +77,13 @@ spec:
           - STEPS
         default: true
       - name: timeout
-        type: string
-        description: "Timeout in seconds until a HTTP call is forcefully terminated."
+        type: int
+        description: "Timeout in seconds until an HTTP call is forcefully terminated."
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: 0
+        default: 900
       - name: agentDownloadUrl
         type: string
         description: "URL used to download the latest version of the WhiteSource Unified Agent."
