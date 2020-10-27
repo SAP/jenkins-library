@@ -27,6 +27,7 @@ type gitopsUpdateDeploymentFileUtils interface {
 	TempDir(dir, pattern string) (name string, err error)
 	RemoveAll(path string) error
 	FileWrite(path string, content []byte, perm os.FileMode) error
+	Getwd() (string, error)
 }
 
 type gitopsUpdateDeploymentExecRunner interface {
@@ -81,7 +82,11 @@ func gitopsUpdateDeployment(config gitopsUpdateDeploymentOptions, _ *telemetry.C
 }
 
 func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gitopsUpdateDeploymentExecRunner, gitUtils iGitopsUpdateDeploymentGitUtils, fileUtils gitopsUpdateDeploymentFileUtils) error {
-	temporaryFolder, err := fileUtils.TempDir(".", "temp-")
+	workingDirectory, err := fileUtils.Getwd()
+	if err != nil {
+		return errors.Wrap(err, "failed to get working directory")
+	}
+	temporaryFolder, err := fileUtils.TempDir(workingDirectory, "temp-")
 	if err != nil {
 		return errors.Wrap(err, "failed to create temporary directory")
 	}
@@ -118,7 +123,7 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gi
 			return errors.Wrap(err, "failed to apply kubectl command")
 		}
 	} else if config.DeployTool == "helm" {
-		outputBytes, err = runHelmCommand(command, config)
+		outputBytes, err = runHelmCommand(command, config, workingDirectory)
 		if err != nil {
 			return errors.Wrap(err, "failed to apply helm command")
 		}
@@ -159,7 +164,7 @@ func runKubeCtlCommand(command gitopsUpdateDeploymentExecRunner, patchString str
 	return kubectlOutput.Bytes(), nil
 }
 
-func runHelmCommand(runner gitopsUpdateDeploymentExecRunner, config *gitopsUpdateDeploymentOptions) ([]byte, error) {
+func runHelmCommand(runner gitopsUpdateDeploymentExecRunner, config *gitopsUpdateDeploymentOptions, workingDirectory string) ([]byte, error) {
 	var helmOutput = bytes.Buffer{}
 	runner.Stdout(&helmOutput)
 
@@ -174,8 +179,8 @@ func runHelmCommand(runner gitopsUpdateDeploymentExecRunner, config *gitopsUpdat
 	helmParams := []string{
 		"template",
 		config.DeploymentName,
-		config.ChartPath,
-		"--values=" + config.HelmAdditionalValueFile,
+		filepath.Join(workingDirectory, config.ChartPath),
+		"--values=" + filepath.Join(workingDirectory, config.HelmAdditionalValueFile),
 		"--set=" + config.HelmValueForRespositoryAndImageName + "=" + registryImage,
 		"--set=" + config.HelmValueForImageVersion + "=" + imageTag,
 	}

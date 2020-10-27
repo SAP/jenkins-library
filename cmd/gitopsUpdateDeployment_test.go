@@ -146,22 +146,29 @@ func TestRunGitopsUpdateDeploymentWithKubectl(t *testing.T) {
 		assert.EqualError(t, err, "failed to commit and push changes: pushing changes failed: error on push")
 	})
 
+	t.Run("error on get working directory", func(t *testing.T) {
+		fileUtils := filesMock{failOnGetWd: true}
+
+		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, fileUtils)
+		assert.EqualError(t, err, "failed to get working directory: error on get wd")
+	})
+
 	t.Run("error on temp dir creation", func(t *testing.T) {
-		fileUtils := filesMock{onCreation: true}
+		fileUtils := filesMock{failOnCreation: true}
 
 		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, fileUtils)
 		assert.EqualError(t, err, "failed to create temporary directory: error appeared")
 	})
 
 	t.Run("error on file write", func(t *testing.T) {
-		fileUtils := filesMock{onWrite: true}
+		fileUtils := filesMock{failOnWrite: true}
 
 		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, fileUtils)
 		assert.EqualError(t, err, "failed to write file: error appeared")
 	})
 
 	t.Run("error on temp dir deletion", func(t *testing.T) {
-		fileUtils := filesMock{onDeletion: true}
+		fileUtils := filesMock{failOnDeletion: true}
 
 		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, fileUtils)
 		assert.NoError(t, err)
@@ -225,8 +232,8 @@ func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 		assert.Equal(t, "helm", runnerMock.executable)
 		assert.Equal(t, "template", runnerMock.params[0])
 		assert.Equal(t, "myFancyDeployment", runnerMock.params[1])
-		assert.Equal(t, "./helm", runnerMock.params[2])
-		assert.Equal(t, "--values=./helm/additionalValues.yaml", runnerMock.params[3])
+		assert.Equal(t, filepath.Join(".", "helm"), runnerMock.params[2])
+		assert.Equal(t, "--values="+filepath.Join(".", "helm/additionalValues.yaml"), runnerMock.params[3])
 		assert.Equal(t, "--set=image.repositoryName=myregistry.com/registry/containers/myFancyContainer", runnerMock.params[4])
 		assert.Equal(t, "--set=image.version=1337", runnerMock.params[5])
 	})
@@ -294,22 +301,29 @@ func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 		assert.EqualError(t, err, "failed to commit and push changes: pushing changes failed: error on push")
 	})
 
+	t.Run("error on get working directory", func(t *testing.T) {
+		fileUtils := filesMock{failOnGetWd: true}
+
+		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, fileUtils)
+		assert.EqualError(t, err, "failed to get working directory: error on get wd")
+	})
+
 	t.Run("error on temp dir creation", func(t *testing.T) {
-		fileUtils := filesMock{onCreation: true}
+		fileUtils := filesMock{failOnCreation: true}
 
 		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, fileUtils)
 		assert.EqualError(t, err, "failed to create temporary directory: error appeared")
 	})
 
 	t.Run("error on file write", func(t *testing.T) {
-		fileUtils := filesMock{onWrite: true}
+		fileUtils := filesMock{failOnWrite: true}
 
 		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, fileUtils)
 		assert.EqualError(t, err, "failed to write file: error appeared")
 	})
 
 	t.Run("error on temp dir deletion", func(t *testing.T) {
-		fileUtils := filesMock{onDeletion: true}
+		fileUtils := filesMock{failOnDeletion: true}
 
 		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, fileUtils)
 		assert.NoError(t, err)
@@ -342,27 +356,35 @@ func (e *gitOpsExecRunnerMock) RunExecutable(executable string, params ...string
 }
 
 type filesMock struct {
-	onCreation bool
-	onDeletion bool
-	onWrite    bool
+	failOnCreation bool
+	failOnDeletion bool
+	failOnWrite    bool
+	failOnGetWd    bool
+}
+
+func (f filesMock) Getwd() (string, error) {
+	if f.failOnGetWd {
+		return "", errors.New("error on get wd")
+	}
+	return ".", nil
 }
 
 func (f filesMock) FileWrite(path string, content []byte, perm os.FileMode) error {
-	if f.onWrite {
+	if f.failOnWrite {
 		return errors.New("error appeared")
 	}
 	return piperutils.Files{}.FileWrite(path, content, perm)
 }
 
 func (f filesMock) TempDir(dir string, pattern string) (name string, err error) {
-	if f.onCreation {
+	if f.failOnCreation {
 		return "", errors.New("error appeared")
 	}
 	return piperutils.Files{}.TempDir(dir, pattern)
 }
 
 func (f filesMock) RemoveAll(path string) error {
-	if f.onDeletion {
+	if f.failOnDeletion {
 		defer func() {
 			// eventually remove file to keep directories clean
 			_ = piperutils.Files{}.RemoveAll(path)
