@@ -21,15 +21,19 @@ type Product struct {
 	LastUpdateDate string `json:"lastUpdatedDate,omitempty"`
 }
 
+// Assignment describes a list of UserAssignments and GroupAssignments which can be attributed to a WhiteSource Product.
 type Assignment struct {
 	UserAssignments  []UserAssignment  `json:"userAssignments,omitempty"`
 	GroupAssignments []GroupAssignment `json:"groupAssignments,omitempty"`
 }
 
+// UserAssignment holds an email address for a WhiteSource user
+// which can be assigned to a WhiteSource Product in a specific role.
 type UserAssignment struct {
 	Email string `json:"email,omitempty"`
 }
 
+// GroupAssignment refers to the name of a particular group in WhiteSource.
 type GroupAssignment struct {
 	Name string `json:"name,omitempty"`
 }
