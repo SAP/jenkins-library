@@ -93,7 +93,7 @@ func runAbapEnvironmentCheckoutBranch(options *abapEnvironmentCheckoutBranchOpti
 }
 
 func checkoutBranches(repositories []abaputils.Repository, checkoutConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (err error) {
-	log.Entry().Infof("Start switching of %v branches", len(repositories))
+	log.Entry().Infof("Start switching %v branches", len(repositories))
 	for _, repo := range repositories {
 		err = handleCheckout(repo, checkoutConnectionDetails, client, pollIntervall)
 		if err != nil {
@@ -124,7 +124,7 @@ func triggerCheckout(repositoryName string, branchName string, checkoutConnectio
 	// workaround until golang version 1.16 is used
 	time.Sleep(1 * time.Second)
 
-	log.Entry().WithField("StatusCode", resp.Status).WithField("ABAP Endpoint", checkoutConnectionDetails.URL).Info("Authentication on the ABAP system was successful")
+	log.Entry().WithField("StatusCode", resp.Status).WithField("ABAP Endpoint", checkoutConnectionDetails.URL).Debug("Authentication on the ABAP system was successful")
 	uriConnectionDetails.XCsrfToken = resp.Header.Get("X-Csrf-Token")
 	checkoutConnectionDetails.XCsrfToken = uriConnectionDetails.XCsrfToken
 
@@ -139,7 +139,7 @@ func triggerCheckout(repositoryName string, branchName string, checkoutConnectio
 		return uriConnectionDetails, err
 	}
 	defer resp.Body.Close()
-	log.Entry().WithField("StatusCode", resp.StatusCode).WithField("repositoryName", repositoryName).WithField("branchName", branchName).Info("Triggered checkout of branch")
+	log.Entry().WithField("StatusCode", resp.StatusCode).WithField("repositoryName", repositoryName).WithField("branchName", branchName).Debug("Triggered checkout of branch")
 
 	// Parse Response
 	var body abaputils.PullEntity
