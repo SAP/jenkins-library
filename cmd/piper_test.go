@@ -359,7 +359,7 @@ bar: 42
 		assert.Equal(t, 1.1, stepConfig["foo"])
 		assert.True(t, hasFailed, "Expected checkTypes() to exit via logging framework")
 	})
-	t.Run("Valid value in case int beyond length", func(t *testing.T) {
+	t.Run("Exits in case number beyond length", func(t *testing.T) {
 		// Init
 		hasFailed := false
 

@@ -317,8 +317,6 @@ func checkTypes(config map[string]interface{}, options interface{}) map[string]i
 
 		var typeError error = nil
 
-		originalValue := config[paramName]
-
 		switch paramValueType.Kind() {
 		case reflect.String:
 			typeError = convertValueFromString(config, optionsField, paramName, paramValueType.String())
@@ -332,7 +330,7 @@ func checkTypes(config map[string]interface{}, options interface{}) map[string]i
 				paramName, paramValueType.Kind(), optionsField.Type.Kind())
 		}
 
-		if typeError != nil || strings.ToLower(fmt.Sprint(config[paramName])) != strings.ToLower(fmt.Sprint(originalValue)) {
+		if typeError != nil {
 			typeError = fmt.Errorf("config value for '%s' is of unexpected type %s, expected %s: %w",
 				paramName, paramValueType.Kind(), optionsField.Type.Kind(), typeError)
 			log.SetErrorCategory(log.ErrorConfiguration)
@@ -367,8 +365,12 @@ func convertValueFromString(config map[string]interface{}, optionsField *reflect
 func convertValueFromFloat(config map[string]interface{}, optionsField *reflect.StructField, paramName string, paramValue float64) error {
 	switch optionsField.Type.Kind() {
 	case reflect.String:
-		config[paramName] = strconv.FormatFloat(paramValue, 'f', -1, 64)
-		return nil
+		val := strconv.FormatFloat(paramValue, 'f', -1, 64)
+		if strings.Contains(val, ".") {
+			config[paramName] = val
+			return nil
+		}
+		return errIncompatibleTypes
 	case reflect.Float32:
 		config[paramName] = float32(paramValue)
 		return nil
