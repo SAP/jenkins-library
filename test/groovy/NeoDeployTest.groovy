@@ -438,7 +438,7 @@ class NeoDeployTest extends BasePiperTest {
             deployMode: 'mta')
 
         Assert.assertThat(shellRule.shell, hasItem(containsString("curl -X POST -u \"clientId:********\" --fail \"https://oauthasservices-trialuser123.test.deploy.host.com/oauth2/api/v1/token?grant_type=client_credentials&scope=write,read")))
-        Assert.assertThat(shellRule.shell[3], containsString("#!/bin/bash curl -i -L -c 'cookies.jar' -H 'X-CSRF-Token: Fetch' -H \"Authorization: Bearer xxx\" --fail \"https://sandboxportal-trialuser123.test.deploy.host.com/fiori/api/v1/csrf\""))
+        Assert.assertThat(shellRule.shell[3], containsString("#!/bin/bash curl -i -L -c 'cookies.jar' -H 'X-CSRF-Token: Fetch' -H \"Authorization: Bearer xxx\" --fail \"https://cloudnwcportal-trialuser123.test.deploy.host.com/fiori/api/v1/csrf\""))
     }
 
     @Test
