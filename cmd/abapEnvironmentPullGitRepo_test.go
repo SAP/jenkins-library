@@ -46,6 +46,7 @@ func TestPullStep(t *testing.T) {
 		err := runAbapEnvironmentPullGitRepo(&config, nil, &autils, client)
 		assert.NoError(t, err, "Did not expect error")
 	})
+
 	t.Run("Run Step Failure", func(t *testing.T) {
 		expectedErrorMessage := "Something failed during the pull of the repositories: Checking configuration failed: You have not specified any repository configuration to be pulled into the ABAP Environment System. Please make sure that you specified the repositories that should be pulled either in a dedicated file or via the parameter 'repositoryNames'. For more information please read the User documentation"
 
@@ -69,6 +70,7 @@ func TestPullStep(t *testing.T) {
 		err := runAbapEnvironmentPullGitRepo(&config, nil, &autils, client)
 		assert.Equal(t, expectedErrorMessage, err.Error(), "Different error message expected")
 	})
+
 	t.Run("Success case: pull repos from file config", func(t *testing.T) {
 		var autils = abaputils.AUtilsMock{}
 		defer autils.Cleanup()
@@ -101,6 +103,7 @@ func TestPullStep(t *testing.T) {
 repositories:
 - name: 'testRepo'
   branch: 'testBranch'
+  commitID: '9caede7f31028cd52333eb496434275687fefb47'
 - name: 'testRepo2'
   branch: 'testBranch2'
 - name: 'testRepo3'
@@ -121,6 +124,7 @@ repositories:
 		err = runAbapEnvironmentPullGitRepo(&config, nil, &autils, client)
 		assert.NoError(t, err)
 	})
+
 	t.Run("Failure case: pull repos from empty file config", func(t *testing.T) {
 		expectedErrorMessage := "Something failed during the pull of the repositories: Error in config file repositoriesTest.yml, AddonDescriptor doesn't contain any repositories"
 
@@ -168,6 +172,7 @@ repositories:
 		err = runAbapEnvironmentPullGitRepo(&config, nil, &autils, client)
 		assert.EqualError(t, err, expectedErrorMessage)
 	})
+
 	t.Run("Failure case: pull repos from wrong file config", func(t *testing.T) {
 		expectedErrorMessage := "Something failed during the pull of the repositories: Could not unmarshal repositoriesTest.yml"
 
