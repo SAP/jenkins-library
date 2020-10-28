@@ -75,7 +75,7 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'invalidateCache',
     /**
-     * Portal landscape region subscribed to in SAP cloud platform ex: Canary/Factory.
+     * Portal landscape region subscribed to in SAP Cloud Platform.
      * @parentConfigKey neo
      */
     'portalLandscape',
