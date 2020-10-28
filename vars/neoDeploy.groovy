@@ -249,7 +249,7 @@ private invalidateCache(configuration){
         usernameVariable: 'OAUTH_NEO_CLIENT_ID')]) {
         def bearerTokenResponse = sh(
             script: """#!/bin/bash
-                       curl -X POST -u "${OAUTH_NEO_CLIENT_ID}:${OAUTH_NEO_CLIENT_SECRET}" \
+                        curl -X POST -u "${OAUTH_NEO_CLIENT_ID}:${OAUTH_NEO_CLIENT_SECRET}" \
                             --fail \
                             "https://oauthasservices-${account}.${host}/oauth2/api/v1/token?grant_type=client_credentials&scope=write,read"
                     """, returnStdout: true)
@@ -259,7 +259,7 @@ private invalidateCache(configuration){
 
         def fetchXcsrfTokenResponse = sh(
             script: """#!/bin/bash
-                       curl -i -L \
+                        curl -i -L \
                             -c 'cookies.jar' \
                             -H 'X-CSRF-Token: Fetch' \
                             -H "Authorization: Bearer ${bearerToken}" \
@@ -278,7 +278,7 @@ private invalidateCache(configuration){
         }
         def statusCode = sh(
             script: """#!/bin/bash
-                       curl -X POST -L \
+                        curl -X POST -L \
                             -b 'cookies.jar'  \
                             -H "X-CSRF-Token: ${xcsrfToken}" \
                             -H "Authorization: Bearer ${bearerToken}" \
