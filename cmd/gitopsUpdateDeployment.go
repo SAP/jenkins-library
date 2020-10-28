@@ -179,6 +179,21 @@ func runHelmCommand(runner gitopsUpdateDeploymentExecRunner, config *gitopsUpdat
 	var helmOutput = bytes.Buffer{}
 	runner.Stdout(&helmOutput)
 
+	// --------------------
+	// TODO: remove again
+	err := filepath.Walk(".",
+		func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			log.Entry().Debug(path)
+			return nil
+		})
+	if err != nil {
+		log.Entry().WithError(err).Debug("error during file walking")
+	}
+	// --------------------
+
 	registryImage, err := buildRegistryPlusImageWithoutTag(config)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to extract registry URL and image")
