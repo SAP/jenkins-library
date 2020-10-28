@@ -226,9 +226,9 @@ func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 		assert.Equal(t, "template", runnerMock.params[0])
 		assert.Equal(t, "myFancyDeployment", runnerMock.params[1])
 		assert.Equal(t, filepath.Join(".", "helm"), runnerMock.params[2])
-		assert.Equal(t, "--values="+filepath.Join(".", "helm/additionalValues.yaml"), runnerMock.params[3])
-		assert.Equal(t, "--set=image.repositoryName=myregistry.com/registry/containers/myFancyContainer", runnerMock.params[4])
-		assert.Equal(t, "--set=image.version=1337", runnerMock.params[5])
+		assert.Equal(t, "--values=\""+filepath.Join(".", "helm/additionalValues.yaml")+"\"", runnerMock.params[3])
+		assert.Equal(t, "--set=\"image.repositoryName=myregistry.com/registry/containers/myFancyContainer\"", runnerMock.params[4])
+		assert.Equal(t, "--set=\"image.version=1337\"", runnerMock.params[5])
 	})
 
 	t.Run("erroneous URL", func(t *testing.T) {

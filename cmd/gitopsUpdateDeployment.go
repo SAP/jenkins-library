@@ -191,9 +191,9 @@ func runHelmCommand(runner gitopsUpdateDeploymentExecRunner, config *gitopsUpdat
 		"template",
 		config.DeploymentName,
 		filepath.Join(".", config.ChartPath),
-		"--values=" + filepath.Join(".", config.HelmAdditionalValueFile),
-		"--set=" + config.HelmValueForRespositoryAndImageName + "=" + registryImage,
-		"--set=" + config.HelmValueForImageVersion + "=" + imageTag,
+		"--values=\"" + filepath.Join(".", config.HelmAdditionalValueFile) + "\"",
+		"--set=\"" + config.HelmValueForRespositoryAndImageName + "=" + registryImage + "\"",
+		"--set=\"" + config.HelmValueForImageVersion + "=" + imageTag + "\"",
 	}
 
 	err = runner.RunExecutable("helm", helmParams...)
