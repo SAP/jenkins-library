@@ -146,13 +146,6 @@ func TestRunGitopsUpdateDeploymentWithKubectl(t *testing.T) {
 		assert.EqualError(t, err, "failed to commit and push changes: pushing changes failed: error on push")
 	})
 
-	t.Run("error on get working directory", func(t *testing.T) {
-		fileUtils := filesMock{failOnGetWd: true}
-
-		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, fileUtils)
-		assert.EqualError(t, err, "failed to get working directory: error on get wd")
-	})
-
 	t.Run("error on temp dir creation", func(t *testing.T) {
 		fileUtils := filesMock{failOnCreation: true}
 
@@ -301,13 +294,6 @@ func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 		assert.EqualError(t, err, "failed to commit and push changes: pushing changes failed: error on push")
 	})
 
-	t.Run("error on get working directory", func(t *testing.T) {
-		fileUtils := filesMock{failOnGetWd: true}
-
-		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, fileUtils)
-		assert.EqualError(t, err, "failed to get working directory: error on get wd")
-	})
-
 	t.Run("error on temp dir creation", func(t *testing.T) {
 		fileUtils := filesMock{failOnCreation: true}
 
@@ -359,14 +345,6 @@ type filesMock struct {
 	failOnCreation bool
 	failOnDeletion bool
 	failOnWrite    bool
-	failOnGetWd    bool
-}
-
-func (f filesMock) Getwd() (string, error) {
-	if f.failOnGetWd {
-		return "", errors.New("error on get wd")
-	}
-	return ".", nil
 }
 
 func (f filesMock) FileWrite(path string, content []byte, perm os.FileMode) error {
