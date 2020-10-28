@@ -16,7 +16,8 @@ Of course, this tackles only the upstream part of the SaaS solution lifecycle. O
 The installation and maintenance of ABAP software is done / controlled via software product versions. A **software product version** is a „bundle" of software component versions made available at the same time for implementing a well-defined scope of functionality. It is the technical / delivery view on a software portfolio.
 
 !!! caution "Initial Scope"
-    The initial scope supports an add-on product consisting of **one** software component. Furthermore, this software component can not be used in multiple add-on products
+    The initial scope supports an add-on product consisting of **one** software component. Furthermore, this software component can not be used in multiple add-on products.
+    Initially it is not possbile to use software components with a structure where included packages do not use the same namespace as provided in the software component name.
 
 ### Software Product Version
 
