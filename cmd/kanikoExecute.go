@@ -64,17 +64,6 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 
 	if !piperutils.ContainsString(config.BuildOptions, "--destination") {
 		dest := []string{"--no-push"}
-		if len(config.ContainerImage) > 0 {
-			containerRegistry, err := docker.ContainerRegistryFromImage(config.ContainerImage)
-			if err != nil {
-				return errors.Wrapf(err, "invalid registry part in image %v", config.ContainerImage)
-			}
-			// errors are already caught with previous call to docker.ContainerRegistryFromImage
-			containerImageNameTag, _ := docker.ContainerImageNameTagFromImage(config.ContainerImage)
-			dest = []string{"--destination", config.ContainerImage}
-			commonPipelineEnvironment.container.registryURL = fmt.Sprintf("https://%v", containerRegistry)
-			commonPipelineEnvironment.container.imageNameTag = containerImageNameTag
-		}
 		if len(config.ContainerRegistryURL) > 0 && len(config.ContainerImageName) > 0 && len(config.ContainerImageTag) > 0 {
 			containerRegistry, err := docker.ContainerRegistryFromURL(config.ContainerRegistryURL)
 			if err != nil {
@@ -84,6 +73,16 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 			dest = []string{"--destination", fmt.Sprintf("%v/%v", containerRegistry, containerImageTag)}
 			commonPipelineEnvironment.container.registryURL = config.ContainerRegistryURL
 			commonPipelineEnvironment.container.imageNameTag = containerImageTag
+		} else if len(config.ContainerImage) > 0 {
+			containerRegistry, err := docker.ContainerRegistryFromImage(config.ContainerImage)
+			if err != nil {
+				return errors.Wrapf(err, "invalid registry part in image %v", config.ContainerImage)
+			}
+			// errors are already caught with previous call to docker.ContainerRegistryFromImage
+			containerImageNameTag, _ := docker.ContainerImageNameTagFromImage(config.ContainerImage)
+			dest = []string{"--destination", config.ContainerImage}
+			commonPipelineEnvironment.container.registryURL = fmt.Sprintf("https://%v", containerRegistry)
+			commonPipelineEnvironment.container.imageNameTag = containerImageNameTag
 		}
 		config.BuildOptions = append(config.BuildOptions, dest...)
 	}
@@ -130,7 +129,7 @@ func certificateUpdate(certLinks []string, httpClient piperhttp.Sender, fileUtil
 		if err != nil {
 			return errors.Wrap(err, "error reading response")
 		}
-		response.Body.Close()
+		_ = response.Body.Close()
 		content = append(content, []byte("\n")...)
 		caCerts = append(caCerts, content...)
 	}
