@@ -30,10 +30,6 @@ func abapEnvironmentCloneGitRepo(config abapEnvironmentCloneGitRepoOptions, tele
 
 	client := piperhttp.Client{}
 
-	// for http calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	// and use a  &piperhttp.Client{} in a custom system
-	// Example: step checkmarxExecuteScan.go
-
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
 	err := runAbapEnvironmentCloneGitRepo(&config, telemetryData, &autils, &client)
 	if err != nil {
@@ -43,7 +39,7 @@ func abapEnvironmentCloneGitRepo(config abapEnvironmentCloneGitRepoOptions, tele
 
 func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender) error {
 	// Mapping for options
-	subOptions := convertConfig(config)
+	subOptions := convertCloneConfig(config)
 
 	// Determine the host, user and password, either via the input parameters or via a cloud foundry service key
 	connectionDetails, errorGetInfo := com.GetAbapCommunicationArrangementInfo(subOptions, "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Clones")
@@ -171,7 +167,7 @@ func triggerClone(repo abaputils.Repository, cloneConnectionDetails abaputils.Co
 	return uriConnectionDetails, nil
 }
 
-func convertConfig(config *abapEnvironmentCloneGitRepoOptions) abaputils.AbapEnvironmentOptions {
+func convertCloneConfig(config *abapEnvironmentCloneGitRepoOptions) abaputils.AbapEnvironmentOptions {
 	subOptions := abaputils.AbapEnvironmentOptions{}
 
 	subOptions.CfAPIEndpoint = config.CfAPIEndpoint

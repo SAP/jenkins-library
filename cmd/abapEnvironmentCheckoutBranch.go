@@ -30,10 +30,6 @@ func abapEnvironmentCheckoutBranch(options abapEnvironmentCheckoutBranchOptions,
 
 	client := piperhttp.Client{}
 
-	// for http calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	// and use a  &piperhttp.Client{} in a custom system
-	// Example: step checkmarxExecuteScan.go
-
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
 	err := runAbapEnvironmentCheckoutBranch(&options, telemetryData, &autils, &client)
 	if err != nil {
@@ -44,16 +40,7 @@ func abapEnvironmentCheckoutBranch(options abapEnvironmentCheckoutBranchOptions,
 func runAbapEnvironmentCheckoutBranch(options *abapEnvironmentCheckoutBranchOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender) (err error) {
 
 	// Mapping for options
-	subOptions := abaputils.AbapEnvironmentOptions{}
-
-	subOptions.CfAPIEndpoint = options.CfAPIEndpoint
-	subOptions.CfServiceInstance = options.CfServiceInstance
-	subOptions.CfServiceKeyName = options.CfServiceKeyName
-	subOptions.CfOrg = options.CfOrg
-	subOptions.CfSpace = options.CfSpace
-	subOptions.Host = options.Host
-	subOptions.Password = options.Password
-	subOptions.Username = options.Username
+	subOptions := convertCheckoutConfig(options)
 
 	//  Determine the host, user and password, either via the input parameters or via a cloud foundry service key
 	connectionDetails, errorGetInfo := com.GetAbapCommunicationArrangementInfo(subOptions, "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/")
@@ -216,4 +203,18 @@ func finishCheckoutLogs(branchName string, repositoryName string) {
 	log.Entry().Info("--------------------------------")
 	log.Entry().Infof("Checkout of branch %v on repository %v was successful", branchName, repositoryName)
 	log.Entry().Info("--------------------------------")
+}
+
+func convertCheckoutConfig(config *abapEnvironmentCheckoutBranchOptions) abaputils.AbapEnvironmentOptions {
+	subOptions := abaputils.AbapEnvironmentOptions{}
+
+	subOptions.CfAPIEndpoint = config.CfAPIEndpoint
+	subOptions.CfServiceInstance = config.CfServiceInstance
+	subOptions.CfServiceKeyName = config.CfServiceKeyName
+	subOptions.CfOrg = config.CfOrg
+	subOptions.CfSpace = config.CfSpace
+	subOptions.Host = config.Host
+	subOptions.Password = config.Password
+	subOptions.Username = config.Username
+	return subOptions
 }

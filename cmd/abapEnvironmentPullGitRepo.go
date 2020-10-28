@@ -30,10 +30,6 @@ func abapEnvironmentPullGitRepo(options abapEnvironmentPullGitRepoOptions, telem
 
 	client := piperhttp.Client{}
 
-	// for http calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	// and use a  &piperhttp.Client{} in a custom system
-	// Example: step checkmarxExecuteScan.go
-
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
 	err := runAbapEnvironmentPullGitRepo(&options, telemetryData, &autils, &client)
 	if err != nil {
@@ -42,16 +38,8 @@ func abapEnvironmentPullGitRepo(options abapEnvironmentPullGitRepoOptions, telem
 }
 
 func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender) (err error) {
-	subOptions := abaputils.AbapEnvironmentOptions{}
 
-	subOptions.CfAPIEndpoint = options.CfAPIEndpoint
-	subOptions.CfServiceInstance = options.CfServiceInstance
-	subOptions.CfServiceKeyName = options.CfServiceKeyName
-	subOptions.CfOrg = options.CfOrg
-	subOptions.CfSpace = options.CfSpace
-	subOptions.Host = options.Host
-	subOptions.Password = options.Password
-	subOptions.Username = options.Username
+	subOptions := convertPullConfig(options)
 
 	// Determine the host, user and password, either via the input parameters or via a cloud foundry service key
 	connectionDetails, err := com.GetAbapCommunicationArrangementInfo(subOptions, "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull")
@@ -104,7 +92,33 @@ func pullRepositories(repositories []abaputils.Repository, pullConnectionDetails
 	return err
 }
 
-func triggerPull(repositoryName string, pullConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (abaputils.ConnectionDetailsHTTP, error) {
+func handlePull(repo abaputils.Repository, pullConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (err error) {
+
+	startPullLogs(repo)
+
+	commitString := ""
+	if repo.CommitID != "" {
+		commitString = ", commit '" + repo.CommitID + "'"
+	}
+
+	uriConnectionDetails, err := triggerPull(repo, pullConnectionDetails, client)
+	if err != nil {
+		return errors.Wrapf(err, "Pull of '%s'%s failed on the ABAP System", repo.Name, commitString)
+	}
+
+	// Polling the status of the repository import on the ABAP Environment system
+	status, errorPollEntity := abaputils.PollEntity(repo.Name, uriConnectionDetails, client, pollIntervall)
+	if errorPollEntity != nil {
+		return errors.Wrapf(errorPollEntity, "Pull of '%s'%s failed on the ABAP System", repo.Name, commitString)
+	}
+	if status == "E" {
+		return errors.New("Pull of " + repo.Name + commitString + " failed on the ABAP System")
+	}
+	log.Entry().Info(repo.Name + " was pulled successfully")
+	return err
+}
+
+func triggerPull(repo abaputils.Repository, pullConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (abaputils.ConnectionDetailsHTTP, error) {
 
 	uriConnectionDetails := pullConnectionDetails
 	uriConnectionDetails.URL = ""
@@ -126,17 +140,23 @@ func triggerPull(repositoryName string, pullConnectionDetails abaputils.Connecti
 	pullConnectionDetails.XCsrfToken = uriConnectionDetails.XCsrfToken
 
 	// Trigger the Pull of a Repository
-	if repositoryName == "" {
+	if repo.Name == "" {
 		return uriConnectionDetails, errors.New("An empty string was passed for the parameter 'repositoryName'")
 	}
-	jsonBody := []byte(`{"sc_name":"` + repositoryName + `"}`)
+	commitQuery := ""
+	commitString := ""
+	if repo.CommitID != "" {
+		commitQuery = `, "commit_id":"` + repo.CommitID + `"`
+		commitString = ", commit '" + repo.CommitID + "'"
+	}
+	jsonBody := []byte(`{"sc_name":"` + repo.Name + `"` + commitQuery + `}`)
 	resp, err = abaputils.GetHTTPResponse("POST", pullConnectionDetails, jsonBody, client)
 	if err != nil {
-		err = abaputils.HandleHTTPError(resp, err, "Could not pull the Repository / Software Component "+repositoryName, uriConnectionDetails)
+		err = abaputils.HandleHTTPError(resp, err, "Could not pull the Repository / Software Component "+repo.Name+commitString, uriConnectionDetails)
 		return uriConnectionDetails, err
 	}
 	defer resp.Body.Close()
-	log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repositoryName).Debug("Triggered Pull of Repository / Software Component")
+	log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repo.Name).WithField("commitID", repo.CommitID).Debug("Triggered Pull of Repository / Software Component")
 
 	// Parse Response
 	var body abaputils.PullEntity
@@ -148,7 +168,7 @@ func triggerPull(repositoryName string, pullConnectionDetails abaputils.Connecti
 	json.Unmarshal(bodyText, &abapResp)
 	json.Unmarshal(*abapResp["d"], &body)
 	if reflect.DeepEqual(abaputils.PullEntity{}, body) {
-		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repositoryName).Error("Could not pull the Repository / Software Component")
+		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repo.Name).WithField("commitID", repo.CommitID).Error("Could not pull the Repository / Software Component")
 		err := errors.New("Request to ABAP System not successful")
 		return uriConnectionDetails, err
 	}
@@ -168,33 +188,27 @@ func checkPullRepositoryConfiguration(options abapEnvironmentPullGitRepoOptions)
 	return nil
 }
 
-func handlePull(repo abaputils.Repository, pullConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (err error) {
-	startPullLogs(repo.Name)
-
-	uriConnectionDetails, err := triggerPull(repo.Name, pullConnectionDetails, client)
-	if err != nil {
-		return errors.Wrapf(err, "Pull of '%s' failed on the ABAP System", repo.Name)
-	}
-
-	// Polling the status of the repository import on the ABAP Environment system
-	status, errorPollEntity := abaputils.PollEntity(repo.Name, uriConnectionDetails, client, pollIntervall)
-	if errorPollEntity != nil {
-		return errors.Wrapf(errorPollEntity, "Pull of '%s' failed on the ABAP System", repo.Name)
-	}
-	if status == "E" {
-		return errors.New("Pull of " + repo.Name + " failed on the ABAP System")
-	}
-	log.Entry().Info(repo.Name + " was pulled successfully")
-	return err
-}
-
-func startPullLogs(repositoryName string) {
+func startPullLogs(repo abaputils.Repository) {
 	log.Entry().Info("-------------------------")
-	log.Entry().Info("Start pulling " + repositoryName)
+	log.Entry().Info("Start pulling " + repo.Name + ", " + repo.CommitID)
 	log.Entry().Info("-------------------------")
 }
 
 func finishPullLogs() {
 	log.Entry().Info("-------------------------")
 	log.Entry().Info("All repositories were pulled successfully")
+}
+
+func convertPullConfig(config *abapEnvironmentPullGitRepoOptions) abaputils.AbapEnvironmentOptions {
+	subOptions := abaputils.AbapEnvironmentOptions{}
+
+	subOptions.CfAPIEndpoint = config.CfAPIEndpoint
+	subOptions.CfServiceInstance = config.CfServiceInstance
+	subOptions.CfServiceKeyName = config.CfServiceKeyName
+	subOptions.CfOrg = config.CfOrg
+	subOptions.CfSpace = config.CfSpace
+	subOptions.Host = config.Host
+	subOptions.Password = config.Password
+	subOptions.Username = config.Username
+	return subOptions
 }
