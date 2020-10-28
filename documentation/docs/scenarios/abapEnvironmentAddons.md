@@ -40,11 +40,11 @@ A software component version is defined by a name and a version string. The name
 - The second number denotes the Support Package level. Support Package deliveries contain a larger collection of corrections and may contains smaller functional enhancements. They are delivered with delivery packages of type [“Component Support Package”](https://help.sap.com/viewer/9043aa5d2f834ad385e1cdfdadc06b6f/5.0.4.7/en-US/6082f55473568c77e10000000a174cb4.html).
 - The third number denotes the Patch level. Patch deliveries shall only contain small corrections. They are shipped with delivery packages of type “Correction Package”.
 
-**Note:** The needed type of delivery does not need to be chosen manually; it is automatically determined by the delivery production tools.
+**Note:** The needed type of delivery does not need to be chosen manually; it is automatically determined by the delivery tools.
 
 ### Target Vector
 
-As explained above, the shipment of a software takes place via software product versions. The delivered content of a software product version is defined in a target vector, which is used by the AAKaaS. The target vector is derived from the addon.yml (more on that below) and contains the following information:
+As explained above, the shipment of a software takes place via software product versions. The delivered content of a software product version is defined in a target vector, which is used by the deployment tools. The target vector is derived from the addon.yml (more on that below) and contains the following information:
 
 - Product name
 - Product release
@@ -62,15 +62,31 @@ The build process of a software product is orchestrated by a Jenkins Pipeline, t
 
 The pipeline consists of different steps responsible for a single task. The steps themselves are grouped thematically into different stages. For example, early in the pipeline, the ABAP Environment system needs to be created and the communication needs to be set up. This is done in the “Prepare System” stage. You can read more about the different stages in the ABAP Environment Pipeline [documentation](https://sap.github.io/jenkins-library/pipelines/abapEnvironment/introduction/).
 
-Different services and systems are required for the add-on build process
+Different services and systems are required for the add-on build process.
 
-### Assembly System
-First the ABAP system responsible for the add-on assembly . It is created during the pipeline and deleted in the end. All actions related to the ABAP source code are executed on this system, e.g. running checks with the ABAP Test Cockpit (ATC) or the physical build of the software components. There are two communication scenarios containing the different APIs of the ABAP Environment System: [Test Integration](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html) and [Software Assembly Integration](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html).
+### Delivery Tools
+With the following tools the add-on deliveries are created.
+
+
+#### Assembly System
+First the ABAP system responsible for the add-on assembly. It is created during the pipeline and deleted in the end. All actions related to the ABAP source code are executed on this system, e.g. running checks with the ABAP Test Cockpit (ATC) or the physical build of the software components. There are two communication scenarios containing the different APIs of the ABAP Environment System: [Test Integration](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html) and [Software Assembly Integration](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html).
 The assembly system should be of [service type abap](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/f0163565eb554f009f990652ca41d1c6.html) and be provisioned with parameter `is_development_allowd = false` to prevent local changes.
 
-### Add-on Assembly Kit as a Service (=AAKaaS)
+#### File Content Management System of SAP
+Used to store physical delivery packages as explained in the library step [abapAddonAssemblyKitRegisterPackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitRegisterPackages/).
+
+
+#### SAP artifactory object store
+Used to store the physical Delivery Packages in status “L” as described in library step [abapAddonAssemblyKitReleasePackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitReleasePackages/).
+
+
+#### Add-on Assembly Kit as a Service (=AAKaaS)
 The Add-on Assembly Kit as a Service is responsible for registering and publishing the software product. It is accessible via APIs with an S-User.
 All required API calls to both systems are built into the different pipeline steps and stages.
+
+### Deployment Tools
+With these SAP tools the add-on deliveries are deployed so that they can be installed.
+
 
 ### Installation Test System
 In order to verify that the delivery packages included in the add-on product version being built are installable, a target vector is published in "test" scope. In the *Integration Tests* stage an ABAP system of service type abap-oem is created. This ABAP OEM service makes it possible to install a specific add-on product version into an ABAP system that is provisioned. The installation test system should be be provisioned with parameter `is_development_allowd = false` to prevent local changes.
