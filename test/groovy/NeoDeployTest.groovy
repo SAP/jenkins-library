@@ -58,7 +58,6 @@ class NeoDeployTest extends BasePiperTest {
         .withCredentials('CI_CREDENTIALS_ID', 'defaultUser', '********')
         .withCredentials('testOauthId', 'clientId', '********'))
         .around(new JenkinsReadJsonRule(this))
-        .around(new JenkinsPropertiesRule(this, null, new Properties()))
         .around(stepRule)
         .around(new JenkinsLockRule(this))
         .around(new JenkinsWithEnvRule(this))
