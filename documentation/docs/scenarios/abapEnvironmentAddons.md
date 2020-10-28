@@ -37,9 +37,9 @@ A software component version is defined by a name and a version string. The name
 
 - The first number denotes the release. Release deliveries contains the whole software component and deliver new and enhancements of existing functionalities. They are delivered with delivery packages of type [“Installation Package”](https://help.sap.com/viewer/9043aa5d2f834ad385e1cdfdadc06b6f/5.0.4.7/en-US/6082f55473568c77e10000000a174cb4.html).
 - The second number denotes the Support Package level. Support Package deliveries contain a larger collection of corrections and may contains smaller functional enhancements. They are delivered with delivery packages of type [“Component Support Package”](https://help.sap.com/viewer/9043aa5d2f834ad385e1cdfdadc06b6f/5.0.4.7/en-US/6082f55473568c77e10000000a174cb4.html).
-- The third number denotes the Patch level. Patch deliveries shall only contain small corrections. They are shipped with delivery packages of type “Correction Package”.
+- The third number denotes the Patch level. Patch deliveries shall only contain small corrections. They are shipped with delivery packages of type “Correction Package”. 
 
-**Note:** The needed type of delivery does not need to be chosen manually; it is automatically determined by the AAKaaS.
+**Note:** The needed type of delivery does not need to be chosen manually; it is automatically determined by the delivery production tools.
 
 ### Target Vector
 
