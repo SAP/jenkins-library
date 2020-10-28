@@ -24,7 +24,7 @@ A software product version is defined by a name and a version string. The name o
 
 - The first number denotes the release. Release deliveries contain the complete scope of functionality. It is possible to change the software component version bundle in a new release.
 - The second number denotes the Support Package Stack level. A Support Package stack consists of Support Package deliveries of the contained software component versions. It is not possible to change the software component version bundle in such a delivery.
-- The third number denotes the Patch level. A Patch delivery correction deliveries of the included software component versions.
+- The third number denotes the Patch level. A Patch delivery contains Patch deliveries of the contained software component versions.
 
 !!! note "Development on SAP Cloud Platform ABAP Environment"
     As you may know, the development in the SAP Cloud Platform ABAP Environment is done within [software component](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/58480f43e0b64de782196922bc5f1ca0.html). A software component is self-contained, and a reduced set of [objects and features of the ABAP programming language](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/c99ba0d28a1a4747b8f47eda06c6b4f1.html) can be used.
