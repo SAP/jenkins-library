@@ -31,6 +31,11 @@ type Options struct {
 	VersioningScheme    string
 }
 
+// Artifact defines the versioning operations for various build tools
+type Utils interface {
+	maven.Utils
+}
+
 type mvnRunner struct{}
 
 func (m *mvnRunner) Execute(options *maven.ExecuteOptions, execRunner mavenExecRunner) (string, error) {
@@ -43,7 +48,7 @@ func (m *mvnRunner) Evaluate(options *maven.EvaluateOptions, expression string, 
 var fileExists func(string) (bool, error)
 
 // GetArtifact returns the build tool specific implementation for retrieving version, etc. of an artifact
-func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, execRunner mavenExecRunner) (Artifact, error) {
+func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, utils Utils) (Artifact, error) {
 	var artifact Artifact
 	if fileExists == nil {
 		fileExists = piperutils.FileExists
@@ -57,7 +62,7 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, execR
 		}
 	case "docker":
 		artifact = &Docker{
-			execRunner:       execRunner,
+			utils:            utils,
 			options:          opts,
 			path:             buildDescriptorFilePath,
 			versionSource:    opts.VersionSource,
@@ -98,7 +103,7 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, execR
 		}
 		artifact = &Maven{
 			runner:     &mvnRunner{},
-			execRunner: execRunner,
+			mavenUtils: utils,
 			options: maven.EvaluateOptions{
 				PomPath:             buildDescriptorFilePath,
 				ProjectSettingsFile: opts.ProjectSettingsFile,

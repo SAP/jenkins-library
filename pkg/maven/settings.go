@@ -11,7 +11,7 @@ import (
 
 var getenv = os.Getenv
 
-// SettingsDownloadUtils defines an interface for downloading files.
+// SettingsDownloadUtils defines an interface for downloading and storing maven settings files.
 type SettingsDownloadUtils interface {
 	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
 	FileExists(filename string) (bool, error)
@@ -19,17 +19,9 @@ type SettingsDownloadUtils interface {
 	MkdirAll(path string, perm os.FileMode) error
 }
 
-// FileUtils defines the external file-related functionality needed by this package.
-type FileUtils interface {
-	FileExists(filename string) (bool, error)
-	Copy(src, dest string) (int64, error)
-	MkdirAll(path string, perm os.FileMode) error
-	Glob(pattern string) (matches []string, err error)
-}
-
 // DownloadAndGetMavenParameters downloads the global or project settings file if the strings contain URLs.
 // It then constructs the arguments that need to be passed to maven in order to point to use these settings files.
-func DownloadAndGetMavenParameters(globalSettingsFile string, projectSettingsFile string, fileUtils FileUtils, httpClient SettingsDownloadUtils) ([]string, error) {
+func DownloadAndGetMavenParameters(globalSettingsFile string, projectSettingsFile string, utils SettingsDownloadUtils) ([]string, error) {
 	mavenArgs := []string{}
 	if len(globalSettingsFile) > 0 {
 		globalSettingsFileName, err := downloadSettingsIfURL(globalSettingsFile, ".pipeline/mavenGlobalSettings.xml", utils, false)
@@ -58,7 +50,7 @@ func DownloadAndGetMavenParameters(globalSettingsFile string, projectSettingsFil
 // DownloadAndCopySettingsFiles downloads the global or project settings file if the strings contain URLs.
 // It copies the given files to either the locations specified in the environment variables M2_HOME and HOME
 // or the default locations where maven expects them.
-func DownloadAndCopySettingsFiles(globalSettingsFile string, projectSettingsFile string, fileUtils FileUtils, httpClient SettingsDownloadUtils) error {
+func DownloadAndCopySettingsFiles(globalSettingsFile string, projectSettingsFile string, utils SettingsDownloadUtils) error {
 	if len(projectSettingsFile) > 0 {
 		destination, err := getProjectSettingsFileDest()
 		if err != nil {
