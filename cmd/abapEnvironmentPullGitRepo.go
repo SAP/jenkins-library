@@ -133,7 +133,7 @@ func triggerPull(repo abaputils.Repository, pullConnectionDetails abaputils.Conn
 	defer resp.Body.Close()
 
 	// workaround until golang version 1.16 is used
-	time.Sleep(1 * time.Second)
+	time.Sleep(100 * time.Millisecond)
 
 	log.Entry().WithField("StatusCode", resp.Status).WithField("ABAP Endpoint", pullConnectionDetails.URL).Debug("Authentication on the ABAP system successful")
 	uriConnectionDetails.XCsrfToken = resp.Header.Get("X-Csrf-Token")
