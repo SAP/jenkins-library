@@ -31,5 +31,5 @@ spec:
           - name: npm/defaultNpmRegistry
   containers:
     - name: node
-      image: node:12-buster-slim
+      image: node:12-buster
       imagePullPolicy: Never
