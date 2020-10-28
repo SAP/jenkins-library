@@ -28,15 +28,6 @@ func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telem
 	// Mapping for options
 	subOptions := abaputils.AbapEnvironmentOptions{}
 
-	subOptions.CfAPIEndpoint = options.CfAPIEndpoint
-	subOptions.CfServiceInstance = options.CfServiceInstance
-	subOptions.CfServiceKeyName = options.CfServiceKeyName
-	subOptions.CfOrg = options.CfOrg
-	subOptions.CfSpace = options.CfSpace
-	subOptions.Host = options.Host
-	subOptions.Password = options.Password
-	subOptions.Username = options.Username
-
 	c := &command.Command{}
 	c.Stdout(log.Entry().Writer())
 	c.Stderr(log.Entry().Writer())
@@ -181,15 +172,19 @@ func parseATCResult(body []byte, atcResultFileName string) (err error) {
 	if len(body) == 0 {
 		return fmt.Errorf("Parsing ATC result failed: %w", errors.New("Body is empty, can't parse empty body"))
 	}
+
+	responseBody := string(body)
+	log.Entry().Debugf("Response body: %s", responseBody)
+	if strings.HasPrefix(responseBody, "<html>") {
+		return errors.New("The Software Component could not be checked. Please make sure the respective Software Component has been cloned successfully on the system")
+	}
+
 	parsedXML := new(Result)
 	xml.Unmarshal([]byte(body), &parsedXML)
 	if len(parsedXML.Files) == 0 {
 		log.Entry().Info("There were no results from this run, most likely the checked Software Components are empty or contain no ATC findings")
 	}
-	s := string(body)
-	if strings.HasPrefix(s, "<html>") {
-		return errors.New("The Software Component could not be checked. Please make sure the respective Software Component has been cloned successfully on the system")
-	}
+
 	err = ioutil.WriteFile(atcResultFileName, body, 0644)
 	if err == nil {
 		var reports []piperutils.Path
@@ -303,6 +298,21 @@ func getResultATCRun(requestType string, details abaputils.ConnectionDetailsHTTP
 		return req, fmt.Errorf("Getting ATC run results failed: %w", err)
 	}
 	return req, err
+}
+
+func convertATCOptions(options *abapEnvironmentRunATCCheckOptions) abaputils.AbapEnvironmentOptions {
+	subOptions := abaputils.AbapEnvironmentOptions{}
+
+	subOptions.CfAPIEndpoint = options.CfAPIEndpoint
+	subOptions.CfServiceInstance = options.CfServiceInstance
+	subOptions.CfServiceKeyName = options.CfServiceKeyName
+	subOptions.CfOrg = options.CfOrg
+	subOptions.CfSpace = options.CfSpace
+	subOptions.Host = options.Host
+	subOptions.Password = options.Password
+	subOptions.Username = options.Username
+
+	return subOptions
 }
 
 //ATCconfig object for parsing yaml config of software components and packages
