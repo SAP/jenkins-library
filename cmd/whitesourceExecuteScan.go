@@ -198,6 +198,7 @@ func checkAndReportScanResults(config *ScanOptions, scan *ws.Scan, utils whiteso
 }
 
 func createWhiteSourceProduct(config *ScanOptions, sys whitesource) (string, error) {
+	log.Entry().Infof("Attempting to create new WhiteSource product for '%s'..", config.ProductName)
 	productToken, err := sys.CreateProduct(config.ProductName)
 	if err != nil {
 		return "", fmt.Errorf("failed to create WhiteSource product: %w", err)
@@ -242,43 +243,64 @@ func resolveProjectIdentifiers(config *ScanOptions, scan *ws.Scan, utils whiteso
 	}
 	scan.ProductVersion = validateProductVersion(config.ProductVersion)
 
-	// Get product token if user did not specify one at runtime
-	if config.ProductToken == "" {
-		log.Entry().Infof("Attempting to resolve product token for product '%s'..", config.ProductName)
-		product, err := sys.GetProductByName(config.ProductName)
-		if err != nil && config.CreateProductFromPipeline {
-			product = ws.Product{}
-			product.Token, err = createWhiteSourceProduct(config, sys)
-			if err != nil {
-				return err
-			}
-		}
-		if err != nil {
-			return err
-		}
-		log.Entry().Infof("Resolved product token: '%s'..", product.Token)
-		config.ProductToken = product.Token
+	if err := resolveProductToken(config, sys); err != nil {
+		return err
 	}
-
-	// Get project token if user did not specify one at runtime
-	if config.ProjectToken == "" && config.ProjectName != "" {
-		log.Entry().Infof("Attempting to resolve project token for project '%s'..", config.ProjectName)
-		fullProjName := fmt.Sprintf("%s - %s", config.ProjectName, config.ProductVersion)
-		projectToken, err := sys.GetProjectToken(config.ProductToken, fullProjName)
-		if err != nil {
-			return err
-		}
-		// A project may not yet exist for this project name-version combo
-		// It will be created by the scan, we retrieve the token again after scanning.
-		if projectToken != "" {
-			log.Entry().Infof("Resolved project token: '%s'..", projectToken)
-			config.ProjectToken = projectToken
-		} else {
-			log.Entry().Infof("Project '%s' not yet present in WhiteSource", fullProjName)
-		}
+	if err := resolveAggregateProjectToken(config, sys); err != nil {
+		return err
 	}
 
 	return scan.UpdateProjects(config.ProductToken, sys)
+}
+
+// resolveProductToken resolves the token of the WhiteSource Product specified by config.ProductName,
+// unless the user provided a token in config.ProductToken already, or it was previously resolved.
+// If no Product can be found for the given config.ProductName, and the parameter
+// config.CreatePipelineFromProduct is set, an attempt will be made to create the product and
+// configure the initial product admins.
+func resolveProductToken(config *ScanOptions, sys whitesource) error {
+	if config.ProductToken != "" {
+		return nil
+	}
+	log.Entry().Infof("Attempting to resolve product token for product '%s'..", config.ProductName)
+	product, err := sys.GetProductByName(config.ProductName)
+	if err != nil && config.CreateProductFromPipeline {
+		product = ws.Product{}
+		product.Token, err = createWhiteSourceProduct(config, sys)
+		if err != nil {
+			return err
+		}
+	}
+	if err != nil {
+		return err
+	}
+	log.Entry().Infof("Resolved product token: '%s'..", product.Token)
+	config.ProductToken = product.Token
+	return nil
+}
+
+// resolveAggregateProjectToken fetches the token of the WhiteSource Project specified by config.ProjectName
+// and stores it in config.ProjectToken.
+// The user can configure a projectName or projectToken of the project to be used as for aggregation of scan results.
+func resolveAggregateProjectToken(config *ScanOptions, sys whitesource) error {
+	if config.ProjectToken != "" || config.ProjectName == "" {
+		return nil
+	}
+	log.Entry().Infof("Attempting to resolve project token for project '%s'..", config.ProjectName)
+	fullProjName := fmt.Sprintf("%s - %s", config.ProjectName, config.ProductVersion)
+	projectToken, err := sys.GetProjectToken(config.ProductToken, fullProjName)
+	if err != nil {
+		return err
+	}
+	// A project may not yet exist for this project name-version combo.
+	// It will be created by the scan, we retrieve the token again after scanning.
+	if projectToken != "" {
+		log.Entry().Infof("Resolved project token: '%s'..", projectToken)
+		config.ProjectToken = projectToken
+	} else {
+		log.Entry().Infof("Project '%s' not yet present in WhiteSource", fullProjName)
+	}
+	return nil
 }
 
 // validateProductVersion makes sure that the version does not contain a dash "-".
