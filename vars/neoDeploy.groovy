@@ -75,6 +75,11 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'invalidateCache',
     /**
+     * Portal landscape region subscribed to in SAP cloud platform ex: Canary/Factory.
+     * @parentConfigKey neo
+     */
+    'portalLandscape',
+    /**
      * UsernamePassword type credential containing SAP CP OAuth client id and client secret.
      * @parentConfigKey neo
      */
@@ -242,6 +247,7 @@ void call(parameters = [:]) {
 private invalidateCache(configuration){
     def account = configuration.neo.account
     def host = configuration.neo.host
+    def portalLandscape = configuration.neo.portalLandscape
 
     withCredentials([usernamePassword(
         credentialsId: configuration.neo.oauthCredentialId,
@@ -264,7 +270,7 @@ private invalidateCache(configuration){
                             -H 'X-CSRF-Token: Fetch' \
                             -H "Authorization: Bearer ${bearerToken}" \
                             --fail \
-                            "https://sandboxportal-${account}.${host}/fiori/api/v1/csrf"
+                            "https://${portalLandscape}-${account}.${host}/fiori/api/v1/csrf"
                     """, returnStdout: true)
 
         def xcsrfToken = readProperties(text: fetchXcsrfTokenResponse)["X-CSRF-Token"]
@@ -285,7 +291,7 @@ private invalidateCache(configuration){
                             -d "{\"siteId\":${siteId}}" \
                             -so /dev/null \
                             -w '%{response_code}' \
-                            "https://sandboxportal-${account}.${host}/fiori/v1/operations/invalidateCache"
+                            "https://${portalLandscape}-${account}.${host}/fiori/v1/operations/invalidateCache"
                     """,
             returnStdout: true).trim()
 
