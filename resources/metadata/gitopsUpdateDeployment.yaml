@@ -13,6 +13,9 @@ spec:
       - name: gitHttpsCredentialsId
         description: Jenkins 'Username with password' credentials ID containing username/password for http access to your git repository.
         type: jenkins
+    resources:
+      - name: deployDescriptor
+        type: stash
     params:
       - name: branchName
         description: The name of the branch where the changes should get pushed into.
