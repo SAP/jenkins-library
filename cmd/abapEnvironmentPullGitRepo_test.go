@@ -235,23 +235,16 @@ func TestTriggerPull(t *testing.T) {
 			Token:      tokenExpected,
 			StatusCode: 200,
 		}
-		config := abapEnvironmentPullGitRepoOptions{
-			CfAPIEndpoint:     "https://api.endpoint.com",
-			CfOrg:             "testOrg",
-			CfSpace:           "testSpace",
-			CfServiceInstance: "testInstance",
-			CfServiceKeyName:  "testServiceKey",
-			Username:          "testUser",
-			Password:          "testPassword",
-			RepositoryNames:   []string{"testRepo1", "testRepo2"},
-		}
+
+		repoName := "testRepo1"
+		testCommit := "9caede7f31028cd52333eb496434275687fefb47"
 
 		con := abaputils.ConnectionDetailsHTTP{
 			User:     "MY_USER",
 			Password: "MY_PW",
 			URL:      "https://api.endpoint.com/Entity/",
 		}
-		entityConnection, err := triggerPull(config.RepositoryNames[0], con, client)
+		entityConnection, err := triggerPull(abaputils.Repository{Name: repoName, CommitID: testCommit}, con, client)
 		assert.Nil(t, err)
 		assert.Equal(t, uriExpected, entityConnection.URL)
 		assert.Equal(t, tokenExpected, entityConnection.XCsrfToken)
@@ -270,23 +263,16 @@ func TestTriggerPull(t *testing.T) {
 			StatusCode: 400,
 			Error:      errors.New(HTTPErrorMessage),
 		}
-		config := abapEnvironmentPullGitRepoOptions{
-			CfAPIEndpoint:     "https://api.endpoint.com",
-			CfOrg:             "testOrg",
-			CfSpace:           "testSpace",
-			CfServiceInstance: "testInstance",
-			CfServiceKeyName:  "testServiceKey",
-			Username:          "testUser",
-			Password:          "testPassword",
-			RepositoryNames:   []string{"testRepo1", "testRepo2"},
-		}
+
+		repoName := "testRepo1"
+		testCommit := "9caede7f31028cd52333eb496434275687fefb47"
 
 		con := abaputils.ConnectionDetailsHTTP{
 			User:     "MY_USER",
 			Password: "MY_PW",
 			URL:      "https://api.endpoint.com/Entity/",
 		}
-		_, err := triggerPull(config.RepositoryNames[0], con, client)
+		_, err := triggerPull(abaputils.Repository{Name: repoName, CommitID: testCommit}, con, client)
 		assert.Equal(t, combinedErrorMessage, err.Error(), "Different error message expected")
 	})
 }
