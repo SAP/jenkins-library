@@ -1,7 +1,7 @@
 # Configuration
 
 In general, the ABAP Environment pipeline supports different scenarios. The idea is that only configured stages are executed and the user is able to choose the appropriate stages.
-In this section, you can learn how to create a configuration in a (GitHub) repository to run an ABAP Environment Pipeline used for testing. This sepcific example will create a pipeline, which executes ATC checks after creating a new ABAP Environment system. In the end, the system will be deprovisioned.
+In this section, you can learn how to create a configuration in a (GitHub) repository to run an ABAP Environment Pipeline used for testing. This specific example will create a pipeline, which executes ATC checks after creating a new ABAP Environment system. In the end, the system will be deprovisioned.
 
 You can have a look at different pipeline configurations in our [SAP-samples repository](https://github.com/SAP-samples/abap-platform-ci-cd-samples).
 Other scenarios (e.g. building an ABAP AddOn) will be added to the documentation soon.
@@ -99,7 +99,7 @@ steps:
     cfDeleteServiceKeys: true
 ```
 
-If one stage of the pipeline is not configured in this yml file, the stage will not be executed during the pipeline run. If the stage `Prepare System` is configured, the system will be deprovisioned in the cleanup routine - although it is necessary to configure the step `cloudFoundryDeleteService` as above.
+If one of the stages of the pipeline is not configured in this yml file, the stage will not be executed during the pipeline run. If the stage `Prepare System` is configured, the system will be deprovisioned in the cleanup routine - although it is necessary to configure the step `cloudFoundryDeleteService` as above.
 
 Please make sure the parameters align with the values defined in the other configuration files, e.g. the service name in the `manifest.yml` needs to be the same as the value in `general.cfServiceInstance`.
 
@@ -107,7 +107,7 @@ The values for `cfApiEndpoint`,`cfOrg` and `cfSpace` can be found in the respect
 
 ## 7. Create a Jenkins Pipeline
 
-On your Jenkinsserver click on `New Item` to create a new pipeline. Provide a name and select the type `Pipeline`.
+On your Jenkins server click on `New Item` to create a new pipeline. Provide a name and select the type `Pipeline`.
 On the creation screen for the pipeline, scroll to the section `Pipeline` and select `Pipeline script from SCM`. Provide the URL (and credentials - if required) of the repository, in which you configured the pipeline. Make sure the `Script Path` points to your Jenkinsfile - if you created the Jenkinsfile according to the documentation above, the default value should be correct.
 
 If you want to configure a build trigger, this can be done in the section of the same name. Here is one example: to run the pipeline every night, you can tick the box "Run periodically". In the visible input field, you can specify a shedule. Click on the questionsmark to read the documentation. The following example will result in the pipeline running every night between 3am and 4am.
