@@ -91,7 +91,7 @@ class AbapEnvironmentPipelineStageCloneRepositoriesTest extends BasePiperTest {
         assertThat(stepsCalled, hasItems('abapEnvironmentPullGitRepo', 'abapEnvironmentCheckoutBranch'))
         assertThat(stepsCalled, not(hasItems('abapEnvironmentCloneGitRepo')))
     }
-    */
+    
     @Test
     void testAbapEnvironmentPipelineStageCloneRepositoriesNoStrategy() {
 
