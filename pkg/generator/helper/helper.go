@@ -114,6 +114,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				{{- range $notused, $oRes := .OutputResources }}
 				{{ index $oRes "name" }}.persist({{if $.ExportPrefix}}{{ $.ExportPrefix }}.{{end}}GeneralConfig.EnvRootPath, "{{ index $oRes "name" }}"){{ end }}
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
@@ -205,32 +206,133 @@ func Test{{.CobraCmdFuncName}}(t *testing.T) {
 
 const stepGoImplementationTemplate = `package cmd
 import (
+	"fmt"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
-func {{.StepName}}(config {{ .StepName }}Options, telemetryData *telemetry.CustomData{{ range $notused, $oRes := .OutputResources}}, {{ index $oRes "name" }} *{{ index $oRes "objectname" }}{{ end }}) {
-	// for command execution use Command
-	c := command.Command{}
-	// reroute command output to logging framework
-	c.Stdout(log.Writer())
-	c.Stderr(log.Writer())
+type {{.StepName}}Utils interface {
+	command.ExecRunner
 
-	// for http calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	FileExists(filename string) (bool, error)
+
+	// Add more methods here, or embed additional interfaces, or remove/replace as required.
+	// The {{.StepName}}Utils interface should be descriptive of your runtime dependencies,
+	// i.e. include everything you need to be able to mock in tests.
+	// Unit tests shall be executable in parallel (not depend on global state), and don't (re-)test dependencies.
+}
+
+type {{.StepName}}UtilsBundle struct {
+	*command.Command
+	*piperutils.Files
+
+	// Embed more structs as necessary to implement methods or interfaces you add to {{.StepName}}Utils.
+	// Structs embedded in this way must each have a unique set of methods attached.
+	// If there is no struct which implements the method you need, attach the method to
+	// {{.StepName}}UtilsBundle and forward to the implementation of the dependency.
+}
+
+func new{{.StepName | title}}Utils() {{.StepName}}Utils {
+	utils := {{.StepName}}UtilsBundle{
+		Command: &command.Command{},
+		Files:   &piperutils.Files{},
+	}
+	// Reroute command output to logging framework
+	utils.Stdout(log.Writer())
+	utils.Stderr(log.Writer())
+	return &utils
+}
+
+func {{.StepName}}(config {{ .StepName }}Options, telemetryData *telemetry.CustomData{{ range $notused, $oRes := .OutputResources}}, {{ index $oRes "name" }} *{{ index $oRes "objectname" }}{{ end }}) {
+	// Utils can be used wherever the command.ExecRunner interface is expected.
+	// It can also be used for example as a mavenExecRunner.
+	utils := new{{.StepName | title}}Utils()
+
+	// For HTTP calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	// and use a  &piperhttp.Client{} in a custom system
 	// Example: step checkmarxExecuteScan.go
 
-	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := run{{.StepName | title}}(&config, telemetryData, &c{{ range $notused, $oRes := .OutputResources}}, &{{ index $oRes "name" }}{{ end }})
+	// Error situations should be bubbled up until they reach the line below which will then stop execution
+	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
+	err := run{{.StepName | title}}(&config, telemetryData, utils{{ range $notused, $oRes := .OutputResources}}, &{{ index $oRes "name" }}{{ end }})
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func run{{.StepName | title}}(config *{{ .StepName }}Options, telemetryData *telemetry.CustomData, command execRunner{{ range $notused, $oRes := .OutputResources}}, {{ index $oRes "name" }} *{{ index $oRes "objectname" }} {{ end }}) error {
+func run{{.StepName | title}}(config *{{ .StepName }}Options, telemetryData *telemetry.CustomData, utils {{.StepName}}Utils{{ range $notused, $oRes := .OutputResources}}, {{ index $oRes "name" }} *{{ index $oRes "objectname" }} {{ end }}) error {
 	log.Entry().WithField("LogField", "Log field content").Info("This is just a demo for a simple step.")
+
+	// Example of calling methods from external dependencies directly on utils:
+	exists, err := utils.FileExists("file.txt")
+	if err != nil {
+		// It is good practice to set an error category.
+		// Most likely you want to do this at the place where enough context is known.
+		log.SetErrorCategory(log.ErrorConfiguration)
+		// Always wrap non-descriptive errors to enrich them with context for when they appear in the log:
+		return fmt.Errorf("failed to check for important file: %w", err)
+	}
+	if !exists {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return fmt.Errorf("cannot run without important file")
+	}
+
 	return nil
+}
+`
+
+const stepGoImplementationTestTemplate = `package cmd
+
+import (
+	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/stretchr/testify/assert"
+	"testing"
+)
+
+type {{.StepName}}MockUtils struct {
+	*mock.ExecMockRunner
+	*mock.FilesMock
+}
+
+func new{{.StepName | title}}TestsUtils() {{.StepName}}MockUtils {
+	utils := {{.StepName}}MockUtils{
+		ExecMockRunner: &mock.ExecMockRunner{},
+		FilesMock:      &mock.FilesMock{},
+	}
+	return utils
+}
+
+func TestRun{{.StepName | title}}(t *testing.T) {
+	t.Parallel()
+
+	t.Run("happy path", func(t *testing.T) {
+		// init
+		config := {{.StepName}}Options{}
+
+		utils := new{{.StepName | title}}TestsUtils()
+		utils.AddFile("file.txt", []byte("dummy content"))
+
+		// test
+		err := run{{.StepName | title}}(&config, nil, utils)
+
+		// assert
+		assert.NoError(t, err)
+	})
+
+	t.Run("error path", func(t *testing.T) {
+		// init
+		config := {{.StepName}}Options{}
+
+		utils := new{{.StepName | title}}TestsUtils()
+
+		// test
+		err := run{{.StepName | title}}(&config, nil, utils)
+
+		// assert
+		assert.EqualError(t, err, "cannot run without important file")
+	})
 }
 `
 
@@ -254,7 +356,6 @@ func ProcessMetaFiles(metadataFiles []string, targetDir string, stepHelperData S
 
 		fmt.Printf("Step name: %v\n", stepData.Metadata.Name)
 
-		//Switch Docu or Step Files
 		osImport := false
 		osImport, err = setDefaultParameters(&stepData)
 		checkError(err)
@@ -262,18 +363,25 @@ func ProcessMetaFiles(metadataFiles []string, targetDir string, stepHelperData S
 		myStepInfo, err := getStepInfo(&stepData, osImport, stepHelperData.ExportPrefix)
 		checkError(err)
 
-		step := stepTemplate(myStepInfo)
+		step := stepTemplate(myStepInfo, "step", stepGoTemplate)
 		err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_generated.go", stepData.Metadata.Name)), step, 0644)
 		checkError(err)
 
-		test := stepTestTemplate(myStepInfo)
+		test := stepTemplate(myStepInfo, "stepTest", stepTestGoTemplate)
 		err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_generated_test.go", stepData.Metadata.Name)), test, 0644)
 		checkError(err)
 
 		exists, _ := piperutils.FileExists(filepath.Join(targetDir, fmt.Sprintf("%v.go", stepData.Metadata.Name)))
 		if !exists {
-			impl := stepImplementation(myStepInfo)
+			impl := stepImplementation(myStepInfo, "impl", stepGoImplementationTemplate)
 			err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v.go", stepData.Metadata.Name)), impl, 0644)
+			checkError(err)
+		}
+
+		exists, _ = piperutils.FileExists(filepath.Join(targetDir, fmt.Sprintf("%v_test.go", stepData.Metadata.Name)))
+		if !exists {
+			impl := stepImplementation(myStepInfo, "implTest", stepGoImplementationTestTemplate)
+			err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_test.go", stepData.Metadata.Name)), impl, 0644)
 			checkError(err)
 		}
 	}
@@ -450,8 +558,7 @@ func MetadataFiles(sourceDirectory string) ([]string, error) {
 	return metadataFiles, nil
 }
 
-func stepTemplate(myStepInfo stepInfo) []byte {
-
+func stepTemplate(myStepInfo stepInfo, templateName, goTemplate string) []byte {
 	funcMap := sprig.HermeticTxtFuncMap()
 	funcMap["flagType"] = flagType
 	funcMap["golangName"] = golangNameTitle
@@ -459,41 +566,19 @@ func stepTemplate(myStepInfo stepInfo) []byte {
 	funcMap["longName"] = longName
 	funcMap["uniqueName"] = mustUniqName
 
-	tmpl, err := template.New("step").Funcs(funcMap).Parse(stepGoTemplate)
-	checkError(err)
-
-	var generatedCode bytes.Buffer
-	err = tmpl.Execute(&generatedCode, myStepInfo)
-	checkError(err)
-
-	return generatedCode.Bytes()
+	return generateCode(myStepInfo, templateName, goTemplate, funcMap)
 }
 
-func stepTestTemplate(myStepInfo stepInfo) []byte {
-
-	funcMap := sprig.HermeticTxtFuncMap()
-	funcMap["flagType"] = flagType
-	funcMap["golangName"] = golangNameTitle
-	funcMap["title"] = strings.Title
-	funcMap["uniqueName"] = mustUniqName
-
-	tmpl, err := template.New("stepTest").Funcs(funcMap).Parse(stepTestGoTemplate)
-	checkError(err)
-
-	var generatedCode bytes.Buffer
-	err = tmpl.Execute(&generatedCode, myStepInfo)
-	checkError(err)
-
-	return generatedCode.Bytes()
-}
-
-func stepImplementation(myStepInfo stepInfo) []byte {
-
+func stepImplementation(myStepInfo stepInfo, templateName, goTemplate string) []byte {
 	funcMap := sprig.HermeticTxtFuncMap()
 	funcMap["title"] = strings.Title
 	funcMap["uniqueName"] = mustUniqName
 
-	tmpl, err := template.New("impl").Funcs(funcMap).Parse(stepGoImplementationTemplate)
+	return generateCode(myStepInfo, templateName, goTemplate, funcMap)
+}
+
+func generateCode(myStepInfo stepInfo, templateName, goTemplate string, funcMap template.FuncMap) []byte {
+	tmpl, err := template.New(templateName).Funcs(funcMap).Parse(goTemplate)
 	checkError(err)
 
 	var generatedCode bytes.Buffer

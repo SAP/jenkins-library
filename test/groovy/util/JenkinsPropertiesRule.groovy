@@ -37,12 +37,28 @@ class JenkinsPropertiesRule implements TestRule {
             void evaluate() throws Throwable {
 
                 testInstance.helper.registerAllowedMethod("readProperties", [Map.class], {
-                    propertyPath ->
-                        if (JenkinsPropertiesRule.this.propertyPath.contains(propertyPath.file)) {
-                            return JenkinsPropertiesRule.this.configProperties
+                    readPropertyType ->
+                        if(readPropertyType.file){
+                            if (JenkinsPropertiesRule.this.propertyPath.contains(readPropertyType.file)) {
+                                return JenkinsPropertiesRule.this.configProperties
+                            }
+                            throw new Exception("Could not find the properties with path $readPropertyType")
                         }
+                        else if (readPropertyType.text){
+                            // Multiline properties are not supported.
+                            def propertiesMap = [:]
+                            for (def line : new StringReader(readPropertyType.text)) {
+                                if (! line.trim()) continue
+                                entry = line.split('=')
+                                if(entry.length != 2) {
+                                    throw new RuntimeException("Invalid properties: ${readPropertyType.text}. Line '${line}' does not contain a valid key value pair ")
+                                }
+                                propertiesMap.put(entry[0], entry[1])
 
-                        throw new Exception("Could not find the properties with path $propertyPath")
+                            }
+                            return propertiesMap
+                        }
+                        throw new Exception("neither 'text' nor 'file' argument was provided to 'readProperties'")
                 })
 
                 base.evaluate()

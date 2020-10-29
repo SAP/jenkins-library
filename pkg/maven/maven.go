@@ -43,7 +43,7 @@ type mavenExecRunner interface {
 }
 
 type mavenUtils interface {
-	piperutils.FileUtils
+	FileUtils
 	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
 }
 
@@ -278,10 +278,12 @@ func warFile(dir, finalName string) string {
 
 func flattenPom(command mavenExecRunner, o EvaluateOptions) error {
 	mavenOptionsFlatten := ExecuteOptions{
-		Goals:   []string{"flatten:flatten"},
-		Defines: []string{"-Dflatten.mode=resolveCiFriendliesOnly"},
-		PomPath: "pom.xml",
-		M2Path:  o.M2Path,
+		Goals:               []string{"flatten:flatten"},
+		Defines:             []string{"-Dflatten.mode=resolveCiFriendliesOnly"},
+		PomPath:             "pom.xml",
+		M2Path:              o.M2Path,
+		ProjectSettingsFile: o.ProjectSettingsFile,
+		GlobalSettingsFile:  o.GlobalSettingsFile,
 	}
 	_, err := Execute(&mavenOptionsFlatten, command)
 	return err

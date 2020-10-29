@@ -234,7 +234,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		return StepConfig{}, err
 	}
 	if vaultClient != nil {
-		addVaultCredentials(&stepConfig, vaultClient, parameters)
+		resolveAllVaultReferences(&stepConfig, vaultClient, parameters)
 	}
 
 	// finally do the condition evaluation post processing

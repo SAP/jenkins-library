@@ -142,7 +142,7 @@ spec:
         params:
           - name: mtarFilePath
   containers:
-    - image: devxci/mbtci:1.0.14.1
+    - image: devxci/mbtci:1.0.16.1
       imagePullPolicy: Always
       conditions:
         - conditionRef: strings-equal

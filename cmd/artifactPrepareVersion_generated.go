@@ -173,6 +173,7 @@ Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to yo
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
@@ -315,7 +316,7 @@ func artifactPrepareVersionMetadata() config.StepData {
 
 							{
 								Name:  "",
-								Paths: []string{"$(vaultPath)/versioning", "$(vaultBasePath)/$(vaultPipelineName)/versioning", "$(vaultBasePath)/GROUP-SECRETS/versioning"},
+								Paths: []string{"$(vaultPath)/gitHttpsCredential", "$(vaultBasePath)/$(vaultPipelineName)/gitHttpsCredential", "$(vaultBasePath)/GROUP-SECRETS/gitHttpsCredential"},
 								Type:  "vaultSecret",
 							},
 						},
@@ -367,7 +368,7 @@ func artifactPrepareVersionMetadata() config.StepData {
 
 							{
 								Name:  "",
-								Paths: []string{"$(vaultPath)/versioning", "$(vaultBasePath)/$(vaultPipelineName)/versioning", "$(vaultBasePath)/GROUP-SECRETS/versioning"},
+								Paths: []string{"$(vaultPath)/gitHttpsCredential", "$(vaultBasePath)/$(vaultPipelineName)/gitHttpsCredential", "$(vaultBasePath)/GROUP-SECRETS/gitHttpsCredential"},
 								Type:  "vaultSecret",
 							},
 						},

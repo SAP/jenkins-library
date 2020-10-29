@@ -9,7 +9,6 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/mock"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
 )
@@ -267,7 +266,7 @@ func TestMarBuild(t *testing.T) {
 		downloadAndCopySettingsFiles = func(
 			globalSettings string,
 			projectSettings string,
-			fileUtils piperutils.FileUtils,
+			fileUtils maven.FileUtils,
 			httpClient maven.SettingsDownloadUtils) error {
 			projectSettingsFile = projectSettings
 			globalSettingsFile = globalSettings
