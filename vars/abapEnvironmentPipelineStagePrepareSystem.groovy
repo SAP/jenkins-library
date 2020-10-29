@@ -9,9 +9,7 @@ import static com.sap.piper.Prerequisites.checkScript
     /** Creates a SAP Cloud Platform ABAP Environment instance via the cloud foundry command line interface */
     'cloudFoundryCreateService',
     /** Creates Communication Arrangements for ABAP Environment instance via the cloud foundry command line interface */
-    'cloudFoundryCreateServiceKey',
-    /** Clones a Git Repository on to the ABAP Environment instance */
-    'abapEnvironmentCloneGitRepo'
+    'cloudFoundryCreateServiceKey'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS

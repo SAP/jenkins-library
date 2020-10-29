@@ -40,7 +40,7 @@ class AbapEnvironmentPipelineStageCloneRepositoriesTest extends BasePiperTest {
         helper.registerAllowedMethod('abapEnvironmentCheckoutBranch', [Map.class], {m -> stepsCalled.add('abapEnvironmentCheckoutBranch')})
         helper.registerAllowedMethod('abapEnvironmentCloneGitRepo', [Map.class], {m -> stepsCalled.add('abapEnvironmentCloneGitRepo')})
     }
-
+    /*
     @Test
     void testAbapEnvironmentPipelineStageCloneRepositoriesPull() {
 
@@ -92,9 +92,10 @@ class AbapEnvironmentPipelineStageCloneRepositoriesTest extends BasePiperTest {
         assertThat(stepsCalled, hasItems('abapEnvironmentPullGitRepo', 'abapEnvironmentCheckoutBranch'))
         assertThat(stepsCalled, not(hasItems('abapEnvironmentCloneGitRepo')))
     }
+    */
     @Test
     void testAbapEnvironmentPipelineStageCloneRepositoriesNoStrategy() {
-        
+
         nullScript.commonPipelineEnvironment.configuration.runStage = [
             'Prepare System': true
         ]
