@@ -93,7 +93,7 @@ func ChangeBranch(branchName string, worktree *git.Worktree) error {
 
 func changeBranch(branchName string, worktree utilsWorkTree) error {
 	if branchName == "" {
-		return errors.New("No branch name provided.")
+		return errors.New("no branch name provided")
 	}
 
 	var checkoutOptions = &git.CheckoutOptions{}

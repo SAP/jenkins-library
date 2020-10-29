@@ -86,7 +86,7 @@ func TestChangeBranch(t *testing.T) {
 		worktreeMock := &WorktreeMock{}
 		err := changeBranch("", worktreeMock)
 		assert.Error(t, err)
-		assert.EqualError(t, err, "No branch name provided.")
+		assert.EqualError(t, err, "no branch name provided")
 	})
 
 	t.Run("create new branch", func(t *testing.T) {
