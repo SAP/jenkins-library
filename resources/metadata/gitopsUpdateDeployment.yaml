@@ -25,6 +25,7 @@ spec:
           - STEPS
         type: string
         default: master
+        mandatory: true
       - name: commitMessage
         description: The commit message of the commit that will be done to do the changes.
         scope:
@@ -87,11 +88,11 @@ spec:
           - STAGES
           - STEPS
         type: string
-        mandatory: true
       - name: containerRegistryUrl
         aliases:
           - name: dockerRegistryUrl
         type: string
+        mandatory: true
         description: http(s) url of the Container registry where the image is located
         scope:
           - GENERAL
@@ -107,6 +108,7 @@ spec:
             deprecated: true
           - name: containerImage
         type: string
+        mandatory: true
         description: Container image name with version tag to annotate in the deployment configuration.
         scope:
           - PARAMETERS
@@ -124,14 +126,14 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: helmAdditionalValueFile
-        description: File path to additional values that shall be used
+      - name: helmValues
+        type: "[]string"
+        description: List of helm values as YAML file reference or URL (as per helm parameter description for `-f` / `--values`)
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
-        type: string
-      - name: helmValueForRespositoryAndImageName
+      - name: helmValueForRepositoryAndImageName
         description: value description used in the template to specify the repository and image name of the deployment
         longDescription: The whole value before the colon sign.
         scope:
@@ -156,6 +158,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        default: deployment
       - name: deployTool
         type: string
         description: Defines the tool which should be used for deployment.
