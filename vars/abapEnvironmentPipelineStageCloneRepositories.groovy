@@ -1,8 +1,6 @@
-import com.cloudbees.groovy.cps.NonCPS
-import com.sap.piper.ConfigurationHelper
-import com.sap.piper.Utils
-import com.sap.piper.GenerateStageDocumentation
 import groovy.transform.Field
+import com.sap.piper.Utils
+import com.sap.piper.ConfigurationHelper
 
 import static com.sap.piper.Prerequisites.checkScript
 
@@ -26,8 +24,6 @@ import static com.sap.piper.Prerequisites.checkScript
 void call(Map parameters = [:]) {
     def script = checkScript(this, parameters) ?: this
     def stageName = parameters.stageName?:env.STAGE_NAME
-
-    //setupCommonPipelineEnvironment(script: script, strategy: parameters.strategy)
 
     Map config = ConfigurationHelper.newInstance(this)
         .loadStepDefaults()

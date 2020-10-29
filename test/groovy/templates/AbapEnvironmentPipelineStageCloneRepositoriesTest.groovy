@@ -34,13 +34,12 @@ class AbapEnvironmentPipelineStageCloneRepositoriesTest extends BasePiperTest {
         })
         helper.registerAllowedMethod('strategy', [Map], {m ->
             stepsCalled.add('strategy')
-            return null
         })
         helper.registerAllowedMethod('abapEnvironmentPullGitRepo', [Map.class], {m -> stepsCalled.add('abapEnvironmentPullGitRepo')})
         helper.registerAllowedMethod('abapEnvironmentCheckoutBranch', [Map.class], {m -> stepsCalled.add('abapEnvironmentCheckoutBranch')})
         helper.registerAllowedMethod('abapEnvironmentCloneGitRepo', [Map.class], {m -> stepsCalled.add('abapEnvironmentCloneGitRepo')})
     }
-    /*
+    
     @Test
     void testAbapEnvironmentPipelineStageCloneRepositoriesPull() {
 
