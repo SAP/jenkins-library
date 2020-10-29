@@ -73,17 +73,9 @@ The assembly system should be of [service type abap](https://help.sap.com/viewer
 
 #### Add-on Assembly Kit as a Service (=AAKaaS)
 The Add-on Assembly Kit as a Service is responsible for registering and publishing the software product. It is accessible via APIs with an S-User.
-All required API calls to both systems are built into the different pipeline steps and stages.
-
-#### File Content Management System of SAP
-Used to store physical delivery packages in status "L" as explained in the library step [abapAddonAssemblyKitRegisterPackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitRegisterPackages/).
 
 ### Deployment Tools
 With these SAP tools the assembled add-on deliveries are deployed to ABAP systems, for example into the [installation test system](#installation-test-system).
-
-#### SAP artifactory object store
-Used to store the physical Delivery Packages in status “R” as described in library step [abapAddonAssemblyKitReleasePackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitReleasePackages/).
-
 
 #### Installation Test System
 In order to verify that the delivery packages included in the add-on product version being built are installable, a target vector is published in "test" scope. In the *Integration Tests* stage an ABAP system of service type abap-oem is created. This ABAP OEM service makes it possible to install a specific add-on product version into an ABAP system that is provisioned. The installation test system should be be provisioned with parameter `is_development_allowd = false` to prevent local changes.
