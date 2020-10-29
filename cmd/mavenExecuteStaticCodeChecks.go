@@ -23,7 +23,7 @@ type mavenStaticCodeChecksUtilsBundle struct {
 	*piperutils.Files
 }
 
-func newStaticCodeChecksUtils() mavenExecuteIntegrationUtils {
+func newStaticCodeChecksUtils() mavenStaticCodeChecksUtils {
 	utils := mavenStaticCodeChecksUtilsBundle{
 		Command: &command.Command{},
 		Files:   &piperutils.Files{},
