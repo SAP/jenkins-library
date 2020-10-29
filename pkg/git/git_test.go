@@ -82,12 +82,11 @@ func TestChangeBranch(t *testing.T) {
 		assert.False(t, worktreeMock.create)
 	})
 
-	t.Run("empty branch defaulted to master", func(t *testing.T) {
+	t.Run("empty branch raises error", func(t *testing.T) {
 		worktreeMock := &WorktreeMock{}
 		err := changeBranch("", worktreeMock)
-		assert.NoError(t, err)
-		assert.Equal(t, string(plumbing.NewBranchReferenceName("master")), worktreeMock.checkedOutBranch)
-		assert.False(t, worktreeMock.create)
+		assert.Error(t, err)
+		assert.EqualError(t, err, "No branch name provided.")
 	})
 
 	t.Run("create new branch", func(t *testing.T) {
