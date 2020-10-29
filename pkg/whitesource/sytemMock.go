@@ -2,7 +2,11 @@
 
 package whitesource
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+	"time"
+)
 
 // SystemMock stores a number of WhiteSource objects and, based on that, mocks the behavior of System.
 type SystemMock struct {
@@ -23,6 +27,31 @@ func (m *SystemMock) GetProductByName(productName string) (Product, error) {
 		}
 	}
 	return Product{}, fmt.Errorf("no product with name '%s' found in Whitesource", productName)
+}
+
+// CreateProduct appends a new Product to the system mock and returns its token ("mock-product-token-<index>").
+func (m *SystemMock) CreateProduct(productName string) (string, error) {
+	now := time.Now().Format(DateTimeLayout)
+	productIndex := len(m.Products)
+	product := Product{
+		Name:           productName,
+		Token:          "mock-product-token-" + strconv.Itoa(productIndex),
+		CreationDate:   now,
+		LastUpdateDate: now,
+	}
+	m.Products = append(m.Products, product)
+	return product.Token, nil
+}
+
+// SetProductAssignments checks if the system mock contains a product with the given token and returns
+// an error depending on that, but otherwise does nothing with the provided arguments.
+func (m *SystemMock) SetProductAssignments(productToken string, _, _, _ *Assignment) error {
+	for _, product := range m.Products {
+		if product.Token == productToken {
+			return nil
+		}
+	}
+	return fmt.Errorf("no product with that token")
 }
 
 // GetProjectsMetaInfo returns the list of Projects stored in the mock or an error if token is unknown.

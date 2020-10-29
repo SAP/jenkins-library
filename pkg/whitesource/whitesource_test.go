@@ -2,13 +2,13 @@ package whitesource
 
 import (
 	"bytes"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"testing"
-
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/stretchr/testify/assert"
 )
 
 type whitesourceMockClient struct {
@@ -55,6 +55,42 @@ func TestGetProductsMetaInfo(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, []Product{{Name: "Test Product", Token: "test_product_token", CreationDate: "2020-01-01 00:00:00", LastUpdateDate: "2020-01-01 01:00:00"}}, products)
+}
+
+func TestCreateProduct(t *testing.T) {
+	t.Parallel()
+	t.Run("not allowed error", func(t *testing.T) {
+		// init
+		myTestClient := whitesourceMockClient{
+			responseBody: `{"errorCode":5001,"errorMessage":"User is not allowed to perform this action"}`,
+		}
+		expectedRequestBody := `{"requestType":"createProduct","userKey":"test_user_token","productName":"test_product_name","orgToken":"test_org_token"}`
+		sys := System{serverURL: "https://my.test.server", httpClient: &myTestClient, orgToken: "test_org_token", userToken: "test_user_token"}
+		// test
+		productToken, err := sys.CreateProduct("test_product_name")
+		// assert
+		assert.EqualError(t, err, "WhiteSource request failed: invalid request, error code 5001, message 'User is not allowed to perform this action'")
+		requestBody, err := ioutil.ReadAll(myTestClient.requestBody)
+		require.NoError(t, err)
+		assert.Equal(t, "", productToken)
+		assert.Equal(t, expectedRequestBody, string(requestBody))
+	})
+	t.Run("happy path", func(t *testing.T) {
+		// init
+		myTestClient := whitesourceMockClient{
+			responseBody: `{"productToken":"test_product_token"}`,
+		}
+		expectedRequestBody := `{"requestType":"createProduct","userKey":"test_user_token","productName":"test_product_name","orgToken":"test_org_token"}`
+		sys := System{serverURL: "https://my.test.server", httpClient: &myTestClient, orgToken: "test_org_token", userToken: "test_user_token"}
+		// test
+		productToken, err := sys.CreateProduct("test_product_name")
+		// assert
+		assert.NoError(t, err)
+		requestBody, err := ioutil.ReadAll(myTestClient.requestBody)
+		require.NoError(t, err)
+		assert.Equal(t, "test_product_token", productToken)
+		assert.Equal(t, expectedRequestBody, string(requestBody))
+	})
 }
 
 func TestGetMetaInfoForProduct(t *testing.T) {
