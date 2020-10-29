@@ -282,6 +282,8 @@ func flattenPom(command mavenExecRunner, o EvaluateOptions) error {
 		Defines: []string{"-Dflatten.mode=resolveCiFriendliesOnly"},
 		PomPath: "pom.xml",
 		M2Path:  o.M2Path,
+		ProjectSettingsFile: o.ProjectSettingsFile,
+		GlobalSettingsFile: o.GlobalSettingsFile,
 	}
 	_, err := Execute(&mavenOptionsFlatten, command)
 	return err
