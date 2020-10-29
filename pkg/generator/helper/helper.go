@@ -388,7 +388,7 @@ func getOutputResourceDetails(stepData *config.StepData) ([]map[string]string, e
 						envResource.Categories = append(envResource.Categories, category)
 					}
 				}
-				envParam := PiperEnvironmentParameter{Category: category, Name: name}
+				envParam := PiperEnvironmentParameter{Category: category, Name: name, Type: fmt.Sprint(param["type"])}
 				envResource.Parameters = append(envResource.Parameters, envParam)
 			}
 			def, err := envResource.StructString()
@@ -510,7 +510,7 @@ func longName(long string) string {
 	return l
 }
 
-func influxType(fieldType string) string {
+func resourceFieldType(fieldType string) string {
 	//TODO: clarify why fields are initialized with <nil> and tags are initialized with ''
 	if len(fieldType) == 0 || fieldType == "<nil>" {
 		return "string"
