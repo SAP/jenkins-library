@@ -187,6 +187,16 @@ spec:
           - STEPS
           - GENERAL
         default: 1
+      - name: addonDescriptor
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: abap/addonDescriptor
   containers:
     - name: cf
       image: ppiper/cf-cli

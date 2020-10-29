@@ -30,6 +30,7 @@ type abapEnvironmentCreateSystemOptions struct {
 	SapSystemName         string `json:"sapSystemName,omitempty"`
 	SizeOfPersistence     int    `json:"sizeOfPersistence,omitempty"`
 	SizeOfRuntime         int    `json:"sizeOfRuntime,omitempty"`
+	AddonDescriptor       string `json:"addonDescriptor,omitempty"`
 }
 
 // AbapEnvironmentCreateSystemCommand Creates a SAP Cloud Platform ABAP Environment system (aka Steampunk system)
@@ -107,6 +108,7 @@ func addAbapEnvironmentCreateSystemFlags(cmd *cobra.Command, stepConfig *abapEnv
 	cmd.Flags().StringVar(&stepConfig.SapSystemName, "sapSystemName", `H02`, "")
 	cmd.Flags().IntVar(&stepConfig.SizeOfPersistence, "sizeOfPersistence", 4, "")
 	cmd.Flags().IntVar(&stepConfig.SizeOfRuntime, "sizeOfRuntime", 1, "")
+	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "")
 
 	cmd.MarkFlagRequired("cfApiEndpoint")
 	cmd.MarkFlagRequired("username")
@@ -276,6 +278,19 @@ func abapEnvironmentCreateSystemMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+					},
+					{
+						Name: "addonDescriptor",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "abap/addonDescriptor",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 				},
 			},

@@ -1,6 +1,10 @@
 package cmd
 
 import (
+	"encoding/json"
+	"fmt"
+
+	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/cloudfoundry"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -20,6 +24,7 @@ func abapEnvironmentCreateSystem(config abapEnvironmentCreateSystemOptions, tele
 
 func runAbapEnvironmentCreateSystem(config *abapEnvironmentCreateSystemOptions, telemetryData *telemetry.CustomData, cf cloudfoundry.CFUtils) error {
 
+	// this is used to ensure compatibility for old pipeline configurations (using the step cloudFoundryCreateService)
 	if config.ServiceManifest != "" {
 		createServiceConfig := cloudFoundryCreateServiceOptions{
 			CfAPIEndpoint:   config.CfAPIEndpoint,
@@ -32,7 +37,30 @@ func runAbapEnvironmentCreateSystem(config *abapEnvironmentCreateSystemOptions, 
 		runCloudFoundryCreateService(&createServiceConfig, telemetryData, cf)
 	} else {
 
-		serviceParameters := ""
+		addonProduct := ""
+		addonVersion := ""
+		if config.AddonDescriptor != "" {
+			descriptor, err := abaputils.ReadAddonDescriptor(config.AddonDescriptor)
+			if err != nil {
+				return fmt.Errorf("Cloud not read addonProduct and addonVersion from %s: %w", config.AddonDescriptor, err)
+			}
+			addonProduct = descriptor.AddonProduct
+			addonVersion = descriptor.AddonVersionYAML
+		}
+		params := abapSystemParameters{
+			AdminEmail:           config.AdminEmail,
+			Description:          config.Description,
+			IsDevelopmentAllowed: config.IsDevelopmentAllowed,
+			SapSystemName:        config.SapSystemName,
+			SizeOfPersistence:    config.SizeOfPersistence,
+			SizeOfRuntime:        config.SizeOfRuntime,
+			AddonProductName:     addonProduct,
+			AddonProductVersion:  addonVersion,
+		}
+		serviceParameters, err := json.Marshal(params)
+		if err != nil {
+			return fmt.Errorf("Could not generate parameter string for the cloud foundry cli: %w", err)
+		}
 
 		createServiceConfig := cloudFoundryCreateServiceOptions{
 			CfAPIEndpoint:         config.CfAPIEndpoint,
@@ -44,7 +72,7 @@ func runAbapEnvironmentCreateSystem(config *abapEnvironmentCreateSystemOptions, 
 			CfServiceBroker:       config.CfServiceBroker,
 			CfService:             config.CfService,
 			CfServicePlan:         config.CfServicePlan,
-			CfCreateServiceConfig: serviceParameters,
+			CfCreateServiceConfig: string(serviceParameters),
 		}
 		runCloudFoundryCreateService(&createServiceConfig, telemetryData, cf)
 	}
@@ -59,4 +87,6 @@ type abapSystemParameters struct {
 	SapSystemName        string `json:"sapsystemname,omitempty"`
 	SizeOfPersistence    int    `json:"size_of_persistence,omitempty"`
 	SizeOfRuntime        int    `json:"size_of_runtime,omitempty"`
+	AddonProductName     string `json:"addon_product_name,omitempty"`
+	AddonProductVersion  string `json:"addon_product_version,omitempty"`
 }
