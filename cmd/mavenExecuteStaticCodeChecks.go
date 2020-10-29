@@ -73,7 +73,7 @@ func getSpotBugsMavenParameters(config *mavenExecuteStaticCodeChecksOptions) *ma
 
 	mavenOptions := maven.ExecuteOptions{
 		// check goal executes spotbugs goal first and fails the build if any bugs were found
-		Goals:   []string{"com.github.spotbugs:spotbugs-maven-plugin:4.0.4:check"},
+		Goals:   []string{"com.github.spotbugs:spotbugs-maven-plugin:4.1.4:check"},
 		Defines: defines,
 	}
 

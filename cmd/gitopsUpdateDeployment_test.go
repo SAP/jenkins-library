@@ -17,8 +17,8 @@ func TestBuildRegistryPlusImage(t *testing.T) {
 	t.Parallel()
 	t.Run("build full image", func(t *testing.T) {
 		registryImage, err := buildRegistryPlusImage(&gitopsUpdateDeploymentOptions{
-			ContainerRegistryURL: "https://myregistry.com/registry/containers",
-			ContainerImage:       "myFancyContainer:1337",
+			ContainerRegistryURL:  "https://myregistry.com/registry/containers",
+			ContainerImageNameTag: "myFancyContainer:1337",
 		})
 		assert.NoError(t, err)
 		assert.Equal(t, "myregistry.com/myFancyContainer:1337", registryImage)
@@ -26,16 +26,16 @@ func TestBuildRegistryPlusImage(t *testing.T) {
 
 	t.Run("without registry", func(t *testing.T) {
 		registryImage, err := buildRegistryPlusImage(&gitopsUpdateDeploymentOptions{
-			ContainerRegistryURL: "",
-			ContainerImage:       "myFancyContainer:1337",
+			ContainerRegistryURL:  "",
+			ContainerImageNameTag: "myFancyContainer:1337",
 		})
 		assert.NoError(t, err)
 		assert.Equal(t, "myFancyContainer:1337", registryImage)
 	})
 	t.Run("without faulty URL", func(t *testing.T) {
 		_, err := buildRegistryPlusImage(&gitopsUpdateDeploymentOptions{
-			ContainerRegistryURL: "//myregistry.com/registry/containers",
-			ContainerImage:       "myFancyContainer:1337",
+			ContainerRegistryURL:  "//myregistry.com/registry/containers",
+			ContainerImageNameTag: "myFancyContainer:1337",
 		})
 		assert.Error(t, err)
 		assert.EqualError(t, err, "registry URL could not be extracted: invalid registry url")
@@ -46,15 +46,15 @@ func TestRunGitopsUpdateDeployment(t *testing.T) {
 	t.Parallel()
 	t.Run("successful run", func(t *testing.T) {
 		var configuration = &gitopsUpdateDeploymentOptions{
-			BranchName:           "main",
-			CommitMessage:        "This is the commit message",
-			ServerURL:            "https://github.com",
-			Username:             "admin3",
-			Password:             "validAccessToken",
-			FilePath:             "dir1/dir2/depl.yaml",
-			ContainerName:        "myContainer",
-			ContainerRegistryURL: "https://myregistry.com/registry/containers",
-			ContainerImage:       "myFancyContainer:1337",
+			BranchName:            "main",
+			CommitMessage:         "This is the commit message",
+			ServerURL:             "https://github.com",
+			Username:              "admin3",
+			Password:              "validAccessToken",
+			FilePath:              "dir1/dir2/depl.yaml",
+			ContainerName:         "myContainer",
+			ContainerRegistryURL:  "https://myregistry.com/registry/containers",
+			ContainerImageNameTag: "myFancyContainer:1337",
 		}
 
 		gitUtilsMock := &validGitUtilsMock{}
@@ -76,15 +76,15 @@ func TestRunGitopsUpdateDeployment(t *testing.T) {
 
 	t.Run("invalid URL", func(t *testing.T) {
 		var configuration = &gitopsUpdateDeploymentOptions{
-			BranchName:           "main",
-			CommitMessage:        "This is the commit message",
-			ServerURL:            "https://github.com",
-			Username:             "admin3",
-			Password:             "validAccessToken",
-			FilePath:             "dir1/dir2/depl.yaml",
-			ContainerName:        "myContainer",
-			ContainerRegistryURL: "//myregistry.com/registry/containers",
-			ContainerImage:       "myFancyContainer:1337",
+			BranchName:            "main",
+			CommitMessage:         "This is the commit message",
+			ServerURL:             "https://github.com",
+			Username:              "admin3",
+			Password:              "validAccessToken",
+			FilePath:              "dir1/dir2/depl.yaml",
+			ContainerName:         "myContainer",
+			ContainerRegistryURL:  "//myregistry.com/registry/containers",
+			ContainerImageNameTag: "myFancyContainer:1337",
 		}
 
 		gitUtilsMock := &validGitUtilsMock{}
@@ -95,15 +95,15 @@ func TestRunGitopsUpdateDeployment(t *testing.T) {
 
 	t.Run("error on plane clone", func(t *testing.T) {
 		var configuration = &gitopsUpdateDeploymentOptions{
-			BranchName:           "main",
-			CommitMessage:        "This is the commit message",
-			ServerURL:            "https://github.com",
-			Username:             "admin3",
-			Password:             "validAccessToken",
-			FilePath:             "dir1/dir2/depl.yaml",
-			ContainerName:        "myContainer",
-			ContainerRegistryURL: "https://myregistry.com/registry/containers",
-			ContainerImage:       "myFancyContainer:1337",
+			BranchName:            "main",
+			CommitMessage:         "This is the commit message",
+			ServerURL:             "https://github.com",
+			Username:              "admin3",
+			Password:              "validAccessToken",
+			FilePath:              "dir1/dir2/depl.yaml",
+			ContainerName:         "myContainer",
+			ContainerRegistryURL:  "https://myregistry.com/registry/containers",
+			ContainerImageNameTag: "myFancyContainer:1337",
 		}
 
 		err := runGitopsUpdateDeployment(configuration, nil, &gitUtilsMockErrorClone{}, piperutils.Files{})
@@ -112,15 +112,15 @@ func TestRunGitopsUpdateDeployment(t *testing.T) {
 
 	t.Run("error on temp dir creation", func(t *testing.T) {
 		var configuration = &gitopsUpdateDeploymentOptions{
-			BranchName:           "main",
-			CommitMessage:        "This is the commit message",
-			ServerURL:            "https://github.com",
-			Username:             "admin3",
-			Password:             "validAccessToken",
-			FilePath:             "dir1/dir2/depl.yaml",
-			ContainerName:        "myContainer",
-			ContainerRegistryURL: "https://myregistry.com/registry/containers",
-			ContainerImage:       "myFancyContainer:1337",
+			BranchName:            "main",
+			CommitMessage:         "This is the commit message",
+			ServerURL:             "https://github.com",
+			Username:              "admin3",
+			Password:              "validAccessToken",
+			FilePath:              "dir1/dir2/depl.yaml",
+			ContainerName:         "myContainer",
+			ContainerRegistryURL:  "https://myregistry.com/registry/containers",
+			ContainerImageNameTag: "myFancyContainer:1337",
 		}
 
 		err := runGitopsUpdateDeployment(configuration, nil, &gitopsUpdateDeploymentGitUtils{}, filesMockErrorTempDirCreation{})
@@ -165,7 +165,7 @@ func (filesMockErrorTempDirCreation) RemoveAll(string) error {
 
 type gitUtilsMockErrorClone struct{}
 
-func (gitUtilsMockErrorClone) CommitSingleFile(string, string) (plumbing.Hash, error) {
+func (gitUtilsMockErrorClone) CommitSingleFile(string, string, string) (plumbing.Hash, error) {
 	panic("implement me")
 }
 
@@ -199,7 +199,7 @@ func (v *validGitUtilsMock) ChangeBranch(branchName string) error {
 	return nil
 }
 
-func (v *validGitUtilsMock) CommitSingleFile(string, string) (plumbing.Hash, error) {
+func (v *validGitUtilsMock) CommitSingleFile(string, string, string) (plumbing.Hash, error) {
 	matches, _ := piperutils.Files{}.Glob("*/dir1/dir2/depl.yaml")
 	fileRead, _ := piperutils.Files{}.FileRead(matches[0])
 	v.savedFile = string(fileRead)
