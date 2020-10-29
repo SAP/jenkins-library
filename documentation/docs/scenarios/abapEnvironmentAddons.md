@@ -98,7 +98,7 @@ The pipeline responsible for building ABAP add-ons has been created specifically
 
 #### Git Repository
 
-The pipeline configuration is done in a git repository (for example on GitHub). This repository needs to be accessed by the Jenkins Server. If the repository is password protected, the user and password (or access token) should be stored in the Jenkins Credentials Store (Manage Jenkins -> Manage Credentials).
+The pipeline configuration is done in a git repository (for example on GitHub). This repository needs to be accessed by the Jenkins Server. If the repository is password protected, the user and password (or access token) should be stored in the Jenkins Credentials Store (Manage Jenkins &rightarrow; Manage Credentials).
 
 #### Add-on Assembly Kit as a Service (=AAKaaS)
 
