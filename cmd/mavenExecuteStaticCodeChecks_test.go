@@ -12,7 +12,7 @@ import (
 
 func TestRunMavenStaticCodeChecks(t *testing.T) {
 	t.Run("should run spotBugs and pmd with all configured options", func(t *testing.T) {
-		utils := newMavenStaticCodeChecksUtilsBundle()
+		utils := newMavenStaticCodeChecksTestUtilsBundle()
 		config := mavenExecuteStaticCodeChecksOptions{
 			SpotBugs:                  true,
 			Pmd:                       true,
@@ -50,7 +50,7 @@ func TestRunMavenStaticCodeChecks(t *testing.T) {
 		assert.Equal(t, expected, utils.Calls[0])
 	})
 	t.Run("should warn and skip execution if all tools are turned off", func(t *testing.T) {
-		utils := newMavenStaticCodeChecksUtilsBundle()
+		utils := newMavenStaticCodeChecksTestUtilsBundle()
 		config := mavenExecuteStaticCodeChecksOptions{
 			SpotBugs: false,
 			Pmd:      false,
@@ -126,7 +126,7 @@ type mavenStaticCodeChecksTestUtilsBundle struct {
 	*mock.FilesMock
 }
 
-func newMavenStaticCodeChecksUtilsBundle() mavenStaticCodeChecksTestUtilsBundle {
+func newMavenStaticCodeChecksTestUtilsBundle() mavenStaticCodeChecksTestUtilsBundle {
 	utilsBundle := mavenStaticCodeChecksTestUtilsBundle{
 		ExecMockRunner: &mock.ExecMockRunner{},
 		FilesMock:      &mock.FilesMock{},

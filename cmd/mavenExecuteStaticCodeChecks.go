@@ -23,8 +23,8 @@ type mavenStaticCodeChecksUtilsBundle struct {
 	*piperutils.Files
 }
 
-func newStaticCodeChecksUtilsUtils() mavenExecuteIntegrationUtils {
-	utils := mavenExecuteIntegrationUtilsBundle{
+func newStaticCodeChecksUtils() mavenExecuteIntegrationUtils {
+	utils := mavenStaticCodeChecksUtilsBundle{
 		Command: &command.Command{},
 		Files:   &piperutils.Files{},
 	}
@@ -34,7 +34,7 @@ func newStaticCodeChecksUtilsUtils() mavenExecuteIntegrationUtils {
 }
 
 func mavenExecuteStaticCodeChecks(config mavenExecuteStaticCodeChecksOptions, telemetryData *telemetry.CustomData) {
-	utils := newStaticCodeChecksUtilsUtils()
+	utils := newStaticCodeChecksUtils()
 	err := runMavenStaticCodeChecks(&config, telemetryData, utils)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
