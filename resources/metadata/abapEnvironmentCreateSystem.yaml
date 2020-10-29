@@ -130,21 +130,24 @@ spec:
           - name: cfServiceManifest
       - name: adminEmail
         type: string
+        description: Admin E-Mail address for the initial administrator of the system
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
           - GENERAL
       - name: description
+        description: Description for the ABAP Environment system
         type: string
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
           - GENERAL
-        default: 'Test system created by an automated pipeline'
+          default: 'Test system created by an automated pipeline'
       - name: isDevelopmentAllowed
         type: bool
+        description: This parameter determines, if development is allowed on the system
         scope:
           - PARAMETERS
           - STAGES
@@ -152,6 +155,7 @@ spec:
           - GENERAL
         default: true
       - name: sapSystemName
+        description: The three character name of the system
         type: string
         scope:
           - PARAMETERS
@@ -160,6 +164,7 @@ spec:
           - GENERAL
         default: 'H02'
       - name: sizeOfPersistence
+        description: The size of the persistence
         type: int
         scope:
           - PARAMETERS
@@ -167,6 +172,7 @@ spec:
           - STEPS
           - GENERAL
       - name: sizeOfRuntime
+        description: The size of the runtime
         type: int
         scope:
           - PARAMETERS
@@ -174,6 +180,7 @@ spec:
           - STEPS
           - GENERAL
       - name: addonDescriptor
+      description: The json string of the addonDescriptor
         type: string
         scope:
           - PARAMETERS
