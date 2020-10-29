@@ -127,7 +127,7 @@ type mavenStaticCodeChecksTestUtilsBundle struct {
 }
 
 func newMavenStaticCodeChecksUtilsBundle() mavenStaticCodeChecksTestUtilsBundle {
-	utilsBundle := mavenStaticCodeChecksTestUtilsBundle {
+	utilsBundle := mavenStaticCodeChecksTestUtilsBundle{
 		ExecMockRunner: &mock.ExecMockRunner{},
 		FilesMock:      &mock.FilesMock{},
 	}
