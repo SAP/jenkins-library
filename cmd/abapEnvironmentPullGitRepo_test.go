@@ -125,6 +125,123 @@ repositories:
 		assert.NoError(t, err)
 	})
 
+	t.Run("Status Error", func(t *testing.T) {
+		var autils = abaputils.AUtilsMock{}
+		defer autils.Cleanup()
+		autils.ReturnedConnectionDetailsHTTP.Password = "password"
+		autils.ReturnedConnectionDetailsHTTP.User = "user"
+		autils.ReturnedConnectionDetailsHTTP.URL = "https://example.com"
+		autils.ReturnedConnectionDetailsHTTP.XCsrfToken = "xcsrftoken"
+
+		dir, errDir := ioutil.TempDir("", "test read addon descriptor")
+		if errDir != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+		defer func() {
+			_ = os.Chdir(oldCWD)
+			_ = os.RemoveAll(dir)
+		}()
+
+		body := `---
+repositories:
+- name: /DMO/REPO_A
+  tag: v-1.0.1-build-0001
+  branch: branchA
+  version: 1.0.1
+  commitID: ABCD1234
+`
+		file, _ := os.Create("filename.yaml")
+		file.Write([]byte(body))
+
+		config := abapEnvironmentPullGitRepoOptions{
+			CfAPIEndpoint:     "https://api.endpoint.com",
+			CfOrg:             "testOrg",
+			CfSpace:           "testSpace",
+			CfServiceInstance: "testInstance",
+			CfServiceKeyName:  "testServiceKey",
+			Username:          "testUser",
+			Password:          "testPassword",
+			Repositories:      "filename.yaml",
+		}
+
+		client := &abaputils.ClientMock{
+			BodyList: []string{
+				`{"d" : { "status" : "E" } }`,
+				`{"d" : { "status" : "R" } }`,
+				`{"d" : { "status" : "R" } }`,
+			},
+			Token:      "myToken",
+			StatusCode: 200,
+		}
+
+		err := runAbapEnvironmentPullGitRepo(&config, nil, &autils, client)
+		if assert.Error(t, err, "Expected error") {
+			assert.Equal(t, "Something failed during the pull of the repositories: Pull of /DMO/REPO_A failed on the ABAP System", err.Error(), "Expected different error message")
+		}
+	})
+
+	t.Run("Status Error, Ignore Commit", func(t *testing.T) {
+		var autils = abaputils.AUtilsMock{}
+		defer autils.Cleanup()
+		autils.ReturnedConnectionDetailsHTTP.Password = "password"
+		autils.ReturnedConnectionDetailsHTTP.User = "user"
+		autils.ReturnedConnectionDetailsHTTP.URL = "https://example.com"
+		autils.ReturnedConnectionDetailsHTTP.XCsrfToken = "xcsrftoken"
+
+		dir, errDir := ioutil.TempDir("", "test read addon descriptor")
+		if errDir != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+		defer func() {
+			_ = os.Chdir(oldCWD)
+			_ = os.RemoveAll(dir)
+		}()
+
+		body := `---
+repositories:
+- name: /DMO/REPO_A
+  tag: v-1.0.1-build-0001
+  branch: branchA
+  version: 1.0.1
+  commitID: ABCD1234
+`
+		file, _ := os.Create("filename.yaml")
+		file.Write([]byte(body))
+
+		config := abapEnvironmentPullGitRepoOptions{
+			CfAPIEndpoint:     "https://api.endpoint.com",
+			CfOrg:             "testOrg",
+			CfSpace:           "testSpace",
+			CfServiceInstance: "testInstance",
+			CfServiceKeyName:  "testServiceKey",
+			Username:          "testUser",
+			Password:          "testPassword",
+			Repositories:      "filename.yaml",
+			IgnoreCommit:      true,
+		}
+
+		client := &abaputils.ClientMock{
+			BodyList: []string{
+				`{"d" : { "status" : "E" } }`,
+				`{"d" : { "status" : "R" } }`,
+				`{"d" : { "status" : "R" } }`,
+			},
+			Token:      "myToken",
+			StatusCode: 200,
+		}
+
+		err := runAbapEnvironmentPullGitRepo(&config, nil, &autils, client)
+		if assert.Error(t, err, "Expected error") {
+			assert.Equal(t, "Something failed during the pull of the repositories: Pull of /DMO/REPO_A, commit 'ABCD1234' failed on the ABAP System", err.Error(), "Expected different error message")
+		}
+	})
+
 	t.Run("Failure case: pull repos from empty file config", func(t *testing.T) {
 		expectedErrorMessage := "Something failed during the pull of the repositories: Error in config file repositoriesTest.yml, AddonDescriptor doesn't contain any repositories"
 

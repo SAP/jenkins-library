@@ -68,7 +68,7 @@ func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, t
 	}
 
 	if err == nil {
-		err = pullRepositories(repositories, connectionDetails, client, pollIntervall)
+		err = pullRepositories(repositories, connectionDetails, client, pollIntervall, options.IgnoreCommit)
 	}
 
 	if err != nil {
@@ -80,9 +80,12 @@ func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, t
 	return err
 }
 
-func pullRepositories(repositories []abaputils.Repository, pullConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (err error) {
+func pullRepositories(repositories []abaputils.Repository, pullConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration, ignoreCommit bool) (err error) {
 	log.Entry().Infof("Start pulling %v repositories", len(repositories))
 	for _, repo := range repositories {
+		if ignoreCommit {
+			repo.CommitID = ""
+		}
 		err = handlePull(repo, pullConnectionDetails, client, pollIntervall)
 		if err != nil {
 			break
