@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/log"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/SAP/jenkins-library/pkg/log"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/mock"
@@ -356,6 +357,32 @@ bar: 42
 
 		// Assert
 		assert.Equal(t, 1.1, stepConfig["foo"])
+		assert.True(t, hasFailed, "Expected checkTypes() to exit via logging framework")
+	})
+	t.Run("Exits in case number beyond length", func(t *testing.T) {
+		// Init
+		hasFailed := false
+
+		exitFunc := log.Entry().Logger.ExitFunc
+		log.Entry().Logger.ExitFunc = func(int) {
+			hasFailed = true
+		}
+		defer func() { log.Entry().Logger.ExitFunc = exitFunc }()
+
+		options := struct {
+			Foo string `json:"foo,omitempty"`
+		}{}
+
+		stepConfig := map[string]interface{}{}
+
+		content := []byte("foo: 73554900100200011600")
+		err := yaml.Unmarshal(content, &stepConfig)
+		assert.NoError(t, err)
+
+		// Test
+		stepConfig = checkTypes(stepConfig, options)
+
+		// Assert
 		assert.True(t, hasFailed, "Expected checkTypes() to exit via logging framework")
 	})
 	t.Run("Ignores nil values", func(t *testing.T) {
