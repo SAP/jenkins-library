@@ -225,8 +225,8 @@ func NewSystemInstance(client piperHttp.Uploader, serverURL, username, password 
 	log.RegisterSecret(token)
 
 	options := piperHttp.ClientOptions{
-		Token:              token,
-		TransportTimeout: 15 * time.Minute,
+		Token:			token,
+		TransportTimeout:	time.Minute * 15,
 	}
 	sys.client.SetOptions(options)
 
