@@ -64,7 +64,7 @@ Please have a look at the [step documentation](https://sap.github.io/jenkins-lib
 
 ## 5. Configuration for Cloning the repositories
 
-If you have specified the `Clone Repositories` Stage you can make use of a dedicated configuration file containing the repositories to be pulled and the branches to be switch on. The `repositoriesFilesNames` flag makes use of such a configuration file and helps executing a Pull and checkout of the Branches of the Repositores. Create the file `repositories.yml` with the following structure containing your repositories including the branches for this Stage.
+If you have specified the `Clone Repositories` Stage you can make use of a dedicated configuration file containing the repositories to be pulled and the branches to be switched on. The `repositories` flag makes use of such a configuration file and helps executing a Pull, Clone and Checkout of the Branches of the Repositores. Create the file `repositories.yml` with the following structure containing your repositories including the branches for this Stage.
 
 ```yml
 repositories:
@@ -74,13 +74,7 @@ repositories:
   branch: 'master'
 ```
 
-Please note that in case that you have specified the `Prepare System` Stage that this stage will be performed using the abapEnvironmentCloneGitRepo step.
-Please have a look at the step documentation for the [abapEnvironmentCloneGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentCloneGitRepo/) step for more details.
-
-In case the `Prepare System` stage is not performed the abapEnvironmentCheckoutBranch and abapEnvironmentPullGitRepo steps will be used in this order.
-Please have a look at the step documentation for the [abapEnvironmentCheckoutBranch](https://sap.github.io/jenkins-library/steps/abapEnvironmentCheckoutBranch/) and [abapEnvironmentPullGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentPullGitRepo/) steps for more details.
-
-Regardless if the `Prepare System` is executed you can use the `repositories.yml` file for the `repositories` parameter in the `Clone Repositories` stage used in chapter 7 `Technical Pipeline Configuration`.
+You can later use the `repositories.yml` file for the `repositories` parameter in the `Clone Repositories` stage used in chapter [7. Technical Pipeline Configuration](#7-technical-pipeline-configuration).
 
 ## 6. Configuration for ATC
 
@@ -111,6 +105,7 @@ stages:
     cfServiceManifest: 'manifest.yml'
     cfServiceKeyConfig: 'sap_com_0510.json'
   Clone Repositories:
+    strategy: 'Pull'
     repositories: 'repositories.yml'
   ATC:
     atcConfig: 'atcConfig.yml'
@@ -119,9 +114,14 @@ steps:
     cfDeleteServiceKeys: true
 ```
 
-If one of the stages of the pipeline is not configured in this yml file, the stage will not be executed during the pipeline run. If the stage `Prepare System` is configured, the system will be deprovisioned in the cleanup routine - although it is necessary to configure the step `cloudFoundryDeleteService` as above.
+If one of the stages of the pipeline is not configured in this yml file, the stage will not be executed during the pipeline run. If the stage `Prepare System` is configured, the system will be deprovisioned in the cleanup routine - although it is necessary to configure the step `cloudFoundryDeleteService` as above. Also, if the `Prepare System` stage is configured, you can specify the strategy for the `strategy` step parameter that should be performed on the Software Components and the Branches that you have configured in the `respositories.yml` file in step [5. Configuration for Cloning the repositories](#5-configuration-for-cloning-the-repositories). Per default the strategy will be set to `Pull` if not specified. The following strategies are supported and can be used on the Software Components and Branches:
 
-Please make sure the parameters align with the values defined in the other configuration files, e.g. the service name in the `manifest.yml` needs to be the same as the value in `general.cfServiceInstance`.
+* `Pull`: If you have specified Pull as the strategy the [abapEnvironmentPullGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentPullGitRepo/) step will be used
+* `Clone`: If you have specified the Clone strategy the [abapEnvironmentCloneGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentCloneGitRepo/) step will be used
+* `CheckoutPull`: This strategy performs a Checkout of Branches with the [abapEnvironmentCheckoutBranch](https://sap.github.io/jenkins-library/steps/abapEnvironmentCheckoutBranch/) step followed by a Pull of the Software Component with the [abapEnvironmentPullGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentPullGitRepo/) step
+* `addonBuild`: This will perform a Pull of the Software Component with the [abapEnvironmentPullGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentPullGitRepo/) step, a Checkout of Branches with the [abapEnvironmentCheckoutBranch](https://sap.github.io/jenkins-library/steps/abapEnvironmentCheckoutBranch/) step followed by a Pull of the Software Component again with the [abapEnvironmentPullGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentPullGitRepo/) step
+
+Note that you can use the `repositories.yml` file with the `repositories` parameter consistently for all strategies. Also, please make sure the parameters align with the values defined in the other configuration files, e.g. the service name in the `manifest.yml` needs to be the same as the value in `general.cfServiceInstance`. 
 
 The values for `cfApiEndpoint`,`cfOrg` and `cfSpace` can be found in the respective overview pages in the SAP Cloud Platform Cockpit. The Cloud Foundry credentials, saved in the Jenkins credentials store with the ID `cfCredentialsId`, must refer to a user with the required authorizations ("Space Developer") for the Cloud Foundry Organization and Space.
 
