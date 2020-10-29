@@ -8,7 +8,9 @@ metadata:
 spec:
   inputs:
     resources:
-      - name: ''
+      - name: buildDescriptor
+        type: stash
+      - name: tests
         type: stash
     params:
       - name: install
