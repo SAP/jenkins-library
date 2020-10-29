@@ -77,7 +77,6 @@ repositories:
 Please note that in case that you have specified the `Prepare System` Stage that this stage will be performed using the abapEnvironmentCloneGitRepo step.
 Please have a look at the step documentation for the [abapEnvironmentCloneGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentCloneGitRepo/) step for more details.
 
-
 In case the `Prepare System` stage is not performed the abapEnvironmentCheckoutBranch and abapEnvironmentPullGitRepo steps will be used in this order.
 Please have a look at the step documentation for the [abapEnvironmentCheckoutBranch](https://sap.github.io/jenkins-library/steps/abapEnvironmentCheckoutBranch/) and [abapEnvironmentPullGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentPullGitRepo/) steps for more details.
 
