@@ -109,10 +109,9 @@ func newWhitesourceScan(config *ScanOptions) *ws.Scan {
 }
 
 func whitesourceExecuteScan(config ScanOptions, _ *telemetry.CustomData, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment) {
-	utils := newWhitesourceUtils()
+	utils := newWhitesourceUtils(&config)
 	scan := newWhitesourceScan(&config)
-	sys := ws.NewSystem(config.ServiceURL, config.OrgToken, config.UserToken,
-		time.Duration(config.Timeout)*time.Second))
+	sys := ws.NewSystem(config.ServiceURL, config.OrgToken, config.UserToken, time.Duration(config.Timeout)*time.Second)
 	err := runWhitesourceExecuteScan(&config, scan, utils, sys, commonPipelineEnvironment)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
