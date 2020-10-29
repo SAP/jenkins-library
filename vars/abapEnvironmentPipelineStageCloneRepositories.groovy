@@ -45,7 +45,7 @@ void call(Map parameters = [:]) {
                 abapEnvironmentCheckoutBranch script: parameters.script
                 abapEnvironmentPullGitRepo script: parameters.script
                 break
-            case 'PullCheckoutPull':
+            case 'addonBuild':
                 abapEnvironmentPullGitRepo script: parameters.script
                 abapEnvironmentCheckoutBranch script: parameters.script
                 abapEnvironmentPullGitRepo script: parameters.script
