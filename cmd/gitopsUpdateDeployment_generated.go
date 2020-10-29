@@ -95,7 +95,7 @@ As of today, it supports the update of deployment yaml files via kubectl patch. 
 
 func addGitopsUpdateDeploymentFlags(cmd *cobra.Command, stepConfig *gitopsUpdateDeploymentOptions) {
 	cmd.Flags().StringVar(&stepConfig.BranchName, "branchName", `master`, "The name of the branch where the changes should get pushed into.")
-	cmd.Flags().StringVar(&stepConfig.CommitMessage, "commitMessage", `Updated {{containerName}} to version {{containerImage}}`, "The commit message of the commit that will be done to do the changes.")
+	cmd.Flags().StringVar(&stepConfig.CommitMessage, "commitMessage", os.Getenv("PIPER_commitMessage"), "The commit message of the commit that will be done to do the changes.")
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", `https://github.com`, "GitHub server url to the repository.")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User name for git authentication")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password/token for git authentication.")
@@ -111,7 +111,6 @@ func addGitopsUpdateDeploymentFlags(cmd *cobra.Command, stepConfig *gitopsUpdate
 	cmd.Flags().StringVar(&stepConfig.DeployTool, "deployTool", `kubectl`, "Defines the tool which should be used for deployment.")
 
 	cmd.MarkFlagRequired("branchName")
-	cmd.MarkFlagRequired("commitMessage")
 	cmd.MarkFlagRequired("serverUrl")
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
@@ -144,7 +143,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
 					{

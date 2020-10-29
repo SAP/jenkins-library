@@ -94,6 +94,27 @@ func TestRunGitopsUpdateDeploymentWithKubectl(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, validConfiguration.BranchName, gitUtilsMock.changedBranch)
 		assert.Equal(t, expectedYaml, gitUtilsMock.savedFile)
+		assert.Equal(t, "This is the commit message", gitUtilsMock.commitMessage)
+		assert.Equal(t, "kubectl", runnerMock.executable)
+		assert.Equal(t, "patch", runnerMock.params[0])
+		assert.Equal(t, "--local", runnerMock.params[1])
+		assert.Equal(t, "--output=yaml", runnerMock.params[2])
+		assert.Equal(t, `--patch={"spec":{"template":{"spec":{"containers":[{"name":"myContainer","image":"myregistry.com/myFancyContainer:1337"}]}}}}`, runnerMock.params[3])
+		assert.True(t, strings.Contains(runnerMock.params[4], filepath.Join("dir1/dir2/depl.yaml")))
+	})
+
+	t.Run("default commit message", func(t *testing.T) {
+		var configuration = *validConfiguration
+		configuration.CommitMessage = ""
+
+		gitUtilsMock := &gitUtilsMock{}
+		runnerMock := &gitOpsExecRunnerMock{}
+
+		err := runGitopsUpdateDeployment(&configuration, runnerMock, gitUtilsMock, filesMock{})
+		assert.NoError(t, err)
+		assert.Equal(t, validConfiguration.BranchName, gitUtilsMock.changedBranch)
+		assert.Equal(t, expectedYaml, gitUtilsMock.savedFile)
+		assert.Equal(t, "Updated myFancyContainer to version 1337", gitUtilsMock.commitMessage)
 		assert.Equal(t, "kubectl", runnerMock.executable)
 		assert.Equal(t, "patch", runnerMock.params[0])
 		assert.Equal(t, "--local", runnerMock.params[1])
@@ -328,6 +349,29 @@ func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, validConfiguration.BranchName, gitUtilsMock.changedBranch)
 		assert.Equal(t, expectedYaml, gitUtilsMock.savedFile)
+		assert.Equal(t, "This is the commit message", gitUtilsMock.commitMessage)
+		assert.Equal(t, "helm", runnerMock.executable)
+		assert.Equal(t, "template", runnerMock.params[0])
+		assert.Equal(t, "myFancyDeployment", runnerMock.params[1])
+		assert.Equal(t, filepath.Join(".", "helm"), runnerMock.params[2])
+		assert.Equal(t, "--set=image.repositoryName=myregistry.com/registry/containers/myFancyContainer", runnerMock.params[3])
+		assert.Equal(t, "--set=image.version=1337", runnerMock.params[4])
+		assert.Equal(t, "--values", runnerMock.params[5])
+		assert.Equal(t, "./helm/additionalValues.yaml", runnerMock.params[6])
+	})
+
+	t.Run("default commit message", func(t *testing.T) {
+		var configuration = *validConfiguration
+		configuration.CommitMessage = ""
+
+		gitUtilsMock := &gitUtilsMock{}
+		runnerMock := &gitOpsExecRunnerMock{}
+
+		err := runGitopsUpdateDeployment(&configuration, runnerMock, gitUtilsMock, filesMock{})
+		assert.NoError(t, err)
+		assert.Equal(t, configuration.BranchName, gitUtilsMock.changedBranch)
+		assert.Equal(t, expectedYaml, gitUtilsMock.savedFile)
+		assert.Equal(t, "Updated registry/containers/myFancyContainer to version 1337", gitUtilsMock.commitMessage)
 		assert.Equal(t, "helm", runnerMock.executable)
 		assert.Equal(t, "template", runnerMock.params[0])
 		assert.Equal(t, "myFancyDeployment", runnerMock.params[1])
@@ -558,6 +602,7 @@ func (f filesMock) RemoveAll(path string) error {
 type gitUtilsMock struct {
 	savedFile          string
 	changedBranch      string
+	commitMessage      string
 	failOnClone        bool
 	failOnChangeBranch bool
 	failOnCommit       bool
@@ -576,10 +621,13 @@ func (v *gitUtilsMock) ChangeBranch(branchName string) error {
 	return nil
 }
 
-func (v *gitUtilsMock) CommitSingleFile(string, string, string) (plumbing.Hash, error) {
+func (v *gitUtilsMock) CommitSingleFile(_ string, commitMessage string, _ string) (plumbing.Hash, error) {
 	if v.failOnCommit {
 		return [20]byte{}, errors.New("error on commit")
 	}
+
+	v.commitMessage = commitMessage
+
 	matches, _ := piperutils.Files{}.Glob("*/dir1/dir2/depl.yaml")
 	if len(matches) < 1 {
 		return [20]byte{}, errors.New("could not find file")

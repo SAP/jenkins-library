@@ -28,13 +28,13 @@ spec:
         mandatory: true
       - name: commitMessage
         description: The commit message of the commit that will be done to do the changes.
+        longDescription: If the commit message is empty a default message in the form "Updated _containerName_ to version _containerImage_" will be used.
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
         type: string
-        mandatory: true
-        default: Updated {{containerName}} to version {{containerImage}}
+        mandatory: false
       - name: serverUrl
         aliases:
           - name: githubServerUrl

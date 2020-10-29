@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/docker"
 	gitUtil "github.com/SAP/jenkins-library/pkg/git"
@@ -322,7 +323,13 @@ func buildRegistryPlusImageWithoutTag(config *gitopsUpdateDeploymentOptions) (st
 }
 
 func commitAndPushChanges(config *gitopsUpdateDeploymentOptions, gitUtils iGitopsUpdateDeploymentGitUtils) (plumbing.Hash, error) {
-	commit, err := gitUtils.CommitSingleFile(config.FilePath, config.CommitMessage, config.Username)
+	commitMessage := config.CommitMessage
+
+	if commitMessage == "" {
+		commitMessage = defaultCommitMessage(config)
+	}
+
+	commit, err := gitUtils.CommitSingleFile(config.FilePath, commitMessage, config.Username)
 	if err != nil {
 		return [20]byte{}, errors.Wrap(err, "committing changes failed")
 	}
@@ -333,4 +340,11 @@ func commitAndPushChanges(config *gitopsUpdateDeploymentOptions, gitUtils iGitop
 	}
 
 	return commit, nil
+}
+
+func defaultCommitMessage(config *gitopsUpdateDeploymentOptions) string {
+	image, _ := docker.ContainerImageNameFromImage(config.ContainerImageNameTag)
+	tag, _ := docker.ContainerImageTagFromImage(config.ContainerImageNameTag)
+	commitMessage := fmt.Sprintf("Updated %v to version %v", image, tag)
+	return commitMessage
 }
