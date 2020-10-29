@@ -28,6 +28,8 @@ type ScanOptions = whitesourceExecuteScanOptions
 // be available from the whitesource system.
 type whitesource interface {
 	GetProductByName(productName string) (ws.Product, error)
+	CreateProduct(productName string) (string, error)
+	SetProductAssignments(productToken string, membership, admins, alertReceivers *ws.Assignment) error
 	GetProjectsMetaInfo(productToken string) ([]ws.Project, error)
 	GetProjectToken(productToken, projectName string) (string, error)
 	GetProjectByToken(projectToken string) (ws.Project, error)
@@ -85,7 +87,7 @@ func (w *whitesourceUtilsBundle) Now() time.Time {
 	return time.Now()
 }
 
-func newWhitesourceUtils() *whitesourceUtilsBundle {
+func newWhitesourceUtils(config *ScanOptions) *whitesourceUtilsBundle {
 	utils := whitesourceUtilsBundle{
 		Client:  &piperhttp.Client{},
 		Command: &command.Command{},
@@ -94,6 +96,8 @@ func newWhitesourceUtils() *whitesourceUtilsBundle {
 	// Reroute cmd output to logging framework
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
+	// Configure HTTP Client
+	utils.SetOptions(piperhttp.ClientOptions{TransportTimeout: time.Duration(config.Timeout) * time.Second})
 	return &utils
 }
 
@@ -107,7 +111,8 @@ func newWhitesourceScan(config *ScanOptions) *ws.Scan {
 func whitesourceExecuteScan(config ScanOptions, _ *telemetry.CustomData, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment) {
 	utils := newWhitesourceUtils()
 	scan := newWhitesourceScan(&config)
-	sys := ws.NewSystem(config.ServiceURL, config.OrgToken, config.UserToken)
+	sys := ws.NewSystem(config.ServiceURL, config.OrgToken, config.UserToken,
+		time.Duration(config.Timeout)*time.Second))
 	err := runWhitesourceExecuteScan(&config, scan, utils, sys, commonPipelineEnvironment)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
@@ -191,6 +196,26 @@ func checkAndReportScanResults(config *ScanOptions, scan *ws.Scan, utils whiteso
 	return nil
 }
 
+func createWhiteSourceProduct(config *ScanOptions, sys whitesource) (string, error) {
+	log.Entry().Infof("Attempting to create new WhiteSource product for '%s'..", config.ProductName)
+	productToken, err := sys.CreateProduct(config.ProductName)
+	if err != nil {
+		return "", fmt.Errorf("failed to create WhiteSource product: %w", err)
+	}
+
+	var admins ws.Assignment
+	for _, address := range config.EmailAddressesOfInitialProductAdmins {
+		admins.UserAssignments = append(admins.UserAssignments, ws.UserAssignment{Email: address})
+	}
+
+	err = sys.SetProductAssignments(productToken, nil, &admins, nil)
+	if err != nil {
+		return "", fmt.Errorf("failed to set admins on new WhiteSource product: %w", err)
+	}
+
+	return productToken, nil
+}
+
 func resolveProjectIdentifiers(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource) error {
 	if scan.AggregateProjectName == "" || config.ProductVersion == "" {
 		options := &versioning.Options{
@@ -217,36 +242,64 @@ func resolveProjectIdentifiers(config *ScanOptions, scan *ws.Scan, utils whiteso
 	}
 	scan.ProductVersion = validateProductVersion(config.ProductVersion)
 
-	// Get product token if user did not specify one at runtime
-	if config.ProductToken == "" {
-		log.Entry().Infof("Attempting to resolve product token for product '%s'..", config.ProductName)
-		product, err := sys.GetProductByName(config.ProductName)
-		if err != nil {
-			return err
-		}
-		log.Entry().Infof("Resolved product token: '%s'..", product.Token)
-		config.ProductToken = product.Token
+	if err := resolveProductToken(config, sys); err != nil {
+		return err
 	}
-
-	// Get project token if user did not specify one at runtime
-	if config.ProjectToken == "" && config.ProjectName != "" {
-		log.Entry().Infof("Attempting to resolve project token for project '%s'..", config.ProjectName)
-		fullProjName := fmt.Sprintf("%s - %s", config.ProjectName, config.ProductVersion)
-		projectToken, err := sys.GetProjectToken(config.ProductToken, fullProjName)
-		if err != nil {
-			return err
-		}
-		// A project may not yet exist for this project name-version combo
-		// It will be created by the scan, we retrieve the token again after scanning.
-		if projectToken != "" {
-			log.Entry().Infof("Resolved project token: '%s'..", projectToken)
-			config.ProjectToken = projectToken
-		} else {
-			log.Entry().Infof("Project '%s' not yet present in WhiteSource", fullProjName)
-		}
+	if err := resolveAggregateProjectToken(config, sys); err != nil {
+		return err
 	}
 
 	return scan.UpdateProjects(config.ProductToken, sys)
+}
+
+// resolveProductToken resolves the token of the WhiteSource Product specified by config.ProductName,
+// unless the user provided a token in config.ProductToken already, or it was previously resolved.
+// If no Product can be found for the given config.ProductName, and the parameter
+// config.CreatePipelineFromProduct is set, an attempt will be made to create the product and
+// configure the initial product admins.
+func resolveProductToken(config *ScanOptions, sys whitesource) error {
+	if config.ProductToken != "" {
+		return nil
+	}
+	log.Entry().Infof("Attempting to resolve product token for product '%s'..", config.ProductName)
+	product, err := sys.GetProductByName(config.ProductName)
+	if err != nil && config.CreateProductFromPipeline {
+		product = ws.Product{}
+		product.Token, err = createWhiteSourceProduct(config, sys)
+		if err != nil {
+			return err
+		}
+	}
+	if err != nil {
+		return err
+	}
+	log.Entry().Infof("Resolved product token: '%s'..", product.Token)
+	config.ProductToken = product.Token
+	return nil
+}
+
+// resolveAggregateProjectToken fetches the token of the WhiteSource Project specified by config.ProjectName
+// and stores it in config.ProjectToken.
+// The user can configure a projectName or projectToken of the project to be used as for aggregation of scan results.
+func resolveAggregateProjectToken(config *ScanOptions, sys whitesource) error {
+	if config.ProjectToken != "" || config.ProjectName == "" {
+		return nil
+	}
+	log.Entry().Infof("Attempting to resolve project token for project '%s'..", config.ProjectName)
+	fullProjName := fmt.Sprintf("%s - %s", config.ProjectName, config.ProductVersion)
+	projectToken, err := sys.GetProjectToken(config.ProductToken, fullProjName)
+	if err != nil {
+		return err
+	}
+	// A project may not yet exist for this project name-version combo.
+	// It will be created by the scan, we retrieve the token again after scanning.
+	if projectToken != "" {
+		log.Entry().Infof("Resolved project token: '%s'..", projectToken)
+		config.ProjectToken = projectToken
+	} else {
+		log.Entry().Infof("Project '%s' not yet present in WhiteSource", fullProjName)
+	}
+	return nil
 }
 
 // validateProductVersion makes sure that the version does not contain a dash "-".
@@ -410,8 +463,6 @@ func pollProjectStatus(projectToken string, scanTime time.Time, sys whitesource)
 	return blockUntilProjectIsUpdated(projectToken, sys, scanTime, 20*time.Second, 20*time.Second, 15*time.Minute)
 }
 
-const whitesourceDateTimeLayout = "2006-01-02 15:04:05 -0700"
-
 // blockUntilProjectIsUpdated polls the project LastUpdateDate until it is newer than the given time stamp
 // or no older than maxAge relative to the given time stamp.
 func blockUntilProjectIsUpdated(projectToken string, sys whitesource, currentTime time.Time, maxAge, timeBetweenPolls, maxWaitTime time.Duration) error {
@@ -425,7 +476,7 @@ func blockUntilProjectIsUpdated(projectToken string, sys whitesource, currentTim
 		if project.LastUpdateDate == "" {
 			log.Entry().Infof("last updated time missing from project metadata, retrying")
 		} else {
-			lastUpdatedTime, err := time.Parse(whitesourceDateTimeLayout, project.LastUpdateDate)
+			lastUpdatedTime, err := time.Parse(ws.DateTimeLayout, project.LastUpdateDate)
 			if err != nil {
 				return fmt.Errorf("failed to parse last updated time (%s) of Whitesource project: %w",
 					project.LastUpdateDate, err)
