@@ -13,7 +13,7 @@ import util.Rules
 import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
 
-class abapEnvironmentPipelineStagePostTest extends BasePiperTest {
+class abapEnvironmentPipelineStageIntegrationTestsTest extends BasePiperTest {
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
 
     @Rule
@@ -26,16 +26,17 @@ class abapEnvironmentPipelineStagePostTest extends BasePiperTest {
 
     @Before
     void init()  {
-        binding.variables.env.STAGE_NAME = 'Declarative: Post Actions'
+        binding.variables.env.STAGE_NAME = 'Integration Tests'
 
         helper.registerAllowedMethod('piperStageWrapper', [Map.class, Closure.class], {m, body ->
-            assertThat(m.stageName, is('Post'))
+            assertThat(m.stageName, is('Integration Tests'))
             return body()
         })
         helper.registerAllowedMethod('input', [Map], {m ->
             stepsCalled.add('input')
             return null
         })
+        helper.registerAllowedMethod('cloudFoundryCreateService', [Map.class], {m -> stepsCalled.add('cloudFoundryCreateService')})
         helper.registerAllowedMethod('cloudFoundryDeleteService', [Map.class], {m -> stepsCalled.add('cloudFoundryDeleteService')})
     }
 
@@ -43,11 +44,12 @@ class abapEnvironmentPipelineStagePostTest extends BasePiperTest {
     void testCloudFoundryDeleteServiceExecutedConfirm() {
 
         nullScript.commonPipelineEnvironment.configuration.runStage = [
-            'Prepare System': true
+            'Integration Tests': true
         ]
-        jsr.step.abapEnvironmentPipelineStagePost(script: nullScript, confirmDeletion: true)
+        jsr.step.abapEnvironmentPipelineStageIntegrationTests(script: nullScript, confirmDeletion: true)
 
         assertThat(stepsCalled, hasItems('input'))
+        assertThat(stepsCalled, hasItems('cloudFoundryCreateService'))
         assertThat(stepsCalled, hasItems('cloudFoundryDeleteService'))
     }
 
@@ -55,22 +57,13 @@ class abapEnvironmentPipelineStagePostTest extends BasePiperTest {
     void testCloudFoundryDeleteServiceExecutedNoConfirm() {
 
         nullScript.commonPipelineEnvironment.configuration.runStage = [
-            'Prepare System': true
+            'Integration Tests': true
         ]
-        jsr.step.abapEnvironmentPipelineStagePost(script: nullScript, confirmDeletion: false)
+        jsr.step.abapEnvironmentPipelineStageIntegrationTests(script: nullScript, confirmDeletion: false)
+
 
         assertThat(stepsCalled, not(hasItem('input')))
+        assertThat(stepsCalled, hasItems('cloudFoundryCreateService'))
         assertThat(stepsCalled, hasItems('cloudFoundryDeleteService'))
-    }
-
-    @Test
-    void testCloudFoundryDeleteServiceNotExecuted() {
-
-        nullScript.commonPipelineEnvironment.configuration.runStage = [
-            'Prepare System': false
-        ]
-        jsr.step.abapEnvironmentPipelineStagePost(script: nullScript)
-
-        assertThat(stepsCalled, not(hasItem('cloudFoundryDeleteService')))
     }
 }
