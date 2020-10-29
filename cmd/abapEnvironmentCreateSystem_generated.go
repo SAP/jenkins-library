@@ -14,23 +14,22 @@ import (
 )
 
 type abapEnvironmentCreateSystemOptions struct {
-	CfAPIEndpoint         string `json:"cfApiEndpoint,omitempty"`
-	Username              string `json:"username,omitempty"`
-	Password              string `json:"password,omitempty"`
-	CfOrg                 string `json:"cfOrg,omitempty"`
-	CfSpace               string `json:"cfSpace,omitempty"`
-	CfService             string `json:"cfService,omitempty"`
-	CfServicePlan         string `json:"cfServicePlan,omitempty"`
-	CfServiceInstanceName string `json:"cfServiceInstanceName,omitempty"`
-	CfServiceBroker       string `json:"cfServiceBroker,omitempty"`
-	ServiceManifest       string `json:"serviceManifest,omitempty"`
-	AdminEmail            string `json:"adminEmail,omitempty"`
-	Description           string `json:"description,omitempty"`
-	IsDevelopmentAllowed  bool   `json:"isDevelopmentAllowed,omitempty"`
-	SapSystemName         string `json:"sapSystemName,omitempty"`
-	SizeOfPersistence     int    `json:"sizeOfPersistence,omitempty"`
-	SizeOfRuntime         int    `json:"sizeOfRuntime,omitempty"`
-	AddonDescriptor       string `json:"addonDescriptor,omitempty"`
+	CfAPIEndpoint        string `json:"cfApiEndpoint,omitempty"`
+	Username             string `json:"username,omitempty"`
+	Password             string `json:"password,omitempty"`
+	CfOrg                string `json:"cfOrg,omitempty"`
+	CfSpace              string `json:"cfSpace,omitempty"`
+	CfService            string `json:"cfService,omitempty"`
+	CfServicePlan        string `json:"cfServicePlan,omitempty"`
+	CfServiceInstance    string `json:"cfServiceInstance,omitempty"`
+	ServiceManifest      string `json:"serviceManifest,omitempty"`
+	AdminEmail           string `json:"adminEmail,omitempty"`
+	Description          string `json:"description,omitempty"`
+	IsDevelopmentAllowed bool   `json:"isDevelopmentAllowed,omitempty"`
+	SapSystemName        string `json:"sapSystemName,omitempty"`
+	SizeOfPersistence    int    `json:"sizeOfPersistence,omitempty"`
+	SizeOfRuntime        int    `json:"sizeOfRuntime,omitempty"`
+	AddonDescriptor      string `json:"addonDescriptor,omitempty"`
 }
 
 // AbapEnvironmentCreateSystemCommand Creates a SAP Cloud Platform ABAP Environment system (aka Steampunk system)
@@ -99,15 +98,14 @@ func addAbapEnvironmentCreateSystemFlags(cmd *cobra.Command, stepConfig *abapEnv
 	cmd.Flags().StringVar(&stepConfig.CfSpace, "cfSpace", os.Getenv("PIPER_cfSpace"), "Cloud Foundry Space")
 	cmd.Flags().StringVar(&stepConfig.CfService, "cfService", os.Getenv("PIPER_cfService"), "Parameter for Cloud Foundry Service to be used for creating Cloud Foundry Service")
 	cmd.Flags().StringVar(&stepConfig.CfServicePlan, "cfServicePlan", os.Getenv("PIPER_cfServicePlan"), "Parameter for Cloud Foundry Service Plan to be used when creating a Cloud Foundry Service")
-	cmd.Flags().StringVar(&stepConfig.CfServiceInstanceName, "cfServiceInstanceName", os.Getenv("PIPER_cfServiceInstanceName"), "Parameter for naming the Service Instance when creating a Cloud Foundry Service")
-	cmd.Flags().StringVar(&stepConfig.CfServiceBroker, "cfServiceBroker", os.Getenv("PIPER_cfServiceBroker"), "Parameter for Service Broker to be used when creating a Cloud Foundry Service")
-	cmd.Flags().StringVar(&stepConfig.ServiceManifest, "serviceManifest", `service-manifest.yml`, "Path to Cloud Foundry Service Manifest in YAML format for multiple service creations that are being passed to a Create-Service-Push Cloud Foundry cli plugin")
+	cmd.Flags().StringVar(&stepConfig.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Parameter for naming the Service Instance when creating a Cloud Foundry Service")
+	cmd.Flags().StringVar(&stepConfig.ServiceManifest, "serviceManifest", os.Getenv("PIPER_serviceManifest"), "Path to Cloud Foundry Service Manifest in YAML format for multiple service creations that are being passed to a Create-Service-Push Cloud Foundry cli plugin")
 	cmd.Flags().StringVar(&stepConfig.AdminEmail, "adminEmail", os.Getenv("PIPER_adminEmail"), "")
 	cmd.Flags().StringVar(&stepConfig.Description, "description", `Test system created by an automated pipeline`, "")
 	cmd.Flags().BoolVar(&stepConfig.IsDevelopmentAllowed, "isDevelopmentAllowed", true, "")
 	cmd.Flags().StringVar(&stepConfig.SapSystemName, "sapSystemName", `H02`, "")
-	cmd.Flags().IntVar(&stepConfig.SizeOfPersistence, "sizeOfPersistence", 4, "")
-	cmd.Flags().IntVar(&stepConfig.SizeOfRuntime, "sizeOfRuntime", 1, "")
+	cmd.Flags().IntVar(&stepConfig.SizeOfPersistence, "sizeOfPersistence", 0, "")
+	cmd.Flags().IntVar(&stepConfig.SizeOfRuntime, "sizeOfRuntime", 0, "")
 	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "")
 
 	cmd.MarkFlagRequired("cfApiEndpoint")
@@ -208,20 +206,12 @@ func abapEnvironmentCreateSystemMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "cloudFoundry/servicePlan"}},
 					},
 					{
-						Name:        "cfServiceInstanceName",
+						Name:        "cfServiceInstance",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceInstanceName"}},
-					},
-					{
-						Name:        "cfServiceBroker",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceBroker"}},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceInstance"}},
 					},
 					{
 						Name:        "serviceManifest",

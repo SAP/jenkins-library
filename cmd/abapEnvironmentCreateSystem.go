@@ -3,12 +3,15 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"os"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/cloudfoundry"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/ghodss/yaml"
 )
 
 func abapEnvironmentCreateSystem(config abapEnvironmentCreateSystemOptions, telemetryData *telemetry.CustomData) {
@@ -24,8 +27,8 @@ func abapEnvironmentCreateSystem(config abapEnvironmentCreateSystemOptions, tele
 
 func runAbapEnvironmentCreateSystem(config *abapEnvironmentCreateSystemOptions, telemetryData *telemetry.CustomData, cf cloudfoundry.CFUtils) error {
 
-	// this is used to ensure compatibility for old pipeline configurations (using the step cloudFoundryCreateService)
 	if config.ServiceManifest != "" {
+		// if the manifest file is provided, it is directly passed through to cloudFoundryCreateService
 		createServiceConfig := cloudFoundryCreateServiceOptions{
 			CfAPIEndpoint:   config.CfAPIEndpoint,
 			CfOrg:           config.CfOrg,
@@ -36,7 +39,11 @@ func runAbapEnvironmentCreateSystem(config *abapEnvironmentCreateSystemOptions, 
 		}
 		runCloudFoundryCreateService(&createServiceConfig, telemetryData, cf)
 	} else {
+		// if no manifest file is provided, it is created with the provided config values
 
+		/*
+			Generating the parameter string including details for the addon installation - if available
+		*/
 		addonProduct := ""
 		addonVersion := ""
 		if config.AddonDescriptor != "" {
@@ -57,22 +64,62 @@ func runAbapEnvironmentCreateSystem(config *abapEnvironmentCreateSystemOptions, 
 			AddonProductName:     addonProduct,
 			AddonProductVersion:  addonVersion,
 		}
+
 		serviceParameters, err := json.Marshal(params)
+		serviceParametersString := string(serviceParameters)
+		log.Entry().Debugf("Service Parameters: %s", serviceParametersString)
 		if err != nil {
 			return fmt.Errorf("Could not generate parameter string for the cloud foundry cli: %w", err)
 		}
 
+		/*
+			Generating the temporary manifest yaml file
+		*/
+		service := Services{
+			Name:       config.CfServiceInstance,
+			Broker:     config.CfService,
+			Plan:       config.CfServicePlan,
+			Parameters: serviceParametersString,
+		}
+
+		serviceManifest := serviceManifest{CreateServices: []Services{service}}
+		errorMessage := "Could not generate manifest file for the cloud foundry cli"
+
+		// converting the golang structure to json
+		manifestJson, err := json.Marshal(serviceManifest)
+		if err != nil {
+			return fmt.Errorf("%s: %w", errorMessage, err)
+		}
+
+		// converting the json to yaml
+		manifestYAML, err := yaml.JSONToYAML(manifestJson)
+		if err != nil {
+			return fmt.Errorf("%s: %w", errorMessage, err)
+		}
+
+		log.Entry().Debug(string(manifestYAML))
+
+		// writing the yaml into a temporary file
+		tmpFile, err := ioutil.TempFile("", "generated_manifest*.yml")
+		if err != nil {
+			return fmt.Errorf("%s: %w", errorMessage, err)
+		}
+		defer os.Remove(tmpFile.Name())
+
+		if _, err := tmpFile.Write(manifestYAML); err != nil {
+			return fmt.Errorf("%s: %w", errorMessage, err)
+		}
+
+		/*
+			Calling cloudFoundryCreateService with the respective parameters
+		*/
 		createServiceConfig := cloudFoundryCreateServiceOptions{
-			CfAPIEndpoint:         config.CfAPIEndpoint,
-			CfOrg:                 config.CfOrg,
-			CfSpace:               config.CfSpace,
-			Username:              config.Username,
-			Password:              config.Password,
-			CfServiceInstanceName: config.CfServiceInstanceName,
-			CfServiceBroker:       config.CfServiceBroker,
-			CfService:             config.CfService,
-			CfServicePlan:         config.CfServicePlan,
-			CfCreateServiceConfig: string(serviceParameters),
+			CfAPIEndpoint:   config.CfAPIEndpoint,
+			CfOrg:           config.CfOrg,
+			CfSpace:         config.CfSpace,
+			Username:        config.Username,
+			Password:        config.Password,
+			ServiceManifest: tmpFile.Name(),
 		}
 		runCloudFoundryCreateService(&createServiceConfig, telemetryData, cf)
 	}
@@ -89,4 +136,15 @@ type abapSystemParameters struct {
 	SizeOfRuntime        int    `json:"size_of_runtime,omitempty"`
 	AddonProductName     string `json:"addon_product_name,omitempty"`
 	AddonProductVersion  string `json:"addon_product_version,omitempty"`
+}
+
+type serviceManifest struct {
+	CreateServices []Services `json:"create-services"`
+}
+
+type Services struct {
+	Name       string `json:"name"`
+	Broker     string `json:"broker"`
+	Plan       string `json:"plan"`
+	Parameters string `json:"parameters,omitempty"`
 }
