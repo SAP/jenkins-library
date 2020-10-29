@@ -45,9 +45,7 @@ func TestRunDetect(t *testing.T) {
 		err := runDetect(detectExecuteScanOptions{}, &s, &fileUtilsMock, &httpClient)
 
 		assert.Equal(t, httpClient.downloadedFiles["https://detect.synopsys.com/detect.sh"], "detect.sh")
-		fileStatus, err := fileUtilsMock.Stat("detect.sh")
-		assert.NoError(t, err)
-		assert.Equal(t, fileStatus.Mode(), os.FileMode(0700))
+		assert.True(t, fileUtilsMock.HasRemovedFile("detect.sh"))
 		assert.NoError(t, err)
 		assert.Equal(t, ".", s.Dir, "Wrong execution directory used")
 		assert.Equal(t, "/bin/bash", s.Shell[0], "Bash shell expected")
@@ -58,9 +56,11 @@ func TestRunDetect(t *testing.T) {
 	t.Run("failure case", func(t *testing.T) {
 		s := mock.ShellMockRunner{ShouldFailOnCommand: map[string]error{"./detect.sh --blackduck.url= --blackduck.api.token= --detect.project.name=\\\"\\\" --detect.project.version.name=\\\"\\\" --detect.code.location.name=\\\"\\\"": fmt.Errorf("Test Error")}}
 		fileUtilsMock := mock.FilesMock{}
+		fileUtilsMock.AddFile("detect.sh", []byte(""))
 		httpClient := httpClientMock{}
 		err := runDetect(detectExecuteScanOptions{}, &s, &fileUtilsMock, &httpClient)
-		assert.NotNil(t, err)
+		assert.EqualError(t, err, "Test Error")
+		assert.True(t, fileUtilsMock.HasRemovedFile("detect.sh"))
 	})
 
 	t.Run("maven parameters", func(t *testing.T) {

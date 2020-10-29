@@ -149,7 +149,7 @@ func buildATCCheckBody(ATCConfig ATCconfig) (checkVariantString string, packageS
 
 	//Build Check Variant and Configuration XML Body
 	if len(ATCConfig.CheckVariant) != 0 {
-		checkVariantString += ` check_variant="` + ATCConfig.CheckVariant + `"`
+		checkVariantString += ` checkVariant="` + ATCConfig.CheckVariant + `"`
 		if len(ATCConfig.Configuration) != 0 {
 			checkVariantString += ` configuration="` + ATCConfig.Configuration + `"`
 		}
@@ -235,6 +235,10 @@ func fetchXcsrfToken(requestType string, details abaputils.ConnectionDetailsHTTP
 		return "", fmt.Errorf("Fetching Xcsrf-Token failed: %w", err)
 	}
 	defer req.Body.Close()
+
+	// workaround until golang version 1.16 is used
+	time.Sleep(1 * time.Second)
+
 	token := req.Header.Get("X-Csrf-Token")
 	return token, err
 }

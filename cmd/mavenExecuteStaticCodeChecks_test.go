@@ -32,7 +32,7 @@ func TestRunMavenStaticCodeChecks(t *testing.T) {
 				"-Dpmd.failurePriority=2",
 				"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
 				"--batch-mode",
-				"com.github.spotbugs:spotbugs-maven-plugin:4.0.4:check",
+				"com.github.spotbugs:spotbugs-maven-plugin:4.1.4:check",
 				"org.apache.maven.plugins:maven-pmd-plugin:3.13.0:check",
 			},
 		}
@@ -106,7 +106,7 @@ func TestGetSpotBugsMavenParameters(t *testing.T) {
 			SpotBugsMaxAllowedViolations: 123,
 		}
 		expected := maven.ExecuteOptions{
-			Goals:   []string{"com.github.spotbugs:spotbugs-maven-plugin:4.0.4:check"},
+			Goals:   []string{"com.github.spotbugs:spotbugs-maven-plugin:4.1.4:check"},
 			Defines: []string{"-Dspotbugs.includeFilterFile=includeFilter.xml", "-Dspotbugs.excludeFilterFile=excludeFilter.xml", "-Dspotbugs.maxAllowedViolations=123"},
 		}
 
@@ -115,7 +115,7 @@ func TestGetSpotBugsMavenParameters(t *testing.T) {
 	t.Run("should return maven goal only", func(t *testing.T) {
 		config := mavenExecuteStaticCodeChecksOptions{}
 		expected := maven.ExecuteOptions{
-			Goals: []string{"com.github.spotbugs:spotbugs-maven-plugin:4.0.4:check"}}
+			Goals: []string{"com.github.spotbugs:spotbugs-maven-plugin:4.1.4:check"}}
 
 		assert.Equal(t, &expected, getSpotBugsMavenParameters(&config))
 	})

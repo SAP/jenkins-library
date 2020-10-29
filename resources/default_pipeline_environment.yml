@@ -24,6 +24,18 @@ general:
         envVars: {}
         pullImage: true
     cts:
+      osDeployUser: 'node'
+      deployToolDependencies:
+        - '@ui5/cli'
+        - '@sap/ux-ui5-tooling'
+        - '@ui5/logger'
+        - '@ui5/fs'
+      deployConfigFile: 'ui5-deploy.yaml'
+      nodeDocker:
+        image: 'node'
+        options: []
+        envVars: {}
+        pullImage: true
       docker:
         image: 'ppiper/cm-client'
         options: []
@@ -329,7 +341,6 @@ steps:
     neoTargets: []
     enableZeroDowntimeDeployment: false
     parallelExecution: false
-    runInCurrentWorkspace: false
   newmanExecute:
     dockerImage: 'node:lts-stretch'
     failOnError: true
@@ -422,7 +433,7 @@ steps:
     timeoutInSeconds: 900
   pipelineStashFilesAfterBuild:
     stashIncludes:
-      buildResult: '**/target/*.jar, **/*.mtar'
+      buildResult: '**/target/*.war, **/target/*.jar, **/*.mtar'
       checkmarx: '**/*.js, **/*.scala, **/*.py, **/*.go, **/*.d, **/*.di, **/*.xml, **/*.html'
       classFiles: '**/target/classes/**/*.class, **/target/test-classes/**/*.class'
       sonar: '**/jacoco*.exec, **/sonar-project.properties'

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
+	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -63,6 +65,12 @@ func generateConfig() error {
 	if err != nil {
 		return errors.Wrap(err, "metadata: read failed")
 	}
+
+	// prepare output resource directories:
+	// this is needed in order to have proper directory permissions in case
+	// resources written inside a container image with a different user
+	// Remark: This is so far only relevant for Jenkins environments where getConfig is executed
+	prepareOutputEnvironment(metadata.Spec.Outputs.Resources, GeneralConfig.EnvRootPath)
 
 	resourceParams := metadata.GetResourceParameters(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 
@@ -152,4 +160,22 @@ func applyContextConditions(metadata config.StepData, stepConfig *config.StepCon
 
 	//ToDo: remove all unnecessary sub maps?
 	// e.g. extract delete() from applyContainerConditions - loop over all stepConfig.Config[param.Value] and remove ...
+}
+
+func prepareOutputEnvironment(outputResources []config.StepResources, envRootPath string) {
+	for _, oResource := range outputResources {
+		for _, oParam := range oResource.Parameters {
+			paramPath := path.Join(envRootPath, oResource.Name, fmt.Sprint(oParam["name"]))
+			if oParam["fields"] != nil {
+				paramFields, ok := oParam["fields"].([]map[string]string)
+				if ok && len(paramFields) > 0 {
+					paramPath = path.Join(paramPath, paramFields[0]["name"])
+				}
+			}
+			if _, err := os.Stat(filepath.Dir(paramPath)); os.IsNotExist(err) {
+				log.Entry().Debugf("Creating directory: %v", filepath.Dir(paramPath))
+				os.MkdirAll(filepath.Dir(paramPath), 0777)
+			}
+		}
+	}
 }
