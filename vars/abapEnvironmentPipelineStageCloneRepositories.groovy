@@ -1,5 +1,6 @@
 import com.cloudbees.groovy.cps.NonCPS
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.Utils
 import com.sap.piper.GenerateStageDocumentation
 import groovy.transform.Field
 
@@ -24,7 +25,6 @@ import static com.sap.piper.Prerequisites.checkScript
  */
 void call(Map parameters = [:]) {
     def script = checkScript(this, parameters) ?: this
-
     def stageName = parameters.stageName?:env.STAGE_NAME
 
     //setupCommonPipelineEnvironment(script: script, strategy: parameters.strategy)
@@ -36,7 +36,6 @@ void call(Map parameters = [:]) {
         .mixin(parameters, PARAMETER_KEYS)
         .addIfEmpty('strategy', 'Pull')
         .use()
-        //.addIfEmpty('strategy', parameters.script.commonPipelineEnvironment.configuration.runStage?.get(stageName))
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
         switch (config.strategy) {

@@ -32,17 +32,20 @@ class AbapEnvironmentPipelineStageCloneRepositoriesTest extends BasePiperTest {
             assertThat(m.stageName, is('Clone Repositories'))
             return body()
         })
+        helper.registerAllowedMethod('strategy', [Map], {m ->
+            stepsCalled.add('strategy')
+            return null
+        })
         helper.registerAllowedMethod('abapEnvironmentPullGitRepo', [Map.class], {m -> stepsCalled.add('abapEnvironmentPullGitRepo')})
         helper.registerAllowedMethod('abapEnvironmentCheckoutBranch', [Map.class], {m -> stepsCalled.add('abapEnvironmentCheckoutBranch')})
         helper.registerAllowedMethod('abapEnvironmentCloneGitRepo', [Map.class], {m -> stepsCalled.add('abapEnvironmentCloneGitRepo')})
     }
 
-    /*
     @Test
     void testAbapEnvironmentPipelineStageCloneRepositoriesPull() {
 
-        nullScript.commonPipelineEnvironment.configuration = [
-            runStage: ['Prepare System': true]
+        nullScript.commonPipelineEnvironment.configuration.runStage = [
+            'Prepare System': true
         ]
         jsr.step.abapEnvironmentPipelineStagePrepareSystem(script: nullScript, strategy: 'Pull')
 
@@ -54,8 +57,8 @@ class AbapEnvironmentPipelineStageCloneRepositoriesTest extends BasePiperTest {
     @Test
     void testAbapEnvironmentPipelineStageCloneRepositoriesClone() {
 
-        nullScript.commonPipelineEnvironment.configuration = [
-            runStage: ['Prepare System': true]
+        nullScript.commonPipelineEnvironment.configuration.runStage = [
+            'Prepare System': true
         ]
         
         jsr.step.abapEnvironmentPipelineStagePrepareSystem(script: nullScript, strategy: 'Clone')
@@ -67,8 +70,8 @@ class AbapEnvironmentPipelineStageCloneRepositoriesTest extends BasePiperTest {
     @Test
     void testAbapEnvironmentPipelineStageCloneRepositoriesCheckoutPull() {
 
-        nullScript.commonPipelineEnvironment.configuration = [
-            runStage: ['Prepare System': true]
+        nullScript.commonPipelineEnvironment.configuration.runStage = [
+            'Prepare System': true
         ]
         
         jsr.step.abapEnvironmentPipelineStagePrepareSystem(script: nullScript, strategy: 'CheckoutPull')
@@ -80,8 +83,8 @@ class AbapEnvironmentPipelineStageCloneRepositoriesTest extends BasePiperTest {
     @Test
     void testAbapEnvironmentPipelineStageCloneRepositoriesPullCheckoutPull() {
 
-        nullScript.commonPipelineEnvironment.configuration = [
-            runStage: ['Prepare System': true]
+        nullScript.commonPipelineEnvironment.configuration.runStage = [
+            'Prepare System': true
         ]
         
         jsr.step.abapEnvironmentPipelineStagePrepareSystem(script: nullScript, strategy: 'PullCheckoutPull')
@@ -89,12 +92,11 @@ class AbapEnvironmentPipelineStageCloneRepositoriesTest extends BasePiperTest {
         assertThat(stepsCalled, hasItems('abapEnvironmentPullGitRepo', 'abapEnvironmentCheckoutBranch'))
         assertThat(stepsCalled, not(hasItems('abapEnvironmentCloneGitRepo')))
     }
-    */
     @Test
     void testAbapEnvironmentPipelineStageCloneRepositoriesNoStrategy() {
-
-        nullScript.commonPipelineEnvironment.configuration = [
-            runStage: ['Prepare System': true]
+        
+        nullScript.commonPipelineEnvironment.configuration.runStage = [
+            'Prepare System': true
         ]
         
         jsr.step.abapEnvironmentPipelineStagePrepareSystem(script: nullScript)
