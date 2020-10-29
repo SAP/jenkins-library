@@ -179,7 +179,7 @@ repositories:
 
 		err := runAbapEnvironmentPullGitRepo(&config, nil, &autils, client)
 		if assert.Error(t, err, "Expected error") {
-			assert.Equal(t, "Something failed during the pull of the repositories: Pull of /DMO/REPO_A failed on the ABAP System", err.Error(), "Expected different error message")
+			assert.Equal(t, "Something failed during the pull of the repositories: Pull of /DMO/REPO_A, commit 'ABCD1234' failed on the ABAP System", err.Error(), "Expected different error message")
 		}
 	})
 
@@ -238,7 +238,7 @@ repositories:
 
 		err := runAbapEnvironmentPullGitRepo(&config, nil, &autils, client)
 		if assert.Error(t, err, "Expected error") {
-			assert.Equal(t, "Something failed during the pull of the repositories: Pull of /DMO/REPO_A, commit 'ABCD1234' failed on the ABAP System", err.Error(), "Expected different error message")
+			assert.Equal(t, "Something failed during the pull of the repositories: Pull of /DMO/REPO_A failed on the ABAP System", err.Error(), "Expected different error message")
 		}
 	})
 

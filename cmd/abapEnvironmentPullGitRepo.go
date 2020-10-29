@@ -192,8 +192,12 @@ func checkPullRepositoryConfiguration(options abapEnvironmentPullGitRepoOptions)
 }
 
 func startPullLogs(repo abaputils.Repository) {
+	commitString := ""
+	if repo.CommitID != "" {
+		commitString = ", commit '" + repo.CommitID + "'"
+	}
 	log.Entry().Info("-------------------------")
-	log.Entry().Info("Start pulling " + repo.Name + ", " + repo.CommitID)
+	log.Entry().Info("Start pulling " + repo.Name + commitString)
 	log.Entry().Info("-------------------------")
 }
 
