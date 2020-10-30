@@ -296,6 +296,17 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
     }
 
     @Test
+    void setGitUrlTest() {
+        helper.registerAllowedMethod("fileExists", [String], { String path ->
+            return path.endsWith('.pipeline/config.yml')
+        })
+
+        stepRule.step.setupCommonPipelineEnvironment(script: nullScript, gitUrl: "https://myGit.tdl/myRepo", gitUtils: gitUtilsMock)
+        assertNotNull(nullScript.commonPipelineEnvironment.gitSshUrl)
+        assertNotNull(nullScript.commonPipelineEnvironment.gitHttpsUrl)
+    }
+
+    @Test
     void testSetScmInfoOnCommonPipelineEnvironment() {
         //currently supported formats
         def scmInfoTestList = [
