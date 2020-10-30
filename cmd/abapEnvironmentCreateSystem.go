@@ -100,24 +100,24 @@ func generateManifestYAML(config *abapEnvironmentCreateSystemOptions) ([]byte, e
 	/*
 		Generating the temporary manifest yaml file
 	*/
-	service := Services{
+	service := Service{
 		Name:       config.CfServiceInstance,
 		Broker:     config.CfService,
 		Plan:       config.CfServicePlan,
 		Parameters: serviceParametersString,
 	}
 
-	serviceManifest := serviceManifest{CreateServices: []Services{service}}
+	serviceManifest := serviceManifest{CreateServices: []Service{service}}
 	errorMessage := "Could not generate manifest for the cloud foundry cli"
 
 	// converting the golang structure to json
-	manifestJson, err := json.Marshal(serviceManifest)
+	manifestJSON, err := json.Marshal(serviceManifest)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", errorMessage, err)
 	}
 
 	// converting the json to yaml
-	manifestYAML, err := yaml.JSONToYAML(manifestJson)
+	manifestYAML, err := yaml.JSONToYAML(manifestJSON)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", errorMessage, err)
 	}
@@ -139,10 +139,11 @@ type abapSystemParameters struct {
 }
 
 type serviceManifest struct {
-	CreateServices []Services `json:"create-services"`
+	CreateServices []Service `json:"create-services"`
 }
 
-type Services struct {
+// Service struct for creating a cloud foundry service
+type Service struct {
 	Name       string `json:"name"`
 	Broker     string `json:"broker"`
 	Plan       string `json:"plan"`
