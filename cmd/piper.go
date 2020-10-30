@@ -366,12 +366,18 @@ func convertValueFromFloat(config map[string]interface{}, optionsField *reflect.
 	switch optionsField.Type.Kind() {
 	case reflect.String:
 		val := strconv.FormatFloat(paramValue, 'f', -1, 64)
+		// if Sprinted value and val are equal, we can be pretty sure that the result fits
+		// for very large numbers for example an exponential format is printed
+		if val == fmt.Sprint(paramValue) {
+			config[paramName] = val
+			return nil
+		}
 		// allow float numbers containing a decimal separator
 		if strings.Contains(val, ".") {
 			config[paramName] = val
 			return nil
 		}
-		// if no decimal separator is available we cannot be sure that the result is correct:
+		// if now no decimal separator is available we cannot be sure that the result is correct:
 		// long numbers like e.g. 73554900100200011600 will not be represented correctly after reading the yaml
 		// thus we cannot assume that the string is correct.
 		// short numbers will be handled as int anyway
