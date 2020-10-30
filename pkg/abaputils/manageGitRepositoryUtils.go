@@ -136,6 +136,15 @@ func GetRepositories(config *RepositoriesConfig) ([]Repository, error) {
 	return repositories, nil
 }
 
+//GetCommitStrings for getting the commit_id property for the http request and a string for logging output
+func GetCommitStrings(commitID string) (commitQuery string, commitString string) {
+	if commitID != "" {
+		commitQuery = `, "commit_id":"` + commitID + `"`
+		commitString = ", commit '" + commitID + "'"
+	}
+	return commitQuery, commitString
+}
+
 /****************************************
  *	Structs for the A4C_A2G_GHA service *
  ****************************************/

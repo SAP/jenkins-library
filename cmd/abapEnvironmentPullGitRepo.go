@@ -65,10 +65,11 @@ func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, t
 
 	if err == nil {
 		repositories, err = abaputils.GetRepositories(&abaputils.RepositoriesConfig{RepositoryNames: options.RepositoryNames, Repositories: options.Repositories})
+		handleIgnoreCommit(repositories, options.IgnoreCommit)
 	}
 
 	if err == nil {
-		err = pullRepositories(repositories, connectionDetails, client, pollIntervall, options.IgnoreCommit)
+		err = pullRepositories(repositories, connectionDetails, client, pollIntervall)
 	}
 
 	if err != nil {
@@ -80,12 +81,9 @@ func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, t
 	return err
 }
 
-func pullRepositories(repositories []abaputils.Repository, pullConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration, ignoreCommit bool) (err error) {
+func pullRepositories(repositories []abaputils.Repository, pullConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (err error) {
 	log.Entry().Infof("Start pulling %v repositories", len(repositories))
 	for _, repo := range repositories {
-		if ignoreCommit {
-			repo.CommitID = ""
-		}
 		err = handlePull(repo, pullConnectionDetails, client, pollIntervall)
 		if err != nil {
 			break
@@ -99,10 +97,7 @@ func handlePull(repo abaputils.Repository, pullConnectionDetails abaputils.Conne
 
 	startPullLogs(repo)
 
-	commitString := ""
-	if repo.CommitID != "" {
-		commitString = ", commit '" + repo.CommitID + "'"
-	}
+	_, commitString := abaputils.GetCommitStrings(repo.CommitID)
 
 	uriConnectionDetails, err := triggerPull(repo, pullConnectionDetails, client)
 	if err != nil {
@@ -115,7 +110,7 @@ func handlePull(repo abaputils.Repository, pullConnectionDetails abaputils.Conne
 		return errors.Wrapf(errorPollEntity, "Pull of '%s'%s failed on the ABAP System", repo.Name, commitString)
 	}
 	if status == "E" {
-		return errors.New("Pull of " + repo.Name + commitString + " failed on the ABAP System")
+		return errors.New("Pull of '" + repo.Name + "'" + commitString + " failed on the ABAP System")
 	}
 	log.Entry().Info(repo.Name + " was pulled successfully")
 	return err
@@ -146,16 +141,11 @@ func triggerPull(repo abaputils.Repository, pullConnectionDetails abaputils.Conn
 	if repo.Name == "" {
 		return uriConnectionDetails, errors.New("An empty string was passed for the parameter 'repositoryName'")
 	}
-	commitQuery := ""
-	commitString := ""
-	if repo.CommitID != "" {
-		commitQuery = `, "commit_id":"` + repo.CommitID + `"`
-		commitString = ", commit '" + repo.CommitID + "'"
-	}
+	commitQuery, commitString := abaputils.GetCommitStrings(repo.CommitID)
 	jsonBody := []byte(`{"sc_name":"` + repo.Name + `"` + commitQuery + `}`)
 	resp, err = abaputils.GetHTTPResponse("POST", pullConnectionDetails, jsonBody, client)
 	if err != nil {
-		err = abaputils.HandleHTTPError(resp, err, "Could not pull the Repository / Software Component "+repo.Name+commitString, uriConnectionDetails)
+		err = abaputils.HandleHTTPError(resp, err, "Could not pull the Repository / Software Component '"+repo.Name+"'"+commitString, uriConnectionDetails)
 		return uriConnectionDetails, err
 	}
 	defer resp.Body.Close()
@@ -192,12 +182,9 @@ func checkPullRepositoryConfiguration(options abapEnvironmentPullGitRepoOptions)
 }
 
 func startPullLogs(repo abaputils.Repository) {
-	commitString := ""
-	if repo.CommitID != "" {
-		commitString = ", commit '" + repo.CommitID + "'"
-	}
+	_, commitString := abaputils.GetCommitStrings(repo.CommitID)
 	log.Entry().Info("-------------------------")
-	log.Entry().Info("Start pulling " + repo.Name + commitString)
+	log.Entry().Info("Start pulling '" + repo.Name + "'" + commitString)
 	log.Entry().Info("-------------------------")
 }
 
@@ -218,4 +205,12 @@ func convertPullConfig(config *abapEnvironmentPullGitRepoOptions) abaputils.Abap
 	subOptions.Password = config.Password
 	subOptions.Username = config.Username
 	return subOptions
+}
+
+func handleIgnoreCommit(repositories []abaputils.Repository, ignoreCommit bool) {
+	for i, _ := range repositories {
+		if ignoreCommit {
+			repositories[i].CommitID = ""
+		}
+	}
 }

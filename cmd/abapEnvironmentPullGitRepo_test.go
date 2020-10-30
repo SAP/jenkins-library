@@ -179,7 +179,7 @@ repositories:
 
 		err := runAbapEnvironmentPullGitRepo(&config, nil, &autils, client)
 		if assert.Error(t, err, "Expected error") {
-			assert.Equal(t, "Something failed during the pull of the repositories: Pull of /DMO/REPO_A, commit 'ABCD1234' failed on the ABAP System", err.Error(), "Expected different error message")
+			assert.Equal(t, "Something failed during the pull of the repositories: Pull of '/DMO/REPO_A', commit 'ABCD1234' failed on the ABAP System", err.Error(), "Expected different error message")
 		}
 	})
 
@@ -238,7 +238,7 @@ repositories:
 
 		err := runAbapEnvironmentPullGitRepo(&config, nil, &autils, client)
 		if assert.Error(t, err, "Expected error") {
-			assert.Equal(t, "Something failed during the pull of the repositories: Pull of /DMO/REPO_A failed on the ABAP System", err.Error(), "Expected different error message")
+			assert.Equal(t, "Something failed during the pull of the repositories: Pull of '/DMO/REPO_A' failed on the ABAP System", err.Error(), "Expected different error message")
 		}
 	})
 
@@ -419,5 +419,40 @@ func TestPullConfigChecker(t *testing.T) {
 		config := abapEnvironmentPullGitRepoOptions{}
 		err := checkPullRepositoryConfiguration(config)
 		assert.Equal(t, errorMessage, err.Error(), "Different error message expected")
+	})
+}
+
+func TestHelpFunctions(t *testing.T) {
+	t.Run("Ignore Commit", func(t *testing.T) {
+		repo1 := abaputils.Repository{
+			Name:     "Repo1",
+			CommitID: "ABCD1234",
+		}
+		repo2 := abaputils.Repository{
+			Name: "Repo2",
+		}
+
+		repoList := []abaputils.Repository{repo1, repo2}
+
+		handleIgnoreCommit(repoList, true)
+
+		assert.Equal(t, "", repoList[0].CommitID, "Expected emtpy CommitID")
+		assert.Equal(t, "", repoList[1].CommitID, "Expected emtpy CommitID")
+	})
+	t.Run("Not Ignore Commit", func(t *testing.T) {
+		repo1 := abaputils.Repository{
+			Name:     "Repo1",
+			CommitID: "ABCD1234",
+		}
+		repo2 := abaputils.Repository{
+			Name: "Repo2",
+		}
+
+		repoList := []abaputils.Repository{repo1, repo2}
+
+		handleIgnoreCommit(repoList, false)
+
+		assert.Equal(t, "ABCD1234", repoList[0].CommitID, "Expected CommitID")
+		assert.Equal(t, "", repoList[1].CommitID, "Expected emtpy CommitID")
 	})
 }

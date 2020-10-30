@@ -125,12 +125,7 @@ func triggerClone(repo abaputils.Repository, cloneConnectionDetails abaputils.Co
 		return uriConnectionDetails, errors.New("An empty string was passed for the parameter 'repositoryName'")
 	}
 
-	commitQuery := ""
-	commitString := ""
-	if repo.CommitID != "" {
-		commitQuery = `, "commit_id":"` + repo.CommitID + `"`
-		commitString = ", commit '" + repo.CommitID + "'"
-	}
+	commitQuery, commitString := abaputils.GetCommitStrings(repo.CommitID)
 
 	jsonBody := []byte(`{"sc_name":"` + repo.Name + `", "branch_name":"` + repo.Branch + `"` + commitQuery + `}`)
 	resp, err = abaputils.GetHTTPResponse("POST", cloneConnectionDetails, jsonBody, client)
