@@ -278,6 +278,7 @@ public void testGetCommandLineWithCMClientOpts() {
             [
                 image: 'ppiper/cm-client',
                 pullImage: true,
+                volumeBind: ['/home/me/certs' : '/certs'],
             ],
             '001',
             '002',
@@ -291,6 +292,7 @@ public void testGetCommandLineWithCMClientOpts() {
 
         assert dockerExecuteRule.getDockerParams().dockerImage == 'ppiper/cm-client'
         assert dockerExecuteRule.getDockerParams().dockerPullImage
+        assert dockerExecuteRule.getDockerParams().dockerVolumeBind == ['/home/me/certs' : '/certs']
     }
 
     @Test
