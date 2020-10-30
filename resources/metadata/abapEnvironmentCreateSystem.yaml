@@ -179,17 +179,14 @@ spec:
           - STAGES
           - STEPS
           - GENERAL
-      - name: addonDescriptor
-        description: The json string of the addonDescriptor
+      - name: addonDescriptorFileName
+        description: The file name of the addonDescriptor
         type: string
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
           - GENERAL
-        resourceRef:
-          - name: commonPipelineEnvironment
-            param: abap/addonDescriptor
   containers:
     - name: cf
       image: ppiper/cf-cli

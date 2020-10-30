@@ -14,22 +14,22 @@ import (
 )
 
 type abapEnvironmentCreateSystemOptions struct {
-	CfAPIEndpoint        string `json:"cfApiEndpoint,omitempty"`
-	Username             string `json:"username,omitempty"`
-	Password             string `json:"password,omitempty"`
-	CfOrg                string `json:"cfOrg,omitempty"`
-	CfSpace              string `json:"cfSpace,omitempty"`
-	CfService            string `json:"cfService,omitempty"`
-	CfServicePlan        string `json:"cfServicePlan,omitempty"`
-	CfServiceInstance    string `json:"cfServiceInstance,omitempty"`
-	ServiceManifest      string `json:"serviceManifest,omitempty"`
-	AdminEmail           string `json:"adminEmail,omitempty"`
-	Description          string `json:"description,omitempty"`
-	IsDevelopmentAllowed bool   `json:"isDevelopmentAllowed,omitempty"`
-	SapSystemName        string `json:"sapSystemName,omitempty"`
-	SizeOfPersistence    int    `json:"sizeOfPersistence,omitempty"`
-	SizeOfRuntime        int    `json:"sizeOfRuntime,omitempty"`
-	AddonDescriptor      string `json:"addonDescriptor,omitempty"`
+	CfAPIEndpoint           string `json:"cfApiEndpoint,omitempty"`
+	Username                string `json:"username,omitempty"`
+	Password                string `json:"password,omitempty"`
+	CfOrg                   string `json:"cfOrg,omitempty"`
+	CfSpace                 string `json:"cfSpace,omitempty"`
+	CfService               string `json:"cfService,omitempty"`
+	CfServicePlan           string `json:"cfServicePlan,omitempty"`
+	CfServiceInstance       string `json:"cfServiceInstance,omitempty"`
+	ServiceManifest         string `json:"serviceManifest,omitempty"`
+	AdminEmail              string `json:"adminEmail,omitempty"`
+	Description             string `json:"description,omitempty"`
+	IsDevelopmentAllowed    bool   `json:"isDevelopmentAllowed,omitempty"`
+	SapSystemName           string `json:"sapSystemName,omitempty"`
+	SizeOfPersistence       int    `json:"sizeOfPersistence,omitempty"`
+	SizeOfRuntime           int    `json:"sizeOfRuntime,omitempty"`
+	AddonDescriptorFileName string `json:"addonDescriptorFileName,omitempty"`
 }
 
 // AbapEnvironmentCreateSystemCommand Creates a SAP Cloud Platform ABAP Environment system (aka Steampunk system)
@@ -106,7 +106,7 @@ func addAbapEnvironmentCreateSystemFlags(cmd *cobra.Command, stepConfig *abapEnv
 	cmd.Flags().StringVar(&stepConfig.SapSystemName, "sapSystemName", `H02`, "The three character name of the system")
 	cmd.Flags().IntVar(&stepConfig.SizeOfPersistence, "sizeOfPersistence", 0, "The size of the persistence")
 	cmd.Flags().IntVar(&stepConfig.SizeOfRuntime, "sizeOfRuntime", 0, "The size of the runtime")
-	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "The json string of the addonDescriptor")
+	cmd.Flags().StringVar(&stepConfig.AddonDescriptorFileName, "addonDescriptorFileName", os.Getenv("PIPER_addonDescriptorFileName"), "The file name of the addonDescriptor")
 
 	cmd.MarkFlagRequired("cfApiEndpoint")
 	cmd.MarkFlagRequired("username")
@@ -270,17 +270,12 @@ func abapEnvironmentCreateSystemMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name: "addonDescriptor",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "abap/addonDescriptor",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Name:        "addonDescriptorFileName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 				},
 			},

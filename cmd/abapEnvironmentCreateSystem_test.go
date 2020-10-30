@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/cloudfoundry"
@@ -9,33 +11,137 @@ import (
 )
 
 func TestRunAbapEnvironmentCreateSystem(t *testing.T) {
-	t.Parallel()
+	m := &mock.ExecMockRunner{}
+	cf := cloudfoundry.CFUtils{Exec: m}
 
-	t.Run("happy path", func(t *testing.T) {
-		// init
-		config := abapEnvironmentCreateSystemOptions{}
+	t.Run("Create service with generated manifest", func(t *testing.T) {
+		defer cfMockCleanup(m)
+		config := abapEnvironmentCreateSystemOptions{
+			CfAPIEndpoint:     "https://api.endpoint.com",
+			CfOrg:             "testOrg",
+			CfSpace:           "testSpace",
+			Username:          "testUser",
+			Password:          "testPassword",
+			CfService:         "testService",
+			CfServiceInstance: "testName",
+			CfServicePlan:     "testPlan",
+		}
 
-		m := &mock.ExecMockRunner{}
-		cf := cloudfoundry.CFUtils{Exec: m}
-
-		// test
 		err := runAbapEnvironmentCreateSystem(&config, nil, cf)
-
-		// assert
-		assert.NoError(t, err)
+		if assert.NoError(t, err) {
+			assert.Equal(t, []mock.ExecCall{
+				{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"login", "-a", "https://api.endpoint.com", "-o", "testOrg", "-s", "testSpace", "-u", "testUser", "-p", "testPassword"}},
+				{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"create-service-push", "--no-push", "--service-manifest", os.TempDir() + "generated_service_manifest.yml"}},
+				{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"logout"}}},
+				m.Calls)
+		}
 	})
 
-	t.Run("error path", func(t *testing.T) {
-		// init
-		config := abapEnvironmentCreateSystemOptions{}
+	t.Run("Create service with mainfest", func(t *testing.T) {
+		defer cfMockCleanup(m)
+		config := abapEnvironmentCreateSystemOptions{
+			CfAPIEndpoint:   "https://api.endpoint.com",
+			CfOrg:           "testOrg",
+			CfSpace:         "testSpace",
+			Username:        "testUser",
+			Password:        "testPassword",
+			ServiceManifest: "customManifest.yml",
+		}
 
-		m := &mock.ExecMockRunner{}
-		cf := cloudfoundry.CFUtils{Exec: m}
+		dir, err := ioutil.TempDir("", "test variable substitution")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+		defer func() {
+			_ = os.Chdir(oldCWD)
+			_ = os.RemoveAll(dir)
+		}()
 
-		// test
-		err := runAbapEnvironmentCreateSystem(&config, nil, cf)
+		manifestFileString := `
+		---
+		create-services:
+		- name:   ((name))
+		  broker: "testBroker"
+		  plan:   "testPlan"
 
-		// assert
-		assert.EqualError(t, err, "cannot run without important file")
+		- name:   ((name2))
+		  broker: "testBroker"
+		  plan:   "testPlan"
+
+		- name:   "test3"
+		  broker: "testBroker"
+		  plan:   "testPlan"`
+
+		manifestFileStringBody := []byte(manifestFileString)
+		err = ioutil.WriteFile("customManifest.yml", manifestFileStringBody, 0644)
+
+		err = runAbapEnvironmentCreateSystem(&config, nil, cf)
+		if assert.NoError(t, err) {
+			assert.Equal(t, []mock.ExecCall{
+				{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"login", "-a", "https://api.endpoint.com", "-o", "testOrg", "-s", "testSpace", "-u", "testUser", "-p", "testPassword"}},
+				{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"create-service-push", "--no-push", "--service-manifest", "customManifest.yml"}},
+				{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"logout"}}},
+				m.Calls)
+		}
+	})
+}
+
+func TestManifestGeneration(t *testing.T) {
+
+	t.Run("Create service with generated manifest", func(t *testing.T) {
+		config := abapEnvironmentCreateSystemOptions{
+			CfAPIEndpoint:           "https://api.endpoint.com",
+			CfOrg:                   "testOrg",
+			CfSpace:                 "testSpace",
+			Username:                "testUser",
+			Password:                "testPassword",
+			CfService:               "testService",
+			CfServiceInstance:       "testName",
+			CfServicePlan:           "testPlan",
+			AdminEmail:              "user@example.com",
+			SapSystemName:           "H02",
+			IsDevelopmentAllowed:    true,
+			SizeOfPersistence:       4,
+			SizeOfRuntime:           4,
+			AddonDescriptorFileName: "addon.yml",
+		}
+
+		dir, err := ioutil.TempDir("", "test variable substitution")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+		defer func() {
+			_ = os.Chdir(oldCWD)
+			_ = os.RemoveAll(dir)
+		}()
+
+		addonYML := `addonProduct: myProduct
+addonVersion: 1.2.3
+repositories:
+  - name: '/DMO/REPO'
+`
+
+		addonYMLBytes := []byte(addonYML)
+		err = ioutil.WriteFile("addon.yml", addonYMLBytes, 0644)
+
+		expectedResult := `create-services:
+- broker: testService
+  name: testName
+  parameters: '{"admin_email":"user@example.com","is_development_allowed":true,"sapsystemname":"H02","size_of_persistence":4,"size_of_runtime":4,"addon_product_name":"myProduct","addon_product_version":"1.2.3"}'
+  plan: testPlan
+`
+
+		resultBytes, err := generateManifestYAML(&config)
+
+		if assert.NoError(t, err) {
+			result := string(resultBytes)
+			assert.Equal(t, expectedResult, result, "Result not as expected")
+		}
 	})
 }
