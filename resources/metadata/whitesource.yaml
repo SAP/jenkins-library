@@ -21,9 +21,13 @@ spec:
   inputs:
     secrets:
       - name: userTokenCredentialsId
+        aliases:
+          - name: whitesourceUserTokenCredentialsId
         description: Jenkins 'Secret text' credentials ID containing Whitesource user token.
         type: jenkins
       - name: orgAdminUserTokenCredentialsId
+        aliases:
+          - name: whitesourceOrgAdminUserTokenCredentialsId
         description: Jenkins 'Secret text' credentials ID containing Whitesource org admin token.
         type: jenkins
     params:
@@ -231,6 +235,8 @@ spec:
           - STAGES
           - STEPS
       - name: productName
+        aliases:
+          - name: whitesourceProductName
         type: string
         description: "Name of the WhiteSource product used for results aggregation.
           This parameter is mandatory if the parameter `createProductFromPipeline` is set to `true`
@@ -485,13 +491,6 @@ spec:
             params:
               - name: scanType
                 value: dub
-  outputs:
-    resources:
-      - name: commonPipelineEnvironment
-        type: piperEnvironment
-        params:
-          - name: custom/whitesourceProjectNames
-            type: "[]string"
   containers:
     - image: maven:3.5-jdk-8
       workingDir: /home/java

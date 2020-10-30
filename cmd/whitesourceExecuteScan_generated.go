@@ -5,12 +5,10 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
@@ -55,34 +53,6 @@ type whitesourceExecuteScanOptions struct {
 	DefaultNpmRegistry                   string   `json:"defaultNpmRegistry,omitempty"`
 }
 
-type whitesourceExecuteScanCommonPipelineEnvironment struct {
-	custom struct {
-		whitesourceProjectNames []string
-	}
-}
-
-func (p *whitesourceExecuteScanCommonPipelineEnvironment) persist(path, resourceName string) {
-	content := []struct {
-		category string
-		name     string
-		value    interface{}
-	}{
-		{category: "custom", name: "whitesourceProjectNames", value: p.custom.whitesourceProjectNames},
-	}
-
-	errCount := 0
-	for _, param := range content {
-		err := piperenv.SetResourceParameter(path, resourceName, filepath.Join(param.category, param.name), param.value)
-		if err != nil {
-			log.Entry().WithError(err).Error("Error persisting piper environment.")
-			errCount++
-		}
-	}
-	if errCount > 0 {
-		log.Entry().Fatal("failed to persist Piper environment")
-	}
-}
-
 // WhitesourceExecuteScanCommand BETA
 func WhitesourceExecuteScanCommand() *cobra.Command {
 	const STEP_NAME = "whitesourceExecuteScan"
@@ -90,7 +60,6 @@ func WhitesourceExecuteScanCommand() *cobra.Command {
 	metadata := whitesourceExecuteScanMetadata()
 	var stepConfig whitesourceExecuteScanOptions
 	var startTime time.Time
-	var commonPipelineEnvironment whitesourceExecuteScanCommonPipelineEnvironment
 
 	var createWhitesourceExecuteScanCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -139,7 +108,6 @@ check and additional Free and Open Source Software Publicly Known Vulnerabilitie
 			telemetryData.ErrorCode = "1"
 			handler := func() {
 				config.RemoveVaultSecretFiles()
-				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
@@ -147,7 +115,7 @@ check and additional Free and Open Source Software Publicly Known Vulnerabilitie
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			whitesourceExecuteScan(stepConfig, &telemetryData, &commonPipelineEnvironment)
+			whitesourceExecuteScan(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
@@ -414,7 +382,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "whitesourceProductName"}},
 					},
 					{
 						Name:        "projectName",
