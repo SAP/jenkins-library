@@ -208,7 +208,7 @@ func convertPullConfig(config *abapEnvironmentPullGitRepoOptions) abaputils.Abap
 }
 
 func handleIgnoreCommit(repositories []abaputils.Repository, ignoreCommit bool) {
-	for i, _ := range repositories {
+	for i := range repositories {
 		if ignoreCommit {
 			repositories[i].CommitID = ""
 		}
