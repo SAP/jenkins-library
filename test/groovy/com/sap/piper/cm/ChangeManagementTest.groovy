@@ -277,7 +277,7 @@ public void testGetCommandLineWithCMClientOpts() {
         new ChangeManagement(nullScript).uploadFileToTransportRequestSOLMAN(
             [
                 image: 'ppiper/cm-client',
-                imagePull: true,
+                pullImage: true,
             ],
             '001',
             '002',
@@ -289,9 +289,8 @@ public void testGetCommandLineWithCMClientOpts() {
         // no assert required here for the shell script, since the regex registered above
         // to the script rule is an implicit check for the command line.
 
-        dockerExecuteRule.getDockerParams().dockerImage = 'ppiper/cmclient'
-        dockerExecuteRule.getDockerParams().dockerPullImage = true
-
+        assert dockerExecuteRule.getDockerParams().dockerImage == 'ppiper/cm-client'
+        assert dockerExecuteRule.getDockerParams().dockerPullImage
     }
 
     @Test
