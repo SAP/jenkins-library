@@ -29,7 +29,7 @@ func (s *Scan) ExecuteMavenScanForPomFile(config *ScanOptions, utils Utils, pomP
 	}
 
 	if config.InstallArtifacts {
-		err := maven.InstallMavenArtifacts(utils, maven.EvaluateOptions{
+		err := maven.InstallMavenArtifacts(utils, &maven.EvaluateOptions{
 			M2Path:              config.M2Path,
 			ProjectSettingsFile: config.ProjectSettingsFile,
 			GlobalSettingsFile:  config.GlobalSettingsFile,
