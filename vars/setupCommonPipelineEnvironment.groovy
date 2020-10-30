@@ -121,7 +121,7 @@ void call(Map parameters = [:]) {
         }
 
         if (config.gitUrl) {
-            setGitUrlsOnCommonPipelineEnvironment(script, gitUrl)
+            setGitUrlsOnCommonPipelineEnvironment(script, config.gitUrl)
         }
     }
 }
