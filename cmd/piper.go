@@ -366,9 +366,9 @@ func convertValueFromFloat(config map[string]interface{}, optionsField *reflect.
 	switch optionsField.Type.Kind() {
 	case reflect.String:
 		val := strconv.FormatFloat(paramValue, 'f', -1, 64)
-		valSprint := fmt.Sprint(paramValue)
-		// if Sprinted value and val are equal, we can be sure that the result fits
-		if val == valSprint {
+		// if Sprinted value and val are equal, we can be pretty sure that the result fits
+		// for very large numbers for example an exponential format is printed
+		if val == fmt.Sprint(paramValue) {
 			config[paramName] = val
 			return nil
 		}
