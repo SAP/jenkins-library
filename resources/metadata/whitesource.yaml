@@ -491,6 +491,13 @@ spec:
             params:
               - name: scanType
                 value: dub
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: custom/whitesourceProjectNames
+            type: "[]string"
   containers:
     - image: maven:3.5-jdk-8
       workingDir: /home/java
