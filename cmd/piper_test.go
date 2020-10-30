@@ -385,6 +385,32 @@ bar: 42
 		// Assert
 		assert.True(t, hasFailed, "Expected checkTypes() to exit via logging framework")
 	})
+	t.Run("Properly handle small ints", func(t *testing.T) {
+		// Init
+		hasFailed := false
+
+		exitFunc := log.Entry().Logger.ExitFunc
+		log.Entry().Logger.ExitFunc = func(int) {
+			hasFailed = true
+		}
+		defer func() { log.Entry().Logger.ExitFunc = exitFunc }()
+
+		options := struct {
+			Foo string `json:"foo,omitempty"`
+		}{}
+
+		stepConfig := map[string]interface{}{}
+
+		content := []byte("foo: 11")
+		err := yaml.Unmarshal(content, &stepConfig)
+		assert.NoError(t, err)
+
+		// Test
+		stepConfig = checkTypes(stepConfig, options)
+
+		// Assert
+		assert.False(t, hasFailed, "Expected checkTypes() NOT to exit via logging framework")
+	})
 	t.Run("Ignores nil values", func(t *testing.T) {
 		// Init
 		hasFailed := false
