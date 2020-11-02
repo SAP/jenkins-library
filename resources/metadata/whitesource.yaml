@@ -21,9 +21,13 @@ spec:
   inputs:
     secrets:
       - name: userTokenCredentialsId
+        aliases:
+          - name: whitesourceUserTokenCredentialsId
         description: Jenkins 'Secret text' credentials ID containing Whitesource user token.
         type: jenkins
       - name: orgAdminUserTokenCredentialsId
+        aliases:
+          - name: whitesourceOrgAdminUserTokenCredentialsId
         description: Jenkins 'Secret text' credentials ID containing Whitesource org admin token.
         type: jenkins
     params:
@@ -231,6 +235,8 @@ spec:
           - STAGES
           - STEPS
       - name: productName
+        aliases:
+          - name: whitesourceProductName
         type: string
         description: "Name of the WhiteSource product used for results aggregation.
           This parameter is mandatory if the parameter `createProductFromPipeline` is set to `true`
@@ -367,6 +373,16 @@ spec:
           - PARAMETERS
         aliases:
           - name: maven/m2Path
+      - name: installArtifacts
+        type: bool
+        description:
+          "If enabled, it will install all artifacts to the local maven repository to make them available before running whitesource.
+          This is required if any maven module has dependencies to other modules in the repository and they were not installed before."
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
 
       # Global npm settings, should be added to all npm steps
       - name: defaultNpmRegistry
@@ -485,6 +501,13 @@ spec:
             params:
               - name: scanType
                 value: dub
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: custom/whitesourceProjectNames
+            type: "[]string"
   containers:
     - image: maven:3.5-jdk-8
       workingDir: /home/java
