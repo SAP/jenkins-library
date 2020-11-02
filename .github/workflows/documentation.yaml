@@ -50,7 +50,7 @@ jobs:
       run: documentation/bin/createDocu.sh
 
     - name: Generate Golang Docs
-      run: go run pkg/documentation/generator.go --docuDir=documentation/docs/steps/
+      run: go run pkg/documentation/generator.go --docuDir=documentation/docs/steps/ --customDefaultFile resources/default_pipeline_environment.yml
 
     - run: docker pull squidfunk/mkdocs-material:3.0.4
 

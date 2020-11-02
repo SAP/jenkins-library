@@ -22,7 +22,7 @@ const (
 func DetermineProjectCoordinates(nameTemplate, versionScheme string, gav Coordinates) (string, string) {
 	projectName, err := piperutils.ExecuteTemplateFunctions(nameTemplate, sprig.HermeticTxtFuncMap(), gav)
 	if err != nil {
-		log.Entry().Warnf("Unable to resolve fortify project name: %v", err)
+		log.Entry().Warnf("Unable to resolve project name: %v", err)
 	}
 
 	var versionTemplate string
@@ -41,7 +41,7 @@ func DetermineProjectCoordinates(nameTemplate, versionScheme string, gav Coordin
 
 	projectVersion, err := piperutils.ExecuteTemplateFunctions(versionTemplate, sprig.HermeticTxtFuncMap(), gav)
 	if err != nil {
-		log.Entry().Warnf("Unable to resolve fortify project version: %v", err)
+		log.Entry().Warnf("Unable to resolve project version: %v", err)
 	}
 	return projectName, projectVersion
 }

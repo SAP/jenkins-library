@@ -233,7 +233,7 @@ spec:
           - STAGES
           - STEPS
           - GENERAL
-        default: "manifest-variables.yml"
+        default: ["manifest-variables.yml"]
         mandatory: false
         aliases:
           - name: cfManifestVariablesFiles
