@@ -1,13 +1,14 @@
 package cmd
 
 import (
+	"path/filepath"
+	"testing"
+	"time"
+
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 	ws "github.com/SAP/jenkins-library/pkg/whitesource"
 	"github.com/stretchr/testify/assert"
-	"path/filepath"
-	"testing"
-	"time"
 )
 
 type whitesourceCoordinatesMock struct {
@@ -194,63 +195,49 @@ func TestBlockUntilProjectIsUpdated(t *testing.T) {
 }
 
 func TestPersistScannedProjects(t *testing.T) {
-	resource := filepath.Join(".pipeline", "commonPipelineEnvironment", "custom", "whitesourceProjectNames")
-
 	t.Parallel()
 	t.Run("write 1 scanned projects", func(t *testing.T) {
 		// init
+		cpe := whitesourceExecuteScanCommonPipelineEnvironment{}
 		config := &ScanOptions{ProductVersion: "1"}
-		utils := newWhitesourceUtilsMock()
 		scan := newWhitesourceScan(config)
 		_ = scan.AppendScannedProject("project")
 		// test
-		err := persistScannedProjects(config, scan, utils)
+		persistScannedProjects(config, scan, &cpe)
 		// assert
-		if assert.NoError(t, err) && assert.True(t, utils.HasWrittenFile(resource)) {
-			contents, _ := utils.FileRead(resource)
-			assert.Equal(t, "project - 1", string(contents))
-		}
+		assert.Equal(t, []string{"project - 1"}, cpe.custom.whitesourceProjectNames)
 	})
 	t.Run("write 2 scanned projects", func(t *testing.T) {
 		// init
+		cpe := whitesourceExecuteScanCommonPipelineEnvironment{}
 		config := &ScanOptions{ProductVersion: "1"}
-		utils := newWhitesourceUtilsMock()
 		scan := newWhitesourceScan(config)
 		_ = scan.AppendScannedProject("project-app")
 		_ = scan.AppendScannedProject("project-db")
 		// test
-		err := persistScannedProjects(config, scan, utils)
+		persistScannedProjects(config, scan, &cpe)
 		// assert
-		if assert.NoError(t, err) && assert.True(t, utils.HasWrittenFile(resource)) {
-			contents, _ := utils.FileRead(resource)
-			assert.Equal(t, "project-app - 1,project-db - 1", string(contents))
-		}
+		assert.Equal(t, []string{"project-app - 1", "project-db - 1"}, cpe.custom.whitesourceProjectNames)
 	})
 	t.Run("write no projects", func(t *testing.T) {
 		// init
+		cpe := whitesourceExecuteScanCommonPipelineEnvironment{}
 		config := &ScanOptions{ProductVersion: "1"}
-		utils := newWhitesourceUtilsMock()
 		scan := newWhitesourceScan(config)
 		// test
-		err := persistScannedProjects(config, scan, utils)
+		persistScannedProjects(config, scan, &cpe)
 		// assert
-		if assert.NoError(t, err) && assert.True(t, utils.HasWrittenFile(resource)) {
-			contents, _ := utils.FileRead(resource)
-			assert.Equal(t, "", string(contents))
-		}
+		assert.Equal(t, []string{}, cpe.custom.whitesourceProjectNames)
 	})
 	t.Run("write aggregated project", func(t *testing.T) {
 		// init
+		cpe := whitesourceExecuteScanCommonPipelineEnvironment{}
 		config := &ScanOptions{ProjectName: "project", ProductVersion: "1"}
-		utils := newWhitesourceUtilsMock()
 		scan := newWhitesourceScan(config)
 		// test
-		err := persistScannedProjects(config, scan, utils)
+		persistScannedProjects(config, scan, &cpe)
 		// assert
-		if assert.NoError(t, err) && assert.True(t, utils.HasWrittenFile(resource)) {
-			contents, _ := utils.FileRead(resource)
-			assert.Equal(t, "project - 1", string(contents))
-		}
+		assert.Equal(t, []string{"project - 1"}, cpe.custom.whitesourceProjectNames)
 	})
 }
 

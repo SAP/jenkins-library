@@ -31,6 +31,8 @@ spec:
           - name: artifactVersion
           - name: git/commitId
           - name: git/branch
+          - name: custom/customList
+            type: "[]string"
       - name: influxTest
         type: influx
         params:
