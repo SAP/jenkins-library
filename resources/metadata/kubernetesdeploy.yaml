@@ -68,7 +68,6 @@ spec:
           - name: k8sAppTemplate
         type: string
         description: Defines the filename for the kubernetes app template (e.g. k8s_apptemplate.yaml)
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -174,7 +173,6 @@ spec:
       - name: helmDeployWaitSeconds
         type: int
         description: Number of seconds before helm deploy returns.
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -211,7 +209,6 @@ spec:
 
           Recommendation is to use custom values and pass them via parameter `helmValues`.<br />
           Since helm supports multiple files on top of the `values.yaml`, landscape-specific attributes can be passed via a specific file.
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -231,7 +228,6 @@ spec:
       - name: kubeContext
         type: string
         description: Defines the context to use from the \"kubeconfig\" file.
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
