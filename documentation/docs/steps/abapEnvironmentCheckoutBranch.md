@@ -56,7 +56,7 @@ repositories:
 ```
 
 Please note that you need to use the YAML data structure as in the example above when using the `repositories.yml` config file.
-For this step it is mandatory to fill the branch values. You can also use this file for the abapEnvironmentPullGitRepo step.
+For this step it is mandatory to fill the branch values. You can also use this file for the abapEnvironmentPullGitRepo step. Using this configuration file is the recommended approach.
 
 If you want to read the host and credentials from the cloud foundry service key of the respective instance, the configuration could look as follows:
 

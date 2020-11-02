@@ -30,10 +30,6 @@ func abapEnvironmentCloneGitRepo(config abapEnvironmentCloneGitRepoOptions, tele
 
 	client := piperhttp.Client{}
 
-	// for http calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	// and use a  &piperhttp.Client{} in a custom system
-	// Example: step checkmarxExecuteScan.go
-
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
 	err := runAbapEnvironmentCloneGitRepo(&config, telemetryData, &autils, &client)
 	if err != nil {
@@ -43,7 +39,7 @@ func abapEnvironmentCloneGitRepo(config abapEnvironmentCloneGitRepoOptions, tele
 
 func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender) error {
 	// Mapping for options
-	subOptions := convertConfig(config)
+	subOptions := convertCloneConfig(config)
 
 	// Determine the host, user and password, either via the input parameters or via a cloud foundry service key
 	connectionDetails, errorGetInfo := com.GetAbapCommunicationArrangementInfo(subOptions, "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Clones")
@@ -71,33 +67,39 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 
 	log.Entry().Infof("Start cloning %v repositories", len(repositories))
 	for _, repo := range repositories {
+
+		commitString := ""
+		if repo.CommitID != "" {
+			commitString = ", commit '" + repo.CommitID + "'"
+		}
+
 		log.Entry().Info("-------------------------")
-		log.Entry().Info("Start cloning " + repo.Name + " with branch " + repo.Branch)
+		log.Entry().Info("Start cloning " + repo.Name + ", branch " + repo.Branch + commitString)
 		log.Entry().Info("-------------------------")
 
 		// Triggering the Clone of the repository into the ABAP Environment system
-		uriConnectionDetails, errorTriggerClone := triggerClone(repo.Name, repo.Branch, connectionDetails, client)
+		uriConnectionDetails, errorTriggerClone := triggerClone(repo, connectionDetails, client)
 		if errorTriggerClone != nil {
-			return errors.Wrapf(errorTriggerClone, "Clone of '%s' with branch '%s' failed on the ABAP System", repo.Name, repo.Branch)
+			return errors.Wrapf(errorTriggerClone, "Clone of '%s', branch '%s'%s failed on the ABAP System", repo.Name, repo.Branch, commitString)
 		}
 
 		// Polling the status of the repository import on the ABAP Environment system
 		status, errorPollEntity := abaputils.PollEntity(repo.Name, uriConnectionDetails, client, com.GetPollIntervall())
 		if errorPollEntity != nil {
-			return errors.Wrapf(errorPollEntity, "Clone of '%s' with branch '%s' failed on the ABAP System", repo.Name, repo.Branch)
+			return errors.Wrapf(errorPollEntity, "Clone of '%s', branch '%s'%s failed on the ABAP System", repo.Name, repo.Branch, commitString)
 		}
 		if status == "E" {
-			return errors.New("Clone of '" + repo.Name + "' with branch '" + repo.Branch + "' failed on the ABAP System")
+			return errors.New("Clone of '" + repo.Name + "', branch '" + repo.Branch + "'" + commitString + " failed on the ABAP System")
 		}
 
-		log.Entry().Info(repo.Name + " with branch  " + repo.Branch + " was cloned successfully")
+		log.Entry().Info(repo.Name + ", branch  " + repo.Branch + commitString + " was cloned successfully")
 	}
 	log.Entry().Info("-------------------------")
 	log.Entry().Info("All repositories were cloned successfully")
 	return nil
 }
 
-func triggerClone(repositoryName string, branchName string, cloneConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (abaputils.ConnectionDetailsHTTP, error) {
+func triggerClone(repo abaputils.Repository, cloneConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (abaputils.ConnectionDetailsHTTP, error) {
 
 	uriConnectionDetails := cloneConnectionDetails
 	uriConnectionDetails.URL = ""
@@ -112,24 +114,27 @@ func triggerClone(repositoryName string, branchName string, cloneConnectionDetai
 	defer resp.Body.Close()
 
 	// workaround until golang version 1.16 is used
-	time.Sleep(1 * time.Second)
+	time.Sleep(100 * time.Millisecond)
 
-	log.Entry().WithField("StatusCode", resp.Status).WithField("ABAP Endpoint", cloneConnectionDetails.URL).Info("Authentication on the ABAP system successful")
+	log.Entry().WithField("StatusCode", resp.Status).WithField("ABAP Endpoint", cloneConnectionDetails.URL).Debug("Authentication on the ABAP system successful")
 	uriConnectionDetails.XCsrfToken = resp.Header.Get("X-Csrf-Token")
 	cloneConnectionDetails.XCsrfToken = uriConnectionDetails.XCsrfToken
 
 	// Trigger the Clone of a Repository
-	if repositoryName == "" {
+	if repo.Name == "" {
 		return uriConnectionDetails, errors.New("An empty string was passed for the parameter 'repositoryName'")
 	}
-	jsonBody := []byte(`{"sc_name":"` + repositoryName + `", "branch_name":"` + branchName + `"}`)
+
+	commitQuery, commitString := abaputils.GetCommitStrings(repo.CommitID)
+
+	jsonBody := []byte(`{"sc_name":"` + repo.Name + `", "branch_name":"` + repo.Branch + `"` + commitQuery + `}`)
 	resp, err = abaputils.GetHTTPResponse("POST", cloneConnectionDetails, jsonBody, client)
 	if err != nil {
-		err = abaputils.HandleHTTPError(resp, err, "Could not clone the Repository / Software Component "+repositoryName+" with branch "+branchName, uriConnectionDetails)
+		err = abaputils.HandleHTTPError(resp, err, "Could not clone the Repository / Software Component "+repo.Name+", branch "+repo.Branch+commitString, uriConnectionDetails)
 		return uriConnectionDetails, err
 	}
 	defer resp.Body.Close()
-	log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repositoryName).WithField("branchName", branchName).Info("Triggered Clone of Repository / Software Component")
+	log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repo.Name).WithField("branchName", repo.Branch).WithField("commitID", repo.CommitID).Info("Triggered Clone of Repository / Software Component")
 
 	// Parse Response
 	var body abaputils.CloneEntity
@@ -141,7 +146,7 @@ func triggerClone(repositoryName string, branchName string, cloneConnectionDetai
 	json.Unmarshal(bodyText, &abapResp)
 	json.Unmarshal(*abapResp["d"], &body)
 	if reflect.DeepEqual(abaputils.CloneEntity{}, body) {
-		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repositoryName).WithField("branchName", branchName).Error("Could not Clone the Repository / Software Component")
+		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repo.Name).WithField("branchName", repo.Branch).WithField("commitID", repo.CommitID).Error("Could not Clone the Repository / Software Component")
 		err := errors.New("Request to ABAP System not successful")
 		return uriConnectionDetails, err
 	}
@@ -151,13 +156,13 @@ func triggerClone(repositoryName string, branchName string, cloneConnectionDetai
 	// The entity "Clones" does not allow for polling. To poll the progress, the related entity "Pull" has to be called
 	// While "Clones" has the key fields UUID, SC_NAME and BRANCH_NAME, "Pull" only has the key field UUID
 	tempURI := strings.Replace(body.Metadata.URI, "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Clones", "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull", 1)
-	pollingURI := strings.Replace(tempURI, ",sc_name='"+repositoryName+"',branch_name='"+branchName+"'", "", 1)
+	pollingURI := strings.Replace(tempURI, ",sc_name='"+repo.Name+"',branch_name='"+repo.Branch+"'", "", 1)
 
 	uriConnectionDetails.URL = pollingURI + expandLog
 	return uriConnectionDetails, nil
 }
 
-func convertConfig(config *abapEnvironmentCloneGitRepoOptions) abaputils.AbapEnvironmentOptions {
+func convertCloneConfig(config *abapEnvironmentCloneGitRepoOptions) abaputils.AbapEnvironmentOptions {
 	subOptions := abaputils.AbapEnvironmentOptions{}
 
 	subOptions.CfAPIEndpoint = config.CfAPIEndpoint
