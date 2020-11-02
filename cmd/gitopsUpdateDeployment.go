@@ -156,25 +156,28 @@ func checkRequiredFieldsForDeployTool(config *gitopsUpdateDeploymentOptions) err
 }
 
 func checkRequiredFieldsForHelm(config *gitopsUpdateDeploymentOptions) error {
+	var missingParameters []string
 	if config.ChartPath == "" {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.New("chartPath is necessary for helm")
+		missingParameters = append(missingParameters, "chartPath")
 	}
 	if config.DeploymentName == "" {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.New("deploymentName is necessary for helm")
+		missingParameters = append(missingParameters, "deploymentName")
 	}
-	if config.DeploymentName == "" {
+	if len(missingParameters) > 0 {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.New("deploymentName is necessary for helm")
+		return errors.Errorf("the following parameters are necessary for helm: %v", missingParameters)
 	}
 	return nil
 }
 
 func checkRequiredFieldsForKubectl(config *gitopsUpdateDeploymentOptions) error {
+	var missingParameters []string
 	if config.ContainerName == "" {
+		missingParameters = append(missingParameters, "containerName")
+	}
+	if len(missingParameters) > 0 {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.New("containerName is necessary for kubectl")
+		return errors.Errorf("the following parameters are necessary for kubectl: %v", missingParameters)
 	}
 	return nil
 }
