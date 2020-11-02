@@ -7,6 +7,9 @@ metadata:
     Execute npm run scripts in all package json files, if they implement the scripts.
 spec:
   inputs:
+    resources:
+      - name: source
+        type: stash
     params:
       - name: install
         type: bool
