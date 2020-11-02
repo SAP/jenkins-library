@@ -16,9 +16,12 @@ import (
 type detectTestUtilsBundle struct {
 	expectedError   error
 	downloadedFiles map[string]string // src, dest
-	*mock.ExecMockRunner
 	*mock.ShellMockRunner
 	*mock.FilesMock
+}
+
+func (c *detectTestUtilsBundle) RunExecutable(e string, p ...string) error {
+	panic("not expected to be called in test")
 }
 
 func (c *detectTestUtilsBundle) SetOptions(options piperhttp.ClientOptions) {
@@ -40,7 +43,6 @@ func (c *detectTestUtilsBundle) DownloadFile(url, filename string, header http.H
 
 func newDetectTestUtilsBundle() detectTestUtilsBundle {
 	utilsBundle := detectTestUtilsBundle{
-		ExecMockRunner:  &mock.ExecMockRunner{},
 		ShellMockRunner: &mock.ShellMockRunner{},
 		FilesMock:       &mock.FilesMock{},
 	}
