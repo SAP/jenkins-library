@@ -19,9 +19,14 @@ spec:
         description: Jenkins 'Secret text' credentials ID containing the API token used to authenticate with the Synopsis Detect (formerly BlackDuck) Server.
         type: jenkins
     params:
-      - name: apiToken
+      - name: token
         aliases:
+          - name: blackduckToken
+          - name: detectToken
+          - name: apiToken
+            deprecated: true
           - name: detect/apiToken
+            deprecated: true
         description: Api token to be used for connectivity with Synopsis Detect server.
         type: string
         mandatory: true
@@ -29,6 +34,11 @@ spec:
         resourceRef:
           - name: detectTokenCredentialsId
             type: secret
+          - type: vaultSecret
+            paths:
+              - $(vaultPath)/detect
+              - $(vaultBasePath)/$(vaultPipelineName)/detect
+              - $(vaultBasePath)/GROUP-SECRETS/detect
         scope:
           - PARAMETERS
           - STAGES
@@ -90,6 +100,7 @@ spec:
           - --blackduck.trust.cert=true
           - --detect.report.timeout=4800
           - --logging.level.com.synopsys.integration=DEBUG
+          - --detect.maven.excluded.scopes=test
         scope:
           - PARAMETERS
           - STAGES

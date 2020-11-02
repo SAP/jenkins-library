@@ -224,7 +224,7 @@ func installMavenArtifacts(e command.ExecRunner, config mtaBuildOptions) error {
 		return err
 	}
 	if pomXMLExists {
-		err = maven.InstallMavenArtifacts(e, maven.EvaluateOptions{M2Path: config.M2Path})
+		err = maven.InstallMavenArtifacts(e, &maven.EvaluateOptions{M2Path: config.M2Path})
 		if err != nil {
 			return err
 		}
@@ -308,7 +308,7 @@ func setTimeStamp(mtaYamlFile string, p piperutils.FileUtils) error {
 
 func getTimestamp() string {
 	t := time.Now()
-	return fmt.Sprintf("%d%02d%02d%02d%02d%02d\n", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
+	return fmt.Sprintf("%d%02d%02d%02d%02d%02d", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
 }
 
 func createMtaYamlFile(mtaYamlFile, applicationName string, p piperutils.FileUtils) error {

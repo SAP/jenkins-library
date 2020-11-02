@@ -57,7 +57,7 @@ func (i *TestStepTestInflux) persist(path, resourceName string) {
 		measurement string
 		valType     string
 		name        string
-		value       string
+		value       interface{}
 	}{
 		{valType: config.InfluxField, measurement: "m1" , name: "field1_1", value: i.m1.fields.field1_1},
 		{valType: config.InfluxField, measurement: "m1" , name: "field1_2", value: i.m1.fields.field1_2},

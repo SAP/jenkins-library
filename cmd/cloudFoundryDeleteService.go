@@ -27,7 +27,7 @@ func cloudFoundryDeleteService(options cloudFoundryDeleteServiceOptions, telemet
 	if err != nil {
 		log.Entry().
 			WithError(err).
-			Fatal("Error occured during step.")
+			Fatal("Error occurred during step.")
 	}
 }
 
@@ -42,12 +42,12 @@ func runCloudFoundryDeleteService(options cloudFoundryDeleteServiceOptions, c co
 	}
 	loginErr := cfUtils.Login(config)
 	if loginErr != nil {
-		return fmt.Errorf("Error while logging in occured: %w", loginErr)
+		return fmt.Errorf("Error while logging in occurred: %w", loginErr)
 	}
 	defer func() {
 		logoutErr := cfUtils.Logout()
 		if logoutErr != nil && returnedError == nil {
-			returnedError = fmt.Errorf("Error while logging out occured: %w", logoutErr)
+			returnedError = fmt.Errorf("Error while logging out occurred: %w", logoutErr)
 		}
 	}()
 

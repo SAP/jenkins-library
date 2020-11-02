@@ -19,19 +19,20 @@ type PiperEnvironmentResource struct {
 type PiperEnvironmentParameter struct {
 	Category string
 	Name     string
+	Type     string
 }
 
 const piperEnvStructTemplate = `type {{ .StepName }}{{ .Name | title}} struct {
 	{{- range $notused, $param := .Parameters }}
 	{{- if not $param.Category}}
-	{{ $param.Name | golangName }} string
+	{{ $param.Name | golangName }} {{ $param.Type | resourceFieldType }}
 	{{- end }}
 	{{- end }}
 	{{- range $notused, $category := .Categories }}
 	{{ $category }} struct {
 		{{- range $notused, $param := $.Parameters }}
 		{{- if eq $category $param.Category }}
-		{{ $param.Name | golangName }} string
+		{{ $param.Name | golangName }} {{ $param.Type | resourceFieldType }}
 		{{- end }}
 		{{- end }}
 	}
@@ -42,7 +43,7 @@ func (p *{{ .StepName }}{{ .Name | title}}) persist(path, resourceName string) {
 	content := []struct{
 		category string
 		name string
-		value string
+		value interface{}
 	}{
 		{{- range $notused, $param := .Parameters }}
 		{{- if not $param.Category}}
@@ -66,16 +67,17 @@ func (p *{{ .StepName }}{{ .Name | title}}) persist(path, resourceName string) {
 	}
 }`
 
-// StructName returns the name of the influx resource struct
+// StructName returns the name of the environment resource struct
 func (p *PiperEnvironmentResource) StructName() string {
 	return fmt.Sprintf("%v%v", p.StepName, strings.Title(p.Name))
 }
 
-// StructString returns the golang coding for the struct definition of the InfluxResource
+// StructString returns the golang coding for the struct definition of the environment resource
 func (p *PiperEnvironmentResource) StructString() (string, error) {
 	funcMap := template.FuncMap{
-		"title":      strings.Title,
-		"golangName": golangName,
+		"title":             strings.Title,
+		"golangName":        golangName,
+		"resourceFieldType": resourceFieldType,
 	}
 
 	tmpl, err := template.New("resources").Funcs(funcMap).Parse(piperEnvStructTemplate)
@@ -109,6 +111,7 @@ type InfluxMeasurement struct {
 // InfluxMetric defines a metric (column) in an influx measurement
 type InfluxMetric struct {
 	Name string
+	Type string
 }
 
 // InfluxMetricContent defines the content of an Inflx metric
@@ -124,12 +127,12 @@ const influxStructTemplate = `type {{ .StepName }}{{ .Name | title}} struct {
 	{{ $measurement.Name }} struct {
 		fields struct {
 			{{- range $notused, $field := $measurement.Fields }}
-			{{ $field.Name | golangName }} string
+			{{ $field.Name | golangName }} {{ $field.Type | resourceFieldType }}
 			{{- end }}
 		}
 		tags struct {
 			{{- range $notused, $tag := $measurement.Tags }}
-			{{ $tag.Name | golangName }} string
+			{{ $tag.Name | golangName }} {{ $tag.Type | resourceFieldType }}
 			{{- end }}
 		}
 	}
@@ -141,7 +144,7 @@ func (i *{{ .StepName }}{{ .Name | title}}) persist(path, resourceName string) {
 		measurement string
 		valType     string
 		name        string
-		value       string
+		value       interface{}
 	}{
 		{{- range $notused, $measurement := .Measurements }}
 		{{- range $notused, $field := $measurement.Fields }}
@@ -169,8 +172,9 @@ func (i *{{ .StepName }}{{ .Name | title}}) persist(path, resourceName string) {
 // StructString returns the golang coding for the struct definition of the InfluxResource
 func (i *InfluxResource) StructString() (string, error) {
 	funcMap := template.FuncMap{
-		"title":      strings.Title,
-		"golangName": golangName,
+		"title":             strings.Title,
+		"golangName":        golangName,
+		"resourceFieldType": resourceFieldType,
 	}
 
 	tmpl, err := template.New("resources").Funcs(funcMap).Parse(influxStructTemplate)

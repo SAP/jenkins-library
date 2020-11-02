@@ -48,6 +48,8 @@ void call(Map parameters = [:]) {
     boolean approval = false
     def userInput
 
+    milestone()
+
     timeout(
         unit: 'HOURS',
         time: config.manualConfirmationTimeout

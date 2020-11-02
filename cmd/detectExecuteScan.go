@@ -2,9 +2,11 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"strings"
+
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/maven"
-	"strings"
 
 	sliceUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 
@@ -15,8 +17,29 @@ import (
 	"github.com/SAP/jenkins-library/pkg/versioning"
 )
 
-func detectExecuteScan(config detectExecuteScanOptions, telemetryData *telemetry.CustomData) {
-	c := command.Command{}
+type detectFileUtils interface {
+	Abs(path string) (string, error)
+	FileExists(filename string) (bool, error)
+	FileRemove(filename string) error
+	Copy(src, dest string) (int64, error)
+	FileRead(path string) ([]byte, error)
+	FileWrite(path string, content []byte, perm os.FileMode) error
+	MkdirAll(path string, perm os.FileMode) error
+	Chmod(path string, mode os.FileMode) error
+	Glob(pattern string) (matches []string, err error)
+}
+
+func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData) {
+	c := command.Command{
+		ErrorCategoryMapping: map[string][]string{
+			log.ErrorCompliance.String(): {
+				"FAILURE_POLICY_VIOLATION - Detect found policy violations.",
+			},
+			log.ErrorConfiguration.String(): {
+				"FAILURE_CONFIGURATION - Detect was unable to start due to issues with it's configuration.",
+			},
+		},
+	}
 	// reroute command output to logging framework
 	c.Stdout(log.Writer())
 	c.Stderr(log.Writer())
@@ -33,10 +56,19 @@ func detectExecuteScan(config detectExecuteScanOptions, telemetryData *telemetry
 	}
 }
 
-func runDetect(config detectExecuteScanOptions, command command.ShellRunner, fileUtils piperutils.FileUtils, httpClient piperhttp.Downloader) error {
+func runDetect(config detectExecuteScanOptions, command command.ShellRunner, fileUtils detectFileUtils, httpClient piperhttp.Downloader) error {
 	// detect execution details, see https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/88440888/Sample+Synopsys+Detect+Scan+Configuration+Scenarios+for+Black+Duck
-	httpClient.DownloadFile("https://detect.synopsys.com/detect.sh", "detect.sh", nil, nil)
-	err := fileUtils.Chmod("detect.sh", 0700)
+	err := httpClient.DownloadFile("https://detect.synopsys.com/detect.sh", "detect.sh", nil, nil)
+	if err != nil {
+		return fmt.Errorf("failed to download 'detect.sh' script: %w", err)
+	}
+	defer func() {
+		err := fileUtils.FileRemove("detect.sh")
+		if err != nil {
+			log.Entry().Warnf("failed to delete 'detect.sh' script: %v", err)
+		}
+	}()
+	err = fileUtils.Chmod("detect.sh", 0700)
 	if err != nil {
 		return err
 	}
@@ -68,7 +100,7 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, fileUtils pip
 	args = append(args, config.ScanProperties...)
 
 	args = append(args, fmt.Sprintf("--blackduck.url=%v", config.ServerURL))
-	args = append(args, fmt.Sprintf("--blackduck.api.token=%v", config.APIToken))
+	args = append(args, fmt.Sprintf("--blackduck.api.token=%v", config.Token))
 	// ProjectNames, VersionName, GroupName etc can contain spaces and need to be escaped using double quotes in CLI
 	// Hence the string need to be surrounded by \"
 	args = append(args, fmt.Sprintf("--detect.project.name=\\\"%v\\\"", config.ProjectName))

@@ -1,5 +1,8 @@
+import com.cloudbees.groovy.cps.NonCPS
+
 import static com.sap.piper.Prerequisites.checkScript
 
+import com.sap.piper.GitUtils
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.Utils
@@ -35,7 +38,11 @@ import groovy.transform.Field
     /** A list of file paths or URLs which must point to YAML content. These work exactly like
      * `customDefaults`, but from local or remote files instead of library resources. They are merged with and
      * take precedence over `customDefaults`.*/
-    'customDefaultsFromFiles'
+    'customDefaultsFromFiles',
+    /**
+      * The projects git repo url. Typically the fetch url.
+      */
+    'gitUrl',
 ]
 
 /**
@@ -51,6 +58,8 @@ void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
         def script = checkScript(this, parameters)
+
+        def gitUtils = parameters.gitUtils ?: new GitUtils()
 
         String configFile = parameters.get('configFile')
         loadConfigurationFromFile(script, configFile)
@@ -92,6 +101,7 @@ void call(Map parameters = [:]) {
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
+            .mixin(parameters, PARAMETER_KEYS)
             .use()
 
         inferBuildTool(script, config)
@@ -104,6 +114,15 @@ void call(Map parameters = [:]) {
 
         InfluxData.addField('step_data', 'build_url', env.BUILD_URL)
         InfluxData.addField('pipeline_data', 'build_url', env.BUILD_URL)
+
+        def gitCommitId = gitUtils.getGitCommitIdOrNull()
+        if (gitCommitId) {
+            script.commonPipelineEnvironment.setGitCommitId(gitCommitId)
+        }
+
+        if (config.gitUrl) {
+            setGitUrlsOnCommonPipelineEnvironment(script, config.gitUrl)
+        }
     }
 }
 
@@ -185,4 +204,60 @@ private static List copyOrDownloadCustomDefaultsIntoPipelineEnv(script, List cus
         fileList.add(fileName)
     }
     return fileList
+}
+
+/*
+ * Returns the parts of an url.
+ * Valid keys for the retured map are:
+ *   - protocol
+ *   - auth
+ *   - host
+ *   - port
+ *   - path
+ */
+@NonCPS
+/* private */ Map parseUrl(String url) {
+
+    def urlMatcher = url =~ /^((http|https|git|ssh):\/\/)?((.*)@)?([^:\/]+)(:([\d]*))?(\/?(.*))$/
+
+    return [
+        protocol: urlMatcher[0][2],
+        auth: urlMatcher[0][4],
+        host: urlMatcher[0][5],
+        port: urlMatcher[0][7],
+        path: urlMatcher[0][9],
+    ]
+}
+
+private void setGitUrlsOnCommonPipelineEnvironment(script, String gitUrl) {
+
+    Map url = parseUrl(gitUrl)
+
+    if (url.protocol in ['http', 'https']) {
+        script.commonPipelineEnvironment.setGitSshUrl("git@${url.host}:${url.path}")
+        script.commonPipelineEnvironment.setGitHttpsUrl(gitUrl)
+    } else if (url.protocol in [ null, 'ssh', 'git']) {
+        script.commonPipelineEnvironment.setGitSshUrl(gitUrl)
+        script.commonPipelineEnvironment.setGitHttpsUrl("https://${url.host}/${url.path}")
+    }
+
+    List gitPathParts = url.path.replaceAll('.git', '').split('/')
+    def gitFolder = 'N/A'
+    def gitRepo = 'N/A'
+    switch (gitPathParts.size()) {
+        case 1:
+            gitRepo = gitPathParts[0]
+            break
+        case 2:
+            gitFolder = gitPathParts[0]
+            gitRepo = gitPathParts[1]
+            break
+        case { it > 3 }:
+            gitRepo = gitPathParts[gitPathParts.size()-1]
+            gitPathParts.remove(gitPathParts.size()-1)
+            gitFolder = gitPathParts.join('/')
+            break
+    }
+    script.commonPipelineEnvironment.setGithubOrg(gitFolder)
+    script.commonPipelineEnvironment.setGithubRepo(gitRepo)
 }

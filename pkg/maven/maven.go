@@ -43,7 +43,7 @@ type mavenExecRunner interface {
 }
 
 type mavenUtils interface {
-	piperutils.FileUtils
+	FileUtils
 	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
 }
 
@@ -75,6 +75,7 @@ func Execute(options *ExecuteOptions, command mavenExecRunner) (string, error) {
 
 	err = command.RunExecutable(mavenExecutable, parameters...)
 	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
 		commandLine := append([]string{mavenExecutable}, parameters...)
 		return "", fmt.Errorf("failed to run executable, command: '%s', error: %w", commandLine, err)
 	}
@@ -112,7 +113,7 @@ func Evaluate(options *EvaluateOptions, expression string, command mavenExecRunn
 
 // InstallFile installs a maven artifact and its pom into the local maven repository.
 // If "file" is empty, only the pom is installed. "pomFile" must not be empty.
-func InstallFile(file, pomFile, m2Path string, command mavenExecRunner) error {
+func InstallFile(file, pomFile string, options *EvaluateOptions, command mavenExecRunner) error {
 	if len(pomFile) == 0 {
 		return fmt.Errorf("pomFile can't be empty")
 	}
@@ -132,9 +133,11 @@ func InstallFile(file, pomFile, m2Path string, command mavenExecRunner) error {
 	}
 	defines = append(defines, "-DpomFile="+pomFile)
 	mavenOptionsInstall := ExecuteOptions{
-		Goals:   []string{"install:install-file"},
-		Defines: defines,
-		M2Path:  m2Path,
+		Goals:               []string{"install:install-file"},
+		Defines:             defines,
+		M2Path:              options.M2Path,
+		ProjectSettingsFile: options.ProjectSettingsFile,
+		GlobalSettingsFile:  options.GlobalSettingsFile,
 	}
 	_, err := Execute(&mavenOptionsInstall, command)
 	if err != nil {
@@ -144,11 +147,11 @@ func InstallFile(file, pomFile, m2Path string, command mavenExecRunner) error {
 }
 
 // InstallMavenArtifacts finds maven modules (identified by pom.xml files) and installs the artifacts into the local maven repository.
-func InstallMavenArtifacts(command mavenExecRunner, options EvaluateOptions) error {
+func InstallMavenArtifacts(command mavenExecRunner, options *EvaluateOptions) error {
 	return doInstallMavenArtifacts(command, options, newUtils())
 }
 
-func doInstallMavenArtifacts(command mavenExecRunner, options EvaluateOptions, utils mavenUtils) error {
+func doInstallMavenArtifacts(command mavenExecRunner, options *EvaluateOptions, utils mavenUtils) error {
 	err := flattenPom(command, options)
 	if err != nil {
 		return err
@@ -173,7 +176,7 @@ func doInstallMavenArtifacts(command mavenExecRunner, options EvaluateOptions, u
 
 		// Set this module's pom file as the pom file for evaluating the packaging,
 		// otherwise we would evaluate the root pom in all iterations.
-		evaluateProjectPackagingOptions := options
+		evaluateProjectPackagingOptions := *options
 		evaluateProjectPackagingOptions.PomPath = pomFile
 		packaging, err := Evaluate(&evaluateProjectPackagingOptions, "project.packaging", command)
 		if err != nil {
@@ -190,7 +193,7 @@ func doInstallMavenArtifacts(command mavenExecRunner, options EvaluateOptions, u
 		}
 
 		if packaging == "pom" {
-			err = InstallFile("", pathToPomFile, options.M2Path, command)
+			err = InstallFile("", pathToPomFile, options, command)
 			if err != nil {
 				return err
 			}
@@ -205,15 +208,15 @@ func doInstallMavenArtifacts(command mavenExecRunner, options EvaluateOptions, u
 	return err
 }
 
-func installJarWarArtifacts(pomFile, dir string, command mavenExecRunner, utils mavenUtils, options EvaluateOptions) error {
+func installJarWarArtifacts(pomFile, dir string, command mavenExecRunner, utils mavenUtils, options *EvaluateOptions) error {
 	options.PomPath = filepath.Join(dir, "pom.xml")
-	finalName, err := Evaluate(&options, "project.build.finalName", command)
+	finalName, err := Evaluate(options, "project.build.finalName", command)
 	if err != nil {
 		return err
 	}
 	if finalName == "" {
 		log.Entry().Warn("project.build.finalName is empty, skipping install of artifact. Installing only the pom file.")
-		err = InstallFile("", pomFile, options.M2Path, command)
+		err = InstallFile("", pomFile, options, command)
 		if err != nil {
 			return err
 		}
@@ -232,26 +235,26 @@ func installJarWarArtifacts(pomFile, dir string, command mavenExecRunner, utils 
 
 	// Due to spring's jar repackaging we need to check for an "original" jar file because the repackaged one is no suitable source for dependent maven modules
 	if originalJarExists {
-		err = InstallFile(originalJarFile(dir, finalName), pomFile, options.M2Path, command)
+		err = InstallFile(originalJarFile(dir, finalName), pomFile, options, command)
 		if err != nil {
 			return err
 		}
 	} else if jarExists {
-		err = InstallFile(jarFile(dir, finalName), pomFile, options.M2Path, command)
+		err = InstallFile(jarFile(dir, finalName), pomFile, options, command)
 		if err != nil {
 			return err
 		}
 	}
 
 	if warExists {
-		err = InstallFile(warFile(dir, finalName), pomFile, options.M2Path, command)
+		err = InstallFile(warFile(dir, finalName), pomFile, options, command)
 		if err != nil {
 			return err
 		}
 	}
 
 	if classesJarExists {
-		err = InstallFile(classesJarFile(dir, finalName), pomFile, options.M2Path, command)
+		err = InstallFile(classesJarFile(dir, finalName), pomFile, options, command)
 		if err != nil {
 			return err
 		}
@@ -275,12 +278,14 @@ func warFile(dir, finalName string) string {
 	return filepath.Join(dir, "target", finalName+".war")
 }
 
-func flattenPom(command mavenExecRunner, o EvaluateOptions) error {
+func flattenPom(command mavenExecRunner, o *EvaluateOptions) error {
 	mavenOptionsFlatten := ExecuteOptions{
-		Goals:   []string{"flatten:flatten"},
-		Defines: []string{"-Dflatten.mode=resolveCiFriendliesOnly"},
-		PomPath: "pom.xml",
-		M2Path:  o.M2Path,
+		Goals:               []string{"flatten:flatten"},
+		Defines:             []string{"-Dflatten.mode=resolveCiFriendliesOnly"},
+		PomPath:             "pom.xml",
+		M2Path:              o.M2Path,
+		ProjectSettingsFile: o.ProjectSettingsFile,
+		GlobalSettingsFile:  o.GlobalSettingsFile,
 	}
 	_, err := Execute(&mavenOptionsFlatten, command)
 	return err

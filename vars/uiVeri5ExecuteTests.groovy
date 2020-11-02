@@ -77,7 +77,7 @@ import static com.sap.piper.Prerequisites.checkScript
  * * Control locators (OPA5 declarative matchers) allow locating and interacting with UI5 controls.
  * * Does not depend on testability support in applications - works with autorefreshing views, resizing elements, animated transitions.
  * * Declarative authentications - authentication flow over OAuth2 providers, etc.
- * * Console operation, CI ready, fully configurable, no need for java (comming soon) or IDE.
+ * * Console operation, CI ready, fully configurable, no need for java (coming soon) or IDE.
  * * Covers full ui5 browser matrix - Chrome,Firefox,IE,Edge,Safari,iOS,Android.
  * * Open-source, modify to suite your specific neeeds.
  *

@@ -64,6 +64,7 @@ type fortifyExecuteScanOptions struct {
 	ProjectSettingsFile             string   `json:"projectSettingsFile,omitempty"`
 	GlobalSettingsFile              string   `json:"globalSettingsFile,omitempty"`
 	M2Path                          string   `json:"m2Path,omitempty"`
+	VerifyOnly                      bool     `json:"verifyOnly,omitempty"`
 }
 
 type fortifyExecuteScanInflux struct {
@@ -71,17 +72,17 @@ type fortifyExecuteScanInflux struct {
 		fields struct {
 			projectName       string
 			projectVersion    string
-			violations        string
-			corporateTotal    string
-			corporateAudited  string
-			auditAllTotal     string
-			auditAllAudited   string
-			spotChecksTotal   string
-			spotChecksAudited string
-			spotChecksGap     string
-			suspicious        string
-			exploitable       string
-			suppressed        string
+			violations        int
+			corporateTotal    int
+			corporateAudited  int
+			auditAllTotal     int
+			auditAllAudited   int
+			spotChecksTotal   int
+			spotChecksAudited int
+			spotChecksGap     int
+			suspicious        int
+			exploitable       int
+			suppressed        int
 		}
 		tags struct {
 		}
@@ -93,7 +94,7 @@ func (i *fortifyExecuteScanInflux) persist(path, resourceName string) {
 		measurement string
 		valType     string
 		name        string
-		value       string
+		value       interface{}
 	}{
 		{valType: config.InfluxField, measurement: "fortify_data", name: "projectName", value: i.fortify_data.fields.projectName},
 		{valType: config.InfluxField, measurement: "fortify_data", name: "projectVersion", value: i.fortify_data.fields.projectVersion},
@@ -123,7 +124,7 @@ func (i *fortifyExecuteScanInflux) persist(path, resourceName string) {
 	}
 }
 
-// FortifyExecuteScanCommand This BETA step executes a Fortify scan on the specified project to perform static code analysis and check the source code for security flaws.
+// FortifyExecuteScanCommand This step executes a Fortify scan on the specified project to perform static code analysis and check the source code for security flaws.
 func FortifyExecuteScanCommand() *cobra.Command {
 	const STEP_NAME = "fortifyExecuteScan"
 
@@ -134,13 +135,11 @@ func FortifyExecuteScanCommand() *cobra.Command {
 
 	var createFortifyExecuteScanCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "This BETA step executes a Fortify scan on the specified project to perform static code analysis and check the source code for security flaws.",
+		Short: "This step executes a Fortify scan on the specified project to perform static code analysis and check the source code for security flaws.",
 		Long: `This step executes a Fortify scan on the specified project to perform static code analysis and check the source code for security flaws.
 
 The Fortify step triggers a scan locally on your Jenkins within a docker container so finally you have to supply a docker image with a Fortify SCA
-and Java plus Maven or alternatively Python installed into it for being able to perform any scans.
-
-DISCLAIMER: The step has not yet been tested on a wide variaty of projects, and is therefore considered of BETA quality.`,
+and Java plus Maven or alternatively Python installed into it for being able to perform any scans.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -169,8 +168,10 @@ DISCLAIMER: The step has not yet been tested on a wide variaty of projects, and 
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
 			}
 			log.DeferExitHandler(handler)
@@ -198,7 +199,7 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().StringVar(&stepConfig.PythonRequirementsInstallSuffix, "pythonRequirementsInstallSuffix", os.Getenv("PIPER_pythonRequirementsInstallSuffix"), "The suffix for the command used to install the requirements file in `buildTool: 'pip'` to populate the build environment with the necessary dependencies")
 	cmd.Flags().StringVar(&stepConfig.PythonVersion, "pythonVersion", `python3`, "Python version to be used in `buildTool: 'pip'`")
 	cmd.Flags().BoolVar(&stepConfig.UploadResults, "uploadResults", true, "Whether results shall be uploaded or not")
-	cmd.Flags().StringVar(&stepConfig.BuildDescriptorFile, "buildDescriptorFile", os.Getenv("PIPER_buildDescriptorFile"), "Path to the build descriptor file addressing the module/folder to be scanned. Defaults are for buildTool=`maven`: `./pom.xml`, buildTool=`pip`: `./setup.py`.")
+	cmd.Flags().StringVar(&stepConfig.BuildDescriptorFile, "buildDescriptorFile", `./pom.xml`, "Path to the build descriptor file addressing the module/folder to be scanned.")
 	cmd.Flags().StringVar(&stepConfig.CommitID, "commitId", os.Getenv("PIPER_commitId"), "Set the Git commit ID for identifying artifacts throughout the scan.")
 	cmd.Flags().StringVar(&stepConfig.CommitMessage, "commitMessage", os.Getenv("PIPER_commitMessage"), "Set the Git commit message for identifying pull request merges throughout the scan.")
 	cmd.Flags().StringVar(&stepConfig.GithubAPIURL, "githubApiUrl", `https://api.github.com`, "Set the GitHub API URL.")
@@ -235,6 +236,7 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Path to the mvn settings file that should be used as project settings file.")
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Path to the mvn settings file that should be used as global settings file.")
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
+	cmd.Flags().BoolVar(&stepConfig.VerifyOnly, "verifyOnly", false, "Whether the step shall only apply verification checks or whether it does a full scan and check cycle")
 
 	cmd.MarkFlagRequired("authToken")
 	cmd.MarkFlagRequired("serverUrl")
@@ -256,6 +258,12 @@ func fortifyExecuteScanMetadata() config.StepData {
 							{
 								Name: "fortifyCredentialsId",
 								Type: "secret",
+							},
+
+							{
+								Name:  "",
+								Paths: []string{"$(vaultPath)/fortify", "$(vaultBasePath)/$(vaultPipelineName)/fortify", "$(vaultBasePath)/GROUP-SECRETS/fortify"},
+								Type:  "vaultSecret",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -345,6 +353,14 @@ func fortifyExecuteScanMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "buildDescriptorFile",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
@@ -663,6 +679,14 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
+					},
+					{
+						Name:        "verifyOnly",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 				},
 			},

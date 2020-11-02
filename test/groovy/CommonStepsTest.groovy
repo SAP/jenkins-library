@@ -106,16 +106,25 @@ public class CommonStepsTest extends BasePiperTest{
     }
 
     private static fieldRelatedWhitelist = [
+        'abapAddonAssemblyKitCheckCVs', //implementing new golang pattern without fields
+        'abapAddonAssemblyKitCheckPV', //implementing new golang pattern without fields
+        'abapAddonAssemblyKitCreateTargetVector', //implementing new golang pattern without fields
+        'abapAddonAssemblyKitPublishTargetVector', //implementing new golang pattern without fields
+        'abapAddonAssemblyKitRegisterPackages', //implementing new golang pattern without fields
+        'abapAddonAssemblyKitReleasePackages', //implementing new golang pattern without fields
+        'abapAddonAssemblyKitReserveNextPackages', //implementing new golang pattern without fields
         'abapEnvironmentAssemblePackages', //implementing new golang pattern without fields
         'abapEnvironmentCheckoutBranch', //implementing new golang pattern without fields
         'abapEnvironmentCloneGitRepo', //implementing new golang pattern without fields
         'abapEnvironmentPullGitRepo', //implementing new golang pattern without fields
-        'abapEnvironmentPipeline', // special step (infrasturcture)
+        'abapEnvironmentPipeline', // special step (infrastructure)
         'abapEnvironmentRunATCCheck', //implementing new golang pattern without fields
         'artifactPrepareVersion',
         'cloudFoundryCreateService', //implementing new golang pattern without fields
         'cloudFoundryCreateServiceKey', //implementing new golang pattern without fields
+        'cloudFoundryCreateSpace', //implementing new golang pattern without fields
         'cloudFoundryDeleteService', //implementing new golang pattern without fields
+        'cloudFoundryDeleteSpace', //implementing new golang pattern without fields
         'durationMeasure', // only expects parameters via signature
         'prepareDefaultValues', // special step (infrastructure)
         'piperPipeline', // special step (infrastructure)
@@ -155,7 +164,8 @@ public class CommonStepsTest extends BasePiperTest{
         'gctsDeploy', //implementing new golang pattern without fields
         'containerSaveImage', //implementing new golang pattern without fields
         'detectExecuteScan', //implementing new golang pattern without fields
-        'kanikoExecute' //implementing new golang pattern without fields
+        'kanikoExecute', //implementing new golang pattern without fields
+        'gitopsUpdateDeployment' //implementing new golang pattern without fields
     ]
 
     @Test

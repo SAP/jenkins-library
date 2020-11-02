@@ -5,25 +5,35 @@ metadata:
     cli command to scan the defined sources and publish the results to a SonarQube instance."
 spec:
   inputs:
+    secrets:
+      - name: sonarTokenCredentialsId
+        type: jenkins
+        description: "Jenkins 'Secret text' credentials ID containing the token used to authenticate
+          with the Sonar Server."
+      - name: githubTokenCredentialsId
+        type: jenkins
+        description: "Jenkins 'Secret text' credentials ID containing the token used to authenticate
+          with the Github Server."
     params:
       - name: instance
         type: string
         description: "Jenkins only: The name of the SonarQube instance defined in the Jenkins settings.
-          DEPRECATED: use host parameter instead"
+          DEPRECATED: use serverUrl parameter instead"
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
         default: "SonarCloud"
-      - name: host
+      - name: serverUrl
+        aliases:
+          - name: host
+          - name: sonarServerUrl
         type: string
         description: "The URL to the Sonar backend."
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
-        aliases:
-          - name: sonarServerUrl
       - name: token
         type: string
         description: "Token used to authenticate with the Sonar Server."
@@ -31,6 +41,11 @@ spec:
           - PARAMETERS
         secret: true
         resourceRef:
+          - type: vaultSecret
+            paths:
+            - $(vaultPath)/sonar
+            - $(vaultBasePath)/$(vaultPipelineName)/sonar
+            - $(vaultBasePath)/GROUP-SECRETS/sonar
           - name: sonarTokenCredentialsId
             type: secret
         aliases:
@@ -53,7 +68,7 @@ spec:
       - name: sonarScannerDownloadUrl
         type: string
         description: "URL to the sonar-scanner-cli archive."
-        default: "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.4.0.2170-linux.zip"
+        default: "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.5.0.2216-linux.zip"
         scope:
           - PARAMETERS
           - STAGES
@@ -228,15 +243,6 @@ spec:
         aliases:
           - name: maven/m2Path
 
-    secrets:
-      - name: sonarTokenCredentialsId
-        type: jenkins
-        description: "Jenkins 'Secret text' credentials ID containing the token used to authenticate
-          with the Sonar Server."
-      - name: githubTokenCredentialsId
-        type: jenkins
-        description: "Jenkins 'Secret text' credentials ID containing the token used to authenticate
-          with the Github Server."
   outputs:
     resources:
       - name: influx
@@ -245,6 +251,7 @@ spec:
           - name: step_data
             fields:
               - name: sonar
+                type: bool
   containers:
     - name: sonar
-      image: node:lts-stretch
+      image: sonarsource/sonar-scanner-cli:4.5

@@ -62,7 +62,7 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
                 config.stashNoDefaultExcludes = parameters.stashNoDefaultExcludes
             }
 
-            dockerWrapper(script, config) {
+            dockerWrapper(script, stepName, config) {
                 handleErrorDetails(stepName) {
                     script.commonPipelineEnvironment.writeToDisk(script)
                     try {
@@ -141,8 +141,9 @@ static String getCustomConfigArg(def script) {
 }
 
 // reused in sonarExecuteScan
-void dockerWrapper(script, config, body) {
+void dockerWrapper(script, stepName, config, body) {
     if (config.dockerImage) {
+        echo "[INFO] executing pipeline step '${stepName}' with docker image '${config.dockerImage}'"
         Map dockerExecuteParameters = [:].plus(config)
         dockerExecuteParameters.script = script
         dockerExecute(dockerExecuteParameters) {
@@ -155,6 +156,10 @@ void dockerWrapper(script, config, body) {
 
 // reused in sonarExecuteScan
 void credentialWrapper(config, List credentialInfo, body) {
+    if (config.containsKey('vaultAppRoleTokenCredentialsId') && config.containsKey('vaultAppRoleSecretTokenCredentialsId')) {
+        credentialInfo = [[type: 'token', id: 'vaultAppRoleTokenCredentialsId', env: ['PIPER_vaultAppRoleID']],
+                            [type: 'token', id: 'vaultAppRoleSecretTokenCredentialsId', env: ['PIPER_vaultAppRoleSecretID']]]
+    }
     if (credentialInfo.size() > 0) {
         def creds = []
         def sshCreds = []

@@ -272,7 +272,7 @@ func runXsDeploy(XsDeployOptions xsDeployOptions, piperEnvironment *xsDeployComm
 	}
 
 	if err != nil {
-		log.Entry().Errorf("An error occured. Stdout from underlying process: >>%s<<. Stderr from underlying process: >>%s<<", o, e)
+		log.Entry().Errorf("An error occurred. Stdout from underlying process: >>%s<<. Stderr from underlying process: >>%s<<", o, e)
 	}
 
 	if e := printStatus(XsDeployOptions, stdout); e != nil {

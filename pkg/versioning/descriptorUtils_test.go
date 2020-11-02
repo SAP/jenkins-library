@@ -1,8 +1,9 @@
 package versioning
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 type mavenMock struct {
@@ -88,5 +89,12 @@ func TestDetermineProjectCoordinates(t *testing.T) {
 		name, version := DetermineProjectCoordinates(nameTemplate, "major", gav)
 		assert.Equal(t, "python-test", name, "Expected different project name")
 		assert.Equal(t, "2", version, "Expected different project version")
+	})
+
+	t.Run("python semantic", func(t *testing.T) {
+		gav, _ := (&pipMock{artifactID: "python-test", version: "2.2.3.20200101"}).GetCoordinates()
+		name, version := DetermineProjectCoordinates(nameTemplate, "semantic", gav)
+		assert.Equal(t, "python-test", name, "Expected different project name")
+		assert.Equal(t, "2.2.3", version, "Expected different project version")
 	})
 }

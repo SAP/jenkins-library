@@ -9,35 +9,26 @@ stages:
           - '**/*.jsx'
           - '**/*.ts'
           - '**/*.tsx'
-  backendIntegrationTests:
+  integration:
     stepConditions:
       npmExecuteScripts:
         npmScripts:
           - 'ci-it-backend'
+          - 'ci-it-frontend'
       mavenExecuteIntegration:
         filePattern: 'integration-tests/pom.xml'
   compliance:
-    onlyProductiveBranch: true
     stepConditions:
       sonarExecuteScan:
         configKeys:
           - 'sonarTokenCredentialsId'
           - 'projectKey'
           - 'instance'
-  frontendIntegrationTests:
-    stepConditions:
-      npmExecuteScripts:
-        npmScripts:
-          - 'ci-it-frontend'
   additionalUnitTests:
     stepConditions:
       npmExecuteScripts:
         npmScripts:
           - 'ci-frontend-unit-test'
-  npmAudit:
-    stepConditions:
-      npmAudit:
-        filePattern: '**/package.json'
   endToEndTests:
     stepConditions:
       multicloudDeploy:
@@ -68,42 +59,23 @@ stages:
         configKeys:
           - 'cfTargets'
           - 'neoTargets'
-  checkmarxScan:
-    onlyProductiveBranch: true
+  security:
     stepConditions:
-      checkmarxScan:
+      checkmarxExecuteScan:
         configKeys:
           - 'groupId'
-  sonarQubeScan:
-    stepConditions:
-      sonarQubeScan:
+      detectExecuteScan:
         configKeys:
-          - 'projectKey'
-          - 'instance'
-  additionalTools:
-    onlyProductiveBranch: true
-    extensionExists: true
-  whitesourceScan:
-    onlyProductiveBranch: true
-    stepConditions:
-      whitesourceScan:
-        configKeys:
-          - 'product'
-          - 'credentialsId'
-  fortifyScan:
-    onlyProductiveBranch: true
-    stepConditions:
+          - 'detectTokenCredentialsId'
       fortifyExecuteScan:
         configKeys:
           - 'fortifyCredentialsId'
-  detectScan:
-    onlyProductiveBranch: true
-    stepConditions:
-      detectScan:
+      whitesourceExecuteScan:
         configKeys:
-          - 'detectTokenCredentialsId'
+          - 'productName'
+          - 'orgAdminUserTokenCredentialsId'
+          - 'userTokenCredentialsId'
   productionDeployment:
-    onlyProductiveBranch: true
     stepConditions:
       multicloudDeploy:
         configKeys:
@@ -131,7 +103,6 @@ stages:
         configKeys:
           - 'githubTokenCredentialsId'
   artifactDeployment:
-    onlyProductiveBranch: true
     stepConditions:
       artifactDeployment:
         configKeys:

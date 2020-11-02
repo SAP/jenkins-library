@@ -59,7 +59,7 @@ class PipelineRestartStepsTest extends BasePiperTest {
                 throw new hudson.AbortException('I just created an error')
             }
         } catch(err) {
-            assertThat(loggingRule.log, containsString('ERROR occured: hudson.AbortException: I just created an error'))
+            assertThat(loggingRule.log, containsString('ERROR occurred: hudson.AbortException: I just created an error'))
             assertThat(mailBuildResult, is('UNSTABLE'))
         }
     }
@@ -102,7 +102,7 @@ class PipelineRestartStepsTest extends BasePiperTest {
                 throw new hudson.AbortException('I just created an error')
             }
         } catch(err) {
-            assertThat(loggingRule.log, containsString('ERROR occured: hudson.AbortException: I just created an error'))
+            assertThat(loggingRule.log, containsString('ERROR occurred: hudson.AbortException: I just created an error'))
             assertThat(mailBuildResult, is(''))
         }
     }

@@ -291,7 +291,7 @@ func TestParseATCResult(t *testing.T) {
 		bodyString := `<html><head><title>HTMLTestResponse</title</head></html>`
 		body := []byte(bodyString)
 		err = parseATCResult(body, "ATCResults.xml")
-		assert.EqualError(t, err, "The Software Component could not be checked. Please make sure the respective Software Component has been cloned succesfully on the system")
+		assert.EqualError(t, err, "The Software Component could not be checked. Please make sure the respective Software Component has been cloned successfully on the system")
 	})
 }
 
@@ -325,12 +325,12 @@ func TestBuildATCCheckBody(t *testing.T) {
 			"",
 			ATCObjects{
 				Package: []Package{
-					Package{Name: "testPackage", IncludeSubpackages: true},
-					Package{Name: "testPackage2", IncludeSubpackages: false},
+					{Name: "testPackage", IncludeSubpackages: true},
+					{Name: "testPackage2", IncludeSubpackages: false},
 				},
 				SoftwareComponent: []SoftwareComponent{
-					SoftwareComponent{Name: "testSoftwareComponent"},
-					SoftwareComponent{Name: "testSoftwareComponent2"},
+					{Name: "testSoftwareComponent"},
+					{Name: "testSoftwareComponent2"},
 				},
 			},
 		}
@@ -357,8 +357,8 @@ func TestBuildATCCheckBody(t *testing.T) {
 			"",
 			ATCObjects{
 				Package: []Package{
-					Package{Name: "testPackage", IncludeSubpackages: true},
-					Package{Name: "testPackage2", IncludeSubpackages: false},
+					{Name: "testPackage", IncludeSubpackages: true},
+					{Name: "testPackage2", IncludeSubpackages: false},
 				},
 			},
 		}
@@ -386,8 +386,8 @@ func TestBuildATCCheckBody(t *testing.T) {
 			"",
 			ATCObjects{
 				SoftwareComponent: []SoftwareComponent{
-					SoftwareComponent{Name: "testSoftwareComponent"},
-					SoftwareComponent{Name: "testSoftwareComponent2"},
+					{Name: "testSoftwareComponent"},
+					{Name: "testSoftwareComponent2"},
 				},
 			},
 		}
@@ -402,7 +402,7 @@ func TestBuildATCCheckBody(t *testing.T) {
 		assert.Equal(t, nil, err)
 	})
 	t.Run("success case: Test build body with example yaml config with check variant configuration", func(t *testing.T) {
-		expectedcheckvariantstring := ` check_variant="TestVariant" configuration="TestConfiguration"`
+		expectedcheckvariantstring := ` checkVariant="TestVariant" configuration="TestConfiguration"`
 		expectedpackagestring := `<obj:packages><obj:package value="testPackage" includeSubpackages="true"/><obj:package value="testPackage2" includeSubpackages="false"/></obj:packages>`
 		expectedsoftwarecomponentstring := `<obj:softwarecomponents><obj:softwarecomponent value="testSoftwareComponent"/><obj:softwarecomponent value="testSoftwareComponent2"/></obj:softwarecomponents>`
 
@@ -414,12 +414,12 @@ func TestBuildATCCheckBody(t *testing.T) {
 			"TestConfiguration",
 			ATCObjects{
 				SoftwareComponent: []SoftwareComponent{
-					SoftwareComponent{Name: "testSoftwareComponent"},
-					SoftwareComponent{Name: "testSoftwareComponent2"},
+					{Name: "testSoftwareComponent"},
+					{Name: "testSoftwareComponent2"},
 				},
 				Package: []Package{
-					Package{Name: "testPackage", IncludeSubpackages: true},
-					Package{Name: "testPackage2", IncludeSubpackages: false},
+					{Name: "testPackage", IncludeSubpackages: true},
+					{Name: "testPackage2", IncludeSubpackages: false},
 				},
 			},
 		}
