@@ -69,11 +69,10 @@ func TestRunDetect(t *testing.T) {
 
 		utilsMock := newDetectTestUtilsBundle()
 		utilsMock.ShouldFailOnCommand = map[string]error{"./detect.sh --blackduck.url= --blackduck.api.token= --detect.project.name=\\\"\\\" --detect.project.version.name=\\\"\\\" --detect.code.location.name=\\\"\\\"": fmt.Errorf("Test Error")}
-		fileUtilsMock := mock.FilesMock{}
-		fileUtilsMock.AddFile("detect.sh", []byte(""))
+		utilsMock.AddFile("detect.sh", []byte(""))
 		err := runDetect(detectExecuteScanOptions{}, &utilsMock)
 		assert.EqualError(t, err, "Test Error")
-		assert.True(t, fileUtilsMock.HasRemovedFile("detect.sh"))
+		assert.True(t, utilsMock.HasRemovedFile("detect.sh"))
 	})
 
 	t.Run("maven parameters", func(t *testing.T) {
