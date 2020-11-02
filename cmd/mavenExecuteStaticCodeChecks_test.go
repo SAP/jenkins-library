@@ -12,7 +12,7 @@ import (
 
 func TestRunMavenStaticCodeChecks(t *testing.T) {
 	t.Run("should run spotBugs and pmd with all configured options", func(t *testing.T) {
-		execMockRunner := mock.ExecMockRunner{}
+		utils := newMavenStaticCodeChecksTestUtilsBundle()
 		config := mavenExecuteStaticCodeChecksOptions{
 			SpotBugs:                  true,
 			Pmd:                       true,
@@ -32,7 +32,7 @@ func TestRunMavenStaticCodeChecks(t *testing.T) {
 				"-Dpmd.failurePriority=2",
 				"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
 				"--batch-mode",
-				"com.github.spotbugs:spotbugs-maven-plugin:4.0.4:check",
+				"com.github.spotbugs:spotbugs-maven-plugin:4.1.4:check",
 				"org.apache.maven.plugins:maven-pmd-plugin:3.13.0:check",
 			},
 		}
@@ -44,20 +44,20 @@ func TestRunMavenStaticCodeChecks(t *testing.T) {
 		defer os.Chdir(currentDir)
 		os.Chdir("../test/resources/maven/")
 
-		err = runMavenStaticCodeChecks(&config, nil, &execMockRunner)
+		err = runMavenStaticCodeChecks(&config, nil, utils)
 
 		assert.Nil(t, err)
-		assert.Equal(t, expected, execMockRunner.Calls[0])
+		assert.Equal(t, expected, utils.Calls[0])
 	})
 	t.Run("should warn and skip execution if all tools are turned off", func(t *testing.T) {
-		execMockRunner := mock.ExecMockRunner{}
+		utils := newMavenStaticCodeChecksTestUtilsBundle()
 		config := mavenExecuteStaticCodeChecksOptions{
 			SpotBugs: false,
 			Pmd:      false,
 		}
-		err := runMavenStaticCodeChecks(&config, nil, &execMockRunner)
+		err := runMavenStaticCodeChecks(&config, nil, utils)
 		assert.Nil(t, err)
-		assert.Nil(t, execMockRunner.Calls)
+		assert.Nil(t, utils.Calls)
 	})
 }
 
@@ -106,7 +106,7 @@ func TestGetSpotBugsMavenParameters(t *testing.T) {
 			SpotBugsMaxAllowedViolations: 123,
 		}
 		expected := maven.ExecuteOptions{
-			Goals:   []string{"com.github.spotbugs:spotbugs-maven-plugin:4.0.4:check"},
+			Goals:   []string{"com.github.spotbugs:spotbugs-maven-plugin:4.1.4:check"},
 			Defines: []string{"-Dspotbugs.includeFilterFile=includeFilter.xml", "-Dspotbugs.excludeFilterFile=excludeFilter.xml", "-Dspotbugs.maxAllowedViolations=123"},
 		}
 
@@ -115,8 +115,21 @@ func TestGetSpotBugsMavenParameters(t *testing.T) {
 	t.Run("should return maven goal only", func(t *testing.T) {
 		config := mavenExecuteStaticCodeChecksOptions{}
 		expected := maven.ExecuteOptions{
-			Goals: []string{"com.github.spotbugs:spotbugs-maven-plugin:4.0.4:check"}}
+			Goals: []string{"com.github.spotbugs:spotbugs-maven-plugin:4.1.4:check"}}
 
 		assert.Equal(t, &expected, getSpotBugsMavenParameters(&config))
 	})
+}
+
+type mavenStaticCodeChecksTestUtilsBundle struct {
+	*mock.ExecMockRunner
+	*mock.FilesMock
+}
+
+func newMavenStaticCodeChecksTestUtilsBundle() mavenStaticCodeChecksTestUtilsBundle {
+	utilsBundle := mavenStaticCodeChecksTestUtilsBundle{
+		ExecMockRunner: &mock.ExecMockRunner{},
+		FilesMock:      &mock.FilesMock{},
+	}
+	return utilsBundle
 }

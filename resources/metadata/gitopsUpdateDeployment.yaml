@@ -98,18 +98,23 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: container/registryUrl
-      - name: containerImage
+      - name: containerImageNameTag
         aliases:
           - name: image
             deprecated: true
-          - name: containerImageNameTag
+          - name: containerImage
         type: string
         description: Container image name with version tag to annotate in the deployment configuration.
-        resourceRef:
-          - name: commonPipelineEnvironment
-            param: container/imageNameTag
-        mandatory: true
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/imageNameTag
+  containers:
+    - image: dtzar/helm-kubectl:2.12.1
+      workingDir: /config
+      options:
+        - name: -u
+          value: "0"

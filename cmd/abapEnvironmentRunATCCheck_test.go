@@ -402,7 +402,7 @@ func TestBuildATCCheckBody(t *testing.T) {
 		assert.Equal(t, nil, err)
 	})
 	t.Run("success case: Test build body with example yaml config with check variant configuration", func(t *testing.T) {
-		expectedcheckvariantstring := ` check_variant="TestVariant" configuration="TestConfiguration"`
+		expectedcheckvariantstring := ` checkVariant="TestVariant" configuration="TestConfiguration"`
 		expectedpackagestring := `<obj:packages><obj:package value="testPackage" includeSubpackages="true"/><obj:package value="testPackage2" includeSubpackages="false"/></obj:packages>`
 		expectedsoftwarecomponentstring := `<obj:softwarecomponents><obj:softwarecomponent value="testSoftwareComponent"/><obj:softwarecomponent value="testSoftwareComponent2"/></obj:softwarecomponents>`
 

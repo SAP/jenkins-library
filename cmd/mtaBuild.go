@@ -224,7 +224,7 @@ func installMavenArtifacts(e command.ExecRunner, config mtaBuildOptions) error {
 		return err
 	}
 	if pomXMLExists {
-		err = maven.InstallMavenArtifacts(e, maven.EvaluateOptions{M2Path: config.M2Path})
+		err = maven.InstallMavenArtifacts(e, &maven.EvaluateOptions{M2Path: config.M2Path})
 		if err != nil {
 			return err
 		}
