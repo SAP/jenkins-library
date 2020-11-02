@@ -38,7 +38,6 @@ spec:
           - STAGES
           - STEPS
         type: string
-        mandatory: false
       - name: serverUrl
         aliases:
           - name: githubServerUrl
