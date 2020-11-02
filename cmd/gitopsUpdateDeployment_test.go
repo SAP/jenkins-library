@@ -82,7 +82,7 @@ func TestRunGitopsUpdateDeploymentWithKubectl(t *testing.T) {
 		ContainerName:         "myContainer",
 		ContainerRegistryURL:  "https://myregistry.com/registry/containers",
 		ContainerImageNameTag: "myFancyContainer:1337",
-		DeployTool:            "kubectl",
+		Tool:                  "kubectl",
 	}
 
 	t.Parallel()
@@ -126,44 +126,6 @@ func TestRunGitopsUpdateDeploymentWithKubectl(t *testing.T) {
 	t.Run("ChartPath not used for kubectl", func(t *testing.T) {
 		var configuration = *validConfiguration
 		configuration.ChartPath = "chartPath"
-
-		gitUtilsMock := &gitUtilsMock{}
-		runnerMock := &gitOpsExecRunnerMock{}
-
-		err := runGitopsUpdateDeployment(&configuration, runnerMock, gitUtilsMock, filesMock{})
-		assert.NoError(t, err)
-		assert.Equal(t, configuration.BranchName, gitUtilsMock.changedBranch)
-		assert.Equal(t, expectedYaml, gitUtilsMock.savedFile)
-		assert.Equal(t, "kubectl", runnerMock.executable)
-		assert.Equal(t, "patch", runnerMock.params[0])
-		assert.Equal(t, "--local", runnerMock.params[1])
-		assert.Equal(t, "--output=yaml", runnerMock.params[2])
-		assert.Equal(t, `--patch={"spec":{"template":{"spec":{"containers":[{"name":"myContainer","image":"myregistry.com/myFancyContainer:1337"}]}}}}`, runnerMock.params[3])
-		assert.True(t, strings.Contains(runnerMock.params[4], filepath.Join("dir1/dir2/depl.yaml")))
-	})
-
-	t.Run("HelmValueForRepositoryAndImageName not used for kubectl", func(t *testing.T) {
-		var configuration = *validConfiguration
-		configuration.HelmValueForRepositoryAndImageName = "HelmValueForRepositoryAndImageName"
-
-		gitUtilsMock := &gitUtilsMock{}
-		runnerMock := &gitOpsExecRunnerMock{}
-
-		err := runGitopsUpdateDeployment(&configuration, runnerMock, gitUtilsMock, filesMock{})
-		assert.NoError(t, err)
-		assert.Equal(t, configuration.BranchName, gitUtilsMock.changedBranch)
-		assert.Equal(t, expectedYaml, gitUtilsMock.savedFile)
-		assert.Equal(t, "kubectl", runnerMock.executable)
-		assert.Equal(t, "patch", runnerMock.params[0])
-		assert.Equal(t, "--local", runnerMock.params[1])
-		assert.Equal(t, "--output=yaml", runnerMock.params[2])
-		assert.Equal(t, `--patch={"spec":{"template":{"spec":{"containers":[{"name":"myContainer","image":"myregistry.com/myFancyContainer:1337"}]}}}}`, runnerMock.params[3])
-		assert.True(t, strings.Contains(runnerMock.params[4], filepath.Join("dir1/dir2/depl.yaml")))
-	})
-
-	t.Run("HelmValueForImageVersion not used for kubectl", func(t *testing.T) {
-		var configuration = *validConfiguration
-		configuration.HelmValueForImageVersion = "HelmValueForImageVersion"
 
 		gitUtilsMock := &gitUtilsMock{}
 		runnerMock := &gitOpsExecRunnerMock{}
@@ -227,7 +189,7 @@ func TestRunGitopsUpdateDeploymentWithKubectl(t *testing.T) {
 
 		err := runGitopsUpdateDeployment(&configuration, runnerMock, gitUtilsMock, filesMock{})
 		assert.Error(t, err)
-		assert.EqualError(t, err, "not all required fields for this deploy tool are configured: missing required fields for kubectl: containerName is necessary for kubectl")
+		assert.EqualError(t, err, "missing required fields for kubectl: the following parameters are necessary for kubectl: [containerName]")
 	})
 
 	t.Run("error on kubectl execution", func(t *testing.T) {
@@ -299,45 +261,41 @@ func TestRunGitopsUpdateDeploymentWithKubectl(t *testing.T) {
 func TestRunGitopsUpdateDeploymentWithInvalid(t *testing.T) {
 	t.Run("invalid deploy tool is not supported", func(t *testing.T) {
 		var configuration = &gitopsUpdateDeploymentOptions{
-			BranchName:                         "main",
-			CommitMessage:                      "This is the commit message",
-			ServerURL:                          "https://github.com",
-			Username:                           "admin3",
-			Password:                           "validAccessToken",
-			FilePath:                           "dir1/dir2/depl.yaml",
-			ContainerName:                      "myContainer",
-			ContainerRegistryURL:               "https://myregistry.com",
-			ContainerImageNameTag:              "registry/containers/myFancyContainer:1337",
-			DeployTool:                         "invalid",
-			HelmValueForImageVersion:           "image.version",
-			ChartPath:                          "./helm",
-			DeploymentName:                     "myFancyDeployment",
-			HelmValueForRepositoryAndImageName: "image.repositoryName",
-			HelmValues:                         []string{"./helm/additionalValues.yaml"},
+			BranchName:            "main",
+			CommitMessage:         "This is the commit message",
+			ServerURL:             "https://github.com",
+			Username:              "admin3",
+			Password:              "validAccessToken",
+			FilePath:              "dir1/dir2/depl.yaml",
+			ContainerName:         "myContainer",
+			ContainerRegistryURL:  "https://myregistry.com",
+			ContainerImageNameTag: "registry/containers/myFancyContainer:1337",
+			Tool:                  "invalid",
+			ChartPath:             "./helm",
+			DeploymentName:        "myFancyDeployment",
+			HelmValues:            []string{"./helm/additionalValues.yaml"},
 		}
 
 		err := runGitopsUpdateDeployment(configuration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, filesMock{})
 		assert.Error(t, err)
-		assert.EqualError(t, err, "deploy tool invalid is not supported")
+		assert.EqualError(t, err, "tool invalid is not supported")
 	})
 }
 
 func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 	var validConfiguration = &gitopsUpdateDeploymentOptions{
-		BranchName:                         "main",
-		CommitMessage:                      "This is the commit message",
-		ServerURL:                          "https://github.com",
-		Username:                           "admin3",
-		Password:                           "validAccessToken",
-		FilePath:                           "dir1/dir2/depl.yaml",
-		ContainerRegistryURL:               "https://myregistry.com",
-		ContainerImageNameTag:              "registry/containers/myFancyContainer:1337",
-		DeployTool:                         "helm",
-		HelmValueForImageVersion:           "image.version",
-		ChartPath:                          "./helm",
-		DeploymentName:                     "myFancyDeployment",
-		HelmValueForRepositoryAndImageName: "image.repositoryName",
-		HelmValues:                         []string{"./helm/additionalValues.yaml"},
+		BranchName:            "main",
+		CommitMessage:         "This is the commit message",
+		ServerURL:             "https://github.com",
+		Username:              "admin3",
+		Password:              "validAccessToken",
+		FilePath:              "dir1/dir2/depl.yaml",
+		ContainerRegistryURL:  "https://myregistry.com",
+		ContainerImageNameTag: "registry/containers/myFancyContainer:1337",
+		Tool:                  "helm",
+		ChartPath:             "./helm",
+		DeploymentName:        "myFancyDeployment",
+		HelmValues:            []string{"./helm/additionalValues.yaml"},
 	}
 
 	t.Parallel()
@@ -354,8 +312,8 @@ func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 		assert.Equal(t, "template", runnerMock.params[0])
 		assert.Equal(t, "myFancyDeployment", runnerMock.params[1])
 		assert.Equal(t, filepath.Join(".", "helm"), runnerMock.params[2])
-		assert.Equal(t, "--set=image.repositoryName=myregistry.com/registry/containers/myFancyContainer", runnerMock.params[3])
-		assert.Equal(t, "--set=image.version=1337", runnerMock.params[4])
+		assert.Equal(t, "--set=image.repository=myregistry.com/registry/containers/myFancyContainer", runnerMock.params[3])
+		assert.Equal(t, "--set=image.tag=1337", runnerMock.params[4])
 		assert.Equal(t, "--values", runnerMock.params[5])
 		assert.Equal(t, "./helm/additionalValues.yaml", runnerMock.params[6])
 	})
@@ -376,8 +334,8 @@ func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 		assert.Equal(t, "template", runnerMock.params[0])
 		assert.Equal(t, "myFancyDeployment", runnerMock.params[1])
 		assert.Equal(t, filepath.Join(".", "helm"), runnerMock.params[2])
-		assert.Equal(t, "--set=image.repositoryName=myregistry.com/registry/containers/myFancyContainer", runnerMock.params[3])
-		assert.Equal(t, "--set=image.version=1337", runnerMock.params[4])
+		assert.Equal(t, "--set=image.repository=myregistry.com/registry/containers/myFancyContainer", runnerMock.params[3])
+		assert.Equal(t, "--set=image.tag=1337", runnerMock.params[4])
 		assert.Equal(t, "--values", runnerMock.params[5])
 		assert.Equal(t, "./helm/additionalValues.yaml", runnerMock.params[6])
 	})
@@ -397,8 +355,8 @@ func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 		assert.Equal(t, "template", runnerMock.params[0])
 		assert.Equal(t, "myFancyDeployment", runnerMock.params[1])
 		assert.Equal(t, filepath.Join(".", "helm"), runnerMock.params[2])
-		assert.Equal(t, "--set=image.repositoryName=myregistry.com/registry/containers/myFancyContainer", runnerMock.params[3])
-		assert.Equal(t, "--set=image.version=1337", runnerMock.params[4])
+		assert.Equal(t, "--set=image.repository=myregistry.com/registry/containers/myFancyContainer", runnerMock.params[3])
+		assert.Equal(t, "--set=image.tag=1337", runnerMock.params[4])
 		assert.Equal(t, "--values", runnerMock.params[5])
 		assert.Equal(t, "./helm/additionalValues.yaml", runnerMock.params[6])
 	})
@@ -418,8 +376,8 @@ func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 		assert.Equal(t, "template", runnerMock.params[0])
 		assert.Equal(t, "myFancyDeployment", runnerMock.params[1])
 		assert.Equal(t, filepath.Join(".", "helm"), runnerMock.params[2])
-		assert.Equal(t, "--set=image.repositoryName=myregistry.com/registry/containers/myFancyContainer", runnerMock.params[3])
-		assert.Equal(t, "--set=image.version=1337", runnerMock.params[4])
+		assert.Equal(t, "--set=image.repository=myregistry.com/registry/containers/myFancyContainer", runnerMock.params[3])
+		assert.Equal(t, "--set=image.tag=1337", runnerMock.params[4])
 	})
 
 	t.Run("erroneous URL", func(t *testing.T) {
@@ -437,25 +395,7 @@ func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 
 		err := runGitopsUpdateDeployment(&configuration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, filesMock{})
 		assert.Error(t, err)
-		assert.EqualError(t, err, "not all required fields for this deploy tool are configured: missing required fields for helm: chartPath is necessary for helm")
-	})
-
-	t.Run("missing HelmValueForRepositoryAndImageName", func(t *testing.T) {
-		var configuration = *validConfiguration
-		configuration.HelmValueForRepositoryAndImageName = ""
-
-		err := runGitopsUpdateDeployment(&configuration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, filesMock{})
-		assert.Error(t, err)
-		assert.EqualError(t, err, "not all required fields for this deploy tool are configured: missing required fields for helm: helmValueForRepositoryAndImageName is necessary for helm")
-	})
-
-	t.Run("missing HelmValueForImageVersion", func(t *testing.T) {
-		var configuration = *validConfiguration
-		configuration.HelmValueForImageVersion = ""
-
-		err := runGitopsUpdateDeployment(&configuration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, filesMock{})
-		assert.Error(t, err)
-		assert.EqualError(t, err, "not all required fields for this deploy tool are configured: missing required fields for helm: helmValueForImageVersion is necessary for helm")
+		assert.EqualError(t, err, "missing required fields for helm: the following parameters are necessary for helm: [chartPath]")
 	})
 
 	t.Run("missing DeploymentName", func(t *testing.T) {
@@ -464,7 +404,17 @@ func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 
 		err := runGitopsUpdateDeployment(&configuration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, filesMock{})
 		assert.Error(t, err)
-		assert.EqualError(t, err, "not all required fields for this deploy tool are configured: missing required fields for helm: deploymentName is necessary for helm")
+		assert.EqualError(t, err, "missing required fields for helm: the following parameters are necessary for helm: [deploymentName]")
+	})
+
+	t.Run("missing DeploymentName and ChartPath", func(t *testing.T) {
+		var configuration = *validConfiguration
+		configuration.DeploymentName = ""
+		configuration.ChartPath = ""
+
+		err := runGitopsUpdateDeployment(&configuration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, filesMock{})
+		assert.Error(t, err)
+		assert.EqualError(t, err, "missing required fields for helm: the following parameters are necessary for helm: [chartPath deploymentName]")
 	})
 
 	t.Run("erroneous tag", func(t *testing.T) {
