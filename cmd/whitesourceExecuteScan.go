@@ -324,6 +324,7 @@ func wsScanOptions(config *ScanOptions) *ws.ScanOptions {
 		M2Path:                     config.M2Path,
 		GlobalSettingsFile:         config.GlobalSettingsFile,
 		ProjectSettingsFile:        config.ProjectSettingsFile,
+		InstallArtifacts:           config.InstallArtifacts,
 		DefaultNpmRegistry:         config.DefaultNpmRegistry,
 		AgentDownloadURL:           config.AgentDownloadURL,
 		AgentFileName:              config.AgentFileName,

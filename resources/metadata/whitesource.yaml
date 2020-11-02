@@ -373,6 +373,16 @@ spec:
           - PARAMETERS
         aliases:
           - name: maven/m2Path
+      - name: installArtifacts
+        type: bool
+        description:
+          "If enabled, it will install all artifacts to the local maven repository to make them available before running whitesource.
+          This is required if any maven module has dependencies to other modules in the repository and they were not installed before."
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
 
       # Global npm settings, should be added to all npm steps
       - name: defaultNpmRegistry

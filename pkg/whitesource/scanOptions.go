@@ -20,6 +20,8 @@ type ScanOptions struct {
 	GlobalSettingsFile string
 	// ProjectSettingsFile is an optional path to a local maven settings file.
 	ProjectSettingsFile string
+	// InstallArtifacts installs artifacts from all maven modules to the local repository
+	InstallArtifacts bool
 
 	// DefaultNpmRegistry is an optional default registry for NPM.
 	DefaultNpmRegistry string
