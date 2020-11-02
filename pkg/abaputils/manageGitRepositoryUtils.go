@@ -44,7 +44,11 @@ func PollEntity(repositoryName string, connectionDetails ConnectionDetailsHTTP, 
 		status = body.Status
 		log.Entry().WithField("StatusCode", resp.Status).Info("Pull Status: " + body.StatusDescription)
 		if body.Status != "R" {
-			PrintLogs(body)
+			if body.Status == "E" {
+				PrintLogs(body, true)
+			} else {
+				PrintLogs(body, false)
+			}
 			break
 		}
 		time.Sleep(pollIntervall)
@@ -53,7 +57,7 @@ func PollEntity(repositoryName string, connectionDetails ConnectionDetailsHTTP, 
 }
 
 // PrintLogs sorts and formats the received transport and execution log of an import
-func PrintLogs(entity PullEntity) {
+func PrintLogs(entity PullEntity, errorOnSystem bool) {
 
 	// Sort logs
 	sort.SliceStable(entity.ToExecutionLog.Results, func(i, j int) bool {
@@ -64,21 +68,41 @@ func PrintLogs(entity PullEntity) {
 		return entity.ToTransportLog.Results[i].Index < entity.ToTransportLog.Results[j].Index
 	})
 
-	log.Entry().Info("-------------------------")
-	log.Entry().Info("Transport Log")
-	log.Entry().Info("-------------------------")
-	for _, logEntry := range entity.ToTransportLog.Results {
+	// Show transport and execution log if either the action was erroenous on the system or the log level is set to "debug" (verbose = true)
+	if errorOnSystem {
+		log.Entry().Info("-------------------------")
+		log.Entry().Info("Transport Log")
+		log.Entry().Info("-------------------------")
+		for _, logEntry := range entity.ToTransportLog.Results {
 
-		log.Entry().WithField("Timestamp", ConvertTime(logEntry.Timestamp)).Info(logEntry.Description)
+			log.Entry().WithField("Timestamp", ConvertTime(logEntry.Timestamp)).Info(logEntry.Description)
+		}
+
+		log.Entry().Info("-------------------------")
+		log.Entry().Info("Execution Log")
+		log.Entry().Info("-------------------------")
+		for _, logEntry := range entity.ToExecutionLog.Results {
+			log.Entry().WithField("Timestamp", ConvertTime(logEntry.Timestamp)).Info(logEntry.Description)
+		}
+		log.Entry().Info("-------------------------")
+	} else {
+		log.Entry().Debug("-------------------------")
+		log.Entry().Debug("Transport Log")
+		log.Entry().Debug("-------------------------")
+		for _, logEntry := range entity.ToTransportLog.Results {
+
+			log.Entry().WithField("Timestamp", ConvertTime(logEntry.Timestamp)).Debug(logEntry.Description)
+		}
+
+		log.Entry().Debug("-------------------------")
+		log.Entry().Debug("Execution Log")
+		log.Entry().Debug("-------------------------")
+		for _, logEntry := range entity.ToExecutionLog.Results {
+			log.Entry().WithField("Timestamp", ConvertTime(logEntry.Timestamp)).Debug(logEntry.Description)
+		}
+		log.Entry().Debug("-------------------------")
 	}
 
-	log.Entry().Info("-------------------------")
-	log.Entry().Info("Execution Log")
-	log.Entry().Info("-------------------------")
-	for _, logEntry := range entity.ToExecutionLog.Results {
-		log.Entry().WithField("Timestamp", ConvertTime(logEntry.Timestamp)).Info(logEntry.Description)
-	}
-	log.Entry().Info("-------------------------")
 }
 
 //GetRepositories for parsing  one or multiple branches and repositories from repositories file or branchName and repositoryName configuration
@@ -110,6 +134,15 @@ func GetRepositories(config *RepositoriesConfig) ([]Repository, error) {
 		}
 	}
 	return repositories, nil
+}
+
+//GetCommitStrings for getting the commit_id property for the http request and a string for logging output
+func GetCommitStrings(commitID string) (commitQuery string, commitString string) {
+	if commitID != "" {
+		commitQuery = `, "commit_id":"` + commitID + `"`
+		commitString = ", commit '" + commitID + "'"
+	}
+	return commitQuery, commitString
 }
 
 /****************************************
