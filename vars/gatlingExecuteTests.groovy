@@ -1,0 +1,102 @@
+import com.sap.piper.ConfigurationHelper
+import com.sap.piper.Utils
+
+import static com.sap.piper.Prerequisites.checkScript
+
+import com.sap.piper.GenerateDocumentation
+import groovy.transform.Field
+
+@Field String STEP_NAME = getClass().getName()
+
+@Field Set GENERAL_CONFIG_KEYS = []
+
+@Field Set STEP_CONFIG_KEYS = [
+    /**
+     * Defines the behavior in case tests fail. When this is set to `true` test results cannot be recorded using the `publishTestResults` step afterwards.
+     * @possibleValues `true`, `false`
+     */
+    'failOnError',
+    /**
+     * Path to the pom.xml file containing the performance test Maven module, for example `performance-tests/pom.xml`.
+     */
+    'testModule',
+    /**
+     * Optional List of app URLs and corresponding Jenkins credential IDs.
+     */
+    'appUrls'
+]
+
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
+
+/**
+ * In this step Gatling performance tests are executed.
+ * Requires the Jenkins Gatling plugin to be installed.
+ */
+@GenerateDocumentation
+void call(Map parameters = [:]) {
+
+    handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
+        Script script = (checkScript(this, parameters) ?: this) as Script
+        Utils utils = parameters.juStabUtils as Utils ?: new Utils()
+        String stageName = parameters.stageName ?: env.STAGE_NAME
+
+        // load default & individual configuration
+        Map config = ConfigurationHelper.newInstance(this)
+            .loadStepDefaults([:], stageName)
+            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
+            .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
+            .mixin(parameters, PARAMETER_KEYS)
+            .withMandatoryProperty('testModule')
+            .use()
+
+        utils.pushToSWA([
+            step: STEP_NAME,
+            stepParamKey1: 'testModule',
+            stepParam1: config.testModule,
+        ], config)
+
+        def appUrls = parameters.get('appUrls')
+        if (appUrls && !(appUrls instanceof List)) {
+            error "The optional parameter 'appUrls' needs to be a List of Maps, where each Map contains the two entries 'url' and 'credentialsId'."
+        }
+
+        if (!fileExists(config.modulePath)) {
+            error "The Maven module '${config.modulePath}' does not exist."
+        }
+
+        try {
+            if (appUrls) {
+                for (int i = 0; i < appUrls.size(); i++) {
+                    def appUrl = appUrls.get(i)
+                    if (!(appUrl instanceof Map)) {
+                        error "The entry at index $i in 'appUrls' is not a Map. It needs to be a Map containing the two entries 'url' and 'credentialsId'."
+                    }
+                    executeTestsWithAppUrlAndCredentials(script, appUrl.url, appUrl.credentialsId, config.testModule)
+                }
+            } else {
+                mavenExecute script: script, flags: ['--update-snapshots', '--batch-mode'], pomPath: config.testModule, goals: ['test']
+            }
+        } finally {
+            gatlingArchive()
+        }
+    }
+}
+
+void executeTestsWithAppUrlAndCredentials(Script script, url, credentialsId, modulePath) {
+    withCredentials([
+        [
+            $class: 'UsernamePasswordMultiBinding',
+            credentialsId: credentialsId,
+            passwordVariable: 'PERFORMANCE_TEST_PASSWORD',
+            usernameVariable: 'PERFORMANCE_TEST_USERNAME'
+        ]
+    ]) {
+        List defines = [
+            "-DappUrl=$url",
+            "-Dusername=$PERFORMANCE_TEST_USERNAME",
+            "-Dpassword=$PERFORMANCE_TEST_PASSWORD"
+        ]
+        mavenExecute script: script, flags: ['--update-snapshots'], pomPath: modulePath, goals: ['test'], defines: defines
+    }
+}
+
