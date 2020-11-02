@@ -74,7 +74,7 @@ void call(Map parameters = [:]) {
                     executeTestsWithAppUrlAndCredentials(script, appUrl.url, appUrl.credentialsId, config.testModule)
                 }
             } else {
-                mavenExecute script: script, flags: ['--update-snapshots', '--batch-mode'], pomPath: config.testModule, goals: ['test']
+                mavenExecute script: script, flags: ['--update-snapshots'], pomPath: config.testModule, goals: ['test']
             }
         } finally {
             gatlingArchive()
