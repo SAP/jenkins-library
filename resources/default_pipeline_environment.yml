@@ -66,9 +66,6 @@ general:
 
 #Steps Specific Configuration
 steps:
-  abapEnvironmentPullGitRepo:
-    dockerImage: 'ppiper/cf-cli'
-    dockerWorkspace: '/home/piper'
   artifactSetVersion:
     timestampTemplate: '%Y%m%d%H%M%S'
     tagPrefix: 'build_'
@@ -212,9 +209,6 @@ steps:
     stashContent:
       - 'tests'
     testReportFilePath: 'cst-report.json'
-  cloudFoundryCreateServiceKey:
-    dockerImage: 'ppiper/cf-cli'
-    dockerWorkspace: '/home/piper'
   debugReportArchive:
     shareConfidentialInformation: false
   dockerExecute:
