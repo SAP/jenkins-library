@@ -17,8 +17,8 @@ import (
 	"path/filepath"
 )
 
-const TOOL_KUBECTL = "kubectl"
-const TOOL_HELM = "helm"
+const ToolKubectl = "kubectl"
+const ToolHelm = "helm"
 
 type iGitopsUpdateDeploymentGitUtils interface {
 	CommitSingleFile(filePath, commitMessage, author string) (plumbing.Hash, error)
@@ -110,12 +110,12 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gi
 	filePath := filepath.Join(temporaryFolder, config.FilePath)
 
 	var outputBytes []byte
-	if config.Tool == TOOL_KUBECTL {
+	if config.Tool == ToolKubectl {
 		outputBytes, err = executeKubectl(config, command, outputBytes, filePath)
 		if err != nil {
 			return errors.Wrap(err, "error on kubectl execution")
 		}
-	} else if config.Tool == TOOL_HELM {
+	} else if config.Tool == ToolHelm {
 		outputBytes, err = runHelmCommand(command, config)
 		if err != nil {
 			return errors.Wrap(err, "failed to apply helm command")
@@ -141,13 +141,13 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gi
 }
 
 func checkRequiredFieldsForDeployTool(config *gitopsUpdateDeploymentOptions) error {
-	if config.Tool == TOOL_HELM {
+	if config.Tool == ToolHelm {
 		err := checkRequiredFieldsForHelm(config)
 		if err != nil {
 			return errors.Wrap(err, "missing required fields for helm")
 		}
 		logNotRequiredButFilledFieldForHelm(config)
-	} else if config.Tool == TOOL_KUBECTL {
+	} else if config.Tool == ToolKubectl {
 		err := checkRequiredFieldsForKubectl(config)
 		if err != nil {
 			return errors.Wrap(err, "missing required fields for kubectl")
@@ -241,7 +241,7 @@ func runKubeCtlCommand(command gitopsUpdateDeploymentExecRunner, patchString str
 		"--patch=" + patchString,
 		"--filename=" + filePath,
 	}
-	err := command.RunExecutable(TOOL_KUBECTL, kubeParams...)
+	err := command.RunExecutable(ToolKubectl, kubeParams...)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to apply kubectl command")
 	}
@@ -272,7 +272,7 @@ func runHelmCommand(runner gitopsUpdateDeploymentExecRunner, config *gitopsUpdat
 		helmParams = append(helmParams, "--values", value)
 	}
 
-	err = runner.RunExecutable(TOOL_HELM, helmParams...)
+	err = runner.RunExecutable(ToolHelm, helmParams...)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to execute helm command")
 	}
