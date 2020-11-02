@@ -136,22 +136,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: helmValueForRepositoryAndImageName
-        description: value description used in the template to specify the repository and image name of the deployment
-        longDescription: The whole value before the colon sign.
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        type: string
-      - name: helmValueForImageVersion
-        description: value description used in the template to specify the version of the deployment
-        longDescription: The whole value after the colon sign.
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        type: string
       - name: deploymentName
         aliases:
           - name: helmDeploymentName
@@ -161,10 +145,10 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: deployment
-      - name: deployTool
+      #        default: deployment
+      - name: tool
         type: string
-        description: Defines the tool which should be used for deployment.
+        description: Defines the tool which should be used to update the deployment description.
         mandatory: true
         scope:
           - PARAMETERS
@@ -183,7 +167,7 @@ spec:
       conditions:
         - conditionRef: strings-equal
           params:
-            - name: deployTool
+            - name: tool
               value: helm
     - image: dtzar/helm-kubectl:2.12.1
       workingDir: /config
@@ -193,5 +177,5 @@ spec:
       conditions:
         - conditionRef: strings-equal
           params:
-            - name: deployTool
+            - name: tool
               value: kubectl

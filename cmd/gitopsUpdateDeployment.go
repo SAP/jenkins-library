@@ -107,18 +107,18 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gi
 	filePath := filepath.Join(temporaryFolder, config.FilePath)
 
 	var outputBytes []byte
-	if config.DeployTool == "kubectl" {
+	if config.Tool == "kubectl" {
 		outputBytes, err = executeKubectl(config, command, outputBytes, filePath)
 		if err != nil {
 			return errors.Wrap(err, "error on kubectl execution")
 		}
-	} else if config.DeployTool == "helm" {
+	} else if config.Tool == "helm" {
 		outputBytes, err = runHelmCommand(command, config)
 		if err != nil {
 			return errors.Wrap(err, "failed to apply helm command")
 		}
 	} else {
-		return errors.New("deploy tool " + config.DeployTool + " is not supported")
+		return errors.New("tool " + config.Tool + " is not supported")
 	}
 
 	err = fileUtils.FileWrite(filePath, outputBytes, 0755)
@@ -137,13 +137,13 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gi
 }
 
 func checkRequiredFieldsForDeployTool(config *gitopsUpdateDeploymentOptions) error {
-	if config.DeployTool == "helm" {
+	if config.Tool == "helm" {
 		err := checkRequiredFieldsForHelm(config)
 		if err != nil {
 			return errors.Wrap(err, "missing required fields for helm")
 		}
 		logNotRequiredButFilledFieldForHelm(config)
-	} else if config.DeployTool == "kubectl" {
+	} else if config.Tool == "kubectl" {
 		err := checkRequiredFieldsForKubectl(config)
 		if err != nil {
 			return errors.Wrap(err, "missing required fields for kubectl")
@@ -156,13 +156,11 @@ func checkRequiredFieldsForDeployTool(config *gitopsUpdateDeploymentOptions) err
 
 func checkRequiredFieldsForHelm(config *gitopsUpdateDeploymentOptions) error {
 	if config.ChartPath == "" {
+		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.New("chartPath is necessary for helm")
 	}
-	if config.HelmValueForRepositoryAndImageName == "" {
-		return errors.New("helmValueForRepositoryAndImageName is necessary for helm")
-	}
-	if config.HelmValueForImageVersion == "" {
-		return errors.New("helmValueForImageVersion is necessary for helm")
+	if config.DeploymentName == "" {
+		return errors.New("deploymentName is necessary for helm")
 	}
 	if config.DeploymentName == "" {
 		return errors.New("deploymentName is necessary for helm")
@@ -187,12 +185,6 @@ func logNotRequiredButFilledFieldForHelm(config *gitopsUpdateDeploymentOptions) 
 func logNotRequiredButFilledFieldForKubectl(config *gitopsUpdateDeploymentOptions) {
 	if config.ChartPath != "" {
 		log.Entry().Info("chartPath is not used for kubectl and can be removed")
-	}
-	if config.HelmValueForRepositoryAndImageName != "" {
-		log.Entry().Info("helmValueForRepositoryAndImageName is not used for kubectl and can be removed")
-	}
-	if config.HelmValueForImageVersion != "" {
-		log.Entry().Info("helmValueForImageVersion is not used for kubectl and can be removed")
 	}
 	if len(config.HelmValues) > 0 {
 		log.Entry().Info("helmValues is not used for kubectl and can be removed")
@@ -263,8 +255,8 @@ func runHelmCommand(runner gitopsUpdateDeploymentExecRunner, config *gitopsUpdat
 		"template",
 		config.DeploymentName,
 		filepath.Join(".", config.ChartPath),
-		"--set=" + config.HelmValueForRepositoryAndImageName + "=" + registryImage,
-		"--set=" + config.HelmValueForImageVersion + "=" + imageTag,
+		"--set=image.repository=" + registryImage,
+		"--set=image.tag=" + imageTag,
 	}
 
 	for _, value := range config.HelmValues {
