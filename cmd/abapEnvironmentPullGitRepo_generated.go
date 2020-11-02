@@ -24,6 +24,7 @@ type abapEnvironmentPullGitRepoOptions struct {
 	CfSpace           string   `json:"cfSpace,omitempty"`
 	CfServiceInstance string   `json:"cfServiceInstance,omitempty"`
 	CfServiceKeyName  string   `json:"cfServiceKeyName,omitempty"`
+	IgnoreCommit      bool     `json:"ignoreCommit,omitempty"`
 }
 
 // AbapEnvironmentPullGitRepoCommand Pulls a git repository to a SAP Cloud Platform ABAP Environment system
@@ -100,6 +101,7 @@ func addAbapEnvironmentPullGitRepoFlags(cmd *cobra.Command, stepConfig *abapEnvi
 	cmd.Flags().StringVar(&stepConfig.CfSpace, "cfSpace", os.Getenv("PIPER_cfSpace"), "Cloud Foundry target space")
 	cmd.Flags().StringVar(&stepConfig.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Cloud Foundry Service Instance")
 	cmd.Flags().StringVar(&stepConfig.CfServiceKeyName, "cfServiceKeyName", os.Getenv("PIPER_cfServiceKeyName"), "Cloud Foundry Service Key")
+	cmd.Flags().BoolVar(&stepConfig.IgnoreCommit, "ignoreCommit", false, "ingores a commit provided via the repositories file")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
@@ -206,6 +208,14 @@ func abapEnvironmentPullGitRepoMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceKey"}, {Name: "cloudFoundry/serviceKeyName"}, {Name: "cfServiceKey"}},
+					},
+					{
+						Name:        "ignoreCommit",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 				},
 			},

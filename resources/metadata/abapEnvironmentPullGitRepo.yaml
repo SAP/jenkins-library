@@ -120,6 +120,12 @@ spec:
           - name: cloudFoundry/serviceKey
           - name: cloudFoundry/serviceKeyName
           - name: cfServiceKey
+      - name: ignoreCommit
+        type: bool
+        description: ingores a commit provided via the repositories file
+        scope:
+          - PARAMETERS
+        default: false
   containers:
     - name: cf
       image: ppiper/cf-cli
