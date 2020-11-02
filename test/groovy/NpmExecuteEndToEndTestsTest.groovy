@@ -170,7 +170,6 @@ class NpmExecuteEndToEndTestsTest extends BasePiperTest {
         assertFalse(executedInParallel)
         assert npmExecuteScriptsRule.hasParameter('script', nullScript)
         assert npmExecuteScriptsRule.hasParameter('parameters', [dockerOptions: ['--shm-size 512MB']])
-        assert npmExecuteScriptsRule.hasParameter('install', false)
         assert npmExecuteScriptsRule.hasParameter('virtualFrameBuffer', true)
         assert npmExecuteScriptsRule.hasParameter('runScripts', ["ci-e2e"])
         assert npmExecuteScriptsRule.hasParameter('scriptOptions', ["--launchUrl=${appUrl.url}"])
@@ -192,7 +191,6 @@ class NpmExecuteEndToEndTestsTest extends BasePiperTest {
 
         assert npmExecuteScriptsRule.hasParameter('script', nullScript)
         assert npmExecuteScriptsRule.hasParameter('parameters', [dockerOptions: ['--shm-size 512MB']])
-        assert npmExecuteScriptsRule.hasParameter('install', false)
         assert npmExecuteScriptsRule.hasParameter('virtualFrameBuffer', true)
         assert npmExecuteScriptsRule.hasParameter('runScripts', ["ci-e2e"])
         assert npmExecuteScriptsRule.hasParameter('scriptOptions', ["--launchUrl=${appUrl.url}"])
@@ -215,7 +213,6 @@ class NpmExecuteEndToEndTestsTest extends BasePiperTest {
 
         assert npmExecuteScriptsRule.hasParameter('script', nullScript)
         assert npmExecuteScriptsRule.hasParameter('parameters', [dockerOptions: ['--shm-size 512MB']])
-        assert npmExecuteScriptsRule.hasParameter('install', false)
         assert npmExecuteScriptsRule.hasParameter('virtualFrameBuffer', true)
         assert npmExecuteScriptsRule.hasParameter('runScripts', ["ci-e2e"])
         assert npmExecuteScriptsRule.hasParameter('scriptOptions', ["--launchUrl=${appUrl.url}"])
@@ -239,7 +236,6 @@ class NpmExecuteEndToEndTestsTest extends BasePiperTest {
 
         assert npmExecuteScriptsRule.hasParameter('script', nullScript)
         assert npmExecuteScriptsRule.hasParameter('parameters', [dockerOptions: ['--shm-size 512MB']])
-        assert npmExecuteScriptsRule.hasParameter('install', false)
         assert npmExecuteScriptsRule.hasParameter('virtualFrameBuffer', true)
         assert npmExecuteScriptsRule.hasParameter('runScripts', ["ci-e2e"])
         assert npmExecuteScriptsRule.hasParameter('scriptOptions', ["--launchUrl=${appUrl.url}"] + appUrl.parameters)
