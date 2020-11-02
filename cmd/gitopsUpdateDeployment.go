@@ -84,7 +84,7 @@ func gitopsUpdateDeployment(config gitopsUpdateDeploymentOptions, _ *telemetry.C
 func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gitopsUpdateDeploymentExecRunner, gitUtils iGitopsUpdateDeploymentGitUtils, fileUtils gitopsUpdateDeploymentFileUtils) error {
 	err := checkRequiredFieldsForDeployTool(config)
 	if err != nil {
-		return errors.Wrap(err, "not all required fields for this deploy tool are configured")
+		return err
 	}
 
 	temporaryFolder, err := fileUtils.TempDir(".", "temp-")
@@ -118,6 +118,7 @@ func runGitopsUpdateDeployment(config *gitopsUpdateDeploymentOptions, command gi
 			return errors.Wrap(err, "failed to apply helm command")
 		}
 	} else {
+		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.New("tool " + config.Tool + " is not supported")
 	}
 
@@ -160,17 +161,19 @@ func checkRequiredFieldsForHelm(config *gitopsUpdateDeploymentOptions) error {
 		return errors.New("chartPath is necessary for helm")
 	}
 	if config.DeploymentName == "" {
+		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.New("deploymentName is necessary for helm")
 	}
 	if config.DeploymentName == "" {
+		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.New("deploymentName is necessary for helm")
 	}
-
 	return nil
 }
 
 func checkRequiredFieldsForKubectl(config *gitopsUpdateDeploymentOptions) error {
 	if config.ContainerName == "" {
+		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.New("containerName is necessary for kubectl")
 	}
 	return nil
