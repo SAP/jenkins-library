@@ -54,3 +54,51 @@ steps:
       account: <myDeployAccount>
       host: hana.example.org
 ```
+
+## Example for invalidating the cache
+
+Setting parameter `invalidateCache` to `true`, will clean up the cache of a Fiori Launchpad site, refreshing the content of html5 applications deployed there. This is **applicable** only when the application (**only** html5 applications ) is deployed, accessed via Portal service (Fiori Launchpad site).
+
+Setting this parameter to true, needs additional configurations to go through. Firstly, create an OAuth credential as shown below:
+
+### OAuth credential creation
+
+1. Select the OAuth settings from your subaccount, create a new client with subscription to portal/nwc as shown in the following images:
+
+    ![OAuth client creation](../images/oauthClientCreation.png)
+
+2. Select the "Clients" tab, which provides an option to register a new client. Click on "Register New Client" button.
+
+3. Then, in the subscription field, select the portal landscape you would like to subscribe to, ex: `portal/nwc` or `portal/sandbox` as shown below:
+
+    ![Portal subscription](../images/portalSubscription.png)
+
+4. In the "Authorization Grant" field, select "Client Credentials" from the drop down menu. Then, enter the "Secret" field with a user defined password and finally save the changes.
+
+After saving these changes, create a UsernamePassword type credential with client Id (obtained from registering new client) as username and client secret (password entered in the secret field above) as password in Jenkins.
+
+### Set Site Id
+
+1. After login to the portal service from SAP CP, the user has a possibility to create a site directory, within which the deployed application resides.
+
+2. On the site directory tile,  click on "edit" button, which lists some set of option as shown in the below image. By publishing that site, the control is navigated to a new page which holds the "site id" in the url. By default, site is set as default as shown below image.
+
+    ![Site set to default](../images/portalSiteSetToDefault.png)
+
+3. If it is already set to default, no need to configure `siteId` in the configuration file. If not set to default, please configure `siteId`, as shown in the below configuration:
+
+Example configuration:
+
+```yaml
+steps:
+  <...>
+  neoDeploy:
+    neo:
+      account: <myDeployAccount>
+      host: hana.example.org
+      credentialsId: 'my-credentials-id'
+      invalidateCache: true
+      portalLandscape: "cloudnwcportal"
+      oauthCredentialId: <OAUTH_CREDENTIAL_ID>
+      siteId: <PORTAL_SITE_ID> # not required, if the default site is already set in the portal service (SAP CP)
+```
