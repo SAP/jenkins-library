@@ -66,6 +66,8 @@ func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemet
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Fortify scan and check failed")
 	}
+	// make sure that no specific error category is set in success case
+	log.SetErrorCategory(log.ErrorUndefined)
 }
 
 func determineArtifact(config fortifyExecuteScanOptions, c *command.Command) (versioning.Artifact, error) {
