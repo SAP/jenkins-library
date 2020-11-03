@@ -60,7 +60,7 @@ void call(Map parameters = [:]) {
         }
 
         if (!fileExists(config.testModule)) {
-            error "The Maven module '${config.testModule}' does not exist."
+            error "The file '${config.testModule}' does not exist."
         }
 
         try {
