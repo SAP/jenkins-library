@@ -25,7 +25,6 @@ abapEnvironmentCreateSystem script: this
 The configuration values for the system can be passed through the `config.yml` file:
 
 ```yaml
-
 steps:
   abapEnvironmentCreateSystem:
     cfCredentialsId: 'cfCredentialsId'
@@ -35,12 +34,12 @@ steps:
     cfServiceInstance: 'H02_Q_system'
     cfService: 'abap'
     cfServicePlan: 'standard'
-    adminEmail: 'user@example.com'
-    description: 'ABAP Environment Q System'
-    isDevelopmentAllowed: true
-    sapSystemName: 'H02'
-    sizeOfPersistence: 4
-    sizeOfRuntime: 1
+    abapSystemAdminEmail: 'user@example.com'
+    abapSystemDescription: 'ABAP Environment Q System'
+    abapSystemIsDevelopmentAllowed: true
+    abapSystemID: 'H02'
+    abapSystemSizeOfPersistence: 4
+    abapSystemSizeOfRuntime: 1
 ```
 
 

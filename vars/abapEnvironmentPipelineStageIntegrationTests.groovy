@@ -8,7 +8,7 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field STAGE_STEP_KEYS = [
     /** Creates a SAP Cloud Platform ABAP Environment instance via the cloud foundry command line interface */
-    'cloudFoundryCreateService',
+    'abapEnvironmentCreateSystem',
     /** If set to true, a confirmation is required to delete the system */
     'confirmDeletion'
 ]
@@ -31,7 +31,7 @@ void call(Map parameters = [:]) {
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
         try {
-            cloudFoundryCreateService script: parameters.script
+            abapEnvironmentCreateSystem script: parameters.script
         } catch (Exception e) {
             script.currentBuild.result = 'UNSTABLE'
         }
