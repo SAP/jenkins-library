@@ -187,8 +187,8 @@ spec:
           - STAGES
           - STEPS
           - GENERAL
-      - name: ignoreAddon
-        description: Ignore the value provided via 'addonDescriptorFileName'
+      - name: includeAddon
+        description: Must be set to true to install the addon provided via 'addonDescriptorFileName'
         type: bool
         scope:
           - PARAMETERS

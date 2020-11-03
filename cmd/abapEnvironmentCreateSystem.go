@@ -73,7 +73,7 @@ func runAbapEnvironmentCreateSystem(config *abapEnvironmentCreateSystemOptions, 
 func generateManifestYAML(config *abapEnvironmentCreateSystemOptions) ([]byte, error) {
 	addonProduct := ""
 	addonVersion := ""
-	if config.AddonDescriptorFileName != "" && !config.IgnoreAddon {
+	if config.AddonDescriptorFileName != "" && config.IncludeAddon {
 		descriptor, err := abaputils.ReadAddonDescriptor(config.AddonDescriptorFileName)
 		if err != nil {
 			return nil, fmt.Errorf("Cloud not read addonProduct and addonVersion from %s: %w", config.AddonDescriptorFileName, err)
