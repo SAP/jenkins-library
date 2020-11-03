@@ -12,6 +12,7 @@ import util.JenkinsLoggingRule
 import util.JenkinsReadYamlRule
 import util.JenkinsShellCallRule
 import util.JenkinsStepRule
+import util.JenkinsWriteFileRule
 import util.Rules
 
 import static org.junit.Assert.assertThat
@@ -27,6 +28,7 @@ class HadolintExecuteTest extends BasePiperTest {
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsReadYamlRule yamlRule = new JenkinsReadYamlRule(this)
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
+    private JenkinsWriteFileRule writeFileRule = new JenkinsWriteFileRule(this)
 
     @Rule
     public RuleChain ruleChain = Rules
@@ -37,6 +39,7 @@ class HadolintExecuteTest extends BasePiperTest {
         .around(shellRule)
         .around(stepRule)
         .around(loggingRule)
+        .around(writeFileRule)
 
     @Before
     void init() {
@@ -45,6 +48,9 @@ class HadolintExecuteTest extends BasePiperTest {
         helper.registerAllowedMethod 'checkStyle', [Map], { m -> assertThat(m.pattern, is('hadolint.xml')); return 'checkstyle' }
         helper.registerAllowedMethod 'recordIssues', [Map], { m -> assertThat(m.tools, hasItem('checkstyle')) }
         helper.registerAllowedMethod 'archiveArtifacts', [String], { String p -> assertThat('hadolint.xml', is(p)) }
+        helper.registerAllowedMethod('httpRequest', [Map.class] , {
+            return [content: "empty", status: 200]
+        })
         Utils.metaClass.echo = { def m -> }
     }
 
@@ -55,15 +61,15 @@ class HadolintExecuteTest extends BasePiperTest {
 
     @Test
     void testHadolintExecute() {
-        stepRule.step.hadolintExecute(script: nullScript, juStabUtils: utils, dockerImage: 'hadolint/hadolint:latest-debian', configurationUrl: 'https://github.com/raw/SGS/Hadolint-Dockerfile/master/.hadolint.yaml')
+        stepRule.step.hadolintExecute(script: nullScript, juStabUtils: utils, dockerImage: 'hadolint/hadolint:latest-debian', configurationUrl: 'https://github.com/raw/SAP/jenkins-library/master/.hadolint.yaml')
         assertThat(dockerExecuteRule.dockerParams.dockerImage, is('hadolint/hadolint:latest-debian'))
         assertThat(loggingRule.log, containsString("Unstash content: buildDescriptor"))
         assertThat(shellRule.shell,
             hasItems(
-                "curl --fail --location --output .hadolint.yaml https://github.com/raw/SGS/Hadolint-Dockerfile/master/.hadolint.yaml",
                 "hadolint ./Dockerfile --config .hadolint.yaml --format checkstyle > hadolint.xml"
             )
         )
+        assertThat(writeFileRule.files['.hadolint.yaml'], is('empty'))
     }
 
     @Test

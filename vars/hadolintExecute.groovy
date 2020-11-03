@@ -27,6 +27,10 @@ import groovy.transform.Field
      */
     'configurationUrl',
     /**
+     * If the url provided as configurationUrl is protected, this Jenkins credential can be used to authenticate the request.
+     */
+    'configurationCredentialsId',
+    /**
      * Docker options to be set when starting the container.
      */
     'dockerOptions',
@@ -69,7 +73,16 @@ void call(Map parameters = [:]) {
         ]) {
             // get context configuration
             config = readContextConfig()
-
+            // ---- move to go
+            if(!fileExists(configuration.configurationFile) && configuration.configurationUrl) {
+                downloadFile(configuration.configurationUrl, configuration.configurationFile, configuration.configurationCredentialsId)
+                if(existingStashes) {
+                    def stashName = 'hadolintConfiguration'
+                    stash name: stashName, includes: configuration.configurationFile
+                    existingStashes += stashName
+                }
+            }
+            // ----
             // telemetry reporting
             utils.pushToSWA([
                 step: STEP_NAME,
@@ -105,4 +118,9 @@ void call(Map parameters = [:]) {
 String readContextConfig(){
     def configContent = sh returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FILE}'")
     return readJSON text: configContent
+}
+
+void downloadFile(url, target, authentication = null){
+        def response = httpRequest url: url, authentication: authentication, timeout: 20
+        writeFile text: response.content, file: target
 }

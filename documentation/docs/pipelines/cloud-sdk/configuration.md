@@ -54,9 +54,13 @@ general:
 ### staticCodeChecks
 
 The `staticCodeChecks` stage has been integrated into the `build` stage.
-To configure static code checks, please configure the step `mavenExecuteStaticCodeChecks` as described [here](https://sap.github.io/jenkins-library/steps/mavenExecuteStaticCodeChecks/).
+To configure static code checks, please configure the step `mavenExecuteStaticCodeChecks` as described [here](../../../steps/mavenExecuteStaticCodeChecks/).
 
 ### backendIntegrationTests
+
+The `backendIntegrationTests` stage has been integrated into the project "Piper" stage `Integration`.
+Thus, it is required to update the stage name in the stages section of your configuration to `integration`.
+The configuration parameters available for the stage remain the same.
 
 | Property | Mandatory | Default Value | Description |
 | --- | --- | --- | --- |
@@ -67,7 +71,7 @@ To configure static code checks, please configure the step `mavenExecuteStaticCo
 Example:
 
 ```yaml
-backendIntegrationTests:
+integration:
   retry: 2
   credentials:
     - alias: 'ERP'
@@ -91,7 +95,7 @@ To use this optional feature the following configuration values have to be provi
 Example:
 
 ```yaml
-backendIntegrationTests:
+integration:
   retry: 2
   credentials:
     - alias: 'ERP'
@@ -106,6 +110,10 @@ backendIntegrationTests:
 ```
 
 ### frontendIntegrationTests
+
+The `frontendIntegrationTests` stage has been integrated into the project "Piper" stage `Integration`.
+Thus, it is required to update the stage name in the stages section of your configuration to `integration`.
+The configuration parameters available for the stage remain the same.
 
 | Property | Mandatory | Default Value | Description |
 | --- | --- | --- | --- |
@@ -171,7 +179,7 @@ This stage has been removed in v43 of the Cloud SDK pipeline.
 ### checkmarxScan
 
 The `checkmarxScan` stage has been merged into the project "Piper" stage `security`.
-To configure Checkmarx please configure the step `checkmarxExecuteScan` as described [in the step documentation](https://sap.github.io/jenkins-library/steps/checkmarxExecuteScan/).
+To configure Checkmarx please configure the step `checkmarxExecuteScan` as described [in the step documentation](../../../steps/checkmarxExecuteScan/).
 
 ### productionDeployment
 
@@ -186,7 +194,7 @@ To configure Checkmarx please configure the step `checkmarxExecuteScan` as descr
 
 The option `cfCreateServices` is especially useful if you don't use MTA and need a way to declaratively define which services should be created in Cloud Foundry.
 The following properties can be defined for each element in the list.
-For a detailed documentation of the indivitual properties please consult the [step documentation](https://sap.github.io/jenkins-library/steps/cloudFoundryCreateService/).
+For a detailed documentation of the indivitual properties please consult the [step documentation](../../../steps/cloudFoundryCreateService/).
 
 | Property | Mandatory | Default Value | Description |
 | --- | --- | --- | --- |
@@ -350,23 +358,23 @@ artifactDeployment:
 ### whitesourceScan
 
 The `whitesourceScan` stage has been merged into the project "Piper" stage `security`.
-To configure WhiteSource please configure the step `whitesourceExecuteScan` as described [in the step documentation](https://sap.github.io/jenkins-library/steps/whitesourceExecuteScan/).
+To configure WhiteSource please configure the step `whitesourceExecuteScan` as described [in the step documentation](../../../steps/whitesourceExecuteScan/).
 
 ### fortifyScan
 
 The `fortifyScan` stage has been merged into the project "Piper" stage `security`.
-To configure Fortify please configure the step `fortifyExecuteScan` as described [in the step documentation](https://sap.github.io/jenkins-library/steps/fortifyExecuteScan/).
+To configure Fortify please configure the step `fortifyExecuteScan` as described [in the step documentation](../../../steps/fortifyExecuteScan/).
 
 ### lint
 
 The `lint` stage has been integrated into the `build` stage.
-The options for the use of linting tools remain the same and are described in the [build tools section](https://sap.github.io/jenkins-library/pipelines/cloud-sdk/build-tools/#lint).
+The options for the use of linting tools remain the same and are described in the [build tools section](../build-tools/#lint).
 
-Note, the available configuration options can be found in the related [step documentation](https://sap.github.io/jenkins-library/steps/npmExecuteLint/#parameters).
+Note, the available configuration options can be found in the related [step documentation](../../../steps/npmExecuteLint/#parameters).
 
 ### compliance
 
-The stage `compliance` executes [SonarQube](https://www.sonarqube.org/) scans, if the step [`sonarExecuteScan`](https://sap.github.io/jenkins-library/steps/sonarExecuteScan/) is configured.
+The stage `compliance` executes [SonarQube](https://www.sonarqube.org/) scans, if the step [`sonarExecuteScan`](../../../steps/sonarExecuteScan/) is configured.
 
 This is an optional feature for teams who prefer to use SonarQube.
 Note that it does some scans that are already done by the pipeline by default.
@@ -390,7 +398,7 @@ compliance:
 This stage does nothing.
 Its purpose is to be overridden if required.
 
-See the documentation for [pipeline extensibility](https://sap.github.io/jenkins-library/extensibility/) for details on how to extend a stage.
+See the documentation for [pipeline extensibility](../../../extensibility/) for details on how to extend a stage.
 The name of an extension file must be `postPipelineHook.groovy`.
 Also, the stage (and thus an extension) is only executed if a stage configuration exists, like in this example:
 
@@ -445,11 +453,11 @@ checkJMeter:
 ### executeNpm
 
 This step has been removed in v43 of the Cloud SDK pipeline.
-Please use the step [npmExecuteScripts](https://sap.github.io/jenkins-library/steps/npmExecuteScripts/) instead.
+Please use the step [npmExecuteScripts](../../../steps/npmExecuteScripts/) instead.
 
 ### debugReportArchive
 
-The documentation for the `debugReportArchive` step has been moved [here](https://sap.github.io/jenkins-library/steps/debugReportArchive/).
+The documentation for the `debugReportArchive` step has been moved [here](../../../steps/debugReportArchive/).
 
 ## Post action configuration
 

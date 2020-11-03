@@ -33,7 +33,7 @@ build:
       merge: true
       includes: "s4hana_pipeline/reports/**, **/target/site/**/jacoco.xml"
 
-backendIntegrationTests:
+integration:
   unstash: ["SOURCE", "M2", "TARGET", "NODE_MODULES", "GENERATED_CAP_FILES"]
   stashes:
     - name: "REPORTS"
@@ -43,43 +43,12 @@ backendIntegrationTests:
       merge: true
       includes: "**/target/**/*.exec"
 
-frontendIntegrationTests:
-  unstash: ["SOURCE", "NODE_MODULES", "GENERATED_CAP_FILES"]
-  stashes:
-    - name: "REPORTS"
-      merge: true
-      includes: "s4hana_pipeline/reports/**, **/target/site/**/jacoco.xml"
-
-checkmarxScan:
-  unstash: ["SOURCE", "TARGET"]
-  stashes: []
-
-whitesourceScan:
-  unstash: ["SOURCE", "M2", "NODE_MODULES", "PACKAGE_LOCK"]
-  stashes: []
-
-additionalTools:
-  unstash: ["SOURCE", "M2", "NODE_MODULES"]
-  stashes: []
-
 compliance:
   unstash: ['SOURCE', 'M2', 'NODE_MODULES', 'REPORTS', 'TARGET']
   stashes: []
 
-fortifyScan:
-  unstash: ["SOURCE", "M2", "TARGET"]
-  stashes: []
-
-detect:
-  unstash: ["SOURCE", "M2", "TARGET"]
-  stashes: []
-
 security:
-  unstash: ["SOURCE", "M2", "TARGET", "NODE_MODULES", "PACKAGE_LOCK"]
-  stashes: []
-
-npmAudit:
-  unstash: ["SOURCE", "PACKAGE_LOCK"]
+  unstash: ["SOURCE"]
   stashes: []
 
 additionalUnitTests:
@@ -98,12 +67,6 @@ performanceTests:
   stashes:
     - name: "REPORTS"
       merge: true
-      includes: "s4hana_pipeline/reports/**"
-
-s4SdkQualityChecks:
-  unstash: ["SOURCE", "M2", "TARGET", "REPORTS", "EXEC_FILES"]
-  stashes:
-    - name: "REPORTS"
       includes: "s4hana_pipeline/reports/**"
 
 artifactDeployment:

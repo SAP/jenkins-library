@@ -2,6 +2,7 @@ package abaputils
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"reflect"
 	"sort"
@@ -43,7 +44,11 @@ func PollEntity(repositoryName string, connectionDetails ConnectionDetailsHTTP, 
 		status = body.Status
 		log.Entry().WithField("StatusCode", resp.Status).Info("Pull Status: " + body.StatusDescription)
 		if body.Status != "R" {
-			PrintLogs(body)
+			if body.Status == "E" {
+				PrintLogs(body, true)
+			} else {
+				PrintLogs(body, false)
+			}
 			break
 		}
 		time.Sleep(pollIntervall)
@@ -52,7 +57,7 @@ func PollEntity(repositoryName string, connectionDetails ConnectionDetailsHTTP, 
 }
 
 // PrintLogs sorts and formats the received transport and execution log of an import
-func PrintLogs(entity PullEntity) {
+func PrintLogs(entity PullEntity, errorOnSystem bool) {
 
 	// Sort logs
 	sort.SliceStable(entity.ToExecutionLog.Results, func(i, j int) bool {
@@ -63,21 +68,81 @@ func PrintLogs(entity PullEntity) {
 		return entity.ToTransportLog.Results[i].Index < entity.ToTransportLog.Results[j].Index
 	})
 
-	log.Entry().Info("-------------------------")
-	log.Entry().Info("Transport Log")
-	log.Entry().Info("-------------------------")
-	for _, logEntry := range entity.ToTransportLog.Results {
+	// Show transport and execution log if either the action was erroenous on the system or the log level is set to "debug" (verbose = true)
+	if errorOnSystem {
+		log.Entry().Info("-------------------------")
+		log.Entry().Info("Transport Log")
+		log.Entry().Info("-------------------------")
+		for _, logEntry := range entity.ToTransportLog.Results {
 
-		log.Entry().WithField("Timestamp", ConvertTime(logEntry.Timestamp)).Info(logEntry.Description)
+			log.Entry().WithField("Timestamp", ConvertTime(logEntry.Timestamp)).Info(logEntry.Description)
+		}
+
+		log.Entry().Info("-------------------------")
+		log.Entry().Info("Execution Log")
+		log.Entry().Info("-------------------------")
+		for _, logEntry := range entity.ToExecutionLog.Results {
+			log.Entry().WithField("Timestamp", ConvertTime(logEntry.Timestamp)).Info(logEntry.Description)
+		}
+		log.Entry().Info("-------------------------")
+	} else {
+		log.Entry().Debug("-------------------------")
+		log.Entry().Debug("Transport Log")
+		log.Entry().Debug("-------------------------")
+		for _, logEntry := range entity.ToTransportLog.Results {
+
+			log.Entry().WithField("Timestamp", ConvertTime(logEntry.Timestamp)).Debug(logEntry.Description)
+		}
+
+		log.Entry().Debug("-------------------------")
+		log.Entry().Debug("Execution Log")
+		log.Entry().Debug("-------------------------")
+		for _, logEntry := range entity.ToExecutionLog.Results {
+			log.Entry().WithField("Timestamp", ConvertTime(logEntry.Timestamp)).Debug(logEntry.Description)
+		}
+		log.Entry().Debug("-------------------------")
 	}
 
-	log.Entry().Info("-------------------------")
-	log.Entry().Info("Execution Log")
-	log.Entry().Info("-------------------------")
-	for _, logEntry := range entity.ToExecutionLog.Results {
-		log.Entry().WithField("Timestamp", ConvertTime(logEntry.Timestamp)).Info(logEntry.Description)
+}
+
+//GetRepositories for parsing  one or multiple branches and repositories from repositories file or branchName and repositoryName configuration
+func GetRepositories(config *RepositoriesConfig) ([]Repository, error) {
+	var repositories = make([]Repository, 0)
+	if reflect.DeepEqual(RepositoriesConfig{}, config) {
+		return repositories, fmt.Errorf("Failed to read repository configuration: %w", errors.New("Eror in configuration, most likely you have entered empty or wrong configuration values. Please make sure that you have correctly specified them. For more information please read the User documentation"))
 	}
-	log.Entry().Info("-------------------------")
+	if config.RepositoryName == "" && config.BranchName == "" && config.Repositories == "" && len(config.RepositoryNames) == 0 {
+		return repositories, fmt.Errorf("Failed to read repository configuration: %w", errors.New("You have not specified any repository configuration. Please make sure that you have correctly specified it. For more information please read the User documentation"))
+	}
+	if config.Repositories != "" {
+		descriptor, err := ReadAddonDescriptor(config.Repositories)
+		if err != nil {
+			return repositories, err
+		}
+		err = CheckAddonDescriptorForRepositories(descriptor)
+		if err != nil {
+			return repositories, fmt.Errorf("Error in config file %v, %w", config.Repositories, err)
+		}
+		repositories = descriptor.Repositories
+	}
+	if config.RepositoryName != "" && config.BranchName != "" {
+		repositories = append(repositories, Repository{Name: config.RepositoryName, Branch: config.BranchName})
+	}
+	if len(config.RepositoryNames) > 0 {
+		for _, repository := range config.RepositoryNames {
+			repositories = append(repositories, Repository{Name: repository})
+		}
+	}
+	return repositories, nil
+}
+
+//GetCommitStrings for getting the commit_id property for the http request and a string for logging output
+func GetCommitStrings(commitID string) (commitQuery string, commitString string) {
+	if commitID != "" {
+		commitQuery = `, "commit_id":"` + commitID + `"`
+		commitString = ", commit '" + commitID + "'"
+	}
+	return commitQuery, commitString
 }
 
 /****************************************
@@ -143,4 +208,12 @@ type LogResults struct {
 	Type        string `json:"type"`
 	Description string `json:"descr"`
 	Timestamp   string `json:"timestamp"`
+}
+
+//RepositoriesConfig struct for parsing one or multiple branches and repositories configurations
+type RepositoriesConfig struct {
+	BranchName      string
+	RepositoryName  string
+	RepositoryNames []string
+	Repositories    string
 }

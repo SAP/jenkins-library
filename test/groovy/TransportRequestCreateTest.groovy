@@ -72,7 +72,7 @@ public class TransportRequestCreateTest extends BasePiperTest {
     public void changeIdNotProvidedSOLANTest() {
 
         thrown.expect(IllegalArgumentException)
-        thrown.expectMessage("Change document id not provided (parameter: 'changeDocumentId' or via commit history).")
+        thrown.expectMessage("Change document id not provided (parameter: 'changeDocumentId' provided to the step call or via commit history).")
         ChangeManagement cm = new ChangeManagement(nullScript) {
             String getChangeDocumentId(
                                        String from,

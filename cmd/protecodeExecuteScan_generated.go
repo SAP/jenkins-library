@@ -56,7 +56,7 @@ func (i *protecodeExecuteScanInflux) persist(path, resourceName string) {
 		measurement string
 		valType     string
 		name        string
-		value       string
+		value       interface{}
 	}{
 		{valType: config.InfluxField, measurement: "protecode_data", name: "historical_vulnerabilities", value: i.protecode_data.fields.historical_vulnerabilities},
 		{valType: config.InfluxField, measurement: "protecode_data", name: "triaged_vulnerabilities", value: i.protecode_data.fields.triaged_vulnerabilities},
@@ -124,6 +124,7 @@ func ProtecodeExecuteScanCommand() *cobra.Command {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()

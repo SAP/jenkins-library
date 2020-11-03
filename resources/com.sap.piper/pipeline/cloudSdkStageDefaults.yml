@@ -9,35 +9,26 @@ stages:
           - '**/*.jsx'
           - '**/*.ts'
           - '**/*.tsx'
-  backendIntegrationTests:
+  integration:
     stepConditions:
       npmExecuteScripts:
         npmScripts:
           - 'ci-it-backend'
+          - 'ci-it-frontend'
       mavenExecuteIntegration:
         filePattern: 'integration-tests/pom.xml'
   compliance:
-    onlyProductiveBranch: true
     stepConditions:
       sonarExecuteScan:
         configKeys:
           - 'sonarTokenCredentialsId'
           - 'projectKey'
           - 'instance'
-  frontendIntegrationTests:
-    stepConditions:
-      npmExecuteScripts:
-        npmScripts:
-          - 'ci-it-frontend'
   additionalUnitTests:
     stepConditions:
       npmExecuteScripts:
         npmScripts:
           - 'ci-frontend-unit-test'
-  npmAudit:
-    stepConditions:
-      npmAudit:
-        filePattern: '**/package.json'
   endToEndTests:
     stepConditions:
       multicloudDeploy:
@@ -68,46 +59,7 @@ stages:
         configKeys:
           - 'cfTargets'
           - 'neoTargets'
-  checkmarxScan:
-    onlyProductiveBranch: true
-    stepConditions:
-      checkmarxScan:
-        configKeys:
-          - 'groupId'
-  sonarQubeScan:
-    stepConditions:
-      sonarQubeScan:
-        configKeys:
-          - 'projectKey'
-          - 'instance'
-  additionalTools:
-    onlyProductiveBranch: true
-    extensionExists: true
-  whitesourceScan:
-    onlyProductiveBranch: true
-    stepConditions:
-      whitesourceExecuteScan:
-        configKeys:
-          - 'product'
-          - 'orgAdminUserTokenCredentialsId'
-      whitesourceScan:
-        configKeys:
-          - 'product'
-          - 'credentialsId'
-  fortifyScan:
-    onlyProductiveBranch: true
-    stepConditions:
-      fortifyExecuteScan:
-        configKeys:
-          - 'fortifyCredentialsId'
-  detectScan:
-    onlyProductiveBranch: true
-    stepConditions:
-      detectScan:
-        configKeys:
-          - 'detectTokenCredentialsId'
   security:
-    onlyProductiveBranch: true
     stepConditions:
       checkmarxExecuteScan:
         configKeys:
@@ -120,11 +72,10 @@ stages:
           - 'fortifyCredentialsId'
       whitesourceExecuteScan:
         configKeys:
-          - 'product'
+          - 'productName'
           - 'orgAdminUserTokenCredentialsId'
           - 'userTokenCredentialsId'
   productionDeployment:
-    onlyProductiveBranch: true
     stepConditions:
       multicloudDeploy:
         configKeys:
@@ -152,7 +103,6 @@ stages:
         configKeys:
           - 'githubTokenCredentialsId'
   artifactDeployment:
-    onlyProductiveBranch: true
     stepConditions:
       artifactDeployment:
         configKeys:

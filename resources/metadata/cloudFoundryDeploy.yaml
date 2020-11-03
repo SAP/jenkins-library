@@ -157,6 +157,7 @@ spec:
           - STAGES
           - STEPS
         mandatory: false
+        secret: true
         resourceRef:
           - name: dockerCredentialsId
             type: secret
@@ -232,7 +233,7 @@ spec:
           - STAGES
           - STEPS
           - GENERAL
-        default: "manifest-variables.yml"
+        default: ["manifest-variables.yml"]
         mandatory: false
         aliases:
           - name: cfManifestVariablesFiles
@@ -296,6 +297,11 @@ spec:
           - name: cfCredentialsId
             type: secret
             param: password
+          - type: vaultSecret
+            paths:
+              - $(vaultPath)/cloudfoundry-$(cfOrg)-$(cfSpace)
+              - $(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(cfOrg)-$(cfSpace)
+              - $(vaultBasePath)/GROUP-SECRETS/cloudfoundry-$(cfOrg)-$(cfSpace)
       - name: smokeTestScript
         type: string
         description:
@@ -346,6 +352,11 @@ spec:
           - name: cfCredentialsId
             type: secret
             param: username
+          - type: vaultSecret
+            paths:
+              - $(vaultPath)/cloudfoundry-$(cfOrg)-$(cfSpace)
+              - $(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(cfOrg)-$(cfSpace)
+              - $(vaultBasePath)/GROUP-SECRETS/cloudfoundry-$(cfOrg)-$(cfSpace)
   containers:
     - name: cfDeploy
       image: ppiper/cf-cli

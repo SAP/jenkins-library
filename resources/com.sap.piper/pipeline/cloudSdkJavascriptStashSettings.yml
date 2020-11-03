@@ -33,14 +33,7 @@ additionalUnitTests:
       merge: true
       includes: "s4hana_pipeline/reports/**"
 
-backendIntegrationTests:
-  unstash: ["SOURCE", "DIST", "NODE_MODULES", "GENERATED_CAP_FILES"]
-  stashes:
-    - name: "REPORTS"
-      merge: true
-      includes: "s4hana_pipeline/reports/**"
-
-frontendIntegrationTests:
+integration:
   unstash: ["SOURCE", "DIST", "NODE_MODULES", "GENERATED_CAP_FILES"]
   stashes:
     - name: "REPORTS"
@@ -51,27 +44,8 @@ compliance:
   unstash: ['SOURCE', 'NODE_MODULES', 'DIST']
   stashes: []
 
-npmAudit:
-  unstash: ["SOURCE", "PACKAGE_LOCK"]
-  stashes: []
-
-s4SdkQualityChecks:
-  unstash: ["SOURCE", "DIST", "REPORTS"]
-
-whitesourceScan:
-  unstash: ["SOURCE", "NODE_MODULES", "PACKAGE_LOCK"]
-  stashes: []
-
-checkmarxScan:
-  unstash: ["SOURCE"]
-  stashes: []
-
-detect:
-  unstash: ["SOURCE"]
-  stashes: []
-
 security:
-  unstash: ["SOURCE", "NODE_MODULES", "PACKAGE_LOCK"]
+  unstash: ["SOURCE"]
   stashes: []
 
 endToEndTests:

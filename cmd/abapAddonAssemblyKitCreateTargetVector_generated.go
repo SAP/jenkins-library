@@ -32,7 +32,7 @@ func (p *abapAddonAssemblyKitCreateTargetVectorCommonPipelineEnvironment) persis
 	content := []struct {
 		category string
 		name     string
-		value    string
+		value    interface{}
 	}{
 		{category: "abap", name: "addonDescriptor", value: p.abap.addonDescriptor},
 	}
@@ -93,6 +93,7 @@ The Target Vector describes the software state, which shall be reached in the ma
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()

@@ -19,9 +19,14 @@ spec:
         description: Jenkins 'Secret text' credentials ID containing the API token used to authenticate with the Synopsis Detect (formerly BlackDuck) Server.
         type: jenkins
     params:
-      - name: apiToken
+      - name: token
         aliases:
+          - name: blackduckToken
+          - name: detectToken
+          - name: apiToken
+            deprecated: true
           - name: detect/apiToken
+            deprecated: true
         description: Api token to be used for connectivity with Synopsis Detect server.
         type: string
         mandatory: true
@@ -29,6 +34,11 @@ spec:
         resourceRef:
           - name: detectTokenCredentialsId
             type: secret
+          - type: vaultSecret
+            paths:
+              - $(vaultPath)/detect
+              - $(vaultBasePath)/$(vaultPipelineName)/detect
+              - $(vaultBasePath)/GROUP-SECRETS/detect
         scope:
           - PARAMETERS
           - STAGES
@@ -36,7 +46,6 @@ spec:
       - name: codeLocation
         description: An override for the name Detect will use for the scan file it creates.
         type: string
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -56,7 +65,6 @@ spec:
         aliases:
           - name: detect/scanners
         type: "[]string"
-        mandatory: false
         default:
           - signature
         possibleValues:
@@ -71,7 +79,6 @@ spec:
         aliases:
           - name: detect/scanPaths
         type: "[]string"
-        mandatory: false
         default:
           - "."
         scope:
@@ -83,14 +90,13 @@ spec:
         aliases:
           - name: detect/scanProperties
         type: "[]string"
-        mandatory: false
         default:
           - --blackduck.signature.scanner.memory=4096
           - --blackduck.timeout=6000
           - --blackduck.trust.cert=true
           - --detect.report.timeout=4800
           - --logging.level.com.synopsys.integration=DEBUG
-          - --detect.maven.excluded.scopes=TEST
+          - --detect.maven.excluded.scopes=test
         scope:
           - PARAMETERS
           - STAGES
@@ -110,7 +116,6 @@ spec:
         aliases:
           - name: detect/groups
         type: "[]string"
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -123,7 +128,6 @@ spec:
         aliases:
           - name: detect/failOn
         type: "[]string"
-        mandatory: false
         default:
           - BLOCKER
         possibleValues:
@@ -181,7 +185,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        mandatory: false
         aliases:
           - name: maven/projectSettingsFile
       - name: globalSettingsFile
@@ -192,7 +195,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        mandatory: false
         aliases:
           - name: maven/globalSettingsFile
       - name: m2Path
@@ -203,9 +205,18 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
-        mandatory: false
         aliases:
           - name: maven/m2Path
+      - name: installArtifacts
+        type: bool
+        description:
+          "If enabled, it will install all artifacts to the local maven repository to make them available before running detect.
+          This is required if any maven module has dependencies to other modules in the repository and they were not installed before."
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
   containers:
     - name: openjdk
       image: openjdk:11

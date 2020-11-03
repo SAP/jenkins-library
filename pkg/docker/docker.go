@@ -74,7 +74,7 @@ func (c *Client) GetImageSource() (string, error) {
 	}
 
 	if len(imageSource) <= 0 {
-		return imageSource, fmt.Errorf("There is no image source for the parameters: (Name: %v, Registry: %v, local Path: %v)", c.imageName, c.registryURL, c.localPath)
+		return imageSource, fmt.Errorf("no image found for the parameters: (Name: %v, Registry: %v, local Path: %v)", c.imageName, c.registryURL, c.localPath)
 	}
 
 	return imageSource, nil

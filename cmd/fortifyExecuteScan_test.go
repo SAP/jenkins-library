@@ -232,18 +232,18 @@ func (f *fortifyMock) GetIssueStatisticsOfProjectVersion(id int64) ([]*models.Is
 func (f *fortifyMock) GenerateQGateReport(projectID, projectVersionID, reportTemplateID int64, projectName, projectVersionName, reportFormat string) (*models.SavedReport, error) {
 	if !f.Successive {
 		f.Successive = true
-		return &models.SavedReport{Status: "Processing"}, nil
+		return &models.SavedReport{Status: "PROCESSING"}, nil
 	}
 	f.Successive = false
-	return &models.SavedReport{Status: "Complete"}, nil
+	return &models.SavedReport{Status: "PROCESS_COMPLETE"}, nil
 }
 func (f *fortifyMock) GetReportDetails(id int64) (*models.SavedReport, error) {
-	return &models.SavedReport{Status: "Complete"}, nil
+	return &models.SavedReport{Status: "PROCESS_COMPLETE"}, nil
 }
 func (f *fortifyMock) UploadResultFile(endpoint, file string, projectVersionID int64) error {
 	return nil
 }
-func (f *fortifyMock) DownloadReportFile(endpoint string, projectVersionID int64) ([]byte, error) {
+func (f *fortifyMock) DownloadReportFile(endpoint string, reportID int64) ([]byte, error) {
 	return []byte("abcd"), nil
 }
 func (f *fortifyMock) DownloadResultFile(endpoint string, projectVersionID int64) ([]byte, error) {
@@ -428,9 +428,9 @@ func TestAnalyseSuspiciousExploitable(t *testing.T) {
 	issues := analyseSuspiciousExploitable(config, &ff, &projectVersion, &models.FilterSet{}, &selectorSet, &influx, auditStatus)
 	assert.Equal(t, 9, issues)
 
-	assert.Equal(t, "4", influx.fortify_data.fields.suspicious)
-	assert.Equal(t, "5", influx.fortify_data.fields.exploitable)
-	assert.Equal(t, "6", influx.fortify_data.fields.suppressed)
+	assert.Equal(t, 4, influx.fortify_data.fields.suspicious)
+	assert.Equal(t, 5, influx.fortify_data.fields.exploitable)
+	assert.Equal(t, 6, influx.fortify_data.fields.suppressed)
 }
 
 func TestAnalyseUnauditedIssues(t *testing.T) {
@@ -477,13 +477,13 @@ func TestAnalyseUnauditedIssues(t *testing.T) {
 	issues := analyseUnauditedIssues(config, &ff, &projectVersion, &models.FilterSet{}, &selectorSet, &influx, auditStatus)
 	assert.Equal(t, 13, issues)
 
-	assert.Equal(t, "15", influx.fortify_data.fields.auditAllTotal)
-	assert.Equal(t, "12", influx.fortify_data.fields.auditAllAudited)
-	assert.Equal(t, "20", influx.fortify_data.fields.corporateTotal)
-	assert.Equal(t, "11", influx.fortify_data.fields.corporateAudited)
-	assert.Equal(t, "13", influx.fortify_data.fields.spotChecksTotal)
-	assert.Equal(t, "11", influx.fortify_data.fields.spotChecksAudited)
-	assert.Equal(t, "1", influx.fortify_data.fields.spotChecksGap)
+	assert.Equal(t, 15, influx.fortify_data.fields.auditAllTotal)
+	assert.Equal(t, 12, influx.fortify_data.fields.auditAllAudited)
+	assert.Equal(t, 20, influx.fortify_data.fields.corporateTotal)
+	assert.Equal(t, 11, influx.fortify_data.fields.corporateAudited)
+	assert.Equal(t, 13, influx.fortify_data.fields.spotChecksTotal)
+	assert.Equal(t, 11, influx.fortify_data.fields.spotChecksAudited)
+	assert.Equal(t, 1, influx.fortify_data.fields.spotChecksGap)
 }
 
 func TestTriggerFortifyScan(t *testing.T) {

@@ -28,17 +28,21 @@ type testStepCommonPipelineEnvironment struct {
 		commitID string
 		branch string
 	}
+	custom struct {
+		customList []string
+	}
 }
 
 func (p *testStepCommonPipelineEnvironment) persist(path, resourceName string) {
 	content := []struct{
 		category string
 		name string
-		value string
+		value interface{}
 	}{
 		{category: "", name: "artifactVersion", value: p.artifactVersion},
 		{category: "git", name: "commitId", value: p.git.commitID},
 		{category: "git", name: "branch", value: p.git.branch},
+		{category: "custom", name: "customList", value: p.custom.customList},
 	}
 
 	errCount := 0
@@ -70,7 +74,7 @@ func (i *testStepInfluxTest) persist(path, resourceName string) {
 		measurement string
 		valType     string
 		name        string
-		value       string
+		value       interface{}
 	}{
 		{valType: config.InfluxField, measurement: "m1" , name: "f1", value: i.m1.fields.f1},
 		{valType: config.InfluxTag, measurement: "m1" , name: "t1", value: i.m1.tags.t1},
@@ -130,6 +134,7 @@ func TestStepCommand() *cobra.Command {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				influxTest.persist(GeneralConfig.EnvRootPath, "influxTest")
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())

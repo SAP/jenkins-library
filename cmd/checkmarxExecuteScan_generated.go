@@ -75,7 +75,7 @@ type checkmarxExecuteScanInflux struct {
 			owner                                string
 			scan_id                              string
 			project_id                           string
-			project_name                         string
+			projectName                          string
 			team                                 string
 			team_full_path_on_report_date        string
 			scan_start                           string
@@ -98,7 +98,7 @@ func (i *checkmarxExecuteScanInflux) persist(path, resourceName string) {
 		measurement string
 		valType     string
 		name        string
-		value       string
+		value       interface{}
 	}{
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "high_issues", value: i.checkmarx_data.fields.high_issues},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "high_not_false_positive", value: i.checkmarx_data.fields.high_not_false_positive},
@@ -132,7 +132,7 @@ func (i *checkmarxExecuteScanInflux) persist(path, resourceName string) {
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "owner", value: i.checkmarx_data.fields.owner},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "scan_id", value: i.checkmarx_data.fields.scan_id},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "project_id", value: i.checkmarx_data.fields.project_id},
-		{valType: config.InfluxField, measurement: "checkmarx_data", name: "project_name", value: i.checkmarx_data.fields.project_name},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "projectName", value: i.checkmarx_data.fields.projectName},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "team", value: i.checkmarx_data.fields.team},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "team_full_path_on_report_date", value: i.checkmarx_data.fields.team_full_path_on_report_date},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "scan_start", value: i.checkmarx_data.fields.scan_start},
@@ -209,6 +209,7 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
@@ -323,6 +324,12 @@ func checkmarxExecuteScanMetadata() config.StepData {
 								Param: "password",
 								Type:  "secret",
 							},
+
+							{
+								Name:  "",
+								Paths: []string{"$(vaultPath)/checkmarx", "$(vaultBasePath)/$(vaultPipelineName)/checkmarx", "$(vaultBasePath)/GROUP-SECRETS/checkmarx"},
+								Type:  "vaultSecret",
+							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
@@ -392,6 +399,12 @@ func checkmarxExecuteScanMetadata() config.StepData {
 								Name:  "checkmarxCredentialsId",
 								Param: "username",
 								Type:  "secret",
+							},
+
+							{
+								Name:  "",
+								Paths: []string{"$(vaultPath)/checkmarx", "$(vaultBasePath)/$(vaultPipelineName)/checkmarx", "$(vaultBasePath)/GROUP-SECRETS/checkmarx"},
+								Type:  "vaultSecret",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},

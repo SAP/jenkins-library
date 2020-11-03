@@ -17,7 +17,7 @@ import (
 
 type sonarExecuteScanOptions struct {
 	Instance                  string   `json:"instance,omitempty"`
-	Host                      string   `json:"host,omitempty"`
+	ServerURL                 string   `json:"serverUrl,omitempty"`
 	Token                     string   `json:"token,omitempty"`
 	Organization              string   `json:"organization,omitempty"`
 	CustomTLSCertificateLinks []string `json:"customTlsCertificateLinks,omitempty"`
@@ -46,7 +46,7 @@ type sonarExecuteScanOptions struct {
 type sonarExecuteScanInflux struct {
 	step_data struct {
 		fields struct {
-			sonar string
+			sonar bool
 		}
 		tags struct {
 		}
@@ -58,7 +58,7 @@ func (i *sonarExecuteScanInflux) persist(path, resourceName string) {
 		measurement string
 		valType     string
 		name        string
-		value       string
+		value       interface{}
 	}{
 		{valType: config.InfluxField, measurement: "step_data", name: "sonar", value: i.step_data.fields.sonar},
 	}
@@ -117,6 +117,7 @@ func SonarExecuteScanCommand() *cobra.Command {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
@@ -136,12 +137,12 @@ func SonarExecuteScanCommand() *cobra.Command {
 }
 
 func addSonarExecuteScanFlags(cmd *cobra.Command, stepConfig *sonarExecuteScanOptions) {
-	cmd.Flags().StringVar(&stepConfig.Instance, "instance", `SonarCloud`, "Jenkins only: The name of the SonarQube instance defined in the Jenkins settings. DEPRECATED: use host parameter instead")
-	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "The URL to the Sonar backend.")
+	cmd.Flags().StringVar(&stepConfig.Instance, "instance", `SonarCloud`, "Jenkins only: The name of the SonarQube instance defined in the Jenkins settings. DEPRECATED: use serverUrl parameter instead")
+	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "The URL to the Sonar backend.")
 	cmd.Flags().StringVar(&stepConfig.Token, "token", os.Getenv("PIPER_token"), "Token used to authenticate with the Sonar Server.")
 	cmd.Flags().StringVar(&stepConfig.Organization, "organization", os.Getenv("PIPER_organization"), "SonarCloud.io only: Organization that the project will be assigned to in SonarCloud.io.")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List of download links to custom TLS certificates. This is required to ensure trusted connections to instances with custom certificates.")
-	cmd.Flags().StringVar(&stepConfig.SonarScannerDownloadURL, "sonarScannerDownloadUrl", `https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.4.0.2170-linux.zip`, "URL to the sonar-scanner-cli archive.")
+	cmd.Flags().StringVar(&stepConfig.SonarScannerDownloadURL, "sonarScannerDownloadUrl", `https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.5.0.2216-linux.zip`, "URL to the sonar-scanner-cli archive.")
 	cmd.Flags().StringVar(&stepConfig.ProjectVersion, "projectVersion", os.Getenv("PIPER_projectVersion"), "The project version that is reported to SonarQube.")
 	cmd.Flags().StringVar(&stepConfig.ProjectKey, "projectKey", os.Getenv("PIPER_projectKey"), "The project key identifies the project in SonarQube.")
 	cmd.Flags().StringSliceVar(&stepConfig.CoverageExclusions, "coverageExclusions", []string{}, "A list of patterns that should be excluded from the coverage scan.")
@@ -183,16 +184,22 @@ func sonarExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "host",
+						Name:        "serverUrl",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "sonarServerUrl"}},
+						Aliases:     []config.Alias{{Name: "host"}, {Name: "sonarServerUrl"}},
 					},
 					{
 						Name: "token",
 						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "",
+								Paths: []string{"$(vaultPath)/sonar", "$(vaultBasePath)/$(vaultPipelineName)/sonar", "$(vaultBasePath)/GROUP-SECRETS/sonar"},
+								Type:  "vaultSecret",
+							},
+
 							{
 								Name: "sonarTokenCredentialsId",
 								Type: "secret",

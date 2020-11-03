@@ -19,6 +19,7 @@ type abapEnvironmentCheckoutBranchOptions struct {
 	RepositoryName    string `json:"repositoryName,omitempty"`
 	BranchName        string `json:"branchName,omitempty"`
 	Host              string `json:"host,omitempty"`
+	Repositories      string `json:"repositories,omitempty"`
 	CfAPIEndpoint     string `json:"cfApiEndpoint,omitempty"`
 	CfOrg             string `json:"cfOrg,omitempty"`
 	CfSpace           string `json:"cfSpace,omitempty"`
@@ -40,7 +41,7 @@ func AbapEnvironmentCheckoutBranchCommand() *cobra.Command {
 		Long: `This step switches between branches of a git repository (Software Component) on a SAP Cloud Platform ABAP Environment system.
 Please provide either of the following options:
 
-* The host and credentials the Cloud Platform ABAP Environment system itself. The credentials must be configured for the Communication Scenario SAP_COM_0510.
+* The host and credentials the Cloud Platform ABAP Environment system itself. The credentials must be configured for the Communication Scenario [SAP_COM_0510](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html).
 * The Cloud Foundry parameters (API endpoint, organization, space), credentials, the service instance for the ABAP service and the service key for the Communication Scenario SAP_COM_0510.
 * Only provide one of those options with the respective credentials. If all values are provided, the direct communication (via host) has priority.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
@@ -71,6 +72,7 @@ Please provide either of the following options:
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
@@ -94,6 +96,7 @@ func addAbapEnvironmentCheckoutBranchFlags(cmd *cobra.Command, stepConfig *abapE
 	cmd.Flags().StringVar(&stepConfig.RepositoryName, "repositoryName", os.Getenv("PIPER_repositoryName"), "Specifies a Repository (Software Component) on the SAP Cloud Platform ABAP Environment system")
 	cmd.Flags().StringVar(&stepConfig.BranchName, "branchName", os.Getenv("PIPER_branchName"), "Specifies a Branch of a Repository (Software Component) on the SAP Cloud Platform ABAP Environment system")
 	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP Cloud Platform ABAP Environment system")
+	cmd.Flags().StringVar(&stepConfig.Repositories, "repositories", os.Getenv("PIPER_repositories"), "Specifies a YAML file containing the repositories configuration")
 	cmd.Flags().StringVar(&stepConfig.CfAPIEndpoint, "cfApiEndpoint", os.Getenv("PIPER_cfApiEndpoint"), "Cloud Foundry API Enpoint")
 	cmd.Flags().StringVar(&stepConfig.CfOrg, "cfOrg", os.Getenv("PIPER_cfOrg"), "Cloud Foundry target organization")
 	cmd.Flags().StringVar(&stepConfig.CfSpace, "cfSpace", os.Getenv("PIPER_cfSpace"), "Cloud Foundry target space")
@@ -102,8 +105,6 @@ func addAbapEnvironmentCheckoutBranchFlags(cmd *cobra.Command, stepConfig *abapE
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
-	cmd.MarkFlagRequired("repositoryName")
-	cmd.MarkFlagRequired("branchName")
 }
 
 // retrieve step metadata
@@ -149,7 +150,7 @@ func abapEnvironmentCheckoutBranchMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -157,13 +158,21 @@ func abapEnvironmentCheckoutBranchMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
 					{
 						Name:        "host",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "repositories",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
