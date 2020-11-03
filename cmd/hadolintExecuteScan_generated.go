@@ -14,11 +14,13 @@ import (
 )
 
 type hadolintExecuteScanOptions struct {
-	ConfigurationURL  string `json:"configurationUrl,omitempty"`
-	DockerFile        string `json:"dockerFile,omitempty"`
-	ConfigurationFile string `json:"configurationFile,omitempty"`
-	QualityGates      string `json:"qualityGates,omitempty"`
-	ReportFile        string `json:"reportFile,omitempty"`
+	ConfigurationURL      string `json:"configurationUrl,omitempty"`
+	ConfigurationUsername string `json:"configurationUsername,omitempty"`
+	ConfigurationPassword string `json:"configurationPassword,omitempty"`
+	DockerFile            string `json:"dockerFile,omitempty"`
+	ConfigurationFile     string `json:"configurationFile,omitempty"`
+	QualityGates          string `json:"qualityGates,omitempty"`
+	ReportFile            string `json:"reportFile,omitempty"`
 }
 
 // HadolintExecuteScanCommand Executes the Haskell Dockerfile Linter which is a smarter Dockerfile linter that helps you build [best practice](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/) Docker images.
@@ -48,6 +50,8 @@ The linter is parsing the Dockerfile into an abstract syntax tree (AST) and perf
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			log.RegisterSecret(stepConfig.ConfigurationUsername)
+			log.RegisterSecret(stepConfig.ConfigurationPassword)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -60,6 +64,7 @@ The linter is parsing the Dockerfile into an abstract syntax tree (AST) and perf
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
@@ -79,6 +84,8 @@ The linter is parsing the Dockerfile into an abstract syntax tree (AST) and perf
 
 func addHadolintExecuteScanFlags(cmd *cobra.Command, stepConfig *hadolintExecuteScanOptions) {
 	cmd.Flags().StringVar(&stepConfig.ConfigurationURL, "configurationUrl", os.Getenv("PIPER_configurationUrl"), "URL pointing to the .hadolint.yaml exclude configuration to be used for linting. Also have a look at `configurationFile` which could avoid central configuration download in case the file is part of your repository.")
+	cmd.Flags().StringVar(&stepConfig.ConfigurationUsername, "configurationUsername", os.Getenv("PIPER_configurationUsername"), "The username to authenticate")
+	cmd.Flags().StringVar(&stepConfig.ConfigurationPassword, "configurationPassword", os.Getenv("PIPER_configurationPassword"), "The password to authenticate")
 	cmd.Flags().StringVar(&stepConfig.DockerFile, "dockerFile", `./Dockerfile`, "Dockerfile to be used for the assessment.")
 	cmd.Flags().StringVar(&stepConfig.ConfigurationFile, "configurationFile", `.hadolint.yaml`, "Name of the configuration file used locally within the step. If a file with this name is detected as part of your repo downloading the central configuration via `configurationUrl` will be skipped. If you change the file's name make sure your stashing configuration also reflects this.")
 	cmd.Flags().StringVar(&stepConfig.QualityGates, "qualityGates", os.Getenv("PIPER_qualityGates"), "Quality Gates to fail the build, see [warnings-ng plugin documentation](https://github.com/jenkinsci/warnings-plugin/blob/master/doc/Documentation.md#quality-gate-configuration).")
@@ -103,6 +110,34 @@ func hadolintExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+					},
+					{
+						Name: "configurationUsername",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "configurationCredentialsId",
+								Param: "username",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+					},
+					{
+						Name: "configurationPassword",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "configurationCredentialsId",
+								Param: "password",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "dockerFile",

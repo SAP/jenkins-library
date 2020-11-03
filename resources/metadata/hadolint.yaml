@@ -6,6 +6,10 @@ metadata:
     The linter is parsing the Dockerfile into an abstract syntax tree (AST) and performs rules on top of the AST.
 spec:
   inputs:
+    secrets:
+      - name: configurationCredentialsId
+        type: jenkins
+        description: Jenkins 'Username with password' credentials ID containing username/password for access to your remote configuration file.
     params:
     - name: configurationUrl
       type: string
@@ -16,6 +20,30 @@ spec:
       - STAGES
       - STEPS
       default: null
+    - name: configurationUsername
+      type: string
+      description: The username to authenticate
+      scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      secret: true
+      resourceRef:
+        - name: configurationCredentialsId
+          type: secret
+          param: username
+    - name: configurationPassword
+      type: string
+      description: The password to authenticate
+      scope:
+        - PARAMETERS
+        - STAGES
+        - STEPS
+      secret: true
+      resourceRef:
+        - name: configurationCredentialsId
+          type: secret
+          param: password
     - name: dockerFile
       type: string
       description: Dockerfile to be used for the assessment.
