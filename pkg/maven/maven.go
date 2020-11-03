@@ -121,7 +121,7 @@ func Evaluate(options *EvaluateOptions, expression string, utils Utils) (string,
 
 // InstallFile installs a maven artifact and its pom into the local maven repository.
 // If "file" is empty, only the pom is installed. "pomFile" must not be empty.
-func InstallFile(file, pomFile, m2Path string, options *EvaluateOption, utils Utils) error {
+func InstallFile(file, pomFile string, options *EvaluateOptions, utils Utils) error {
 	if len(pomFile) == 0 {
 		return fmt.Errorf("pomFile can't be empty")
 	}

@@ -31,7 +31,10 @@ type Utils interface {
 	FileRename(oldPath, newPath string) error
 	RemoveAll(path string) error
 	FileOpen(name string, flag int, perm os.FileMode) (File, error)
+	Glob(pattern string) (matches []string, err error)
+	Copy(src, dest string) (int64, error)
 
 	FindPackageJSONFiles(config *ScanOptions) ([]string, error)
 	InstallAllNPMDependencies(config *ScanOptions, packageJSONFiles []string) error
 }
+

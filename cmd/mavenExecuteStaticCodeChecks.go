@@ -3,34 +3,9 @@ package cmd
 import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/maven"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"io"
 	"strconv"
 )
-
-type mavenStaticCodeChecksUtils interface {
-	Stdout(out io.Writer)
-	Stderr(err io.Writer)
-	RunExecutable(e string, p ...string) error
-
-	FileExists(filename string) (bool, error)
-}
-
-type mavenStaticCodeChecksUtilsBundle struct {
-	*command.Command
-	*piperutils.Files
-}
-
-func newStaticCodeChecksUtils() mavenStaticCodeChecksUtils {
-	utils := mavenStaticCodeChecksUtilsBundle{
-		Command: &command.Command{},
-		Files:   &piperutils.Files{},
-	}
-	utils.Stdout(log.Writer())
-	utils.Stderr(log.Writer())
-	return &utils
-}
 
 func mavenExecuteStaticCodeChecks(config mavenExecuteStaticCodeChecksOptions, telemetryData *telemetry.CustomData) {
 	err := runMavenStaticCodeChecks(&config, telemetryData, maven.NewUtilsBundle())
@@ -49,11 +24,11 @@ func runMavenStaticCodeChecks(config *mavenExecuteStaticCodeChecksOptions, telem
 	}
 
 	if config.InstallArtifacts {
-		err := maven.InstallMavenArtifacts(utils, &maven.EvaluateOptions{
+		err := maven.InstallMavenArtifacts(&maven.EvaluateOptions{
 			M2Path:              config.M2Path,
 			ProjectSettingsFile: config.ProjectSettingsFile,
 			GlobalSettingsFile:  config.GlobalSettingsFile,
-		})
+		}, utils)
 		if err != nil {
 			return err
 		}
