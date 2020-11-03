@@ -4,13 +4,14 @@ package mock
 
 import (
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/bmatcuk/doublestar"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/bmatcuk/doublestar"
 )
 
 var dirContent []byte
