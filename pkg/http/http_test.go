@@ -169,6 +169,7 @@ func TestUploadRequest(t *testing.T) {
 		{clientOptions: ClientOptions{}, method: "POST", header: map[string][]string{"Testheader": {"Test1", "Test2"}}, expected: "OK"},
 		{clientOptions: ClientOptions{}, cookies: []*http.Cookie{{Name: "TestCookie1", Value: "TestValue1"}, {Name: "TestCookie2", Value: "TestValue2"}}, method: "POST", expected: "OK"},
 		{clientOptions: ClientOptions{Username: "TestUser", Password: "TestPwd"}, method: "POST", expected: "OK"},
+		{clientOptions: ClientOptions{Username: "UserOnly", Password: ""}, method: "POST", expected: "OK"},
 	}
 
 	client := Client{logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")}
