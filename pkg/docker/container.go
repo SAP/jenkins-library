@@ -39,25 +39,3 @@ func ContainerImageNameTagFromImage(fullImage string) (string, error) {
 	registryOnly := fmt.Sprintf("%v/", ref.Context().RegistryStr())
 	return strings.ReplaceAll(fullImage, registryOnly, ""), nil
 }
-
-// ContainerImageNameFromImage provides the name without tag part of a full image name
-func ContainerImageNameFromImage(fullImage string) (string, error) {
-	imageNameTag, err := ContainerImageNameTagFromImage(fullImage)
-	if err != nil {
-		return "", errors.Wrap(err, "could not extract image name with tag from full image")
-	}
-	return strings.Split(imageNameTag, ":")[0], nil
-}
-
-// ContainerImageTagFromImage provides the tag part of a full image name
-func ContainerImageTagFromImage(fullImage string) (string, error) {
-	imageNameTag, err := ContainerImageNameTagFromImage(fullImage)
-	if err != nil {
-		return "", errors.Wrap(err, "could not extract image name with tag from full image")
-	}
-	splitting := strings.Split(imageNameTag, ":")
-	if len(splitting) < 2 || splitting[1] == "" {
-		return "", errors.New("could not extract tag from full image")
-	}
-	return splitting[1], nil
-}

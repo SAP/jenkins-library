@@ -15,6 +15,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 const toolKubectl = "kubectl"
@@ -203,6 +204,19 @@ func logNotRequiredButFilledFieldForKubectl(config *gitopsUpdateDeploymentOption
 	}
 }
 
+func cloneRepositoryAndChangeBranch(config *gitopsUpdateDeploymentOptions, gitUtils iGitopsUpdateDeploymentGitUtils, temporaryFolder string) error {
+	err := gitUtils.PlainClone(config.Username, config.Password, config.ServerURL, temporaryFolder)
+	if err != nil {
+		return errors.Wrap(err, "failed to plain clone repository")
+	}
+
+	err = gitUtils.ChangeBranch(config.BranchName)
+	if err != nil {
+		return errors.Wrap(err, "failed to change branch")
+	}
+	return nil
+}
+
 func executeKubectl(config *gitopsUpdateDeploymentOptions, command gitopsUpdateDeploymentExecRunner, outputBytes []byte, filePath string) ([]byte, error) {
 	registryImage, err := buildRegistryPlusImage(config)
 	if err != nil {
@@ -217,17 +231,20 @@ func executeKubectl(config *gitopsUpdateDeploymentOptions, command gitopsUpdateD
 	return outputBytes, nil
 }
 
-func cloneRepositoryAndChangeBranch(config *gitopsUpdateDeploymentOptions, gitUtils iGitopsUpdateDeploymentGitUtils, temporaryFolder string) error {
-	err := gitUtils.PlainClone(config.Username, config.Password, config.ServerURL, temporaryFolder)
-	if err != nil {
-		return errors.Wrap(err, "failed to plain clone repository")
+func buildRegistryPlusImage(config *gitopsUpdateDeploymentOptions) (string, error) {
+	registryURL := config.ContainerRegistryURL
+	if registryURL == "" {
+		return config.ContainerImageNameTag, nil
 	}
 
-	err = gitUtils.ChangeBranch(config.BranchName)
+	url, err := docker.ContainerRegistryFromURL(registryURL)
 	if err != nil {
-		return errors.Wrap(err, "failed to change branch")
+		return "", errors.Wrap(err, "registry URL could not be extracted")
 	}
-	return nil
+	if url != "" {
+		url = url + "/"
+	}
+	return url + config.ContainerImageNameTag, nil
 }
 
 func runKubeCtlCommand(command gitopsUpdateDeploymentExecRunner, patchString string, filePath string) ([]byte, error) {
@@ -252,13 +269,9 @@ func runHelmCommand(runner gitopsUpdateDeploymentExecRunner, config *gitopsUpdat
 	var helmOutput = bytes.Buffer{}
 	runner.Stdout(&helmOutput)
 
-	registryImage, err := buildRegistryPlusImageWithoutTag(config)
+	registryImage, imageTag, err := buildRegistryPlusImageAndTagSeparately(config)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to extract registry URL and image")
-	}
-	imageTag, err := extractTagFromImageNameTag(config)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to extract image tag")
+		return nil, errors.Wrap(err, "failed to extract registry URL, image name, and image tag")
 	}
 	helmParams := []string{
 		"template",
@@ -279,48 +292,42 @@ func runHelmCommand(runner gitopsUpdateDeploymentExecRunner, config *gitopsUpdat
 	return helmOutput.Bytes(), nil
 }
 
-func extractTagFromImageNameTag(config *gitopsUpdateDeploymentOptions) (string, error) {
-	imageTag, err := docker.ContainerImageTagFromImage(config.ContainerImageNameTag)
-	if err != nil {
-		return "", errors.Wrap(err, "image name could not be extracted")
-	}
-	return imageTag, nil
-}
-
-func buildRegistryPlusImage(config *gitopsUpdateDeploymentOptions) (string, error) {
-	registryURL := config.ContainerRegistryURL
-	if registryURL == "" {
-		return config.ContainerImageNameTag, nil
-	}
-
-	url, err := docker.ContainerRegistryFromURL(registryURL)
-	if err != nil {
-		return "", errors.Wrap(err, "registry URL could not be extracted")
-	}
-	if url != "" {
-		url = url + "/"
-	}
-	return url + config.ContainerImageNameTag, nil
-}
-
-func buildRegistryPlusImageWithoutTag(config *gitopsUpdateDeploymentOptions) (string, error) {
+// buildRegistryPlusImageAndTagSeparately combines the registry together with the image name. Handles the tag separately.
+// Tag is defined by everything on the right hand side of the colon sign. This looks weird for sha container versions but works for helm.
+func buildRegistryPlusImageAndTagSeparately(config *gitopsUpdateDeploymentOptions) (string, string, error) {
 	registryURL := config.ContainerRegistryURL
 	url := ""
 	if registryURL != "" {
 		containerURL, err := docker.ContainerRegistryFromURL(registryURL)
 		if err != nil {
-			return "", errors.Wrap(err, "registry URL could not be extracted")
+			return "", "", errors.Wrap(err, "registry URL could not be extracted")
 		}
 		if containerURL != "" {
 			containerURL = containerURL + "/"
 		}
 		url = containerURL
 	}
-	imageName, err := docker.ContainerImageNameFromImage(config.ContainerImageNameTag)
-	if err != nil {
-		return "", errors.Wrap(err, "image name could not be extracted")
+
+	imageNameTag := config.ContainerImageNameTag
+	var imageName, imageTag string
+	if strings.Contains(imageNameTag, ":") {
+		split := strings.Split(imageNameTag, ":")
+		if split[0] == "" {
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return "", "", errors.New("image name could not be extracted")
+		}
+		if split[1] == "" {
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return "", "", errors.New("tag could not be extracted")
+		}
+		imageName = split[0]
+		imageTag = split[1]
+		return url + imageName, imageTag, nil
 	}
-	return url + imageName, nil
+
+	log.SetErrorCategory(log.ErrorConfiguration)
+	return "", "", errors.New("image name and tag could not be extracted")
+
 }
 
 func commitAndPushChanges(config *gitopsUpdateDeploymentOptions, gitUtils iGitopsUpdateDeploymentGitUtils) (plumbing.Hash, error) {
@@ -344,8 +351,7 @@ func commitAndPushChanges(config *gitopsUpdateDeploymentOptions, gitUtils iGitop
 }
 
 func defaultCommitMessage(config *gitopsUpdateDeploymentOptions) string {
-	image, _ := docker.ContainerImageNameFromImage(config.ContainerImageNameTag)
-	tag, _ := docker.ContainerImageTagFromImage(config.ContainerImageNameTag)
+	image, tag, _ := buildRegistryPlusImageAndTagSeparately(config)
 	commitMessage := fmt.Sprintf("Updated %v to version %v", image, tag)
 	return commitMessage
 }
