@@ -63,7 +63,7 @@ void call(Map parameters = [:]) {
             error "The file '${config.pomPath}' does not exist."
         }
 
-        utils.unstashAll(configuration.stashContent)
+        utils.unstashAll(config.stashContent)
 
         try {
             if (appUrls) {
