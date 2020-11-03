@@ -279,8 +279,8 @@ spec:
         description:
           "A list of source directories to scan. Wildcards can be used, e.g., `'src/main/java/**/*'`.
           If `'translate'` is set, this will ignored. The default value for `buildTool: 'maven'` is
-          ['**/*.xml', '**/*.html', '**/*.jsp', '**/*.js', '**/src/main/resources/**/*', '**/src/main/java/**/*'], for
-          `buildTool: 'pip'` it is ['./**/*']."
+          `['**/*.xml', '**/*.html', '**/*.jsp', '**/*.js', '**/src/main/resources/**/*', '**/src/main/java/**/*']`, for
+          `buildTool: 'pip'` it is `['./**/*']`."
         scope:
           - PARAMETERS
           - STAGES

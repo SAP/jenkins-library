@@ -102,7 +102,6 @@ spec:
           - name: dockerfile
         type: string
         description: Defines the location of the Dockerfile relative to the Jenkins workspace.
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
