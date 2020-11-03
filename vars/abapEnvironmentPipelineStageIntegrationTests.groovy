@@ -31,7 +31,7 @@ void call(Map parameters = [:]) {
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
         try {
-            abapEnvironmentCreateSystem script: parameters.script
+            abapEnvironmentCreateSystem(script: parameters.script, includeAddon: true)
         } catch (Exception e) {
             script.currentBuild.result = 'UNSTABLE'
         }
