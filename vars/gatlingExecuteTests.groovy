@@ -40,7 +40,6 @@ void call(Map parameters = [:]) {
         Utils utils = parameters.juStabUtils ?: new Utils()
         String stageName = parameters.stageName ?: env.STAGE_NAME
 
-        // load default & individual configuration
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults([:], stageName)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
