@@ -33,6 +33,8 @@ var _cfLogin = cfLogin
 var _cfLogout = cfLogout
 var _getManifest = getManifest
 var _replaceVariables = yaml.Substitute
+var _getVarsOptions = cloudfoundry.GetVarsOptions
+var _getVarsFileOptions = cloudfoundry.GetVarsFileOptions
 var fileUtils cfFileUtil = piperutils.Files{}
 
 // for simplify mocking. Maybe we find a more elegant way (mock for CFUtils)
@@ -80,6 +82,8 @@ func runCloudFoundryDeploy(config *cloudFoundryDeployOptions, telemetryData *tel
 		return err
 	}
 
+	validateDeployTool(config)
+
 	var deployTriggered bool
 
 	if config.DeployTool == "mtaDeployPlugin" {
@@ -97,6 +101,21 @@ func runCloudFoundryDeploy(config *cloudFoundryDeployOptions, telemetryData *tel
 	}
 
 	return err
+}
+
+func validateDeployTool(config *cloudFoundryDeployOptions) {
+	if config.DeployTool != "" || config.BuildTool == "" {
+		return
+	}
+
+	switch config.BuildTool {
+	case "mta":
+		config.DeployTool = "mtaDeployPlugin"
+	default:
+		config.DeployTool = "cf_native"
+	}
+	log.Entry().Infof("Parameter deployTool not specified - deriving from buildTool '%s': '%s'",
+		config.BuildTool, config.DeployTool)
 }
 
 func validateAppName(appName string) error {
@@ -537,14 +556,20 @@ func handleLegacyCfManifest(manifestFile string) error {
 func prepareCfPushCfNativeDeploy(config *cloudFoundryDeployOptions) (string, []string, []string, error) {
 
 	deployOptions := []string{}
-	varOptions, err := getVarOptions(config.ManifestVariables)
+	varOptions, err := _getVarsOptions(config.ManifestVariables)
 	if err != nil {
 		return "", []string{}, []string{}, errors.Wrapf(err, "Cannot prepare var-options: '%v'", config.ManifestVariables)
 	}
 
-	varFileOptions, err := getVarFileOptions(config.ManifestVariablesFiles)
+	varFileOptions, err := _getVarsFileOptions(config.ManifestVariablesFiles)
 	if err != nil {
-		return "", []string{}, []string{}, errors.Wrapf(err, "Cannot prepare var-file-options: '%v'", config.ManifestVariablesFiles)
+		if e, ok := err.(*cloudfoundry.VarsFilesNotFoundError); ok {
+			for _, missingVarFile := range e.MissingFiles {
+				log.Entry().Warningf("We skip adding not-existing file '%s' as a vars-file to the cf create-service-push call", missingVarFile)
+			}
+		} else {
+			return "", []string{}, []string{}, errors.Wrapf(err, "Cannot prepare var-file-options: '%v'", config.ManifestVariablesFiles)
+		}
 	}
 
 	deployOptions = append(deployOptions, varOptions...)
@@ -573,54 +598,6 @@ func toStringInterfaceMap(in *orderedmap.OrderedMap, err error) (map[string]inte
 	}
 
 	return out, err
-}
-func getVarOptions(vars []string) ([]string, error) {
-
-	varsMap, err := toParameterMap(vars)
-	if err != nil {
-		return []string{}, err
-	}
-
-	varsResult := []string{}
-
-	for _, key := range varsMap.Keys() {
-		val, _ := varsMap.Get(key)
-		if v, ok := val.(string); ok {
-			varsResult = append(varsResult, "--var", fmt.Sprintf("%s=%s", key, v))
-		} else {
-			return []string{}, fmt.Errorf("Cannot cast '%v' to string", val)
-		}
-	}
-	return varsResult, nil
-}
-
-func getVarFileOptions(manifestVariableFiles []string) ([]string, error) {
-
-	varFiles, err := validateManifestVariablesFiles(manifestVariableFiles)
-	if err != nil {
-		return []string{}, errors.Wrapf(err, "Cannot validate manifest variables files '%v'", manifestVariableFiles)
-	}
-
-	varFilesResult := []string{}
-
-	for _, varFile := range varFiles {
-		fExists, err := fileUtils.FileExists(varFile)
-		if err != nil {
-			return []string{}, err
-		}
-
-		if !fExists {
-			log.Entry().Warningf("We skip adding not-existing file '%s' as a vars-file to the cf create-service-push call", varFile)
-			continue
-		}
-
-		varFilesResult = append(varFilesResult, "--vars-file", varFile)
-	}
-
-	if len(varFilesResult) > 0 {
-		log.Entry().Infof("We will add the following string to the cf push call: '%s'", strings.Join(varFilesResult, " "))
-	}
-	return varFilesResult, nil
 }
 
 func checkAndUpdateDeployTypeForNotSupportedManifest(config *cloudFoundryDeployOptions) (string, error) {

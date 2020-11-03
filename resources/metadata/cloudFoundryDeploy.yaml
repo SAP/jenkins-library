@@ -1,18 +1,28 @@
 metadata:
   name: cloudFoundryDeploy
-  description: Deploys an application to cloud foundry
+  description: "Deploys an application to Cloud Foundry"
   longDescription: |
     Deploys an application to a test or production space within Cloud Foundry.
 spec:
   inputs:
+    secrets:
+      - name: cfCredentialsId
+        description: Jenkins 'Username with password' credentials ID containing user and password to authenticate to the Cloud Foundry API.
+        type: jenkins
+        aliases:
+          - name: cloudFoundry/credentialsId
+      - name: dockerCredentialsId
+        description: Jenkins 'Username with password' credentials ID containing user and password to authenticate to the Docker registry.
+        type: jenkins
     params:
       - name: apiEndpoint
         type: string
         description: "Cloud Foundry API endpoint"
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
         mandatory: true
         default: "https://api.cf.eu10.hana.ondemand.com"
         aliases:
@@ -22,9 +32,10 @@ spec:
         type: string
         description: "Defines the name of the application to be deployed to the Cloud Foundry space"
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
         mandatory: false
         aliases:
           - name: cfAppName
@@ -33,9 +44,10 @@ spec:
         type: string
         description: "The artifact version, used for influx reporting"
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
         mandatory: false
         resourceRef:
           - name: commonPipelineEnvironment
@@ -44,114 +56,184 @@ spec:
         type: string
         description: "The cf home folder used by the cf cli. If not provided the default assumed by the cf cli is used."
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
         mandatory: false
       - name: cfNativeDeployParameters
         type: string
         description: "Additional parameters passed to cf native deployment command"
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
         mandatory: false
       - name: cfPluginHome
         type: string
-        description: "The cf plugin home folder used by the cf cli. If not provided the default assumed by the cf cli is used."
+        description: "The cf plugin home folder used by the cf cli.
+          If not provided the default assumed by the cf cli is used."
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
         mandatory: false
       - name: deployDockerImage
         type: string
-        description: "Docker image deployments are supported (via manifest file in general)[https://docs.cloudfoundry.org/devguide/deploy-apps/manifest-attributes.html#docker]. If no manifest is used, this parameter defines the image to be deployed. The specified name of the image is passed to the `--docker-image` parameter of the cf CLI and must adhere it's naming pattern (e.g. REPO/IMAGE:TAG). See (cf CLI documentation)[https://docs.cloudfoundry.org/devguide/deploy-apps/push-docker.html] for details. Note: The used Docker registry must be visible for the targeted Cloud Foundry instance."
+        description: "Docker image deployments are supported
+          (via manifest file in general)[https://docs.cloudfoundry.org/devguide/deploy-apps/manifest-attributes.html#docker].
+          If no manifest is used, this parameter defines the image to be deployed.
+          The specified name of the image is passed to the `--docker-image` parameter of the cf CLI and must
+          adhere it's naming pattern (e.g. REPO/IMAGE:TAG).
+          See (cf CLI documentation)[https://docs.cloudfoundry.org/devguide/deploy-apps/push-docker.html]
+          for details.
+          Note: The used Docker registry must be visible for the targeted Cloud Foundry instance."
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
         mandatory: false
       - name: deployTool
         type: string
         description: "Defines the tool which should be used for deployment."
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
-        mandatory: true
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: buildTool
+        type: string
+        description: "Defines the tool which is used for building the artifact.
+          If provided, `deployTool` is automatically derived from it.
+          For MTA projects, `deployTool` defaults to `mtaDeployPlugin`.
+          For other projects `cf_native` will be used."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: buildTool
       - name: deployType
         type: string
-        description: "Defines the type of deployment, either `standard` deployment which results in a system downtime or a zero-downtime `blue-green` deployment.If 'cf_native' as deployType and 'blue-green' as deployTool is used in combination, your manifest.yaml may only contain one application. If this application has the option 'no-route' active the deployType will be changed to 'standard'."
+        description:
+          "Defines the type of deployment, either `standard` deployment which results in a system
+          downtime or a zero-downtime `blue-green` deployment.If 'cf_native' as deployType and 'blue-green'
+          as deployTool is used in combination, your manifest.yaml may only contain one application.
+          If this application has the option 'no-route' active the deployType will be changed to 'standard'."
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
         mandatory: false
         default: "standard"
       - name: dockerPassword
         type: string
-        description: "dockerPassword"
+        description:
+          "If the specified image in `deployDockerImage` is contained in a Docker registry,
+          which requires authorization, this defines the password to be used."
         secret: true
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: false
+        resourceRef:
+          - name: dockerCredentialsId
+            type: secret
+            param: password
       - name: dockerUsername
         type: string
-        description: "dockerUserName"
+        description:
+          "If the specified image in `deployDockerImage` is contained in a Docker registry,
+          which requires authorization, this defines the username to be used."
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: false
+        secret: true
+        resourceRef:
+          - name: dockerCredentialsId
+            type: secret
+            param: username
       - name: keepOldInstance
         type: bool
-        description: "In case of a `blue-green` deployment the old instance will be deleted by default. If this option is set to true the old instance will remain stopped in the Cloud Foundry space."
+        description:
+          "In case of a `blue-green` deployment the old instance will be deleted by default.
+          If this option is set to true the old instance will remain stopped in the Cloud Foundry space."
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: false
       - name: loginParameters
         type: string
-        description: "Addition command line options for cf login command. No escaping/quoting is performed. Not recommanded for productive environments."
+        description:
+          "Addition command line options for cf login command. No escaping/quoting is performed.
+          Not recommended for productive environments."
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
         mandatory: false
       - name: manifest
         type: string
         description: "Defines the manifest to be used for deployment to Cloud Foundry."
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
         mandatory: false
         aliases:
           - name: cfManifest
           - name: cloudFoundry/manifest
       - name: manifestVariables
         type: "[]string"
-        description: "Defines a list of variables as key-value Map objects used for variable substitution within the file given by manifest. Defaults to an empty list, if not specified otherwise. This can be used to set variables like it is provided by 'cf push --var key=value'. The order of the maps of variables given in the list is relevant in case there are conflicting variable names and value between maps contained within the list. In case of conflicts, the last specified map in the list will win. Though each map entry in the list can contain more than one key-value pair for variable substitution, it is recommended to stick to one entry per map, and rather declare more maps within the list. The reason is that if a map in the list contains more than one key-value entry, and the entries are conflicting, the conflict resolution behavior is undefined (since map entries have no sequence). Note: variables defined via 'manifestVariables' always win over conflicting variables defined via any file given by 'manifestVariablesFiles' - no matter what is declared before. This is the same behavior as can be observed when using 'cf push --var' in combination with 'cf push --vars-file'."
+        description:
+          "Defines a list of variables as key-value Map objects used for variable substitution
+          within the file given by manifest. Defaults to an empty list, if not specified otherwise.
+          This can be used to set variables like it is provided by 'cf push --var key=value'.
+          The order of the maps of variables given in the list is relevant in case there are conflicting
+          variable names and value between maps contained within the list. In case of conflicts, the last
+          specified map in the list will win. Though each map entry in the list can contain more than one
+          key-value pair for variable substitution, it is recommended to stick to one entry per map,
+          and rather declare more maps within the list. The reason is that if a map in the list contains
+          more than one key-value entry, and the entries are conflicting, the conflict resolution behavior
+          is undefined (since map entries have no sequence).
+          Note: variables defined via 'manifestVariables' always win over conflicting variables defined
+          via any file given by 'manifestVariablesFiles' - no matter what is declared before.
+          This is the same behavior as can be observed when using 'cf push --var' in combination
+          with 'cf push --vars-file'."
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
         mandatory: false
         aliases:
           - name: cfManifestVariables
           - name: cloudFoundry/manifestVariables
       - name: manifestVariablesFiles
         type: "[]string"
-        description: "path(s) of the Yaml file(s) containing the variable values to use as a replacement in the manifest file. The order of the files is relevant in case there are conflicting variable names and values within variable files. In such a case, the values of the last file win."
+        description:
+          "path(s) of the Yaml file(s) containing the variable values to use as a
+          replacement in the manifest file. The order of the files is relevant in case there are
+          conflicting variable names and values within variable files.
+          In such a case, the values of the last file win."
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
-        default: "manifest-variables.yml"
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        default: ["manifest-variables.yml"]
         mandatory: false
         aliases:
           - name: cfManifestVariablesFiles
@@ -160,18 +242,20 @@ spec:
         type: string
         description: "Additional parameters passed to mta deployment command"
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
         mandatory: false
         default: "-f"
       - name: mtaExtensionDescriptor
         type: string
         description: "Defines additional extension descriptor file for deployment with the mtaDeployPlugin"
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
         mandatory: false
         aliases:
           - name: cloudFoundry/mtaExtensionDescriptor
@@ -179,9 +263,10 @@ spec:
         type: string
         description: "Defines the path to *.mtar for deployment with the mtaDeployPlugin"
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
         mandatory: false
         resourceRef:
           - name: commonPipelineEnvironment
@@ -190,9 +275,10 @@ spec:
         type: string
         description: "Cloud Foundry target organization."
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
         aliases:
           - name: cfOrg
           - name: cloudFoundry/org
@@ -202,50 +288,75 @@ spec:
         type: string
         description: "Password"
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: true
         secret: true
+        resourceRef:
+          - name: cfCredentialsId
+            type: secret
+            param: password
+          - type: vaultSecret
+            paths:
+              - $(vaultPath)/cloudfoundry-$(cfOrg)-$(cfSpace)
+              - $(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(cfOrg)-$(cfSpace)
+              - $(vaultBasePath)/GROUP-SECRETS/cloudfoundry-$(cfOrg)-$(cfSpace)
       - name: smokeTestScript
         type: string
-        description: "Allows to specify a script which performs a check during blue-green deployment. The script gets the FQDN as parameter and returns `exit code 0` in case check returned `smokeTestStatusCode`. More details can be found [here](https://github.com/bluemixgaragelondon/cf-blue-green-deploy#how-to-use). Currently this option is only considered for deployTool `cf_native`."
+        description:
+          "Allows to specify a script which performs a check during blue-green deployment.
+          The script gets the FQDN as parameter and returns `exit code 0` in case check returned
+          `smokeTestStatusCode`.
+          More details can be found [here](https://github.com/bluemixgaragelondon/cf-blue-green-deploy#how-to-use).
+          Currently this option is only considered for deployTool `cf_native`."
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
         mandatory: false
         default: "blueGreenCheckScript.sh"
       - name: smokeTestStatusCode
         type: int
         description: "Expected status code returned by the check."
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
         mandatory: false
         default: 200
       - name: space
         type: string
         description: "Cloud Foundry target space"
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
         aliases:
           - name: cfSpace
           - name: cloudFoundry/space
         mandatory: true
-        secret: false
       - name: username
         type: string
         description: "User"
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: true
         secret: true
+        resourceRef:
+          - name: cfCredentialsId
+            type: secret
+            param: username
+          - type: vaultSecret
+            paths:
+              - $(vaultPath)/cloudfoundry-$(cfOrg)-$(cfSpace)
+              - $(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(cfOrg)-$(cfSpace)
+              - $(vaultBasePath)/GROUP-SECRETS/cloudfoundry-$(cfOrg)-$(cfSpace)
   containers:
     - name: cfDeploy
       image: ppiper/cf-cli
@@ -267,4 +378,3 @@ spec:
               - name: cfApiEndpoint
               - name: cfOrg
               - name: cfSpace
-

@@ -39,7 +39,9 @@ import static com.sap.piper.Prerequisites.checkScript
 
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.plus([
     /** The source file to deploy to SAP Cloud Platform.*/
-    'source'
+    'source',
+    /** Closure which is executed before calling the deployment steps.*/
+    'preDeploymentHook'
 ])
 
 @Field Map CONFIG_KEY_COMPATIBILITY = [parallelExecution: 'features/parallelTestExecution']
@@ -55,10 +57,10 @@ void call(parameters = [:]) {
         def script = checkScript(this, parameters) ?: this
         def utils = parameters.utils ?: new Utils()
         def jenkinsUtils = parameters.jenkinsUtils ?: new JenkinsUtils()
-        def stageName = parameters.stage ?: env.STAGE_NAME
+        String stageName = parameters.stage ?: env.STAGE_NAME
 
         ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
-            .loadStepDefaults()
+            .loadStepDefaults([:], stageName)
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
@@ -116,6 +118,10 @@ void call(parameters = [:]) {
                         deploymentUtils.unstashStageFiles(script, stageName)
                     }
 
+                    if (config.preDeploymentHook) {
+                        config.preDeploymentHook.call()
+                    }
+
                     cloudFoundryDeploy(
                         script: script,
                         juStabUtils: utils,
@@ -157,6 +163,9 @@ void call(parameters = [:]) {
                 def target = config.neoTargets[i]
 
                 Closure deployment = {
+                    if (config.preDeploymentHook) {
+                        config.preDeploymentHook.call()
+                    }
 
                     neoDeploy(
                         script: script,

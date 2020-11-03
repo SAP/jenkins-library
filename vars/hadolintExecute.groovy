@@ -25,6 +25,10 @@ import groovy.transform.Field
      */
     'configurationUrl',
     /**
+     * If the url provided as configurationUrl is protected, this Jenkins credential can be used to authenticate the request.
+     */
+    'configurationCredentialsId',
+    /**
      * Docker options to be set when starting the container.
      */
     'dockerOptions',
@@ -51,13 +55,14 @@ void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
         final script = checkScript(this, parameters) ?: this
         final utils = parameters.juStabUtils ?: new Utils()
+        String stageName = parameters.stageName ?: env.STAGE_NAME
 
         // load default & individual configuration
         Map configuration = ConfigurationHelper.newInstance(this)
-            .loadStepDefaults()
+            .loadStepDefaults([:], stageName)
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
+            .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
@@ -74,7 +79,7 @@ void call(Map parameters = [:]) {
         }
 
         if(!fileExists(configuration.configurationFile) && configuration.configurationUrl) {
-            sh "curl --fail --location --output ${configuration.configurationFile} ${configuration.configurationUrl}"
+            downloadFile(configuration.configurationUrl, configuration.configurationFile, configuration.configurationCredentialsId)
             if(existingStashes) {
                 def stashName = 'hadolintConfiguration'
                 stash name: stashName, includes: configuration.configurationFile
@@ -118,4 +123,9 @@ void call(Map parameters = [:]) {
             }
         }
     }
+}
+
+void downloadFile(url, target, authentication = null){
+        def response = httpRequest url: url, authentication: authentication, timeout: 20
+        writeFile text: response.content, file: target
 }

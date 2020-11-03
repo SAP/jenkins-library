@@ -1,10 +1,12 @@
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateStageDocumentation
+import com.sap.piper.StageNameProvider
 import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
+@Field String TECHNICAL_STAGE_NAME = 'confirm'
 
 @Field Set GENERAL_CONFIG_KEYS = [
     /**
@@ -32,7 +34,7 @@ import static com.sap.piper.Prerequisites.checkScript
 @GenerateStageDocumentation(defaultStageName = 'Confirm')
 void call(Map parameters = [:]) {
     def script = checkScript(this, parameters) ?: this
-    def stageName = parameters.stageName?:env.STAGE_NAME
+    def stageName = StageNameProvider.instance.getStageName(script, parameters, this)
 
     Map config = ConfigurationHelper.newInstance(this)
         .loadStepDefaults()
@@ -45,6 +47,8 @@ void call(Map parameters = [:]) {
 
     boolean approval = false
     def userInput
+
+    milestone()
 
     timeout(
         unit: 'HOURS',

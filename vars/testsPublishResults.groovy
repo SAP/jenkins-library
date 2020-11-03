@@ -32,7 +32,12 @@ import groovy.transform.Field
      * Publishes test results with the [Cucumber plugin](https://plugins.jenkins.io/cucumber-testresult-plugin/).
      * @possibleValues `true`, `false`, `Map`
      */
-    'cucumber'
+    'cucumber',
+    /**
+     * Publishes test results with the [HTML Publisher plugin](https://plugins.jenkins.io/htmlpublisher/).
+     * @possibleValues `true`, `false`, `Map`
+     */
+    'htmlPublisher'
 ]
 
 @Field def STEP_NAME = getClass().getName()
@@ -56,15 +61,16 @@ import groovy.transform.Field
 void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
         def script = checkScript(this, parameters) ?: this
+        String stageName = parameters.stageName ?: env.STAGE_NAME
 
         prepare(parameters)
 
         // load default & individual configuration
         Map configuration = ConfigurationHelper.newInstance(this)
-            .loadStepDefaults()
+            .loadStepDefaults([:], stageName)
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
+            .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
@@ -79,6 +85,7 @@ void call(Map parameters = [:]) {
         publishCoberturaReport(configuration.get('cobertura'))
         publishJMeterReport(configuration.get('jmeter'))
         publishCucumberReport(configuration.get('cucumber'))
+        publishHtmlReport(configuration.get('htmlPublisher'))
 
         if (configuration.failOnError && JenkinsUtils.hasTestFailures(script.currentBuild)) {
             script.currentBuild.result = 'FAILURE'
@@ -171,6 +178,19 @@ def publishCucumberReport(Map settings = [:]) {
             testResults: pattern
         )
         archiveResults(settings.get('archive'), pattern, allowEmpty)
+    }
+}
+
+def publishHtmlReport(Map settings = [:]) {
+    if (settings.active) {
+        publishHTML(target: [
+            allowMissing         : settings.get('allowMissing'),
+            alwaysLinkToLastBuild: settings.get('alwaysLinkToLastBuild'),
+            keepAll              : settings.get('keepAll'),
+            reportDir            : settings.get('reportDir'),
+            reportFiles          : settings.get('pattern'),
+            reportName           : settings.get('reportName')
+        ])
     }
 }
 

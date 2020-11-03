@@ -18,14 +18,25 @@ targets/
 documentation/docs-gen
 
 consumer-test/**/workspace
-.pipeline/commonPipelineEnvironment
 
 *.code-workspace
-/piper
-/piper.exe
 .factorypath
 
 debug.test
 /cache/protecode
 
+
+# build artifacts
+/piper
+/piper.exe
+/piper_master
+/piper_master.exe
+/jenkins-library
+/jenkins-library.exe
+
+# piper binary outputs
+.pipeline/commonPipelineEnvironment/
+.pipeline/influx/
 *errorDetails.json
+*_links.json
+*_reports.json

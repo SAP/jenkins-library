@@ -263,8 +263,8 @@ func TestCfDeployment(t *testing.T) {
 
 				withLoginAndLogout(t, func(t *testing.T) {
 					assert.Equal(t, []mock.ExecCall{
-						mock.ExecCall{Exec: "cf", Params: []string{"plugins"}},
-						mock.ExecCall{Exec: "cf", Params: []string{"push", "-f", "manifest.yml"}},
+						{Exec: "cf", Params: []string{"plugins"}},
+						{Exec: "cf", Params: []string{"push", "-f", "manifest.yml"}},
 					}, s.Calls)
 				})
 			})
@@ -341,8 +341,8 @@ func TestCfDeployment(t *testing.T) {
 
 			withLoginAndLogout(t, func(t *testing.T) {
 				assert.Equal(t, []mock.ExecCall{
-					mock.ExecCall{Exec: "cf", Params: []string{"plugins"}},
-					mock.ExecCall{Exec: "cf", Params: []string{"push",
+					{Exec: "cf", Params: []string{"plugins"}},
+					{Exec: "cf", Params: []string{"push",
 						"testAppName",
 						"--docker-image",
 						"repo/image:tag",
@@ -380,8 +380,8 @@ func TestCfDeployment(t *testing.T) {
 				withLoginAndLogout(t, func(t *testing.T) {
 
 					assert.Equal(t, []mock.ExecCall{
-						mock.ExecCall{Exec: "cf", Params: []string{"plugins"}},
-						mock.ExecCall{Exec: "cf", Params: []string{"push",
+						{Exec: "cf", Params: []string{"plugins"}},
+						{Exec: "cf", Params: []string{"push",
 							"testAppName",
 							"--docker-image",
 							"repo/image:tag",
@@ -427,8 +427,8 @@ func TestCfDeployment(t *testing.T) {
 				withLoginAndLogout(t, func(t *testing.T) {
 
 					assert.Equal(t, []mock.ExecCall{
-						mock.ExecCall{Exec: "cf", Params: []string{"plugins"}},
-						mock.ExecCall{Exec: "cf", Params: []string{
+						{Exec: "cf", Params: []string{"plugins"}},
+						{Exec: "cf", Params: []string{
 							"blue-green-deploy",
 							"testAppName",
 							"--delete-old-apps",
@@ -469,8 +469,8 @@ func TestCfDeployment(t *testing.T) {
 				withLoginAndLogout(t, func(t *testing.T) {
 
 					assert.Equal(t, []mock.ExecCall{
-						mock.ExecCall{Exec: "cf", Params: []string{"plugins"}},
-						mock.ExecCall{Exec: "cf", Params: []string{
+						{Exec: "cf", Params: []string{"plugins"}},
+						{Exec: "cf", Params: []string{
 							"push",
 							"-f",
 							"test-manifest.yml",
@@ -528,14 +528,14 @@ func TestCfDeployment(t *testing.T) {
 				withLoginAndLogout(t, func(t *testing.T) {
 
 					assert.Equal(t, []mock.ExecCall{
-						mock.ExecCall{Exec: "cf", Params: []string{"plugins"}},
-						mock.ExecCall{Exec: "cf", Params: []string{
+						{Exec: "cf", Params: []string{"plugins"}},
+						{Exec: "cf", Params: []string{
 							"blue-green-deploy",
 							"myTestApp",
 							"-f",
 							"test-manifest.yml",
 						}},
-						mock.ExecCall{Exec: "cf", Params: []string{
+						{Exec: "cf", Params: []string{
 							"stop",
 							"myTestApp-old",
 							// MIGRATE FFROM GROOVY: in contrast to groovy there is not redirect of everything &> to a file since we
@@ -589,7 +589,7 @@ func TestCfDeployment(t *testing.T) {
 			return manifestMock{
 					manifestFileName: "test-manifest.yml",
 					apps: []map[string]interface{}{
-						map[string]interface{}{
+						{
 							"name":     "app1",
 							"no-route": true,
 						},
@@ -609,8 +609,8 @@ func TestCfDeployment(t *testing.T) {
 				withLoginAndLogout(t, func(t *testing.T) {
 
 					assert.Equal(t, []mock.ExecCall{
-						mock.ExecCall{Exec: "cf", Params: []string{"plugins"}},
-						mock.ExecCall{Exec: "cf", Params: []string{
+						{Exec: "cf", Params: []string{"plugins"}},
+						{Exec: "cf", Params: []string{
 							"push",
 							"myTestApp",
 							"-f",
@@ -711,8 +711,8 @@ func TestCfDeployment(t *testing.T) {
 				withLoginAndLogout(t, func(t *testing.T) {
 
 					assert.Equal(t, []mock.ExecCall{
-						mock.ExecCall{Exec: "cf", Params: []string{"plugins"}},
-						mock.ExecCall{Exec: "cf", Params: []string{
+						{Exec: "cf", Params: []string{"plugins"}},
+						{Exec: "cf", Params: []string{
 							"push",
 							"myTestApp",
 							"-f",
@@ -748,7 +748,7 @@ func TestCfDeployment(t *testing.T) {
 			return manifestMock{
 					manifestFileName: "test-manifest.yml",
 					apps: []map[string]interface{}{
-						map[string]interface{}{
+						{
 							"there-is": "no-app-name",
 						},
 					},
@@ -795,8 +795,8 @@ func TestCfDeployment(t *testing.T) {
 				withLoginAndLogout(t, func(t *testing.T) {
 
 					assert.Equal(t, []mock.ExecCall{
-						mock.ExecCall{Exec: "cf", Params: []string{"plugins"}},
-						mock.ExecCall{Exec: "cf", Params: []string{
+						{Exec: "cf", Params: []string{"plugins"}},
+						{Exec: "cf", Params: []string{
 							"bg-deploy",
 							"target/test.mtar",
 							"-f",
@@ -827,16 +827,24 @@ func TestCfDeployment(t *testing.T) {
 
 		defer func() {
 			_getManifest = getManifest
+			_getVarsOptions = cloudfoundry.GetVarsOptions
+			_getVarsFileOptions = cloudfoundry.GetVarsFileOptions
 		}()
 
-		filesMock.AddFile("vars.yaml", []byte("content does not matter"))
+		_getVarsOptions = func(vars []string) ([]string, error) {
+			return []string{"--var", "appName=testApplicationFromVarsList"}, nil
+		}
+		_getVarsFileOptions = func(varFiles []string) ([]string, error) {
+			return []string{"--vars-file", "vars.yaml"}, nil
+		}
+
 		filesMock.AddFile("test-manifest.yml", []byte("content does not matter"))
 
 		_getManifest = func(name string) (cloudfoundry.Manifest, error) {
 			return manifestMock{
 					manifestFileName: "test-manifest.yml",
 					apps: []map[string]interface{}{
-						map[string]interface{}{
+						{
 							"name": "myApp",
 						},
 					},
@@ -857,8 +865,8 @@ func TestCfDeployment(t *testing.T) {
 					// Revisit: we don't verify a log message in case of a non existing vars file
 
 					assert.Equal(t, []mock.ExecCall{
-						mock.ExecCall{Exec: "cf", Params: []string{"plugins"}},
-						mock.ExecCall{Exec: "cf", Params: []string{
+						{Exec: "cf", Params: []string{"plugins"}},
+						{Exec: "cf", Params: []string{
 							"push",
 							"testAppName",
 							"--var",
@@ -887,16 +895,17 @@ func TestCfDeployment(t *testing.T) {
 			filesMock.FileRemove("test-manifest.yml")
 			filesMock.FileRemove("vars.yaml")
 			_getManifest = getManifest
+			_getVarsOptions = cloudfoundry.GetVarsOptions
+			_getVarsFileOptions = cloudfoundry.GetVarsFileOptions
 		}()
 
 		filesMock.AddFile("test-manifest.yml", []byte("content does not matter"))
-		filesMock.AddFile("vars.yaml", []byte("content does not matter"))
 
 		_getManifest = func(name string) (cloudfoundry.Manifest, error) {
 			return manifestMock{
 					manifestFileName: "test-manifest.yml",
 					apps: []map[string]interface{}{
-						map[string]interface{}{
+						{
 							"name": "myApp",
 						},
 					},
@@ -906,9 +915,29 @@ func TestCfDeployment(t *testing.T) {
 
 		s := mock.ExecMockRunner{}
 
+		var receivedVarOptions []string
+		var receivedVarsFileOptions []string
+
+		_getVarsOptions = func(vars []string) ([]string, error) {
+			receivedVarOptions = vars
+			return []string{}, nil
+		}
+		_getVarsFileOptions = func(varFiles []string) ([]string, error) {
+			receivedVarsFileOptions = varFiles
+			return []string{"--vars-file", "vars.yaml"}, nil
+		}
+
 		err := runCloudFoundryDeploy(&config, nil, nil, &s)
 
 		if assert.NoError(t, err) {
+
+			t.Run("check received vars options", func(t *testing.T) {
+				assert.Empty(t, receivedVarOptions)
+			})
+
+			t.Run("check received vars file options", func(t *testing.T) {
+				assert.Equal(t, []string{"vars.yaml", "vars-does-not-exist.yaml"}, receivedVarsFileOptions)
+			})
 
 			t.Run("check shell calls", func(t *testing.T) {
 
@@ -916,8 +945,8 @@ func TestCfDeployment(t *testing.T) {
 					// Revisit: we don't verify a log message in case of a non existing vars file
 
 					assert.Equal(t, []mock.ExecCall{
-						mock.ExecCall{Exec: "cf", Params: []string{"plugins"}},
-						mock.ExecCall{Exec: "cf", Params: []string{
+						{Exec: "cf", Params: []string{"plugins"}},
+						{Exec: "cf", Params: []string{
 							"push",
 							"testAppName",
 							"--vars-file",
@@ -952,7 +981,7 @@ func TestCfDeployment(t *testing.T) {
 			// AddFile() adds the file absolute, prefix with the current working directory
 			// Glob() returns the absolute path - but without leading slash - , whereas
 			// the real Glob returns the path relative to the current workdir.
-			// In order to mimic the behavour in the free wild we add the mtar at the root dir.
+			// In order to mimic the behavior in the free wild we add the mtar at the root dir.
 			filesMock.AddDir("/")
 			assert.NoError(t, filesMock.Chdir("/"))
 			filesMock.AddFile("xyz.mtar", []byte("content does not matter"))
@@ -966,8 +995,8 @@ func TestCfDeployment(t *testing.T) {
 				withLoginAndLogout(t, func(t *testing.T) {
 
 					assert.Equal(t, s.Calls, []mock.ExecCall{
-						mock.ExecCall{Exec: "cf", Params: []string{"plugins"}},
-						mock.ExecCall{Exec: "cf", Params: []string{"deploy", "xyz.mtar", "-f"}}})
+						{Exec: "cf", Params: []string{"plugins"}},
+						{Exec: "cf", Params: []string{"deploy", "xyz.mtar", "-f"}}})
 
 				})
 			}
@@ -985,59 +1014,30 @@ func TestCfDeployment(t *testing.T) {
 	})
 }
 
-func TestManifestVariableFiles(t *testing.T) {
+func TestValidateDeployTool(t *testing.T) {
+	testCases := []struct {
+		runName            string
+		deployToolGiven    string
+		buildTool          string
+		deployToolExpected string
+	}{
+		{"no params", "", "", ""},
+		{"build tool MTA", "", "mta", "mtaDeployPlugin"},
+		{"build tool other", "", "other", "cf_native"},
+		{"deploy and build tool given", "given", "unknown", "given"},
+		{"only deploy tool given", "given", "", "given"},
+	}
 
-	defer func() {
-		fileUtils = &piperutils.Files{}
-	}()
+	t.Parallel()
 
-	filesMock := mock.FilesMock{}
-	fileUtils = &filesMock
-
-	filesMock.AddFile("a/varsA.txt", []byte("content does not matter"))
-	filesMock.AddFile("varsB.txt", []byte("content does not matter"))
-
-	t.Run("straight forward", func(t *testing.T) {
-		varOpts, err := getVarFileOptions([]string{"a/varsA.txt", "varsB.txt"})
-		if assert.NoError(t, err) {
-			assert.Equal(t, []string{"--vars-file", "a/varsA.txt", "--vars-file", "varsB.txt"}, varOpts)
-		}
-	})
-
-	t.Run("no var filesprovided", func(t *testing.T) {
-		varOpts, err := getVarFileOptions([]string{})
-		if assert.NoError(t, err) {
-			assert.Equal(t, []string{}, varOpts)
-		}
-	})
-
-	t.Run("one var file does not exist", func(t *testing.T) {
-		varOpts, err := getVarFileOptions([]string{"a/varsA.txt", "doesNotExist.txt"})
-		if assert.NoError(t, err) {
-			assert.Equal(t, []string{"--vars-file", "a/varsA.txt"}, varOpts)
-		}
-	})
-}
-
-func TestManifestVariables(t *testing.T) {
-	t.Run("straight forward", func(t *testing.T) {
-		varOpts, err := getVarOptions([]string{"a=b", "c=d"})
-		if assert.NoError(t, err) {
-			assert.Equal(t, []string{"--var", "a=b", "--var", "c=d"}, varOpts)
-		}
-	})
-
-	t.Run("empty variabls list", func(t *testing.T) {
-		varOpts, err := getVarOptions([]string{})
-		if assert.NoError(t, err) {
-			assert.Equal(t, []string{}, varOpts)
-		}
-	})
-
-	t.Run("no equal sign in variable", func(t *testing.T) {
-		_, err := getVarOptions([]string{"ab"})
-		assert.EqualError(t, err, "Invalid parameter provided (expected format <key>=<val>: 'ab'")
-	})
+	for _, test := range testCases {
+		t.Run(test.runName, func(t *testing.T) {
+			config := cloudFoundryDeployOptions{BuildTool: test.buildTool, DeployTool: test.deployToolGiven}
+			validateDeployTool(&config)
+			assert.Equal(t, test.deployToolExpected, config.DeployTool,
+				"expected different deployTool result")
+		})
+	}
 }
 
 func TestMtarLookup(t *testing.T) {

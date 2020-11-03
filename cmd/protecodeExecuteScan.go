@@ -12,6 +12,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+
+	"github.com/GoogleContainerTools/container-diff/pkg/util"
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperDocker "github.com/SAP/jenkins-library/pkg/docker"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -20,51 +23,42 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
-type protecodeData struct {
-	Target                      string           `json:"target,omitempty"`
-	Mandatory                   bool             `json:"mandatory,omitempty"`
-	ProductID                   string           `json:"productID,omitempty"`
-	ServerURL                   string           `json:"serverUrl,omitempty"`
-	FailOnSevereVulnerabilities bool             `json:"failOnSevereVulnerabilities,omitempty"`
-	ExcludeCVEs                 string           `json:"excludeCVEs,omitempty"`
-	Count                       string           `json:"count,omitempty"`
-	Cvss2GreaterOrEqualSeven    string           `json:"cvss2GreaterOrEqualSeven,omitempty"`
-	Cvss3GreaterOrEqualSeven    string           `json:"cvss3GreaterOrEqualSeven,omitempty"`
-	ExcludedVulnerabilities     string           `json:"excludedVulnerabilities,omitempty"`
-	TriagedVulnerabilities      string           `json:"triagedVulnerabilities,omitempty"`
-	HistoricalVulnerabilities   string           `json:"historicalVulnerabilities,omitempty"`
-	Vulnerabilities             []protecode.Vuln `json:"Vulnerabilities,omitempty"`
-}
+const (
+	webReportPath  = "%s/products/%v/"
+	scanResultFile = "protecodescan_vulns.json"
+	stepResultFile = "protecodeExecuteScan.json"
+)
 
 var reportPath = "./"
 var cachePath = "./cache"
 var cacheProtecodeImagePath = "/protecode/Image"
 var cacheProtecodePath = "/protecode"
 
-func protecodeExecuteScan(config protecodeExecuteScanOptions, telemetryData *telemetry.CustomData, influx *protecodeExecuteScanInflux) error {
+func protecodeExecuteScan(config protecodeExecuteScanOptions, telemetryData *telemetry.CustomData, influx *protecodeExecuteScanInflux) {
 	c := command.Command{}
 	// reroute command output to loging framework
 	c.Stdout(log.Writer())
 	c.Stderr(log.Writer())
 
 	dClient := createDockerClient(&config)
-	return runProtecodeScan(&config, influx, dClient)
+	if err := runProtecodeScan(&config, influx, dClient); err != nil {
+		log.Entry().WithError(err).Fatal("Failed to execute protecode scan.")
+	}
 }
 
 func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExecuteScanInflux, dClient piperDocker.Download) error {
-
 	correctDockerConfigEnvVar(config)
-
 	var fileName, filePath string
+	var err error
 	//create client for sending api request
 	log.Entry().Debug("Create protecode client")
 	client := createClient(config)
-
 	if len(config.FetchURL) <= 0 {
-
 		log.Entry().Debugf("Get docker image: %v, %v, %v, %v", config.ScanImage, config.DockerRegistryURL, config.FilePath, config.IncludeLayers)
-		fileName, filePath = getDockerImage(dClient, config)
-
+		fileName, filePath, err = getDockerImage(dClient, config)
+		if err != nil {
+			return errors.Wrap(err, "failed to get Docker image")
+		}
 		if len(config.FilePath) <= 0 {
 			(*config).FilePath = filePath
 			log.Entry().Debugf("Filepath for upload image: %v", config.FilePath)
@@ -72,16 +66,13 @@ func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExec
 	}
 
 	log.Entry().Debug("Execute protecode scan")
-	parsedResult := executeProtecodeScan(client, config, fileName, writeReportToFile)
-
-	log.Entry().Debug("Write influx data")
-	setInfluxData(influx, parsedResult)
+	if err := executeProtecodeScan(influx, client, config, fileName, writeReportToFile); err != nil {
+		return err
+	}
 
 	defer os.Remove(config.FilePath)
 
-	deletePath := filepath.Join(cachePath, cacheProtecodePath)
-	err := os.RemoveAll(deletePath)
-	if err != nil {
+	if err := os.RemoveAll(filepath.Join(cachePath, cacheProtecodePath)); err != nil {
 		log.Entry().Warnf("Error during cleanup folder %v", err)
 	}
 
@@ -100,7 +91,7 @@ func handleArtifactVersion(artifactVersion string) string {
 	return artifactVersion
 }
 
-func getDockerImage(dClient piperDocker.Download, config *protecodeExecuteScanOptions) (string, string) {
+func getDockerImage(dClient piperDocker.Download, config *protecodeExecuteScanOptions) (string, string, error) {
 
 	cacheImagePath := filepath.Join(cachePath, cacheProtecodeImagePath)
 	deletePath := filepath.Join(cachePath, cacheProtecodePath)
@@ -110,19 +101,32 @@ func getDockerImage(dClient piperDocker.Download, config *protecodeExecuteScanOp
 
 	imageSource, err := dClient.GetImageSource()
 	if err != nil {
-		log.Entry().WithError(err).Fatal("Error during get docker image source")
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return "", "", errors.Wrap(err, "failed to get docker image")
 	}
 	image, err := dClient.DownloadImageToPath(imageSource, cacheImagePath)
 	if err != nil {
-		log.Entry().Fatalf("Error during get docker image: %v", err)
+		return "", "", errors.Wrap(err, "failed to download docker image")
 	}
 
-	tarFile, fileName := tarImage(config)
-	if tarFile != nil {
-		defer tarFile.Close()
-		err = dClient.TarImage(tarFile, image)
+	var fileName string
+	if util.IsTar(config.ScanImage) {
+		fileName = config.ScanImage
+	} else {
+		fileName = getTarName(config)
+		tarFilePath := filepath.Join(cachePath, fileName)
+		tarFile, err := os.Create(tarFilePath)
 		if err != nil {
-			log.Entry().WithError(err).Fatal("Error during tar the docker image")
+			log.SetErrorCategory(log.ErrorCustom)
+			return "", "", errors.Wrap(err, "failed to create tar for the docker image")
+		}
+		defer tarFile.Close()
+		if err := os.Chmod(tarFilePath, 0644); err != nil {
+			log.SetErrorCategory(log.ErrorCustom)
+			return "", "", errors.Wrap(err, "failed to set permissions on tar for the docker image")
+		}
+		if err = dClient.TarImage(tarFile, image); err != nil {
+			return "", "", errors.Wrap(err, "failed to tar the docker image")
 		}
 	}
 
@@ -132,35 +136,10 @@ func getDockerImage(dClient piperDocker.Download, config *protecodeExecuteScanOp
 		resultFilePath = cachePath
 	}
 
-	return fileName, resultFilePath
+	return fileName, resultFilePath, nil
 }
 
-func tarImage(config *protecodeExecuteScanOptions) (*os.File, string) {
-	if !(filepath.Ext(config.ScanImage) == ".tar" ||
-		filepath.Ext(config.ScanImage) == ".tar.gz" ||
-		filepath.Ext(config.ScanImage) == ".tgz") {
-
-		artifactVersion := handleArtifactVersion(config.ArtifactVersion)
-		fileName := fmt.Sprintf("%v%v.tar", strings.ReplaceAll(config.ScanImage, "/", "_"), strings.ReplaceAll(artifactVersion, ":", "_"))
-		tarFileName := filepath.Join(cachePath, fileName)
-
-		tarFile, err := os.Create(tarFileName)
-		if err != nil {
-			log.Entry().WithError(err).Fatal("Error during create tar for the docker image")
-		}
-		if err := os.Chmod(tarFileName, 0644); err != nil {
-			log.Entry().WithError(err).Fatal("Error during create tar for the docker image")
-		}
-
-		return tarFile, fileName
-	}
-
-	return nil, config.ScanImage
-}
-
-func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteScanOptions, fileName string, writeReportToFile func(resp io.ReadCloser, reportFileName string) error) map[string]int {
-
-	var parsedResult map[string]int = make(map[string]int)
+func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.Protecode, config *protecodeExecuteScanOptions, fileName string, writeReportToFile func(resp io.ReadCloser, reportFileName string) error) error {
 	//load existing product by filename
 	log.Entry().Debugf("Load existing product Group:%v Reuse:%v", config.Group, config.ReuseExisting)
 	productID := client.LoadExistingProduct(config.Group, config.ReuseExisting)
@@ -168,91 +147,79 @@ func executeProtecodeScan(client protecode.Protecode, config *protecodeExecuteSc
 	// check if no existing is found or reuse existing is false
 	productID = uploadScanOrDeclareFetch(*config, productID, client, fileName)
 	if productID <= 0 {
-		log.Entry().Fatalf("The product id is not valid (product id %v <= zero)", productID)
+		return fmt.Errorf("the product id is not valid '%d'", productID)
 	}
 	//pollForResult
 	log.Entry().Debugf("Poll for scan result %v", productID)
 	result := client.PollForResult(productID, config.TimeoutMinutes)
-
+	// write results to file
 	jsonData, _ := json.Marshal(result)
-	filePath := filepath.Join(reportPath, "protecodescan_vulns.json")
-	ioutil.WriteFile(filePath, jsonData, 0644)
+	ioutil.WriteFile(filepath.Join(reportPath, scanResultFile), jsonData, 0644)
 
 	//check if result is ok else notify
-	if len(result.Result.Status) > 0 && result.Result.Status == "F" {
-		log.Entry().Fatalf("Please check the log and protecode backend for more details. URL: %v/products/%v", config.ServerURL, productID)
+	if protecode.HasFailed(result) {
+		log.SetErrorCategory(log.ErrorService)
+		return fmt.Errorf("protecode scan failed: %v/products/%v", config.ServerURL, productID)
 	}
+
 	//loadReport
 	log.Entry().Debugf("Load report %v for %v", config.ReportFileName, productID)
 	resp := client.LoadReport(config.ReportFileName, productID)
-
 	//save report to filesystem
-	err := writeReportToFile(*resp, config.ReportFileName)
-	if err != nil {
-		return parsedResult
+	if err := writeReportToFile(*resp, config.ReportFileName); err != nil {
+		log.Entry().Warningf("failed to write report: %s", err)
 	}
 	//clean scan from server
 	log.Entry().Debugf("Delete scan %v for %v", config.CleanupMode, productID)
 	client.DeleteScan(config.CleanupMode, productID)
 
 	//count vulnerabilities
-	log.Entry().Debug("Parse scan reult")
+	log.Entry().Debug("Parse scan result")
 	parsedResult, vulns := client.ParseResultForInflux(result.Result, config.ExcludeCVEs)
 
 	log.Entry().Debug("Write report to filesystem")
-	writeReportDataToJSONFile(config, parsedResult, productID, vulns, ioutil.WriteFile)
+	if err := protecode.WriteReport(
+		protecode.ReportData{
+			ServerURL:                   config.ServerURL,
+			FailOnSevereVulnerabilities: config.FailOnSevereVulnerabilities,
+			ExcludeCVEs:                 config.ExcludeCVEs,
+			Target:                      config.ReportFileName,
+			Vulnerabilities:             vulns,
+			ProductID:                   fmt.Sprintf("%v", productID),
+		}, reportPath, stepResultFile, parsedResult, ioutil.WriteFile); err != nil {
+		log.Entry().Warningf("failed to write report: %v", err)
+	}
+
+	log.Entry().Debug("Write influx data")
+	setInfluxData(influx, parsedResult)
 
 	// write reports JSON
 	reports := []StepResults.Path{
 		{Target: config.ReportFileName, Mandatory: true},
-		{Target: "protecodeExecuteScan.json", Mandatory: true},
-		{Target: "protecodescan_vulns.json", Mandatory: true},
+		{Target: stepResultFile, Mandatory: true},
+		{Target: scanResultFile, Mandatory: true},
 	}
 	// write links JSON
 	links := []StepResults.Path{
-		{Name: "Protecode WebUI", Target: fmt.Sprintf("%s/products/%v/", config.ServerURL, productID)},
+		{Name: "Protecode WebUI", Target: fmt.Sprintf(webReportPath, config.ServerURL, productID)},
 		{Name: "Protecode Report", Target: path.Join("artifact", config.ReportFileName), Scope: "job"},
 	}
-
 	StepResults.PersistReportsAndLinks("protecodeExecuteScan", "", reports, links)
 
-	return parsedResult
+	if config.FailOnSevereVulnerabilities && protecode.HasSevereVulnerabilities(result.Result, config.ExcludeCVEs) {
+		log.SetErrorCategory(log.ErrorCompliance)
+		return fmt.Errorf("the product is not compliant")
+	}
+	return nil
 }
 
 func setInfluxData(influx *protecodeExecuteScanInflux, result map[string]int) {
-
 	influx.protecode_data.fields.historical_vulnerabilities = fmt.Sprintf("%v", result["historical_vulnerabilities"])
 	influx.protecode_data.fields.triaged_vulnerabilities = fmt.Sprintf("%v", result["triaged_vulnerabilities"])
 	influx.protecode_data.fields.excluded_vulnerabilities = fmt.Sprintf("%v", result["excluded_vulnerabilities"])
 	influx.protecode_data.fields.minor_vulnerabilities = fmt.Sprintf("%v", result["minor_vulnerabilities"])
 	influx.protecode_data.fields.major_vulnerabilities = fmt.Sprintf("%v", result["major_vulnerabilities"])
 	influx.protecode_data.fields.vulnerabilities = fmt.Sprintf("%v", result["vulnerabilities"])
-}
-
-func writeReportDataToJSONFile(config *protecodeExecuteScanOptions, result map[string]int, productID int, vulns []protecode.Vuln, writeToFile func(f string, d []byte, p os.FileMode) error) {
-
-	protecodeData := protecodeData{}
-	protecodeData.ServerURL = config.ServerURL
-	protecodeData.FailOnSevereVulnerabilities = config.FailOnSevereVulnerabilities
-	protecodeData.ExcludeCVEs = config.ExcludeCVEs
-	protecodeData.Target = config.ReportFileName
-	protecodeData.Mandatory = true
-	protecodeData.ProductID = fmt.Sprintf("%v", productID)
-	protecodeData.Count = fmt.Sprintf("%v", result["count"])
-	protecodeData.Cvss2GreaterOrEqualSeven = fmt.Sprintf("%v", result["cvss2GreaterOrEqualSeven"])
-	protecodeData.Cvss3GreaterOrEqualSeven = fmt.Sprintf("%v", result["cvss3GreaterOrEqualSeven"])
-	protecodeData.ExcludedVulnerabilities = fmt.Sprintf("%v", result["excluded_vulnerabilities"])
-	protecodeData.TriagedVulnerabilities = fmt.Sprintf("%v", result["triaged_vulnerabilities"])
-	protecodeData.HistoricalVulnerabilities = fmt.Sprintf("%v", result["historical_vulnerabilities"])
-	protecodeData.Vulnerabilities = vulns
-
-	jsonData, _ := json.Marshal(protecodeData)
-
-	log.Entry().Infof("Protecode scan info, %v of which %v had a CVSS v2 score >= 7.0 and %v had a CVSS v3 score >= 7.0.\n %v vulnerabilities were excluded via configuration (%v) and %v vulnerabilities were triaged via the webUI.\nIn addition %v historical vulnerabilities were spotted. \n\n Vulnerabilities: %v",
-		protecodeData.Count, protecodeData.Cvss2GreaterOrEqualSeven, protecodeData.Cvss3GreaterOrEqualSeven, protecodeData.ExcludedVulnerabilities, protecodeData.ExcludeCVEs, protecodeData.TriagedVulnerabilities, protecodeData.HistoricalVulnerabilities, protecodeData.Vulnerabilities)
-
-	filePath := filepath.Join(reportPath, "protecodeExecuteScan.json")
-	writeToFile(filePath, jsonData, 0644)
 }
 
 func createClient(config *protecodeExecuteScanOptions) protecode.Protecode {
@@ -282,6 +249,7 @@ func createClient(config *protecodeExecuteScanOptions) protecode.Protecode {
 
 	return pc
 }
+
 func createDockerClient(config *protecodeExecuteScanOptions) piperDocker.Download {
 
 	dClientOptions := piperDocker.ClientOptions{ImageName: config.ScanImage, RegistryURL: config.DockerRegistryURL, LocalPath: config.FilePath, IncludeLayers: config.IncludeLayers}
@@ -292,14 +260,12 @@ func createDockerClient(config *protecodeExecuteScanOptions) piperDocker.Downloa
 }
 
 func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productID int, client protecode.Protecode, fileName string) int {
-
 	//check if the LoadExistingProduct) before returns an valid product id, than scip this
 	if !hasExisting(productID, config.ReuseExisting) {
 		if len(config.FetchURL) > 0 {
 			log.Entry().Debugf("Declare fetch url %v", config.FetchURL)
 			resultData := client.DeclareFetchURL(config.CleanupMode, config.Group, config.FetchURL)
 			productID = resultData.Result.ProductID
-
 		} else {
 			log.Entry().Debugf("Upload file path: %v", config.FilePath)
 			if len(config.FilePath) <= 0 {
@@ -319,7 +285,6 @@ func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productID int,
 			productID = resultData.Result.ProductID
 		}
 	}
-
 	return productID
 }
 
@@ -360,4 +325,16 @@ func correctDockerConfigEnvVar(config *protecodeExecuteScanOptions) {
 	} else {
 		log.Entry().Info("Docker credentials configuration: NONE")
 	}
+}
+
+func getTarName(config *protecodeExecuteScanOptions) string {
+	// remove original version
+	fileName := strings.TrimSuffix(config.ScanImage, ":"+config.ArtifactVersion)
+	// append trimmed version
+	if version := handleArtifactVersion(config.ArtifactVersion); len(version) > 0 {
+		fileName = fileName + "_" + version
+	}
+	// replace unwanted chars
+	fileName = strings.ReplaceAll(fileName, "/", "_")
+	return fileName + ".tar"
 }

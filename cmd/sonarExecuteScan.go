@@ -18,6 +18,7 @@ import (
 	StepResults "github.com/SAP/jenkins-library/pkg/piperutils"
 	SonarUtils "github.com/SAP/jenkins-library/pkg/sonar"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/bmatcuk/doublestar"
 	"github.com/pkg/errors"
 )
 
@@ -32,20 +33,43 @@ func (s *sonarSettings) addEnvironment(element string) {
 	s.environment = append(s.environment, element)
 }
 
-func (s *sonarSettings) addOption(element string) { s.options = append(s.options, element) }
+func (s *sonarSettings) addOption(element string) {
+	s.options = append(s.options, element)
+}
 
-var sonar sonarSettings
+var (
+	sonar sonarSettings
 
-var execLookPath = exec.LookPath
-var fileUtilsExists = FileUtils.FileExists
-var fileUtilsUnzip = FileUtils.Unzip
-var osRename = os.Rename
+	execLookPath    = exec.LookPath
+	fileUtilsExists = FileUtils.FileExists
+	fileUtilsUnzip  = FileUtils.Unzip
+	osRename        = os.Rename
+	osStat          = os.Stat
+	doublestarGlob  = doublestar.Glob
+)
+
+const (
+	coverageReportPaths = "sonar.coverage.jacoco.xmlReportPaths="
+	javaBinaries        = "sonar.java.binaries="
+	javaLibraries       = "sonar.java.libraries="
+	coverageExclusions  = "sonar.coverage.exclusions="
+	pomXMLPattern       = "**/pom.xml"
+)
 
 func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, influx *sonarExecuteScanInflux) {
 	runner := command.Command{
 		ErrorCategoryMapping: map[string][]string{
-			"infrastructure": {
+			log.ErrorConfiguration.String(): {
+				"You must define the following mandatory properties for '*': *",
+				"org.sonar.java.AnalysisException: Your project contains .java files, please provide compiled classes with sonar.java.binaries property, or exclude them from the analysis with sonar.exclusions property.",
+				"ERROR: Invalid value for *",
+				"java.lang.IllegalStateException: No files nor directories matching '*'",
+			},
+			log.ErrorInfrastructure.String(): {
+				"ERROR: SonarQube server [*] can not be reached",
 				"Caused by: java.net.SocketTimeoutException: timeout",
+				"java.lang.IllegalStateException: Fail to request *",
+				"java.lang.IllegalStateException: Fail to download plugin [*] into *",
 			},
 		},
 	}
@@ -63,16 +87,16 @@ func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, i
 		options:     []string{},
 	}
 
-	influx.step_data.fields.sonar = "false"
+	influx.step_data.fields.sonar = false
 	if err := runSonar(config, &client, &runner); err != nil {
 		log.Entry().WithError(err).Fatal("Execution failed")
 	}
-	influx.step_data.fields.sonar = "true"
+	influx.step_data.fields.sonar = true
 }
 
 func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runner command.ExecRunner) error {
-	if len(config.Host) > 0 {
-		sonar.addEnvironment("SONAR_HOST_URL=" + config.Host)
+	if len(config.ServerURL) > 0 {
+		sonar.addEnvironment("SONAR_HOST_URL=" + config.ServerURL)
 	}
 	if len(config.Token) > 0 {
 		sonar.addEnvironment("SONAR_TOKEN=" + config.Token)
@@ -83,6 +107,18 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 	if len(config.ProjectVersion) > 0 {
 		// handleArtifactVersion is reused from cmd/protecodeExecuteScan.go
 		sonar.addOption("sonar.projectVersion=" + handleArtifactVersion(config.ProjectVersion))
+	}
+	if len(config.ProjectKey) > 0 {
+		sonar.addOption("sonar.projectKey=" + config.ProjectKey)
+	}
+	if len(config.M2Path) > 0 && config.InferJavaLibraries {
+		sonar.addOption(javaLibraries + filepath.Join(config.M2Path, "**"))
+	}
+	if len(config.CoverageExclusions) > 0 && !isInOptions(config, coverageExclusions) {
+		sonar.addOption(coverageExclusions + strings.Join(config.CoverageExclusions, ","))
+	}
+	if config.InferJavaBinaries && !isInOptions(config, javaBinaries) {
+		addJavaBinaries()
 	}
 	if err := handlePullRequest(config); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
@@ -129,6 +165,37 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		StepResults.PersistReportsAndLinks("sonarExecuteScan", sonar.workingDir, nil, links)
 	}
 	return nil
+}
+
+// isInOptions returns true, if the given property is already provided in config.Options.
+func isInOptions(config sonarExecuteScanOptions, property string) bool {
+	property = strings.TrimSuffix(property, "=")
+	return SliceUtils.ContainsStringPart(config.Options, property)
+}
+
+func addJavaBinaries() {
+	pomFiles, err := doublestarGlob(pomXMLPattern)
+	if err != nil {
+		log.Entry().Warnf("failed to glob for pom modules: %v", err)
+		return
+	}
+	var binaries []string
+
+	var classesDirs = []string{"classes", "test-classes"}
+
+	for _, pomFile := range pomFiles {
+		module := filepath.Dir(pomFile)
+		for _, classDir := range classesDirs {
+			classesPath := filepath.Join(module, "target", classDir)
+			_, err := osStat(classesPath)
+			if err == nil {
+				binaries = append(binaries, classesPath)
+			}
+		}
+	}
+	if len(binaries) > 0 {
+		sonar.addOption(javaBinaries + strings.Join(binaries, ","))
+	}
 }
 
 func handlePullRequest(config sonarExecuteScanOptions) error {
@@ -207,7 +274,7 @@ func loadCertificates(certificateList []string, client piperhttp.Downloader, run
 
 	if exists, _ := fileUtilsExists(trustStoreFile); exists {
 		// use local existing trust store
-		sonar.addEnvironment("SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore=" + trustStoreFile)
+		sonar.addEnvironment("SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore=" + trustStoreFile + " -Djavax.net.ssl.trustStorePassword=changeit")
 		log.Entry().WithField("trust store", trustStoreFile).Info("Using local trust store")
 	} else
 	//TODO: certificate loading is deactivated due to the missing JAVA keytool
@@ -239,7 +306,7 @@ func loadCertificates(certificateList []string, client piperhttp.Downloader, run
 				return errors.Wrap(err, "Adding certificate to keystore failed")
 			}
 		}
-		sonar.addEnvironment("SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore=" + trustStoreFile)
+		sonar.addEnvironment("SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore=" + trustStoreFile + " -Djavax.net.ssl.trustStorePassword=changeit")
 		log.Entry().WithField("trust store", trustStoreFile).Info("Using local trust store")
 	} else {
 		log.Entry().Debug("Download of TLS certificates skipped")

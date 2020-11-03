@@ -56,7 +56,7 @@ func (i *protecodeExecuteScanInflux) persist(path, resourceName string) {
 		measurement string
 		valType     string
 		name        string
-		value       string
+		value       interface{}
 	}{
 		{valType: config.InfluxField, measurement: "protecode_data", name: "historical_vulnerabilities", value: i.protecode_data.fields.historical_vulnerabilities},
 		{valType: config.InfluxField, measurement: "protecode_data", name: "triaged_vulnerabilities", value: i.protecode_data.fields.triaged_vulnerabilities},
@@ -124,8 +124,10 @@ func ProtecodeExecuteScanCommand() *cobra.Command {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
 			}
 			log.DeferExitHandler(handler)
@@ -142,7 +144,7 @@ func ProtecodeExecuteScanCommand() *cobra.Command {
 }
 
 func addProtecodeExecuteScanFlags(cmd *cobra.Command, stepConfig *protecodeExecuteScanOptions) {
-	cmd.Flags().StringVar(&stepConfig.ExcludeCVEs, "excludeCVEs", `[]`, "DEPRECATED: Do use triaging within the Protecode UI instead")
+	cmd.Flags().StringVar(&stepConfig.ExcludeCVEs, "excludeCVEs", ``, "DEPRECATED: Do use triaging within the Protecode UI instead")
 	cmd.Flags().BoolVar(&stepConfig.FailOnSevereVulnerabilities, "failOnSevereVulnerabilities", true, "Whether to fail the job on severe vulnerabilties or not")
 	cmd.Flags().StringVar(&stepConfig.ScanImage, "scanImage", os.Getenv("PIPER_scanImage"), "The reference to the docker image to scan with Protecode")
 	cmd.Flags().StringVar(&stepConfig.DockerRegistryURL, "dockerRegistryUrl", os.Getenv("PIPER_dockerRegistryUrl"), "The reference to the docker registry to scan with Protecode")
@@ -194,28 +196,43 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "protecodeFailOnSevereVulnerabilities"}},
 					},
 					{
-						Name:        "scanImage",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "container/imageNameTag"}},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "dockerImage"}},
+						Name: "scanImage",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/imageNameTag",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "dockerImage"}},
 					},
 					{
-						Name:        "dockerRegistryUrl",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "container/registryUrl"}},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Name: "dockerRegistryUrl",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/registryUrl",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "dockerConfigJSON",
-						ResourceRef: []config.ResourceReference{{Name: "dockerConfigJsonCredentialsId", Param: ""}},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Name: "dockerConfigJSON",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name: "dockerConfigJsonCredentialsId",
+								Type: "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "cleanupMode",
@@ -290,28 +307,45 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "username",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "user"}},
+						Name: "username",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "protecodeCredentialsId",
+								Param: "username",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{{Name: "user"}},
 					},
 					{
-						Name:        "password",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Name: "password",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "protecodeCredentialsId",
+								Param: "password",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "artifactVersion",
-						ResourceRef: []config.ResourceReference{{Name: "commonPipelineEnvironment", Param: "artifactVersion"}},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Name: "artifactVersion",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "artifactVersion",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "pullRequestName",

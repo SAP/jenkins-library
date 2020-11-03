@@ -1,11 +1,13 @@
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateDocumentation
+import com.sap.piper.StageNameProvider
 import com.sap.piper.Utils
 import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
+@Field String TECHNICAL_STAGE_NAME = 'postPipelineHook'
 
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field STAGE_STEP_KEYS = []
@@ -26,9 +28,10 @@ import static com.sap.piper.Prerequisites.checkScript
 void call(Map parameters = [:]) {
     def script = checkScript(this, parameters) ?: this
     def utils = parameters.juStabUtils ?: new Utils()
-    def stageName = parameters.stageName?:env.STAGE_NAME
+    def stageName = StageNameProvider.instance.getStageName(script, parameters, this)
     // ease handling extension
     stageName = stageName.replace('Declarative: ', '')
+
     Map config = ConfigurationHelper.newInstance(this)
         .loadStepDefaults()
         .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
@@ -47,7 +50,9 @@ void call(Map parameters = [:]) {
                 slackSendNotification script: parameters.script
             }
         }
+
         mailSendNotification script: script
+        debugReportArchive script: script
         piperPublishWarnings script: script
     }
 }

@@ -258,6 +258,16 @@ func TestGetContextParameterFilters(t *testing.T) {
 		},
 	}
 
+	metadata4 := StepData{
+		Spec: StepSpec{
+			Inputs: StepInputs{
+				Parameters: []StepParameters{
+					{ResourceRef: []ResourceReference{{Type: "vaultSecret"}}},
+				},
+			},
+		},
+	}
+
 	t.Run("Secrets and stashes", func(t *testing.T) {
 		filters := metadata1.GetContextParameterFilters()
 		assert.Equal(t, []string{"testSecret1", "testSecret2", "stashContent"}, filters.All, "incorrect filter All")
@@ -286,6 +296,16 @@ func TestGetContextParameterFilters(t *testing.T) {
 		assert.Equal(t, []string{"containerName", "containerPortMappings", "dockerName", "sidecarEnvVars", "sidecarImage", "sidecarName", "sidecarOptions", "sidecarPullImage", "sidecarReadyCommand", "sidecarVolumeBind", "sidecarWorkspace"}, filters.Stages, "incorrect filter Stages")
 		assert.Equal(t, []string{"containerName", "containerPortMappings", "dockerName", "sidecarEnvVars", "sidecarImage", "sidecarName", "sidecarOptions", "sidecarPullImage", "sidecarReadyCommand", "sidecarVolumeBind", "sidecarWorkspace"}, filters.Parameters, "incorrect filter Parameters")
 		assert.Equal(t, []string{"containerName", "containerPortMappings", "dockerName", "sidecarEnvVars", "sidecarImage", "sidecarName", "sidecarOptions", "sidecarPullImage", "sidecarReadyCommand", "sidecarVolumeBind", "sidecarWorkspace"}, filters.Env, "incorrect filter Env")
+	})
+
+	t.Run("Vault", func(t *testing.T) {
+		filters := metadata4.GetContextParameterFilters()
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId"}, filters.All, "incorrect filter All")
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId"}, filters.General, "incorrect filter General")
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId"}, filters.Steps, "incorrect filter Steps")
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId"}, filters.Stages, "incorrect filter Stages")
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId"}, filters.Parameters, "incorrect filter Parameters")
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId"}, filters.Env, "incorrect filter Env")
 	})
 }
 

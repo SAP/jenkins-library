@@ -28,18 +28,38 @@ nav:
                 - 'Release Stage': stages/release.md
         - 'SAP Cloud SDK pipeline':
             - 'Introduction': pipelines/cloud-sdk/introduction.md
+            - 'Configuration': pipelines/cloud-sdk/configuration.md
+            - 'Stages':
+                - 'Build and Test': stages/build.md
+                - 'Additional Unit Tests': stages/additionalunittests.md
+                - 'Integration Tests': stages/integration.md
+                - 'End to End Tests': stages/acceptance.md
+                - 'Security': stages/security.md
+                - 'Compliance': stages/compliance.md
+                - 'Performance': stages/performance.md
+                - 'Production Deployment': stages/release.md
             - 'Build Tools': pipelines/cloud-sdk/build-tools.md
             - 'Cloud Qualities': pipelines/cloud-sdk/cloud-qualities.md
     - 'Scenarios':
-        - 'Build and Deploy Hybrid Applications with Jenkins and SAP Solution Manager': scenarios/changeManagement.md
-        - 'Build and Deploy SAP UI5 or SAP Fiori Applications on SAP Cloud Platform with Jenkins': scenarios/ui5-sap-cp/Readme.md
-        - 'Build and Deploy Applications with Jenkins and the SAP Cloud Application Programming Model': scenarios/CAP_Scenario.md
+        - 'Build and Deploy Hybrid Applications with SAP Solution Manager': scenarios/changeManagement.md
+        - 'Build and Deploy SAPUI5/SAP Fiori Applications on SAP Cloud Platform': scenarios/ui5-sap-cp/Readme.md
+        - 'Build and Deploy SAP Cloud Application Programming Model Applications': scenarios/CAP_Scenario.md
         - 'Integrate SAP Cloud Platform Transport Management Into Your CI/CD Pipeline': scenarios/TMS_Extension.md
-        - 'Build and Deploy SAP Fiori Applications on SAP HANA XS Advanced': scenarios/xsa-deploy/Readme.md
-        - 'Build an SAP Fiori Application and Attach It to a Transport Request on an ABAP System with Jenkins': scenarios/upload-to-transportrequest/Readme.md
+        - 'Build and Deploy SAP Fiori Applications on SAP HANA Extended Application Services, Advanced Model': scenarios/xsa-deploy/Readme.md
+        - 'Build an SAP Fiori Application and Attach It to a Transport Request on an ABAP System': scenarios/upload-to-transportrequest/Readme.md
+        - 'Build and Publish Add-on Products on SAP Cloud Platform ABAP Environment': scenarios/abapEnvironmentAddons.md
     - Extensibility: extensibility.md
     - 'Library steps':
+        - abapAddonAssemblyKitCheckCVs: steps/abapAddonAssemblyKitCheckCVs.md
+        - abapAddonAssemblyKitCheckCVs: steps/abapAddonAssemblyKitCheckPV.md
+        - abapAddonAssemblyKitCreateTargetVector: steps/abapAddonAssemblyKitCreateTargetVector.md
+        - abapAddonAssemblyKitPublishTargetVector: steps/abapAddonAssemblyKitPublishTargetVector.md
+        - abapAddonAssemblyKitRegisterPackages: steps/abapAddonAssemblyKitRegisterPackages.md
+        - abapAddonAssemblyKitReleasePackages: steps/abapAddonAssemblyKitReleasePackages.md
+        - abapAddonAssemblyKitReserveNextPackages: steps/abapAddonAssemblyKitReserveNextPackages.md
+        - abapEnvironmentAssemblePackages: steps/abapEnvironmentAssemblePackages.md
         - abapEnvironmentCheckoutBranch: steps/abapEnvironmentCheckoutBranch.md
+        - abapEnvironmentCloneGitRepo: steps/abapEnvironmentCloneGitRepo.md
         - abapEnvironmentPullGitRepo: steps/abapEnvironmentPullGitRepo.md
         - abapEnvironmentRunATCCheck: steps/abapEnvironmentRunATCCheck.md
         - artifactPrepareVersion: steps/artifactPrepareVersion.md
@@ -56,19 +76,24 @@ nav:
         - commonPipelineEnvironment: steps/commonPipelineEnvironment.md
         - containerExecuteStructureTests: steps/containerExecuteStructureTests.md
         - containerPushToRegistry: steps/containerPushToRegistry.md
+        - debugReportArchive: steps/debugReportArchive.md
         - detectExecuteScan: steps/detectExecuteScan.md
         - dockerExecute: steps/dockerExecute.md
         - dockerExecuteOnKubernetes: steps/dockerExecuteOnKubernetes.md
         - dubExecute: steps/dubExecute.md
         - durationMeasure: steps/durationMeasure.md
         - fortifyExecuteScan: steps/fortifyExecuteScan.md
+        - gatlingExecuteTests: steps/gatlingExecuteTests.md
         - gaugeExecuteTests: steps/gaugeExecuteTests.md
         - gctsCloneRepository: steps/gctsCloneRepository.md
         - gctsCreateRepository: steps/gctsCreateRepository.md
         - gctsDeploy: steps/gctsDeploy.md
         - gctsExecuteABAPUnitTests: steps/gctsExecuteABAPUnitTests.md
         - gctsRollback: steps/gctsRollback.md
+        - githubCheckBranchProtection: steps/githubCheckBranchProtection.md
+        - githubCreatePullRequest: steps/githubCreatePullRequest.md
         - githubPublishRelease: steps/githubPublishRelease.md
+        - githubSetCommitStatus: steps/githubSetCommitStatus.md
         - hadolintExecute: steps/hadolintExecute.md
         - handlePipelineStepErrors: steps/handlePipelineStepErrors.md
         - healthExecuteCheck: steps/healthExecuteCheck.md
@@ -81,6 +106,7 @@ nav:
         - malwareExecuteScan: steps/malwareExecuteScan.md
         - mavenBuild: steps/mavenBuild.md
         - mavenExecute: steps/mavenExecute.md
+        - mavenExecuteIntegration: steps/mavenExecuteIntegration.md
         - mavenExecuteStaticCodeChecks: steps/mavenExecuteStaticCodeChecks.md
         - mtaBuild: steps/mtaBuild.md
         - multicloudDeploy: steps/multicloudDeploy.md

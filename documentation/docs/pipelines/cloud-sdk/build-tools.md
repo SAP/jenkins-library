@@ -55,7 +55,7 @@ For Java, the default is still (as of August 2020) version 8.
 For more details, please check the [documentation of the SAP Cloud SDK for Java](https://sap.github.io/cloud-sdk/docs/java/getting-started/).
 
 In case you need to use a specific Java version to build your application, you may do so by setting another Docker image in your `.pipeline/config.yml` file.
-See [documentation of the pipeline configuration](https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/configuration.md) and look for the `dockerImage` key on where this option applies.
+See [documentation of the pipeline configuration](../configuration/) and look for the `dockerImage` key on where this option applies.
 
 In most cases, it should be suffcient to configure an image for the `mavenExecute` step like so:
 
@@ -70,7 +70,7 @@ steps:
 Each variant of the pipeline has different requirements regarding the project structure, location of reports and tooling.
 
 Stages not listed here do not have a special requirement.
-In any case, please also consult the [documentation of the pipeline configuration](https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/configuration.md), as some stages have to be activated by providing configuration values.
+In any case, please also consult the [documentation of the pipeline configuration](../configuration/), as some stages have to be activated by providing configuration values.
 
 ### Build Tool Independent Requirements
 
@@ -81,15 +81,13 @@ Please pick the corresponding version for your deployment target and rename it p
 
 #### Frontend Unit Tests
 
-The command `npm run ci-frontend-unit-test` will be executed in this stage.
+For each `package.json` where the script `ci-frontend-unit-test` is defined the command `npm run ci-frontend-unit-test` will be executed in this stage.
 Furthermore, the test results have to be stored in the folder `./s4hana_pipeline/reports/frontend-unit` in the root directory.
 The required format of the test result report is the JUnit format as an `.xml` file.
 The code coverage report can be published as html report and in the cobertura format.
 The cobertura report as html report has to be stored in the directory `./s4hana_pipeline/reports/coverage-reports/frontend-unit/report-html/ut/` as an `index.html` file.
 These coverage reports will then be published in Jenkins.
 Furthermore, if configured in the `.pipeline/config.yml`, the pipeline ensures the configured level of code coverage.
-
-In MTA projects Frontend Unit Tests are executed for every module of type `html5`.
 
 #### Frontend Integration Tests
 
@@ -105,7 +103,7 @@ It is recommended to use the same tools as in the `package.json` of this [exampl
 
 ##### Maven
 
-Maven unit-tests are executed as part of the [`mavenBuild`](https://sap.github.io/jenkins-library/steps/mavenBuild/) step.
+Maven unit-tests are executed as part of the [`mavenBuild`](../../../steps/mavenBuild/) step.
 They are supposed to be placed inside of `application/src/test`.
 
 ##### Java MTA modules
@@ -140,13 +138,12 @@ If you have multiple npm packages with unit tests the names of the report files 
 
 #### Lint
 
-For each `package.json` where the script `ci-lint` is defined the command `npm run ci-lint` will be executed in this stage.
+For each `package.json` where the script `ci-lint` is defined the command `npm run ci-lint` will be executed as part of the `build` stage.
 The required format of the linting results is the checkstyle format as an `xml` file.
 The linting results have to be stored in a file named `*cilint.xml`, which may reside in any directory of the project.
 The linting results will then be published in Jenkins.
 
-If no script `ci-lint` is defined, the pipeline will check SAPUI5 components, if present, for the SAPUI5 recommended best practices.
-If none of the scenarios described apply and Javascript or Typescript files are present in the project, the pipeline will automatically execute ESLint.
+If no script `ci-lint` is defined and Javascript or Typescript files are present in the project, the pipeline will automatically execute ESLint.
 
 If no ESLint configuration files are present in the project directory, a general purpose configuration is used to lint all Javascript and/or Typescript files of the project.
 If, on the other hand, ESLint configuration files exist in the project, they will be used to lint Javascript files in the project.
@@ -241,7 +238,7 @@ This directory has to be defined as path in the `manifest.yml`.
 The project structure follows the standard structure for projects created via the _SAP Cloud Platform Business Application_ SAP Web IDE Template with some constraints.
 Please leave the basic structure of the generated project intact.
 
-Make sure to check the _Include support for continuous delivery pipeline of SAP Cloud SDK_ checkbox, which will automatically add the required files for continous delivery in your project.
+Make sure to check the _Include support for continuous delivery pipeline of SAP Cloud SDK_ checkbox, which will automatically add the required files for continuous delivery in your project.
 
 If you already created your project without this option, you'll need to copy and paste two files into the root directory of your project, and commit them to your git repository:
 

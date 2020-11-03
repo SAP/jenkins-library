@@ -1,4 +1,34 @@
 stages:
+  build:
+    stepConditions:
+      mavenExecuteStaticCodeChecks:
+        filePattern: 'pom.xml'
+      npmExecuteLint:
+        filePattern:
+          - '**/*.js'
+          - '**/*.jsx'
+          - '**/*.ts'
+          - '**/*.tsx'
+  integration:
+    stepConditions:
+      npmExecuteScripts:
+        npmScripts:
+          - 'ci-it-backend'
+          - 'ci-it-frontend'
+      mavenExecuteIntegration:
+        filePattern: 'integration-tests/pom.xml'
+  compliance:
+    stepConditions:
+      sonarExecuteScan:
+        configKeys:
+          - 'sonarTokenCredentialsId'
+          - 'projectKey'
+          - 'instance'
+  additionalUnitTests:
+    stepConditions:
+      npmExecuteScripts:
+        npmScripts:
+          - 'ci-frontend-unit-test'
   endToEndTests:
     stepConditions:
       multicloudDeploy:
@@ -23,6 +53,32 @@ stages:
       npmExecuteEndToEndTests:
         configKeys:
           - 'appUrls'
+  performanceTests:
+    stepConditions:
+      gatlingExecuteTests:
+        filePatternFromConfig: 'pomPath'
+        configKeys:
+          - 'appUrls'
+      performanceTests:
+        configKeys:
+          - 'cfTargets'
+          - 'neoTargets'
+  security:
+    stepConditions:
+      checkmarxExecuteScan:
+        configKeys:
+          - 'groupId'
+      detectExecuteScan:
+        configKeys:
+          - 'detectTokenCredentialsId'
+      fortifyExecuteScan:
+        configKeys:
+          - 'fortifyCredentialsId'
+      whitesourceExecuteScan:
+        configKeys:
+          - 'productName'
+          - 'orgAdminUserTokenCredentialsId'
+          - 'userTokenCredentialsId'
   productionDeployment:
     stepConditions:
       multicloudDeploy:
@@ -36,6 +92,11 @@ stages:
       neoDeploy:
         configKeys:
           - 'neo/account'
+      tmsUpload:
+        configKeys:
+          - 'credentialsId'
+          - 'mtaPath'
+          - 'nodeName'
       healthExecuteCheck:
         configKeys:
           - 'testServerUrl'
@@ -45,10 +106,19 @@ stages:
       githubPublishRelease:
         configKeys:
           - 'githubTokenCredentialsId'
-  backendIntegrationTests:
+  artifactDeployment:
     stepConditions:
-      npmExecuteScripts:
+      artifactDeployment:
         configKeys:
-          - 'runScripts'
-      mavenExecuteIntegration:
-        filePattern: 'integration-tests/pom.xml'
+          - 'nexus'
+  postPipelineHook:
+    stepConditions:
+      postPipelineHook:
+        configKeys:
+          - 'enabled'
+  archiveReport:
+    stepConditions:
+      archiveReport:
+        filePattern:
+          - 'mta.yaml'
+          - 'pom.xml'

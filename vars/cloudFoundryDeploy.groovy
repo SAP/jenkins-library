@@ -11,6 +11,9 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = [
+    /**
+     * This is set in the common pipeline environment by the build tool, e.g. during the mtaBuild step.
+     */
     'buildTool',
     'cloudFoundry',
         /**
@@ -60,6 +63,7 @@ import static com.sap.piper.Prerequisites.checkScript
          * Note: variables defined via `manifestVariables` always win over conflicting variables defined via any file given
          * by `manifestVariablesFiles` - no matter what is declared before. This is the same behavior as can be
          * observed when using `cf push --var` in combination with `cf push --vars-file`.
+         * @parentConfigKey cloudFoundry
          */
         'manifestVariables',
         /**
@@ -155,6 +159,11 @@ import static com.sap.piper.Prerequisites.checkScript
      * this defines the credentials to be used.
      */
     'dockerCredentialsId',
+    /**
+     * Toggle to activate the new go-implementation of the step. Off by default.
+     * @possibleValues true, false
+     */
+    'useGoStep',
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
@@ -187,12 +196,12 @@ import static com.sap.piper.Prerequisites.checkScript
  *     * [MTA CF CLI Plugin](https://github.com/cloudfoundry-incubator/multiapps-cli-plugin)
  *
  * !!! note
- * Due to [an incompatible change](https://github.com/cloudfoundry/cli/issues/1445) in the Cloud Foundry CLI, multiple buildpacks are not supported by this step.
- * If your `application` contains a list of `buildpacks` instead a single `buildpack`, this will be automatically re-written by the step when blue-green deployment is used.
+ *     Due to [an incompatible change](https://github.com/cloudfoundry/cli/issues/1445) in the Cloud Foundry CLI, multiple buildpacks are not supported by this step.
+ *     If your `application` contains a list of `buildpacks` instead a single `buildpack`, this will be automatically re-written by the step when blue-green deployment is used.
  *
  * !!! note
- * Cloud Foundry supports the deployment of multiple applications using a single manifest file.
- * This option is supported with Piper.
+ *     Cloud Foundry supports the deployment of multiple applications using a single manifest file.
+ *     This option is supported with Piper.
  *
  * In this case define `appName: ''` since the app name for the individual applications have to be defined via the manifest.
  * You can find details in the [Cloud Foundry Documentation](https://docs.cloudfoundry.org/devguide/deploy-apps/manifest.html#multi-apps)
@@ -202,16 +211,16 @@ void call(Map parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
+        final script = checkScript(this, parameters) ?: this
         def utils = parameters.juStabUtils ?: new Utils()
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
-
-        final script = checkScript(this, parameters) ?: this
+        String stageName = parameters.stageName ?: env.STAGE_NAME
 
         Map config = ConfigurationHelper.newInstance(this)
-            .loadStepDefaults()
+            .loadStepDefaults([:], stageName)
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixin(parameters, PARAMETER_KEYS, CONFIG_KEY_COMPATIBILITY)
             .addIfEmpty('buildTool', script.commonPipelineEnvironment.getBuildTool())
             .dependingOn('buildTool').mixin('deployTool')
@@ -219,8 +228,17 @@ void call(Map parameters = [:]) {
             .dependingOn('deployTool').mixin('dockerWorkspace')
             .withMandatoryProperty('cloudFoundry/org')
             .withMandatoryProperty('cloudFoundry/space')
-            .withMandatoryProperty('cloudFoundry/credentialsId')
+            .withMandatoryProperty('cloudFoundry/credentialsId', null, {c -> return !c.containsKey('vaultAppRoleTokenCredentialsId') || !c.containsKey('vaultAppRoleSecretTokenCredentialsId')})
             .use()
+
+        if (config.useGoStep == true) {
+            List credentials = [
+                [type: 'usernamePassword', id: 'cfCredentialsId', env: ['PIPER_username', 'PIPER_password']],
+                [type: 'usernamePassword', id: 'dockerCredentialsId', env: ['PIPER_dockerUsername', 'PIPER_dockerPassword']]
+            ]
+            piperExecuteBin(parameters, STEP_NAME, 'metadata/cloudFoundryDeploy.yaml', credentials)
+            return
+        }
 
         utils.pushToSWA([
             step: STEP_NAME,

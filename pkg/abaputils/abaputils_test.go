@@ -1,13 +1,17 @@
 package abaputils
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -112,6 +116,7 @@ func TestCloudFoundryGetAbapCommunicationInfo(t *testing.T) {
 		assert.NoError(t, err)
 	})
 }
+
 func TestHostGetAbapCommunicationInfo(t *testing.T) {
 	t.Run("HOST GetAbapCommunicationArrangementInfo - Success", func(t *testing.T) {
 
@@ -188,6 +193,7 @@ func TestHostGetAbapCommunicationInfo(t *testing.T) {
 		assert.NoError(t, err)
 	})
 }
+
 func TestReadServiceKeyAbapEnvironment(t *testing.T) {
 	t.Run("CF ReadServiceKeyAbapEnvironment - Failed to login to Cloud Foundry", func(t *testing.T) {
 
@@ -282,7 +288,7 @@ repositories:
 		addonDescriptor, err := ReadAddonDescriptor("filename.yaml")
 		assert.NoError(t, err)
 		assert.Equal(t, `/DMO/myAddonProduct`, addonDescriptor.AddonProduct)
-		assert.Equal(t, `3.1.4`, addonDescriptor.AddonVersion)
+		assert.Equal(t, `3.1.4`, addonDescriptor.AddonVersionYAML)
 		assert.Equal(t, `myAddonId`, addonDescriptor.AddonUniqueID)
 		assert.Equal(t, float64(1234), addonDescriptor.CustomerID)
 		assert.Equal(t, ``, addonDescriptor.AddonSpsLevel)
@@ -292,14 +298,129 @@ repositories:
 		assert.Equal(t, `rel-2.1.1-build-0001`, addonDescriptor.Repositories[1].Tag)
 		assert.Equal(t, `branchA`, addonDescriptor.Repositories[0].Branch)
 		assert.Equal(t, `branchB`, addonDescriptor.Repositories[1].Branch)
-		assert.Equal(t, `1.0.1`, addonDescriptor.Repositories[0].Version)
-		assert.Equal(t, `2.1.1`, addonDescriptor.Repositories[1].Version)
-		assert.Equal(t, ``, addonDescriptor.Repositories[0].SpsLevel)
-		assert.Equal(t, ``, addonDescriptor.Repositories[1].SpsLevel)
+		assert.Equal(t, `1.0.1`, addonDescriptor.Repositories[0].VersionYAML)
+		assert.Equal(t, `2.1.1`, addonDescriptor.Repositories[1].VersionYAML)
+		assert.Equal(t, ``, addonDescriptor.Repositories[0].SpLevel)
+		assert.Equal(t, ``, addonDescriptor.Repositories[1].SpLevel)
+
+		err = CheckAddonDescriptorForRepositories(addonDescriptor)
+		assert.NoError(t, err)
+	})
+	t.Run("Test: file does not exist", func(t *testing.T) {
+		expectedErrorMessage := "AddonDescriptor doesn't contain any repositories"
+
+		addonDescriptor, err := ReadAddonDescriptor("filename.yaml")
+		assert.EqualError(t, err, fmt.Sprintf("Could not find %v", "filename.yaml"))
+		assert.Equal(t, AddonDescriptor{}, addonDescriptor)
+
+		err = CheckAddonDescriptorForRepositories(addonDescriptor)
+		assert.EqualError(t, err, expectedErrorMessage)
+	})
+	t.Run("Test: empty config - failure case", func(t *testing.T) {
+		expectedErrorMessage := "AddonDescriptor doesn't contain any repositories"
+
+		addonDescriptor, err := ReadAddonDescriptor("")
+
+		assert.EqualError(t, err, fmt.Sprintf("Could not find %v", ""))
+		assert.Equal(t, AddonDescriptor{}, addonDescriptor)
+
+		err = CheckAddonDescriptorForRepositories(addonDescriptor)
+		assert.EqualError(t, err, expectedErrorMessage)
+	})
+	t.Run("Read empty addon descriptor from wrong config - failure case", func(t *testing.T) {
+		expectedErrorMessage := "AddonDescriptor doesn't contain any repositories"
+		expectedRepositoryList := AddonDescriptor{Repositories: []Repository{{}, {}}}
+
+		dir, err := ioutil.TempDir("", "test abap utils")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+
+		defer func() {
+			_ = os.Chdir(oldCWD)
+			_ = os.RemoveAll(dir)
+		}()
+
+		manifestFileString := `
+repositories:
+- repo: 'testRepo'
+- repo: 'testRepo2'`
+
+		err = ioutil.WriteFile("repositories.yml", []byte(manifestFileString), 0644)
+
+		addonDescriptor, err := ReadAddonDescriptor("repositories.yml")
+
+		assert.Equal(t, expectedRepositoryList, addonDescriptor)
+		assert.NoError(t, err)
+
+		err = CheckAddonDescriptorForRepositories(addonDescriptor)
+		assert.EqualError(t, err, expectedErrorMessage)
+	})
+}
+
+func TestHandleHTTPError(t *testing.T) {
+	t.Run("Test", func(t *testing.T) {
+
+		errorValue := "Received Error"
+		abapErrorCode := "abapErrorCode"
+		abapErrorMessage := "abapErrorMessage"
+		bodyString := `{"error" : { "code" : "` + abapErrorCode + `", "message" : { "lang" : "en", "value" : "` + abapErrorMessage + `" } } }`
+		body := []byte(bodyString)
+
+		resp := http.Response{
+			Status:     "400 Bad Request",
+			StatusCode: 400,
+			Body:       ioutil.NopCloser(bytes.NewReader(body)),
+		}
+		receivedErr := errors.New(errorValue)
+		message := "Custom Error Message"
+
+		err := HandleHTTPError(&resp, receivedErr, message, ConnectionDetailsHTTP{})
+		assert.Error(t, err, "Error was expected")
+		assert.EqualError(t, err, fmt.Sprintf("%s: %s - %s", receivedErr.Error(), abapErrorCode, abapErrorMessage))
+		log.Entry().Info(err.Error())
 	})
 
-	t.Run("Test: file does not exist", func(t *testing.T) {
-		_, err := ReadAddonDescriptor("filename.yaml")
-		assert.EqualError(t, err, fmt.Sprintf("Could not find %v.", "filename.yaml"))
+	t.Run("Non JSON Error", func(t *testing.T) {
+
+		errorValue := "Received Error"
+		bodyString := `Error message`
+		body := []byte(bodyString)
+
+		resp := http.Response{
+			Status:     "400 Bad Request",
+			StatusCode: 400,
+			Body:       ioutil.NopCloser(bytes.NewReader(body)),
+		}
+		receivedErr := errors.New(errorValue)
+		message := "Custom Error Message"
+
+		err := HandleHTTPError(&resp, receivedErr, message, ConnectionDetailsHTTP{})
+		assert.Error(t, err, "Error was expected")
+		assert.EqualError(t, err, fmt.Sprintf("%s", receivedErr.Error()))
+		log.Entry().Info(err.Error())
+	})
+
+	t.Run("Different JSON Error", func(t *testing.T) {
+
+		errorValue := "Received Error"
+		bodyString := `{"abap" : { "key" : "value" } }`
+		body := []byte(bodyString)
+
+		resp := http.Response{
+			Status:     "400 Bad Request",
+			StatusCode: 400,
+			Body:       ioutil.NopCloser(bytes.NewReader(body)),
+		}
+		receivedErr := errors.New(errorValue)
+		message := "Custom Error Message"
+
+		err := HandleHTTPError(&resp, receivedErr, message, ConnectionDetailsHTTP{})
+		assert.Error(t, err, "Error was expected")
+		assert.EqualError(t, err, fmt.Sprintf("%s", receivedErr.Error()))
+		log.Entry().Info(err.Error())
 	})
 }

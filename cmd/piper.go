@@ -32,6 +32,8 @@ type GeneralConfigOptions struct {
 	StepName             string
 	Verbose              bool
 	LogFormat            string
+	VaultRoleID          string
+	VaultRoleSecretID    string
 	HookConfig           HookConfiguration
 }
 
@@ -63,17 +65,23 @@ func Execute() {
 	rootCmd.AddCommand(ArtifactPrepareVersionCommand())
 	rootCmd.AddCommand(ConfigCommand())
 	rootCmd.AddCommand(ContainerSaveImageCommand())
+	rootCmd.AddCommand(CommandLineCompletionCommand())
 	rootCmd.AddCommand(VersionCommand())
 	rootCmd.AddCommand(DetectExecuteScanCommand())
 	rootCmd.AddCommand(KarmaExecuteTestsCommand())
 	rootCmd.AddCommand(SonarExecuteScanCommand())
 	rootCmd.AddCommand(KubernetesDeployCommand())
 	rootCmd.AddCommand(XsDeployCommand())
-	rootCmd.AddCommand(GithubPublishReleaseCommand())
+	rootCmd.AddCommand(GithubCheckBranchProtectionCommand())
 	rootCmd.AddCommand(GithubCreatePullRequestCommand())
+	rootCmd.AddCommand(GithubPublishReleaseCommand())
+	rootCmd.AddCommand(GithubSetCommitStatusCommand())
+	rootCmd.AddCommand(GitopsUpdateDeploymentCommand())
 	rootCmd.AddCommand(CloudFoundryDeleteServiceCommand())
 	rootCmd.AddCommand(AbapEnvironmentPullGitRepoCommand())
+	rootCmd.AddCommand(AbapEnvironmentCloneGitRepoCommand())
 	rootCmd.AddCommand(AbapEnvironmentCheckoutBranchCommand())
+	rootCmd.AddCommand(AbapEnvironmentCreateSystemCommand())
 	rootCmd.AddCommand(CheckmarxExecuteScanCommand())
 	rootCmd.AddCommand(FortifyExecuteScanCommand())
 	rootCmd.AddCommand(MtaBuildCommand())
@@ -91,15 +99,27 @@ func Execute() {
 	rootCmd.AddCommand(GctsExecuteABAPUnitTestsCommand())
 	rootCmd.AddCommand(GctsDeployCommand())
 	rootCmd.AddCommand(MalwareExecuteScanCommand())
+	rootCmd.AddCommand(CloudFoundryCreateServiceCommand())
 	rootCmd.AddCommand(CloudFoundryDeployCommand())
 	rootCmd.AddCommand(GctsRollbackCommand())
 	rootCmd.AddCommand(WhitesourceExecuteScanCommand())
 	rootCmd.AddCommand(GctsCloneRepositoryCommand())
 	rootCmd.AddCommand(JsonApplyPatchCommand())
 	rootCmd.AddCommand(KanikoExecuteCommand())
+	rootCmd.AddCommand(AbapEnvironmentAssemblePackagesCommand())
+	rootCmd.AddCommand(AbapAddonAssemblyKitCheckCVsCommand())
+	rootCmd.AddCommand(AbapAddonAssemblyKitCheckPVCommand())
+	rootCmd.AddCommand(AbapAddonAssemblyKitCreateTargetVectorCommand())
+	rootCmd.AddCommand(AbapAddonAssemblyKitPublishTargetVectorCommand())
+	rootCmd.AddCommand(AbapAddonAssemblyKitRegisterPackagesCommand())
+	rootCmd.AddCommand(AbapAddonAssemblyKitReleasePackagesCommand())
+	rootCmd.AddCommand(AbapAddonAssemblyKitReserveNextPackagesCommand())
+	rootCmd.AddCommand(CloudFoundryCreateSpaceCommand())
+	rootCmd.AddCommand(CloudFoundryDeleteSpaceCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
 		log.Entry().WithError(err).Fatal("configuration error")
 	}
 }
@@ -182,11 +202,19 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 	filters.Parameters = append(filters.Parameters, "collectTelemetryData")
 
 	resourceParams := metadata.GetResourceParameters(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
-
 	flagValues := config.AvailableFlagValues(cmd, &filters)
 
 	var myConfig config.Config
 	var stepConfig config.StepConfig
+
+	// add vault credentials so that configuration can be fetched from vault
+	if GeneralConfig.VaultRoleID == "" {
+		GeneralConfig.VaultRoleID = os.Getenv("PIPER_vaultAppRoleID")
+	}
+	if GeneralConfig.VaultRoleSecretID == "" {
+		GeneralConfig.VaultRoleSecretID = os.Getenv("PIPER_vaultAppRoleSecretID")
+	}
+	myConfig.SetVaultCredentials(GeneralConfig.VaultRoleID, GeneralConfig.VaultRoleSecretID)
 
 	if len(GeneralConfig.StepConfigJSON) != 0 {
 		// ignore config & defaults in favor of passed stepConfigJSON
@@ -338,8 +366,23 @@ func convertValueFromString(config map[string]interface{}, optionsField *reflect
 func convertValueFromFloat(config map[string]interface{}, optionsField *reflect.StructField, paramName string, paramValue float64) error {
 	switch optionsField.Type.Kind() {
 	case reflect.String:
-		config[paramName] = strconv.FormatFloat(paramValue, 'f', -1, 64)
-		return nil
+		val := strconv.FormatFloat(paramValue, 'f', -1, 64)
+		// if Sprinted value and val are equal, we can be pretty sure that the result fits
+		// for very large numbers for example an exponential format is printed
+		if val == fmt.Sprint(paramValue) {
+			config[paramName] = val
+			return nil
+		}
+		// allow float numbers containing a decimal separator
+		if strings.Contains(val, ".") {
+			config[paramName] = val
+			return nil
+		}
+		// if now no decimal separator is available we cannot be sure that the result is correct:
+		// long numbers like e.g. 73554900100200011600 will not be represented correctly after reading the yaml
+		// thus we cannot assume that the string is correct.
+		// short numbers will be handled as int anyway
+		return errIncompatibleTypes
 	case reflect.Float32:
 		config[paramName] = float32(paramValue)
 		return nil

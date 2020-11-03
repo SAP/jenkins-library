@@ -81,7 +81,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			DeploymentName:            "deploymentName",
 			DeployTool:                "helm3",
 			HelmDeployWaitSeconds:     400,
-			IngressHosts:              []string{"ingress.host1", "ingress.host2"},
+			HelmValues:                []string{"values1.yaml", "values2.yaml"},
 			Image:                     "path/to/Image:latest",
 			AdditionalParameters:      []string{"--testParam", "testValue"},
 			KubeContext:               "testCluster",
@@ -108,12 +108,16 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"upgrade",
 			"deploymentName",
 			"path/to/chart",
+			"--values",
+			"values1.yaml",
+			"--values",
+			"values2.yaml",
 			"--install",
 			"--force",
 			"--namespace",
 			"deploymentNamespace",
 			"--set",
-			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,imagePullSecrets[0].name=testSecret,ingress.hosts[0]=ingress.host1,ingress.hosts[1]=ingress.host2",
+			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,imagePullSecrets[0].name=testSecret",
 			"--atomic",
 			"--timeout",
 			"400s",
@@ -132,7 +136,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			DeploymentName:          "deploymentName",
 			DeployTool:              "helm3",
 			HelmDeployWaitSeconds:   400,
-			IngressHosts:            []string{"ingress.host1", "ingress.host2"},
+			IngressHosts:            []string{},
 			Image:                   "path/to/Image:latest",
 			AdditionalParameters:    []string{"--testParam", "testValue"},
 			KubeContext:             "testCluster",
@@ -144,7 +148,8 @@ func TestRunKubernetesDeploy(t *testing.T) {
 
 		runKubernetesDeploy(opts, &e, &stdout)
 
-		assert.Equal(t, "helm", e.Calls[1].Exec, "Wrong upgrade command")
+		assert.Equal(t, 1, len(e.Calls), "Wrong number of upgrade commands")
+		assert.Equal(t, "helm", e.Calls[0].Exec, "Wrong upgrade command")
 		assert.Equal(t, []string{
 			"upgrade",
 			"deploymentName",
@@ -154,7 +159,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"--namespace",
 			"deploymentNamespace",
 			"--set",
-			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,imagePullSecrets[0].name=testSecret,ingress.hosts[0]=ingress.host1,ingress.hosts[1]=ingress.host2",
+			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,imagePullSecrets[0].name=testSecret",
 			"--atomic",
 			"--timeout",
 			"400s",
@@ -162,7 +167,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"testCluster",
 			"--testParam",
 			"testValue",
-		}, e.Calls[1].Params, "Wrong upgrade parameters")
+		}, e.Calls[0].Params, "Wrong upgrade parameters")
 	})
 
 	t.Run("test kubectl - create secret/kubeconfig", func(t *testing.T) {
