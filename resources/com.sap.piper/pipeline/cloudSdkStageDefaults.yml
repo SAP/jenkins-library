@@ -56,7 +56,7 @@ stages:
   performanceTests:
     stepConditions:
       gatlingExecuteTests:
-        filePatternFromConfig: 'testModule'
+        filePatternFromConfig: 'pomPath'
         configKeys:
           - 'appUrls'
       performanceTests:

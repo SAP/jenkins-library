@@ -19,7 +19,7 @@ import groovy.transform.Field
     /**
      * Path to the pom.xml file containing the performance test Maven module, for example `performance-tests/pom.xml`.
      */
-    'testModule',
+    'pomPath',
     /**
      * Optional List of app URLs and corresponding Jenkins credential IDs.
      */
@@ -46,13 +46,13 @@ void call(Map parameters = [:]) {
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
-            .withMandatoryProperty('testModule')
+            .withMandatoryProperty('pomPath')
             .use()
 
         utils.pushToSWA([
             step: STEP_NAME,
-            stepParamKey1: 'testModule',
-            stepParam1: config.testModule,
+            stepParamKey1: 'pomPath',
+            stepParam1: config.pomPath,
         ], config)
 
         def appUrls = parameters.get('appUrls')
@@ -60,8 +60,8 @@ void call(Map parameters = [:]) {
             error "The optional parameter 'appUrls' needs to be a List of Maps, where each Map contains the two entries 'url' and 'credentialsId'."
         }
 
-        if (!fileExists(config.testModule)) {
-            error "The Maven module '${config.testModule}' does not exist."
+        if (!fileExists(config.pomPath)) {
+            error "The file '${config.pomPath}' does not exist."
         }
 
         try {
@@ -71,10 +71,10 @@ void call(Map parameters = [:]) {
                     if (!(appUrl instanceof Map)) {
                         error "The entry at index $i in 'appUrls' is not a Map. It needs to be a Map containing the two entries 'url' and 'credentialsId'."
                     }
-                    executeTestsWithAppUrlAndCredentials(script, appUrl.url, appUrl.credentialsId, config.testModule)
+                    executeTestsWithAppUrlAndCredentials(script, appUrl.url, appUrl.credentialsId, config.pomPath)
                 }
             } else {
-                mavenExecute script: script, flags: ['--update-snapshots'], pomPath: config.testModule, goals: ['test']
+                mavenExecute script: script, flags: ['--update-snapshots'], pomPath: config.pomPath, goals: ['test']
             }
         } finally {
             gatlingArchive()
@@ -82,7 +82,7 @@ void call(Map parameters = [:]) {
     }
 }
 
-void executeTestsWithAppUrlAndCredentials(Script script, url, credentialsId, modulePath) {
+void executeTestsWithAppUrlAndCredentials(Script script, url, credentialsId, pomPath) {
     withCredentials([
         [
             $class: 'UsernamePasswordMultiBinding',
@@ -96,6 +96,6 @@ void executeTestsWithAppUrlAndCredentials(Script script, url, credentialsId, mod
             "-Dusername=$PERFORMANCE_TEST_USERNAME",
             "-Dpassword=$PERFORMANCE_TEST_PASSWORD"
         ]
-        mavenExecute script: script, flags: ['--update-snapshots'], pomPath: modulePath, goals: ['test'], defines: defines
+        mavenExecute script: script, flags: ['--update-snapshots'], pomPath: pomPath, goals: ['test'], defines: defines
     }
 }

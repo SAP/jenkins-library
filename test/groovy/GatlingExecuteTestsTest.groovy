@@ -1,4 +1,3 @@
-import hudson.AbortException
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -30,14 +29,14 @@ class GatlingExecuteTestsTest extends BasePiperTest {
     }
 
     @Test
-    void testModuleDoesNotExist() throws Exception {
+    void pomPathDoesNotExist() throws Exception {
         helper.registerAllowedMethod("fileExists", [String], { path -> return false })
-        thrown.expectMessage("The Maven module 'does-not-exist' does not exist.")
+        thrown.expectMessage("The file 'does-not-exist' does not exist.")
 
         stepRule.step.gatlingExecuteTests(
             script: nullScript,
             juStabUtils: utils,
-            testModule: 'does-not-exist'
+            pomPath: 'does-not-exist'
         )
 
         assertJobStatusFailure()
@@ -50,7 +49,7 @@ class GatlingExecuteTestsTest extends BasePiperTest {
         stepRule.step.gatlingExecuteTests(
             script: nullScript,
             juStabUtils: utils,
-            testModule: 'performance-tests/pom.xml'
+            pomPath: 'performance-tests/pom.xml'
         )
 
         assertThat(mavenParams.size(), is(1))
@@ -84,7 +83,7 @@ class GatlingExecuteTestsTest extends BasePiperTest {
         stepRule.step.gatlingExecuteTests(
             script: nullScript,
             juStabUtils: utils,
-            testModule: 'performance-tests/pom.xml',
+            pomPath: 'performance-tests/pom.xml',
             appUrls: [[url: url1, credentialsId: 'credentials1'], [url: url2, credentialsId: 'credentials2']]
         )
 
