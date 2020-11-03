@@ -62,17 +62,12 @@ var GeneralConfig GeneralConfigOptions
 // Execute is the starting point of the piper command line tool
 func Execute() {
 
-	rootCmd.AddCommand(AbapEnvironmentPullGitRepoCommand())
-	rootCmd.AddCommand(CheckmarxExecuteScanCommand())
-	rootCmd.AddCommand(CloudFoundryDeleteServiceCommand())
 	rootCmd.AddCommand(ArtifactPrepareVersionCommand())
 	rootCmd.AddCommand(ConfigCommand())
 	rootCmd.AddCommand(ContainerSaveImageCommand())
 	rootCmd.AddCommand(CommandLineCompletionCommand())
 	rootCmd.AddCommand(VersionCommand())
 	rootCmd.AddCommand(DetectExecuteScanCommand())
-	rootCmd.AddCommand(GithubCreatePullRequestCommand())
-	rootCmd.AddCommand(GithubPublishReleaseCommand())
 	rootCmd.AddCommand(HadolintExecuteCommand())
 	rootCmd.AddCommand(KarmaExecuteTestsCommand())
 	rootCmd.AddCommand(SonarExecuteScanCommand())
@@ -91,8 +86,6 @@ func Execute() {
 	rootCmd.AddCommand(FortifyExecuteScanCommand())
 	rootCmd.AddCommand(MtaBuildCommand())
 	rootCmd.AddCommand(ProtecodeExecuteScanCommand())
-	rootCmd.AddCommand(VersionCommand())
-	rootCmd.AddCommand(XsDeployCommand())
 	rootCmd.AddCommand(MavenExecuteCommand())
 	rootCmd.AddCommand(CloudFoundryCreateServiceKeyCommand())
 	rootCmd.AddCommand(MavenBuildCommand())
