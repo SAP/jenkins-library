@@ -44,9 +44,9 @@ func runAbapEnvironmentCreateSystem(config *abapEnvironmentCreateSystemOptions, 
 
 		// writing the yaml into a temporary file
 		f := piperutils.Files{}
-		path := os.TempDir() + "generated_service_manifest.yml"
+		path, _ := os.Getwd()
+		path = path + "/generated_service_manifest.yml"
 		log.Entry().Infof("Path: %s", path)
-		f.Chmod(path, 0644)
 		err = f.FileWrite(path, manifestYAML, 0644)
 
 		if err != nil {

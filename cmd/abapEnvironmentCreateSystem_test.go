@@ -26,12 +26,12 @@ func TestRunAbapEnvironmentCreateSystem(t *testing.T) {
 			CfServiceInstance: "testName",
 			CfServicePlan:     "testPlan",
 		}
-
+		wd, _ := os.Getwd()
 		err := runAbapEnvironmentCreateSystem(&config, nil, cf)
 		if assert.NoError(t, err) {
 			assert.Equal(t, []mock.ExecCall{
 				{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"login", "-a", "https://api.endpoint.com", "-o", "testOrg", "-s", "testSpace", "-u", "testUser", "-p", "testPassword"}},
-				{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"create-service-push", "--no-push", "--service-manifest", os.TempDir() + "generated_service_manifest.yml"}},
+				{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"create-service-push", "--no-push", "--service-manifest", wd + "/generated_service_manifest.yml"}},
 				{Execution: (*mock.Execution)(nil), Async: false, Exec: "cf", Params: []string{"logout"}}},
 				m.Calls)
 		}
