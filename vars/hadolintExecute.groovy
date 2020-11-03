@@ -55,72 +55,56 @@ import groovy.transform.Field
 @GenerateDocumentation
 void call(Map parameters = [:]) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
-        final script = checkScript(this, parameters) ?: this
-        final utils = parameters.juStabUtils ?: new Utils()
-        String stageName = parameters.stageName ?: env.STAGE_NAME
+        def script = checkScript(this, parameters) ?: this
+        def utils = parameters.juStabUtils ?: new Utils()
+        def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
+        String piperGoPath = parameters.piperGoPath ?: './piper'
 
-        // load default & individual configuration
-        Map config
+        piperExecuteBin.prepareExecution(script, utils, parameters)
+        piperExecuteBin.prepareMetadataResource(script, METADATA_FILE)
+        Map stepParameters = piperExecuteBin.prepareStepParameters(parameters)
 
-        new PiperGoUtils(this, utils).unstashPiperBin()
-        utils.unstash('pipelineConfigAndTests')
-        script.commonPipelineEnvironment.writeToDisk(script)
-
-        writeFile(file: METADATA_FILE, text: libraryResource(METADATA_FILE))
+        List credentialInfo = [
+            // [type: 'token', id: 'githubTokenCredentialsId', env: ['PIPER_githubToken']],
+        ]
 
         withEnv([
-            "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(parameters)}",
+            "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(stepParameters)}",
+            "PIPER_correlationID=${env.BUILD_URL}",
         ]) {
+            String customDefaultConfig = piperExecuteBin.getCustomDefaultConfigsArg()
+            String customConfigArg = piperExecuteBin.getCustomConfigArg(script)
             // get context configuration
-            config = readContextConfig()
-            // ---- move to go
-            if(!fileExists(configuration.configurationFile) && configuration.configurationUrl) {
-                downloadFile(configuration.configurationUrl, configuration.configurationFile, configuration.configurationCredentialsId)
-                if(existingStashes) {
-                    def stashName = 'hadolintConfiguration'
-                    stash name: stashName, includes: configuration.configurationFile
-                    existingStashes += stashName
-                }
+            Map config
+            piperExecuteBin.handleErrorDetails(STEP_NAME) {
+                config = piperExecuteBin.getStepContextConfig(script, piperGoPath, METADATA_FILE, customDefaultConfig, customConfigArg)
+                echo "Context Config: ${config}"
             }
-            // ----
-            // telemetry reporting
-            utils.pushToSWA([
-                step: STEP_NAME,
-                stepParamKey1: 'scriptMissing',
-                stepParam1: parameters?.script == null
-            ], config)
 
-            utils.unstashAll(config.stashContent)
+            piperExecuteBin.dockerWrapper(script, STEP_NAME, config){
+                piperExecuteBin.handleErrorDetails(STEP_NAME) {
+                    script.commonPipelineEnvironment.writeToDisk(script)
+                    try {
+                        piperExecuteBin.credentialWrapper(config, credentialInfo){
+                            sh "${piperGoPath} ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
+                        }
+                    } finally {
+                        jenkinsUtils.handleStepResults(STEP_NAME, true, false)
+                        script.commonPipelineEnvironment.readFromDisk(script)
 
-            dockerExecute(
-                script: script,
-                dockerImage: config.dockerImage,
-                dockerOptions: config.dockerOptions
-            ) {
-                sh "./piper hadolintExecute"
-
-                jenkinsUtils.handleStepResults(STEP_NAME, true, false)
-                recordIssues(
-                    tools: [checkStyle(
-                        name: config.reportName,
-                        pattern: config.reportFile,
-                        id: config.reportName
-                    )],
-                    qualityGates: config.qualityGates,
-                    enabledForFailure: true,
-                    blameDisabled: true
-                )
+                        recordIssues(
+                            tools: [checkStyle(
+                                name: config.reportName,
+                                pattern: config.reportFile,
+                                id: config.reportName
+                            )],
+                            qualityGates: config.qualityGates,
+                            enabledForFailure: true,
+                            blameDisabled: true
+                        )
+                    }
+                }
             }
         }
     }
-}
-
-String readContextConfig(){
-    def configContent = sh returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '${METADATA_FILE}'")
-    return readJSON text: configContent
-}
-
-void downloadFile(url, target, authentication = null){
-        def response = httpRequest url: url, authentication: authentication, timeout: 20
-        writeFile text: response.content, file: target
 }
