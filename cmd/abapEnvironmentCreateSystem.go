@@ -3,30 +3,31 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/cloudfoundry"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/ghodss/yaml"
+	"github.com/google/uuid"
 )
 
 func abapEnvironmentCreateSystem(config abapEnvironmentCreateSystemOptions, telemetryData *telemetry.CustomData) {
 
 	cf := cloudfoundry.CFUtils{Exec: &command.Command{}}
-	f := piperutils.Files{}
+	u := &googleUUID{}
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runAbapEnvironmentCreateSystem(&config, telemetryData, cf, f)
+	err := runAbapEnvironmentCreateSystem(&config, telemetryData, cf, u)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapEnvironmentCreateSystem(config *abapEnvironmentCreateSystemOptions, telemetryData *telemetry.CustomData, cf cloudfoundry.CFUtils, f piperutils.Files) error {
+func runAbapEnvironmentCreateSystem(config *abapEnvironmentCreateSystemOptions, telemetryData *telemetry.CustomData, cf cloudfoundry.CFUtils, u uuidGenerator) error {
 
 	if config.ServiceManifest != "" {
 		// if the manifest file is provided, it is directly passed through to cloudFoundryCreateService
@@ -44,10 +45,10 @@ func runAbapEnvironmentCreateSystem(config *abapEnvironmentCreateSystemOptions, 
 		manifestYAML, err := generateManifestYAML(config)
 
 		// writing the yaml into a temporary file
-		path, _ := f.Getwd()
-		path = path + "/generated_service_manifest.yml"
-		log.Entry().Infof("Path: %s", path)
-		err = f.FileWrite(path, manifestYAML, 0644)
+		path, _ := os.Getwd()
+		path = path + "/generated_service_manifest-" + u.getUUID() + ".yml"
+		log.Entry().Debugf("Path: %s", path)
+		err = ioutil.WriteFile(path, manifestYAML, 0644)
 		if err != nil {
 			return fmt.Errorf("%s: %w", "Could not generate manifest file for the cloud foundry cli", err)
 		}
@@ -149,4 +150,15 @@ type Service struct {
 	Broker     string `json:"broker"`
 	Plan       string `json:"plan"`
 	Parameters string `json:"parameters,omitempty"`
+}
+
+type uuidGenerator interface {
+	getUUID() string
+}
+
+type googleUUID struct {
+}
+
+func (u *googleUUID) getUUID() string {
+	return uuid.New().String()
 }
