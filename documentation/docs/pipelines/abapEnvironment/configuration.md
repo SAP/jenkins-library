@@ -163,6 +163,9 @@ return this
 
 While `tools: [checkStyle(pattern: '**/**/ATCResults.xml')]` will display the ATC findings using the checkstyle format, `qualityGates: [[threshold: 1, type: 'TOTAL', unstable: true]]` will set the build result to UNSTABLE in case the ATC results contain at least one warning or error.
 
+!!! caution "Local Jenkins"
+    If you are using a local Jenkins you may have to [adapt the Jenkins URL](https://stackoverflow.com/a/39543223) in the configuration if the CheckStyl Plugin shows this error: "Can't create fingerprints for some files".
+
 ### Stage Names
 
 The stage name for the extension is usually the displayed name, e.g. `ATC.groovy` or `Prepare System.groovy`. One exception is the generated `Post` stage. While the displayed name is "Declarative: Post Actions", you can extend this stage using `Post.groovy`.
