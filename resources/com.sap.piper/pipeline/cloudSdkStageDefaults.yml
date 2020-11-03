@@ -55,6 +55,10 @@ stages:
           - 'appUrls'
   performanceTests:
     stepConditions:
+      gatlingExecuteTests:
+        filePatternFromConfig: 'pomPath'
+        configKeys:
+          - 'appUrls'
       performanceTests:
         configKeys:
           - 'cfTargets'
