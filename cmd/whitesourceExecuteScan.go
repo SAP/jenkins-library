@@ -2,13 +2,14 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/npm"
 	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/SAP/jenkins-library/pkg/npm"
 
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -107,18 +108,17 @@ func newWhitesourceScan(config *ScanOptions) *ws.Scan {
 	}
 }
 
-func whitesourceExecuteScan(config ScanOptions, _ *telemetry.CustomData) {
+func whitesourceExecuteScan(config ScanOptions, _ *telemetry.CustomData, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment) {
 	utils := newWhitesourceUtils(&config)
 	scan := newWhitesourceScan(&config)
-	sys := ws.NewSystem(config.ServiceURL, config.OrgToken, config.UserToken,
-		time.Duration(config.Timeout)*time.Second)
-	err := runWhitesourceExecuteScan(&config, scan, utils, sys)
+	sys := ws.NewSystem(config.ServiceURL, config.OrgToken, config.UserToken, time.Duration(config.Timeout)*time.Second)
+	err := runWhitesourceExecuteScan(&config, scan, utils, sys, commonPipelineEnvironment)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runWhitesourceExecuteScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource) error {
+func runWhitesourceExecuteScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment) error {
 	if err := resolveProjectIdentifiers(config, scan, utils, sys); err != nil {
 		return fmt.Errorf("failed to resolve project identifiers: %w", err)
 	}
@@ -135,14 +135,14 @@ func runWhitesourceExecuteScan(config *ScanOptions, scan *ws.Scan, utils whiteso
 			return fmt.Errorf("failed to aggregate version wide vulnerabilities: %w", err)
 		}
 	} else {
-		if err := runWhitesourceScan(config, scan, utils, sys); err != nil {
+		if err := runWhitesourceScan(config, scan, utils, sys, commonPipelineEnvironment); err != nil {
 			return fmt.Errorf("failed to execute WhiteSource scan: %w", err)
 		}
 	}
 	return nil
 }
 
-func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource) error {
+func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment) error {
 	// Start the scan
 	if err := executeScan(config, scan, utils); err != nil {
 		return err
@@ -165,9 +165,7 @@ func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUti
 		return err
 	}
 
-	if err := persistScannedProjects(config, scan, utils); err != nil {
-		return fmt.Errorf("failed to persist scanned WhiteSource project names: %w", err)
-	}
+	persistScannedProjects(config, scan, commonPipelineEnvironment)
 
 	return nil
 }
@@ -326,6 +324,7 @@ func wsScanOptions(config *ScanOptions) *ws.ScanOptions {
 		M2Path:                     config.M2Path,
 		GlobalSettingsFile:         config.GlobalSettingsFile,
 		ProjectSettingsFile:        config.ProjectSettingsFile,
+		InstallArtifacts:           config.InstallArtifacts,
 		DefaultNpmRegistry:         config.DefaultNpmRegistry,
 		AgentDownloadURL:           config.AgentDownloadURL,
 		AgentFileName:              config.AgentFileName,
@@ -655,8 +654,8 @@ func newLibraryCSVReport(libraries map[string][]ws.Library, config *ScanOptions,
 
 // persistScannedProjects writes all actually scanned WhiteSource project names as comma separated
 // string into the Common Pipeline Environment, from where it can be used by sub-sequent steps.
-func persistScannedProjects(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils) error {
-	var projectNames []string
+func persistScannedProjects(config *ScanOptions, scan *ws.Scan, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment) {
+	projectNames := []string{}
 	if config.ProjectName != "" {
 		projectNames = []string{config.ProjectName + " - " + config.ProductVersion}
 	} else {
@@ -667,14 +666,5 @@ func persistScannedProjects(config *ScanOptions, scan *ws.Scan, utils whitesourc
 		// as the order in which we travers map keys is not deterministic.
 		sort.Strings(projectNames)
 	}
-	resourceDir := filepath.Join(".pipeline", "commonPipelineEnvironment", "custom")
-	if err := utils.MkdirAll(resourceDir, 0755); err != nil {
-		return err
-	}
-	fileContents := strings.Join(projectNames, ",")
-	resource := filepath.Join(resourceDir, "whitesourceProjectNames")
-	if err := utils.FileWrite(resource, []byte(fileContents), 0644); err != nil {
-		return err
-	}
-	return nil
+	commonPipelineEnvironment.custom.whitesourceProjectNames = projectNames
 }

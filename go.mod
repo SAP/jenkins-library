@@ -12,6 +12,7 @@ require (
 	github.com/Microsoft/hcsshim v0.8.10 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20200907205600-7a23bdc65eef // indirect
 	github.com/bmatcuk/doublestar v1.3.2
+	github.com/bndr/gojenkins v1.0.1
 	github.com/containerd/containerd v1.4.1 // indirect
 	github.com/docker/docker v1.4.2-0.20200114201811-16a3519d870b // indirect
 	github.com/elliotchance/orderedmap v1.3.0

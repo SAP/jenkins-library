@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"io"
@@ -32,6 +33,17 @@ func main() {
 
 	fmt.Printf("Running go fmt %v\n", targetDir)
 	cmd := exec.Command("go", "fmt", targetDir)
+	r, _ := cmd.StdoutPipe()
+	cmd.Stderr = cmd.Stdout
+	done := make(chan struct{})
+	scanner := bufio.NewScanner(r)
+	go func() {
+		for scanner.Scan() {
+			fmt.Println(scanner.Text())
+		}
+		done <- struct{}{}
+
+	}()
 	err = cmd.Run()
 	checkError(err)
 
