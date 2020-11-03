@@ -22,11 +22,11 @@ class GatlingExecuteTestsTest extends BasePiperTest {
         .around(stepRule)
         .around(thrown)
 
-    def mavenParams = [:]
+    List mavenParams = []
 
     @Before
     void init() throws Exception {
-        helper.registerAllowedMethod("mavenExecute", [Map], { map -> mavenParams = map })
+        helper.registerAllowedMethod("mavenExecute", [Map], { map -> mavenParams.add(map) })
     }
 
     @Test
@@ -45,14 +45,7 @@ class GatlingExecuteTestsTest extends BasePiperTest {
 
     @Test
     void executionWithoutAppUrls() throws Exception {
-        helper.registerAllowedMethod("fileExists", [String], { path ->
-            switch (path) {
-            case "performance-tests/pom.xml":
-                return true
-            default:
-                return false
-            }
-        })
+        registerPerformanceTestsModule()
 
         stepRule.step.gatlingExecuteTests(
             script: nullScript,
@@ -60,7 +53,9 @@ class GatlingExecuteTestsTest extends BasePiperTest {
             testModule: 'performance-tests/pom.xml'
         )
 
-        assertThat(mavenParams, is([
+        assertThat(mavenParams.size(), is(1))
+
+        assertThat(mavenParams[0], is([
             script: nullScript,
             flags: ['--update-snapshots'],
             pomPath: 'performance-tests/pom.xml',
@@ -68,5 +63,68 @@ class GatlingExecuteTestsTest extends BasePiperTest {
         ]))
 
         assertJobStatusSuccess()
+    }
+
+    @Test
+    void executionWithAppUrls() throws Exception {
+        registerPerformanceTestsModule()
+
+        final String url1 = 'url1'
+        final String url2 = 'url2'
+        final String username = 'test-username'
+        final String password = 'test-password'
+
+        helper.registerAllowedMethod("withCredentials", [List, Closure], { creds, body ->
+            assertThat(creds.size(), is(1))
+            binding.setVariable(creds[0].usernameVariable, username)
+            binding.setVariable(creds[0].passwordVariable, password)
+            body()
+        })
+
+        stepRule.step.gatlingExecuteTests(
+            script: nullScript,
+            juStabUtils: utils,
+            testModule: 'performance-tests/pom.xml',
+            appUrls: [[url: url1, credentialsId: 'credentials1'], [url: url2, credentialsId: 'credentials2']]
+        )
+
+        assertThat(mavenParams.size(), is(2))
+
+        assertThat(mavenParams[0], is([
+            script: nullScript,
+            flags: ['--update-snapshots'],
+            pomPath: 'performance-tests/pom.xml',
+            goals: ['test'],
+            defines: [
+                "-DappUrl=$url1",
+                "-Dusername=$username",
+                "-Dpassword=$password"
+            ]
+        ]))
+
+        assertThat(mavenParams[1], is([
+            script: nullScript,
+            flags: ['--update-snapshots'],
+            pomPath: 'performance-tests/pom.xml',
+            goals: ['test'],
+            defines: [
+                "-DappUrl=$url2",
+                "-Dusername=$username",
+                "-Dpassword=$password"
+            ]
+        ]))
+
+        assertJobStatusSuccess()
+    }
+
+    private void registerPerformanceTestsModule() {
+        helper.registerAllowedMethod("fileExists", [String], { path ->
+            switch (path) {
+                case "performance-tests/pom.xml":
+                    return true
+                default:
+                    return false
+            }
+        })
     }
 }
