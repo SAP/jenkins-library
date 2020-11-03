@@ -60,8 +60,8 @@ void call(Map parameters = [:]) {
             error "The optional parameter 'appUrls' needs to be a List of Maps, where each Map contains the two entries 'url' and 'credentialsId'."
         }
 
-        if (!fileExists(config.modulePath)) {
-            error "The Maven module '${config.modulePath}' does not exist."
+        if (!fileExists(config.testModule)) {
+            error "The Maven module '${config.testModule}' does not exist."
         }
 
         try {
