@@ -30,7 +30,7 @@ import groovy.transform.Field
 
 /**
  * In this step Gatling performance tests are executed.
- * Requires the Jenkins Gatling plugin to be installed.
+ * Requires the [Jenkins Gatling plugin](https://plugins.jenkins.io/gatling/) to be installed.
  */
 @GenerateDocumentation
 void call(Map parameters = [:]) {
@@ -99,4 +99,3 @@ void executeTestsWithAppUrlAndCredentials(Script script, url, credentialsId, mod
         mavenExecute script: script, flags: ['--update-snapshots'], pomPath: modulePath, goals: ['test'], defines: defines
     }
 }
-
