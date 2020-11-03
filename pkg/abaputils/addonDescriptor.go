@@ -29,6 +29,7 @@ type Repository struct {
 	Name                string `json:"name"`
 	Tag                 string `json:"tag"`
 	Branch              string `json:"branch"`
+	CommitID            string `json:"commitID"`
 	VersionYAML         string `json:"version"`
 	Version             string `json:"versionAAK"`
 	PackageName         string
