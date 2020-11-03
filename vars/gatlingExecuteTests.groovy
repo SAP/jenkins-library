@@ -36,8 +36,8 @@ import groovy.transform.Field
 void call(Map parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
-        Script script = (checkScript(this, parameters) ?: this) as Script
-        Utils utils = parameters.juStabUtils as Utils ?: new Utils()
+        Script script = checkScript(this, parameters) ?: this
+        Utils utils = parameters.juStabUtils ?: new Utils()
         String stageName = parameters.stageName ?: env.STAGE_NAME
 
         // load default & individual configuration
