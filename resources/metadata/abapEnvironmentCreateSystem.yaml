@@ -187,6 +187,13 @@ spec:
           - STAGES
           - STEPS
           - GENERAL
+      - name: ignoreAddon
+        description: Ignore the value provided via 'addonDescriptorFileName'
+        type: bool
+        scope:
+          - PARAMETERS
+          - STAGES
+        default: false
   containers:
     - name: cf
       image: ppiper/cf-cli
