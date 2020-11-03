@@ -94,20 +94,20 @@ func TestManifestGeneration(t *testing.T) {
 
 	t.Run("Create service with generated manifest", func(t *testing.T) {
 		config := abapEnvironmentCreateSystemOptions{
-			CfAPIEndpoint:           "https://api.endpoint.com",
-			CfOrg:                   "testOrg",
-			CfSpace:                 "testSpace",
-			Username:                "testUser",
-			Password:                "testPassword",
-			CfService:               "testService",
-			CfServiceInstance:       "testName",
-			CfServicePlan:           "testPlan",
-			AdminEmail:              "user@example.com",
-			SapSystemName:           "H02",
-			IsDevelopmentAllowed:    true,
-			SizeOfPersistence:       4,
-			SizeOfRuntime:           4,
-			AddonDescriptorFileName: "addon.yml",
+			CfAPIEndpoint:                  "https://api.endpoint.com",
+			CfOrg:                          "testOrg",
+			CfSpace:                        "testSpace",
+			Username:                       "testUser",
+			Password:                       "testPassword",
+			CfService:                      "testService",
+			CfServiceInstance:              "testName",
+			CfServicePlan:                  "testPlan",
+			AbapSystemAdminEmail:           "user@example.com",
+			AbapSystemID:                   "H02",
+			AbapSystemIsDevelopmentAllowed: true,
+			AbapSystemSizeOfPersistence:    4,
+			AbapSystemSizeOfRuntime:        4,
+			AddonDescriptorFileName:        "addon.yml",
 		}
 
 		dir, err := ioutil.TempDir("", "test variable substitution")
