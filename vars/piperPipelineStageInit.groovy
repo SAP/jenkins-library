@@ -109,7 +109,7 @@ void call(Map parameters = [:]) {
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], ordinal: 1, telemetryDisabled: true) {
         def scmInfo = checkout scm
 
-        setupCommonPipelineEnvironment(script: script, customDefaults: parameters.customDefaults, gitUrl: scmInfo.GIT_URL,
+        setupCommonPipelineEnvironment(script: script, customDefaults: parameters.customDefaults, scmInfo: scmInfo,
             configFile: parameters.configFile, customDefaultsFromFiles: parameters.customDefaultsFromFiles)
 
         Map config = ConfigurationHelper.newInstance(this)
