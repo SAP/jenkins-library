@@ -243,7 +243,6 @@ spec:
       - name: versioningTemplate
         type: string
         description: "DEPRECATED: Defines the template for the automatic version which will be created"
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
