@@ -9,26 +9,21 @@ stages:
           - '**/*.jsx'
           - '**/*.ts'
           - '**/*.tsx'
-  backendIntegrationTests:
+  integration:
     stepConditions:
       npmExecuteScripts:
         npmScripts:
           - 'ci-it-backend'
+          - 'ci-it-frontend'
       mavenExecuteIntegration:
         filePattern: 'integration-tests/pom.xml'
   compliance:
-    onlyProductiveBranch: true
     stepConditions:
       sonarExecuteScan:
         configKeys:
           - 'sonarTokenCredentialsId'
           - 'projectKey'
           - 'instance'
-  frontendIntegrationTests:
-    stepConditions:
-      npmExecuteScripts:
-        npmScripts:
-          - 'ci-it-frontend'
   additionalUnitTests:
     stepConditions:
       npmExecuteScripts:
@@ -60,12 +55,15 @@ stages:
           - 'appUrls'
   performanceTests:
     stepConditions:
+      gatlingExecuteTests:
+        filePatternFromConfig: 'pomPath'
+        configKeys:
+          - 'appUrls'
       performanceTests:
         configKeys:
           - 'cfTargets'
           - 'neoTargets'
   security:
-    onlyProductiveBranch: true
     stepConditions:
       checkmarxExecuteScan:
         configKeys:
@@ -82,7 +80,6 @@ stages:
           - 'orgAdminUserTokenCredentialsId'
           - 'userTokenCredentialsId'
   productionDeployment:
-    onlyProductiveBranch: true
     stepConditions:
       multicloudDeploy:
         configKeys:
@@ -110,7 +107,6 @@ stages:
         configKeys:
           - 'githubTokenCredentialsId'
   artifactDeployment:
-    onlyProductiveBranch: true
     stepConditions:
       artifactDeployment:
         configKeys:

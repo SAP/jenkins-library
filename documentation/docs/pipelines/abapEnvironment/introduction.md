@@ -46,8 +46,13 @@ After the confirmation, the Communication Arrangement [SAP_COM_0510](https://hel
 
 ## Clone Repositories
 
-In this stage, the Software Components / Git repositories are pulled to the ABAP Environment system using the step abapEnvironmentPullGitRepo.
+As a default we assume that the ABAP Environment system is already configured and all Software Components are cloned and the latest change of the respective Software Components should be pulled with the abapEnvironmentPullGitRepo step.
+In this stage, the Software Components / Git repositories are then pulled to the ABAP Environment system using the step abapEnvironmentPullGitRepo.
 The step can receive a list of Software Components / repositories and pulls them successively.
+If the Software Components have not been cloned on the ABAP Environment system yet or you want to e.g. checkout a different Branch you can make use of the `strategy` stage parameter and perform other steps and step orders.
+Please refer to the Configuration section for the abapEnvironment Pipeline or the respective documentations for the [abapEnvironmentCheckoutBranch](https://sap.github.io/jenkins-library/steps/abapEnvironmentCheckoutBranch/), [abapEnvironmentCloneGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentCloneGitRepo/) and [abapEnvironmentPullGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentPullGitRepo/) steps.
+
+Either way, if you chose a dedicated strategy or the default Pull variant you can optionally provide a dedicated configuration file, e.g. `repositories.yml`, containing the repositories to be cloned and the branches to be switched to. This file can be used consistently for all strategies.
 
 ## ATC
 
