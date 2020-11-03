@@ -17,15 +17,16 @@ import (
 func abapEnvironmentCreateSystem(config abapEnvironmentCreateSystemOptions, telemetryData *telemetry.CustomData) {
 
 	cf := cloudfoundry.CFUtils{Exec: &command.Command{}}
+	f := piperutils.Files{}
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runAbapEnvironmentCreateSystem(&config, telemetryData, cf)
+	err := runAbapEnvironmentCreateSystem(&config, telemetryData, cf, f)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapEnvironmentCreateSystem(config *abapEnvironmentCreateSystemOptions, telemetryData *telemetry.CustomData, cf cloudfoundry.CFUtils) error {
+func runAbapEnvironmentCreateSystem(config *abapEnvironmentCreateSystemOptions, telemetryData *telemetry.CustomData, cf cloudfoundry.CFUtils, f piperutils.Files) error {
 
 	if config.ServiceManifest != "" {
 		// if the manifest file is provided, it is directly passed through to cloudFoundryCreateService
@@ -43,12 +44,10 @@ func runAbapEnvironmentCreateSystem(config *abapEnvironmentCreateSystemOptions, 
 		manifestYAML, err := generateManifestYAML(config)
 
 		// writing the yaml into a temporary file
-		f := piperutils.Files{}
-		path, _ := os.Getwd()
+		path, _ := f.Getwd()
 		path = path + "/generated_service_manifest.yml"
 		log.Entry().Infof("Path: %s", path)
 		err = f.FileWrite(path, manifestYAML, 0644)
-
 		if err != nil {
 			return fmt.Errorf("%s: %w", "Could not generate manifest file for the cloud foundry cli", err)
 		}
