@@ -58,7 +58,6 @@ class NeoDeployTest extends BasePiperTest {
         .withCredentials('CI_CREDENTIALS_ID', 'defaultUser', '********')
         .withCredentials('testOauthId', 'clientId', '********'))
         .around(new JenkinsReadJsonRule(this))
-        .around(new JenkinsPropertiesRule(this, null, new Properties()))
         .around(stepRule)
         .around(new JenkinsLockRule(this))
         .around(new JenkinsWithEnvRule(this))
@@ -439,6 +438,25 @@ class NeoDeployTest extends BasePiperTest {
 
         Assert.assertThat(shellRule.shell, hasItem(containsString("curl -X POST -u \"clientId:********\" --fail \"https://oauthasservices-trialuser123.test.deploy.host.com/oauth2/api/v1/token?grant_type=client_credentials&scope=write,read")))
         Assert.assertThat(shellRule.shell[3], containsString("#!/bin/bash curl -i -L -c 'cookies.jar' -H 'X-CSRF-Token: Fetch' -H \"Authorization: Bearer xxx\" --fail \"https://cloudnwcportal-trialuser123.test.deploy.host.com/fiori/api/v1/csrf\""))
+    }
+
+    @Test
+    void invalidateCache_notPerformed_warFiles() {
+
+        nullScript.commonPipelineEnvironment.configuration = [steps: [neoDeploy: [neo: [host: 'test.deploy.host.com', account: 'trialuser123', invalidateCache: true]]]]
+
+        stepRule.step.neoDeploy(script: nullScript,
+            neo: [
+                application: 'testApp',
+                runtime: 'neo-javaee6-wp',
+                runtimeVersion: '2.125',
+                size: 'lite',
+            ],
+            deployMode: 'warParams',
+            warAction: 'deploy',
+            source: warArchiveName)
+
+        assertThat(loggingRule.log, containsString("Invalidation of cache is ignored. It is performed only for html5 applications and 'invalidateCache' parameter is set to true."))
     }
 
     @Test

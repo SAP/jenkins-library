@@ -71,6 +71,7 @@ import static com.sap.piper.Prerequisites.checkScript
     'vmArguments',
     /**
      * Boolean to enable/disable invalidating the cache after deployment.
+     * @possibleValues `true`, `false`
      * @parentConfigKey neo
      */
     'invalidateCache',
@@ -80,7 +81,7 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'portalLandscape',
     /**
-     * UsernamePassword type credential containing SAP CP OAuth client id and client secret.
+     * UsernamePassword type credential containing SAP Cloud Platform OAuth client ID and client secret.
      * @parentConfigKey neo
      */
     'oauthCredentialId',
@@ -236,8 +237,12 @@ void call(parameters = [:]) {
                 lock("$STEP_NAME:${neoCommandHelper.resourceLock()}") {
                     deploy(script, configuration, neoCommandHelper, configuration.dockerImage, deployMode)
                 }
-                if(configuration.neo.invalidateCache == true) {
+                if(configuration.neo.invalidateCache == true && configuration.deployMode == 'mta') {
+                    echo "Triggering invalidation of cache for html5 applications"
                     invalidateCache(configuration)
+                }
+                else{
+                    echo "Invalidation of cache is ignored. It is performed only for html5 applications and 'invalidateCache' parameter is set to true."
                 }
             }
         }
@@ -258,7 +263,8 @@ private invalidateCache(configuration){
                         curl -X POST -u "${OAUTH_NEO_CLIENT_ID}:${OAUTH_NEO_CLIENT_SECRET}" \
                             --fail \
                             "https://oauthasservices-${account}.${host}/oauth2/api/v1/token?grant_type=client_credentials&scope=write,read"
-                    """, returnStdout: true)
+                    """,
+            returnStdout: true)
         def bearerToken = readJSON(text: bearerTokenResponse).access_token
 
         echo "Retrieved bearer token."
@@ -271,7 +277,8 @@ private invalidateCache(configuration){
                             -H "Authorization: Bearer ${bearerToken}" \
                             --fail \
                             "https://${portalLandscape}-${account}.${host}/fiori/api/v1/csrf"
-                    """, returnStdout: true)
+                    """,
+            returnStdout: true)
 
         def xcsrfToken = readProperties(text: fetchXcsrfTokenResponse)["X-CSRF-Token"]
         def siteId = configuration.neo.siteId ?: ""
@@ -300,8 +307,7 @@ private invalidateCache(configuration){
                     "As no siteId is set, the default site defined in the portal UI is used. " +
                     "Please verify a default site is defined in Portal service. " +
                     "Alternatively, configure the siteId parameter for this step to invalidate the cache of that specific site."
-        }
-        else if(! statusCode == "200" || ! statusCode == "201" ){
+        } else if(! statusCode == "200" || ! statusCode == "201" ){
             error "Invalidating the cache failed with response code: ${statusCode}."
         }
         echo "Successfully invalidated the cache."
