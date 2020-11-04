@@ -47,7 +47,9 @@ func runHadolint(config hadolintExecuteOptions, client piperhttp.Downloader, run
 	}
 	// load config file from URL
 	if !hasConfigurationFile(config.ConfigurationFile) && len(config.ConfigurationURL) > 0 {
-		loadConfigurationFile(config.ConfigurationURL, config.ConfigurationFile, client)
+		if err := loadConfigurationFile(config.ConfigurationURL, config.ConfigurationFile, client); err != nil {
+			return errors.Wrap(err, "failed to load configuration file from URL")
+		}
 	}
 	// use config
 	if hasConfigurationFile(config.ConfigurationFile) {
@@ -77,15 +79,9 @@ func runHadolint(config hadolintExecuteOptions, client piperhttp.Downloader, run
 }
 
 // loadConfigurationFile loads a file from the provided url
-func loadConfigurationFile(url, file string, client piperhttp.Downloader) {
+func loadConfigurationFile(url, file string, client piperhttp.Downloader) error {
 	log.Entry().WithField("url", url).Debug("Loading configuration file from URL")
-
-	if err := client.DownloadFile(url, file, nil, nil); err != nil {
-		log.Entry().
-			WithError(err).
-			WithField("file", url).
-			Error("Failed to load configuration file from URL.")
-	}
+	return client.DownloadFile(url, file, nil, nil)
 }
 
 // hasConfigurationFile checks if the given file exists
