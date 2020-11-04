@@ -87,7 +87,8 @@ void call(Map parameters = [:]) {
                     script.commonPipelineEnvironment.writeToDisk(script)
                     try {
                         piperExecuteBin.credentialWrapper(config, credentialInfo){
-                            sh "${piperGoPath} ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
+                            // sh "${piperGoPath} ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
+                            sh "${piperGoPath} hadolintExecuteScan${customDefaultConfig}${customConfigArg}"
                         }
                     } finally {
                         jenkinsUtils.handleStepResults(STEP_NAME, true, false)
