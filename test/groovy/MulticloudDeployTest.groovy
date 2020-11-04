@@ -373,4 +373,16 @@ class MulticloudDeployTest extends BasePiperTest {
         assertFalse(executedOnKubernetes)
 
     }
+
+    @Test
+    void multicloudPreDeploymentHookTest() {
+        def closureRun = null
+
+        stepRule.step.multicloudDeploy([
+            script                      : nullScript,
+            preDeploymentHook           : {closureRun = true},
+        ])
+
+        assertTrue(closureRun)
+    }
 }

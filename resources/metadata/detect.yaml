@@ -207,6 +207,16 @@ spec:
           - PARAMETERS
         aliases:
           - name: maven/m2Path
+      - name: installArtifacts
+        type: bool
+        description:
+          "If enabled, it will install all artifacts to the local maven repository to make them available before running detect.
+          This is required if any maven module has dependencies to other modules in the repository and they were not installed before."
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
   containers:
     - name: openjdk
       image: openjdk:11
