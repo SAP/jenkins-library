@@ -278,7 +278,7 @@ func (exec *Execute) InstallAllDependencies(packageJSONFiles []string) error {
 	for _, packageJSON := range packageJSONFiles {
 		fileExists, err := exec.Utils.FileExists(packageJSON)
 		if err != nil {
-			return fmt.Errorf("cannot check if package.json exists: %w", err)
+			return fmt.Errorf("cannot check if '%s' exists: %w", packageJSON, err)
 		}
 		if !fileExists {
 			return fmt.Errorf("package.json file '%s' not found: %w", packageJSON, err)
