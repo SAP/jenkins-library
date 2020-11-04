@@ -17,8 +17,6 @@ spec:
     resources:
       - name: deployDescriptor
         type: stash
-      - name: pipelineConfigAndTests
-        type: stash
     params:
       - name: apiEndpoint
         type: string
