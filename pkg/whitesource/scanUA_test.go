@@ -28,9 +28,8 @@ func TestExecuteScanUA(t *testing.T) {
 		scan := newTestScan(&config)
 		// test
 		err := scan.ExecuteUAScan(&config, utilsMock)
-		// many assert
+		// assert
 		require.NoError(t, err)
-
 		content, err := utilsMock.FileRead("ua.cfg")
 		require.NoError(t, err)
 		contentAsString := string(content)
@@ -71,7 +70,7 @@ func TestExecuteScanUA(t *testing.T) {
 		scan := newTestScan(&config)
 		// test
 		err := scan.ExecuteUAScan(&config, utilsMock)
-		// many assert
+		// assert
 		require.NoError(t, err)
 		require.Len(t, utilsMock.DownloadedFiles, 1)
 		assert.Equal(t, "https://download.ua.org/agent.jar", utilsMock.DownloadedFiles[0].sourceURL)
@@ -91,7 +90,7 @@ func TestExecuteScanUA(t *testing.T) {
 		scan := newTestScan(&config)
 		// test
 		err := scan.ExecuteUAScan(&config, utilsMock)
-		// many assert
+		// assert
 		require.NoError(t, err)
 		assert.Len(t, utilsMock.DownloadedFiles, 0)
 	})
