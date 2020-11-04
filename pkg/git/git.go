@@ -86,14 +86,14 @@ func plainClone(username, password, serverURL, directory string, abstractionGit 
 
 // ChangeBranch checkout the provided branch.
 // It will create a new branch if the branch does not exist yet.
-// It will checkout "master" if no branch name if provided
+// It will return an error if no branch name if provided
 func ChangeBranch(branchName string, worktree *git.Worktree) error {
 	return changeBranch(branchName, worktree)
 }
 
 func changeBranch(branchName string, worktree utilsWorkTree) error {
 	if branchName == "" {
-		branchName = "master"
+		return errors.New("no branch name provided")
 	}
 
 	var checkoutOptions = &git.CheckoutOptions{}
