@@ -96,16 +96,20 @@ void call(Map parameters = [:]) {
                         jenkinsUtils.handleStepResults(STEP_NAME, true, false)
                         script.commonPipelineEnvironment.readFromDisk(script)
 
-                        recordIssues(
+                        def options = [
+                            enabledForFailure: true,
+                            blameDisabled: true,
                             tools: [checkStyle(
                                 name: stepConfig.reportName,
                                 pattern: stepConfig.reportFile,
-                                id: stepConfig.reportName
+                                id: stepConfig.reportName,
                             )],
-                            qualityGates: stepConfig.qualityGates,
-                            enabledForFailure: true,
-                            blameDisabled: true
-                        )
+                        ]
+
+                        if (stepConfig.qualityGates){
+                            options.qualityGates = stepConfig.qualityGates
+                        }
+                        recordIssues(options)
                     }
                 }
             }
