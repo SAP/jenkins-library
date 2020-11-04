@@ -264,10 +264,9 @@ func TestMarBuild(t *testing.T) {
 		}()
 
 		downloadAndCopySettingsFiles = func(
-			globalSettings string,
-			projectSettings string,
-			fileUtils maven.FileUtils,
-			httpClient maven.SettingsDownloadUtils) error {
+			globalSettingsFile string,
+			projectSettingsFile string,
+			utils maven.SettingsDownloadUtils) error {
 			projectSettingsFile = projectSettings
 			globalSettingsFile = globalSettings
 			return nil

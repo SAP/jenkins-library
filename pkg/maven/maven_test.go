@@ -203,17 +203,17 @@ func TestMavenInstall(t *testing.T) {
 		utils.AddFile("pom.xml", []byte("<project></project>"))
 
 		options := EvaluateOptions{}
-		options.ProjectSettingsFile = "settings.xml
+		options.ProjectSettingsFile = "settings.xml"
 		utils.StdoutReturn = map[string]string{"mvn --file pom.xml -Dexpression=project.build.finalName -DforceStdout -q -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --batch-mode org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate": "foo"}
-		err := doInstallMavenArtifacts(options, &utils)
+		err := doInstallMavenArtifacts(&options, &utils)
 
 		assert.NoError(t, err)
 		if assert.Equal(t, 5, len(utils.Calls)) {
-			assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: []string{"--settings", "settings.xml", "--file", "pom.xml", "-Dflatten.mode=resolveCiFriendliesOnly", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "flatten:flatten"}}, execMockRunner.Calls[0])
-			assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: []string{"--settings", "settings.xml", "--file", "pom.xml", "-Dexpression=project.packaging", "-DforceStdout", "-q", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate"}}, execMockRunner.Calls[1])
-			assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: []string{"--settings", "settings.xml", "--file", "pom.xml", "-Dexpression=project.build.finalName", "-DforceStdout", "-q", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate"}}, execMockRunner.Calls[2])
-			assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: []string{"--settings", "settings.xml", "-Dfile=" + filepath.Join(".", "target", "foo.jar"), "-Dpackaging=jar", "-DpomFile=pom.xml", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "install:install-file"}}, execMockRunner.Calls[3])
-			assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: []string{"--settings", "settings.xml", "-Dfile=" + filepath.Join(".", "target", "foo.war"), "-DpomFile=pom.xml", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "install:install-file"}}, execMockRunner.Calls[4])
+			assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: []string{"--settings", "settings.xml", "--file", "pom.xml", "-Dflatten.mode=resolveCiFriendliesOnly", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "flatten:flatten"}}, utils.Calls[0])
+			assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: []string{"--settings", "settings.xml", "--file", "pom.xml", "-Dexpression=project.packaging", "-DforceStdout", "-q", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate"}}, utils.Calls[1])
+			assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: []string{"--settings", "settings.xml", "--file", "pom.xml", "-Dexpression=project.build.finalName", "-DforceStdout", "-q", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate"}}, utils.Calls[2])
+			assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: []string{"--settings", "settings.xml", "-Dfile=" + filepath.Join(".", "target", "foo.jar"), "-Dpackaging=jar", "-DpomFile=pom.xml", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "install:install-file"}}, utils.Calls[3])
+			assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: []string{"--settings", "settings.xml", "-Dfile=" + filepath.Join(".", "target", "foo.war"), "-DpomFile=pom.xml", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "install:install-file"}}, utils.Calls[4])
 		}
 	})
 

@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"path"
 	"strings"
@@ -38,9 +40,6 @@ modules:
     build-parameters:
       builder: grunt
       build-result: dist`
-
-// for mocking
-var downloadAndCopySettingsFiles = maven.DownloadAndCopySettingsFiles
 
 // MTABuildTarget ...
 type MTABuildTarget int
@@ -77,18 +76,53 @@ func (m MTABuildTarget) String() string {
 	}[m]
 }
 
+type mtaBuildUtils interface {
+	Stdout(out io.Writer)
+	Stderr(err io.Writer)
+	SetDir(d string)
+	RunExecutable(e string, p ...string) error
+
+	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
+	Glob(pattern string) (matches []string, err error)
+	FileExists(filename string) (bool, error)
+	Copy(src, dest string) (int64, error)
+	MkdirAll(path string, perm os.FileMode) error
+
+	DownloadAndCopySettingsFiles(globalSettingsFile string, projectSettingsFile string) error
+}
+
+type mtaBuildUtilsBundle struct {
+	*command.Command
+	*piperutils.Files
+	*piperhttp.Client
+}
+
+func (bundle *mtaBuildUtilsBundle) DownloadAndCopySettingsFiles(globalSettingsFile string, projectSettingsFile string) error {
+	return maven.DownloadAndCopySettingsFiles(globalSettingsFile, projectSettingsFile, bundle)
+}
+
+func newMtaBuildUtilsBundle() mtaBuildUtils {
+	utils := mtaBuildUtilsBundle{
+		Command: &command.Command{},
+		Files:   &piperutils.Files{},
+		Client: &piperhttp.Client{},
+	}
+	utils.Stdout(log.Writer())
+	utils.Stderr(log.Writer())
+	return &utils
+}
+
 func mtaBuild(config mtaBuildOptions,
 	telemetryData *telemetry.CustomData,
 	commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment) {
 	log.Entry().Debugf("Launching mta build")
-	files := piperutils.Files{}
-	httpClient := piperhttp.Client{}
 	e := command.Command{}
 
+	utils := newMtaBuildUtilsBundle()
 	npmExecutorOptions := npm.ExecutorOptions{DefaultNpmRegistry: config.DefaultNpmRegistry, ExecRunner: &e}
 	npmExecutor := npm.NewExecutor(npmExecutorOptions)
 
-	err := runMtaBuild(config, commonPipelineEnvironment, &e, &files, &httpClient, npmExecutor)
+	err := runMtaBuild(config, commonPipelineEnvironment, utils, npmExecutor)
 	if err != nil {
 		log.Entry().
 			WithError(err).
@@ -98,13 +132,8 @@ func mtaBuild(config mtaBuildOptions,
 
 func runMtaBuild(config mtaBuildOptions,
 	commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment,
-	execRunner command.ExecRunner,
-	p piperutils.FileUtils,
-	downloader piperhttp.Downloader,
+	utils mtaBuildUtils,
 	npmExecutor npm.Executor) error {
-
-	execRunner.Stdout(log.Writer()) // not sure if using the logging framework here is a suitable approach. We handover already log formatted
-	execRunner.Stderr(log.Writer()) // entries to a logging framework again. But this is considered to be some kind of project standard.
 
 	var err error
 
@@ -116,7 +145,7 @@ func runMtaBuild(config mtaBuildOptions,
 	err = npmExecutor.SetNpmRegistries()
 
 	mtaYamlFile := "mta.yaml"
-	mtaYamlFileExists, err := p.FileExists(mtaYamlFile)
+	mtaYamlFileExists, err := utils.FileExists(mtaYamlFile)
 
 	if err != nil {
 		return err
@@ -191,12 +220,12 @@ func runMtaBuild(config mtaBuildOptions,
 		if err != nil {
 			return err
 		}
-		execRunner.AppendEnv([]string{"MAVEN_OPTS=-Dmaven.repo.local=" + absolutePath})
+		utils.AppendEnv([]string{"MAVEN_OPTS=-Dmaven.repo.local=" + absolutePath})
 	}
 
 	log.Entry().Infof("Executing mta build call: \"%s\"", strings.Join(call, " "))
 
-	if err := execRunner.RunExecutable(call[0], call[1:]...); err != nil {
+	if err := utils.RunExecutable(call[0], call[1:]...); err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
 		return err
 	}

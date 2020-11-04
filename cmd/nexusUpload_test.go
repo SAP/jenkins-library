@@ -1,12 +1,13 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/nexus"
 	"github.com/stretchr/testify/assert"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,12 +16,16 @@ import (
 
 type mockUtilsBundle struct {
 	*mock.FilesMock
+	*mock.ExecMockRunner
 	mta        bool
 	maven      bool
 	npm        bool
 	properties map[string]map[string]string
 	cpe        map[string]string
-	execRunner mock.ExecMockRunner
+}
+
+func (m *mockUtilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+	return errors.New("Test should not download files.")
 }
 
 func newMockUtilsBundle(usesMta, usesMaven, usesNpm bool) mockUtilsBundle {
@@ -45,10 +50,6 @@ func (m *mockUtilsBundle) UsesNpm() bool {
 func (m *mockUtilsBundle) getEnvParameter(path, name string) string {
 	path = path + "/" + name
 	return m.cpe[path]
-}
-
-func (m *mockUtilsBundle) getExecRunner() command.ExecRunner {
-	return &m.execRunner
 }
 
 func (m *mockUtilsBundle) setProperty(pomFile, expression, value string) {
@@ -298,8 +299,8 @@ func TestUploadArtifacts(t *testing.T) {
 		utils := newMockUtilsBundle(false, true, false)
 
 		// Configure mocked execRunner to fail
-		utils.execRunner.ShouldFailOnCommand = map[string]error{}
-		utils.execRunner.ShouldFailOnCommand["mvn"] = fmt.Errorf("failed")
+		utils.ShouldFailOnCommand = map[string]error{}
+		utils.ShouldFailOnCommand["mvn"] = fmt.Errorf("failed")
 
 		uploader := mockUploader{}
 		options := createOptions()
@@ -334,7 +335,7 @@ func TestUploadArtifacts(t *testing.T) {
 
 		err := uploadArtifacts(&utils, &uploader, &options, false)
 		assert.NoError(t, err, "expected upload as two bundles to work")
-		assert.Equal(t, 1, len(utils.execRunner.Calls))
+		assert.Equal(t, 1, len(utils.Calls))
 
 		expectedParameters1 := []string{
 			"-Durl=http://localhost:8081/repository/maven-releases/",
@@ -350,8 +351,8 @@ func TestUploadArtifacts(t *testing.T) {
 			"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
 			"--batch-mode",
 			deployGoal}
-		assert.Equal(t, len(expectedParameters1), len(utils.execRunner.Calls[0].Params))
-		assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: expectedParameters1}, utils.execRunner.Calls[0])
+		assert.Equal(t, len(expectedParameters1), len(utils.Calls[0].Params))
+		assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: expectedParameters1}, utils.Calls[0])
 	})
 }
 
@@ -369,8 +370,8 @@ func TestUploadNpmProjects(t *testing.T) {
 
 		assert.Equal(t, "localhost:8081/repository/npm-repo/", uploader.GetNpmRepoURL())
 
-		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"publish"}}, utils.execRunner.Calls[0])
-		assert.Equal(t, []string{"npm_config_registry=http://localhost:8081/repository/npm-repo/", "npm_config_email=project-piper@no-reply.com", "npm_config__auth=YWRtaW46YWRtaW4xMjM="}, utils.execRunner.Env)
+		assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"publish"}}, utils.Calls[0])
+		assert.Equal(t, []string{"npm_config_registry=http://localhost:8081/repository/npm-repo/", "npm_config_email=project-piper@no-reply.com", "npm_config__auth=YWRtaW46YWRtaW4xMjM="}, utils.Env)
 	})
 }
 
@@ -586,7 +587,7 @@ func TestUploadMavenProjects(t *testing.T) {
 			assert.Equal(t, "pom", artifacts[3].Type)
 
 		}
-		if assert.Equal(t, 2, len(utils.execRunner.Calls)) {
+		if assert.Equal(t, 2, len(utils.Calls)) {
 			expectedParameters1 := []string{
 				"-Durl=http://localhost:8081/repository/maven-releases/",
 				"-DgroupId=com.mycompany.app",
@@ -600,8 +601,8 @@ func TestUploadMavenProjects(t *testing.T) {
 				"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
 				"--batch-mode",
 				deployGoal}
-			assert.Equal(t, len(expectedParameters1), len(utils.execRunner.Calls[0].Params))
-			assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: expectedParameters1}, utils.execRunner.Calls[0])
+			assert.Equal(t, len(expectedParameters1), len(utils.Calls[0].Params))
+			assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: expectedParameters1}, utils.Calls[0])
 
 			expectedParameters2 := []string{
 				"-Durl=http://localhost:8081/repository/maven-releases/",
@@ -613,8 +614,8 @@ func TestUploadMavenProjects(t *testing.T) {
 				"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
 				"--batch-mode",
 				deployGoal}
-			assert.Equal(t, len(expectedParameters2), len(utils.execRunner.Calls[1].Params))
-			assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: expectedParameters2}, utils.execRunner.Calls[1])
+			assert.Equal(t, len(expectedParameters2), len(utils.Calls[1].Params))
+			assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: expectedParameters2}, utils.Calls[1])
 		}
 	})
 	t.Run("Write credentials settings", func(t *testing.T) {
@@ -633,7 +634,7 @@ func TestUploadMavenProjects(t *testing.T) {
 		err := runNexusUpload(&utils, &uploader, &options)
 		assert.NoError(t, err, "expected Maven upload to work")
 
-		assert.Equal(t, 1, len(utils.execRunner.Calls))
+		assert.Equal(t, 1, len(utils.Calls))
 		expectedParameters1 := []string{
 			"--settings",
 			settingsPath,
@@ -647,12 +648,12 @@ func TestUploadMavenProjects(t *testing.T) {
 			"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
 			"--batch-mode",
 			deployGoal}
-		assert.Equal(t, len(expectedParameters1), len(utils.execRunner.Calls[0].Params))
-		assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: expectedParameters1}, utils.execRunner.Calls[0])
+		assert.Equal(t, len(expectedParameters1), len(utils.Calls[0].Params))
+		assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: expectedParameters1}, utils.Calls[0])
 
 		expectedEnv := []string{"NEXUS_username=admin", "NEXUS_password=admin123"}
-		assert.Equal(t, 2, len(utils.execRunner.Env))
-		assert.Equal(t, expectedEnv, utils.execRunner.Env)
+		assert.Equal(t, 2, len(utils.Env))
+		assert.Equal(t, expectedEnv, utils.Env)
 
 		assert.False(t, utils.HasFile(settingsPath))
 		assert.True(t, utils.HasRemovedFile(settingsPath))
@@ -666,10 +667,10 @@ func TestSetupNexusCredentialsSettingsFile(t *testing.T) {
 	settingsPath, err := setupNexusCredentialsSettingsFile(&utils, &options, &mavenOptions)
 
 	assert.NoError(t, err, "expected setting up credentials settings.xml to work")
-	assert.Equal(t, 0, len(utils.execRunner.Calls))
+	assert.Equal(t, 0, len(utils.Calls))
 	expectedEnv := []string{"NEXUS_username=admin", "NEXUS_password=admin123"}
-	assert.Equal(t, 2, len(utils.execRunner.Env))
-	assert.Equal(t, expectedEnv, utils.execRunner.Env)
+	assert.Equal(t, 2, len(utils.Env))
+	assert.Equal(t, expectedEnv, utils.Env)
 
 	assert.True(t, settingsPath != "")
 	assert.True(t, utils.HasFile(settingsPath))

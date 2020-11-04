@@ -1,14 +1,20 @@
 package cmd
 
 import (
+	"errors"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
+	"net/http"
 	"testing"
 )
 
 type mavenExecuteIntegrationTestUtilsBundle struct {
 	*mock.ExecMockRunner
 	*mock.FilesMock
+}
+
+func (m mavenExecuteIntegrationTestUtilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+	return errors.New("Test should not download files.")
 }
 
 func TestIntegrationTestModuleDoesNotExist(t *testing.T) {

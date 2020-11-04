@@ -14,7 +14,6 @@ import (
 type mavenExecuteUtils interface {
 	maven.Utils
 	FileWrite(path string, content []byte, perm os.FileMode) error
-
 }
 
 type mavenExecuteUtilsBundle struct {

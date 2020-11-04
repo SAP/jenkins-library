@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"errors"
+	"net/http"
 	"os"
 	"testing"
 
@@ -124,6 +126,10 @@ func TestGetSpotBugsMavenParameters(t *testing.T) {
 type mavenStaticCodeChecksTestUtilsBundle struct {
 	*mock.ExecMockRunner
 	*mock.FilesMock
+}
+
+func (m mavenStaticCodeChecksTestUtilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+	return errors.New("Test should not download files.")
 }
 
 func newMavenStaticCodeChecksTestUtilsBundle() mavenStaticCodeChecksTestUtilsBundle {
