@@ -269,16 +269,10 @@ steps:
       runCommand: 'bundle install && bundle exec gauge run'
       testOptions: 'specs'
   hadolintExecute:
-    configurationFile: '.hadolint.yaml'
-    configurationUrl: ''
-    dockerFile: './Dockerfile'
-    dockerImage: 'hadolint/hadolint:latest-debian'
-    qualityGates:
-      - threshold: 1
-        type: 'TOTAL_ERROR'
-        unstable: false
-    reportFile: 'hadolint.xml'
-    reportName: 'HaDoLint'
+    # qualityGates:
+    #   - threshold: 1
+    #     type: 'TOTAL_ERROR'
+    #     unstable: false
     stashContent:
       - 'buildDescriptor'
   handlePipelineStepErrors:
