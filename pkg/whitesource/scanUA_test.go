@@ -62,6 +62,7 @@ func TestExecuteScanUA(t *testing.T) {
 		// init
 		config := ScanOptions{
 			ScanType:         "unified-agent",
+			ProjectName:      "mock-project",
 			AgentDownloadURL: "https://download.ua.org/agent.jar",
 			AgentFileName:    "unified-agent.jar",
 		}
@@ -80,6 +81,7 @@ func TestExecuteScanUA(t *testing.T) {
 		// init
 		config := ScanOptions{
 			ScanType:         "unified-agent",
+			ProjectName:      "mock-project",
 			AgentDownloadURL: "https://download.ua.org/agent.jar",
 			AgentFileName:    "unified-agent.jar",
 		}
