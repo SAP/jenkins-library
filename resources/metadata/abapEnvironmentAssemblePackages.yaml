@@ -126,4 +126,3 @@ spec:
   containers:
     - name: cf
       image: ppiper/cf-cli
-      imagePullPolicy: Never
