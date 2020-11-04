@@ -3,6 +3,7 @@ package http
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
@@ -23,15 +24,16 @@ import (
 
 // Client defines an http client object
 type Client struct {
-	maxRequestDuration       time.Duration
-	transportTimeout         time.Duration
-	username                 string
-	password                 string
-	token                    string
-	logger                   *logrus.Entry
-	cookieJar                http.CookieJar
-	doLogRequestBodyOnDebug  bool
-	doLogResponseBodyOnDebug bool
+	maxRequestDuration        time.Duration
+	transportTimeout          time.Duration
+	transportSkipVerification bool
+	username                  string
+	password                  string
+	token                     string
+	logger                    *logrus.Entry
+	cookieJar                 http.CookieJar
+	doLogRequestBodyOnDebug   bool
+	doLogResponseBodyOnDebug  bool
 }
 
 // ClientOptions defines the options to be set on the client
@@ -43,14 +45,15 @@ type ClientOptions struct {
 	MaxRequestDuration time.Duration
 	// TransportTimeout defaults to 3 minutes, if not specified. It is
 	// used for the transport layer and duration of handshakes and such.
-	TransportTimeout         time.Duration
-	Username                 string
-	Password                 string
-	Token                    string
-	Logger                   *logrus.Entry
-	CookieJar                http.CookieJar
-	DoLogRequestBodyOnDebug  bool
-	DoLogResponseBodyOnDebug bool
+	TransportTimeout          time.Duration
+	TransportSkipVerification bool
+	Username                  string
+	Password                  string
+	Token                     string
+	Logger                    *logrus.Entry
+	CookieJar                 http.CookieJar
+	DoLogRequestBodyOnDebug   bool
+	DoLogResponseBodyOnDebug  bool
 }
 
 // TransportWrapper is a wrapper for central logging capabilities
@@ -213,6 +216,7 @@ func (c *Client) initialize() *http.Client {
 			ResponseHeaderTimeout: c.transportTimeout,
 			ExpectContinueTimeout: c.transportTimeout,
 			TLSHandshakeTimeout:   c.transportTimeout,
+			TLSClientConfig:       &tls.Config{InsecureSkipVerify: c.transportSkipVerification},
 		},
 		doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,
 		doLogResponseBodyOnDebug: c.doLogResponseBodyOnDebug,
