@@ -5,28 +5,49 @@ import (
 	"fmt"
 	"io/ioutil"
 	"strings"
+	"time"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/pkg/errors"
 )
 
-func hadolintExecute(config hadolintExecuteOptions, telemetryData *telemetry.CustomData) {
+func hadolintExecuteScan(config hadolintExecuteScanOptions, _ *telemetry.CustomData) {
+	runner := command.Command{
+		ErrorCategoryMapping: map[string][]string{},
+	}
+	// reroute command output to logging framework
+	// runner.Stdout(log.Writer())
+	// runner.Stderr(log.Writer())
+
+	client := piperhttp.Client{}
+	clientOptions := piperhttp.ClientOptions{TransportTimeout: 20 * time.Second}
+	if len(config.ConfigurationUsername) > 0 {
+		clientOptions.Username = config.ConfigurationUsername
+		clientOptions.Password = config.ConfigurationPassword
+	}
+	client.SetOptions(clientOptions)
+
+	if err := runHadolint(config, &client, &runner); err != nil {
+		log.Entry().WithError(err).Fatal("Execution failed")
+	}
+}
+
+func runHadolint(config hadolintExecuteScanOptions, client piperhttp.Downloader, runner command.ExecRunner) error {
 	var outputBuffer bytes.Buffer
 	var errorBuffer bytes.Buffer
-	c := command.Command{}
+	runner.Stdout(&outputBuffer)
+	runner.Stderr(&errorBuffer)
+
 	options := []string{
 		"--format checkstyle",
 	}
-	client := piperhttp.Client{}
-
-	c.Stdout(&outputBuffer)
-	c.Stderr(&errorBuffer)
 	// load config file from URL
 	if !hasConfigurationFile(config.ConfigurationFile) && len(config.ConfigurationURL) > 0 {
-		loadConfigurationFile(config.ConfigurationURL, config.ConfigurationFile, &client)
+		loadConfigurationFile(config.ConfigurationURL, config.ConfigurationFile, client)
 	}
 	// use config
 	if hasConfigurationFile(config.ConfigurationFile) {
@@ -38,26 +59,21 @@ func hadolintExecute(config hadolintExecuteOptions, telemetryData *telemetry.Cus
 	// execute scan command
 	runCommand := fmt.Sprintf("hadolint %s %s", config.DockerFile, strings.Join(options, " "))
 	runCommandTokens := tokenize(runCommand)
-	err := c.RunExecutable(runCommandTokens[0], runCommandTokens[1:]...)
-	//TODO: incorporate https://github.com/hadolint/hadolint/pull/392 if merged
-	output := outputBuffer.String()
+	err := runner.RunExecutable(runCommandTokens[0], runCommandTokens[1:]...)
+
+	//TODO: related to https://github.com/hadolint/hadolint/issues/391
 	// hadolint exists with 1 if there are processing issues but also if there are findings
 	// thus check stdout first if a report was created
-	if len(output) > 0 {
+	if output := outputBuffer.String(); len(output) > 0 {
 		log.Entry().WithField("report", output).Debug("Report created")
 		ioutil.WriteFile(config.ReportFile, []byte(output), 0755)
 	} else if err != nil {
 		// if stdout is empty a processing issue occured
-		log.Entry().
-			WithError(err).
-			WithField("command", runCommand).
-			Fatal(errorBuffer.String())
+		return errors.Wrap(err, errorBuffer.String())
 	}
 	// persist report information
-	piperutils.PersistReportsAndLinks(
-		"hadolintExecute", "./",
-		[]piperutils.Path{piperutils.Path{Target: config.ReportFile}},
-		[]piperutils.Path{})
+	piperutils.PersistReportsAndLinks("hadolintExecute", "./", []piperutils.Path{piperutils.Path{Target: config.ReportFile}}, []piperutils.Path{})
+	return nil
 }
 
 // loadConfigurationFile loads a file from the provided url
