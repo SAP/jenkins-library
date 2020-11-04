@@ -66,7 +66,7 @@ void call(Map parameters = [:]) {
         Map stepParameters = piperExecuteBin.prepareStepParameters(parameters)
 
         List credentialInfo = [
-            // [type: 'token', id: 'githubTokenCredentialsId', env: ['PIPER_githubToken']],
+            [type: 'usernamePassword', id: 'configurationCredentialsId', env: ['PIPER_configurationUsername', 'PIPER_configurationPassword']],
         ]
 
         withEnv([
