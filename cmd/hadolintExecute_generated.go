@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type hadolintExecuteScanOptions struct {
+type hadolintExecuteOptions struct {
 	ConfigurationURL      string `json:"configurationUrl,omitempty"`
 	ConfigurationUsername string `json:"configurationUsername,omitempty"`
 	ConfigurationPassword string `json:"configurationPassword,omitempty"`
@@ -23,15 +23,15 @@ type hadolintExecuteScanOptions struct {
 	ReportFile            string `json:"reportFile,omitempty"`
 }
 
-// HadolintExecuteScanCommand Executes the Haskell Dockerfile Linter which is a smarter Dockerfile linter that helps you build [best practice](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/) Docker images.
-func HadolintExecuteScanCommand() *cobra.Command {
-	const STEP_NAME = "hadolintExecuteScan"
+// HadolintExecuteCommand Executes the Haskell Dockerfile Linter which is a smarter Dockerfile linter that helps you build [best practice](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/) Docker images.
+func HadolintExecuteCommand() *cobra.Command {
+	const STEP_NAME = "hadolintExecute"
 
-	metadata := hadolintExecuteScanMetadata()
-	var stepConfig hadolintExecuteScanOptions
+	metadata := hadolintExecuteMetadata()
+	var stepConfig hadolintExecuteOptions
 	var startTime time.Time
 
-	var createHadolintExecuteScanCmd = &cobra.Command{
+	var createHadolintExecuteCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Executes the Haskell Dockerfile Linter which is a smarter Dockerfile linter that helps you build [best practice](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/) Docker images.",
 		Long: `Executes the Haskell Dockerfile Linter which is a smarter Dockerfile linter that helps you build [best practice](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/) Docker images.
@@ -72,17 +72,17 @@ The linter is parsing the Dockerfile into an abstract syntax tree (AST) and perf
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			hadolintExecuteScan(stepConfig, &telemetryData)
+			hadolintExecute(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
 
-	addHadolintExecuteScanFlags(createHadolintExecuteScanCmd, &stepConfig)
-	return createHadolintExecuteScanCmd
+	addHadolintExecuteFlags(createHadolintExecuteCmd, &stepConfig)
+	return createHadolintExecuteCmd
 }
 
-func addHadolintExecuteScanFlags(cmd *cobra.Command, stepConfig *hadolintExecuteScanOptions) {
+func addHadolintExecuteFlags(cmd *cobra.Command, stepConfig *hadolintExecuteOptions) {
 	cmd.Flags().StringVar(&stepConfig.ConfigurationURL, "configurationUrl", os.Getenv("PIPER_configurationUrl"), "URL pointing to the .hadolint.yaml exclude configuration to be used for linting. Also have a look at `configurationFile` which could avoid central configuration download in case the file is part of your repository.")
 	cmd.Flags().StringVar(&stepConfig.ConfigurationUsername, "configurationUsername", os.Getenv("PIPER_configurationUsername"), "The username to authenticate")
 	cmd.Flags().StringVar(&stepConfig.ConfigurationPassword, "configurationPassword", os.Getenv("PIPER_configurationPassword"), "The password to authenticate")
@@ -94,10 +94,10 @@ func addHadolintExecuteScanFlags(cmd *cobra.Command, stepConfig *hadolintExecute
 }
 
 // retrieve step metadata
-func hadolintExecuteScanMetadata() config.StepData {
+func hadolintExecuteMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "hadolintExecuteScan",
+			Name:    "hadolintExecute",
 			Aliases: []config.Alias{},
 		},
 		Spec: config.StepSpec{

@@ -15,7 +15,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func hadolintExecuteScan(config hadolintExecuteScanOptions, _ *telemetry.CustomData) {
+func hadolintExecute(config hadolintExecuteOptions, _ *telemetry.CustomData) {
 	runner := command.Command{
 		ErrorCategoryMapping: map[string][]string{},
 	}
@@ -36,7 +36,7 @@ func hadolintExecuteScan(config hadolintExecuteScanOptions, _ *telemetry.CustomD
 	}
 }
 
-func runHadolint(config hadolintExecuteScanOptions, client piperhttp.Downloader, runner command.ExecRunner) error {
+func runHadolint(config hadolintExecuteOptions, client piperhttp.Downloader, runner command.ExecRunner) error {
 	var outputBuffer bytes.Buffer
 	var errorBuffer bytes.Buffer
 	runner.Stdout(&outputBuffer)
