@@ -65,7 +65,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: ["deployment/**"]
   containers:
     - name: node
       image: node:12-buster-slim
