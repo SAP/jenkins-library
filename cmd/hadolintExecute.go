@@ -26,7 +26,6 @@ func hadolintExecute(config hadolintExecuteOptions, _ *telemetry.CustomData) {
 	client := piperhttp.Client{}
 	clientOptions := piperhttp.ClientOptions{TransportTimeout: 20 * time.Second, TransportSkipVerification: true}
 	if len(config.ConfigurationUsername) > 0 {
-		log.Entry().Debug("Using username/password: %s %s", config.ConfigurationUsername, config.ConfigurationPassword)
 		clientOptions.Username = config.ConfigurationUsername
 		clientOptions.Password = config.ConfigurationPassword
 	}
