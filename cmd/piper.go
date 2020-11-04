@@ -68,7 +68,7 @@ func Execute() {
 	rootCmd.AddCommand(CommandLineCompletionCommand())
 	rootCmd.AddCommand(VersionCommand())
 	rootCmd.AddCommand(DetectExecuteScanCommand())
-	rootCmd.AddCommand(HadolintExecuteCommand())
+	rootCmd.AddCommand(HadolintExecuteScanCommand())
 	rootCmd.AddCommand(KarmaExecuteTestsCommand())
 	rootCmd.AddCommand(SonarExecuteScanCommand())
 	rootCmd.AddCommand(KubernetesDeployCommand())
