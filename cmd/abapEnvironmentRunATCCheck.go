@@ -26,7 +26,7 @@ import (
 func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telemetryData *telemetry.CustomData) {
 
 	// Mapping for options
-	subOptions := abaputils.AbapEnvironmentOptions{}
+	subOptions := convertATCOptions(&options)
 
 	c := &command.Command{}
 	c.Stdout(log.Entry().Writer())
