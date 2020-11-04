@@ -81,6 +81,9 @@ void call(Map parameters = [:]) {
                 config = piperExecuteBin.getStepContextConfig(script, piperGoPath, METADATA_FILE, customDefaultConfig, customConfigArg)
                 echo "Context Config: ${config}"
             }
+            // get step configuration to access `reportName` & `reportFile` & `qualityGates`
+            Map stepConfig = readJSON(text: sh(returnStdout: true, script: "${piperGoPath} getConfig --stepMetadata '.pipeline/tmp/${METADATA_FILE}'${customDefaultConfig}${customConfigArg}"))
+            echo "Step Config: ${stepConfig}"
 
             piperExecuteBin.dockerWrapper(script, STEP_NAME, config){
                 piperExecuteBin.handleErrorDetails(STEP_NAME) {
@@ -95,11 +98,11 @@ void call(Map parameters = [:]) {
 
                         recordIssues(
                             tools: [checkStyle(
-                                name: config.reportName,
-                                pattern: config.reportFile,
-                                id: config.reportName
+                                name: stepConfig.reportName,
+                                pattern: stepConfig.reportFile,
+                                id: stepConfig.reportName
                             )],
-                            qualityGates: config.qualityGates,
+                            qualityGates: stepConfig.qualityGates,
                             enabledForFailure: true,
                             blameDisabled: true
                         )
