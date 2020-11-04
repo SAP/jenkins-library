@@ -1,6 +1,7 @@
 import static com.sap.piper.Prerequisites.checkScript
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.JenkinsUtils
 import com.sap.piper.Utils
 import groovy.transform.Field
 
