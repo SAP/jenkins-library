@@ -4,12 +4,13 @@ import (
 	"archive/zip"
 	"errors"
 	"fmt"
-	"github.com/bmatcuk/doublestar"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/bmatcuk/doublestar"
 )
 
 // FileUtils ...
