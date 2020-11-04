@@ -269,10 +269,10 @@ steps:
       runCommand: 'bundle install && bundle exec gauge run'
       testOptions: 'specs'
   hadolintExecute:
-    # qualityGates:
-    #   - threshold: 1
-    #     type: 'TOTAL_ERROR'
-    #     unstable: false
+    qualityGates:
+      - threshold: 1
+        type: 'TOTAL_ERROR'
+        unstable: false
     stashContent:
       - 'buildDescriptor'
   handlePipelineStepErrors:
