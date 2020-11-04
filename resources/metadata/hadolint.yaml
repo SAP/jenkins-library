@@ -11,82 +11,82 @@ spec:
         type: jenkins
         description: Jenkins 'Username with password' credentials ID containing username/password for access to your remote configuration file.
     params:
-    - name: configurationUrl
-      type: string
-      description: URL pointing to the .hadolint.yaml exclude configuration to be used for linting. Also have a look at `configurationFile` which could avoid central configuration download in case the file is part of your repository.
-      mandatory: false
-      scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: null
-    - name: configurationUsername
-      type: string
-      description: The username to authenticate
-      scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
-      secret: true
-      resourceRef:
-        - name: configurationCredentialsId
-          type: secret
-          param: username
-    - name: configurationPassword
-      type: string
-      description: The password to authenticate
-      scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
-      secret: true
-      resourceRef:
-        - name: configurationCredentialsId
-          type: secret
-          param: password
-    - name: dockerFile
-      type: string
-      description: Dockerfile to be used for the assessment.
-      mandatory: false
-      scope:
-      - GENERAL
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: ./Dockerfile
-    - name: configurationFile
-      type: string
-      description: Name of the configuration file used locally within the step. If a file with this name is detected as part of your repo downloading the central configuration via `configurationUrl` will be skipped. If you change the file's name make sure your stashing configuration also reflects this.
-      mandatory: false
-      scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: .hadolint.yaml
-      # only Groovy
-    - name: qualityGates
-      type: string
-      description: Quality Gates to fail the build, see [warnings-ng plugin documentation](https://github.com/jenkinsci/warnings-plugin/blob/master/doc/Documentation.md#quality-gate-configuration).
-      mandatory: false
-      scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: null
-      conditions:
-      - conditionRef: strings-equal
-        params:
-        - name: null
-          value: null
-    - name: reportFile
-      type: string
-      description: Name of the result file used locally within the step.
-      mandatory: false
-      scope:
-      - PARAMETERS
-      - STAGES
-      - STEPS
-      default: hadolint.xml
+      - name: configurationUrl
+        type: string
+        description: URL pointing to the .hadolint.yaml exclude configuration to be used for linting. Also have a look at `configurationFile` which could avoid central configuration download in case the file is part of your repository.
+        mandatory: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: null
+      - name: configurationUsername
+        type: string
+        description: The username to authenticate
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: configurationCredentialsId
+            type: secret
+            param: username
+      - name: configurationPassword
+        type: string
+        description: The password to authenticate
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: configurationCredentialsId
+            type: secret
+            param: password
+      - name: dockerFile
+        type: string
+        description: Dockerfile to be used for the assessment.
+        mandatory: false
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: ./Dockerfile
+      - name: configurationFile
+        type: string
+        description: Name of the configuration file used locally within the step. If a file with this name is detected as part of your repo downloading the central configuration via `configurationUrl` will be skipped. If you change the file's name make sure your stashing configuration also reflects this.
+        mandatory: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: .hadolint.yaml
+        # only Groovy
+      - name: qualityGates
+        type: string
+        description: Quality Gates to fail the build, see [warnings-ng plugin documentation](https://github.com/jenkinsci/warnings-plugin/blob/master/doc/Documentation.md#quality-gate-configuration).
+        mandatory: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: null
+        conditions:
+          - conditionRef: strings-equal
+            params:
+              - name: null
+                value: null
+      - name: reportFile
+        type: string
+        description: Name of the result file used locally within the step.
+        mandatory: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: hadolint.xml
   containers:
-  - name: hadolint
-    image: hadolint/hadolint:latest-debian
+    - name: hadolint
+      image: hadolint/hadolint:latest-debian
