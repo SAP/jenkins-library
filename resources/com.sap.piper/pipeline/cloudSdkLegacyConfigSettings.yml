@@ -60,6 +60,8 @@ removedOrReplacedSteps:
       Apart from that it is also possible to implement an extension for the backendIntegrationTests stage using the extensibility concept explained in the documentation: https://sap.github.io/jenkins-library/extensibility/
       For the time being, the step createHdiContainer is still available in the Pipeline and can be called from an extension.
       The extension must pass all required options to the step via parameters, it cannot be configured in your .pipeline/config.yml."
+  checkGatling:
+    newStepName: "gatlingExecuteTests"
 
 removedOrReplacedStages:
   integrationTests:
