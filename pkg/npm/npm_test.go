@@ -271,11 +271,11 @@ func TestNpm(t *testing.T) {
 
 	t.Run("check Execute all scripts with buildDescriptorList", func(t *testing.T) {
 		utils := newNpmMockUtilsBundle()
-		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-build\": \"exit 0\" } }"))                       // is filtered out
+		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))                        // is filtered out
 		utils.AddFile(filepath.Join("src", "package.json"), []byte("{\"scripts\": { \"ci-build\": \"exit 0\" } }")) // should NOT be filtered out
 
 		options := ExecutorOptions{}
-		runScripts := []string{"ci-build"}
+		runScripts := []string{"ci-lint", "ci-build"}
 		buildDescriptorList := []string{filepath.Join("src", "package.json")}
 
 		exec := &Execute{
