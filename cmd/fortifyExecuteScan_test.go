@@ -28,6 +28,7 @@ import (
 type fortifyTestUtilsBundle struct {
 	*execRunnerMock
 	*mock.FilesMock
+	getArtifactShouldFail bool
 }
 
 func (f fortifyTestUtilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
@@ -35,7 +36,10 @@ func (f fortifyTestUtilsBundle) DownloadFile(url, filename string, header http.H
 }
 
 func (f fortifyTestUtilsBundle) GetArtifact(buildTool, buildDescriptorFile string, options *versioning.Options) (versioning.Artifact, error) {
-	panic("implement me")
+	if f.getArtifactShouldFail {
+		return nil, fmt.Errorf("build tool '%v' not supported", buildTool)
+	}
+	panic("not implemented")
 }
 
 func newFortifyTestUtilsBundle() fortifyTestUtilsBundle {
@@ -347,27 +351,14 @@ func (er *execRunnerMock) RunExecutable(e string, p ...string) error {
 	return nil
 }
 
-func TestParametersAreValidated(t *testing.T) {
-	type parameterTestData struct {
-		nameOfRun     string
-		config        fortifyExecuteScanOptions
-		expectedError string
-	}
+func TestDetermineArtifact(t *testing.T) {
+	t.Run("Cannot get artifact without build tool", func(t *testing.T) {
+		utilsMock := newFortifyTestUtilsBundle()
+		utilsMock.getArtifactShouldFail = true
 
-	testData := []parameterTestData{
-		{
-			nameOfRun:     "all parameters empty",
-			config:        fortifyExecuteScanOptions{},
-			expectedError: "Unable to get artifact from descriptor : build tool '' not supported",
-		},
-	}
-
-	for _, data := range testData {
-		t.Run(data.nameOfRun, func(t *testing.T) {
-			_, err := determineArtifact(data.config, newFortifyTestUtilsBundle())
-			assert.EqualError(t, err, data.expectedError)
-		})
-	}
+		_, err := determineArtifact(fortifyExecuteScanOptions{}, utilsMock)
+		assert.EqualError(t, err,  "Unable to get artifact from descriptor : build tool '' not supported")
+	})
 }
 
 func TestExecutions(t *testing.T) {
