@@ -71,12 +71,9 @@ func TestMavenExecute(t *testing.T) {
 			LogSuccessfulMavenTransfers: true,
 		}
 
-		mockRunner := mock.ExecMockRunner{}
-		mockRunner.StdoutReturn = map[string]string{}
-		mockRunner.StdoutReturn[""] = "test output"
+		mockUtils := newMavenMockUtils()
 
 		// test
-		mockUtils := newMavenMockUtils()
 		err := runMavenExecute(config, &mockUtils)
 
 		// assert
@@ -85,9 +82,9 @@ func TestMavenExecute(t *testing.T) {
 		}
 
 		assert.NoError(t, err)
-		if assert.Equal(t, 1, len(mockRunner.Calls)) {
-			assert.Equal(t, "mvn", mockRunner.Calls[0].Exec)
-			assert.Equal(t, expectedParams, mockRunner.Calls[0].Params)
+		if assert.Equal(t, 1, len(mockUtils.Calls)) {
+			assert.Equal(t, "mvn", mockUtils.Calls[0].Exec)
+			assert.Equal(t, expectedParams, mockUtils.Calls[0].Params)
 		}
 
 		outputFileExists, _ := mockUtils.FileExists(".pipeline/maven_output.txt")
