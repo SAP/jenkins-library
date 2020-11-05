@@ -2,11 +2,14 @@ package versioning
 
 import (
 	"bytes"
-	"github.com/SAP/jenkins-library/pkg/command"
-	"github.com/SAP/jenkins-library/pkg/log"
 	"io"
+	"io/ioutil"
+	"os"
 	"regexp"
 	"strings"
+
+	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 type gradleExecRunner interface {
@@ -27,6 +30,10 @@ type GradleDescriptor struct {
 type Gradle struct {
 	execRunner     gradleExecRunner
 	gradlePropsOut []byte
+	path           string
+	propertiesFile *PropertiesFile
+	versionField   string
+	writeFile      func(string, []byte, os.FileMode) error
 }
 
 func (g *Gradle) init() error {
@@ -34,6 +41,26 @@ func (g *Gradle) init() error {
 		g.execRunner = &command.Command{}
 	}
 
+	if g.writeFile == nil {
+		g.writeFile = ioutil.WriteFile
+	}
+
+	if g.propertiesFile == nil {
+		g.propertiesFile = &PropertiesFile{
+			path:             g.path,
+			versioningScheme: g.VersioningScheme(),
+			versionField:     g.versionField,
+			writeFile:        g.writeFile,
+		}
+		err := g.propertiesFile.init()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (g *Gradle) initGetArtifact() error {
 	if g.gradlePropsOut == nil {
 		gradlePropsBuffer := &bytes.Buffer{}
 		g.execRunner.Stdout(gradlePropsBuffer)
@@ -99,7 +126,7 @@ func (g *Gradle) GetCoordinates() (Coordinates, error) {
 
 // GetArtifactID returns the current ID of the artifact
 func (g *Gradle) GetArtifactID() (string, error) {
-	err := g.init()
+	err := g.initGetArtifact()
 	if err != nil {
 		return "", err
 	}
@@ -113,23 +140,19 @@ func (g *Gradle) GetArtifactID() (string, error) {
 
 // GetVersion returns the current version of the artifact
 func (g *Gradle) GetVersion() (string, error) {
-	versionID := "unspecified"
 	err := g.init()
 	if err != nil {
 		return "", err
 	}
 
-	r := regexp.MustCompile("(?m:^version: (.*))")
-	match := r.FindString(string(g.gradlePropsOut))
-	versionIDSlice := strings.Split(match, ` `)
-	if len(versionIDSlice) > 1 {
-		versionID = versionIDSlice[1]
-	}
-
-	return versionID, nil
+	return g.propertiesFile.GetVersion()
 }
 
 // SetVersion updates the version of the artifact
 func (g *Gradle) SetVersion(version string) error {
-	return nil
+	err := g.init()
+	if err != nil {
+		return err
+	}
+	return g.propertiesFile.SetVersion(version)
 }
