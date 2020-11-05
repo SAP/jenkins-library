@@ -96,12 +96,27 @@ type mtaBuildUtils interface {
 	MkdirAll(path string, perm os.FileMode) error
 
 	DownloadAndCopySettingsFiles(globalSettingsFile string, projectSettingsFile string) error
+
+	SetNpmRegistries(defaultNpmRegistry string) error
+	InstallAllDependencies(defaultNpmRegistry string) error
 }
 
 type mtaBuildUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
 	*piperhttp.Client
+}
+
+func (bundle *mtaBuildUtilsBundle) SetNpmRegistries(defaultNpmRegistry string) error {
+	npmExecutorOptions := npm.ExecutorOptions{DefaultNpmRegistry: defaultNpmRegistry, ExecRunner: bundle}
+	npmExecutor := npm.NewExecutor(npmExecutorOptions)
+	return npmExecutor.SetNpmRegistries()
+}
+
+func (bundle *mtaBuildUtilsBundle) InstallAllDependencies(defaultNpmRegistry string) error {
+	npmExecutorOptions := npm.ExecutorOptions{DefaultNpmRegistry: defaultNpmRegistry, ExecRunner: bundle}
+	npmExecutor := npm.NewExecutor(npmExecutorOptions)
+	return npmExecutor.InstallAllDependencies(npmExecutor.FindPackageJSONFiles())
 }
 
 func (bundle *mtaBuildUtilsBundle) DownloadAndCopySettingsFiles(globalSettingsFile string, projectSettingsFile string) error {
@@ -124,10 +139,8 @@ func mtaBuild(config mtaBuildOptions,
 	commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment) {
 	log.Entry().Debugf("Launching mta build")
 	utils := newMtaBuildUtilsBundle()
-	npmExecutorOptions := npm.ExecutorOptions{DefaultNpmRegistry: config.DefaultNpmRegistry, ExecRunner: utils}
-	npmExecutor := npm.NewExecutor(npmExecutorOptions)
 
-	err := runMtaBuild(config, commonPipelineEnvironment, utils, npmExecutor)
+	err := runMtaBuild(config, commonPipelineEnvironment, utils)
 	if err != nil {
 		log.Entry().
 			WithError(err).
@@ -137,8 +150,7 @@ func mtaBuild(config mtaBuildOptions,
 
 func runMtaBuild(config mtaBuildOptions,
 	commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment,
-	utils mtaBuildUtils,
-	npmExecutor npm.Executor) error {
+	utils mtaBuildUtils) error {
 
 	var err error
 
@@ -147,7 +159,7 @@ func runMtaBuild(config mtaBuildOptions,
 		return err
 	}
 
-	err = npmExecutor.SetNpmRegistries()
+	err = utils.SetNpmRegistries(config.DefaultNpmRegistry)
 
 	mtaYamlFile := "mta.yaml"
 	mtaYamlFileExists, err := utils.FileExists(mtaYamlFile)
@@ -244,19 +256,12 @@ func runMtaBuild(config mtaBuildOptions,
 			return err
 		}
 		// mta-builder executes 'npm install --production', therefore we need 'npm ci/install' to install the dev-dependencies
-		err = npmExecutor.InstallAllDependencies(npmExecutor.FindPackageJSONFiles())
+		err = utils.InstallAllDependencies(config.DefaultNpmRegistry)
 		if err != nil {
 			return err
 		}
 	}
 	return err
-}
-
-
-type installMavenArtifactsBundle struct {
-	piperutils.FileUtils
-	piperhttp.Downloader
-	command.ExecRunner
 }
 
 func installMavenArtifacts(utils mtaBuildUtils, config mtaBuildOptions) error {

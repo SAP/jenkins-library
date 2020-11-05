@@ -14,8 +14,18 @@ import (
 type mtaBuildTestUtilsBundle struct {
 	*mock.ExecMockRunner
 	*mock.FilesMock
-	projectSettingsFile string
-	globalSettingsFile string
+	projectSettingsFile            string
+	globalSettingsFile             string
+	registryUsedInSetNpmRegistries string
+}
+
+func (m mtaBuildTestUtilsBundle) SetNpmRegistries(defaultNpmRegistry string) error {
+	m.registryUsedInSetNpmRegistries = defaultNpmRegistry
+	return nil
+}
+
+func (m mtaBuildTestUtilsBundle) InstallAllDependencies(defaultNpmRegistry string) error {
+	return errors.New("Test should not install dependencies.") //TODO implement test
 }
 
 func (m mtaBuildTestUtilsBundle) DownloadAndCopySettingsFiles(globalSettingsFile string, projectSettingsFile string) error {
@@ -45,7 +55,7 @@ func TestMarBuild(t *testing.T) {
 		utilsMock := newMtaBuildTestUtilsBundle()
 		options := mtaBuildOptions{}
 
-		err := runMtaBuild(options, &cpe, utilsMock, newNpmExecutor(utilsMock))
+		err := runMtaBuild(options, &cpe, utilsMock)
 
 		assert.NotNil(t, err)
 		assert.Equal(t, "'mta.yaml' not found in project sources and 'applicationName' not provided as parameter - cannot generate 'mta.yaml' file", err.Error())
@@ -61,17 +71,11 @@ func TestMarBuild(t *testing.T) {
 
 		utilsMock.AddFile("package.json", []byte("{\"name\": \"myName\", \"version\": \"1.2.3\"}"))
 
-		npmExecutor := newNpmExecutor(utilsMock)
-		npmExecutor.Options = npm.ExecutorOptions{DefaultNpmRegistry: options.DefaultNpmRegistry}
-
-		err := runMtaBuild(options, &cpe, utilsMock, npmExecutor)
+		err := runMtaBuild(options, &cpe, utilsMock)
 
 		assert.Nil(t, err)
 
-		if assert.Len(t, utilsMock.Calls, 3) { // the second (unchecked) entry is the mta call
-			assert.Equal(t, "npm", utilsMock.Calls[1].Exec)
-			assert.Equal(t, []string{"config", "set", "registry", "https://example.org/npm"}, utilsMock.Calls[1].Params)
-		}
+		assert.Equal(t, "https://example.org/npm", utilsMock.registryUsedInSetNpmRegistries)
 	})
 
 	t.Run("Package json does not exist", func(t *testing.T) {
@@ -80,7 +84,7 @@ func TestMarBuild(t *testing.T) {
 
 		options := mtaBuildOptions{ApplicationName: "myApp"}
 
-		err := runMtaBuild(options, &cpe, utilsMock, newNpmExecutor(utilsMock))
+		err := runMtaBuild(options, &cpe, utilsMock)
 
 		assert.NotNil(t, err)
 
@@ -96,7 +100,7 @@ func TestMarBuild(t *testing.T) {
 
 		utilsMock.AddFile("package.json", []byte("{\"name\": \"myName\", \"version\": \"1.2.3\"}"))
 
-		err := runMtaBuild(options, &cpe,utilsMock, newNpmExecutor(utilsMock))
+		err := runMtaBuild(options, &cpe,utilsMock)
 
 		assert.Nil(t, err)
 
@@ -134,7 +138,7 @@ func TestMarBuild(t *testing.T) {
 		utilsMock.AddFile("package.json", []byte("{\"name\": \"myName\", \"version\": \"1.2.3\"}"))
 		utilsMock.AddFile("mta.yaml", []byte("already there"))
 
-		_ = runMtaBuild(options, &cpe, utilsMock, newNpmExecutor(utilsMock))
+		_ = runMtaBuild(options, &cpe, utilsMock)
 
 		assert.False(t, utilsMock.HasWrittenFile("mta.yaml"))
 	})
@@ -148,7 +152,7 @@ func TestMarBuild(t *testing.T) {
 		utilsMock.AddFile("package.json", []byte("{\"name\": \"myName\", \"version\": \"1.2.3\"}"))
 		utilsMock.AddFile("mta.yaml", []byte("already there with-${timestamp}"))
 
-		_ = runMtaBuild(options, &cpe, utilsMock, newNpmExecutor(utilsMock))
+		_ = runMtaBuild(options, &cpe, utilsMock)
 
 		assert.True(t, utilsMock.HasWrittenFile("mta.yaml"))
 	})
@@ -163,7 +167,7 @@ func TestMarBuild(t *testing.T) {
 
 		utilsMock.AddFile("package.json", []byte("{\"name\": \"myName\", \"version\": \"1.2.3\"}"))
 
-		err := runMtaBuild(options, &cpe, utilsMock, newNpmExecutor(utilsMock))
+		err := runMtaBuild(options, &cpe, utilsMock)
 
 		assert.Nil(t, err)
 
@@ -186,7 +190,7 @@ func TestMarBuild(t *testing.T) {
 		utilsMock.AddFile("package.json", []byte("{\"name\": \"myName\", \"version\": \"1.2.3\"}"))
 		utilsMock.AddFile("mta.yaml", []byte("ID: \"myNameFromMtar\""))
 
-		err := runMtaBuild(options, &cpe, utilsMock, newNpmExecutor(utilsMock))
+		err := runMtaBuild(options, &cpe, utilsMock)
 
 		assert.Nil(t, err)
 
@@ -204,7 +208,7 @@ func TestMarBuild(t *testing.T) {
 
 		utilsMock.AddFile("package.json", []byte("{\"name\": \"myName\", \"version\": \"1.2.3\"}"))
 
-		err := runMtaBuild(options, &cpe, utilsMock, newNpmExecutor(utilsMock))
+		err := runMtaBuild(options, &cpe, utilsMock)
 
 		assert.Nil(t, err)
 
@@ -224,7 +228,7 @@ func TestMarBuild(t *testing.T) {
 
 		utilsMock.AddFile("package.json", []byte("{\"name\": \"myName\", \"version\": \"1.2.3\"}"))
 
-		err := runMtaBuild(options, &cpe, utilsMock, newNpmExecutor(utilsMock))
+		err := runMtaBuild(options, &cpe, utilsMock)
 
 		assert.Nil(t, err)
 
@@ -246,7 +250,7 @@ func TestMarBuild(t *testing.T) {
 
 			utilsMock.AddFile("mta.yaml", []byte("ID: \"myNameFromMtar\""))
 
-			err := runMtaBuild(options, &cpe, utilsMock, newNpmExecutor(utilsMock))
+			err := runMtaBuild(options, &cpe, utilsMock)
 
 			assert.Nil(t, err)
 			assert.Contains(t, utilsMock.Env, "MAVEN_OPTS=-Dmaven.repo.local=/root_folder/workspace/.pipeline/local_repo")
@@ -261,7 +265,7 @@ func TestMarBuild(t *testing.T) {
 
 			options := mtaBuildOptions{ApplicationName: "myApp", GlobalSettingsFile: "/opt/maven/settings.xml", MtaBuildTool: "cloudMbt", Platform: "CF", MtarName: "myName"}
 
-			err := runMtaBuild(options, &cpe, utilsMock, newNpmExecutor(utilsMock))
+			err := runMtaBuild(options, &cpe, utilsMock)
 
 			assert.Nil(t, err)
 
@@ -275,7 +279,7 @@ func TestMarBuild(t *testing.T) {
 
 			options := mtaBuildOptions{ApplicationName: "myApp", ProjectSettingsFile: "/my/project/settings.xml", MtaBuildTool: "cloudMbt", Platform: "CF", MtarName: "myName"}
 
-			err := runMtaBuild(options, &cpe,utilsMock, newNpmExecutor(utilsMock))
+			err := runMtaBuild(options, &cpe,utilsMock)
 
 			assert.Nil(t, err)
 
