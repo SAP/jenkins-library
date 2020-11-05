@@ -357,7 +357,7 @@ func TestDetermineArtifact(t *testing.T) {
 		utilsMock.getArtifactShouldFail = true
 
 		_, err := determineArtifact(fortifyExecuteScanOptions{}, utilsMock)
-		assert.EqualError(t, err,  "Unable to get artifact from descriptor : build tool '' not supported")
+		assert.EqualError(t, err, "Unable to get artifact from descriptor : build tool '' not supported")
 	})
 }
 
