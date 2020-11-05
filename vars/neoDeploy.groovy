@@ -237,12 +237,13 @@ void call(parameters = [:]) {
                 lock("$STEP_NAME:${neoCommandHelper.resourceLock()}") {
                     deploy(script, configuration, neoCommandHelper, configuration.dockerImage, deployMode)
                 }
-                if(configuration.neo.invalidateCache == true && configuration.deployMode == 'mta') {
-                    echo "Triggering invalidation of cache for html5 applications"
-                    invalidateCache(configuration)
-                }
-                else{
-                    echo "Invalidation of cache is ignored. It is performed only for html5 applications and 'invalidateCache' parameter is set to true."
+                if(configuration.neo.invalidateCache == true) {
+                    if (configuration.deployMode == 'mta') {
+                        echo "Triggering invalidation of cache for html5 applications"
+                        invalidateCache(configuration)
+                    } else {
+                        echo "Invalidation of cache is ignored. It is performed only for html5 applications."
+                    }
                 }
             }
         }
