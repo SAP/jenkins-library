@@ -125,7 +125,7 @@ void call(Map parameters = [:]) {
 
         if (config.legacyConfigSettings) {
             Map legacyConfigSettings = readYaml(text: libraryResource(config.legacyConfigSettings))
-            LegacyConfigurationCheckUtils.checkConfiguration(script, legacyConfigSettings)
+            checkForLegacyConfiguration(script: script, legacyConfigSettings: legacyConfigSettings)
         }
 
         String buildTool = checkBuildTool(config)

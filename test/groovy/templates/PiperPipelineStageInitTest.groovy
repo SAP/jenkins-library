@@ -14,16 +14,18 @@ import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.isEmptyOrNullString
 import static org.hamcrest.Matchers.not
 import static org.junit.Assert.assertThat
+import static org.junit.Assert.assertTrue
 
 class PiperPipelineStageInitTest extends BasePiperTest {
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
     private ExpectedException thrown = new ExpectedException()
+    private JenkinsReadYamlRule jenkinsReadYamlRule = new JenkinsReadYamlRule(this)
 
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
-        .around(new JenkinsReadYamlRule(this))
+        .around(jenkinsReadYamlRule)
         .around(thrown)
         .around(jlr)
         .around(jsr)
@@ -232,5 +234,21 @@ class PiperPipelineStageInitTest extends BasePiperTest {
         jsr.step.piperPipelineStageInit(script: nullScript, juStabUtils: utils, initCloudSdkStashSettings: true, buildTool: 'maven')
 
         assertThat(nullScript.commonPipelineEnvironment.configuration.stageStashes, hasKey('init'))
+    }
+
+    @Test
+    void testLegacyConfigSettings() {
+        boolean checkForLegacyConfigurationCalled = false
+        helper.registerAllowedMethod('checkForLegacyConfiguration', [Map.class], { m ->
+            println(m.legacyConfigSettings)
+            checkForLegacyConfigurationCalled = true
+        })
+        nullScript.commonPipelineEnvironment.configuration = [
+            general: [legacyConfigSettings: 'com.sap.piper/pipeline/cloudSdkLegacyConfigSettings.yml']
+        ]
+
+        jsr.step.piperPipelineStageInit(script: nullScript, juStabUtils: utils, buildTool: 'maven')
+
+        assertTrue(checkForLegacyConfigurationCalled)
     }
 }
