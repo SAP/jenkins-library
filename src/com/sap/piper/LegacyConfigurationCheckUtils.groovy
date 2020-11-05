@@ -25,7 +25,9 @@ class LegacyConfigurationCheckUtils{
         }
 
         if (errors) {
-            script.echo("Your pipeline configuration file contains the following errors:")
+            if (errors.size() > 1) {
+                script.echo("Your pipeline configuration file contains the following errors:")
+            }
             errors.each {error ->
                 script.echo(error)
             }
