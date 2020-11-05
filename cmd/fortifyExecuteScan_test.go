@@ -39,7 +39,7 @@ func (f fortifyTestUtilsBundle) GetArtifact(buildTool, buildDescriptorFile strin
 	if f.getArtifactShouldFail {
 		return nil, fmt.Errorf("build tool '%v' not supported", buildTool)
 	}
-	panic("not implemented")
+	return artifactMock{Coordinates: newCoordinatesMock()}, nil
 }
 
 func newFortifyTestUtilsBundle() fortifyTestUtilsBundle {
@@ -388,10 +388,9 @@ func TestExecutions(t *testing.T) {
 		t.Run(data.nameOfRun, func(t *testing.T) {
 			ff := fortifyMock{}
 			utils := newFortifyTestUtilsBundle()
-			artMock := artifactMock{Coordinates: newCoordinatesMock()}
 			influx := fortifyExecuteScanInflux{}
 			auditStatus := map[string]string{}
-			reports, _ := runFortifyScan(data.config, &ff, utils, artMock, nil, &influx, auditStatus)
+			reports, _ := runFortifyScan(data.config, &ff, utils, nil, &influx, auditStatus)
 			if len(data.expectedReports) != data.expectedReportsLength {
 				assert.Fail(t, fmt.Sprintf("Wrong number of reports detected, expected %v, actual %v", data.expectedReportsLength, len(data.expectedReports)))
 			}

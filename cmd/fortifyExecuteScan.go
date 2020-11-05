@@ -85,12 +85,7 @@ func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemet
 	sys := fortify.NewSystemInstance(config.ServerURL, config.APIEndpoint, config.AuthToken, time.Minute*15)
 	utils := newFortifyUtilsBundleBundle()
 
-	artifact, err := determineArtifact(config, utils)
-	if err != nil {
-		log.Entry().WithError(err).Fatal()
-	}
-
-	reports, err := runFortifyScan(config, sys, utils, artifact, telemetryData, influx, auditStatus)
+	reports, err := runFortifyScan(config, sys, utils, telemetryData, influx, auditStatus)
 	piperutils.PersistReportsAndLinks("fortifyExecuteScan", config.ModulePath, reports, nil)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Fortify scan and check failed")
@@ -111,9 +106,14 @@ func determineArtifact(config fortifyExecuteScanOptions, utils fortifyUtils) (ve
 	return artifact, nil
 }
 
-func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils fortifyUtils, artifact versioning.Artifact, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux, auditStatus map[string]string) ([]piperutils.Path, error) {
+func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils fortifyUtils, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux, auditStatus map[string]string) ([]piperutils.Path, error) {
 	var reports []piperutils.Path
 	log.Entry().Debugf("Running Fortify scan against SSC at %v", config.ServerURL)
+
+	artifact, err := determineArtifact(config, utils)
+	if err != nil {
+		log.Entry().WithError(err).Fatal()
+	}
 	coordinates, err := artifact.GetCoordinates()
 	if err != nil {
 		return reports, fmt.Errorf("unable to get project coordinates from descriptor %v: %w", config.BuildDescriptorFile, err)
