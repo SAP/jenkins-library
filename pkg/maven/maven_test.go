@@ -204,7 +204,7 @@ func TestMavenInstall(t *testing.T) {
 
 		options := EvaluateOptions{}
 		options.ProjectSettingsFile = "settings.xml"
-		utils.StdoutReturn = map[string]string{"mvn --file pom.xml -Dexpression=project.build.finalName -DforceStdout -q -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --batch-mode org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate": "foo"}
+		utils.StdoutReturn = map[string]string{"mvn --settings settings.xml --file pom.xml -Dexpression=project.build.finalName -DforceStdout -q -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --batch-mode org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate": "foo"}
 		err := doInstallMavenArtifacts(&options, &utils)
 
 		assert.NoError(t, err)
