@@ -54,38 +54,6 @@ func TestHappyPathIntegrationTests(t *testing.T) {
 	assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: expectedParameters1}, utils.ExecMockRunner.Calls[0])
 }
 
-func TestIntegrationTestsWithInstallArtifacts(t *testing.T) {
-	utils := newMavenIntegrationTestsUtilsBundle()
-	utils.FilesMock.AddFile("pom.xml", []byte(`<project> </project>`))
-	utils.FilesMock.AddFile("application/pom.xml", []byte(`<project> </project>`))
-	utils.FilesMock.AddFile("application/target/application.jar", []byte(`<project> </project>`))
-	utils.FilesMock.AddFile("integration-tests/pom.xml", []byte(`<project> </project>`))
-
-	config := mavenExecuteIntegrationOptions{
-		Retry:            2,
-		ForkCount:        "1C",
-		InstallArtifacts: true,
-	}
-
-	err := runMavenExecuteIntegration(&config, utils)
-	if err != nil {
-		t.Fatalf("Error %s", err)
-	}
-
-	expectedParameters1 := []string{
-		"--file",
-		"integration-tests/pom.xml",
-		"-Dsurefire.rerunFailingTestsCount=2",
-		"-Dsurefire.forkCount=1C",
-		"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
-		"--batch-mode",
-		"org.jacoco:jacoco-maven-plugin:prepare-agent",
-		"test",
-	}
-
-	assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: expectedParameters1}, utils.ExecMockRunner.Calls[0])
-}
-
 func TestInvalidForkCountParam(t *testing.T) {
 	// init
 	utils := newMavenIntegrationTestsUtilsBundle()
@@ -162,10 +130,10 @@ func TestValidateForkCount(t *testing.T) {
 	}
 }
 
-func newMavenIntegrationTestsUtilsBundle() mavenExecuteIntegrationTestUtilsBundle {
+func newMavenIntegrationTestsUtilsBundle() *mavenExecuteIntegrationTestUtilsBundle {
 	utilsBundle := mavenExecuteIntegrationTestUtilsBundle{
 		ExecMockRunner: &mock.ExecMockRunner{},
 		FilesMock:      &mock.FilesMock{},
 	}
-	return utilsBundle
+	return &utilsBundle
 }

@@ -15,6 +15,9 @@ import (
 func TestRunMavenStaticCodeChecks(t *testing.T) {
 	t.Run("should run spotBugs and pmd with all configured options", func(t *testing.T) {
 		utils := newMavenStaticCodeChecksTestUtilsBundle()
+		utils.FilesMock.AddFile("unit-tests/pom.xml", []byte(`<project> </project>`))
+		utils.FilesMock.AddFile("integration-tests/pom.xml", []byte(`<project> </project>`))
+
 		config := mavenExecuteStaticCodeChecksOptions{
 			SpotBugs:                  true,
 			Pmd:                       true,
