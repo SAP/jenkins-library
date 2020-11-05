@@ -37,10 +37,6 @@ type Gradle struct {
 }
 
 func (g *Gradle) init() error {
-	if g.execRunner == nil {
-		g.execRunner = &command.Command{}
-	}
-
 	if g.writeFile == nil {
 		g.writeFile = ioutil.WriteFile
 	}
@@ -61,6 +57,10 @@ func (g *Gradle) init() error {
 }
 
 func (g *Gradle) initGetArtifact() error {
+	if g.execRunner == nil {
+		g.execRunner = &command.Command{}
+	}
+
 	if g.gradlePropsOut == nil {
 		gradlePropsBuffer := &bytes.Buffer{}
 		g.execRunner.Stdout(gradlePropsBuffer)
