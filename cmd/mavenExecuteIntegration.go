@@ -53,7 +53,7 @@ func runMavenExecuteIntegration(config *mavenExecuteIntegrationOptions, utils ma
 	}
 
 	if config.InstallArtifacts {
-		err := maven.InstallMavenArtifacts(utils, maven.EvaluateOptions{
+		err := maven.InstallMavenArtifacts(utils, &maven.EvaluateOptions{
 			M2Path:              config.M2Path,
 			ProjectSettingsFile: config.ProjectSettingsFile,
 			GlobalSettingsFile:  config.GlobalSettingsFile,
