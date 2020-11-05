@@ -240,7 +240,7 @@ func TestMarBuild(t *testing.T) {
 		t.Run("Mta build mbt toolset with m2Path", func(t *testing.T) {
 
 			utilsMock := newMtaBuildTestUtilsBundle()
-
+			utilsMock.CurrentDir = "/root_folder/workspace"
 			cpe.mtarFilePath = ""
 
 			options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "cloudMbt", Platform: "CF", MtarName: "myName.mtar", M2Path: ".pipeline/local_repo"}
