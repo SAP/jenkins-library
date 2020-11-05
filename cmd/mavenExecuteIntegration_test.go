@@ -62,8 +62,8 @@ func TestIntegrationTestsWithInstallArtifacts(t *testing.T) {
 	utils.FilesMock.AddFile("integration-tests/pom.xml", []byte(`<project> </project>`))
 
 	config := mavenExecuteIntegrationOptions{
-		Retry:     2,
-		ForkCount: "1C",
+		Retry:            2,
+		ForkCount:        "1C",
 		InstallArtifacts: true,
 	}
 

@@ -25,7 +25,6 @@ import (
 	"github.com/piper-validation/fortify-client-go/models"
 )
 
-
 type fortifyTestUtilsBundle struct {
 	*execRunnerMock
 	*mock.FilesMock
@@ -557,7 +556,7 @@ func TestTriggerFortifyScan(t *testing.T) {
 			_ = os.RemoveAll(dir)
 		}()
 
-		utils :=  newFortifyTestUtilsBundle()
+		utils := newFortifyTestUtilsBundle()
 		config := fortifyExecuteScanOptions{BuildTool: "pip", PythonVersion: "python2", AutodetectClasspath: true, BuildDescriptorFile: "./setup.py", PythonRequirementsFile: "./requirements.txt", PythonInstallCommand: "pip2 install --user", Memory: "-Xmx4G -Xms2G"}
 		triggerFortifyScan(config, &utils, "test", "testLabel", "")
 
@@ -692,7 +691,7 @@ func TestCalculateTimeDifferenceToLastUpload(t *testing.T) {
 }
 
 func TestExecuteTemplatedCommand(t *testing.T) {
-	utils :=  newFortifyTestUtilsBundle()
+	utils := newFortifyTestUtilsBundle()
 	template := []string{"{{.Executable}}", "-c", "{{.Param}}"}
 	context := map[string]string{"Executable": "test.cmd", "Param": "abcd"}
 	executeTemplatedCommand(&utils, template, context)
@@ -740,7 +739,7 @@ func TestDeterminePullRequestMergeGithub(t *testing.T) {
 
 func TestTranslateProject(t *testing.T) {
 	t.Run("python", func(t *testing.T) {
-		utils :=  newFortifyTestUtilsBundle()
+		utils := newFortifyTestUtilsBundle()
 		config := fortifyExecuteScanOptions{BuildTool: "pip", Memory: "-Xmx4G", Translate: `[{"pythonPath":"./some/path","src":"./**/*","exclude":"./tests/**/*"}]`}
 		translateProject(&config, &utils, "/commit/7267658798797", "")
 		assert.Equal(t, "sourceanalyzer", utils.executions[0].executable, "Expected different executable")
@@ -748,7 +747,7 @@ func TestTranslateProject(t *testing.T) {
 	})
 
 	t.Run("asp", func(t *testing.T) {
-		utils :=  newFortifyTestUtilsBundle()
+		utils := newFortifyTestUtilsBundle()
 		config := fortifyExecuteScanOptions{BuildTool: "windows", Memory: "-Xmx6G", Translate: `[{"aspnetcore":"true","dotNetCoreVersion":"3.5","exclude":"./tests/**/*","libDirs":"tmp/","src":"./**/*"}]`}
 		translateProject(&config, &utils, "/commit/7267658798797", "")
 		assert.Equal(t, "sourceanalyzer", utils.executions[0].executable, "Expected different executable")
@@ -756,7 +755,7 @@ func TestTranslateProject(t *testing.T) {
 	})
 
 	t.Run("java", func(t *testing.T) {
-		utils :=  newFortifyTestUtilsBundle()
+		utils := newFortifyTestUtilsBundle()
 		config := fortifyExecuteScanOptions{BuildTool: "maven", Memory: "-Xmx2G", Translate: `[{"classpath":"./classes/*.jar","extdirs":"tmp/","jdk":"1.8.0-21","source":"1.8","sourcepath":"src/ext/","src":"./**/*"}]`}
 		translateProject(&config, &utils, "/commit/7267658798797", "")
 		assert.Equal(t, "sourceanalyzer", utils.executions[0].executable, "Expected different executable")
@@ -764,7 +763,7 @@ func TestTranslateProject(t *testing.T) {
 	})
 
 	t.Run("auto classpath", func(t *testing.T) {
-		utils :=  newFortifyTestUtilsBundle()
+		utils := newFortifyTestUtilsBundle()
 		config := fortifyExecuteScanOptions{BuildTool: "maven", Memory: "-Xmx2G", Translate: `[{"classpath":"./classes/*.jar", "extdirs":"tmp/","jdk":"1.8.0-21","source":"1.8","sourcepath":"src/ext/","src":"./**/*"}]`}
 		translateProject(&config, &utils, "/commit/7267658798797", "./WEB-INF/lib/*.jar")
 		assert.Equal(t, "sourceanalyzer", utils.executions[0].executable, "Expected different executable")
@@ -776,7 +775,7 @@ func TestScanProject(t *testing.T) {
 	config := fortifyExecuteScanOptions{Memory: "-Xmx4G"}
 
 	t.Run("normal", func(t *testing.T) {
-		utils :=  newFortifyTestUtilsBundle()
+		utils := newFortifyTestUtilsBundle()
 		scanProject(&config, &utils, "/commit/7267658798797", "label", "my.group-myartifact")
 		assert.Equal(t, "sourceanalyzer", utils.executions[0].executable, "Expected different executable")
 		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-scan", "-Xmx4G", "-build-label", "label", "-build-project", "my.group-myartifact", "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr"}, utils.executions[0].parameters, "Expected different parameters")

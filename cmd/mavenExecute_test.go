@@ -22,8 +22,8 @@ func (m *mavenMockUtils) DownloadFile(_, _ string, _ http.Header, _ []*http.Cook
 
 func newMavenMockUtils() mavenMockUtils {
 	utils := mavenMockUtils{
-		shouldFail: false,
-		FilesMock: &mock.FilesMock{},
+		shouldFail:     false,
+		FilesMock:      &mock.FilesMock{},
 		ExecMockRunner: &mock.ExecMockRunner{},
 	}
 	return utils

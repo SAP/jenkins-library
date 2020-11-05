@@ -6,11 +6,11 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"io"
+	netHttp "net/http"
 	"os"
 	"strings"
 	"text/template"
 	"time"
-	netHttp "net/http"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -69,13 +69,12 @@ func newArtifactPrepareVersionUtilsBundle() artifactPrepareVersionUtils {
 	utils := artifactPrepareVersionUtilsBundle{
 		Command: &command.Command{},
 		Files:   &piperutils.Files{},
-		Client: &piperhttp.Client{},
+		Client:  &piperhttp.Client{},
 	}
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
 	return &utils
 }
-
 
 func artifactPrepareVersion(config artifactPrepareVersionOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *artifactPrepareVersionCommonPipelineEnvironment) {
 	utils := newArtifactPrepareVersionUtilsBundle()

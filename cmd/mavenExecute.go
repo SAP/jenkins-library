@@ -26,7 +26,7 @@ func newMavenExecuteUtilsBundle() mavenExecuteUtils {
 	utils := mavenExecuteUtilsBundle{
 		Command: &command.Command{},
 		Files:   &piperutils.Files{},
-		Client: &piperhttp.Client{},
+		Client:  &piperhttp.Client{},
 	}
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())

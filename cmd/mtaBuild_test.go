@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"errors"
-	"github.com/SAP/jenkins-library/pkg/npm"
 	"net/http"
 	"testing"
 
@@ -100,7 +99,7 @@ func TestMarBuild(t *testing.T) {
 
 		utilsMock.AddFile("package.json", []byte("{\"name\": \"myName\", \"version\": \"1.2.3\"}"))
 
-		err := runMtaBuild(options, &cpe,utilsMock)
+		err := runMtaBuild(options, &cpe, utilsMock)
 
 		assert.Nil(t, err)
 
@@ -279,7 +278,7 @@ func TestMarBuild(t *testing.T) {
 
 			options := mtaBuildOptions{ApplicationName: "myApp", ProjectSettingsFile: "/my/project/settings.xml", MtaBuildTool: "cloudMbt", Platform: "CF", MtarName: "myName"}
 
-			err := runMtaBuild(options, &cpe,utilsMock)
+			err := runMtaBuild(options, &cpe, utilsMock)
 
 			assert.Nil(t, err)
 
@@ -287,10 +286,4 @@ func TestMarBuild(t *testing.T) {
 			assert.Equal(t, "", utilsMock.globalSettingsFile)
 		})
 	})
-}
-
-func newNpmExecutor(mtaUtils mtaBuildTestUtilsBundle) *npm.Execute {
-	utils := newNpmMockUtilsBundle()
-	utils.execRunner = mtaUtils.ExecMockRunner
-	return &npm.Execute{Utils: &utils}
 }

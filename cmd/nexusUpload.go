@@ -56,7 +56,6 @@ type utilsBundle struct {
 	*piperhttp.Client
 }
 
-
 func newUtilsBundle() *utilsBundle {
 	utils := utilsBundle{
 		ProjectStructure: &piperutils.ProjectStructure{},
