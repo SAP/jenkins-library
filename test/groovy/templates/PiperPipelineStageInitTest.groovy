@@ -20,12 +20,11 @@ class PiperPipelineStageInitTest extends BasePiperTest {
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
     private ExpectedException thrown = new ExpectedException()
-    private JenkinsReadYamlRule jenkinsReadYamlRule = new JenkinsReadYamlRule(this)
 
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
-        .around(jenkinsReadYamlRule)
+        .around(new JenkinsReadYamlRule(this))
         .around(thrown)
         .around(jlr)
         .around(jsr)
@@ -239,8 +238,7 @@ class PiperPipelineStageInitTest extends BasePiperTest {
     @Test
     void testLegacyConfigSettings() {
         boolean checkForLegacyConfigurationCalled = false
-        helper.registerAllowedMethod('checkForLegacyConfiguration', [Map.class], { m ->
-            println(m.legacyConfigSettings)
+        helper.registerAllowedMethod('checkForLegacyConfiguration', [Map.class], {
             checkForLegacyConfigurationCalled = true
         })
         nullScript.commonPipelineEnvironment.configuration = [
