@@ -117,9 +117,9 @@ func (c *settingsDownloadTestUtils) DownloadFile(url, filename string, header ht
 	return nil
 }
 
-func newSettingsDownloadTestUtilsBundle() settingsDownloadTestUtils {
+func newSettingsDownloadTestUtilsBundle() *settingsDownloadTestUtils {
 	utilsBundle := settingsDownloadTestUtils{
 		FilesMock: &mock.FilesMock{},
 	}
-	return utilsBundle
+	return &utilsBundle
 }

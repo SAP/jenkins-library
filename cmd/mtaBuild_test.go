@@ -18,31 +18,31 @@ type mtaBuildTestUtilsBundle struct {
 	registryUsedInSetNpmRegistries string
 }
 
-func (m mtaBuildTestUtilsBundle) SetNpmRegistries(defaultNpmRegistry string) error {
+func (m *mtaBuildTestUtilsBundle) SetNpmRegistries(defaultNpmRegistry string) error {
 	m.registryUsedInSetNpmRegistries = defaultNpmRegistry
 	return nil
 }
 
-func (m mtaBuildTestUtilsBundle) InstallAllDependencies(defaultNpmRegistry string) error {
+func (m *mtaBuildTestUtilsBundle) InstallAllDependencies(defaultNpmRegistry string) error {
 	return errors.New("Test should not install dependencies.") //TODO implement test
 }
 
-func (m mtaBuildTestUtilsBundle) DownloadAndCopySettingsFiles(globalSettingsFile string, projectSettingsFile string) error {
+func (m *mtaBuildTestUtilsBundle) DownloadAndCopySettingsFiles(globalSettingsFile string, projectSettingsFile string) error {
 	m.projectSettingsFile = projectSettingsFile
 	m.globalSettingsFile = globalSettingsFile
 	return nil
 }
 
-func (m mtaBuildTestUtilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+func (m *mtaBuildTestUtilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
 	return errors.New("Test should not download files.")
 }
 
-func newMtaBuildTestUtilsBundle() mtaBuildTestUtilsBundle {
+func newMtaBuildTestUtilsBundle() *mtaBuildTestUtilsBundle {
 	utilsBundle := mtaBuildTestUtilsBundle{
 		ExecMockRunner: &mock.ExecMockRunner{},
 		FilesMock:      &mock.FilesMock{},
 	}
-	return utilsBundle
+	return &utilsBundle
 }
 
 func TestMarBuild(t *testing.T) {
@@ -64,8 +64,6 @@ func TestMarBuild(t *testing.T) {
 	t.Run("Provide default npm registry", func(t *testing.T) {
 
 		utilsMock := newMtaBuildTestUtilsBundle()
-		utilsMock.StdoutReturn = map[string]string{"npm config get registry": "undefined"}
-
 		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF", DefaultNpmRegistry: "https://example.org/npm", MtarName: "myName"}
 
 		utilsMock.AddFile("package.json", []byte("{\"name\": \"myName\", \"version\": \"1.2.3\"}"))
