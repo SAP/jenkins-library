@@ -269,6 +269,8 @@ steps:
       runCommand: 'bundle install && bundle exec gauge run'
       testOptions: 'specs'
   hadolintExecute:
+    reportFile: hadolint.xml
+    reportName: HaDoLint
     qualityGates:
       - threshold: 1
         type: 'TOTAL_ERROR'

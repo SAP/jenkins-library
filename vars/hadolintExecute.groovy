@@ -8,33 +8,8 @@ import groovy.transform.Field
 @Field def STEP_NAME = getClass().getName()
 @Field String METADATA_FILE = 'metadata/hadolint.yaml'
 
-@Field Set GENERAL_CONFIG_KEYS = [
-    /**
-     * Dockerfile to be used for the assessment.
-     */
-    'dockerFile',
-    /**
-     * Name of the docker image that should be used, in which node should be installed and configured. Default value is 'hadolint/hadolint:latest-debian'.
-     */
-    'dockerImage'
-]
+@Field Set GENERAL_CONFIG_KEYS = []
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
-    /**
-     * Name of the configuration file used locally within the step. If a file with this name is detected as part of your repo downloading the central configuration via `configurationUrl` will be skipped. If you change the file's name make sure your stashing configuration also reflects this.
-     */
-    'configurationFile',
-    /**
-     * URL pointing to the .hadolint.yaml exclude configuration to be used for linting. Also have a look at `configurationFile` which could avoid central configuration download in case the file is part of your repository.
-     */
-    'configurationUrl',
-    /**
-     * If the url provided as configurationUrl is protected, this Jenkins credential can be used to authenticate the request.
-     */
-    'configurationCredentialsId',
-    /**
-     * Docker options to be set when starting the container.
-     */
-    'dockerOptions',
     /**
      * Quality Gates to fail the build, see [warnings-ng plugin documentation](https://github.com/jenkinsci/warnings-plugin/blob/master/doc/Documentation.md#quality-gate-configuration).
      */
@@ -88,31 +63,46 @@ void call(Map parameters = [:]) {
             piperExecuteBin.dockerWrapper(script, STEP_NAME, config){
                 piperExecuteBin.handleErrorDetails(STEP_NAME) {
                     script.commonPipelineEnvironment.writeToDisk(script)
-                    try {
-                        piperExecuteBin.credentialWrapper(config, credentialInfo){
-                            sh "${piperGoPath} ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
+                    issuesWrapper(parameters, script){
+                        try{
+                            piperExecuteBin.credentialWrapper(config, credentialInfo){
+                                sh "${piperGoPath} ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
+                            }
+                        } finally {
+                            jenkinsUtils.handleStepResults(STEP_NAME, true, false)
+                            script.commonPipelineEnvironment.readFromDisk(script)
                         }
-                    } finally {
-                        jenkinsUtils.handleStepResults(STEP_NAME, true, false)
-                        script.commonPipelineEnvironment.readFromDisk(script)
-
-                        def options = [
-                            enabledForFailure: true,
-                            blameDisabled: true,
-                            tools: [checkStyle(
-                                name: stepConfig.reportName,
-                                pattern: stepConfig.reportFile,
-                                id: stepConfig.reportName,
-                            )],
-                        ]
-
-                        if (stepConfig.qualityGates){
-                            options.qualityGates = stepConfig.qualityGates
-                        }
-                        recordIssues(options)
                     }
                 }
             }
         }
+    }
+}
+
+def issuesWrapper(Map parameters = [:], Script script, Closure body){
+    String stageName = parameters.stageName ?: env.STAGE_NAME
+    // load default & individual configuration
+    Map config = ConfigurationHelper.newInstance(this)
+        .loadStepDefaults([:], stageName)
+        .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
+        .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
+        .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
+        .mixin(parameters, PARAMETER_KEYS)
+        .use()
+
+    try {
+        body()
+    } finally {
+        recordIssues(
+            blameDisabled: true,
+            enabledForFailure: true,
+            aggregatingResults: false,
+            qualityGates: config.qualityGates,
+            tool: checkStyle(
+                id: config.reportName,
+                name: config.reportName,
+                pattern: config.reportFile
+            )
+        )
     }
 }

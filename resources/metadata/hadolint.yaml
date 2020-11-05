@@ -63,16 +63,6 @@ spec:
           - STAGES
           - STEPS
         default: .hadolint.yaml
-        # only Groovy
-      - name: qualityGates
-        type: string
-        description: Quality Gates to fail the build, see [warnings-ng plugin documentation](https://github.com/jenkinsci/warnings-plugin/blob/master/doc/Documentation.md#quality-gate-configuration).
-        mandatory: false
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        default: "[[threshold: 1, type: 'TOTAL_ERROR', unstable: false]]"
       - name: reportFile
         type: string
         description: Name of the result file used locally within the step.
@@ -81,14 +71,6 @@ spec:
           - STAGES
           - STEPS
         default: hadolint.xml
-      - name: reportName
-        type: string
-        description: Name of the checkstyle report used locally within the step.
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        default: HaDoLint
   containers:
     - name: hadolint
       image: hadolint/hadolint:latest-debian

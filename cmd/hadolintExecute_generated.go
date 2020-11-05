@@ -19,9 +19,7 @@ type hadolintExecuteOptions struct {
 	ConfigurationPassword string `json:"configurationPassword,omitempty"`
 	DockerFile            string `json:"dockerFile,omitempty"`
 	ConfigurationFile     string `json:"configurationFile,omitempty"`
-	QualityGates          string `json:"qualityGates,omitempty"`
 	ReportFile            string `json:"reportFile,omitempty"`
-	ReportName            string `json:"reportName,omitempty"`
 }
 
 // HadolintExecuteCommand Executes the Haskell Dockerfile Linter which is a smarter Dockerfile linter that helps you build [best practice](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/) Docker images.
@@ -89,9 +87,7 @@ func addHadolintExecuteFlags(cmd *cobra.Command, stepConfig *hadolintExecuteOpti
 	cmd.Flags().StringVar(&stepConfig.ConfigurationPassword, "configurationPassword", os.Getenv("PIPER_configurationPassword"), "The password to authenticate")
 	cmd.Flags().StringVar(&stepConfig.DockerFile, "dockerFile", `./Dockerfile`, "Dockerfile to be used for the assessment.")
 	cmd.Flags().StringVar(&stepConfig.ConfigurationFile, "configurationFile", `.hadolint.yaml`, "Name of the configuration file used locally within the step. If a file with this name is detected as part of your repo downloading the central configuration via `configurationUrl` will be skipped. If you change the file's name make sure your stashing configuration also reflects this.")
-	cmd.Flags().StringVar(&stepConfig.QualityGates, "qualityGates", `[[threshold: 1, type: 'TOTAL_ERROR', unstable: false]]`, "Quality Gates to fail the build, see [warnings-ng plugin documentation](https://github.com/jenkinsci/warnings-plugin/blob/master/doc/Documentation.md#quality-gate-configuration).")
 	cmd.Flags().StringVar(&stepConfig.ReportFile, "reportFile", `hadolint.xml`, "Name of the result file used locally within the step.")
-	cmd.Flags().StringVar(&stepConfig.ReportName, "reportName", `HaDoLint`, "Name of the checkstyle report used locally within the step.")
 
 }
 
@@ -158,23 +154,7 @@ func hadolintExecuteMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "qualityGates",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
 						Name:        "reportFile",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "reportName",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
