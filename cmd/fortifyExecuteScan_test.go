@@ -32,7 +32,7 @@ type fortifyTestUtilsBundle struct {
 }
 
 func (f fortifyTestUtilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
-	panic("implement me")
+	panic("not expected to be called in tests")
 }
 
 func (f fortifyTestUtilsBundle) GetArtifact(buildTool, buildDescriptorFile string, options *versioning.Options) (versioning.Artifact, error) {
