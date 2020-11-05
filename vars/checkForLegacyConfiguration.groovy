@@ -6,6 +6,9 @@ import groovy.transform.Field
 import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
+@Field Set GENERAL_CONFIG_KEYS = []
+@Field Set STEP_CONFIG_KEYS = []
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 void call(Map parameters = [:]) {
     def script = checkScript(this, parameters) ?: this
