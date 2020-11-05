@@ -37,4 +37,3 @@ type Utils interface {
 	FindPackageJSONFiles(config *ScanOptions) ([]string, error)
 	InstallAllNPMDependencies(config *ScanOptions, packageJSONFiles []string) error
 }
-

@@ -30,9 +30,9 @@ type MavenDescriptor struct {
 
 // Maven defines a maven artifact used for versioning
 type Maven struct {
-	options    maven.EvaluateOptions
-	runner     mavenRunner
-	utils	   maven.Utils
+	options maven.EvaluateOptions
+	runner  mavenRunner
+	utils   maven.Utils
 }
 
 func (m *Maven) init() {

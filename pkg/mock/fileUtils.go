@@ -49,7 +49,7 @@ func (p *fileProperties) isDir() bool {
 type FilesMock struct {
 	files        map[string]*fileProperties
 	writtenFiles []string
-	copiedFiles   map[string]string
+	copiedFiles  map[string]string
 	removedFiles []string
 	CurrentDir   string
 	Separator    string

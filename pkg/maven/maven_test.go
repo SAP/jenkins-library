@@ -30,8 +30,8 @@ func (m *MockUtils) DownloadFile(url, filename string, header http.Header, cooki
 
 func NewMockUtils(downloadShouldFail bool) MockUtils {
 	utils := MockUtils{
-		shouldFail: downloadShouldFail,
-		FilesMock: &mock.FilesMock{},
+		shouldFail:     downloadShouldFail,
+		FilesMock:      &mock.FilesMock{},
 		ExecMockRunner: &mock.ExecMockRunner{},
 	}
 	return utils

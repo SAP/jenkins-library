@@ -102,8 +102,8 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, utils
 			buildDescriptorFilePath = "pom.xml"
 		}
 		artifact = &Maven{
-			runner:     &mvnRunner{},
-			utils: utils,
+			runner: &mvnRunner{},
+			utils:  utils,
 			options: maven.EvaluateOptions{
 				PomPath:             buildDescriptorFilePath,
 				ProjectSettingsFile: opts.ProjectSettingsFile,

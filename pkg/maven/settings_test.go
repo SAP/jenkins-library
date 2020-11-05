@@ -54,7 +54,7 @@ func TestSettings(t *testing.T) {
 
 		if assert.NoError(t, err) {
 			assert.True(t, utilsMock.HasCopiedFile("/opt/sap/maven/global-settings.xml", "/usr/share/maven/conf/settings.xml"))
-			assert.True(t, utilsMock.HasCopiedFile("/opt/sap/maven/project-settings.xml", "/home/me/.m2/settings.xml", ))
+			assert.True(t, utilsMock.HasCopiedFile("/opt/sap/maven/project-settings.xml", "/home/me/.m2/settings.xml"))
 		}
 
 		assert.Empty(t, utilsMock.downloadedFiles)
@@ -119,7 +119,7 @@ func (c *settingsDownloadTestUtils) DownloadFile(url, filename string, header ht
 
 func newSettingsDownloadTestUtilsBundle() settingsDownloadTestUtils {
 	utilsBundle := settingsDownloadTestUtils{
-		FilesMock:      &mock.FilesMock{},
+		FilesMock: &mock.FilesMock{},
 	}
 	return utilsBundle
 }

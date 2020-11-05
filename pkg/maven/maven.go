@@ -60,7 +60,7 @@ func NewUtilsBundle() Utils {
 	utils := utilsBundle{
 		Command: &command.Command{},
 		Files:   &piperutils.Files{},
-		Client: &piperhttp.Client{},
+		Client:  &piperhttp.Client{},
 	}
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
