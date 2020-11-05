@@ -146,6 +146,10 @@ func buildATCCheckBody(ATCConfig ATCconfig) (checkVariantString string, packageS
 		if len(ATCConfig.Configuration) != 0 {
 			checkVariantString += ` configuration="` + ATCConfig.Configuration + `"`
 		}
+	} else {
+		const defaultCheckVariant = "SAP_CLOUD_PLATFORM_ATC_DEFAULT"
+		checkVariantString += ` checkVariant="` + defaultCheckVariant + `"`
+		log.Entry().Infof("ATC Check Variant: %s", checkVariantString)
 	}
 
 	//Build Package XML body
