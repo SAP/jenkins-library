@@ -168,9 +168,9 @@ func TestMarBuild(t *testing.T) {
 
 		assert.Nil(t, err)
 
-		if assert.Len(t, utilsMock.Calls, 2) {
-			assert.Equal(t, "java", utilsMock.Calls[1].Exec)
-			assert.Equal(t, []string{"-jar", "mta.jar", "--mtar", "myName.mtar", "--build-target=CF", "build"}, utilsMock.Calls[1].Params)
+		if assert.Len(t, utilsMock.Calls, 1) {
+			assert.Equal(t, "java", utilsMock.Calls[0].Exec)
+			assert.Equal(t, []string{"-jar", "mta.jar", "--mtar", "myName.mtar", "--build-target=CF", "build"}, utilsMock.Calls[0].Params)
 		}
 
 		assert.Equal(t, "myName.mtar", cpe.mtarFilePath)
@@ -191,9 +191,9 @@ func TestMarBuild(t *testing.T) {
 
 		assert.Nil(t, err)
 
-		if assert.Len(t, utilsMock.Calls, 2) {
-			assert.Equal(t, "java", utilsMock.Calls[1].Exec)
-			assert.Equal(t, []string{"-jar", "mta.jar", "--mtar", "myNameFromMtar.mtar", "--build-target=CF", "build"}, utilsMock.Calls[1].Params)
+		if assert.Len(t, utilsMock.Calls, 1) {
+			assert.Equal(t, "java", utilsMock.Calls[0].Exec)
+			assert.Equal(t, []string{"-jar", "mta.jar", "--mtar", "myNameFromMtar.mtar", "--build-target=CF", "build"}, utilsMock.Calls[0].Params)
 		}
 	})
 
@@ -209,9 +209,9 @@ func TestMarBuild(t *testing.T) {
 
 		assert.Nil(t, err)
 
-		if assert.Len(t, utilsMock.Calls, 2) {
-			assert.Equal(t, "java", utilsMock.Calls[1].Exec)
-			assert.Equal(t, []string{"-jar", "/opt/sap/mta/lib/mta.jar", "--mtar", "myName.mtar", "--build-target=CF", "build"}, utilsMock.Calls[1].Params)
+		if assert.Len(t, utilsMock.Calls, 1) {
+			assert.Equal(t, "java", utilsMock.Calls[0].Exec)
+			assert.Equal(t, []string{"-jar", "/opt/sap/mta/lib/mta.jar", "--mtar", "myName.mtar", "--build-target=CF", "build"}, utilsMock.Calls[0].Params)
 		}
 	})
 
@@ -229,9 +229,9 @@ func TestMarBuild(t *testing.T) {
 
 		assert.Nil(t, err)
 
-		if assert.Len(t, utilsMock.Calls, 2) {
-			assert.Equal(t, "mbt", utilsMock.Calls[1].Exec)
-			assert.Equal(t, []string{"build", "--mtar", "myName.mtar", "--platform", "CF", "--target", "./"}, utilsMock.Calls[1].Params)
+		if assert.Len(t, utilsMock.Calls, 1) {
+			assert.Equal(t, "mbt", utilsMock.Calls[0].Exec)
+			assert.Equal(t, []string{"build", "--mtar", "myName.mtar", "--platform", "CF", "--target", "./"}, utilsMock.Calls[0].Params)
 		}
 		assert.Equal(t, "myName.mtar", cpe.mtarFilePath)
 	})
@@ -259,6 +259,7 @@ func TestMarBuild(t *testing.T) {
 		t.Run("Copy global settings file", func(t *testing.T) {
 
 			utilsMock := newMtaBuildTestUtilsBundle()
+			utilsMock.AddFile("mta.yaml", []byte("ID: \"myNameFromMtar\""))
 
 			options := mtaBuildOptions{ApplicationName: "myApp", GlobalSettingsFile: "/opt/maven/settings.xml", MtaBuildTool: "cloudMbt", Platform: "CF", MtarName: "myName"}
 
@@ -273,6 +274,7 @@ func TestMarBuild(t *testing.T) {
 		t.Run("Copy project settings file", func(t *testing.T) {
 
 			utilsMock := newMtaBuildTestUtilsBundle()
+			utilsMock.AddFile("mta.yaml", []byte("ID: \"myNameFromMtar\""))
 
 			options := mtaBuildOptions{ApplicationName: "myApp", ProjectSettingsFile: "/my/project/settings.xml", MtaBuildTool: "cloudMbt", Platform: "CF", MtarName: "myName"}
 
