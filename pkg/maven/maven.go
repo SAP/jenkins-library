@@ -344,11 +344,8 @@ func getParametersFromOptions(options *ExecuteOptions, utils Utils) ([]string, e
 	return parameters, nil
 }
 
+// GetTestModulesExcludes return testing modules that you be excluded from reactor
 func GetTestModulesExcludes(utils Utils) []string {
-	return getTestModulesExcludes(utils)
-}
-
-func getTestModulesExcludes(utils Utils) []string {
 	var excludes []string
 	exists, _ := utils.FileExists("unit-tests/pom.xml")
 	if exists {

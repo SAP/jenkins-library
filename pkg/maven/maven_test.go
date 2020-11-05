@@ -159,7 +159,7 @@ func TestGetTestModulesExcludes(t *testing.T) {
 		utils.AddFile("integration-tests/pom.xml", []byte("dummyContent"))
 		expected := []string{"-pl", "!unit-tests", "-pl", "!integration-tests"}
 
-		modulesExcludes := getTestModulesExcludes(&utils)
+		modulesExcludes := GetTestModulesExcludes(&utils)
 		assert.Equal(t, expected, modulesExcludes)
 	})
 	t.Run("Should not return excludes for unit- and integration-tests", func(t *testing.T) {
@@ -167,7 +167,7 @@ func TestGetTestModulesExcludes(t *testing.T) {
 
 		var expected []string
 
-		modulesExcludes := getTestModulesExcludes(&utils)
+		modulesExcludes := GetTestModulesExcludes(&utils)
 		assert.Equal(t, expected, modulesExcludes)
 	})
 }
