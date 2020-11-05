@@ -217,7 +217,9 @@ func (c *Client) initialize() *http.Client {
 			ResponseHeaderTimeout: c.transportTimeout,
 			ExpectContinueTimeout: c.transportTimeout,
 			TLSHandshakeTimeout:   c.transportTimeout,
-			TLSClientConfig:       &tls.Config{InsecureSkipVerify: c.transportSkipVerification},
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: c.transportSkipVerification,
+			},
 		},
 		doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,
 		doLogResponseBodyOnDebug: c.doLogResponseBodyOnDebug,
