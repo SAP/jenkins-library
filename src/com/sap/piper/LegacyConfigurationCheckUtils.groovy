@@ -31,7 +31,7 @@ class LegacyConfigurationCheckUtils{
             errors.each {error ->
                 script.echo(error)
             }
-            script.error("Failing pipeline due to configuration errors")
+            script.error("Failing pipeline due to configuration errors. Please see log output above.")
         }
     }
 
