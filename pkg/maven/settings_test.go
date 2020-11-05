@@ -29,7 +29,7 @@ func TestSettings(t *testing.T) {
 
 		utilsMock := newSettingsDownloadTestUtilsBundle()
 
-		err := downloadAndCopySettingsFile("", "foo", &utilsMock)
+		err := downloadAndCopySettingsFile("", "foo", utilsMock)
 
 		assert.EqualError(t, err, "Settings file source location not provided")
 	})
@@ -38,7 +38,7 @@ func TestSettings(t *testing.T) {
 
 		utilsMock := newSettingsDownloadTestUtilsBundle()
 
-		err := downloadAndCopySettingsFile("/opt/sap/maven/global-settings.xml", "", &utilsMock)
+		err := downloadAndCopySettingsFile("/opt/sap/maven/global-settings.xml", "", utilsMock)
 
 		assert.EqualError(t, err, "Settings file destination location not provided")
 	})
@@ -50,7 +50,7 @@ func TestSettings(t *testing.T) {
 		utilsMock.AddFile("/opt/sap/maven/global-settings.xml", []byte(""))
 		utilsMock.AddFile("/opt/sap/maven/project-settings.xml", []byte(""))
 
-		err := DownloadAndCopySettingsFiles("/opt/sap/maven/global-settings.xml", "/opt/sap/maven/project-settings.xml", &utilsMock)
+		err := DownloadAndCopySettingsFiles("/opt/sap/maven/global-settings.xml", "/opt/sap/maven/project-settings.xml", utilsMock)
 
 		if assert.NoError(t, err) {
 			assert.True(t, utilsMock.HasCopiedFile("/opt/sap/maven/global-settings.xml", "/usr/share/maven/conf/settings.xml"))
@@ -64,7 +64,7 @@ func TestSettings(t *testing.T) {
 
 		utilsMock := newSettingsDownloadTestUtilsBundle()
 
-		err := downloadAndCopySettingsFile("https://example.org/maven/global-settings.xml", "/usr/share/maven/conf/settings.xml", &utilsMock)
+		err := downloadAndCopySettingsFile("https://example.org/maven/global-settings.xml", "/usr/share/maven/conf/settings.xml", utilsMock)
 
 		if assert.NoError(t, err) {
 			assert.Equal(t, "/usr/share/maven/conf/settings.xml", utilsMock.downloadedFiles["https://example.org/maven/global-settings.xml"])
@@ -76,7 +76,7 @@ func TestSettings(t *testing.T) {
 		utilsMock := newSettingsDownloadTestUtilsBundle()
 		utilsMock.expectedError = fmt.Errorf("Download failed")
 
-		err := downloadAndCopySettingsFile("https://example.org/maven/global-settings.xml", "/usr/share/maven/conf/settings.xml", &utilsMock)
+		err := downloadAndCopySettingsFile("https://example.org/maven/global-settings.xml", "/usr/share/maven/conf/settings.xml", utilsMock)
 
 		if assert.Error(t, err) {
 			assert.Contains(t, err.Error(), "failed to download maven settings from URL")
@@ -87,12 +87,19 @@ func TestSettings(t *testing.T) {
 
 		utilsMock := newSettingsDownloadTestUtilsBundle()
 
-		err := downloadAndCopySettingsFile("/opt/sap/maven/project-settings.xml", "/home/me/.m2/settings.xml", &utilsMock)
+		err := downloadAndCopySettingsFile("/opt/sap/maven/project-settings.xml", "/home/me/.m2/settings.xml", utilsMock)
 
 		if assert.Error(t, err) {
 			assert.Contains(t, err.Error(), "cannot copy '/opt/sap/maven/project-settings.xml': file does not exist")
 		}
 	})
+}
+
+func newSettingsDownloadTestUtilsBundle() *settingsDownloadTestUtils {
+	utilsBundle := settingsDownloadTestUtils{
+		FilesMock: &mock.FilesMock{},
+	}
+	return &utilsBundle
 }
 
 type settingsDownloadTestUtils struct {
@@ -115,11 +122,4 @@ func (c *settingsDownloadTestUtils) DownloadFile(url, filename string, header ht
 	}
 	c.downloadedFiles[url] = filename
 	return nil
-}
-
-func newSettingsDownloadTestUtilsBundle() *settingsDownloadTestUtils {
-	utilsBundle := settingsDownloadTestUtils{
-		FilesMock: &mock.FilesMock{},
-	}
-	return &utilsBundle
 }
