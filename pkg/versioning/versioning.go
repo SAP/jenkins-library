@@ -31,7 +31,7 @@ type Options struct {
 	VersioningScheme    string
 }
 
-// Artifact defines the versioning operations for various build tools
+// Utils defines the versioning operations for various build tools
 type Utils interface {
 	maven.Utils
 }
