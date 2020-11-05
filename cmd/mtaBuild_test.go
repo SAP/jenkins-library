@@ -121,7 +121,7 @@ func TestMarBuild(t *testing.T) {
 		assert.Equal(t, "myName", result.ID)
 		assert.Equal(t, "1.2.3", result.Version)
 		assert.Equal(t, "myApp", result.Modules[0].Name)
-		assert.Equal(t, result.Modules[0].Parameters["version"], "1.2.3-${timestamp}")
+		assert.Regexp(t, "^1\\.2\\.3-[\\d]{14}$", result.Modules[0].Parameters["version"])
 		assert.Equal(t, "myApp", result.Modules[0].Parameters["name"])
 
 	})
