@@ -456,7 +456,7 @@ class NeoDeployTest extends BasePiperTest {
             warAction: 'deploy',
             source: warArchiveName)
 
-        assertThat(loggingRule.log, containsString("Invalidation of cache is ignored. It is performed only for html5 applications and 'invalidateCache' parameter is set to true."))
+        assertThat(loggingRule.log, containsString("Invalidation of cache is ignored. It is performed only for html5 applications."))
     }
 
     @Test

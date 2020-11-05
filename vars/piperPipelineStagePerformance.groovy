@@ -10,14 +10,17 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String TECHNICAL_STAGE_NAME = 'performanceTests'
 
 @Field Set GENERAL_CONFIG_KEYS = []
-@Field STAGE_STEP_KEYS = []
+@Field STAGE_STEP_KEYS = [
+    /** Executes Gatling performance tests */
+    'gatlingExecuteTests',
+]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 /**
  * In this stage important performance-relevant checks will be conducted.<br />
  *
- * Currently, there is no default implementation of the stage. This you can expect soon ...
+ * The stage will execute a Gatling test, if the step `gatlingExecuteTests` is configured.
  */
 @GenerateStageDocumentation(defaultStageName = 'Performance')
 void call(Map parameters = [:]) {
@@ -31,6 +34,7 @@ void call(Map parameters = [:]) {
         .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
         .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
         .mixin(parameters, PARAMETER_KEYS)
+        .addIfEmpty('gatlingExecuteTests', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.gatlingExecuteTests)
         .use()
 
     piperStageWrapper (script: script, stageName: stageName) {
@@ -38,8 +42,10 @@ void call(Map parameters = [:]) {
         // telemetry reporting
         utils.pushToSWA([step: STEP_NAME], config)
 
-        //ToDO: provide stage implementation
-        echo "${STEP_NAME}: Stage implementation is not provided yet. You can extend the stage using the provided stage extension mechanism."
-
+        if (config.gatlingExecuteTests) {
+            durationMeasure(script: script, measurementName: 'gatling_duration') {
+                gatlingExecuteTests script: script
+            }
+        }
     }
 }

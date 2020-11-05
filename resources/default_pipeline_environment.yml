@@ -234,6 +234,9 @@ steps:
       - 'invalid'
       - 'question'
       - 'wontfix'
+  gatlingExecuteTests:
+    stashContent:
+      - 'source'
   gaugeExecuteTests:
     buildTool: 'maven'
     dockerEnvVars:
