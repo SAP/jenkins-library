@@ -273,7 +273,6 @@ spec:
           - name: git/commitMessage
   containers:
     - image: maven:3.6-jdk-8
-      imagePullPolicy: Never
       conditions:
         - conditionRef: strings-equal
           params:
