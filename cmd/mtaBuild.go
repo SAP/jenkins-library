@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"path"
@@ -77,23 +76,16 @@ func (m MTABuildTarget) String() string {
 }
 
 type mtaBuildUtils interface {
-	Stdout(out io.Writer)
-	Stderr(err io.Writer)
-	SetDir(d string)
+	maven.Utils
+
 	SetEnv(env []string)
 	AppendEnv(env []string)
-	RunExecutable(e string, p ...string) error
-	RunExecutableInBackground(executable string, params ...string) (command.Execution, error)
-
-	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
 
 	Abs(path string) (string, error)
-	Glob(pattern string) (matches []string, err error)
-	FileExists(filename string) (bool, error)
 	FileRead(path string) ([]byte, error)
 	FileWrite(path string, content []byte, perm os.FileMode) error
-	Copy(src, dest string) (int64, error)
-	MkdirAll(path string, perm os.FileMode) error
+
+	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
 
 	DownloadAndCopySettingsFiles(globalSettingsFile string, projectSettingsFile string) error
 

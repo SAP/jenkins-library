@@ -6,10 +6,8 @@ import (
 	"errors"
 	"fmt"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"io"
 	"io/ioutil"
 	"math"
-	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -40,16 +38,9 @@ type pullRequestService interface {
 }
 
 type fortifyUtils interface {
-	Stdout(out io.Writer)
-	Stderr(err io.Writer)
-	SetDir(d string)
-	RunExecutable(e string, p ...string) error
+	maven.Utils
 
-	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
-	Glob(pattern string) (matches []string, err error)
-	FileExists(filename string) (bool, error)
-	Copy(src, dest string) (int64, error)
-	MkdirAll(path string, perm os.FileMode) error
+	SetDir(d string)
 
 	GetArtifact(buildTool, buildDescriptorFile string,
 		options *versioning.Options) (versioning.Artifact, error)
