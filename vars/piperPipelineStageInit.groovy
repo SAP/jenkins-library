@@ -2,7 +2,6 @@ import com.cloudbees.groovy.cps.NonCPS
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateStageDocumentation
 import com.sap.piper.JenkinsUtils
-import com.sap.piper.LegacyConfigurationCheckUtils
 import com.sap.piper.StageNameProvider
 import com.sap.piper.Utils
 import com.sap.piper.k8s.ContainerMap
