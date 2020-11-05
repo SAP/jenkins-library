@@ -52,25 +52,24 @@ class LegacyConfigurationCheckUtilsTest extends BasePiperTest {
 
     @Test
     void testCheckForRemovedConfigKeys() {
-        thrown.expect(hudson.AbortException)
-        thrown.expectMessage("Your pipeline configuration contains the configuration key oldConfigKey for the step someStep. " +
-        "This configuration option was removed. test")
         nullScript.commonPipelineEnvironment.configuration = [steps: [someStep: [oldConfigKey: false]]]
         Map configChanges = [oldConfigKey: [steps: ['someStep'], customMessage: "test"]]
 
-        LegacyConfigurationCheckUtils.checkForRemovedOrReplacedConfigKeys(nullScript, configChanges)
+        List errors = LegacyConfigurationCheckUtils.checkForRemovedOrReplacedConfigKeys(nullScript, configChanges)
+
+        assertEquals(errors, ["Your pipeline configuration contains the configuration key oldConfigKey for the step someStep. " +
+            "This configuration option was removed. test"])
     }
 
     @Test
     void testCheckForReplacedConfigKeys() {
-        thrown.expect(hudson.AbortException)
-        thrown.expectMessage("Your pipeline configuration contains the configuration key oldConfigKey for the step someStep. " +
-            "This configuration option was removed. Please use the parameter newConfigKey instead. test")
         nullScript.commonPipelineEnvironment.configuration = [steps: [someStep: [oldConfigKey: false]]]
         Map configChanges = [oldConfigKey: [steps: ['someStep'], newConfigKey: "newConfigKey", customMessage: "test"]]
 
-        LegacyConfigurationCheckUtils.checkForRemovedOrReplacedConfigKeys(nullScript, configChanges)
+        List errors = LegacyConfigurationCheckUtils.checkForRemovedOrReplacedConfigKeys(nullScript, configChanges)
 
+        assertEquals(errors, ["Your pipeline configuration contains the configuration key oldConfigKey for the step someStep. " +
+            "This configuration option was removed. Please use the parameter newConfigKey instead. test"])
     }
 
     @Test
@@ -81,64 +80,67 @@ class LegacyConfigurationCheckUtilsTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.configuration = [steps: [someStep: [oldConfigKey: false]]]
         Map configChanges = [oldConfigKey: [steps: ['someStep'], warnInsteadOfError: true, customMessage: "test"]]
 
-        LegacyConfigurationCheckUtils.checkForRemovedOrReplacedConfigKeys(nullScript, configChanges)
+        List errors = LegacyConfigurationCheckUtils.checkForRemovedOrReplacedConfigKeys(nullScript, configChanges)
+
         assertEquals(expectedWarning, echoOutput)
+        assertEquals(errors, [])
     }
 
     @Test
     void testCheckForRemovedStageConfigKeys() {
-        thrown.expect(hudson.AbortException)
-        thrown.expectMessage("Your pipeline configuration contains the configuration key oldConfigKey for the stage someStage. " +
-            "This configuration option was removed. ")
         nullScript.commonPipelineEnvironment.configuration = [stages: [someStage: [oldConfigKey: false]]]
         Map configChanges = [oldConfigKey: [stages: ['someStage']]]
 
-        LegacyConfigurationCheckUtils.checkForRemovedOrReplacedConfigKeys(nullScript, configChanges)
+        List errors = LegacyConfigurationCheckUtils.checkForRemovedOrReplacedConfigKeys(nullScript, configChanges)
+
+        assertEquals(errors, ["Your pipeline configuration contains the configuration key oldConfigKey for the stage someStage. " +
+            "This configuration option was removed. "])
     }
 
     @Test
     void testCheckForRemovedGeneralConfigKeys() {
-        thrown.expect(hudson.AbortException)
-        thrown.expectMessage("Your pipeline configuration contains the configuration key oldConfigKey in the general section. " +
-            "This configuration option was removed. ")
         nullScript.commonPipelineEnvironment.configuration = [general: [oldConfigKey: false]]
         Map configChanges = [oldConfigKey: [general: true]]
 
-        LegacyConfigurationCheckUtils.checkForRemovedOrReplacedConfigKeys(nullScript, configChanges)
+        List errors = LegacyConfigurationCheckUtils.checkForRemovedOrReplacedConfigKeys(nullScript, configChanges)
+
+        assertEquals(errors, ["Your pipeline configuration contains the configuration key oldConfigKey in the general section. " +
+            "This configuration option was removed. "])
     }
 
     @Test
     void testCheckForRemovedPostActionConfigKeys() {
-        thrown.expect(hudson.AbortException)
-        thrown.expectMessage("Your pipeline configuration contains the configuration key oldConfigKey in the postActions section. " +
-            "This configuration option was removed. ")
         nullScript.commonPipelineEnvironment.configuration = [postActions: [oldConfigKey: false]]
         Map configChanges = [oldConfigKey: [postAction: true]]
 
-        LegacyConfigurationCheckUtils.checkForRemovedOrReplacedConfigKeys(nullScript, configChanges)
+        List errors = LegacyConfigurationCheckUtils.checkForRemovedOrReplacedConfigKeys(nullScript, configChanges)
+
+        assertEquals(errors, ["Your pipeline configuration contains the configuration key oldConfigKey in the postActions section. " +
+            "This configuration option was removed. "])
     }
 
     @Test
     void testCheckForReplacedStep() {
-        thrown.expect(hudson.AbortException)
-        thrown.expectMessage("Your pipeline configuration contains configuration for the step oldStep. " +
-            "This step has been removed. Please configure the step newStep instead. test")
+        String oldStep = "oldStep"
         nullScript.commonPipelineEnvironment.configuration = [steps: [oldStep: [configKey: false]]]
-        Map configChanges = [oldStep: [newStepName: 'newStep', customMessage: "test"]]
+        Map configChanges = [oldStep: [newStepName: "newStep", customMessage: "test"]]
 
-        LegacyConfigurationCheckUtils.checkForRemovedOrReplacedSteps(nullScript, configChanges)
+        List errors = LegacyConfigurationCheckUtils.checkForRemovedOrReplacedSteps(nullScript, configChanges)
 
+        assertEquals(errors, ["Your pipeline configuration contains configuration for the step $oldStep. " +
+            "This step has been removed. Please configure the step newStep instead. test"])
     }
 
     @Test
     void testCheckForRemovedStep() {
-        thrown.expect(hudson.AbortException)
-        thrown.expectMessage("Your pipeline configuration contains configuration for the step oldStep. " +
-            "This step has been removed. test")
+        String oldStep = "oldStep"
         nullScript.commonPipelineEnvironment.configuration = [steps: [oldStep: [configKey: false]]]
         Map configChanges = [oldStep: [customMessage: "test"]]
 
-        LegacyConfigurationCheckUtils.checkForRemovedOrReplacedSteps(nullScript, configChanges)
+        List errors = LegacyConfigurationCheckUtils.checkForRemovedOrReplacedSteps(nullScript, configChanges)
+
+        assertEquals(errors, ["Your pipeline configuration contains configuration for the step $oldStep. " +
+          "This step has been removed. test"])
     }
 
     @Test
@@ -153,64 +155,69 @@ class LegacyConfigurationCheckUtilsTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.configuration = [steps: [newStep: [configKey: false]]]
         Map configChanges = [oldStep: [onlyCheckProjectConfig: true]]
 
-        LegacyConfigurationCheckUtils.checkForRemovedOrReplacedSteps(nullScript, configChanges)
+        List errors = LegacyConfigurationCheckUtils.checkForRemovedOrReplacedSteps(nullScript, configChanges)
+
+        assertEquals(errors, [])
     }
 
     @Test
     void testCheckForReplacedStage() {
-        thrown.expect(hudson.AbortException)
-        thrown.expectMessage("Your pipeline configuration contains configuration for the stage oldStage. " +
-            "This stage has been removed. Please configure the stage newStage instead. test")
+        String oldStage = "oldStage"
         nullScript.commonPipelineEnvironment.configuration = [stages: [oldStage: [configKey: false]]]
         Map configChanges = [oldStage: [newStageName: 'newStage', customMessage: "test"]]
 
-        LegacyConfigurationCheckUtils.checkForRemovedOrReplacedStages(nullScript, configChanges)
+        List errors = LegacyConfigurationCheckUtils.checkForRemovedOrReplacedStages(nullScript, configChanges)
 
+        assertEquals(errors, ["Your pipeline configuration contains configuration for the stage $oldStage. " +
+            "This stage has been removed. Please configure the stage newStage instead. test"])
     }
 
     @Test
     void testCheckForRemovedStage() {
-        thrown.expect(hudson.AbortException)
-        thrown.expectMessage("Your pipeline configuration contains configuration for the stage oldStage. " +
-            "This stage has been removed. ")
+        String oldStage = "oldStage"
         nullScript.commonPipelineEnvironment.configuration = [stages: [oldStage: [configKey: false]]]
         Map configChanges = [oldStage: []]
 
-        LegacyConfigurationCheckUtils.checkForRemovedOrReplacedStages(nullScript, configChanges)
+        List errors = LegacyConfigurationCheckUtils.checkForRemovedOrReplacedStages(nullScript, configChanges)
+
+        assertEquals(errors, ["Your pipeline configuration contains configuration for the stage $oldStage. " +
+            "This stage has been removed. "])
     }
 
     @Test
     void testCheckForStageParameterTypeChanged() {
-        thrown.expect(hudson.AbortException)
-        thrown.expectMessage("Your pipeline configuration contains the configuration key configKeyOldType for the stage productionDeployment. " +
-            "The type of this configuration parameter was changed from String to List. test")
+        String stageName = "productionDeployment"
         nullScript.commonPipelineEnvironment.configuration = [stages: [productionDeployment: [configKeyOldType: "string"]]]
         Map configChanges = [configKeyOldType: [oldType: "String", newType: "List", stages: ["productionDeployment", "endToEndTests"], customMessage: "test"]]
 
-        LegacyConfigurationCheckUtils.checkForParameterTypeChanged(nullScript, configChanges)
+        List errors = LegacyConfigurationCheckUtils.checkForParameterTypeChanged(nullScript, configChanges)
 
+        assertEquals(errors, ["Your pipeline configuration contains the configuration key configKeyOldType for the stage $stageName. " +
+            "The type of this configuration parameter was changed from String to List. test"])
     }
 
     @Test
     void testCheckForStepParameterTypeChanged() {
-        thrown.expect(hudson.AbortException)
-        thrown.expectMessage("Your pipeline configuration contains the configuration key configKeyOldType for the step testStep. " +
-            "The type of this configuration parameter was changed from String to List. test")
+        String stepName = "testStep"
         nullScript.commonPipelineEnvironment.configuration = [steps: [testStep: [configKeyOldType: "string"]]]
         Map configChanges = [configKeyOldType: [oldType: "String", newType: "List", steps: ["testStep"], customMessage: "test"]]
 
-        LegacyConfigurationCheckUtils.checkForParameterTypeChanged(nullScript, configChanges)
+        List errors = LegacyConfigurationCheckUtils.checkForParameterTypeChanged(nullScript, configChanges)
+
+        assertEquals(errors, ["Your pipeline configuration contains the configuration key configKeyOldType for the step $stepName. " +
+            "The type of this configuration parameter was changed from String to List. test"])
     }
 
     @Test
     void testCheckForGeneralParameterTypeChanged() {
-        thrown.expect(hudson.AbortException)
-        thrown.expectMessage("Your pipeline configuration contains the configuration key configKeyOldType in the general section. " +
-            "The type of this configuration parameter was changed from String to List. test")
+        String key = "configKeyOldType"
         nullScript.commonPipelineEnvironment.configuration = [general: [configKeyOldType: "string"]]
         Map configChanges = [configKeyOldType: [oldType: "String", newType: "List", general: true, customMessage: "test"]]
 
-        LegacyConfigurationCheckUtils.checkForParameterTypeChanged(nullScript, configChanges)
+        List errors = LegacyConfigurationCheckUtils.checkForParameterTypeChanged(nullScript, configChanges)
+
+        assertEquals(errors, ["Your pipeline configuration contains the configuration key $key in the general section. " +
+            "The type of this configuration parameter was changed from String to List. test"])
     }
 
     @Test
@@ -221,17 +228,17 @@ class LegacyConfigurationCheckUtilsTest extends BasePiperTest {
         Map configChanges = [configKeyOldType: [oldType: "Map", newType: "List", steps: ["testStep"], customMessage: "test"]]
 
         LegacyConfigurationCheckUtils.checkForParameterTypeChanged(nullScript, configChanges)
+
         assertEquals(expectedWarning, echoOutput)
     }
 
     @Test
     void testCheckForRenamedNpmScripts() {
-        thrown.expect(hudson.AbortException)
-        thrown.expectMessage("Your package.json file package.json contains an npm script using the deprecated name oldNpmScriptName. " +
-            "Please rename the script to newNpmScriptName, since the script oldNpmScriptName will not be executed by the pipeline anymore. test")
         Map configChanges = [oldNpmScriptName: [newScriptName: "newNpmScriptName", customMessage: "test"]]
 
-        LegacyConfigurationCheckUtils.checkForRenamedNpmScripts(nullScript, configChanges)
+        List errors = LegacyConfigurationCheckUtils.checkForRenamedNpmScripts(nullScript, configChanges)
+        assertEquals(errors, ["Your package.json file package.json contains an npm script using the deprecated name oldNpmScriptName. " +
+            "Please rename the script to newNpmScriptName, since the script oldNpmScriptName will not be executed by the pipeline anymore. test"])
     }
 
     @Test
@@ -248,8 +255,7 @@ class LegacyConfigurationCheckUtilsTest extends BasePiperTest {
     @Test
     void testCheckConfigurationRemovedOrReplacedConfigKeys() {
         thrown.expect(hudson.AbortException)
-        thrown.expectMessage("Your pipeline configuration contains the configuration key oldConfigKey for the step someStep. " +
-            "This configuration option was removed. test")
+        thrown.expectMessage("Failing pipeline due to configuration errors")
         nullScript.commonPipelineEnvironment.configuration = [steps: [someStep: [oldConfigKey: false]]]
         Map configChanges = [
             removedOrReplacedConfigKeys: [
@@ -261,13 +267,15 @@ class LegacyConfigurationCheckUtilsTest extends BasePiperTest {
         ]
 
         LegacyConfigurationCheckUtils.checkConfiguration(nullScript, configChanges)
+
+        assertEquals(echoOutput, "Your pipeline configuration contains the configuration key oldConfigKey for the step someStep. " +
+            "This configuration option was removed. test")
     }
 
     @Test
     void testCheckConfigurationRemovedOrReplacedSteps() {
         thrown.expect(hudson.AbortException)
-        thrown.expectMessage("Your pipeline configuration contains configuration for the step oldStep. " +
-            "This step has been removed. Please configure the step newStep instead. test")
+        thrown.expectMessage("Failing pipeline due to configuration errors")
         nullScript.commonPipelineEnvironment.configuration = [steps: [oldStep: [configKey: false]]]
         Map configChanges = [
             removedOrReplacedSteps: [
@@ -279,13 +287,15 @@ class LegacyConfigurationCheckUtilsTest extends BasePiperTest {
         ]
 
         LegacyConfigurationCheckUtils.checkConfiguration(nullScript, configChanges)
+
+        assertEquals(echoOutput, "Your pipeline configuration contains configuration for the step oldStep. " +
+            "This step has been removed. Please configure the step newStep instead. test")
     }
 
     @Test
     void testCheckConfigurationRemovedOrReplacedStages() {
         thrown.expect(hudson.AbortException)
-        thrown.expectMessage("Your pipeline configuration contains configuration for the stage oldStage. " +
-            "This stage has been removed. ")
+        thrown.expectMessage("Failing pipeline due to configuration errors")
         nullScript.commonPipelineEnvironment.configuration = [stages: [oldStage: [configKey: false]]]
         Map configChanges = [
             removedOrReplacedStages: [
@@ -294,13 +304,15 @@ class LegacyConfigurationCheckUtilsTest extends BasePiperTest {
         ]
 
         LegacyConfigurationCheckUtils.checkConfiguration(nullScript, configChanges)
+
+        assertEquals(echoOutput, "Your pipeline configuration contains configuration for the stage oldStage. " +
+            "This stage has been removed. ")
     }
 
     @Test
     void testCheckConfigurationParameterTypeChanged() {
         thrown.expect(hudson.AbortException)
-        thrown.expectMessage("Your pipeline configuration contains the configuration key configKeyOldType for the step testStep. " +
-            "The type of this configuration parameter was changed from String to List. test")
+        thrown.expectMessage("Failing pipeline due to configuration errors")
         nullScript.commonPipelineEnvironment.configuration = [steps: [testStep: [configKeyOldType: "string"]]]
         Map configChanges = [
             parameterTypeChanged: [
@@ -313,13 +325,15 @@ class LegacyConfigurationCheckUtilsTest extends BasePiperTest {
         ]
 
         LegacyConfigurationCheckUtils.checkConfiguration(nullScript, configChanges)
+
+        assertEquals(echoOutput, "Your pipeline configuration contains the configuration key configKeyOldType for the step testStep. " +
+            "The type of this configuration parameter was changed from String to List. test")
     }
 
     @Test
     void testCheckConfigurationRenamedNpmScript() {
         thrown.expect(hudson.AbortException)
-        thrown.expectMessage("Your package.json file package.json contains an npm script using the deprecated name oldNpmScriptName. " +
-            "Please rename the script to newNpmScriptName, since the script oldNpmScriptName will not be executed by the pipeline anymore. test")
+        thrown.expectMessage("Failing pipeline due to configuration errors")
         Map configChanges = [
             renamedNpmScript: [
                 oldNpmScriptName: [
@@ -329,5 +343,36 @@ class LegacyConfigurationCheckUtilsTest extends BasePiperTest {
         ]
 
         LegacyConfigurationCheckUtils.checkConfiguration(nullScript, configChanges)
+
+        assertEquals(echoOutput, "Your package.json file package.json contains an npm script using the deprecated name oldNpmScriptName. " +
+            "Please rename the script to newNpmScriptName, since the script oldNpmScriptName will not be executed by the pipeline anymore. test")
+    }
+
+    @Test
+    void testCheckConfigurationMultipleErrors() {
+        thrown.expect(hudson.AbortException)
+        thrown.expectMessage("Failing pipeline due to configuration errors")
+        nullScript.commonPipelineEnvironment.configuration = [steps: [testStep: [configKeyOldType: "string"]]]
+        Map configChanges = [
+            renamedNpmScript: [
+                oldNpmScriptName: [
+                    newScriptName: "newNpmScriptName",
+                    customMessage: "test"]
+            ],
+            parameterTypeChanged: [
+                configKeyOldType: [
+                    oldType: "String",
+                    newType: "List",
+                    steps: ["testStep"],
+                    customMessage: "test"]
+            ]
+        ]
+
+        LegacyConfigurationCheckUtils.checkConfiguration(nullScript, configChanges)
+
+        assertEquals(echoOutput, "Your package.json file package.json contains an npm script using the deprecated name oldNpmScriptName. " +
+            "Please rename the script to newNpmScriptName, since the script oldNpmScriptName will not be executed by the pipeline anymore. test\n" +
+            "Your pipeline configuration contains the configuration key configKeyOldType for the step testStep. " +
+            "The type of this configuration parameter was changed from String to List. test")
     }
 }
