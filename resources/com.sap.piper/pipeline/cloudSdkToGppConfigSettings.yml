@@ -113,7 +113,7 @@ parameterTypeChanged:
   appUrls:
     oldType: "String"
     newType: "List"
-    stages: ["productionDeployment", "endToEndTests"]
+    stages: ["productionDeployment", "endToEndTests", "Release", "Acceptance"]
 
 renamedNpmScript:
   ci-integration-test:
