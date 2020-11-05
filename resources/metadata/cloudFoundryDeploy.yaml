@@ -363,7 +363,6 @@ spec:
   containers:
     - name: cfDeploy
       image: ppiper/cf-cli
-      imagePullPolicy: Always
   outputs:
     resources:
       - name: influx
