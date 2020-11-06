@@ -6,10 +6,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stretchr/testify/mock"
-
 	"github.com/SAP/jenkins-library/pkg/config/mocks"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestVaultConfigLoad(t *testing.T) {
@@ -62,6 +61,21 @@ func TestVaultConfigLoad(t *testing.T) {
 		vaultMock.On("GetKvSecret", "team1/pipelineA").Return(nil, nil)
 		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams)
 		assert.Len(t, stepConfig.Config, 1)
+	})
+
+	t.Run("Alias names should be considered", func(t *testing.T) {
+		aliasName := "alias"
+		vaultMock := &mocks.VaultMock{}
+		stepConfig := StepConfig{Config: map[string]interface{}{
+			"vaultBasePath": "team1",
+		}}
+		param := stepParam(secretName, "vaultSecret", "$(vaultBasePath)/pipelineA")
+		addAlias(&param, aliasName)
+		stepParams := []StepParameters{param}
+		vaultData := map[string]string{aliasName: "value1"}
+		vaultMock.On("GetKvSecret", "team1/pipelineA").Return(vaultData, nil)
+		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams)
+		assert.Equal(t, "value1", stepConfig.Config[secretName])
 	})
 
 	t.Run("Search over multiple paths", func(t *testing.T) {
@@ -148,7 +162,8 @@ func TestVaultSecretFiles(t *testing.T) {
 
 func stepParam(name string, refType string, refPaths ...string) StepParameters {
 	return StepParameters{
-		Name: name,
+		Name:    name,
+		Aliases: []Alias{},
 		ResourceRef: []ResourceReference{
 			{
 				Type:  refType,
@@ -156,4 +171,9 @@ func stepParam(name string, refType string, refPaths ...string) StepParameters {
 			},
 		},
 	}
+}
+
+func addAlias(param *StepParameters, aliasName string) {
+	alias := Alias{Name: aliasName}
+	param.Aliases = append(param.Aliases, alias)
 }
