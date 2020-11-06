@@ -111,10 +111,12 @@ func TestPropertiesFileSetVersion(t *testing.T) {
 	})
 
 	t.Run("error case - write failed", func(t *testing.T) {
+		props := properties.LoadMap(map[string]string{"version": "0.0.1"})
 		propsfile := PropertiesFile{
-			content:   &properties.Properties{},
-			path:      "gradle.properties",
-			writeFile: func(filename string, filecontent []byte, mode os.FileMode) error { return fmt.Errorf("write error") },
+			content:      props,
+			path:         "gradle.properties",
+			versionField: "version",
+			writeFile:    func(filename string, filecontent []byte, mode os.FileMode) error { return fmt.Errorf("write error") },
 		}
 		err := propsfile.SetVersion("1.2.3")
 		assert.EqualError(t, err, "failed to write file: write error")

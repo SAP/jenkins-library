@@ -46,11 +46,9 @@ func (p *PropertiesFile) VersioningScheme() string {
 
 // GetVersion returns the current version of the artifact with a ini-file-based build descriptor
 func (p *PropertiesFile) GetVersion() (string, error) {
-	if p.content == nil {
-		err := p.init()
-		if err != nil {
-			return "", err
-		}
+	err := p.init()
+	if err != nil {
+		return "", err
 	}
 	version := p.content.GetString(p.versionField, "")
 	if len(version) == 0 {
@@ -61,13 +59,11 @@ func (p *PropertiesFile) GetVersion() (string, error) {
 
 // SetVersion updates the version of the artifact with a ini-file-based build descriptor
 func (p *PropertiesFile) SetVersion(version string) error {
-	if p.content == nil {
-		err := p.init()
-		if err != nil {
-			return err
-		}
+	err := p.init()
+	if err != nil {
+		return err
 	}
-	err := p.content.SetValue(p.versionField, version)
+	err = p.content.SetValue(p.versionField, version)
 	if err != nil {
 		return errors.Wrapf(err, "failed to set version")
 	}
