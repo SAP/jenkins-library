@@ -35,7 +35,12 @@ class CheckForLegacyConfigurationTest extends BasePiperTest {
         ])
         helper.registerAllowedMethod('addBadge', [Map], {return})
         helper.registerAllowedMethod('createSummary', [Map], {return})
-        helper.registerAllowedMethod("echo", [String.class], { s -> echoOutput = s})
+        helper.registerAllowedMethod("echo", [String.class], { s ->
+            if (echoOutput) {
+                echoOutput += "\n"
+            }
+            echoOutput += s
+        })
         helper.registerAllowedMethod('findFiles', [Map], {m ->
             if(m.glob == '**/package.json') {
                 return [new File("package.json")].toArray()

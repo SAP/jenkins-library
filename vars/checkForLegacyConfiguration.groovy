@@ -11,31 +11,43 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 void call(Map parameters = [:]) {
+    List errors = []
     def script = checkScript(this, parameters) ?: this
     def configChanges = parameters.legacyConfigSettings
 
     if (configChanges?.removedOrReplacedConfigKeys) {
-        checkForRemovedOrReplacedConfigKeys(script, configChanges.removedOrReplacedConfigKeys)
+        errors.addAll(checkForRemovedOrReplacedConfigKeys(script, configChanges.removedOrReplacedConfigKeys))
     }
 
     if (configChanges?.removedOrReplacedSteps) {
-        checkForRemovedOrReplacedSteps(script, configChanges.removedOrReplacedSteps)
+        errors.addAll(checkForRemovedOrReplacedSteps(script, configChanges.removedOrReplacedSteps))
     }
 
     if (configChanges?.removedOrReplacedStages) {
-        checkForRemovedOrReplacedStages(script, configChanges.removedOrReplacedStages)
+        errors.addAll(checkForRemovedOrReplacedStages(script, configChanges.removedOrReplacedStages))
     }
 
     if (configChanges?.parameterTypeChanged) {
-        checkForParameterTypeChanged(script, configChanges.parameterTypeChanged)
+        errors.addAll(checkForParameterTypeChanged(script, configChanges.parameterTypeChanged))
     }
 
     if (configChanges?.renamedNpmScript) {
-        checkForRenamedNpmScripts(script, configChanges.renamedNpmScript)
+        errors.addAll(checkForRenamedNpmScripts(script, configChanges.renamedNpmScript))
+    }
+
+    if (errors) {
+        if (errors.size() > 1) {
+            script.echo("Your pipeline configuration file contains the following errors:")
+        }
+        for (error in errors) {
+            script.echo(error)
+        }
+        script.error("Failing pipeline due to configuration errors. Please see log output above.")
     }
 }
 
-static void checkForRemovedOrReplacedConfigKeys(Script script, Map configChanges) {
+static List checkForRemovedOrReplacedConfigKeys(Script script, Map configChanges) {
+    List errors = []
     configChanges.each { oldConfigKey, changes ->
         List steps = changes?.steps ?: []
         List stages = changes?.stages ?: []
@@ -58,7 +70,7 @@ static void checkForRemovedOrReplacedConfigKeys(Script script, Map configChanges
                 if (warnInsteadOfError) {
                     addPipelineWarning(script, "Deprecated configuration key ${oldConfigKey}", errorMessage)
                 } else {
-                    script.error(errorMessage)
+                    errors.add(errorMessage)
                 }
             }
         }
@@ -71,7 +83,7 @@ static void checkForRemovedOrReplacedConfigKeys(Script script, Map configChanges
                 if (warnInsteadOfError) {
                     addPipelineWarning(script, "Deprecated configuration key ${oldConfigKey}", errorMessage)
                 } else {
-                    script.error(errorMessage)
+                    errors.add(errorMessage)
                 }
             }
         }
@@ -84,7 +96,7 @@ static void checkForRemovedOrReplacedConfigKeys(Script script, Map configChanges
                 if (warnInsteadOfError) {
                     addPipelineWarning(script, "Deprecated configuration key ${oldConfigKey}", errorMessage)
                 } else {
-                    script.error(errorMessage)
+                    errors.add(errorMessage)
                 }
             }
         }
@@ -97,14 +109,16 @@ static void checkForRemovedOrReplacedConfigKeys(Script script, Map configChanges
                 if (warnInsteadOfError) {
                     addPipelineWarning(script, "Deprecated configuration key ${oldConfigKey}", errorMessage)
                 } else {
-                    script.error(errorMessage)
+                    errors.add(errorMessage)
                 }
             }
         }
     }
+    return errors
 }
 
-static void checkForRemovedOrReplacedSteps(Script script, Map configChanges) {
+static List checkForRemovedOrReplacedSteps(Script script, Map configChanges) {
+    List errors = []
     configChanges.each { oldConfigKey, changes ->
         Boolean onlyCheckProjectConfig = changes?.onlyCheckProjectConfig ?: false
         String customMessage = changes?.customMessage ?: ""
@@ -122,13 +136,15 @@ static void checkForRemovedOrReplacedSteps(Script script, Map configChanges) {
         }
 
         if (config) {
-            script.error("Your pipeline configuration contains configuration for the step ${oldConfigKey}. " +
+            errors.add("Your pipeline configuration contains configuration for the step ${oldConfigKey}. " +
                 "This step has been removed. " + customMessage)
         }
     }
+    return errors
 }
 
-static void checkForRemovedOrReplacedStages(Script script, Map configChanges) {
+static List checkForRemovedOrReplacedStages(Script script, Map configChanges) {
+    List errors = []
     configChanges.each { oldConfigKey, changes ->
         String customMessage = changes?.customMessage ?: ""
         String newStageName = changes?.newStageName ?: ""
@@ -138,13 +154,15 @@ static void checkForRemovedOrReplacedStages(Script script, Map configChanges) {
         }
 
         if (loadEffectiveStageConfig(script, oldConfigKey)) {
-            script.error("Your pipeline configuration contains configuration for the stage ${oldConfigKey}. " +
+            errors.add("Your pipeline configuration contains configuration for the stage ${oldConfigKey}. " +
                 "This stage has been removed. " + customMessage)
         }
     }
+    return errors
 }
 
-static void checkForParameterTypeChanged(Script script, Map configChanges) {
+static List checkForParameterTypeChanged(Script script, Map configChanges) {
+    List errors = []
     configChanges.each { oldConfigKey, changes ->
         String oldType = changes?.oldType ?: ""
         String newType = changes?.newType ?: ""
@@ -154,7 +172,7 @@ static void checkForParameterTypeChanged(Script script, Map configChanges) {
         String customMessage = changes?.customMessage ?: ""
 
         if (oldType != "String") {
-            script.echo("Your legacy config settings contain an entry for parameterTypeChanged with the key ${oldConfigKey} with the unsupported type ${oldType}. " +
+            errors.add("Your legacy config settings contain an entry for parameterTypeChanged with the key ${oldConfigKey} with the unsupported type ${oldType}. " +
                 "Currently only the type 'String' is supported.")
             return
         }
@@ -163,7 +181,7 @@ static void checkForParameterTypeChanged(Script script, Map configChanges) {
             Map config = loadEffectiveStepConfig(script, steps[i])
             if (config.containsKey(oldConfigKey)) {
                 if (oldType == "String" && config.get(oldConfigKey) instanceof String) {
-                    script.error("Your pipeline configuration contains the configuration key ${oldConfigKey} for the step ${steps[i]}. " +
+                    errors.add("Your pipeline configuration contains the configuration key ${oldConfigKey} for the step ${steps[i]}. " +
                         "The type of this configuration parameter was changed from ${oldType} to ${newType}. " + customMessage)
                 }
             }
@@ -173,7 +191,7 @@ static void checkForParameterTypeChanged(Script script, Map configChanges) {
             Map config = loadEffectiveStageConfig(script, stages[i])
             if (config.containsKey(oldConfigKey)) {
                 if (oldType == "String" && config.get(oldConfigKey) instanceof String) {
-                    script.error("Your pipeline configuration contains the configuration key ${oldConfigKey} for the stage ${stages[i]}. " +
+                    errors.add("Your pipeline configuration contains the configuration key ${oldConfigKey} for the stage ${stages[i]}. " +
                         "The type of this configuration parameter was changed from ${oldType} to ${newType}. " + customMessage)
                 }
             }
@@ -183,15 +201,17 @@ static void checkForParameterTypeChanged(Script script, Map configChanges) {
             Map config = loadEffectiveGeneralConfig(script)
             if (config.containsKey(oldConfigKey)) {
                 if (oldType == "String" && config.get(oldConfigKey) instanceof String) {
-                    script.error("Your pipeline configuration contains the configuration key ${oldConfigKey} in the general section. " +
+                    errors.add("Your pipeline configuration contains the configuration key ${oldConfigKey} in the general section. " +
                         "The type of this configuration parameter was changed from ${oldType} to ${newType}. " + customMessage)
                 }
             }
         }
     }
+    return errors
 }
 
-static void checkForRenamedNpmScripts(Script script, Map configChanges) {
+static List checkForRenamedNpmScripts(Script script, Map configChanges) {
+    List errors = []
     configChanges.each { oldScriptName, changes ->
         String newScriptName = changes?.newScriptName ?: ""
         Boolean warnInsteadOfError = changes?.warnInsteadOfError ?: false
@@ -204,10 +224,11 @@ static void checkForRenamedNpmScripts(Script script, Map configChanges) {
             if (warnInsteadOfError) {
                 addPipelineWarning(script, "Deprecated npm script ${oldScriptName}", errorMessage)
             } else {
-                script.error(errorMessage)
+                errors.add(errorMessage)
             }
         }
     }
+    return errors
 }
 
 private static String findPackageWithScript(Script script, String scriptName) {
