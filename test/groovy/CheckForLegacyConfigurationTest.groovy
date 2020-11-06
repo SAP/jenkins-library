@@ -234,8 +234,8 @@ class CheckForLegacyConfigurationTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.configuration = [steps: [testStep: [configKeyOldType: [test: true]]]]
         Map configChanges = [configKeyOldType: [oldType: "Map", newType: "List", steps: ["testStep"], customMessage: "test"]]
 
-        checkForLegacyConfiguration.checkForParameterTypeChanged(nullScript, configChanges)
-        assertEquals(expectedWarning, echoOutput)
+        List errors = checkForLegacyConfiguration.checkForParameterTypeChanged(nullScript, configChanges)
+        assertEquals(expectedWarning, errors[0].toString())
     }
 
     @Test
