@@ -75,7 +75,7 @@ func (p *PropertiesFile) SetVersion(version string) error {
 	var propsContent bytes.Buffer
 	_, err = p.content.Write(&propsContent, properties.UTF8)
 	if err != nil {
-		return errors.Wrap(err, "failed to write version to file")
+		return errors.Wrap(err, "failed to write version")
 	}
 	err = p.writeFile(p.path, propsContent.Bytes(), 0666)
 	if err != nil {
