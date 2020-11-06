@@ -283,7 +283,9 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 			p["dockerEnvVars"] = EnvVarsAsMap(container.EnvVars)
 			p["dockerImage"] = container.Image
 			p["dockerName"] = container.Name
-			p["dockerPullImage"] = container.ImagePullPolicy != "Never"
+			if container.ImagePullPolicy != "" {
+				p["dockerPullImage"] = container.ImagePullPolicy != "Never"
+			}
 			p["dockerWorkspace"] = container.WorkingDir
 			p["dockerOptions"] = OptionsAsStringSlice(container.Options)
 			//p["dockerVolumeBind"] = volumeMountsAsStringSlice(container.VolumeMounts)
@@ -301,7 +303,9 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 		root["sidecarEnvVars"] = EnvVarsAsMap(m.Spec.Sidecars[0].EnvVars)
 		root["sidecarImage"] = m.Spec.Sidecars[0].Image
 		root["sidecarName"] = m.Spec.Sidecars[0].Name
-		root["sidecarPullImage"] = m.Spec.Sidecars[0].ImagePullPolicy != "Never"
+		if m.Spec.Sidecars[0].ImagePullPolicy != "" {
+			root["sidecarPullImage"] = m.Spec.Sidecars[0].ImagePullPolicy != "Never"
+		}
 		root["sidecarReadyCommand"] = m.Spec.Sidecars[0].ReadyCommand
 		root["sidecarWorkspace"] = m.Spec.Sidecars[0].WorkingDir
 		root["sidecarOptions"] = OptionsAsStringSlice(m.Spec.Sidecars[0].Options)
