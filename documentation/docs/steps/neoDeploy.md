@@ -69,7 +69,7 @@ Setting this parameter to `true` requires additional configuration:
 
     ![OAuth client creation](../images/oauthClientCreation.png)
 
-2. In the **Subscription** field, select the portal landscape to which you would like to subscribe, for example `portal/nwc` or `portal/sandbox`.
+2. In the **Subscription** field, select the portal landscape to which you would like to subscribe, for example, `portal/nwc` or `portal/sandbox`.
 
     ![Portal subscription](../images/portalSubscription.png)
 
