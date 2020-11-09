@@ -37,6 +37,12 @@ removedOrReplacedConfigKeys:
     postAction: true
     customMessage: "Details can be found in the release notes of v43 of the Cloud SDK Pipeline: https://github.com/SAP/cloud-s4-sdk-pipeline/releases/tag/v43"
 
+requiredConfigKeys:
+  inferBuildTool:
+    general: true
+    customMessage: "Please specify 'inferBuildTool: true' in the general section of your .pipeline/config.yml file.
+        This will activate a number of features previously activated by the Cloud SDK Pipeline's default configuration."
+
 removedOrReplacedSteps:
   executeMaven:
     newStepName: "mavenExecute"
