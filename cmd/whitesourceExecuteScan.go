@@ -178,6 +178,7 @@ func checkAndReportScanResults(config *ScanOptions, scan *ws.Scan, utils whiteso
 	if !config.Reporting && !config.SecurityVulnerabilities {
 		return nil
 	}
+	// Wait for WhiteSource backend to propagate the changes before downloading any reports.
 	if err := scan.BlockUntilReportsAreReady(sys); err != nil {
 		return err
 	}
