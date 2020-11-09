@@ -84,7 +84,6 @@ Setting this parameter to `true` requires additional configuration:
 When you're logged in to the portal service, you can retrieve the site ID. Either configure it in your configuration file or set the site as default through the **Site Directory** tile.
 If you don't set it as default, configure the parameter `siteId` as follows in your configuration file:
 
-Example configuration:
 
 ```yaml
 steps:
