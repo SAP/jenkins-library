@@ -169,6 +169,16 @@ class CheckForLegacyConfigurationTest extends BasePiperTest {
     }
 
     @Test
+    void testCheckForPresentGeneralConfigKeys() {
+        nullScript.commonPipelineEnvironment.configuration = [general: [importantConfigKey: 'isPresent']]
+        Map configChanges = [importantConfigKey: [general: true]]
+
+        List errors = stepRule.step.checkForLegacyConfiguration.checkForMissingConfigKeys(nullScript, configChanges)
+
+        assertEquals(errors, [])
+    }
+
+    @Test
     void testCheckForMissingPostActionConfigKeys() {
         nullScript.commonPipelineEnvironment.configuration = [postActions: [:]]
         Map configChanges = [importantConfigKey: [postAction: true]]
