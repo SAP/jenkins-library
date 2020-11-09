@@ -20,15 +20,15 @@ type detectTestUtilsBundle struct {
 	*mock.FilesMock
 }
 
-func (c *detectTestUtilsBundle) RunExecutable(e string, p ...string) error {
+func (c *detectTestUtilsBundle) RunExecutable(string, ...string) error {
 	panic("not expected to be called in test")
 }
 
-func (c *detectTestUtilsBundle) SetOptions(options piperhttp.ClientOptions) {
+func (c *detectTestUtilsBundle) SetOptions(piperhttp.ClientOptions) {
 
 }
 
-func (c *detectTestUtilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+func (c *detectTestUtilsBundle) DownloadFile(url, filename string, _ http.Header, _ []*http.Cookie) error {
 
 	if c.expectedError != nil {
 		return c.expectedError
