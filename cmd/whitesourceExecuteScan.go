@@ -119,6 +119,10 @@ func whitesourceExecuteScan(config ScanOptions, _ *telemetry.CustomData, commonP
 }
 
 func runWhitesourceExecuteScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment) error {
+	if err := resolveAggregateProjectName(config, scan, sys); err != nil {
+		return err
+	}
+
 	if err := resolveProjectIdentifiers(config, scan, utils, sys); err != nil {
 		return fmt.Errorf("failed to resolve project identifiers: %w", err)
 	}
@@ -174,7 +178,7 @@ func checkAndReportScanResults(config *ScanOptions, scan *ws.Scan, utils whiteso
 	if !config.Reporting && !config.SecurityVulnerabilities {
 		return nil
 	}
-	if err := blockUntilReportsAreaReady(config, scan, sys); err != nil {
+	if err := scan.BlockUntilReportsAreaReady(sys); err != nil {
 		return err
 	}
 	if config.Reporting {
@@ -274,6 +278,25 @@ func resolveProductToken(config *ScanOptions, sys whitesource) error {
 	}
 	log.Entry().Infof("Resolved product token: '%s'..", product.Token)
 	config.ProductToken = product.Token
+	return nil
+}
+
+// resolveAggregateProjectName checks if config.ProjectToken is configured, and if so, expects a WhiteSource
+// project with that token to exist. The AggregateProjectName in the ws.Scan is then configured with that
+// project's name.
+func resolveAggregateProjectName(config *ScanOptions, scan *ws.Scan, sys whitesource) error {
+	if config.ProjectToken == "" {
+		return nil
+	}
+	log.Entry().Infof("Attempting to resolve aggregate project name for token '%s'..", config.ProjectToken)
+	// If the user configured the "projectToken" parameter, we expect this project to exist in the backend.
+	project, err := sys.GetProjectByToken(config.ProjectToken)
+	if err != nil {
+		return err
+	}
+	nameVersion := strings.Split(project.Name, " - ")
+	scan.AggregateProjectName = nameVersion[0]
+	log.Entry().Infof("Resolve aggregate project name '%s'..", scan.AggregateProjectName)
 	return nil
 }
 
@@ -435,65 +458,6 @@ func checkProjectSecurityViolations(cvssSeverityLimit float64, project ws.Projec
 		return fmt.Errorf("%v Open Source Software Security vulnerabilities with CVSS score greater "+
 			"or equal to %.1f detected in project %s",
 			severeVulnerabilities, cvssSeverityLimit, project.Name)
-	}
-	return nil
-}
-
-func blockUntilReportsAreaReady(config *ScanOptions, scan *ws.Scan, sys whitesource) error {
-	// Project was scanned. We need to wait for WhiteSource backend to propagate the changes
-	// before downloading any reports or check security vulnerabilities.
-	if config.ProjectToken != "" {
-		// Poll status of aggregated project
-		if err := pollProjectStatus(config.ProjectToken, time.Now(), sys); err != nil {
-			return err
-		}
-	} else {
-		// Poll status of all scanned projects
-		for _, project := range scan.ScannedProjects() {
-			if err := pollProjectStatus(project.Token, scan.ScanTime(project.Name), sys); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-// pollProjectStatus polls project LastUpdateDate until it reflects the most recent scan
-func pollProjectStatus(projectToken string, scanTime time.Time, sys whitesource) error {
-	return blockUntilProjectIsUpdated(projectToken, sys, scanTime, 20*time.Second, 20*time.Second, 15*time.Minute)
-}
-
-// blockUntilProjectIsUpdated polls the project LastUpdateDate until it is newer than the given time stamp
-// or no older than maxAge relative to the given time stamp.
-func blockUntilProjectIsUpdated(projectToken string, sys whitesource, currentTime time.Time, maxAge, timeBetweenPolls, maxWaitTime time.Duration) error {
-	startTime := time.Now()
-	for {
-		project, err := sys.GetProjectByToken(projectToken)
-		if err != nil {
-			return err
-		}
-
-		if project.LastUpdateDate == "" {
-			log.Entry().Infof("last updated time missing from project metadata, retrying")
-		} else {
-			lastUpdatedTime, err := time.Parse(ws.DateTimeLayout, project.LastUpdateDate)
-			if err != nil {
-				return fmt.Errorf("failed to parse last updated time (%s) of Whitesource project: %w",
-					project.LastUpdateDate, err)
-			}
-			age := currentTime.Sub(lastUpdatedTime)
-			if age < maxAge {
-				//done polling
-				break
-			}
-			log.Entry().Infof("time since project was last updated %v > %v, polling status...", age, maxAge)
-		}
-
-		if time.Now().Sub(startTime) > maxWaitTime {
-			return fmt.Errorf("timeout while waiting for Whitesource scan results to be reflected in service")
-		}
-
-		time.Sleep(timeBetweenPolls)
 	}
 	return nil
 }

@@ -73,8 +73,8 @@ func TestExecuteScanUA(t *testing.T) {
 		// assert
 		require.NoError(t, err)
 		require.Len(t, utilsMock.DownloadedFiles, 1)
-		assert.Equal(t, "https://download.ua.org/agent.jar", utilsMock.DownloadedFiles[0].sourceURL)
-		assert.Equal(t, "unified-agent.jar", utilsMock.DownloadedFiles[0].filePath)
+		assert.Equal(t, "https://download.ua.org/agent.jar", utilsMock.DownloadedFiles[0].SourceURL)
+		assert.Equal(t, "unified-agent.jar", utilsMock.DownloadedFiles[0].FilePath)
 	})
 	t.Run("UA is NOT downloaded", func(t *testing.T) {
 		// init
