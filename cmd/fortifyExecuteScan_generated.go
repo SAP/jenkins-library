@@ -246,8 +246,9 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 func fortifyExecuteScanMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "fortifyExecuteScan",
-			Aliases: []config.Alias{},
+			Name:        "fortifyExecuteScan",
+			Aliases:     []config.Alias{},
+			Description: "This step executes a Fortify scan on the specified project to perform static code analysis and check the source code for security flaws.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -689,6 +690,9 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 				},
+			},
+			Containers: []config.Container{
+				{Image: "<<please bring your own fortify image>>", WorkingDir: "/home/piper"},
 			},
 		},
 	}

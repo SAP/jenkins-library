@@ -134,8 +134,9 @@ func addMtaBuildFlags(cmd *cobra.Command, stepConfig *mtaBuildOptions) {
 func mtaBuildMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "mtaBuild",
-			Aliases: []config.Alias{},
+			Name:        "mtaBuild",
+			Aliases:     []config.Alias{},
+			Description: "Performs an mta build",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -237,6 +238,10 @@ func mtaBuildMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 				},
+			},
+			Containers: []config.Container{
+				{Image: "devxci/mbtci:1.0.16.1", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "mtaBuildTool", Value: "cloudMbt"}}}}},
+				{Image: "ppiper/mta-archive-builder:v1", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "mtaBuildTool", Value: "classic"}}}}},
 			},
 		},
 	}

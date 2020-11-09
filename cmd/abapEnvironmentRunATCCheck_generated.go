@@ -112,8 +112,9 @@ func addAbapEnvironmentRunATCCheckFlags(cmd *cobra.Command, stepConfig *abapEnvi
 func abapEnvironmentRunATCCheckMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "abapEnvironmentRunATCCheck",
-			Aliases: []config.Alias{},
+			Name:        "abapEnvironmentRunATCCheck",
+			Aliases:     []config.Alias{},
+			Description: "Runs an ATC Check",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -211,6 +212,9 @@ func abapEnvironmentRunATCCheckMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 				},
+			},
+			Containers: []config.Container{
+				{Name: "cf", Image: "ppiper/cf-cli"},
 			},
 		},
 	}

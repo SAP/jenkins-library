@@ -126,8 +126,9 @@ func addAbapAddonAssemblyKitReleasePackagesFlags(cmd *cobra.Command, stepConfig 
 func abapAddonAssemblyKitReleasePackagesMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "abapAddonAssemblyKitReleasePackages",
-			Aliases: []config.Alias{},
+			Name:        "abapAddonAssemblyKitReleasePackages",
+			Aliases:     []config.Alias{},
+			Description: "This step releases the physical Delivery Packages",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{

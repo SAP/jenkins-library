@@ -208,8 +208,9 @@ func addWhitesourceExecuteScanFlags(cmd *cobra.Command, stepConfig *whitesourceE
 func whitesourceExecuteScanMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "whitesourceExecuteScan",
-			Aliases: []config.Alias{},
+			Name:        "whitesourceExecuteScan",
+			Aliases:     []config.Alias{},
+			Description: "BETA",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -539,6 +540,12 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "npm/defaultNpmRegistry"}},
 					},
 				},
+			},
+			Containers: []config.Container{
+				{Image: "maven:3.5-jdk-8", WorkingDir: "/home/java", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "scanType", Value: "maven"}}}}},
+				{Image: "node:lts-stretch", WorkingDir: "/home/node", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "scanType", Value: "npm"}}}}},
+				{Image: "hseeberger/scala-sbt:8u181_2.12.8_1.2.8", WorkingDir: "/home/scala", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "scanType", Value: "sbt"}}}}},
+				{Image: "buildpack-deps:stretch-curl", WorkingDir: "/home/dub", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "scanType", Value: "dub"}}}}},
 			},
 		},
 	}

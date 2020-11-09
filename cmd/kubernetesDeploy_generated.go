@@ -146,8 +146,9 @@ func addKubernetesDeployFlags(cmd *cobra.Command, stepConfig *kubernetesDeployOp
 func kubernetesDeployMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "kubernetesDeploy",
-			Aliases: []config.Alias{{Name: "deployToKubernetes", Deprecated: true}},
+			Name:        "kubernetesDeploy",
+			Aliases:     []config.Alias{{Name: "deployToKubernetes", Deprecated: true}},
+			Description: "Deployment to Kubernetes test or production namespace within the specified Kubernetes cluster.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -351,6 +352,11 @@ func kubernetesDeployMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "helmTillerNamespace"}},
 					},
 				},
+			},
+			Containers: []config.Container{
+				{Image: "dtzar/helm-kubectl:3.1.2", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "deployTool", Value: "helm3"}}}}},
+				{Image: "dtzar/helm-kubectl:2.12.1", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "deployTool", Value: "helm"}}}}},
+				{Image: "dtzar/helm-kubectl:2.12.1", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "deployTool", Value: "kubectl"}}}}},
 			},
 		},
 	}

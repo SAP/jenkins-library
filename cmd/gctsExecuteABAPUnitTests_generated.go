@@ -97,8 +97,9 @@ func addGctsExecuteABAPUnitTestsFlags(cmd *cobra.Command, stepConfig *gctsExecut
 func gctsExecuteABAPUnitTestsMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "gctsExecuteABAPUnitTests",
-			Aliases: []config.Alias{},
+			Name:        "gctsExecuteABAPUnitTests",
+			Aliases:     []config.Alias{},
+			Description: "Runs ABAP unit tests for all packages of the specified repository",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{

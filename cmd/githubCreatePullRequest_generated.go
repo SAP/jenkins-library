@@ -114,8 +114,9 @@ func addGithubCreatePullRequestFlags(cmd *cobra.Command, stepConfig *githubCreat
 func githubCreatePullRequestMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "githubCreatePullRequest",
-			Aliases: []config.Alias{},
+			Name:        "githubCreatePullRequest",
+			Aliases:     []config.Alias{},
+			Description: "Create a pull request on GitHub",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{

@@ -129,8 +129,9 @@ func addAbapAddonAssemblyKitCheckCVsFlags(cmd *cobra.Command, stepConfig *abapAd
 func abapAddonAssemblyKitCheckCVsMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "abapAddonAssemblyKitCheckCVs",
-			Aliases: []config.Alias{},
+			Name:        "abapAddonAssemblyKitCheckCVs",
+			Aliases:     []config.Alias{},
+			Description: "This step checks the validity of Software Component Versions.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{

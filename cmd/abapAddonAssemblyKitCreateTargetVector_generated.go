@@ -128,8 +128,9 @@ func addAbapAddonAssemblyKitCreateTargetVectorFlags(cmd *cobra.Command, stepConf
 func abapAddonAssemblyKitCreateTargetVectorMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "abapAddonAssemblyKitCreateTargetVector",
-			Aliases: []config.Alias{},
+			Name:        "abapAddonAssemblyKitCreateTargetVector",
+			Aliases:     []config.Alias{},
+			Description: "This step creates a Target Vector for software lifecycle operations",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{

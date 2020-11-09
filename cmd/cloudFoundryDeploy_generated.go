@@ -194,8 +194,9 @@ func addCloudFoundryDeployFlags(cmd *cobra.Command, stepConfig *cloudFoundryDepl
 func cloudFoundryDeployMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "cloudFoundryDeploy",
-			Aliases: []config.Alias{},
+			Name:        "cloudFoundryDeploy",
+			Aliases:     []config.Alias{},
+			Description: "Deploys an application to Cloud Foundry",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -460,6 +461,9 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Aliases:   []config.Alias{},
 					},
 				},
+			},
+			Containers: []config.Container{
+				{Name: "cfDeploy", Image: "ppiper/cf-cli"},
 			},
 		},
 	}

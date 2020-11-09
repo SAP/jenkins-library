@@ -105,8 +105,9 @@ func addCloudFoundryCreateServiceKeyFlags(cmd *cobra.Command, stepConfig *cloudF
 func cloudFoundryCreateServiceKeyMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "cloudFoundryCreateServiceKey",
-			Aliases: []config.Alias{},
+			Name:        "cloudFoundryCreateServiceKey",
+			Aliases:     []config.Alias{},
+			Description: "cloudFoundryCreateServiceKey",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -200,6 +201,9 @@ func cloudFoundryCreateServiceKeyMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceKeyConfig"}},
 					},
 				},
+			},
+			Containers: []config.Container{
+				{Name: "cf", Image: "ppiper/cf-cli"},
 			},
 		},
 	}

@@ -262,8 +262,9 @@ func addCheckmarxExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxExecu
 func checkmarxExecuteScanMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "checkmarxExecuteScan",
-			Aliases: []config.Alias{},
+			Name:        "checkmarxExecuteScan",
+			Aliases:     []config.Alias{},
+			Description: "Checkmarx is the recommended tool for security scans of JavaScript, iOS, Swift and Ruby code.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
