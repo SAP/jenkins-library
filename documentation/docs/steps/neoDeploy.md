@@ -57,30 +57,32 @@ steps:
 
 ## Example for invalidating the cache
 
-Setting parameter `invalidateCache` to `true`, will clean up the cache of a Fiori Launchpad site, refreshing the content of html5 applications deployed there. This is only applicable for **html5** applications accessed via a **Fiori Launchpad** site.
+Set the parameter `invalidateCache` to `true` to clean up the cache of an SAP Fiori launchpad site by refreshing the content of HTML5 applications deployed in it.
 
-Setting this parameter to true, needs additional configuration. Firstly, an OAuth credential needs to be created as shown below:
+**Note:** This section is only applicable for HTML5 applications accessed through an SAP Fiori launchpad site.
 
-### OAuth credential creation
+Setting this parameter to `true` requires additional configuration:
 
-1. Select the OAuth settings from your subaccount, create a new client with subscription to portal/nwc as shown in the following images:
+### Create an OAuth credential
+
+1. In your subaccount, choose **OAuth**.
 
     ![OAuth client creation](../images/oauthClientCreation.png)
 
-2. Select the "Clients" tab, which provides an option to register a new client. Then, click on "Register New Client" button.
-
-3. Then, in the "Subscription" field, select the portal landscape you would like to subscribe to, ex: `portal/nwc` or `portal/sandbox` as shown below:
+2. In the **Subscription** field, select the portal landscape to which you would like to subscribe, for example `portal/nwc` or `portal/sandbox`.
 
     ![Portal subscription](../images/portalSubscription.png)
 
-4. In the "Authorization Grant" field, select "Client Credentials" from the drop down menu. Then, enter a user defined password in the "Secret" field and finally, save the changes.
+3. From the drop-down menu in the **Authorization Grant** field, choose **Client Credentials**.
 
-After saving these changes, create a UsernamePassword type credential with the Client Id as username and Client Secret as password in Jenkins.
+4. In the **Secret** field, enter a user-defined password and save your changes.
 
-### Site Id
+5. In Jenkins, create new username/password credentials. As username, use the client ID and as password, use the client secret.
 
-After login to the portal service, one can retrieve the site id and configure it in configuration file or could set it (from site directory tile) as default.
-If not set to default, please configure `siteId`, as shown in the below configuration:
+###  Configure the site ID
+
+When you're logged in to the portal service, you can retrieve the site ID. Either configure it in your configuration file or set the site as default through the **Site Directory** tile.
+If you don't set it as default, configure the parameter `siteId` as follows in your configuration file:
 
 Example configuration:
 
