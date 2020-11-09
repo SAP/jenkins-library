@@ -41,20 +41,20 @@ func (c *detectTestUtilsBundle) DownloadFile(url, filename string, header http.H
 	return nil
 }
 
-func newDetectTestUtilsBundle() detectTestUtilsBundle {
+func newDetectTestUtilsBundle() *detectTestUtilsBundle {
 	utilsBundle := detectTestUtilsBundle{
 		ShellMockRunner: &mock.ShellMockRunner{},
 		FilesMock:       &mock.FilesMock{},
 	}
-	return utilsBundle
+	return &utilsBundle
 }
 
 func TestRunDetect(t *testing.T) {
-
+	t.Parallel()
 	t.Run("success case", func(t *testing.T) {
 		utilsMock := newDetectTestUtilsBundle()
 		utilsMock.AddFile("detect.sh", []byte(""))
-		err := runDetect(detectExecuteScanOptions{}, &utilsMock)
+		err := runDetect(detectExecuteScanOptions{}, utilsMock)
 
 		assert.Equal(t, utilsMock.downloadedFiles["https://detect.synopsys.com/detect.sh"], "detect.sh")
 		assert.True(t, utilsMock.HasRemovedFile("detect.sh"))
@@ -70,7 +70,7 @@ func TestRunDetect(t *testing.T) {
 		utilsMock := newDetectTestUtilsBundle()
 		utilsMock.ShouldFailOnCommand = map[string]error{"./detect.sh --blackduck.url= --blackduck.api.token= --detect.project.name=\\\"\\\" --detect.project.version.name=\\\"\\\" --detect.code.location.name=\\\"\\\"": fmt.Errorf("Test Error")}
 		utilsMock.AddFile("detect.sh", []byte(""))
-		err := runDetect(detectExecuteScanOptions{}, &utilsMock)
+		err := runDetect(detectExecuteScanOptions{}, utilsMock)
 		assert.EqualError(t, err, "Test Error")
 		assert.True(t, utilsMock.HasRemovedFile("detect.sh"))
 	})
@@ -83,7 +83,7 @@ func TestRunDetect(t *testing.T) {
 			M2Path:              ".pipeline/local_repo",
 			ProjectSettingsFile: "project-settings.xml",
 			GlobalSettingsFile:  "global-settings.xml",
-		}, &utilsMock)
+		}, utilsMock)
 
 		assert.NoError(t, err)
 		assert.Equal(t, ".", utilsMock.Dir, "Wrong execution directory used")
@@ -96,8 +96,7 @@ func TestRunDetect(t *testing.T) {
 }
 
 func TestAddDetectArgs(t *testing.T) {
-	utilsMock := newDetectTestUtilsBundle()
-
+	t.Parallel()
 	testData := []struct {
 		args     []string
 		options  detectExecuteScanOptions
@@ -184,7 +183,7 @@ func TestAddDetectArgs(t *testing.T) {
 
 	for k, v := range testData {
 		t.Run(fmt.Sprintf("run %v", k), func(t *testing.T) {
-			got, err := addDetectArgs(v.args, v.options, &utilsMock)
+			got, err := addDetectArgs(v.args, v.options, newDetectTestUtilsBundle())
 			assert.NoError(t, err)
 			assert.Equal(t, v.expected, got)
 		})

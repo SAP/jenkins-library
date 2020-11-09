@@ -12,6 +12,7 @@ type mavenExecuteIntegrationTestUtilsBundle struct {
 }
 
 func TestIntegrationTestModuleDoesNotExist(t *testing.T) {
+	t.Parallel()
 	utils := newMavenIntegrationTestsUtilsBundle()
 	config := mavenExecuteIntegrationOptions{}
 
@@ -21,6 +22,7 @@ func TestIntegrationTestModuleDoesNotExist(t *testing.T) {
 }
 
 func TestHappyPathIntegrationTests(t *testing.T) {
+	t.Parallel()
 	utils := newMavenIntegrationTestsUtilsBundle()
 	utils.FilesMock.AddFile("integration-tests/pom.xml", []byte(`<project> </project>`))
 
@@ -49,6 +51,7 @@ func TestHappyPathIntegrationTests(t *testing.T) {
 }
 
 func TestInvalidForkCountParam(t *testing.T) {
+	t.Parallel()
 	// init
 	utils := newMavenIntegrationTestsUtilsBundle()
 	utils.FilesMock.AddFile("integration-tests/pom.xml", []byte(`<project> </project>`))
