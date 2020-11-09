@@ -64,6 +64,18 @@ func TestGetArtifact(t *testing.T) {
 		assert.EqualError(t, err, "no build descriptor available, supported: [VERSION version.txt go.mod]")
 	})
 
+	t.Run("gradle", func(t *testing.T) {
+		gradle, err := GetArtifact("gradle", "", &Options{VersionField: "theversion"}, nil)
+
+		assert.NoError(t, err)
+
+		theType, ok := gradle.(*Gradle)
+		assert.True(t, ok)
+		assert.Equal(t, "gradle.properties", theType.path)
+		assert.Equal(t, "theversion", theType.versionField)
+		assert.Equal(t, "semver2", gradle.VersioningScheme())
+	})
+
 	t.Run("maven", func(t *testing.T) {
 		opts := Options{
 			ProjectSettingsFile: "projectsettings.xml",

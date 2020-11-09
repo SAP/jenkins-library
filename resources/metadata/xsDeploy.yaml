@@ -153,4 +153,3 @@ spec:
   containers:
     - name: xs
       image: ppiper/xs-cli
-      imagePullPolicy: Never
