@@ -128,7 +128,7 @@ spec:
         aliases:
           - name: cloudFoundry/serviceManifest
           - name: cfServiceManifest
-      - name: adminEmail
+      - name: abapSystemAdminEmail
         type: string
         description: Admin E-Mail address for the initial administrator of the system
         scope:
@@ -136,7 +136,7 @@ spec:
           - STAGES
           - STEPS
           - GENERAL
-      - name: description
+      - name: abapSystemDescription
         description: Description for the ABAP Environment system
         type: string
         scope:
@@ -145,7 +145,7 @@ spec:
           - STEPS
           - GENERAL
         default: 'Test system created by an automated pipeline'
-      - name: isDevelopmentAllowed
+      - name: abapSystemIsDevelopmentAllowed
         type: bool
         description: This parameter determines, if development is allowed on the system
         scope:
@@ -154,8 +154,8 @@ spec:
           - STEPS
           - GENERAL
         default: true
-      - name: sapSystemName
-        description: The three character name of the system
+      - name: abapSystemID
+        description: The three character name of the system - maps to 'sapSystemName'
         type: string
         scope:
           - PARAMETERS
@@ -163,7 +163,7 @@ spec:
           - STEPS
           - GENERAL
         default: 'H02'
-      - name: sizeOfPersistence
+      - name: abapSystemSizeOfPersistence
         description: The size of the persistence
         type: int
         scope:
@@ -171,7 +171,7 @@ spec:
           - STAGES
           - STEPS
           - GENERAL
-      - name: sizeOfRuntime
+      - name: abapSystemSizeOfRuntime
         description: The size of the runtime
         type: int
         scope:
@@ -187,7 +187,13 @@ spec:
           - STAGES
           - STEPS
           - GENERAL
+      - name: includeAddon
+        description: Must be set to true to install the addon provided via 'addonDescriptorFileName'
+        type: bool
+        scope:
+          - PARAMETERS
+          - STAGES
+        default: false
   containers:
     - name: cf
       image: ppiper/cf-cli
-      imagePullPolicy: Never
