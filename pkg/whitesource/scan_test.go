@@ -81,7 +81,7 @@ func TestAppendScannedProjectVersion(t *testing.T) {
 		assert.Len(t, scan.scannedProjects, 0)
 		assert.Len(t, scan.scanTimes, 0)
 	})
-	t.Run("empty project name 2", func(t *testing.T) {
+	t.Run("only version part in project name", func(t *testing.T) {
 		// init
 		scan := &Scan{ProductVersion: "1"}
 		// test
