@@ -399,16 +399,16 @@ func ProcessMetaFiles(metadataFiles []string, targetDir string, stepHelperData S
 
 		exists, _ = piperutils.FileExists(filepath.Join(targetDir, fmt.Sprintf("%v_test.go", stepName)))
 		if !exists {
-			code := stepImplementation(myStepInfo, "implTest", metadataGeneratedTemplate)
-			err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_test.go", stepName)), code, 0644)
+			impl := stepImplementation(myStepInfo, "implTest", stepGoImplementationTestTemplate)
+			err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_test.go", stepName)), impl, 0644)
 			checkError(err)
 		}
 	}
 	// expose metadata functions
 	exists, _ := piperutils.FileExists(filepath.Join(targetDir, metadataGeneratedTemplate))
 	if !exists {
-		impl := generateCode(allSteps, "metadata", metadataGeneratedTemplate, nil)
-		err := stepHelperData.WriteFile(filepath.Join(targetDir, metadataGeneratedFileName), impl, 0644)
+		code := generateCode(allSteps, "metadata", metadataGeneratedTemplate, nil)
+		err := stepHelperData.WriteFile(filepath.Join(targetDir, metadataGeneratedFileName), code, 0644)
 		checkError(err)
 	}
 	return nil
