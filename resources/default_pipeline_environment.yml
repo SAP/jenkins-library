@@ -333,6 +333,7 @@ steps:
     neo:
       size: 'lite'
       credentialsId: 'CI_CREDENTIALS_ID'
+      portalLandscape: "cloudnwcportal"
   multicloudDeploy:
     cfTargets: []
     neoTargets: []
