@@ -202,7 +202,7 @@ void call(Map parameters = [:]) {
             }
         }
         pipelineStashFilesBeforeBuild script: script
-    }gpp-migration-checks-2
+    }
 }
 
 private String inferProjectName(Script script, String buildTool) {
