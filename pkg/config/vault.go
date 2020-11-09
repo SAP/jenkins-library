@@ -151,7 +151,7 @@ func lookupPath(client vaultClient, path string, param *StepParameters) *string 
 
 	// try parameter aliases
 	for _, alias := range param.Aliases {
-		field := secret[param.Name]
+		field := secret[alias.Name]
 		if field != "" {
 			log.RegisterSecret(field)
 			if alias.Deprecated {
