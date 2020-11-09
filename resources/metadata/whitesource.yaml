@@ -222,9 +222,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        resourceRef:
-          - name: commonPipelineEnvironment
-            param: artifactVersion
       - name: jreDownloadUrl
         type: string
         description: "[NOT IMPLEMENTED] URL used for downloading the Java Runtime Environment (JRE) required to run the
