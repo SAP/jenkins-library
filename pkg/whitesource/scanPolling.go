@@ -10,9 +10,9 @@ type whitesourcePoller interface {
 	GetProjectByToken(projectToken string) (Project, error)
 }
 
-// BlockUntilReportsAreaReady polls the WhiteSource system for all projects known to the Scan and blocks
+// BlockUntilReportsAreReady polls the WhiteSource system for all projects known to the Scan and blocks
 // until their LastUpdateDate time stamp is from within the last 20 seconds.
-func (s *Scan) BlockUntilReportsAreaReady(sys whitesourcePoller) error {
+func (s *Scan) BlockUntilReportsAreReady(sys whitesourcePoller) error {
 	// Project was scanned. We need to wait for WhiteSource backend to propagate the changes
 	// before downloading any reports or check security vulnerabilities.
 	// Poll status of all scanned projects

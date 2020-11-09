@@ -178,7 +178,7 @@ func checkAndReportScanResults(config *ScanOptions, scan *ws.Scan, utils whiteso
 	if !config.Reporting && !config.SecurityVulnerabilities {
 		return nil
 	}
-	if err := scan.BlockUntilReportsAreaReady(sys); err != nil {
+	if err := scan.BlockUntilReportsAreReady(sys); err != nil {
 		return err
 	}
 	if config.Reporting {
