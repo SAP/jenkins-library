@@ -73,9 +73,12 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, execR
 		}
 	case "gradle":
 		if len(buildDescriptorFilePath) == 0 {
-			buildDescriptorFilePath = "build.gradle"
+			buildDescriptorFilePath = "gradle.properties"
 		}
-		artifact = &Gradle{}
+		artifact = &Gradle{
+			path:         buildDescriptorFilePath,
+			versionField: opts.VersionField,
+		}
 	case "golang":
 		if len(buildDescriptorFilePath) == 0 {
 			var err error
