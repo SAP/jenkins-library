@@ -30,49 +30,13 @@ import groovy.transform.Field
  */
 @GenerateDocumentation
 void call(Map parameters = [:]) {
-    handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters) {
-        def script = checkScript(this, parameters) ?: this
-        def utils = parameters.juStabUtils ?: new Utils()
-        def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
-        String piperGoPath = parameters.piperGoPath ?: './piper'
+    final script = checkScript(this, parameters) ?: null
+    List credentialInfo = [
+        [type: 'usernamePassword', id: 'configurationCredentialsId', env: ['PIPER_configurationUsername', 'PIPER_configurationPassword']],
+    ]
 
-        piperExecuteBin.prepareExecution(script, utils, parameters)
-        piperExecuteBin.prepareMetadataResource(script, METADATA_FILE)
-        Map stepParameters = piperExecuteBin.prepareStepParameters(parameters)
-
-        List credentialInfo = [
-            [type: 'usernamePassword', id: 'configurationCredentialsId', env: ['PIPER_configurationUsername', 'PIPER_configurationPassword']],
-        ]
-
-        withEnv([
-            "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(stepParameters)}",
-            "PIPER_correlationID=${env.BUILD_URL}",
-        ]) {
-            String customDefaultConfig = piperExecuteBin.getCustomDefaultConfigsArg()
-            String customConfigArg = piperExecuteBin.getCustomConfigArg(script)
-            // get context configuration
-            Map config
-            piperExecuteBin.handleErrorDetails(STEP_NAME) {
-                config = piperExecuteBin.getStepContextConfig(script, piperGoPath, METADATA_FILE, customDefaultConfig, customConfigArg)
-                echo "Context Config: ${config}"
-            }
-
-            piperExecuteBin.dockerWrapper(script, STEP_NAME, config){
-                piperExecuteBin.handleErrorDetails(STEP_NAME) {
-                    script.commonPipelineEnvironment.writeToDisk(script)
-                    issuesWrapper(parameters, script){
-                        try{
-                            piperExecuteBin.credentialWrapper(config, credentialInfo){
-                                sh "${piperGoPath} ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
-                            }
-                        } finally {
-                            jenkinsUtils.handleStepResults(STEP_NAME, true, false)
-                            script.commonPipelineEnvironment.readFromDisk(script)
-                        }
-                    }
-                }
-            }
-        }
+    issuesWrapper(parameters, script){
+        piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentialInfo)
     }
 }
 
