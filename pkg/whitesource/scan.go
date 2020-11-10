@@ -28,17 +28,30 @@ func (s *Scan) init() {
 	}
 }
 
+func (s *Scan) versionSuffix() string {
+	return " - " + s.ProductVersion
+}
+
 // AppendScannedProject checks that no Project with the same name is already contained in the list of scanned projects,
 // and appends a new Project with the given name. The global product version is appended to the name.
 func (s *Scan) AppendScannedProject(projectName string) error {
-	return s.AppendScannedProjectVersion(projectName + " - " + s.ProductVersion)
+	if len(projectName) == 0 {
+		return fmt.Errorf("projectName must not be empty")
+	}
+	if strings.HasSuffix(projectName, s.versionSuffix()) {
+		return fmt.Errorf("projectName is not expected to include the product version already")
+	}
+	return s.AppendScannedProjectVersion(projectName + s.versionSuffix())
 }
 
 // AppendScannedProjectVersion checks that no Project with the same name is already contained in the list of scanned
 // projects,  and appends a new Project with the given name (which is expected to include the product version).
 func (s *Scan) AppendScannedProjectVersion(projectName string) error {
-	if !strings.HasSuffix(projectName, " - "+s.ProductVersion) {
+	if !strings.HasSuffix(projectName, s.versionSuffix()) {
 		return fmt.Errorf("projectName is expected to include the product version")
+	}
+	if len(projectName) == len(s.versionSuffix()) {
+		return fmt.Errorf("projectName consists only of the product version")
 	}
 	s.init()
 	_, exists := s.scannedProjects[projectName]
