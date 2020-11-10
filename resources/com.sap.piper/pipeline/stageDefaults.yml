@@ -4,8 +4,14 @@ stages:
       slackSendNotification:
         configKeys:
           - 'channel'
-  'Pull-Request Voting': {}
-  Build: {}
+  'Pull-Request Voting':
+    stepConditions:
+      sonarExecuteScan:
+        filePattern: '**/sonar-project.properties'
+  Build:
+    stepConditions:
+      sonarExecuteScan:
+        filePattern: '**/sonar-project.properties'
   'Additional Unit Tests':
     stepConditions:
       batsExecuteTests:
@@ -70,6 +76,9 @@ stages:
       neoDeploy:
         configKeys:
           - 'neo/account'
+      tmsUpload:
+        configKeys:
+          - nodeName
       healthExecuteCheck:
         configKeys:
           - 'testServerUrl'
