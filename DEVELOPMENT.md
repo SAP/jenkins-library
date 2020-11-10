@@ -469,11 +469,10 @@ func TestMethod(t *testing.T) {
         },
     }
 
-    for i, name := range testCases { // name is only defined outside the loop
-        name := name // define new variable within loop to prevent overwrite of name variable outside loop
-        // Otherwise the test with "Name2" could get executed twice and "Name1" never.
-        // The same variable name "name" is used for convinience.
-        t.Run("sub test " + i, func(t *testing.T){
+    for _, testCase := range testCases { // testCase defined here is re-assigned in each iteration
+        testCase := testCase // define new variable within loop to detach from overwriting of the outer testCase variable by next loop iteration
+        // The same variable name "testCase" is used for convenience.
+        t.Run(testCase.Name, func(t *testing.T){
             t.Parallel() // indicates that this sub test can run parallel to other sub tests
             // execute test
         })
