@@ -19,6 +19,7 @@ import (
 	"github.com/motemen/go-nuts/roundtime"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"github.com/hashicorp/go-retryablehttp"
 )
 
 // Client defines an http client object
@@ -32,6 +33,7 @@ type Client struct {
 	cookieJar                http.CookieJar
 	doLogRequestBodyOnDebug  bool
 	doLogResponseBodyOnDebug bool
+	maxRetries               int
 }
 
 // ClientOptions defines the options to be set on the client
@@ -51,6 +53,7 @@ type ClientOptions struct {
 	CookieJar                http.CookieJar
 	DoLogRequestBodyOnDebug  bool
 	DoLogResponseBodyOnDebug bool
+	MaxRetries               int
 }
 
 // TransportWrapper is a wrapper for central logging capabilities
@@ -192,6 +195,7 @@ func (c *Client) SetOptions(options ClientOptions) {
 	c.username = options.Username
 	c.password = options.Password
 	c.token = options.Token
+	c.maxRetries = options.MaxRetries
 
 	if options.Logger != nil {
 		c.logger = options.Logger
@@ -217,11 +221,19 @@ func (c *Client) initialize() *http.Client {
 		doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,
 		doLogResponseBodyOnDebug: c.doLogResponseBodyOnDebug,
 	}
-	var httpClient = &http.Client{
-		Timeout:   c.maxRequestDuration,
-		Transport: transport,
-		Jar:       c.cookieJar,
+
+	var httpClient *http.Client
+	if c.maxRetries > 0 {
+		retryClient := retryablehttp.NewClient()
+		retryClient.RetryMax = c.maxRetries
+		httpClient = retryClient.StandardClient()
+	} else {
+		httpClient = &http.Client{}
 	}
+	httpClient.Timeout = c.maxRequestDuration
+	httpClient.Jar = c.cookieJar
+	httpClient.Transport = transport
+
 	c.logger.Debugf("Transport timeout: %v, max request duration: %v", c.transportTimeout, c.maxRequestDuration)
 
 	return httpClient

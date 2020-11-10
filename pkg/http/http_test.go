@@ -164,7 +164,7 @@ func TestUploadRequest(t *testing.T) {
 		cookies       []*http.Cookie
 		expected      string
 	}{
-		{clientOptions: ClientOptions{}, method: "PUT", expected: "OK"},
+		{clientOptions: ClientOptions{MaxRetries: 3}, method: "PUT", expected: "OK"},
 		{clientOptions: ClientOptions{}, method: "POST", expected: "OK"},
 		{clientOptions: ClientOptions{}, method: "POST", header: map[string][]string{"Testheader": {"Test1", "Test2"}}, expected: "OK"},
 		{clientOptions: ClientOptions{}, cookies: []*http.Cookie{{Name: "TestCookie1", Value: "TestValue1"}, {Name: "TestCookie2", Value: "TestValue2"}}, method: "POST", expected: "OK"},
