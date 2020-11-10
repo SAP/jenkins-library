@@ -229,7 +229,7 @@ Writing the file is handled by [`pkg/log/FatalHook`](pkg/log/fatalHook.go).
 
 1. [Mocking](#mocking)
 1. [Mockable Interface](#mockable-interface)
-1. [Global function pointers](global-function-pointers)
+1. [Global function pointers](#global-function-pointers)
 1. [Test Parallelization](#test-parallelization)
 
 Unit tests are done using basic `golang` means.
