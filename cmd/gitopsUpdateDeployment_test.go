@@ -37,7 +37,6 @@ func TestBuildRegistryPlusImage(t *testing.T) {
 			ContainerRegistryURL:  "//myregistry.com/registry/containers",
 			ContainerImageNameTag: "myFancyContainer:1337",
 		})
-		assert.Error(t, err)
 		assert.EqualError(t, err, "registry URL could not be extracted: invalid registry url")
 	})
 }
@@ -68,7 +67,6 @@ func TestBuildRegistryPlusImageWithoutTag(t *testing.T) {
 			ContainerRegistryURL:  "//myregistry.com/registry/containers",
 			ContainerImageNameTag: "myFancyContainer:1337",
 		})
-		assert.Error(t, err)
 		assert.EqualError(t, err, "registry URL could not be extracted: invalid registry url")
 	})
 }
@@ -190,7 +188,6 @@ func TestRunGitopsUpdateDeploymentWithKubectl(t *testing.T) {
 		runnerMock := &gitOpsExecRunnerMock{}
 
 		err := runGitopsUpdateDeployment(&configuration, runnerMock, gitUtilsMock, &filesMock{})
-		assert.Error(t, err)
 		assert.EqualError(t, err, "missing required fields for kubectl: the following parameters are necessary for kubectl: [containerName]")
 	})
 
@@ -198,7 +195,6 @@ func TestRunGitopsUpdateDeploymentWithKubectl(t *testing.T) {
 		runner := &gitOpsExecRunnerMock{failOnRunExecutable: true}
 
 		err := runGitopsUpdateDeployment(validConfiguration, runner, &gitUtilsMock{}, &filesMock{})
-		assert.Error(t, err)
 		assert.EqualError(t, err, "error on kubectl execution: failed to apply kubectl command: failed to apply kubectl command: error happened")
 	})
 
@@ -280,7 +276,6 @@ func TestRunGitopsUpdateDeploymentWithInvalid(t *testing.T) {
 		}
 
 		err := runGitopsUpdateDeployment(configuration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, &filesMock{})
-		assert.Error(t, err)
 		assert.EqualError(t, err, "tool invalid is not supported")
 	})
 }
@@ -388,7 +383,6 @@ func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 		configuration.ContainerRegistryURL = "://myregistry.com"
 
 		err := runGitopsUpdateDeployment(&configuration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, &filesMock{})
-		assert.Error(t, err)
 		assert.EqualError(t, err, `failed to apply helm command: failed to extract registry URL, image name, and image tag: registry URL could not be extracted: invalid registry url: parse "://myregistry.com": missing protocol scheme`)
 	})
 
@@ -397,7 +391,6 @@ func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 		configuration.ChartPath = ""
 
 		err := runGitopsUpdateDeployment(&configuration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, &filesMock{})
-		assert.Error(t, err)
 		assert.EqualError(t, err, "missing required fields for helm: the following parameters are necessary for helm: [chartPath]")
 	})
 
@@ -406,7 +399,6 @@ func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 		configuration.DeploymentName = ""
 
 		err := runGitopsUpdateDeployment(&configuration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, &filesMock{})
-		assert.Error(t, err)
 		assert.EqualError(t, err, "missing required fields for helm: the following parameters are necessary for helm: [deploymentName]")
 	})
 
@@ -416,7 +408,6 @@ func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 		configuration.ChartPath = ""
 
 		err := runGitopsUpdateDeployment(&configuration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, &filesMock{})
-		assert.Error(t, err)
 		assert.EqualError(t, err, "missing required fields for helm: the following parameters are necessary for helm: [chartPath deploymentName]")
 	})
 
@@ -425,7 +416,6 @@ func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 		configuration.ContainerImageNameTag = "registry/containers/myFancyContainer:"
 
 		err := runGitopsUpdateDeployment(&configuration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, &filesMock{})
-		assert.Error(t, err)
 		assert.EqualError(t, err, "failed to apply helm command: failed to extract registry URL, image name, and image tag: tag could not be extracted")
 	})
 
@@ -434,7 +424,6 @@ func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 		configuration.ContainerImageNameTag = ":1.0.1"
 
 		err := runGitopsUpdateDeployment(&configuration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, &filesMock{})
-		assert.Error(t, err)
 		assert.EqualError(t, err, "failed to apply helm command: failed to extract registry URL, image name, and image tag: image name could not be extracted")
 	})
 
@@ -442,7 +431,6 @@ func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 		runner := &gitOpsExecRunnerMock{failOnRunExecutable: true}
 
 		err := runGitopsUpdateDeployment(validConfiguration, runner, &gitUtilsMock{}, &filesMock{})
-		assert.Error(t, err)
 		assert.EqualError(t, err, "failed to apply helm command: failed to execute helm command: error happened")
 	})
 
