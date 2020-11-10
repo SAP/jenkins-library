@@ -389,7 +389,7 @@ func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 
 		err := runGitopsUpdateDeployment(&configuration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, &filesMock{})
 		assert.Error(t, err)
-		assert.EqualError(t, err, `failed to apply helm command: failed to extract registry URL, image name, and image tag: registry URL could not be extracted: invalid registry url: parse "://myregistry.com": missing protocol scheme`)
+		assert.EqualError(t, getRootCause(err), "missing protocol scheme")
 	})
 
 	t.Run("missing ChartPath", func(t *testing.T) {
@@ -495,6 +495,22 @@ func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 		assert.NoError(t, err)
 		_ = piperutils.Files{}.RemoveAll(fileUtils.path)
 	})
+}
+
+// getRootCause Returns the last error in the chain
+func getRootCause(err error) error {
+	// Should not be here, but in some kind of a helper.
+	// Anyway, with the next testify release we should have
+	// ErrorIs which can be used instead of this func.
+	e := err
+	for {
+		next := errors.Unwrap(e)
+		if next == nil {
+			break
+		}
+		e = next
+	}
+	return e
 }
 
 type gitOpsExecRunnerMock struct {
