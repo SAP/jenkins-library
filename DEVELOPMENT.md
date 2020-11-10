@@ -440,8 +440,7 @@ func TestMethod(t *testing.T) {
 }
 ```
 
-Go will first execute the non-parallelized tests in sequence and afterwards execute the all parallel tests in parallel
-limited by the default number of parallel executions.
+Go will first execute the non-parallelized tests in sequence and afterwards execute all the parallel tests in parallel, limited by the default number of parallel executions.
 
 For table tests some additional lines are necessary to prevent overshadowing of the iteration variable.
 (See [blog about it](https://eleni.blog/2019/05/11/parallel-test-execution-in-go/).)
