@@ -160,7 +160,11 @@ func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, s
 	}
 
 	if config.DeployTool == "helm3" {
-		upgradeParams = append(upgradeParams, "--atomic", "--timeout", fmt.Sprintf("%vs", config.HelmDeployWaitSeconds))
+		upgradeParams = append(upgradeParams, "--wait", "--timeout", fmt.Sprintf("%vs", config.HelmDeployWaitSeconds))
+	}
+
+	if !config.KeepFailedDeployments {
+		upgradeParams = append(upgradeParams, "--atomic")
 	}
 
 	if len(config.KubeContext) > 0 {
