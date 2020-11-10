@@ -416,7 +416,6 @@ in the actual implementation and give great flexibility in the tests, while mock
 tend to result in more code re-use and slim down the tests. The mocking implementation of a
 utils interface can facilitate implementations of related functions to be based on shared data.
 
-
 ### Test Parallelization
 
 Tests that can be executed in parallel should be marked as such. With the command `t.Parallel()` the test framework can
