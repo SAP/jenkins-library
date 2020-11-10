@@ -468,7 +468,7 @@ func TestMethod(t *testing.T) {
     for _, testCase := range testCases { // testCase defined here is re-assigned in each iteration
         testCase := testCase // define new variable within loop to detach from overwriting of the outer testCase variable by next loop iteration
         // The same variable name "testCase" is used for convenience.
-        t.Run(testCase.Name, func(t *testing.T){
+        t.Run(testCase.Name, func(t *testing.T) {
             t.Parallel() // indicates that this sub test can run parallel to other sub tests
             // execute test
         })
