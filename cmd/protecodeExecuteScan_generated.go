@@ -228,6 +228,12 @@ func protecodeExecuteScanMetadata() config.StepData {
 								Name: "dockerConfigJsonCredentialsId",
 								Type: "secret",
 							},
+
+							{
+								Name:  "",
+								Paths: []string{"$(vaultPath)/docker-config", "$(vaultBasePath)/$(vaultPipelineName)/docker-config", "$(vaultBasePath)/GROUP-SECRETS/docker-config"},
+								Type:  "vaultSecretFile",
+							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",

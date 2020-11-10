@@ -87,6 +87,7 @@ func TestSetOptions(t *testing.T) {
 	c.SetOptions(opts)
 
 	assert.Equal(t, opts.TransportTimeout, c.transportTimeout)
+	assert.Equal(t, opts.TransportSkipVerification, c.transportSkipVerification)
 	assert.Equal(t, opts.MaxRequestDuration, c.maxRequestDuration)
 	assert.Equal(t, opts.Username, c.username)
 	assert.Equal(t, opts.Password, c.password)
@@ -275,6 +276,31 @@ func TestTransportTimout(t *testing.T) {
 		// assert
 		assert.NoError(t, err)
 	})
+}
+
+func TestTransportSkipVerification(t *testing.T) {
+	testCases := []struct {
+		client        Client
+		expectedError string
+	}{
+		{client: Client{}, expectedError: "certificate signed by unknown authority"},
+		{client: Client{transportSkipVerification: false}, expectedError: "certificate signed by unknown authority"},
+		{client: Client{transportSkipVerification: true}},
+	}
+
+	for _, testCase := range testCases {
+		// init
+		svr := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+		defer svr.Close()
+		// test
+		_, err := testCase.client.SendRequest(http.MethodGet, svr.URL, &bytes.Buffer{}, nil, nil)
+		// assert
+		if len(testCase.expectedError) > 0 {
+			assert.Error(t, err, "certificate signed by unknown authority")
+		} else {
+			assert.NoError(t, err)
+		}
+	}
 }
 
 func TestParseHTTPResponseBodyJSON(t *testing.T) {
