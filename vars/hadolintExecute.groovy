@@ -56,9 +56,6 @@ void call(Map parameters = [:]) {
                 config = piperExecuteBin.getStepContextConfig(script, piperGoPath, METADATA_FILE, customDefaultConfig, customConfigArg)
                 echo "Context Config: ${config}"
             }
-            // get step configuration to access `reportName` & `reportFile` & `qualityGates`
-            Map stepConfig = readJSON(text: sh(returnStdout: true, script: "${piperGoPath} getConfig --stepMetadata '.pipeline/tmp/${METADATA_FILE}'${customDefaultConfig}${customConfigArg}"))
-            echo "Step Config: ${stepConfig}"
 
             piperExecuteBin.dockerWrapper(script, STEP_NAME, config){
                 piperExecuteBin.handleErrorDetails(STEP_NAME) {
