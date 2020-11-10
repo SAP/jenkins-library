@@ -33,6 +33,7 @@ type stepInfo struct {
 	StepSecrets      []string
 	Containers       []config.Container
 	Sidecars         []config.Container
+	Outputs          config.StepOutputs
 }
 
 //StepGoTemplate ...
@@ -186,12 +187,12 @@ func {{ .StepName }}Metadata() config.StepData {
 			Containers: []config.Container{
 				{{- range $container := .Containers }}
 				{
-					{{- if $container.Name }} Name: "{{$container.Name}}", {{ end -}}
-					{{- if $container.Image }} Image: "{{$container.Image}}", {{ end -}}
-					{{- if $container.EnvVars }} EnvVars: []config.EnvVar{ {{- range $i, $env := $container.EnvVars }} {Name: "{{$env.Name}}", Value: "{{$env.Value}}"}, {{ end -}}  }, {{ end -}}
-					{{- if $container.WorkingDir }} WorkingDir: "{{$container.WorkingDir}}", {{ end -}}
-					{{- if $container.Options }} Options: []config.Option{ {{- range $i, $option := $container.Options }} {Name: "{{$option.Name}}", Value: "{{$option.Value}}"}, {{ end -}}  }, {{ end -}}
-					{{- if $container.Conditions }} Conditions: []config.Condition{ {{- range $i, $cond := $container.Conditions }} {ConditionRef: "{{$cond.ConditionRef}}", Params: []config.Param{ {{- range $j, $p := $cond.Params}} { Name: "{{$p.Name}}", Value: "{{$p.Value}}" }, {{end -}} } }, {{ end -}}  }, {{ end -}}
+					{{- if $container.Name -}} Name: "{{$container.Name}}",{{- end }}
+					{{- if $container.Image -}} Image: "{{$container.Image}}",{{- end }}
+					{{- if $container.EnvVars -}} EnvVars: []config.EnvVar{ {{- range $i, $env := $container.EnvVars }} {Name: "{{$env.Name}}", Value: "{{$env.Value}}"}, {{ end -}}  },{{- end }}
+					{{- if $container.WorkingDir -}} WorkingDir: "{{$container.WorkingDir}}",{{- end }}
+					{{- if $container.Options -}} Options: []config.Option{ {{- range $i, $option := $container.Options }} {Name: "{{$option.Name}}", Value: "{{$option.Value}}"}, {{ end -}} },{{ end }}
+					{{- if $container.Conditions -}} Conditions: []config.Condition{ {{- range $i, $cond := $container.Conditions }} {ConditionRef: "{{$cond.ConditionRef}}", Params: []config.Param{ {{- range $j, $p := $cond.Params}} { Name: "{{$p.Name}}", Value: "{{$p.Value}}" }, {{end -}} } }, {{ end -}} },{{ end }}
 				}, {{ end }}
 			},
 			{{ end -}}
@@ -199,13 +200,32 @@ func {{ .StepName }}Metadata() config.StepData {
 			Sidecars: []config.Container{
 				{{- range $container := .Sidecars }}
 				{
-					{{- if $container.Name }} Name: "{{$container.Name}}", {{ end -}}
-					{{- if $container.Image }} Image: "{{$container.Image}}", {{ end -}}
-					{{- if $container.EnvVars }} EnvVars: []config.EnvVar{ {{- range $i, $env := $container.EnvVars }} {Name: "{{$env.Name}}", Value: "{{$env.Value}}"}, {{ end -}}  }, {{ end -}}
-					{{- if $container.WorkingDir }} WorkingDir: "{{$container.WorkingDir}}", {{ end -}}
-					{{- if $container.Options }} Options: []config.Option{ {{- range $i, $option := $container.Options }} {Name: "{{$option.Name}}", Value: "{{$option.Value}}"}, {{ end -}}  }, {{ end -}}
-					{{- if $container.Conditions }} Conditions: []config.Condition{ {{- range $i, $cond := $container.Conditions }} {ConditionRef: "{{$cond.ConditionRef}}", Params: []config.Param{ {{- range $j, $p := $cond.Params}} { Name: "{{$p.Name}}", Value: "{{$p.Value}}" }, {{end -}} } }, {{ end -}}  }, {{ end -}}
+					{{- if $container.Name -}} Name: "{{$container.Name}}", {{- end }}
+					{{- if $container.Image -}} Image: "{{$container.Image}}", {{- end }}
+					{{- if $container.EnvVars -}} EnvVars: []config.EnvVar{ {{- range $i, $env := $container.EnvVars }} {Name: "{{$env.Name}}", Value: "{{$env.Value}}"}, {{ end -}}  }, {{- end }}
+					{{- if $container.WorkingDir -}} WorkingDir: "{{$container.WorkingDir}}", {{- end }}
+					{{- if $container.Options -}} Options: []config.Option{ {{- range $i, $option := $container.Options }} {Name: "{{$option.Name}}", Value: "{{$option.Value}}"}, {{ end -}} }, {{- end }}
+					{{- if $container.Conditions -}} Conditions: []config.Condition{ {{- range $i, $cond := $container.Conditions }} {ConditionRef: "{{$cond.ConditionRef}}", Params: []config.Param{ {{- range $j, $p := $cond.Params}} { Name: "{{$p.Name}}", Value: "{{$p.Value}}" }, {{end -}} } }, {{ end -}} }, {{- end }}
 				}, {{ end }}
+			},
+			{{ end -}}
+			{{- if .Outputs.Resources -}}
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{{- range $res := .Outputs.Resources }}
+					{
+						{{ if $res.Name }}Name: "{{$res.Name}}", {{- end }}
+						{{ if $res.Type }}Type: "{{$res.Type}}", {{- end }}
+						{{ if $res.Parameters }}Parameters: []map[string]interface{}{ {{- end }}
+						{{ range $i, $p := $res.Parameters }}
+							{{- if $p.name}}{"Name": "{{$p.name}}"},{{end }}
+							{{- if $p.fields}}{"fields": "{{$p.fields}}" },{{end }}
+							{{- if $p.tags}}{"tags": "{{$p.tags}}" },{{end }}
+						{{end }}
+						{{ if $res.Parameters -}} }, {{- end }}
+					},
+					{{ end -}}
+				},
 			},
 			{{ end -}}
 		},
@@ -514,6 +534,7 @@ func getStepInfo(stepData *config.StepData, osImport bool, exportPrefix string) 
 			StepSecrets:      getSecretFields(stepData),
 			Containers:       stepData.Spec.Containers,
 			Sidecars:         stepData.Spec.Sidecars,
+			Outputs:          stepData.Spec.Outputs,
 		},
 		err
 }
