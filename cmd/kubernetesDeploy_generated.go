@@ -29,6 +29,7 @@ type kubernetesDeployOptions struct {
 	HelmValues                 []string `json:"helmValues,omitempty"`
 	Image                      string   `json:"image,omitempty"`
 	IngressHosts               []string `json:"ingressHosts,omitempty"`
+	KeepFailedDeployments      bool     `json:"keepFailedDeployments,omitempty"`
 	KubeConfig                 string   `json:"kubeConfig,omitempty"`
 	KubeContext                string   `json:"kubeContext,omitempty"`
 	KubeToken                  string   `json:"kubeToken,omitempty"`
@@ -129,6 +130,7 @@ func addKubernetesDeployFlags(cmd *cobra.Command, stepConfig *kubernetesDeployOp
 	cmd.Flags().StringSliceVar(&stepConfig.HelmValues, "helmValues", []string{}, "List of helm values as YAML file reference or URL (as per helm parameter description for `-f` / `--values`)")
 	cmd.Flags().StringVar(&stepConfig.Image, "image", os.Getenv("PIPER_image"), "Full name of the image to be deployed.")
 	cmd.Flags().StringSliceVar(&stepConfig.IngressHosts, "ingressHosts", []string{}, "(Deprecated) List of ingress hosts to be exposed via helm deployment.")
+	cmd.Flags().BoolVar(&stepConfig.KeepFailedDeployments, "keepFailedDeployments", true, "Defines whether a failed deployment will be purged")
 	cmd.Flags().StringVar(&stepConfig.KubeConfig, "kubeConfig", os.Getenv("PIPER_kubeConfig"), "Defines the path to the \"kubeconfig\" file.")
 	cmd.Flags().StringVar(&stepConfig.KubeContext, "kubeContext", os.Getenv("PIPER_kubeContext"), "Defines the context to use from the \"kubeconfig\" file.")
 	cmd.Flags().StringVar(&stepConfig.KubeToken, "kubeToken", os.Getenv("PIPER_kubeToken"), "Contains the id_token used by kubectl for authentication. Consider using kubeConfig parameter instead.")
@@ -291,6 +293,14 @@ func kubernetesDeployMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "keepFailedDeployments",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
