@@ -450,10 +450,6 @@ At the minimum, you need to capture the test case value from the loop iteration 
 Inside the `t.Run()` closure, this shadow copy is visible, and cannot be overwritten by later loop iterations.
 If you do not make this shadowing copy, what is visible in the closure is the variable which gets re-assigned with a new value in each loop iteration.
 The value of this variable is then not fixed for the test run.
-The loop opens with each iteration a new scope. The used variable in the loop is only defined outside the scope
-such that each loop overwrites the variable which will lead to execution of loops with the same variable multiple times
-and leave out some others. Therefore, the variable shall be captured by defining a new variable within the loops scope
-that represents the looping variable.
 
 ```go
 func TestMethod(t *testing.T) {
