@@ -17,7 +17,7 @@ The installation and maintenance of ABAP software is done / controlled via softw
 
 !!! caution "Initial Scope"
     The initial scope supports an add-on product consisting of **one** software component. Furthermore, this software component can not be used in multiple add-on products.
-    All packages of a software component must have the same namespace as the software component itself.
+    All packages of a software component must have the same namespace as the software component itself. And initially only the master branch of software components shall be used.
 
 ### Software Product Version
 
