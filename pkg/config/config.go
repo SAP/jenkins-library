@@ -227,6 +227,12 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		stepConfig.mixIn(flagValues, filters.Parameters)
 	}
 
+	if verbose, ok := stepConfig.Config["verbose"].(bool); ok && verbose {
+		log.SetVerbose(verbose)
+	} else if !ok {
+		log.Entry().Warnf("invalid value for parameter verbose: '%v'", stepConfig.Config["verbose"])
+	}
+
 	stepConfig.mixIn(c.General, vaultFilter)
 	// fetch secrets from vault
 	vaultClient, err := getVaultClientFromConfig(stepConfig, c.vaultCredentials)
@@ -243,9 +249,9 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 			cp := p.Conditions[0].Params[0]
 			dependentValue := stepConfig.Config[cp.Name]
 			if cmp.Equal(dependentValue, cp.Value) && stepConfig.Config[p.Name] == nil {
-				subMapValue := stepConfig.Config[dependentValue.(string)].(map[string]interface{})[p.Name]
-				if subMapValue != nil {
-					stepConfig.Config[p.Name] = subMapValue
+				subMap, ok := stepConfig.Config[dependentValue.(string)].(map[string]interface{})
+				if ok && subMap[p.Name] != nil {
+					stepConfig.Config[p.Name] = subMap[p.Name]
 				} else {
 					stepConfig.Config[p.Name] = p.Default
 				}
