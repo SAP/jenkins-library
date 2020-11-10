@@ -1,8 +1,6 @@
-import com.cloudbees.groovy.cps.NonCPS
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateStageDocumentation
 import com.sap.piper.JenkinsUtils
-import com.sap.piper.LegacyConfigurationCheckUtils
 import com.sap.piper.StageNameProvider
 import com.sap.piper.Utils
 import com.sap.piper.k8s.ContainerMap
@@ -109,7 +107,7 @@ void call(Map parameters = [:]) {
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], ordinal: 1, telemetryDisabled: true) {
         def scmInfo = checkout scm
 
-        setupCommonPipelineEnvironment(script: script, customDefaults: parameters.customDefaults, scmInfo: scmInfo,
+        setupCommonPipelineEnvironment(script: script, customDefaults: parameters.customDefaults, gitUrl: scmInfo.GIT_URL,
             configFile: parameters.configFile, customDefaultsFromFiles: parameters.customDefaultsFromFiles)
 
         Map config = ConfigurationHelper.newInstance(this)
@@ -125,7 +123,7 @@ void call(Map parameters = [:]) {
 
         if (config.legacyConfigSettings) {
             Map legacyConfigSettings = readYaml(text: libraryResource(config.legacyConfigSettings))
-            LegacyConfigurationCheckUtils.checkConfiguration(script, legacyConfigSettings)
+            checkForLegacyConfiguration(script: script, legacyConfigSettings: legacyConfigSettings)
         }
 
         String buildTool = checkBuildTool(config)

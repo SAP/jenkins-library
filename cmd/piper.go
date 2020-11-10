@@ -81,6 +81,7 @@ func Execute() {
 	rootCmd.AddCommand(AbapEnvironmentPullGitRepoCommand())
 	rootCmd.AddCommand(AbapEnvironmentCloneGitRepoCommand())
 	rootCmd.AddCommand(AbapEnvironmentCheckoutBranchCommand())
+	rootCmd.AddCommand(AbapEnvironmentCreateSystemCommand())
 	rootCmd.AddCommand(CheckmarxExecuteScanCommand())
 	rootCmd.AddCommand(FortifyExecuteScanCommand())
 	rootCmd.AddCommand(MtaBuildCommand())
@@ -365,8 +366,23 @@ func convertValueFromString(config map[string]interface{}, optionsField *reflect
 func convertValueFromFloat(config map[string]interface{}, optionsField *reflect.StructField, paramName string, paramValue float64) error {
 	switch optionsField.Type.Kind() {
 	case reflect.String:
-		config[paramName] = strconv.FormatFloat(paramValue, 'f', -1, 64)
-		return nil
+		val := strconv.FormatFloat(paramValue, 'f', -1, 64)
+		// if Sprinted value and val are equal, we can be pretty sure that the result fits
+		// for very large numbers for example an exponential format is printed
+		if val == fmt.Sprint(paramValue) {
+			config[paramName] = val
+			return nil
+		}
+		// allow float numbers containing a decimal separator
+		if strings.Contains(val, ".") {
+			config[paramName] = val
+			return nil
+		}
+		// if now no decimal separator is available we cannot be sure that the result is correct:
+		// long numbers like e.g. 73554900100200011600 will not be represented correctly after reading the yaml
+		// thus we cannot assume that the string is correct.
+		// short numbers will be handled as int anyway
+		return errIncompatibleTypes
 	case reflect.Float32:
 		config[paramName] = float32(paramValue)
 		return nil

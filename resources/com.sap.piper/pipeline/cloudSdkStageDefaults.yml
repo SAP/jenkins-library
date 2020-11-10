@@ -18,7 +18,6 @@ stages:
       mavenExecuteIntegration:
         filePattern: 'integration-tests/pom.xml'
   compliance:
-    onlyProductiveBranch: true
     stepConditions:
       sonarExecuteScan:
         configKeys:
@@ -56,12 +55,15 @@ stages:
           - 'appUrls'
   performanceTests:
     stepConditions:
+      gatlingExecuteTests:
+        filePatternFromConfig: 'pomPath'
+        configKeys:
+          - 'appUrls'
       performanceTests:
         configKeys:
           - 'cfTargets'
           - 'neoTargets'
   security:
-    onlyProductiveBranch: true
     stepConditions:
       checkmarxExecuteScan:
         configKeys:
@@ -78,7 +80,6 @@ stages:
           - 'orgAdminUserTokenCredentialsId'
           - 'userTokenCredentialsId'
   productionDeployment:
-    onlyProductiveBranch: true
     stepConditions:
       multicloudDeploy:
         configKeys:
@@ -106,7 +107,6 @@ stages:
         configKeys:
           - 'githubTokenCredentialsId'
   artifactDeployment:
-    onlyProductiveBranch: true
     stepConditions:
       artifactDeployment:
         configKeys:

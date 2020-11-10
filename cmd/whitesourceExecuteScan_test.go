@@ -1,13 +1,14 @@
 package cmd
 
 import (
+	"path/filepath"
+	"testing"
+	"time"
+
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 	ws "github.com/SAP/jenkins-library/pkg/whitesource"
 	"github.com/stretchr/testify/assert"
-	"path/filepath"
-	"testing"
-	"time"
 )
 
 type whitesourceCoordinatesMock struct {
@@ -122,6 +123,26 @@ func TestResolveProjectIdentifiers(t *testing.T) {
 		// assert
 		assert.EqualError(t, err, "no product with name 'does-not-exist' found in Whitesource")
 	})
+	t.Run("product not found, created from pipeline", func(t *testing.T) {
+		// init
+		config := ScanOptions{
+			BuildTool:                            "mta",
+			CreateProductFromPipeline:            true,
+			EmailAddressesOfInitialProductAdmins: []string{"user1@domain.org", "user2@domain.org"},
+			VersioningModel:                      "major",
+			ProductName:                          "created-by-pipeline",
+		}
+		utilsMock := newWhitesourceUtilsMock()
+		systemMock := ws.NewSystemMock("ignored")
+		scan := newWhitesourceScan(&config)
+		// test
+		err := resolveProjectIdentifiers(&config, scan, utilsMock, systemMock)
+		// assert
+		assert.NoError(t, err)
+		assert.Len(t, systemMock.Products, 2)
+		assert.Equal(t, "created-by-pipeline", systemMock.Products[1].Name)
+		assert.Equal(t, "mock-product-token-1", config.ProductToken)
+	})
 }
 
 func TestBlockUntilProjectIsUpdated(t *testing.T) {
@@ -129,7 +150,7 @@ func TestBlockUntilProjectIsUpdated(t *testing.T) {
 	t.Run("already new enough", func(t *testing.T) {
 		// init
 		nowString := "2010-05-30 00:15:00 +0100"
-		now, err := time.Parse(whitesourceDateTimeLayout, nowString)
+		now, err := time.Parse(ws.DateTimeLayout, nowString)
 		if err != nil {
 			t.Fatalf(err.Error())
 		}
@@ -143,7 +164,7 @@ func TestBlockUntilProjectIsUpdated(t *testing.T) {
 	t.Run("timeout while polling", func(t *testing.T) {
 		// init
 		nowString := "2010-05-30 00:15:00 +0100"
-		now, err := time.Parse(whitesourceDateTimeLayout, nowString)
+		now, err := time.Parse(ws.DateTimeLayout, nowString)
 		if err != nil {
 			t.Fatalf(err.Error())
 		}
@@ -159,7 +180,7 @@ func TestBlockUntilProjectIsUpdated(t *testing.T) {
 	t.Run("timeout while polling, no update time", func(t *testing.T) {
 		// init
 		nowString := "2010-05-30 00:15:00 +0100"
-		now, err := time.Parse(whitesourceDateTimeLayout, nowString)
+		now, err := time.Parse(ws.DateTimeLayout, nowString)
 		if err != nil {
 			t.Fatalf(err.Error())
 		}
@@ -174,63 +195,49 @@ func TestBlockUntilProjectIsUpdated(t *testing.T) {
 }
 
 func TestPersistScannedProjects(t *testing.T) {
-	resource := filepath.Join(".pipeline", "commonPipelineEnvironment", "custom", "whitesourceProjectNames")
-
 	t.Parallel()
 	t.Run("write 1 scanned projects", func(t *testing.T) {
 		// init
+		cpe := whitesourceExecuteScanCommonPipelineEnvironment{}
 		config := &ScanOptions{ProductVersion: "1"}
-		utils := newWhitesourceUtilsMock()
 		scan := newWhitesourceScan(config)
 		_ = scan.AppendScannedProject("project")
 		// test
-		err := persistScannedProjects(config, scan, utils)
+		persistScannedProjects(config, scan, &cpe)
 		// assert
-		if assert.NoError(t, err) && assert.True(t, utils.HasWrittenFile(resource)) {
-			contents, _ := utils.FileRead(resource)
-			assert.Equal(t, "project - 1", string(contents))
-		}
+		assert.Equal(t, []string{"project - 1"}, cpe.custom.whitesourceProjectNames)
 	})
 	t.Run("write 2 scanned projects", func(t *testing.T) {
 		// init
+		cpe := whitesourceExecuteScanCommonPipelineEnvironment{}
 		config := &ScanOptions{ProductVersion: "1"}
-		utils := newWhitesourceUtilsMock()
 		scan := newWhitesourceScan(config)
 		_ = scan.AppendScannedProject("project-app")
 		_ = scan.AppendScannedProject("project-db")
 		// test
-		err := persistScannedProjects(config, scan, utils)
+		persistScannedProjects(config, scan, &cpe)
 		// assert
-		if assert.NoError(t, err) && assert.True(t, utils.HasWrittenFile(resource)) {
-			contents, _ := utils.FileRead(resource)
-			assert.Equal(t, "project-app - 1,project-db - 1", string(contents))
-		}
+		assert.Equal(t, []string{"project-app - 1", "project-db - 1"}, cpe.custom.whitesourceProjectNames)
 	})
 	t.Run("write no projects", func(t *testing.T) {
 		// init
+		cpe := whitesourceExecuteScanCommonPipelineEnvironment{}
 		config := &ScanOptions{ProductVersion: "1"}
-		utils := newWhitesourceUtilsMock()
 		scan := newWhitesourceScan(config)
 		// test
-		err := persistScannedProjects(config, scan, utils)
+		persistScannedProjects(config, scan, &cpe)
 		// assert
-		if assert.NoError(t, err) && assert.True(t, utils.HasWrittenFile(resource)) {
-			contents, _ := utils.FileRead(resource)
-			assert.Equal(t, "", string(contents))
-		}
+		assert.Equal(t, []string{}, cpe.custom.whitesourceProjectNames)
 	})
 	t.Run("write aggregated project", func(t *testing.T) {
 		// init
+		cpe := whitesourceExecuteScanCommonPipelineEnvironment{}
 		config := &ScanOptions{ProjectName: "project", ProductVersion: "1"}
-		utils := newWhitesourceUtilsMock()
 		scan := newWhitesourceScan(config)
 		// test
-		err := persistScannedProjects(config, scan, utils)
+		persistScannedProjects(config, scan, &cpe)
 		// assert
-		if assert.NoError(t, err) && assert.True(t, utils.HasWrittenFile(resource)) {
-			contents, _ := utils.FileRead(resource)
-			assert.Equal(t, "project - 1", string(contents))
-		}
+		assert.Equal(t, []string{"project - 1"}, cpe.custom.whitesourceProjectNames)
 	})
 }
 
@@ -297,14 +304,14 @@ func TestCheckAndReportScanResults(t *testing.T) {
 		}
 		scan := newWhitesourceScan(config)
 		utils := newWhitesourceUtilsMock()
-		system := ws.NewSystemMock(time.Now().Format(whitesourceDateTimeLayout))
+		system := ws.NewSystemMock(time.Now().Format(ws.DateTimeLayout))
 		// test
 		err := checkAndReportScanResults(config, scan, utils, system)
 		// assert
 		assert.NoError(t, err)
-		vPath := filepath.Join("report-dir", "mock-project-vulnerability-report.txt")
+		vPath := filepath.Join("mock-reports", "mock-project-vulnerability-report.txt")
 		assert.False(t, utils.HasWrittenFile(vPath))
-		rPath := filepath.Join("report-dir", "mock-project-risk-report.pdf")
+		rPath := filepath.Join("mock-reports", "mock-project-risk-report.pdf")
 		assert.False(t, utils.HasWrittenFile(rPath))
 	})
 	t.Run("check vulnerabilities - invalid limit", func(t *testing.T) {
@@ -315,7 +322,7 @@ func TestCheckAndReportScanResults(t *testing.T) {
 		}
 		scan := newWhitesourceScan(config)
 		utils := newWhitesourceUtilsMock()
-		system := ws.NewSystemMock(time.Now().Format(whitesourceDateTimeLayout))
+		system := ws.NewSystemMock(time.Now().Format(ws.DateTimeLayout))
 		// test
 		err := checkAndReportScanResults(config, scan, utils, system)
 		// assert
@@ -333,7 +340,7 @@ func TestCheckAndReportScanResults(t *testing.T) {
 		}
 		scan := newWhitesourceScan(config)
 		utils := newWhitesourceUtilsMock()
-		system := ws.NewSystemMock(time.Now().Format(whitesourceDateTimeLayout))
+		system := ws.NewSystemMock(time.Now().Format(ws.DateTimeLayout))
 		// test
 		err := checkAndReportScanResults(config, scan, utils, system)
 		// assert
@@ -352,7 +359,7 @@ func TestCheckAndReportScanResults(t *testing.T) {
 		}
 		scan := newWhitesourceScan(config)
 		utils := newWhitesourceUtilsMock()
-		system := ws.NewSystemMock(time.Now().Format(whitesourceDateTimeLayout))
+		system := ws.NewSystemMock(time.Now().Format(ws.DateTimeLayout))
 		// test
 		err := checkAndReportScanResults(config, scan, utils, system)
 		// assert
