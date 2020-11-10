@@ -531,8 +531,7 @@ spec:
           - STEPS
         default: false
   containers:
-    - image: "<<please bring your own fortify image>>"
-      workingDir: "/home/piper"
+    - image: ""
   outputs:
     resources:
       - name: influx
