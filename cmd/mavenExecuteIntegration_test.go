@@ -3,6 +3,7 @@ package cmd
 import (
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
+	"path/filepath"
 	"testing"
 )
 
@@ -12,6 +13,7 @@ type mavenExecuteIntegrationTestUtilsBundle struct {
 }
 
 func TestIntegrationTestModuleDoesNotExist(t *testing.T) {
+	t.Parallel()
 	utils := newMavenIntegrationTestsUtilsBundle()
 	config := mavenExecuteIntegrationOptions{}
 
@@ -21,6 +23,7 @@ func TestIntegrationTestModuleDoesNotExist(t *testing.T) {
 }
 
 func TestHappyPathIntegrationTests(t *testing.T) {
+	t.Parallel()
 	utils := newMavenIntegrationTestsUtilsBundle()
 	utils.FilesMock.AddFile("integration-tests/pom.xml", []byte(`<project> </project>`))
 
@@ -36,7 +39,7 @@ func TestHappyPathIntegrationTests(t *testing.T) {
 
 	expectedParameters1 := []string{
 		"--file",
-		"integration-tests/pom.xml",
+		filepath.Join(".", "integration-tests", "pom.xml"),
 		"-Dsurefire.rerunFailingTestsCount=2",
 		"-Dsurefire.forkCount=1C",
 		"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
@@ -49,6 +52,7 @@ func TestHappyPathIntegrationTests(t *testing.T) {
 }
 
 func TestInvalidForkCountParam(t *testing.T) {
+	t.Parallel()
 	// init
 	utils := newMavenIntegrationTestsUtilsBundle()
 	utils.FilesMock.AddFile("integration-tests/pom.xml", []byte(`<project> </project>`))
@@ -113,7 +117,9 @@ func TestValidateForkCount(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
+		testCase := testCase
 		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
 			err := validateForkCount(testCase.testValue)
 			if testCase.expectedError == "" {
 				assert.NoError(t, err)
