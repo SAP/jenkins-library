@@ -52,6 +52,7 @@ func newDetectTestUtilsBundle() *detectTestUtilsBundle {
 func TestRunDetect(t *testing.T) {
 	t.Parallel()
 	t.Run("success case", func(t *testing.T) {
+		t.Parallel()
 		utilsMock := newDetectTestUtilsBundle()
 		utilsMock.AddFile("detect.sh", []byte(""))
 		err := runDetect(detectExecuteScanOptions{}, utilsMock)
@@ -66,7 +67,7 @@ func TestRunDetect(t *testing.T) {
 	})
 
 	t.Run("failure case", func(t *testing.T) {
-
+		t.Parallel()
 		utilsMock := newDetectTestUtilsBundle()
 		utilsMock.ShouldFailOnCommand = map[string]error{"./detect.sh --blackduck.url= --blackduck.api.token= --detect.project.name=\\\"\\\" --detect.project.version.name=\\\"\\\" --detect.code.location.name=\\\"\\\"": fmt.Errorf("Test Error")}
 		utilsMock.AddFile("detect.sh", []byte(""))
@@ -76,6 +77,7 @@ func TestRunDetect(t *testing.T) {
 	})
 
 	t.Run("maven parameters", func(t *testing.T) {
+		t.Parallel()
 		utilsMock := newDetectTestUtilsBundle()
 		utilsMock.CurrentDir = "root_folder"
 		utilsMock.AddFile("detect.sh", []byte(""))
@@ -182,7 +184,9 @@ func TestAddDetectArgs(t *testing.T) {
 	}
 
 	for k, v := range testData {
+		v := v
 		t.Run(fmt.Sprintf("run %v", k), func(t *testing.T) {
+			t.Parallel()
 			got, err := addDetectArgs(v.args, v.options, newDetectTestUtilsBundle())
 			assert.NoError(t, err)
 			assert.Equal(t, v.expected, got)
