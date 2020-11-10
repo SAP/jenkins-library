@@ -216,7 +216,7 @@ spec:
       - name: keepFailedDeployments
         type: bool
         description: Defines whether a failed deployment will be purged
-        default: true
+        default: false
         scope:
           - GENERAL
           - PARAMETERS
