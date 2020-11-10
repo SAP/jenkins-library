@@ -177,6 +177,17 @@ func abapAddonAssemblyKitReserveNextPackagesMetadata() config.StepData {
 					},
 				},
 			},
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{
+						Name: "commonPipelineEnvironment",
+						Type: "piperEnvironment",
+						Parameters: []map[string]interface{}{
+							{"Name": "abap/addonDescriptor"},
+						},
+					},
+				},
+			},
 		},
 	}
 	return theMetaData

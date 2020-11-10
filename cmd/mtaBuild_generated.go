@@ -243,6 +243,17 @@ func mtaBuildMetadata() config.StepData {
 				{Image: "devxci/mbtci:1.0.16.1", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "mtaBuildTool", Value: "cloudMbt"}}}}},
 				{Image: "ppiper/mta-archive-builder:v1", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "mtaBuildTool", Value: "classic"}}}}},
 			},
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{
+						Name: "commonPipelineEnvironment",
+						Type: "piperEnvironment",
+						Parameters: []map[string]interface{}{
+							{"Name": "mtarFilePath"},
+						},
+					},
+				},
+			},
 		},
 	}
 	return theMetaData

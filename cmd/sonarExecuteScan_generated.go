@@ -412,6 +412,17 @@ func sonarExecuteScanMetadata() config.StepData {
 			Containers: []config.Container{
 				{Name: "sonar", Image: "sonarsource/sonar-scanner-cli:4.5"},
 			},
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{
+						Name: "influx",
+						Type: "influx",
+						Parameters: []map[string]interface{}{
+							{"Name": "step_data"}, {"fields": "[map[name:sonar type:bool]]"},
+						},
+					},
+				},
+			},
 		},
 	}
 	return theMetaData

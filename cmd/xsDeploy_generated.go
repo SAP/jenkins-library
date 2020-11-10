@@ -284,6 +284,17 @@ func xsDeployMetadata() config.StepData {
 			Containers: []config.Container{
 				{Name: "xs", Image: "ppiper/xs-cli"},
 			},
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{
+						Name: "commonPipelineEnvironment",
+						Type: "piperEnvironment",
+						Parameters: []map[string]interface{}{
+							{"Name": "operationId"},
+						},
+					},
+				},
+			},
 		},
 	}
 	return theMetaData

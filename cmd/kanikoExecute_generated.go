@@ -248,6 +248,18 @@ func kanikoExecuteMetadata() config.StepData {
 			Containers: []config.Container{
 				{Image: "gcr.io/kaniko-project/executor:debug", Options: []config.Option{{Name: "-u", Value: "0"}, {Name: "--entrypoint", Value: "''"}}},
 			},
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{
+						Name: "commonPipelineEnvironment",
+						Type: "piperEnvironment",
+						Parameters: []map[string]interface{}{
+							{"Name": "container/registryUrl"},
+							{"Name": "container/imageNameTag"},
+						},
+					},
+				},
+			},
 		},
 	}
 	return theMetaData

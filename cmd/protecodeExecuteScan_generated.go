@@ -364,6 +364,17 @@ func protecodeExecuteScanMetadata() config.StepData {
 					},
 				},
 			},
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{
+						Name: "influx",
+						Type: "influx",
+						Parameters: []map[string]interface{}{
+							{"Name": "protecode_data"}, {"fields": "[map[name:historical_vulnerabilities] map[name:triaged_vulnerabilities] map[name:excluded_vulnerabilities] map[name:minor_vulnerabilities] map[name:major_vulnerabilities] map[name:vulnerabilities]]"},
+						},
+					},
+				},
+			},
 		},
 	}
 	return theMetaData

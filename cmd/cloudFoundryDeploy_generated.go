@@ -465,6 +465,17 @@ func cloudFoundryDeployMetadata() config.StepData {
 			Containers: []config.Container{
 				{Name: "cfDeploy", Image: "ppiper/cf-cli"},
 			},
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{
+						Name: "influx",
+						Type: "influx",
+						Parameters: []map[string]interface{}{
+							{"Name": "deployment_data"}, {"fields": "[map[name:artifactUrl] map[name:deployTime] map[name:jobTrigger]]"}, {"tags": "[map[name:artifactVersion] map[name:deployUser] map[name:deployResult] map[name:cfApiEndpoint] map[name:cfOrg] map[name:cfSpace]]"},
+						},
+					},
+				},
+			},
 		},
 	}
 	return theMetaData

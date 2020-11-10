@@ -399,6 +399,20 @@ func artifactPrepareVersionMetadata() config.StepData {
 			Containers: []config.Container{
 				{Image: "maven:3.6-jdk-8", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "maven"}}}}},
 			},
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{
+						Name: "commonPipelineEnvironment",
+						Type: "piperEnvironment",
+						Parameters: []map[string]interface{}{
+							{"Name": "artifactVersion"},
+							{"Name": "originalArtifactVersion"},
+							{"Name": "git/commitId"},
+							{"Name": "git/commitMessage"},
+						},
+					},
+				},
+			},
 		},
 	}
 	return theMetaData

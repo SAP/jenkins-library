@@ -547,6 +547,17 @@ func whitesourceExecuteScanMetadata() config.StepData {
 				{Image: "hseeberger/scala-sbt:8u181_2.12.8_1.2.8", WorkingDir: "/home/scala", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "scanType", Value: "sbt"}}}}},
 				{Image: "buildpack-deps:stretch-curl", WorkingDir: "/home/dub", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "scanType", Value: "dub"}}}}},
 			},
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{
+						Name: "commonPipelineEnvironment",
+						Type: "piperEnvironment",
+						Parameters: []map[string]interface{}{
+							{"Name": "custom/whitesourceProjectNames"},
+						},
+					},
+				},
+			},
 		},
 	}
 	return theMetaData

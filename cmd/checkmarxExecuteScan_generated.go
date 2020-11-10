@@ -471,6 +471,17 @@ func checkmarxExecuteScanMetadata() config.StepData {
 					},
 				},
 			},
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{
+						Name: "influx",
+						Type: "influx",
+						Parameters: []map[string]interface{}{
+							{"Name": "checkmarx_data"}, {"fields": "[map[name:high_issues] map[name:high_not_false_positive] map[name:high_not_exploitable] map[name:high_confirmed] map[name:high_urgent] map[name:high_proposed_not_exploitable] map[name:high_to_verify] map[name:medium_issues] map[name:medium_not_false_positive] map[name:medium_not_exploitable] map[name:medium_confirmed] map[name:medium_urgent] map[name:medium_proposed_not_exploitable] map[name:medium_to_verify] map[name:low_issues] map[name:low_not_false_positive] map[name:low_not_exploitable] map[name:low_confirmed] map[name:low_urgent] map[name:low_proposed_not_exploitable] map[name:low_to_verify] map[name:information_issues] map[name:information_not_false_positive] map[name:information_not_exploitable] map[name:information_confirmed] map[name:information_urgent] map[name:information_proposed_not_exploitable] map[name:information_to_verify] map[name:initiator_name] map[name:owner] map[name:scan_id] map[name:project_id] map[name:projectName] map[name:team] map[name:team_full_path_on_report_date] map[name:scan_start] map[name:scan_time] map[name:lines_of_code_scanned] map[name:files_scanned] map[name:checkmarx_version] map[name:scan_type] map[name:preset] map[name:deep_link] map[name:report_creation_time]]"},
+						},
+					},
+				},
+			},
 		},
 	}
 	return theMetaData

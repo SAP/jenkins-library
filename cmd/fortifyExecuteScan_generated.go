@@ -692,7 +692,18 @@ func fortifyExecuteScanMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Image: "<<please bring your own fortify image>>", WorkingDir: "/home/piper"},
+				{},
+			},
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{
+						Name: "influx",
+						Type: "influx",
+						Parameters: []map[string]interface{}{
+							{"Name": "fortify_data"}, {"fields": "[map[name:projectName] map[name:projectVersion] map[name:violations type:int] map[name:corporateTotal type:int] map[name:corporateAudited type:int] map[name:auditAllTotal type:int] map[name:auditAllAudited type:int] map[name:spotChecksTotal type:int] map[name:spotChecksAudited type:int] map[name:spotChecksGap type:int] map[name:suspicious type:int] map[name:exploitable type:int] map[name:suppressed type:int]]"},
+						},
+					},
+				},
 			},
 		},
 	}
