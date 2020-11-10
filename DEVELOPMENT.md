@@ -426,7 +426,7 @@ See also the [documentation](https://golang.org/pkg/testing/#T.Parallel) for `t.
 
 ```go
 func TestMethod(t *testing.T) {
-    t.Parallel() // indicates that this method can parallel to other methods
+    t.Parallel() // indicates that this method can run parallel to other methods
 
     t.Run("sub test 1", func(t *testing.T){
         t.Parallel() // indicates that this sub test can run parallel to other sub tests
