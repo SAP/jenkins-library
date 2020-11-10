@@ -76,6 +76,9 @@ stages:
       neoDeploy:
         configKeys:
           - 'neo/account'
+      tmsUpload:
+        configKeys:
+          - nodeName
       healthExecuteCheck:
         configKeys:
           - 'testServerUrl'
