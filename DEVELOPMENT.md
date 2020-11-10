@@ -421,7 +421,7 @@ utils interface can facilitate implementations of related functions to be based 
 Tests that can be executed in parallel should be marked as such. With the command `t.Parallel()` the test framework can
 be notified that this test can run in parallel, and it can start running the next test.
 ([Example in Stackoverflow](https://stackoverflow.com/questions/44325232/are-tests-executed-in-parallel-in-go-or-one-by-one))
-Therefore, this command shall be called at the beginning of a test method and `t.Run()` sub tests.
+Therefore, this command shall be called at the beginning of a test method **and also** in each `t.Run()` sub tests.
 See also the [documentation](https://golang.org/pkg/testing/#T.Parallel) for `t.Parallel()` and `t.Run()`.
 
 ```go
