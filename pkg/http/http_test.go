@@ -16,6 +16,9 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+
+	"encoding/base64"
+	"github.com/sirupsen/logrus"
 )
 
 func TestSendRequest(t *testing.T) {
@@ -39,6 +42,10 @@ func TestSendRequest(t *testing.T) {
 	// Close the server when test finishes
 	defer server.Close()
 
+	oldLogLevel := logrus.GetLevel()
+	defer logrus.SetLevel(oldLogLevel)
+	logrus.SetLevel(logrus.DebugLevel)
+
 	tt := []struct {
 		client   Client
 		method   string
@@ -55,6 +62,11 @@ func TestSendRequest(t *testing.T) {
 
 	for key, test := range tt {
 		t.Run(fmt.Sprintf("Row %v", key+1), func(t *testing.T) {
+			oldLogOutput := test.client.logger.Logger.Out
+			defer func() { test.client.logger.Logger.Out = oldLogOutput }()
+			logBuffer := new(bytes.Buffer)
+			test.client.logger.Logger.Out = logBuffer
+
 			response, err := test.client.SendRequest("GET", server.URL, test.body, test.header, test.cookies)
 			assert.NoError(t, err, "Error occurred but none expected")
 			content, err := ioutil.ReadAll(response.Body)
@@ -70,12 +82,18 @@ func TestSendRequest(t *testing.T) {
 				assert.Equal(t, test.cookies, passedCookies, "Passed cookies not correct")
 			}
 
-			if len(test.client.username) > 0 {
+			if len(test.client.username) > 0 || len(test.client.password) > 0 {
+				if len(test.client.username) == 0 || len(test.client.password) == 0 {
+					//"User and password must both be provided"
+					t.Fail()
+				}
 				assert.Equal(t, test.client.username, passedUsername)
-			}
-
-			if len(test.client.password) > 0 {
 				assert.Equal(t, test.client.password, passedPassword)
+
+				log := fmt.Sprintf("%s", logBuffer)
+				credentialsEncoded := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", test.client.username, test.client.password)))
+				assert.NotContains(t, log, fmt.Sprintf("Authorization:[Basic %s]", credentialsEncoded))
+				assert.Contains(t, log, "Authorization:[<set>]")
 			}
 		})
 	}

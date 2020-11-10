@@ -259,7 +259,7 @@ func (t *TransportWrapper) RoundTrip(req *http.Request) (*http.Response, error) 
 func (t *TransportWrapper) logRequest(req *http.Request) {
 	log.Entry().Debug("--------------------------------")
 	log.Entry().Debugf("--> %v request to %v", req.Method, req.URL)
-	log.Entry().Debugf("headers: %v", req.Header)
+	log.Entry().Debugf("headers: %v", transformHeaders(req.Header))
 	log.Entry().Debugf("cookies: %v", transformCookies(req.Cookies()))
 	if t.doLogRequestBodyOnDebug {
 		log.Entry().Debugf("body: %v", transformBody(req.Body))
@@ -282,6 +282,18 @@ func (t *TransportWrapper) logResponse(resp *http.Response) {
 		log.Entry().Debug("response <nil>")
 	}
 	log.Entry().Debug("--------------------------------")
+}
+
+func transformHeaders(header http.Header) http.Header {
+	var h http.Header = map[string][]string{}
+	for name, value := range header {
+		if name == "Authorization" {
+			value = []string{"<set>"}
+		}
+		h[name] = value
+
+	}
+	return h
 }
 
 func transformCookies(cookies []*http.Cookie) string {
