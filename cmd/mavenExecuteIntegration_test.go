@@ -39,7 +39,7 @@ func TestHappyPathIntegrationTests(t *testing.T) {
 
 	expectedParameters1 := []string{
 		"--file",
-		filepath.Join(".", "integration-tests/pom.xml"),
+		filepath.Join(".", "integration-tests", "pom.xml"),
 		"-Dsurefire.rerunFailingTestsCount=2",
 		"-Dsurefire.forkCount=1C",
 		"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
