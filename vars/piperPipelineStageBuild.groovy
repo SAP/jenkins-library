@@ -20,6 +20,8 @@ import static com.sap.piper.Prerequisites.checkScript
      * **Note: Please make sure that your build artifacts are contained here since this stash is the foundation for subsequent tests and checks, e.g. deployment to a test landscape.**
      **/
     'pipelineStashFilesAfterBuild',
+    /** Executes a Sonar scan.*/
+    'sonarExecuteScan',
     /** Publishes test results to Jenkins. It will always be active. */
     'testsPublishResults',
     /** Publishes check results to Jenkins. It will always be active. */
@@ -64,8 +66,14 @@ void call(Map parameters = [:]) {
             buildExecute script: script
             pipelineStashFilesAfterBuild script: script
 
-            testsPublishResults script: script, junit: [updateResults: true]
-            checksPublishResults script: script
+            try {
+                testsPublishResults script: script, junit: [updateResults: true]
+                checksPublishResults script: script
+            } finally {
+                if (config.sonarExecuteScan) {
+                    sonarExecuteScan script: script
+                }
+            }
         }
 
         if (config.mavenExecuteStaticCodeChecks) {
