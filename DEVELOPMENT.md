@@ -442,7 +442,9 @@ func TestMethod(t *testing.T) {
 
 Go will first execute the non-parallelized tests in sequence and afterwards execute all the parallel tests in parallel, limited by the default number of parallel executions.
 
-For table tests some additional lines are necessary to prevent overshadowing of the iteration variable.
+It is important that tests executed in parallel use the variable values actually meant to be visible to them.
+Especially in table tests, it can happen easily that a variable injected into the `t.Run()`-closure via the outer scope is changed before or while the closure executes.
+To prevent this, it is possible to create shadowing instances of variables in the body of the test loop.
 (See [blog about it](https://eleni.blog/2019/05/11/parallel-test-execution-in-go/).)
 Additionally, to the `t.Parallel()` a capture of the iteration variable is necessary.
 The loop opens with each iteration a new scope. The used variable in the loop is only defined outside the scope
