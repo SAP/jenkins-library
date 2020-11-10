@@ -230,6 +230,7 @@ Writing the file is handled by [`pkg/log/FatalHook`](pkg/log/fatalHook.go).
 1. [Mocking](#mocking)
 1. [Mockable Interface](#mockable-interface)
 1. [Global function pointers](global-function-pointers)
+1. [Test Parallelization](#test-parallelization)
 
 Unit tests are done using basic `golang` means.
 
@@ -414,6 +415,68 @@ Both approaches have their own benefits. Global function pointers require less p
 in the actual implementation and give great flexibility in the tests, while mocking interfaces
 tend to result in more code re-use and slim down the tests. The mocking implementation of a
 utils interface can facilitate implementations of related functions to be based on shared data.
+
+
+### Test Parallelization
+
+Tests that can be executed in parallel should be marked as such. With the command `t.Parallel()` the test framework can
+be notified that this test can run in parallel, and it can start running the next test.
+([Example in Stackoverflow](https://stackoverflow.com/questions/44325232/are-tests-executed-in-parallel-in-go-or-one-by-one))
+Therefore, this command shall be called at the beginning of a test method and `t.Run()` sub tests.
+See also the [documentation](https://golang.org/pkg/testing/#T.Parallel) for `t.Parallel()` and `t.Run()`.
+
+```go
+func TestMethod(t *testing.T) {
+    t.Parallel() // indicates that this method can parallel to other methods
+
+    t.Run("sub test 1", func(t *testing.T){
+        t.Parallel() // indicates that this sub test can run parallel to other sub tests
+        // execute test
+    })
+
+    t.Run("sub test 2", func(t *testing.T){
+        t.Parallel() // indicates that this sub test can run parallel to other sub tests
+        // execute test
+    })
+}
+```
+
+Go will first execute the non-parallelized tests in sequence and afterwards execute the all parallel tests in parallel
+limited by the default number of parallel executions.
+
+For table tests some additional lines are necessary to prevent overshadowing of the iteration variable.
+(See [blog about it](https://eleni.blog/2019/05/11/parallel-test-execution-in-go/).)
+Additionally, to the `t.Parallel()` a capture of the iteration variable is necessary.
+The loop opens with each iteration a new scope. The used variable in the loop is only defined outside the scope
+such that each loop overwrites the variable which will lead to execution of loops with the same variable multiple times
+and leave out some others. Therefore, the variable shall be captured by defining a new variable within the loops scope
+that represents the looping variable.
+
+```go
+func TestMethod(t *testing.T) {
+    t.Parallel() // indicates that this method can parallel to other methods
+    testCases := []struct {
+        Name string
+    }{
+        {
+            Name: "Name1"
+        },
+        {
+            Name: "Name2"
+        },
+    }
+
+    for i, name := range testCases { // name is only defined outside the loop
+        name := name // define new variable within loop to prevent overwrite of name variable outside loop
+        // Otherwise the test with "Name2" could get executed twice and "Name1" never.
+        // The same variable name "name" is used for convinience.
+        t.Run("sub test " + i, func(t *testing.T){
+            t.Parallel() // indicates that this sub test can run parallel to other sub tests
+            // execute test
+        })
+    }
+}
+```
 
 ## Debugging
 
