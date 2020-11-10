@@ -61,6 +61,36 @@ func TestAppendScannedProjectVersion(t *testing.T) {
 		assert.Equal(t, expected, scan.scannedProjects)
 		assert.Len(t, scan.scanTimes, 1)
 	})
+	t.Run("empty project name", func(t *testing.T) {
+		// init
+		scan := &Scan{ProductVersion: "1"}
+		// test
+		err := scan.AppendScannedProject("")
+		// assert
+		assert.EqualError(t, err, "projectName must not be empty")
+		assert.Len(t, scan.scannedProjects, 0)
+		assert.Len(t, scan.scanTimes, 0)
+	})
+	t.Run("product version supplied wrongly", func(t *testing.T) {
+		// init
+		scan := &Scan{ProductVersion: "1"}
+		// test
+		err := scan.AppendScannedProject("name - 1")
+		// assert
+		assert.EqualError(t, err, "projectName is not expected to include the product version already")
+		assert.Len(t, scan.scannedProjects, 0)
+		assert.Len(t, scan.scanTimes, 0)
+	})
+	t.Run("only version part in project name", func(t *testing.T) {
+		// init
+		scan := &Scan{ProductVersion: "1"}
+		// test
+		err := scan.AppendScannedProjectVersion(" - 1")
+		// assert
+		assert.EqualError(t, err, "projectName consists only of the product version")
+		assert.Len(t, scan.scannedProjects, 0)
+		assert.Len(t, scan.scanTimes, 0)
+	})
 }
 
 func TestAppendScannedProject(t *testing.T) {

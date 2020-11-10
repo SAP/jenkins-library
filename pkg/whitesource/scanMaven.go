@@ -29,12 +29,12 @@ func (s *Scan) ExecuteMavenScanForPomFile(config *ScanOptions, utils Utils, pomP
 	}
 
 	if config.InstallArtifacts {
-		err := maven.InstallMavenArtifacts(utils, &maven.EvaluateOptions{
+		err := maven.InstallMavenArtifacts(&maven.EvaluateOptions{
 			M2Path:              config.M2Path,
 			ProjectSettingsFile: config.ProjectSettingsFile,
 			GlobalSettingsFile:  config.GlobalSettingsFile,
 			PomPath:             pomPath,
-		})
+		}, utils)
 		if err != nil {
 			return err
 		}

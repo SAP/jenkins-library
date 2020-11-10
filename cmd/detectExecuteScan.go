@@ -95,11 +95,11 @@ func runDetect(config detectExecuteScanOptions, utils detectUtils) error {
 	}
 
 	if config.InstallArtifacts {
-		err := maven.InstallMavenArtifacts(utils, &maven.EvaluateOptions{
+		err := maven.InstallMavenArtifacts(&maven.EvaluateOptions{
 			M2Path:              config.M2Path,
 			ProjectSettingsFile: config.ProjectSettingsFile,
 			GlobalSettingsFile:  config.GlobalSettingsFile,
-		})
+		}, utils)
 		if err != nil {
 			return err
 		}
@@ -163,7 +163,7 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		args = append(args, fmt.Sprintf("--detect.source.path=%v", config.ScanPaths[0]))
 	}
 
-	mavenArgs, err := maven.DownloadAndGetMavenParameters(config.GlobalSettingsFile, config.ProjectSettingsFile, utils, utils)
+	mavenArgs, err := maven.DownloadAndGetMavenParameters(config.GlobalSettingsFile, config.ProjectSettingsFile, utils)
 	if err != nil {
 		return nil, err
 	}

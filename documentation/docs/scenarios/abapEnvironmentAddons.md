@@ -69,7 +69,7 @@ With the following tools the add-on deliveries are created.
 
 #### Assembly System
 First the ABAP system responsible for the add-on assembly. It is created during the pipeline and deleted in the end. All actions related to the ABAP source code are executed on this system, e.g. running checks with the ABAP Test Cockpit (ATC) or the physical build of the software components. There are two communication scenarios containing the different APIs of the ABAP Environment System: [Test Integration](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html) and [Software Assembly Integration](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html).
-The assembly system should be of [service type abap](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/f0163565eb554f009f990652ca41d1c6.html) and be provisioned with parameter `is_development_allowd = false` to prevent local changes.
+The assembly system should be of [service type abap](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/f0163565eb554f009f990652ca41d1c6.html) and be provisioned with parameter `is_development_allowed = false` to prevent local changes.
 
 #### Add-on Assembly Kit as a Service (=AAKaaS)
 The Add-on Assembly Kit as a Service is responsible for registering and publishing the software product. It is accessible via APIs with an S-User.
@@ -78,7 +78,7 @@ The Add-on Assembly Kit as a Service is responsible for registering and publishi
 With these SAP tools the assembled add-on deliveries are deployed to ABAP systems, for example into the [installation test system](#installation-test-system).
 
 #### Installation Test System
-In order to verify that the delivery packages included in the add-on product version being built are installable, a target vector is published in "test" scope. In the *Integration Tests* stage an ABAP system of service type abap-oem is created. This ABAP OEM service makes it possible to install a specific add-on product version into an ABAP system that is provisioned. The installation test system should be be provisioned with parameter `is_development_allowd = false` to prevent local changes.
+In order to verify that the delivery packages included in the add-on product version being built are installable, a target vector is published in "test" scope. In the *Integration Tests* stage an ABAP system of service type abap-oem is created. This ABAP OEM service makes it possible to install a specific add-on product version into an ABAP system that is provisioned. The installation test system should be be provisioned with parameter `is_development_allowed = false` to prevent local changes.
 
 ### Prerequisites
 
