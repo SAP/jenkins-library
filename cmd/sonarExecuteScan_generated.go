@@ -418,7 +418,7 @@ func sonarExecuteScanMetadata() config.StepData {
 						Name: "influx",
 						Type: "influx",
 						Parameters: []map[string]interface{}{
-							{"Name": "step_data"}, {"fields": "[map[name:sonar type:bool]]"},
+							{"Name": "step_data"}, {"fields": []map[string]string{{"name": "sonar"}}},
 						},
 					},
 				},

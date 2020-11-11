@@ -219,8 +219,8 @@ func {{ .StepName }}Metadata() config.StepData {
 						{{ if $res.Parameters }}Parameters: []map[string]interface{}{ {{- end -}}
 						{{ range $i, $p := $res.Parameters }}
 							{{ if $p.name}}{"Name": "{{$p.name}}"},{{ end -}}
-							{{ if $p.fields}}{"fields": "{{$p.fields}}" },{{ end -}}
-							{{ if $p.tags}}{"tags": "{{$p.tags}}" },{{ end -}}
+							{{ if $p.fields}}{"fields": []map[string]string{ {{- range $j, $f := $p.fields}} {"name": "{{$f.name}}"}, {{end -}} } },{{ end -}}
+							{{ if $p.tags}}{"tags": []map[string]string{ {{- range $j, $t := $p.tags}} {"name": "{{$t.name}}"}, {{end -}} } },{{ end -}}
 						{{ end }}
 						{{ if $res.Parameters -}} }, {{- end }}
 					}, {{- end }}
