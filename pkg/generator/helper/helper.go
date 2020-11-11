@@ -216,18 +216,16 @@ func {{ .StepName }}Metadata() config.StepData {
 					{
 						{{ if $res.Name }}Name: "{{$res.Name}}", {{- end }}
 						{{ if $res.Type }}Type: "{{$res.Type}}", {{- end }}
-						{{ if $res.Parameters }}Parameters: []map[string]interface{}{ {{- end }}
+						{{ if $res.Parameters }}Parameters: []map[string]interface{}{ {{- end -}}
 						{{ range $i, $p := $res.Parameters }}
-							{{- if $p.name}}{"Name": "{{$p.name}}"},{{end }}
-							{{- if $p.fields}}{"fields": "{{$p.fields}}" },{{end }}
-							{{- if $p.tags}}{"tags": "{{$p.tags}}" },{{end }}
-						{{end }}
+							{{ if $p.name}}{"Name": "{{$p.name}}"},{{ end -}}
+							{{ if $p.fields}}{"fields": "{{$p.fields}}" },{{ end -}}
+							{{ if $p.tags}}{"tags": "{{$p.tags}}" },{{ end -}}
+						{{ end }}
 						{{ if $res.Parameters -}} }, {{- end }}
-					},
-					{{ end -}}
+					}, {{- end }}
 				},
-			},
-			{{ end -}}
+			}, {{- end }}
 		},
 	}
 	return theMetaData
