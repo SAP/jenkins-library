@@ -18,6 +18,10 @@ func (s *Scan) ExecuteUAScan(config *ScanOptions, utils Utils) error {
 		return err
 	}
 
+	if err := s.AppendScannedProject(s.AggregateProjectName); err != nil {
+		return err
+	}
+
 	return utils.RunExecutable("java", "-jar", config.AgentFileName, "-d", ".", "-c", config.ConfigFilePath,
 		"-apiKey", config.OrgToken, "-userKey", config.UserToken, "-project", s.AggregateProjectName,
 		"-product", config.ProductName, "-productVersion", s.ProductVersion)

@@ -31,19 +31,24 @@ type Options struct {
 	VersioningScheme    string
 }
 
+// Utils defines the versioning operations for various build tools
+type Utils interface {
+	maven.Utils
+}
+
 type mvnRunner struct{}
 
-func (m *mvnRunner) Execute(options *maven.ExecuteOptions, execRunner mavenExecRunner) (string, error) {
-	return maven.Execute(options, execRunner)
+func (m *mvnRunner) Execute(options *maven.ExecuteOptions, utils maven.Utils) (string, error) {
+	return maven.Execute(options, utils)
 }
-func (m *mvnRunner) Evaluate(options *maven.EvaluateOptions, expression string, execRunner mavenExecRunner) (string, error) {
-	return maven.Evaluate(options, expression, execRunner)
+func (m *mvnRunner) Evaluate(options *maven.EvaluateOptions, expression string, utils maven.Utils) (string, error) {
+	return maven.Evaluate(options, expression, utils)
 }
 
 var fileExists func(string) (bool, error)
 
 // GetArtifact returns the build tool specific implementation for retrieving version, etc. of an artifact
-func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, execRunner mavenExecRunner) (Artifact, error) {
+func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, utils Utils) (Artifact, error) {
 	var artifact Artifact
 	if fileExists == nil {
 		fileExists = piperutils.FileExists
@@ -57,7 +62,7 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, execR
 		}
 	case "docker":
 		artifact = &Docker{
-			execRunner:       execRunner,
+			utils:            utils,
 			options:          opts,
 			path:             buildDescriptorFilePath,
 			versionSource:    opts.VersionSource,
@@ -73,9 +78,12 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, execR
 		}
 	case "gradle":
 		if len(buildDescriptorFilePath) == 0 {
-			buildDescriptorFilePath = "build.gradle"
+			buildDescriptorFilePath = "gradle.properties"
 		}
-		artifact = &Gradle{}
+		artifact = &Gradle{
+			path:         buildDescriptorFilePath,
+			versionField: opts.VersionField,
+		}
 	case "golang":
 		if len(buildDescriptorFilePath) == 0 {
 			var err error
@@ -97,8 +105,8 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, execR
 			buildDescriptorFilePath = "pom.xml"
 		}
 		artifact = &Maven{
-			runner:     &mvnRunner{},
-			execRunner: execRunner,
+			runner: &mvnRunner{},
+			utils:  utils,
 			options: maven.EvaluateOptions{
 				PomPath:             buildDescriptorFilePath,
 				ProjectSettingsFile: opts.ProjectSettingsFile,
