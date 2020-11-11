@@ -22,7 +22,6 @@ import org.junit.rules.RuleChain
 
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.Utils
-import com.sap.piper.GitUtils
 
 import util.BasePiperTest
 import util.JenkinsCredentialsRule
@@ -116,16 +115,12 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
         })
 
         UUID.metaClass.static.randomUUID = { -> 1 }
-
-        GitUtils.metaClass.insideWorkTree = { -> return true }
-        GitUtils.metaClass.getGitCommitIdOrNull = { -> return '0123456789012345678901234567890123456789' }
     }
 
     @After
     public void tearDown() {
         Utils.metaClass = null
         UUID.metaClass = null
-        GitUtils.metaClass = null
     }
 
     @Test
