@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"errors"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
+	"net/http"
 	"path/filepath"
 	"testing"
 )
@@ -10,6 +12,10 @@ import (
 type mavenExecuteIntegrationTestUtilsBundle struct {
 	*mock.ExecMockRunner
 	*mock.FilesMock
+}
+
+func (m mavenExecuteIntegrationTestUtilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+	return errors.New("Test should not download files.")
 }
 
 func TestIntegrationTestModuleDoesNotExist(t *testing.T) {
@@ -130,10 +136,10 @@ func TestValidateForkCount(t *testing.T) {
 	}
 }
 
-func newMavenIntegrationTestsUtilsBundle() mavenExecuteIntegrationTestUtilsBundle {
+func newMavenIntegrationTestsUtilsBundle() *mavenExecuteIntegrationTestUtilsBundle {
 	utilsBundle := mavenExecuteIntegrationTestUtilsBundle{
 		ExecMockRunner: &mock.ExecMockRunner{},
 		FilesMock:      &mock.FilesMock{},
 	}
-	return utilsBundle
+	return &utilsBundle
 }

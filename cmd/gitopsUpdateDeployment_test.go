@@ -16,6 +16,7 @@ import (
 func TestBuildRegistryPlusImage(t *testing.T) {
 	t.Parallel()
 	t.Run("build full image", func(t *testing.T) {
+		t.Parallel()
 		registryImage, err := buildRegistryPlusImage(&gitopsUpdateDeploymentOptions{
 			ContainerRegistryURL:  "https://myregistry.com/registry/containers",
 			ContainerImageNameTag: "myFancyContainer:1337",
@@ -25,6 +26,7 @@ func TestBuildRegistryPlusImage(t *testing.T) {
 	})
 
 	t.Run("without registry", func(t *testing.T) {
+		t.Parallel()
 		registryImage, err := buildRegistryPlusImage(&gitopsUpdateDeploymentOptions{
 			ContainerRegistryURL:  "",
 			ContainerImageNameTag: "myFancyContainer:1337",
@@ -33,11 +35,11 @@ func TestBuildRegistryPlusImage(t *testing.T) {
 		assert.Equal(t, "myFancyContainer:1337", registryImage)
 	})
 	t.Run("without faulty URL", func(t *testing.T) {
+		t.Parallel()
 		_, err := buildRegistryPlusImage(&gitopsUpdateDeploymentOptions{
 			ContainerRegistryURL:  "//myregistry.com/registry/containers",
 			ContainerImageNameTag: "myFancyContainer:1337",
 		})
-		assert.Error(t, err)
 		assert.EqualError(t, err, "registry URL could not be extracted: invalid registry url")
 	})
 }
@@ -45,6 +47,7 @@ func TestBuildRegistryPlusImage(t *testing.T) {
 func TestBuildRegistryPlusImageWithoutTag(t *testing.T) {
 	t.Parallel()
 	t.Run("build full image", func(t *testing.T) {
+		t.Parallel()
 		registryImage, tag, err := buildRegistryPlusImageAndTagSeparately(&gitopsUpdateDeploymentOptions{
 			ContainerRegistryURL:  "https://myregistry.com/registry/containers",
 			ContainerImageNameTag: "myFancyContainer:1337",
@@ -55,6 +58,7 @@ func TestBuildRegistryPlusImageWithoutTag(t *testing.T) {
 	})
 
 	t.Run("without registry", func(t *testing.T) {
+		t.Parallel()
 		registryImage, tag, err := buildRegistryPlusImageAndTagSeparately(&gitopsUpdateDeploymentOptions{
 			ContainerRegistryURL:  "",
 			ContainerImageNameTag: "myFancyContainer:1337",
@@ -64,11 +68,11 @@ func TestBuildRegistryPlusImageWithoutTag(t *testing.T) {
 		assert.Equal(t, "1337", tag)
 	})
 	t.Run("without faulty URL", func(t *testing.T) {
+		t.Parallel()
 		_, _, err := buildRegistryPlusImageAndTagSeparately(&gitopsUpdateDeploymentOptions{
 			ContainerRegistryURL:  "//myregistry.com/registry/containers",
 			ContainerImageNameTag: "myFancyContainer:1337",
 		})
-		assert.Error(t, err)
 		assert.EqualError(t, err, "registry URL could not be extracted: invalid registry url")
 	})
 }
@@ -89,6 +93,7 @@ func TestRunGitopsUpdateDeploymentWithKubectl(t *testing.T) {
 
 	t.Parallel()
 	t.Run("successful run", func(t *testing.T) {
+		t.Parallel()
 		gitUtilsMock := &gitUtilsMock{}
 		runnerMock := &gitOpsExecRunnerMock{}
 
@@ -106,6 +111,7 @@ func TestRunGitopsUpdateDeploymentWithKubectl(t *testing.T) {
 	})
 
 	t.Run("default commit message", func(t *testing.T) {
+		t.Parallel()
 		var configuration = *validConfiguration
 		configuration.CommitMessage = ""
 
@@ -126,6 +132,7 @@ func TestRunGitopsUpdateDeploymentWithKubectl(t *testing.T) {
 	})
 
 	t.Run("ChartPath not used for kubectl", func(t *testing.T) {
+		t.Parallel()
 		var configuration = *validConfiguration
 		configuration.ChartPath = "chartPath"
 
@@ -145,6 +152,7 @@ func TestRunGitopsUpdateDeploymentWithKubectl(t *testing.T) {
 	})
 
 	t.Run("HelmValues not used for kubectl", func(t *testing.T) {
+		t.Parallel()
 		var configuration = *validConfiguration
 		configuration.HelmValues = []string{"HelmValues"}
 
@@ -164,6 +172,7 @@ func TestRunGitopsUpdateDeploymentWithKubectl(t *testing.T) {
 	})
 
 	t.Run("DeploymentName not used for kubectl", func(t *testing.T) {
+		t.Parallel()
 		var configuration = *validConfiguration
 		configuration.DeploymentName = "DeploymentName"
 
@@ -183,6 +192,7 @@ func TestRunGitopsUpdateDeploymentWithKubectl(t *testing.T) {
 	})
 
 	t.Run("missing ContainerName", func(t *testing.T) {
+		t.Parallel()
 		var configuration = *validConfiguration
 		configuration.ContainerName = ""
 
@@ -190,19 +200,19 @@ func TestRunGitopsUpdateDeploymentWithKubectl(t *testing.T) {
 		runnerMock := &gitOpsExecRunnerMock{}
 
 		err := runGitopsUpdateDeployment(&configuration, runnerMock, gitUtilsMock, &filesMock{})
-		assert.Error(t, err)
 		assert.EqualError(t, err, "missing required fields for kubectl: the following parameters are necessary for kubectl: [containerName]")
 	})
 
 	t.Run("error on kubectl execution", func(t *testing.T) {
+		t.Parallel()
 		runner := &gitOpsExecRunnerMock{failOnRunExecutable: true}
 
 		err := runGitopsUpdateDeployment(validConfiguration, runner, &gitUtilsMock{}, &filesMock{})
-		assert.Error(t, err)
 		assert.EqualError(t, err, "error on kubectl execution: failed to apply kubectl command: failed to apply kubectl command: error happened")
 	})
 
 	t.Run("invalid URL", func(t *testing.T) {
+		t.Parallel()
 		var configuration = *validConfiguration
 		configuration.ContainerRegistryURL = "//myregistry.com/registry/containers"
 
@@ -211,6 +221,7 @@ func TestRunGitopsUpdateDeploymentWithKubectl(t *testing.T) {
 	})
 
 	t.Run("error on plain clone", func(t *testing.T) {
+		t.Parallel()
 		gitUtils := &gitUtilsMock{failOnClone: true}
 
 		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, gitUtils, &filesMock{})
@@ -218,6 +229,7 @@ func TestRunGitopsUpdateDeploymentWithKubectl(t *testing.T) {
 	})
 
 	t.Run("error on change branch", func(t *testing.T) {
+		t.Parallel()
 		gitUtils := &gitUtilsMock{failOnChangeBranch: true}
 
 		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, gitUtils, &filesMock{})
@@ -225,6 +237,7 @@ func TestRunGitopsUpdateDeploymentWithKubectl(t *testing.T) {
 	})
 
 	t.Run("error on commit changes", func(t *testing.T) {
+		t.Parallel()
 		gitUtils := &gitUtilsMock{failOnCommit: true}
 
 		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, gitUtils, &filesMock{})
@@ -232,6 +245,7 @@ func TestRunGitopsUpdateDeploymentWithKubectl(t *testing.T) {
 	})
 
 	t.Run("error on push commits", func(t *testing.T) {
+		t.Parallel()
 		gitUtils := &gitUtilsMock{failOnPush: true}
 
 		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, gitUtils, &filesMock{})
@@ -239,6 +253,7 @@ func TestRunGitopsUpdateDeploymentWithKubectl(t *testing.T) {
 	})
 
 	t.Run("error on temp dir creation", func(t *testing.T) {
+		t.Parallel()
 		fileUtils := &filesMock{failOnCreation: true}
 
 		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, fileUtils)
@@ -246,6 +261,7 @@ func TestRunGitopsUpdateDeploymentWithKubectl(t *testing.T) {
 	})
 
 	t.Run("error on file write", func(t *testing.T) {
+		t.Parallel()
 		fileUtils := &filesMock{failOnWrite: true}
 
 		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, fileUtils)
@@ -253,6 +269,7 @@ func TestRunGitopsUpdateDeploymentWithKubectl(t *testing.T) {
 	})
 
 	t.Run("error on temp dir deletion", func(t *testing.T) {
+		t.Parallel()
 		fileUtils := &filesMock{failOnDeletion: true}
 
 		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, fileUtils)
@@ -262,6 +279,7 @@ func TestRunGitopsUpdateDeploymentWithKubectl(t *testing.T) {
 }
 
 func TestRunGitopsUpdateDeploymentWithInvalid(t *testing.T) {
+	t.Parallel()
 	t.Run("invalid deploy tool is not supported", func(t *testing.T) {
 		var configuration = &gitopsUpdateDeploymentOptions{
 			BranchName:            "main",
@@ -280,7 +298,6 @@ func TestRunGitopsUpdateDeploymentWithInvalid(t *testing.T) {
 		}
 
 		err := runGitopsUpdateDeployment(configuration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, &filesMock{})
-		assert.Error(t, err)
 		assert.EqualError(t, err, "tool invalid is not supported")
 	})
 }
@@ -303,6 +320,7 @@ func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 
 	t.Parallel()
 	t.Run("successful run", func(t *testing.T) {
+		t.Parallel()
 		gitUtilsMock := &gitUtilsMock{}
 		runnerMock := &gitOpsExecRunnerMock{}
 
@@ -322,6 +340,7 @@ func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 	})
 
 	t.Run("default commit message", func(t *testing.T) {
+		t.Parallel()
 		var configuration = *validConfiguration
 		configuration.CommitMessage = ""
 
@@ -344,6 +363,7 @@ func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 	})
 
 	t.Run("ContainerName not used for helm", func(t *testing.T) {
+		t.Parallel()
 		var configuration = *validConfiguration
 		configuration.ContainerName = "containerName"
 
@@ -365,6 +385,7 @@ func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 	})
 
 	t.Run("HelmValues is optional", func(t *testing.T) {
+		t.Parallel()
 		var configuration = *validConfiguration
 		configuration.HelmValues = nil
 
@@ -384,69 +405,70 @@ func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 	})
 
 	t.Run("erroneous URL", func(t *testing.T) {
+		t.Parallel()
 		var configuration = *validConfiguration
 		configuration.ContainerRegistryURL = "://myregistry.com"
 
 		err := runGitopsUpdateDeployment(&configuration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, &filesMock{})
-		assert.Error(t, err)
 		assert.EqualError(t, err, `failed to apply helm command: failed to extract registry URL, image name, and image tag: registry URL could not be extracted: invalid registry url: parse "://myregistry.com": missing protocol scheme`)
 	})
 
 	t.Run("missing ChartPath", func(t *testing.T) {
+		t.Parallel()
 		var configuration = *validConfiguration
 		configuration.ChartPath = ""
 
 		err := runGitopsUpdateDeployment(&configuration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, &filesMock{})
-		assert.Error(t, err)
 		assert.EqualError(t, err, "missing required fields for helm: the following parameters are necessary for helm: [chartPath]")
 	})
 
 	t.Run("missing DeploymentName", func(t *testing.T) {
+		t.Parallel()
 		var configuration = *validConfiguration
 		configuration.DeploymentName = ""
 
 		err := runGitopsUpdateDeployment(&configuration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, &filesMock{})
-		assert.Error(t, err)
 		assert.EqualError(t, err, "missing required fields for helm: the following parameters are necessary for helm: [deploymentName]")
 	})
 
 	t.Run("missing DeploymentName and ChartPath", func(t *testing.T) {
+		t.Parallel()
 		var configuration = *validConfiguration
 		configuration.DeploymentName = ""
 		configuration.ChartPath = ""
 
 		err := runGitopsUpdateDeployment(&configuration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, &filesMock{})
-		assert.Error(t, err)
 		assert.EqualError(t, err, "missing required fields for helm: the following parameters are necessary for helm: [chartPath deploymentName]")
 	})
 
 	t.Run("erroneous tag", func(t *testing.T) {
+		t.Parallel()
 		var configuration = *validConfiguration
 		configuration.ContainerImageNameTag = "registry/containers/myFancyContainer:"
 
 		err := runGitopsUpdateDeployment(&configuration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, &filesMock{})
-		assert.Error(t, err)
 		assert.EqualError(t, err, "failed to apply helm command: failed to extract registry URL, image name, and image tag: tag could not be extracted")
 	})
 
 	t.Run("erroneous image name", func(t *testing.T) {
+		t.Parallel()
 		var configuration = *validConfiguration
 		configuration.ContainerImageNameTag = ":1.0.1"
 
 		err := runGitopsUpdateDeployment(&configuration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, &filesMock{})
-		assert.Error(t, err)
 		assert.EqualError(t, err, "failed to apply helm command: failed to extract registry URL, image name, and image tag: image name could not be extracted")
 	})
 
 	t.Run("error on helm execution", func(t *testing.T) {
+		t.Parallel()
 		runner := &gitOpsExecRunnerMock{failOnRunExecutable: true}
 
 		err := runGitopsUpdateDeployment(validConfiguration, runner, &gitUtilsMock{}, &filesMock{})
-		assert.Error(t, err)
 		assert.EqualError(t, err, "failed to apply helm command: failed to execute helm command: error happened")
 	})
 
 	t.Run("error on plain clone", func(t *testing.T) {
+		t.Parallel()
 		gitUtils := &gitUtilsMock{failOnClone: true}
 
 		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, gitUtils, &filesMock{})
@@ -454,6 +476,7 @@ func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 	})
 
 	t.Run("error on change branch", func(t *testing.T) {
+		t.Parallel()
 		gitUtils := &gitUtilsMock{failOnChangeBranch: true}
 
 		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, gitUtils, &filesMock{})
@@ -461,6 +484,7 @@ func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 	})
 
 	t.Run("error on commit changes", func(t *testing.T) {
+		t.Parallel()
 		gitUtils := &gitUtilsMock{failOnCommit: true}
 
 		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, gitUtils, &filesMock{})
@@ -468,6 +492,7 @@ func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 	})
 
 	t.Run("error on push commits", func(t *testing.T) {
+		t.Parallel()
 		gitUtils := &gitUtilsMock{failOnPush: true}
 
 		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, gitUtils, &filesMock{})
@@ -475,6 +500,7 @@ func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 	})
 
 	t.Run("error on temp dir creation", func(t *testing.T) {
+		t.Parallel()
 		fileUtils := &filesMock{failOnCreation: true}
 
 		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, fileUtils)
@@ -482,6 +508,7 @@ func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 	})
 
 	t.Run("error on file write", func(t *testing.T) {
+		t.Parallel()
 		fileUtils := &filesMock{failOnWrite: true}
 
 		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, fileUtils)
@@ -489,6 +516,7 @@ func TestRunGitopsUpdateDeploymentWithHelm(t *testing.T) {
 	})
 
 	t.Run("error on temp dir deletion", func(t *testing.T) {
+		t.Parallel()
 		fileUtils := &filesMock{failOnDeletion: true}
 
 		err := runGitopsUpdateDeployment(validConfiguration, &gitOpsExecRunnerMock{}, &gitUtilsMock{}, fileUtils)

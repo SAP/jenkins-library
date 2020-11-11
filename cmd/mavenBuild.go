@@ -1,28 +1,21 @@
 package cmd
 
 import (
-	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/maven"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
 func mavenBuild(config mavenBuildOptions, telemetryData *telemetry.CustomData) {
-	c := command.Command{}
+	utils := maven.NewUtilsBundle()
 
-	c.Stdout(log.Writer())
-	c.Stderr(log.Writer())
-
-	utils := piperutils.Files{}
-
-	err := runMavenBuild(&config, telemetryData, &c, &utils)
+	err := runMavenBuild(&config, telemetryData, utils)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomData, command command.ExecRunner, utils piperutils.FileUtils) error {
+func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomData, utils maven.Utils) error {
 	var flags = []string{"-update-snapshots", "--batch-mode"}
 
 	exists, _ := utils.FileExists("integration-tests/pom.xml")
@@ -57,6 +50,6 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 		LogSuccessfulMavenTransfers: config.LogSuccessfulMavenTransfers,
 	}
 
-	_, err := maven.Execute(&mavenOptions, command)
+	_, err := maven.Execute(&mavenOptions, utils)
 	return err
 }
