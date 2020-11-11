@@ -40,13 +40,16 @@ void call(Map parameters = [:]) {
     }
 
     if (errors) {
+        String message = ""
         if (errors.size() > 1) {
-            script.echo("Your pipeline configuration file contains the following errors:")
+            message += "Your pipeline configuration file contains the following errors:\n"
         }
         for (error in errors) {
-            script.echo(error)
+            message += error
+            message += "\n"
         }
-        script.error("Failing pipeline due to configuration errors. Please see log output above.")
+        message += "Failing pipeline due to configuration errors. Please see log output above."
+        script.error(message)
     }
 }
 
