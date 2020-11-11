@@ -111,14 +111,9 @@ stages:
       artifactDeployment:
         configKeys:
           - 'nexus'
-  promote:
-    stepConditions:
       nexusUpload:
         configKeys:
           - 'url'
-      promote:
-        configKeys:
-          - 'nexus'
   postPipelineHook:
     stepConditions:
       postPipelineHook:
