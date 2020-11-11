@@ -26,8 +26,9 @@ import (
 // Client defines an http client object
 type Client struct {
 	maxRequestDuration       time.Duration
-  maxRetries               int
+	maxRetries               int
 	transportTimeout         time.Duration
+	transportSkipVerification bool
 	username                 string
 	password                 string
 	token                    string
@@ -44,10 +45,11 @@ type ClientOptions struct {
 	// for the request will be enforced. This should only be used if the
 	// length of the request bodies is known.
 	MaxRequestDuration time.Duration
-  MaxRetries               int
+	MaxRetries               int
 	// TransportTimeout defaults to 3 minutes, if not specified. It is
 	// used for the transport layer and duration of handshakes and such.
 	TransportTimeout         time.Duration
+	TransportSkipVerification bool
 	Username                 string
 	Password                 string
 	Token                    string
