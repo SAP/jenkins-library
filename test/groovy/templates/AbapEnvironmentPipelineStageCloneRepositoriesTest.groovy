@@ -39,7 +39,7 @@ class AbapEnvironmentPipelineStageCloneRepositoriesTest extends BasePiperTest {
         helper.registerAllowedMethod('abapEnvironmentCheckoutBranch', [Map.class], {m -> stepsCalled.add('abapEnvironmentCheckoutBranch')})
         helper.registerAllowedMethod('abapEnvironmentCloneGitRepo', [Map.class], {m -> stepsCalled.add('abapEnvironmentCloneGitRepo')})
     }
-    
+
     @Test
     void testAbapEnvironmentPipelineStageCloneRepositoriesPull() {
 
@@ -59,7 +59,7 @@ class AbapEnvironmentPipelineStageCloneRepositoriesTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.configuration.runStage = [
             'Prepare System': true
         ]
-        
+
         jsr.step.abapEnvironmentPipelineStageCloneRepositories(script: nullScript, strategy: 'Clone')
 
         assertThat(stepsCalled, hasItems('abapEnvironmentCloneGitRepo'))
@@ -72,7 +72,7 @@ class AbapEnvironmentPipelineStageCloneRepositoriesTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.configuration.runStage = [
             'Prepare System': true
         ]
-        
+
         jsr.step.abapEnvironmentPipelineStageCloneRepositories(script: nullScript, strategy: 'CheckoutPull')
 
         assertThat(stepsCalled, hasItems('abapEnvironmentPullGitRepo', 'abapEnvironmentCheckoutBranch'))
@@ -85,8 +85,8 @@ class AbapEnvironmentPipelineStageCloneRepositoriesTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.configuration.runStage = [
             'Prepare System': true
         ]
-        
-        jsr.step.abapEnvironmentPipelineStageCloneRepositories(script: nullScript, strategy: 'addonBuild')
+
+        jsr.step.abapEnvironmentPipelineStageCloneRepositories(script: nullScript, strategy: 'AddonBuild')
 
         assertThat(stepsCalled, hasItems('abapEnvironmentPullGitRepo', 'abapEnvironmentCheckoutBranch'))
         assertThat(stepsCalled, not(hasItems('abapEnvironmentCloneGitRepo')))
@@ -98,7 +98,7 @@ class AbapEnvironmentPipelineStageCloneRepositoriesTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.configuration.runStage = [
             'Prepare System': true
         ]
-        
+
         jsr.step.abapEnvironmentPipelineStageCloneRepositories(script: nullScript)
 
         assertThat(stepsCalled, hasItems('abapEnvironmentPullGitRepo'))

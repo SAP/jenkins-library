@@ -19,6 +19,10 @@ void call(Map parameters = [:]) {
         errors.addAll(checkForRemovedOrReplacedConfigKeys(script, configChanges.removedOrReplacedConfigKeys))
     }
 
+    if (configChanges?.requiredConfigKeys) {
+        errors.addAll(checkForMissingConfigKeys(script, configChanges.requiredConfigKeys))
+    }
+
     if (configChanges?.removedOrReplacedSteps) {
         errors.addAll(checkForRemovedOrReplacedSteps(script, configChanges.removedOrReplacedSteps))
     }
@@ -36,13 +40,16 @@ void call(Map parameters = [:]) {
     }
 
     if (errors) {
+        String message = ""
         if (errors.size() > 1) {
-            script.echo("Your pipeline configuration file contains the following errors:")
+            message += "Your pipeline configuration file contains the following errors:\n"
         }
         for (error in errors) {
-            script.echo(error)
+            message += error
+            message += "\n"
         }
-        script.error("Failing pipeline due to configuration errors. Please see log output above.")
+        message += "Failing pipeline due to configuration errors. Please see log output above."
+        script.error(message)
     }
 }
 
@@ -108,6 +115,72 @@ static List checkForRemovedOrReplacedConfigKeys(Script script, Map configChanges
                     "This configuration option was removed. " + customMessage
                 if (warnInsteadOfError) {
                     addPipelineWarning(script, "Deprecated configuration key ${oldConfigKey}", errorMessage)
+                } else {
+                    errors.add(errorMessage)
+                }
+            }
+        }
+    }
+    return errors
+}
+
+static List checkForMissingConfigKeys(Script script, Map configChanges) {
+    List errors = []
+    configChanges.each { requiredConfigKey, changes ->
+        List steps = changes?.steps ?: []
+        List stages = changes?.stages ?: []
+        Boolean general = changes?.general ?: false
+        Boolean postAction = changes?.postAction ?: false
+
+        Boolean warnInsteadOfError = changes?.warnInsteadOfError ?: false
+        String customMessage = changes?.customMessage ?: ""
+
+        for (int i = 0; i < steps.size(); i++) {
+            Map config = loadEffectiveStepConfig(script, steps[i])
+            if (!config.containsKey(requiredConfigKey)) {
+                String errorMessage = "Your pipeline configuration does not contain the configuration " +
+                    "key ${requiredConfigKey} for the step ${steps[i]}. " + customMessage
+                if (warnInsteadOfError) {
+                    addPipelineWarning(script, "Missing configuration key ${requiredConfigKey}", errorMessage)
+                } else {
+                    errors.add(errorMessage)
+                }
+            }
+        }
+
+        for (int i = 0; i < stages.size(); i++) {
+            Map config = loadEffectiveStageConfig(script, stages[i])
+            if (!config.containsKey(requiredConfigKey)) {
+                String errorMessage = "Your pipeline configuration does not contain the configuration " +
+                    "key ${requiredConfigKey} for the stage ${stages[i]}. " + customMessage
+                if (warnInsteadOfError) {
+                    addPipelineWarning(script, "Missing configuration key ${requiredConfigKey}", errorMessage)
+                } else {
+                    errors.add(errorMessage)
+                }
+            }
+        }
+
+        if (general) {
+            Map config = loadEffectiveGeneralConfig(script)
+            if (!config.containsKey(requiredConfigKey)) {
+                String errorMessage = "Your pipeline configuration does not contain the configuration " +
+                    "key ${requiredConfigKey} in the general section. " + customMessage
+                if (warnInsteadOfError) {
+                    addPipelineWarning(script, "Missing configuration key ${requiredConfigKey}", errorMessage)
+                } else {
+                    errors.add(errorMessage)
+                }
+            }
+        }
+
+        if (postAction) {
+            Map config = loadEffectivePostActionConfig(script)
+            if (!config.containsKey(requiredConfigKey)) {
+                String errorMessage = "Your pipeline configuration does not contain the configuration " +
+                    "key ${requiredConfigKey} in the postActions section. " + customMessage
+                if (warnInsteadOfError) {
+                    addPipelineWarning(script, "Missing configuration key ${requiredConfigKey}", errorMessage)
                 } else {
                     errors.add(errorMessage)
                 }
