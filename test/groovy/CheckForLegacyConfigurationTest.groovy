@@ -271,9 +271,9 @@ class CheckForLegacyConfigurationTest extends BasePiperTest {
             ]
         ]
 
-        String exception = "Failing pipeline due to configuration errors. Please see log output above."
-        String output = "Your pipeline configuration contains the configuration key oldConfigKey for the step someStep. " +
-            "This configuration option was removed. test"
+        String exception = "Your pipeline configuration contains the configuration key oldConfigKey for the step someStep. This configuration option was removed. test\n" +
+            "Failing pipeline due to configuration errors. Please see log output above."
+        String output = ""
 
         assertExceptionAndOutput(exception, output) {
             stepRule.step.checkForLegacyConfiguration(script: nullScript, legacyConfigSettings: configChanges)
@@ -292,9 +292,9 @@ class CheckForLegacyConfigurationTest extends BasePiperTest {
             ]
         ]
 
-        String exception = "Failing pipeline due to configuration errors. Please see log output above."
-        String output = "Your pipeline configuration contains configuration for the step oldStep. " +
-            "This step has been removed. Please configure the step newStep instead. test"
+        String exception = "Your pipeline configuration contains configuration for the step oldStep. This step has been removed. Please configure the step newStep instead. test\n" +
+            "Failing pipeline due to configuration errors. Please see log output above."
+        String output = ""
 
         assertExceptionAndOutput(exception, output) {
             stepRule.step.checkForLegacyConfiguration(script: nullScript, legacyConfigSettings: configChanges)
@@ -310,9 +310,9 @@ class CheckForLegacyConfigurationTest extends BasePiperTest {
             ]
         ]
 
-        String exception = "Failing pipeline due to configuration errors. Please see log output above."
-        String output = "Your pipeline configuration contains configuration for the stage oldStage. " +
-            "This stage has been removed. "
+        String exception = "Your pipeline configuration contains configuration for the stage oldStage. This stage has been removed. \n" +
+            "Failing pipeline due to configuration errors. Please see log output above."
+        String output = ""
 
         assertExceptionAndOutput(exception, output) {
             stepRule.step.checkForLegacyConfiguration(script: nullScript, legacyConfigSettings: configChanges)
@@ -332,9 +332,9 @@ class CheckForLegacyConfigurationTest extends BasePiperTest {
             ]
         ]
 
-        String exception = "Failing pipeline due to configuration errors. Please see log output above."
-        String output = "Your pipeline configuration contains the configuration key configKeyOldType for the step testStep. " +
-            "The type of this configuration parameter was changed from String to List. test"
+        String exception = "Your pipeline configuration contains the configuration key configKeyOldType for the step testStep. The type of this configuration parameter was changed from String to List. test\n" +
+            "Failing pipeline due to configuration errors. Please see log output above."
+        String output = ""
 
         assertExceptionAndOutput(exception, output) {
             stepRule.step.checkForLegacyConfiguration(script: nullScript, legacyConfigSettings: configChanges)
@@ -351,9 +351,9 @@ class CheckForLegacyConfigurationTest extends BasePiperTest {
             ]
         ]
 
-        String exception = "Failing pipeline due to configuration errors. Please see log output above."
-        String output = "Your package.json file package.json contains an npm script using the deprecated name oldNpmScriptName. " +
-            "Please rename the script to newNpmScriptName, since the script oldNpmScriptName will not be executed by the pipeline anymore. test"
+        String exception = "Your package.json file package.json contains an npm script using the deprecated name oldNpmScriptName. Please rename the script to newNpmScriptName, since the script oldNpmScriptName will not be executed by the pipeline anymore. test\n" +
+            "Failing pipeline due to configuration errors. Please see log output above."
+        String output = ""
 
         assertExceptionAndOutput(exception, output) {
             stepRule.step.checkForLegacyConfiguration(script: nullScript, legacyConfigSettings: configChanges)
