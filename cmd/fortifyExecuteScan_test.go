@@ -486,7 +486,8 @@ func TestAnalyseUnauditedIssues(t *testing.T) {
 			},
 		},
 	}
-	issues := analyseUnauditedIssues(config, &ff, &projectVersion, &models.FilterSet{}, &selectorSet, &influx, auditStatus)
+	issues, err := analyseUnauditedIssues(config, &ff, &projectVersion, &models.FilterSet{}, &selectorSet, &influx, auditStatus)
+	assert.NoError(t, err)
 	assert.Equal(t, 13, issues)
 
 	assert.Equal(t, 15, influx.fortify_data.fields.auditAllTotal)
@@ -788,7 +789,8 @@ func TestAutoresolveClasspath(t *testing.T) {
 		defer os.RemoveAll(dir)
 		file := filepath.Join(dir, "cp.txt")
 
-		result := autoresolvePipClasspath("python2", []string{"-c", "import sys;p=sys.path;p.remove('');print(';'.join(p))"}, file, &utils)
+		result, err := autoresolvePipClasspath("python2", []string{"-c", "import sys;p=sys.path;p.remove('');print(';'.join(p))"}, file, &utils)
+		assert.NoError(t, err)
 		assert.Equal(t, "python2", utils.executions[0].executable, "Expected different executable")
 		assert.Equal(t, []string{"-c", "import sys;p=sys.path;p.remove('');print(';'.join(p))"}, utils.executions[0].parameters, "Expected different parameters")
 		assert.Equal(t, "/usr/lib/python35.zip;/usr/lib/python3.5;/usr/lib/python3.5/plat-x86_64-linux-gnu;/usr/lib/python3.5/lib-dynload;/home/piper/.local/lib/python3.5/site-packages;/usr/local/lib/python3.5/dist-packages;/usr/lib/python3/dist-packages;./lib", result, "Expected different result")
