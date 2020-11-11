@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/maven"
 
 	"github.com/pkg/errors"
@@ -17,8 +16,8 @@ type mavenExecRunner interface {
 }
 
 type mavenRunner interface {
-	Execute(*maven.ExecuteOptions, mavenExecRunner) (string, error)
-	Evaluate(*maven.EvaluateOptions, string, mavenExecRunner) (string, error)
+	Execute(*maven.ExecuteOptions, maven.Utils) (string, error)
+	Evaluate(*maven.EvaluateOptions, string, maven.Utils) (string, error)
 }
 
 // MavenDescriptor holds the unique identifier combination for Maven built Java artifacts
@@ -31,9 +30,9 @@ type MavenDescriptor struct {
 
 // Maven defines a maven artifact used for versioning
 type Maven struct {
-	options    maven.EvaluateOptions
-	runner     mavenRunner
-	execRunner mavenExecRunner
+	options maven.EvaluateOptions
+	runner  mavenRunner
+	utils   maven.Utils
 }
 
 func (m *Maven) init() {
@@ -41,8 +40,8 @@ func (m *Maven) init() {
 		m.options.PomPath = "pom.xml"
 	}
 
-	if m.execRunner == nil {
-		m.execRunner = &command.Command{}
+	if m.utils == nil {
+		m.utils = maven.NewUtilsBundle()
 	}
 }
 
@@ -78,7 +77,7 @@ func (m *Maven) GetCoordinates() (Coordinates, error) {
 func (m *Maven) GetPackaging() (string, error) {
 	m.init()
 
-	packaging, err := m.runner.Evaluate(&m.options, "project.packaging", m.execRunner)
+	packaging, err := m.runner.Evaluate(&m.options, "project.packaging", m.utils)
 	if err != nil {
 		return "", errors.Wrap(err, "Maven - getting packaging failed")
 	}
@@ -89,7 +88,7 @@ func (m *Maven) GetPackaging() (string, error) {
 func (m *Maven) GetGroupID() (string, error) {
 	m.init()
 
-	groupID, err := m.runner.Evaluate(&m.options, "project.groupId", m.execRunner)
+	groupID, err := m.runner.Evaluate(&m.options, "project.groupId", m.utils)
 	if err != nil {
 		return "", errors.Wrap(err, "Maven - getting groupId failed")
 	}
@@ -100,7 +99,7 @@ func (m *Maven) GetGroupID() (string, error) {
 func (m *Maven) GetArtifactID() (string, error) {
 	m.init()
 
-	artifactID, err := m.runner.Evaluate(&m.options, "project.artifactId", m.execRunner)
+	artifactID, err := m.runner.Evaluate(&m.options, "project.artifactId", m.utils)
 	if err != nil {
 		return "", errors.Wrap(err, "Maven - getting artifactId failed")
 	}
@@ -111,7 +110,7 @@ func (m *Maven) GetArtifactID() (string, error) {
 func (m *Maven) GetVersion() (string, error) {
 	m.init()
 
-	version, err := m.runner.Evaluate(&m.options, "project.version", m.execRunner)
+	version, err := m.runner.Evaluate(&m.options, "project.version", m.utils)
 	if err != nil {
 		return "", errors.Wrap(err, "Maven - getting version failed")
 	}
@@ -123,7 +122,7 @@ func (m *Maven) GetVersion() (string, error) {
 func (m *Maven) SetVersion(version string) error {
 	m.init()
 
-	groupID, err := m.runner.Evaluate(&m.options, "project.groupId", m.execRunner)
+	groupID, err := m.runner.Evaluate(&m.options, "project.groupId", m.utils)
 	if err != nil {
 		return errors.Wrap(err, "Maven - getting groupId failed")
 	}
@@ -141,7 +140,7 @@ func (m *Maven) SetVersion(version string) error {
 			"-DgenerateBackupPoms=false",
 		},
 	}
-	_, err = m.runner.Execute(&opts, m.execRunner)
+	_, err = m.runner.Execute(&opts, m.utils)
 	if err != nil {
 		return errors.Wrapf(err, "Maven - setting version %v failed", version)
 	}
