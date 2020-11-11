@@ -25,17 +25,17 @@ import (
 
 // Client defines an http client object
 type Client struct {
-	maxRequestDuration       time.Duration
-	maxRetries               int
-	transportTimeout         time.Duration
+	maxRequestDuration        time.Duration
+	maxRetries                int
+	transportTimeout          time.Duration
 	transportSkipVerification bool
-	username                 string
-	password                 string
-	token                    string
-	logger                   *logrus.Entry
-	cookieJar                http.CookieJar
-	doLogRequestBodyOnDebug  bool
-	doLogResponseBodyOnDebug bool
+	username                  string
+	password                  string
+	token                     string
+	logger                    *logrus.Entry
+	cookieJar                 http.CookieJar
+	doLogRequestBodyOnDebug   bool
+	doLogResponseBodyOnDebug  bool
 }
 
 // ClientOptions defines the options to be set on the client
@@ -45,18 +45,18 @@ type ClientOptions struct {
 	// for the request will be enforced. This should only be used if the
 	// length of the request bodies is known.
 	MaxRequestDuration time.Duration
-	MaxRetries               int
+	MaxRetries         int
 	// TransportTimeout defaults to 3 minutes, if not specified. It is
 	// used for the transport layer and duration of handshakes and such.
-	TransportTimeout         time.Duration
+	TransportTimeout          time.Duration
 	TransportSkipVerification bool
-	Username                 string
-	Password                 string
-	Token                    string
-	Logger                   *logrus.Entry
-	CookieJar                http.CookieJar
-	DoLogRequestBodyOnDebug  bool
-	DoLogResponseBodyOnDebug bool
+	Username                  string
+	Password                  string
+	Token                     string
+	Logger                    *logrus.Entry
+	CookieJar                 http.CookieJar
+	DoLogRequestBodyOnDebug   bool
+	DoLogResponseBodyOnDebug  bool
 }
 
 // TransportWrapper is a wrapper for central logging capabilities
