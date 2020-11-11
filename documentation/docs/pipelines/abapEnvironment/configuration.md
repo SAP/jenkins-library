@@ -34,7 +34,7 @@ An Overview of the releases of the Piper Library can be found [here](https://git
 
 ## 3. Configuration for the Communication
 
-The communication to the ABAP system is done using a Communication Arrangement. The Communication Arrangement is created during the pipeline via the command `cf create-service-key`. The configuration for the command needs to be stored in a JSON file. Create the file `sap_com_0510.json` in the repository with the following content:
+The communication to the ABAP system is done using a Communication Arrangement. The Communication Arrangement is created during the pipeline stage `Prepare System` after the system creation via the command `cf create-service-key`. The configuration for the command needs to be stored in a JSON file. Create the file `sap_com_0510.json` in the repository with the following content:
 
 ```json
 {
@@ -114,7 +114,7 @@ Please have a look at the [step documentation](https://sap.github.io/jenkins-lib
 
 ### Clone Repositories
 
-If the `Clone Repositories` stage is configured, you can specify the `strategy` that should be performed on the Software Components and the Branches that you have configured in the `respositories.yml` file in step [5. Configuration for Cloning the repositories](#5-configuration-for-cloning-the-repositories). Per default the strategy will be set to `Pull` if not specified. The following strategies are supported and can be used on the Software Components and Branches:
+If the `Clone Repositories` stage is configured, you can specify the `strategy` that should be performed on the Software Components and the Branches that you have configured in the `respositories.yml` file in step [4. Configuration for Cloning the repositories](#4-configuration-for-cloning-the-repositories). Per default the strategy will be set to `Pull` if not specified. The following strategies are supported and can be used on the Software Components and Branches:
 
 * `Pull`: If you have specified Pull as the strategy the [abapEnvironmentPullGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentPullGitRepo/) step will be used
 * `Clone`: If you have specified the Clone strategy the [abapEnvironmentCloneGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentCloneGitRepo/) step will be used
