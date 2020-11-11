@@ -16,10 +16,10 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/motemen/go-nuts/roundtime"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/hashicorp/go-retryablehttp"
 )
 
 // Client defines an http client object
