@@ -26,15 +26,6 @@ func hadolintExecute(config hadolintExecuteOptions, _ *telemetry.CustomData) {
 	runner.Stderr(log.Writer())
 
 	client := piperhttp.Client{}
-	clientOptions := piperhttp.ClientOptions{
-		TransportTimeout:          20 * time.Second,
-		TransportSkipVerification: true,
-	}
-	if len(config.ConfigurationUsername) > 0 {
-		clientOptions.Username = config.ConfigurationUsername
-		clientOptions.Password = config.ConfigurationPassword
-	}
-	client.SetOptions(clientOptions)
 
 	if err := runHadolint(config, &client, &runner); err != nil {
 		log.Entry().WithError(err).Fatal("Execution failed")
@@ -46,6 +37,16 @@ func runHadolint(config hadolintExecuteOptions, client piperhttp.Downloader, run
 	var errorBuffer bytes.Buffer
 	runner.Stdout(&outputBuffer)
 	runner.Stderr(&errorBuffer)
+
+	clientOptions := piperhttp.ClientOptions{
+		TransportTimeout:          20 * time.Second,
+		TransportSkipVerification: true,
+	}
+	if len(config.ConfigurationUsername) > 0 {
+		clientOptions.Username = config.ConfigurationUsername
+		clientOptions.Password = config.ConfigurationPassword
+	}
+	client.SetOptions(clientOptions)
 
 	options := []string{
 		"--format checkstyle",

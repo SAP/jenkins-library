@@ -39,7 +39,9 @@ func (c *hadolintMockClient) DownloadFile(url, filename string, header http.Head
 func TestRunHadolintExecute(t *testing.T) {
 	t.Run("default", func(t *testing.T) {
 		// init
-		config := hadolintExecuteOptions{}
+		config := hadolintExecuteOptions{
+			DockerFile: "./Dockerfile",
+		}
 		utils := newHadolintExecuteScanTestsUtils()
 		// test
 		err := runHadolint(config, &utils, &utils)
@@ -58,7 +60,8 @@ func TestRunHadolintExecute(t *testing.T) {
 	t.Run("with remote config", func(t *testing.T) {
 		// init
 		config := hadolintExecuteOptions{
-			ConfigurationFile: "anything",
+			DockerFile:        "./Dockerfile",
+			ConfigurationFile: ".hadolint.yaml",
 			ConfigurationURL:  "https://myconfig",
 		}
 		utils := newHadolintExecuteScanTestsUtils()
@@ -74,6 +77,6 @@ func TestRunHadolintExecute(t *testing.T) {
 		// hasFile not mocked yet
 		// assert.Contains(t, utils.Calls[0].Params, "--config")
 		assert.Contains(t, utils.requestedURL, "https://myconfig")
-		assert.Contains(t, utils.requestedFile, "anything")
+		assert.Contains(t, utils.requestedFile, ".hadolint.yaml")
 	})
 }
