@@ -351,6 +351,8 @@ steps:
       - 'tests'
   npmExecute:
     dockerImage: 'node:lts-stretch'
+  npmExecuteScripts:
+    install: true
   whitesourceExecuteScan:
     createProductFromPipeline: true
     emailAddressesOfInitialProductAdmins: []
@@ -611,3 +613,8 @@ steps:
     mode: 'DEPLOY'
     action: 'NONE'
     xsSessionFile: '.xsconfig'
+
+stages:
+  'Pull-Request Voting':
+    runScripts: [ 'ci-frontend-unit-test' ]
+    virtualFrameBuffer: true
