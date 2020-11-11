@@ -164,6 +164,7 @@ func (sys *SystemInstance) GetProjectByName(projectName string, autoCreate bool,
 
 	// Project with specified name was NOT found, check if autoCreate flag is set, if not stop otherwise create it automatically
 	if !autoCreate {
+		log.SetErrorCategory(log.ErrorConfiguration)
 		return nil, fmt.Errorf("Project with name %v not found in backend and automatic creation not enabled", projectName)
 	}
 
@@ -194,6 +195,7 @@ func (sys *SystemInstance) GetProjectVersionDetailsByProjectIDAndVersionName(id 
 	}
 	// projectVersion not found for specified project id and name, check if autoCreate is enabled
 	if !autoCreate {
+		log.SetErrorCategory(log.ErrorConfiguration)
 		return nil, errors.New(fmt.Sprintf("Project version with name %v not found in project with ID %v and automatic creation not enabled", versionName, id))
 	}
 
