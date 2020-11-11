@@ -63,6 +63,9 @@ stages:
       containerPushToRegistry:
         configKeys:
           - 'dockerRegistryUrl'
+      nexusUpload:
+        configKeys:
+          - 'url'
   Release:
     stepConditions:
       multicloudDeploy:
