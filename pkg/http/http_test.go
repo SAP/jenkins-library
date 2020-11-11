@@ -305,8 +305,8 @@ func TestTransportSkipVerification(t *testing.T) {
 
 func TestMaxRetries(t *testing.T) {
 	testCases := []struct {
-		client        Client
-		countedCalls  int
+		client       Client
+		countedCalls int
 	}{
 		{client: Client{maxRetries: 0}, countedCalls: 1},
 		{client: Client{maxRetries: 2}, countedCalls: 3},
