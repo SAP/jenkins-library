@@ -165,7 +165,7 @@ func TestUploadRequest(t *testing.T) {
 		cookies       []*http.Cookie
 		expected      string
 	}{
-		{clientOptions: ClientOptions{MaxRetries: 3}, method: "PUT", expected: "OK"},
+		{clientOptions: ClientOptions{}, method: "PUT", expected: "OK"},
 		{clientOptions: ClientOptions{}, method: "POST", expected: "OK"},
 		{clientOptions: ClientOptions{}, method: "POST", header: map[string][]string{"Testheader": {"Test1", "Test2"}}, expected: "OK"},
 		{clientOptions: ClientOptions{}, cookies: []*http.Cookie{{Name: "TestCookie1", Value: "TestValue1"}, {Name: "TestCookie2", Value: "TestValue2"}}, method: "POST", expected: "OK"},
@@ -300,6 +300,32 @@ func TestTransportSkipVerification(t *testing.T) {
 		} else {
 			assert.NoError(t, err)
 		}
+	}
+}
+
+func TestMaxRetries(t *testing.T) {
+	testCases := []struct {
+		client        Client
+		countedCalls  int
+	}{
+		{client: Client{maxRetries: 0}, countedCalls: 1},
+		{client: Client{maxRetries: 2}, countedCalls: 3},
+		{client: Client{maxRetries: 3}, countedCalls: 4},
+	}
+
+	for _, testCase := range testCases {
+		// init
+		count := 0
+		svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			count++
+			w.WriteHeader(500)
+		}))
+		defer svr.Close()
+		// test
+		_, err := testCase.client.SendRequest(http.MethodGet, svr.URL, &bytes.Buffer{}, nil, nil)
+		// assert
+		assert.Error(t, err)
+		assert.Equal(t, testCase.countedCalls, count)
 	}
 }
 

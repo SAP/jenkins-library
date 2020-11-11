@@ -232,14 +232,17 @@ func (c *Client) initialize() *http.Client {
 	var httpClient *http.Client
 	if c.maxRetries > 0 {
 		retryClient := retryablehttp.NewClient()
+		retryClient.HTTPClient.Timeout = c.maxRequestDuration
+		retryClient.HTTPClient.Jar = c.cookieJar
+		retryClient.HTTPClient.Transport = transport
 		retryClient.RetryMax = c.maxRetries
 		httpClient = retryClient.StandardClient()
 	} else {
 		httpClient = &http.Client{}
+		httpClient.Timeout = c.maxRequestDuration
+		httpClient.Jar = c.cookieJar
+		httpClient.Transport = transport
 	}
-	httpClient.Timeout = c.maxRequestDuration
-	httpClient.Jar = c.cookieJar
-	httpClient.Transport = transport
 
 	if c.transportSkipVerification {
 		c.logger.Debugf("TLS verification disabled")
