@@ -321,6 +321,32 @@ func TestTransportSkipVerification(t *testing.T) {
 	}
 }
 
+func TestMaxRetries(t *testing.T) {
+	testCases := []struct {
+		client       Client
+		countedCalls int
+	}{
+		{client: Client{maxRetries: 0}, countedCalls: 1},
+		{client: Client{maxRetries: 2}, countedCalls: 3},
+		{client: Client{maxRetries: 3}, countedCalls: 4},
+	}
+
+	for _, testCase := range testCases {
+		// init
+		count := 0
+		svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			count++
+			w.WriteHeader(500)
+		}))
+		defer svr.Close()
+		// test
+		_, err := testCase.client.SendRequest(http.MethodGet, svr.URL, &bytes.Buffer{}, nil, nil)
+		// assert
+		assert.Error(t, err)
+		assert.Equal(t, testCase.countedCalls, count)
+	}
+}
+
 func TestParseHTTPResponseBodyJSON(t *testing.T) {
 
 	type myJSONStruct struct {

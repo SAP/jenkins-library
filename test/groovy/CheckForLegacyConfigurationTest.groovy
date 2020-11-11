@@ -127,6 +127,68 @@ class CheckForLegacyConfigurationTest extends BasePiperTest {
     }
 
     @Test
+    void testCheckForMissingConfigKeys() {
+        nullScript.commonPipelineEnvironment.configuration = [steps: [someStep: [:]]]
+        Map configChanges = [importantConfigKey: [steps: ['someStep'], customMessage: "test"]]
+
+        List errors = stepRule.step.checkForLegacyConfiguration.checkForMissingConfigKeys(nullScript, configChanges)
+
+        assertEquals(errors, ["Your pipeline configuration does not contain the configuration key importantConfigKey for the step someStep. test"])
+    }
+
+    @Test
+    void testCheckForMissingConfigKeysWithWarning() {
+        String expectedWarning = "[WARNING] Your pipeline configuration does not contain the configuration key importantConfigKey for the step someStep. test"
+
+        nullScript.commonPipelineEnvironment.configuration = [steps: [someStep: [:]]]
+        Map configChanges = [importantConfigKey: [steps: ['someStep'], warnInsteadOfError: true, customMessage: "test"]]
+
+        List errors = stepRule.step.checkForLegacyConfiguration.checkForMissingConfigKeys(nullScript, configChanges)
+        assertEquals(expectedWarning, echoOutput)
+        assertEquals(errors, [])
+    }
+
+    @Test
+    void testCheckForMissingStageConfigKeys() {
+        nullScript.commonPipelineEnvironment.configuration = [stages: [someStage: [:]]]
+        Map configChanges = [importantConfigKey: [stages: ['someStage']]]
+
+        List errors = stepRule.step.checkForLegacyConfiguration.checkForMissingConfigKeys(nullScript, configChanges)
+
+        assertEquals(errors, ["Your pipeline configuration does not contain the configuration key importantConfigKey for the stage someStage. "])
+    }
+
+    @Test
+    void testCheckForMissingGeneralConfigKeys() {
+        nullScript.commonPipelineEnvironment.configuration = [general: [:]]
+        Map configChanges = [importantConfigKey: [general: true]]
+
+        List errors = stepRule.step.checkForLegacyConfiguration.checkForMissingConfigKeys(nullScript, configChanges)
+
+        assertEquals(errors, ["Your pipeline configuration does not contain the configuration key importantConfigKey in the general section. "])
+    }
+
+    @Test
+    void testCheckForPresentGeneralConfigKeys() {
+        nullScript.commonPipelineEnvironment.configuration = [general: [importantConfigKey: 'isPresent']]
+        Map configChanges = [importantConfigKey: [general: true]]
+
+        List errors = stepRule.step.checkForLegacyConfiguration.checkForMissingConfigKeys(nullScript, configChanges)
+
+        assertEquals(errors, [])
+    }
+
+    @Test
+    void testCheckForMissingPostActionConfigKeys() {
+        nullScript.commonPipelineEnvironment.configuration = [postActions: [:]]
+        Map configChanges = [importantConfigKey: [postAction: true]]
+
+        List errors = stepRule.step.checkForLegacyConfiguration.checkForMissingConfigKeys(nullScript, configChanges)
+
+        assertEquals(errors, ["Your pipeline configuration does not contain the configuration key importantConfigKey in the postActions section. "])
+    }
+
+    @Test
     void testCheckForReplacedStep() {
         String oldStep = "oldStep"
         nullScript.commonPipelineEnvironment.configuration = [steps: [oldStep: [configKey: false]]]
@@ -271,9 +333,9 @@ class CheckForLegacyConfigurationTest extends BasePiperTest {
             ]
         ]
 
-        String exception = "Failing pipeline due to configuration errors. Please see log output above."
-        String output = "Your pipeline configuration contains the configuration key oldConfigKey for the step someStep. " +
-            "This configuration option was removed. test"
+        String exception = "Your pipeline configuration contains the configuration key oldConfigKey for the step someStep. This configuration option was removed. test\n" +
+            "Failing pipeline due to configuration errors. Please see log output above."
+        String output = ""
 
         assertExceptionAndOutput(exception, output) {
             stepRule.step.checkForLegacyConfiguration(script: nullScript, legacyConfigSettings: configChanges)
@@ -292,9 +354,9 @@ class CheckForLegacyConfigurationTest extends BasePiperTest {
             ]
         ]
 
-        String exception = "Failing pipeline due to configuration errors. Please see log output above."
-        String output = "Your pipeline configuration contains configuration for the step oldStep. " +
-            "This step has been removed. Please configure the step newStep instead. test"
+        String exception = "Your pipeline configuration contains configuration for the step oldStep. This step has been removed. Please configure the step newStep instead. test\n" +
+            "Failing pipeline due to configuration errors. Please see log output above."
+        String output = ""
 
         assertExceptionAndOutput(exception, output) {
             stepRule.step.checkForLegacyConfiguration(script: nullScript, legacyConfigSettings: configChanges)
@@ -310,9 +372,9 @@ class CheckForLegacyConfigurationTest extends BasePiperTest {
             ]
         ]
 
-        String exception = "Failing pipeline due to configuration errors. Please see log output above."
-        String output = "Your pipeline configuration contains configuration for the stage oldStage. " +
-            "This stage has been removed. "
+        String exception = "Your pipeline configuration contains configuration for the stage oldStage. This stage has been removed. \n" +
+            "Failing pipeline due to configuration errors. Please see log output above."
+        String output = ""
 
         assertExceptionAndOutput(exception, output) {
             stepRule.step.checkForLegacyConfiguration(script: nullScript, legacyConfigSettings: configChanges)
@@ -332,9 +394,9 @@ class CheckForLegacyConfigurationTest extends BasePiperTest {
             ]
         ]
 
-        String exception = "Failing pipeline due to configuration errors. Please see log output above."
-        String output = "Your pipeline configuration contains the configuration key configKeyOldType for the step testStep. " +
-            "The type of this configuration parameter was changed from String to List. test"
+        String exception = "Your pipeline configuration contains the configuration key configKeyOldType for the step testStep. The type of this configuration parameter was changed from String to List. test\n" +
+            "Failing pipeline due to configuration errors. Please see log output above."
+        String output = ""
 
         assertExceptionAndOutput(exception, output) {
             stepRule.step.checkForLegacyConfiguration(script: nullScript, legacyConfigSettings: configChanges)
@@ -351,9 +413,9 @@ class CheckForLegacyConfigurationTest extends BasePiperTest {
             ]
         ]
 
-        String exception = "Failing pipeline due to configuration errors. Please see log output above."
-        String output = "Your package.json file package.json contains an npm script using the deprecated name oldNpmScriptName. " +
-            "Please rename the script to newNpmScriptName, since the script oldNpmScriptName will not be executed by the pipeline anymore. test"
+        String exception = "Your package.json file package.json contains an npm script using the deprecated name oldNpmScriptName. Please rename the script to newNpmScriptName, since the script oldNpmScriptName will not be executed by the pipeline anymore. test\n" +
+            "Failing pipeline due to configuration errors. Please see log output above."
+        String output = ""
 
         assertExceptionAndOutput(exception, output) {
             stepRule.step.checkForLegacyConfiguration(script: nullScript, legacyConfigSettings: configChanges)
