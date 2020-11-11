@@ -151,7 +151,7 @@ theme:
     palette:
       primary: 'teal'
       accent: 'purple'
-    logo: 'images/piper_head_white.png'
+    logo: 'images/piper_400_white.png'
     favicon: 'images/favicon.ico'
 extra:
     font:
