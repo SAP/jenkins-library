@@ -15,6 +15,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+var hadolintWriteFile = ioutil.WriteFile
+
 func hadolintExecute(config hadolintExecuteOptions, _ *telemetry.CustomData) {
 	runner := command.Command{
 		ErrorCategoryMapping: map[string][]string{},
@@ -71,7 +73,7 @@ func runHadolint(config hadolintExecuteOptions, client piperhttp.Downloader, run
 	// thus check stdout first if a report was created
 	if output := outputBuffer.String(); len(output) > 0 {
 		log.Entry().WithField("report", output).Debug("Report created")
-		ioutil.WriteFile(config.ReportFile, []byte(output), 0755)
+		hadolintWriteFile(config.ReportFile, []byte(output), 0755)
 	} else if err != nil {
 		// if stdout is empty a processing issue occured
 		return errors.Wrap(err, errorBuffer.String())
