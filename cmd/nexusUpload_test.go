@@ -25,7 +25,7 @@ type mockUtilsBundle struct {
 }
 
 func (m *mockUtilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
-	return errors.New("Test should not download files.")
+	return errors.New("test should not download files")
 }
 
 func newMockUtilsBundle(usesMta, usesMaven, usesNpm bool) *mockUtilsBundle {
@@ -148,6 +148,7 @@ var testPackageJson = []byte(`{
 func TestUploadMTAProjects(t *testing.T) {
 	t.Parallel()
 	t.Run("Uploading MTA project without groupId parameter fails", func(t *testing.T) {
+		t.Parallel()
 		utils := newMockUtilsBundle(true, false, false)
 		utils.AddFile("mta.yaml", testMtaYml)
 		utils.cpe[".pipeline/commonPipelineEnvironment/mtarFilePath"] = "test.mtar"
@@ -161,6 +162,7 @@ func TestUploadMTAProjects(t *testing.T) {
 		assert.Equal(t, 0, len(uploader.uploadedArtifacts))
 	})
 	t.Run("Uploading MTA project without artifactId parameter works", func(t *testing.T) {
+		t.Parallel()
 		utils := newMockUtilsBundle(true, false, false)
 		utils.AddFile("mta.yaml", testMtaYml)
 		utils.AddFile("test.mtar", []byte("contentsOfMtar"))
@@ -176,6 +178,7 @@ func TestUploadMTAProjects(t *testing.T) {
 		}
 	})
 	t.Run("Uploading MTA project fails due to missing yaml file", func(t *testing.T) {
+		t.Parallel()
 		utils := newMockUtilsBundle(true, false, false)
 		utils.cpe[".pipeline/commonPipelineEnvironment/mtarFilePath"] = "test.mtar"
 		uploader := mockUploader{}
@@ -187,6 +190,7 @@ func TestUploadMTAProjects(t *testing.T) {
 		assert.Equal(t, 0, len(uploader.uploadedArtifacts))
 	})
 	t.Run("Uploading MTA project fails due to garbage YAML content", func(t *testing.T) {
+		t.Parallel()
 		utils := newMockUtilsBundle(true, false, false)
 		utils.AddFile("mta.yaml", []byte("garbage"))
 		utils.cpe[".pipeline/commonPipelineEnvironment/mtarFilePath"] = "test.mtar"
@@ -200,6 +204,7 @@ func TestUploadMTAProjects(t *testing.T) {
 		assert.Equal(t, 0, len(uploader.uploadedArtifacts))
 	})
 	t.Run("Uploading MTA project fails due invalid version in YAML content", func(t *testing.T) {
+		t.Parallel()
 		utils := newMockUtilsBundle(true, false, false)
 		utils.AddFile("mta.yaml", []byte(testMtaYmlNoVersion))
 		utils.cpe[".pipeline/commonPipelineEnvironment/mtarFilePath"] = "test.mtar"
@@ -213,6 +218,7 @@ func TestUploadMTAProjects(t *testing.T) {
 		assert.Equal(t, 0, len(uploader.uploadedArtifacts))
 	})
 	t.Run("Test uploading mta.yaml project fails due to missing mtar file", func(t *testing.T) {
+		t.Parallel()
 		utils := newMockUtilsBundle(true, false, false)
 		utils.AddFile("mta.yaml", testMtaYml)
 		utils.cpe[".pipeline/commonPipelineEnvironment/mtarFilePath"] = "test.mtar"
@@ -234,6 +240,7 @@ func TestUploadMTAProjects(t *testing.T) {
 		assert.Equal(t, 0, len(uploader.uploadedArtifacts))
 	})
 	t.Run("Test uploading mta.yaml project works", func(t *testing.T) {
+		t.Parallel()
 		utils := newMockUtilsBundle(true, false, false)
 		utils.AddFile("mta.yaml", testMtaYml)
 		utils.AddFile("test.mtar", []byte("contentsOfMtar"))
@@ -257,6 +264,7 @@ func TestUploadMTAProjects(t *testing.T) {
 		}
 	})
 	t.Run("Test uploading mta.yml project works", func(t *testing.T) {
+		t.Parallel()
 		utils := newMockUtilsBundle(true, false, false)
 		utils.AddFile("mta.yml", testMtaYml)
 		utils.AddFile("test.mtar", []byte("contentsOfMtar"))
@@ -284,6 +292,7 @@ func TestUploadMTAProjects(t *testing.T) {
 func TestUploadArtifacts(t *testing.T) {
 	t.Parallel()
 	t.Run("Uploading MTA project fails without info", func(t *testing.T) {
+		t.Parallel()
 		utils := newMockUtilsBundle(false, true, false)
 		uploader := mockUploader{}
 		options := createOptions()
@@ -292,6 +301,7 @@ func TestUploadArtifacts(t *testing.T) {
 		assert.EqualError(t, err, "no group ID was provided, or could be established from project files")
 	})
 	t.Run("Uploading MTA project fails without any artifacts", func(t *testing.T) {
+		t.Parallel()
 		utils := newMockUtilsBundle(false, true, false)
 		uploader := mockUploader{}
 		options := createOptions()
@@ -302,6 +312,7 @@ func TestUploadArtifacts(t *testing.T) {
 		assert.EqualError(t, err, "no artifacts to upload")
 	})
 	t.Run("Uploading MTA project fails for unknown reasons", func(t *testing.T) {
+		t.Parallel()
 		utils := newMockUtilsBundle(false, true, false)
 
 		// Configure mocked execRunner to fail
@@ -324,6 +335,7 @@ func TestUploadArtifacts(t *testing.T) {
 		assert.EqualError(t, err, "uploading artifacts for ID 'some.id' failed: failed to run executable, command: '[mvn -Durl=http:// -DgroupId=my.group.id -Dversion=3.0 -DartifactId=some.id -Dfile=mta.yaml -Dpackaging=yaml -DgeneratePom=false -Dfiles=artifact.mtar -Dclassifiers= -Dtypes=yaml -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --batch-mode "+deployGoal+"]', error: failed")
 	})
 	t.Run("Uploading bundle generates correct maven parameters", func(t *testing.T) {
+		t.Parallel()
 		utils := newMockUtilsBundle(false, true, false)
 		uploader := mockUploader{}
 		options := createOptions()
@@ -362,8 +374,22 @@ func TestUploadArtifacts(t *testing.T) {
 	})
 }
 
-func TestUploadNpmProjects(t *testing.T) {
+func TestRunNexusUpload(t *testing.T) {
+	t.Parallel()
+	t.Run("uploading without any repos fails step", func(t *testing.T) {
+		t.Parallel()
+		utils := newMockUtilsBundle(false, false, true)
+		utils.AddFile("package.json", testPackageJson)
+		uploader := mockUploader{}
+		options := nexusUploadOptions{
+			Url: "localhost:8081",
+		}
+
+		err := runNexusUpload(utils, &uploader, &options)
+		assert.EqualError(t, err, "none of the parameters 'mavenRepository' and 'npmRepository' are configured")
+	})
 	t.Run("Test uploading simple npm project", func(t *testing.T) {
+		t.Parallel()
 		utils := newMockUtilsBundle(false, false, true)
 		utils.AddFile("package.json", testPackageJson)
 		uploader := mockUploader{}
@@ -384,6 +410,7 @@ func TestUploadNpmProjects(t *testing.T) {
 func TestUploadMavenProjects(t *testing.T) {
 	t.Parallel()
 	t.Run("Uploading Maven project fails due to missing pom.xml", func(t *testing.T) {
+		t.Parallel()
 		utils := newMockUtilsBundle(false, true, false)
 		uploader := mockUploader{}
 		options := createOptions()
@@ -393,6 +420,7 @@ func TestUploadMavenProjects(t *testing.T) {
 		assert.Equal(t, 0, len(uploader.uploadedArtifacts))
 	})
 	t.Run("Test uploading Maven project with POM packaging works", func(t *testing.T) {
+		t.Parallel()
 		utils := newMockUtilsBundle(false, true, false)
 		utils.setProperty("pom.xml", "project.version", "1.0")
 		utils.setProperty("pom.xml", "project.groupId", "com.mycompany.app")
@@ -415,6 +443,7 @@ func TestUploadMavenProjects(t *testing.T) {
 		}
 	})
 	t.Run("Test uploading Maven project with JAR packaging fails without main target", func(t *testing.T) {
+		t.Parallel()
 		utils := newMockUtilsBundle(false, true, false)
 		utils.setProperty("pom.xml", "project.version", "1.0")
 		utils.setProperty("pom.xml", "project.groupId", "com.mycompany.app")
@@ -431,6 +460,7 @@ func TestUploadMavenProjects(t *testing.T) {
 		assert.Equal(t, 0, len(uploader.uploadedArtifacts))
 	})
 	t.Run("Test uploading Maven project with JAR packaging works", func(t *testing.T) {
+		t.Parallel()
 		utils := newMockUtilsBundle(false, true, false)
 		utils.setProperty("pom.xml", "project.version", "1.0")
 		utils.setProperty("pom.xml", "project.groupId", "com.mycompany.app")
@@ -458,6 +488,7 @@ func TestUploadMavenProjects(t *testing.T) {
 		}
 	})
 	t.Run("Test uploading Maven project with fall-back to JAR packaging works", func(t *testing.T) {
+		t.Parallel()
 		utils := newMockUtilsBundle(false, true, false)
 		utils.setProperty("pom.xml", "project.version", "1.0")
 		utils.setProperty("pom.xml", "project.groupId", "com.mycompany.app")
@@ -484,6 +515,7 @@ func TestUploadMavenProjects(t *testing.T) {
 		}
 	})
 	t.Run("Test uploading Maven project with fall-back to group id from parameters works", func(t *testing.T) {
+		t.Parallel()
 		utils := newMockUtilsBundle(false, true, false)
 		utils.setProperty("pom.xml", "project.version", "1.0")
 		utils.setProperty("pom.xml", "project.artifactId", "my-app")
@@ -509,6 +541,7 @@ func TestUploadMavenProjects(t *testing.T) {
 		}
 	})
 	t.Run("Test uploading Maven project with fall-back for finalBuildName works", func(t *testing.T) {
+		t.Parallel()
 		utils := newMockUtilsBundle(false, true, false)
 		utils.setProperty("pom.xml", "project.version", "1.0")
 		utils.setProperty("pom.xml", "project.groupId", "awesome.group")
@@ -536,6 +569,7 @@ func TestUploadMavenProjects(t *testing.T) {
 		}
 	})
 	t.Run("Test uploading Maven project with application module and finalName works", func(t *testing.T) {
+		t.Parallel()
 		utils := newMockUtilsBundle(false, true, false)
 		utils.setProperty("pom.xml", "project.version", "1.0")
 		utils.setProperty("pom.xml", "project.groupId", "com.mycompany.app")
@@ -625,6 +659,7 @@ func TestUploadMavenProjects(t *testing.T) {
 		}
 	})
 	t.Run("Write credentials settings", func(t *testing.T) {
+		t.Parallel()
 		utils := newMockUtilsBundle(false, true, false)
 		utils.setProperty("pom.xml", "project.version", "1.0")
 		utils.setProperty("pom.xml", "project.groupId", "com.mycompany.app")
@@ -667,6 +702,7 @@ func TestUploadMavenProjects(t *testing.T) {
 }
 
 func TestSetupNexusCredentialsSettingsFile(t *testing.T) {
+	t.Parallel()
 	utils := newMockUtilsBundle(false, true, false)
 	options := nexusUploadOptions{Username: "admin", Password: "admin123"}
 	mavenOptions := maven.ExecuteOptions{}
