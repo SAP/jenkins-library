@@ -288,10 +288,24 @@ func transformHeaders(header http.Header) http.Header {
 	var h http.Header = map[string][]string{}
 	for name, value := range header {
 		if name == "Authorization" {
+			for _, v := range value {
+				// The format of the Authorization header value is: <type> <cred>.
+				// We don't register the full string since only the part after
+				// the first token is the secret in the narrower sense (applies at
+				// least for basic auth)
+				log.RegisterSecret(strings.Join(strings.Split(v, " ")[1:], " "))
+			}
+			// Since
+			//   1.) The auth header type itself might serve as a vector for an
+			//       intrusion
+			//   2.) We cannot make assumtions about the structure of the auth
+			//       header value since that depends on the type, e.g. several tokens
+			//       where only some of the tokens define the secret
+			// we hide the full auth header value anyway in order to be on the
+			// save side.
 			value = []string{"<set>"}
 		}
 		h[name] = value
-
 	}
 	return h
 }
