@@ -141,11 +141,8 @@ spec:
         type: piperEnvironment
         params:
           - name: mtarFilePath
-            fields:
-              - name: mtarFilePath
   containers:
-    - image: devxci/mbtci:1.0.14.1
-      imagePullPolicy: Always
+    - image: devxci/mbtci:1.0.16.1
       conditions:
         - conditionRef: strings-equal
           params:

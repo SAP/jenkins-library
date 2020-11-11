@@ -4,13 +4,14 @@ package mock
 
 import (
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/bmatcuk/doublestar"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/bmatcuk/doublestar"
 )
 
 var dirContent []byte
@@ -48,6 +49,7 @@ func (p *fileProperties) isDir() bool {
 type FilesMock struct {
 	files        map[string]*fileProperties
 	writtenFiles []string
+	copiedFiles  map[string]string
 	removedFiles []string
 	CurrentDir   string
 	Separator    string
@@ -59,6 +61,9 @@ func (f *FilesMock) init() {
 	}
 	if f.Separator == "" {
 		f.Separator = string(os.PathSeparator)
+	}
+	if f.copiedFiles == nil {
+		f.copiedFiles = map[string]string{}
 	}
 }
 
@@ -133,6 +138,12 @@ func (f *FilesMock) HasWrittenFile(path string) bool {
 	return piperutils.ContainsString(f.writtenFiles, f.toAbsPath(path))
 }
 
+// HasCopiedFile returns true if the virtual file system at one point contained an entry for the given source and destination,
+// and it was written via CopyFile().
+func (f *FilesMock) HasCopiedFile(src string, dest string) bool {
+	return f.copiedFiles[f.toAbsPath(src)] == f.toAbsPath(dest)
+}
+
 // FileExists returns true if file content has been associated with the given path, false otherwise.
 // Only relative paths are supported.
 func (f *FilesMock) FileExists(path string) (bool, error) {
@@ -186,6 +197,7 @@ func (f *FilesMock) Copy(src, dst string) (int64, error) {
 		return 0, fmt.Errorf("cannot copy '%s': %w", src, os.ErrNotExist)
 	}
 	f.AddFileWithMode(dst, *props.content, props.mode)
+	f.copiedFiles[f.toAbsPath(src)] = f.toAbsPath(dst)
 	return int64(len(*props.content)), nil
 }
 

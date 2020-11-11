@@ -1,4 +1,4 @@
-# Build an SAP Fiori Application and Attach It to a Transport Request on an ABAP System with Jenkins
+# Build an SAP Fiori Application and Attach It to a Transport Request on an ABAP System
 
 Build an application based on SAPUI5 or SAP Fiori with Jenkins and attach the build result to a transport request in an SAP ABAP system.
 

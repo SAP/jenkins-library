@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"io/ioutil"
 	"math"
 	"os"
@@ -37,11 +37,35 @@ type pullRequestService interface {
 	ListPullRequestsWithCommit(ctx context.Context, owner, repo, sha string, opts *github.PullRequestListOptions) ([]*github.PullRequest, *github.Response, error)
 }
 
-type fortifyExecRunner interface {
-	Stdout(out io.Writer)
-	Stderr(err io.Writer)
+type fortifyUtils interface {
+	maven.Utils
+
 	SetDir(d string)
-	RunExecutable(e string, p ...string) error
+
+	GetArtifact(buildTool, buildDescriptorFile string,
+		options *versioning.Options) (versioning.Artifact, error)
+}
+
+type fortifyUtilsBundle struct {
+	*command.Command
+	*piperutils.Files
+	*piperhttp.Client
+}
+
+func (bundle *fortifyUtilsBundle) GetArtifact(buildTool, buildDescriptorFile string,
+	options *versioning.Options) (versioning.Artifact, error) {
+	return versioning.GetArtifact(buildTool, buildDescriptorFile, options, bundle)
+}
+
+func newFortifyUtilsBundleBundle() fortifyUtils {
+	utils := fortifyUtilsBundle{
+		Command: &command.Command{},
+		Files:   &piperutils.Files{},
+		Client:  &piperhttp.Client{},
+	}
+	utils.Stdout(log.Writer())
+	utils.Stderr(log.Writer())
+	return &utils
 }
 
 const checkString = "<---CHECK FORTIFY---"
@@ -49,41 +73,38 @@ const classpathFileName = "fortify-execute-scan-cp.txt"
 
 func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux) {
 	auditStatus := map[string]string{}
-	sys := fortify.NewSystemInstance(config.ServerURL, config.APIEndpoint, config.AuthToken, time.Second*30)
-	c := &command.Command{}
-	// reroute command output to logging framework
-	c.Stdout(log.Entry().Writer())
-	c.Stderr(log.Entry().Writer())
+	sys := fortify.NewSystemInstance(config.ServerURL, config.APIEndpoint, config.AuthToken, time.Minute*15)
+	utils := newFortifyUtilsBundleBundle()
 
-	artifact, err := determineArtifact(config, c)
-	if err != nil {
-		log.Entry().WithError(err).Fatal()
-	}
-
-	reports, err := runFortifyScan(config, sys, c, artifact, telemetryData, influx, auditStatus)
+	reports, err := runFortifyScan(config, sys, utils, telemetryData, influx, auditStatus)
 	piperutils.PersistReportsAndLinks("fortifyExecuteScan", config.ModulePath, reports, nil)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Fortify scan and check failed")
 	}
 }
 
-func determineArtifact(config fortifyExecuteScanOptions, c *command.Command) (versioning.Artifact, error) {
+func determineArtifact(config fortifyExecuteScanOptions, utils fortifyUtils) (versioning.Artifact, error) {
 	versioningOptions := versioning.Options{
 		M2Path:              config.M2Path,
 		GlobalSettingsFile:  config.GlobalSettingsFile,
 		ProjectSettingsFile: config.ProjectSettingsFile,
 	}
 
-	artifact, err := versioning.GetArtifact(config.BuildTool, config.BuildDescriptorFile, &versioningOptions, c)
+	artifact, err := utils.GetArtifact(config.BuildTool, config.BuildDescriptorFile, &versioningOptions)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to get artifact from descriptor %v: %w", config.BuildDescriptorFile, err)
 	}
 	return artifact, nil
 }
 
-func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, command fortifyExecRunner, artifact versioning.Artifact, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux, auditStatus map[string]string) ([]piperutils.Path, error) {
+func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils fortifyUtils, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux, auditStatus map[string]string) ([]piperutils.Path, error) {
 	var reports []piperutils.Path
 	log.Entry().Debugf("Running Fortify scan against SSC at %v", config.ServerURL)
+
+	artifact, err := determineArtifact(config, utils)
+	if err != nil {
+		log.Entry().WithError(err).Fatal()
+	}
 	coordinates, err := artifact.GetCoordinates()
 	if err != nil {
 		return reports, fmt.Errorf("unable to get project coordinates from descriptor %v: %w", config.BuildDescriptorFile, err)
@@ -133,21 +154,21 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 
 	// Create sourceanalyzer command based on configuration
 	buildID := uuid.New().String()
-	command.SetDir(config.ModulePath)
+	utils.SetDir(config.ModulePath)
 	os.MkdirAll(fmt.Sprintf("%v/%v", config.ModulePath, "target"), os.ModePerm)
 
 	if config.UpdateRulePack {
-		err := command.RunExecutable("fortifyupdate", "-acceptKey", "-acceptSSLCertificate", "-url", config.ServerURL)
+		err := utils.RunExecutable("fortifyupdate", "-acceptKey", "-acceptSSLCertificate", "-url", config.ServerURL)
 		if err != nil {
 			log.Entry().WithError(err).WithField("serverUrl", config.ServerURL).Fatal("Failed to update rule pack")
 		}
-		err = command.RunExecutable("fortifyupdate", "-acceptKey", "-acceptSSLCertificate", "-showInstalledRules")
+		err = utils.RunExecutable("fortifyupdate", "-acceptKey", "-acceptSSLCertificate", "-showInstalledRules")
 		if err != nil {
 			log.Entry().WithError(err).WithField("serverUrl", config.ServerURL).Fatal("Failed to fetch details of installed rule pack")
 		}
 	}
 
-	triggerFortifyScan(config, command, buildID, buildLabel, fortifyProjectName)
+	triggerFortifyScan(config, utils, buildID, buildLabel, fortifyProjectName)
 
 	reports = append(reports, piperutils.Path{Target: fmt.Sprintf("%vtarget/fortify-scan.*", config.ModulePath)})
 	reports = append(reports, piperutils.Path{Target: fmt.Sprintf("%vtarget/*.fpr", config.ModulePath)})
@@ -161,7 +182,7 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, comman
 	} else {
 		log.Entry().Debug("Generating XML report")
 		xmlReportName := "fortify_result.xml"
-		err = command.RunExecutable("ReportGenerator", "-format", "xml", "-f", xmlReportName, "-source", fmt.Sprintf("%vtarget/result.fpr", config.ModulePath))
+		err = utils.RunExecutable("ReportGenerator", "-format", "xml", "-f", xmlReportName, "-source", fmt.Sprintf("%vtarget/result.fpr", config.ModulePath))
 		message = fmt.Sprintf("Failed to generate XML report %v", xmlReportName)
 		if err != nil {
 			reports = append(reports, piperutils.Path{Target: fmt.Sprintf("%vfortify_result.xml", config.ModulePath)})
@@ -208,7 +229,7 @@ func verifyFFProjectCompliance(config fortifyExecuteScanOptions, sys fortify.Sys
 
 	influx.fortify_data.fields.projectName = *project.Name
 	influx.fortify_data.fields.projectVersion = *projectVersion.Name
-	influx.fortify_data.fields.violations = fmt.Sprintf("%v", numberOfViolations)
+	influx.fortify_data.fields.violations = numberOfViolations
 	if numberOfViolations > 0 {
 		return errors.New("fortify scan failed, the project is not compliant. For details check the archived report")
 	}
@@ -253,12 +274,12 @@ func getIssueDeltaFor(config fortifyExecuteScanOptions, sys fortify.System, issu
 		if strings.Contains(config.MustAuditIssueGroups, group) {
 			totalMinusAuditedDelta += groupTotalMinusAuditedDelta
 			if group == "Corporate Security Requirements" {
-				influx.fortify_data.fields.corporateTotal = fmt.Sprintf("%v", total)
-				influx.fortify_data.fields.corporateAudited = fmt.Sprintf("%v", audited)
+				influx.fortify_data.fields.corporateTotal = total
+				influx.fortify_data.fields.corporateAudited = audited
 			}
 			if group == "Audit All" {
-				influx.fortify_data.fields.auditAllTotal = fmt.Sprintf("%v", total)
-				influx.fortify_data.fields.auditAllAudited = fmt.Sprintf("%v", audited)
+				influx.fortify_data.fields.auditAllTotal = total
+				influx.fortify_data.fields.auditAllAudited = audited
 			}
 			log.Entry().Errorf("[projectVersionId %v]: Unaudited %v detected, count %v", projectVersionID, group, totalMinusAuditedDelta)
 			logIssueURL(config, projectVersionID, folderSelector, analysisSelector)
@@ -313,9 +334,9 @@ func getSpotIssueCount(config fortifyExecuteScanOptions, sys fortify.System, spo
 		auditStatus[group] = fmt.Sprintf("%v total : %v audited %v", total, audited, flagOutput)
 	}
 
-	influx.fortify_data.fields.spotChecksTotal = fmt.Sprintf("%v", overallIssues)
-	influx.fortify_data.fields.spotChecksAudited = fmt.Sprintf("%v", overallIssuesAudited)
-	influx.fortify_data.fields.spotChecksGap = fmt.Sprintf("%v", overallDelta)
+	influx.fortify_data.fields.spotChecksTotal = overallIssues
+	influx.fortify_data.fields.spotChecksAudited = overallIssuesAudited
+	influx.fortify_data.fields.spotChecksGap = overallDelta
 
 	return overallDelta
 }
@@ -351,9 +372,9 @@ func analyseSuspiciousExploitable(config fortifyExecuteScanOptions, sys fortify.
 	if suppressedCount > 0 {
 		auditStatus["Suppressed"] = fmt.Sprintf("WARNING: Detected %v suppressed issues which could violate audit compliance!!!", suppressedCount)
 	}
-	influx.fortify_data.fields.suspicious = fmt.Sprintf("%v", suspiciousCount)
-	influx.fortify_data.fields.exploitable = fmt.Sprintf("%v", exploitableCount)
-	influx.fortify_data.fields.suppressed = fmt.Sprintf("%v", suppressedCount)
+	influx.fortify_data.fields.suspicious = suspiciousCount
+	influx.fortify_data.fields.exploitable = exploitableCount
+	influx.fortify_data.fields.suppressed = int(suppressedCount)
 
 	return result
 }
@@ -394,7 +415,7 @@ func generateAndDownloadQGateReport(config fortifyExecuteScanOptions, sys fortif
 		}
 		status = report.Status
 	}
-	data, err := sys.DownloadReportFile(config.ReportDownloadEndpoint, projectVersion.ID)
+	data, err := sys.DownloadReportFile(config.ReportDownloadEndpoint, report.ID)
 	if err != nil {
 		return []byte{}, fmt.Errorf("Failed to download Q-Gate Report: %w", err)
 	}
@@ -493,7 +514,7 @@ func calculateTimeDifferenceToLastUpload(uploadDate models.Iso8601MilliDateTime,
 	return absoluteSeconds
 }
 
-func executeTemplatedCommand(command fortifyExecRunner, cmdTemplate []string, context map[string]string) {
+func executeTemplatedCommand(utils fortifyUtils, cmdTemplate []string, context map[string]string) {
 	for index, cmdTemplatePart := range cmdTemplate {
 		result, err := piperutils.ExecuteTemplate(cmdTemplatePart, context)
 		if err != nil {
@@ -501,29 +522,29 @@ func executeTemplatedCommand(command fortifyExecRunner, cmdTemplate []string, co
 		}
 		cmdTemplate[index] = result
 	}
-	err := command.RunExecutable(cmdTemplate[0], cmdTemplate[1:]...)
+	err := utils.RunExecutable(cmdTemplate[0], cmdTemplate[1:]...)
 	if err != nil {
 		log.Entry().WithError(err).WithField("command", cmdTemplate).Fatal("Failed to execute command")
 	}
 }
 
-func autoresolvePipClasspath(executable string, parameters []string, file string, command fortifyExecRunner) string {
+func autoresolvePipClasspath(executable string, parameters []string, file string, utils fortifyUtils) string {
 	// redirect stdout and create cp file from command output
 	outfile, err := os.Create(file)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to create classpath file")
 	}
 	defer outfile.Close()
-	command.Stdout(outfile)
-	err = command.RunExecutable(executable, parameters...)
+	utils.Stdout(outfile)
+	err = utils.RunExecutable(executable, parameters...)
 	if err != nil {
 		log.Entry().WithError(err).WithField("command", fmt.Sprintf("%v with parameters %v", executable, parameters)).Fatal("Failed to run classpath autodetection command")
 	}
-	command.Stdout(log.Entry().Writer())
+	utils.Stdout(log.Entry().Writer())
 	return readClasspathFile(file)
 }
 
-func autoresolveMavenClasspath(config fortifyExecuteScanOptions, file string, command fortifyExecRunner) string {
+func autoresolveMavenClasspath(config fortifyExecuteScanOptions, file string, utils fortifyUtils) string {
 	if filepath.IsAbs(file) {
 		log.Entry().Warnf("Passing an absolute path for -Dmdep.outputFile results in the classpath only for the last module in multi-module maven projects.")
 	}
@@ -536,7 +557,7 @@ func autoresolveMavenClasspath(config fortifyExecuteScanOptions, file string, co
 		Defines:             []string{fmt.Sprintf("-Dmdep.outputFile=%v", file), "-DincludeScope=compile"},
 		ReturnStdout:        false,
 	}
-	_, err := maven.Execute(&executeOptions, command)
+	_, err := maven.Execute(&executeOptions, utils)
 	if err != nil {
 		log.Entry().WithError(err).Warn("failed to determine classpath using Maven")
 	}
@@ -598,7 +619,7 @@ func removeDuplicates(contents, separator string) string {
 	return contents
 }
 
-func triggerFortifyScan(config fortifyExecuteScanOptions, command fortifyExecRunner, buildID, buildLabel, buildProject string) {
+func triggerFortifyScan(config fortifyExecuteScanOptions, utils fortifyUtils, buildID, buildLabel, buildProject string) {
 	var err error = nil
 	// Do special Python related prep
 	pipVersion := "pip3"
@@ -609,7 +630,7 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, command fortifyExecRun
 	classpath := ""
 	if config.BuildTool == "maven" {
 		if config.AutodetectClasspath {
-			classpath = autoresolveMavenClasspath(config, classpathFileName, command)
+			classpath = autoresolveMavenClasspath(config, classpathFileName, utils)
 		}
 		config.Translate, err = populateMavenTranslate(&config, classpath)
 		if err != nil {
@@ -620,17 +641,17 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, command fortifyExecRun
 		if config.AutodetectClasspath {
 			separator := getSeparator()
 			script := fmt.Sprintf("import sys;p=sys.path;p.remove('');print('%v'.join(p))", separator)
-			classpath = autoresolvePipClasspath(config.PythonVersion, []string{"-c", script}, classpathFileName, command)
+			classpath = autoresolvePipClasspath(config.PythonVersion, []string{"-c", script}, classpathFileName, utils)
 		}
 		// install the dev dependencies
 		if len(config.PythonRequirementsFile) > 0 {
 			context := map[string]string{}
 			cmdTemplate := []string{pipVersion, "install", "--user", "-r", config.PythonRequirementsFile}
 			cmdTemplate = append(cmdTemplate, tokenize(config.PythonRequirementsInstallSuffix)...)
-			executeTemplatedCommand(command, cmdTemplate, context)
+			executeTemplatedCommand(utils, cmdTemplate, context)
 		}
 
-		executeTemplatedCommand(command, tokenize(config.PythonInstallCommand), map[string]string{"Pip": pipVersion})
+		executeTemplatedCommand(utils, tokenize(config.PythonInstallCommand), map[string]string{"Pip": pipVersion})
 
 		config.Translate, err = populatePipTranslate(&config, classpath)
 		if err != nil {
@@ -639,9 +660,9 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, command fortifyExecRun
 
 	}
 
-	translateProject(&config, command, buildID, classpath)
+	translateProject(&config, utils, buildID, classpath)
 
-	scanProject(&config, command, buildID, buildLabel, buildProject)
+	scanProject(&config, utils, buildID, buildLabel, buildProject)
 }
 
 func populatePipTranslate(config *fortifyExecuteScanOptions, classpath string) (string, error) {
@@ -685,7 +706,7 @@ func populateMavenTranslate(config *fortifyExecuteScanOptions, classpath string)
 	return string(translateJSON), err
 }
 
-func translateProject(config *fortifyExecuteScanOptions, command fortifyExecRunner, buildID, classpath string) {
+func translateProject(config *fortifyExecuteScanOptions, utils fortifyUtils, buildID, classpath string) {
 	var translateList []map[string]string
 	json.Unmarshal([]byte(config.Translate), &translateList)
 	log.Entry().Debugf("Translating with options: %v", translateList)
@@ -693,11 +714,11 @@ func translateProject(config *fortifyExecuteScanOptions, command fortifyExecRunn
 		if len(classpath) > 0 {
 			translate["autoClasspath"] = classpath
 		}
-		handleSingleTranslate(config, command, buildID, translate)
+		handleSingleTranslate(config, utils, buildID, translate)
 	}
 }
 
-func handleSingleTranslate(config *fortifyExecuteScanOptions, command fortifyExecRunner, buildID string, t map[string]string) {
+func handleSingleTranslate(config *fortifyExecuteScanOptions, command fortifyUtils, buildID string, t map[string]string) {
 	if t != nil {
 		log.Entry().Debugf("Handling translate config %v", t)
 		translateOptions := []string{
@@ -718,7 +739,7 @@ func handleSingleTranslate(config *fortifyExecuteScanOptions, command fortifyExe
 	}
 }
 
-func scanProject(config *fortifyExecuteScanOptions, command fortifyExecRunner, buildID, buildLabel, buildProject string) {
+func scanProject(config *fortifyExecuteScanOptions, command fortifyUtils, buildID, buildLabel, buildProject string) {
 	var scanOptions = []string{
 		"-verbose",
 		"-64",

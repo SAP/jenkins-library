@@ -173,6 +173,7 @@ Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to yo
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
@@ -312,6 +313,12 @@ func artifactPrepareVersionMetadata() config.StepData {
 								Param: "password",
 								Type:  "secret",
 							},
+
+							{
+								Name:  "",
+								Paths: []string{"$(vaultPath)/gitHttpsCredential", "$(vaultBasePath)/$(vaultPipelineName)/gitHttpsCredential", "$(vaultBasePath)/GROUP-SECRETS/gitHttpsCredential"},
+								Type:  "vaultSecret",
+							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
@@ -357,6 +364,12 @@ func artifactPrepareVersionMetadata() config.StepData {
 								Name:  "gitHttpsCredentialsId",
 								Param: "username",
 								Type:  "secret",
+							},
+
+							{
+								Name:  "",
+								Paths: []string{"$(vaultPath)/gitHttpsCredential", "$(vaultBasePath)/$(vaultPipelineName)/gitHttpsCredential", "$(vaultBasePath)/GROUP-SECRETS/gitHttpsCredential"},
+								Type:  "vaultSecret",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},

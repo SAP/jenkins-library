@@ -3,6 +3,7 @@ package http
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
@@ -25,6 +26,7 @@ import (
 // Client defines an http client object
 type Client struct {
 	maxRequestDuration       time.Duration
+  maxRetries               int
 	transportTimeout         time.Duration
 	username                 string
 	password                 string
@@ -33,7 +35,6 @@ type Client struct {
 	cookieJar                http.CookieJar
 	doLogRequestBodyOnDebug  bool
 	doLogResponseBodyOnDebug bool
-	maxRetries               int
 }
 
 // ClientOptions defines the options to be set on the client
@@ -43,6 +44,7 @@ type ClientOptions struct {
 	// for the request will be enforced. This should only be used if the
 	// length of the request bodies is known.
 	MaxRequestDuration time.Duration
+  MaxRetries               int
 	// TransportTimeout defaults to 3 minutes, if not specified. It is
 	// used for the transport layer and duration of handshakes and such.
 	TransportTimeout         time.Duration
@@ -53,7 +55,6 @@ type ClientOptions struct {
 	CookieJar                http.CookieJar
 	DoLogRequestBodyOnDebug  bool
 	DoLogResponseBodyOnDebug bool
-	MaxRetries               int
 }
 
 // TransportWrapper is a wrapper for central logging capabilities
@@ -191,6 +192,7 @@ func (c *Client) SetOptions(options ClientOptions) {
 	c.doLogRequestBodyOnDebug = options.DoLogRequestBodyOnDebug
 	c.doLogResponseBodyOnDebug = options.DoLogResponseBodyOnDebug
 	c.transportTimeout = options.TransportTimeout
+	c.transportSkipVerification = options.TransportSkipVerification
 	c.maxRequestDuration = options.MaxRequestDuration
 	c.username = options.Username
 	c.password = options.Password
@@ -217,6 +219,9 @@ func (c *Client) initialize() *http.Client {
 			ResponseHeaderTimeout: c.transportTimeout,
 			ExpectContinueTimeout: c.transportTimeout,
 			TLSHandshakeTimeout:   c.transportTimeout,
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: c.transportSkipVerification,
+			},
 		},
 		doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,
 		doLogResponseBodyOnDebug: c.doLogResponseBodyOnDebug,
@@ -233,6 +238,10 @@ func (c *Client) initialize() *http.Client {
 	httpClient.Timeout = c.maxRequestDuration
 	httpClient.Jar = c.cookieJar
 	httpClient.Transport = transport
+
+	if c.transportSkipVerification {
+		c.logger.Debugf("TLS verification disabled")
+	}
 
 	c.logger.Debugf("Transport timeout: %v, max request duration: %v", c.transportTimeout, c.maxRequestDuration)
 
@@ -323,7 +332,7 @@ func (c *Client) createRequest(method, url string, body io.Reader, header *http.
 		}
 	}
 
-	if len(c.username) > 0 && len(c.password) > 0 {
+	if len(c.username) > 0 {
 		request.SetBasicAuth(c.username, c.password)
 		c.logger.Debug("Using Basic Authentication ****/****")
 	}

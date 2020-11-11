@@ -60,6 +60,11 @@ repositories:
     branch: 'feature'
 ```
 
+Using such a configuration file is the recommended approach. Please note that you need to use the YAML data structure as in the example above when using the `repositories.yml` config file.
+
+!!! note "Commit IDs"
+    CommitIDs will also be supported in the future. While the step already includes the handling of commit IDs, the ABAP Environment system will support this not until a later release.
+
 ## Example: Configuration in the Jenkinsfile
 
 It is also possible to call the steps - including all parameters - directly in the Jenkinsfile.

@@ -24,6 +24,18 @@ general:
         envVars: {}
         pullImage: true
     cts:
+      osDeployUser: 'node'
+      deployToolDependencies:
+        - '@ui5/cli'
+        - '@sap/ux-ui5-tooling'
+        - '@ui5/logger'
+        - '@ui5/fs'
+      deployConfigFile: 'ui5-deploy.yaml'
+      nodeDocker:
+        image: 'node'
+        options: []
+        envVars: {}
+        pullImage: true
       docker:
         image: 'ppiper/cm-client'
         options: []
@@ -54,9 +66,6 @@ general:
 
 #Steps Specific Configuration
 steps:
-  abapEnvironmentPullGitRepo:
-    dockerImage: 'ppiper/cf-cli'
-    dockerWorkspace: '/home/piper'
   artifactSetVersion:
     timestampTemplate: '%Y%m%d%H%M%S'
     tagPrefix: 'build_'
@@ -200,9 +209,6 @@ steps:
     stashContent:
       - 'tests'
     testReportFilePath: 'cst-report.json'
-  cloudFoundryCreateServiceKey:
-    dockerImage: 'ppiper/cf-cli'
-    dockerWorkspace: '/home/piper'
   debugReportArchive:
     shareConfidentialInformation: false
   dockerExecute:
@@ -228,6 +234,9 @@ steps:
       - 'invalid'
       - 'question'
       - 'wontfix'
+  gatlingExecuteTests:
+    stashContent:
+      - 'source'
   gaugeExecuteTests:
     buildTool: 'maven'
     dockerEnvVars:
@@ -324,12 +333,12 @@ steps:
     neo:
       size: 'lite'
       credentialsId: 'CI_CREDENTIALS_ID'
+      portalLandscape: "cloudnwcportal"
   multicloudDeploy:
     cfTargets: []
     neoTargets: []
     enableZeroDowntimeDeployment: false
     parallelExecution: false
-    runInCurrentWorkspace: false
   newmanExecute:
     dockerImage: 'node:lts-stretch'
     failOnError: true
@@ -422,7 +431,7 @@ steps:
     timeoutInSeconds: 900
   pipelineStashFilesAfterBuild:
     stashIncludes:
-      buildResult: '**/target/*.jar, **/*.mtar'
+      buildResult: '**/target/*.war, **/target/*.jar, **/*.mtar'
       checkmarx: '**/*.js, **/*.scala, **/*.py, **/*.go, **/*.d, **/*.di, **/*.xml, **/*.html'
       classFiles: '**/target/classes/**/*.class, **/target/test-classes/**/*.class'
       sonar: '**/jacoco*.exec, **/sonar-project.properties'
@@ -485,7 +494,7 @@ steps:
       dockerName: 'bundler'
       dockerWorkspace: ''
   slackSendNotification:
-    color: "${buildStatus == 'SUCCESS'?'#008000':'#E60000'}"
+    color: "${['SUCCESS': '#8cc04f', 'FAILURE': '#d54c53', 'ABORTED': '#949393', 'UNSTABLE': '#f6b44b', 'PAUSED': '#24b0d5', 'UNKNOWN': '#d54cc4'].get(buildStatus, '#d54cc4')}"
     defaultMessage: "${buildStatus}: Job ${env.JOB_NAME} <${env.BUILD_URL}|#${env.BUILD_NUMBER}>"
   snykExecute:
     buildDescriptorFile: './package.json'
