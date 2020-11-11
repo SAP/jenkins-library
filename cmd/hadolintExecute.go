@@ -77,7 +77,7 @@ func runHadolint(config hadolintExecuteOptions, client piperhttp.Downloader, run
 		return errors.Wrap(err, errorBuffer.String())
 	}
 	// persist report information
-	piperutils.PersistReportsAndLinks("hadolintExecute", "./", []piperutils.Path{piperutils.Path{Target: config.ReportFile}}, []piperutils.Path{})
+	piperutils.PersistReportsAndLinks("hadolintExecute", "./", []piperutils.Path{{Target: config.ReportFile}}, []piperutils.Path{})
 	return nil
 }
 
