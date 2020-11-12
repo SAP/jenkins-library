@@ -38,12 +38,15 @@ func checkmarxExecuteScan(config checkmarxExecuteScanOptions, telemetryData *tel
 }
 
 func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace string, influx *checkmarxExecuteScanInflux) error {
-
-	team, err := loadTeam(sys, config.TeamName, config.TeamID)
-	if err != nil {
-		return errors.Wrap(err, "failed to load team")
+	var teamID string
+	if len(config.TeamID) == 0 {
+		team, err := loadTeam(sys, config.TeamName, config.TeamID)
+		if err != nil {
+			return errors.Wrap(err, "failed to load team")
+		}
+		teamID = team.ID
 	}
-	project, projectName, err := loadExistingProject(sys, config.ProjectName, config.PullRequestName, team.ID)
+	project, projectName, err := loadExistingProject(sys, config.ProjectName, config.PullRequestName, teamID)
 	if err != nil {
 		return errors.Wrap(err, "error when trying to load project")
 	}
