@@ -4,8 +4,19 @@ stages:
       slackSendNotification:
         configKeys:
           - 'channel'
-  'Pull-Request Voting': {}
-  Build: {}
+  'Pull-Request Voting':
+    stepConditions:
+      sonarExecuteScan:
+        filePattern: '**/sonar-project.properties'
+      mavenExecuteIntegration:
+        filePattern: 'integration-tests/pom.xml'
+      npmExecuteScripts:
+        configKeys:
+          - 'runScripts'
+  Build:
+    stepConditions:
+      sonarExecuteScan:
+        filePattern: '**/sonar-project.properties'
   'Additional Unit Tests':
     stepConditions:
       batsExecuteTests:
@@ -57,6 +68,9 @@ stages:
       containerPushToRegistry:
         configKeys:
           - 'dockerRegistryUrl'
+      nexusUpload:
+        configKeys:
+          - 'url'
   Release:
     stepConditions:
       multicloudDeploy:
@@ -70,6 +84,9 @@ stages:
       neoDeploy:
         configKeys:
           - 'neo/account'
+      tmsUpload:
+        configKeys:
+          - nodeName
       healthExecuteCheck:
         configKeys:
           - 'testServerUrl'

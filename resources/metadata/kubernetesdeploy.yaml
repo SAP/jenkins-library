@@ -213,6 +213,15 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: keepFailedDeployments
+        type: bool
+        description: Defines whether a failed deployment will be purged
+        default: false
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: kubeConfig
         type: string
         description: Defines the path to the \"kubeconfig\" file.
@@ -225,6 +234,11 @@ spec:
         resourceRef:
           - name: kubeConfigFileCredentialsId
             type: secret
+          - type: vaultSecretFile
+            paths:
+            - $(vaultPath)/kube-config
+            - $(vaultBasePath)/$(vaultPipelineName)/kube-config
+            - $(vaultBasePath)/GROUP-SECRETS/kube-config
       - name: kubeContext
         type: string
         description: Defines the context to use from the \"kubeconfig\" file.
