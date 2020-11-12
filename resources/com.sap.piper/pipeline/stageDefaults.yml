@@ -8,6 +8,11 @@ stages:
     stepConditions:
       sonarExecuteScan:
         filePattern: '**/sonar-project.properties'
+      mavenExecuteIntegration:
+        filePattern: 'integration-tests/pom.xml'
+      npmExecuteScripts:
+        configKeys:
+          - 'runScripts'
   Build:
     stepConditions:
       sonarExecuteScan:
