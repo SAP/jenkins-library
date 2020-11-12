@@ -27,8 +27,8 @@ func TestRunHadolintExecute(t *testing.T) {
 
 		// test
 		err := runHadolint(config, hadolintUtils{
-			hadolintPiperFileUtils: fileMock,
-			hadolintClient:         clientMock,
+			HadolintPiperFileUtils: fileMock,
+			HadolintClient:         clientMock,
 			hadolintRunner:         runnerMock,
 		})
 		// assert
@@ -64,8 +64,8 @@ func TestRunHadolintExecute(t *testing.T) {
 			On("FileExists", config.ConfigurationFile).Return(true, nil)
 		// test
 		err := runHadolint(config, hadolintUtils{
-			hadolintPiperFileUtils: fileMock,
-			hadolintClient:         clientMock,
+			HadolintPiperFileUtils: fileMock,
+			HadolintClient:         clientMock,
 			hadolintRunner:         runnerMock,
 		})
 		// assert
