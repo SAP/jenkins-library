@@ -9,36 +9,6 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// type hadolintExecuteScanMockUtils struct {
-// 	*piperMocks.ExecMockRunner
-// 	*hadolintMockClient
-// 	*hadolintFileMock
-// }
-
-// func newHadolintExecuteScanTestsUtils() hadolintExecuteScanMockUtils {
-// 	utils := hadolintExecuteScanMockUtils{
-// 		ExecMockRunner:     &piperMocks.ExecMockRunner{},
-// 		hadolintMockClient: &hadolintMockClient{},
-// 	}
-// 	// utils := hadolintUtils{
-// 	// 	hadolintRunner: &piperMocks.ExecMockRunner{},
-// 	// }
-// 	return utils
-// }
-
-// type hadolintMockClient struct {
-// 	requestedURL  []string
-// 	requestedFile []string
-// }
-
-// func (c *hadolintMockClient) SetOptions(opts piperhttp.ClientOptions) {}
-
-// func (c *hadolintMockClient) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
-// 	c.requestedURL = append(c.requestedURL, url)
-// 	c.requestedFile = append(c.requestedFile, filename)
-// 	return nil
-// }
-
 func TestRunHadolintExecute(t *testing.T) {
 	t.Run("default", func(t *testing.T) {
 		// init
