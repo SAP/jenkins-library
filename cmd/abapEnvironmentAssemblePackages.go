@@ -148,6 +148,9 @@ func starting(repos []abaputils.Repository, conn abapbuild.Connector) ([]buildWi
 			log.Entry().Infof("Packages %s is in status '%s'. No need to run the assembly", repo.PackageName, repo.Status)
 			buildsAlreadyReleased = append(buildsAlreadyReleased, buildRepo)
 		}
+
+		//as batch events in the ABAP Backend need a little time
+		time.Sleep(3 * time.Second)
 	}
 	return builds, buildsAlreadyReleased, nil
 }
