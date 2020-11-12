@@ -85,8 +85,6 @@ type mtaBuildUtils interface {
 	FileRead(path string) ([]byte, error)
 	FileWrite(path string, content []byte, perm os.FileMode) error
 
-	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
-
 	DownloadAndCopySettingsFiles(globalSettingsFile string, projectSettingsFile string) error
 
 	SetNpmRegistries(defaultNpmRegistry string) error
