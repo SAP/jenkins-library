@@ -48,6 +48,7 @@ void call(Map parameters = [:]) {
 
         boolean publishResults = false
         try {
+            utils.unstashAll(['source', 'buildResult'])
             writeTemporaryCredentials(script: script) {
                 if (config.npmExecuteScripts) {
                     publishResults = true
