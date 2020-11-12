@@ -23,6 +23,9 @@ stages:
         filePattern: '**/*.bats'
       karmaExecuteTests:
         filePattern: '**/karma.conf.js'
+      npmExecuteScripts:
+        configKeys:
+          - 'runScripts'
   Integration: {}
   Acceptance:
     stepConditions:
