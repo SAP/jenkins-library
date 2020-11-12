@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"os"
 	"path"
 	"strings"
@@ -84,8 +83,6 @@ type mtaBuildUtils interface {
 	Abs(path string) (string, error)
 	FileRead(path string) ([]byte, error)
 	FileWrite(path string, content []byte, perm os.FileMode) error
-
-	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
 
 	DownloadAndCopySettingsFiles(globalSettingsFile string, projectSettingsFile string) error
 
