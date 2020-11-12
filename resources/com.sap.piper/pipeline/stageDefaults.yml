@@ -24,8 +24,8 @@ stages:
       karmaExecuteTests:
         filePattern: '**/karma.conf.js'
       npmExecuteScripts:
-        npmScripts:
-          - 'ci-frontend-unit-test'
+        configKeys:
+          - 'runScripts'
   Integration: {}
   Acceptance:
     stepConditions:
