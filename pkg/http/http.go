@@ -3,6 +3,7 @@ package http
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
@@ -16,6 +17,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/motemen/go-nuts/roundtime"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -23,15 +25,17 @@ import (
 
 // Client defines an http client object
 type Client struct {
-	maxRequestDuration       time.Duration
-	transportTimeout         time.Duration
-	username                 string
-	password                 string
-	token                    string
-	logger                   *logrus.Entry
-	cookieJar                http.CookieJar
-	doLogRequestBodyOnDebug  bool
-	doLogResponseBodyOnDebug bool
+	maxRequestDuration        time.Duration
+	maxRetries                int
+	transportTimeout          time.Duration
+	transportSkipVerification bool
+	username                  string
+	password                  string
+	token                     string
+	logger                    *logrus.Entry
+	cookieJar                 http.CookieJar
+	doLogRequestBodyOnDebug   bool
+	doLogResponseBodyOnDebug  bool
 }
 
 // ClientOptions defines the options to be set on the client
@@ -41,16 +45,18 @@ type ClientOptions struct {
 	// for the request will be enforced. This should only be used if the
 	// length of the request bodies is known.
 	MaxRequestDuration time.Duration
+	MaxRetries         int
 	// TransportTimeout defaults to 3 minutes, if not specified. It is
 	// used for the transport layer and duration of handshakes and such.
-	TransportTimeout         time.Duration
-	Username                 string
-	Password                 string
-	Token                    string
-	Logger                   *logrus.Entry
-	CookieJar                http.CookieJar
-	DoLogRequestBodyOnDebug  bool
-	DoLogResponseBodyOnDebug bool
+	TransportTimeout          time.Duration
+	TransportSkipVerification bool
+	Username                  string
+	Password                  string
+	Token                     string
+	Logger                    *logrus.Entry
+	CookieJar                 http.CookieJar
+	DoLogRequestBodyOnDebug   bool
+	DoLogResponseBodyOnDebug  bool
 }
 
 // TransportWrapper is a wrapper for central logging capabilities
@@ -188,10 +194,12 @@ func (c *Client) SetOptions(options ClientOptions) {
 	c.doLogRequestBodyOnDebug = options.DoLogRequestBodyOnDebug
 	c.doLogResponseBodyOnDebug = options.DoLogResponseBodyOnDebug
 	c.transportTimeout = options.TransportTimeout
+	c.transportSkipVerification = options.TransportSkipVerification
 	c.maxRequestDuration = options.MaxRequestDuration
 	c.username = options.Username
 	c.password = options.Password
 	c.token = options.Token
+	c.maxRetries = options.MaxRetries
 
 	if options.Logger != nil {
 		c.logger = options.Logger
@@ -213,15 +221,33 @@ func (c *Client) initialize() *http.Client {
 			ResponseHeaderTimeout: c.transportTimeout,
 			ExpectContinueTimeout: c.transportTimeout,
 			TLSHandshakeTimeout:   c.transportTimeout,
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: c.transportSkipVerification,
+			},
 		},
 		doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,
 		doLogResponseBodyOnDebug: c.doLogResponseBodyOnDebug,
 	}
-	var httpClient = &http.Client{
-		Timeout:   c.maxRequestDuration,
-		Transport: transport,
-		Jar:       c.cookieJar,
+
+	var httpClient *http.Client
+	if c.maxRetries > 0 {
+		retryClient := retryablehttp.NewClient()
+		retryClient.HTTPClient.Timeout = c.maxRequestDuration
+		retryClient.HTTPClient.Jar = c.cookieJar
+		retryClient.HTTPClient.Transport = transport
+		retryClient.RetryMax = c.maxRetries
+		httpClient = retryClient.StandardClient()
+	} else {
+		httpClient = &http.Client{}
+		httpClient.Timeout = c.maxRequestDuration
+		httpClient.Jar = c.cookieJar
+		httpClient.Transport = transport
 	}
+
+	if c.transportSkipVerification {
+		c.logger.Debugf("TLS verification disabled")
+	}
+
 	c.logger.Debugf("Transport timeout: %v, max request duration: %v", c.transportTimeout, c.maxRequestDuration)
 
 	return httpClient
@@ -311,7 +337,7 @@ func (c *Client) createRequest(method, url string, body io.Reader, header *http.
 		}
 	}
 
-	if len(c.username) > 0 && len(c.password) > 0 {
+	if len(c.username) > 0 {
 		request.SetBasicAuth(c.username, c.password)
 		c.logger.Debug("Using Basic Authentication ****/****")
 	}

@@ -26,6 +26,8 @@ import (
 
 func checkmarxExecuteScan(config checkmarxExecuteScanOptions, telemetryData *telemetry.CustomData, influx *checkmarxExecuteScanInflux) {
 	client := &piperHttp.Client{}
+	options := piperHttp.ClientOptions{MaxRetries: config.MaxRetries}
+	client.SetOptions(options)
 	sys, err := checkmarx.NewSystemInstance(client, config.ServerURL, config.Username, config.Password)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Failed to create Checkmarx client talking to URL %v", config.ServerURL)
@@ -311,7 +313,7 @@ func reportToInflux(results map[string]interface{}, influx *checkmarxExecuteScan
 	influx.checkmarx_data.fields.owner = results["Owner"].(string)
 	influx.checkmarx_data.fields.scan_id = results["ScanId"].(string)
 	influx.checkmarx_data.fields.project_id = results["ProjectId"].(string)
-	influx.checkmarx_data.fields.project_name = results["ProjectName"].(string)
+	influx.checkmarx_data.fields.projectName = results["ProjectName"].(string)
 	influx.checkmarx_data.fields.team = results["Team"].(string)
 	influx.checkmarx_data.fields.team_full_path_on_report_date = results["TeamFullPathOnReportDate"].(string)
 	influx.checkmarx_data.fields.scan_start = results["ScanStart"].(string)

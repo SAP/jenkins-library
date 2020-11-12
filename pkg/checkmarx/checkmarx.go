@@ -222,9 +222,11 @@ func NewSystemInstance(client piperHttp.Uploader, serverURL, username, password 
 		return sys, errors.Wrap(err, "Error fetching oAuth token")
 	}
 
+	log.RegisterSecret(token)
+
 	options := piperHttp.ClientOptions{
-		Token:              token,
-		MaxRequestDuration: 60 * time.Second,
+		Token:            token,
+		TransportTimeout: time.Minute * 15,
 	}
 	sys.client.SetOptions(options)
 

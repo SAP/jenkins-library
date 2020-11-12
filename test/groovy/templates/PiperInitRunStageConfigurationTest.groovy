@@ -563,7 +563,6 @@ steps: {}
                 return '''
 stages:
   testStage1:
-    onlyProductiveBranch: true
     stepConditions:
       firstStep:
         filePattern: \'**/conf.js\'
@@ -572,6 +571,9 @@ stages:
                 return '''
 general: {}
 steps: {}
+stages:
+  testStage1:
+    runInAllBranches: false
 '''
             }
         })
@@ -595,7 +597,6 @@ steps: {}
                 return '''
 stages:
   testStage1:
-    onlyProductiveBranch: true
     stepConditions:
       firstStep:
         filePattern: \'**/conf.js\'
@@ -604,6 +605,9 @@ stages:
                 return '''
 general: {}
 steps: {}
+stages:
+  testStage1:
+    runInAllBranches: false
 '''
             }
         })

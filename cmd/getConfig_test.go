@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -11,6 +13,7 @@ import (
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func configOpenFileMock(name string) (io.ReadCloser, error) {
@@ -256,4 +259,54 @@ func TestApplyContextConditions(t *testing.T) {
 			assert.Equalf(t, test.expected, test.conf.Config, fmt.Sprintf("Run %v failed", run))
 		})
 	}
+}
+
+func TestPrepareOutputEnvironment(t *testing.T) {
+	outputResources := []config.StepResources{
+		{
+			Name: "commonPipelineEnvironment",
+			Type: "piperEnvironment",
+			Parameters: []map[string]interface{}{
+				{"name": "param0"},
+				{"name": "path1/param1"},
+				{"name": "path2/param2"},
+			},
+		},
+		{
+			Name: "influx",
+			Type: "influx",
+			Parameters: []map[string]interface{}{
+				{
+					"name": "measurement0",
+					"fields": []map[string]string{
+						{"name": "influx0_0"},
+						{"name": "influx0_1"},
+					},
+				},
+				{
+					"name": "measurement1",
+					"fields": []map[string]string{
+						{"name": "influx1_0"},
+						{"name": "influx1_1"},
+					},
+				},
+			},
+		},
+	}
+
+	dir, tempDirErr := ioutil.TempDir("", "")
+	defer os.RemoveAll(dir)
+	require.NoError(t, tempDirErr)
+	require.DirExists(t, dir, "Failed to create temporary directory")
+
+	prepareOutputEnvironment(outputResources, dir)
+	assert.DirExists(t, filepath.Join(dir, "commonPipelineEnvironment", "path1"))
+	assert.DirExists(t, filepath.Join(dir, "commonPipelineEnvironment", "path2"))
+	assert.DirExists(t, filepath.Join(dir, "influx", "measurement0"))
+	assert.DirExists(t, filepath.Join(dir, "influx", "measurement1"))
+	assert.NoDirExists(t, filepath.Join(dir, "commonPipelineEnvironment", "param0"))
+	assert.NoDirExists(t, filepath.Join(dir, "commonPipelineEnvironment", "path1", "param1"))
+	assert.NoDirExists(t, filepath.Join(dir, "commonPipelineEnvironment", "path2", "param2"))
+	assert.NoDirExists(t, filepath.Join(dir, "influx", "measurement0", "influx0_0"))
+	assert.NoDirExists(t, filepath.Join(dir, "influx", "measurement1", "influx0_1"))
 }
