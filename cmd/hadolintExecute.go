@@ -3,7 +3,9 @@ package cmd
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
+	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -15,7 +17,31 @@ import (
 	"github.com/pkg/errors"
 )
 
-var hadolintWriteFile = ioutil.WriteFile
+// HadolintPiperFileUtils ..
+// mock generated with: mockery --name HadolintPiperFileUtils --dir cmd --output pkg/hadolint/mocks
+type HadolintPiperFileUtils interface {
+	FileExists(filename string) (bool, error)
+	FileWrite(filename string, data []byte, perm os.FileMode) error
+}
+
+// HadolintClient ..
+// mock generated with: mockery --name hadolintClient --dir cmd --output pkg/hadolint/mocks
+type HadolintClient interface {
+	SetOptions(options piperhttp.ClientOptions)
+	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
+}
+
+type hadolintRunner interface {
+	RunExecutable(executable string, params ...string) error
+	Stdout(err io.Writer)
+	Stderr(err io.Writer)
+}
+
+type hadolintUtils struct {
+	HadolintPiperFileUtils
+	HadolintClient
+	hadolintRunner
+}
 
 func hadolintExecute(config hadolintExecuteOptions, _ *telemetry.CustomData) {
 	runner := command.Command{
@@ -25,18 +51,22 @@ func hadolintExecute(config hadolintExecuteOptions, _ *telemetry.CustomData) {
 	runner.Stdout(log.Writer())
 	runner.Stderr(log.Writer())
 
-	client := piperhttp.Client{}
+	utils := hadolintUtils{
+		HadolintPiperFileUtils: &piperutils.Files{},
+		HadolintClient:         &piperhttp.Client{},
+		hadolintRunner:         &runner,
+	}
 
-	if err := runHadolint(config, &client, &runner); err != nil {
+	if err := runHadolint(config, utils); err != nil {
 		log.Entry().WithError(err).Fatal("Execution failed")
 	}
 }
 
-func runHadolint(config hadolintExecuteOptions, client piperhttp.Downloader, runner command.ExecRunner) error {
+func runHadolint(config hadolintExecuteOptions, utils hadolintUtils) error {
 	var outputBuffer bytes.Buffer
 	var errorBuffer bytes.Buffer
-	runner.Stdout(&outputBuffer)
-	runner.Stderr(&errorBuffer)
+	utils.Stdout(&outputBuffer)
+	utils.Stderr(&errorBuffer)
 
 	clientOptions := piperhttp.ClientOptions{
 		TransportTimeout:          20 * time.Second,
@@ -46,19 +76,19 @@ func runHadolint(config hadolintExecuteOptions, client piperhttp.Downloader, run
 		clientOptions.Username = config.ConfigurationUsername
 		clientOptions.Password = config.ConfigurationPassword
 	}
-	client.SetOptions(clientOptions)
+	utils.SetOptions(clientOptions)
 
 	options := []string{
 		"--format checkstyle",
 	}
 	// load config file from URL
-	if !hasConfigurationFile(config.ConfigurationFile) && len(config.ConfigurationURL) > 0 {
-		if err := loadConfigurationFile(config.ConfigurationURL, config.ConfigurationFile, client); err != nil {
+	if !hasConfigurationFile(config.ConfigurationFile, utils) && len(config.ConfigurationURL) > 0 {
+		if err := loadConfigurationFile(config.ConfigurationURL, config.ConfigurationFile, utils); err != nil {
 			return errors.Wrap(err, "failed to load configuration file from URL")
 		}
 	}
 	// use config
-	if hasConfigurationFile(config.ConfigurationFile) {
+	if hasConfigurationFile(config.ConfigurationFile, utils) {
 		options = append(options, fmt.Sprintf("--config %s", config.ConfigurationFile))
 		log.Entry().WithField("file", config.ConfigurationFile).Debug("Using configuration file")
 	} else {
@@ -67,14 +97,14 @@ func runHadolint(config hadolintExecuteOptions, client piperhttp.Downloader, run
 	// execute scan command
 	runCommand := fmt.Sprintf("hadolint %s %s", config.DockerFile, strings.Join(options, " "))
 	runCommandTokens := tokenize(runCommand)
-	err := runner.RunExecutable(runCommandTokens[0], runCommandTokens[1:]...)
+	err := utils.RunExecutable(runCommandTokens[0], runCommandTokens[1:]...)
 
 	//TODO: related to https://github.com/hadolint/hadolint/issues/391
 	// hadolint exists with 1 if there are processing issues but also if there are findings
 	// thus check stdout first if a report was created
 	if output := outputBuffer.String(); len(output) > 0 {
 		log.Entry().WithField("report", output).Debug("Report created")
-		hadolintWriteFile(config.ReportFile, []byte(output), 0755)
+		utils.FileWrite(config.ReportFile, []byte(output), 0755)
 	} else if err != nil {
 		// if stdout is empty a processing issue occured
 		return errors.Wrap(err, errorBuffer.String())
@@ -85,14 +115,14 @@ func runHadolint(config hadolintExecuteOptions, client piperhttp.Downloader, run
 }
 
 // loadConfigurationFile loads a file from the provided url
-func loadConfigurationFile(url, file string, client piperhttp.Downloader) error {
+func loadConfigurationFile(url, file string, utils hadolintUtils) error {
 	log.Entry().WithField("url", url).Debug("Loading configuration file from URL")
-	return client.DownloadFile(url, file, nil, nil)
+	return utils.DownloadFile(url, file, nil, nil)
 }
 
 // hasConfigurationFile checks if the given file exists
-func hasConfigurationFile(file string) bool {
-	exists, err := piperutils.FileExists(file)
+func hasConfigurationFile(file string, utils hadolintUtils) bool {
+	exists, err := utils.FileExists(file)
 	if err != nil {
 		log.Entry().WithError(err).Error()
 	}
