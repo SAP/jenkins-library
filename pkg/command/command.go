@@ -30,6 +30,7 @@ type runner interface {
 	AppendEnv(env []string)
 	Stdout(out io.Writer)
 	Stderr(err io.Writer)
+	GetExitCode() int
 }
 
 // ExecRunner mock for intercepting calls to executables
