@@ -100,6 +100,11 @@ func nexusUpload(options nexusUploadOptions, _ *telemetry.CustomData) {
 func runNexusUpload(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions) error {
 	performMavenUpload := len(options.MavenRepository) > 0
 	performNpmUpload := len(options.NpmRepository) > 0
+
+	if !performMavenUpload && !performNpmUpload {
+		return fmt.Errorf("none of the parameters 'mavenRepository' and 'npmRepository' are configured")
+	}
+
 	err := uploader.SetRepoURL(options.Url, options.Version, options.MavenRepository, options.NpmRepository)
 	if err != nil {
 		return err
