@@ -199,13 +199,10 @@ Open the application name to get into the `Application Overview`. Open the **App
 ## What's Next
 
 You are now familiar with the basics of using project "Piper". Through the concept of pipeline as code, project "Piper" and Jenkins pipelines are extremely powerful. While Jenkins pipelines offer a full set of common programming features, project "Piper" adds SAP-specific flavors. Have a look at the different **Scenarios**  to understand how to easily integrate SAP systems with defaults.
-Dive into the ready-made continuous delivery pipelines: the **General Purpose Pipeline**
-and **SAP Cloud SDK Pipeline** help you quickly build and deliver your apps.
+Dive into the ready-made continuous delivery pipelines: the **General Purpose Pipeline** help you to quickly build and deliver your apps.
 Browse the steadily increasing list of features you can implement through the project "Piper" **Steps**.
 
 The **Configuration** pattern supports simple pipelines that can be reused by multiple applications. To understand the principles of inheritance and customization, have a look at the the [configuration][resources-configuration] documentation.
-
-Please also consult the blog post on setting up [Continuous Delivery for S/4HANA extensions][sap-blog-ci-cd] and get tons of informations around the application development with the [S/4HANA Cloud SDK][sap-blog-s4-sdk-first-steps].
 
 [guidedtour-my-own-jenkins]:         myownjenkins.md
 [guidedtour-sample.config]:          samples/cloud-cf-helloworld-nodejs/pipeline/config.yml
@@ -218,8 +215,6 @@ Please also consult the blog post on setting up [Continuous Delivery for S/4HANA
 
 [sap]:                               https://www.sap.com
 [sap-cp-trial]:                      https://account.hanatrial.ondemand.com
-[sap-blog-s4-sdk-first-steps]:       https://blogs.sap.com/2017/05/10/first-steps-with-sap-s4hana-cloud-sdk/
-[sap-blog-ci-cd]:                    https://blogs.sap.com/2017/09/20/continuous-integration-and-delivery/
 
 [devops-docker-images-cxs-guide]:    https://github.com/SAP/devops-docker-cx-server/blob/master/docs/operations/cx-server-operations-guide.md
 

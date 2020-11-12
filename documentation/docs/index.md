@@ -12,7 +12,6 @@ To get you started quickly, project "Piper" offers you the following artifacts:
 * A set of ready-made Continuous Delivery pipelines for direct use in your project
   * [ABAP Environment Pipeline](pipelines/abapEnvironment/introduction/)
   * [General Purpose Pipeline](stages/introduction/)
-  * [SAP Cloud SDK Pipeline][cloud-sdk-pipeline]
 * [A shared library][piper-library] that contains reusable step implementations, which enable you to customize our preconfigured pipelines, or to even build your own customized ones
 * A standalone [command line utility](cli) for Linux and a [GitHub Action](https://github.com/SAP/project-piper-action)
   * Note: This version is still in early development. Feel free to use it and [provide feedback](https://github.com/SAP/jenkins-library/issues), but don't expect all the features of the Jenkins library
@@ -23,11 +22,8 @@ In many cases, they should satisfy your requirements, and if this is the case, y
 
 ### The best-practice way: Ready-made pipelines
 
-**Are you building a standalone SAP Cloud Platform application?<br>**
+**Are you building a standalone SAP Cloud Platform application, an application with the SAP Cloud SDK, or using the SAP Cloud Application Programming Model??<br>**
 Then continue reading about our [general purpose pipeline](stages/introduction/), which supports various technologies and programming languages.
-
-**Are you building an application with the SAP Cloud SDK and/or SAP Cloud Application Programming Model?<br>**
-Then we can offer you a [pipeline specifically tailored to SAP Cloud SDK and SAP Cloud Application Programming Model applications][cloud-sdk-pipeline]
 
 ### The do-it-yourself way: Build with Library
 
