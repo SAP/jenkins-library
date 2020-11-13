@@ -93,7 +93,7 @@ func runHadolint(config hadolintExecuteOptions, utils hadolintUtils) error {
 		log.Entry().Debug("No configuration file found.")
 	}
 	// execute scan command
-	err := utils.RunExecutable(hadolintCommand, append([]string{config.Dockerfile}, options...)...)
+	err := utils.RunExecutable(hadolintCommand, append([]string{config.DockerFile}, options...)...)
 
 	//TODO: related to https://github.com/hadolint/hadolint/issues/391
 	// hadolint exists with 1 if there are processing issues but also if there are findings

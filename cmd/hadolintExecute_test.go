@@ -16,7 +16,7 @@ func TestRunHadolintExecute(t *testing.T) {
 		clientMock := &mocks.HadolintClient{}
 		runnerMock := &piperMocks.ExecMockRunner{}
 		config := hadolintExecuteOptions{
-			Dockerfile:        "./Dockerfile",   // default
+			DockerFile:        "./Dockerfile",   // default
 			ConfigurationFile: ".hadolint.yaml", // default
 		}
 
@@ -49,7 +49,7 @@ func TestRunHadolintExecute(t *testing.T) {
 		clientMock := &mocks.HadolintClient{}
 		runnerMock := &piperMocks.ExecMockRunner{}
 		config := hadolintExecuteOptions{
-			Dockerfile:        "./Dockerfile",   // default
+			DockerFile:        "./Dockerfile",   // default
 			ConfigurationFile: ".hadolint.yaml", // default
 			ConfigurationURL:  "https://myconfig",
 		}

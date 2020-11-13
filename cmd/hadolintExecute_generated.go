@@ -17,7 +17,7 @@ type hadolintExecuteOptions struct {
 	ConfigurationURL      string `json:"configurationUrl,omitempty"`
 	ConfigurationUsername string `json:"configurationUsername,omitempty"`
 	ConfigurationPassword string `json:"configurationPassword,omitempty"`
-	Dockerfile            string `json:"dockerfile,omitempty"`
+	DockerFile            string `json:"dockerFile,omitempty"`
 	ConfigurationFile     string `json:"configurationFile,omitempty"`
 	ReportFile            string `json:"reportFile,omitempty"`
 }
@@ -85,7 +85,7 @@ func addHadolintExecuteFlags(cmd *cobra.Command, stepConfig *hadolintExecuteOpti
 	cmd.Flags().StringVar(&stepConfig.ConfigurationURL, "configurationUrl", os.Getenv("PIPER_configurationUrl"), "URL pointing to the .hadolint.yaml exclude configuration to be used for linting. Also have a look at `configurationFile` which could avoid central configuration download in case the file is part of your repository.")
 	cmd.Flags().StringVar(&stepConfig.ConfigurationUsername, "configurationUsername", os.Getenv("PIPER_configurationUsername"), "The username to authenticate")
 	cmd.Flags().StringVar(&stepConfig.ConfigurationPassword, "configurationPassword", os.Getenv("PIPER_configurationPassword"), "The password to authenticate")
-	cmd.Flags().StringVar(&stepConfig.Dockerfile, "dockerfile", `./Dockerfile`, "Dockerfile to be used for the assessment.")
+	cmd.Flags().StringVar(&stepConfig.DockerFile, "dockerFile", `./Dockerfile`, "Dockerfile to be used for the assessment.")
 	cmd.Flags().StringVar(&stepConfig.ConfigurationFile, "configurationFile", `.hadolint.yaml`, "Name of the configuration file used locally within the step. If a file with this name is detected as part of your repo downloading the central configuration via `configurationUrl` will be skipped. If you change the file's name make sure your stashing configuration also reflects this.")
 	cmd.Flags().StringVar(&stepConfig.ReportFile, "reportFile", `hadolint.xml`, "Name of the result file used locally within the step.")
 
@@ -138,12 +138,12 @@ func hadolintExecuteMetadata() config.StepData {
 						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "dockerfile",
+						Name:        "dockerFile",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "dockerFile"}},
+						Aliases:     []config.Alias{},
 					},
 					{
 						Name:        "configurationFile",

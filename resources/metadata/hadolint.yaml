@@ -44,10 +44,7 @@ spec:
           - name: configurationCredentialsId
             type: secret
             param: password
-      - name: dockerfile
-        aliases:
-          - name: dockerFile
-            deprecated: true
+      - name: dockerFile
         type: string
         description: Dockerfile to be used for the assessment.
         mandatory: false
