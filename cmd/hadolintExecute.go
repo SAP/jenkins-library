@@ -104,7 +104,7 @@ func runHadolint(config hadolintExecuteOptions, utils hadolintUtils) error {
 	// thus check stdout first if a report was created
 	if output := outputBuffer.String(); len(output) > 0 {
 		log.Entry().WithField("report", output).Debug("Report created")
-		utils.FileWrite(config.ReportFile, []byte(output), 0755)
+		utils.FileWrite(config.ReportFile, []byte(output), 0666)
 	} else if err != nil {
 		// if stdout is empty a processing issue occured
 		return errors.Wrap(err, errorBuffer.String())
