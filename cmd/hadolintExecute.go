@@ -2,11 +2,9 @@ package cmd
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -17,9 +15,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-const commandHadolint = "hadolint"
+const hadolintCommand = "hadolint"
 
-// HadolintPiperFileUtils ..
+// HadolintPiperFileUtils
 // mock generated with: mockery --name HadolintPiperFileUtils --dir cmd --output pkg/hadolint/mocks
 type HadolintPiperFileUtils interface {
 	FileExists(filename string) (bool, error)
@@ -80,9 +78,7 @@ func runHadolint(config hadolintExecuteOptions, utils hadolintUtils) error {
 	}
 	utils.SetOptions(clientOptions)
 
-	options := []string{
-		"--format checkstyle",
-	}
+	options := []string{"--format", "checkstyle"}
 	// load config file from URL
 	if !hasConfigurationFile(config.ConfigurationFile, utils) && len(config.ConfigurationURL) > 0 {
 		if err := loadConfigurationFile(config.ConfigurationURL, config.ConfigurationFile, utils); err != nil {
@@ -91,13 +87,13 @@ func runHadolint(config hadolintExecuteOptions, utils hadolintUtils) error {
 	}
 	// use config
 	if hasConfigurationFile(config.ConfigurationFile, utils) {
-		options = append(options, fmt.Sprintf("--config %s", config.ConfigurationFile))
+		options = append(options, "--config", config.ConfigurationFile)
 		log.Entry().WithField("file", config.ConfigurationFile).Debug("Using configuration file")
 	} else {
 		log.Entry().Debug("No configuration file found.")
 	}
 	// execute scan command
-	err := utils.RunExecutable(commandHadolint, append([]string{config.Dockerfile}, tokenize(strings.Join(options, " "))...)...)
+	err := utils.RunExecutable(hadolintCommand, append([]string{config.Dockerfile}, options...)...)
 
 	//TODO: related to https://github.com/hadolint/hadolint/issues/391
 	// hadolint exists with 1 if there are processing issues but also if there are findings
