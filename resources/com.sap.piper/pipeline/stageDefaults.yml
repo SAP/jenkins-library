@@ -72,6 +72,10 @@ stages:
           - 'whitesourceUserTokenCredentialsId'
   Performance:
     stepConditions:
+      multicloudDeploy:
+        configKeys:
+          - 'cfTargets'
+          - 'neoTargets'
       gatlingExecuteTests:
         filePatternFromConfig: 'pomPath'
         configKeys:
