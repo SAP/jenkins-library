@@ -26,7 +26,13 @@ stages:
       npmExecuteScripts:
         configKeys:
           - 'runScripts'
-  Integration: {}
+  Integration:
+    stepConditions:
+      npmExecuteScripts:
+        configKeys:
+          - 'runScripts'
+      mavenExecuteIntegration:
+        filePattern: 'integration-tests/pom.xml'
   Acceptance:
     stepConditions:
       multicloudDeploy:
