@@ -69,19 +69,18 @@ func runHadolint(config hadolintExecuteOptions, utils hadolintUtils) error {
 	utils.Stdout(&outputBuffer)
 	utils.Stderr(&errorBuffer)
 
-	clientOptions := piperhttp.ClientOptions{
-		TransportTimeout:          20 * time.Second,
-		TransportSkipVerification: true,
-	}
-	if len(config.ConfigurationUsername) > 0 {
-		clientOptions.Username = config.ConfigurationUsername
-		clientOptions.Password = config.ConfigurationPassword
-	}
-	utils.SetOptions(clientOptions)
-
 	options := []string{"--format", "checkstyle"}
 	// load config file from URL
 	if !hasConfigurationFile(config.ConfigurationFile, utils) && len(config.ConfigurationURL) > 0 {
+		clientOptions := piperhttp.ClientOptions{
+			TransportTimeout:          20 * time.Second,
+			TransportSkipVerification: true,
+		}
+		if len(config.ConfigurationUsername) > 0 {
+			clientOptions.Username = config.ConfigurationUsername
+			clientOptions.Password = config.ConfigurationPassword
+		}
+		utils.SetOptions(clientOptions)
 		if err := loadConfigurationFile(config.ConfigurationURL, config.ConfigurationFile, utils); err != nil {
 			return errors.Wrap(err, "failed to load configuration file from URL")
 		}

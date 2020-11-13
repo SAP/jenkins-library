@@ -22,8 +22,6 @@ func TestRunHadolintExecute(t *testing.T) {
 
 		fileMock.
 			On("FileExists", config.ConfigurationFile).Return(false, nil)
-		clientMock.
-			On("SetOptions", mock.Anything)
 
 		// test
 		err := runHadolint(config, hadolintUtils{
