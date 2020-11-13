@@ -18,7 +18,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: false
+        default: true
       - name: runScripts
         type: "[]string"
         description: List of additional run scripts to execute from package.json.
@@ -58,7 +58,13 @@ spec:
           - STAGES
           - STEPS
         default: ["deployment/**"]
+      - name: buildDescriptorList
+        type: "[]string"
+        description: List of build descriptors and therefore modules for execution of the npm scripts. The elements have to be paths to the build descriptors. **If set, buildDescriptorExcludeList will be ignored.**
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   containers:
     - name: node
       image: node:12-buster-slim
-      imagePullPolicy: Never

@@ -1,8 +1,6 @@
-import com.cloudbees.groovy.cps.NonCPS
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateStageDocumentation
 import com.sap.piper.JenkinsUtils
-import com.sap.piper.LegacyConfigurationCheckUtils
 import com.sap.piper.StageNameProvider
 import com.sap.piper.Utils
 import com.sap.piper.k8s.ContainerMap
@@ -71,6 +69,12 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'useTechnicalStageNames',
     /**
+     * Provides a clone from the specified repository.
+     * This map contains attributes, such as, `branches`, `extensions`, `userRemoteConfigs` etc.
+     * Example: `[$class: 'GitSCM', branches: [[name: <branch_to_be_cloned>]], userRemoteConfigs: [[credentialsId: <credential_to_access_repository>, url: <repository_url>]]]`.
+     */
+    'checkoutMap',
+    /**
      * Optional path to the pipeline configuration file defining project specific settings.
      */
     'configFile',
@@ -107,7 +111,7 @@ void call(Map parameters = [:]) {
     def stageName = StageNameProvider.instance.getStageName(script, parameters, this)
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], ordinal: 1, telemetryDisabled: true) {
-        def scmInfo = checkout scm
+        def scmInfo = checkout(parameters.checkoutMap ?: scm)
 
         setupCommonPipelineEnvironment(script: script, customDefaults: parameters.customDefaults, scmInfo: scmInfo,
             configFile: parameters.configFile, customDefaultsFromFiles: parameters.customDefaultsFromFiles)
@@ -125,7 +129,7 @@ void call(Map parameters = [:]) {
 
         if (config.legacyConfigSettings) {
             Map legacyConfigSettings = readYaml(text: libraryResource(config.legacyConfigSettings))
-            LegacyConfigurationCheckUtils.checkConfiguration(script, legacyConfigSettings)
+            checkForLegacyConfiguration(script: script, legacyConfigSettings: legacyConfigSettings)
         }
 
         String buildTool = checkBuildTool(config)

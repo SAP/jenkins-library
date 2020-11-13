@@ -21,9 +21,13 @@ spec:
   inputs:
     secrets:
       - name: userTokenCredentialsId
+        aliases:
+          - name: whitesourceUserTokenCredentialsId
         description: Jenkins 'Secret text' credentials ID containing Whitesource user token.
         type: jenkins
       - name: orgAdminUserTokenCredentialsId
+        aliases:
+          - name: whitesourceOrgAdminUserTokenCredentialsId
         description: Jenkins 'Secret text' credentials ID containing Whitesource org admin token.
         type: jenkins
     params:
@@ -218,9 +222,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        resourceRef:
-          - name: commonPipelineEnvironment
-            param: artifactVersion
       - name: jreDownloadUrl
         type: string
         description: "[NOT IMPLEMENTED] URL used for downloading the Java Runtime Environment (JRE) required to run the
@@ -231,6 +232,8 @@ spec:
           - STAGES
           - STEPS
       - name: productName
+        aliases:
+          - name: whitesourceProductName
         type: string
         description: "Name of the WhiteSource product used for results aggregation.
           This parameter is mandatory if the parameter `createProductFromPipeline` is set to `true`
@@ -392,109 +395,17 @@ spec:
     resources:
       - name: buildDescriptor
         type: stash
-        conditions:
-          - conditionRef: strings-equal
-            params:
-              - name: scanType
-                value: golang
       - name: opensourceConfiguration
         type: stash
-        conditions:
-          - conditionRef: strings-equal
-            params:
-              - name: scanType
-                value: golang
       - name: checkmarx
         type: stash
-        conditions:
-          - conditionRef: strings-equal
-            params:
-              - name: scanType
-                value: golang
-      - name: buildDescriptor
-        type: stash
-        conditions:
-          - conditionRef: strings-equal
-            params:
-              - name: scanType
-                value: maven
-      - name: opensourceConfiguration
-        type: stash
-        conditions:
-          - conditionRef: strings-equal
-            params:
-              - name: scanType
-                value: maven
-      - name: buildDescriptor
-        type: stash
-        conditions:
-          - conditionRef: strings-equal
-            params:
-              - name: scanType
-                value: mta
-      - name: opensourceConfiguration
-        type: stash
-        conditions:
-          - conditionRef: strings-equal
-            params:
-              - name: scanType
-                value: mta
-      - name: buildDescriptor
-        type: stash
-        conditions:
-          - conditionRef: strings-equal
-            params:
-              - name: scanType
-                value: npm
-      - name: opensourceConfiguration
-        type: stash
-        conditions:
-          - conditionRef: strings-equal
-            params:
-              - name: scanType
-                value: npm
-      - name: buildDescriptor
-        type: stash
-        conditions:
-          - conditionRef: strings-equal
-            params:
-              - name: scanType
-                value: pip
-      - name: opensourceConfiguration
-        type: stash
-        conditions:
-          - conditionRef: strings-equal
-            params:
-              - name: scanType
-                value: pip
-      - name: buildDescriptor
-        type: stash
-        conditions:
-          - conditionRef: strings-equal
-            params:
-              - name: scanType
-                value: sbt
-      - name: opensourceConfiguration
-        type: stash
-        conditions:
-          - conditionRef: strings-equal
-            params:
-              - name: scanType
-                value: sbt
-      - name: buildDescriptor
-        type: stash
-        conditions:
-          - conditionRef: strings-equal
-            params:
-              - name: scanType
-                value: dub
-      - name: checkmarx
-        type: stash
-        conditions:
-          - conditionRef: strings-equal
-            params:
-              - name: scanType
-                value: dub
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: custom/whitesourceProjectNames
+            type: "[]string"
   containers:
     - image: maven:3.5-jdk-8
       workingDir: /home/java

@@ -55,6 +55,10 @@ stages:
           - 'appUrls'
   performanceTests:
     stepConditions:
+      gatlingExecuteTests:
+        filePatternFromConfig: 'pomPath'
+        configKeys:
+          - 'appUrls'
       performanceTests:
         configKeys:
           - 'cfTargets'
@@ -107,6 +111,9 @@ stages:
       artifactDeployment:
         configKeys:
           - 'nexus'
+      nexusUpload:
+        configKeys:
+          - 'url'
   postPipelineHook:
     stepConditions:
       postPipelineHook:

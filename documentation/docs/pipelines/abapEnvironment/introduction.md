@@ -14,7 +14,7 @@ The following stages and steps are part of the pipeline:
 |--------------------------|-------|
 | Init                     | -     |
 | Initial Checks           | [abapAddonAssemblyKitCheckPV](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitCheckPV/), [abapAddonAssemblyKitCheckCVs](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitCheckCVs/)|
-| Prepare System           | [cloudFoundryCreateService](https://sap.github.io/jenkins-library/steps/cloudFoundryCreateService/), [cloudFoundryCreateServiceKey](https://sap.github.io/jenkins-library/steps/cloudFoundryCreateServiceKey/)|
+| Prepare System           | [abapEnvironmentCreateSystem](https://sap.github.io/jenkins-library/steps/abapEnvironmentCreateSystem/), [cloudFoundryCreateServiceKey](https://sap.github.io/jenkins-library/steps/cloudFoundryCreateServiceKey/)|
 | Clone Repositories       | [abapEnvironmentPullGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentPullGitRepo/)|
 | ATC                      | [abapEnvironmentRunATCCheck](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunATCCheck/)|
 | Build                    | [cloudFoundryCreateServiceKey](https://sap.github.io/jenkins-library/steps/cloudFoundryCreateServiceKey/), [abapAddonAssemblyKitReserveNextPackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitReserveNextPackages/), [abapEnvironmentAssemblePackages](https://sap.github.io/jenkins-library/steps/abapEnvironmentAssemblePackages/), [abapAddonAssemblyKitRegisterPackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitRegisterPackages/), [abapAddonAssemblyKitReleasePackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitReleasePackages/), [abapAddonAssemblyKitCreateTargetVector](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitCreateTargetVector/), [abapAddonAssemblyKitPublishTargetVector](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitPublishTargetVector/)|
@@ -35,7 +35,7 @@ This stage is executed, if the "Build" stage is configured. It contains checks t
 
 ## Prepare System
 
-In this stage, the ABAP Environment system is created. This is done with the cloudFoundryCreateService step.
+In this stage, the ABAP Environment system is created. This is done with the abapEnvironmentCreateSystem step.
 
 !!! caution "Limitation"
     As some parts of the system configuration is done after the Cloud Foundry instance was created, the following workaround is currently necessary:
@@ -46,8 +46,13 @@ After the confirmation, the Communication Arrangement [SAP_COM_0510](https://hel
 
 ## Clone Repositories
 
-In this stage, the Software Components / Git repositories are pulled to the ABAP Environment system using the step abapEnvironmentPullGitRepo.
+As a default we assume that the ABAP Environment system is already configured and all Software Components are cloned and the latest change of the respective Software Components should be pulled with the abapEnvironmentPullGitRepo step.
+In this stage, the Software Components / Git repositories are then pulled to the ABAP Environment system using the step abapEnvironmentPullGitRepo.
 The step can receive a list of Software Components / repositories and pulls them successively.
+If the Software Components have not been cloned on the ABAP Environment system yet or you want to e.g. checkout a different Branch you can make use of the `strategy` stage parameter and perform other steps and step orders.
+Please refer to the Configuration section for the abapEnvironment Pipeline or the respective documentations for the [abapEnvironmentCheckoutBranch](https://sap.github.io/jenkins-library/steps/abapEnvironmentCheckoutBranch/), [abapEnvironmentCloneGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentCloneGitRepo/) and [abapEnvironmentPullGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentPullGitRepo/) steps.
+
+Either way, if you chose a dedicated strategy or the default Pull variant you can optionally provide a dedicated configuration file, e.g. `repositories.yml`, containing the repositories to be cloned and the branches to be switched to. This file can be used consistently for all strategies.
 
 ## ATC
 

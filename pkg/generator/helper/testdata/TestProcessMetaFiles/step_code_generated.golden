@@ -28,6 +28,9 @@ type testStepCommonPipelineEnvironment struct {
 		commitID string
 		branch string
 	}
+	custom struct {
+		customList []string
+	}
 }
 
 func (p *testStepCommonPipelineEnvironment) persist(path, resourceName string) {
@@ -39,6 +42,7 @@ func (p *testStepCommonPipelineEnvironment) persist(path, resourceName string) {
 		{category: "", name: "artifactVersion", value: p.artifactVersion},
 		{category: "git", name: "commitId", value: p.git.commitID},
 		{category: "git", name: "branch", value: p.git.branch},
+		{category: "custom", name: "customList", value: p.custom.customList},
 	}
 
 	errCount := 0

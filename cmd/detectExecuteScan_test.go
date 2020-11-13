@@ -13,16 +13,22 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type httpClientMock struct {
+type detectTestUtilsBundle struct {
 	expectedError   error
 	downloadedFiles map[string]string // src, dest
+	*mock.ShellMockRunner
+	*mock.FilesMock
 }
 
-func (c *httpClientMock) SetOptions(options piperhttp.ClientOptions) {
+func (c *detectTestUtilsBundle) RunExecutable(string, ...string) error {
+	panic("not expected to be called in test")
+}
+
+func (c *detectTestUtilsBundle) SetOptions(piperhttp.ClientOptions) {
 
 }
 
-func (c *httpClientMock) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+func (c *detectTestUtilsBundle) DownloadFile(url, filename string, _ http.Header, _ []*http.Cookie) error {
 
 	if c.expectedError != nil {
 		return c.expectedError
@@ -35,61 +41,64 @@ func (c *httpClientMock) DownloadFile(url, filename string, header http.Header, 
 	return nil
 }
 
+func newDetectTestUtilsBundle() *detectTestUtilsBundle {
+	utilsBundle := detectTestUtilsBundle{
+		ShellMockRunner: &mock.ShellMockRunner{},
+		FilesMock:       &mock.FilesMock{},
+	}
+	return &utilsBundle
+}
+
 func TestRunDetect(t *testing.T) {
-
+	t.Parallel()
 	t.Run("success case", func(t *testing.T) {
-		s := mock.ShellMockRunner{}
-		fileUtilsMock := mock.FilesMock{}
-		fileUtilsMock.AddFile("detect.sh", []byte(""))
-		httpClient := httpClientMock{}
-		err := runDetect(detectExecuteScanOptions{}, &s, &fileUtilsMock, &httpClient)
+		t.Parallel()
+		utilsMock := newDetectTestUtilsBundle()
+		utilsMock.AddFile("detect.sh", []byte(""))
+		err := runDetect(detectExecuteScanOptions{}, utilsMock)
 
-		assert.Equal(t, httpClient.downloadedFiles["https://detect.synopsys.com/detect.sh"], "detect.sh")
-		assert.True(t, fileUtilsMock.HasRemovedFile("detect.sh"))
+		assert.Equal(t, utilsMock.downloadedFiles["https://detect.synopsys.com/detect.sh"], "detect.sh")
+		assert.True(t, utilsMock.HasRemovedFile("detect.sh"))
 		assert.NoError(t, err)
-		assert.Equal(t, ".", s.Dir, "Wrong execution directory used")
-		assert.Equal(t, "/bin/bash", s.Shell[0], "Bash shell expected")
+		assert.Equal(t, ".", utilsMock.Dir, "Wrong execution directory used")
+		assert.Equal(t, "/bin/bash", utilsMock.Shell[0], "Bash shell expected")
 		expectedScript := "./detect.sh --blackduck.url= --blackduck.api.token= --detect.project.name=\\\"\\\" --detect.project.version.name=\\\"\\\" --detect.code.location.name=\\\"\\\""
-		assert.Equal(t, expectedScript, s.Calls[0])
+		assert.Equal(t, expectedScript, utilsMock.Calls[0])
 	})
 
 	t.Run("failure case", func(t *testing.T) {
-		s := mock.ShellMockRunner{ShouldFailOnCommand: map[string]error{"./detect.sh --blackduck.url= --blackduck.api.token= --detect.project.name=\\\"\\\" --detect.project.version.name=\\\"\\\" --detect.code.location.name=\\\"\\\"": fmt.Errorf("Test Error")}}
-		fileUtilsMock := mock.FilesMock{}
-		fileUtilsMock.AddFile("detect.sh", []byte(""))
-		httpClient := httpClientMock{}
-		err := runDetect(detectExecuteScanOptions{}, &s, &fileUtilsMock, &httpClient)
+		t.Parallel()
+		utilsMock := newDetectTestUtilsBundle()
+		utilsMock.ShouldFailOnCommand = map[string]error{"./detect.sh --blackduck.url= --blackduck.api.token= --detect.project.name=\\\"\\\" --detect.project.version.name=\\\"\\\" --detect.code.location.name=\\\"\\\"": fmt.Errorf("Test Error")}
+		utilsMock.AddFile("detect.sh", []byte(""))
+		err := runDetect(detectExecuteScanOptions{}, utilsMock)
 		assert.EqualError(t, err, "Test Error")
-		assert.True(t, fileUtilsMock.HasRemovedFile("detect.sh"))
+		assert.True(t, utilsMock.HasRemovedFile("detect.sh"))
 	})
 
 	t.Run("maven parameters", func(t *testing.T) {
-		s := mock.ShellMockRunner{}
-		fileUtilsMock := mock.FilesMock{
-			CurrentDir: "root_folder",
-		}
-		fileUtilsMock.AddFile("detect.sh", []byte(""))
-		httpClient := httpClientMock{}
+		t.Parallel()
+		utilsMock := newDetectTestUtilsBundle()
+		utilsMock.CurrentDir = "root_folder"
+		utilsMock.AddFile("detect.sh", []byte(""))
 		err := runDetect(detectExecuteScanOptions{
 			M2Path:              ".pipeline/local_repo",
 			ProjectSettingsFile: "project-settings.xml",
 			GlobalSettingsFile:  "global-settings.xml",
-		}, &s, &fileUtilsMock, &httpClient)
+		}, utilsMock)
 
 		assert.NoError(t, err)
-		assert.Equal(t, ".", s.Dir, "Wrong execution directory used")
-		assert.Equal(t, "/bin/bash", s.Shell[0], "Bash shell expected")
+		assert.Equal(t, ".", utilsMock.Dir, "Wrong execution directory used")
+		assert.Equal(t, "/bin/bash", utilsMock.Shell[0], "Bash shell expected")
 		absoluteLocalPath := string(os.PathSeparator) + filepath.Join("root_folder", ".pipeline", "local_repo")
 
 		expectedParam := "\"--detect.maven.build.command='--global-settings global-settings.xml --settings project-settings.xml -Dmaven.repo.local=" + absoluteLocalPath + "'\""
-		assert.Contains(t, s.Calls[0], expectedParam)
+		assert.Contains(t, utilsMock.Calls[0], expectedParam)
 	})
 }
 
 func TestAddDetectArgs(t *testing.T) {
-	httpClient := piperhttp.Client{}
-	fileUtilsMock := mock.FilesMock{}
-
+	t.Parallel()
 	testData := []struct {
 		args     []string
 		options  detectExecuteScanOptions
@@ -175,8 +184,10 @@ func TestAddDetectArgs(t *testing.T) {
 	}
 
 	for k, v := range testData {
+		v := v
 		t.Run(fmt.Sprintf("run %v", k), func(t *testing.T) {
-			got, err := addDetectArgs(v.args, v.options, &fileUtilsMock, &httpClient)
+			t.Parallel()
+			got, err := addDetectArgs(v.args, v.options, newDetectTestUtilsBundle())
 			assert.NoError(t, err)
 			assert.Equal(t, v.expected, got)
 		})

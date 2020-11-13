@@ -72,6 +72,14 @@ spec:
           - STAGES
           - STEPS
         default: true
+      - name: maxRetries
+        type: int
+        description: Maximum number of HTTP request retries upon intermittend connetion interrupts
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: 3
       - name: password
         type: string
         description: The password to authenticate
@@ -113,7 +121,6 @@ spec:
       - name: pullRequestName
         type: string
         description: Used to supply the name for the newly created PR project branch when being used in pull request scenarios
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -226,7 +233,6 @@ spec:
       - name: vulnerabilityThresholdUnit
         type: string
         description: The unit for the threshold to apply.
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES

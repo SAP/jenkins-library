@@ -60,6 +60,7 @@ nav:
         - abapEnvironmentAssemblePackages: steps/abapEnvironmentAssemblePackages.md
         - abapEnvironmentCheckoutBranch: steps/abapEnvironmentCheckoutBranch.md
         - abapEnvironmentCloneGitRepo: steps/abapEnvironmentCloneGitRepo.md
+        - abapEnvironmentCreateSystem: steps/abapEnvironmentCreateSystem.md
         - abapEnvironmentPullGitRepo: steps/abapEnvironmentPullGitRepo.md
         - abapEnvironmentRunATCCheck: steps/abapEnvironmentRunATCCheck.md
         - artifactPrepareVersion: steps/artifactPrepareVersion.md
@@ -83,6 +84,7 @@ nav:
         - dubExecute: steps/dubExecute.md
         - durationMeasure: steps/durationMeasure.md
         - fortifyExecuteScan: steps/fortifyExecuteScan.md
+        - gatlingExecuteTests: steps/gatlingExecuteTests.md
         - gaugeExecuteTests: steps/gaugeExecuteTests.md
         - gctsCloneRepository: steps/gctsCloneRepository.md
         - gctsCreateRepository: steps/gctsCreateRepository.md
@@ -149,7 +151,7 @@ theme:
     palette:
       primary: 'teal'
       accent: 'purple'
-    logo: 'images/piper_head_white.png'
+    logo: 'images/piper_400_white.png'
     favicon: 'images/favicon.ico'
 extra:
     font:
