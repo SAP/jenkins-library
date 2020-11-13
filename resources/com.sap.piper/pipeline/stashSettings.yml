@@ -30,6 +30,7 @@ Acceptance:
 Performance:
   unstash:
     - source
+    - buildResult
   stashes: []
 
 Release:
