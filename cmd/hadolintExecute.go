@@ -95,7 +95,7 @@ func runHadolint(config hadolintExecuteOptions, utils hadolintUtils) error {
 		log.Entry().Debug("No configuration file found.")
 	}
 	// execute scan command
-	runCommand := fmt.Sprintf("hadolint %s %s", config.DockerFile, strings.Join(options, " "))
+	runCommand := fmt.Sprintf("hadolint %s %s", config.Dockerfile, strings.Join(options, " "))
 	runCommandTokens := tokenize(runCommand)
 	err := utils.RunExecutable(runCommandTokens[0], runCommandTokens[1:]...)
 
