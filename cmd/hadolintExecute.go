@@ -105,6 +105,7 @@ func runHadolint(config hadolintExecuteOptions, utils hadolintUtils) error {
 		// if stdout is empty a processing issue occured
 		return errors.Wrap(err, errorBuffer.String())
 	}
+	//TODO: mock away in tests
 	// persist report information
 	piperutils.PersistReportsAndLinks("hadolintExecute", "./", []piperutils.Path{{Target: config.ReportFile}}, []piperutils.Path{})
 	return nil
