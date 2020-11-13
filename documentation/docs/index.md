@@ -22,7 +22,7 @@ In many cases, they should satisfy your requirements, and if this is the case, y
 
 ### The best-practice way: Ready-made pipelines
 
-**Are you building a standalone SAP Cloud Platform application, an application with the SAP Cloud SDK, or using the SAP Cloud Application Programming Model??<br>**
+**Are you building a standalone SAP Cloud Platform application, an application with the SAP Cloud SDK, or using the SAP Cloud Application Programming Model?<br>**
 Then continue reading about our [general purpose pipeline](stages/introduction/), which supports various technologies and programming languages.
 
 ### The do-it-yourself way: Build with Library
