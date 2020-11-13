@@ -23,7 +23,16 @@ stages:
         filePattern: '**/*.bats'
       karmaExecuteTests:
         filePattern: '**/karma.conf.js'
-  Integration: {}
+      npmExecuteScripts:
+        configKeys:
+          - 'runScripts'
+  Integration:
+    stepConditions:
+      npmExecuteScripts:
+        configKeys:
+          - 'runScripts'
+      mavenExecuteIntegration:
+        filePattern: 'integration-tests/pom.xml'
   Acceptance:
     stepConditions:
       multicloudDeploy:
