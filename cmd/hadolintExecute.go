@@ -17,6 +17,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+const commandHadolint = "hadolint"
+
 // HadolintPiperFileUtils ..
 // mock generated with: mockery --name HadolintPiperFileUtils --dir cmd --output pkg/hadolint/mocks
 type HadolintPiperFileUtils interface {
@@ -95,9 +97,7 @@ func runHadolint(config hadolintExecuteOptions, utils hadolintUtils) error {
 		log.Entry().Debug("No configuration file found.")
 	}
 	// execute scan command
-	runCommand := fmt.Sprintf("hadolint %s %s", config.Dockerfile, strings.Join(options, " "))
-	runCommandTokens := tokenize(runCommand)
-	err := utils.RunExecutable(runCommandTokens[0], runCommandTokens[1:]...)
+	err := utils.RunExecutable(commandHadolint, append([]string{config.Dockerfile}, tokenize(strings.Join(options, " "))...)...)
 
 	//TODO: related to https://github.com/hadolint/hadolint/issues/391
 	// hadolint exists with 1 if there are processing issues but also if there are findings
