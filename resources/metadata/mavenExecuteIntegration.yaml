@@ -42,7 +42,7 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
-
+        default: true
       # Global maven settings, should be added to all maven steps
       - name: projectSettingsFile
         type: string
