@@ -13,6 +13,8 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field STAGE_STEP_KEYS = [
     /** Executes Gatling performance tests */
     'gatlingExecuteTests',
+    /** Can perform both to cloud foundry and neo targets. Preferred over cloudFoundryDeploy and neoDeploy, if configured. */
+    'multicloudDeploy',
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
@@ -34,6 +36,7 @@ void call(Map parameters = [:]) {
         .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
         .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
         .mixin(parameters, PARAMETER_KEYS)
+        .addIfEmpty('multicloudDeploy', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.multicloudDeploy)
         .addIfEmpty('gatlingExecuteTests', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.gatlingExecuteTests)
         .use()
 
@@ -41,6 +44,12 @@ void call(Map parameters = [:]) {
 
         // telemetry reporting
         utils.pushToSWA([step: STEP_NAME], config)
+
+        if (config.multicloudDeploy) {
+            durationMeasure(script: script, measurementName: 'deploy_performance_multicloud_duration') {
+                multicloudDeploy(script: script, stage: stageName)
+            }
+        }
 
         if (config.gatlingExecuteTests) {
             durationMeasure(script: script, measurementName: 'gatling_duration') {

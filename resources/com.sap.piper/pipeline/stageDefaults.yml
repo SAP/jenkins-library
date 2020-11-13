@@ -64,7 +64,12 @@ stages:
           - 'userTokenCredentialsId'
           - 'whitesource/userTokenCredentialsId'
           - 'whitesourceUserTokenCredentialsId'
-  Performance: {}
+  Performance:
+    stepConditions:
+      gatlingExecuteTests:
+        filePatternFromConfig: 'pomPath'
+        configKeys:
+          - 'appUrls'
   Compliance: {}
   Promote:
     stepConditions:
