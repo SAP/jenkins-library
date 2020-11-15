@@ -159,9 +159,9 @@ func checkManifestParameters(config *abapEnvironmentCreateSystemOptions) (err er
 		}
 
 		if config.AbapSystemID != "" {
-			const systemIdSyntaxCheck = `[A-Z0-9]`
-			systemIdMatch, _ := regexp.MatchString(systemIdSyntaxCheck, config.AbapSystemID)
-			if !systemIdMatch {
+			const systemIDSyntaxCheck = `[A-Z0-9]`
+			systemIDMatch, _ := regexp.MatchString(systemIDSyntaxCheck, config.AbapSystemID)
+			if !systemIDMatch {
 				return errors.New("It seems like you have incorrectly specified the AbapSystemID step parameter. Please check that the parameters follows the respective syntax to specify the AbapSystemID. For more information please refer to the step documentation")
 			}
 		}

@@ -79,7 +79,7 @@ If you want to use an abap-oem System please note that the following configurati
 
 You can either specify the parameters required for an abap-oem System either directly in the Jenkinsfile or in a `manifest.yml` file.
 
-The first example makes use of the Jenkinsfile. 
+The first example makes use of the Jenkinsfile.
 
 ```yaml
 steps:
@@ -105,7 +105,7 @@ steps:
 
 ```
 
-In this second example a configuration file is used that can be passed in the Jenkinsfile. 
+In this second example a configuration file is used that can be passed in the Jenkinsfile.
 
 ```groovy
 abapEnvironmentCloneGitRepo (
