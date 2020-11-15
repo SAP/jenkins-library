@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"regexp"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/cloudfoundry"
@@ -13,6 +14,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/ghodss/yaml"
 	"github.com/google/uuid"
+	"github.com/pkg/errors"
 )
 
 func abapEnvironmentCreateSystem(config abapEnvironmentCreateSystemOptions, telemetryData *telemetry.CustomData) {
@@ -81,15 +83,25 @@ func generateManifestYAML(config *abapEnvironmentCreateSystemOptions) ([]byte, e
 		addonProduct = descriptor.AddonProduct
 		addonVersion = descriptor.AddonVersionYAML
 	}
+	err := checkManifestParameters(config)
+	if err != nil {
+		return nil, fmt.Errorf("Checking manifest parameters failed: %w", err)
+	}
+
 	params := abapSystemParameters{
-		AdminEmail:           config.AbapSystemAdminEmail,
-		Description:          config.AbapSystemDescription,
-		IsDevelopmentAllowed: config.AbapSystemIsDevelopmentAllowed,
-		SapSystemName:        config.AbapSystemID,
-		SizeOfPersistence:    config.AbapSystemSizeOfPersistence,
-		SizeOfRuntime:        config.AbapSystemSizeOfRuntime,
-		AddonProductName:     addonProduct,
-		AddonProductVersion:  addonVersion,
+		AdminEmail:                config.AbapSystemAdminEmail,
+		Description:               config.AbapSystemDescription,
+		IsDevelopmentAllowed:      config.AbapSystemIsDevelopmentAllowed,
+		SapSystemName:             config.AbapSystemID,
+		SizeOfPersistence:         config.AbapSystemSizeOfPersistence,
+		SizeOfRuntime:             config.AbapSystemSizeOfRuntime,
+		AddonProductName:          addonProduct,
+		AddonProductVersion:       addonVersion,
+		ParentServiceLabel:        config.AbapSystemParentServiceLabel,
+		ParentServiceInstanceGuid: config.AbapSystemParentServiceInstanceGuid,
+		ParentSaasAppname:         config.AbapSystemParentSaasAppname,
+		ParentServiceParameters:   config.AbapSystemParentServiceParameters,
+		ConsumerTenantLimit:       config.AbapSystemConsumerTenantLimit,
 	}
 
 	serviceParameters, err := json.Marshal(params)
@@ -129,15 +141,53 @@ func generateManifestYAML(config *abapEnvironmentCreateSystemOptions) ([]byte, e
 	return manifestYAML, nil
 }
 
+func checkManifestParameters(config *abapEnvironmentCreateSystemOptions) (err error) {
+
+	//Only checks for correct parameter specification if CF Service "abap-oem" is selected
+	if config.CfService == "abap-oem" {
+
+		if config.AbapSystemParentSaasAppname == "" && config.AbapSystemParentServiceLabel == "" {
+			return errors.New("Both parameters AbapSystemParentServiceLabel and AbapSystemParentSaasAppname seem to be empty. Please specify either AbapSystemParentServiceLabel or AbapSystemParentSaasAppname depending on who created the oem-instance in the step configuration. For more information please refer to the step documentation")
+		}
+
+		if config.AbapSystemParentSaasAppname != "" {
+			const parentSaasAppnameSyntaxCheck = `[a-zA-Z0-9\-\_]+`
+			addonProductVersionMatch, _ := regexp.MatchString(parentSaasAppnameSyntaxCheck, config.AbapSystemParentSaasAppname)
+			if !addonProductVersionMatch {
+				return errors.New("It seems like you have incorrectly specified the AbapSystemParentSaasAppname step parameter. Please check that the parameters follows the respective syntax to specify the AbapSystemParentSaasAppname. For more information please refer to the step documentation")
+			}
+		}
+
+		if config.AbapSystemID != "" {
+			const systemIdSyntaxCheck = `[A-Z0-9]`
+			systemIdMatch, _ := regexp.MatchString(systemIdSyntaxCheck, config.AbapSystemID)
+			if !systemIdMatch {
+				return errors.New("It seems like you have incorrectly specified the AbapSystemID step parameter. Please check that the parameters follows the respective syntax to specify the AbapSystemID. For more information please refer to the step documentation")
+			}
+		}
+
+		if config.AbapSystemConsumerTenantLimit == 0 {
+			return errors.New("You have specified 0 tenants o be created in the system for the step parameter AbapSystemConsumerTenantLimit. Please check that you have set the parameter value correctly. For more information please refer to the step documentation")
+		}
+	}
+
+	return err
+}
+
 type abapSystemParameters struct {
-	AdminEmail           string `json:"admin_email,omitempty"`
-	Description          string `json:"description,omitempty"`
-	IsDevelopmentAllowed bool   `json:"is_development_allowed,omitempty"`
-	SapSystemName        string `json:"sapsystemname,omitempty"`
-	SizeOfPersistence    int    `json:"size_of_persistence,omitempty"`
-	SizeOfRuntime        int    `json:"size_of_runtime,omitempty"`
-	AddonProductName     string `json:"addon_product_name,omitempty"`
-	AddonProductVersion  string `json:"addon_product_version,omitempty"`
+	AdminEmail                string `json:"admin_email,omitempty"`
+	Description               string `json:"description,omitempty"`
+	IsDevelopmentAllowed      bool   `json:"is_development_allowed,omitempty"`
+	SapSystemName             string `json:"sapsystemname,omitempty"`
+	SizeOfPersistence         int    `json:"size_of_persistence,omitempty"`
+	SizeOfRuntime             int    `json:"size_of_runtime,omitempty"`
+	AddonProductName          string `json:"addon_product_name,omitempty"`
+	AddonProductVersion       string `json:"addon_product_version,omitempty"`
+	ParentServiceLabel        string `json:"parent_service_label,omitempty"`
+	ParentServiceInstanceGuid string `json:"parent_service_instance_guid,omitempty"`
+	ParentSaasAppname         string `json:"parent_saas_appname,omitempty"`
+	ParentServiceParameters   string `json:"parent_service_parameters,omitempty"`
+	ConsumerTenantLimit       int    `json:"consumer_tenant_limit,omitempty"`
 }
 
 type serviceManifest struct {

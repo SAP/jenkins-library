@@ -14,23 +14,28 @@ import (
 )
 
 type abapEnvironmentCreateSystemOptions struct {
-	CfAPIEndpoint                  string `json:"cfApiEndpoint,omitempty"`
-	Username                       string `json:"username,omitempty"`
-	Password                       string `json:"password,omitempty"`
-	CfOrg                          string `json:"cfOrg,omitempty"`
-	CfSpace                        string `json:"cfSpace,omitempty"`
-	CfService                      string `json:"cfService,omitempty"`
-	CfServicePlan                  string `json:"cfServicePlan,omitempty"`
-	CfServiceInstance              string `json:"cfServiceInstance,omitempty"`
-	ServiceManifest                string `json:"serviceManifest,omitempty"`
-	AbapSystemAdminEmail           string `json:"abapSystemAdminEmail,omitempty"`
-	AbapSystemDescription          string `json:"abapSystemDescription,omitempty"`
-	AbapSystemIsDevelopmentAllowed bool   `json:"abapSystemIsDevelopmentAllowed,omitempty"`
-	AbapSystemID                   string `json:"abapSystemID,omitempty"`
-	AbapSystemSizeOfPersistence    int    `json:"abapSystemSizeOfPersistence,omitempty"`
-	AbapSystemSizeOfRuntime        int    `json:"abapSystemSizeOfRuntime,omitempty"`
-	AddonDescriptorFileName        string `json:"addonDescriptorFileName,omitempty"`
-	IncludeAddon                   bool   `json:"includeAddon,omitempty"`
+	CfAPIEndpoint                       string `json:"cfApiEndpoint,omitempty"`
+	Username                            string `json:"username,omitempty"`
+	Password                            string `json:"password,omitempty"`
+	CfOrg                               string `json:"cfOrg,omitempty"`
+	CfSpace                             string `json:"cfSpace,omitempty"`
+	CfService                           string `json:"cfService,omitempty"`
+	CfServicePlan                       string `json:"cfServicePlan,omitempty"`
+	CfServiceInstance                   string `json:"cfServiceInstance,omitempty"`
+	ServiceManifest                     string `json:"serviceManifest,omitempty"`
+	AbapSystemAdminEmail                string `json:"abapSystemAdminEmail,omitempty"`
+	AbapSystemDescription               string `json:"abapSystemDescription,omitempty"`
+	AbapSystemIsDevelopmentAllowed      bool   `json:"abapSystemIsDevelopmentAllowed,omitempty"`
+	AbapSystemID                        string `json:"abapSystemID,omitempty"`
+	AbapSystemSizeOfPersistence         int    `json:"abapSystemSizeOfPersistence,omitempty"`
+	AbapSystemSizeOfRuntime             int    `json:"abapSystemSizeOfRuntime,omitempty"`
+	AbapSystemParentServiceLabel        string `json:"abapSystemParentServiceLabel,omitempty"`
+	AbapSystemParentServiceInstanceGuid string `json:"abapSystemParentServiceInstanceGuid,omitempty"`
+	AbapSystemParentSaasAppname         string `json:"abapSystemParentSaasAppname,omitempty"`
+	AbapSystemParentServiceParameters   string `json:"abapSystemParentServiceParameters,omitempty"`
+	AbapSystemConsumerTenantLimit       int    `json:"abapSystemConsumerTenantLimit,omitempty"`
+	AddonDescriptorFileName             string `json:"addonDescriptorFileName,omitempty"`
+	IncludeAddon                        bool   `json:"includeAddon,omitempty"`
 }
 
 // AbapEnvironmentCreateSystemCommand Creates a SAP Cloud Platform ABAP Environment system (aka Steampunk system)
@@ -107,6 +112,11 @@ func addAbapEnvironmentCreateSystemFlags(cmd *cobra.Command, stepConfig *abapEnv
 	cmd.Flags().StringVar(&stepConfig.AbapSystemID, "abapSystemID", `H02`, "The three character name of the system - maps to 'sapSystemName'")
 	cmd.Flags().IntVar(&stepConfig.AbapSystemSizeOfPersistence, "abapSystemSizeOfPersistence", 0, "The size of the persistence")
 	cmd.Flags().IntVar(&stepConfig.AbapSystemSizeOfRuntime, "abapSystemSizeOfRuntime", 0, "The size of the runtime")
+	cmd.Flags().StringVar(&stepConfig.AbapSystemParentServiceLabel, "abapSystemParentServiceLabel", os.Getenv("PIPER_abapSystemParentServiceLabel"), "The name of the parent service label that is passed through to CLD")
+	cmd.Flags().StringVar(&stepConfig.AbapSystemParentServiceInstanceGuid, "abapSystemParentServiceInstanceGuid", os.Getenv("PIPER_abapSystemParentServiceInstanceGuid"), "The guid/Service ID of the parent service")
+	cmd.Flags().StringVar(&stepConfig.AbapSystemParentSaasAppname, "abapSystemParentSaasAppname", os.Getenv("PIPER_abapSystemParentSaasAppname"), "The parent appname from the SaaS registry")
+	cmd.Flags().StringVar(&stepConfig.AbapSystemParentServiceParameters, "abapSystemParentServiceParameters", os.Getenv("PIPER_abapSystemParentServiceParameters"), "JSON string that contains the service parameters of the parent service passed through CLD")
+	cmd.Flags().IntVar(&stepConfig.AbapSystemConsumerTenantLimit, "abapSystemConsumerTenantLimit", 0, "Specifies how many tenants can be created/onboarded in the system")
 	cmd.Flags().StringVar(&stepConfig.AddonDescriptorFileName, "addonDescriptorFileName", os.Getenv("PIPER_addonDescriptorFileName"), "The file name of the addonDescriptor")
 	cmd.Flags().BoolVar(&stepConfig.IncludeAddon, "includeAddon", false, "Must be set to true to install the addon provided via 'addonDescriptorFileName'")
 
@@ -265,6 +275,46 @@ func abapEnvironmentCreateSystemMetadata() config.StepData {
 					},
 					{
 						Name:        "abapSystemSizeOfRuntime",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "abapSystemParentServiceLabel",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "abapSystemParentServiceInstanceGuid",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "abapSystemParentSaasAppname",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "abapSystemParentServiceParameters",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "abapSystemConsumerTenantLimit",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "int",
