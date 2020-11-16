@@ -39,6 +39,7 @@ func TestRunHadolintExecute(t *testing.T) {
 			assert.NotContains(t, runnerMock.Calls[0].Params, "--config")
 			assert.NotContains(t, runnerMock.Calls[0].Params, config.ConfigurationFile)
 		}
+		// assert that mocks are called as previously defined
 		fileMock.AssertExpectations(t)
 		clientMock.AssertExpectations(t)
 	})
@@ -78,6 +79,7 @@ func TestRunHadolintExecute(t *testing.T) {
 			assert.Contains(t, runnerMock.Calls[0].Params, "--config")
 			assert.Contains(t, runnerMock.Calls[0].Params, config.ConfigurationFile)
 		}
+		// assert that mocks are called as previously defined
 		fileMock.AssertExpectations(t)
 		clientMock.AssertExpectations(t)
 	})
