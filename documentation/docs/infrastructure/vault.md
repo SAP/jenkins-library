@@ -18,7 +18,7 @@ You have to [create an AppRole Role](https://www.vaultproject.io/api-docs/auth/a
 
 Take the role ID from your Vault AppRole and create a Jenkins `Secret Text` credential. Do the same for the Vault AppRole secret ID.
 
-![Create two jenkins secret sext credentials](../images/jenkins-vault-credential.png)
+![Create two jenkins secret text credentials](../images/jenkins-vault-credential.png)
 
 ## Pipline Configuration
 
