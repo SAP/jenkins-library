@@ -9,7 +9,6 @@ MD001: false #heading-increment/header-increment
 MD004: false #ul-style
 MD012: false #no-multiple-blanks
 MD007: false #ul-indent
-MD022: false #blanks-around-headings/blanks-around-headers
 MD024: false #no-duplicate-heading/no-duplicate-header
 MD026: false #no-trailing-punctuation
 MD030: false #list-marker-space

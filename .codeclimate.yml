@@ -51,9 +51,6 @@ plugins:
       # https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md#md007
       MD007:
         enabled: false
-      # https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md#md022
-      MD022:
-        enabled: false
       # https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md#md024
       MD024:
         enabled: false
