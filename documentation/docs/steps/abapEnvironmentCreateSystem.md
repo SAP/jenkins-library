@@ -48,7 +48,7 @@ steps:
 The step, including all parameters, can also be called directly from the Jenkinsfile. In the following example, a configuration file is used.
 
 ```groovy
-abapEnvironmentCloneGitRepo (
+abapEnvironmentCreateSystem (
   script: this,
   cfCredentialsId: 'cfCredentialsId',
   cfApiEndpoint: 'https://test.server.com',
