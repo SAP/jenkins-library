@@ -36,7 +36,7 @@ class abapEnvironmentPipelineStageIntegrationTestsTest extends BasePiperTest {
             stepsCalled.add('input')
             return null
         })
-        helper.registerAllowedMethod('cloudFoundryCreateService', [Map.class], {m -> stepsCalled.add('cloudFoundryCreateService')})
+        helper.registerAllowedMethod('abapEnvironmentCreateSystem', [Map.class], {m -> stepsCalled.add('abapEnvironmentCreateSystem')})
         helper.registerAllowedMethod('cloudFoundryDeleteService', [Map.class], {m -> stepsCalled.add('cloudFoundryDeleteService')})
     }
 
@@ -49,7 +49,7 @@ class abapEnvironmentPipelineStageIntegrationTestsTest extends BasePiperTest {
         jsr.step.abapEnvironmentPipelineStageIntegrationTests(script: nullScript, confirmDeletion: true)
 
         assertThat(stepsCalled, hasItems('input'))
-        assertThat(stepsCalled, hasItems('cloudFoundryCreateService'))
+        assertThat(stepsCalled, hasItems('abapEnvironmentCreateSystem'))
         assertThat(stepsCalled, hasItems('cloudFoundryDeleteService'))
     }
 
@@ -63,7 +63,7 @@ class abapEnvironmentPipelineStageIntegrationTestsTest extends BasePiperTest {
 
 
         assertThat(stepsCalled, not(hasItem('input')))
-        assertThat(stepsCalled, hasItems('cloudFoundryCreateService'))
+        assertThat(stepsCalled, hasItems('abapEnvironmentCreateSystem'))
         assertThat(stepsCalled, hasItems('cloudFoundryDeleteService'))
     }
 }

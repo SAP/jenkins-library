@@ -44,7 +44,7 @@ func AbapEnvironmentCreateSystemCommand() *cobra.Command {
 	var createAbapEnvironmentCreateSystemCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Creates a SAP Cloud Platform ABAP Environment system (aka Steampunk system)",
-		Long:  `creates a SAP Cloud Platform ABAP Environment system (aka Steampunk system)`,
+		Long:  `This step creates a SAP Cloud Platform ABAP Environment system (aka Steampunk system) via the cloud foundry command line interface (cf CLI). This can be done by providing a service manifest as a configuration file (parameter ` + "`" + `serviceManifest` + "`" + `) or by passing the configuration values directly via the other parameters of this step.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
