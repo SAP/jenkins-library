@@ -45,6 +45,8 @@ spec:
             type: secret
             param: password
       - name: dockerFile
+        aliases:
+          - name: dockerfile
         type: string
         description: Dockerfile to be used for the assessment.
         mandatory: false
