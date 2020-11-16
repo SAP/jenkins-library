@@ -122,7 +122,7 @@ class PiperPipelineStageInitTest extends BasePiperTest {
             stashSettings: 'com.sap.piper/pipeline/stashSettings.yml'
         )
 
-        assertThat(stepsCalled, hasItems('checkout', 'setupCommonPipelineEnvironment', 'piperInitRunStageConfiguration', 'artifactSetVersion', 'pipelineStashFilesBeforeBuild'))
+        assertThat(stepsCalled, hasItems('checkout', 'setupCommonPipelineEnvironment', 'piperInitRunStageConfiguration', 'artifactPrepareVersion', 'pipelineStashFilesBeforeBuild'))
         assertThat(stepsCalled, not(hasItems('slackSendNotification')))
 
     }
@@ -176,7 +176,7 @@ class PiperPipelineStageInitTest extends BasePiperTest {
             'checkout',
             'setupCommonPipelineEnvironment',
             'piperInitRunStageConfiguration',
-            'artifactSetVersion',
+            'artifactPrepareVersion',
             'slackSendNotification',
             'pipelineStashFilesBeforeBuild'
         ))
@@ -211,7 +211,7 @@ class PiperPipelineStageInitTest extends BasePiperTest {
             'checkout',
             'setupCommonPipelineEnvironment',
             'piperInitRunStageConfiguration',
-            'artifactSetVersion',
+            'artifactPrepareVersion',
             'pipelineStashFilesBeforeBuild'
         ))
     }
