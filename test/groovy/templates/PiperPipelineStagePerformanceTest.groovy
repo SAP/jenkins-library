@@ -37,6 +37,10 @@ class PiperPipelineStagePerformanceTest extends BasePiperTest {
             stepsCalled.add('gatlingExecuteTests')
             stepParameters.gatlingExecuteTests = m
         })
+        helper.registerAllowedMethod('multicloudDeploy', [Map.class], {m ->
+            stepsCalled.add('multicloudDeploy')
+            stepParameters.multicloudDeploy = m
+        })
     }
 
     @Test
@@ -45,7 +49,7 @@ class PiperPipelineStagePerformanceTest extends BasePiperTest {
             script: nullScript,
             juStabUtils: utils,
         )
-        assertThat(stepsCalled, not(anyOf(hasItems('gatlingExecuteTests'))))
+        assertThat(stepsCalled, not(anyOf(hasItems('gatlingExecuteTests', 'multicloudDeploy'))))
     }
 
     @Test
@@ -57,5 +61,16 @@ class PiperPipelineStagePerformanceTest extends BasePiperTest {
         )
         assertThat(stepsCalled, hasItems('gatlingExecuteTests'))
         assertNotNull(stepParameters.gatlingExecuteTests)
+    }
+
+    @Test
+    void testMulticloudDeployTests() {
+        jsr.step.piperPipelineStagePerformance(
+            script: nullScript,
+            juStabUtils: utils,
+            multicloudDeploy: true
+        )
+        assertThat(stepsCalled, hasItems('multicloudDeploy'))
+        assertNotNull(stepParameters.multicloudDeploy)
     }
 }
