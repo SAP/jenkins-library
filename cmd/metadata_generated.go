@@ -39,6 +39,7 @@ func GetAllStepMetadata() map[string]config.StepData {
 		"githubPublishRelease":                    githubPublishReleaseMetadata(),
 		"githubSetCommitStatus":                   githubSetCommitStatusMetadata(),
 		"gitopsUpdateDeployment":                  gitopsUpdateDeploymentMetadata(),
+		"hadolintExecute":                         hadolintExecuteMetadata(),
 		"jsonApplyPatch":                          jsonApplyPatchMetadata(),
 		"kanikoExecute":                           kanikoExecuteMetadata(),
 		"karmaExecuteTests":                       karmaExecuteTestsMetadata(),
