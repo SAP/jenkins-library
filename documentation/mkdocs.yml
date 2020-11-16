@@ -7,7 +7,7 @@ nav:
         - 'Overview': infrastructure/overview.md
         - 'Custom Jenkins Setup': infrastructure/customjenkins.md
         - 'Vault For Pipline Secrets': infrastructure/vault.md
-        - 'Troubleshooting Docker toomanyrequests': infrastructure/docker-rate-limit.md
+        - 'Fixing docker rate limit': infrastructure/docker-rate-limit.md
     - 'Pipelines':
         - 'ABAP Environment pipeline':
             - 'Introduction': pipelines/abapEnvironment/introduction.md
