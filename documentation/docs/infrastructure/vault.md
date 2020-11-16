@@ -7,7 +7,6 @@ Parameters that support being fetched from Vault are marked with the Vault Label
 
 ![Vault Label](../images/parameter-with-vault-support.png)
 
-
 ## Vault Setup
 
 The first step to store your pipeline secrets in vault, is to enable a the [Key-Value Engine](https://www.vaultproject.io/docs/secrets/kv/kv-v2). And then create a policy which grants read access to the key value engine.

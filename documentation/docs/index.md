@@ -55,7 +55,6 @@ the API and are subjected to change without prior notice. Types and methods anno
 `@API` are considered to be API, used e.g. from other shared libraries. Changes to those
 methods/types needs to be announced, discussed and agreed.
 
-
 [github]: https://github.com
 [piper-library]: https://github.com/SAP/jenkins-library
 [cloud-sdk-pipeline]: pipelines/cloud-sdk/introduction/
