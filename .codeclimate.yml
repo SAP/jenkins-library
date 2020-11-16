@@ -39,6 +39,7 @@ plugins:
     enabled: true
 exclude_patterns:
   - "**/*_generated.go"
+  - "**/mocks/*.go"
   # default excludes are overwritten, add them again
   # https://docs.codeclimate.com/docs/excluding-files-and-folders#section-auto-generated-file-and-folder-exclusions
   - "**/*_test.go"
