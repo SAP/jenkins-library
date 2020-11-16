@@ -70,7 +70,16 @@ stages:
           - 'userTokenCredentialsId'
           - 'whitesource/userTokenCredentialsId'
           - 'whitesourceUserTokenCredentialsId'
-  Performance: {}
+  Performance:
+    stepConditions:
+      multicloudDeploy:
+        configKeys:
+          - 'cfTargets'
+          - 'neoTargets'
+      gatlingExecuteTests:
+        filePatternFromConfig: 'pomPath'
+        configKeys:
+          - 'appUrls'
   Compliance: {}
   Promote:
     stepConditions:
