@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -81,10 +82,10 @@ func (sys *systemMock) GetProjectsByNameAndTeam(projectName, teamID string) ([]c
 	return []checkmarx.Project{}, fmt.Errorf("no project error")
 }
 func (sys *systemMock) FilterTeamByName(teams []checkmarx.Team, teamName string) checkmarx.Team {
-	return checkmarx.Team{ID: "16", FullName: "OpenSource/Cracks/16"}
+	return checkmarx.Team{ID: json.RawMessage(`"16"`), FullName: "OpenSource/Cracks/16"}
 }
-func (sys *systemMock) FilterTeamByID(teams []checkmarx.Team, teamID string) checkmarx.Team {
-	return checkmarx.Team{ID: "15", FullName: "OpenSource/Cracks/15"}
+func (sys *systemMock) FilterTeamByID(teams []checkmarx.Team, teamID json.RawMessage) checkmarx.Team {
+	return checkmarx.Team{ID: json.RawMessage(`"15"`), FullName: "OpenSource/Cracks/15"}
 }
 func (sys *systemMock) DownloadReport(reportID int) ([]byte, error) {
 	return sys.response.([]byte), nil
@@ -132,7 +133,7 @@ func (sys *systemMock) GetProjects() ([]checkmarx.Project, error) {
 	return []checkmarx.Project{{ID: 15, Name: "OtherTest", TeamID: "16"}, {ID: 1, Name: "Test", TeamID: "16"}}, nil
 }
 func (sys *systemMock) GetTeams() []checkmarx.Team {
-	return []checkmarx.Team{{ID: "16", FullName: "OpenSource/Cracks/16"}, {ID: "15", FullName: "OpenSource/Cracks/15"}}
+	return []checkmarx.Team{{ID: json.RawMessage(`"16"`), FullName: "OpenSource/Cracks/16"}, {ID: json.RawMessage(`"15"`), FullName: "OpenSource/Cracks/15"}}
 }
 
 type systemMockForExistingProject struct {
@@ -159,10 +160,10 @@ func (sys *systemMockForExistingProject) GetProjectsByNameAndTeam(projectName, t
 	return []checkmarx.Project{{ID: 19, Name: projectName, TeamID: teamID, IsPublic: true}}, nil
 }
 func (sys *systemMockForExistingProject) FilterTeamByName(teams []checkmarx.Team, teamName string) checkmarx.Team {
-	return checkmarx.Team{ID: "16", FullName: "OpenSource/Cracks/16"}
+	return checkmarx.Team{ID: json.RawMessage(`"16"`), FullName: "OpenSource/Cracks/16"}
 }
-func (sys *systemMockForExistingProject) FilterTeamByID(teams []checkmarx.Team, teamID string) checkmarx.Team {
-	return checkmarx.Team{ID: "15", FullName: "OpenSource/Cracks/15"}
+func (sys *systemMockForExistingProject) FilterTeamByID(teams []checkmarx.Team, teamID json.RawMessage) checkmarx.Team {
+	return checkmarx.Team{ID: json.RawMessage(`"15"`), FullName: "OpenSource/Cracks/15"}
 }
 func (sys *systemMockForExistingProject) DownloadReport(reportID int) ([]byte, error) {
 	return sys.response.([]byte), nil
@@ -211,7 +212,7 @@ func (sys *systemMockForExistingProject) GetProjects() ([]checkmarx.Project, err
 	return []checkmarx.Project{{ID: 1, Name: "TestExisting", TeamID: "16"}}, nil
 }
 func (sys *systemMockForExistingProject) GetTeams() []checkmarx.Team {
-	return []checkmarx.Team{{ID: "16", FullName: "OpenSource/Cracks/16"}, {ID: "15", FullName: "OpenSource/Cracks/15"}}
+	return []checkmarx.Team{{ID: json.RawMessage(`"16"`), FullName: "OpenSource/Cracks/16"}, {ID: json.RawMessage(`"15"`), FullName: "OpenSource/Cracks/15"}}
 }
 
 func TestFilterFileGlob(t *testing.T) {

@@ -38,13 +38,15 @@ func checkmarxExecuteScan(config checkmarxExecuteScanOptions, telemetryData *tel
 }
 
 func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace string, influx *checkmarxExecuteScanInflux) error {
-	var teamID string
-	if len(config.TeamID) == 0 {
-		team, err := loadTeam(sys, config.TeamName, config.TeamID)
+	teamID := config.TeamID
+	if len(teamID) == 0 {
+		team, err := loadTeam(sys, config.TeamName)
 		if err != nil {
 			return errors.Wrap(err, "failed to load team")
 		}
-		teamID = team.ID
+		var teamIDBytes []byte
+		team.ID.UnmarshalJSON(teamIDBytes)
+		teamID = string(teamIDBytes)
 	}
 	project, projectName, err := loadExistingProject(sys, config.ProjectName, config.PullRequestName, teamID)
 	if err != nil {
@@ -60,7 +62,7 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace
 		}
 	} else {
 		log.Entry().Infof("Project %v does not exist, starting to create it...", projectName)
-		project, err = createAndConfigureNewProject(sys, projectName, team.ID, config.Preset, config.SourceEncoding)
+		project, err = createAndConfigureNewProject(sys, projectName, teamID, config.Preset, config.SourceEncoding)
 		if err != nil {
 			return errors.Wrapf(err, "failed to create and configure new project %v", projectName)
 		}
@@ -73,20 +75,13 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace
 	return nil
 }
 
-func loadTeam(sys checkmarx.System, teamName, teamID string) (checkmarx.Team, error) {
+func loadTeam(sys checkmarx.System, teamName string) (checkmarx.Team, error) {
 	teams := sys.GetTeams()
 	team := checkmarx.Team{}
-	if len(teams) > 0 {
-		if len(teamName) > 0 {
-			team = sys.FilterTeamByName(teams, teamName)
-		} else {
-			team = sys.FilterTeamByID(teams, teamID)
-		}
+	if len(teams) > 0 && len(teamName) > 0 {
+		return sys.FilterTeamByName(teams, teamName), nil
 	}
-	if len(team.ID) == 0 {
-		return team, fmt.Errorf("failed to identify team by teamName %v as well as by checkmarxGroupId %v", teamName, teamID)
-	}
-	return team, nil
+	return team, fmt.Errorf("failed to identify team by teamName %v", teamName)
 }
 
 func loadExistingProject(sys checkmarx.System, initialProjectName, pullRequestName, teamID string) (checkmarx.Project, string, error) {
