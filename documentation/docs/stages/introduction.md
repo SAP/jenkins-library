@@ -134,6 +134,7 @@ Currently custom logic can be added using the [stage extension mechanism](../ext
 Default implementation will come soon ...
 
 Currently custom logic can be added using the [stage extension mechanism](../extensibility.md).
+
 ### Compliance
 
 Default implementation will come soon ...
