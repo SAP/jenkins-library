@@ -6,6 +6,7 @@ nav:
     - 'Infrastructure':
         - 'Overview': infrastructure/overview.md
         - 'Custom Jenkins Setup': infrastructure/customjenkins.md
+        - 'Vault For Pipline Secrets': infrastructure/vault.md
     - 'Pipelines':
         - 'ABAP Environment pipeline':
             - 'Introduction': pipelines/abapEnvironment/introduction.md
