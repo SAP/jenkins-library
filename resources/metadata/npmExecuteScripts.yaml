@@ -18,7 +18,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: false
+        default: true
       - name: runScripts
         type: "[]string"
         description: List of additional run scripts to execute from package.json.
