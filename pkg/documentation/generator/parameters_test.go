@@ -263,7 +263,7 @@ func TestResourceReferenceDetails(t *testing.T) {
 			resourceRef: []config.ResourceReference{
 				{Name: "testCredentialId", Aliases: []config.Alias{}, Type: "secret", Param: "password"},
 			},
-			expected: "Jenkins credential id:<br />&nbsp;&nbsp;id: [`testCredentialId`](#testcredentialid)<br />&nbsp;&nbsp;reference to: `password`<br />",
+			expected: "Jenkins credential id:<br />&nbsp;&nbsp;id: [`testCredentialId`](#testcredentialid)<br />&nbsp;&nbsp;reference to: `password`<br /><br />",
 		},
 		{
 			resourceRef: []config.ResourceReference{
