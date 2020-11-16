@@ -2,7 +2,6 @@
 
 The pipeline consists of a sequence of stages where each contains a number of individual steps.
 
-
 ### First step: Pull Request Pipeline
 
 In order to validate pull-requests to your GitHub repository you need to perform two simple steps:
@@ -130,20 +129,16 @@ Default implementation will come soon ...
 
 Currently custom logic can be added using the [stage extension mechanism](../extensibility.md).
 
-
 ### Performance
 
 Default implementation will come soon ...
 
 Currently custom logic can be added using the [stage extension mechanism](../extensibility.md).
-
-
 ### Compliance
 
 Default implementation will come soon ...
 
 Currently custom logic can be added using the [stage extension mechanism](../extensibility.md).
-
 
 ### Confirm
 
@@ -154,7 +149,6 @@ The [Confirm stage](confirm.md), if executed, stops the pipeline execution and a
 Default implementation will come soon ...
 
 Currently custom logic can be added using the [stage extension mechanism](../extensibility.md).
-
 
 ### Release
 
