@@ -229,38 +229,38 @@ void call(Map parameters = [:], body) {
             if (executeInsideDocker && config.dockerImage) {
                 utils.unstashAll(config.stashContent)
                 def image = docker.image(config.dockerImage)
-                if (config.dockerPullImage) pull(image, config.dockerRegistry, config.dockerRegistryCredentials)
-                else echo "[INFO][$STEP_NAME] Skipped pull of image '${config.dockerImage}'."
-                if (!config.sidecarImage) {
-                    image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
-                        body()
-                    }
-                } else {
-                    def networkName = "sidecar-${UUID.randomUUID()}"
-                    sh "docker network create ${networkName}"
-                    try {
-                        def sidecarImage = docker.image(config.sidecarImage)
-                        if (config.sidecarPullImage) pull(sidecarImage, config.dockerSidecarRegistry, config.dockerSidecarRegistryCredentials)
-                        else echo "[INFO][$STEP_NAME] Skipped pull of image '${config.sidecarImage}'."
-                        config.sidecarOptions = config.sidecarOptions ?: []
-                        if (config.sidecarName)
-                            config.sidecarOptions.add("--network-alias ${config.sidecarName}")
-                        config.sidecarOptions.add("--network ${networkName}")
-                        sidecarImage.withRun(getDockerOptions(config.sidecarEnvVars, config.sidecarVolumeBind, config.sidecarOptions)) { container ->
-                            config.dockerOptions = config.dockerOptions ?: []
-                            if (config.dockerName)
-                                config.dockerOptions.add("--network-alias ${config.dockerName}")
-                            config.dockerOptions.add("--network ${networkName}")
-                            if (config.sidecarReadyCommand) {
-                                sidecarUtils.waitForSidecarReadyOnDocker(container.id, config.sidecarReadyCommand)
-                            }
-                            image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
-                                echo "[INFO][${STEP_NAME}] Running with sidecar container."
-                                body()
-                            }
+                pullWrapper(config.dockerPullImage, image, config.dockerRegistry, config.dockerRegistryCredentials) {
+                    if (!config.sidecarImage) {
+                        image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
+                            body()
                         }
-                    } finally {
-                        sh "docker network remove ${networkName}"
+                    } else {
+                        def networkName = "sidecar-${UUID.randomUUID()}"
+                        sh "docker network create ${networkName}"
+                        try {
+                            def sidecarImage = docker.image(config.sidecarImage)
+                            pullWrapper(config.sidecarPullImage, sidecarImage, config.dockerSidecarRegistry, config.dockerSidecarRegistryCredentials) {
+                                config.sidecarOptions = config.sidecarOptions ?: []
+                                if (config.sidecarName)
+                                    config.sidecarOptions.add("--network-alias ${config.sidecarName}")
+                                config.sidecarOptions.add("--network ${networkName}")
+                                sidecarImage.withRun(getDockerOptions(config.sidecarEnvVars, config.sidecarVolumeBind, config.sidecarOptions)) { container ->
+                                    config.dockerOptions = config.dockerOptions ?: []
+                                    if (config.dockerName)
+                                        config.dockerOptions.add("--network-alias ${config.dockerName}")
+                                    config.dockerOptions.add("--network ${networkName}")
+                                    if (config.sidecarReadyCommand) {
+                                        sidecarUtils.waitForSidecarReadyOnDocker(container.id, config.sidecarReadyCommand)
+                                    }
+                                    image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
+                                        echo "[INFO][${STEP_NAME}] Running with sidecar container."
+                                        body()
+                                    }
+                                }
+                            }
+                        } finally {
+                            sh "docker network remove ${networkName}"
+                        }
                     }
                 }
             } else {
@@ -271,17 +271,26 @@ void call(Map parameters = [:], body) {
     }
 }
 
-void pull(def dockerImage, String dockerRegistry, String dockerCredentialsId) {
-
-    // docker registry can be provided empty and will default to 'https://index.docker.io/v1/' in this case.
-    dockerRegistry = dockerRegistry ?: ''
+void pullWrapper(boolean pullImage, def dockerImage, String dockerRegistry, String dockerCredentialsId, Closure body) {
+    if (!pullImage) {
+        echo "[INFO][$STEP_NAME] Skipped pull of image '$dockerImage'."
+        body()
+        return
+    }
 
     if (dockerCredentialsId) {
-        docker.withRegistry(dockerRegistry, dockerCredentialsId) {
+        // docker registry can be provided empty and will default to 'https://index.docker.io/v1/' in this case.
+        docker.withRegistry(dockerRegistry ?: '', dockerCredentialsId) {
             dockerImage.pull()
+            body()
+        }
+    } else if (dockerRegistry) {
+        docker.withRegistry(dockerRegistry) {
+            dockerImage.pull()
+            body()
         }
     } else {
-        dockerImage.pull()
+        body()
     }
 }
 
