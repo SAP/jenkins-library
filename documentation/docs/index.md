@@ -25,6 +25,10 @@ In many cases, they should satisfy your requirements, and if this is the case, y
 **Are you building a standalone SAP Cloud Platform application, an application with the SAP Cloud SDK, or using the SAP Cloud Application Programming Model?<br>**
 Then continue reading about our [general purpose pipeline](stages/introduction/), which supports various technologies and programming languages.
 
+Previously, project "Piper" included also the SAP Cloud SDK Pipeline designed specifically for SAP Cloud SDK and SAP Cloud Application Model (CAP) projects.
+SAP Cloud SDK pipeline and its features are merged into the General Purpose Pipeline as of November 2020.
+The reasoning as well as further information how to adopt the General Purpose Pipeline are described in our [guide](https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/gpp-guide.md).
+
 ### The do-it-yourself way: Build with Library
 
 The shared library contains building blocks for your own pipeline, following our best practice Jenkins pipelines described in the Scenarios section.
