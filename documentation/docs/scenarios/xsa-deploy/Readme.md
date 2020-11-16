@@ -21,6 +21,7 @@ This scenario combines various different steps to create a complete pipeline.
 In this scenario, we want to show how to build a Multitarget Application (MTA) and deploy the build result into an on-prem SAP HANA XS advances system. This document comprises the [mtaBuild](https://sap.github.io/jenkins-library/steps/mtaBuild/) and the [xsDeploy](https://sap.github.io/jenkins-library/steps/xsDeploy/) steps.
 
 ![This pipeline in Jenkins Blue Ocean](images/pipeline.jpg)
+
 ###### Screenshot: Build and Deploy Process in Jenkins
 
 ## Example
