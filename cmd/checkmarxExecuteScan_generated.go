@@ -176,6 +176,7 @@ func CheckmarxExecuteScanCommand() *cobra.Command {
 and many other programming languages for security flaws based on a set of provided rules/queries that can be customized and extended.
 
 This step by default enforces a specific audit baseline for findings and therefore ensures that:
+
 * No 'To Verify' High and Medium issues exist in your project
 * Total number of High and Medium 'Confirmed' or 'Urgent' issues is zero
 * 10% of all Low issues are 'Confirmed' or 'Not Exploitable'

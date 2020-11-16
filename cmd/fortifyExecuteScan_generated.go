@@ -65,6 +65,7 @@ type fortifyExecuteScanOptions struct {
 	GlobalSettingsFile              string   `json:"globalSettingsFile,omitempty"`
 	M2Path                          string   `json:"m2Path,omitempty"`
 	VerifyOnly                      bool     `json:"verifyOnly,omitempty"`
+	InstallArtifacts                bool     `json:"installArtifacts,omitempty"`
 }
 
 type fortifyExecuteScanInflux struct {
@@ -237,6 +238,7 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Path to the mvn settings file that should be used as global settings file.")
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
 	cmd.Flags().BoolVar(&stepConfig.VerifyOnly, "verifyOnly", false, "Whether the step shall only apply verification checks or whether it does a full scan and check cycle")
+	cmd.Flags().BoolVar(&stepConfig.InstallArtifacts, "installArtifacts", false, "If enabled, it will install all artifacts to the local maven repository to make them available before running Fortify. This is required if any maven module has dependencies to other modules in the repository and they were not installed before.")
 
 	cmd.MarkFlagRequired("authToken")
 	cmd.MarkFlagRequired("serverUrl")
@@ -685,6 +687,14 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Name:        "verifyOnly",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "installArtifacts",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
