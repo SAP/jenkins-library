@@ -55,11 +55,11 @@ import groovy.transform.Field
     /**
       * Same as `dockerRegistryUrl`, but for the sidecar. If left empty, `dockerRegistryUrl` is used instead.
       */
-    'dockerSidecarRegistryUrl',
+    'sidecarRegistryUrl',
     /**
       * Same as `dockerRegistryCredentials`, but for the sidecar. If left empty `dockerRegistryCredentials` is used instead.
       */
-    'dockerSidecarRegistryCredentials',
+    'sidecarRegistryCredentials',
     /**
      * Kubernetes only:
      * Name of the container launching `dockerImage`.
@@ -154,8 +154,8 @@ void call(Map parameters = [:], body) {
             .use()
 
         config = ConfigurationHelper.newInstance(this, config)
-            .addIfEmpty('dockerSidecarRegistryUrl', config.dockerRegistryUrl)
-            .addIfEmpty('dockerSidecarRegistryCredentials', config.dockerRegistryCredentials)
+            .addIfEmpty('sidecarRegistryUrl', config.dockerRegistryUrl)
+            .addIfEmpty('sidecarRegistryCredentials', config.dockerRegistryCredentials)
             .use()
 
         SidecarUtils sidecarUtils = new SidecarUtils(script)
@@ -239,7 +239,7 @@ void call(Map parameters = [:], body) {
                         sh "docker network create ${networkName}"
                         try {
                             def sidecarImage = docker.image(config.sidecarImage)
-                            pullWrapper(config.sidecarPullImage, sidecarImage, config.dockerSidecarRegistryUrl, config.dockerSidecarRegistryCredentials) {
+                            pullWrapper(config.sidecarPullImage, sidecarImage, config.sidecarRegistryUrl, config.sidecarRegistryCredentials) {
                                 config.sidecarOptions = config.sidecarOptions ?: []
                                 if (config.sidecarName)
                                     config.sidecarOptions.add("--network-alias ${config.sidecarName}")

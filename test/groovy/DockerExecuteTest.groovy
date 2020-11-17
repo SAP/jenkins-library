@@ -175,8 +175,8 @@ class DockerExecuteTest extends BasePiperTest {
                 dockerExecute: [
                     dockerRegistryUrl: 'https://registry.example.org',
                     dockerRegistryCredentials: 'mySecrets',
-                    dockerSidecarRegistryUrl: 'https://sidecarregistry.example.org',
-                    dockerSidecarRegistryCredentials: 'mySidecarRegistryCredentials',
+                    sidecarRegistryUrl: 'https://sidecarregistry.example.org',
+                    sidecarRegistryCredentials: 'mySidecarRegistryCredentials',
                 ]
             ]
         ]
