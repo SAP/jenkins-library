@@ -139,6 +139,7 @@ nav:
         - transportRequestRelease:  steps/transportRequestRelease.md
         - transportRequestUploadFile: steps/transportRequestUploadFile.md
         - uiVeri5ExecuteTests: steps/uiVeri5ExecuteTests.md
+        - vaultRotateSecretId: steps/vaultRotateSecretId.md
         - whitesourceExecuteScan: steps/whitesourceExecuteScan.md
         - writeTemporaryCredentials: steps/writeTemporaryCredentials.md
         - xsDeploy: steps/xsDeploy.md

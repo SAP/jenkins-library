@@ -117,6 +117,7 @@ func Execute() {
 	rootCmd.AddCommand(AbapAddonAssemblyKitReserveNextPackagesCommand())
 	rootCmd.AddCommand(CloudFoundryCreateSpaceCommand())
 	rootCmd.AddCommand(CloudFoundryDeleteSpaceCommand())
+	rootCmd.AddCommand(VaultRotateSecretIdCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
@@ -264,14 +265,6 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 
 	if fmt.Sprintf("%v", stepConfig.Config["collectTelemetryData"]) == "false" {
 		GeneralConfig.NoTelemetry = true
-	}
-
-	if !GeneralConfig.Verbose && stepConfig.Config["verbose"] != nil {
-		if verboseValue, ok := stepConfig.Config["verbose"].(bool); ok {
-			log.SetVerbose(verboseValue)
-		} else {
-			return fmt.Errorf("invalid value for parameter verbose: '%v'", stepConfig.Config["verbose"])
-		}
 	}
 
 	stepConfig.Config = checkTypes(stepConfig.Config, options)
