@@ -103,8 +103,9 @@ func addVaultRotateSecretIdFlags(cmd *cobra.Command, stepConfig *vaultRotateSecr
 func vaultRotateSecretIdMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "vaultRotateSecretId",
-			Aliases: []config.Alias{},
+			Name:        "vaultRotateSecretId",
+			Aliases:     []config.Alias{},
+			Description: "Rotate vault AppRole Secret ID",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
