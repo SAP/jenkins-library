@@ -21,8 +21,9 @@ If your company uses Artifactory for example, you might want to check if [Docker
 You could configure that registry for example using this snippet in your `.pipeline/config.yml` file.
 
 ```
-dockerExecute:
-  dockerRegistry: 'https://my.internal.registry:1234'
+steps:
+  dockerExecute:
+    dockerRegistry: 'https://my.internal.registry:1234'
 ```
 
 ## Authenticated pulls from Docker Hub
