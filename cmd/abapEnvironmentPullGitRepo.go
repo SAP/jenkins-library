@@ -76,8 +76,6 @@ func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, t
 		return fmt.Errorf("Something failed during the pull of the repositories: %w", err)
 	}
 
-	log.Entry().Info("-------------------------")
-	log.Entry().Info("All repositories were pulled successfully")
 	return err
 }
 
@@ -88,8 +86,8 @@ func pullRepositories(repositories []abaputils.Repository, pullConnectionDetails
 		if err != nil {
 			break
 		}
-		finishPullLogs()
 	}
+	finishPullLogs()
 	return err
 }
 
