@@ -378,7 +378,7 @@ func TestRunScanForPullRequest(t *testing.T) {
 
 func TestRunScanForPullRequestProjectNew(t *testing.T) {
 	sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`), createProject: true}
-	options := checkmarxExecuteScanOptions{PullRequestName: "PR-17", ProjectName: "Test", VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamName: "OpenSource/Cracks/15", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+	options := checkmarxExecuteScanOptions{PullRequestName: "PR-17", ProjectName: "Test", AvoidDuplicateProjectScans: true, VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamName: "OpenSource/Cracks/15", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
 	workspace, err := ioutil.TempDir("", "workspace4")
 	if err != nil {
 		t.Fatal("Failed to create temporary workspace directory")
@@ -389,9 +389,10 @@ func TestRunScanForPullRequestProjectNew(t *testing.T) {
 	influx := checkmarxExecuteScanInflux{}
 
 	err = runScan(options, sys, workspace, &influx)
+	assert.NoError(t, err, "Unexpected error caught")
 	assert.Equal(t, true, sys.isIncremental, "isIncremental has wrong value")
 	assert.Equal(t, true, sys.isPublic, "isPublic has wrong value")
-	assert.Equal(t, true, sys.forceScan, "forceScan has wrong value")
+	assert.Equal(t, false, sys.forceScan, "forceScan has wrong value")
 }
 
 func TestRunScanHighViolationPercentage(t *testing.T) {

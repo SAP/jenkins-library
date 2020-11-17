@@ -45,11 +45,11 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace
 		if err != nil {
 			return errors.Wrap(err, "failed to load team")
 		}
-		teamIDBytes, err := json.Marshal(&team.ID)
+		teamIDBytes, _ := team.ID.MarshalJSON()
+		err = json.Unmarshal(teamIDBytes, &teamID)
 		if err != nil {
-			return errors.Wrap(err, "failed to decode team.ID")
+			return errors.Wrap(err, "failed to unmarshall team.ID")
 		}
-		teamID = string(teamIDBytes)
 	}
 	project, projectName, err := loadExistingProject(sys, config.ProjectName, config.PullRequestName, teamID)
 	if err != nil {
