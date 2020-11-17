@@ -2,12 +2,11 @@
 
 The pipeline consists of a sequence of stages where each contains a number of individual steps.
 
-
-### First step: Pull Request Pipeline
+## First step: Pull Request Pipeline
 
 In order to validate pull-requests to your GitHub repository you need to perform two simple steps:
 
-#### 1. Create Pipeline configuration
+### 1. Create Pipeline configuration
 
 Create a file `.pipeline/config.yml` in your repository (typically in `master` branch) with the following content:
 
@@ -28,7 +27,7 @@ general:
 
     If your build tool is not in the list you can still use further options as described for [Pull-Request Voting Stage](prvoting.md)
 
-#### 2. Create Jenkinsfile
+### 2. Create Jenkinsfile
 
 Create a file called `Jenkinsfile` in the root of your repository (typically in `master` branch) with the following content:
 
@@ -49,7 +48,7 @@ piperPipeline script: this
 
     You find more details about the custom defaults in the [configuration section](../configuration.md)
 
-### Second step: Prepare pipeline for your main branch.
+## Second step: Prepare pipeline for your main branch
 
 Extend your configuration to also contain git ssh credentials information.
 
@@ -65,7 +64,7 @@ general:
     The pointer to the Jenkins credentials containing your ssh private key is an important part of the pipeline run.
     The credentials are for example required to push automatic versioning information to your GitHub repository.
 
-### Subsequent steps: Configure individual stages
+## Subsequent steps: Configure individual stages
 
 The stages of the pipeline can be configured individually.
 As a general rule of thumb, only stages with an existing configuration are executed.
@@ -76,7 +75,7 @@ If no dedicated configuration is required for a step, the precence of relevant f
 
 The pipeline comprises following stages:
 
-#### Init
+### Init
 
 This stage takes care that the pipeline is initialized correctly.
 It will for example:
@@ -88,7 +87,7 @@ It will for example:
 
 You find details about this stage on  [**Init Stage** Details](init.md)
 
-#### Pull-Request Voting
+### Pull-Request Voting
 
 This stage is responsible for validating pull-requests, see also above.
 
@@ -130,20 +129,17 @@ Default implementation will come soon ...
 
 Currently custom logic can be added using the [stage extension mechanism](../extensibility.md).
 
-
 ### Performance
 
 Default implementation will come soon ...
 
 Currently custom logic can be added using the [stage extension mechanism](../extensibility.md).
 
-
 ### Compliance
 
 Default implementation will come soon ...
 
 Currently custom logic can be added using the [stage extension mechanism](../extensibility.md).
-
 
 ### Confirm
 
@@ -154,7 +150,6 @@ The [Confirm stage](confirm.md), if executed, stops the pipeline execution and a
 Default implementation will come soon ...
 
 Currently custom logic can be added using the [stage extension mechanism](../extensibility.md).
-
 
 ### Release
 
