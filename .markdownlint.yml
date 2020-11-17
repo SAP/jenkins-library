@@ -11,7 +11,6 @@ MD007: false #ul-indent
 MD024: false #no-duplicate-heading/no-duplicate-header
 MD026: false #no-trailing-punctuation
 MD036: false #no-emphasis-as-heading/no-emphasis-as-header
-MD039: false #no-space-in-links
 MD040: false #fenced-code-language
 MD041: false #first-line-heading/first-line-h1
 MD046: false #code-block-style
