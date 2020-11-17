@@ -22,6 +22,7 @@ type checkmarxExecuteScanOptions struct {
 	FullScansScheduled            bool   `json:"fullScansScheduled,omitempty"`
 	GeneratePdfReport             bool   `json:"generatePdfReport,omitempty"`
 	Incremental                   bool   `json:"incremental,omitempty"`
+	MaxRetries                    int    `json:"maxRetries,omitempty"`
 	Password                      string `json:"password,omitempty"`
 	Preset                        string `json:"preset,omitempty"`
 	ProjectName                   string `json:"projectName,omitempty"`
@@ -75,7 +76,7 @@ type checkmarxExecuteScanInflux struct {
 			owner                                string
 			scan_id                              string
 			project_id                           string
-			project_name                         string
+			projectName                          string
 			team                                 string
 			team_full_path_on_report_date        string
 			scan_start                           string
@@ -132,7 +133,7 @@ func (i *checkmarxExecuteScanInflux) persist(path, resourceName string) {
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "owner", value: i.checkmarx_data.fields.owner},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "scan_id", value: i.checkmarx_data.fields.scan_id},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "project_id", value: i.checkmarx_data.fields.project_id},
-		{valType: config.InfluxField, measurement: "checkmarx_data", name: "project_name", value: i.checkmarx_data.fields.project_name},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "projectName", value: i.checkmarx_data.fields.projectName},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "team", value: i.checkmarx_data.fields.team},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "team_full_path_on_report_date", value: i.checkmarx_data.fields.team_full_path_on_report_date},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "scan_start", value: i.checkmarx_data.fields.scan_start},
@@ -175,6 +176,7 @@ func CheckmarxExecuteScanCommand() *cobra.Command {
 and many other programming languages for security flaws based on a set of provided rules/queries that can be customized and extended.
 
 This step by default enforces a specific audit baseline for findings and therefore ensures that:
+
 * No 'To Verify' High and Medium issues exist in your project
 * Total number of High and Medium 'Confirmed' or 'Urgent' issues is zero
 * 10% of all Low issues are 'Confirmed' or 'Not Exploitable'
@@ -209,6 +211,7 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
@@ -234,6 +237,7 @@ func addCheckmarxExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxExecu
 	cmd.Flags().BoolVar(&stepConfig.FullScansScheduled, "fullScansScheduled", true, "Whether full scans are to be scheduled or not. Should be used in relation with `incremental` and `fullScanCycle`")
 	cmd.Flags().BoolVar(&stepConfig.GeneratePdfReport, "generatePdfReport", true, "Whether to generate a PDF report of the analysis results or not")
 	cmd.Flags().BoolVar(&stepConfig.Incremental, "incremental", true, "Whether incremental scans are to be applied which optimizes the scan time but might reduce detection capabilities. Therefore full scans are still required from time to time and should be scheduled via `fullScansScheduled` and `fullScanCycle`")
+	cmd.Flags().IntVar(&stepConfig.MaxRetries, "maxRetries", 3, "Maximum number of HTTP request retries upon intermittend connetion interrupts")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "The password to authenticate")
 	cmd.Flags().StringVar(&stepConfig.Preset, "preset", os.Getenv("PIPER_preset"), "The preset to use for scanning, if not set explicitly the step will attempt to look up the project's setting based on the availability of `checkmarxCredentialsId`")
 	cmd.Flags().StringVar(&stepConfig.ProjectName, "projectName", os.Getenv("PIPER_projectName"), "The name of the Checkmarx project to scan into")
@@ -312,6 +316,14 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "maxRetries",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},

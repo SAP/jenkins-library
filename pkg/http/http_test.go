@@ -87,6 +87,7 @@ func TestSetOptions(t *testing.T) {
 	c.SetOptions(opts)
 
 	assert.Equal(t, opts.TransportTimeout, c.transportTimeout)
+	assert.Equal(t, opts.TransportSkipVerification, c.transportSkipVerification)
 	assert.Equal(t, opts.MaxRequestDuration, c.maxRequestDuration)
 	assert.Equal(t, opts.Username, c.username)
 	assert.Equal(t, opts.Password, c.password)
@@ -169,6 +170,7 @@ func TestUploadRequest(t *testing.T) {
 		{clientOptions: ClientOptions{}, method: "POST", header: map[string][]string{"Testheader": {"Test1", "Test2"}}, expected: "OK"},
 		{clientOptions: ClientOptions{}, cookies: []*http.Cookie{{Name: "TestCookie1", Value: "TestValue1"}, {Name: "TestCookie2", Value: "TestValue2"}}, method: "POST", expected: "OK"},
 		{clientOptions: ClientOptions{Username: "TestUser", Password: "TestPwd"}, method: "POST", expected: "OK"},
+		{clientOptions: ClientOptions{Username: "UserOnly", Password: ""}, method: "POST", expected: "OK"},
 	}
 
 	client := Client{logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")}
@@ -274,6 +276,57 @@ func TestTransportTimout(t *testing.T) {
 		// assert
 		assert.NoError(t, err)
 	})
+}
+
+func TestTransportSkipVerification(t *testing.T) {
+	testCases := []struct {
+		client        Client
+		expectedError string
+	}{
+		{client: Client{}, expectedError: "certificate signed by unknown authority"},
+		{client: Client{transportSkipVerification: false}, expectedError: "certificate signed by unknown authority"},
+		{client: Client{transportSkipVerification: true}},
+	}
+
+	for _, testCase := range testCases {
+		// init
+		svr := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+		defer svr.Close()
+		// test
+		_, err := testCase.client.SendRequest(http.MethodGet, svr.URL, &bytes.Buffer{}, nil, nil)
+		// assert
+		if len(testCase.expectedError) > 0 {
+			assert.Error(t, err, "certificate signed by unknown authority")
+		} else {
+			assert.NoError(t, err)
+		}
+	}
+}
+
+func TestMaxRetries(t *testing.T) {
+	testCases := []struct {
+		client       Client
+		countedCalls int
+	}{
+		{client: Client{maxRetries: 0}, countedCalls: 1},
+		{client: Client{maxRetries: 2}, countedCalls: 3},
+		{client: Client{maxRetries: 3}, countedCalls: 4},
+	}
+
+	for _, testCase := range testCases {
+		// init
+		count := 0
+		svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			count++
+			w.WriteHeader(500)
+		}))
+		defer svr.Close()
+		// test
+		_, err := testCase.client.SendRequest(http.MethodGet, svr.URL, &bytes.Buffer{}, nil, nil)
+		// assert
+		assert.Error(t, err)
+		assert.Equal(t, testCase.countedCalls, count)
+	}
 }
 
 func TestParseHTTPResponseBodyJSON(t *testing.T) {

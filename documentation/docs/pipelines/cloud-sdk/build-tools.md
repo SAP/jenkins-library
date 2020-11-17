@@ -244,7 +244,7 @@ If you already created your project without this option, you'll need to copy and
 
 * [`Jenkinsfile`](https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/archetype-resources/Jenkinsfile)
 * [`.pipeline/config.yml`](https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/archetype-resources/cf-pipeline_config.yml)
-    * Note: The file must be named `.pipeline/config.yml`, despite the different name of the file template
+  * Note: The file must be named `.pipeline/config.yml`, despite the different name of the file template
 
 Further constrains on the project structure (this is all correct in projects generated from the _SAP Cloud Platform Business Application_ SAP Web IDE Template):
 

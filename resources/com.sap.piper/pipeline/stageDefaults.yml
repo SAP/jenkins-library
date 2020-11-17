@@ -4,15 +4,35 @@ stages:
       slackSendNotification:
         configKeys:
           - 'channel'
-  'Pull-Request Voting': {}
-  Build: {}
+  'Pull-Request Voting':
+    stepConditions:
+      sonarExecuteScan:
+        filePattern: '**/sonar-project.properties'
+      mavenExecuteIntegration:
+        filePattern: 'integration-tests/pom.xml'
+      npmExecuteScripts:
+        configKeys:
+          - 'runScripts'
+  Build:
+    stepConditions:
+      sonarExecuteScan:
+        filePattern: '**/sonar-project.properties'
   'Additional Unit Tests':
     stepConditions:
       batsExecuteTests:
         filePattern: '**/*.bats'
       karmaExecuteTests:
         filePattern: '**/karma.conf.js'
-  Integration: {}
+      npmExecuteScripts:
+        configKeys:
+          - 'runScripts'
+  Integration:
+    stepConditions:
+      npmExecuteScripts:
+        configKeys:
+          - 'runScripts'
+      mavenExecuteIntegration:
+        filePattern: 'integration-tests/pom.xml'
   Acceptance:
     stepConditions:
       multicloudDeploy:
@@ -50,13 +70,25 @@ stages:
           - 'userTokenCredentialsId'
           - 'whitesource/userTokenCredentialsId'
           - 'whitesourceUserTokenCredentialsId'
-  Performance: {}
+  Performance:
+    stepConditions:
+      multicloudDeploy:
+        configKeys:
+          - 'cfTargets'
+          - 'neoTargets'
+      gatlingExecuteTests:
+        filePatternFromConfig: 'pomPath'
+        configKeys:
+          - 'appUrls'
   Compliance: {}
   Promote:
     stepConditions:
       containerPushToRegistry:
         configKeys:
           - 'dockerRegistryUrl'
+      nexusUpload:
+        configKeys:
+          - 'url'
   Release:
     stepConditions:
       multicloudDeploy:
@@ -70,6 +102,9 @@ stages:
       neoDeploy:
         configKeys:
           - 'neo/account'
+      tmsUpload:
+        configKeys:
+          - nodeName
       healthExecuteCheck:
         configKeys:
           - 'testServerUrl'

@@ -30,10 +30,6 @@ func abapEnvironmentCheckoutBranch(options abapEnvironmentCheckoutBranchOptions,
 
 	client := piperhttp.Client{}
 
-	// for http calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	// and use a  &piperhttp.Client{} in a custom system
-	// Example: step checkmarxExecuteScan.go
-
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
 	err := runAbapEnvironmentCheckoutBranch(&options, telemetryData, &autils, &client)
 	if err != nil {
@@ -44,16 +40,7 @@ func abapEnvironmentCheckoutBranch(options abapEnvironmentCheckoutBranchOptions,
 func runAbapEnvironmentCheckoutBranch(options *abapEnvironmentCheckoutBranchOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender) (err error) {
 
 	// Mapping for options
-	subOptions := abaputils.AbapEnvironmentOptions{}
-
-	subOptions.CfAPIEndpoint = options.CfAPIEndpoint
-	subOptions.CfServiceInstance = options.CfServiceInstance
-	subOptions.CfServiceKeyName = options.CfServiceKeyName
-	subOptions.CfOrg = options.CfOrg
-	subOptions.CfSpace = options.CfSpace
-	subOptions.Host = options.Host
-	subOptions.Password = options.Password
-	subOptions.Username = options.Username
+	subOptions := convertCheckoutConfig(options)
 
 	//  Determine the host, user and password, either via the input parameters or via a cloud foundry service key
 	connectionDetails, errorGetInfo := com.GetAbapCommunicationArrangementInfo(subOptions, "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/")
@@ -93,7 +80,7 @@ func runAbapEnvironmentCheckoutBranch(options *abapEnvironmentCheckoutBranchOpti
 }
 
 func checkoutBranches(repositories []abaputils.Repository, checkoutConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (err error) {
-	log.Entry().Infof("Start switching of %v branches", len(repositories))
+	log.Entry().Infof("Start switching %v branches", len(repositories))
 	for _, repo := range repositories {
 		err = handleCheckout(repo, checkoutConnectionDetails, client, pollIntervall)
 		if err != nil {
@@ -122,9 +109,9 @@ func triggerCheckout(repositoryName string, branchName string, checkoutConnectio
 	defer resp.Body.Close()
 
 	// workaround until golang version 1.16 is used
-	time.Sleep(1 * time.Second)
+	time.Sleep(100 * time.Millisecond)
 
-	log.Entry().WithField("StatusCode", resp.Status).WithField("ABAP Endpoint", checkoutConnectionDetails.URL).Info("Authentication on the ABAP system was successful")
+	log.Entry().WithField("StatusCode", resp.Status).WithField("ABAP Endpoint", checkoutConnectionDetails.URL).Debug("Authentication on the ABAP system was successful")
 	uriConnectionDetails.XCsrfToken = resp.Header.Get("X-Csrf-Token")
 	checkoutConnectionDetails.XCsrfToken = uriConnectionDetails.XCsrfToken
 
@@ -139,7 +126,7 @@ func triggerCheckout(repositoryName string, branchName string, checkoutConnectio
 		return uriConnectionDetails, err
 	}
 	defer resp.Body.Close()
-	log.Entry().WithField("StatusCode", resp.StatusCode).WithField("repositoryName", repositoryName).WithField("branchName", branchName).Info("Triggered checkout of branch")
+	log.Entry().WithField("StatusCode", resp.StatusCode).WithField("repositoryName", repositoryName).WithField("branchName", branchName).Debug("Triggered checkout of branch")
 
 	// Parse Response
 	var body abaputils.PullEntity
@@ -216,4 +203,18 @@ func finishCheckoutLogs(branchName string, repositoryName string) {
 	log.Entry().Info("--------------------------------")
 	log.Entry().Infof("Checkout of branch %v on repository %v was successful", branchName, repositoryName)
 	log.Entry().Info("--------------------------------")
+}
+
+func convertCheckoutConfig(config *abapEnvironmentCheckoutBranchOptions) abaputils.AbapEnvironmentOptions {
+	subOptions := abaputils.AbapEnvironmentOptions{}
+
+	subOptions.CfAPIEndpoint = config.CfAPIEndpoint
+	subOptions.CfServiceInstance = config.CfServiceInstance
+	subOptions.CfServiceKeyName = config.CfServiceKeyName
+	subOptions.CfOrg = config.CfOrg
+	subOptions.CfSpace = config.CfSpace
+	subOptions.Host = config.Host
+	subOptions.Password = config.Password
+	subOptions.Username = config.Username
+	return subOptions
 }
