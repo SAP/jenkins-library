@@ -40,7 +40,7 @@ The basic workflow is as follows:
 
 ![Hybrid Application Development Workflow](../images/Scenario_SolMan.png "Hybrid Application Development Workflow")
 
-###### Hybrid Application Development Workflow
+**Hybrid Application Development Workflow**
 
 ## Example
 

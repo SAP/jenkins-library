@@ -22,7 +22,7 @@ In this scenario, we want to show how to build a Multitarget Application (MTA) a
 
 ![This pipeline in Jenkins Blue Ocean](images/pipeline.jpg)
 
-###### Screenshot: Build and Deploy Process in Jenkins
+**Screenshot: Build and Deploy Process in Jenkins**
 
 ## Example
 
