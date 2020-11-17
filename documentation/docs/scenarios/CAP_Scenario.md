@@ -26,7 +26,6 @@ This will generate a project which already includes a `Jenkinsfile`, and a `pipe
     For a limited amount of time starting with version v29 both locations can be used.
     In the following the configuration file is referenced by its new location.
 
-
 In case you already created your project without this option, you'll need to copy and paste two files into the root directory of your project, and commit them to your git repository:
 
 * [`Jenkinsfile`](https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/archetype-resources/Jenkinsfile)
