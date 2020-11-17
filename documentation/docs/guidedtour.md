@@ -57,6 +57,7 @@ Copy the sources of the application into your own Git repository. While we will 
 
 1. Get your application repository in place.
 1. Create a new file with the name `Jenkinsfile` in the root level of your repository and enter the following code:
+
    ```
    @Library('piper-lib-os') _
    node() {
@@ -66,6 +67,7 @@ Copy the sources of the application into your own Git repository. While we will 
        }
    }
    ```
+
    The "prepare" step synchronizes the repository and initializes the project specific settings. For more information about Jenkinsfiles and pipelines, see [Using a Jenkinsfile][jenkins-io-jenkinsfile].
 
 1. Save your changes to your remote repository.
@@ -106,14 +108,17 @@ For additional information about multibranch pipelines, please refer to the [Jen
 ## Add a Build Step
 
 1. In your `Jenkinsfile`, add the following code snippet:
+
    ```
    stage('build') {
        mtaBuild script: this
    }
    ```
+
    The `mtaBuild` step calls a build tool to build a multi-target application (MTA). The tool consumes an MTA descriptor that contains the metadata of all entities which comprise an application or are used by one during deployment or runtime, and the dependencies between them. For more information about MTAs, see [sap.com][sap].
 
 1. Create the MTA descriptor file with the name `mta.yaml` in the root level of the repository. Insert the following code:
+
    ```
    _schema-version: 2.1.0
    ID: com.sap.piper.node.hello.world
@@ -127,12 +132,14 @@ For additional information about multibranch pipelines, please refer to the [Jen
    ```
 
 1. Configure the step to build an MTA for the Cloud Foundry environment. Create the configuration file `.pipeline/config.yml` relative to the root level of the repository and insert the following content:
+
    ```
    general:
    steps:
      mtaBuild:
        buildTarget: 'CF'
    ```
+
    For additional information about the configuration, have a look at the [Common Configuration Guide][resources-configuration] and the [MTA build step documentation][resources-step-mtabuild].
 
 1. Save your changes to your remote repository.
@@ -141,15 +148,18 @@ For additional information about multibranch pipelines, please refer to the [Jen
 
 ## Add a Deploy Step
 
-1.  In your `Jenkinsfile`, add the following code snippet:
+1. In your `Jenkinsfile`, add the following code snippet:
+
    ```
    stage('deploy') {
        cloudFoundryDeploy script: this
    }
    ```
+
    The `cloudFoundryDeploy`  step calls the Cloud Foundry command line client to deploy the built MTA into SAP Cloud Platform.
 
 1. To configure the step to deploy into the Cloud Foundry environment, in your repository, open the `.pipeline/config.yml` and add the following content:
+
    ```
      cloudFoundryDeploy:
        deployTool: 'mtaDeployPlugin'
@@ -159,6 +169,7 @@ For additional information about multibranch pipelines, please refer to the [Jen
          space: '<your-space>'
          credentialsId: 'CF_CREDENTIALSID'
    ```
+
    **Note:** look after the indentation of the step within the YAML. Specify the `organisation` and `space` properties. For more information about the configuration, see the [Common Configuration Guide][resources-configuration] and [cloudFoundryDeploy][resources-step-cloudFoundryDeploy].
 1. The key `CF_CREDENTIALSID` refers to a user-password credential you must create in Jenkins: In Jenkins, choose **Credentials** from the main menu and add a **Username with Password** entry.
    <p align="center">
