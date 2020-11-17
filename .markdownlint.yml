@@ -8,7 +8,6 @@ MD033: false #no-inline-html
 MD001: false #heading-increment/header-increment
 MD004: false #ul-style
 MD024: false #no-duplicate-heading/no-duplicate-header
-MD026: false #no-trailing-punctuation
 MD036: false #no-emphasis-as-heading/no-emphasis-as-header
 MD040: false #fenced-code-language
 MD041: false #first-line-heading/first-line-h1
