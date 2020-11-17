@@ -13,6 +13,7 @@ piperPipeline script: this
 ## Pure Pull-Request Voting
 
 .pipeline/config.yml:
+
 ``` YAML
 general:
   buildTool: 'npm'
