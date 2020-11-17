@@ -199,7 +199,7 @@ Open the application name to get into the `Application Overview`. Open the **App
 ## What's Next
 
 You are now familiar with the basics of using project "Piper". Through the concept of pipeline as code, project "Piper" and Jenkins pipelines are extremely powerful. While Jenkins pipelines offer a full set of common programming features, project "Piper" adds SAP-specific flavors. Have a look at the different **Scenarios**  to understand how to easily integrate SAP systems with defaults.
-Dive into the ready-made continuous delivery pipelines: the **General Purpose Pipeline** helps you to quickly build and deliver your apps.
+Dive into the ready-made continuous delivery pipeline: the **General Purpose Pipeline** helps you to quickly build and deliver your apps.
 Browse the steadily increasing list of features you can implement through the project "Piper" **Steps**.
 
 The **Configuration** pattern supports simple pipelines that can be reused by multiple applications. To understand the principles of inheritance and customization, have a look at the the [configuration][resources-configuration] documentation.
