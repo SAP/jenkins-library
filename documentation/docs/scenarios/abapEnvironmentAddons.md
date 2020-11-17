@@ -50,9 +50,9 @@ As explained above, the shipment of a software takes place via software product 
 - Product release
 - Product Support Package stack and Patch level
 - A list of contained software component versions with
-    - Software component name
-    - Software component release
-    - Delivery Package, which delivers the versions
+  - Software component name
+  - Software component release
+  - Delivery Package, which delivers the versions
 
 ## Building the Add-on Product
 
