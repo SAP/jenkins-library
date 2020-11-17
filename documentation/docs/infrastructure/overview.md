@@ -6,7 +6,7 @@ The core of the Jenkins infrastructure tooling is a set of [Docker images][docke
 There is a main Docker image containing a preconfigured Jenkins and several tooling images used in the specific project "Piper" steps.
 
 !!! info "Docker Hub rate limiting"
-    Please be aware that Docker Hub as rate lmiting active which might cause project "Piper" pipelines to fail.
+    Please be aware that Docker Hub as rate limiting active which might cause project "Piper" pipelines to fail.
     Refer to the [page dedicated to docker rate limiting for details and solutions][resources-docker-rate-limit].
 
 The document and the linked resources explain the various ways of starting such a Jenkins server based on these Docker images.

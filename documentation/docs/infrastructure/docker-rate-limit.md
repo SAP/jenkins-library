@@ -10,9 +10,8 @@ Error response from daemon: toomanyrequests: You have reached your pull rate lim
 
 Those occur because Docker Hub has introduced rate limiting in November 2020. More background information is available [here](https://www.docker.com/pricing/resource-consumption-updates).
 
-There are various options to mitigate this issue.
-Options are listed here in no particular order.
-None of the options will work in all use-cases, please pick what works best for you.
+There are various options to mitigate this issue, which are listed below in no particular order.
+No single option will work in *all* use-cases, please pick what works best for you.
 
 ## Company-internal Docker Hub mirror
 
@@ -23,20 +22,20 @@ You could configure that registry for example using this snippet in your `.pipel
 ```
 steps:
   dockerExecute:
-    dockerRegistry: 'https://my.internal.registry:1234'
+    dockerRegistryUrl: 'https://my.internal.registry:1234'
 ```
 
 ## Authenticated pulls from Docker Hub
 
-The [`dockerExecute`](../steps/dockerExecute) step has an option `dockerRegistryCredentials` which you can use with any Docker Hub account.
+The [`dockerExecute`](../steps/dockerExecute) step has an option `dockerRegistryCredentialsId` which you can use with any Docker Hub account.
 See [Docker's information on pricing](https://www.docker.com/pricing) to check which type of account is right for you.
 
 ## Alternative Docker registry
 
 Project "Piper"'s Docker images are also published to [GitHub Container Registry](https://github.com/orgs/SAP/packages?tab=packages&q=ppiper).
-We don't have much expirince with that, but in case the other options don't work for you you might want to try consuming the images from there.
+We don't have much experience with that, but in case the other options don't work for you, you might want to try consuming the images from there.
 
 ## Hyperscaler mirror
 
-If you use some kind of hyperscaler, your provider might offer a dockerhub mirror for you.
+If you use some kind of hyperscaler, your provider might offer a Docker Hub mirror for you.
 Please check the respective documentation of your provider.
