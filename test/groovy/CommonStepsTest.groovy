@@ -55,7 +55,7 @@ public class CommonStepsTest extends BasePiperTest{
             'piperPipeline',
             'prepareDefaultValues',
             'runClosures',
-            'setupCommonPipelineEnvironment'
+            'setupCommonPipelineEnvironment',
         ]
 
         List steps = getSteps().stream()
@@ -166,7 +166,8 @@ public class CommonStepsTest extends BasePiperTest{
         'containerSaveImage', //implementing new golang pattern without fields
         'detectExecuteScan', //implementing new golang pattern without fields
         'kanikoExecute', //implementing new golang pattern without fields
-        'gitopsUpdateDeployment' //implementing new golang pattern without fields
+        'gitopsUpdateDeployment', //implementing new golang pattern without fields
+        'vaultRotateSecretId' //implementing new golang pattern without fields
     ]
 
     @Test
