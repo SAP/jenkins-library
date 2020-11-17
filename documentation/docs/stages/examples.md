@@ -31,4 +31,4 @@ In order to use a custom defaults only a simple extension to the `Jenkinsfile` i
 piperPipeline script: this, customDefaults: ['myCustomDefaults.yml']
 ```
 
-## more examples to come ...
+## more examples to come

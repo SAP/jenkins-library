@@ -24,11 +24,11 @@ All this makes it important to make compatible deployments.
 
 For this option, we only consider the goal `deploy:deploy-file`.
 
-##### :+1:
+:+1:
 
 - Official maven plugin for deployment, which is perfect if you only care whether the artifacts are deployed correctly.
 
-##### :-1:
+:-1:
 
 - Knowledge about which artifacts to deploy has to be obtained manually.
 - A list of parameters has to be generated before using the plugin, including `artifactId` and `version`, which is the same case as the `Uploading artifacts manually`. For maven projects, the parameters can be obtained using the `evaluate` goal of the `maven-help-plugin`. There is however a performance impact, since a maven command line has to be executed for each parameter, multiplied by the number of modules. This is not a problem for `Maven lifecycle phase : deploy`.
@@ -38,13 +38,13 @@ For this option, we only consider the goal `deploy:deploy-file`.
 
 By default, the maven lifecycle phase `deploy` binds to the goal `deploy:deploy` of the `Apache Maven Deploy Plugin`.
 
-##### :+1:
+:+1:
 
 - Same as the `Apache Maven Deploy Plugin`
 - You don't have to obtain and pass the parameters as for `Apache Maven Deploy Plugin`, because `package` phase is executed implicitly and makes the parameters ready before `deploy` phase.
 - Supports multi-module Maven projects and any project structure.
 
-##### :-1:
+:-1:
 
 - Same case as the `Apache Maven Deploy Plugin` for handling credentials.
 - Cannot be used for non-Maven projects (i.e. MTA)
@@ -59,12 +59,12 @@ Unfortunately, however, `Apache Maven JAR Plugin` does not provide an option to 
 
 Files can be uploaded to the Nexus by simple HTTP PUT requests, using basic authentication if necessary. Meta-data files have to be downloaded, updated and re-uploaded after successful upload of the artifacts.
 
-##### :+1:
+:+1:
 
 - Without the pain of handling the credentials, which was mentioned above in `Apache Maven Deploy Plugin` section.
 - Gives full control over the implementation.
 
-##### :-1:
+:-1:
 
 - Same as the `Apache Maven Deploy Plugin`. Knowledge about which artifacts to deploy has to be obtained manually.
 - Same as the `Apache Maven Deploy Plugin`. A list of parameters has to be prepared.

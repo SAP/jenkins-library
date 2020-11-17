@@ -48,7 +48,7 @@ piperPipeline script: this
 
     You find more details about the custom defaults in the [configuration section](../configuration.md)
 
-### Second step: Prepare pipeline for your main branch.
+### Second step: Prepare pipeline for your main branch
 
 Extend your configuration to also contain git ssh credentials information.
 
