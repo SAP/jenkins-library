@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"encoding/json"
 	"encoding/xml"
 
 	"github.com/SAP/jenkins-library/pkg/checkmarx"
@@ -44,7 +45,7 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace
 		if err != nil {
 			return errors.Wrap(err, "failed to load team")
 		}
-		teamIDBytes, err := team.ID.MarshalJSON()
+		teamIDBytes, err := json.Marshal(&team.ID)
 		if err != nil {
 			return errors.Wrap(err, "failed to decode team.ID")
 		}

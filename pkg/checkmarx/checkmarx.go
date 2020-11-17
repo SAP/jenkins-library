@@ -631,9 +631,9 @@ func (sys *SystemInstance) FilterTeamByName(teams []Team, teamName string) Team 
 
 // FilterTeamByID filters a team by its ID
 func (sys *SystemInstance) FilterTeamByID(teams []Team, teamID json.RawMessage) Team {
-	teamIDBytes1, _ := teamID.MarshalJSON()
+	teamIDBytes1, _ := json.Marshal(&teamID)
 	for _, team := range teams {
-		teamIDBytes2, _ := team.ID.MarshalJSON()
+		teamIDBytes2, _ := json.Marshal(&team.ID)
 		if bytes.Compare(teamIDBytes1, teamIDBytes2) == 0 {
 			return team
 		}
