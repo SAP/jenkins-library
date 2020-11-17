@@ -141,7 +141,7 @@ For additional information about multibranch pipelines, please refer to the [Jen
 
 ## Add a Deploy Step
 
-1.  In your `Jenkinsfile`, add the following code snippet:
+1. In your `Jenkinsfile`, add the following code snippet:
    ```
    stage('deploy') {
        cloudFoundryDeploy script: this
