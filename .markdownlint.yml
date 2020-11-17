@@ -5,7 +5,6 @@ MD013: false #line-length
 MD033: false #no-inline-html
 
 # TODO: fix in separate PR
-MD001: false #heading-increment/header-increment
 MD004: false #ul-style
 MD024: false #no-duplicate-heading/no-duplicate-header
 MD036: false #no-emphasis-as-heading/no-emphasis-as-header

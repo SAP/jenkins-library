@@ -39,9 +39,6 @@ plugins:
       MD033:
         enabled: false
       # TODO: fix in separate PR
-      # https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md#md001
-      MD001:
-        enabled: false
       # https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md#md004
       MD004:
         enabled: false
