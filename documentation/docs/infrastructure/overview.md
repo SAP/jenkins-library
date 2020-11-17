@@ -119,8 +119,6 @@ If you use your own Jenkins installation, you need to care for the configuration
 This option should only be considered if you know why you need it, otherwise using the Cx Server life-cycle management makes your life much easier.
 If you choose to go this path, follow the [Custom Jenkins Setup guide][resources-custom-jenkins].
 
-**Note:** This option is not supported for SAP Cloud SDK projects.
-
 [devops-docker-images-cxs-guide]:    https://github.com/SAP/devops-docker-cx-server/blob/master/docs/operations/cx-server-operations-guide.md
 [docker-images]:                     https://hub.docker.com/u/ppiper
 [resources-docker-rate-limit]:       docker-rate-limit.md
