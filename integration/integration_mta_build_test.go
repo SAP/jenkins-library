@@ -29,7 +29,7 @@ func TestMavenProject(t *testing.T) {
 func TestMavenSpringProject(t *testing.T) {
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "devxci/mbtci:latestt",
+		Image:   "devxci/mbtci:latest",
 		User:    "mta",
 		TestDir: []string{"testdata", "TestMtaIntegration", "maven-spring"},
 	})
