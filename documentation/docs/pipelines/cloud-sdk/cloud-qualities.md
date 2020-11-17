@@ -91,8 +91,8 @@ The SAP Cloud SDK Pipeline includes commonly used static checks using both [PMD]
 In addition to the default checks of those tools, it adds the following SAP Cloud SDK specific checks:
 
 * To make post-mortem debugging possible
-    * Log the exception in the catch block or in a called handling method or reference it in a new thrown exception
-    * Reference the exception when logging inside a catch block
+  * Log the exception in the catch block or in a called handling method or reference it in a new thrown exception
+  * Reference the exception when logging inside a catch block
 * In order to allow a smooth transition from Neo to Cloud Foundry, you should use the platform independent abstractions provided by the SAP S4HANA Cloud SDK
 
 ### Lint
