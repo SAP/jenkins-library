@@ -35,57 +35,24 @@ plugins:
       # https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md#md013---line-length
       MD013:
         enabled: false
-      # https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md#md033---inline-html
-      MD033:
-        enabled: false
-      # TODO: fix in separate PR
-      # https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md#md001
-      MD001:
-        enabled: false
-      # https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md#md004
-      MD004:
-        enabled: false
-      # https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md#md012
-      MD012:
-        enabled: false
-      # https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md#md007
-      MD007:
-        enabled: false
-      # https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md#md022
-      MD022:
-        enabled: false
       # https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md#md024
       MD024:
         enabled: false
-      # https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md#md026
-      MD026:
-        enabled: false
-      # https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md#md030
-      MD030:
-        enabled: false
-      # https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md#md031
-      MD031:
-        enabled: false
-      # https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md#md032
-      MD032:
+      # https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md#md033---inline-html
+      MD033:
         enabled: false
       # https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md#md036
       MD036:
         enabled: false
-      # https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md#md038
-      MD038:
+      # https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md#md041
+      MD041:
         enabled: false
-      # https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md#md039
-      MD039:
+      # TODO: fix in separate PR
+      # https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md#md004
+      MD004:
         enabled: false
       # https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md#md040
       MD040:
-        enabled: false
-      # https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md#md042
-      MD042:
-        enabled: false
-      # https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md#md041
-      MD041:
         enabled: false
       # https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md#md046
       MD046:
@@ -94,6 +61,7 @@ plugins:
     enabled: true
 exclude_patterns:
   - "**/*_generated.go"
+  - "**/mocks/*.go"
   # default excludes are overwritten, add them again
   # https://docs.codeclimate.com/docs/excluding-files-and-folders#section-auto-generated-file-and-folder-exclusions
   - "**/*_test.go"

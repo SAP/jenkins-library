@@ -27,7 +27,6 @@ Register to our [google group][google-group] in order to get updates or for aski
 Read and understand our [contribution guidelines][piper-library-contribution]
 before opening a pull request.
 
-
 [piper-library-user-doc]: https://sap.github.io/jenkins-library/
 [piper-library-issues]: https://github.com/SAP/jenkins-library/issues
 [piper-library-license]: ./LICENSE
