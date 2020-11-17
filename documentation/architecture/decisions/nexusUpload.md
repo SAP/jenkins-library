@@ -49,6 +49,7 @@ By default, the maven lifecycle phase `deploy` binds to the goal `deploy:deploy`
 - Same case as the `Apache Maven Deploy Plugin` for handling credentials.
 - Cannot be used for non-Maven projects (i.e. MTA)
 - As a maven phase, a list of phases is triggered implicitly before this phase, including `compile`, `test` and `package`.
+
 To follow the build-once principle, all these phases have to be skipped.
 However, it's not possible to skip some of the maven goals binding to certain phases.
 For example, if the `<packaging>` tag of the `pom.xml` is set to `jar`, then the `jar:jar` goal of the [`Apache Maven JAR Plugin`](https://maven.apache.org/plugins/maven-jar-plugin/) is bound to the `package` phase.
