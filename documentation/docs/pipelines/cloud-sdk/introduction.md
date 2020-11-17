@@ -11,17 +11,17 @@ The SAP Cloud SDK pipeline is based on project "Piper" and offers unique feature
 In conjunction with the SAP Cloud SDK libraries, the pipeline helps you to implement and automatically assure application qualities, for example:
 
 * Functional correctness via:
-    * Backend and frontend unit tests
-    * Backend and frontend integration tests
-    * User acceptance testing via headless browser end-to-end tests
+  * Backend and frontend unit tests
+  * Backend and frontend integration tests
+  * User acceptance testing via headless browser end-to-end tests
 * Non-functional qualities via:
-    * Dynamic resilience checks
-    * Performance tests based on *Gatling* or *JMeter*
-    * Code Security scans based on *Checkmarx* and *Fortify*
-    * Dependency vulnerability scans based on *Whitesource*
-    * IP compliance scan based on *Whitesource*
-    * Zero-downtime deployment
-    * Proper logging of application errors
+  * Dynamic resilience checks
+  * Performance tests based on *Gatling* or *JMeter*
+  * Code Security scans based on *Checkmarx* and *Fortify*
+  * Dependency vulnerability scans based on *Whitesource*
+  * IP compliance scan based on *Whitesource*
+  * Zero-downtime deployment
+  * Proper logging of application errors
 
 For more details, see [Cloud Qualities](../cloud-qualities).
 
