@@ -10,7 +10,6 @@ MD004: false #ul-style
 MD007: false #ul-indent
 MD024: false #no-duplicate-heading/no-duplicate-header
 MD026: false #no-trailing-punctuation
-MD031: false #blanks-around-fences
 MD032: false #blanks-around-lists
 MD036: false #no-emphasis-as-heading/no-emphasis-as-header
 MD039: false #no-space-in-links
