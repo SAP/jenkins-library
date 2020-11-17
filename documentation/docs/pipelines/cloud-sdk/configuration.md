@@ -436,8 +436,8 @@ checkGatling:
 | `options` | |  | Options such as proxy. |
 | `testPlan` | | `./performance-tests/*` | The directory where the test plans reside. Should reside in a subdirectory under `performance-tests` directory if both JMeter and Gatling are enabled.|
 | `dockerImage` | | `famiko/jmeter-base` | JMeter docker image. |
-| `failThreshold ` | | `100` | Marks build as `FAILURE` if the value exceeds the threshold. |
-| `unstableThreshold ` | | `90` | Marks build as `UNSTABLE` if the value exceeds the threshold. |
+| `failThreshold` | | `100` | Marks build as `FAILURE` if the value exceeds the threshold. |
+| `unstableThreshold` | | `90` | Marks build as `UNSTABLE` if the value exceeds the threshold. |
 
 Example:
 
