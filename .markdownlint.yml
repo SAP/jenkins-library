@@ -14,6 +14,5 @@ MD032: false #blanks-around-lists
 MD036: false #no-emphasis-as-heading/no-emphasis-as-header
 MD039: false #no-space-in-links
 MD040: false #fenced-code-language
-MD042: false #no-empty-links
 MD041: false #first-line-heading/first-line-h1
 MD046: false #code-block-style
