@@ -101,6 +101,9 @@ steps:
     abapSystemParentSaasAppname: "abapcp-saas-itapcao1"
     abapSystemParentServiceParameters: `{"foo":"bar","veryspecialfeature":"true"}`
     abapSystemConsumerTenantLimit: 1
+    addonDescriptorFileName: "addonDescriptor.yml"
+    includeAddon: true
+    confirmDeletion: true
 
 ```
 
