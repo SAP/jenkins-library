@@ -133,9 +133,7 @@ import groovy.transform.Field
 ])
 
 @Field Map CONFIG_KEY_COMPATIBILITY = [
-    dockerRegistryUrl: 'dockerRegistry',
     dockerRegistryCredentialsId: 'dockerRegistryCredentials',
-    sidecarRegistryUrl: 'dockerSidecarRegistry',
     sidecarRegistryCredentialsId: 'dockerSidecarRegistryCredentials',
 ]
 
