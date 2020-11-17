@@ -47,15 +47,15 @@ import groovy.transform.Field
     /**
       * The registry used for pulling the docker image, if left empty the default registry as defined by the `docker-commons-plugin` will be used.
       */
-    'dockerRegistry',
+    'dockerRegistryUrl',
     /**
       * The credentials for the docker registry. If left empty, images are pulled anonymously.
       */
     'dockerRegistryCredentials',
     /**
-      * Same as `dockerRegistry`, but for the sidecar. If left empty, `dockerRegistry` is used instead.
+      * Same as `dockerRegistryUrl`, but for the sidecar. If left empty, `dockerRegistryUrl` is used instead.
       */
-    'dockerSidecarRegistry',
+    'dockerSidecarRegistryUrl',
     /**
       * Same as `dockerRegistryCredentials`, but for the sidecar. If left empty `dockerRegistryCredentials` is used instead.
       */
@@ -154,7 +154,7 @@ void call(Map parameters = [:], body) {
             .use()
 
         config = ConfigurationHelper.newInstance(this, config)
-            .addIfEmpty('dockerSidecarRegistry', config.dockerRegistry)
+            .addIfEmpty('dockerSidecarRegistryUrl', config.dockerRegistryUrl)
             .addIfEmpty('dockerSidecarRegistryCredentials', config.dockerRegistryCredentials)
             .use()
 
@@ -229,7 +229,7 @@ void call(Map parameters = [:], body) {
             if (executeInsideDocker && config.dockerImage) {
                 utils.unstashAll(config.stashContent)
                 def image = docker.image(config.dockerImage)
-                pullWrapper(config.dockerPullImage, image, config.dockerRegistry, config.dockerRegistryCredentials) {
+                pullWrapper(config.dockerPullImage, image, config.dockerRegistryUrl, config.dockerRegistryCredentials) {
                     if (!config.sidecarImage) {
                         image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
                             body()
@@ -239,7 +239,7 @@ void call(Map parameters = [:], body) {
                         sh "docker network create ${networkName}"
                         try {
                             def sidecarImage = docker.image(config.sidecarImage)
-                            pullWrapper(config.sidecarPullImage, sidecarImage, config.dockerSidecarRegistry, config.dockerSidecarRegistryCredentials) {
+                            pullWrapper(config.sidecarPullImage, sidecarImage, config.dockerSidecarRegistryUrl, config.dockerSidecarRegistryCredentials) {
                                 config.sidecarOptions = config.sidecarOptions ?: []
                                 if (config.sidecarName)
                                     config.sidecarOptions.add("--network-alias ${config.sidecarName}")
@@ -271,7 +271,7 @@ void call(Map parameters = [:], body) {
     }
 }
 
-void pullWrapper(boolean pullImage, def dockerImage, String dockerRegistry, String dockerCredentialsId, Closure body) {
+void pullWrapper(boolean pullImage, def dockerImage, String dockerRegistryUrl, String dockerCredentialsId, Closure body) {
     if (!pullImage) {
         echo "[INFO][$STEP_NAME] Skipped pull of image '$dockerImage'."
         body()
@@ -280,12 +280,12 @@ void pullWrapper(boolean pullImage, def dockerImage, String dockerRegistry, Stri
 
     if (dockerCredentialsId) {
         // docker registry can be provided empty and will default to 'https://index.docker.io/v1/' in this case.
-        docker.withRegistry(dockerRegistry ?: '', dockerCredentialsId) {
+        docker.withRegistry(dockerRegistryUrl ?: '', dockerCredentialsId) {
             dockerImage.pull()
             body()
         }
-    } else if (dockerRegistry) {
-        docker.withRegistry(dockerRegistry) {
+    } else if (dockerRegistryUrl) {
+        docker.withRegistry(dockerRegistryUrl) {
             dockerImage.pull()
             body()
         }
