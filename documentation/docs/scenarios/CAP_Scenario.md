@@ -41,7 +41,7 @@ Now, you'll need to push the code to a git repository.
 This is required because the pipeline gets your code via git.
 This might be GitHub, or any other cloud or on-premise git solution you have in your company.
 
-Be sure to configure the [`productionDeployment `](https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/configuration.md#productiondeployment) stage so your changes are deployed to SAP Cloud Platform automatically.
+Be sure to configure the [`productionDeployment`](https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/configuration.md#productiondeployment) stage so your changes are deployed to SAP Cloud Platform automatically.
 
 ## Legacy documentation
 
