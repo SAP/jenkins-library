@@ -51,15 +51,15 @@ import groovy.transform.Field
     /**
       * The credentials for the docker registry. If left empty, images are pulled anonymously.
       */
-    'dockerRegistryCredentials',
+    'dockerRegistryCredentialsId',
     /**
       * Same as `dockerRegistryUrl`, but for the sidecar. If left empty, `dockerRegistryUrl` is used instead.
       */
     'sidecarRegistryUrl',
     /**
-      * Same as `dockerRegistryCredentials`, but for the sidecar. If left empty `dockerRegistryCredentials` is used instead.
+      * Same as `dockerRegistryCredentialsId`, but for the sidecar. If left empty `dockerRegistryCredentialsId` is used instead.
       */
-    'sidecarRegistryCredentials',
+    'sidecarRegistryCredentialsId',
     /**
      * Kubernetes only:
      * Name of the container launching `dockerImage`.
@@ -155,7 +155,7 @@ void call(Map parameters = [:], body) {
 
         config = ConfigurationHelper.newInstance(this, config)
             .addIfEmpty('sidecarRegistryUrl', config.dockerRegistryUrl)
-            .addIfEmpty('sidecarRegistryCredentials', config.dockerRegistryCredentials)
+            .addIfEmpty('sidecarRegistryCredentialsId', config.dockerRegistryCredentialsId)
             .use()
 
         SidecarUtils sidecarUtils = new SidecarUtils(script)
@@ -229,7 +229,7 @@ void call(Map parameters = [:], body) {
             if (executeInsideDocker && config.dockerImage) {
                 utils.unstashAll(config.stashContent)
                 def image = docker.image(config.dockerImage)
-                pullWrapper(config.dockerPullImage, image, config.dockerRegistryUrl, config.dockerRegistryCredentials) {
+                pullWrapper(config.dockerPullImage, image, config.dockerRegistryUrl, config.dockerRegistryCredentialsId) {
                     if (!config.sidecarImage) {
                         image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
                             body()
@@ -239,7 +239,7 @@ void call(Map parameters = [:], body) {
                         sh "docker network create ${networkName}"
                         try {
                             def sidecarImage = docker.image(config.sidecarImage)
-                            pullWrapper(config.sidecarPullImage, sidecarImage, config.sidecarRegistryUrl, config.sidecarRegistryCredentials) {
+                            pullWrapper(config.sidecarPullImage, sidecarImage, config.sidecarRegistryUrl, config.sidecarRegistryCredentialsId) {
                                 config.sidecarOptions = config.sidecarOptions ?: []
                                 if (config.sidecarName)
                                     config.sidecarOptions.add("--network-alias ${config.sidecarName}")

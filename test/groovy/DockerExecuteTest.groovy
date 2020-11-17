@@ -174,16 +174,16 @@ class DockerExecuteTest extends BasePiperTest {
             steps: [
                 dockerExecute: [
                     dockerRegistryUrl: 'https://registry.example.org',
-                    dockerRegistryCredentials: 'mySecrets',
+                    dockerRegistryCredentialsId: 'mySecrets',
                     sidecarRegistryUrl: 'https://sidecarregistry.example.org',
-                    sidecarRegistryCredentials: 'mySidecarRegistryCredentials',
+                    sidecarRegistryCredentialsId: 'mySidecarRegistryCredentials',
                 ]
             ]
         ]
         stepRule.step.dockerExecute(
             script: nullScript,
             dockerImage: 'maven:3.5-jdk-8-alpine',
-            dockerRegistryCredentials: 'mySecrets',
+            dockerRegistryCredentialsId: 'mySecrets',
             sidecarImage: 'ubuntu',
         ) {
             bodyExecuted = true
@@ -217,7 +217,7 @@ class DockerExecuteTest extends BasePiperTest {
         stepRule.step.dockerExecute(
             script: nullScript,
             dockerImage: 'maven:3.5-jdk-8-alpine',
-            dockerRegistryCredentials: 'mySecrets',
+            dockerRegistryCredentialsId: 'mySecrets',
             sidecarImage: 'ubuntu',
         ) {
             bodyExecuted = true
@@ -273,7 +273,7 @@ class DockerExecuteTest extends BasePiperTest {
             steps: [
                 dockerExecute: [
                     dockerRegistryUrl: 'https://registry.example.org',
-                    dockerRegistryCredentials: 'mySecrets',
+                    dockerRegistryCredentialsId: 'mySecrets',
                 ]
             ]
         ]
