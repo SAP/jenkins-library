@@ -105,8 +105,10 @@ func triggerATCrun(config abapEnvironmentRunATCCheckOptions, details abaputils.C
 	filelocation, err := filepath.Glob(config.AtcConfig)
 	//Parse YAML ATC run configuration as body for ATC run trigger
 	if err == nil {
-		filename, _ := filepath.Abs(filelocation[0])
-		atcConfigyamlFile, err = ioutil.ReadFile(filename)
+		filename, err := filepath.Abs(filelocation[0])
+		if err == nil {
+			atcConfigyamlFile, err = ioutil.ReadFile(filename)
+		}
 	}
 	var ATCConfig ATCconfig
 	if err == nil {
