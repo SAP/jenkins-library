@@ -290,6 +290,7 @@ void pullWrapper(boolean pullImage, def dockerImage, String dockerRegistryUrl, S
             body()
         }
     } else {
+        dockerImage.pull()
         body()
     }
 }
