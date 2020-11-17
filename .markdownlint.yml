@@ -13,7 +13,6 @@ MD026: false #no-trailing-punctuation
 MD031: false #blanks-around-fences
 MD032: false #blanks-around-lists
 MD036: false #no-emphasis-as-heading/no-emphasis-as-header
-MD038: false #no-space-in-code
 MD039: false #no-space-in-links
 MD040: false #fenced-code-language
 MD042: false #no-empty-links
