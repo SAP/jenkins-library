@@ -218,8 +218,8 @@ repositories:
 			AbapSystemSizeOfRuntime:             4,
 			AddonDescriptorFileName:             "addon.yml",
 			AbapSystemParentServiceLabel:        "abap-trial",
-			AbapSystemParentServiceInstanceGuid: "131bb94b-3045-4303-94bc-34df92072302",
-			AbapSystemParentSaasAppname:         "abapcp-saas-itapcao1",
+			AbapSystemParentServiceInstanceGUID: "131bb94b-3045-4303-94bc-34df92072302",
+			AbapSystemParentSaaSAppname:         "abapcp-saas-itapcao1",
 			AbapSystemParentServiceParameters:   `{"foo":"bar","veryspecialfeature":"true"}`,
 			AbapSystemConsumerTenantLimit:       1,
 		}
@@ -280,8 +280,8 @@ func TestManifestCheck(t *testing.T) {
 			AbapSystemSizeOfRuntime:             4,
 			AddonDescriptorFileName:             "addon.yml",
 			AbapSystemParentServiceLabel:        "abap-trial",
-			AbapSystemParentServiceInstanceGuid: "131bb94b-3045-4303-94bc-34df92072302",
-			AbapSystemParentSaasAppname:         "abapcp-saas-itapcao1",
+			AbapSystemParentServiceInstanceGUID: "131bb94b-3045-4303-94bc-34df92072302",
+			AbapSystemParentSaaSAppname:         "abapcp-saas-itapcao1",
 			AbapSystemParentServiceParameters:   `{"foo":"bar","veryspecialfeature":"true"}`,
 			AbapSystemConsumerTenantLimit:       1,
 		}
@@ -291,7 +291,7 @@ func TestManifestCheck(t *testing.T) {
 	})
 
 	t.Run("check manifest parameters - wrong SID", func(t *testing.T) {
-		expectedErrorMessage := "It seems like you have incorrectly specified the AbapSystemID step parameter. Please check that the parameters follows the respective syntax to specify the AbapSystemID. For more information please refer to the step documentation"
+		expectedErrorMessage := "The parameter AbapSystemID contains invalid characters. Please check that the parameter follows the respective syntax to specify the AbapSystemID parameter. For more information please refer to the step documentation"
 
 		config := abapEnvironmentCreateSystemOptions{
 			CfAPIEndpoint:                       "https://api.endpoint.com",
@@ -299,7 +299,7 @@ func TestManifestCheck(t *testing.T) {
 			CfSpace:                             "testSpace",
 			Username:                            "testUser",
 			Password:                            "testPassword",
-			CfService:                           "testService",
+			CfService:                           "abap-oem",
 			CfServiceInstance:                   "testName",
 			CfServicePlan:                       "testPlan",
 			AbapSystemAdminEmail:                "user@example.com",
@@ -309,8 +309,8 @@ func TestManifestCheck(t *testing.T) {
 			AbapSystemSizeOfRuntime:             4,
 			AddonDescriptorFileName:             "addon.yml",
 			AbapSystemParentServiceLabel:        "abap-trial",
-			AbapSystemParentServiceInstanceGuid: "131bb94b-3045-4303-94bc-34df92072302",
-			AbapSystemParentSaasAppname:         "abapcp-saas-itapcao1",
+			AbapSystemParentServiceInstanceGUID: "131bb94b-3045-4303-94bc-34df92072302",
+			AbapSystemParentSaaSAppname:         "abapcp-saas-itapcao1",
 			AbapSystemParentServiceParameters:   `{"foo":"bar","veryspecialfeature":"true"}`,
 			AbapSystemConsumerTenantLimit:       1,
 		}
@@ -320,14 +320,14 @@ func TestManifestCheck(t *testing.T) {
 	})
 
 	t.Run("check manifest parameters - wrong consumer tenant limit", func(t *testing.T) {
-		expectedErrorMessage := "You have specified 0 tenants o be created in the system for the step parameter AbapSystemConsumerTenantLimit. Please check that you have set the parameter value correctly. For more information please refer to the step documentation"
+		expectedErrorMessage := "You have specified 0 tenants to be created in the system for the step parameter AbapSystemConsumerTenantLimit. Please check that you have set the parameter value correctly. For more information please refer to the step documentation"
 		config := abapEnvironmentCreateSystemOptions{
 			CfAPIEndpoint:                       "https://api.endpoint.com",
 			CfOrg:                               "testOrg",
 			CfSpace:                             "testSpace",
 			Username:                            "testUser",
 			Password:                            "testPassword",
-			CfService:                           "testService",
+			CfService:                           "abap-oem",
 			CfServiceInstance:                   "testName",
 			CfServicePlan:                       "testPlan",
 			AbapSystemAdminEmail:                "user@example.com",
@@ -337,8 +337,8 @@ func TestManifestCheck(t *testing.T) {
 			AbapSystemSizeOfRuntime:             4,
 			AddonDescriptorFileName:             "addon.yml",
 			AbapSystemParentServiceLabel:        "abap-trial",
-			AbapSystemParentServiceInstanceGuid: "131bb94b-3045-4303-94bc-34df92072302",
-			AbapSystemParentSaasAppname:         "abapcp-saas-itapcao1",
+			AbapSystemParentServiceInstanceGUID: "131bb94b-3045-4303-94bc-34df92072302",
+			AbapSystemParentSaaSAppname:         "abapcp-saas-itapcao1",
 			AbapSystemParentServiceParameters:   `{"foo":"bar","veryspecialfeature":"true"}`,
 			AbapSystemConsumerTenantLimit:       0,
 		}
@@ -355,7 +355,7 @@ func TestManifestCheck(t *testing.T) {
 			CfSpace:                             "testSpace",
 			Username:                            "testUser",
 			Password:                            "testPassword",
-			CfService:                           "testService",
+			CfService:                           "abap-oem",
 			CfServiceInstance:                   "testName",
 			CfServicePlan:                       "testPlan",
 			AbapSystemAdminEmail:                "user@example.com",
@@ -364,7 +364,7 @@ func TestManifestCheck(t *testing.T) {
 			AbapSystemSizeOfPersistence:         4,
 			AbapSystemSizeOfRuntime:             4,
 			AddonDescriptorFileName:             "addon.yml",
-			AbapSystemParentServiceInstanceGuid: "131bb94b-3045-4303-94bc-34df92072302",
+			AbapSystemParentServiceInstanceGUID: "131bb94b-3045-4303-94bc-34df92072302",
 			AbapSystemParentServiceParameters:   `{"foo":"bar","veryspecialfeature":"true"}`,
 			AbapSystemConsumerTenantLimit:       1,
 		}
@@ -375,14 +375,15 @@ func TestManifestCheck(t *testing.T) {
 	})
 
 	t.Run("check manifest parameters - wrong Saas Appname", func(t *testing.T) {
-		expectedErrorMessage := "It seems like you have incorrectly specified the AbapSystemParentSaasAppname step parameter. Please check that the parameters follows the respective syntax to specify the AbapSystemParentSaasAppname. For more information please refer to the step documentation"
+		expectedErrorMessage := "The parameter AbapSystemParentSaaSAppname contains invalid characters. Please check that the parameter follows the respective syntax to specify the AbapSystemParentSaasAppname parameter. For more information please refer to the step documentation"
+
 		config := abapEnvironmentCreateSystemOptions{
 			CfAPIEndpoint:                       "https://api.endpoint.com",
 			CfOrg:                               "testOrg",
 			CfSpace:                             "testSpace",
 			Username:                            "testUser",
 			Password:                            "testPassword",
-			CfService:                           "testService",
+			CfService:                           "abap-oem",
 			CfServiceInstance:                   "testName",
 			CfServicePlan:                       "testPlan",
 			AbapSystemAdminEmail:                "user@example.com",
@@ -392,8 +393,8 @@ func TestManifestCheck(t *testing.T) {
 			AbapSystemSizeOfRuntime:             4,
 			AddonDescriptorFileName:             "addon.yml",
 			AbapSystemParentServiceLabel:        "abap-trial",
-			AbapSystemParentServiceInstanceGuid: "131bb94b-3045-4303-94bc-34df92072302",
-			AbapSystemParentSaasAppname:         "***",
+			AbapSystemParentServiceInstanceGUID: "131bb94b-3045-4303-94bc-34df92072302",
+			AbapSystemParentSaaSAppname:         "***",
 			AbapSystemParentServiceParameters:   `{"foo":"bar","veryspecialfeature":"true"}`,
 			AbapSystemConsumerTenantLimit:       1,
 		}

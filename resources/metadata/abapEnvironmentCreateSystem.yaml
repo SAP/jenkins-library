@@ -187,7 +187,7 @@ spec:
           - STAGES
           - STEPS
           - GENERAL
-      - name: abapSystemParentServiceInstanceGuid
+      - name: abapSystemParentServiceInstanceGUID
         description: The guid/Service ID of the parent service
         type: string
         scope:
@@ -195,7 +195,7 @@ spec:
           - STAGES
           - STEPS
           - GENERAL
-      - name: abapSystemParentSaasAppname
+      - name: abapSystemParentSaaSAppname
         description: The parent appname from the SaaS registry
         type: string
         scope:

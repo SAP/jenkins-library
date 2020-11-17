@@ -98,8 +98,8 @@ func generateManifestYAML(config *abapEnvironmentCreateSystemOptions) ([]byte, e
 		AddonProductName:          addonProduct,
 		AddonProductVersion:       addonVersion,
 		ParentServiceLabel:        config.AbapSystemParentServiceLabel,
-		ParentServiceInstanceGuid: config.AbapSystemParentServiceInstanceGuid,
-		ParentSaasAppname:         config.AbapSystemParentSaasAppname,
+		ParentServiceInstanceGUID: config.AbapSystemParentServiceInstanceGUID,
+		ParentSaaSAppname:         config.AbapSystemParentSaaSAppname,
 		ParentServiceParameters:   config.AbapSystemParentServiceParameters,
 		ConsumerTenantLimit:       config.AbapSystemConsumerTenantLimit,
 	}
@@ -146,15 +146,15 @@ func checkManifestParameters(config *abapEnvironmentCreateSystemOptions) (err er
 	//Only checks for correct parameter specification if CF Service "abap-oem" is selected
 	if config.CfService == "abap-oem" {
 
-		if config.AbapSystemParentSaasAppname == "" && config.AbapSystemParentServiceLabel == "" {
+		if config.AbapSystemParentSaaSAppname == "" && config.AbapSystemParentServiceLabel == "" {
 			return errors.New("Both parameters AbapSystemParentServiceLabel and AbapSystemParentSaasAppname seem to be empty. Please specify either AbapSystemParentServiceLabel or AbapSystemParentSaasAppname depending on who created the oem-instance in the step configuration. For more information please refer to the step documentation")
 		}
 
-		if config.AbapSystemParentSaasAppname != "" {
+		if config.AbapSystemParentSaaSAppname != "" {
 			const parentSaasAppnameSyntaxCheck = `[a-zA-Z0-9\-\_]+`
-			addonProductVersionMatch, _ := regexp.MatchString(parentSaasAppnameSyntaxCheck, config.AbapSystemParentSaasAppname)
+			addonProductVersionMatch, _ := regexp.MatchString(parentSaasAppnameSyntaxCheck, config.AbapSystemParentSaaSAppname)
 			if !addonProductVersionMatch {
-				return errors.New("It seems like you have incorrectly specified the AbapSystemParentSaasAppname step parameter. Please check that the parameters follows the respective syntax to specify the AbapSystemParentSaasAppname. For more information please refer to the step documentation")
+				return errors.New("The parameter AbapSystemParentSaaSAppname contains invalid characters. Please check that the parameter follows the respective syntax to specify the AbapSystemParentSaasAppname parameter. For more information please refer to the step documentation")
 			}
 		}
 
@@ -162,12 +162,12 @@ func checkManifestParameters(config *abapEnvironmentCreateSystemOptions) (err er
 			const systemIDSyntaxCheck = `[A-Z0-9]`
 			systemIDMatch, _ := regexp.MatchString(systemIDSyntaxCheck, config.AbapSystemID)
 			if !systemIDMatch {
-				return errors.New("It seems like you have incorrectly specified the AbapSystemID step parameter. Please check that the parameters follows the respective syntax to specify the AbapSystemID. For more information please refer to the step documentation")
+				return errors.New("The parameter AbapSystemID contains invalid characters. Please check that the parameter follows the respective syntax to specify the AbapSystemID parameter. For more information please refer to the step documentation")
 			}
 		}
 
 		if config.AbapSystemConsumerTenantLimit == 0 {
-			return errors.New("You have specified 0 tenants o be created in the system for the step parameter AbapSystemConsumerTenantLimit. Please check that you have set the parameter value correctly. For more information please refer to the step documentation")
+			return errors.New("You have specified 0 tenants to be created in the system for the step parameter AbapSystemConsumerTenantLimit. Please check that you have set the parameter value correctly. For more information please refer to the step documentation")
 		}
 	}
 
@@ -184,8 +184,8 @@ type abapSystemParameters struct {
 	AddonProductName          string `json:"addon_product_name,omitempty"`
 	AddonProductVersion       string `json:"addon_product_version,omitempty"`
 	ParentServiceLabel        string `json:"parent_service_label,omitempty"`
-	ParentServiceInstanceGuid string `json:"parent_service_instance_guid,omitempty"`
-	ParentSaasAppname         string `json:"parent_saas_appname,omitempty"`
+	ParentServiceInstanceGUID string `json:"parent_service_instance_guid,omitempty"`
+	ParentSaaSAppname         string `json:"parent_saas_appname,omitempty"`
 	ParentServiceParameters   string `json:"parent_service_parameters,omitempty"`
 	ConsumerTenantLimit       int    `json:"consumer_tenant_limit,omitempty"`
 }
