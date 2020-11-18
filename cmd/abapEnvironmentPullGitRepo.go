@@ -87,7 +87,9 @@ func pullRepositories(repositories []abaputils.Repository, pullConnectionDetails
 			break
 		}
 	}
-	finishPullLogs()
+	if err == nil {
+		finishPullLogs()
+	}
 	return err
 }
 
