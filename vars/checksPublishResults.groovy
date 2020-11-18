@@ -100,7 +100,7 @@ void call(Map parameters = [:]) {
             highTags: configuration.tasks.get('high'),
             normalTags: configuration.tasks.get('normal'),
             lowTags: configuration.tasks.get('low'),
-        ])), configuration.tasks, configuration.archive)
+        ]).minus([pattern: configuration.tasks.get('pattern')])), configuration.tasks, configuration.archive)
     }
 }
 
