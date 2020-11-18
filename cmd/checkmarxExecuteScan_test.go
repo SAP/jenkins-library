@@ -332,7 +332,6 @@ func TestRunScan(t *testing.T) {
 
 func TestSetPresetForProjectWithIDProvided(t *testing.T) {
 	sys := &systemMock{}
-	
 	err := setPresetForProject(sys, 12345, 16, "testProject", "CX_Default", "")
 	assert.NoError(t, err, "error occured but none expected")
 	assert.Equal(t, false, sys.getPresetsCalled, "GetPresets was called")
