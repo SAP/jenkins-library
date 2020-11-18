@@ -85,64 +85,89 @@ void call(Map parameters = [:]) {
         ], configuration)
 
         // JAVA
-        report('PmdPublisher', configuration.pmd, configuration.archive)
-        report('DryPublisher', configuration.cpd, configuration.archive)
-        report('FindBugsPublisher', configuration.findbugs, configuration.archive)
-        report('CheckStylePublisher', configuration.checkstyle, configuration.archive)
+        // PMD
+        if (configuration.pmd.active) {
+            def settings = configuration.pmd
+            // publish
+            def options = createCommonOptionsMap(settings)
+            def toolOptions = createCommonToolOptionsMap(settings)
+            options.put('tools', [pmdParser(toolOptions)])
+            recordIssues(options)
+            // archive check results
+            archiveResults(configuration.archive && settings.get('archive'), settings.get('pattern'), true)
+        }
+        if (configuration.cpd.active) {
+            def settings = configuration.cpd
+            // publish
+            def options = createCommonOptionsMap(settings)
+            def toolOptions = createCommonToolOptionsMap(settings)
+            options.put('tools', [cpd(toolOptions)])
+            recordIssues(options)
+            // archive check results
+            archiveResults(configuration.archive && settings.get('archive'), settings.get('pattern'), true)
+        }
+        if (configuration.findbugs.active) {
+            def settings = configuration.findbugs
+            // publish
+            def options = createCommonOptionsMap(settings)
+            def toolOptions = createCommonToolOptionsMap(settings)
+            options.put('tools', [findBugs(toolOptions.plus([useRankAsPriority: true]))])
+            recordIssues(options)
+            // archive check results
+            archiveResults(configuration.archive && settings.get('archive'), settings.get('pattern'), true)
+        }
+        if (configuration.checkstyle.active) {
+            def settings = configuration.checkstyle
+            // publish
+            def options = createCommonOptionsMap(settings)
+            def toolOptions = createCommonToolOptionsMap(settings)
+            options.put('tools', [checkStyle(toolOptions)])
+            recordIssues(options)
+            // archive check results
+            archiveResults(configuration.archive && settings.get('archive'), settings.get('pattern'), true)
+        }
         // JAVA SCRIPT
-        reportWarnings('JSLint', configuration.eslint, configuration.archive)
+        if (configuration.eslint.active) {
+            def settings = configuration.eslint
+            def pattern =
+            // publish
+            def options = createCommonOptionsMap(settings)
+            def toolOptions = createCommonToolOptionsMap(settings)
+            options.put('tools', [esLint(toolOptions)])
+            recordIssues(options)
+            // archive check results
+            archiveResults(configuration.archive && settings.get('archive'), settings.get('pattern'), true)
+        }
+        //TODO: check if JSLint is needed
         // PYTHON
-        reportWarnings('PyLint', configuration.pylint, configuration.archive)
+        if (configuration.pylint.active) {
+            def settings = configuration.pylint
+            def pattern = settings.get('pattern')
+            // publish
+            def options = createCommonOptionsMap(settings)
+            def toolOptions = createCommonToolOptionsMap(settings)
+            options.put('tools', [pyLint(toolOptions.plus([pattern: pattern]))])
+            recordIssues(options)
+            // archive check results
+            archiveResults(configuration.archive && settings.get('archive'), pattern, true)
+        }
         // GENERAL
-        reportTasks(configuration.tasks)
-        aggregateReports(configuration.aggregation)
-    }
-}
-
-def aggregateReports(settings){
-    if (settings.active) {
-        def options = createCommonOptionsMap('AnalysisPublisher', settings)
-        // publish
-        step(options)
-    }
-}
-
-def reportTasks(settings){
-    if (settings.active) {
-        def options = createCommonOptionsMap('TasksPublisher', settings)
-        options.put('pattern', settings.get('pattern'))
-        options.put('high', settings.get('high'))
-        options.put('normal', settings.get('normal'))
-        options.put('low', settings.get('low'))
-        // publish
-        step(options)
-    }
-}
-
-def report(publisherName, settings, doArchive){
-    if (settings.active) {
-        def pattern = settings.get('pattern')
-        def options = createCommonOptionsMap(publisherName, settings)
-        options.put('pattern', pattern)
-        // publish
-        step(options)
-        // archive check results
-        archiveResults(doArchive && settings.get('archive'), pattern, true)
-    }
-}
-
-def reportWarnings(parserName, settings, doArchive){
-    if (settings.active) {
-        def pattern = settings.get('pattern')
-        def options = createCommonOptionsMap('WarningsPublisher', settings)
-        options.put('parserConfigurations', [[
-            parserName: parserName,
-            pattern: pattern
-        ]])
-        // publish
-        step(options)
-        // archive check results
-        archiveResults(doArchive && settings.get('archive'), pattern, true)
+        if (configuration.tasks.active) {
+            def settings = configuration.tasks
+            def pattern = settings.get('pattern')
+            // publish
+            def options = createCommonOptionsMap(settings)
+            def toolOptions = createCommonToolOptionsMap(settings)
+            options.put('tools', [taskScanner(toolOptions.plus([
+                includePattern: pattern,
+                highTags: settings.get('high'),
+                normalTags: settings.get('normal'),
+                lowTags: settings.get('low'),
+            ]))])
+            recordIssues(options)
+            // archive check results
+            archiveResults(configuration.archive && settings.get('archive'), pattern, true)
+        }
     }
 }
 
@@ -154,24 +179,27 @@ def archiveResults(archive, pattern, allowEmpty){
 }
 
 @NonCPS
-def createCommonOptionsMap(publisherName, settings){
+def createCommonOptionsMap(settings){
     Map result = [:]
-    def thresholds = settings.get('thresholds', [:])
-    def fail = thresholds.get('fail', [:])
-    def unstable = thresholds.get('unstable', [:])
+    result.put('blameDisabled', true)
+    result.put('enabledForFailure', true)
+    result.put('aggregatingResults', false)
+    if (settings.qualityGates)
+        result.put('qualityGates', settings.qualityGates)
+    // filter empty values
+    result = result.findAll {
+        return it.value != null && it.value != ''
+    }
+    return result
+}
 
-    result.put('$class', publisherName)
-    result.put('healthy', settings.get('healthy'))
-    result.put('unHealthy', settings.get('unHealthy'))
-    result.put('canRunOnFailed', true)
-    result.put('failedTotalAll', fail.get('all'))
-    result.put('failedTotalHigh', fail.get('high'))
-    result.put('failedTotalNormal', fail.get('normal'))
-    result.put('failedTotalLow', fail.get('low'))
-    result.put('unstableTotalAll', unstable.get('all'))
-    result.put('unstableTotalHigh', unstable.get('high'))
-    result.put('unstableTotalNormal', unstable.get('normal'))
-    result.put('unstableTotalLow', unstable.get('low'))
+@NonCPS
+def createCommonToolOptionsMap(settings){
+    Map result = [pattern: settings.get('pattern')]
+    if (settings.id)
+        result.put('id ', settings.id)
+    if (settings.name)
+        result.put('name', settings.name)
     // filter empty values
     result = result.findAll {
         return it.value != null && it.value != ''
