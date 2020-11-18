@@ -129,6 +129,20 @@ def createOptions(settings){
     result.put('aggregatingResults', false)
     if (settings.qualityGates)
         result.put('qualityGates', settings.qualityGates)
+
+
+    def thresholds = settings.get('thresholds', [:])
+    def fail = thresholds.get('fail', [:])
+    def unstable = thresholds.get('unstable', [:])
+
+    result.put('failedTotalAll', fail.get('all'))
+    result.put('failedTotalHigh', fail.get('high'))
+    result.put('failedTotalNormal', fail.get('normal'))
+    result.put('failedTotalLow', fail.get('low'))
+    result.put('unstableTotalAll', unstable.get('all'))
+    result.put('unstableTotalHigh', unstable.get('high'))
+    result.put('unstableTotalNormal', unstable.get('normal'))
+    result.put('unstableTotalLow', unstable.get('low'))
     // filter empty values
     result = result.findAll {
         return it.value != null && it.value != ''
