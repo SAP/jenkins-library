@@ -566,11 +566,6 @@ func TestEnforceThresholds(t *testing.T) {
 
 func TestLoadPreset(t *testing.T) {
 	sys := &systemMock{}
-	t.Run("resolve via code", func(t *testing.T) {
-		preset, err := loadPreset(sys, "10048")
-		assert.NoError(t, err, "Expected success but failed")
-		assert.Equal(t, 10048, preset.ID, "Expected result but got none")
-	})
 
 	t.Run("resolve via name", func(t *testing.T) {
 		preset, err := loadPreset(sys, "SAP_JS_Default")
