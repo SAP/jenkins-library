@@ -32,7 +32,7 @@ func (p *abapAddonAssemblyKitReleasePackagesCommonPipelineEnvironment) persist(p
 	content := []struct {
 		category string
 		name     string
-		value    string
+		value    interface{}
 	}{
 		{category: "abap", name: "addonDescriptor", value: p.abap.addonDescriptor},
 	}
@@ -91,6 +91,7 @@ store. The new status "R"eleased is written back to the addonDescriptor in the c
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
@@ -110,7 +111,7 @@ store. The new status "R"eleased is written back to the addonDescriptor in the c
 }
 
 func addAbapAddonAssemblyKitReleasePackagesFlags(cmd *cobra.Command, stepConfig *abapAddonAssemblyKitReleasePackagesOptions) {
-	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitEndpoint, "abapAddonAssemblyKitEndpoint", os.Getenv("PIPER_abapAddonAssemblyKitEndpoint"), "Base URL to the Addon Assembly Kit as a Service (AAKaaS) system")
+	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitEndpoint, "abapAddonAssemblyKitEndpoint", `https://apps.support.sap.com`, "Base URL to the Addon Assembly Kit as a Service (AAKaaS) system")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for the Addon Assembly Kit as a Service (AAKaaS) system")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for the Addon Assembly Kit as a Service (AAKaaS) system")
 	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions")

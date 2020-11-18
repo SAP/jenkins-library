@@ -4,12 +4,13 @@ import (
 	"archive/zip"
 	"errors"
 	"fmt"
-	"github.com/bmatcuk/doublestar"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/bmatcuk/doublestar"
 )
 
 // FileUtils ...
@@ -26,6 +27,11 @@ type FileUtils interface {
 
 // Files ...
 type Files struct {
+}
+
+// TempDir creates a temporary directory
+func (f Files) TempDir(dir, pattern string) (name string, err error) {
+	return ioutil.TempDir(dir, pattern)
 }
 
 // FileExists returns true if the file system entry for the given path exists and is not a directory.

@@ -14,7 +14,7 @@ import (
 type Docker struct {
 	artifact         Artifact
 	content          []byte
-	execRunner       mavenExecRunner
+	utils            Utils
 	options          *Options
 	path             string
 	versionSource    string
@@ -75,7 +75,7 @@ func (d *Docker) GetVersion() (string, error) {
 		if d.options == nil {
 			d.options = &Options{}
 		}
-		d.artifact, err = GetArtifact(d.versionSource, d.path, d.options, d.execRunner)
+		d.artifact, err = GetArtifact(d.versionSource, d.path, d.options, d.utils)
 		if err != nil {
 			return "", err
 		}

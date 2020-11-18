@@ -18,11 +18,19 @@ import (
 func kubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetry.CustomData) {
 	c := command.Command{
 		ErrorCategoryMapping: map[string][]string{
-			"config": {
-				"Error: unknown flag",
-				"Invalid value: \"\": field is immutable",
+			log.ErrorConfiguration.String(): {
+				"Error: Get * no such host",
 				"Error: path * not found",
+				"Error: rendered manifests contain a resource that already exists.",
+				"Error: unknown flag",
+				"Error: UPGRADE FAILED: * failed to replace object: * is invalid",
+				"Error: UPGRADE FAILED: * failed to create resource: * is invalid",
+				"Error: UPGRADE FAILED: an error occurred * not found",
 				"Error: UPGRADE FAILED: query: failed to query with labels:",
+				"Invalid value: \"\": field is immutable",
+			},
+			log.ErrorCustom.String(): {
+				"Error: release * failed, * timed out waiting for the condition",
 			},
 		},
 	}
@@ -152,7 +160,11 @@ func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, s
 	}
 
 	if config.DeployTool == "helm3" {
-		upgradeParams = append(upgradeParams, "--atomic", "--timeout", fmt.Sprintf("%vs", config.HelmDeployWaitSeconds))
+		upgradeParams = append(upgradeParams, "--wait", "--timeout", fmt.Sprintf("%vs", config.HelmDeployWaitSeconds))
+	}
+
+	if !config.KeepFailedDeployments {
+		upgradeParams = append(upgradeParams, "--atomic")
 	}
 
 	if len(config.KubeContext) > 0 {

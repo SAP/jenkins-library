@@ -38,7 +38,7 @@ func (p *abapEnvironmentAssemblePackagesCommonPipelineEnvironment) persist(path,
 	content := []struct {
 		category string
 		name     string
-		value    string
+		value    interface{}
 	}{
 		{category: "abap", name: "addonDescriptor", value: p.abap.addonDescriptor},
 	}
@@ -68,8 +68,8 @@ func AbapEnvironmentAssemblePackagesCommand() *cobra.Command {
 	var createAbapEnvironmentAssemblePackagesCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Assembly of installation, support package or patch in SAP Cloud Platform ABAP Environment system",
-		Long: `This step runs the assembly of a list of provided installations, support packages or patches in SAP Cloud
-Platform ABAP Environment system and saves the corresponding SAR archive to the filesystem.`,
+		Long: `This step runs the assembly of a list of provided [installations, support packages or patches](https://help.sap.com/viewer/9043aa5d2f834ad385e1cdfdadc06b6f/LATEST/en-US/9a81f55473568c77e10000000a174cb4.html) in SAP Cloud
+Platform ABAP Environment system and saves the corresponding [SAR archive](https://launchpad.support.sap.com/#/notes/212876) to the filesystem.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -98,6 +98,7 @@ Platform ABAP Environment system and saves the corresponding SAR archive to the 
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
@@ -118,14 +119,14 @@ Platform ABAP Environment system and saves the corresponding SAR archive to the 
 
 func addAbapEnvironmentAssemblePackagesFlags(cmd *cobra.Command, stepConfig *abapEnvironmentAssemblePackagesOptions) {
 	cmd.Flags().StringVar(&stepConfig.CfAPIEndpoint, "cfApiEndpoint", os.Getenv("PIPER_cfApiEndpoint"), "Cloud Foundry API endpoint")
-	cmd.Flags().StringVar(&stepConfig.CfOrg, "cfOrg", os.Getenv("PIPER_cfOrg"), "CF org")
-	cmd.Flags().StringVar(&stepConfig.CfSpace, "cfSpace", os.Getenv("PIPER_cfSpace"), "CF Space")
-	cmd.Flags().StringVar(&stepConfig.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Parameter of ServiceInstance Name to delete CloudFoundry Service")
-	cmd.Flags().StringVar(&stepConfig.CfServiceKeyName, "cfServiceKeyName", os.Getenv("PIPER_cfServiceKeyName"), "Parameter of CloudFoundry Service Key to be created")
+	cmd.Flags().StringVar(&stepConfig.CfOrg, "cfOrg", os.Getenv("PIPER_cfOrg"), "Cloud Foundry target organization")
+	cmd.Flags().StringVar(&stepConfig.CfSpace, "cfSpace", os.Getenv("PIPER_cfSpace"), "Cloud Foundry target space")
+	cmd.Flags().StringVar(&stepConfig.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Cloud Foundry Service Instance")
+	cmd.Flags().StringVar(&stepConfig.CfServiceKeyName, "cfServiceKeyName", os.Getenv("PIPER_cfServiceKeyName"), "Cloud Foundry Service Key")
 	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP Cloud Platform ABAP Environment system")
-	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User or E-Mail for CF")
-	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "User Password for CF User")
-	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "AddonDescriptor")
+	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0582")
+	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0582")
+	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions")
 	cmd.Flags().IntVar(&stepConfig.MaxRuntimeInMinutes, "maxRuntimeInMinutes", 360, "maximal runtime of the step")
 
 	cmd.MarkFlagRequired("username")

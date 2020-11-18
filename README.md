@@ -1,4 +1,3 @@
-[![Build Status](https://travis-ci.org/SAP/jenkins-library.svg?branch=master)](https://travis-ci.org/SAP/jenkins-library)
 [![Maintainability](https://api.codeclimate.com/v1/badges/0e6a23344616e29b4ed0/maintainability)](https://codeclimate.com/github/SAP/jenkins-library/maintainability)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/0e6a23344616e29b4ed0/test_coverage)](https://codeclimate.com/github/SAP/jenkins-library/test_coverage)
 [![Go Report Card](https://goreportcard.com/badge/github.com/SAP/jenkins-library)](https://goreportcard.com/report/github.com/SAP/jenkins-library)
@@ -27,7 +26,6 @@ Register to our [google group][google-group] in order to get updates or for aski
 
 Read and understand our [contribution guidelines][piper-library-contribution]
 before opening a pull request.
-
 
 [piper-library-user-doc]: https://sap.github.io/jenkins-library/
 [piper-library-issues]: https://github.com/SAP/jenkins-library/issues

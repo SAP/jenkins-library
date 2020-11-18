@@ -1,8 +1,6 @@
-import com.cloudbees.groovy.cps.NonCPS
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateStageDocumentation
 import com.sap.piper.JenkinsUtils
-import com.sap.piper.LegacyConfigurationCheckUtils
 import com.sap.piper.StageNameProvider
 import com.sap.piper.Utils
 import com.sap.piper.k8s.ContainerMap
@@ -29,6 +27,10 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'inferBuildTool',
     /**
+     * Enables automatic inference from the build descriptor in case projectName is not configured.
+     */
+    'inferProjectName',
+    /**
      * Toggle for initialization of the stash settings for Cloud SDK Pipeline.
      * If this is set to true, the stashSettings parameter is **not** configurable.
      */
@@ -41,6 +43,10 @@ import static com.sap.piper.Prerequisites.checkScript
      * Defines the main branch for your pipeline. **Typically this is the `master` branch, which does not need to be set explicitly.** Only change this in exceptional cases
      */
     'productiveBranch',
+    /**
+     * Name of the project, e.g. used for the name of lockable resources.
+     */
+    'projectName',
     /**
      * Defines the library resource containing stage/step initialization settings. Those define conditions when certain steps/stages will be activated. **Caution: changing the default will break the standard behavior of the pipeline - thus only relevant when including `Init` stage into custom pipelines!**
      */
@@ -62,6 +68,29 @@ import static com.sap.piper.Prerequisites.checkScript
      * Enables the use of technical stage names.
      */
     'useTechnicalStageNames',
+    /**
+     * Provides a clone from the specified repository.
+     * This map contains attributes, such as, `branches`, `extensions`, `userRemoteConfigs` etc.
+     * Example: `[$class: 'GitSCM', branches: [[name: <branch_to_be_cloned>]], userRemoteConfigs: [[credentialsId: <credential_to_access_repository>, url: <repository_url>]]]`.
+     */
+    'checkoutMap',
+    /**
+     * Optional path to the pipeline configuration file defining project specific settings.
+     */
+    'configFile',
+    /**
+     * Optional list of file names which will be extracted from library resources and which serve as source for
+     * default values for the pipeline configuration. These are merged with and override built-in defaults, with
+     * a parameter supplied by the last resource file taking precedence over the same parameter supplied in an
+     * earlier resource file or built-in default.
+     */
+    'customDefaults',
+    /**
+     * Optional list of file paths or URLs which must point to YAML content. These work exactly like
+     * `customDefaults`, but from local or remote files instead of library resources. They are merged with and
+     * take precedence over `customDefaults`.
+     */
+    'customDefaultsFromFiles'
 ])
 
 /**
@@ -82,9 +111,10 @@ void call(Map parameters = [:]) {
     def stageName = StageNameProvider.instance.getStageName(script, parameters, this)
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], ordinal: 1, telemetryDisabled: true) {
-        def scmInfo = checkout scm
+        def scmInfo = checkout(parameters.checkoutMap ?: scm)
 
-        setupCommonPipelineEnvironment script: script, customDefaults: parameters.customDefaults
+        setupCommonPipelineEnvironment(script: script, customDefaults: parameters.customDefaults, scmInfo: scmInfo,
+            configFile: parameters.configFile, customDefaultsFromFiles: parameters.customDefaultsFromFiles)
 
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
@@ -99,10 +129,16 @@ void call(Map parameters = [:]) {
 
         if (config.legacyConfigSettings) {
             Map legacyConfigSettings = readYaml(text: libraryResource(config.legacyConfigSettings))
-            LegacyConfigurationCheckUtils.checkConfiguration(script, legacyConfigSettings)
+            checkForLegacyConfiguration(script: script, legacyConfigSettings: legacyConfigSettings)
         }
 
         String buildTool = checkBuildTool(config)
+
+        script.commonPipelineEnvironment.projectName = config.projectName
+
+        if (!script.commonPipelineEnvironment.projectName && config.inferProjectName) {
+            script.commonPipelineEnvironment.projectName = inferProjectName(script, buildTool)
+        }
 
         if (Boolean.valueOf(env.ON_K8S) && config.containerMapResource) {
             ContainerMap.instance.initFromResource(script, config.containerMapResource, buildTool)
@@ -127,9 +163,6 @@ void call(Map parameters = [:]) {
         } else {
             initStashConfiguration(script, config.stashSettings, config.verbose?: false)
         }
-
-        setGitUrlsOnCommonPipelineEnvironment(script, scmInfo.GIT_URL)
-        script.commonPipelineEnvironment.setGitCommitId(scmInfo.GIT_COMMIT)
 
         if (config.verbose) {
             echo "piper-lib-os  configuration: ${script.commonPipelineEnvironment.configuration}"
@@ -156,7 +189,6 @@ void call(Map parameters = [:]) {
                 echo "[${STEP_NAME}] GitHub labels could not be retrieved from Pull Request, please make sure that credentials are maintained on multi-branch job."
             }
 
-
             setPullRequestStageStepActivation(script, config, prActions)
         }
 
@@ -164,18 +196,38 @@ void call(Map parameters = [:]) {
             if (parameters.script.commonPipelineEnvironment.configuration.runStep?.get('Init')?.slackSendNotification) {
                 slackSendNotification script: script, message: "STARTED: Job <${env.BUILD_URL}|${URLDecoder.decode(env.JOB_NAME, java.nio.charset.StandardCharsets.UTF_8.name())} ${env.BUILD_DISPLAY_NAME}>", color: 'WARNING'
             }
-            if (config.inferBuildTool && env.ON_K8S) {
-                // We set dockerImage: "" for the K8S case to avoid the execution of artifactPrepareVersion in a K8S Pod.
-                // In addition, a mvn executable is available on the Jenkins instance which can be used directly instead of executing the command in a container.
-                artifactPrepareVersion script: script, buildTool: buildTool, dockerImage: ""
-            } else if (config.inferBuildTool) {
-                artifactPrepareVersion script: script, buildTool: buildTool
-            } else {
-                artifactSetVersion script: script
+            Map prepareVersionParams = [script: script]
+            if (config.inferBuildTool) {
+                prepareVersionParams.buildTool = buildTool
             }
+            if (env.ON_K8S) {
+                // We force dockerImage: "" for the K8S case to avoid the execution of artifactPrepareVersion in a K8S Pod.
+                // Since artifactPrepareVersion may need the ".git" folder in order to push a tag, it would need to be part of the stashing.
+                // There are however problems with tar-ing this folder, which results in a failure to copy the stash back -- without a failure of the pipeline.
+                // This then also has the effect that any changes made to the build descriptors by the step (updated version) are not visible in the relevant stashes.
+                // In addition, a mvn executable is available on the Jenkins instance which can be used directly instead of executing the command in a container.
+                prepareVersionParams.dockerImage = ""
+            }
+            artifactPrepareVersion prepareVersionParams
         }
         pipelineStashFilesBeforeBuild script: script
     }
+}
+
+private String inferProjectName(Script script, String buildTool) {
+    switch (buildTool) {
+        case 'maven':
+            def pom = script.readMavenPom file: 'pom.xml'
+            return "${pom.groupId}-${pom.artifactId}"
+        case 'npm':
+            Map packageJson = script.readJSON file: 'package.json'
+            return packageJson.name
+        case 'mta':
+            Map mta = script.readYaml file: 'mta.yaml'
+            return mta.ID
+    }
+
+    script.error "Cannot infer projectName. Project buildTool was none of the expected ones 'mta', 'maven', or 'npm'."
 }
 
 private String checkBuildTool(config) {
@@ -203,62 +255,6 @@ private void initStashConfiguration (script, stashSettings, verbose) {
     Map stashConfiguration = readYaml(text: libraryResource(stashSettings))
     if (verbose) echo "Stash config: ${stashConfiguration}"
     script.commonPipelineEnvironment.configuration.stageStashes = stashConfiguration
-}
-
-private void setGitUrlsOnCommonPipelineEnvironment(script, String gitUrl) {
-
-    Map url = parseUrl(gitUrl)
-
-    if (url.protocol in ['http', 'https']) {
-        script.commonPipelineEnvironment.setGitSshUrl("git@${url.host}:${url.path}")
-        script.commonPipelineEnvironment.setGitHttpsUrl(gitUrl)
-    } else if (url.protocol in [ null, 'ssh', 'git']) {
-        script.commonPipelineEnvironment.setGitSshUrl(gitUrl)
-        script.commonPipelineEnvironment.setGitHttpsUrl("https://${url.host}/${url.path}")
-    }
-
-    List gitPathParts = url.path.replaceAll('.git', '').split('/')
-    def gitFolder = 'N/A'
-    def gitRepo = 'N/A'
-    switch (gitPathParts.size()) {
-        case 1:
-            gitRepo = gitPathParts[0]
-            break
-        case 2:
-            gitFolder = gitPathParts[0]
-            gitRepo = gitPathParts[1]
-            break
-        case { it > 3 }:
-            gitRepo = gitPathParts[gitPathParts.size()-1]
-            gitPathParts.remove(gitPathParts.size()-1)
-            gitFolder = gitPathParts.join('/')
-            break
-    }
-    script.commonPipelineEnvironment.setGithubOrg(gitFolder)
-    script.commonPipelineEnvironment.setGithubRepo(gitRepo)
-}
-
-/*
- * Returns the parts of an url.
- * Valid keys for the retured map are:
- *   - protocol
- *   - auth
- *   - host
- *   - port
- *   - path
- */
-@NonCPS
-/* private */ Map parseUrl(String url) {
-
-    def urlMatcher = url =~ /^((http|https|git|ssh):\/\/)?((.*)@)?([^:\/]+)(:([\d]*))?(\/?(.*))$/
-
-    return [
-        protocol: urlMatcher[0][2],
-        auth: urlMatcher[0][4],
-        host: urlMatcher[0][5],
-        port: urlMatcher[0][7],
-        path: urlMatcher[0][9],
-    ]
 }
 
 private void setPullRequestStageStepActivation(script, config, List actions) {

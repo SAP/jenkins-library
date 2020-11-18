@@ -10,7 +10,7 @@ import (
 	"gopkg.in/ini.v1"
 )
 
-// INIfile defines an artifact using a json file for versioning
+// INIfile defines an artifact using a ini file for versioning
 type INIfile struct {
 	path             string
 	content          *ini.File
