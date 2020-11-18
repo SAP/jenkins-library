@@ -48,7 +48,12 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace
 		teamIDBytes, _ := team.ID.MarshalJSON()
 		err = json.Unmarshal(teamIDBytes, &teamID)
 		if err != nil {
-			return errors.Wrap(err, "failed to unmarshall team.ID")
+			var teamIDInt int
+			err = json.Unmarshal(teamIDBytes, &teamIDInt)
+			if err != nil {
+				return errors.Wrap(err, "failed to unmarshall team.ID")
+			}
+			teamID = strconv.Itoa(teamIDInt)
 		}
 	}
 	project, projectName, err := loadExistingProject(sys, config.ProjectName, config.PullRequestName, teamID)
