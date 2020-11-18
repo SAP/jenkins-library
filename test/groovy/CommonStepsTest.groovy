@@ -55,7 +55,7 @@ public class CommonStepsTest extends BasePiperTest{
             'piperPipeline',
             'prepareDefaultValues',
             'runClosures',
-            'setupCommonPipelineEnvironment'
+            'setupCommonPipelineEnvironment',
         ]
 
         List steps = getSteps().stream()
@@ -119,6 +119,7 @@ public class CommonStepsTest extends BasePiperTest{
         'abapEnvironmentPullGitRepo', //implementing new golang pattern without fields
         'abapEnvironmentPipeline', // special step (infrastructure)
         'abapEnvironmentRunATCCheck', //implementing new golang pattern without fields
+        'abapEnvironmentCreateSystem', //implementing new golang pattern without fields
         'artifactPrepareVersion',
         'cloudFoundryCreateService', //implementing new golang pattern without fields
         'cloudFoundryCreateServiceKey', //implementing new golang pattern without fields
@@ -165,7 +166,8 @@ public class CommonStepsTest extends BasePiperTest{
         'containerSaveImage', //implementing new golang pattern without fields
         'detectExecuteScan', //implementing new golang pattern without fields
         'kanikoExecute', //implementing new golang pattern without fields
-        'gitopsUpdateDeployment' //implementing new golang pattern without fields
+        'gitopsUpdateDeployment', //implementing new golang pattern without fields
+        'vaultRotateSecretId' //implementing new golang pattern without fields
     ]
 
     @Test
