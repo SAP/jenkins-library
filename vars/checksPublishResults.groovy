@@ -129,7 +129,6 @@ void call(Map parameters = [:]) {
         // JAVA SCRIPT
         if (configuration.eslint.active) {
             def settings = configuration.eslint
-            def pattern =
             // publish
             def options = createCommonOptionsMap(settings)
             def toolOptions = createCommonToolOptionsMap(settings)
@@ -142,14 +141,13 @@ void call(Map parameters = [:]) {
         // PYTHON
         if (configuration.pylint.active) {
             def settings = configuration.pylint
-            def pattern = settings.get('pattern')
             // publish
             def options = createCommonOptionsMap(settings)
             def toolOptions = createCommonToolOptionsMap(settings)
-            options.put('tools', [pyLint(toolOptions.plus([pattern: pattern]))])
+            options.put('tools', [pyLint(toolOptions)])
             recordIssues(options)
             // archive check results
-            archiveResults(configuration.archive && settings.get('archive'), pattern, true)
+            archiveResults(configuration.archive && settings.get('archive'), settings.get('pattern'), true)
         }
         // GENERAL
         if (configuration.tasks.active) {
