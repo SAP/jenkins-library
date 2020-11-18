@@ -112,7 +112,7 @@ def report(tool, settings, doArchive){
         // archive check results
         archiveResults(doArchive && settings.get('archive'), settings.get('pattern'), true)
     }
- }
+}
 
 def archiveResults(archive, pattern, allowEmpty){
     if(archive){
