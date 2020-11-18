@@ -45,13 +45,13 @@ func (fi fileInfo) Sys() interface{} {
 }
 
 type systemMock struct {
-	response      interface{}
-	isIncremental bool
-	isPublic      bool
-	forceScan     bool
-	createProject bool
-	previousPName string
-	getPresetsCalled bool
+	response                         interface{}
+	isIncremental                    bool
+	isPublic                         bool
+	forceScan                        bool
+	createProject                    bool
+	previousPName                    string
+	getPresetsCalled                 bool
 	updateProjectConfigurationCalled bool
 }
 
