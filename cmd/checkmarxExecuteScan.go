@@ -58,14 +58,16 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace
 	if project.Name == projectName {
 		log.Entry().Infof("Project %v exists...", projectName)
 		if len(config.Preset) > 0 {
-			err := setPresetForProject(sys, project.ID, projectName, config.Preset, config.SourceEncoding)
+			presetID, _ := strconv.Atoi(config.Preset)
+			err := setPresetForProject(sys, project.ID, presetID, projectName, config.Preset, config.SourceEncoding)
 			if err != nil {
 				return errors.Wrapf(err, "failed to set preset %v for project %v", config.Preset, projectName)
 			}
 		}
 	} else {
 		log.Entry().Infof("Project %v does not exist, starting to create it...", projectName)
-		project, err = createAndConfigureNewProject(sys, projectName, teamID, config.Preset, config.SourceEncoding)
+		presetID, _ := strconv.Atoi(config.Preset)
+		project, err = createAndConfigureNewProject(sys, projectName, teamID, presetID, config.Preset, config.SourceEncoding)
 		if err != nil {
 			return errors.Wrapf(err, "failed to create and configure new project %v", projectName)
 		}
@@ -412,7 +414,7 @@ func enforceThresholds(config checkmarxExecuteScanOptions, results map[string]in
 	return insecure
 }
 
-func createAndConfigureNewProject(sys checkmarx.System, projectName, teamID, presetValue, engineConfiguration string) (checkmarx.Project, error) {
+func createAndConfigureNewProject(sys checkmarx.System, projectName, teamID string, presetIDValue int, presetValue, engineConfiguration string) (checkmarx.Project, error) {
 	if len(presetValue) == 0 {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return checkmarx.Project{}, fmt.Errorf("preset not specified, creation of project %v failed", projectName)
@@ -423,7 +425,7 @@ func createAndConfigureNewProject(sys checkmarx.System, projectName, teamID, pre
 		return checkmarx.Project{}, errors.Wrapf(err, "cannot create project %v", projectName)
 	}
 
-	if err := setPresetForProject(sys, projectCreateResult.ID, projectName, presetValue, engineConfiguration); err != nil {
+	if err := setPresetForProject(sys, projectCreateResult.ID, presetIDValue, projectName, presetValue, engineConfiguration); err != nil {
 		return checkmarx.Project{}, errors.Wrapf(err, "failed to set preset %v for project", presetValue)
 	}
 
@@ -441,22 +443,13 @@ func createAndConfigureNewProject(sys checkmarx.System, projectName, teamID, pre
 func loadPreset(sys checkmarx.System, presetValue string) (checkmarx.Preset, error) {
 	presets := sys.GetPresets()
 	var preset checkmarx.Preset
-	presetID, err := strconv.Atoi(presetValue)
-	var configuredPresetID int
 	var configuredPresetName string
-	if err != nil {
-		preset = sys.FilterPresetByName(presets, presetValue)
-		configuredPresetName = presetValue
-	} else {
-		preset = sys.FilterPresetByID(presets, presetID)
-		configuredPresetID = presetID
-	}
-
-	if configuredPresetID > 0 && preset.ID == configuredPresetID || len(configuredPresetName) > 0 && preset.Name == configuredPresetName {
+	preset = sys.FilterPresetByName(presets, presetValue)
+	configuredPresetName = presetValue
+	if len(configuredPresetName) > 0 && preset.Name == configuredPresetName {
 		log.Entry().Infof("Loaded preset %v", preset.Name)
 		return preset, nil
 	}
-
 	log.Entry().Infof("Preset '%s' not found. Available presets are:", presetValue)
 	for _, prs := range presets {
 		log.Entry().Infof("preset id: %v, name: '%v'", prs.ID, prs.Name)
@@ -466,13 +459,16 @@ func loadPreset(sys checkmarx.System, presetValue string) (checkmarx.Preset, err
 
 // setPresetForProject is only called when it has already been established that the preset needs to be set.
 // It will exit via the logging framework in case the preset could be found, or the project could not be updated.
-func setPresetForProject(sys checkmarx.System, projectID int, projectName, presetValue, engineConfiguration string) error {
-	preset, err := loadPreset(sys, presetValue)
-	if err != nil {
-		return errors.Wrapf(err, "preset %v not found, configuration of project %v failed", presetValue, projectName)
+func setPresetForProject(sys checkmarx.System, projectID, presetIDValue int, projectName, presetValue, engineConfiguration string) error {
+	presetID := presetIDValue
+	if presetID <= 0 {
+		preset, err := loadPreset(sys, presetValue)
+		if err != nil {
+			return errors.Wrapf(err, "preset %v not found, configuration of project %v failed", presetValue, projectName)
+		}
+		presetID = preset.ID
 	}
-
-	err = sys.UpdateProjectConfiguration(projectID, preset.ID, engineConfiguration)
+	err := sys.UpdateProjectConfiguration(projectID, presetID, engineConfiguration)
 	if err != nil {
 		return errors.Wrapf(err, "updating configuration of project %v failed", projectName)
 	}
