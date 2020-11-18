@@ -74,16 +74,61 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
          * A pattern used for identifying lines holding the transport request id.
          * @parentConfigKey changeManagement
          */
-        'changeManagement/transportRequestLabel'
+        'transportRequestLabel',
+        /**
+         * Some CTS related transport related steps are cm_client based, others are node based.
+         * For the node based steps the docker image is specified here.
+         * @parentConfigKey changeManagement
+         */
+        'cts/nodeDocker/image',
+        /**
+         * The ABAP client. Only for `CTS`
+         * @parentConfigKey changeManagement
+         */
+        'client',
+        /**
+         * By default we use a standard node docker image and prepare some fiori related packages
+         * before performing the deployment. For that we need to launch the image with root privileges.
+         * After that, before actually performing the deployment we swith to a non root user. This user
+         * can be specified here.
+         * @parentConfigKey changeManagement
+         */
+        'cts/osDeployUser',
+        /**
+         * By default we use a standard node docker iamge and prepare some fiori related packages
+         * performing the deployment. The additional dependencies can be provided here. In case you
+         * use an already prepared docker image which contains the required dependencies, the empty
+         * list can be provide here. Caused hereby installing additional dependencies will be skipped.
+         *
+         * @parentConfigKey changeManagement
+         */
+        'cts/deployToolDependencies',
+        /**
+         * A list containing additional options for the npm install call. `-g`, `--global` is always assumed.
+         * Can be used for e.g. providing custom registries (`--registry https://your.registry.com`) or
+         * for providing the verbose flag (`--verbose`) for troubleshooting.
+         * @parentConfigKey changeManagement
+         */
+        'cts/npmInstallOpts',
+        /**
+         * The file handed over to `fiori deploy` with flag `-c --config`.
+         * @parentConfigKey changeManagement
+         */
+        'cts/deployConfigFile',
   ]
 
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
-        'applicationName', // RFC
+        /** The name of the application. `RFC` and `CTS` only. */
+        'applicationName', // RFC, CTS
         /** The id of the application. Only for `SOLMAN`.*/
         'applicationId', // SOLMAN
+        /** The application description, `RFC` and `CTS` only. For `CTS`: the desription is only
+            taken into account for a new upload. In case of an update the description will not be
+            updated.
+        */
         'applicationDescription',
-        /** The path of the file to upload.*/
-        'filePath', // SOLMAN, CTS
+        /** The path of the file to upload, Only for `SOLMAN`.*/
+        'filePath', // SOLMAN
         /** The URL where to find the UI5 package to upload to the transport request.  Only for `RFC`. */
         'applicationUrl', // RFC
         /** The ABAP package name of your application. */
@@ -133,11 +178,12 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('changeManagement/clientOpts')
             .withMandatoryProperty('changeManagement/credentialsId')
             .withMandatoryProperty('changeManagement/endpoint')
+            .withMandatoryProperty('changeManagement/client', null, {backendType == BackendType.CTS})
             .withMandatoryProperty('changeManagement/type')
             .withMandatoryProperty('changeManagement/git/from')
             .withMandatoryProperty('changeManagement/git/to')
             .withMandatoryProperty('changeManagement/git/format')
-            .withMandatoryProperty('filePath', null, { backendType in [BackendType.SOLMAN, BackendType.CTS] })
+            .withMandatoryProperty('filePath', null, { backendType == BackendType.SOLMAN })
             .withMandatoryProperty('applicationUrl', null, { backendType == BackendType.RFC })
             .withMandatoryProperty('codePage', null, { backendType == BackendType.RFC })
             .withMandatoryProperty('acceptUnixStyleLineEndings', null, { backendType == BackendType.RFC })
@@ -148,9 +194,9 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('changeManagement/rfc/docker/envVars', null, {backendType == BackendType.RFC})
             .withMandatoryProperty('changeManagement/rfc/docker/pullImage', null, {backendType == BackendType.RFC})
             .withMandatoryProperty('applicationDescription', null, { backendType == BackendType.RFC })
-            .withMandatoryProperty('abapPackage', null, { backendType == BackendType.RFC })
+            .withMandatoryProperty('abapPackage', null, { backendType in [BackendType.RFC, BackendType.CTS] })
             .withMandatoryProperty('applicationId', null, {backendType == BackendType.SOLMAN})
-            .withMandatoryProperty('applicationName', null, {backendType == BackendType.RFC})
+            .withMandatoryProperty('applicationName', null, {backendType in [BackendType.RFC, BackendType.CTS]})
             .withMandatoryProperty('failOnWarning', null, {backendType == BackendType.RFC})
             .withMandatoryProperty('verbose', null, {backendType == BackendType.RFC})
 
@@ -184,20 +230,15 @@ void call(Map parameters = [:]) {
                 "Transport request id not provided (parameter: \'transportRequestId\' provided to the step call or via commit history).")
             .use()
 
-        def uploadingMessage = ['[INFO] Uploading file ' +
-            "'${backendType == BackendType.RFC ? configuration.applicationUrl : configuration.filePath}' " +
-            "to transport request '${configuration.transportRequestId}'"]
-        if(backendType == BackendType.SOLMAN)
-            uploadingMessage << " of change document '${configuration.changeDocumentId}'"
-        uploadingMessage << '.'
-
-        echo uploadingMessage.join()
-
             try {
 
                 switch(backendType) {
 
                     case BackendType.SOLMAN:
+
+                        echo "[INFO] Uploading file '${configuration.filePath}' to transport request '${configuration.transportRequestId}'" +
+                            " of change document '${configuration.changeDocumentId}'."
+
                         cm.uploadFileToTransportRequestSOLMAN(
                             configuration.changeManagement.solman?.docker ?: [:],
                             configuration.changeDocumentId,
@@ -207,17 +248,35 @@ void call(Map parameters = [:]) {
                             configuration.changeManagement.endpoint,
                             configuration.changeManagement.credentialsId,
                             configuration.changeManagement.clientOpts)
+
+                        echo "[INFO] File '${configuration.filePath}' has been successfully uploaded to transport request '${configuration.transportRequestId}'" +
+                            " of change document '${configuration.changeDocumentId}'."
+
                         break
                     case BackendType.CTS:
+
+                        echo "[INFO] Uploading application '${configuration.applicationName}' to transport request '${configuration.transportRequestId}'."
+
                         cm.uploadFileToTransportRequestCTS(
-                            configuration.changeManagement.cts?.docker ?: [:],
+                            configuration.changeManagement.cts?.nodeDocker ?: [:],
                             configuration.transportRequestId,
-                            configuration.filePath,
                             configuration.changeManagement.endpoint,
-                            configuration.changeManagement.credentialsId,
-                            configuration.changeManagement.clientOpts)
+                            configuration.changeManagement.client,
+                            configuration.applicationName,
+                            configuration.applicationDescription,
+                            configuration.abapPackage,
+                            configuration.changeManagement.cts.osDeployUser,
+                            configuration.changeManagement.cts.deployToolDependencies,
+                            configuration.changeManagement.cts.npmInstallOpts,
+                            configuration.changeManagement.cts.deployConfigFile,
+                            configuration.changeManagement.credentialsId)
+
+                        echo "[INFO] Application '${configuration.applicationName}' has been successfully uploaded to transport request '${configuration.transportRequestId}'."
+
                         break
                     case BackendType.RFC:
+
+                        echo "[INFO] Uploading file '${configuration.applicationUrl}' to transport request '${configuration.transportRequestId}'."
 
                         cm.uploadFileToTransportRequestRFC(
                             configuration.changeManagement.rfc.docker ?: [:],
@@ -236,19 +295,13 @@ void call(Map parameters = [:]) {
                             configuration.verbose
                         )
 
-                        break
+                        echo "[INFO] File 'configuration.applicationUrl' has been successfully uploaded to transport request '${configuration.transportRequestId}'."
 
+                        break
                 }
 
             } catch(ChangeManagementException ex) {
                 throw new AbortException(ex.getMessage())
             }
-
-
-        def uploadedMessage = ["[INFO] File '${backendType == BackendType.RFC ? configuration.applicationUrl : configuration.filePath}' has been successfully uploaded to transport request '${configuration.transportRequestId}'"]
-        if(backendType == BackendType.SOLMAN)
-            uploadedMessage << " of change document '${configuration.changeDocumentId}'"
-        uploadedMessage << '.'
-        echo uploadedMessage.join()
     }
 }

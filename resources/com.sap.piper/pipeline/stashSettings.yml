@@ -15,10 +15,22 @@ Build:
   - source
   stashes: []
 
+Integration:
+  unstash:
+  - source
+  - buildResult
+  stashes: []
+
 Acceptance:
   unstash:
   - buildResult
   - deployDescriptor
+  stashes: []
+
+Performance:
+  unstash:
+    - source
+    - buildResult
   stashes: []
 
 Release:

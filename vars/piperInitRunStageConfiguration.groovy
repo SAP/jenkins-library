@@ -102,8 +102,7 @@ void call(Map parameters = [:]) {
             .use()
 
         boolean runStage
-        if (stageConfig.runInAllBranches != true &&
-            stage.getValue().onlyProductiveBranch && (config.productiveBranch != env.BRANCH_NAME)) {
+        if (stageConfig.runInAllBranches == false && (config.productiveBranch != env.BRANCH_NAME)) {
             runStage = false
         } else if (ConfigurationLoader.stageConfiguration(script, currentStage)) {
             //activate stage if stage configuration is available

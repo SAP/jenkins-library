@@ -68,6 +68,7 @@ func Execute() {
 	rootCmd.AddCommand(CommandLineCompletionCommand())
 	rootCmd.AddCommand(VersionCommand())
 	rootCmd.AddCommand(DetectExecuteScanCommand())
+	rootCmd.AddCommand(HadolintExecuteCommand())
 	rootCmd.AddCommand(KarmaExecuteTestsCommand())
 	rootCmd.AddCommand(SonarExecuteScanCommand())
 	rootCmd.AddCommand(KubernetesDeployCommand())
@@ -76,10 +77,12 @@ func Execute() {
 	rootCmd.AddCommand(GithubCreatePullRequestCommand())
 	rootCmd.AddCommand(GithubPublishReleaseCommand())
 	rootCmd.AddCommand(GithubSetCommitStatusCommand())
+	rootCmd.AddCommand(GitopsUpdateDeploymentCommand())
 	rootCmd.AddCommand(CloudFoundryDeleteServiceCommand())
 	rootCmd.AddCommand(AbapEnvironmentPullGitRepoCommand())
 	rootCmd.AddCommand(AbapEnvironmentCloneGitRepoCommand())
 	rootCmd.AddCommand(AbapEnvironmentCheckoutBranchCommand())
+	rootCmd.AddCommand(AbapEnvironmentCreateSystemCommand())
 	rootCmd.AddCommand(CheckmarxExecuteScanCommand())
 	rootCmd.AddCommand(FortifyExecuteScanCommand())
 	rootCmd.AddCommand(MtaBuildCommand())
@@ -114,6 +117,7 @@ func Execute() {
 	rootCmd.AddCommand(AbapAddonAssemblyKitReserveNextPackagesCommand())
 	rootCmd.AddCommand(CloudFoundryCreateSpaceCommand())
 	rootCmd.AddCommand(CloudFoundryDeleteSpaceCommand())
+	rootCmd.AddCommand(VaultRotateSecretIdCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
@@ -263,14 +267,6 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 		GeneralConfig.NoTelemetry = true
 	}
 
-	if !GeneralConfig.Verbose && stepConfig.Config["verbose"] != nil {
-		if verboseValue, ok := stepConfig.Config["verbose"].(bool); ok {
-			log.SetVerbose(verboseValue)
-		} else {
-			return fmt.Errorf("invalid value for parameter verbose: '%v'", stepConfig.Config["verbose"])
-		}
-	}
-
 	stepConfig.Config = checkTypes(stepConfig.Config, options)
 	confJSON, _ := json.Marshal(stepConfig.Config)
 	_ = json.Unmarshal(confJSON, &options)
@@ -364,8 +360,23 @@ func convertValueFromString(config map[string]interface{}, optionsField *reflect
 func convertValueFromFloat(config map[string]interface{}, optionsField *reflect.StructField, paramName string, paramValue float64) error {
 	switch optionsField.Type.Kind() {
 	case reflect.String:
-		config[paramName] = strconv.FormatFloat(paramValue, 'f', -1, 64)
-		return nil
+		val := strconv.FormatFloat(paramValue, 'f', -1, 64)
+		// if Sprinted value and val are equal, we can be pretty sure that the result fits
+		// for very large numbers for example an exponential format is printed
+		if val == fmt.Sprint(paramValue) {
+			config[paramName] = val
+			return nil
+		}
+		// allow float numbers containing a decimal separator
+		if strings.Contains(val, ".") {
+			config[paramName] = val
+			return nil
+		}
+		// if now no decimal separator is available we cannot be sure that the result is correct:
+		// long numbers like e.g. 73554900100200011600 will not be represented correctly after reading the yaml
+		// thus we cannot assume that the string is correct.
+		// short numbers will be handled as int anyway
+		return errIncompatibleTypes
 	case reflect.Float32:
 		config[paramName] = float32(paramValue)
 		return nil

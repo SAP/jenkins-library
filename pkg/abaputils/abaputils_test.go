@@ -379,7 +379,6 @@ func TestHandleHTTPError(t *testing.T) {
 		message := "Custom Error Message"
 
 		err := HandleHTTPError(&resp, receivedErr, message, ConnectionDetailsHTTP{})
-		assert.Error(t, err, "Error was expected")
 		assert.EqualError(t, err, fmt.Sprintf("%s: %s - %s", receivedErr.Error(), abapErrorCode, abapErrorMessage))
 		log.Entry().Info(err.Error())
 	})
@@ -399,7 +398,6 @@ func TestHandleHTTPError(t *testing.T) {
 		message := "Custom Error Message"
 
 		err := HandleHTTPError(&resp, receivedErr, message, ConnectionDetailsHTTP{})
-		assert.Error(t, err, "Error was expected")
 		assert.EqualError(t, err, fmt.Sprintf("%s", receivedErr.Error()))
 		log.Entry().Info(err.Error())
 	})
@@ -419,7 +417,6 @@ func TestHandleHTTPError(t *testing.T) {
 		message := "Custom Error Message"
 
 		err := HandleHTTPError(&resp, receivedErr, message, ConnectionDetailsHTTP{})
-		assert.Error(t, err, "Error was expected")
 		assert.EqualError(t, err, fmt.Sprintf("%s", receivedErr.Error()))
 		log.Entry().Info(err.Error())
 	})

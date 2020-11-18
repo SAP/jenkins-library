@@ -24,11 +24,10 @@ containerMaps:
     - mtaBuild
     - mavenExecuteStaticCodeChecks
     - npmExecuteLint
-  backendIntegrationTests:
+  integration:
     - mavenExecute
     - executeNpm
     - createHdiContainer
-  frontendIntegrationTests:
     - npmExecuteScripts
   additionalUnitTests:
     - npmExecuteScripts
