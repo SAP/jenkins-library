@@ -85,30 +85,30 @@ void call(Map parameters = [:]) {
         ], configuration)
 
         // JAVA
-        report(pmdParser, configuration.pmd, configuration.archive)
-        report(cpd, configuration.cpd, configuration.archive)
-        report(findBugs, configuration.findbugs, configuration.archive, [useRankAsPriority: true])
-        report(checkStyle, configuration.checkstyle, configuration.archive)
+        report(pmdParser(createToolOptions(configuration.pmd)), configuration.pmd, configuration.archive)
+        report(cpd(createToolOptions(configuration.cpd)), configuration.cpd, configuration.archive)
+        report(findBugs(createToolOptions(configuration.findbugs, [useRankAsPriority: true])), configuration.findbugs, configuration.archive)
+        report(checkStyle(createToolOptions(configuration.checkstyle)), configuration.checkstyle, configuration.archive)
         // JAVA SCRIPT
         //TODO: check if ESLint (in Checkstyle format) is sufficient or if JSLint is needed
-        report(esLint, configuration.eslint, configuration.archive)
+        report(esLint(createToolOptions(configuration.eslint)), configuration.eslint, configuration.archive)
         // PYTHON
-        report(pyLint, configuration.pylint, configuration.archive)
+        report(pyLint(createToolOptions(configuration.pylint)), configuration.pylint, configuration.archive)
         // GENERAL
-        report(taskScanner, configuration.tasks, configuration.archive, [
+        report(taskScanner(createToolOptions(configuration.tasks, [
             includePattern: configuration.tasks.get('pattern'),
             highTags: configuration.tasks.get('high'),
             normalTags: configuration.tasks.get('normal'),
             lowTags: configuration.tasks.get('low'),
-        ])
+        ])), configuration.tasks, configuration.archive)
     }
 }
 
-def report(publisherFunction, settings, doArchive, additionalToolSettings = [:]){
+def report(tool, settings, doArchive){
     if (settings.active) {
-        def options = createCommonOptionsMap(settings, additionalToolSettings)
+        def options = createOptions(settings)
         // publish
-        recordIssues(options)
+        recordIssues(options.plus([tools: [tool]]))
         // archive check results
         archiveResults(doArchive && settings.get('archive'), settings.get('pattern'), true)
     }
@@ -122,10 +122,8 @@ def archiveResults(archive, pattern, allowEmpty){
 }
 
 @NonCPS
-def createCommonOptionsMap(toolFunction, settings, additionalToolSettings = [:]){
-    Map toolSettings = createCommonToolOptionsMap(settings)
+def createOptions(settings){
     Map result = [:]
-    result.put('tools', [toolFunction(toolSettings.plus(additionalToolSettings))])
     result.put('blameDisabled', true)
     result.put('enabledForFailure', true)
     result.put('aggregatingResults', false)
@@ -139,12 +137,13 @@ def createCommonOptionsMap(toolFunction, settings, additionalToolSettings = [:])
 }
 
 @NonCPS
-def createCommonToolOptionsMap(settings){
+def createToolOptions(settings, additionalOptions = [:]){
     Map result = [pattern: settings.get('pattern')]
     if (settings.id)
         result.put('id ', settings.id)
     if (settings.name)
         result.put('name', settings.name)
+    result = result.plus(additionalOptions)
     // filter empty values
     result = result.findAll {
         return it.value != null && it.value != ''
