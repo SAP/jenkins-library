@@ -10,6 +10,7 @@ import com.sap.piper.Utils
 import util.BasePiperTest
 
 import static org.hamcrest.Matchers.hasItem
+import static org.hamcrest.Matchers.containsInAnyOrder
 import static org.hamcrest.Matchers.not
 import static org.hamcrest.Matchers.allOf
 import static org.hamcrest.Matchers.is
@@ -255,41 +256,56 @@ class ChecksPublishResultsTest extends BasePiperTest {
         assertThat(publisherStepOptions['PmdPublisher']['qualityGates'], allOf(
             hasSize(1),
             hasItem(allOf(
-                hasEntry('threshold', '0'),
+                hasEntry('threshold', 1),
                 hasEntry('type', 'TOTAL_HIGH'),
                 hasEntry('unstable', false),
-            )
-        )))
-        // ensure nothing else is published
-        assertThat(publisherStepOptions, not(hasKey('DryPublisher')))
-        assertThat(publisherStepOptions, not(hasKey('FindBugsPublisher')))
-        assertThat(publisherStepOptions, not(hasKey('CheckStylePublisher')))
-        assertThat(publisherStepOptions, not(hasKey('ESLintPublisher')))
-        assertThat(publisherStepOptions, not(hasKey('PyLintPublisher')))
-        assertThat(publisherStepOptions, not(hasKey('TaskPublisher')))
+            )),
+        ))
     }
 
     @Test
-    void testPublishWithThresholds() throws Exception {
+    void testPublishWithLegacyThresholds() throws Exception {
         // test
         stepRule.step.checksPublishResults(script: nullScript, pmd: [thresholds: [fail: [high: '10']]])
         // assert
         assertThat(publisherStepOptions, hasKey('PmdPublisher'))
         assertThat(publisherStepOptions['PmdPublisher'], hasKey('qualityGates'))
+        assertThat(publisherStepOptions['PmdPublisher']['qualityGates'], hasSize(2))
         assertThat(publisherStepOptions['PmdPublisher']['qualityGates'], allOf(
-            hasSize(1),
+            //TODO: thresholds are added to existing qualityGates, thus we have 2 defined in the end
+            hasSize(2),
             hasItem(allOf(
-                hasEntry('threshold', '10'),
+                hasEntry('threshold', 1),
                 hasEntry('type', 'TOTAL_HIGH'),
                 hasEntry('unstable', false),
-            )
-        )))
-        // ensure nothing else is published
-        assertThat(publisherStepOptions, not(hasKey('DryPublisher')))
-        assertThat(publisherStepOptions, not(hasKey('FindBugsPublisher')))
-        assertThat(publisherStepOptions, not(hasKey('CheckStylePublisher')))
-        assertThat(publisherStepOptions, not(hasKey('ESLintPublisher')))
-        assertThat(publisherStepOptions, not(hasKey('PyLintPublisher')))
-        assertThat(publisherStepOptions, not(hasKey('TaskPublisher')))
+            )),
+            hasItem(allOf(
+                hasEntry('threshold', 11),
+                hasEntry('type', 'TOTAL_HIGH'),
+                hasEntry('unstable', false),
+            )),
+        ))
+    }
+
+    @Test
+    void testPublishWithCustomThresholds() throws Exception {
+        // test
+        stepRule.step.checksPublishResults(script: nullScript, pmd: [qualityGates: [[threshold: 20, type: 'TOTAL_LOW', unstable: false],[threshold: 10, type: 'TOTAL_NORMAL', unstable: false]]])
+        // assert
+        assertThat(publisherStepOptions, hasKey('PmdPublisher'))
+        assertThat(publisherStepOptions['PmdPublisher'], hasKey('qualityGates'))
+        assertThat(publisherStepOptions['PmdPublisher']['qualityGates'], allOf(
+            hasSize(2),
+            hasItem(allOf(
+                hasEntry('threshold', 10),
+                hasEntry('type', 'TOTAL_NORMAL'),
+                hasEntry('unstable', false),
+            )),
+            hasItem(allOf(
+                hasEntry('threshold', 20),
+                hasEntry('type', 'TOTAL_LOW'),
+                hasEntry('unstable', false),
+            )),
+        ))
     }
 }
