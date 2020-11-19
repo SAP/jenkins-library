@@ -115,7 +115,7 @@ You find details about this stage on the page [**Additional Unit Tests**](additi
 
 ### Integration
 
-The [Integration stage](integration.md) allows to run test based on maven, npm, or custom integration test script.
+The [Integration stage](integration.md) allows to run test based on maven, npm, or a custom integration test script.
 For more flexibility, consider using the [stage extension mechanism](../extensibility.md) if required.
 
 You find details about this stage on the page [**Integration**](integration.md).
