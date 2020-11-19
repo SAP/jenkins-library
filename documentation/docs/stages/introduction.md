@@ -115,31 +115,39 @@ You find details about this stage on the page [**Additional Unit Tests**](additi
 
 ### Integration
 
-In the [Integration stage](integration.md) a custom integration test script can be executed.
+The [Integration stage](integration.md) allows to run test based on maven, npm, or custom integration test script.
+For more flexibility, consider using the [stage extension mechanism](../extensibility.md) if required.
+
+You find details about this stage on the page [**Integration**](integration.md).
 
 ### Acceptance
 
-Default implementation will come soon ...
+In this stage the application/service is typically deployed and automated acceptance tests are executed.
 
-Currently custom logic can be added using the [stage extension mechanism](../extensibility.md).
+This is to make sure that
+
+* new functionality is tested end-to-end
+* there is no end-to-end regression in existing functionality
+
+You find details about this stage on the page [**Acceptance**](acceptance.md).
 
 ### Security
 
-Default implementation will come soon ...
+This stage can run security checks using Checkmarx, Synopsys Detect, Fortify and WhiteSource.
 
-Currently custom logic can be added using the [stage extension mechanism](../extensibility.md).
+You find details about this stage on the page [**Security**](security.md).
 
 ### Performance
 
-Default implementation will come soon ...
+The stage will execute a Gatling test, if the step `gatlingExecuteTests` is configured.
 
-Currently custom logic can be added using the [stage extension mechanism](../extensibility.md).
+You find details about this stage on the page [**Performance**](performance.md).
 
 ### Compliance
 
-Default implementation will come soon ...
+The stage will execute a SonarQube scan, if the step `sonarExecuteSan` is configured.
 
-Currently custom logic can be added using the [stage extension mechanism](../extensibility.md).
+You find details about this stage on the page [**Compliance**](compliance.md).
 
 ### Confirm
 
@@ -147,12 +155,12 @@ The [Confirm stage](confirm.md), if executed, stops the pipeline execution and a
 
 ### Promote
 
-Default implementation will come soon ...
+This stage is responsible to promote build artifacts to an artifact repository / container registry where they can be used from in production deployments.
 
-Currently custom logic can be added using the [stage extension mechanism](../extensibility.md).
+You find details about this stage on the page [**Promote**](promote.md).
 
 ### Release
 
-Default implementation will come soon ...
+This stage is responsible to release/deploy artifacts into your productive landscape.
 
-Currently custom logic can be added using the [stage extension mechanism](../extensibility.md).
+You find details about this stage on the page [**Release**](release.md).
