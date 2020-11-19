@@ -23,9 +23,9 @@ Integration:
 
 Acceptance:
   unstash:
+    - buildDescriptor
     - buildResult
     - deployDescriptor
-    - buildDescriptor
   stashes: []
 
 Performance:
