@@ -17,7 +17,7 @@ import groovy.transform.Field
     /**
      *  If it is set, the step message can be customized to throw user friendly error messages in Jenkins UI.
      */
-    'stepname',
+    'stepMessage',
     /**
      * Defines the time period where the job waits for input. Default is 15 minutes. Once this time is passed the job enters state `FAILED`.
      */
