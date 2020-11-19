@@ -128,23 +128,31 @@ def createOptions(settings){
     result.put('blameDisabled', true)
     result.put('enabledForFailure', true)
     result.put('aggregatingResults', false)
+
+    def qualityGates = []
     if (settings.qualityGates)
-        result.put('qualityGates', settings.qualityGates)
+        qualityGates.plus(settings.qualityGates)
 
     // handle legacy thresholds
     // https://github.com/jenkinsci/warnings-ng-plugin/blob/6602c3a999b971405adda15be03979ce21cb3cbf/plugin/src/main/java/io/jenkins/plugins/analysis/core/util/QualityGate.java#L186
     def thresholds = settings.get('thresholds', [:])
-    def fail = thresholds.get('fail', [:])
-    def unstable = thresholds.get('unstable', [:])
+    if (thresholds) {
+        for (String status : ['fail', 'unstable']) {
+            def a = thresholds.get(status, [:])
+            if (a) {
+                for (String severity : ['all', 'high', 'normal', 'low']) {
+                    def type = "TOTAL"
+                    if(severity != 'all')
+                        type += "_" + severity.toUpperCase()
+                    def gate = [threshold: a.get(severity), type: type, unstable: status == 'unstable']
+                    echo "Adding legacy quelity gate: ${gate}"
+                    qualityGates.plus([gate])
+                }
+            }
+        }
+    }
 
-    result.put('failedTotalAll', fail.get('all'))
-    result.put('failedTotalHigh', fail.get('high'))
-    result.put('failedTotalNormal', fail.get('normal'))
-    result.put('failedTotalLow', fail.get('low'))
-    result.put('unstableTotalAll', unstable.get('all'))
-    result.put('unstableTotalHigh', unstable.get('high'))
-    result.put('unstableTotalNormal', unstable.get('normal'))
-    result.put('unstableTotalLow', unstable.get('low'))
+    result.put('qualityGates', qualityGates)
     // filter empty values
     result = result.findAll {
         return it.value != null && it.value != ''
