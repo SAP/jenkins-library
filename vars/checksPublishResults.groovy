@@ -107,6 +107,7 @@ void call(Map parameters = [:]) {
 def report(tool, settings, doArchive){
     if (settings.active) {
         def options = createOptions(settings)
+        echo "recordIssues OPTIONS: ${options}"
         // publish
         recordIssues(options.plus([tools: [tool]]))
         // archive check results
@@ -130,7 +131,8 @@ def createOptions(settings){
     if (settings.qualityGates)
         result.put('qualityGates', settings.qualityGates)
 
-
+    // handle legacy thresholds
+    // https://github.com/jenkinsci/warnings-ng-plugin/blob/6602c3a999b971405adda15be03979ce21cb3cbf/plugin/src/main/java/io/jenkins/plugins/analysis/core/util/QualityGate.java#L186
     def thresholds = settings.get('thresholds', [:])
     def fail = thresholds.get('fail', [:])
     def unstable = thresholds.get('unstable', [:])
