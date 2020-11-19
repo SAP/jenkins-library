@@ -425,6 +425,7 @@ steps:
   pipelineRestartSteps:
     sendMail: true
     timeoutInSeconds: 900
+    stepMessage: 'Do you want to restart?'
   pipelineStashFilesAfterBuild:
     stashIncludes:
       buildResult: '**/target/*.war, **/target/*.jar, **/*.mtar, **/*.jar.original'
