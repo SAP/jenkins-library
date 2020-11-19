@@ -131,7 +131,7 @@ def createOptions(settings){
 
     def qualityGates = []
     if (settings.qualityGates)
-        qualityGates.plus(settings.qualityGates)
+        qualityGates = qualityGates.plus(settings.qualityGates)
 
     // handle legacy thresholds
     // https://github.com/jenkinsci/warnings-ng-plugin/blob/6602c3a999b971405adda15be03979ce21cb3cbf/plugin/src/main/java/io/jenkins/plugins/analysis/core/util/QualityGate.java#L186
