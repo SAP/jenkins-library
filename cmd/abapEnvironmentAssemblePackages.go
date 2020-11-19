@@ -61,7 +61,8 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 	if err != nil {
 		return err
 	}
-	builds, buildsAlreadyReleased, err := starting(addonDescriptor.Repositories, *conn)
+	delayBetweenPostsInSeconds := time.Duration(3 * time.Second)
+	builds, buildsAlreadyReleased, err := starting(addonDescriptor.Repositories, *conn, delayBetweenPostsInSeconds)
 	if err != nil {
 		return err
 	}
@@ -127,7 +128,7 @@ func checkIfFailedAndPrintLogs(builds []buildWithRepository) error {
 	return nil
 }
 
-func starting(repos []abaputils.Repository, conn abapbuild.Connector) ([]buildWithRepository, []buildWithRepository, error) {
+func starting(repos []abaputils.Repository, conn abapbuild.Connector, delayBetweenPostsInSeconds time.Duration) ([]buildWithRepository, []buildWithRepository, error) {
 	var builds []buildWithRepository
 	var buildsAlreadyReleased []buildWithRepository
 	for _, repo := range repos {
@@ -148,6 +149,9 @@ func starting(repos []abaputils.Repository, conn abapbuild.Connector) ([]buildWi
 			log.Entry().Infof("Packages %s is in status '%s'. No need to run the assembly", repo.PackageName, repo.Status)
 			buildsAlreadyReleased = append(buildsAlreadyReleased, buildRepo)
 		}
+
+		//as batch events in the ABAP Backend need a little time
+		time.Sleep(delayBetweenPostsInSeconds)
 	}
 	return builds, buildsAlreadyReleased, nil
 }

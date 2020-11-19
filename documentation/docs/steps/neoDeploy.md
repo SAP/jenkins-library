@@ -27,15 +27,15 @@ none
 ## Exceptions
 
 * `Exception`:
-    * If `source` is not provided.
-    * If `propertiesFile` is not provided (when using `'WAR_PROPERTIESFILE'` deployment mode).
-    * If `application` is not provided (when using `'WAR_PARAMS'` deployment mode).
-    * If `runtime` is not provided (when using `'WAR_PARAMS'` deployment mode).
-    * If `runtimeVersion` is not provided (when using `'WAR_PARAMS'` deployment mode).
+  * If `source` is not provided.
+  * If `propertiesFile` is not provided (when using `'WAR_PROPERTIESFILE'` deployment mode).
+  * If `application` is not provided (when using `'WAR_PARAMS'` deployment mode).
+  * If `runtime` is not provided (when using `'WAR_PARAMS'` deployment mode).
+  * If `runtimeVersion` is not provided (when using `'WAR_PARAMS'` deployment mode).
 * `AbortException`:
-    * If neo-java-web-sdk is not properly installed.
+  * If neo-java-web-sdk is not properly installed.
 * `CredentialNotFoundException`:
-    * If the credentials cannot be resolved.
+  * If the credentials cannot be resolved.
 
 ## Example
 

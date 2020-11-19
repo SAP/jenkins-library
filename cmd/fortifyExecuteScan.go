@@ -104,6 +104,18 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 	var reports []piperutils.Path
 	log.Entry().Debugf("Running Fortify scan against SSC at %v", config.ServerURL)
 
+	if config.BuildTool == "maven" && config.InstallArtifacts {
+		err := maven.InstallMavenArtifacts(&maven.EvaluateOptions{
+			M2Path:              config.M2Path,
+			ProjectSettingsFile: config.ProjectSettingsFile,
+			GlobalSettingsFile:  config.GlobalSettingsFile,
+			PomPath:             config.BuildDescriptorFile,
+		}, utils)
+		if err != nil {
+			return reports, fmt.Errorf("Unable to install artifacts: %w", err)
+		}
+	}
+
 	artifact, err := determineArtifact(config, utils)
 	if err != nil {
 		log.Entry().WithError(err).Fatal()
