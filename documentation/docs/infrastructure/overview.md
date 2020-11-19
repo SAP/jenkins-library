@@ -5,6 +5,10 @@ Besides SAP specific Jenkins library steps and out-of-the-box pipelines, project
 The core of the Jenkins infrastructure tooling is a set of [Docker images][docker-images].
 There is a main Docker image containing a preconfigured Jenkins and several tooling images used in the specific project "Piper" steps.
 
+!!! info "Docker Hub rate limiting"
+    Please be aware that Docker Hub as rate limiting active which might cause project "Piper" pipelines to fail.
+    Refer to the [page dedicated to docker rate limiting for details and solutions][resources-docker-rate-limit].
+
 The document and the linked resources explain the various ways of starting such a Jenkins server based on these Docker images.
 
 ## Cx Server (Recommended)
@@ -115,10 +119,9 @@ If you use your own Jenkins installation, you need to care for the configuration
 This option should only be considered if you know why you need it, otherwise using the Cx Server life-cycle management makes your life much easier.
 If you choose to go this path, follow the [Custom Jenkins Setup guide][resources-custom-jenkins].
 
-**Note:** This option is not supported for SAP Cloud SDK projects.
-
 [devops-docker-images-cxs-guide]:    https://github.com/SAP/devops-docker-cx-server/blob/master/docs/operations/cx-server-operations-guide.md
 [docker-images]:                     https://hub.docker.com/u/ppiper
+[resources-docker-rate-limit]:       docker-rate-limit.md
 [resources-custom-jenkins]:          customjenkins.md
 [build-agents]:                      https://wiki.jenkins.io/display/jenkins/distributed+builds
 [ssh-documentation]:                 https://www.openssh.com/manual.html
