@@ -67,11 +67,11 @@ Either way, if you chose a dedicated strategy or the default Pull variant you ca
 
 ### ATC
 
-In this stage, ATC checks can be executed using abapEnvironmentRunATCCheck. The step can receive software components or packages (configured in YML file - as described in [configuration](configuration.md)). The results are returned in the checkstlye format. With the use of a pipeline extension, quality gates can be configured (see [step documentation](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunATCCheck/) or the "Extensions" section in the [configuration](configuration.md)).
+In this stage, ATC checks can be executed using abapEnvironmentRunATCCheck. The step can receive software components or packages (configured in YML file - as described in [configuration](configuration.md)). The results are returned in the checkstyle format. With the use of a pipeline extension, quality gates can be configured (see [step documentation](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunATCCheck/) or the "Extensions" section in the [configuration](configuration.md)).
 
 ### Build
 
-This stage is responsible for building an ABAP Add-on for the SAP Cloud Platform ABAP Environment. The build process of the add-on is done on a Steampunk system (using [SAP_COM_0582](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/26b8df5435c649aa8ea7b3688ad5bb0a.html)) with the help of the ABAP Add-on Assembly Kit as a Service (AAKaaS). After executing this stage successfully, the add is ready to be tested.
+This stage is responsible for building an ABAP Add-on for the SAP Cloud Platform ABAP Environment. The build process of the add-on is done on a Steampunk system (using [SAP_COM_0582](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/26b8df5435c649aa8ea7b3688ad5bb0a.html)) with the help of the ABAP Add-on Assembly Kit as a Service (AAKaaS). After executing this stage successfully, the add-on is ready to be tested.
 
 ### Integration Tests
 

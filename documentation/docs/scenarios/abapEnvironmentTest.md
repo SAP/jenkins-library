@@ -10,7 +10,7 @@ For this scenario three stages of the ABAP Environment Pipeline are relevant: "P
 
 ### Prepare System
 
-The pipeline starts with the stage "Prepare System". This stage, however, is optional.  **If this stage is active**, a new Steampunk system is created for each pipeline execution. This has the advantage, that each test runs on a fresh system without a history. On the other hand, the duration of each pipeline execution will increase as the system provisioning takes a significant amount of time. **If this stage is not active**, you have to provide a prepared Steampunk (quality) system for the other stages. Then, each pipeline execution runs on the same system. Of course, the system has a history, but the pipeline durtion will be shorter. Please also consider: the total costs may increase for a static system in contrast to a system, which is only active during the pipeline.
+The pipeline starts with the stage "Prepare System". This stage, however, is optional.  **If this stage is active**, a new Steampunk system is created for each pipeline execution. This has the advantage, that each test runs on a fresh system without a history. On the other hand, the duration of each pipeline execution will increase as the system provisioning takes a significant amount of time. **If this stage is not active**, you have to provide a prepared Steampunk (quality) system for the other stages. Then, each pipeline execution runs on the same system. Of course, the system has a history, but the pipeline duration will be shorter. Please also consider: the total costs may increase for a static system in contrast to a system, which is only active during the pipeline.
 
 ### Clone Repositories
 
