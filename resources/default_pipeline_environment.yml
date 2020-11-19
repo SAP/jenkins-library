@@ -464,6 +464,7 @@ steps:
     recordIssuesSettings:
       blameDisabled: true
       enabledForFailure: true
+      skipPublishingChecks: true
   seleniumExecuteTests:
     buildTool: 'npm'
     containerPortMappings:
