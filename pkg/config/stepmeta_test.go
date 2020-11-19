@@ -485,6 +485,33 @@ func TestGetContextDefaults(t *testing.T) {
 		assert.Equal(t, "testImage1:tag", notMetParameter["dockerImage"])
 	})
 
+	t.Run("If ImagePullPolicy not defined pullImage parameter not set", func(t *testing.T) {
+		metadata := StepData{
+			Spec: StepSpec{
+				Containers: []Container{
+					{
+						Image: "testImage1:tag",
+					},
+				},
+				Sidecars: []Container{
+					{
+						Image: "testImage1:tag",
+					},
+				},
+			},
+		}
+
+		cd, err := metadata.GetContextDefaults("testStep")
+
+		assert.NoError(t, err)
+
+		var d PipelineDefaults
+		d.ReadPipelineDefaults([]io.ReadCloser{cd})
+
+		assert.Equal(t, nil, d.Defaults[0].Steps["testStep"]["dockerPullImage"], "dockerPullImage default not available")
+		assert.Equal(t, nil, d.Defaults[0].Steps["testStep"]["sidecarPullImage"], "sidecarPullImage default not available")
+	})
+
 	t.Run("Negative case", func(t *testing.T) {
 		metadataErr := []StepData{
 			{},
