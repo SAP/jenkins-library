@@ -49,6 +49,7 @@ func (s *Scan) writeWhitesourceConfigJSON(config *ScanOptions, utils Utils, devD
 	npmConfig["apiKey"] = config.OrgToken
 	npmConfig["userKey"] = config.UserToken
 	setValueAndLogChange(npmConfig, "checkPolicies", true)
+	setValueAndLogChange(npmConfig, "forceUpdate", true)
 	setValueAndLogChange(npmConfig, "productName", config.ProductName)
 	setValueAndLogChange(npmConfig, "productVer", s.ProductVersion)
 	setValueOmitIfPresent(npmConfig, "productToken", "projectToken", config.ProductToken)
