@@ -110,11 +110,11 @@ steps:
       - 'tests'
     testPackage: 'piper-bats'
   checksPublishResults:
-    aggregation:
-      active: true
-      thresholds:
-        fail:
-          high: '0'
+    # aggregation:
+    #   active: true
+    #   thresholds:
+    #     fail:
+    #       high: '0'
     tasks:
       pattern: '**/*.java'
       low: ''
@@ -122,9 +122,9 @@ steps:
       high: 'FIXME'
       archive: true
       active: false
-      thresholds:
-        fail:
-          high: '0'
+      # thresholds:
+      #   fail:
+      #     high: '0'
       qualityGates:
         - threshold: 1
           type: 'TOTAL_HIGH'
@@ -133,9 +133,9 @@ steps:
       pattern: '**/target/pmd.xml'
       archive: true
       active: false
-      thresholds:
-        fail:
-          high: '0'
+      # thresholds:
+      #   fail:
+      #     high: '0'
       qualityGates:
         - threshold: 1
           type: 'TOTAL_HIGH'
@@ -144,9 +144,9 @@ steps:
       pattern: '**/target/cpd.xml'
       archive: true
       active: false
-      thresholds:
-        fail:
-          high: '0'
+      # thresholds:
+      #   fail:
+      #     high: '0'
       qualityGates:
         - threshold: 1
           type: 'TOTAL_HIGH'
@@ -155,9 +155,9 @@ steps:
       pattern: '**/target/findbugsXml.xml, **/target/findbugs.xml'
       archive: true
       active: false
-      thresholds:
-        fail:
-          high: '0'
+      # thresholds:
+      #   fail:
+      #     high: '0'
       qualityGates:
         - threshold: 1
           type: 'TOTAL_HIGH'
@@ -166,9 +166,9 @@ steps:
       pattern: '**/target/checkstyle-result.xml'
       archive: true
       active: false
-      thresholds:
-        fail:
-          high: '0'
+      # thresholds:
+      #   fail:
+      #     high: '0'
       qualityGates:
         - threshold: 1
           type: 'TOTAL_ERROR'
@@ -177,9 +177,9 @@ steps:
       pattern: '**/eslint.xml'
       archive: true
       active: false
-      thresholds:
-        fail:
-          high: '0'
+      # thresholds:
+      #   fail:
+      #     high: '0'
       qualityGates:
         - threshold: 1
           type: 'TOTAL_HIGH'
@@ -188,9 +188,9 @@ steps:
       pattern: '**/pylint.log'
       archive: true
       active: false
-      thresholds:
-        fail:
-          high: '0'
+      # thresholds:
+      #   fail:
+      #     high: '0'
       qualityGates:
         - threshold: 1
           type: 'TOTAL_HIGH'
