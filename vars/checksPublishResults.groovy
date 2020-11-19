@@ -136,17 +136,19 @@ def createOptions(settings){
     // handle legacy thresholds
     // https://github.com/jenkinsci/warnings-ng-plugin/blob/6602c3a999b971405adda15be03979ce21cb3cbf/plugin/src/main/java/io/jenkins/plugins/analysis/core/util/QualityGate.java#L186
     def thresholds = settings.get('thresholds', [:])
-    if (thresholds) {
+    if (thresholdsList) {
         for (String status : ['fail', 'unstable']) {
-            def legacyThresholds = thresholds.get(status, [:])
-            if (legacyThresholds) {
+            def thresholdsListPerStatus = thresholdsList.get(status, [:])
+            if (thresholdsListPerStatus) {
                 for (String severity : ['all', 'high', 'normal', 'low']) {
-                    if (legacyThresholds.get(severity) == null)
+                    def threshold = thresholdsListPerStatus.get(severity)
+                    if (threshold == null)
                         continue
+                    threshold = threshold.toInteger() + 1
                     def type = "TOTAL"
                     if(severity != 'all')
                         type += "_" + severity.toUpperCase()
-                    def gate = [threshold: legacyThresholds.get(severity), type: type, unstable: status == 'unstable']
+                    def gate = [threshold: threshold, type: type, unstable: status == 'unstable']
                     echo "Adding legacy quality gate: ${gate}"
                     qualityGates = qualityGates.plus([gate])
                 }
