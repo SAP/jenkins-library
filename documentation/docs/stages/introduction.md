@@ -155,7 +155,7 @@ The [Confirm stage](confirm.md), if executed, stops the pipeline execution and a
 
 ### Promote
 
-This stage is responsible to promote build artifacts to an artifact repository / container registry where they can be used from in production deployments.
+This stage is responsible to promote build artifacts to an artifact repository / container registry where they can be used from production deployments.
 
 You find details about this stage on the page [**Promote**](promote.md).
 
