@@ -135,7 +135,7 @@ def createOptions(settings){
 
     // handle legacy thresholds
     // https://github.com/jenkinsci/warnings-ng-plugin/blob/6602c3a999b971405adda15be03979ce21cb3cbf/plugin/src/main/java/io/jenkins/plugins/analysis/core/util/QualityGate.java#L186
-    def thresholds = settings.get('thresholds', [:])
+    def thresholdsList = settings.get('thresholds', [:])
     if (thresholdsList) {
         for (String status : ['fail', 'unstable']) {
             def thresholdsListPerStatus = thresholdsList.get(status, [:])
