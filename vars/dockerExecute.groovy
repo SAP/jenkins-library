@@ -132,6 +132,11 @@ import groovy.transform.Field
     'stashNoDefaultExcludes',
 ])
 
+@Field Map CONFIG_KEY_COMPATIBILITY = [
+    dockerRegistryCredentialsId: 'dockerRegistryCredentials',
+    sidecarRegistryCredentialsId: 'dockerSidecarRegistryCredentials',
+]
+
 /**
  * Executes a closure inside a docker container with the specified docker image.
  * The workspace is mounted into the docker image.
@@ -147,10 +152,10 @@ void call(Map parameters = [:], body) {
 
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults([:], stageName)
-            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
-            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-            .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
-            .mixin(parameters, PARAMETER_KEYS)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixin(parameters, PARAMETER_KEYS, CONFIG_KEY_COMPATIBILITY)
             .use()
 
         config = ConfigurationHelper.newInstance(this, config)
