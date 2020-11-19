@@ -138,15 +138,17 @@ def createOptions(settings){
     def thresholds = settings.get('thresholds', [:])
     if (thresholds) {
         for (String status : ['fail', 'unstable']) {
-            def a = thresholds.get(status, [:])
-            if (a) {
+            def legacyThresholds = thresholds.get(status, [:])
+            if (legacyThresholds) {
                 for (String severity : ['all', 'high', 'normal', 'low']) {
+                    if (legacyThresholds.get(severity) == null)
+                        continue
                     def type = "TOTAL"
                     if(severity != 'all')
                         type += "_" + severity.toUpperCase()
-                    def gate = [threshold: a.get(severity), type: type, unstable: status == 'unstable']
-                    echo "Adding legacy quelity gate: ${gate}"
-                    qualityGates.plus([gate])
+                    def gate = [threshold: legacyThresholds.get(severity), type: type, unstable: status == 'unstable']
+                    echo "Adding legacy quality gate: ${gate}"
+                    qualityGates = qualityGates.plus([gate])
                 }
             }
         }
