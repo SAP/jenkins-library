@@ -111,8 +111,9 @@ func addAbapEnvironmentPullGitRepoFlags(cmd *cobra.Command, stepConfig *abapEnvi
 func abapEnvironmentPullGitRepoMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "abapEnvironmentPullGitRepo",
-			Aliases: []config.Alias{},
+			Name:        "abapEnvironmentPullGitRepo",
+			Aliases:     []config.Alias{},
+			Description: "Pulls a git repository to a SAP Cloud Platform ABAP Environment system",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -218,6 +219,9 @@ func abapEnvironmentPullGitRepoMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 				},
+			},
+			Containers: []config.Container{
+				{Name: "cf", Image: "ppiper/cf-cli"},
 			},
 		},
 	}

@@ -94,8 +94,9 @@ func addNpmExecuteScriptsFlags(cmd *cobra.Command, stepConfig *npmExecuteScripts
 func npmExecuteScriptsMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "npmExecuteScripts",
-			Aliases: []config.Alias{{Name: "executeNpm", Deprecated: false}},
+			Name:        "npmExecuteScripts",
+			Aliases:     []config.Alias{{Name: "executeNpm", Deprecated: false}},
+			Description: "Execute npm run scripts on all npm packages in a project",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -157,6 +158,9 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 				},
+			},
+			Containers: []config.Container{
+				{Name: "node", Image: "node:12-buster-slim"},
 			},
 		},
 	}

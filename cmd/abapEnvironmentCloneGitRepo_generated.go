@@ -111,8 +111,9 @@ func addAbapEnvironmentCloneGitRepoFlags(cmd *cobra.Command, stepConfig *abapEnv
 func abapEnvironmentCloneGitRepoMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "abapEnvironmentCloneGitRepo",
-			Aliases: []config.Alias{},
+			Name:        "abapEnvironmentCloneGitRepo",
+			Aliases:     []config.Alias{},
+			Description: "Clones a git repository to a SAP Cloud Platform ABAP Environment system",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -218,6 +219,9 @@ func abapEnvironmentCloneGitRepoMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceKey"}, {Name: "cloudFoundry/serviceKeyName"}, {Name: "cfServiceKey"}},
 					},
 				},
+			},
+			Containers: []config.Container{
+				{Name: "cf", Image: "ppiper/cf-cli"},
 			},
 		},
 	}
