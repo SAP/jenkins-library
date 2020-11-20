@@ -145,7 +145,7 @@ def createOptions(settings){
                         type += "_" + severity.toUpperCase()
                     def gate = [threshold: threshold, type: type, unstable: status == 'unstable']
                     echo "[WARNING] legacy threshold found, please migrate to quality gate (piper-lib/checksPublishResults)"
-                    echo "legacy threshold: ${gate}"
+                    echo "legacy threshold transformed to quality gate: ${gate}"
                     qualityGates = qualityGates.plus([gate])
                 }
             }
