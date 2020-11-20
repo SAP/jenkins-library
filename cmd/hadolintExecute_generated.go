@@ -95,8 +95,9 @@ func addHadolintExecuteFlags(cmd *cobra.Command, stepConfig *hadolintExecuteOpti
 func hadolintExecuteMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "hadolintExecute",
-			Aliases: []config.Alias{},
+			Name:        "hadolintExecute",
+			Aliases:     []config.Alias{},
+			Description: "Executes the Haskell Dockerfile Linter which is a smarter Dockerfile linter that helps you build [best practice](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/) Docker images.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -162,6 +163,9 @@ func hadolintExecuteMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 				},
+			},
+			Containers: []config.Container{
+				{Name: "hadolint", Image: "hadolint/hadolint:latest-debian"},
 			},
 		},
 	}

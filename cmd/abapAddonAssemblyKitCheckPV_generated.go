@@ -129,8 +129,9 @@ func addAbapAddonAssemblyKitCheckPVFlags(cmd *cobra.Command, stepConfig *abapAdd
 func abapAddonAssemblyKitCheckPVMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "abapAddonAssemblyKitCheckPV",
-			Aliases: []config.Alias{},
+			Name:        "abapAddonAssemblyKitCheckPV",
+			Aliases:     []config.Alias{},
+			Description: "This step checks the validity of a Addon Product Version.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -179,6 +180,17 @@ func abapAddonAssemblyKitCheckPVMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+					},
+				},
+			},
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{
+						Name: "commonPipelineEnvironment",
+						Type: "piperEnvironment",
+						Parameters: []map[string]interface{}{
+							{"Name": "abap/addonDescriptor"},
+						},
 					},
 				},
 			},
