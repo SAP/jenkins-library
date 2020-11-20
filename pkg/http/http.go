@@ -357,13 +357,13 @@ func (c *Client) handleResponse(response *http.Response) (*http.Response, error)
 
 	switch response.StatusCode {
 	case http.StatusUnauthorized:
-		c.logger.WithField("HTTP Error", "401 (Unauthorized)").Error("Credentials invalid, please check your user credentials!")
+		c.logger.WithField("HTTP Error", "401 (Unauthorized)").Warning("Credentials invalid, please check your user credentials!")
 	case http.StatusForbidden:
-		c.logger.WithField("HTTP Error", "403 (Forbidden)").Error("Permission issue, please check your user permissions!")
+		c.logger.WithField("HTTP Error", "403 (Forbidden)").Warning("Permission issue, please check your user permissions!")
 	case http.StatusNotFound:
-		c.logger.WithField("HTTP Error", "404 (Not Found)").Error("Requested resource could not be found")
+		c.logger.WithField("HTTP Error", "404 (Not Found)").Warning("Requested resource could not be found")
 	case http.StatusInternalServerError:
-		c.logger.WithField("HTTP Error", "500 (Internal Server Error)").Error("Unknown error occurred.")
+		c.logger.WithField("HTTP Error", "500 (Internal Server Error)").Warning("Unknown error occurred.")
 	}
 
 	return response, fmt.Errorf("Request to %v returned with response %v", response.Request.URL, response.Status)
