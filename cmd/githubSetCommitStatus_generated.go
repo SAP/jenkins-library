@@ -115,8 +115,9 @@ func addGithubSetCommitStatusFlags(cmd *cobra.Command, stepConfig *githubSetComm
 func githubSetCommitStatusMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "githubSetCommitStatus",
-			Aliases: []config.Alias{},
+			Name:        "githubSetCommitStatus",
+			Aliases:     []config.Alias{},
+			Description: "Set a status of a certain commit.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{

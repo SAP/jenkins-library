@@ -120,8 +120,9 @@ func addNexusUploadFlags(cmd *cobra.Command, stepConfig *nexusUploadOptions) {
 func nexusUploadMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "nexusUpload",
-			Aliases: []config.Alias{{Name: "mavenExecute", Deprecated: false}},
+			Name:        "nexusUpload",
+			Aliases:     []config.Alias{{Name: "mavenExecute", Deprecated: false}},
+			Description: "Upload artifacts to Nexus Repository Manager",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -219,6 +220,9 @@ func nexusUploadMetadata() config.StepData {
 						Aliases:   []config.Alias{},
 					},
 				},
+			},
+			Containers: []config.Container{
+				{Name: "mvn-npm", Image: "devxci/mbtci:1.0.16.1"},
 			},
 		},
 	}
