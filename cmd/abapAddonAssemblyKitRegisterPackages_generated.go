@@ -129,8 +129,9 @@ func addAbapAddonAssemblyKitRegisterPackagesFlags(cmd *cobra.Command, stepConfig
 func abapAddonAssemblyKitRegisterPackagesMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "abapAddonAssemblyKitRegisterPackages",
-			Aliases: []config.Alias{},
+			Name:        "abapAddonAssemblyKitRegisterPackages",
+			Aliases:     []config.Alias{},
+			Description: "This step uploads the SAR archives and creates physical Delivery Packages in in the File Content Management System of SAP.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -171,6 +172,17 @@ func abapAddonAssemblyKitRegisterPackagesMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+					},
+				},
+			},
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{
+						Name: "commonPipelineEnvironment",
+						Type: "piperEnvironment",
+						Parameters: []map[string]interface{}{
+							{"Name": "abap/addonDescriptor"},
+						},
 					},
 				},
 			},

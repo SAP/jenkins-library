@@ -131,8 +131,9 @@ func addAbapAddonAssemblyKitReserveNextPackagesFlags(cmd *cobra.Command, stepCon
 func abapAddonAssemblyKitReserveNextPackagesMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "abapAddonAssemblyKitReserveNextPackages",
-			Aliases: []config.Alias{},
+			Name:        "abapAddonAssemblyKitReserveNextPackages",
+			Aliases:     []config.Alias{},
+			Description: "This step determines the ABAP delivery packages (name and type), which are needed to deliver Software Component Versions.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -173,6 +174,17 @@ func abapAddonAssemblyKitReserveNextPackagesMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+					},
+				},
+			},
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{
+						Name: "commonPipelineEnvironment",
+						Type: "piperEnvironment",
+						Parameters: []map[string]interface{}{
+							{"Name": "abap/addonDescriptor"},
+						},
 					},
 				},
 			},
