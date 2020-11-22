@@ -6,7 +6,6 @@
     The initial scope supports an add-on product consisting of **one** software component. Furthermore, this software component can not be used in multiple add-on products.
     All packages of a software component must have the same namespace as the software component itself. You cannot build add-ons based on gCTS branching functionality.
 
-
 This scenario describes how an add-on for the SAP Cloud Platform ABAP Environment is built. It is intended for SAP partners who want to provide a Software as a Service (SaaS) solution on the SAP Cloud Platform using the ABAP Environment. Therefore, a partner development contract (see [SAP PartnerEdge Test, Demo & Development Price List](https://partneredge.sap.com/en/library/assets/partnership/sales/order_license/pl_pl_part_price_list.html)) is required. This page aims to provide an overview of the build process of the add-on.
 
 The development on SAP Cloud Platform ABAP Environment systems is done within [“software components”](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/58480f43e0b64de782196922bc5f1ca0.html) (also called: “repositories”). The add-ons being built in this scenario are made up by one or multiple software components combined to an add-on product. The “ABAP Environment Pipeline” can be used to build and publish the add-on product. Please read on for more details about the Add-on Product and the build process.
