@@ -4,7 +4,7 @@
 
 !!! caution "Initial Scope"
     The initial scope supports an add-on product consisting of **one** software component. Furthermore, this software component can not be used in multiple add-on products.
-    All packages of a software component must have the same namespace as the software component itself. You cannot build add-ons based on gCTS branching functionality.
+    You cannot build add-ons based on gCTS branching functionality.
 
 This scenario describes how an add-on for the SAP Cloud Platform ABAP Environment is built. It is intended for SAP partners who want to provide a Software as a Service (SaaS) solution on the SAP Cloud Platform using the ABAP Environment. Therefore, a partner development contract (see [SAP PartnerEdge Test, Demo & Development Price List](https://partneredge.sap.com/en/library/assets/partnership/sales/order_license/pl_pl_part_price_list.html)) is required. This page aims to provide an overview of the build process of the add-on.
 
