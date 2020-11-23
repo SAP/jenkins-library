@@ -1,3 +1,6 @@
+# This file should be removed when existing cloud sdk consumers switched to general purpose pipeline
+# This should be safe to do after Q2 2021
+
 removedOrReplacedConfigKeys:
   extensionRepository:
     newConfigKey: "globalExtensionsRepository"

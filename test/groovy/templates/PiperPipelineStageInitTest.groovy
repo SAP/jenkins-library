@@ -229,13 +229,6 @@ class PiperPipelineStageInitTest extends BasePiperTest {
     }
 
     @Test
-    void testInitWithCloudSdkStashInit() {
-        jsr.step.piperPipelineStageInit(script: nullScript, juStabUtils: utils, initCloudSdkStashSettings: true, buildTool: 'maven')
-
-        assertThat(nullScript.commonPipelineEnvironment.configuration.stageStashes, hasKey('init'))
-    }
-
-    @Test
     void testLegacyConfigSettings() {
         boolean checkForLegacyConfigurationCalled = false
         helper.registerAllowedMethod('checkForLegacyConfiguration', [Map.class], {
