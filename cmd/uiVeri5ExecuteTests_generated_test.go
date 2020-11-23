@@ -10,7 +10,7 @@ func TestUiVeri5ExecuteTestsCommand(t *testing.T) {
 
 	testCmd := UiVeri5ExecuteTestsCommand()
 
-	// only high level testing performed - details are tested in step generation procudure
+	// only high level testing performed - details are tested in step generation procedure
 	assert.Equal(t, "uiVeri5ExecuteTests", testCmd.Use, "command name incorrect")
 
 }
