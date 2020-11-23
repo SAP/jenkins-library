@@ -79,6 +79,7 @@ The result looks like
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
@@ -126,8 +127,9 @@ func addGithubPublishReleaseFlags(cmd *cobra.Command, stepConfig *githubPublishR
 func githubPublishReleaseMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "githubPublishRelease",
-			Aliases: []config.Alias{},
+			Name:        "githubPublishRelease",
+			Aliases:     []config.Alias{},
+			Description: "Publish a release in GitHub",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{

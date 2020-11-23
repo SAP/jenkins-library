@@ -14,15 +14,19 @@ import (
 )
 
 type gitopsUpdateDeploymentOptions struct {
-	BranchName           string `json:"branchName,omitempty"`
-	CommitMessage        string `json:"commitMessage,omitempty"`
-	ServerURL            string `json:"serverUrl,omitempty"`
-	Username             string `json:"username,omitempty"`
-	Password             string `json:"password,omitempty"`
-	FilePath             string `json:"filePath,omitempty"`
-	ContainerName        string `json:"containerName,omitempty"`
-	ContainerRegistryURL string `json:"containerRegistryUrl,omitempty"`
-	ContainerImage       string `json:"containerImage,omitempty"`
+	BranchName            string   `json:"branchName,omitempty"`
+	CommitMessage         string   `json:"commitMessage,omitempty"`
+	ServerURL             string   `json:"serverUrl,omitempty"`
+	Username              string   `json:"username,omitempty"`
+	Password              string   `json:"password,omitempty"`
+	FilePath              string   `json:"filePath,omitempty"`
+	ContainerName         string   `json:"containerName,omitempty"`
+	ContainerRegistryURL  string   `json:"containerRegistryUrl,omitempty"`
+	ContainerImageNameTag string   `json:"containerImageNameTag,omitempty"`
+	ChartPath             string   `json:"chartPath,omitempty"`
+	HelmValues            []string `json:"helmValues,omitempty"`
+	DeploymentName        string   `json:"deploymentName,omitempty"`
+	Tool                  string   `json:"tool,omitempty"`
 }
 
 // GitopsUpdateDeploymentCommand Updates Kubernetes Deployment Manifest in an Infrastructure Git Repository
@@ -40,7 +44,9 @@ func GitopsUpdateDeploymentCommand() *cobra.Command {
 
 It can for example be used for GitOps scenarios where the update of the manifests triggers an update of the corresponding deployment in Kubernetes.
 
-As of today, it supports the update of deployment yaml files via kubectl patch. The container inside the yaml must be described within the following hierarchy: {"spec":{"template":{"spec":{"containers":[{...}]}}}}`,
+As of today, it supports the update of deployment yaml files via kubectl patch and update a whole helm template.
+For kubectl the container inside the yaml must be described within the following hierarchy: ` + "`" + `{"spec":{"template":{"spec":{"containers":[{...}]}}}}` + "`" + `
+For helm the whole template is generated into a file and uploaded into the repository.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -69,6 +75,7 @@ As of today, it supports the update of deployment yaml files via kubectl patch. 
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
@@ -88,30 +95,36 @@ As of today, it supports the update of deployment yaml files via kubectl patch. 
 
 func addGitopsUpdateDeploymentFlags(cmd *cobra.Command, stepConfig *gitopsUpdateDeploymentOptions) {
 	cmd.Flags().StringVar(&stepConfig.BranchName, "branchName", `master`, "The name of the branch where the changes should get pushed into.")
-	cmd.Flags().StringVar(&stepConfig.CommitMessage, "commitMessage", `Updated {{containerName}} to version {{containerImage}}`, "The commit message of the commit that will be done to do the changes.")
+	cmd.Flags().StringVar(&stepConfig.CommitMessage, "commitMessage", os.Getenv("PIPER_commitMessage"), "The commit message of the commit that will be done to do the changes.")
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", `https://github.com`, "GitHub server url to the repository.")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User name for git authentication")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password/token for git authentication.")
 	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "Relative path in the git repository to the deployment descriptor file that shall be updated")
 	cmd.Flags().StringVar(&stepConfig.ContainerName, "containerName", os.Getenv("PIPER_containerName"), "The name of the container to update")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryURL, "containerRegistryUrl", os.Getenv("PIPER_containerRegistryUrl"), "http(s) url of the Container registry where the image is located")
-	cmd.Flags().StringVar(&stepConfig.ContainerImage, "containerImage", os.Getenv("PIPER_containerImage"), "Container image name with version tag to annotate in the deployment configuration.")
+	cmd.Flags().StringVar(&stepConfig.ContainerImageNameTag, "containerImageNameTag", os.Getenv("PIPER_containerImageNameTag"), "Container image name with version tag to annotate in the deployment configuration.")
+	cmd.Flags().StringVar(&stepConfig.ChartPath, "chartPath", os.Getenv("PIPER_chartPath"), "Defines the chart path for deployments using helm.")
+	cmd.Flags().StringSliceVar(&stepConfig.HelmValues, "helmValues", []string{}, "List of helm values as YAML file reference or URL (as per helm parameter description for `-f` / `--values`)")
+	cmd.Flags().StringVar(&stepConfig.DeploymentName, "deploymentName", os.Getenv("PIPER_deploymentName"), "Defines the name of the deployment.")
+	cmd.Flags().StringVar(&stepConfig.Tool, "tool", `kubectl`, "Defines the tool which should be used to update the deployment description.")
 
-	cmd.MarkFlagRequired("commitMessage")
+	cmd.MarkFlagRequired("branchName")
 	cmd.MarkFlagRequired("serverUrl")
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("filePath")
-	cmd.MarkFlagRequired("containerName")
-	cmd.MarkFlagRequired("containerImage")
+	cmd.MarkFlagRequired("containerRegistryUrl")
+	cmd.MarkFlagRequired("containerImageNameTag")
+	cmd.MarkFlagRequired("tool")
 }
 
 // retrieve step metadata
 func gitopsUpdateDeploymentMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "gitopsUpdateDeployment",
-			Aliases: []config.Alias{},
+			Name:        "gitopsUpdateDeployment",
+			Aliases:     []config.Alias{},
+			Description: "Updates Kubernetes Deployment Manifest in an Infrastructure Git Repository",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -121,7 +134,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   false,
+						Mandatory:   true,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -129,7 +142,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -181,7 +194,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -194,11 +207,11 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
-						Mandatory: false,
+						Mandatory: true,
 						Aliases:   []config.Alias{{Name: "dockerRegistryUrl"}},
 					},
 					{
-						Name: "containerImage",
+						Name: "containerImageNameTag",
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "commonPipelineEnvironment",
@@ -208,9 +221,45 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "image"}, {Name: "containerImageNameTag"}},
+						Aliases:   []config.Alias{{Name: "image"}, {Name: "containerImage"}},
+					},
+					{
+						Name:        "chartPath",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "helmChartPath"}},
+					},
+					{
+						Name:        "helmValues",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "deploymentName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "helmDeploymentName"}},
+					},
+					{
+						Name:        "tool",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
 					},
 				},
+			},
+			Containers: []config.Container{
+				{Image: "dtzar/helm-kubectl:3.3.4", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "tool", Value: "helm"}}}}},
+				{Image: "dtzar/helm-kubectl:2.12.1", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "tool", Value: "kubectl"}}}}},
 			},
 		},
 	}

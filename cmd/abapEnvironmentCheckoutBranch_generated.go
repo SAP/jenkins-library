@@ -72,6 +72,7 @@ Please provide either of the following options:
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
@@ -110,8 +111,9 @@ func addAbapEnvironmentCheckoutBranchFlags(cmd *cobra.Command, stepConfig *abapE
 func abapEnvironmentCheckoutBranchMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "abapEnvironmentCheckoutBranch",
-			Aliases: []config.Alias{},
+			Name:        "abapEnvironmentCheckoutBranch",
+			Aliases:     []config.Alias{},
+			Description: "Switches between branches of a git repository on a SAP Cloud Platform ABAP Environment system",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -217,6 +219,9 @@ func abapEnvironmentCheckoutBranchMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceKey"}, {Name: "cloudFoundry/serviceKeyName"}, {Name: "cfServiceKeyName"}},
 					},
 				},
+			},
+			Containers: []config.Container{
+				{Name: "cf", Image: "ppiper/cf-cli"},
 			},
 		},
 	}

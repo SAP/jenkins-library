@@ -73,6 +73,7 @@ Regardless of the option you chose, please make sure to provide the configuratio
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
@@ -111,8 +112,9 @@ func addAbapEnvironmentRunATCCheckFlags(cmd *cobra.Command, stepConfig *abapEnvi
 func abapEnvironmentRunATCCheckMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "abapEnvironmentRunATCCheck",
-			Aliases: []config.Alias{},
+			Name:        "abapEnvironmentRunATCCheck",
+			Aliases:     []config.Alias{},
+			Description: "Runs an ATC Check",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -210,6 +212,9 @@ func abapEnvironmentRunATCCheckMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 				},
+			},
+			Containers: []config.Container{
+				{Name: "cf", Image: "ppiper/cf-cli"},
 			},
 		},
 	}

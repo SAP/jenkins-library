@@ -22,6 +22,7 @@ type checkmarxExecuteScanOptions struct {
 	FullScansScheduled            bool   `json:"fullScansScheduled,omitempty"`
 	GeneratePdfReport             bool   `json:"generatePdfReport,omitempty"`
 	Incremental                   bool   `json:"incremental,omitempty"`
+	MaxRetries                    int    `json:"maxRetries,omitempty"`
 	Password                      string `json:"password,omitempty"`
 	Preset                        string `json:"preset,omitempty"`
 	ProjectName                   string `json:"projectName,omitempty"`
@@ -175,6 +176,7 @@ func CheckmarxExecuteScanCommand() *cobra.Command {
 and many other programming languages for security flaws based on a set of provided rules/queries that can be customized and extended.
 
 This step by default enforces a specific audit baseline for findings and therefore ensures that:
+
 * No 'To Verify' High and Medium issues exist in your project
 * Total number of High and Medium 'Confirmed' or 'Urgent' issues is zero
 * 10% of all Low issues are 'Confirmed' or 'Not Exploitable'
@@ -209,6 +211,7 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
@@ -234,6 +237,7 @@ func addCheckmarxExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxExecu
 	cmd.Flags().BoolVar(&stepConfig.FullScansScheduled, "fullScansScheduled", true, "Whether full scans are to be scheduled or not. Should be used in relation with `incremental` and `fullScanCycle`")
 	cmd.Flags().BoolVar(&stepConfig.GeneratePdfReport, "generatePdfReport", true, "Whether to generate a PDF report of the analysis results or not")
 	cmd.Flags().BoolVar(&stepConfig.Incremental, "incremental", true, "Whether incremental scans are to be applied which optimizes the scan time but might reduce detection capabilities. Therefore full scans are still required from time to time and should be scheduled via `fullScansScheduled` and `fullScanCycle`")
+	cmd.Flags().IntVar(&stepConfig.MaxRetries, "maxRetries", 3, "Maximum number of HTTP request retries upon intermittend connetion interrupts")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "The password to authenticate")
 	cmd.Flags().StringVar(&stepConfig.Preset, "preset", os.Getenv("PIPER_preset"), "The preset to use for scanning, if not set explicitly the step will attempt to look up the project's setting based on the availability of `checkmarxCredentialsId`")
 	cmd.Flags().StringVar(&stepConfig.ProjectName, "projectName", os.Getenv("PIPER_projectName"), "The name of the Checkmarx project to scan into")
@@ -261,8 +265,9 @@ func addCheckmarxExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxExecu
 func checkmarxExecuteScanMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "checkmarxExecuteScan",
-			Aliases: []config.Alias{},
+			Name:        "checkmarxExecuteScan",
+			Aliases:     []config.Alias{},
+			Description: "Checkmarx is the recommended tool for security scans of JavaScript, iOS, Swift and Ruby code.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -312,6 +317,14 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "maxRetries",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
@@ -466,6 +479,17 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+					},
+				},
+			},
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{
+						Name: "influx",
+						Type: "influx",
+						Parameters: []map[string]interface{}{
+							{"Name": "checkmarx_data"}, {"fields": []map[string]string{{"name": "high_issues"}, {"name": "high_not_false_positive"}, {"name": "high_not_exploitable"}, {"name": "high_confirmed"}, {"name": "high_urgent"}, {"name": "high_proposed_not_exploitable"}, {"name": "high_to_verify"}, {"name": "medium_issues"}, {"name": "medium_not_false_positive"}, {"name": "medium_not_exploitable"}, {"name": "medium_confirmed"}, {"name": "medium_urgent"}, {"name": "medium_proposed_not_exploitable"}, {"name": "medium_to_verify"}, {"name": "low_issues"}, {"name": "low_not_false_positive"}, {"name": "low_not_exploitable"}, {"name": "low_confirmed"}, {"name": "low_urgent"}, {"name": "low_proposed_not_exploitable"}, {"name": "low_to_verify"}, {"name": "information_issues"}, {"name": "information_not_false_positive"}, {"name": "information_not_exploitable"}, {"name": "information_confirmed"}, {"name": "information_urgent"}, {"name": "information_proposed_not_exploitable"}, {"name": "information_to_verify"}, {"name": "initiator_name"}, {"name": "owner"}, {"name": "scan_id"}, {"name": "project_id"}, {"name": "projectName"}, {"name": "team"}, {"name": "team_full_path_on_report_date"}, {"name": "scan_start"}, {"name": "scan_time"}, {"name": "lines_of_code_scanned"}, {"name": "files_scanned"}, {"name": "checkmarx_version"}, {"name": "scan_type"}, {"name": "preset"}, {"name": "deep_link"}, {"name": "report_creation_time"}}},
+						},
 					},
 				},
 			},

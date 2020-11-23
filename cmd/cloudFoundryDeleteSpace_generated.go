@@ -63,6 +63,7 @@ Mandatory:
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
@@ -98,8 +99,9 @@ func addCloudFoundryDeleteSpaceFlags(cmd *cobra.Command, stepConfig *cloudFoundr
 func cloudFoundryDeleteSpaceMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "cloudFoundryDeleteSpace",
-			Aliases: []config.Alias{},
+			Name:        "cloudFoundryDeleteSpace",
+			Aliases:     []config.Alias{},
+			Description: "Deletes a space in Cloud Foundry",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -157,6 +159,9 @@ func cloudFoundryDeleteSpaceMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "cloudFoundry/space"}},
 					},
 				},
+			},
+			Containers: []config.Container{
+				{Name: "cf", Image: "ppiper/cf-cli"},
 			},
 		},
 	}

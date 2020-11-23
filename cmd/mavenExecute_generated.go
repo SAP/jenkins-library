@@ -63,6 +63,7 @@ func MavenExecuteCommand() *cobra.Command {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
@@ -98,8 +99,9 @@ func addMavenExecuteFlags(cmd *cobra.Command, stepConfig *mavenExecuteOptions) {
 func mavenExecuteMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "mavenExecute",
-			Aliases: []config.Alias{},
+			Name:        "mavenExecute",
+			Aliases:     []config.Alias{},
+			Description: "This step allows to run maven commands",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -177,6 +179,9 @@ func mavenExecuteMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "maven/logSuccessfulMavenTransfers"}},
 					},
 				},
+			},
+			Containers: []config.Container{
+				{Name: "mvn", Image: "maven:3.6-jdk-8"},
 			},
 		},
 	}

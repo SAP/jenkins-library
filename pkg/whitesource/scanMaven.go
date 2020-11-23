@@ -28,6 +28,18 @@ func (s *Scan) ExecuteMavenScanForPomFile(config *ScanOptions, utils Utils, pomP
 			config.ScanType, pomPath)
 	}
 
+	if config.InstallArtifacts {
+		err := maven.InstallMavenArtifacts(&maven.EvaluateOptions{
+			M2Path:              config.M2Path,
+			ProjectSettingsFile: config.ProjectSettingsFile,
+			GlobalSettingsFile:  config.GlobalSettingsFile,
+			PomPath:             pomPath,
+		}, utils)
+		if err != nil {
+			return err
+		}
+	}
+
 	defines := s.generateMavenWhitesourceDefines(config)
 	flags, excludes := generateMavenWhitesourceFlags(config, utils)
 	err := s.appendModulesThatWillBeScanned(utils, excludes)

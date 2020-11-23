@@ -47,7 +47,8 @@ TransportRequest: <YOUR TRANSPORT REQUEST ID>
 By default, the Git commits between the merge base with the base branch (default: `master`) and the current branch head are traversed.
 
 ![This pipeline in Jenkins Blue Ocean](images/pipeline.png)
-###### Screenshot: Build and Deploy Process in Jenkins
+
+**Screenshot: Build and Deploy Process in Jenkins**
 
 ## Examples
 

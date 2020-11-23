@@ -11,24 +11,28 @@ import (
 func TestCommit(t *testing.T) {
 	t.Parallel()
 	t.Run("successful run", func(t *testing.T) {
-		hash, err := commitSingleFile(".", "message", &WorktreeMock{})
+		t.Parallel()
+		worktreeMock := WorktreeMock{}
+		hash, err := commitSingleFile(".", "message", "user", &worktreeMock)
 		assert.NoError(t, err)
 		assert.Equal(t, plumbing.Hash([20]byte{4, 5, 6}), hash)
+		assert.Equal(t, "user", worktreeMock.author)
+		assert.True(t, worktreeMock.commitAll)
 	})
 
 	t.Run("error adding file", func(t *testing.T) {
-		_, err := commitSingleFile(".", "message", WorktreeMockFailing{
+		t.Parallel()
+		_, err := commitSingleFile(".", "message", "user", WorktreeMockFailing{
 			failingAdd: true,
 		})
-		assert.Error(t, err)
 		assert.EqualError(t, err, "failed to add file to git: failed to add file")
 	})
 
 	t.Run("error committing file", func(t *testing.T) {
-		_, err := commitSingleFile(".", "message", WorktreeMockFailing{
+		t.Parallel()
+		_, err := commitSingleFile(".", "message", "user", WorktreeMockFailing{
 			failingCommit: true,
 		})
-		assert.Error(t, err)
 		assert.EqualError(t, err, "failed to commit file: failed to commit file")
 	})
 }
@@ -36,6 +40,7 @@ func TestCommit(t *testing.T) {
 func TestPushChangesToRepository(t *testing.T) {
 	t.Parallel()
 	t.Run("successful push", func(t *testing.T) {
+		t.Parallel()
 		err := pushChangesToRepository("user", "password", RepositoryMock{
 			test: t,
 		})
@@ -43,8 +48,8 @@ func TestPushChangesToRepository(t *testing.T) {
 	})
 
 	t.Run("error pushing", func(t *testing.T) {
+		t.Parallel()
 		err := pushChangesToRepository("user", "password", RepositoryMockError{})
-		assert.Error(t, err)
 		assert.EqualError(t, err, "failed to push commit: error on push commits")
 	})
 }
@@ -52,6 +57,7 @@ func TestPushChangesToRepository(t *testing.T) {
 func TestPlainClone(t *testing.T) {
 	t.Parallel()
 	t.Run("successful clone", func(t *testing.T) {
+		t.Parallel()
 		abstractedGit := &UtilsGitMock{}
 		_, err := plainClone("user", "password", "URL", "directory", abstractedGit)
 		assert.NoError(t, err)
@@ -62,9 +68,9 @@ func TestPlainClone(t *testing.T) {
 	})
 
 	t.Run("error on cloning", func(t *testing.T) {
+		t.Parallel()
 		abstractedGit := UtilsGitMockError{}
 		_, err := plainClone("user", "password", "URL", "directory", abstractedGit)
-		assert.Error(t, err)
 		assert.EqualError(t, err, "failed to clone git: error during clone")
 	})
 }
@@ -72,6 +78,7 @@ func TestPlainClone(t *testing.T) {
 func TestChangeBranch(t *testing.T) {
 	t.Parallel()
 	t.Run("checkout existing branch", func(t *testing.T) {
+		t.Parallel()
 		worktreeMock := &WorktreeMock{}
 		err := changeBranch("otherBranch", worktreeMock)
 		assert.NoError(t, err)
@@ -79,24 +86,24 @@ func TestChangeBranch(t *testing.T) {
 		assert.False(t, worktreeMock.create)
 	})
 
-	t.Run("empty branch defaulted to master", func(t *testing.T) {
+	t.Run("empty branch raises error", func(t *testing.T) {
+		t.Parallel()
 		worktreeMock := &WorktreeMock{}
 		err := changeBranch("", worktreeMock)
-		assert.NoError(t, err)
-		assert.Equal(t, string(plumbing.NewBranchReferenceName("master")), worktreeMock.checkedOutBranch)
-		assert.False(t, worktreeMock.create)
+		assert.EqualError(t, err, "no branch name provided")
 	})
 
 	t.Run("create new branch", func(t *testing.T) {
+		t.Parallel()
 		err := changeBranch("otherBranch", WorktreeUtilsNewBranch{})
 		assert.NoError(t, err)
 	})
 
 	t.Run("error on new branch", func(t *testing.T) {
+		t.Parallel()
 		err := changeBranch("otherBranch", WorktreeMockFailing{
 			failingCheckout: true,
 		})
-		assert.Error(t, err)
 		assert.EqualError(t, err, "failed to checkout branch: failed to checkout branch")
 	})
 }
@@ -159,13 +166,17 @@ type WorktreeMock struct {
 	expectedBranchName string
 	checkedOutBranch   string
 	create             bool
+	author             string
+	commitAll          bool
 }
 
 func (WorktreeMock) Add(string) (plumbing.Hash, error) {
 	return [20]byte{1, 2, 3}, nil
 }
 
-func (WorktreeMock) Commit(string, *git.CommitOptions) (plumbing.Hash, error) {
+func (w *WorktreeMock) Commit(_ string, options *git.CommitOptions) (plumbing.Hash, error) {
+	w.author = options.Author.Name
+	w.commitAll = options.All
 	return [20]byte{4, 5, 6}, nil
 }
 

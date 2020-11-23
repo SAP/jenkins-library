@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -9,16 +8,13 @@ import (
 )
 
 func mavenExecuteStaticCodeChecks(config mavenExecuteStaticCodeChecksOptions, telemetryData *telemetry.CustomData) {
-	c := command.Command{}
-	c.Stdout(log.Writer())
-	c.Stderr(log.Writer())
-	err := runMavenStaticCodeChecks(&config, telemetryData, &c)
+	err := runMavenStaticCodeChecks(&config, telemetryData, maven.NewUtilsBundle())
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runMavenStaticCodeChecks(config *mavenExecuteStaticCodeChecksOptions, telemetryData *telemetry.CustomData, command command.ExecRunner) error {
+func runMavenStaticCodeChecks(config *mavenExecuteStaticCodeChecksOptions, telemetryData *telemetry.CustomData, utils maven.Utils) error {
 	var defines []string
 	var goals []string
 
@@ -27,7 +23,18 @@ func runMavenStaticCodeChecks(config *mavenExecuteStaticCodeChecksOptions, telem
 		return nil
 	}
 
-	if testModulesExcludes := maven.GetTestModulesExcludes(); testModulesExcludes != nil {
+	if config.InstallArtifacts {
+		err := maven.InstallMavenArtifacts(&maven.EvaluateOptions{
+			M2Path:              config.M2Path,
+			ProjectSettingsFile: config.ProjectSettingsFile,
+			GlobalSettingsFile:  config.GlobalSettingsFile,
+		}, utils)
+		if err != nil {
+			return err
+		}
+	}
+
+	if testModulesExcludes := maven.GetTestModulesExcludes(utils); testModulesExcludes != nil {
 		defines = append(defines, testModulesExcludes...)
 	}
 	if config.MavenModulesExcludes != nil {
@@ -55,7 +62,7 @@ func runMavenStaticCodeChecks(config *mavenExecuteStaticCodeChecksOptions, telem
 		M2Path:                      config.M2Path,
 		LogSuccessfulMavenTransfers: config.LogSuccessfulMavenTransfers,
 	}
-	_, err := maven.Execute(&finalMavenOptions, command)
+	_, err := maven.Execute(&finalMavenOptions, utils)
 	return err
 }
 

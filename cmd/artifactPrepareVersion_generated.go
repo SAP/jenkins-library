@@ -173,6 +173,7 @@ Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to yo
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
@@ -218,8 +219,9 @@ func addArtifactPrepareVersionFlags(cmd *cobra.Command, stepConfig *artifactPrep
 func artifactPrepareVersionMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "artifactPrepareVersion",
-			Aliases: []config.Alias{{Name: "artifactSetVersion", Deprecated: false}, {Name: "setVersion", Deprecated: true}},
+			Name:        "artifactPrepareVersion",
+			Aliases:     []config.Alias{{Name: "artifactSetVersion", Deprecated: false}, {Name: "setVersion", Deprecated: true}},
+			Description: "Prepares and potentially updates the artifact's version before building the artifact.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -315,7 +317,7 @@ func artifactPrepareVersionMetadata() config.StepData {
 
 							{
 								Name:  "",
-								Paths: []string{"$(vaultPath)/versioning", "$(vaultBasePath)/$(vaultPipelineName)/versioning", "$(vaultBasePath)/GROUP-SECRETS/versioning"},
+								Paths: []string{"$(vaultPath)/gitHttpsCredential", "$(vaultBasePath)/$(vaultPipelineName)/gitHttpsCredential", "$(vaultBasePath)/GROUP-SECRETS/gitHttpsCredential"},
 								Type:  "vaultSecret",
 							},
 						},
@@ -367,7 +369,7 @@ func artifactPrepareVersionMetadata() config.StepData {
 
 							{
 								Name:  "",
-								Paths: []string{"$(vaultPath)/versioning", "$(vaultBasePath)/$(vaultPipelineName)/versioning", "$(vaultBasePath)/GROUP-SECRETS/versioning"},
+								Paths: []string{"$(vaultPath)/gitHttpsCredential", "$(vaultBasePath)/$(vaultPipelineName)/gitHttpsCredential", "$(vaultBasePath)/GROUP-SECRETS/gitHttpsCredential"},
 								Type:  "vaultSecret",
 							},
 						},
@@ -391,6 +393,23 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+					},
+				},
+			},
+			Containers: []config.Container{
+				{Image: "maven:3.6-jdk-8", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "maven"}}}}},
+			},
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{
+						Name: "commonPipelineEnvironment",
+						Type: "piperEnvironment",
+						Parameters: []map[string]interface{}{
+							{"Name": "artifactVersion"},
+							{"Name": "originalArtifactVersion"},
+							{"Name": "git/commitId"},
+							{"Name": "git/commitMessage"},
+						},
 					},
 				},
 			},

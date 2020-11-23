@@ -1,10 +1,9 @@
 # Configuration
 
 In general, the ABAP Environment pipeline supports different scenarios. The idea is that only configured stages are executed and the user is able to choose the appropriate stages.
-In this section, you can learn how to create a configuration in a (GitHub) repository to run an ABAP Environment Pipeline used for testing. This sepcific example will create a pipeline, which executes ATC checks after creating a new ABAP Environment system. In the end, the system will be deprovisioned.
+In this section, you can learn how to create a configuration in a (GitHub) repository to run an ABAP Environment Pipeline used for testing. This specific example will create a pipeline, which executes ATC checks after creating a new ABAP Environment system. In the end, the system will be deprovisioned.
 
 You can have a look at different pipeline configurations in our [SAP-samples repository](https://github.com/SAP-samples/abap-platform-ci-cd-samples).
-Other scenarios (e.g. building an ABAP AddOn) will be added to the documentation soon.
 
 ## 1. Prerequisites
 
@@ -32,26 +31,9 @@ The annotation `@Library('piper-lib-os')` is a reference to the Jenkins Configur
 
 An Overview of the releases of the Piper Library can be found [here](https://github.com/SAP/jenkins-library/releases).
 
-## 3. Manifest for Service Creation
+## 3. Configuration for the Communication
 
-Create a file `manifest.yml`. The pipeline will create a SAP Cloud Platform ABAP Environment System in the beginning (and delete it in the end). This file describes the ABAP instance, which will be created:
-
-```yaml
----
-create-services:
-- name:   "abapEnvironmentPipeline"
-  broker: "abap"
-  plan:   "standard"
-  parameters: "{ \"admin_email\" : \"user@example.com\", \"description\" : \"System for ABAP Pipeline\", \"is_development_allowed\" : true, \"sapsystemname\" : \"H02\", \"size_of_persistence\" : 4, \"size_of_runtime\" : 1 }"
-```
-
-The example values are a suggestion. Please change them accordingly and don't forget to enter your own email address. Please be aware that creating a SAP Cloud ABAP Environment instance may incur costs.
-
-Please have a look at the [step documentation](https://sap.github.io/jenkins-library/steps/cloudFoundryCreateService/) for more details.
-
-## 4. Configuration for the Communication
-
-The communication to the ABAP system is done using a Communication Arrangement. The Communication Arrangement is created during the pipeline via the command `cf create-service-key`. The configuration for the command needs to be stored in a JSON file. Create the file `sap_com_0510.json` in the repository with the following content:
+The communication to the ABAP system is done using a Communication Arrangement. The Communication Arrangement is created during the pipeline stage `Prepare System` after the system creation via the command `cf create-service-key`. The configuration for the command needs to be stored in a JSON file. Create the file `sap_com_0510.json` in the repository with the following content:
 
 ```json
 {
@@ -61,6 +43,20 @@ The communication to the ABAP system is done using a Communication Arrangement. 
 ```
 
 Please have a look at the [step documentation](https://sap.github.io/jenkins-library/steps/cloudFoundryCreateServiceKey/) for more details.
+
+## 4. Configuration for Cloning the repositories
+
+If you have specified the `Clone Repositories` Stage you can make use of a dedicated configuration file containing the repositories to be pulled and the branches to be switched on. The `repositories` flag makes use of such a configuration file and helps executing a Pull, Clone and Checkout of the Branches of the Repositores. Create the file `repositories.yml` with the following structure containing your repositories including the branches for this Stage.
+
+```yml
+repositories:
+- name: '/DMO/GIT_REPOSITORY'
+  branch: 'master'
+- name: '/DMO/GIT_REPO'
+  branch: 'master'
+```
+
+You can later use the `repositories.yml` file for the `repositories` parameter in the `Clone Repositories` stage used in chapter [7. Technical Pipeline Configuration](#7-technical-pipeline-configuration).
 
 ## 5. Configuration for ATC
 
@@ -88,10 +84,18 @@ general:
   cfServiceKeyName: 'jenkins_sap_com_0510'
 stages:
   Prepare System:
-    cfServiceManifest: 'manifest.yml'
+    cfService: 'abap'
+    cfServicePlan: 'standard'
+    abapSystemAdminEmail: 'user@example.com'
+    abapSystemDescription: 'ABAP Environment Q System'
+    abapSystemIsDevelopmentAllowed: false
+    abapSystemID: 'H02'
+    abapSystemSizeOfPersistence: 4
+    abapSystemSizeOfRuntime: 1
     cfServiceKeyConfig: 'sap_com_0510.json'
   Clone Repositories:
-    repositoryNames: ['/DMO/REPO']
+    strategy: 'Pull'
+    repositories: 'repositories.yml'
   ATC:
     atcConfig: 'atcConfig.yml'
 steps:
@@ -99,15 +103,30 @@ steps:
     cfDeleteServiceKeys: true
 ```
 
-If one stage of the pipeline is not configured in this yml file, the stage will not be executed during the pipeline run. If the stage `Prepare System` is configured, the system will be deprovisioned in the cleanup routine - although it is necessary to configure the step `cloudFoundryDeleteService` as above.
+Some stages may only be executed if a certain condition is met. For example: the stage `Prepare System` will only be executed if it is configured in the stages section. Also, the created system will be deprovisioned in the cleanup routine - although it is necessary to configure the step `cloudFoundryDeleteService` as above.
 
-Please make sure the parameters align with the values defined in the other configuration files, e.g. the service name in the `manifest.yml` needs to be the same as the value in `general.cfServiceInstance`.
+### Prepare system
+
+The example values for the `Prepare System` stage are a suggestion. Please change them accordingly and don't forget to enter your own email address. Please be aware that creating a SAP Cloud ABAP Environment instance may incur costs.
+
+Please have a look at the [step documentation](https://sap.github.io/jenkins-library/steps/abapEnvironmentCreateSystem/) for more details.
+
+### Clone Repositories
+
+If the `Clone Repositories` stage is configured, you can specify the `strategy` that should be performed on the Software Components and the Branches that you have configured in the `respositories.yml` file in step [4. Configuration for Cloning the repositories](#4-configuration-for-cloning-the-repositories). Per default the strategy will be set to `Pull` if not specified. The following strategies are supported and can be used on the Software Components and Branches:
+
+* `Pull`: If you have specified Pull as the strategy the [abapEnvironmentPullGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentPullGitRepo/) step will be used
+* `Clone`: If you have specified the Clone strategy the [abapEnvironmentCloneGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentCloneGitRepo/) step will be used
+* `CheckoutPull`: This strategy performs a Checkout of Branches with the [abapEnvironmentCheckoutBranch](https://sap.github.io/jenkins-library/steps/abapEnvironmentCheckoutBranch/) step followed by a Pull of the Software Component with the [abapEnvironmentPullGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentPullGitRepo/) step
+* `AddonBuild`: This will perform a Pull of the Software Component with the [abapEnvironmentPullGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentPullGitRepo/) step, a Checkout of Branches with the [abapEnvironmentCheckoutBranch](https://sap.github.io/jenkins-library/steps/abapEnvironmentCheckoutBranch/) step followed by a Pull of the Software Component again with the [abapEnvironmentPullGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentPullGitRepo/) step
+
+Note that you can use the `repositories.yml` file with the `repositories` parameter consistently for all strategies.
 
 The values for `cfApiEndpoint`,`cfOrg` and `cfSpace` can be found in the respective overview pages in the SAP Cloud Platform Cockpit. The Cloud Foundry credentials, saved in the Jenkins credentials store with the ID `cfCredentialsId`, must refer to a user with the required authorizations ("Space Developer") for the Cloud Foundry Organization and Space.
 
 ## 7. Create a Jenkins Pipeline
 
-On your Jenkinsserver click on `New Item` to create a new pipeline. Provide a name and select the type `Pipeline`.
+On your Jenkins server click on `New Item` to create a new pipeline. Provide a name and select the type `Pipeline`.
 On the creation screen for the pipeline, scroll to the section `Pipeline` and select `Pipeline script from SCM`. Provide the URL (and credentials - if required) of the repository, in which you configured the pipeline. Make sure the `Script Path` points to your Jenkinsfile - if you created the Jenkinsfile according to the documentation above, the default value should be correct.
 
 If you want to configure a build trigger, this can be done in the section of the same name. Here is one example: to run the pipeline every night, you can tick the box "Run periodically". In the visible input field, you can specify a shedule. Click on the questionsmark to read the documentation. The following example will result in the pipeline running every night between 3am and 4am.
@@ -142,6 +161,9 @@ return this
 ```
 
 While `tools: [checkStyle(pattern: '**/**/ATCResults.xml')]` will display the ATC findings using the checkstyle format, `qualityGates: [[threshold: 1, type: 'TOTAL', unstable: true]]` will set the build result to UNSTABLE in case the ATC results contain at least one warning or error.
+
+!!! caution "Local Jenkins"
+    If you are using a local Jenkins you may have to [adapt the Jenkins URL](https://stackoverflow.com/a/39543223) in the configuration if the CheckStyl Plugin shows this error: "Can't create fingerprints for some files".
 
 ### Stage Names
 
