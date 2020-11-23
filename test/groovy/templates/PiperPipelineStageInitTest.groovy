@@ -228,18 +228,4 @@ class PiperPipelineStageInitTest extends BasePiperTest {
         assertThat(stepParams.setupCommonPipelineEnvironment?.customDefaultsFromFiles, is(['my-custom-default-file.yml']))
     }
 
-    @Test
-    void testLegacyConfigSettings() {
-        boolean checkForLegacyConfigurationCalled = false
-        helper.registerAllowedMethod('checkForLegacyConfiguration', [Map.class], {
-            checkForLegacyConfigurationCalled = true
-        })
-        nullScript.commonPipelineEnvironment.configuration = [
-            general: [legacyConfigSettings: 'com.sap.piper/pipeline/cloudSdkLegacyConfigSettings.yml']
-        ]
-
-        jsr.step.piperPipelineStageInit(script: nullScript, juStabUtils: utils, buildTool: 'maven')
-
-        assertTrue(checkForLegacyConfigurationCalled)
-    }
 }
