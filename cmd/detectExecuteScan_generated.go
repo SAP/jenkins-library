@@ -116,8 +116,9 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 func detectExecuteScanMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "detectExecuteScan",
-			Aliases: []config.Alias{},
+			Name:        "detectExecuteScan",
+			Aliases:     []config.Alias{},
+			Description: "Executes Synopsys Detect scan",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -259,6 +260,9 @@ func detectExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 				},
+			},
+			Containers: []config.Container{
+				{Name: "openjdk", Image: "openjdk:11", WorkingDir: "/root", Options: []config.Option{{Name: "-u", Value: "0"}}},
 			},
 		},
 	}
