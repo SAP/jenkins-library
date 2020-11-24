@@ -99,8 +99,9 @@ func addGctsDeployFlags(cmd *cobra.Command, stepConfig *gctsDeployOptions) {
 func gctsDeployMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "gctsDeploy",
-			Aliases: []config.Alias{},
+			Name:        "gctsDeploy",
+			Aliases:     []config.Alias{},
+			Description: "Pulls a commit from the remote Git repository to a local repository",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{

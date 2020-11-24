@@ -97,8 +97,9 @@ func addGctsCloneRepositoryFlags(cmd *cobra.Command, stepConfig *gctsCloneReposi
 func gctsCloneRepositoryMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "gctsCloneRepository",
-			Aliases: []config.Alias{},
+			Name:        "gctsCloneRepository",
+			Aliases:     []config.Alias{},
+			Description: "Clones a Git repository",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{

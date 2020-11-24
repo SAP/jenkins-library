@@ -95,8 +95,9 @@ func addMavenExecuteIntegrationFlags(cmd *cobra.Command, stepConfig *mavenExecut
 func mavenExecuteIntegrationMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "mavenExecuteIntegration",
-			Aliases: []config.Alias{{Name: "mavenExecute", Deprecated: false}},
+			Name:        "mavenExecuteIntegration",
+			Aliases:     []config.Alias{{Name: "mavenExecute", Deprecated: false}},
+			Description: "This step will execute backend integration tests via the Jacoco Maven-plugin.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -158,6 +159,12 @@ func mavenExecuteIntegrationMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "maven/logSuccessfulMavenTransfers"}},
 					},
 				},
+			},
+			Containers: []config.Container{
+				{Name: "mvn", Image: "maven:3.6-jdk-8"},
+			},
+			Sidecars: []config.Container{
+				{},
 			},
 		},
 	}

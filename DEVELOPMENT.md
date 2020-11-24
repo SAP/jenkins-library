@@ -222,6 +222,7 @@ With writing a fatal error
 ```golang
 log.Entry().WithError(err).Fatal("the error message")
 ```
+
 the category will be written into the file `errorDetails.json` and can be used from there in the further pipeline flow.
 Writing the file is handled by [`pkg/log/FatalHook`](pkg/log/fatalHook.go).
 

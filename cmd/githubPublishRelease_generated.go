@@ -127,8 +127,9 @@ func addGithubPublishReleaseFlags(cmd *cobra.Command, stepConfig *githubPublishR
 func githubPublishReleaseMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "githubPublishRelease",
-			Aliases: []config.Alias{},
+			Name:        "githubPublishRelease",
+			Aliases:     []config.Alias{},
+			Description: "Publish a release in GitHub",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{

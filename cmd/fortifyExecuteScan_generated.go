@@ -248,8 +248,9 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 func fortifyExecuteScanMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "fortifyExecuteScan",
-			Aliases: []config.Alias{},
+			Name:        "fortifyExecuteScan",
+			Aliases:     []config.Alias{},
+			Description: "This step executes a Fortify scan on the specified project to perform static code analysis and check the source code for security flaws.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -697,6 +698,20 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+					},
+				},
+			},
+			Containers: []config.Container{
+				{},
+			},
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{
+						Name: "influx",
+						Type: "influx",
+						Parameters: []map[string]interface{}{
+							{"Name": "fortify_data"}, {"fields": []map[string]string{{"name": "projectName"}, {"name": "projectVersion"}, {"name": "violations"}, {"name": "corporateTotal"}, {"name": "corporateAudited"}, {"name": "auditAllTotal"}, {"name": "auditAllAudited"}, {"name": "spotChecksTotal"}, {"name": "spotChecksAudited"}, {"name": "spotChecksGap"}, {"name": "suspicious"}, {"name": "exploitable"}, {"name": "suppressed"}}},
+						},
 					},
 				},
 			},
