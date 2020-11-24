@@ -85,7 +85,6 @@ void call(Map parameters = [:]) {
         report(findBugs(createToolOptions(configuration.findbugs, [useRankAsPriority: true])), configuration.findbugs, configuration.archive)
         report(checkStyle(createToolOptions(configuration.checkstyle)), configuration.checkstyle, configuration.archive)
         // JAVA SCRIPT
-        //TODO: check if ESLint (in Checkstyle format) is sufficient or if JSLint is needed
         report(esLint(createToolOptions(configuration.eslint)), configuration.eslint, configuration.archive)
         // PYTHON
         report(pyLint(createToolOptions(configuration.pylint)), configuration.pylint, configuration.archive)
