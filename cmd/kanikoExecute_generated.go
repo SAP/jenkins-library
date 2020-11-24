@@ -135,8 +135,9 @@ func addKanikoExecuteFlags(cmd *cobra.Command, stepConfig *kanikoExecuteOptions)
 func kanikoExecuteMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "kanikoExecute",
-			Aliases: []config.Alias{},
+			Name:        "kanikoExecute",
+			Aliases:     []config.Alias{},
+			Description: "Executes a [Kaniko](https://github.com/GoogleContainerTools/kaniko) build for creating a Docker container.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -241,6 +242,21 @@ func kanikoExecuteMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "dockerfile"}},
+					},
+				},
+			},
+			Containers: []config.Container{
+				{Image: "gcr.io/kaniko-project/executor:debug", Options: []config.Option{{Name: "-u", Value: "0"}, {Name: "--entrypoint", Value: "''"}}},
+			},
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{
+						Name: "commonPipelineEnvironment",
+						Type: "piperEnvironment",
+						Parameters: []map[string]interface{}{
+							{"Name": "container/registryUrl"},
+							{"Name": "container/imageNameTag"},
+						},
 					},
 				},
 			},

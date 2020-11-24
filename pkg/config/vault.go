@@ -50,7 +50,7 @@ func getVaultClientFromConfig(config StepConfig, creds VaultCredentials) (vaultC
 		log.Entry().Debugf("Using vault namespace %s", namespace)
 	}
 
-	client, err := vault.NewClientWithAppRole(&api.Config{Address: address}, creds.AppRoleID, creds.AppRoleSecretID, namespace)
+	client, err := vault.NewClientWithAppRole(&vault.Config{Config: &api.Config{Address: address}, Namespace: namespace}, creds.AppRoleID, creds.AppRoleSecretID)
 	if err != nil {
 		return nil, err
 	}
@@ -148,9 +148,10 @@ func lookupPath(client vaultClient, path string, param *StepParameters) *string 
 		log.RegisterSecret(field)
 		return &field
 	}
-
+	log.Entry().Debugf("Secret did not contain a field name '%s'", param.Name)
 	// try parameter aliases
 	for _, alias := range param.Aliases {
+		log.Entry().Debugf("Trying alias field name '%s'", alias.Name)
 		field := secret[alias.Name]
 		if field != "" {
 			log.RegisterSecret(field)

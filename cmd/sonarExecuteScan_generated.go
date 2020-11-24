@@ -169,8 +169,9 @@ func addSonarExecuteScanFlags(cmd *cobra.Command, stepConfig *sonarExecuteScanOp
 func sonarExecuteScanMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "sonarExecuteScan",
-			Aliases: []config.Alias{},
+			Name:        "sonarExecuteScan",
+			Aliases:     []config.Alias{},
+			Description: "Executes the Sonar scanner",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -405,6 +406,20 @@ func sonarExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
+					},
+				},
+			},
+			Containers: []config.Container{
+				{Name: "sonar", Image: "sonarsource/sonar-scanner-cli:4.5"},
+			},
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{
+						Name: "influx",
+						Type: "influx",
+						Parameters: []map[string]interface{}{
+							{"Name": "step_data"}, {"fields": []map[string]string{{"name": "sonar"}}},
+						},
 					},
 				},
 			},
