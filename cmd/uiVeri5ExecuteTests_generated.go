@@ -91,8 +91,9 @@ func addUiVeri5ExecuteTestsFlags(cmd *cobra.Command, stepConfig *uiVeri5ExecuteT
 func uiVeri5ExecuteTestsMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "uiVeri5ExecuteTests",
-			Aliases: []config.Alias{},
+			Name:        "uiVeri5ExecuteTests",
+			Aliases:     []config.Alias{},
+			Description: "Executes UI5 e2e tests using uiVeri5",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -130,6 +131,9 @@ func uiVeri5ExecuteTestsMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 				},
+			},
+			Containers: []config.Container{
+				{Name: "uiVeri5", Image: "node:lts-stretch", EnvVars: []config.EnvVar{{Name: "no_proxy", Value: "localhost,selenium,$no_proxy"}, {Name: "NO_PROXY", Value: "localhost,selenium,$NO_PROXY"}}, WorkingDir: "/home/node"},
 			},
 		},
 	}
