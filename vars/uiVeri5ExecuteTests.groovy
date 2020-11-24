@@ -77,7 +77,7 @@ import static com.sap.piper.Prerequisites.checkScript
  * * Control locators (OPA5 declarative matchers) allow locating and interacting with UI5 controls.
  * * Does not depend on testability support in applications - works with autorefreshing views, resizing elements, animated transitions.
  * * Declarative authentications - authentication flow over OAuth2 providers, etc.
- * * Console operation, CI ready, fully configurable, no need for java (coming soon) or IDE.
+ * * Console operation, CI ready, fully configurable, no need for java (comming soon) or IDE.
  * * Covers full ui5 browser matrix - Chrome,Firefox,IE,Edge,Safari,iOS,Android.
  * * Open-source, modify to suite your specific neeeds.
  *
@@ -100,7 +100,7 @@ void call(Map parameters = [:]) {
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
-            .addIfEmpty('seleniumHost', isKubernetes()?'localhost':'selenium')
+            .addIfEmpty('seleniumHost', getHost())
             .use()
 
         utils.pushToSWA([
@@ -110,8 +110,8 @@ void call(Map parameters = [:]) {
         ], config)
 
         config.stashContent = config.testRepository ? [GitUtils.handleTestRepository(this, config)] : utils.unstashAll(config.stashContent)
-        config.installCommand = GStringTemplateEngine.newInstance().createTemplate(config.installCommand).make([config: config]).toString()
-        config.runCommand = GStringTemplateEngine.newInstance().createTemplate(config.runCommand).make([config: config]).toString()
+        //config.installCommand = GStringTemplateEngine.newInstance().createTemplate(config.installCommand).make([config: config]).toString()
+        //config.runCommand = GStringTemplateEngine.newInstance().createTemplate(config.runCommand).make([config: config]).toString()
         config.dockerEnvVars.TARGET_SERVER_URL = config.dockerEnvVars.TARGET_SERVER_URL ?: config.testServerUrl
 
         seleniumExecuteTests(
@@ -131,8 +131,9 @@ void call(Map parameters = [:]) {
                 npm --version
             """
             try {
-                sh "NPM_CONFIG_PREFIX=~/.npm-global ${config.installCommand}"
-                sh "PATH=\$PATH:~/.npm-global/bin ${config.runCommand} ${config.testOptions}"
+                //sh "NPM_CONFIG_PREFIX=~/.npm-global ${config.installCommand}"
+                //sh "PATH=\$PATH:~/.npm-global/bin ${config.runCommand} ${config.testOptions}"
+                sh "./piper uiVeri5ExecuteTests --confPath ${config.testOptions}"
             } catch (err) {
                 echo "[${STEP_NAME}] Test execution failed"
                 script.currentBuild.result = 'UNSTABLE'
@@ -142,6 +143,9 @@ void call(Map parameters = [:]) {
     }
 }
 
-boolean isKubernetes() {
-    return Boolean.valueOf(env.ON_K8S)
+String getHost() {
+    if (Boolean.valueOf(env.ON_K8S)) {
+        return 'localhost'
+    }
+    return 'selenium'
 }
