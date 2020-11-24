@@ -71,6 +71,9 @@ func uploadSarFiles(repos []abaputils.Repository, conn abapbuild.Connector, read
 				return err
 			}
 			log.Entry().Infof("... %d bytes read", len(sarFile))
+			if len(sarFile) == 0 {
+				return errors.New("File has no content - 0 bytes")
+			}
 			log.Entry().Infof("Upload SAR file %s in chunks", filename)
 			//err = conn.UploadSarFile("/odata/aas_file_upload", sarFile)
 			err = conn.UploadSarFileInChunks("/odata/aas_file_upload", filename, sarFile)

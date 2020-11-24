@@ -186,7 +186,9 @@ func (conn Connector) UploadSarFileInChunks(appendum string, fileName string, sa
 	header := make(map[string][]string)
 	header["Content-Disposition"] = []string{"form-data; name=\"file\"; filename=\"" + fileName + "\""}
 
-	chunkSize := 10000 // 10KB for testing //1000000 //1MB for Testing,
+	//chunkSize := 10000 // 10KB for testing
+	//chunkSize := 1000000 //1MB for Testing,
+	chunkSize := 10000000 //10MB
 	log.Entry().Infof("Upload in chunks of %d bytes", chunkSize)
 
 	sarFileBuffer := bytes.NewBuffer(sarFile)
@@ -202,7 +204,7 @@ func (conn Connector) UploadSarFileInChunks(appendum string, fileName string, sa
 		response, err := conn.Client.SendRequest("POST", url, nextChunk, header, nil)
 		if err != nil {
 			errorbody, _ := ioutil.ReadAll(response.Body)
-			response.Body.Close()
+			defer response.Body.Close()
 			return errors.Wrapf(err, "Upload of SAR file failed: %v", string(errorbody))
 		}
 

@@ -126,7 +126,10 @@ func (p *Package) Register() error {
 	}
 
 	var jPck jsonPackage
-	json.Unmarshal(body, &jPck)
+	err = json.Unmarshal(body, &jPck)
+	if err != nil {
+		return err
+	}
 	p.Status = jPck.Package.Status
 	log.Entry().Infof("Package status %s", p.Status)
 	return nil
