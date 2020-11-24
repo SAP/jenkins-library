@@ -113,7 +113,7 @@ It resolves the dotted version string into version, support package level and pa
 }
 
 func addAbapAddonAssemblyKitCheckCVsFlags(cmd *cobra.Command, stepConfig *abapAddonAssemblyKitCheckCVsOptions) {
-	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitEndpoint, "abapAddonAssemblyKitEndpoint", os.Getenv("PIPER_abapAddonAssemblyKitEndpoint"), "Base URL to the Addon Assembly Kit as a Service (AAKaaS) system")
+	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitEndpoint, "abapAddonAssemblyKitEndpoint", `https://apps.support.sap.com`, "Base URL to the Addon Assembly Kit as a Service (AAKaaS) system")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for the Addon Assembly Kit as a Service (AAKaaS) system")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for the Addon Assembly Kit as a Service (AAKaaS) system")
 	cmd.Flags().StringVar(&stepConfig.AddonDescriptorFileName, "addonDescriptorFileName", `addon.yml`, "File name of the YAML file which describes the Product Version and corresponding Software Component Versions")
@@ -129,8 +129,9 @@ func addAbapAddonAssemblyKitCheckCVsFlags(cmd *cobra.Command, stepConfig *abapAd
 func abapAddonAssemblyKitCheckCVsMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "abapAddonAssemblyKitCheckCVs",
-			Aliases: []config.Alias{},
+			Name:        "abapAddonAssemblyKitCheckCVs",
+			Aliases:     []config.Alias{},
+			Description: "This step checks the validity of Software Component Versions.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -179,6 +180,17 @@ func abapAddonAssemblyKitCheckCVsMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+					},
+				},
+			},
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{
+						Name: "commonPipelineEnvironment",
+						Type: "piperEnvironment",
+						Parameters: []map[string]interface{}{
+							{"Name": "abap/addonDescriptor"},
+						},
 					},
 				},
 			},

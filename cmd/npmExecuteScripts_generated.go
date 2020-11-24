@@ -80,7 +80,7 @@ func NpmExecuteScriptsCommand() *cobra.Command {
 }
 
 func addNpmExecuteScriptsFlags(cmd *cobra.Command, stepConfig *npmExecuteScriptsOptions) {
-	cmd.Flags().BoolVar(&stepConfig.Install, "install", false, "Run npm install or similar commands depending on the project structure.")
+	cmd.Flags().BoolVar(&stepConfig.Install, "install", true, "Run npm install or similar commands depending on the project structure.")
 	cmd.Flags().StringSliceVar(&stepConfig.RunScripts, "runScripts", []string{}, "List of additional run scripts to execute from package.json.")
 	cmd.Flags().StringVar(&stepConfig.DefaultNpmRegistry, "defaultNpmRegistry", os.Getenv("PIPER_defaultNpmRegistry"), "URL of the npm registry to use. Defaults to https://registry.npmjs.org/")
 	cmd.Flags().BoolVar(&stepConfig.VirtualFrameBuffer, "virtualFrameBuffer", false, "(Linux only) Start a virtual frame buffer in the background. This allows you to run a web browser without the need for an X server. Note that xvfb needs to be installed in the execution environment.")
@@ -94,8 +94,9 @@ func addNpmExecuteScriptsFlags(cmd *cobra.Command, stepConfig *npmExecuteScripts
 func npmExecuteScriptsMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "npmExecuteScripts",
-			Aliases: []config.Alias{{Name: "executeNpm", Deprecated: false}},
+			Name:        "npmExecuteScripts",
+			Aliases:     []config.Alias{{Name: "executeNpm", Deprecated: false}},
+			Description: "Execute npm run scripts on all npm packages in a project",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -157,6 +158,9 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 				},
+			},
+			Containers: []config.Container{
+				{Name: "node", Image: "node:12-buster-slim"},
 			},
 		},
 	}

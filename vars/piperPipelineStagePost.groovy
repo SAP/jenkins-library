@@ -8,9 +8,8 @@ import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
 @Field String TECHNICAL_STAGE_NAME = 'postPipelineHook'
-
-@Field Set GENERAL_CONFIG_KEYS = []
-@Field STAGE_STEP_KEYS = []
+@Field Set GENERAL_CONFIG_KEYS = ["vaultServerUrl", "vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId"]
+@Field STAGE_STEP_KEYS = ["vaultRotateSecretId"]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
@@ -18,6 +17,7 @@ import static com.sap.piper.Prerequisites.checkScript
  * In this stage reporting actions like mail notification or telemetry reporting are executed.
  *
  * This stage contains following steps:
+ * - [vaultRotateSecretId](./vaultRotateSecretId.md)
  * - [influxWriteData](./influxWriteData.md)
  * - [mailSendNotification](./mailSendNotification.md)
  *
@@ -37,14 +37,20 @@ void call(Map parameters = [:]) {
         .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
         .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
         .mixin(parameters, PARAMETER_KEYS)
+        .addIfEmpty("vaultRotateSecretId", false)
         .use()
 
     piperStageWrapper (script: script, stageName: stageName, stageLocking: false) {
+        // rotate vault secret id if necessary
+        if (config.vaultRotateSecretId && config.vaultServerUrl && config.vaultAppRoleSecretTokenCredentialsId
+            && config.vaultAppRoleTokenCredentialsId) {
+            vaultRotateSecretId script: script
+        }
+
         // telemetry reporting
         utils.pushToSWA([step: STEP_NAME], config)
 
         influxWriteData script: script
-
         if(env.BRANCH_NAME == parameters.script.commonPipelineEnvironment.getStepConfiguration('', '').productiveBranch) {
             if(parameters.script.commonPipelineEnvironment.configuration.runStep?.get('Post Actions')?.slackSendNotification) {
                 slackSendNotification script: parameters.script
