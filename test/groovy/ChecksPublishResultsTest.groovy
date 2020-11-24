@@ -254,7 +254,12 @@ class ChecksPublishResultsTest extends BasePiperTest {
         assertThat(publisherStepOptions, hasKey('PmdPublisher'))
         assertThat(publisherStepOptions['PmdPublisher'], hasKey('qualityGates'))
         assertThat(publisherStepOptions['PmdPublisher']['qualityGates'], allOf(
-            hasSize(1),
+            hasSize(2),
+            hasItem(allOf(
+                hasEntry('threshold', 1),
+                hasEntry('type', 'TOTAL_ERROR'),
+                hasEntry('unstable', false),
+            )),
             hasItem(allOf(
                 hasEntry('threshold', 1),
                 hasEntry('type', 'TOTAL_HIGH'),
@@ -273,7 +278,12 @@ class ChecksPublishResultsTest extends BasePiperTest {
         assertThat(publisherStepOptions['PmdPublisher']['qualityGates'], hasSize(2))
         assertThat(publisherStepOptions['PmdPublisher']['qualityGates'], allOf(
             //TODO: thresholds are added to existing qualityGates, thus we have 2 defined in the end
-            hasSize(2),
+            hasSize(3),
+            hasItem(allOf(
+                hasEntry('threshold', 1),
+                hasEntry('type', 'TOTAL_ERROR'),
+                hasEntry('unstable', false),
+            )),
             hasItem(allOf(
                 hasEntry('threshold', 1),
                 hasEntry('type', 'TOTAL_HIGH'),
