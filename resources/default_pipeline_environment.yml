@@ -121,6 +121,9 @@ steps:
         - threshold: 1
           type: 'TOTAL_HIGH'
           unstable: false
+        - threshold: 1
+          type: 'TOTAL_ERROR'
+          unstable: false
     pmd:
       pattern: '**/target/pmd.xml'
       archive: true
@@ -128,6 +131,9 @@ steps:
       qualityGates:
         - threshold: 1
           type: 'TOTAL_HIGH'
+          unstable: false
+        - threshold: 1
+          type: 'TOTAL_ERROR'
           unstable: false
     cpd:
       pattern: '**/target/cpd.xml'
@@ -137,6 +143,9 @@ steps:
         - threshold: 1
           type: 'TOTAL_HIGH'
           unstable: false
+        - threshold: 1
+          type: 'TOTAL_ERROR'
+          unstable: false
     findbugs:
       pattern: '**/target/findbugsXml.xml, **/target/findbugs.xml'
       archive: true
@@ -145,11 +154,17 @@ steps:
         - threshold: 1
           type: 'TOTAL_HIGH'
           unstable: false
+        - threshold: 1
+          type: 'TOTAL_ERROR'
+          unstable: false
     checkstyle:
       pattern: '**/target/checkstyle-result.xml'
       archive: true
       active: false
       qualityGates:
+        - threshold: 1
+          type: 'TOTAL_HIGH'
+          unstable: false
         - threshold: 1
           type: 'TOTAL_ERROR'
           unstable: false
@@ -161,6 +176,9 @@ steps:
         - threshold: 1
           type: 'TOTAL_HIGH'
           unstable: false
+        - threshold: 1
+          type: 'TOTAL_ERROR'
+          unstable: false
     pylint:
       pattern: '**/pylint.log'
       archive: true
@@ -168,6 +186,9 @@ steps:
       qualityGates:
         - threshold: 1
           type: 'TOTAL_HIGH'
+          unstable: false
+        - threshold: 1
+          type: 'TOTAL_ERROR'
           unstable: false
     archive: false
   cloudFoundryDeploy:
