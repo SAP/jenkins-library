@@ -370,6 +370,8 @@ steps:
       - 'tests'
   npmExecute:
     dockerImage: 'node:lts-stretch'
+  npmExecuteScripts:
+    install: true
   whitesourceExecuteScan:
     createProductFromPipeline: true
     emailAddressesOfInitialProductAdmins: []
