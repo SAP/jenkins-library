@@ -93,6 +93,8 @@ void call(Map parameters = [:]) {
         def utils = parameters.juStabUtils ?: new Utils()
         String stageName = parameters.stageName ?: env.STAGE_NAME
 
+        piperExecuteBin.prepareExecution(script, utils, parameters)
+
         // load default & individual configuration
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults([:], stageName)
