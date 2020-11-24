@@ -275,7 +275,6 @@ class ChecksPublishResultsTest extends BasePiperTest {
         // assert
         assertThat(publisherStepOptions, hasKey('PmdPublisher'))
         assertThat(publisherStepOptions['PmdPublisher'], hasKey('qualityGates'))
-        assertThat(publisherStepOptions['PmdPublisher']['qualityGates'], hasSize(2))
         assertThat(publisherStepOptions['PmdPublisher']['qualityGates'], allOf(
             //TODO: thresholds are added to existing qualityGates, thus we have 2 defined in the end
             hasSize(3),
