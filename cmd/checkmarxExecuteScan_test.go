@@ -88,10 +88,17 @@ func (sys *systemMock) GetProjectsByNameAndTeam(projectName, teamID string) ([]c
 	return []checkmarx.Project{}, fmt.Errorf("no project error")
 }
 func (sys *systemMock) FilterTeamByName(teams []checkmarx.Team, teamName string) checkmarx.Team {
-	return checkmarx.Team{ID: json.RawMessage(`"16"`), FullName: "OpenSource/Cracks/16"}
+	if teamName == "OpenSource/Cracks/16" {
+		return checkmarx.Team{ID: json.RawMessage(`"16"`), FullName: "OpenSource/Cracks/16"}
+	}
+	return checkmarx.Team{ID: json.RawMessage(`15`), FullName: "OpenSource/Cracks/15"}
 }
 func (sys *systemMock) FilterTeamByID(teams []checkmarx.Team, teamID json.RawMessage) checkmarx.Team {
-	return checkmarx.Team{ID: json.RawMessage(`"15"`), FullName: "OpenSource/Cracks/15"}
+	teamIDBytes, _ := teamID.MarshalJSON()
+	if bytes.Compare(teamIDBytes, []byte(`"16"`)) == 0 {
+		return checkmarx.Team{ID: json.RawMessage(`"16"`), FullName: "OpenSource/Cracks/16"}
+	}
+	return checkmarx.Team{ID: json.RawMessage(`15`), FullName: "OpenSource/Cracks/15"}
 }
 func (sys *systemMock) DownloadReport(reportID int) ([]byte, error) {
 	return sys.response.([]byte), nil
@@ -141,7 +148,7 @@ func (sys *systemMock) GetProjects() ([]checkmarx.Project, error) {
 	return []checkmarx.Project{{ID: 15, Name: "OtherTest", TeamID: "16"}, {ID: 1, Name: "Test", TeamID: "16"}}, nil
 }
 func (sys *systemMock) GetTeams() []checkmarx.Team {
-	return []checkmarx.Team{{ID: json.RawMessage(`"16"`), FullName: "OpenSource/Cracks/16"}, {ID: json.RawMessage(`"15"`), FullName: "OpenSource/Cracks/15"}}
+	return []checkmarx.Team{{ID: json.RawMessage(`"16"`), FullName: "OpenSource/Cracks/16"}, {ID: json.RawMessage(`15`), FullName: "OpenSource/Cracks/15"}}
 }
 
 type systemMockForExistingProject struct {
@@ -349,7 +356,7 @@ func TestSetPresetForProjectWithNameProvided(t *testing.T) {
 
 func TestVerifyOnly(t *testing.T) {
 	sys := &systemMockForExistingProject{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`)}
-	options := checkmarxExecuteScanOptions{VerifyOnly: true, ProjectName: "TestExisting", VulnerabilityThresholdUnit: "absolute", FullScanCycle: "2", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+	options := checkmarxExecuteScanOptions{VerifyOnly: true, ProjectName: "TestExisting", VulnerabilityThresholdUnit: "absolute", FullScanCycle: "2", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamName: "OpenSource/Cracks/15", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
 	workspace, err := ioutil.TempDir("", "workspace1")
 	if err != nil {
 		t.Fatal("Failed to create temporary workspace directory")
