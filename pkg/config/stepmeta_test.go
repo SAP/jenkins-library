@@ -629,3 +629,46 @@ func TestGetResourceParameters(t *testing.T) {
 		})
 	}
 }
+
+func TestAvoidEmptyFields(t *testing.T) {
+	t.Parallel()
+	t.Run("ignore empty string", func(t *testing.T) {
+		t.Parallel()
+		m := make(map[string]interface{})
+		putStringIfNotEmpty(m, "key", "")
+		assert.Len(t, m, 0)
+	})
+	t.Run("add non-empty string", func(t *testing.T) {
+		t.Parallel()
+		m := make(map[string]interface{})
+		putStringIfNotEmpty(m, "key", "value")
+		assert.Equal(t, "value", m["key"])
+	})
+	t.Run("ignore empty slice", func(t *testing.T) {
+		t.Parallel()
+		m := make(map[string]interface{})
+		putSliceIfNotEmpty(m, "key", []string{})
+		assert.Len(t, m, 0)
+	})
+	t.Run("add non-empty slice", func(t *testing.T) {
+		t.Parallel()
+		m := make(map[string]interface{})
+		putSliceIfNotEmpty(m, "key", []string{"value"})
+		assert.Equal(t, []string{"value"}, m["key"])
+	})
+	t.Run("ignore empty map", func(t *testing.T) {
+		t.Parallel()
+		m := make(map[string]interface{})
+		value := make(map[string]string)
+		putMapIfNotEmpty(m, "key", value)
+		assert.Len(t, m, 0)
+	})
+	t.Run("add non-empty map", func(t *testing.T) {
+		t.Parallel()
+		m := make(map[string]interface{})
+		value := make(map[string]string)
+		value["param"] = "value"
+		putMapIfNotEmpty(m, "key", value)
+		assert.Equal(t, value, m["key"])
+	})
+}

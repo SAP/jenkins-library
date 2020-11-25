@@ -278,20 +278,21 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 			if len(container.Command) > 0 {
 				p["containerCommand"] = container.Command[0]
 			}
-			p["containerName"] = container.Name
-			p["containerShell"] = container.Shell
-			p["dockerEnvVars"] = EnvVarsAsMap(container.EnvVars)
-			p["dockerImage"] = container.Image
-			p["dockerName"] = container.Name
+
+			putStringIfNotEmpty(p, "containerName", container.Name)
+			putStringIfNotEmpty(p, "containerShell", container.Shell)
+			putMapIfNotEmpty(p, "dockerEnvVars", EnvVarsAsMap(container.EnvVars))
+			putStringIfNotEmpty(p, "dockerImage", container.Image)
+			putStringIfNotEmpty(p, "dockerName", container.Name)
 			if container.ImagePullPolicy != "" {
 				p["dockerPullImage"] = container.ImagePullPolicy != "Never"
 			}
-			p["dockerWorkspace"] = container.WorkingDir
-			p["dockerOptions"] = OptionsAsStringSlice(container.Options)
-			//p["dockerVolumeBind"] = volumeMountsAsStringSlice(container.VolumeMounts)
+			putStringIfNotEmpty(p, "dockerWorkspace", container.WorkingDir)
+			putSliceIfNotEmpty(p, "dockerOptions", OptionsAsStringSlice(container.Options))
+			//putSliceIfNotEmpty(p, "dockerVolumeBind", volumeMountsAsStringSlice(container.VolumeMounts))
 
 			// Ready command not relevant for main runtime container so far
-			//p[] = container.ReadyCommand
+			//putStringIfNotEmpty(p, ..., container.ReadyCommand)
 		}
 
 	}
@@ -429,6 +430,24 @@ func OptionsAsStringSlice(options []Option) []string {
 		e = append(e, fmt.Sprintf("%v %v", v.Name, v.Value))
 	}
 	return e
+}
+
+func putStringIfNotEmpty(config map[string]interface{}, key, value string) {
+	if value != "" {
+		config[key] = value
+	}
+}
+
+func putMapIfNotEmpty(config map[string]interface{}, key string, value map[string]string) {
+	if len(value) > 0 {
+		config[key] = value
+	}
+}
+
+func putSliceIfNotEmpty(config map[string]interface{}, key string, value []string) {
+	if len(value) > 0 {
+		config[key] = value
+	}
 }
 
 //ToDo: Enable this when the Volumes part is also implemented
