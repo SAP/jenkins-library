@@ -12,11 +12,11 @@ import groovy.transform.Field
 @Field def STEP_NAME = getClass().getName()
 
 @Field Set TOOLS = [
-     /**
-      * Allows to publish the check results.
-      * @possibleValues `true`, `false`, `Map`
-      */
-     'aggregation',
+    /**
+     * Allows to publish the check results.
+     * @possibleValues `true`, `false`, `Map`
+     */
+    'aggregation',
     /**
      * Searches and publishes TODOs in files with the [Task Scanner Plugin](https://wiki.jenkins-ci.org/display/JENKINS/Task+Scanner+Plugin).
      * @possibleValues `true`, `false`, `Map`
