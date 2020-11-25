@@ -435,7 +435,7 @@ func getMtaID(mtaYamlFile string, utils mtaBuildUtils) (string, error) {
 
 	id, ok := result["ID"].(string)
 	if !ok || len(id) == 0 {
-		fmt.Errorf("Id not found in mta yaml file (or wrong type)")
+		return "", fmt.Errorf("Id not found in mta yaml file (or wrong type)")
 	}
 
 	return id, nil
