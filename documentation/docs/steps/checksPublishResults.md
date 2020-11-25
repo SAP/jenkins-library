@@ -79,7 +79,7 @@ deprecated, do not use
 
 ### QualityGates
 
-It is possible to define quality gates to set the build result to `FAILURE` (not stop the build) on a certain count of findings. To achieve this, just define your quality gates a followed for the specific check tool:
+It is possible to define quality gates to set the build result to `FAILURE` (not stop the build) on a certain count of findings. To achieve this, just define your quality gates as followed for the specific check tool:
 
 ```groovy
 qualityGates: [
