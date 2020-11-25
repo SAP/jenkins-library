@@ -204,7 +204,7 @@ func (conn Connector) UploadSarFileInChunks(appendum string, fileName string, sa
 		response, err := conn.Client.SendRequest("POST", url, nextChunk, header, nil)
 		if err != nil {
 			errorbody, _ := ioutil.ReadAll(response.Body)
-			defer response.Body.Close()
+			response.Body.Close()
 			return errors.Wrapf(err, "Upload of SAR file failed: %v", string(errorbody))
 		}
 

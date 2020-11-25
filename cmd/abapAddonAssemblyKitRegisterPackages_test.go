@@ -12,7 +12,6 @@ import (
 )
 
 func mockReader(path string) ([]byte, error) {
-	//file := []byte("test")
 	if path == "exists" {
 		return []byte("test"), nil
 	} else if path == "null" {
