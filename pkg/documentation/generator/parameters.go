@@ -256,7 +256,7 @@ func resourceReferenceDetails(resourceRef []config.ResourceReference) string {
 			}
 			resourceDetails += fmt.Sprintf("&nbsp;&nbsp;id: [`%v`](#%v)<br />", resource.Name, strings.ToLower(resource.Name))
 			if resource.Param != "" {
-				resourceDetails += fmt.Sprintf("&nbsp;&nbsp;reference to: `%v` <br />", resource.Param)
+				resourceDetails += fmt.Sprintf("&nbsp;&nbsp;reference to: `%v`<br />", resource.Param)
 			}
 			continue
 		}
