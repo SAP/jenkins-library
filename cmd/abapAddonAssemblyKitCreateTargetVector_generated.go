@@ -113,7 +113,7 @@ The Target Vector describes the software state, which shall be reached in the ma
 }
 
 func addAbapAddonAssemblyKitCreateTargetVectorFlags(cmd *cobra.Command, stepConfig *abapAddonAssemblyKitCreateTargetVectorOptions) {
-	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitEndpoint, "abapAddonAssemblyKitEndpoint", os.Getenv("PIPER_abapAddonAssemblyKitEndpoint"), "Base URL to the Addon Assembly Kit as a Service (AAKaaS) system")
+	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitEndpoint, "abapAddonAssemblyKitEndpoint", `https://apps.support.sap.com`, "Base URL to the Addon Assembly Kit as a Service (AAKaaS) system")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for the Addon Assembly Kit as a Service (AAKaaS) system")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for the Addon Assembly Kit as a Service (AAKaaS) system")
 	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions")
@@ -128,8 +128,9 @@ func addAbapAddonAssemblyKitCreateTargetVectorFlags(cmd *cobra.Command, stepConf
 func abapAddonAssemblyKitCreateTargetVectorMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "abapAddonAssemblyKitCreateTargetVector",
-			Aliases: []config.Alias{},
+			Name:        "abapAddonAssemblyKitCreateTargetVector",
+			Aliases:     []config.Alias{},
+			Description: "This step creates a Target Vector for software lifecycle operations",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -170,6 +171,17 @@ func abapAddonAssemblyKitCreateTargetVectorMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+					},
+				},
+			},
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{
+						Name: "commonPipelineEnvironment",
+						Type: "piperEnvironment",
+						Parameters: []map[string]interface{}{
+							{"Name": "abap/addonDescriptor"},
+						},
 					},
 				},
 			},

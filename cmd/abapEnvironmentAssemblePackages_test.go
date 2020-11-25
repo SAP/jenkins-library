@@ -78,7 +78,7 @@ func TestStarting(t *testing.T) {
 		repo.Status = "R"
 		repos = append(repos, repo)
 
-		builds, buildsAlreadyReleased, err := starting(repos, *conn)
+		builds, buildsAlreadyReleased, err := starting(repos, *conn, time.Duration(0*time.Second))
 		assert.NoError(t, err)
 		assert.Equal(t, 1, len(builds))
 		assert.Equal(t, 1, len(buildsAlreadyReleased))
@@ -101,7 +101,7 @@ func TestStartingInvalidInput(t *testing.T) {
 			Status: "P",
 		}
 		repos = append(repos, repo)
-		_, _, err := starting(repos, *conn)
+		_, _, err := starting(repos, *conn, time.Duration(0*time.Second))
 		assert.Error(t, err)
 	})
 }
