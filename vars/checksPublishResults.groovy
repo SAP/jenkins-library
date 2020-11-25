@@ -12,6 +12,11 @@ import groovy.transform.Field
 @Field def STEP_NAME = getClass().getName()
 
 @Field Set TOOLS = [
+     /**
+      * Allows to publish the check results.
+      * @possibleValues `true`, `false`, `Map`
+      */
+     'aggregation',
     /**
      * Searches and publishes TODOs in files with the [Task Scanner Plugin](https://wiki.jenkins-ci.org/display/JENKINS/Task+Scanner+Plugin).
      * @possibleValues `true`, `false`, `Map`
@@ -72,6 +77,10 @@ void call(Map parameters = [:]) {
             .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .use()
+
+        if (configuration.aggregation && configuration.aggregation.active != false){
+            error "[ERROR] Configuration of the aggregation view is no longer possible. Migrate any thresholds defined here to tool specific quality gates. (piper-lib/${STEP_NAME})"
+        }
 
         new Utils().pushToSWA([
             step: STEP_NAME,
