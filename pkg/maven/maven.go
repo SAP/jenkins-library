@@ -290,7 +290,7 @@ func flattenPom(options *EvaluateOptions, utils Utils) error {
 	mavenOptionsFlatten := ExecuteOptions{
 		Goals:               []string{"flatten:flatten"},
 		Defines:             []string{"-Dflatten.mode=resolveCiFriendliesOnly"},
-		PomPath:             "pom.xml",
+		PomPath:             options.PomPath,
 		M2Path:              options.M2Path,
 		ProjectSettingsFile: options.ProjectSettingsFile,
 		GlobalSettingsFile:  options.GlobalSettingsFile,
