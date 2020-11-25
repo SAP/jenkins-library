@@ -104,8 +104,9 @@ func addGithubCheckBranchProtectionFlags(cmd *cobra.Command, stepConfig *githubC
 func githubCheckBranchProtectionMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "githubCheckBranchProtection",
-			Aliases: []config.Alias{},
+			Name:        "githubCheckBranchProtection",
+			Aliases:     []config.Alias{},
+			Description: "Check branch protection of a GitHub branch",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
