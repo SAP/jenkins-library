@@ -323,6 +323,8 @@ spec:
           - STEPS
         default: "tests/**/*.py **/src/test/**/*.java"
       - name: productToken
+        aliases:
+          - name: whitesourceProductToken
         type: string
         description: "Token of the WhiteSource product to be created and used for results aggregation,
           usually determined automatically. Can optionally be provided as an alternative to `productName`."
