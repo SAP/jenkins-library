@@ -53,7 +53,7 @@ spec:
   #outputs:
   containers:
     - name: uiVeri5
-      image: node:lts-stretch
+      image: node:10.23.0-stretch #node:lts-stretch
       env:
         - name: no_proxy
           value: localhost,selenium,$no_proxy

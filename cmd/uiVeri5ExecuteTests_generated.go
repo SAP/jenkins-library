@@ -133,7 +133,7 @@ func uiVeri5ExecuteTestsMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "uiVeri5", Image: "node:lts-stretch", EnvVars: []config.EnvVar{{Name: "no_proxy", Value: "localhost,selenium,$no_proxy"}, {Name: "NO_PROXY", Value: "localhost,selenium,$NO_PROXY"}}, WorkingDir: "/home/node"},
+				{Name: "uiVeri5", Image: "node:10.23.0-stretch", EnvVars: []config.EnvVar{{Name: "no_proxy", Value: "localhost,selenium,$no_proxy"}, {Name: "NO_PROXY", Value: "localhost,selenium,$NO_PROXY"}}, WorkingDir: "/home/node"},
 			},
 		},
 	}
