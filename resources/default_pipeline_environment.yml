@@ -110,11 +110,6 @@ steps:
       - 'tests'
     testPackage: 'piper-bats'
   checksPublishResults:
-    aggregation:
-      active: true
-      thresholds:
-        fail:
-          high: '0'
     tasks:
       pattern: '**/*.java'
       low: ''
@@ -122,51 +117,79 @@ steps:
       high: 'FIXME'
       archive: true
       active: false
-      thresholds:
-        fail:
-          high: '0'
+      qualityGates:
+        - threshold: 1
+          type: 'TOTAL_HIGH'
+          unstable: false
+        - threshold: 1
+          type: 'TOTAL_ERROR'
+          unstable: false
     pmd:
       pattern: '**/target/pmd.xml'
       archive: true
       active: false
-      thresholds:
-        fail:
-          high: '0'
+      qualityGates:
+        - threshold: 1
+          type: 'TOTAL_HIGH'
+          unstable: false
+        - threshold: 1
+          type: 'TOTAL_ERROR'
+          unstable: false
     cpd:
       pattern: '**/target/cpd.xml'
       archive: true
       active: false
-      thresholds:
-        fail:
-          high: '0'
+      qualityGates:
+        - threshold: 1
+          type: 'TOTAL_HIGH'
+          unstable: false
+        - threshold: 1
+          type: 'TOTAL_ERROR'
+          unstable: false
     findbugs:
       pattern: '**/target/findbugsXml.xml, **/target/findbugs.xml'
       archive: true
       active: false
-      thresholds:
-        fail:
-          high: '0'
+      qualityGates:
+        - threshold: 1
+          type: 'TOTAL_HIGH'
+          unstable: false
+        - threshold: 1
+          type: 'TOTAL_ERROR'
+          unstable: false
     checkstyle:
       pattern: '**/target/checkstyle-result.xml'
       archive: true
       active: false
-      thresholds:
-        fail:
-          high: '0'
+      qualityGates:
+        - threshold: 1
+          type: 'TOTAL_HIGH'
+          unstable: false
+        - threshold: 1
+          type: 'TOTAL_ERROR'
+          unstable: false
     eslint:
       pattern: '**/eslint.xml'
       archive: true
       active: false
-      thresholds:
-        fail:
-          high: '0'
+      qualityGates:
+        - threshold: 1
+          type: 'TOTAL_HIGH'
+          unstable: false
+        - threshold: 1
+          type: 'TOTAL_ERROR'
+          unstable: false
     pylint:
       pattern: '**/pylint.log'
       archive: true
       active: false
-      thresholds:
-        fail:
-          high: '0'
+      qualityGates:
+        - threshold: 1
+          type: 'TOTAL_HIGH'
+          unstable: false
+        - threshold: 1
+          type: 'TOTAL_ERROR'
+          unstable: false
     archive: false
   cloudFoundryDeploy:
     cloudFoundry:
@@ -347,6 +370,8 @@ steps:
       - 'tests'
   npmExecute:
     dockerImage: 'node:lts-stretch'
+  npmExecuteScripts:
+    install: true
   whitesourceExecuteScan:
     createProductFromPipeline: true
     emailAddressesOfInitialProductAdmins: []

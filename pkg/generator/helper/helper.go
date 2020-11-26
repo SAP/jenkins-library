@@ -139,7 +139,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 
 func {{.FlagsFunc}}(cmd *cobra.Command, stepConfig *{{.StepName}}Options) {
 	{{- range $key, $value := uniqueName .StepParameters }}
-	cmd.Flags().{{ $value.Type | flagType }}(&stepConfig.{{ $value.Name | golangName }}, "{{ $value.Name }}", {{ $value.Default }}, "{{ $value.Description }}"){{ end }}
+	{{ if isCLIParam $value.Type }}cmd.Flags().{{ $value.Type | flagType }}(&stepConfig.{{ $value.Name | golangName }}, "{{ $value.Name }}", {{ $value.Default }}, "{{ $value.Description }}"){{end}}{{ end }}
 	{{- printf "\n" }}
 	{{- range $key, $value := .StepParameters }}{{ if $value.Mandatory }}
 	cmd.MarkFlagRequired("{{ $value.Name }}"){{ end }}{{ end }}
@@ -485,6 +485,10 @@ func setDefaultParameters(stepData *config.StepData) (bool, error) {
 			case "[]string":
 				// ToDo: Check if default should be read from env
 				param.Default = "[]string{}"
+			case "map[string]interface{}":
+				// Currently we don't need to set a default here since in this case the default
+				// is never used. Needs to be changed in case we enable cli parameter handling
+				// for that type.
 			default:
 				return false, fmt.Errorf("Meta data type not set or not known: '%v'", param.Type)
 			}
@@ -502,6 +506,10 @@ func setDefaultParameters(stepData *config.StepData) (bool, error) {
 				param.Default = fmt.Sprintf("`%v`", param.Default)
 			case "[]string":
 				param.Default = fmt.Sprintf("[]string{`%v`}", strings.Join(getStringSliceFromInterface(param.Default), "`, `"))
+			case "map[string]interface{}":
+				// Currently we don't need to set a default here since in this case the default
+				// is never used. Needs to be changed in case we enable cli parameter handling
+				// for that type.
 			default:
 				return false, fmt.Errorf("Meta data type not set or not known: '%v'", param.Type)
 			}
@@ -632,6 +640,10 @@ func MetadataFiles(sourceDirectory string) ([]string, error) {
 	return metadataFiles, nil
 }
 
+func isCLIParam(myType string) bool {
+	return myType != "map[string]interface{}"
+}
+
 func stepTemplate(myStepInfo stepInfo, templateName, goTemplate string) []byte {
 	funcMap := sprig.HermeticTxtFuncMap()
 	funcMap["flagType"] = flagType
@@ -639,6 +651,7 @@ func stepTemplate(myStepInfo stepInfo, templateName, goTemplate string) []byte {
 	funcMap["title"] = strings.Title
 	funcMap["longName"] = longName
 	funcMap["uniqueName"] = mustUniqName
+	funcMap["isCLIParam"] = isCLIParam
 
 	return generateCode(myStepInfo, templateName, goTemplate, funcMap)
 }
