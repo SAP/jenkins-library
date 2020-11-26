@@ -131,8 +131,9 @@ func addAbapEnvironmentCreateSystemFlags(cmd *cobra.Command, stepConfig *abapEnv
 func abapEnvironmentCreateSystemMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "abapEnvironmentCreateSystem",
-			Aliases: []config.Alias{},
+			Name:        "abapEnvironmentCreateSystem",
+			Aliases:     []config.Alias{},
+			Description: "Creates a SAP Cloud Platform ABAP Environment system (aka Steampunk system)",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -338,6 +339,9 @@ func abapEnvironmentCreateSystemMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 				},
+			},
+			Containers: []config.Container{
+				{Name: "cf", Image: "ppiper/cf-cli"},
 			},
 		},
 	}
