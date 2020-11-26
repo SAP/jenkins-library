@@ -6,6 +6,7 @@ import (
 
 // Artifact is an interface to abstract gojenkins.Artifact.
 type Artifact interface {
+	Save(path string) (bool, error)
 	SaveToDir(dir string) (bool, error)
 	GetData() ([]byte, error)
 	FileName() string
@@ -14,6 +15,11 @@ type Artifact interface {
 // ArtifactImpl is a wrapper struct for gojenkins.Artifact that respects the Artifact interface.
 type ArtifactImpl struct {
 	artifact gojenkins.Artifact
+}
+
+// Save refers to the gojenkins.Artifact.Save function.
+func (a *ArtifactImpl) Save(path string) (bool, error) {
+	return a.artifact.Save(path)
 }
 
 // SaveToDir refers to the gojenkins.Artifact.SaveToDir function.
