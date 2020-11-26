@@ -49,6 +49,9 @@ func (s *Scan) writeWhitesourceConfigJSON(config *ScanOptions, utils Utils, devD
 	npmConfig["apiKey"] = config.OrgToken
 	npmConfig["userKey"] = config.UserToken
 	setValueAndLogChange(npmConfig, "checkPolicies", true)
+	// When checkPolicies detects any violations, it will by default not update the WS project in the backend.
+	// Therefore we also need "forceUpdate".
+	setValueAndLogChange(npmConfig, "forceUpdate", true)
 	setValueAndLogChange(npmConfig, "productName", config.ProductName)
 	setValueAndLogChange(npmConfig, "productVer", s.ProductVersion)
 	setValueOmitIfPresent(npmConfig, "productToken", "projectToken", config.ProductToken)
