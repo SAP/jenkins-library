@@ -180,6 +180,7 @@ func (conn Connector) UploadSarFile(appendum string, sarFile []byte) error {
 // UploadSarFileInChunks : upload *.sar file in chunks
 func (conn Connector) UploadSarFileInChunks(appendum string, fileName string, sarFile []byte) error {
 	//Maybe Next Refactoring step to read the file in chunks, too?
+	//In case it turns out to be not reliable add a retry mechanism
 
 	url := conn.Baseurl + appendum
 

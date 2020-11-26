@@ -64,7 +64,6 @@ func uploadSarFiles(repos []abaputils.Repository, conn abapbuild.Connector, read
 				return errors.New("Parameter missing. Please provide the path to the SAR file")
 			}
 			filename := filepath.Base(repos[i].SarXMLFilePath)
-			//conn.Header["Content-Filename"] = []string{filename}
 			log.Entry().Infof("Trying to read file %s", repos[i].SarXMLFilePath)
 			sarFile, err := readFileFunc(repos[i].SarXMLFilePath)
 			if err != nil {
@@ -75,7 +74,6 @@ func uploadSarFiles(repos []abaputils.Repository, conn abapbuild.Connector, read
 				return errors.New("File has no content - 0 bytes")
 			}
 			log.Entry().Infof("Upload SAR file %s in chunks", filename)
-			//err = conn.UploadSarFile("/odata/aas_file_upload", sarFile)
 			err = conn.UploadSarFileInChunks("/odata/aas_file_upload", filename, sarFile)
 			if err != nil {
 				return err
