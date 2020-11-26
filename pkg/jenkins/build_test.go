@@ -34,8 +34,8 @@ func TestFetchBuildArtifact(t *testing.T) {
 		build.On("IsRunning").Return(false)
 		build.On("GetArtifacts").Return(
 			[]gojenkins.Artifact{
-				gojenkins.Artifact{FileName: mock.Anything},
-				gojenkins.Artifact{FileName: fileName},
+				{FileName: mock.Anything},
+				{FileName: fileName},
 			},
 		)
 		// test
@@ -70,7 +70,7 @@ func TestFetchBuildArtifact(t *testing.T) {
 		// init
 		build := &mocks.Build{}
 		build.On("IsRunning").Return(false)
-		build.On("GetArtifacts").Return([]gojenkins.Artifact{gojenkins.Artifact{FileName: mock.Anything}})
+		build.On("GetArtifacts").Return([]gojenkins.Artifact{{FileName: mock.Anything}})
 		// test
 		_, err := FetchBuildArtifact(build, fileName)
 		// asserts
