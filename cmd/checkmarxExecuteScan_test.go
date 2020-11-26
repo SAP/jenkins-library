@@ -2,10 +2,12 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -43,15 +45,20 @@ func (fi fileInfo) Sys() interface{} {
 }
 
 type systemMock struct {
-	response      interface{}
-	isIncremental bool
-	isPublic      bool
-	forceScan     bool
-	createProject bool
-	previousPName string
+	response                         interface{}
+	isIncremental                    bool
+	isPublic                         bool
+	forceScan                        bool
+	createProject                    bool
+	previousPName                    string
+	getPresetsCalled                 bool
+	updateProjectConfigurationCalled bool
 }
 
 func (sys *systemMock) FilterPresetByName(presets []checkmarx.Preset, presetName string) checkmarx.Preset {
+	if presetName == "CX_Default" {
+		return checkmarx.Preset{ID: 16, Name: "CX_Default", OwnerName: "16"}
+	}
 	return checkmarx.Preset{ID: 10050, Name: "SAP_JS_Default", OwnerName: "16"}
 }
 func (sys *systemMock) FilterPresetByID(presets []checkmarx.Preset, presetID int) checkmarx.Preset {
@@ -81,10 +88,17 @@ func (sys *systemMock) GetProjectsByNameAndTeam(projectName, teamID string) ([]c
 	return []checkmarx.Project{}, fmt.Errorf("no project error")
 }
 func (sys *systemMock) FilterTeamByName(teams []checkmarx.Team, teamName string) checkmarx.Team {
-	return checkmarx.Team{ID: "16", FullName: "OpenSource/Cracks/16"}
+	if teamName == "OpenSource/Cracks/16" {
+		return checkmarx.Team{ID: json.RawMessage(`"16"`), FullName: "OpenSource/Cracks/16"}
+	}
+	return checkmarx.Team{ID: json.RawMessage(`15`), FullName: "OpenSource/Cracks/15"}
 }
-func (sys *systemMock) FilterTeamByID(teams []checkmarx.Team, teamID string) checkmarx.Team {
-	return checkmarx.Team{ID: "15", FullName: "OpenSource/Cracks/15"}
+func (sys *systemMock) FilterTeamByID(teams []checkmarx.Team, teamID json.RawMessage) checkmarx.Team {
+	teamIDBytes, _ := teamID.MarshalJSON()
+	if bytes.Compare(teamIDBytes, []byte(`"16"`)) == 0 {
+		return checkmarx.Team{ID: json.RawMessage(`"16"`), FullName: "OpenSource/Cracks/16"}
+	}
+	return checkmarx.Team{ID: json.RawMessage(`15`), FullName: "OpenSource/Cracks/15"}
 }
 func (sys *systemMock) DownloadReport(reportID int) ([]byte, error) {
 	return sys.response.([]byte), nil
@@ -111,6 +125,7 @@ func (sys *systemMock) ScanProject(projectID int, isIncrementalV, isPublicV, for
 	return checkmarx.Scan{ID: 16}, nil
 }
 func (sys *systemMock) UpdateProjectConfiguration(projectID int, presetID int, engineConfigurationID string) error {
+	sys.updateProjectConfigurationCalled = true
 	return nil
 }
 func (sys *systemMock) UpdateProjectExcludeSettings(projectID int, excludeFolders string, excludeFiles string) error {
@@ -126,13 +141,14 @@ func (sys *systemMock) CreateBranch(projectID int, branchName string) int {
 	return 18
 }
 func (sys *systemMock) GetPresets() []checkmarx.Preset {
-	return []checkmarx.Preset{{ID: 10078, Name: "SAP Java Default", OwnerName: "16"}, {ID: 10048, Name: "SAP JS Default", OwnerName: "16"}}
+	sys.getPresetsCalled = true
+	return []checkmarx.Preset{{ID: 10078, Name: "SAP Java Default", OwnerName: "16"}, {ID: 10048, Name: "SAP JS Default", OwnerName: "16"}, {ID: 16, Name: "CX_Default", OwnerName: "16"}}
 }
 func (sys *systemMock) GetProjects() ([]checkmarx.Project, error) {
 	return []checkmarx.Project{{ID: 15, Name: "OtherTest", TeamID: "16"}, {ID: 1, Name: "Test", TeamID: "16"}}, nil
 }
 func (sys *systemMock) GetTeams() []checkmarx.Team {
-	return []checkmarx.Team{{ID: "16", FullName: "OpenSource/Cracks/16"}, {ID: "15", FullName: "OpenSource/Cracks/15"}}
+	return []checkmarx.Team{{ID: json.RawMessage(`"16"`), FullName: "OpenSource/Cracks/16"}, {ID: json.RawMessage(`15`), FullName: "OpenSource/Cracks/15"}}
 }
 
 type systemMockForExistingProject struct {
@@ -159,10 +175,10 @@ func (sys *systemMockForExistingProject) GetProjectsByNameAndTeam(projectName, t
 	return []checkmarx.Project{{ID: 19, Name: projectName, TeamID: teamID, IsPublic: true}}, nil
 }
 func (sys *systemMockForExistingProject) FilterTeamByName(teams []checkmarx.Team, teamName string) checkmarx.Team {
-	return checkmarx.Team{ID: "16", FullName: "OpenSource/Cracks/16"}
+	return checkmarx.Team{ID: json.RawMessage(`"16"`), FullName: "OpenSource/Cracks/16"}
 }
-func (sys *systemMockForExistingProject) FilterTeamByID(teams []checkmarx.Team, teamID string) checkmarx.Team {
-	return checkmarx.Team{ID: "15", FullName: "OpenSource/Cracks/15"}
+func (sys *systemMockForExistingProject) FilterTeamByID(teams []checkmarx.Team, teamID json.RawMessage) checkmarx.Team {
+	return checkmarx.Team{ID: json.RawMessage(`"15"`), FullName: "OpenSource/Cracks/15"}
 }
 func (sys *systemMockForExistingProject) DownloadReport(reportID int) ([]byte, error) {
 	return sys.response.([]byte), nil
@@ -205,13 +221,13 @@ func (sys *systemMockForExistingProject) CreateBranch(projectID int, branchName 
 	return 0
 }
 func (sys *systemMockForExistingProject) GetPresets() []checkmarx.Preset {
-	return []checkmarx.Preset{{ID: 10078, Name: "SAP Java Default", OwnerName: "16"}, {ID: 10048, Name: "SAP JS Default", OwnerName: "16"}}
+	return []checkmarx.Preset{{ID: 10078, Name: "SAP_Java_Default", OwnerName: "16"}, {ID: 10048, Name: "SAP_JS_Default", OwnerName: "16"}}
 }
 func (sys *systemMockForExistingProject) GetProjects() ([]checkmarx.Project, error) {
 	return []checkmarx.Project{{ID: 1, Name: "TestExisting", TeamID: "16"}}, nil
 }
 func (sys *systemMockForExistingProject) GetTeams() []checkmarx.Team {
-	return []checkmarx.Team{{ID: "16", FullName: "OpenSource/Cracks/16"}, {ID: "15", FullName: "OpenSource/Cracks/15"}}
+	return []checkmarx.Team{{ID: json.RawMessage(`"16"`), FullName: "OpenSource/Cracks/16"}, {ID: json.RawMessage(`"15"`), FullName: "OpenSource/Cracks/15"}}
 }
 
 func TestFilterFileGlob(t *testing.T) {
@@ -321,9 +337,26 @@ func TestRunScan(t *testing.T) {
 	assert.Equal(t, true, sys.scanProjectCalled, "ScanProject was not invoked")
 }
 
+func TestSetPresetForProjectWithIDProvided(t *testing.T) {
+	sys := &systemMock{}
+	err := setPresetForProject(sys, 12345, 16, "testProject", "CX_Default", "")
+	assert.NoError(t, err, "error occured but none expected")
+	assert.Equal(t, false, sys.getPresetsCalled, "GetPresets was called")
+	assert.Equal(t, true, sys.updateProjectConfigurationCalled, "UpdateProjectConfiguration was not called")
+}
+
+func TestSetPresetForProjectWithNameProvided(t *testing.T) {
+	sys := &systemMock{}
+	presetID, _ := strconv.Atoi("CX_Default")
+	err := setPresetForProject(sys, 12345, presetID, "testProject", "CX_Default", "")
+	assert.NoError(t, err, "error occured but none expected")
+	assert.Equal(t, true, sys.getPresetsCalled, "GetPresets was not called")
+	assert.Equal(t, true, sys.updateProjectConfigurationCalled, "UpdateProjectConfiguration was not called")
+}
+
 func TestVerifyOnly(t *testing.T) {
 	sys := &systemMockForExistingProject{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`)}
-	options := checkmarxExecuteScanOptions{VerifyOnly: true, ProjectName: "TestExisting", VulnerabilityThresholdUnit: "absolute", FullScanCycle: "2", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+	options := checkmarxExecuteScanOptions{VerifyOnly: true, ProjectName: "TestExisting", VulnerabilityThresholdUnit: "absolute", FullScanCycle: "2", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamName: "OpenSource/Cracks/15", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
 	workspace, err := ioutil.TempDir("", "workspace1")
 	if err != nil {
 		t.Fatal("Failed to create temporary workspace directory")
@@ -377,7 +410,7 @@ func TestRunScanForPullRequest(t *testing.T) {
 
 func TestRunScanForPullRequestProjectNew(t *testing.T) {
 	sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`), createProject: true}
-	options := checkmarxExecuteScanOptions{PullRequestName: "PR-17", ProjectName: "Test", VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamName: "OpenSource/Cracks/15", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+	options := checkmarxExecuteScanOptions{PullRequestName: "PR-17", ProjectName: "Test", AvoidDuplicateProjectScans: true, VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamName: "OpenSource/Cracks/15", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
 	workspace, err := ioutil.TempDir("", "workspace4")
 	if err != nil {
 		t.Fatal("Failed to create temporary workspace directory")
@@ -388,9 +421,10 @@ func TestRunScanForPullRequestProjectNew(t *testing.T) {
 	influx := checkmarxExecuteScanInflux{}
 
 	err = runScan(options, sys, workspace, &influx)
+	assert.NoError(t, err, "Unexpected error caught")
 	assert.Equal(t, true, sys.isIncremental, "isIncremental has wrong value")
 	assert.Equal(t, true, sys.isPublic, "isPublic has wrong value")
-	assert.Equal(t, true, sys.forceScan, "forceScan has wrong value")
+	assert.Equal(t, false, sys.forceScan, "forceScan has wrong value")
 }
 
 func TestRunScanHighViolationPercentage(t *testing.T) {
@@ -538,11 +572,6 @@ func TestEnforceThresholds(t *testing.T) {
 
 func TestLoadPreset(t *testing.T) {
 	sys := &systemMock{}
-	t.Run("resolve via code", func(t *testing.T) {
-		preset, err := loadPreset(sys, "10048")
-		assert.NoError(t, err, "Expected success but failed")
-		assert.Equal(t, 10048, preset.ID, "Expected result but got none")
-	})
 
 	t.Run("resolve via name", func(t *testing.T) {
 		preset, err := loadPreset(sys, "SAP_JS_Default")
