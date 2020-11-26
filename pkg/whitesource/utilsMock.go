@@ -3,9 +3,8 @@
 package whitesource
 
 import (
-	"fmt"
 	"github.com/SAP/jenkins-library/pkg/mock"
-	"github.com/bmatcuk/doublestar"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"net/http"
 	"os"
 )
@@ -46,29 +45,7 @@ func (m *ScanUtilsMock) RemoveAll(_ string) error {
 // FindPackageJSONFiles mimics npm.FindPackageJSONFiles() based on the FilesMock setup.
 func (m *ScanUtilsMock) FindPackageJSONFiles(options *ScanOptions) ([]string, error) {
 	unfilteredMatches, _ := m.Glob("**/package.json")
-	var matches []string
-
-	// Copied from pkg/npm/npm.go
-	for _, file := range unfilteredMatches {
-		excludePackage := false
-		for _, exclude := range options.BuildDescriptorExcludeList {
-			matched, err := doublestar.PathMatch(exclude, file)
-			if err != nil {
-				return nil, fmt.Errorf("failed to match file %s to pattern %s: %w", file, exclude, err)
-			}
-			if matched {
-				excludePackage = true
-				break
-			}
-		}
-		if excludePackage {
-			continue
-		}
-
-		matches = append(matches, file)
-	}
-
-	return matches, nil
+	return piperutils.ExcludeFiles(unfilteredMatches, options.BuildDescriptorExcludeList)
 }
 
 // InstallAllNPMDependencies mimics npm.InstallAllNPMDependencies() and records the "npm install".
