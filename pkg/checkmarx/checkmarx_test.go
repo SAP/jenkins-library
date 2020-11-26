@@ -167,7 +167,7 @@ func TestGetTeams(t *testing.T) {
 	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx_test")
 	opts := piperHttp.ClientOptions{}
 	t.Run("test success", func(t *testing.T) {
-		myTestClient := senderMock{responseBody: `[{"id":"1", "fullName":"Team1"}, {"id":2, "fullName":"Team2"}, {"id":3, "fullName":"Team3"}, {"id":4, "fullName":"Team\\4"}]`, httpStatusCode: 200}
+		myTestClient := senderMock{responseBody: `[{"id":"1", "fullName":"Team1"}, {"id":2, "fullName":"Team2"}, {"id":3, "fullName":"Team3"}, {"id":4, "fullName":"/Team/4"}]`, httpStatusCode: 200}
 		sys := SystemInstance{serverURL: "https://cx.server.com", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 
@@ -178,7 +178,7 @@ func TestGetTeams(t *testing.T) {
 		assert.Equal(t, "Team1", teams[0].FullName, "Team name 1 incorrect")
 		assert.Equal(t, "Team2", teams[1].FullName, "Team name 2 incorrect")
 		assert.Equal(t, "Team3", teams[2].FullName, "Team name 3 incorrect")
-		assert.Equal(t, "Team\\4", teams[3].FullName, "Team name 4 incorrect")
+		assert.Equal(t, "/Team/4", teams[3].FullName, "Team name 4 incorrect")
 
 		t.Run("test filter teams by name", func(t *testing.T) {
 			team2 := sys.FilterTeamByName(teams, "Team2")
@@ -187,8 +187,8 @@ func TestGetTeams(t *testing.T) {
 		})
 
 		t.Run("test filter teams by name with backslash/forward slash", func(t *testing.T) {
-			team4 := sys.FilterTeamByName(teams, "Team/4")
-			assert.Equal(t, "Team\\4", team4.FullName, "Team name incorrect")
+			team4 := sys.FilterTeamByName(teams, "\\Team\\4")
+			assert.Equal(t, "/Team/4", team4.FullName, "Team name incorrect")
 			assert.Equal(t, json.RawMessage([]byte(strconv.Itoa(4))), team4.ID, "Team id incorrect")
 		})
 
