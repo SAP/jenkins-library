@@ -5,6 +5,7 @@ import (
 )
 
 // Artifact is an interface to abstract gojenkins.Artifact.
+// mock generated with: mockery --name Artifact --dir pkg/jenkins --output pkg/jenkins/mocks
 type Artifact interface {
 	Save(path string) (bool, error)
 	SaveToDir(dir string) (bool, error)
