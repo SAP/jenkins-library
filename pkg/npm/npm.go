@@ -7,7 +7,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/bmatcuk/doublestar"
 	"io"
 	"path/filepath"
 	"strings"
@@ -220,25 +219,12 @@ func (exec *Execute) FindPackageJSONFilesWithExcludes(excludeList []string) ([]s
 	genExclude := "**/gen/**"
 	excludeList = append(excludeList, nodeModulesExclude, genExclude)
 
-	var packageJSONFiles []string
+	packageJSONFiles, err := piperutils.ExcludeFiles(unfilteredListOfPackageJSONFiles, excludeList)
+	if err != nil {
+		return nil, err
+	}
 
-	for _, file := range unfilteredListOfPackageJSONFiles {
-		excludePackage := false
-		for _, exclude := range excludeList {
-			matched, err := doublestar.PathMatch(exclude, file)
-			if err != nil {
-				return nil, fmt.Errorf("failed to match file %s to pattern %s: %w", file, exclude, err)
-			}
-			if matched {
-				excludePackage = true
-				break
-			}
-		}
-		if excludePackage {
-			continue
-		}
-
-		packageJSONFiles = append(packageJSONFiles, file)
+	for _, file := range packageJSONFiles {
 		log.Entry().Info("Discovered package.json file " + file)
 	}
 	return packageJSONFiles, nil
