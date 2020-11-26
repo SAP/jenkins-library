@@ -2,8 +2,9 @@
 
 ## Introduction
 
-!!! caution "Not yet released"
-    This scenario is not yet available. It is still work in progress and will be released at a later time.
+!!! caution "Initial Scope"
+    The initial scope supports an add-on product consisting of **one** software component. Furthermore, this software component can not be used in multiple add-on products.
+    You cannot build add-ons based on gCTS branching functionality.
 
 This scenario describes how an add-on for the SAP Cloud Platform ABAP Environment is built. It is intended for SAP partners who want to provide a Software as a Service (SaaS) solution on the SAP Cloud Platform using the ABAP Environment. Therefore, a partner development contract (see [SAP PartnerEdge Test, Demo & Development Price List](https://partneredge.sap.com/en/library/assets/partnership/sales/order_license/pl_pl_part_price_list.html)) is required. This page aims to provide an overview of the build process of the add-on.
 
@@ -14,10 +15,6 @@ Of course, this tackles only the upstream part of the SaaS solution lifecycle. O
 ## The Add-on Product
 
 The installation and maintenance of ABAP software is done / controlled via software product versions. A **software product version** is a „bundle" of software component versions made available at the same time for implementing a well-defined scope of functionality. It is the technical / delivery view on a software portfolio.
-
-!!! caution "Initial Scope"
-    The initial scope supports an add-on product consisting of **one** software component. Furthermore, this software component can not be used in multiple add-on products.
-    All packages of a software component must have the same namespace as the software component itself. And initially only the master branch of software components shall be used.
 
 ### Software Product Version
 
@@ -204,12 +201,12 @@ If the pipelines receives the error from a backend system, please open a [suppor
 | Stage                    | Steps | Support Component |
 |--------------------------|-------|-------------------|
 | Initial Checks           | [abapAddonAssemblyKitCheckPV](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitCheckPV/), [abapAddonAssemblyKitCheckCVs](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitCheckCVs/)| BC-UPG-OCS |
-| Prepare System           | [abapEnvironmentCreateSystem](https://sap.github.io/jenkins-library/steps/cloudFoundryCreateService/), [cloudFoundryCreateServiceKey](https://sap.github.io/jenkins-library/steps/cloudFoundryCreateServiceKey/)| BC-CP-ABA |
+| Prepare System           | [abapEnvironmentCreateSystem](https://sap.github.io/jenkins-library/steps/abapEnvironmentCreateSystem/), [cloudFoundryCreateServiceKey](https://sap.github.io/jenkins-library/steps/cloudFoundryCreateServiceKey/)| BC-CP-ABA |
 | Clone Repositories       | [abapEnvironmentPullGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentPullGitRepo/)| BC-CP-ABA-SC |
 | ATC                      | [abapEnvironmentRunATCCheck](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunATCCheck/)| BC-DWB-TOO-ATF |
 | Build                    | [cloudFoundryCreateServiceKey](https://sap.github.io/jenkins-library/steps/cloudFoundryCreateServiceKey/)| BC-CP-ABA |
 |                          | [abapEnvironmentAssemblePackages](https://sap.github.io/jenkins-library/steps/abapEnvironmentAssemblePackages/)| BC-UPG-ADDON |
 |                          | [abapAddonAssemblyKitReleasePackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitReleasePackages/), [abapAddonAssemblyKitReserveNextPackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitReserveNextPackages/), [abapAddonAssemblyKitRegisterPackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitRegisterPackages/), [abapAddonAssemblyKitCreateTargetVector](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitCreateTargetVector/), [abapAddonAssemblyKitPublishTargetVector](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitPublishTargetVector/)| BC-UPG-OCS |
-| Integration Tests        | [cloudFoundryCreateService](https://sap.github.io/jenkins-library/steps/cloudFoundryCreateService/)| BC-CP-ABA |
+| Integration Tests        | [abapEnvironmentCreateSystem](https://sap.github.io/jenkins-library/steps/abapEnvironmentCreateSystem/), [cloudFoundryDeleteService](https://sap.github.io/jenkins-library/steps/cloudFoundryDeleteService/)| BC-CP-ABA |
 | Publish                  | [abapAddonAssemblyKitPublishTargetVector](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitPublishTargetVector/)| BC-UPG-OCS |
 | Post                     | [cloudFoundryDeleteService](https://sap.github.io/jenkins-library/steps/cloudFoundryDeleteService/)| BC-CP-ABA |
