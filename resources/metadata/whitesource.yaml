@@ -408,7 +408,7 @@ spec:
             type: "[]string"
   containers:
     - image: devxci/mbtci:1.0.14
-      workingDir: /project
+      workingDir: /home/mta
       env: [ ]
       conditions:
         - conditionRef: strings-equal
