@@ -709,7 +709,10 @@ func handleMtaExtensionCredentials(extFile string, credentials map[string]interf
 	}
 	content := string(b)
 
-	env := toMap(_environ(), "=")
+	env, err := toMap(_environ(), "=")
+	if err != nil {
+		errors.Wrap(err, "Cannot handle mta extension credentials.")
+	}
 
 	updated := false
 	missingCredentials := []string{}
@@ -745,13 +748,16 @@ func handleMtaExtensionCredentials(extFile string, credentials map[string]interf
 	return nil
 }
 
-func toMap(keyValue []string, separator string) map[string]string {
+func toMap(keyValue []string, separator string) (map[string]string, error) {
 	result := map[string]string{}
 	for _, entry := range keyValue {
 		kv := strings.Split(entry, separator)
+		if len(kv) < 2 {
+			return map[string]string{}, fmt.Errorf("Cannot convert to map: separator '%s' not found in entry '%s'", separator, entry)
+		}
 		result[kv[0]] = strings.Join(kv[1:], separator)
 	}
-	return result
+	return result, nil
 }
 
 func handleMtaExtensionDescriptors(mtaExtensionDescriptor string) ([]string, []string) {
