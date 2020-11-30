@@ -724,7 +724,6 @@ func handleMtaExtensionCredentials(extFile string, credentials map[string]interf
 			if len(cred) == 0 {
 				missingCredentials = append(missingCredentials, credKey)
 				continue
-				log.Entry().Warningf("No credentials found for '%s'. Are these credentials maintained?", credKey)
 			}
 			content = strings.Replace(content, pattern, cred, -1)
 			updated = true
