@@ -677,11 +677,11 @@ func deployMta(config *cloudFoundryDeployOptions, mtarFilePath string, command c
 	for _, extFile := range extFiles {
 		_, err := fileUtils.Copy(extFile, extFile+".original")
 		if err != nil {
-			return err
+			return fmt.Errorf("Cannot prepare mta extension files: %w", err)
 		}
 		err = handleMtaExtensionCredentials(extFile, config.MtaExtensionCredentials)
 		if err != nil {
-			return err
+			return fmt.Errorf("Cannot handle credentials inside mta extension files: %w", err)
 		}
 	}
 
