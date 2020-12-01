@@ -1,5 +1,4 @@
 import com.sap.piper.JenkinsUtils
-
 import hudson.AbortException
 import org.junit.After
 import org.junit.Before
@@ -77,7 +76,6 @@ class CloudFoundryDeployTest extends BasePiperTest {
         // removing additional credentials tests might have added; adding default credentials
         credentialsRule.reset()
             .withCredentials('test_cfCredentialsId', 'test_cf', '********')
-            .withCredentials('mtaExtensionCredentialCredentialId', 'resolvedMtaExtensionCredential')
 
         UUID.metaClass.static.randomUUID = { -> 1 }
         helper.registerAllowedMethod('influxWriteData', [Map.class], { m ->
@@ -1336,8 +1334,6 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
     @Test
     void testGoStepFeatureToggleOn() {
-        List additionalEnv
-        Map piperExecuteBinParams
         String calledStep = ''
         String usedMetadataFile = ''
         helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
@@ -1345,10 +1341,9 @@ class CloudFoundryDeployTest extends BasePiperTest {
             String metadataFile, List credentialInfo ->
                 calledStep = stepName
                 usedMetadataFile = metadataFile
-                piperExecuteBinParams = parameters
         })
 
-        helper.registerAllowedMethod('withEnv', [List, Closure], {l, c -> additionalEnv = l; c() })
+        credentialsRule.withCredentials('mtaExtensionCredentialCredentialId', 'resolvedMtaExtensionCredential')
 
         stepRule.step.cloudFoundryDeploy([
             script: nullScript,
@@ -1362,9 +1357,6 @@ class CloudFoundryDeployTest extends BasePiperTest {
             mtaExtensionCredentials: [myCred: 'mtaExtensionCredentialCredentialId'],
         ])
 
-        assertThat(additionalEnv.size(), is(1))
-        assertEquals('myCred=resolvedMtaExtensionCredential', additionalEnv[0].toString())
-        assertEquals([myCred:'resolvedMtaExtensionCredential'], piperExecuteBinParams.dockerEnvVars)
         assertEquals('cloudFoundryDeploy', calledStep)
         assertEquals('metadata/cloudFoundryDeploy.yaml', usedMetadataFile)
     }

@@ -235,43 +235,18 @@ void call(Map parameters = [:]) {
             def creds = []
             if (config.mtaExtensionCredentials) {
                 config.mtaExtensionCredentials.each { key, credentialsId ->
-                    creds << string(credentialsId: credentialsId, variable: credentialsId)
+                    creds << string(credentialsId: credentialsId, variable: key)
                 }
             }
 
             withCredentials(creds) {
-                def credMapping = [:]
-                if (config.mtaExtensionCredentials) {
-
-                    // In the go layer we expect the string credentials as environment variables
-                    // hence we retrieve the values here inside Jenkins and set it as docker
-                    // environment variables so that they are available as expected as environment
-                    // variables.
-
-                    config.mtaExtensionCredentials.each { key, credentialsId ->
-                        credMapping[key] = this."${credentialsId}"
-                    }
-
-                    parameters = [:].plus(parameters)
-                    if (parameters.dockerEnvVars == null) {
-                        parameters.dockerEnvVars = [:]
-                    }
-                    parameters.dockerEnvVars << credMapping
-                }
 
                 List credentials = [
                     [type: 'usernamePassword', id: 'cfCredentialsId', env: ['PIPER_username', 'PIPER_password']],
                     [type: 'usernamePassword', id: 'dockerCredentialsId', env: ['PIPER_dockerUsername', 'PIPER_dockerPassword']]
                 ]
-                withEnv(toEnvironmentList(credMapping)) {
-                    /*
-                        We need the withEnv here in case we do not forward to docker inside piperExecuteBin.
-                        In this case we execute locally and in that case the credentials needs to be present
-                        in the current environment.
-                    */
-                    piperExecuteBin(parameters, STEP_NAME, 'metadata/cloudFoundryDeploy.yaml', credentials)
-                }
-            } // withCredentials ends here in order to avoid leaking the credentials somewhere during executing the piper go binary.
+                piperExecuteBin(parameters, STEP_NAME, 'metadata/cloudFoundryDeploy.yaml', credentials)
+            }
             return
         }
 
@@ -342,14 +317,6 @@ void call(Map parameters = [:]) {
         }
 
     }
-}
-
-List toEnvironmentList(Map environmentVariables) {
-    List environmentList = []
-    environmentVariables.each { k, v ->
-        environmentList << "${k}=${v}"
-    }
-    return environmentList
 }
 
 private void handleMTADeployment(Map config, script) {
