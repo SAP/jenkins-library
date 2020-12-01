@@ -201,7 +201,6 @@ func addWhitesourceExecuteScanFlags(cmd *cobra.Command, stepConfig *whitesourceE
 	cmd.MarkFlagRequired("buildTool")
 	cmd.MarkFlagRequired("orgToken")
 	cmd.MarkFlagRequired("userToken")
-	cmd.MarkFlagRequired("productName")
 }
 
 // retrieve step metadata
@@ -411,7 +410,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "whitesourceProductName"}},
 					},
 					{
