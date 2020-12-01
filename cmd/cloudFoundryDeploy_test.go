@@ -1312,7 +1312,7 @@ func TestMtaExtensionCredentials(t *testing.T) {
 
 	t.Run("extension file does not exist", func(t *testing.T) {
 		err := handleMtaExtensionCredentials("mtaextDoesNotExist.mtaext", map[string]interface{}{})
-		assert.EqualError(t, err, "could not read 'mtaextDoesNotExist.mtaext'")
+		assert.EqualError(t, err, "Cannot handle credentials for mta extension file 'mtaextDoesNotExist.mtaext': could not read 'mtaextDoesNotExist.mtaext'")
 	})
 
 	t.Run("credential cannot be retrieved", func(t *testing.T) {
@@ -1324,7 +1324,7 @@ func TestMtaExtensionCredentials(t *testing.T) {
 				"testCred2": "myCredEnvVar2NotDefined",
 			},
 		)
-		assert.EqualError(t, err, "No credentials found for '[myCredEnvVar1NotDefined myCredEnvVar2NotDefined]'. Are these credentials maintained?")
+		assert.EqualError(t, err, "Cannot hanlde mta extension credentials: No credentials found for '[myCredEnvVar1NotDefined myCredEnvVar2NotDefined]'. Are these credentials maintained?")
 	})
 
 	t.Run("irrelevant credentials does not cause failures", func(t *testing.T) {

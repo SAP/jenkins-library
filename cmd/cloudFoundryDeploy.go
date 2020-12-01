@@ -706,7 +706,7 @@ func handleMtaExtensionCredentials(extFile string, credentials map[string]interf
 
 	b, err := fileUtils.FileRead(extFile)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Cannot handle credentials for mta extension file '%s'", extFile)
 	}
 	content := string(b)
 
@@ -720,7 +720,7 @@ func handleMtaExtensionCredentials(extFile string, credentials map[string]interf
 	for name, credentialKey := range credentials {
 		credKey, ok := credentialKey.(string)
 		if !ok {
-			return fmt.Errorf("Cannot cast '%v' (type %T) to string", credentialKey, credentialKey)
+			return fmt.Errorf("Cannot handle mta extension credentials: Cannot cast '%v' (type %T) to string", credentialKey, credentialKey)
 		}
 		pattern := "<%= " + name + " %>"
 		if strings.Contains(content, pattern) {
@@ -731,14 +731,14 @@ func handleMtaExtensionCredentials(extFile string, credentials map[string]interf
 			}
 			content = strings.Replace(content, pattern, cred, -1)
 			updated = true
-			log.Entry().Debugf("Placeholder '%s' has been replaced by credential denoted by '%s' in file '%s'", name, credKey, extFile)
+			log.Entry().Debugf("Mta extension credentials handling: Placeholder '%s' has been replaced by credential denoted by '%s' in file '%s'", name, credKey, extFile)
 		}
 	}
 	if len(missingCredentials) > 0 {
-		return fmt.Errorf("No credentials found for '%s'. Are these credentials maintained?", missingCredentials)
+		return fmt.Errorf("Cannot hanlde mta extension credentials: No credentials found for '%s'. Are these credentials maintained?", missingCredentials)
 	}
 	if !updated {
-		log.Entry().Debugf("Extension file '%s' has not been updated. Seems to contain no credentials.", extFile)
+		log.Entry().Debugf("Mta extension credentials handling: Extension file '%s' has not been updated. Seems to contain no credentials.", extFile)
 	} else {
 		fInfo, err := fileUtils.Stat(extFile)
 		fMode := fInfo.Mode()
@@ -747,9 +747,9 @@ func handleMtaExtensionCredentials(extFile string, credentials map[string]interf
 		}
 		err = fileUtils.FileWrite(extFile, []byte(content), fMode)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "Cannot handle mta extension credentials.")
 		}
-		log.Entry().Debugf("Extension file '%s' has been updated.", extFile)
+		log.Entry().Debugf("Mta extension credentials handling: Extension file '%s' has been updated.", extFile)
 	}
 	return nil
 }
