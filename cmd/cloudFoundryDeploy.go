@@ -29,6 +29,7 @@ type cfFileUtil interface {
 	Glob(string) ([]string, error)
 	Chmod(string, os.FileMode) error
 	Copy(string, string) (int64, error)
+	Stat(path string) (os.FileInfo, error)
 }
 
 var _now = time.Now
@@ -739,7 +740,12 @@ func handleMtaExtensionCredentials(extFile string, credentials map[string]interf
 	if !updated {
 		log.Entry().Debugf("Extension file '%s' has not been updated. Seems to contain no credentials.", extFile)
 	} else {
-		err := fileUtils.FileWrite(extFile, []byte(content), 0755) // TODO revisit the octet
+		fInfo, err := fileUtils.Stat(extFile)
+		fMode := fInfo.Mode()
+		if err != nil {
+			errors.Wrap(err, "Cannot handle mta extension credentials.")
+		}
+		err = fileUtils.FileWrite(extFile, []byte(content), fMode)
 		if err != nil {
 			return err
 		}
