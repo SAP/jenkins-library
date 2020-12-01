@@ -165,6 +165,11 @@ void credentialWrapper(config, List credentialInfo, body) {
         def sshCreds = []
         credentialInfo.each { cred ->
             def credentialsId = config[cred.id]
+            if (cred.resolveCredentialsId == false) {
+                credentialsId = cred.id
+            } else {
+                credentialsId = config[cred.id]
+            }
             if (credentialsId) {
                 switch(cred.type) {
                     case "file":
