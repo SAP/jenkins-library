@@ -155,10 +155,8 @@ void dockerWrapper(script, stepName, config, body) {
 
 // reused in sonarExecuteScan
 void credentialWrapper(config, List credentialInfo, body) {
-    if (config.containsKey('vaultAppRoleTokenCredentialsId') && config.containsKey('vaultAppRoleSecretTokenCredentialsId')) {
-        credentialInfo = [[type: 'token', id: 'vaultAppRoleTokenCredentialsId', env: ['PIPER_vaultAppRoleID']],
-                            [type: 'token', id: 'vaultAppRoleSecretTokenCredentialsId', env: ['PIPER_vaultAppRoleSecretID']]]
-    }
+    credentialInfo = handleVaultCredentials(config, credentialInfo)
+
     if (credentialInfo.size() > 0) {
         def creds = []
         def sshCreds = []
@@ -203,6 +201,20 @@ void credentialWrapper(config, List credentialInfo, body) {
     } else {
         body()
     }
+}
+
+// Injects vaultCredentials if steps supports resolving parameters from vault
+List handleVaultCredentials( config, List credentialInfo) {
+    if (config.containsKey('vaultAppRoleTokenCredentialsId') && config.containsKey('vaultAppRoleSecretTokenCredentialsId')) {
+        credentialInfo += [[type: 'token', id: 'vaultAppRoleTokenCredentialsId', env: ['PIPER_vaultAppRoleID']],
+                            [type: 'token', id: 'vaultAppRoleSecretTokenCredentialsId', env: ['PIPER_vaultAppRoleSecretID']]]
+    }
+
+    if (config.containsKey('vaultTokenCredentialsId')) {
+        credentialInfo += [[type: 'token', id: 'vaultTokenCredentialsId', env: ['PIPER_vaultToken']]]
+    }
+
+    return credentialInfo
 }
 
 // reused in sonarExecuteScan

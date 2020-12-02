@@ -429,7 +429,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 					{
 						Name:        "smokeTestScript",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Scope:       []string{"PARAMETERS", "PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},

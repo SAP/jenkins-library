@@ -323,6 +323,7 @@ spec:
           Currently this option is only considered for deployTool `cf_native`."
         scope:
           - PARAMETERS
+          - PARAMETERS
           - STAGES
           - STEPS
           - GENERAL
