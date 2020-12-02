@@ -58,6 +58,7 @@ This step can, e.g., be used if there is a json schema which needs to be patched
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
@@ -89,8 +90,9 @@ func addJsonApplyPatchFlags(cmd *cobra.Command, stepConfig *jsonApplyPatchOption
 func jsonApplyPatchMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "jsonApplyPatch",
-			Aliases: []config.Alias{},
+			Name:        "jsonApplyPatch",
+			Aliases:     []config.Alias{},
+			Description: "Patches a json with a patch file",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{

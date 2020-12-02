@@ -3,6 +3,7 @@ package log
 import (
 	"fmt"
 	"io"
+	"net/url"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -110,8 +111,13 @@ func RegisterHook(hook logrus.Hook) {
 	logrus.AddHook(hook)
 }
 
+// RegisterSecret registers a value which should be masked in every log message
 func RegisterSecret(secret string) {
 	if len(secret) > 0 {
 		secrets = append(secrets, secret)
+		encoded := url.QueryEscape(secret)
+		if secret != encoded {
+			secrets = append(secrets, encoded)
+		}
 	}
 }

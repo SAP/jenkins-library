@@ -7,7 +7,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/bmatcuk/doublestar"
 	"io"
 	"path/filepath"
 	"strings"
@@ -24,7 +23,7 @@ type Executor interface {
 	FindPackageJSONFiles() []string
 	FindPackageJSONFilesWithExcludes(excludeList []string) ([]string, error)
 	FindPackageJSONFilesWithScript(packageJSONFiles []string, script string) ([]string, error)
-	RunScriptsInAllPackages(runScripts []string, runOptions []string, scriptOptions []string, virtualFrameBuffer bool, excludeList []string) error
+	RunScriptsInAllPackages(runScripts []string, runOptions []string, scriptOptions []string, virtualFrameBuffer bool, excludeList []string, packagesList []string) error
 	InstallAllDependencies(packageJSONFiles []string) error
 	SetNpmRegistries() error
 }
@@ -118,10 +117,17 @@ func registryRequiresConfiguration(preConfiguredRegistry, url string) bool {
 }
 
 // RunScriptsInAllPackages runs all scripts defined in ExecuteOptions.RunScripts
-func (exec *Execute) RunScriptsInAllPackages(runScripts []string, runOptions []string, scriptOptions []string, virtualFrameBuffer bool, excludeList []string) error {
-	packageJSONFiles, err := exec.FindPackageJSONFilesWithExcludes(excludeList)
-	if err != nil {
-		return err
+func (exec *Execute) RunScriptsInAllPackages(runScripts []string, runOptions []string, scriptOptions []string, virtualFrameBuffer bool, excludeList []string, packagesList []string) error {
+	var packageJSONFiles []string
+	var err error
+
+	if len(packagesList) > 0 {
+		packageJSONFiles = packagesList
+	} else {
+		packageJSONFiles, err = exec.FindPackageJSONFilesWithExcludes(excludeList)
+		if err != nil {
+			return err
+		}
 	}
 
 	execRunner := exec.Utils.GetExecRunner()
@@ -213,25 +219,12 @@ func (exec *Execute) FindPackageJSONFilesWithExcludes(excludeList []string) ([]s
 	genExclude := "**/gen/**"
 	excludeList = append(excludeList, nodeModulesExclude, genExclude)
 
-	var packageJSONFiles []string
+	packageJSONFiles, err := piperutils.ExcludeFiles(unfilteredListOfPackageJSONFiles, excludeList)
+	if err != nil {
+		return nil, err
+	}
 
-	for _, file := range unfilteredListOfPackageJSONFiles {
-		excludePackage := false
-		for _, exclude := range excludeList {
-			matched, err := doublestar.PathMatch(exclude, file)
-			if err != nil {
-				return nil, fmt.Errorf("failed to match file %s to pattern %s: %w", file, exclude, err)
-			}
-			if matched {
-				excludePackage = true
-				break
-			}
-		}
-		if excludePackage {
-			continue
-		}
-
-		packageJSONFiles = append(packageJSONFiles, file)
+	for _, file := range packageJSONFiles {
 		log.Entry().Info("Discovered package.json file " + file)
 	}
 	return packageJSONFiles, nil
@@ -269,7 +262,15 @@ func (exec *Execute) FindPackageJSONFilesWithScript(packageJSONFiles []string, s
 // InstallAllDependencies executes npm or yarn Install for all package.json fileUtils defined in packageJSONFiles
 func (exec *Execute) InstallAllDependencies(packageJSONFiles []string) error {
 	for _, packageJSON := range packageJSONFiles {
-		err := exec.install(packageJSON)
+		fileExists, err := exec.Utils.FileExists(packageJSON)
+		if err != nil {
+			return fmt.Errorf("cannot check if '%s' exists: %w", packageJSON, err)
+		}
+		if !fileExists {
+			return fmt.Errorf("package.json file '%s' not found: %w", packageJSON, err)
+		}
+
+		err = exec.install(packageJSON)
 		if err != nil {
 			return err
 		}

@@ -373,20 +373,16 @@ class MulticloudDeployTest extends BasePiperTest {
         assertFalse(executedOnKubernetes)
 
     }
-    
+
     @Test
-    void multicloudParallelOnCurrentWorkspaceTest() {
+    void multicloudPreDeploymentHookTest() {
+        def closureRun = null
+
         stepRule.step.multicloudDeploy([
             script                      : nullScript,
-            enableZeroDowntimeDeployment: true,
-            parallelExecution           : true,
-            source                      : 'file.mtar',
-            runInCurrentWorkspace       : true
+            preDeploymentHook           : {closureRun = true},
         ])
 
-        assertTrue(executedInParallel)
-        assertFalse(executedOnNode)
-        assertFalse(executedOnKubernetes)
-
+        assertTrue(closureRun)
     }
 }

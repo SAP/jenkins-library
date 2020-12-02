@@ -4,12 +4,13 @@ import (
 	"archive/zip"
 	"errors"
 	"fmt"
-	"github.com/bmatcuk/doublestar"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/bmatcuk/doublestar"
 )
 
 // FileUtils ...
@@ -26,6 +27,11 @@ type FileUtils interface {
 
 // Files ...
 type Files struct {
+}
+
+// TempDir creates a temporary directory
+func (f Files) TempDir(dir, pattern string) (name string, err error) {
+	return ioutil.TempDir(dir, pattern)
 }
 
 // FileExists returns true if the file system entry for the given path exists and is not a directory.
@@ -220,6 +226,34 @@ func (f Files) RemoveAll(path string) error {
 // Glob is a wrapper for doublestar.Glob().
 func (f Files) Glob(pattern string) (matches []string, err error) {
 	return doublestar.Glob(pattern)
+}
+
+// ExcludeFiles returns a slice of files, which contains only the sub-set of files that matched none
+// of the glob patterns in the provided excludes list.
+func ExcludeFiles(files, excludes []string) ([]string, error) {
+	if len(excludes) == 0 {
+		return files, nil
+	}
+
+	var filteredFiles []string
+	for _, file := range files {
+		includeFile := true
+		for _, exclude := range excludes {
+			matched, err := doublestar.PathMatch(exclude, file)
+			if err != nil {
+				return nil, fmt.Errorf("failed to match file %s to pattern %s: %w", file, exclude, err)
+			}
+			if matched {
+				includeFile = false
+				break
+			}
+		}
+		if includeFile {
+			filteredFiles = append(filteredFiles, file)
+		}
+	}
+
+	return filteredFiles, nil
 }
 
 // Getwd is a wrapper for os.Getwd().

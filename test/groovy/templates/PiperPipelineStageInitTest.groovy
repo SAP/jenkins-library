@@ -14,6 +14,7 @@ import static org.hamcrest.Matchers.is
 import static org.hamcrest.Matchers.isEmptyOrNullString
 import static org.hamcrest.Matchers.not
 import static org.junit.Assert.assertThat
+import static org.junit.Assert.assertTrue
 
 class PiperPipelineStageInitTest extends BasePiperTest {
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
@@ -121,7 +122,7 @@ class PiperPipelineStageInitTest extends BasePiperTest {
             stashSettings: 'com.sap.piper/pipeline/stashSettings.yml'
         )
 
-        assertThat(stepsCalled, hasItems('checkout', 'setupCommonPipelineEnvironment', 'piperInitRunStageConfiguration', 'artifactSetVersion', 'pipelineStashFilesBeforeBuild'))
+        assertThat(stepsCalled, hasItems('checkout', 'setupCommonPipelineEnvironment', 'piperInitRunStageConfiguration', 'artifactPrepareVersion', 'pipelineStashFilesBeforeBuild'))
         assertThat(stepsCalled, not(hasItems('slackSendNotification')))
 
     }
@@ -175,7 +176,7 @@ class PiperPipelineStageInitTest extends BasePiperTest {
             'checkout',
             'setupCommonPipelineEnvironment',
             'piperInitRunStageConfiguration',
-            'artifactSetVersion',
+            'artifactPrepareVersion',
             'slackSendNotification',
             'pipelineStashFilesBeforeBuild'
         ))
@@ -210,7 +211,7 @@ class PiperPipelineStageInitTest extends BasePiperTest {
             'checkout',
             'setupCommonPipelineEnvironment',
             'piperInitRunStageConfiguration',
-            'artifactSetVersion',
+            'artifactPrepareVersion',
             'pipelineStashFilesBeforeBuild'
         ))
     }
@@ -227,10 +228,4 @@ class PiperPipelineStageInitTest extends BasePiperTest {
         assertThat(stepParams.setupCommonPipelineEnvironment?.customDefaultsFromFiles, is(['my-custom-default-file.yml']))
     }
 
-    @Test
-    void testInitWithCloudSdkStashInit() {
-        jsr.step.piperPipelineStageInit(script: nullScript, juStabUtils: utils, initCloudSdkStashSettings: true, buildTool: 'maven')
-
-        assertThat(nullScript.commonPipelineEnvironment.configuration.stageStashes, hasKey('init'))
-    }
 }

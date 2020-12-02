@@ -215,3 +215,16 @@ repositories:
 		assert.EqualError(t, err, expectedErrorMessage)
 	})
 }
+
+func TestGetCommitStrings(t *testing.T) {
+	t.Run("CommitID available", func(t *testing.T) {
+		commitQuery, commitString := GetCommitStrings("ABCD1234")
+		assert.Equal(t, `, "commit_id":"ABCD1234"`, commitQuery, "Expected different query")
+		assert.Equal(t, `, commit 'ABCD1234'`, commitString, "Expected different string")
+	})
+	t.Run("CommitID available", func(t *testing.T) {
+		commitQuery, commitString := GetCommitStrings("")
+		assert.Equal(t, ``, commitQuery, "Expected empty query")
+		assert.Equal(t, ``, commitString, "Expected empty string")
+	})
+}

@@ -6,7 +6,11 @@ import org.junit.Test
 import org.junit.rules.RuleChain
 import util.*
 
+import static org.hamcrest.Matchers.anyOf
 import static org.hamcrest.Matchers.containsString
+import static org.hamcrest.Matchers.hasItems
+import static org.hamcrest.Matchers.not
+import static org.junit.Assert.assertNotNull
 import static org.junit.Assert.assertThat
 
 class PiperPipelineStagePerformanceTest extends BasePiperTest {
@@ -20,22 +24,53 @@ class PiperPipelineStagePerformanceTest extends BasePiperTest {
         .around(jlr)
         .around(jsr)
 
+    private List stepsCalled = []
+    private Map stepParameters = [:]
+
     @Before
     void init()  {
         binding.variables.env.STAGE_NAME = 'Performance'
         helper.registerAllowedMethod('piperStageWrapper', [Map.class, Closure.class], {m, body ->
             return body()
         })
+        helper.registerAllowedMethod('gatlingExecuteTests', [Map.class], {m ->
+            stepsCalled.add('gatlingExecuteTests')
+            stepParameters.gatlingExecuteTests = m
+        })
+        helper.registerAllowedMethod('multicloudDeploy', [Map.class], {m ->
+            stepsCalled.add('multicloudDeploy')
+            stepParameters.multicloudDeploy = m
+        })
     }
 
     @Test
     void testStageDefault() {
-
         jsr.step.piperPipelineStagePerformance(
             script: nullScript,
             juStabUtils: utils,
         )
-        assertThat(jlr.log, containsString('Stage implementation is not provided yet.'))
+        assertThat(stepsCalled, not(anyOf(hasItems('gatlingExecuteTests', 'multicloudDeploy'))))
+    }
 
+    @Test
+    void testgatlingExecuteTests() {
+        jsr.step.piperPipelineStagePerformance(
+            script: nullScript,
+            juStabUtils: utils,
+            gatlingExecuteTests: true
+        )
+        assertThat(stepsCalled, hasItems('gatlingExecuteTests'))
+        assertNotNull(stepParameters.gatlingExecuteTests)
+    }
+
+    @Test
+    void testMulticloudDeployTests() {
+        jsr.step.piperPipelineStagePerformance(
+            script: nullScript,
+            juStabUtils: utils,
+            multicloudDeploy: true
+        )
+        assertThat(stepsCalled, hasItems('multicloudDeploy'))
+        assertNotNull(stepParameters.multicloudDeploy)
     }
 }
