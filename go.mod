@@ -20,6 +20,7 @@ require (
 	github.com/frankban/quicktest v1.10.0 // indirect
 	github.com/getsentry/sentry-go v0.7.0
 	github.com/ghodss/yaml v1.0.0
+	github.com/go-git/go-billy/v5 v5.0.0
 	github.com/go-git/go-git/v5 v5.1.0
 	github.com/go-openapi/runtime v0.19.22
 	github.com/go-openapi/spec v0.19.9 // indirect

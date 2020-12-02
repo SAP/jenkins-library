@@ -2,8 +2,13 @@ package git
 
 import (
 	"errors"
+	"fmt"
+	"github.com/go-git/go-billy/v5"
+	"github.com/go-git/go-billy/v5/memfs"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -105,6 +110,139 @@ func TestChangeBranch(t *testing.T) {
 			failingCheckout: true,
 		})
 		assert.EqualError(t, err, "failed to checkout branch: failed to checkout branch")
+	})
+}
+
+func TestLogRange(t *testing.T) {
+
+	against := func(t *testing.T, r *git.Repository, from, to string, expected []plumbing.Hash) {
+		seen := []plumbing.Hash{}
+		cIter, err := LogRange(r, from, to)
+		if assert.NoError(t, err) {
+			err = cIter.ForEach(func(c *object.Commit) error {
+				seen = append(seen, c.ID())
+				return nil
+			})
+			if assert.NoError(t, err) {
+				if assert.Len(t, seen, len(expected)) {
+					assert.Subset(t, seen, expected)
+				}
+			}
+		}
+	}
+
+	prepareRepo := func() (r *git.Repository, hashes map[string]plumbing.Hash, err error) {
+
+		hashes = map[string]plumbing.Hash{}
+
+		c := func(r *git.Repository, fs billy.Filesystem, name string) (hash plumbing.Hash, err error) {
+			w, err := r.Worktree()
+			if err != nil {
+				return
+			}
+			f, err := fs.Create(fmt.Sprintf("commit%s.txt", name))
+			if err != nil {
+				return
+			}
+			_, err = f.Write([]byte(fmt.Sprintf("Commit %s", name)))
+			if err != nil {
+				return
+			}
+			_, err = w.Add(fmt.Sprintf("commit%s.txt", name))
+			if err != nil {
+				return
+			}
+
+			hash, err = w.Commit(fmt.Sprintf("Commit %s", name), &git.CommitOptions{})
+			if err != nil {
+				return
+			}
+			hashes[name] = hash
+			return
+		}
+
+		fs := memfs.New()
+
+		// create new git repo
+		r, err = git.Init(memory.NewStorage(), fs)
+		if err != nil {
+			return
+		}
+		w, err := r.Worktree()
+		if err != nil {
+			return
+		}
+
+		// add a commit to the repo -- A --
+		hashA, err := c(r, fs, "A")
+		if err != nil {
+			return
+		}
+
+		// another commit -- B --
+		_, err = c(r, fs, "B")
+		if err != nil {
+			return
+		}
+
+		// checkout the first commit again
+		err = w.Checkout(&git.CheckoutOptions{Hash: hashA})
+		if err != nil {
+			return
+		}
+
+		// add another file as sucessor of the first commit -- C --
+		_, err = c(r, fs, "C")
+		if err != nil {
+			return
+		}
+
+		// and yet another commit -- D --
+		_, err = c(r, fs, "D")
+		if err != nil {
+			return
+		}
+
+		// Remark: it seems to be possible to create additional branches with r.CreateBranch(./.)
+		// In case this would be possible, we could also test with some custom branch.
+		return
+	}
+
+	r, hashes, err := prepareRepo()
+	if err != nil {
+		assert.FailNow(t, fmt.Sprintf("%v", err), err)
+	}
+
+	// Our repo contains these commits and branches:
+	//  / C - D <-- HEAD
+	// A - B <-- master
+
+	t.Parallel()
+
+	t.Run("B against D", func(t *testing.T) {
+		against(t, r, hashes["B"].String(), hashes["D"].String(), []plumbing.Hash{hashes["C"], hashes["D"]})
+	})
+	t.Run("A against B", func(t *testing.T) {
+		against(t, r, hashes["A"].String(), hashes["B"].String(), []plumbing.Hash{hashes["B"]})
+	})
+	t.Run("B against HEAD", func(t *testing.T) {
+		against(t, r, hashes["B"].String(), "HEAD", []plumbing.Hash{hashes["C"], hashes["D"]})
+	})
+	t.Run("B against HEAD~1", func(t *testing.T) {
+		against(t, r, hashes["B"].String(), "HEAD~1", []plumbing.Hash{hashes["C"]})
+	})
+	t.Run("A against master", func(t *testing.T) {
+		against(t, r, hashes["A"].String(), "master", []plumbing.Hash{hashes["B"]})
+	})
+	t.Run("A against master~1", func(t *testing.T) {
+		against(t, r, hashes["A"].String(), "master~1", []plumbing.Hash{})
+	})
+	t.Run("Same ref results in empty result", func(t *testing.T) {
+		against(t, r, hashes["A"].String(), hashes["A"].String(), []plumbing.Hash{})
+	})
+	t.Run("Invalid ref", func(t *testing.T) {
+		_, err := LogRange(r, "012346789012346789012346789012346789", "HEAD")
+		assert.EqualError(t, err, "Cannot provide log range: Trouble resolving '012346789012346789012346789012346789': reference not found")
 	})
 }
 
