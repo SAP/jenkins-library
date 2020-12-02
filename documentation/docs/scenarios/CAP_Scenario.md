@@ -33,6 +33,8 @@ Now, you'll need to push the code to a git repository.
 This is required because the pipeline gets your code via git.
 This might be GitHub, or any other cloud or on-premise git solution you have in your company.
 
+Afterwards you can connect your Jenkins instance to your git repository and let it build the project.
+
 ## Legacy documentation
 
 If your project is not based on the _SAP Cloud Platform Business Application_ WebIDE template, you could either migrate your code to comply with the structure which is described [here](https://github.com/SAP/cloud-s4-sdk-pipeline/blob/master/doc/pipeline/build-tools.md#sap-cloud-application-programming-model--mta), or you can use a self built pipeline, as described in this section.
