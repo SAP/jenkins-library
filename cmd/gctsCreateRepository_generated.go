@@ -105,8 +105,9 @@ func addGctsCreateRepositoryFlags(cmd *cobra.Command, stepConfig *gctsCreateRepo
 func gctsCreateRepositoryMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "gctsCreateRepository",
-			Aliases: []config.Alias{},
+			Name:        "gctsCreateRepository",
+			Aliases:     []config.Alias{},
+			Description: "Creates a Git repository on an ABAP system",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{

@@ -121,8 +121,9 @@ func addCloudFoundryCreateServiceFlags(cmd *cobra.Command, stepConfig *cloudFoun
 func cloudFoundryCreateServiceMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "cloudFoundryCreateService",
-			Aliases: []config.Alias{},
+			Name:        "cloudFoundryCreateService",
+			Aliases:     []config.Alias{},
+			Description: "Creates one or multiple Services in Cloud Foundry",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -264,6 +265,9 @@ func cloudFoundryCreateServiceMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "cloudFoundry/manifestVariablesFiles"}, {Name: "cfManifestVariablesFiles"}},
 					},
 				},
+			},
+			Containers: []config.Container{
+				{Name: "cf", Image: "ppiper/cf-cli"},
 			},
 		},
 	}
