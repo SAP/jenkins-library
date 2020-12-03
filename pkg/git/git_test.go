@@ -255,8 +255,11 @@ func TestLogRange(t *testing.T) {
 		against(t, r, hashes["A"].String(), hashes["A"].String(), []plumbing.Hash{})
 	})
 	t.Run("Invalid ref", func(t *testing.T) {
-		_, err := LogRange(r, "012346789012346789012346789012346789", "HEAD")
-		assert.EqualError(t, err, "Cannot provide log range: Trouble resolving '012346789012346789012346789012346789': reference not found")
+		// it is unlikely as hell, but at some time we might get a test failure here
+		// when a commit with this hash has been created during preparation of the repo.
+		// paranoia :-)
+		_, err := LogRange(r, "0123456789012345678901234567890123456789", "HEAD")
+		assert.EqualError(t, err, "Cannot provide log range: Trouble resolving '0123456789012345678901234567890123456789': reference not found")
 	})
 }
 
