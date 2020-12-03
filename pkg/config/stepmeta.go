@@ -281,15 +281,7 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 
 			putStringIfNotEmpty(p, "containerName", container.Name)
 			putStringIfNotEmpty(p, "containerShell", container.Shell)
-			putMapIfNotEmpty(p, "dockerEnvVars", EnvVarsAsMap(container.EnvVars))
-			putStringIfNotEmpty(p, "dockerImage", container.Image)
-			putStringIfNotEmpty(p, "dockerName", container.Name)
-			if container.ImagePullPolicy != "" {
-				p["dockerPullImage"] = container.ImagePullPolicy != "Never"
-			}
-			putStringIfNotEmpty(p, "dockerWorkspace", container.WorkingDir)
-			putSliceIfNotEmpty(p, "dockerOptions", OptionsAsStringSlice(container.Options))
-			//putSliceIfNotEmpty(p, "dockerVolumeBind", volumeMountsAsStringSlice(container.VolumeMounts))
+			container.commonConfiguration("docker", &p)
 
 			// Ready command not relevant for main runtime container so far
 			//putStringIfNotEmpty(p, ..., container.ReadyCommand)
@@ -301,16 +293,8 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 		if len(m.Spec.Sidecars[0].Command) > 0 {
 			root["sidecarCommand"] = m.Spec.Sidecars[0].Command[0]
 		}
-		putMapIfNotEmpty(root, "sidecarEnvVars", EnvVarsAsMap(m.Spec.Sidecars[0].EnvVars))
-		putStringIfNotEmpty(root, "sidecarImage", m.Spec.Sidecars[0].Image)
-		putStringIfNotEmpty(root, "sidecarName", m.Spec.Sidecars[0].Name)
-		if m.Spec.Sidecars[0].ImagePullPolicy != "" {
-			root["sidecarPullImage"] = m.Spec.Sidecars[0].ImagePullPolicy != "Never"
-		}
+		m.Spec.Sidecars[0].commonConfiguration("sidecar", &root)
 		putStringIfNotEmpty(root, "sidecarReadyCommand", m.Spec.Sidecars[0].ReadyCommand)
-		putStringIfNotEmpty(root, "sidecarWorkspace", m.Spec.Sidecars[0].WorkingDir)
-		putSliceIfNotEmpty(root, "sidecarOptions", OptionsAsStringSlice(m.Spec.Sidecars[0].Options))
-		//putSliceIfNotEmpty(root, "sidecarVolumeBind", volumeMountsAsStringSlice(m.Spec.Sidecars[0].VolumeMounts))
 
 		// not filled for now since this is not relevant in Kubernetes case
 		//putStringIfNotEmpty(root, "containerPortMappings", m.Spec.Sidecars[0].)
@@ -377,6 +361,19 @@ func (m *StepData) GetResourceParameters(path, name string) map[string]interface
 	}
 
 	return resourceParams
+}
+
+func (container *Container) commonConfiguration(keyPrefix string, config *map[string]interface{}) {
+	putMapIfNotEmpty(*config, keyPrefix+"EnvVars", EnvVarsAsMap(container.EnvVars))
+	putStringIfNotEmpty(*config, keyPrefix+"Image", container.Image)
+	putStringIfNotEmpty(*config, keyPrefix+"Name", container.Name)
+	if container.ImagePullPolicy != "" {
+		(*config)[keyPrefix+"PullImage"] = container.ImagePullPolicy != "Never"
+	}
+	putStringIfNotEmpty(*config, keyPrefix+"Workspace", container.WorkingDir)
+	putSliceIfNotEmpty(*config, keyPrefix+"Options", OptionsAsStringSlice(container.Options))
+	//putSliceIfNotEmpty(*config, keyPrefix+"VolumeBind", volumeMountsAsStringSlice(container.VolumeMounts))
+
 }
 
 func getParameterValue(path string, res ResourceReference, param StepParameters) interface{} {
