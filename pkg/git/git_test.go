@@ -162,6 +162,20 @@ func TestLogRange(t *testing.T) {
 			return
 		}
 
+		// Creates a branch on the currently checked out commit
+		b := func(r *git.Repository, name string) (err error) {
+			w, err := r.Worktree()
+			if err != nil {
+				return
+			}
+
+			b := plumbing.ReferenceName(fmt.Sprintf("refs/heads/%s", name))
+
+			err = w.Checkout(&git.CheckoutOptions{Create: true, Force: false, Branch: b})
+
+			return
+		}
+
 		fs := memfs.New()
 
 		// create new git repo
@@ -218,8 +232,8 @@ func TestLogRange(t *testing.T) {
 			return
 		}
 
-		// Remark: it seems to be possible to create additional branches with r.CreateBranch(./.)
-		// In case this would be possible, we could also test with some custom branch.
+		err = b(r, "branch1")
+
 		return
 	}
 
@@ -229,7 +243,7 @@ func TestLogRange(t *testing.T) {
 	}
 
 	// Our repo contains these commits and branches:
-	//  / C - D <-- HEAD
+	//  / C - D <-- HEAD <-- branch1
 	// A - B <-- master
 
 	t.Parallel()
@@ -248,6 +262,9 @@ func TestLogRange(t *testing.T) {
 	})
 	t.Run("A against master", func(t *testing.T) {
 		against(t, r, hashes["A"].String(), "master", []plumbing.Hash{hashes["B"]})
+	})
+	t.Run("master against a branch pointing to D", func(t *testing.T) {
+		against(t, r, "master", "branch1", []plumbing.Hash{hashes["C"], hashes["D"]})
 	})
 	t.Run("A against master~1", func(t *testing.T) {
 		against(t, r, hashes["A"].String(), "master~1", []plumbing.Hash{})
