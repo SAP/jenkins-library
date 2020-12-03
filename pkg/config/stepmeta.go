@@ -301,20 +301,20 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 		if len(m.Spec.Sidecars[0].Command) > 0 {
 			root["sidecarCommand"] = m.Spec.Sidecars[0].Command[0]
 		}
-		root["sidecarEnvVars"] = EnvVarsAsMap(m.Spec.Sidecars[0].EnvVars)
-		root["sidecarImage"] = m.Spec.Sidecars[0].Image
-		root["sidecarName"] = m.Spec.Sidecars[0].Name
+		putMapIfNotEmpty(root, "sidecarEnvVars", EnvVarsAsMap(m.Spec.Sidecars[0].EnvVars))
+		putStringIfNotEmpty(root, "sidecarImage", m.Spec.Sidecars[0].Image)
+		putStringIfNotEmpty(root, "sidecarName", m.Spec.Sidecars[0].Name)
 		if m.Spec.Sidecars[0].ImagePullPolicy != "" {
 			root["sidecarPullImage"] = m.Spec.Sidecars[0].ImagePullPolicy != "Never"
 		}
-		root["sidecarReadyCommand"] = m.Spec.Sidecars[0].ReadyCommand
-		root["sidecarWorkspace"] = m.Spec.Sidecars[0].WorkingDir
-		root["sidecarOptions"] = OptionsAsStringSlice(m.Spec.Sidecars[0].Options)
-		//root["sidecarVolumeBind"] = volumeMountsAsStringSlice(m.Spec.Sidecars[0].VolumeMounts)
-	}
+		putStringIfNotEmpty(root, "sidecarReadyCommand", m.Spec.Sidecars[0].ReadyCommand)
+		putStringIfNotEmpty(root, "sidecarWorkspace", m.Spec.Sidecars[0].WorkingDir)
+		putSliceIfNotEmpty(root, "sidecarOptions", OptionsAsStringSlice(m.Spec.Sidecars[0].Options))
+		//putSliceIfNotEmpty(root, "sidecarVolumeBind", volumeMountsAsStringSlice(m.Spec.Sidecars[0].VolumeMounts))
 
-	// not filled for now since this is not relevant in Kubernetes case
-	//root["containerPortMappings"] = m.Spec.Sidecars[0].
+		// not filled for now since this is not relevant in Kubernetes case
+		//putStringIfNotEmpty(root, "containerPortMappings", m.Spec.Sidecars[0].)
+	}
 
 	if len(m.Spec.Inputs.Resources) > 0 {
 		keys := []string{}
