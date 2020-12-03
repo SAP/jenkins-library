@@ -235,7 +235,7 @@ void call(Map parameters = [:]) {
             def creds = []
             if (config.mtaExtensionCredentials) {
                 config.mtaExtensionCredentials.each { key, credentialsId ->
-                    creds << string(credentialsId: credentialsId, variable: key)
+                    creds << string(credentialsId: credentialsId, variable: credentialsId)
                 }
             }
 
