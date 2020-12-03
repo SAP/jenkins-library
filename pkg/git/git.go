@@ -141,6 +141,10 @@ func LogRange(repo *git.Repository, from, to string) (object.CommitIter, error) 
 }
 
 func getCommitObject(ref string, repo *git.Repository) (*object.Commit, error) {
+	if len(ref) == 0 {
+		// with go-git v5.1.0 we panic otherwise inside ResolveRevision
+		return nil, errors.New("Cannot get a commit for an empty ref")
+	}
 	r, err := repo.ResolveRevision(plumbing.Revision(ref))
 	if err != nil {
 		return nil, errors.Wrapf(err, "Trouble resolving '%s'", ref)

@@ -299,6 +299,10 @@ func TestLogRange(t *testing.T) {
 		_, err := LogRange(r, "0123456789012345678901234567890123456789", "HEAD")
 		assert.EqualError(t, err, "Cannot provide log range: Trouble resolving '0123456789012345678901234567890123456789': reference not found")
 	})
+	t.Run("Empty string as ref", func(t *testing.T) {
+		_, err := LogRange(r, "", "HEAD")
+		assert.EqualError(t, err, "Cannot provide log range: Cannot get a commit for an empty ref")
+	})
 }
 
 type RepositoryMock struct {
