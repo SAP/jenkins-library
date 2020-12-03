@@ -208,6 +208,18 @@ func TestLogRange(t *testing.T) {
 			return
 		}
 
+		_, err = r.CreateTag("initial", hashA,
+			&git.CreateTagOptions{
+				Tagger: &object.Signature{
+					Name:  config.User.Name,
+					Email: config.User.Email,
+				},
+				Message: "initial",
+			})
+		if err != nil {
+			return
+		}
+
 		// another commit -- B --
 		_, err = c(r, fs, "B")
 		if err != nil {
@@ -243,8 +255,11 @@ func TestLogRange(t *testing.T) {
 	}
 
 	// Our repo contains these commits and branches:
+	//
 	//  / C - D <-- HEAD <-- branch1
 	// A - B <-- master
+	//
+	// Tag 'initial' sits on commit A
 
 	t.Parallel()
 
@@ -269,6 +284,10 @@ func TestLogRange(t *testing.T) {
 	t.Run("A against master~1", func(t *testing.T) {
 		against(t, r, hashes["A"].String(), "master~1", []plumbing.Hash{})
 	})
+	t.Run("Tag against C", func(t *testing.T) {
+		against(t, r, "initial", hashes["C"].String(), []plumbing.Hash{hashes["C"]})
+	})
+
 	t.Run("Same ref results in empty result", func(t *testing.T) {
 		against(t, r, hashes["A"].String(), hashes["A"].String(), []plumbing.Hash{})
 	})
