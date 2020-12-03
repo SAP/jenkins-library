@@ -135,6 +135,7 @@ func TestLogRange(t *testing.T) {
 
 		hashes = map[string]plumbing.Hash{}
 
+		// Creates a commit
 		c := func(r *git.Repository, fs billy.Filesystem, name string) (hash plumbing.Hash, err error) {
 			w, err := r.Worktree()
 			if err != nil {
