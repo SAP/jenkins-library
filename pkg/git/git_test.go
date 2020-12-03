@@ -168,6 +168,20 @@ func TestLogRange(t *testing.T) {
 		if err != nil {
 			return
 		}
+
+		config, err := r.Config()
+		if err != nil {
+			return
+		}
+
+		config.User.Name = "me"
+		config.User.Email = "me@example.org"
+
+		err = r.SetConfig(config)
+		if err != nil {
+			return
+		}
+
 		w, err := r.Worktree()
 		if err != nil {
 			return
