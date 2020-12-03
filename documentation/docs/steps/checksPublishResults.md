@@ -5,8 +5,7 @@
 ## Prerequisites
 
 * **static check result files** - To use this step, there must be static check result files available.
-* installed plugins:
-  * [warnings-ng](https://plugins.jenkins.io/warnings-ng/)
+* installed [warnings-ng](https://plugins.jenkins.io/warnings-ng/) plugin
 
 ## ${docGenParameters}
 
@@ -23,7 +22,7 @@ deprecated, do not use
 | high | no | `'FIXME'` |  |
 | normal | no | `'TODO,REVISE,XXX'` |  |
 | low | no |  |  |
-| qualityGates | no | [[threshold: 1, type: 'TOTAL_HIGH', unstable: false], [threshold: 1, type: 'TOTAL_ERROR', unstable: false]] | see [QualityGates](#qualitygates) |
+| qualityGates | no | `[[threshold: 1, type: 'TOTAL_HIGH', unstable: false], [threshold: 1, type: 'TOTAL_ERROR', unstable: false]]` | see [QualityGates](#qualitygates) |
 
 ### pmd
 
@@ -31,7 +30,7 @@ deprecated, do not use
 | ----------|-----------|---------|-----------------|
 | pattern | no | `'**/target/pmd.xml'` |  |
 | archive | no | `true` | `true`, `false` |
-| qualityGates | no | [[threshold: 1, type: 'TOTAL_HIGH', unstable: false], [threshold: 1, type: 'TOTAL_ERROR', unstable: false]] | see [QualityGates](#qualitygates) |
+| qualityGates | no | `[[threshold: 1, type: 'TOTAL_HIGH', unstable: false], [threshold: 1, type: 'TOTAL_ERROR', unstable: false]]` | see [QualityGates](#qualitygates) |
 
 ### cpd
 
@@ -39,7 +38,7 @@ deprecated, do not use
 | ----------|-----------|---------|-----------------|
 | pattern | no | `'**/target/cpd.xml'` |  |
 | archive | no | `true` | `true`, `false` |
-| qualityGates | no | [[threshold: 1, type: 'TOTAL_HIGH', unstable: false], [threshold: 1, type: 'TOTAL_ERROR', unstable: false]] | see [QualityGates](#qualitygates) |
+| qualityGates | no | `[[threshold: 1, type: 'TOTAL_HIGH', unstable: false], [threshold: 1, type: 'TOTAL_ERROR', unstable: false]]` | see [QualityGates](#qualitygates) |
 
 ### findbugs
 
@@ -47,7 +46,7 @@ deprecated, do not use
 | ----------|-----------|---------|-----------------|
 | pattern | no | `'**/target/findbugsXml.xml, **/target/findbugs.xml'` |  |
 | archive | no | `true` | true, false |
-| qualityGates | no | [[threshold: 1, type: 'TOTAL_HIGH', unstable: false], [threshold: 1, type: 'TOTAL_ERROR', unstable: false]] | see [QualityGates](#qualitygates) |
+| qualityGates | no | `[[threshold: 1, type: 'TOTAL_HIGH', unstable: false], [threshold: 1, type: 'TOTAL_ERROR', unstable: false]]` | see [QualityGates](#qualitygates) |
 
 ### checkstyle
 
@@ -55,7 +54,7 @@ deprecated, do not use
 | ----------|-----------|---------|-----------------|
 | pattern | no | `'**/target/checkstyle-result.xml'` |  |
 | archive | no | `true` | `true`, `false` |
-| qualityGates | no | [[threshold: 1, type: 'TOTAL_HIGH', unstable: false], [threshold: 1, type: 'TOTAL_ERROR', unstable: false]] | see [QualityGates](#qualitygates) |
+| qualityGates | no | `[[threshold: 1, type: 'TOTAL_HIGH', unstable: false], [threshold: 1, type: 'TOTAL_ERROR', unstable: false]]` | see [QualityGates](#qualitygates) |
 
 ### eslint
 
@@ -63,7 +62,7 @@ deprecated, do not use
 | ----------|-----------|---------|-----------------|
 | pattern | no | `'**/eslint.jslint.xml'` |  |
 | archive | no | `true` | `true`, `false` |
-| qualityGates | no | [[threshold: 1, type: 'TOTAL_HIGH', unstable: false], [threshold: 1, type: 'TOTAL_ERROR', unstable: false]] | see [QualityGates](#qualitygates) |
+| qualityGates | no | `[[threshold: 1, type: 'TOTAL_HIGH', unstable: false], [threshold: 1, type: 'TOTAL_ERROR', unstable: false]]` | see [QualityGates](#qualitygates) |
 
 ### pylint
 
@@ -71,7 +70,7 @@ deprecated, do not use
 | ----------|-----------|---------|-----------------|
 | pattern | no | `'**/pylint.log'` |  |
 | archive | no | `true` | `true`, `false` |
-| qualityGates | no | [[threshold: 1, type: 'TOTAL_HIGH', unstable: false], [threshold: 1, type: 'TOTAL_ERROR', unstable: false]] | see [QualityGates](#qualitygates) |
+| qualityGates | no | `[[threshold: 1, type: 'TOTAL_HIGH', unstable: false], [threshold: 1, type: 'TOTAL_ERROR', unstable: false]]` | see [QualityGates](#qualitygates) |
 
 ## ${docGenConfiguration}
 
@@ -83,10 +82,10 @@ It is possible to define quality gates to set the build result to `FAILURE` (not
 
 ```groovy
 qualityGates: [
-  [thresholds: 1, type: 'TOTAL_HIGH', unstable: false],
-  [thresholds: 10, type: 'TOTAL_NORMAL', unstable: false],
-  [thresholds: 100, type: 'TOTAL_LOW', unstable: false],
-  [thresholds: 1000, type: 'TOTAL', unstable: false],
+  [threshold: 1, type: 'TOTAL_HIGH', unstable: false],
+  [threshold: 10, type: 'TOTAL_NORMAL', unstable: false],
+  [threshold: 100, type: 'TOTAL_LOW', unstable: false],
+  [threshold: 1000, type: 'TOTAL', unstable: false],
 ]
 ```
 
