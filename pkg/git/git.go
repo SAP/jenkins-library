@@ -112,7 +112,7 @@ func changeBranch(branchName string, worktree utilsWorkTree) error {
 	return nil
 }
 
-// LogRange Returns a CommitIterating providing all commits reachable from 'to', but
+// LogRange Returns a CommitIterator providing all commits reachable from 'to', but
 // not reachable by 'from'.
 func LogRange(repo *git.Repository, from, to string) (object.CommitIter, error) {
 
