@@ -125,8 +125,11 @@ func LogRange(repo *git.Repository, from, to string) (object.CommitIter, error) 
 		return nil, errors.Wrap(err, "Cannot provide log range")
 	}
 	ignore := []plumbing.Hash{}
-	cFromIter := object.NewCommitPreorderIter(cFrom, map[plumbing.Hash]bool{}, []plumbing.Hash{})
-	err = cFromIter.ForEach(func(c *object.Commit) error {
+	err = object.NewCommitPreorderIter(
+		cFrom,
+		map[plumbing.Hash]bool{},
+		[]plumbing.Hash{},
+	).ForEach(func(c *object.Commit) error {
 		ignore = append(ignore, c.ID())
 		return nil
 	})
