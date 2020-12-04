@@ -46,14 +46,7 @@ This stage is executed, if the "Build" stage is configured. It contains checks t
 
 ### Prepare System
 
-In this stage, the ABAP Environment system is created. This is done with the abapEnvironmentCreateSystem step.
-
-!!! caution "Limitation"
-    As some parts of the system configuration is done after the Cloud Foundry instance was created, the following workaround is currently necessary:
-    An authorized user has to manually confirm that the ABAP Environment system is ready. This is the case when the email has been received by the initially provided administrator (as configured in the file `manifest.yml` - as described in [configuration](configuration.md)).
-    Redefining the "Prepare System" stage via an extension could circumvent the manual confirmation and replace it with an optimistic wait statement - this, however, may lead to a failing pipeline in case the system is not ready in time.
-
-After the confirmation, the Communication Arrangement [SAP_COM_0510](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html) (SAP Cloud Platform ABAP Environment - Software Component Test Integration) is created using the step cloudFoundryCreateServiceKey. With the creation of the Communication Arrangement, a User and Password is created on the ABAP Environment system for the APIs that are used in the following stages.
+In this stage, the ABAP Environment system is created. This is done with the abapEnvironmentCreateSystem step. After the system creation, the Communication Arrangement [SAP_COM_0510](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html) (SAP Cloud Platform ABAP Environment - Software Component Test Integration) is created using the step cloudFoundryCreateServiceKey. With the creation of the Communication Arrangement, a User and Password is created on the ABAP Environment system for the APIs that are used in the following stages.
 
 ### Clone Repositories
 
