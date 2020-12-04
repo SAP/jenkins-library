@@ -407,6 +407,14 @@ spec:
           - name: custom/whitesourceProjectNames
             type: "[]string"
   containers:
+    - image: devxci/mbtci:1.0.14
+      workingDir: /home/mta
+      env: [ ]
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: scanType
+              value: mta
     - image: maven:3.5-jdk-8
       workingDir: /home/java
       env: []
