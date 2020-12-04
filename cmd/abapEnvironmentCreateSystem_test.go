@@ -189,7 +189,7 @@ repositories:
 		expectedResult := `create-services:
 - broker: testService
   name: testName
-  parameters: '{"admin_email":"user@example.com","is_development_allowed":true,"sapsystemname":"H02","size_of_persistence":4,"size_of_runtime":4,"addon_product_name":"myProduct","addon_product_version":"1.2.3"}'
+  parameters: '{"admin_email":"user@example.com","is_development_allowed":true,"sapsystemname":"H02","size_of_persistence":4,"size_of_runtime":4,"addon_product_name":"myProduct","addon_product_version":"1.2.3","parent_saas_appname":"addon_test"}'
   plan: testPlan
 `
 

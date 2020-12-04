@@ -537,6 +537,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
+				{Image: "devxci/mbtci:1.0.14", WorkingDir: "/home/mta", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "scanType", Value: "mta"}}}}},
 				{Image: "maven:3.5-jdk-8", WorkingDir: "/home/java", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "scanType", Value: "maven"}}}}},
 				{Image: "node:lts-stretch", WorkingDir: "/home/node", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "scanType", Value: "npm"}}}}},
 				{Image: "hseeberger/scala-sbt:8u181_2.12.8_1.2.8", WorkingDir: "/home/scala", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "scanType", Value: "sbt"}}}}},

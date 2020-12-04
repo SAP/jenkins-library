@@ -64,16 +64,21 @@ func uploadSarFiles(repos []abaputils.Repository, conn abapbuild.Connector, read
 				return errors.New("Parameter missing. Please provide the path to the SAR file")
 			}
 			filename := filepath.Base(repos[i].SarXMLFilePath)
-			conn.Header["Content-Filename"] = []string{filename}
+			log.Entry().Infof("Trying to read file %s", repos[i].SarXMLFilePath)
 			sarFile, err := readFileFunc(repos[i].SarXMLFilePath)
 			if err != nil {
 				return err
 			}
-			log.Entry().Infof("Upload SAR file %s", filename)
-			err = conn.UploadSarFile("/odata/aas_file_upload", sarFile)
+			log.Entry().Infof("... %d bytes read", len(sarFile))
+			if len(sarFile) == 0 {
+				return errors.New("File has no content - 0 bytes")
+			}
+			log.Entry().Infof("Upload SAR file %s in chunks", filename)
+			err = conn.UploadSarFileInChunks("/odata/aas_file_upload", filename, sarFile)
 			if err != nil {
 				return err
 			}
+			log.Entry().Info("...done")
 		} else {
 			log.Entry().Infof("Package %s has status %s, cannot upload the SAR file of this package", repos[i].PackageName, repos[i].Status)
 		}
@@ -93,11 +98,14 @@ func registerPackages(repos []abaputils.Repository, conn abapbuild.Connector) ([
 		var pack aakaas.Package
 		pack.InitPackage(repos[i], conn)
 		if repos[i].Status == string(aakaas.PackageStatusPlanned) {
+			log.Entry().Infof("Trying to Register Package %s", pack.PackageName)
 			err := pack.Register()
 			if err != nil {
 				return repos, err
 			}
+			log.Entry().Info("...done, take over new status")
 			pack.ChangeStatus(&repos[i])
+			log.Entry().Info("...done")
 		} else {
 			log.Entry().Infof("Package %s has status %s, cannot register this package", pack.PackageName, pack.Status)
 		}
