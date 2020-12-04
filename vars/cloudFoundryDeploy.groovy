@@ -235,6 +235,7 @@ void call(Map parameters = [:]) {
             def creds = []
             if (config.mtaExtensionCredentials) {
                 config.mtaExtensionCredentials.each { key, credentialsId ->
+                    echo "[INFO]${STEP_NAME}] Preparing credential for being used by piper-go. key: ${key}, credentialsId is: ${credentialsId}"
                     creds << string(credentialsId: credentialsId, variable: credentialsId)
                 }
             }
