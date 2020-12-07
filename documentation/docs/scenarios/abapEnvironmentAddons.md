@@ -191,7 +191,7 @@ Make sure to check the general option "Do not allow concurrent builds" in order 
 
 ### Example
 
-Soon, an example will be posted in this [GitHub repository](https://github.com/SAP-samples/abap-platform-ci-cd-samples).
+Please have a look at the configuration example in this [GitHub repository](https://github.com/SAP-samples/abap-platform-ci-cd-samples/tree/addon-build).
 
 ## Troubleshooting
 
