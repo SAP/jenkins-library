@@ -1336,14 +1336,14 @@ class CloudFoundryDeployTest extends BasePiperTest {
     void testGoStepFeatureToggleOn() {
         String calledStep = ''
         String usedMetadataFile = ''
+        List credInfo = []
         helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
             Map parameters, String stepName,
             String metadataFile, List credentialInfo ->
                 calledStep = stepName
                 usedMetadataFile = metadataFile
+                credInfo = credentialInfo
         })
-
-        credentialsRule.withCredentials('mtaExtensionCredentialCredentialId', 'resolvedMtaExtensionCredential')
 
         stepRule.step.cloudFoundryDeploy([
             script: nullScript,
@@ -1359,6 +1359,15 @@ class CloudFoundryDeployTest extends BasePiperTest {
 
         assertEquals('cloudFoundryDeploy', calledStep)
         assertEquals('metadata/cloudFoundryDeploy.yaml', usedMetadataFile)
+
+        // contains assertion does not work apparently when comparing a list of lists agains an expected list.
+	boolean found
+        credInfo.each { entry ->
+            if (entry == [type:'token', id:'mtaExtensionCredentialCredentialId', env:['mtaExtensionCredentialCredentialId'], resolveCredentialsId:false]) {
+                found = true
+            }
+	}
+        assertTrue(found)
     }
 
     @Test
