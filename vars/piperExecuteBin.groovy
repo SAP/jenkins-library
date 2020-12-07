@@ -164,7 +164,7 @@ void credentialWrapper(config, List credentialInfo, body) {
         def creds = []
         def sshCreds = []
         credentialInfo.each { cred ->
-            def credentialsId = config[cred.id]
+            def credentialsId
             if (cred.resolveCredentialsId == false) {
                 credentialsId = cred.id
             } else {
