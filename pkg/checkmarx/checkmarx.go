@@ -173,11 +173,13 @@ type Result struct {
 
 // SystemInstance is the client communicating with the Checkmarx backend
 type SystemInstance struct {
-	serverURL string
-	username  string
-	password  string
-	client    piperHttp.Uploader
-	logger    *logrus.Entry
+	serverURL    string
+	username     string
+	password     string
+	client       piperHttp.Uploader
+	logger       *logrus.Entry
+	clientID     string
+	clientSecret string
 }
 
 // System is the interface abstraction of a specific SystemIns
@@ -207,14 +209,16 @@ type System interface {
 }
 
 // NewSystemInstance returns a new Checkmarx client for communicating with the backend
-func NewSystemInstance(client piperHttp.Uploader, serverURL, username, password string) (*SystemInstance, error) {
+func NewSystemInstance(client piperHttp.Uploader, serverURL, username, password, clientID, clientSecret string) (*SystemInstance, error) {
 	loggerInstance := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx")
 	sys := &SystemInstance{
-		serverURL: serverURL,
-		username:  username,
-		password:  password,
-		client:    client,
-		logger:    loggerInstance,
+		serverURL:    serverURL,
+		username:     username,
+		password:     password,
+		client:       client,
+		logger:       loggerInstance,
+		clientID:     clientID,
+		clientSecret: clientSecret,
 	}
 
 	token, err := sys.getOAuth2Token()
@@ -278,8 +282,8 @@ func (sys *SystemInstance) getOAuth2Token() (string, error) {
 		"password":      {sys.password},
 		"grant_type":    {"password"},
 		"scope":         {"sast_rest_api"},
-		"client_id":     {"resource_owner_client"},
-		"client_secret": {"014DF517-39D1-4453-B7B3-9930C563627C"},
+		"client_id":     {sys.clientID},
+		"client_secret": {sys.clientSecret},
 	}
 	header := http.Header{}
 	header.Add("Content-type", "application/x-www-form-urlencoded")
