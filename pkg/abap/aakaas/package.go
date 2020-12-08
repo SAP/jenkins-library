@@ -3,6 +3,7 @@ package aakaas
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
@@ -126,7 +127,10 @@ func (p *Package) Register() error {
 	}
 
 	var jPck jsonPackage
-	json.Unmarshal(body, &jPck)
+	err = json.Unmarshal(body, &jPck)
+	if err != nil {
+		return fmt.Errorf("failed to parse package status from response: %w", err)
+	}
 	p.Status = jPck.Package.Status
 	log.Entry().Infof("Package status %s", p.Status)
 	return nil

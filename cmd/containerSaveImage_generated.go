@@ -60,6 +60,7 @@ It can be used no matter if a Docker daemon is available or not. It will also wo
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
@@ -91,8 +92,9 @@ func addContainerSaveImageFlags(cmd *cobra.Command, stepConfig *containerSaveIma
 func containerSaveImageMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "containerSaveImage",
-			Aliases: []config.Alias{},
+			Name:        "containerSaveImage",
+			Aliases:     []config.Alias{},
+			Description: "Saves a container image as a tar file",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{

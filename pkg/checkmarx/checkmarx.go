@@ -110,8 +110,8 @@ type Project struct {
 
 // Team - Team Structure
 type Team struct {
-	ID       string `json:"id"`
-	FullName string `json:"fullName"`
+	ID       json.RawMessage `json:"id"`
+	FullName string          `json:"fullName"`
 }
 
 // Links - Links Structure
@@ -173,11 +173,13 @@ type Result struct {
 
 // SystemInstance is the client communicating with the Checkmarx backend
 type SystemInstance struct {
-	serverURL string
-	username  string
-	password  string
-	client    piperHttp.Uploader
-	logger    *logrus.Entry
+	serverURL    string
+	username     string
+	password     string
+	client       piperHttp.Uploader
+	logger       *logrus.Entry
+	clientID     string
+	clientSecret string
 }
 
 // System is the interface abstraction of a specific SystemIns
@@ -186,7 +188,7 @@ type System interface {
 	FilterPresetByID(presets []Preset, presetID int) Preset
 	FilterProjectByName(projects []Project, projectName string) Project
 	FilterTeamByName(teams []Team, teamName string) Team
-	FilterTeamByID(teams []Team, teamID string) Team
+	FilterTeamByID(teams []Team, teamID json.RawMessage) Team
 	DownloadReport(reportID int) ([]byte, error)
 	GetReportStatus(reportID int) (ReportStatusResponse, error)
 	RequestNewReport(scanID int, reportType string) (Report, error)
@@ -197,7 +199,7 @@ type System interface {
 	UpdateProjectConfiguration(projectID int, presetID int, engineConfigurationID string) error
 	UpdateProjectExcludeSettings(projectID int, excludeFolders string, excludeFiles string) error
 	UploadProjectSourceCode(projectID int, zipFile string) error
-	CreateProject(projectName string, teamID string) (ProjectCreateResult, error)
+	CreateProject(projectName, teamID string) (ProjectCreateResult, error)
 	CreateBranch(projectID int, branchName string) int
 	GetPresets() []Preset
 	GetProjectByID(projectID int) (Project, error)
@@ -207,14 +209,16 @@ type System interface {
 }
 
 // NewSystemInstance returns a new Checkmarx client for communicating with the backend
-func NewSystemInstance(client piperHttp.Uploader, serverURL, username, password string) (*SystemInstance, error) {
+func NewSystemInstance(client piperHttp.Uploader, serverURL, username, password, clientID, clientSecret string) (*SystemInstance, error) {
 	loggerInstance := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx")
 	sys := &SystemInstance{
-		serverURL: serverURL,
-		username:  username,
-		password:  password,
-		client:    client,
-		logger:    loggerInstance,
+		serverURL:    serverURL,
+		username:     username,
+		password:     password,
+		client:       client,
+		logger:       loggerInstance,
+		clientID:     clientID,
+		clientSecret: clientSecret,
 	}
 
 	token, err := sys.getOAuth2Token()
@@ -222,9 +226,11 @@ func NewSystemInstance(client piperHttp.Uploader, serverURL, username, password 
 		return sys, errors.Wrap(err, "Error fetching oAuth token")
 	}
 
+	log.RegisterSecret(token)
+
 	options := piperHttp.ClientOptions{
-		Token:              token,
-		MaxRequestDuration: 60 * time.Second,
+		Token:            token,
+		TransportTimeout: time.Minute * 15,
 	}
 	sys.client.SetOptions(options)
 
@@ -276,8 +282,8 @@ func (sys *SystemInstance) getOAuth2Token() (string, error) {
 		"password":      {sys.password},
 		"grant_type":    {"password"},
 		"scope":         {"sast_rest_api"},
-		"client_id":     {"resource_owner_client"},
-		"client_secret": {"014DF517-39D1-4453-B7B3-9930C563627C"},
+		"client_id":     {sys.clientID},
+		"client_secret": {sys.clientSecret},
 	}
 	header := http.Header{}
 	header.Add("Content-type", "application/x-www-form-urlencoded")
@@ -351,7 +357,7 @@ func (sys *SystemInstance) GetProjectsByNameAndTeam(projectName, teamID string) 
 }
 
 // CreateProject creates a new project in the Checkmarx backend
-func (sys *SystemInstance) CreateProject(projectName string, teamID string) (ProjectCreateResult, error) {
+func (sys *SystemInstance) CreateProject(projectName, teamID string) (ProjectCreateResult, error) {
 	var result ProjectCreateResult
 	jsonData := map[string]interface{}{
 		"name":       projectName,
@@ -620,7 +626,7 @@ func (sys *SystemInstance) DownloadReport(reportID int) ([]byte, error) {
 // FilterTeamByName filters a team by its name
 func (sys *SystemInstance) FilterTeamByName(teams []Team, teamName string) Team {
 	for _, team := range teams {
-		if team.FullName == teamName {
+		if team.FullName == teamName || team.FullName == strings.ReplaceAll(teamName, `\`, `/`) {
 			return team
 		}
 	}
@@ -628,9 +634,11 @@ func (sys *SystemInstance) FilterTeamByName(teams []Team, teamName string) Team 
 }
 
 // FilterTeamByID filters a team by its ID
-func (sys *SystemInstance) FilterTeamByID(teams []Team, teamID string) Team {
+func (sys *SystemInstance) FilterTeamByID(teams []Team, teamID json.RawMessage) Team {
+	teamIDBytes1, _ := teamID.MarshalJSON()
 	for _, team := range teams {
-		if team.ID == teamID {
+		teamIDBytes2, _ := team.ID.MarshalJSON()
+		if bytes.Compare(teamIDBytes1, teamIDBytes2) == 0 {
 			return team
 		}
 	}

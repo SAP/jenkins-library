@@ -259,12 +259,34 @@ func TestNpm(t *testing.T) {
 			Utils:   &utils,
 			Options: options,
 		}
-		err := exec.RunScriptsInAllPackages(runScripts, nil, nil, false, nil)
+		err := exec.RunScriptsInAllPackages(runScripts, nil, nil, false, nil, nil)
 
 		if assert.NoError(t, err) {
 			if assert.Equal(t, 4, len(utils.execRunner.Calls)) {
 				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "ci-lint"}}, utils.execRunner.Calls[1])
 				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "ci-build"}}, utils.execRunner.Calls[3])
+			}
+		}
+	})
+
+	t.Run("check Execute all scripts with buildDescriptorList", func(t *testing.T) {
+		utils := newNpmMockUtilsBundle()
+		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))                        // is filtered out
+		utils.AddFile(filepath.Join("src", "package.json"), []byte("{\"scripts\": { \"ci-build\": \"exit 0\" } }")) // should NOT be filtered out
+
+		options := ExecutorOptions{}
+		runScripts := []string{"ci-lint", "ci-build"}
+		buildDescriptorList := []string{filepath.Join("src", "package.json")}
+
+		exec := &Execute{
+			Utils:   &utils,
+			Options: options,
+		}
+		err := exec.RunScriptsInAllPackages(runScripts, nil, nil, false, nil, buildDescriptorList)
+
+		if assert.NoError(t, err) {
+			if assert.Equal(t, 2, len(utils.execRunner.Calls)) {
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "ci-build"}}, utils.execRunner.Calls[1])
 			}
 		}
 	})
@@ -301,7 +323,7 @@ func TestNpm(t *testing.T) {
 			Utils:   &utils,
 			Options: options,
 		}
-		err := exec.RunScriptsInAllPackages([]string{"foo"}, nil, nil, true, nil)
+		err := exec.RunScriptsInAllPackages([]string{"foo"}, nil, nil, true, nil, nil)
 
 		assert.Contains(t, utils.execRunner.Env, "DISPLAY=:99")
 		assert.NoError(t, err)

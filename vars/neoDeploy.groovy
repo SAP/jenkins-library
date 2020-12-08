@@ -41,7 +41,7 @@ import static com.sap.piper.Prerequisites.checkScript
      * @mandatory for deployMode=warParams
      */
     'host',
-        /**
+    /**
      * The path to the .properties file in which all necessary deployment properties for the application are defined.
      * @parentConfigKey neo
      * @mandatory for deployMode=warPropertiesFile
@@ -59,16 +59,37 @@ import static com.sap.piper.Prerequisites.checkScript
      * @mandatory for deployMode=warParams
      */
     'runtimeVersion',
-        /**
+    /**
      * Compute unit (VM) size. Acceptable values: lite, pro, prem, prem-plus.
      * @parentConfigKey neo
      */
     'size',
-        /**
+    /**
      * String of VM arguments passed to the JVM.
      * @parentConfigKey neo
      */
-    'vmArguments'
+    'vmArguments',
+    /**
+     * Boolean to enable/disable invalidating the cache after deployment.
+     * @possibleValues `true`, `false`
+     * @parentConfigKey neo
+     */
+    'invalidateCache',
+    /**
+     * Portal landscape region subscribed to in SAP Cloud Platform.
+     * @parentConfigKey neo
+     */
+    'portalLandscape',
+    /**
+     * UsernamePassword type credential containing SAP Cloud Platform OAuth client ID and client secret.
+     * @parentConfigKey neo
+     */
+    'oauthCredentialId',
+    /**
+     * Site ID of the SAP Fiori Launchpad containing the SAP Fiori app. If not set, the cache of the default site, as defined in the Portal service, is invalidated.
+     * @parentConfigKey neo
+     */
+    'siteId'
 ]
 
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
@@ -216,8 +237,81 @@ void call(parameters = [:]) {
                 lock("$STEP_NAME:${neoCommandHelper.resourceLock()}") {
                     deploy(script, configuration, neoCommandHelper, configuration.dockerImage, deployMode)
                 }
+                if(configuration.neo.invalidateCache == true) {
+                    if (configuration.deployMode == 'mta') {
+                        echo "Triggering invalidation of cache for html5 applications"
+                        invalidateCache(configuration)
+                    } else {
+                        echo "Invalidation of cache is ignored. It is performed only for html5 applications."
+                    }
+                }
             }
         }
+    }
+}
+
+private invalidateCache(configuration){
+    def account = configuration.neo.account
+    def host = configuration.neo.host
+    def portalLandscape = configuration.neo.portalLandscape
+
+    withCredentials([usernamePassword(
+        credentialsId: configuration.neo.oauthCredentialId,
+        passwordVariable: 'OAUTH_NEO_CLIENT_SECRET',
+        usernameVariable: 'OAUTH_NEO_CLIENT_ID')]) {
+        def bearerTokenResponse = sh(
+            script: """#!/bin/bash
+                        curl -X POST -u "${OAUTH_NEO_CLIENT_ID}:${OAUTH_NEO_CLIENT_SECRET}" \
+                            --fail \
+                            "https://oauthasservices-${account}.${host}/oauth2/api/v1/token?grant_type=client_credentials&scope=write,read"
+                    """,
+            returnStdout: true)
+        def bearerToken = readJSON(text: bearerTokenResponse).access_token
+
+        echo "Retrieved bearer token."
+
+        def fetchXcsrfTokenResponse = sh(
+            script: """#!/bin/bash
+                        curl -i -L \
+                            -c 'cookies.jar' \
+                            -H 'X-CSRF-Token: Fetch' \
+                            -H "Authorization: Bearer ${bearerToken}" \
+                            --fail \
+                            "https://${portalLandscape}-${account}.${host}/fiori/api/v1/csrf"
+                    """,
+            returnStdout: true)
+
+        def xcsrfToken = readProperties(text: fetchXcsrfTokenResponse)["X-CSRF-Token"]
+        def siteId = configuration.neo.siteId ?: ""
+
+        if(! siteId){
+            echo "Using the default site defined in Portal service and invalidating the cache."
+        }
+        else{
+            echo "Invalidating the cache for site with Id: ${siteId}."
+        }
+        def statusCode = sh(
+            script: """#!/bin/bash
+                        curl -X POST -L \
+                            -b 'cookies.jar'  \
+                            -H "X-CSRF-Token: ${xcsrfToken}" \
+                            -H "Authorization: Bearer ${bearerToken}" \
+                            -d "{\"siteId\":${siteId}}" \
+                            -so /dev/null \
+                            -w '%{response_code}' \
+                            "https://${portalLandscape}-${account}.${host}/fiori/v1/operations/invalidateCache"
+                    """,
+            returnStdout: true).trim()
+
+        if(! siteId && statusCode == "500") {
+            error "Invalidating the cache failed. " +
+                    "As no siteId is set, the default site defined in the portal UI is used. " +
+                    "Please verify a default site is defined in Portal service. " +
+                    "Alternatively, configure the siteId parameter for this step to invalidate the cache of that specific site."
+        } else if(! statusCode == "200" || ! statusCode == "201" ){
+            error "Invalidating the cache failed with response code: ${statusCode}."
+        }
+        echo "Successfully invalidated the cache."
     }
 }
 

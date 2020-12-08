@@ -66,6 +66,7 @@ gctsRollback will rollback to the previously active commit in the local reposito
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
@@ -103,8 +104,9 @@ func addGctsRollbackFlags(cmd *cobra.Command, stepConfig *gctsRollbackOptions) {
 func gctsRollbackMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "gctsRollback",
-			Aliases: []config.Alias{},
+			Name:        "gctsRollback",
+			Aliases:     []config.Alias{},
+			Description: "Perfoms roll back of one (default) or several commit(s)",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{

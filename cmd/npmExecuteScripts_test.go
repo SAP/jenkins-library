@@ -33,6 +33,7 @@ type npmConfig struct {
 	scriptOptions      []string
 	virtualFrameBuffer bool
 	excludeList        []string
+	packagesList       []string
 }
 
 // npmExecutorMock mocking struct
@@ -59,7 +60,7 @@ func (n *npmExecutorMock) FindPackageJSONFilesWithScript(packageJSONFiles []stri
 }
 
 // RunScriptsInAllPackages mock implementation
-func (n *npmExecutorMock) RunScriptsInAllPackages(runScripts []string, runOptions []string, scriptOptions []string, virtualFrameBuffer bool, excludeList []string) error {
+func (n *npmExecutorMock) RunScriptsInAllPackages(runScripts []string, runOptions []string, scriptOptions []string, virtualFrameBuffer bool, excludeList []string, packagesList []string) error {
 	if len(runScripts) != len(n.config.runScripts) {
 		return fmt.Errorf("RunScriptsInAllPackages was called with a different list of runScripts than config.runScripts")
 	}
@@ -83,6 +84,10 @@ func (n *npmExecutorMock) RunScriptsInAllPackages(runScripts []string, runOption
 
 	if len(excludeList) != len(n.config.excludeList) {
 		return fmt.Errorf("RunScriptsInAllPackages was called with a different value of excludeList than config.excludeList")
+	}
+
+	if len(packagesList) != len(n.config.packagesList) {
+		return fmt.Errorf("RunScriptsInAllPackages was called with a different value of packagesList than config.packagesList")
 	}
 
 	return nil
@@ -112,6 +117,18 @@ func (n *npmExecutorMock) SetNpmRegistries() error {
 }
 
 func TestNpmExecuteScripts(t *testing.T) {
+	t.Run("Call with packagesList", func(t *testing.T) {
+		config := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build", "ci-test"}, BuildDescriptorList: []string{"src/package.json"}}
+		utils := newNpmMockUtilsBundle()
+		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
+		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
+
+		npmExecutor := npmExecutorMock{utils: utils, config: npmConfig{install: config.Install, runScripts: config.RunScripts, packagesList: config.BuildDescriptorList}}
+		err := runNpmExecuteScripts(&npmExecutor, &config)
+
+		assert.NoError(t, err)
+	})
+
 	t.Run("Call with excludeList", func(t *testing.T) {
 		config := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build", "ci-test"}, BuildDescriptorExcludeList: []string{"**/path/**"}}
 		utils := newNpmMockUtilsBundle()

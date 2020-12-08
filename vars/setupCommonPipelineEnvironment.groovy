@@ -92,7 +92,11 @@ void call(Map parameters = [:]) {
 
         piperLoadGlobalExtensions script: script, customDefaults: parameters.customDefaults, customDefaultsFromFiles: customDefaultsFiles
 
-        stash name: 'pipelineConfigAndTests', includes: '.pipeline/**', allowEmpty: true
+        String stashIncludes = '.pipeline/**'
+        if (configFile && !configFile.startsWith('.pipeline/')) {
+            stashIncludes += ", $configFile"
+        }
+        stash name: 'pipelineConfigAndTests', includes: stashIncludes, allowEmpty: true
 
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
@@ -237,6 +241,8 @@ private void setGitUrlsOnCommonPipelineEnvironment(script, String gitUrl) {
     def gitFolder = 'N/A'
     def gitRepo = 'N/A'
     switch (gitPathParts.size()) {
+        case 0:
+            break
         case 1:
             gitRepo = gitPathParts[0]
             break
@@ -244,7 +250,7 @@ private void setGitUrlsOnCommonPipelineEnvironment(script, String gitUrl) {
             gitFolder = gitPathParts[0]
             gitRepo = gitPathParts[1]
             break
-        case { it > 3 }:
+        default:
             gitRepo = gitPathParts[gitPathParts.size()-1]
             gitPathParts.remove(gitPathParts.size()-1)
             gitFolder = gitPathParts.join('/')
