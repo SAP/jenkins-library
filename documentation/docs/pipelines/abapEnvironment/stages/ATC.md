@@ -1,6 +1,6 @@
 # ATC
 
-In this stage, ATC checks can be executed using abapEnvironmentRunATCCheck. The step can receive software components or packages. The results are returned in the checkstyle format. With the use of a pipeline extension, quality gates can be configured (see [step documentation](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunATCCheck/) or the "Extensions" section in the [configuration](configuration.md)).
+In this stage, ATC checks can be executed using abapEnvironmentRunATCCheck. The step can receive software components or packages. The results are returned in the checkstyle format. With the use of a pipeline extension, quality gates can be configured (see [step documentation](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunATCCheck/) or the "Extensions" section in the [configuration](../configuration.md)).
 
 ## Steps
 

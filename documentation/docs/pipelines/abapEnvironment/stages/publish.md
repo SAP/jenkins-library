@@ -6,7 +6,7 @@ This stage publishes an add-on for the ABAP Environment (please refer to the [sc
 
 The following steps are executed in this stage:
 
-- [abapAddonAssemblyKitPublishTargetVector](../../steps/abapAddonAssemblyKitPublishTargetVector.md)
+- [abapAddonAssemblyKitPublishTargetVector](../../../steps/abapAddonAssemblyKitPublishTargetVector.md)
 
 ## Stage Parameters
 

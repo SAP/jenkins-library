@@ -6,13 +6,13 @@ This stage is responsible for building an ABAP Add-on for the SAP Cloud Platform
 
 The following steps are executed in this stage:
 
-- [cloudFoundryCreateServiceKey](../../steps/cloudFoundryCreateServiceKey.md)
-- [abapAddonAssemblyKitReserveNextPackages](../../steps/abapAddonAssemblyKitReserveNextPackages.md)
-- [abapEnvironmentAssemblePackages](../../steps/abapEnvironmentAssemblePackages.md)
-- [abapAddonAssemblyKitRegisterPackages](../../steps/abapAddonAssemblyKitRegisterPackages.md)
-- [abapAddonAssemblyKitReleasePackages](../../steps/abapAddonAssemblyKitReleasePackages.md)
-- [abapAddonAssemblyKitCreateTargetVector](../../steps/abapAddonAssemblyKitCreateTargetVector.md)
-- [abapAddonAssemblyKitPublishTargetVector](../../steps/abapAddonAssemblyKitPublishTargetVector.md)
+- [cloudFoundryCreateServiceKey](../../../steps/cloudFoundryCreateServiceKey.md)
+- [abapAddonAssemblyKitReserveNextPackages](../../../steps/abapAddonAssemblyKitReserveNextPackages.md)
+- [abapEnvironmentAssemblePackages](../../../steps/abapEnvironmentAssemblePackages.md)
+- [abapAddonAssemblyKitRegisterPackages](../../../steps/abapAddonAssemblyKitRegisterPackages.md)
+- [abapAddonAssemblyKitReleasePackages](../../../steps/abapAddonAssemblyKitReleasePackages.md)
+- [abapAddonAssemblyKitCreateTargetVector](../../../steps/abapAddonAssemblyKitCreateTargetVector.md)
+- [abapAddonAssemblyKitPublishTargetVector](../../../steps/abapAddonAssemblyKitPublishTargetVector.md)
 
 ## Stage Parameters
 
