@@ -27,6 +27,8 @@ This stage will be active, if the stage configuration in the `config.yml` contai
 
 ## Configuration Example
 
+It is recommended to use a yml configuration to define the software components. This yml file works for all strategies. If you are building an ABAP add-on, the addon descriptor `addon.yml` can be reused.
+
 ### config.yml
 
 ```yaml
