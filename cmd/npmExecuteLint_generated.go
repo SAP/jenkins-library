@@ -98,6 +98,7 @@ func npmExecuteLintMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
+						Default:     false,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -106,6 +107,7 @@ func npmExecuteLintMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_defaultNpmRegistry"),
 						Aliases:     []config.Alias{{Name: "npm/defaultNpmRegistry"}},
 					},
 				},

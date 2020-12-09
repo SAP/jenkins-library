@@ -152,6 +152,9 @@ func xsDeployMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "credentialsId", Description: "Jenkins 'Username with password' credentials ID containing username/password for accessing xs endpoint.", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "deployOpts",
@@ -159,6 +162,7 @@ func xsDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_deployOpts"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -167,6 +171,7 @@ func xsDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     `^.*xs bg-deploy -i (.*) -a.*$`,
 						Aliases:     []config.Alias{{Name: "deployIdLogPattern"}},
 					},
 					{
@@ -180,6 +185,7 @@ func xsDeployMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
+						Default:   os.Getenv("PIPER_mtaPath"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -188,6 +194,7 @@ func xsDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     `NONE`,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -196,6 +203,7 @@ func xsDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     `DEPLOY`,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -209,6 +217,7 @@ func xsDeployMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
+						Default:   os.Getenv("PIPER_operationId"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -217,6 +226,7 @@ func xsDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     os.Getenv("PIPER_apiUrl"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -231,6 +241,7 @@ func xsDeployMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
+						Default:   os.Getenv("PIPER_username"),
 						Aliases:   []config.Alias{{Name: "user"}},
 					},
 					{
@@ -245,6 +256,7 @@ func xsDeployMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
+						Default:   os.Getenv("PIPER_password"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -253,6 +265,7 @@ func xsDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     os.Getenv("PIPER_org"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -261,6 +274,7 @@ func xsDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     os.Getenv("PIPER_space"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -269,6 +283,7 @@ func xsDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     os.Getenv("PIPER_loginOpts"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -277,6 +292,7 @@ func xsDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_xsSessionFile"),
 						Aliases:     []config.Alias{},
 					},
 				},
