@@ -235,7 +235,7 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('cloudFoundry/credentialsId', null, {c -> return !c.containsKey('vaultAppRoleTokenCredentialsId') || !c.containsKey('vaultAppRoleSecretTokenCredentialsId')})
             .use()
 
-        if (config.cfTrace == null) config.cfTrace = config.verbose
+        if (config.cfTrace == null) config.cfTrace = true
 
         if (config.useGoStep == true) {
             List credentials = [
@@ -593,7 +593,7 @@ private deploy(String cfApiStatement, String cfDeployStatement, config, Closure 
             set +x
             set -e
             export HOME=${config.dockerWorkspace}
-            export CF_TRACE=${cfTraceFile}
+            ${config.cfTrace ? "export CF_TRACE=${cfTraceFile}" : ""}
             ${cfApiStatement ?: ''}
             cf login -u \"${username}\" -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\" ${config.loginParameters}
             cf plugins
@@ -612,7 +612,7 @@ private deploy(String cfApiStatement, String cfDeployStatement, config, Closure 
 
             error "[${STEP_NAME}] ERROR: The execution of the deploy command failed, see the log for details."
         }
-        if (config.cfTrace) {
+        if (config.verbose) {
             handleCfCliLog(cfTraceFile)
         }
 
