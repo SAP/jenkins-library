@@ -55,26 +55,9 @@ func generateConfig() error {
 	var myConfig config.Config
 	var stepConfig config.StepConfig
 
-	var metadata config.StepData
-	if configOptions.stepMetadata == "" {
-		if configOptions.stepName != "" {
-			metadataMap := GetAllStepMetadata()
-			var ok bool
-			metadata, ok = metadataMap[configOptions.stepMetadata]
-			if !ok {
-				log.Entry().Errorf("metadata could not be retrieved by stepName %v", configOptions.stepName)
-			}
-		}
-	} else {
-		metadataFile, err := configOptions.openFile(configOptions.stepMetadata)
-		if err != nil {
-			return errors.Wrap(err, "metadata: open failed")
-		}
-
-		err = metadata.ReadPipelineStepData(metadataFile)
-		if err != nil {
-			return errors.Wrap(err, "metadata: read failed")
-		}
+	metadata, err := resolveMetadata()
+	if err != nil {
+		return errors.Wrapf(err, "failed to resolve metadata:")
 	}
 
 	// prepare output resource directories:
@@ -142,7 +125,7 @@ func addConfigFlags(cmd *cobra.Command) {
 
 	cmd.Flags().StringVar(&configOptions.parametersJSON, "parametersJSON", os.Getenv("PIPER_parametersJSON"), "Parameters to be considered in JSON format")
 	cmd.Flags().StringVar(&configOptions.stepMetadata, "stepMetadata", "", "Step metadata, passed as path to yaml")
-	cmd.Flags().StringVar(&configOptions.stepMetadata, "stepName", "", "Step name, used to get step metadata if path is not set")
+	cmd.Flags().StringVar(&configOptions.stepName, "stepName", "", "Step name, used to get step metadata if path is not set")
 	cmd.Flags().BoolVar(&configOptions.contextConfig, "contextConfig", false, "Defines if step context configuration should be loaded instead of step config")
 
 }
@@ -188,4 +171,31 @@ func prepareOutputEnvironment(outputResources []config.StepResources, envRootPat
 			}
 		}
 	}
+}
+
+func resolveMetadata() (config.StepData, error) {
+	var metadata config.StepData
+	if configOptions.stepMetadata != "" {
+		metadataFile, err := configOptions.openFile(configOptions.stepMetadata)
+		if err != nil {
+			return metadata, errors.Wrap(err, "open failed")
+		}
+
+		err = metadata.ReadPipelineStepData(metadataFile)
+		if err != nil {
+			return metadata, errors.Wrap(err, "read failed")
+		}
+	} else {
+		if configOptions.stepName != "" {
+			metadataMap := GetAllStepMetadata()
+			var ok bool
+			metadata, ok = metadataMap[configOptions.stepName]
+			if !ok {
+				return metadata, errors.Errorf("metadata could not be retrieved by stepName %v", configOptions.stepName)
+			}
+		} else {
+			return metadata, errors.Errorf("either one of stepData or stepName parameter has to be configured")
+		}
+	}
+	return metadata, nil
 }
