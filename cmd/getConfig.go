@@ -56,14 +56,25 @@ func generateConfig() error {
 	var stepConfig config.StepConfig
 
 	var metadata config.StepData
-	metadataFile, err := configOptions.openFile(configOptions.stepMetadata)
-	if err != nil {
-		return errors.Wrap(err, "metadata: open failed")
-	}
+	if configOptions.stepMetadata == "" {
+		if configOptions.stepName != "" {
+			metadataMap := GetAllStepMetadata()
+			var ok bool
+			metadata, ok = metadataMap[configOptions.stepMetadata]
+			if !ok {
+				log.Entry().Errorf("metadata could not be retrieved by stepName %v", configOptions.stepName)
+			}
+		}
+	} else {
+		metadataFile, err := configOptions.openFile(configOptions.stepMetadata)
+		if err != nil {
+			return errors.Wrap(err, "metadata: open failed")
+		}
 
-	err = metadata.ReadPipelineStepData(metadataFile)
-	if err != nil {
-		return errors.Wrap(err, "metadata: read failed")
+		err = metadata.ReadPipelineStepData(metadataFile)
+		if err != nil {
+			return errors.Wrap(err, "metadata: read failed")
+		}
 	}
 
 	// prepare output resource directories:
@@ -131,9 +142,8 @@ func addConfigFlags(cmd *cobra.Command) {
 
 	cmd.Flags().StringVar(&configOptions.parametersJSON, "parametersJSON", os.Getenv("PIPER_parametersJSON"), "Parameters to be considered in JSON format")
 	cmd.Flags().StringVar(&configOptions.stepMetadata, "stepMetadata", "", "Step metadata, passed as path to yaml")
+	cmd.Flags().StringVar(&configOptions.stepMetadata, "stepName", "", "Step name, used to get step metadata if path is not set")
 	cmd.Flags().BoolVar(&configOptions.contextConfig, "contextConfig", false, "Defines if step context configuration should be loaded instead of step config")
-
-	_ = cmd.MarkFlagRequired("stepMetadata")
 
 }
 
