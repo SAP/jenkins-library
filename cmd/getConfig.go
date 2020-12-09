@@ -60,6 +60,8 @@ func generateConfig() error {
 		return errors.Wrapf(err, "failed to resolve metadata:")
 	}
 
+	fmt.Println(config.GetJSON(metadata))
+
 	// prepare output resource directories:
 	// this is needed in order to have proper directory permissions in case
 	// resources written inside a container image with a different user
@@ -125,7 +127,7 @@ func addConfigFlags(cmd *cobra.Command) {
 
 	cmd.Flags().StringVar(&configOptions.parametersJSON, "parametersJSON", os.Getenv("PIPER_parametersJSON"), "Parameters to be considered in JSON format")
 	cmd.Flags().StringVar(&configOptions.stepMetadata, "stepMetadata", "", "Step metadata, passed as path to yaml")
-	cmd.Flags().StringVar(&configOptions.stepName, "stepName", "", "Step name, used to get step metadata if path is not set")
+	cmd.Flags().StringVar(&configOptions.stepName, "stepName", "", "Step name, used to get step metadata if yaml path is not set")
 	cmd.Flags().BoolVar(&configOptions.contextConfig, "contextConfig", false, "Defines if step context configuration should be loaded instead of step config")
 
 }
@@ -194,7 +196,7 @@ func resolveMetadata() (config.StepData, error) {
 				return metadata, errors.Errorf("metadata could not be retrieved by stepName %v", configOptions.stepName)
 			}
 		} else {
-			return metadata, errors.Errorf("either one of stepData or stepName parameter has to be configured")
+			return metadata, errors.Errorf("either one of stepData or stepName parameter has to be passed")
 		}
 	}
 	return metadata, nil
