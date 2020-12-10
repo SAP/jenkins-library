@@ -186,6 +186,7 @@ type BranchEntity struct {
 // CloneEntity struct for the Clone entity A4C_A2G_GHA_SC_CLONE
 type CloneEntity struct {
 	Metadata          AbapMetadata `json:"__metadata"`
+	UUID              string       `json:"uuid"`
 	ScName            string       `json:"sc_name"`
 	BranchName        string       `json:"branch_name"`
 	ImportType        string       `json:"import_type"`

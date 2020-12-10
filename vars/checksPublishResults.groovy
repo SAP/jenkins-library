@@ -172,7 +172,7 @@ def createOptions(settings){
 def createToolOptions(settings, additionalOptions = [:]){
     Map result = [pattern: settings.get('pattern')]
     if (settings.id)
-        result.put('id ', settings.id)
+        result.put('id', settings.id)
     if (settings.name)
         result.put('name', settings.name)
     result = result.plus(additionalOptions)
