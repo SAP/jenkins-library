@@ -167,7 +167,7 @@ func getFioriDeployStatement(
 	}
 	if len(transportRequestID) > 0 {
 		log.Entry().Debugf("TransportRequestID '%s' used from piper config", transportRequestID)
-		cmd = append(cmd, "-t", transportRequestID)
+		cmd = append(cmd, "--transport", transportRequestID)
 	} else {
 		log.Entry().Debug("No transportRequestID found in piper config.")
 	}
