@@ -155,7 +155,7 @@ func getFioriDeployStatement(
 	}
 	if len(cts.Endpoint) > 0 {
 		log.Entry().Debugf("Endpoint '%s' used from piper config", cts.Endpoint)
-		cmd = append(cmd, "-u", cts.Endpoint)
+		cmd = append(cmd, "--url", cts.Endpoint)
 	} else {
 		log.Entry().Debug("No endpoint found in piper config.")
 	}
