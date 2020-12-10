@@ -151,7 +151,7 @@ func getFioriDeployStatement(
 		cmd = append(cmd, "--noConfig") // no config file, but we will provide our parameters
 	}
 	if useConfigFile {
-		cmd = append(cmd, "-c", fmt.Sprintf("\"%s\"", configFile))
+		cmd = append(cmd, "--config", fmt.Sprintf("\"%s\"", configFile))
 	}
 	if len(cts.Endpoint) > 0 {
 		log.Entry().Debugf("Endpoint '%s' used from piper config", cts.Endpoint)

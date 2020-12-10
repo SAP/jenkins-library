@@ -116,7 +116,7 @@ func TestUploadCTS(t *testing.T) {
 			}
 			err := action.Perform(&cmd)
 			if assert.NoError(t, err) {
-				assert.Contains(t, cmd.Calls[0], "-c \"ui5-deploy.yaml\"")
+				assert.Contains(t, cmd.Calls[0], "--config \"ui5-deploy.yaml\"")
 			}
 		})
 		t.Run("Config file exists", func(t *testing.T) {
@@ -136,7 +136,7 @@ func TestUploadCTS(t *testing.T) {
 
 			err := action.Perform(&cmd)
 			if assert.NoError(t, err) {
-				assert.Contains(t, cmd.Calls[0], "-c \"my-ui5-deploy.yaml\"")
+				assert.Contains(t, cmd.Calls[0], "--config \"my-ui5-deploy.yaml\"")
 			}
 		})
 		t.Run("Config file missing", func(t *testing.T) {
