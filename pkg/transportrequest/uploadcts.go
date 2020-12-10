@@ -144,7 +144,7 @@ func getFioriDeployStatement(
 		"-y", // autoconfirm --> no need to press 'y' key in order to confirm the params and trigger the deployment
 		"--username", abapUserKey,
 		"--password", abapPasswordKey,
-		"-e", fmt.Sprintf("\"%s\"", desc),
+		"--description", fmt.Sprintf("\"%s\"", desc),
 	}
 
 	if noConfig {
