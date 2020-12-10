@@ -173,7 +173,7 @@ func getFioriDeployStatement(
 	}
 	if len(app.Pack) > 0 {
 		log.Entry().Debugf("application package '%s' used from piper config", app.Pack)
-		cmd = append(cmd, "-p", app.Pack)
+		cmd = append(cmd, "--package", app.Pack)
 	} else {
 		log.Entry().Debug("No application package found in piper config.")
 	}
