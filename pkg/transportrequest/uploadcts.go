@@ -161,7 +161,7 @@ func getFioriDeployStatement(
 	}
 	if len(cts.Client) > 0 {
 		log.Entry().Debugf("Client '%s' used from piper config", cts.Client)
-		cmd = append(cmd, "-l", cts.Client)
+		cmd = append(cmd, "--client", cts.Client)
 	} else {
 		log.Entry().Debug("No client found in piper config.")
 	}
