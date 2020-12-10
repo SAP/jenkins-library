@@ -179,7 +179,7 @@ func getFioriDeployStatement(
 	}
 	if len(app.Name) > 0 {
 		log.Entry().Debugf("application name '%s' used from piper config", app.Name)
-		cmd = append(cmd, "-n", app.Name)
+		cmd = append(cmd, "--name", app.Name)
 	} else {
 		log.Entry().Debug("No application name found in piper config.")
 	}
