@@ -140,7 +140,7 @@ func getFioriDeployStatement(
 	cmd := []string{
 		"fiori",
 		"deploy",
-		"-f", // failfast --> provide return code != 0 in case of any failure
+		"--failfast", // provide return code != 0 in case of any failure
 		"-y", // autoconfirm --> no need to press 'y' key in order to confirm the params and trigger the deployment
 		"--username", abapUserKey,
 		"--password", abapPasswordKey,

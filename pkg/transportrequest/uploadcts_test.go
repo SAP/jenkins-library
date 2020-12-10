@@ -61,7 +61,7 @@ func TestUploadCTS(t *testing.T) {
 				assert.Contains(
 					t,
 					cmd.Calls[0],
-					"fiori deploy -f -y --username ABAP_USER --password ABAP_PASSWORD --description \"the Desc\" --noConfig --url https://example.org:8080/cts --client 001 --transport 12345678 --package abapPackage --name appName",
+					"fiori deploy --failfast -y --username ABAP_USER --password ABAP_PASSWORD --description \"the Desc\" --noConfig --url https://example.org:8080/cts --client 001 --transport 12345678 --package abapPackage --name appName",
 				)
 				assert.Equal(t, []string{"ABAP_USER=me", "ABAP_PASSWORD=******"}, cmd.Env)
 			}
@@ -86,7 +86,7 @@ func TestUploadCTS(t *testing.T) {
 				assert.Contains(
 					t,
 					cmd.Calls[0],
-					"fiori deploy -f -y --username ABAP_USER --password ABAP_PASSWORD --description \"Deployed with Piper based on SAP Fiori tools\" --noConfig --transport 12345678",
+					"fiori deploy --failfast -y --username ABAP_USER --password ABAP_PASSWORD --description \"Deployed with Piper based on SAP Fiori tools\" --noConfig --transport 12345678",
 				)
 				assert.Equal(t, []string{"ABAP_USER=me", "ABAP_PASSWORD=******"}, cmd.Env)
 			}
