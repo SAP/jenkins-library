@@ -84,7 +84,7 @@ import static com.sap.piper.Prerequisites.checkScript
     'deployTool',
     /**
      * Defines the type of deployment, either `standard` deployment which results in a system downtime or a zero-downtime `blue-green` deployment.
-     * If 'cf_native' as deployType and 'blue-green' as deployTool is used in combination, your manifest.yaml may only contain one application.
+     * If 'cf_native' as deployTool and 'blue-green' as deployType is used in combination, your manifest.yaml may only contain one application.
      * If this application has the option 'no-route' active the deployType will be changed to 'standard'.
      * @possibleValues 'standard', 'blue-green'
      */
