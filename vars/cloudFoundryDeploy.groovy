@@ -240,8 +240,8 @@ void call(Map parameters = [:]) {
 
             if (config.mtaExtensionCredentials) {
                 config.mtaExtensionCredentials.each { key, credentialsId ->
-                    echo "[INFO]${STEP_NAME}] Preparing credential for being used by piper-go. key: ${key}, credentialsId is: ${credentialsId}"
-                    credentials << [type: 'token', id: credentialsId, env: [credentialsId], resolveCredentialsId: false]
+                    echo "[INFO]${STEP_NAME}] Preparing credential for being used by piper-go. key: ${key}, credentialsId is: ${credentialsId}, exposed as environment variable ${toEnvVarKey(credentialsId)}"
+                    credentials << [type: 'token', id: credentialsId, env: [toEnvVarKey(credentialsId)], resolveCredentialsId: false]
                 }
             }
             piperExecuteBin(parameters, STEP_NAME, 'metadata/cloudFoundryDeploy.yaml', credentials)
