@@ -56,6 +56,10 @@ import groovy.transform.Field
 
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field Set STEP_CONFIG_KEYS = TOOLS.plus([
+    /**
+     * If it is set to `true` the step will archive reports matching the tool specific pattern.
+     * @possibleValues `true`, `false`
+     */
     'archive',
     /**
      * If it is set to `true` the step will fail the build if JUnit detected any failing tests.
