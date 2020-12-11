@@ -1300,8 +1300,8 @@ func TestMtaExtensionCredentials(t *testing.T) {
 
 	_environ = func() []string {
 		return []string{
-			"myCredEnvVar1=******",
-			"myCredEnvVar2=++++++",
+			"MY_CRED_ENV_VAR1=******",
+			"MY_CRED_ENV_VAR2=++++++",
 		}
 	}
 
@@ -1324,7 +1324,7 @@ func TestMtaExtensionCredentials(t *testing.T) {
 				"testCred2": "myCredEnvVar2NotDefined",
 			},
 		)
-		assert.EqualError(t, err, "Cannot hanlde mta extension credentials: No credentials found for '[myCredEnvVar1NotDefined myCredEnvVar2NotDefined]'. Are these credentials maintained?")
+		assert.EqualError(t, err, "Cannot handle mta extension credentials: No credentials found for '[myCredEnvVar1NotDefined myCredEnvVar2NotDefined]'/'[MY_CRED_ENV_VAR1_NOT_DEFINED MY_CRED_ENV_VAR2_NOT_DEFINED]'. Are these credentials maintained?")
 	})
 
 	t.Run("irrelevant credentials does not cause failures", func(t *testing.T) {
@@ -1359,4 +1359,9 @@ func TestMtaExtensionCredentials(t *testing.T) {
 			assert.Contains(t, content, "test-credentials2: \"++++++\"")
 		}
 	})
+}
+
+func TestEnvVarKeyModification(t *testing.T) {
+	envVarCompatibleKey := toEnvVarKey("Mta.ExtensionCredential~Credential_Id1")
+	assert.Equal(t, "MTA_EXTENSION_CREDENTIAL_CREDENTIAL_ID1", envVarCompatibleKey)
 }
