@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"net/http/cookiejar"
 	"reflect"
-	"strings"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
@@ -42,7 +41,7 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 	subOptions := convertCloneConfig(config)
 
 	// Determine the host, user and password, either via the input parameters or via a cloud foundry service key
-	connectionDetails, errorGetInfo := com.GetAbapCommunicationArrangementInfo(subOptions, "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Clones")
+	connectionDetails, errorGetInfo := com.GetAbapCommunicationArrangementInfo(subOptions, "")
 	if errorGetInfo != nil {
 		return errors.Wrap(errorGetInfo, "Parameters for the ABAP Connection not available")
 	}
@@ -102,8 +101,9 @@ func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, 
 func triggerClone(repo abaputils.Repository, cloneConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (abaputils.ConnectionDetailsHTTP, error) {
 
 	uriConnectionDetails := cloneConnectionDetails
-	uriConnectionDetails.URL = ""
 	cloneConnectionDetails.XCsrfToken = "fetch"
+
+	cloneConnectionDetails.URL = cloneConnectionDetails.URL + "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Clones"
 
 	// Loging into the ABAP System - getting the x-csrf-token and cookies
 	resp, err := abaputils.GetHTTPResponse("HEAD", cloneConnectionDetails, nil, client)
@@ -151,14 +151,9 @@ func triggerClone(repo abaputils.Repository, cloneConnectionDetails abaputils.Co
 		return uriConnectionDetails, err
 	}
 
-	expandLog := "?$expand=to_Execution_log,to_Transport_log"
-
 	// The entity "Clones" does not allow for polling. To poll the progress, the related entity "Pull" has to be called
 	// While "Clones" has the key fields UUID, SC_NAME and BRANCH_NAME, "Pull" only has the key field UUID
-	tempURI := strings.Replace(body.Metadata.URI, "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Clones", "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull", 1)
-	pollingURI := strings.Replace(tempURI, ",sc_name='"+repo.Name+"',branch_name='"+repo.Branch+"'", "", 1)
-
-	uriConnectionDetails.URL = pollingURI + expandLog
+	uriConnectionDetails.URL = uriConnectionDetails.URL + "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull(uuid=guid'" + body.UUID + "')" + "?$expand=to_Execution_log,to_Transport_log"
 	return uriConnectionDetails, nil
 }
 

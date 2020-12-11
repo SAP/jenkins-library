@@ -5,10 +5,12 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
+	"strconv"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
 )
 
@@ -172,5 +174,42 @@ func (conn Connector) UploadSarFile(appendum string, sarFile []byte) error {
 		return errors.Wrapf(err, "Upload of SAR file failed: %v", string(errorbody))
 	}
 	defer response.Body.Close()
+	return nil
+}
+
+// UploadSarFileInChunks : upload *.sar file in chunks
+func (conn Connector) UploadSarFileInChunks(appendum string, fileName string, sarFile []byte) error {
+	//Maybe Next Refactoring step to read the file in chunks, too?
+	//In case it turns out to be not reliable add a retry mechanism
+
+	url := conn.Baseurl + appendum
+
+	header := make(map[string][]string)
+	header["Content-Disposition"] = []string{"form-data; name=\"file\"; filename=\"" + fileName + "\""}
+
+	//chunkSize := 10000 // 10KB for testing
+	//chunkSize := 1000000 //1MB for Testing,
+	chunkSize := 10000000 //10MB
+	log.Entry().Infof("Upload in chunks of %d bytes", chunkSize)
+
+	sarFileBuffer := bytes.NewBuffer(sarFile)
+	fileSize := sarFileBuffer.Len()
+
+	for sarFileBuffer.Len() > 0 {
+		startOffset := fileSize - sarFileBuffer.Len()
+		nextChunk := bytes.NewBuffer(sarFileBuffer.Next(chunkSize))
+		endOffset := fileSize - sarFileBuffer.Len()
+		header["Content-Range"] = []string{"bytes " + strconv.Itoa(startOffset) + " - " + strconv.Itoa(endOffset) + " / " + strconv.Itoa(fileSize)}
+		log.Entry().Info(header["Content-Range"])
+
+		response, err := conn.Client.SendRequest("POST", url, nextChunk, header, nil)
+		if err != nil {
+			errorbody, _ := ioutil.ReadAll(response.Body)
+			response.Body.Close()
+			return errors.Wrapf(err, "Upload of SAR file failed: %v", string(errorbody))
+		}
+
+		response.Body.Close()
+	}
 	return nil
 }

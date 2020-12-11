@@ -78,6 +78,10 @@ void call(Map parameters = [:]) {
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
+        if (configuration.aggregation && configuration.aggregation.active != false){
+            error "[ERROR] Configuration of the aggregation view is no longer possible. Migrate any thresholds defined here to tool specific quality gates. (piper-lib/${STEP_NAME})"
+        }
+
         new Utils().pushToSWA([
             step: STEP_NAME,
             stepParamKey1: 'scriptMissing',
@@ -85,64 +89,32 @@ void call(Map parameters = [:]) {
         ], configuration)
 
         // JAVA
-        report('PmdPublisher', configuration.pmd, configuration.archive)
-        report('DryPublisher', configuration.cpd, configuration.archive)
-        report('FindBugsPublisher', configuration.findbugs, configuration.archive)
-        report('CheckStylePublisher', configuration.checkstyle, configuration.archive)
+        report(pmdParser(createToolOptions(configuration.pmd)), configuration.pmd, configuration.archive)
+        report(cpd(createToolOptions(configuration.cpd)), configuration.cpd, configuration.archive)
+        report(findBugs(createToolOptions(configuration.findbugs, [useRankAsPriority: true])), configuration.findbugs, configuration.archive)
+        report(checkStyle(createToolOptions(configuration.checkstyle)), configuration.checkstyle, configuration.archive)
         // JAVA SCRIPT
-        reportWarnings('JSLint', configuration.eslint, configuration.archive)
+        report(esLint(createToolOptions(configuration.eslint)), configuration.eslint, configuration.archive)
         // PYTHON
-        reportWarnings('PyLint', configuration.pylint, configuration.archive)
+        report(pyLint(createToolOptions(configuration.pylint)), configuration.pylint, configuration.archive)
         // GENERAL
-        reportTasks(configuration.tasks)
-        aggregateReports(configuration.aggregation)
+        report(taskScanner(createToolOptions(configuration.tasks, [
+            includePattern: configuration.tasks.get('pattern'),
+            highTags: configuration.tasks.get('high'),
+            normalTags: configuration.tasks.get('normal'),
+            lowTags: configuration.tasks.get('low'),
+        ]).minus([pattern: configuration.tasks.get('pattern')])), configuration.tasks, configuration.archive)
     }
 }
 
-def aggregateReports(settings){
+def report(tool, settings, doArchive){
     if (settings.active) {
-        def options = createCommonOptionsMap('AnalysisPublisher', settings)
+        def options = createOptions(settings).plus([tools: [tool]])
+        echo "recordIssues OPTIONS: ${options}"
         // publish
-        step(options)
-    }
-}
-
-def reportTasks(settings){
-    if (settings.active) {
-        def options = createCommonOptionsMap('TasksPublisher', settings)
-        options.put('pattern', settings.get('pattern'))
-        options.put('high', settings.get('high'))
-        options.put('normal', settings.get('normal'))
-        options.put('low', settings.get('low'))
-        // publish
-        step(options)
-    }
-}
-
-def report(publisherName, settings, doArchive){
-    if (settings.active) {
-        def pattern = settings.get('pattern')
-        def options = createCommonOptionsMap(publisherName, settings)
-        options.put('pattern', pattern)
-        // publish
-        step(options)
+        recordIssues(options)
         // archive check results
-        archiveResults(doArchive && settings.get('archive'), pattern, true)
-    }
-}
-
-def reportWarnings(parserName, settings, doArchive){
-    if (settings.active) {
-        def pattern = settings.get('pattern')
-        def options = createCommonOptionsMap('WarningsPublisher', settings)
-        options.put('parserConfigurations', [[
-            parserName: parserName,
-            pattern: pattern
-        ]])
-        // publish
-        step(options)
-        // archive check results
-        archiveResults(doArchive && settings.get('archive'), pattern, true)
+        archiveResults(doArchive && settings.get('archive'), settings.get('pattern'), true)
     }
 }
 
@@ -154,24 +126,56 @@ def archiveResults(archive, pattern, allowEmpty){
 }
 
 @NonCPS
-def createCommonOptionsMap(publisherName, settings){
+def createOptions(settings){
     Map result = [:]
-    def thresholds = settings.get('thresholds', [:])
-    def fail = thresholds.get('fail', [:])
-    def unstable = thresholds.get('unstable', [:])
+    result.put('blameDisabled', true)
+    result.put('enabledForFailure', true)
+    result.put('aggregatingResults', false)
 
-    result.put('$class', publisherName)
-    result.put('healthy', settings.get('healthy'))
-    result.put('unHealthy', settings.get('unHealthy'))
-    result.put('canRunOnFailed', true)
-    result.put('failedTotalAll', fail.get('all'))
-    result.put('failedTotalHigh', fail.get('high'))
-    result.put('failedTotalNormal', fail.get('normal'))
-    result.put('failedTotalLow', fail.get('low'))
-    result.put('unstableTotalAll', unstable.get('all'))
-    result.put('unstableTotalHigh', unstable.get('high'))
-    result.put('unstableTotalNormal', unstable.get('normal'))
-    result.put('unstableTotalLow', unstable.get('low'))
+    def qualityGates = []
+    if (settings.qualityGates)
+        qualityGates = qualityGates.plus(settings.qualityGates)
+
+    // handle legacy thresholds
+    // https://github.com/jenkinsci/warnings-ng-plugin/blob/6602c3a999b971405adda15be03979ce21cb3cbf/plugin/src/main/java/io/jenkins/plugins/analysis/core/util/QualityGate.java#L186
+    def thresholdsList = settings.get('thresholds', [:])
+    if (thresholdsList) {
+        for (String status : ['fail', 'unstable']) {
+            def thresholdsListPerStatus = thresholdsList.get(status, [:])
+            if (thresholdsListPerStatus) {
+                for (String severity : ['all', 'high', 'normal', 'low']) {
+                    def threshold = thresholdsListPerStatus.get(severity)
+                    if (threshold == null)
+                        continue
+                    threshold = threshold.toInteger() + 1
+                    def type = "TOTAL"
+                    if(severity != 'all')
+                        type += "_" + severity.toUpperCase()
+                    def gate = [threshold: threshold, type: type, unstable: status == 'unstable']
+                    echo "[WARNING] legacy threshold found, please migrate to quality gate (piper-lib/checksPublishResults)"
+                    echo "legacy threshold transformed to quality gate: ${gate}"
+                    qualityGates = qualityGates.plus([gate])
+                }
+            }
+        }
+    }
+
+    result.put('qualityGates', qualityGates)
+    // filter empty values
+    result = result.findAll {
+        return it.value != null && it.value != ''
+    }
+    return result
+}
+
+@NonCPS
+def createToolOptions(settings, additionalOptions = [:]){
+    Map result = [pattern: settings.get('pattern')]
+    if (settings.id)
+        result.put('id', settings.id)
+    if (settings.name)
+        result.put('name', settings.name)
+    result = result.plus(additionalOptions)
     // filter empty values
     result = result.findAll {
         return it.value != null && it.value != ''
