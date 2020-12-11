@@ -58,12 +58,11 @@ repositories:
     branch: 'master'
   - name: '/DMO/SOFTWARE_COMPONENT'
     branch: 'feature'
+    commitID: 'cd87a3cac2bc946b7629580e58598c3db56a26f8'
 ```
 
 Using such a configuration file is the recommended approach. Please note that you need to use the YAML data structure as in the example above when using the `repositories.yml` config file.
-
-!!! note "Commit IDs"
-    CommitIDs will also be supported in the future. While the step already includes the handling of commit IDs, the ABAP Environment system will support this not until a later release.
+If you want to pull a specific commit, the `commitID` can be specified optionally for a repository.
 
 ## Example: Configuration in the Jenkinsfile
 
