@@ -317,6 +317,17 @@ void call(Map parameters = [:]) {
     }
 }
 
+/*
+ * Inserts underscores before all upper case letters which are not already
+ * have an underscore before, replaces any non letters/digits with underscore
+ * and transforms all lower case letters to upper case.
+ */
+private static String toEnvVarKey(String key) {
+    key = key.replaceAll(/[^A-Za-z0-9]/, "_")
+    key = key.replaceAll(/(.)(?<!_)([A-Z])/, "\$1_\$2")
+    return key.toUpperCase()
+}
+
 private void handleMTADeployment(Map config, script) {
     // set default mtar path
     if(!config.mtaPath) {
