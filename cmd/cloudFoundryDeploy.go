@@ -15,6 +15,7 @@ import (
 	"io"
 	"os"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -740,6 +741,9 @@ func handleMtaExtensionCredentials(extFile string, credentials map[string]interf
 		for _, missingKey := range missingCredentials {
 			missinCredsEnvVarKeyCompatible = append(missinCredsEnvVarKeyCompatible, toEnvVarKey(missingKey))
 		}
+		// ensure stable order of the entries. Needed e.g. for the tests.
+		sort.Strings(missingCredentials)
+		sort.Strings(missinCredsEnvVarKeyCompatible)
 		return fmt.Errorf("Cannot handle mta extension credentials: No credentials found for '%s'/'%s'. Are these credentials maintained?", missingCredentials, missinCredsEnvVarKeyCompatible)
 	}
 	if !updated {
