@@ -126,9 +126,9 @@ class PiperExecuteBinTest extends BasePiperTest {
         shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/test.yaml\'', '{"fileCredentialsId":"credFile", "tokenCredentialsId":"credToken", "credentialsId":"credUsernamePassword", "dockerImage":"my.Registry/my/image:latest"}')
 
         List stepCredentials = [
-            [type: 'file', id: 'fileCredentialsId', env: ['PIPER_credFile']],
-            [type: 'token', id: 'tokenCredentialsId', env: ['PIPER_credToken']],
-            [type: 'usernamePassword', id: 'credentialsId', env: ['PIPER_user', 'PIPER_password']],
+            [type: CredentialType.FILE, id: 'fileCredentialsId', env: ['PIPER_credFile']],
+            [type: CredentialType.TOKEN, id: 'tokenCredentialsId', env: ['PIPER_credToken']],
+            [type: CredentialType.USERNAME_PASSWORD, id: 'credentialsId', env: ['PIPER_user', 'PIPER_password']],
         ]
         stepRule.step.piperExecuteBin(
             [
@@ -165,7 +165,7 @@ class PiperExecuteBinTest extends BasePiperTest {
         shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/test.yaml\'', '{"dockerImage":"my.Registry/my/image:latest"}')
 
         List stepCredentials = [
-            [type: 'token', env: ['PIPER_credTokenNoResolve'], resolveCredentialsId: false],
+            [type: CredentialType.TOKEN, env: ['PIPER_credTokenNoResolve'], resolveCredentialsId: false],
         ]
 
         stepRule.step.piperExecuteBin(
@@ -187,12 +187,12 @@ class PiperExecuteBinTest extends BasePiperTest {
         shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/test.yaml\'', '{"fileCredentialsId":"credFile", "tokenCredentialsId":"credToken", "dockerImage":"my.Registry/my/image:latest"}')
 
         List stepCredentials = [
-            [type: 'file', id: 'fileCredentialsId', env: ['PIPER_credFile']],
-            [type: 'token', id: 'tokenCredentialsId', env: ['PIPER_credToken']],
+            [type: CredentialType.FILE, id: 'fileCredentialsId', env: ['PIPER_credFile']],
+            [type: CredentialType.TOKEN, id: 'tokenCredentialsId', env: ['PIPER_credToken']],
             // for the entry below we don't have a config lookup.
-            [type: 'token', id: 'tokenCredentialsIdNoResolve', env: ['PIPER_credTokenNoResolve'], resolveCredentialsId: false],
-            [type: 'token', id: 'tokenCredentialsIdNotContainedInConfig', env: ['PIPER_credToken_doesNotMatter']],
-            [type: 'usernamePassword', id: 'credentialsId', env: ['PIPER_user', 'PIPER_password']],
+            [type: CredentialType.TOKEN, id: 'tokenCredentialsIdNoResolve', env: ['PIPER_credTokenNoResolve'], resolveCredentialsId: false],
+            [type: CredentialType.TOKEN, id: 'tokenCredentialsIdNotContainedInConfig', env: ['PIPER_credToken_doesNotMatter']],
+            [type: CredentialType.USERNAME_PASSWORD, id: 'credentialsId', env: ['PIPER_user', 'PIPER_password']],
         ]
         stepRule.step.piperExecuteBin(
             [

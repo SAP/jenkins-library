@@ -1,3 +1,5 @@
+import com.sap.piper.CredentialType
+
 import static com.sap.piper.Prerequisites.checkScript
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
@@ -32,7 +34,7 @@ import groovy.transform.Field
 void call(Map parameters = [:]) {
     final script = checkScript(this, parameters) ?: null
     List credentialInfo = [
-        [type: 'usernamePassword', id: 'configurationCredentialsId', env: ['PIPER_configurationUsername', 'PIPER_configurationPassword']],
+        [type: CredentialType.USERNAME_PASSWORD, id: 'configurationCredentialsId', env: ['PIPER_configurationUsername', 'PIPER_configurationPassword']],
     ]
 
     issuesWrapper(parameters, script){
