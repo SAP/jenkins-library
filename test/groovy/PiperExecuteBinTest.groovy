@@ -242,7 +242,6 @@ class PiperExecuteBinTest extends BasePiperTest {
         )
         // asserts
         assertThat(credentials.size(), is(4))
-        assertThat(sshKey, is(['sshKey']))
         assertThat(credentials[0], allOf(hasEntry('credentialsId', 'credUsernamePassword'), hasEntry('usernameVariable', 'PIPER_user') , hasEntry('passwordVariable', 'PIPER_password')))
         int index = 1
         for (type in CredentialType.values()) {
