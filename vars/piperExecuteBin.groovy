@@ -1,4 +1,5 @@
 import com.sap.piper.BashUtils
+import com.sap.piper.CredentialType
 import com.sap.piper.DebugReport
 import com.sap.piper.DefaultValueCache
 import com.sap.piper.JenkinsUtils
@@ -172,17 +173,17 @@ void credentialWrapper(config, List credentialInfo, body) {
             }
             if (credentialsId) {
                 switch("${cred.type}") {
-                    case "file":
+                    case "${CredentialType.FILE}":
                         creds.add(file(credentialsId: credentialsId, variable: cred.env[0]))
                         break
-                    case "token":
-                    case "secretText":
+                    case "${CredentialType.TOKEN}":
+                    case "${CredentialType.SECRET_TEXT}":
                         creds.add(string(credentialsId: credentialsId, variable: cred.env[0]))
                         break
-                    case "usernamePassword":
+                    case "${CredentialType.USERNAME_PASSWORD}":
                         creds.add(usernamePassword(credentialsId: credentialsId, usernameVariable: cred.env[0], passwordVariable: cred.env[1]))
                         break
-                    case "ssh":
+                    case "${CredentialType.SSH}":
                         sshCreds.add(credentialsId)
                         break
                     default:
