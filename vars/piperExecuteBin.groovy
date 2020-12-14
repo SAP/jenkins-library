@@ -164,21 +164,29 @@ void credentialWrapper(config, List credentialInfo, body) {
         def creds = []
         def sshCreds = []
         credentialInfo.each { cred ->
-            switch(cred.type) {
-                case "file":
-                    if (config[cred.id]) creds.add(file(credentialsId: config[cred.id], variable: cred.env[0]))
-                    break
-                case "token":
-                    if (config[cred.id]) creds.add(string(credentialsId: config[cred.id], variable: cred.env[0]))
-                    break
-                case "usernamePassword":
-                    if (config[cred.id]) creds.add(usernamePassword(credentialsId: config[cred.id], usernameVariable: cred.env[0], passwordVariable: cred.env[1]))
-                    break
-                case "ssh":
-                    if (config[cred.id]) sshCreds.add(config[cred.id])
-                    break
-                default:
-                    error ("invalid credential type: ${cred.type}")
+            def credentialsId
+            if (cred.resolveCredentialsId == false) {
+                credentialsId = cred.id
+            } else {
+                credentialsId = config[cred.id]
+            }
+            if (credentialsId) {
+                switch(cred.type) {
+                    case "file":
+                        creds.add(file(credentialsId: credentialsId, variable: cred.env[0]))
+                        break
+                    case "token":
+                        creds.add(string(credentialsId: credentialsId, variable: cred.env[0]))
+                        break
+                    case "usernamePassword":
+                        creds.add(usernamePassword(credentialsId: credentialsId, usernameVariable: cred.env[0], passwordVariable: cred.env[1]))
+                        break
+                    case "ssh":
+                        sshCreds.add(credentialsId)
+                        break
+                    default:
+                        error ("invalid credential type: ${cred.type}")
+                }
             }
         }
 
