@@ -336,5 +336,12 @@ func getTarName(config *protecodeExecuteScanOptions) string {
 	}
 	// replace unwanted chars
 	fileName = strings.ReplaceAll(fileName, "/", "_")
+	log.Entry().Infof("Filename : %s", fileName)
+	input := "@sha256"
+	if strings.Contains(fileName, input) { 
+		fileName = strings.ReplaceAll(fileName, ":",    "_")
+		fileName = strings.ReplaceAll(fileName, "@sha256", "")
+		log.Entry().Infof("Image Pulled via sha: %s", fileName)
+    }
 	return fileName + ".tar"
 }
