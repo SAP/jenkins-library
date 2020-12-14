@@ -89,6 +89,10 @@ func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, i
 
 	influx.step_data.fields.sonar = false
 	if err := runSonar(config, &client, &runner); err != nil {
+		if log.GetErrorCategory() == log.ErrorUndefined && runner.GetExitCode() == 2 {
+			// see https://github.com/SonarSource/sonar-scanner-cli/blob/adb67d645c3bcb9b46f29dea06ba082ebec9ba7a/src/main/java/org/sonarsource/scanner/cli/Exit.java#L25
+			log.SetErrorCategory(log.ErrorConfiguration)
+		}
 		log.Entry().WithError(err).Fatal("Execution failed")
 	}
 	influx.step_data.fields.sonar = true

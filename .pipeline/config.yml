@@ -8,6 +8,7 @@ steps:
       - 'invalid'
       - 'question'
       - 'wontfix'
+      - 'stale'
     owner: 'SAP'
     repository: 'jenkins-library'
     releaseBodyHeader: ''

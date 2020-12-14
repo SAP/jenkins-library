@@ -146,8 +146,9 @@ func addXsDeployFlags(cmd *cobra.Command, stepConfig *xsDeployOptions) {
 func xsDeployMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "xsDeploy",
-			Aliases: []config.Alias{},
+			Name:        "xsDeploy",
+			Aliases:     []config.Alias{},
+			Description: "Performs xs deployment",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -277,6 +278,20 @@ func xsDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+					},
+				},
+			},
+			Containers: []config.Container{
+				{Name: "xs", Image: "ppiper/xs-cli"},
+			},
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{
+						Name: "commonPipelineEnvironment",
+						Type: "piperEnvironment",
+						Parameters: []map[string]interface{}{
+							{"Name": "operationId"},
+						},
 					},
 				},
 			},

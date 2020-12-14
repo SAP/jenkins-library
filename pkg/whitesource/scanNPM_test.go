@@ -49,6 +49,48 @@ func TestExecuteScanNPM(t *testing.T) {
 		assert.True(t, utilsMock.HasWrittenFile(whiteSourceConfig))
 		assert.True(t, utilsMock.HasRemovedFile(whiteSourceConfig))
 	})
+	t.Run("happy path with excluded modules", func(t *testing.T) {
+		// init
+		utilsMock := NewScanUtilsMock()
+		utilsMock.AddFile("package.json", []byte(`{"name":"my-module-name"}`))
+		utilsMock.AddFile("sub/package.json", []byte(`{"name":"my-sub-module-name"}`))
+		utilsMock.AddFile("deep/sub/package.json", []byte(`{"name":"my-deep-sub-module-name"}`))
+
+		config := ScanOptions{
+			ScanType:                   "npm",
+			OrgToken:                   "org-token",
+			UserToken:                  "user-token",
+			ProductName:                "mock-product",
+			ProjectName:                "mock-project",
+			BuildDescriptorExcludeList: []string{"unrelated/pom.xml", "sub/package.json", "deep/sub/package.json"},
+		}
+
+		scan := newTestScan(&config)
+		// test
+		err := scan.ExecuteNpmScan(&config, utilsMock)
+		// assert
+		require.NoError(t, err)
+		expectedCalls := []mock.ExecCall{
+			{
+				Exec: "npm",
+				Params: []string{
+					"ls",
+				},
+			},
+			{
+				Exec: "npx",
+				Params: []string{
+					"whitesource",
+					"run",
+				},
+			},
+		}
+		assert.Equal(t, expectedCalls, utilsMock.Calls)
+		assert.True(t, utilsMock.HasWrittenFile(whiteSourceConfig))
+		assert.True(t, utilsMock.HasRemovedFile(whiteSourceConfig))
+		assert.False(t, utilsMock.HasWrittenFile(filepath.Join("sub", whiteSourceConfig)))
+		assert.False(t, utilsMock.HasWrittenFile(filepath.Join("deep", "sub", whiteSourceConfig)))
+	})
 	t.Run("no NPM modules", func(t *testing.T) {
 		// init
 		utilsMock := NewScanUtilsMock()
@@ -106,6 +148,7 @@ func TestWriteWhitesourceConfigJSON(t *testing.T) {
 	expected["apiKey"] = "org-token"
 	expected["userKey"] = "user-token"
 	expected["checkPolicies"] = true
+	expected["forceUpdate"] = true
 	expected["productName"] = "mock-product"
 	expected["projectName"] = "mock-project"
 	expected["productToken"] = "mock-product-token"
