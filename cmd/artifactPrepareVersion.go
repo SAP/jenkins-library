@@ -325,12 +325,16 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return commitID, fmt.Errorf("no remote url maintained")
 	}
-	if strings.HasPrefix(urls[0], "http") {
+
+	// github and bitbucket are using a standard git user "git".
+	// when taking gerrit into account this needs to be made configurable, e.g. config.Username
+	gitSSHUser := "git"
+	if strings.HasPrefix(urls[0], "http:") || strings.HasPrefix(urls[0], "https:") {
 		if len(config.Username) == 0 || len(config.Password) == 0 {
 			// handling compatibility: try to use ssh in case no credentials are available
 			log.Entry().Info("git username/password missing - switching to ssh")
 
-			remoteURL := convertHTTPToSSHURL(urls[0])
+			remoteURL := convertHTTPToSSHURL(urls[0], gitSSHUser)
 
 			// update remote origin url to point to ssh url instead of http(s) url
 			err = repository.DeleteRemote("origin")
@@ -351,12 +355,16 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 		} else {
 			pushOptions.Auth = &http.BasicAuth{Username: config.Username, Password: config.Password}
 		}
-	} else {
-		pushOptions.Auth, err = sshAgentAuth("git")
+	} else if strings.HasPrefix(urls[0], gitSSHUser+"@") {
+		// in this case we have the scp like repo url format which does not come with an explict protocol.
+		// this format is commonly used by github and bitbucket always with the generic user "git".
+		pushOptions.Auth, err = sshAgentAuth(gitSSHUser)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return commitID, errors.Wrap(err, "failed to retrieve ssh authentication")
 		}
+	} else {
+		return commitID, fmt.Errorf("git url has invalid prefix: '%s'. Supported prefixes are the protocols '%s' and the scp like format starting with user '%s'", urls[0], []string{"http", "https"}, gitSSHUser)
 	}
 
 	err = repository.Push(&pushOptions)
@@ -413,8 +421,8 @@ func originUrls(repository gitRepository) []string {
 	return remote.Config().URLs
 }
 
-func convertHTTPToSSHURL(url string) string {
-	sshURL := strings.Replace(url, "https://", "git@", 1)
+func convertHTTPToSSHURL(url, gitSSHUser string) string {
+	sshURL := strings.Replace(url, "https://", gitSSHUser+"@", 1)
 	return strings.Replace(sshURL, "/", ":", 1)
 }
 

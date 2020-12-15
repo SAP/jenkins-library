@@ -492,6 +492,14 @@ func TestPushChanges(t *testing.T) {
 		assert.Equal(t, &git.PushOptions{RefSpecs: []gitConfig.RefSpec{"refs/tags/1.2.3:refs/tags/1.2.3"}, Auth: &http.BasicAuth{Username: config.Username, Password: config.Password}}, repo.pushOptions)
 	})
 
+	t.Run("failure - invalid protocol or wrong ssh user", func(t *testing.T) {
+		config := artifactPrepareVersionOptions{Username: "testUser", Password: "****", CommitUserName: "Project Piper"}
+		repo := gitRepositoryMock{remote: git.NewRemote(nil, &gitConfig.RemoteConfig{Name: "origin", URLs: []string{"httpsx://my.test.server"}})}
+		worktree := gitWorktreeMock{commitHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3})}
+
+		_, err := pushChanges(&config, newVersion, &repo, &worktree, testTime)
+		assert.EqualError(t, err, "git url has invalid prefix: 'httpsx://my.test.server'. Supported prefixes are the protocols '[http https]' and the scp like format starting with user 'git'")
+	})
 	t.Run("success - ssh fallback", func(t *testing.T) {
 		config := artifactPrepareVersionOptions{CommitUserName: "Project Piper"}
 		repo := gitRepositoryMock{remote: remote}
@@ -631,6 +639,6 @@ func TestConvertHTTPToSSHURL(t *testing.T) {
 	}
 
 	for _, test := range tt {
-		assert.Equal(t, test.expected, convertHTTPToSSHURL(test.httpURL))
+		assert.Equal(t, test.expected, convertHTTPToSSHURL(test.httpURL, "git"))
 	}
 }
