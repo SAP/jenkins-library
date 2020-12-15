@@ -1,9 +1,10 @@
 package sonar
 
 import (
-	"github.com/SAP/jenkins-library/pkg/log"
 	sonarAPI "github.com/magicsong/sonargo/sonar"
 	"github.com/pkg/errors"
+
+	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 type IssueService struct {
@@ -22,6 +23,9 @@ func (s issueSeverity) ToString() string {
 const (
 	issueSeverityBlocker  issueSeverity = "BLOCKER"
 	issueSeverityCritical issueSeverity = "CRITICAL"
+	issueSeverityMajor    issueSeverity = "MAJOR"
+	issueSeverityMinor    issueSeverity = "MINOR"
+	issueSeverityInfo     issueSeverity = "INFO"
 )
 
 func (api *IssueService) GetNumberOfBlockerIssues() (int, error) {
@@ -30,6 +34,18 @@ func (api *IssueService) GetNumberOfBlockerIssues() (int, error) {
 
 func (api *IssueService) GetNumberOfCriticalIssues() (int, error) {
 	return api.getIssueCount(issueSeverityCritical)
+}
+
+func (api *IssueService) GetNumberOfMajorIssues() (int, error) {
+	return api.getIssueCount(issueSeverityMajor)
+}
+
+func (api *IssueService) GetNumberOfMinorIssues() (int, error) {
+	return api.getIssueCount(issueSeverityMinor)
+}
+
+func (api *IssueService) GetNumberOfInfoIssues() (int, error) {
+	return api.getIssueCount(issueSeverityInfo)
 }
 
 func (api *IssueService) getIssueCount(severity issueSeverity) (int, error) {

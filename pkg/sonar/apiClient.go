@@ -1,9 +1,10 @@
 package sonar
 
 import (
-	"github.com/SAP/jenkins-library/pkg/log"
 	sonarAPI "github.com/magicsong/sonargo/sonar"
 	"github.com/pkg/errors"
+
+	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 func (api *IssueService) createClient() error {

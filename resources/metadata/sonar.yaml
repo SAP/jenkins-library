@@ -258,6 +258,12 @@ spec:
                 type: int
               - name: critical_issues
                 type: int
+              - name: major_issues
+                type: int
+              - name: minor_issues
+                type: int
+              - name: info_issues
+                type: int
   containers:
     - name: sonar
       image: sonarsource/sonar-scanner-cli:4.5
