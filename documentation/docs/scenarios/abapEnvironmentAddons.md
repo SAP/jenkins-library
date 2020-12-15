@@ -10,7 +10,7 @@ This scenario describes how an add-on for the SAP Cloud Platform ABAP Environmen
 
 The development on SAP Cloud Platform ABAP Environment systems is done within [“software components”](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/58480f43e0b64de782196922bc5f1ca0.html) (also called: “repositories”). The add-ons being built in this scenario are made up by one or multiple software components combined to an add-on product. The “ABAP Environment Pipeline” can be used to build and publish the add-on product. Please read on for more details about the Add-on Product and the build process.
 
-Of course, this tackles only the upstream part of the SaaS solution lifecycle. Once the add-on is published, it can be consumed as a multitenant application in ABAP Environment.
+Of course, this tackles only the upstream part of the SaaS solution lifecycle. Once the add-on is published, it can be consumed as a [multitenant application in ABAP Environment](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/195031ff8f484b51af16fe392ec2ae6e.html).
 
 ## The Add-on Product
 
