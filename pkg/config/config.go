@@ -229,7 +229,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 
 	if verbose, ok := stepConfig.Config["verbose"].(bool); ok && verbose {
 		log.SetVerbose(verbose)
-	} else if !ok {
+	} else if !ok && stepConfig.Config["verbose"] != nil {
 		log.Entry().Warnf("invalid value for parameter verbose: '%v'", stepConfig.Config["verbose"])
 	}
 
