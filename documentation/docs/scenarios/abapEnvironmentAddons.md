@@ -10,7 +10,7 @@ This scenario describes how an add-on for the SAP Cloud Platform ABAP Environmen
 
 The development on SAP Cloud Platform ABAP Environment systems is done within [“software components”](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/58480f43e0b64de782196922bc5f1ca0.html) (also called: “repositories”). The add-ons being built in this scenario are made up by one or multiple software components combined to an add-on product. The “ABAP Environment Pipeline” can be used to build and publish the add-on product. Please read on for more details about the Add-on Product and the build process.
 
-Of course, this tackles only the upstream part of the SaaS solution lifecycle. Once the add-on is published, it can be consumed as a multitenant application in ABAP Environment.
+Of course, this tackles only the upstream part of the SaaS solution lifecycle. Once the add-on is published, it can be consumed as a [multitenant application in ABAP Environment](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/195031ff8f484b51af16fe392ec2ae6e.html).
 
 ## The Add-on Product
 
@@ -80,7 +80,7 @@ With these SAP tools the assembled add-on deliveries are deployed to ABAP system
 
 #### Installation Test System
 
-In order to verify that the delivery packages included in the add-on product version being built are installable, a target vector is published in "test" scope. In the *Integration Tests* stage an ABAP system of service type abap-oem is created. This ABAP OEM service makes it possible to install a specific add-on product version into an ABAP system that is provisioned. The installation test system should be be provisioned with parameter `is_development_allowed = false` to prevent local changes.
+In order to verify that the delivery packages included in the add-on product version being built are installable, a target vector is published in "test" scope. In the *Integration Tests* stage an ABAP system of service plan `saas_oem` is created. This ABAP system makes it possible to install a specific add-on product version into an ABAP system that is provisioned. The installation test system should be be provisioned with parameter `is_development_allowed = false` to prevent local changes.
 
 ### Prerequisites
 
@@ -191,7 +191,7 @@ Make sure to check the general option "Do not allow concurrent builds" in order 
 
 ### Example
 
-Soon, an example will be posted in this [GitHub repository](https://github.com/SAP-samples/abap-platform-ci-cd-samples).
+Please have a look at the configuration example in this [GitHub repository](https://github.com/SAP-samples/abap-platform-ci-cd-samples/tree/addon-build).
 
 ## Troubleshooting
 
