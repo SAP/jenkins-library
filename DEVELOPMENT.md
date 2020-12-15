@@ -222,6 +222,7 @@ With writing a fatal error
 ```golang
 log.Entry().WithError(err).Fatal("the error message")
 ```
+
 the category will be written into the file `errorDetails.json` and can be used from there in the further pipeline flow.
 Writing the file is handled by [`pkg/log/FatalHook`](pkg/log/fatalHook.go).
 
@@ -229,7 +230,8 @@ Writing the file is handled by [`pkg/log/FatalHook`](pkg/log/fatalHook.go).
 
 1. [Mocking](#mocking)
 1. [Mockable Interface](#mockable-interface)
-1. [Global function pointers](global-function-pointers)
+1. [Global function pointers](#global-function-pointers)
+1. [Test Parallelization](#test-parallelization)
 
 Unit tests are done using basic `golang` means.
 
@@ -414,6 +416,66 @@ Both approaches have their own benefits. Global function pointers require less p
 in the actual implementation and give great flexibility in the tests, while mocking interfaces
 tend to result in more code re-use and slim down the tests. The mocking implementation of a
 utils interface can facilitate implementations of related functions to be based on shared data.
+
+### Test Parallelization
+
+Tests that can be executed in parallel should be marked as such.
+With the command `t.Parallel()` the test framework can be notified that this test can run in parallel, and it can start running the next test.
+([Example in Stackoverflow](https://stackoverflow.com/questions/44325232/are-tests-executed-in-parallel-in-go-or-one-by-one))
+Therefore, this command shall be called at the beginning of a test method **and also** in each `t.Run()` sub tests.
+See also the [documentation](https://golang.org/pkg/testing/#T.Parallel) for `t.Parallel()` and `t.Run()`.
+
+```go
+func TestMethod(t *testing.T) {
+    t.Parallel() // indicates that this method can run parallel to other methods
+
+    t.Run("sub test 1", func(t *testing.T){
+        t.Parallel() // indicates that this sub test can run parallel to other sub tests
+        // execute test
+    })
+
+    t.Run("sub test 2", func(t *testing.T){
+        t.Parallel() // indicates that this sub test can run parallel to other sub tests
+        // execute test
+    })
+}
+```
+
+Go will first execute the non-parallelized tests in sequence and afterwards execute all the parallel tests in parallel, limited by the default number of parallel executions.
+
+It is important that tests executed in parallel use the variable values actually meant to be visible to them.
+Especially in table tests, it can happen easily that a variable injected into the `t.Run()`-closure via the outer scope is changed before or while the closure executes.
+To prevent this, it is possible to create shadowing instances of variables in the body of the test loop.
+(See [blog about it](https://eleni.blog/2019/05/11/parallel-test-execution-in-go/).)
+At the minimum, you need to capture the test case value from the loop iteration variable, by shadowing this variable in the loop body.
+Inside the `t.Run()` closure, this shadow copy is visible, and cannot be overwritten by later loop iterations.
+If you do not make this shadowing copy, what is visible in the closure is the variable which gets re-assigned with a new value in each loop iteration.
+The value of this variable is then not fixed for the test run.
+
+```go
+func TestMethod(t *testing.T) {
+    t.Parallel() // indicates that this method can parallel to other methods
+    testCases := []struct {
+        Name string
+    }{
+        {
+            Name: "Name1"
+        },
+        {
+            Name: "Name2"
+        },
+    }
+
+    for _, testCase := range testCases { // testCase defined here is re-assigned in each iteration
+        testCase := testCase // define new variable within loop to detach from overwriting of the outer testCase variable by next loop iteration
+        // The same variable name "testCase" is used for convenience.
+        t.Run(testCase.Name, func(t *testing.T) {
+            t.Parallel() // indicates that this sub test can run parallel to other sub tests
+            // execute test
+        })
+    }
+}
+```
 
 ## Debugging
 

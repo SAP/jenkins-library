@@ -1,4 +1,4 @@
-# SAP Cloud SDK `<% print shareConfidentialInformation ? "Confidential" : "Redacted" %>` Debug Log
+# Project "Piper" `<% print shareConfidentialInformation ? "Confidential" : "Redacted" %>` Debug Log
 
 The debug log is generated with each build and should be included in every support request, don't worry in case you don't understand all of its contents.
 

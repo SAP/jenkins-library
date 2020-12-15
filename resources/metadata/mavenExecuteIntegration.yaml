@@ -42,7 +42,7 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
-
+        default: true
       # Global maven settings, should be added to all maven steps
       - name: projectSettingsFile
         type: string
@@ -90,7 +90,6 @@ spec:
   containers:
     - name: mvn
       image: maven:3.6-jdk-8
-      imagePullPolicy: Never
 
   # This declaration is necessary in order to return any sidecar configuration in the context config.
   sidecars:

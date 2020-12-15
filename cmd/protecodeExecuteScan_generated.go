@@ -124,6 +124,7 @@ func ProtecodeExecuteScanCommand() *cobra.Command {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				influx.persist(GeneralConfig.EnvRootPath, "influx")
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
@@ -172,8 +173,9 @@ func addProtecodeExecuteScanFlags(cmd *cobra.Command, stepConfig *protecodeExecu
 func protecodeExecuteScanMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "protecodeExecuteScan",
-			Aliases: []config.Alias{},
+			Name:        "protecodeExecuteScan",
+			Aliases:     []config.Alias{},
+			Description: "Protecode is an Open Source Vulnerability Scanner that is capable of scanning binaries. It can be used to scan docker images but is supports many other programming languages especially those of the C family.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -226,6 +228,12 @@ func protecodeExecuteScanMetadata() config.StepData {
 							{
 								Name: "dockerConfigJsonCredentialsId",
 								Type: "secret",
+							},
+
+							{
+								Name:  "",
+								Paths: []string{"$(vaultPath)/docker-config", "$(vaultBasePath)/$(vaultPipelineName)/docker-config", "$(vaultBasePath)/GROUP-SECRETS/docker-config"},
+								Type:  "vaultSecretFile",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -353,6 +361,17 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+					},
+				},
+			},
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{
+						Name: "influx",
+						Type: "influx",
+						Parameters: []map[string]interface{}{
+							{"Name": "protecode_data"}, {"fields": []map[string]string{{"name": "historical_vulnerabilities"}, {"name": "triaged_vulnerabilities"}, {"name": "excluded_vulnerabilities"}, {"name": "minor_vulnerabilities"}, {"name": "major_vulnerabilities"}, {"name": "vulnerabilities"}}},
+						},
 					},
 				},
 			},

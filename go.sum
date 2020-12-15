@@ -125,6 +125,8 @@ github.com/bgentry/speakeasy v0.1.0/go.mod h1:+zsyZBPWlz7T6j88CTgSN5bM796AkVf0kB
 github.com/blang/semver v3.5.0+incompatible/go.mod h1:kRBLl5iJ+tD4TcOOxsy/0fnwebNt5EWlYSAyrTnjyyk=
 github.com/bmatcuk/doublestar v1.3.2 h1:mzUncgFmpzNUhIITFqGdZ8nUU0O7JTJzRO8VdkeLCSo=
 github.com/bmatcuk/doublestar v1.3.2/go.mod h1:wiQtGV+rzVYxB7WIlirSN++5HPtPlXEo9MEoZQC/PmE=
+github.com/bndr/gojenkins v1.0.1 h1:DFIuamRSmXoI/CwB44txuRf8xaHZNejZge/Lui4RYD4=
+github.com/bndr/gojenkins v1.0.1/go.mod h1:J2FxlujWW87NJJrdysyctcDllRVYUONGGlHX16134P4=
 github.com/cenkalti/backoff v2.2.1+incompatible h1:tNowT99t7UNflLxfYYSlKYsBpXdEet03Pg2g16Swow4=
 github.com/cenkalti/backoff v2.2.1+incompatible/go.mod h1:90ReRw6GdpyfrHakVjL/QHaoyV4aDUVVkXQJJJ3NXXM=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=

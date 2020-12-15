@@ -57,6 +57,7 @@ either use ESLint configurations present in the project or use the provided gene
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
@@ -84,8 +85,9 @@ func addNpmExecuteLintFlags(cmd *cobra.Command, stepConfig *npmExecuteLintOption
 func npmExecuteLintMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "npmExecuteLint",
-			Aliases: []config.Alias{{Name: "executeNpm", Deprecated: false}},
+			Name:        "npmExecuteLint",
+			Aliases:     []config.Alias{{Name: "executeNpm", Deprecated: false}},
+			Description: "Execute ci-lint script on all npm packages in a project or execute default linting",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -107,6 +109,9 @@ func npmExecuteLintMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "npm/defaultNpmRegistry"}},
 					},
 				},
+			},
+			Containers: []config.Container{
+				{Name: "node", Image: "node:12-buster"},
 			},
 		},
 	}

@@ -36,9 +36,9 @@ spec:
             param: username
           - type: vaultSecret
             paths:
-              - $(vaultPath)/cloudfoundry-$(cfOrg)-$(cfSpace)
-              - $(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(cfOrg)-$(cfSpace)
-              - $(vaultBasePath)/GROUP-SECRETS/cloudfoundry-$(cfOrg)-$(cfSpace)
+              - $(vaultPath)/cloudfoundry-$(org)-$(space)
+              - $(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(org)-$(space)
+              - $(vaultBasePath)/GROUP-SECRETS/cloudfoundry-$(org)-$(space)
       - name: password
         type: string
         description: User Password for CF User
@@ -54,9 +54,9 @@ spec:
             param: password
           - type: vaultSecret
             paths:
-              - $(vaultPath)/cloudfoundry-$(cfOrg)-$(cfSpace)
-              - $(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(cfOrg)-$(cfSpace)
-              - $(vaultBasePath)/GROUP-SECRETS/cloudfoundry-$(cfOrg)-$(cfSpace)
+              - $(vaultPath)/cloudfoundry-$(org)-$(space)
+              - $(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(org)-$(space)
+              - $(vaultBasePath)/GROUP-SECRETS/cloudfoundry-$(org)-$(space)
       - name: cfOrg
         type: string
         description: CF org
@@ -116,4 +116,3 @@ spec:
   containers:
     - name: cf
       image: ppiper/cf-cli
-      imagePullPolicy: Never

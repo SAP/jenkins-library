@@ -188,9 +188,9 @@ spec:
             param: password
           - type: vaultSecret
             paths:
-              - $(vaultPath)/versioning
-              - $(vaultBasePath)/$(vaultPipelineName)/versioning
-              - $(vaultBasePath)/GROUP-SECRETS/versioning
+              - $(vaultPath)/gitHttpsCredential
+              - $(vaultBasePath)/$(vaultPipelineName)/gitHttpsCredential
+              - $(vaultBasePath)/GROUP-SECRETS/gitHttpsCredential
       - name: projectSettingsFile
         aliases:
           - name: maven/projectSettingsFile
@@ -237,13 +237,12 @@ spec:
             param: username
           - type: vaultSecret
             paths:
-              - $(vaultPath)/versioning
-              - $(vaultBasePath)/$(vaultPipelineName)/versioning
-              - $(vaultBasePath)/GROUP-SECRETS/versioning
+              - $(vaultPath)/gitHttpsCredential
+              - $(vaultBasePath)/$(vaultPipelineName)/gitHttpsCredential
+              - $(vaultBasePath)/GROUP-SECRETS/gitHttpsCredential
       - name: versioningTemplate
         type: string
         description: "DEPRECATED: Defines the template for the automatic version which will be created"
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -274,7 +273,6 @@ spec:
           - name: git/commitMessage
   containers:
     - image: maven:3.6-jdk-8
-      imagePullPolicy: Never
       conditions:
         - conditionRef: strings-equal
           params:

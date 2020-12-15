@@ -21,9 +21,13 @@ spec:
   inputs:
     secrets:
       - name: userTokenCredentialsId
+        aliases:
+          - name: whitesourceUserTokenCredentialsId
         description: Jenkins 'Secret text' credentials ID containing Whitesource user token.
         type: jenkins
       - name: orgAdminUserTokenCredentialsId
+        aliases:
+          - name: whitesourceOrgAdminUserTokenCredentialsId
         description: Jenkins 'Secret text' credentials ID containing Whitesource org admin token.
         type: jenkins
     params:
@@ -77,13 +81,13 @@ spec:
           - STEPS
         default: true
       - name: timeout
-        type: string
-        description: "Timeout in seconds until a HTTP call is forcefully terminated."
+        type: int
+        description: "Timeout in seconds until an HTTP call is forcefully terminated."
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: 0
+        default: 900
       - name: agentDownloadUrl
         type: string
         description: "URL used to download the latest version of the WhiteSource Unified Agent."
@@ -128,7 +132,7 @@ spec:
         default: xlsx
       - name: parallelLimit
         type: string
-        description: 'Limit of parallel jobs being run at once in case of `scanType:
+        description: '[NOT IMPLEMENTED] Limit of parallel jobs being run at once in case of `scanType:
           ''mta''` based scenarios, defaults to `15`.'
         scope:
           - PARAMETERS
@@ -151,7 +155,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: https://saas.whitesourcesoftware.com/api
+        default: "https://saas.whitesourcesoftware.com/api"
       - name: buildDescriptorExcludeList
         type: "[]string"
         description: "List of build descriptors and therefore modules to exclude from the scan and assessment activities."
@@ -175,7 +179,7 @@ spec:
             type: secret
       - name: userToken
         type: string
-        description: "WhiteSource token identifying the user executing the scan"
+        description: "WhiteSource token identifying the user executing the scan."
         scope:
           - GENERAL
           - PARAMETERS
@@ -188,7 +192,7 @@ spec:
             type: secret
       - name: licensingVulnerabilities
         type: bool
-        description: "Whether license compliance is considered and reported as part of the assessment."
+        description: "[NOT IMPLEMENTED] Whether license compliance is considered and reported as part of the assessment."
         scope:
           - PARAMETERS
           - STAGES
@@ -201,7 +205,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: wss-unified-agent.jar
+        default: "wss-unified-agent.jar"
       - name: emailAddressesOfInitialProductAdmins
         type: "[]string"
         description: "The list of email addresses to assign as product admins for newly created WhiteSource products."
@@ -218,12 +222,9 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        resourceRef:
-          - name: commonPipelineEnvironment
-            param: artifactVersion
       - name: jreDownloadUrl
         type: string
-        description: "URL used for downloading the Java Runtime Environment (JRE) required to run the
+        description: "[NOT IMPLEMENTED] URL used for downloading the Java Runtime Environment (JRE) required to run the
           WhiteSource Unified Agent."
         scope:
           - GENERAL
@@ -231,8 +232,13 @@ spec:
           - STAGES
           - STEPS
       - name: productName
+        aliases:
+          - name: whitesourceProductName
         type: string
-        description: "Name of the WhiteSource product to be created and used for results aggregation."
+        description: "Name of the WhiteSource product used for results aggregation.
+          This parameter is mandatory if the parameter `createProductFromPipeline` is set to `true`
+          and the WhiteSource product does not yet exist.
+          It is also mandatory if the parameter `productToken` is not provided."
         mandatory: true
         scope:
           - GENERAL
@@ -243,14 +249,21 @@ spec:
         aliases:
           - name: whitesourceProjectName
         type: string
-        description: "The project used for reporting results in Whitesource"
+        description: "The project name used for reporting results in WhiteSource.
+          When provided, all source modules will be scanned into one aggregated WhiteSource project.
+          For scan types `maven`, `mta`, `npm`, the default is to generate one WhiteSource project per module,
+          whereas the project name is derived from the module's build descriptor.
+          For NPM modules, project aggregation is not supported, the last scanned NPM module will override all
+          previously aggregated scan results!"
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
       - name: projectToken
         type: string
-        description: Project token to execute scan on
+        description: "Project token to execute scan on. Ignored for scan types `maven`, `mta` and `npm`.
+          Used for project aggregation when scanning with the Unified Agent and can be provided as an
+          alternative to `projectName`."
         scope:
           - GENERAL
           - PARAMETERS
@@ -263,17 +276,21 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: WhiteSource Security Vulnerability Report
+        default: "WhiteSource Security Vulnerability Report"
       - name: installCommand
         type: string
-        description: "Install command that can be used to populate the default docker image for some scenarios."
+        description: "[NOT IMPLEMENTED] Install command that can be used to populate the default docker image for some scenarios."
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
       - name: scanType
         type: string
-        description: "Type of development stack used to implement the solution."
+        description: "Type of development stack used to implement the solution.
+          For scan types other than `mta`, `maven`, and `npm`,
+          the WhiteSource Unified Agent is downloaded and used to perform the scan.
+          If the parameter is not provided, it is derived from the parameter `buildTool`,
+          which is usually configured in the general section of the pipeline config file."
         scope:
           - GENERAL
           - PARAMETERS
@@ -308,7 +325,7 @@ spec:
       - name: productToken
         type: string
         description: "Token of the WhiteSource product to be created and used for results aggregation,
-          usually determined automatically."
+          usually determined automatically. Can optionally be provided as an alternative to `productName`."
         scope:
           - GENERAL
           - PARAMETERS
@@ -316,7 +333,7 @@ spec:
           - STEPS
       - name: agentParameters
         type: string
-        description: "Additional parameters passed to the Unified Agent command line."
+        description: "[NOT IMPLEMENTED] Additional parameters passed to the Unified Agent command line."
         scope:
           - PARAMETERS
           - STAGES
@@ -353,6 +370,16 @@ spec:
           - PARAMETERS
         aliases:
           - name: maven/m2Path
+      - name: installArtifacts
+        type: bool
+        description:
+          "If enabled, it will install all artifacts to the local maven repository to make them available before running whitesource.
+          This is required if any maven module has dependencies to other modules in the repository and they were not installed before."
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
 
       # Global npm settings, should be added to all npm steps
       - name: defaultNpmRegistry
@@ -368,110 +395,26 @@ spec:
     resources:
       - name: buildDescriptor
         type: stash
-        conditions:
-          - conditionRef: strings-equal
-            params:
-              - name: scanType
-                value: golang
       - name: opensourceConfiguration
         type: stash
-        conditions:
-          - conditionRef: strings-equal
-            params:
-              - name: scanType
-                value: golang
       - name: checkmarx
         type: stash
-        conditions:
-          - conditionRef: strings-equal
-            params:
-              - name: scanType
-                value: golang
-      - name: buildDescriptor
-        type: stash
-        conditions:
-          - conditionRef: strings-equal
-            params:
-              - name: scanType
-                value: maven
-      - name: opensourceConfiguration
-        type: stash
-        conditions:
-          - conditionRef: strings-equal
-            params:
-              - name: scanType
-                value: maven
-      - name: buildDescriptor
-        type: stash
-        conditions:
-          - conditionRef: strings-equal
-            params:
-              - name: scanType
-                value: mta
-      - name: opensourceConfiguration
-        type: stash
-        conditions:
-          - conditionRef: strings-equal
-            params:
-              - name: scanType
-                value: mta
-      - name: buildDescriptor
-        type: stash
-        conditions:
-          - conditionRef: strings-equal
-            params:
-              - name: scanType
-                value: npm
-      - name: opensourceConfiguration
-        type: stash
-        conditions:
-          - conditionRef: strings-equal
-            params:
-              - name: scanType
-                value: npm
-      - name: buildDescriptor
-        type: stash
-        conditions:
-          - conditionRef: strings-equal
-            params:
-              - name: scanType
-                value: pip
-      - name: opensourceConfiguration
-        type: stash
-        conditions:
-          - conditionRef: strings-equal
-            params:
-              - name: scanType
-                value: pip
-      - name: buildDescriptor
-        type: stash
-        conditions:
-          - conditionRef: strings-equal
-            params:
-              - name: scanType
-                value: sbt
-      - name: opensourceConfiguration
-        type: stash
-        conditions:
-          - conditionRef: strings-equal
-            params:
-              - name: scanType
-                value: sbt
-      - name: buildDescriptor
-        type: stash
-        conditions:
-          - conditionRef: strings-equal
-            params:
-              - name: scanType
-                value: dub
-      - name: checkmarx
-        type: stash
-        conditions:
-          - conditionRef: strings-equal
-            params:
-              - name: scanType
-                value: dub
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: custom/whitesourceProjectNames
+            type: "[]string"
   containers:
+    - image: devxci/mbtci:1.0.14
+      workingDir: /home/mta
+      env: [ ]
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: scanType
+              value: mta
     - image: maven:3.5-jdk-8
       workingDir: /home/java
       env: []
