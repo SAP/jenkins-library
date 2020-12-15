@@ -175,14 +175,20 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		Token:   config.Token,
 		Project: taskReport.ProjectKey,
 	}
-	influx.sonarqube_data.fields.blocker_issues, err = issues.GetNumberOfBlockerIssues()
-	if err != nil {
-		log.Entry().Warn(err)
-	}
-	influx.sonarqube_data.fields.critical_issues, err = issues.GetNumberOfCriticalIssues()
-	if err != nil {
-		log.Entry().Warn(err)
-	}
+	blocker, err := issues.GetNumberOfBlockerIssues()
+	log.Entry().Infof("Number of Blocker Issues: ", blocker)
+	critical, err := issues.GetNumberOfCriticalIssues()
+	log.Entry().Infof("Number of Critical Issues: ", critical)
+	major, err := issues.GetNumberOfMajorIssues()
+	log.Entry().Infof("Number of Major Issues: ", major)
+	minor, err := issues.GetNumberOfMinorIssues()
+	log.Entry().Infof("Number of Minor Issues: ", minor)
+	info, err := issues.GetNumberOfInfoIssues()
+	log.Entry().Infof("Number of Info Issues: ", info)
+	// influx.sonarqube_data.fields.critical_issues, err = issues.GetNumberOfCriticalIssues()
+	// if err != nil {
+	// 	log.Entry().Warn(err)
+	// }
 	return nil
 }
 
