@@ -110,6 +110,7 @@ steps:
       - 'tests'
     testPackage: 'piper-bats'
   checksPublishResults:
+    failOnError: false
     tasks:
       pattern: '**/*.java'
       low: ''
