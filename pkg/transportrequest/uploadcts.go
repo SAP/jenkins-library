@@ -202,10 +202,9 @@ func getSwitchUserStatement(user string) string {
 	return fmt.Sprintf("su %s", user)
 }
 
-func handleConfigFile(path string) (bool, bool, error) {
+func handleConfigFile(path string) (useConfigFile, noConfig bool, err error) {
 
-	useConfigFile := true
-	noConfig := false
+	useConfigFile = true
 
 	if len(path) == 0 {
 		useConfigFile = false
@@ -234,5 +233,5 @@ func handleConfigFile(path string) (bool, bool, error) {
 			}
 		}
 	}
-	return useConfigFile, noConfig, nil
+	return
 }
