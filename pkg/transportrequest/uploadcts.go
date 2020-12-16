@@ -14,28 +14,39 @@ type fileUtils interface {
 
 var files fileUtils = piperutils.Files{}
 
-// CTSConnection ...
+// CTSConnection Everything wee need for connecting to CTS
 type CTSConnection struct {
+	// The endpoint in for form <protocol>://<host>:<port>, no path
 	Endpoint string
+	// The ABAP client, like e.g. "001"
 	Client   string
 	User     string
 	Password string
 }
 
-// CTSApplication ...
+// CTSApplication The details of the application
 type CTSApplication struct {
+	// Name of the application
 	Name string
+	// The ABAP package
 	Pack string
+	// A description. Only taken into account for initial upload, not
+	// in case of a re-deployment.
 	Desc string
 }
 
-// CTSNode ...
+// CTSNode The details von configuring the node image
 type CTSNode struct {
+	// The dependencies which are installed on a basic node image in order
+	// to enable it for fiori deployment. If left empty we assume the
+	// provided base image has already everything installed.
 	DeployDependencies []string
-	InstallOpts        []string
+	// Additional options for the npm install command. Useful e.g.
+	// for providing additional registries or for triggering verbose mode
+	InstallOpts []string
 }
 
-// CTSUploadAction ...
+// CTSUploadAction Collects all the properties we need for the deployment
 type CTSUploadAction struct {
 	Connection         CTSConnection
 	Application        CTSApplication
