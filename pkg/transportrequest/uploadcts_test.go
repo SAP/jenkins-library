@@ -9,8 +9,8 @@ import (
 
 func TestUploadCTS(t *testing.T) {
 
-	filesMock := mock.FilesMock{}
-	files = &filesMock
+	fMock := &mock.FilesMock{}
+	files = fMock
 	defer func() { files = piperutils.Files{} }()
 
 	t.Run("npm install command tests", func(t *testing.T) {
@@ -104,7 +104,7 @@ func TestUploadCTS(t *testing.T) {
 			filesMock := mock.FilesMock{}
 			filesMock.AddFile("ui5-deploy.yaml", []byte{})
 			files = &filesMock
-			defer func() { files = piperutils.Files{} }()
+			defer func() { files = fMock }()
 			cmd := mock.ShellMockRunner{}
 			action := CTSUploadAction{
 				Connection:         connection,
@@ -123,7 +123,7 @@ func TestUploadCTS(t *testing.T) {
 			filesMock := mock.FilesMock{}
 			filesMock.AddFile("my-ui5-deploy.yaml", []byte{})
 			files = &filesMock
-			defer func() { files = piperutils.Files{} }()
+			defer func() { files = fMock }()
 			cmd := mock.ShellMockRunner{}
 			action := CTSUploadAction{
 				Connection:         connection,
