@@ -204,34 +204,30 @@ func getSwitchUserStatement(user string) string {
 
 func handleConfigFile(path string) (useConfigFile, noConfig bool, err error) {
 
-	useConfigFile = true
-
 	if len(path) == 0 {
+		exists, e := files.FileExists(defaultConfigFileName)
+		if e != nil {
+			return false, false, e
+		}
 		useConfigFile = false
-		exists, err := files.FileExists(defaultConfigFileName)
-		if err != nil {
-			return false, false, err
-		}
 		noConfig = !exists
+		return
+	}
+	exists, err := files.FileExists(path)
+	if err != nil {
+		return false, false, err
+	}
+	if exists {
+		useConfigFile = true
+		noConfig = false
 	} else {
-		exists, err := files.FileExists(path)
-		if err != nil {
-			return false, false, err
+		if path != defaultConfigFileName {
+			return false, false, fmt.Errorf("Configured deploy config file '%s' does not exists", path)
 		}
-		if exists {
-			useConfigFile = true
-			noConfig = false
-		} else {
-			if path == defaultConfigFileName {
-				// in this case this is most likely provided by the piper default config and
-				// it was not explicitly configured. Hence we assume not having a config file
-				useConfigFile = false
-				noConfig = true
-			} else {
-				err = fmt.Errorf("Configured deploy config file '%s' does not exists", path)
-				return false, false, err
-			}
-		}
+		// in this case this is most likely provided by the piper default config and
+		// it was not explicitly configured. Hence we assume not having a config file
+		useConfigFile = false
+		noConfig = true
 	}
 	return
 }
