@@ -24,6 +24,7 @@ import static org.junit.Assert.assertThat
 class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
 
     def usedConfigFile
+    def pipelineAndTestStashIncludes
 
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsWriteFileRule writeFileRule = new JenkinsWriteFileRule(this)
@@ -61,14 +62,33 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
             Yaml yamlParser = new Yaml()
             if (parameters.text) {
                 return yamlParser.load(parameters.text)
-            } else if(parameters.file) {
-                if(parameters.file == '.pipeline/default_pipeline_environment.yml') return [default: 'config']
-                else if (parameters.file == '.pipeline/custom.yml') return [custom: 'myConfig']
+            } else if (parameters.file) {
+                switch (parameters.file) {
+                    case '.pipeline/default_pipeline_environment.yml':
+                        return [default: 'config']
+                    case '.pipeline/custom.yml':
+                        return [custom: 'myConfig']
+                    case 'pipeline_config.yml':
+                        usedConfigFile = parameters.file
+                        return [
+                            general: [
+                                productiveBranch: 'main'
+                            ],
+                            steps: [
+                                mavenExecute: [
+                                    dockerImage: 'my-custom-maven-docker']
+                            ]
+                        ]
+                }
             } else {
                 throw new IllegalArgumentException("Key 'text' and 'file' are both missing in map ${m}.")
             }
             usedConfigFile = parameters.file
             return yamlParser.load(examplePipelineConfig)
+        })
+
+        helper.registerAllowedMethod("stash", [Map], { Map params ->
+            pipelineAndTestStashIncludes = params.includes
         })
 
         Utils.metaClass.echo = { def m -> }
@@ -93,6 +113,7 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
         assertNotNull(nullScript.commonPipelineEnvironment.configuration)
         assertEquals('develop', nullScript.commonPipelineEnvironment.configuration.general.productiveBranch)
         assertEquals('my-maven-docker', nullScript.commonPipelineEnvironment.configuration.steps.mavenExecute.dockerImage)
+        assertEquals('.pipeline/**', pipelineAndTestStashIncludes)
     }
 
     @Test
@@ -108,6 +129,23 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
         assertNotNull(nullScript.commonPipelineEnvironment.configuration)
         assertEquals('develop', nullScript.commonPipelineEnvironment.configuration.general.productiveBranch)
         assertEquals('my-maven-docker', nullScript.commonPipelineEnvironment.configuration.steps.mavenExecute.dockerImage)
+        assertEquals('.pipeline/**', pipelineAndTestStashIncludes)
+    }
+
+    @Test
+    void testWorksAlsoWithCustomConfig() throws Exception {
+
+        helper.registerAllowedMethod("fileExists", [String], { String path ->
+            return path.endsWith('pipeline_config.yml')
+        })
+
+        stepRule.step.setupCommonPipelineEnvironment(script: nullScript, configFile: 'pipeline_config.yml')
+
+        assertEquals('pipeline_config.yml', usedConfigFile)
+        assertNotNull(nullScript.commonPipelineEnvironment.configuration)
+        assertEquals('main', nullScript.commonPipelineEnvironment.configuration.general.productiveBranch)
+        assertEquals('my-custom-maven-docker', nullScript.commonPipelineEnvironment.configuration.steps.mavenExecute.dockerImage)
+        assertEquals('.pipeline/**, pipeline_config.yml', pipelineAndTestStashIncludes)
     }
 
     @Test

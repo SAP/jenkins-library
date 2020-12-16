@@ -31,11 +31,6 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'inferProjectName',
     /**
-     * Toggle for initialization of the stash settings for Cloud SDK Pipeline.
-     * If this is set to true, the stashSettings parameter is **not** configurable.
-     */
-    'initCloudSdkStashSettings',
-    /**
      * Defines the library resource containing the legacy configuration definition.
      */
     'legacyConfigSettings',
@@ -144,25 +139,7 @@ void call(Map parameters = [:]) {
             ContainerMap.instance.initFromResource(script, config.containerMapResource, buildTool)
         }
 
-        //perform stashing based on library resource piper-stash-settings.yml if not configured otherwise or Cloud SDK Pipeline is initialized
-        if (config.initCloudSdkStashSettings) {
-            switch (buildTool) {
-                case 'maven':
-                    initStashConfiguration(script, "com.sap.piper/pipeline/cloudSdkJavaStashSettings.yml", config.verbose?: false)
-                    break
-                case 'npm':
-                    initStashConfiguration(script, "com.sap.piper/pipeline/cloudSdkJavascriptStashSettings.yml", config.verbose?: false)
-                    break
-                case 'mta':
-                    initStashConfiguration(script, "com.sap.piper/pipeline/cloudSdkMtaStashSettings.yml", config.verbose?: false)
-                    break
-                default:
-                    error "[${STEP_NAME}] No stash settings for build tool ${buildTool} can be found. With `initCloudSdkStashSettings` active, only Maven, MTA or NPM projects are supported."
-                    break
-            }
-        } else {
-            initStashConfiguration(script, config.stashSettings, config.verbose?: false)
-        }
+        initStashConfiguration(script, config.stashSettings, config.verbose?: false)
 
         if (config.verbose) {
             echo "piper-lib-os  configuration: ${script.commonPipelineEnvironment.configuration}"
@@ -246,7 +223,7 @@ private String checkBuildTool(config) {
             break
     }
     if (buildDescriptorPattern && !findFiles(glob: buildDescriptorPattern)) {
-        error "[${STEP_NAME}] buildTool configuration '${config.buildTool}' does not fit to your project, please set buildTool as genereal setting in your .pipeline/config.yml correctly, see also https://sap.github.io/jenkins-library/configuration/"
+        error "[${STEP_NAME}] buildTool configuration '${config.buildTool}' does not fit to your project, please set buildTool as general setting in your .pipeline/config.yml correctly, see also https://sap.github.io/jenkins-library/configuration/"
     }
     return buildTool
 }

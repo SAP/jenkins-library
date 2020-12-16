@@ -49,12 +49,11 @@ repositories:
   branch: 'master'
 - name: '/DMO/GIT_REPO'
   branch: 'master'
+  commitID: 'cd87a3cac2bc946b7629580e58598c3db56a26f8'
 ```
 
 It is optional to provide a branch. However, if you also want to use this file for the abapEnvironmentCheckoutBranch step it is recommended to follow the above structure.
-
-!!! note "Commit IDs"
-    CommitIDs will also be supported in the future. While the step already includes the handling of commit IDs, the ABAP Environment system will support this not until a later release.
+If you want to pull a specific commit, the `commitID` can be specified optionally for a repository.
 
 If you want to read the host and credentials from the cloud foundry service key of the respective instance, the configuration could look as follows:
 
