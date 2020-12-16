@@ -223,7 +223,7 @@ func handleConfigFileOptions(path string) (useConfigFileOptionInCommandInvocatio
 		useNoConfigFileOptionInCommandInvoction = false
 	} else {
 		if path != defaultConfigFileName {
-			err =  fmt.Errorf("Configured deploy config file '%s' does not exists", path)
+			err = fmt.Errorf("Configured deploy config file '%s' does not exists", path)
 			return
 		}
 		// in this case this is most likely provided by the piper default config and
