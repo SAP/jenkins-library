@@ -14,11 +14,11 @@ Of course, this tackles only the upstream part of the SaaS solution lifecycle. O
 
 ## The Add-on Product
 
-The installation and maintenance of ABAP software is done / controlled via software product versions. A **software product version** is a „bundle" of software component versions made available at the same time for implementing a well-defined scope of functionality. It is the technical / delivery view on a software portfolio.
+The installation and maintenance of ABAP software is done / controlled via add-on product versions. An **add-on product version** is a „bundle" of software component versions made available at the same time for implementing a well-defined scope of functionality. It is the technical / delivery view on a software portfolio.
 
-### Software Product Version
+### Add-on Product Version
 
-A software product version is defined by a name and a version string. The name of a software product is a string with a maximum of 30 characters and consists of the [namespace](https://launchpad.support.sap.com/#/notes/84282) and a freely chooseble part - `/NAMESPC/PRODUCT1`. The version string consists of three numbers separated by a dot - `1.2.0`. The numbers in the version string have a hierarchic relationship:
+An add-on product version is defined by a name and a version string. The name of an add-on product is a string with a maximum of 30 characters and consists of the [namespace](https://launchpad.support.sap.com/#/notes/84282) and a freely chooseble part - `/NAMESPC/PRODUCT1`. The version string consists of three numbers separated by a dot - `1.2.0`. The numbers in the version string have a hierarchic relationship:
 
 - The first number denotes the release. Release deliveries contain the complete scope of functionality. It is possible to change the software component version bundle in a new release.
 - The second number denotes the Support Package Stack level. A Support Package stack consists of Support Package deliveries of the contained software component versions. It is not possible to change the software component version bundle in such a delivery.
@@ -30,7 +30,7 @@ A software product version is defined by a name and a version string. The name o
 
 ### Software Component Version
 
-A **software component version** is a technically distinguishable unit of software and is installed and patched as a whole. It consists of ABAP development packages and contained objects. Software component versions are delivered via delivery packages. But software component versions are not individual shipment entities. They can only be delivered to customers as part of a [software product version](#software-product-version).
+A **software component version** is a technically distinguishable unit of software and is installed and patched as a whole. It consists of ABAP development packages and contained objects. Software component versions are delivered via delivery packages. But software component versions are not individual shipment entities. They can only be delivered to customers as part of an [add-on product version](#add-on-product-version).
 A software component version is defined by a name and a version string. The name of a software component is string with a maximum of characters and consists of the [namespace](https://launchpad.support.sap.com/#/notes/84282) and a freely chooseble part - /NAMESPC/COMPONENT1. The version consists of three numbers separated by a dot - 1.2.0. The numbers in the version string have a hierarchic relationship:
 
 - The first number denotes the release. Release deliveries contains the whole software component and deliver new and enhancements of existing functionalities. They are delivered with delivery packages of type [“Installation Package”](https://help.sap.com/viewer/9043aa5d2f834ad385e1cdfdadc06b6f/5.0.4.7/en-US/6082f55473568c77e10000000a174cb4.html).
@@ -41,7 +41,7 @@ A software component version is defined by a name and a version string. The name
 
 ### Target Vector
 
-As explained above, the shipment of a software takes place via software product versions. The delivered content of a software product version is defined in a target vector, which is used by the deployment tools. The target vector is derived from the addon.yml (more on that below) and contains the following information:
+As explained above, the shipment of a software takes place via add-on product versions. The delivered content of an add-on product version is defined in a target vector, which is used by the deployment tools. The target vector is derived from the addon.yml (more on that below) and contains the following information:
 
 - Product name
 - Product release
@@ -53,7 +53,7 @@ As explained above, the shipment of a software takes place via software product 
 
 ## Building the Add-on Product
 
-The build process of a software product is orchestrated by a Jenkins Pipeline, the “ABAP Environment Pipeline” provided in this project. To run this pipeline, it only needs to be configured – which will be explained in the sections “Prerequisites” and “Configuration”.
+The build process of an add-on product is orchestrated by a Jenkins Pipeline, the “ABAP Environment Pipeline” provided in this project. To run this pipeline, it only needs to be configured – which will be explained in the sections “Prerequisites” and “Configuration”.
 
 ![ABAP Environment Pipeline Build](../images/abapEnvironmentBuildPipeline.png)
 
@@ -72,7 +72,7 @@ The assembly system should be of [service type abap](https://help.sap.com/viewer
 
 #### Add-on Assembly Kit as a Service (=AAKaaS)
 
-The Add-on Assembly Kit as a Service is responsible for registering and publishing the software product. It is accessible via APIs with an S-User.
+The Add-on Assembly Kit as a Service is responsible for registering and publishing the add-on product. It is accessible via APIs with an S-User.
 
 ### Deployment Tools
 
@@ -138,7 +138,7 @@ A configuration file `.pipeline/config.yml` is used to provide all required valu
 
 #### Add-on descriptor file
 
-The build process is controlled by an add-on descriptor file called `addon.yml`. This file must be created manually and must be stored in the GIT repository of the pipeline. It must contain information about the to-be-delivered [software product version](#software-product-version) and the contained [software component versions](#software-component-version). Below, you see an example:
+The build process is controlled by an add-on descriptor file called `addon.yml`. This file must be created manually and must be stored in the GIT repository of the pipeline. It must contain information about the to-be-delivered [add-on product version](#add-on-product-version) and the contained [software component versions](#software-component-version). Below, you see an example:
 
 ```YAML
 ---
