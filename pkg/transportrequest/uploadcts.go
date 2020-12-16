@@ -144,7 +144,7 @@ func getFioriDeployStatement(
 		desc = "Deployed with Piper based on SAP Fiori tools"
 	}
 
-	useConfigFile, noConfig, err := handleConfigFile(configFile)
+	useConfigFileOptionInCommandInvocation, useNoConfigFileOptionInCommandInvoction, err := handleConfigFileOptions(configFile)
 	if err != nil {
 		return "", err
 	}
@@ -158,10 +158,10 @@ func getFioriDeployStatement(
 		"--description", fmt.Sprintf("\"%s\"", desc),
 	}
 
-	if noConfig {
+	if useNoConfigFileOptionInCommandInvoction {
 		cmd = append(cmd, "--noConfig") // no config file, but we will provide our parameters
 	}
-	if useConfigFile {
+	if useConfigFileOptionInCommandInvocation {
 		cmd = append(cmd, "--config", fmt.Sprintf("\"%s\"", configFile))
 	}
 	if len(cts.Endpoint) > 0 {
@@ -202,7 +202,7 @@ func getSwitchUserStatement(user string) string {
 	return fmt.Sprintf("su %s", user)
 }
 
-func handleConfigFile(path string) (useConfigFile, noConfig bool, err error) {
+func handleConfigFileOptions(path string) (useConfigFileOptionInCommandInvocation, useNoConfigFileOptionInCommandInvoction bool, err error) {
 
 	exists := false
 	if len(path) == 0 {
@@ -210,8 +210,8 @@ func handleConfigFile(path string) (useConfigFile, noConfig bool, err error) {
 		if err != nil {
 			return
 		}
-		useConfigFile = false
-		noConfig = !exists
+		useConfigFileOptionInCommandInvocation = false
+		useNoConfigFileOptionInCommandInvoction = !exists
 		return
 	}
 	exists, err = files.FileExists(path)
@@ -219,8 +219,8 @@ func handleConfigFile(path string) (useConfigFile, noConfig bool, err error) {
 		return
 	}
 	if exists {
-		useConfigFile = true
-		noConfig = false
+		useConfigFileOptionInCommandInvocation = true
+		useNoConfigFileOptionInCommandInvoction = false
 	} else {
 		if path != defaultConfigFileName {
 			err =  fmt.Errorf("Configured deploy config file '%s' does not exists", path)
@@ -228,8 +228,8 @@ func handleConfigFile(path string) (useConfigFile, noConfig bool, err error) {
 		}
 		// in this case this is most likely provided by the piper default config and
 		// it was not explicitly configured. Hence we assume not having a config file
-		useConfigFile = false
-		noConfig = true
+		useConfigFileOptionInCommandInvocation = false
+		useNoConfigFileOptionInCommandInvoction = true
 	}
 	return
 }
