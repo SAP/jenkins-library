@@ -35,7 +35,7 @@ type CTSApplication struct {
 	Desc string
 }
 
-// CTSNode The details von configuring the node image
+// CTSNode The details for configuring the node image
 type CTSNode struct {
 	// The dependencies which are installed on a basic node image in order
 	// to enable it for fiori deployment. If left empty we assume the
