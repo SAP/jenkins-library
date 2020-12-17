@@ -120,7 +120,7 @@ func TestGetOAuthToken(t *testing.T) {
 	opts := piperHttp.ClientOptions{}
 	t.Run("test success", func(t *testing.T) {
 		myTestClient := senderMock{responseBody: `{"token_type":"Bearer","access_token":"abcd12345","expires_in":7045634}`, httpStatusCode: 200}
-		sys, _ := NewSystemInstance(&myTestClient, "https://cx.server.com", "test", "user", "client_id", "client_secret")
+		sys, _ := NewSystemInstance(&myTestClient, "https://cx.server.com", "test", "user", "resource_owner_client", "014DF517-39D1-4453-B7B3-9930C563627C")
 		myTestClient.SetOptions(opts)
 
 		token, err := sys.getOAuth2Token()
