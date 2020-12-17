@@ -144,7 +144,7 @@ func getFioriDeployStatement(
 		desc = "Deployed with Piper based on SAP Fiori tools"
 	}
 
-	useConfigFileOptionInCommandInvocation, useNoConfigFileOptionInCommandInvoction, err := handleConfigFileOptions(configFile)
+	useConfigFileOptionInCommandInvocation, useNoConfigFileOptionInCommandInvocation, err := handleConfigFileOptions(configFile)
 	if err != nil {
 		return "", err
 	}
@@ -158,7 +158,7 @@ func getFioriDeployStatement(
 		"--description", fmt.Sprintf("\"%s\"", desc),
 	}
 
-	if useNoConfigFileOptionInCommandInvoction {
+	if useNoConfigFileOptionInCommandInvocation {
 		cmd = append(cmd, "--noConfig") // no config file, but we will provide our parameters
 	}
 	if useConfigFileOptionInCommandInvocation {
