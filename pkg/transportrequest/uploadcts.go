@@ -101,7 +101,7 @@ func (action *CTSUploadAction) Perform(command command.ShellRunner) error {
 			fmt.Sprintf("%s=%s", abapPasswordKey, action.Connection.Password),
 		})
 
-	cmd := []string{"/bin/bash -e"}
+	cmd := []string{"#!/bin/bash -e"}
 
 	noInstall := len(action.Node.DeployDependencies) == 0
 	if !noInstall {
