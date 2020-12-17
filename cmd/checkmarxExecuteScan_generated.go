@@ -17,6 +17,8 @@ import (
 
 type checkmarxExecuteScanOptions struct {
 	AvoidDuplicateProjectScans    bool   `json:"avoidDuplicateProjectScans,omitempty"`
+	ClientID                      string `json:"clientId,omitempty"`
+	ClientSecret                  string `json:"clientSecret,omitempty"`
 	FilterPattern                 string `json:"filterPattern,omitempty"`
 	FullScanCycle                 string `json:"fullScanCycle,omitempty"`
 	FullScansScheduled            bool   `json:"fullScansScheduled,omitempty"`
@@ -232,6 +234,8 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 
 func addCheckmarxExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxExecuteScanOptions) {
 	cmd.Flags().BoolVar(&stepConfig.AvoidDuplicateProjectScans, "avoidDuplicateProjectScans", true, "Whether duplicate scans of the same project state shall be avoided or not")
+	cmd.Flags().StringVar(&stepConfig.ClientID, "clientId", `resource_owner_client`, "The client_id of the Checkmarx OIDC client")
+	cmd.Flags().StringVar(&stepConfig.ClientSecret, "clientSecret", `014DF517-39D1-4453-B7B3-9930C563627C`, "The client_secret of the Checkmarx OIDC client")
 	cmd.Flags().StringVar(&stepConfig.FilterPattern, "filterPattern", `!**/node_modules/**, !**/.xmake/**, !**/*_test.go, !**/vendor/**/*.go, **/*.html, **/*.xml, **/*.go, **/*.py, **/*.js, **/*.scala, **/*.ts`, "The filter pattern used to zip the files relevant for scanning, patterns can be negated by setting an exclamation mark in front i.e. `!test/*.js` would avoid adding any javascript files located in the test directory")
 	cmd.Flags().StringVar(&stepConfig.FullScanCycle, "fullScanCycle", `5`, "Indicates how often a full scan should happen between the incremental scans when activated")
 	cmd.Flags().BoolVar(&stepConfig.FullScansScheduled, "fullScansScheduled", true, "Whether full scans are to be scheduled or not. Should be used in relation with `incremental` and `fullScanCycle`")
@@ -277,6 +281,22 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "clientId",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "clientSecret",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},

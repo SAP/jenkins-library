@@ -120,7 +120,7 @@ func TestGetOAuthToken(t *testing.T) {
 	opts := piperHttp.ClientOptions{}
 	t.Run("test success", func(t *testing.T) {
 		myTestClient := senderMock{responseBody: `{"token_type":"Bearer","access_token":"abcd12345","expires_in":7045634}`, httpStatusCode: 200}
-		sys, _ := NewSystemInstance(&myTestClient, "https://cx.server.com", "test", "user")
+		sys, _ := NewSystemInstance(&myTestClient, "https://cx.server.com", "test", "user", "client_id", "client_secret")
 		myTestClient.SetOptions(opts)
 
 		token, err := sys.getOAuth2Token()
@@ -144,7 +144,7 @@ func TestGetOAuthToken(t *testing.T) {
 
 	t.Run("test new system", func(t *testing.T) {
 		myTestClient := senderMock{responseBody: `{"token_type":"Bearer","access_token":"abcd12345","expires_in":7045634}`, httpStatusCode: 200}
-		_, err := NewSystemInstance(&myTestClient, "https://cx.server.com", "test", "user")
+		_, err := NewSystemInstance(&myTestClient, "https://cx.server.com", "test", "user", "client_id", "client_secret")
 
 		assert.NoError(t, err, "Error occurred but none expected")
 		assert.Equal(t, "https://cx.server.com/cxrestapi/auth/identity/connect/token", myTestClient.urlCalled, "Called url incorrect")
