@@ -256,6 +256,49 @@ class PiperExecuteBinTest extends BasePiperTest {
     }
 
     @Test
+    void testPiperExecuteBinCredentialsSetString() {
+        shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/test.yaml\'', '{"sshCredentialsId":"sshKey", "fileCredentialsId":"cred_file", "tokenCredentialsId":"cred_token", "secretTextCredentialsId":"cred_secretText", "credentialsId":"credUsernamePassword", "dockerImage":"my.Registry/my/image:latest"}')
+
+        List sshKey = []
+        helper.registerAllowedMethod("sshagent", [List, Closure], {s, c ->
+            sshKey = s
+            c()
+        })
+
+        List stepCredentials = [[type: "${CredentialType.USERNAME_PASSWORD}", id: 'credentialsId', env: ['PIPER_user', 'PIPER_password']]]
+        for (type in CredentialType.values()) {
+            if (type != CredentialType.USERNAME_PASSWORD) {
+                stepCredentials.add([type: "${type}", id: "${type}CredentialsId", env: ["PIPER_cred_${type}"]])
+            }
+        }
+
+        stepRule.step.piperExecuteBin(
+            [
+                juStabUtils: utils,
+                jenkinsUtilsStub: jenkinsUtils,
+                testParam: "This is test content",
+                script: nullScript
+            ],
+            'testStep',
+            'metadata/test.yaml',
+            stepCredentials
+        )
+        // asserts
+        assertThat(credentials.size(), is(4))
+        assertThat(credentials[0], allOf(hasEntry('credentialsId', 'credUsernamePassword'), hasEntry('usernameVariable', 'PIPER_user') , hasEntry('passwordVariable', 'PIPER_password')))
+        int index = 1
+        for (type in CredentialType.values()) {
+            if (type != CredentialType.USERNAME_PASSWORD && type != CredentialType.SSH) {
+                def credId = "cred_${type}".toString() // toString() to avoid failure due to comparison to GString
+                assertThat(credentials[index++], allOf(hasEntry('credentialsId', credId), hasEntry('variable', "PIPER_cred_${type}")))
+            }
+        }
+        assertThat(stringCredentialClassCalled, is(2))
+        assertThat(sshKey, is(['sshKey']))
+
+    }
+
+    @Test
     void testPiperExecuteBinNoDockerNoCredentials() {
         shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/test.yaml\'', '{}')
 
