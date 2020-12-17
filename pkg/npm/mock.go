@@ -3,7 +3,6 @@
 package npm
 
 import (
-	"fmt"
 	"github.com/SAP/jenkins-library/pkg/mock"
 )
 
@@ -33,12 +32,13 @@ type NpmConfig struct {
 	VirtualFrameBuffer bool
 	ExcludeList        []string
 	PackagesList       []string
+	FoundPackageFiles  []string
 }
 
 // NpmExecutorMock mocking struct
 type NpmExecutorMock struct {
-	Utils  NpmMockUtilsBundle
-	Config NpmConfig
+	Utils    NpmMockUtilsBundle
+	Received NpmConfig
 }
 
 // FindPackageJSONFiles mock implementation
@@ -60,53 +60,19 @@ func (n *NpmExecutorMock) FindPackageJSONFilesWithScript(packageJSONFiles []stri
 
 // RunScriptsInAllPackages mock implementation
 func (n *NpmExecutorMock) RunScriptsInAllPackages(runScripts []string, runOptions []string, scriptOptions []string, virtualFrameBuffer bool, excludeList []string, packagesList []string) error {
-	if len(runScripts) != len(n.Config.RunScripts) {
-		return fmt.Errorf("RunScriptsInAllPackages was called with a different list of runScripts than config.runScripts")
-	}
-	for i, script := range runScripts {
-		if script != n.Config.RunScripts[i] {
-			return fmt.Errorf("RunScriptsInAllPackages was called with a different list of runScripts than config.runScripts")
-		}
-	}
-
-	if len(scriptOptions) != len(n.Config.ScriptOptions) {
-		return fmt.Errorf("RunScriptsInAllPackages was called with a different list of scriptOptions than config.scriptOptions")
-	}
-
-	if len(runOptions) != len(n.Config.RunOptions) {
-		return fmt.Errorf("RunScriptsInAllPackages was called with a different list of runOptions than config.runOptions")
-	}
-
-	if virtualFrameBuffer != n.Config.VirtualFrameBuffer {
-		return fmt.Errorf("RunScriptsInAllPackages was called with a different value of virtualFrameBuffer than config.virtualFrameBuffer")
-	}
-
-	if len(excludeList) != len(n.Config.ExcludeList) {
-		return fmt.Errorf("RunScriptsInAllPackages was called with a different value of excludeList than config.excludeList")
-	}
-
-	if len(packagesList) != len(n.Config.PackagesList) {
-		return fmt.Errorf("RunScriptsInAllPackages was called with a different value of packagesList than config.packagesList")
-	}
-
+	n.Received.RunScripts = runScripts
+	n.Received.ScriptOptions = scriptOptions
+	n.Received.RunOptions = runOptions
+	n.Received.VirtualFrameBuffer = virtualFrameBuffer
+	n.Received.PackagesList = packagesList
+	n.Received.ExcludeList = excludeList
 	return nil
 }
 
 // InstallAllDependencies mock implementation
 func (n *NpmExecutorMock) InstallAllDependencies(packageJSONFiles []string) error {
-	allPackages := n.FindPackageJSONFiles()
-	if len(packageJSONFiles) != len(allPackages) {
-		return fmt.Errorf("packageJSONFiles != n.FindPackageJSONFiles()")
-	}
-	for i, packageJSON := range packageJSONFiles {
-		if packageJSON != allPackages[i] {
-			return fmt.Errorf("InstallAllDependencies was called with a different list of package.json files than result of n.FindPackageJSONFiles()")
-		}
-	}
-
-	if !n.Config.Install {
-		return fmt.Errorf("InstallAllDependencies was called but config.install was false")
-	}
+	n.Received.FoundPackageFiles = packageJSONFiles
+	n.Received.Install = true
 	return nil
 }
 
