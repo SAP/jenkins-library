@@ -92,7 +92,7 @@ func (action *CTSUploadAction) WithDeployUser(deployUser string) {
 	action.DeployUser = deployUser
 }
 
-// Perform ...
+// Perform Performs the upload
 func (action *CTSUploadAction) Perform(command command.ShellRunner) error {
 
 	command.AppendEnv(
