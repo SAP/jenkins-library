@@ -55,7 +55,18 @@ import groovy.transform.Field
 ]
 
 @Field Set GENERAL_CONFIG_KEYS = []
-@Field Set STEP_CONFIG_KEYS = TOOLS.plus(['archive'])
+@Field Set STEP_CONFIG_KEYS = TOOLS.plus([
+    /**
+     * If it is set to `true` the step will archive reports matching the tool specific pattern.
+     * @possibleValues `true`, `false`
+     */
+    'archive',
+    /**
+     * If it is set to `true` the step will fail the build if JUnit detected any failing tests.
+     * @possibleValues `true`, `false`
+     */
+    'failOnError'
+])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 /**
@@ -104,6 +115,11 @@ void call(Map parameters = [:]) {
             normalTags: configuration.tasks.get('normal'),
             lowTags: configuration.tasks.get('low'),
         ]).minus([pattern: configuration.tasks.get('pattern')])), configuration.tasks, configuration.archive)
+
+        if (configuration.failOnError && 'FAILURE' == script.currentBuild?.result){
+            script.currentBuild.result = 'FAILURE'
+            error "[${STEP_NAME}] Some checks failed!"
+        }
     }
 }
 

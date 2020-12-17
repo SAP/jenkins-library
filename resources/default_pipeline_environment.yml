@@ -113,6 +113,7 @@ steps:
     clientId: resource_owner_client
     clientSecret: 014DF517-39D1-4453-B7B3-9930C563627C
   checksPublishResults:
+    failOnError: false
     tasks:
       pattern: '**/*.java'
       low: ''
