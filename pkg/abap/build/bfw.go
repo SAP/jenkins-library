@@ -162,7 +162,6 @@ func (b *Build) Start(phase string, inputValues Values) error {
 	b.Startedby = jBuild.Build.Startedby
 	b.StartedAt = jBuild.Build.StartedAt
 	b.FinishedAt = jBuild.Build.FinishedAt
-	fmt.Println("Hello")
 	return nil
 }
 
