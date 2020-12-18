@@ -85,10 +85,6 @@ func runDeployIntegrationArtifact(config *deployIntegrationArtifactOptions, tele
 
 	deployResp, httpErr := httpClient.SendRequest("POST", deployURL, nil, header, nil)
 
-	if httpErr != nil {
-		return errors.Wrap(httpErr, "Deploying the integration flow failed")
-	}
-
 	defer func() {
 		if deployResp != nil && deployResp.Body != nil {
 			deployResp.Body.Close()
