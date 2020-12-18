@@ -26,7 +26,7 @@ func githubCommentIssue(config githubCommentIssueOptions, telemetryData *telemet
 	}
 }
 
-func runGithubCommentIssue(ctx context.Context, config *githubCommentIssueOptions, telemetryData *telemetry.CustomData, ghIssueCommentService githubIssueCommentService) error {
+func runGithubCommentIssue(ctx context.Context, config *githubCommentIssueOptions, _ *telemetry.CustomData, ghIssueCommentService githubIssueCommentService) error {
 	issueComment := github.IssueComment{
 		Body: &config.Body,
 	}
