@@ -74,6 +74,7 @@ func Execute() {
 	rootCmd.AddCommand(KubernetesDeployCommand())
 	rootCmd.AddCommand(XsDeployCommand())
 	rootCmd.AddCommand(GithubCheckBranchProtectionCommand())
+	rootCmd.AddCommand(GithubCreateIssueCommand())
 	rootCmd.AddCommand(GithubCreatePullRequestCommand())
 	rootCmd.AddCommand(GithubPublishReleaseCommand())
 	rootCmd.AddCommand(GithubSetCommitStatusCommand())
