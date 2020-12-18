@@ -4,7 +4,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
-	"strings"
 
 	"github.com/Jeffail/gabs/v2"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -110,14 +109,9 @@ func runDeployIntegrationArtifact(config *deployIntegrationArtifactOptions, tele
 
 func getBearerTokenforDeployIntegrationArtifactCall(config *deployIntegrationArtifactOptions, httpClient piperhttp.Sender) (string, error) {
 
-	cookieJar, cookieErr := cookiejar.New(nil)
-	if cookieErr != nil {
-		return "", errors.Wrap(cookieErr, "creating a cookie jar failed")
-	}
 	clientOptions := piperhttp.ClientOptions{
-		CookieJar: cookieJar,
-		Username:  config.Username,
-		Password:  config.Password,
+		Username: config.Username,
+		Password: config.Password,
 	}
 	httpClient.SetOptions(clientOptions)
 
@@ -131,15 +125,19 @@ func getBearerTokenforDeployIntegrationArtifactCall(config *deployIntegrationArt
 			resp.Body.Close()
 		}
 	}()
+
+	if resp == nil {
+		return "", errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
+	}
+
 	// for supporting tests
+	// with httpMockGcts we want to try only on actual odata API calls but not for OAuth token fetch calls
+	// so we pass Oauth token in advance and skip OAuth call for mock tests
 	if resp.Header.Get("Authorization") != "" {
 		result := resp.Header.Get("Authorization")
 		return result, nil
 	}
 
-	if resp == nil {
-		return "", errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
-	}
 	if resp.StatusCode != 200 {
 		return "", errors.Errorf("did not retrieve a valid HTTP response code: %v", httpErr)
 	}
@@ -152,7 +150,6 @@ func getBearerTokenforDeployIntegrationArtifactCall(config *deployIntegrationArt
 	if parsingErr != nil {
 		return "", errors.Wrapf(parsingErr, "HTTP response body could not be parsed as JSON: %v", string(bodyText))
 	}
-	finalResult := jsonresponse.Path("access_token").String()
-	res := strings.ReplaceAll(finalResult, "\"", "")
-	return res, nil
+	finalResult := jsonresponse.Path("access_token").Data().(string)
+	return finalResult, nil
 }
