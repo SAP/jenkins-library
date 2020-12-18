@@ -32,6 +32,7 @@ spec:
           - STAGES
           - STEPS
         type: string
+        mandatory: true
       - name: number
         description: Defines the number of the GitHub issue/pull request.
         scope:
@@ -39,6 +40,7 @@ spec:
           - STAGES
           - STEPS
         type: int
+        mandatory: true
       - name: owner
         aliases:
           - name: githubOrg
