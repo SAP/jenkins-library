@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
@@ -73,11 +74,9 @@ func runDeployIntegrationArtifact(config *deployIntegrationArtifactOptions, tele
 	header := make(http.Header)
 	header.Add("Accept", "application/json")
 
-	deployURL := config.Host +
-		"/api/v1/DeployIntegrationDesigntimeArtifact?Id=" + "'" + config.IntegrationFlowID +
-		"'" + "&Version=" + "'" + config.IntegrationFlowVersion + "'"
+	deployURL := fmt.Sprintf("%s/api/v1/DeployIntegrationDesigntimeArtifact?Id='%s'&Version='%s'", config.Host, config.IntegrationFlowID, config.IntegrationFlowVersion)
 
-	finalResult, err := getBearerTokenforDeployIntegrationArtifactCall(config, httpClient)
+	finalResult, err := getBearerTokenForDeployIntegrationArtifactCall(config, httpClient)
 	if err != nil {
 		return errors.Wrap(err, "failed to fetch Bearer Token")
 	}
@@ -85,6 +84,10 @@ func runDeployIntegrationArtifact(config *deployIntegrationArtifactOptions, tele
 	httpClient.SetOptions(clientOptions)
 
 	deployResp, httpErr := httpClient.SendRequest("POST", deployURL, nil, header, nil)
+
+	if httpErr != nil {
+		return errors.Wrap(httpErr, "Deploying the integration flow failed")
+	}
 
 	defer func() {
 		if deployResp != nil && deployResp.Body != nil {
@@ -107,7 +110,7 @@ func runDeployIntegrationArtifact(config *deployIntegrationArtifactOptions, tele
 	return errors.Wrap(httpErr, "Deploying the integration flow failed")
 }
 
-func getBearerTokenforDeployIntegrationArtifactCall(config *deployIntegrationArtifactOptions, httpClient piperhttp.Sender) (string, error) {
+func getBearerTokenForDeployIntegrationArtifactCall(config *deployIntegrationArtifactOptions, httpClient piperhttp.Sender) (string, error) {
 
 	clientOptions := piperhttp.ClientOptions{
 		Username: config.Username,
@@ -117,7 +120,7 @@ func getBearerTokenforDeployIntegrationArtifactCall(config *deployIntegrationArt
 
 	header := make(http.Header)
 	header.Add("Accept", "application/json")
-	tokenURL := config.OAuthTokenProviderURL + "?grant_type=client_credentials"
+	tokenURL := fmt.Sprintf("%s?grant_type=client_credentials", config.OAuthTokenProviderURL)
 	method := "POST"
 	resp, httpErr := httpClient.SendRequest(method, tokenURL, nil, header, nil)
 	defer func() {
@@ -146,10 +149,10 @@ func getBearerTokenforDeployIntegrationArtifactCall(config *deployIntegrationArt
 	if readErr != nil {
 		return "", errors.Wrap(readErr, "HTTP response body could not be read")
 	}
-	jsonresponse, parsingErr := gabs.ParseJSON([]byte(bodyText))
+	jsonResponse, parsingErr := gabs.ParseJSON([]byte(bodyText))
 	if parsingErr != nil {
 		return "", errors.Wrapf(parsingErr, "HTTP response body could not be parsed as JSON: %v", string(bodyText))
 	}
-	finalResult := jsonresponse.Path("access_token").Data().(string)
+	finalResult := jsonResponse.Path("access_token").Data().(string)
 	return finalResult, nil
 }

@@ -25,18 +25,19 @@ func TestRunDeployIntegrationArtifact(t *testing.T) {
 
 	t.Run("Successfull Integration Flow Deploy Test", func(t *testing.T) {
 		// init
+
 		config := deployIntegrationArtifactOptions{
 			Host:                   "https://demo",
 			OAuthTokenProviderURL:  "https://demo/oauth/token",
-			Username:               "sb-8f9-c3e6-417e-ad27-21fa5a3349dd!b15187|it!b11463",
-			Password:               "9f43-312f-4644-9607-7c21974cb01sii7gpT3h_242UKSJLbKnV8wKyeQ6qCsQTxEmvDfE=",
+			Username:               "demouser",
+			Password:               "******",
 			IntegrationFlowID:      "flow1",
 			IntegrationFlowVersion: "1.0.1",
 			Platform:               "cf",
 		}
 
 		httpClient := httpMockGcts{StatusCode: 202,
-			Header:       map[string][]string{"Authorization": {"eyJhbGciOiJSUzI1NiIsImprdSI6Imh0dHBzOi8vY3Bpc3VpdGUtZXVyb3BlLTA4LmF1dGhlbnRp"}},
+			Header:       map[string][]string{"Authorization": {"dummyBearerToken"}},
 			ResponseBody: ``}
 
 		err := runDeployIntegrationArtifact(&config, nil, &httpClient)
@@ -49,15 +50,15 @@ func TestRunDeployIntegrationArtifact(t *testing.T) {
 		config := deployIntegrationArtifactOptions{
 			Host:                   "https://demo",
 			OAuthTokenProviderURL:  "https://demo/oauth/token",
-			Username:               "sb-8f9-c3e6-417e-ad27-21fa5a3349dd!b15187|it!b11463",
-			Password:               "9f43-312f-4644-9607-7c21974cb01sii7gpT3h_242UKSJLbKnV8wKyeQ6qCsQTxEmvDfE=",
+			Username:               "demouser",
+			Password:               "******",
 			IntegrationFlowID:      "flow1",
 			IntegrationFlowVersion: "1.0.1",
 			Platform:               "cf",
 		}
 
 		httpClient := httpMockGcts{StatusCode: 500,
-			Header: map[string][]string{"Authorization": {"eyJhbGciOiJSUzI1NiIsImprdSI6Imh0dHBzOi8vY3Bpc3VpdGUtZXVyb3BlLTA4LmF1dGhlbnRp"}},
+			Header: map[string][]string{"Authorization": {"dummyBearerToken"}},
 			ResponseBody: `{
 				"code": "Internal Server Error",
 				"message": {
