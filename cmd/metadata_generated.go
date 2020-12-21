@@ -28,6 +28,7 @@ func GetAllStepMetadata() map[string]config.StepData {
 		"cloudFoundryDeleteSpace":                 cloudFoundryDeleteSpaceMetadata(),
 		"cloudFoundryDeploy":                      cloudFoundryDeployMetadata(),
 		"detectExecuteScan":                       detectExecuteScanMetadata(),
+		"executeNewman":                           executeNewmanMetadata(),
 		"fortifyExecuteScan":                      fortifyExecuteScanMetadata(),
 		"gctsCloneRepository":                     gctsCloneRepositoryMetadata(),
 		"gctsCreateRepository":                    gctsCreateRepositoryMetadata(),
