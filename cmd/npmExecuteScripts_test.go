@@ -38,8 +38,33 @@ type npmConfig struct {
 
 // npmExecutorMock mocking struct
 type npmExecutorMock struct {
+
 	utils  npmMockUtilsBundle
 	config npmConfig
+	// config above should disappear with other PR
+	conf   []string
+	calls [][]string
+}
+
+func (exec *npmExecutorMock) SetConfig(key, value string) error {
+	// finally we mock here how the real impl behaves. Actually we shoulnd't to this here
+	// this is just for outlining. Later on we should simply collect the values we receive.
+	if len(value) > 0 {
+		exec.conf = append(exec.conf, fmt.Sprintf("--%s=%s", key, value))
+	} else {
+		exec.conf = append(exec.conf, fmt.Sprintf("--%s", key))
+	}
+	return nil
+}
+
+func (exec *npmExecutorMock) Execute(args []string) error {
+	// finally we mock here how the real impl behaves. Actually we shoulnd't to this here
+	// this is just for outlining. Later on we should simply collect the values we receive.
+	call := []string{"npm"}
+	call = append(call, exec.conf...)
+	call = append(call, args...)
+	exec.calls = append(exec.calls, call)
+	return nil
 }
 
 // FindPackageJSONFiles mock implementation
@@ -208,6 +233,23 @@ func TestNpmExecuteScripts(t *testing.T) {
 				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"ci"}}, utils.execRunner.Calls[1])
 				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "ci-build"}}, utils.execRunner.Calls[3])
 			}
+		}
+	})
+
+	//
+	// This test does basically not belong to here. It is only here since we can't access the mock from pkg currently.
+	t.Run("Execute", func(t *testing.T) {
+                //config := npmExecuteScriptsOptions{}
+                utils := newNpmMockUtilsBundle()
+                npmExecutor := npmExecutorMock{utils: utils, config: npmConfig{}}
+		npmExecutor.SetConfig("@mycomp:registry", "http://npm.my-company.com")
+		npmExecutor.SetConfig("verbose", "")
+		err := npmExecutor.Execute([]string{"install", "--global"})
+		if assert.NoError(t, err) {
+			// The mock here mimics the behaviour of the real impl. That is of course not that cool. Finally the mock should "only"
+			// remember the args and the config entries. We should finally assert only this, not the call. The (full) call needs to
+			// be asserted on the level of the exec runner. This here is only for outlining ...
+			assert.Equal(t, []string{"npm", "--@mycomp:registry=http://npm.my-company.com", "--verbose", "install", "--global"}, npmExecutor.calls[0])
 		}
 	})
 }

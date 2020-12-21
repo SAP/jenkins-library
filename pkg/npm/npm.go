@@ -16,6 +16,7 @@ import (
 type Execute struct {
 	Utils   Utils
 	Options ExecutorOptions
+	Config  map[string]bool
 }
 
 // Executor interface to enable mocking for testing
@@ -26,6 +27,8 @@ type Executor interface {
 	RunScriptsInAllPackages(runScripts []string, runOptions []string, scriptOptions []string, virtualFrameBuffer bool, excludeList []string, packagesList []string) error
 	InstallAllDependencies(packageJSONFiles []string) error
 	SetNpmRegistries() error
+	Execute([]string) error
+	SetConfig(key, value string) error
 }
 
 // ExecutorOptions holds common parameters for functions of Executor
@@ -78,6 +81,31 @@ func (u *utilsBundle) GetExecRunner() ExecRunner {
 	return u.execRunner
 }
 
+func (exec *Execute) SetConfig(key, value string) error {
+	if len(value) > 0 {
+		exec.Config[fmt.Sprintf("--%s=%s", key, value)]=true
+	} else {
+		exec.Config[fmt.Sprintf("--%s", key)]=true
+	}
+	return nil
+}
+
+func (exec *Execute)getConfig() []string {
+	config := make([]string, 0, len(exec.Config))
+	for k := range exec.Config {
+		config = append(config, k)
+	}
+	return config
+}
+
+func (exec *Execute) Execute(args []string) error {
+	execRunner := exec.Utils.GetExecRunner()
+	a := []string{}
+	a = append(a, exec.getConfig()...)
+	a = append(a, args...)
+        return execRunner.RunExecutable("npm", a...)
+}
+
 // SetNpmRegistries configures the given npm registries.
 // CAUTION: This will change the npm configuration in the user's home directory.
 func (exec *Execute) SetNpmRegistries() error {
@@ -86,7 +114,7 @@ func (exec *Execute) SetNpmRegistries() error {
 
 	var buffer bytes.Buffer
 	execRunner.Stdout(&buffer)
-	err := execRunner.RunExecutable("npm", "config", "get", npmRegistry)
+	err := exec.Execute([]string {"config", "get", npmRegistry})
 	execRunner.Stdout(log.Writer())
 	if err != nil {
 		return err
@@ -99,7 +127,7 @@ func (exec *Execute) SetNpmRegistries() error {
 
 	if exec.Options.DefaultNpmRegistry != "" && registryRequiresConfiguration(preConfiguredRegistry, "https://registry.npmjs.org") {
 		log.Entry().Info("npm registry " + npmRegistry + " was not configured, setting it to " + exec.Options.DefaultNpmRegistry)
-		err = execRunner.RunExecutable("npm", "config", "set", npmRegistry, exec.Options.DefaultNpmRegistry)
+		err = exec.Execute([]string {"config", "set", npmRegistry, exec.Options.DefaultNpmRegistry})
 		if err != nil {
 			return err
 		}
@@ -163,7 +191,6 @@ func (exec *Execute) RunScriptsInAllPackages(runScripts []string, runOptions []s
 }
 
 func (exec *Execute) executeScript(packageJSON string, script string, runOptions []string, scriptOptions []string) error {
-	execRunner := exec.Utils.GetExecRunner()
 	oldWorkingDirectory, err := exec.Utils.Getwd()
 	if err != nil {
 		return fmt.Errorf("failed to get current working directory before executing npm scripts: %w", err)
@@ -193,7 +220,7 @@ func (exec *Execute) executeScript(packageJSON string, script string, runOptions
 		npmRunArgs = append(npmRunArgs, scriptOptions...)
 	}
 
-	err = execRunner.RunExecutable("npm", npmRunArgs...)
+	err = exec.Execute(npmRunArgs)
 	if err != nil {
 		return fmt.Errorf("failed to run npm script %s: %w", script, err)
 	}
@@ -305,7 +332,7 @@ func (exec *Execute) install(packageJSON string) error {
 
 	log.Entry().WithField("WorkingDirectory", dir).Info("Running Install")
 	if packageLockExists {
-		err = execRunner.RunExecutable("npm", "ci")
+		err = exec.Execute([]string{"ci"})
 		if err != nil {
 			return err
 		}
@@ -319,7 +346,7 @@ func (exec *Execute) install(packageJSON string) error {
 			"It is recommended to create a `package-lock.json` file by running `npm Install` locally." +
 			" Add this file to your version control. " +
 			"By doing so, the builds of your application become more reliable.")
-		err = execRunner.RunExecutable("npm", "install")
+		err = exec.Execute([]string{"install"})
 		if err != nil {
 			return err
 		}
