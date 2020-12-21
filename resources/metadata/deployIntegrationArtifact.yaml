@@ -55,7 +55,7 @@ spec:
         mandatory: true
       - name: platform
         type: string
-        description: Specifies the running platform of the SAP Cloud platform integraion service 
+        description: Specifies the running platform of the SAP Cloud platform integraion service
         scope:
           - PARAMETERS
           - STAGES
@@ -77,4 +77,3 @@ spec:
           - STAGES
           - STEPS
         mandatory: true
-        
