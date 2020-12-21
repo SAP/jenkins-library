@@ -1,7 +1,6 @@
 package npm
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -9,7 +8,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"io"
 	"path/filepath"
-	"strings"
 )
 
 // Execute struct holds utils to enable mocking and common parameters
@@ -82,6 +80,9 @@ func (u *utilsBundle) GetExecRunner() ExecRunner {
 }
 
 func (exec *Execute) SetConfig(key, value string) error {
+	if exec.Config == nil {
+		exec.Config = map[string]bool{}
+	}
 	if len(value) > 0 {
 		exec.Config[fmt.Sprintf("--%s=%s", key, value)]=true
 	} else {
@@ -107,41 +108,9 @@ func (exec *Execute) Execute(args []string) error {
 }
 
 // SetNpmRegistries configures the given npm registries.
-// CAUTION: This will change the npm configuration in the user's home directory.
 func (exec *Execute) SetNpmRegistries() error {
-	execRunner := exec.Utils.GetExecRunner()
-	const npmRegistry = "registry"
-
-	var buffer bytes.Buffer
-	execRunner.Stdout(&buffer)
-	err := exec.Execute([]string {"config", "get", npmRegistry})
-	execRunner.Stdout(log.Writer())
-	if err != nil {
-		return err
-	}
-	preConfiguredRegistry := buffer.String()
-
-	if registryIsNonEmpty(preConfiguredRegistry) {
-		log.Entry().Info("Discovered pre-configured npm registry " + npmRegistry + " with value " + preConfiguredRegistry)
-	}
-
-	if exec.Options.DefaultNpmRegistry != "" && registryRequiresConfiguration(preConfiguredRegistry, "https://registry.npmjs.org") {
-		log.Entry().Info("npm registry " + npmRegistry + " was not configured, setting it to " + exec.Options.DefaultNpmRegistry)
-		err = exec.Execute([]string {"config", "set", npmRegistry, exec.Options.DefaultNpmRegistry})
-		if err != nil {
-			return err
-		}
-	}
-
+	exec.SetConfig("registry", "https://registry.npmjs.org")
 	return nil
-}
-
-func registryIsNonEmpty(preConfiguredRegistry string) bool {
-	return !strings.HasPrefix(preConfiguredRegistry, "undefined") && len(preConfiguredRegistry) > 0
-}
-
-func registryRequiresConfiguration(preConfiguredRegistry, url string) bool {
-	return strings.HasPrefix(preConfiguredRegistry, "undefined") || strings.HasPrefix(preConfiguredRegistry, url)
 }
 
 // RunScriptsInAllPackages runs all scripts defined in ExecuteOptions.RunScripts

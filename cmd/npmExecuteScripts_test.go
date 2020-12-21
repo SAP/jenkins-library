@@ -228,10 +228,9 @@ func TestNpmExecuteScripts(t *testing.T) {
 		err := runNpmExecuteScripts(&npmExecutor, &config)
 
 		if assert.NoError(t, err) {
-			if assert.Equal(t, 4, len(utils.execRunner.Calls)) {
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"config", "get", "registry"}}, utils.execRunner.Calls[0])
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"ci"}}, utils.execRunner.Calls[1])
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "ci-build"}}, utils.execRunner.Calls[3])
+			if assert.Equal(t, 2, len(utils.execRunner.Calls)) {
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"--registry=https://registry.npmjs.org", "ci"}}, utils.execRunner.Calls[0])
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"--registry=https://registry.npmjs.org", "run", "ci-build"}}, utils.execRunner.Calls[1])
 			}
 		}
 	})
