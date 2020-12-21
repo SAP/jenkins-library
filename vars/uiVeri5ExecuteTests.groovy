@@ -9,6 +9,7 @@ import groovy.transform.Field
 import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
+@Field String METADATA_FILE = 'metadata/uiVeri5ExecuteTests.yaml'
 
 @Field Set GENERAL_CONFIG_KEYS = [
     /** @see seleniumExecuteTests */
@@ -116,32 +117,37 @@ void call(Map parameters = [:]) {
         //config.runCommand = GStringTemplateEngine.newInstance().createTemplate(config.runCommand).make([config: config]).toString()
         config.dockerEnvVars.TARGET_SERVER_URL = config.dockerEnvVars.TARGET_SERVER_URL ?: config.testServerUrl
 
-        seleniumExecuteTests(
-            script: script,
-            buildTool: 'npm',
-            dockerEnvVars: config.dockerEnvVars,
-            dockerImage: config.dockerImage,
-            dockerName: config.dockerName,
-            dockerWorkspace: config.dockerWorkspace,
-            seleniumHubCredentialsId: config.seleniumHubCredentialsId,
-            sidecarEnvVars: config.sidecarEnvVars,
-            sidecarImage: config.sidecarImage,
-            stashContent: config.stashContent
-        ) {
-            sh returnStatus: true, script: """
-                node --version
-                npm --version
-            """
-            try {
-                //sh "NPM_CONFIG_PREFIX=~/.npm-global ${config.installCommand}"
-                //sh "PATH=\$PATH:~/.npm-global/bin ${config.runCommand} ${config.testOptions}"
-                sh "./piper uiVeri5ExecuteTests --confPath ${config.testOptions}"
-            } catch (err) {
-                echo "[${STEP_NAME}] Test execution failed"
-                script.currentBuild.result = 'UNSTABLE'
-                if (config.failOnError) error "[${STEP_NAME}] ERROR: The execution of the uiveri5 tests failed, see the log for details."
-            }
-        }
+        // seleniumExecuteTests(
+        //     script: script,
+        //     buildTool: 'npm',
+        //     dockerEnvVars: config.dockerEnvVars,
+        //     dockerImage: config.dockerImage,
+        //     dockerName: config.dockerName,
+        //     dockerWorkspace: config.dockerWorkspace,
+        //     seleniumHubCredentialsId: config.seleniumHubCredentialsId,
+        //     sidecarEnvVars: config.sidecarEnvVars,
+        //     sidecarImage: config.sidecarImage,
+        //     stashContent: config.stashContent
+        // ) {
+        //     sh returnStatus: true, script: """
+        //         node --version
+        //         npm --version
+        //     """
+        //     try {
+        //         //sh "NPM_CONFIG_PREFIX=~/.npm-global ${config.installCommand}"
+        //         //sh "PATH=\$PATH:~/.npm-global/bin ${config.runCommand} ${config.testOptions}"
+        //         sh "./piper uiVeri5ExecuteTests --confPath ${config.testOptions}"
+        //     } catch (err) {
+        //         echo "[${STEP_NAME}] Test execution failed"
+        //         script.currentBuild.result = 'UNSTABLE'
+        //         if (config.failOnError) error "[${STEP_NAME}] ERROR: The execution of the uiveri5 tests failed, see the log for details."
+        //     }
+        // }
+
+        List credentials = [
+            [type: 'usernamePassword', id: config.seleniumHubCredentialsId, env: ['PIPER_SELENIUM_HUB_PASSWORD', 'PIPER_SELENIUM_HUB_USER']],
+        ]
+        piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
     }
 }
 
