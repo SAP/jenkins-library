@@ -626,6 +626,7 @@ steps:
     deployIdLogPattern: '^.*"xs bg-deploy -i (.*) -a .*".*$'
     loginOpts: ''
     deployOpts: ''
+    dockerPullImage: false
     docker:
       dockerImage: ''
       dockerPullImage: false
