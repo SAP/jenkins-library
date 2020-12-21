@@ -36,6 +36,7 @@ func GetAllStepMetadata() map[string]config.StepData {
 		"gctsRollback":                            gctsRollbackMetadata(),
 		"githubCheckBranchProtection":             githubCheckBranchProtectionMetadata(),
 		"githubCommentIssue":                      githubCommentIssueMetadata(),
+		"githubCreateIssue":                       githubCreateIssueMetadata(),
 		"githubCreatePullRequest":                 githubCreatePullRequestMetadata(),
 		"githubPublishRelease":                    githubPublishReleaseMetadata(),
 		"githubSetCommitStatus":                   githubSetCommitStatusMetadata(),
