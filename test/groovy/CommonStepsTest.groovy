@@ -142,6 +142,7 @@ public class CommonStepsTest extends BasePiperTest{
         'githubCreateIssue', //implementing new golang pattern without fields
         'githubPublishRelease', //implementing new golang pattern without fields
         'githubCheckBranchProtection', //implementing new golang pattern without fields
+        'githubCommentIssue', //implementing new golang pattern without fields
         'githubSetCommitStatus', //implementing new golang pattern without fields
         'kubernetesDeploy', //implementing new golang pattern without fields
         'piperExecuteBin', //implementing new golang pattern without fields
