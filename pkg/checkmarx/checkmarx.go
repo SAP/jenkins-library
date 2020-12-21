@@ -622,7 +622,7 @@ func (sys *SystemInstance) DownloadReport(reportID int) ([]byte, error) {
 // FilterTeamByName filters a team by its name
 func (sys *SystemInstance) FilterTeamByName(teams []Team, teamName string) Team {
 	for _, team := range teams {
-		if team.FullName == teamName {
+		if team.FullName == teamName || team.FullName == strings.ReplaceAll(teamName, `\`, `/`) {
 			return team
 		}
 	}
