@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"net/url"
 
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
@@ -78,8 +79,8 @@ func (p *productVersion) transferVersionFields(initialAddonDescriptor *abaputils
 }
 
 func (p *productVersion) validateAndResolveVersionFields() error {
-	log.Entry().Infof("Validate product %s version '%s' and resolve version", p.Name, p.VersionYAML)
-	appendum := "/odata/aas_ocs_package/ValidateProductVersion?Name='" + p.Name + "'&Version='" + p.VersionYAML + "'"
+	log.Entry().Infof("Validate product '%s' version '%s' and resolve version", p.Name, p.VersionYAML)
+	appendum := "/odata/aas_ocs_package/ValidateProductVersion?Name='" + url.QueryEscape(p.Name) + "'&Version='" + url.QueryEscape(p.VersionYAML) + "'"
 	body, err := p.Connector.Get(appendum)
 	if err != nil {
 		return err

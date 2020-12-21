@@ -92,7 +92,11 @@ void call(Map parameters = [:]) {
 
         piperLoadGlobalExtensions script: script, customDefaults: parameters.customDefaults, customDefaultsFromFiles: customDefaultsFiles
 
-        stash name: 'pipelineConfigAndTests', includes: '.pipeline/**', allowEmpty: true
+        String stashIncludes = '.pipeline/**'
+        if (configFile && !configFile.startsWith('.pipeline/')) {
+            stashIncludes += ", $configFile"
+        }
+        stash name: 'pipelineConfigAndTests', includes: stashIncludes, allowEmpty: true
 
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
