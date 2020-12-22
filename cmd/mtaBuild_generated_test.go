@@ -7,6 +7,7 @@ import (
 )
 
 func TestMtaBuildCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := MtaBuildCommand()
 

@@ -6,12 +6,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestFortifyExecuteScanCommand(t *testing.T) {
+func TestGithubCreateIssueCommand(t *testing.T) {
 	t.Parallel()
 
-	testCmd := FortifyExecuteScanCommand()
+	testCmd := GithubCreateIssueCommand()
 
 	// only high level testing performed - details are tested in step generation procedure
-	assert.Equal(t, "fortifyExecuteScan", testCmd.Use, "command name incorrect")
+	assert.Equal(t, "githubCreateIssue", testCmd.Use, "command name incorrect")
 
 }

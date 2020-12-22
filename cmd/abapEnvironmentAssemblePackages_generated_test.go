@@ -7,6 +7,7 @@ import (
 )
 
 func TestAbapEnvironmentAssemblePackagesCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := AbapEnvironmentAssemblePackagesCommand()
 

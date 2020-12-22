@@ -7,6 +7,7 @@ import (
 )
 
 func TestGithubCommentIssueCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := GithubCommentIssueCommand()
 
