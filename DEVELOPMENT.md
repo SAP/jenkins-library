@@ -549,13 +549,13 @@ It only contains the paths of configurations which are **not** provided via `cus
 
 You can find additional hints at [documentation/developer-hints](./documentation/developer_hints)
 
-# Security Setup
+## Security Setup
 
 Here some hints and tricks are described to enhance the security within the development process.
 
 1. [Signing Commits](#signing-commits)
 
-## Signing Commits
+### Signing Commits
 
 In git, commits can be [signed](https://git-scm.com/book/en/v2/Git-Tools-Signing-Your-Work) to guarantee that that changes were made by the person named in the commit.
 The name and email used for commits can be easily modified in the local git setup and afterwards it cannot be distinguished anymore if the commit was done by the real person or by some potential attacker.
