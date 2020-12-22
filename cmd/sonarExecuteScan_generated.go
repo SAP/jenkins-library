@@ -369,6 +369,12 @@ func sonarExecuteScanMetadata() config.StepData {
 								Name: "githubTokenCredentialsId",
 								Type: "secret",
 							},
+
+							{
+								Name:  "",
+								Paths: []string{"$(vaultPath)/github", "$(vaultBasePath)/$(vaultPipelineName)/github", "$(vaultBasePath)/GROUP-SECRETS/github"},
+								Type:  "vaultSecret",
+							},
 						},
 						Scope:     []string{"PARAMETERS"},
 						Type:      "string",
