@@ -2,17 +2,15 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
 
-	"github.com/Jeffail/gabs/v2"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/pkg/errors"
-
 	"github.com/SAP/jenkins-library/pkg/command"
+	cpi "github.com/SAP/jenkins-library/pkg/cpi"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/pkg/errors"
 )
 
 type deployIntegrationArtifactUtils interface {
@@ -75,8 +73,8 @@ func runDeployIntegrationArtifact(config *deployIntegrationArtifactOptions, tele
 	header.Add("Accept", "application/json")
 
 	deployURL := fmt.Sprintf("%s/api/v1/DeployIntegrationDesigntimeArtifact?Id='%s'&Version='%s'", config.Host, config.IntegrationFlowID, config.IntegrationFlowVersion)
-
-	finalResult, err := getBearerTokenForDeployIntegrationArtifactCall(config, httpClient)
+	tokenParameters := cpi.TokenParameters{TokenURL: config.OAuthTokenProviderURL, User: config.Username, Pwd: config.Password}
+	finalResult, err := cpi.CommonUtils.GetBearerToken(tokenParameters)
 	if err != nil {
 		return errors.Wrap(err, "failed to fetch Bearer Token")
 	}
@@ -98,57 +96,10 @@ func runDeployIntegrationArtifact(config *deployIntegrationArtifactOptions, tele
 	if deployResp.StatusCode == 202 {
 		log.Entry().
 			WithField("IntegrationFlowID", config.IntegrationFlowID).
-			Info("successfully deployed in to CPI runtime")
+			Info("successfully deployed into CPI runtime")
 		return nil
 	}
 
 	log.Entry().Errorf("a HTTP error occurred! Response Status Code: %v", deployResp.StatusCode)
 	return errors.Wrap(httpErr, "Deploying the integration flow failed")
-}
-
-func getBearerTokenForDeployIntegrationArtifactCall(config *deployIntegrationArtifactOptions, httpClient piperhttp.Sender) (string, error) {
-
-	clientOptions := piperhttp.ClientOptions{
-		Username: config.Username,
-		Password: config.Password,
-	}
-	httpClient.SetOptions(clientOptions)
-
-	header := make(http.Header)
-	header.Add("Accept", "application/json")
-	tokenURL := fmt.Sprintf("%s?grant_type=client_credentials", config.OAuthTokenProviderURL)
-	method := "POST"
-	resp, httpErr := httpClient.SendRequest(method, tokenURL, nil, header, nil)
-	defer func() {
-		if resp != nil && resp.Body != nil {
-			resp.Body.Close()
-		}
-	}()
-
-	if resp == nil {
-		return "", errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
-	}
-
-	// for supporting tests
-	// with httpMockGcts we want to try only on actual odata API calls but not for OAuth token fetch calls
-	// so we pass Oauth token in advance and skip OAuth call for mock tests
-	if resp.Header.Get("Authorization") != "" {
-		result := resp.Header.Get("Authorization")
-		return result, nil
-	}
-
-	if resp.StatusCode != 200 {
-		return "", errors.Errorf("did not retrieve a valid HTTP response code: %v", httpErr)
-	}
-
-	bodyText, readErr := ioutil.ReadAll(resp.Body)
-	if readErr != nil {
-		return "", errors.Wrap(readErr, "HTTP response body could not be read")
-	}
-	jsonResponse, parsingErr := gabs.ParseJSON([]byte(bodyText))
-	if parsingErr != nil {
-		return "", errors.Wrapf(parsingErr, "HTTP response body could not be parsed as JSON: %v", string(bodyText))
-	}
-	finalResult := jsonResponse.Path("access_token").Data().(string)
-	return finalResult, nil
 }
