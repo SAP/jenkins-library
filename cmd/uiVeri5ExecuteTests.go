@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"strings"
+
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -21,8 +23,7 @@ func uiVeri5ExecuteTests(config uiVeri5ExecuteTestsOptions, telemetryData *telem
 }
 
 func runUIVeri5(config *uiVeri5ExecuteTestsOptions, command command.ExecRunner) error {
-	installCommandTokens := tokenize(config.InstallCommand) // strings.Split(command, " ")
-	//command.SetDir(config.ModulePath)
+	installCommandTokens := strings.Split(config.InstallCommand, " ")
 	command.SetEnv([]string{"NPM_CONFIG_PREFIX=/home/node/.npm-global"})
 	err := command.RunExecutable(installCommandTokens[0], installCommandTokens[1:]...)
 	if err != nil {
@@ -30,8 +31,6 @@ func runUIVeri5(config *uiVeri5ExecuteTestsOptions, command command.ExecRunner) 
 		return err
 	}
 
-	//command.SetDir(config.ModulePath)
-	//command.SetEnv([]string{"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/node/.npm-global/bin"})
 	options := []string{}
 	if config.TestOptions != "" {
 		options = append(options, config.TestOptions)

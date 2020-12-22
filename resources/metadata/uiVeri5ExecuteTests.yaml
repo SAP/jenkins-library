@@ -23,15 +23,6 @@ spec:
           - STAGES
           - STEPS
         mandatory: true
-      - name: modulePath
-        type: string
-        description: Define the path of the module to execute tests on.
-        default: "."
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        mandatory: true
       - name: runCommand
         type: string
         description: The command that is executed to start the tests.
@@ -45,7 +36,8 @@ spec:
       - name: runOptions
         type: "[]string"
         description: Options to append to the runCommand
-        default: [--seleniumAddress='http://localhost:4444/wd/hub']
+        default:
+          - --seleniumAddress='http://localhost:4444/wd/hub'
         scope:
           - PARAMETERS
           - STAGES
