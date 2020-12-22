@@ -8,8 +8,11 @@ import (
 )
 
 type executeNewmanMockUtils struct {
-	errorOnGlob bool
-	filesToFind []string
+	errorOnGlob     bool
+	errorOnRunShell bool
+	executedShell   string
+	executedScript  string
+	filesToFind     []string
 }
 
 func newExecuteNewmanMockUtils() executeNewmanMockUtils {
@@ -33,10 +36,39 @@ func TestRunExecuteNewman(t *testing.T) {
 		utils := newExecuteNewmanMockUtils()
 
 		// test
-		err := runExecuteNewman(&allFineConfig, nil, utils)
+		err := runExecuteNewman(&allFineConfig, nil, &utils)
 
 		// assert
 		assert.NoError(t, err)
+	})
+
+	t.Run("error on newman installation", func(t *testing.T) {
+		t.Parallel()
+		// init
+
+		utils := newExecuteNewmanMockUtils()
+		utils.errorOnRunShell = true
+
+		// test
+		err := runExecuteNewman(&allFineConfig, nil, &utils)
+
+		// assert
+		assert.EqualError(t, err, "error installing newman: error on RunShell")
+	})
+
+	t.Run("error on template resolution", func(t *testing.T) {
+		t.Parallel()
+		// init
+
+		utils := newExecuteNewmanMockUtils()
+		config := allFineConfig
+		config.NewmanRunCommand = "this is my erroneous command {{.collectionDisplayName}"
+
+		// test
+		err := runExecuteNewman(&config, nil, &utils)
+
+		// assert
+		assert.EqualError(t, err, "could not parse newman command template: template: template:1: unexpected \"}\" in operand")
 	})
 
 	t.Run("error on file search", func(t *testing.T) {
@@ -47,7 +79,7 @@ func TestRunExecuteNewman(t *testing.T) {
 		utils.filesToFind = nil
 
 		// test
-		err := runExecuteNewman(&allFineConfig, nil, utils)
+		err := runExecuteNewman(&allFineConfig, nil, &utils)
 
 		// assert
 		assert.EqualError(t, err, "no collection found with pattern 'localFile.txt'")
@@ -61,7 +93,7 @@ func TestRunExecuteNewman(t *testing.T) {
 		utils.errorOnGlob = true
 
 		// test
-		err := runExecuteNewman(&allFineConfig, nil, utils)
+		err := runExecuteNewman(&allFineConfig, nil, &utils)
 
 		// assert
 		assert.EqualError(t, err, "Could not execute global search for 'localFile.txt': error on Glob")
@@ -119,6 +151,19 @@ func TestResolveTemplate(t *testing.T) {
 		assert.Equal(t, "this is my fancy command theDisplayName", cmd)
 	})
 
+	t.Run("replace config Verbose", func(t *testing.T) {
+		t.Parallel()
+
+		config := executeNewmanOptions{
+			NewmanRunCommand: "this is my fancy command {{.Config.Verbose}}",
+			Verbose:          "false",
+		}
+
+		cmd, err := resolveTemplate(&config, "theDisplayName")
+		assert.NoError(t, err)
+		assert.Equal(t, "this is my fancy command false", cmd)
+	})
+
 	t.Run("error when parameter cannot be resolved", func(t *testing.T) {
 		t.Parallel()
 
@@ -138,10 +183,43 @@ func TestResolveTemplate(t *testing.T) {
 	})
 }
 
-func (e executeNewmanMockUtils) Glob(string) (matches []string, err error) {
+func TestInstallNewman(t *testing.T) {
+	t.Parallel()
+
+	t.Run("happy path", func(t *testing.T) {
+		t.Parallel()
+		utils := newExecuteNewmanMockUtils()
+
+		err := installNewman("command", &utils)
+		assert.NoError(t, err)
+		assert.Equal(t, "/bin/sh", utils.executedShell)
+		assert.Equal(t, "NPM_CONFIG_PREFIX=~/.npm-global command", utils.executedScript)
+	})
+
+	t.Run("error on run shell", func(t *testing.T) {
+		t.Parallel()
+		utils := newExecuteNewmanMockUtils()
+		utils.errorOnRunShell = true
+
+		err := installNewman("command", &utils)
+		assert.EqualError(t, err, "error installing newman: error on RunShell")
+	})
+}
+
+func (e *executeNewmanMockUtils) Glob(string) (matches []string, err error) {
 	if e.errorOnGlob {
 		return nil, fmt.Errorf("error on Glob")
 	}
 
 	return e.filesToFind, nil
+}
+
+func (e *executeNewmanMockUtils) RunShell(shell, script string) error {
+	if e.errorOnRunShell {
+		return fmt.Errorf("error on RunShell")
+	}
+
+	e.executedShell = shell
+	e.executedScript = script
+	return nil
 }

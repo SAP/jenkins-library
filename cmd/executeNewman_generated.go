@@ -14,9 +14,10 @@ import (
 )
 
 type executeNewmanOptions struct {
-	Verbose          string `json:"verbose,omitempty"`
-	NewmanCollection string `json:"newmanCollection,omitempty"`
-	NewmanRunCommand string `json:"newmanRunCommand,omitempty"`
+	Verbose              string `json:"verbose,omitempty"`
+	NewmanCollection     string `json:"newmanCollection,omitempty"`
+	NewmanRunCommand     string `json:"newmanRunCommand,omitempty"`
+	NewmanInstallCommand string `json:"newmanInstallCommand,omitempty"`
 }
 
 // ExecuteNewmanCommand This script executes [Postman](https://www.getpostman.com) tests from a collection via the [Newman](https://www.getpostman.com/docs/v6/postman/collection_runs/command_line_integration_with_newman) command line tool.
@@ -79,10 +80,12 @@ func addExecuteNewmanFlags(cmd *cobra.Command, stepConfig *executeNewmanOptions)
 	cmd.Flags().StringVar(&stepConfig.Verbose, "verbose", `false`, "Print more detailed information into the log.")
 	cmd.Flags().StringVar(&stepConfig.NewmanCollection, "newmanCollection", os.Getenv("PIPER_newmanCollection"), "The test collection that should be executed. This could also be a file pattern.")
 	cmd.Flags().StringVar(&stepConfig.NewmanRunCommand, "newmanRunCommand", os.Getenv("PIPER_newmanRunCommand"), "The newman command that will be executed inside the docker container.")
+	cmd.Flags().StringVar(&stepConfig.NewmanInstallCommand, "newmanInstallCommand", os.Getenv("PIPER_newmanInstallCommand"), "The shell command that will be executed inside the docker container to install Newman.")
 
 	cmd.MarkFlagRequired("verbose")
 	cmd.MarkFlagRequired("newmanCollection")
 	cmd.MarkFlagRequired("newmanRunCommand")
+	cmd.MarkFlagRequired("newmanInstallCommand")
 }
 
 // retrieve step metadata
@@ -114,6 +117,14 @@ func executeNewmanMetadata() config.StepData {
 					},
 					{
 						Name:        "newmanRunCommand",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "newmanInstallCommand",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",

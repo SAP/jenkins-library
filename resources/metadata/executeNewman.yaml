@@ -49,6 +49,14 @@ spec:
           - STEPS
         type: string
         mandatory: true
+      - name: newmanInstallCommand
+        description: The shell command that will be executed inside the docker container to install Newman.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        mandatory: true
 #      - name: commitMessage
 #        description: The commit message of the commit that will be done to do the changes.
 #        longDescription: If the commit message is empty a default message in the form "Updated _containerName_ to version _containerImage_" will be used.

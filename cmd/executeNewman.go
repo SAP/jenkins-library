@@ -16,10 +16,7 @@ import (
 type executeNewmanUtils interface {
 	Glob(pattern string) (matches []string, err error)
 
-	// Add more methods here, or embed additional interfaces, or remove/replace as required.
-	// The executeNewmanUtils interface should be descriptive of your runtime dependencies,
-	// i.e. include everything you need to be able to mock in tests.
-	// Unit tests shall be executable in parallel (not depend on global state), and don't (re-)test dependencies.
+	RunShell(shell, script string) error
 }
 
 type executeNewmanUtilsBundle struct {
@@ -73,25 +70,41 @@ func runExecuteNewman(config *executeNewmanOptions, telemetryData *telemetry.Cus
 		log.Entry().Infof("Found files '%v'", collectionList)
 	}
 
-	for _, collection := range collectionList {
-		collectionDisplayName := defineCollectionDisplayName(collection)
+	err = installNewman(config.NewmanInstallCommand, utils)
+	if err != nil {
+		return err
+	}
 
-		cmd, err := resolveTemplate(config, collectionDisplayName)
+	for _, collection := range collectionList {
+		cmd, err := resolveTemplate(config, collection)
 		if err != nil {
 			return err
 		}
-
-		log.Entry().Debug(cmd)
-
+		log.Entry().Debug(cmd) // TODO
 	}
 
 	return nil
 }
 
-func resolveTemplate(config *executeNewmanOptions, collectionDisplayName string) (string, error) {
+func installNewman(newmanInstallCommand string, utils executeNewmanUtils) error {
+	args := []string{"NPM_CONFIG_PREFIX=~/.npm-global", newmanInstallCommand}
+	script := strings.Join(args, " ")
+	//utils.SetDir(".") // TODO: Need this?
+	err := utils.RunShell("/bin/sh", script)
+	if err != nil {
+		return errors.Wrap(err, "error installing newman")
+	}
+	return nil
+}
+
+func resolveTemplate(config *executeNewmanOptions, collection string) (string, error) {
+	collectionDisplayName := defineCollectionDisplayName(collection)
+
 	type TemplateConfig struct {
-		Config                string
+		Config                interface{}
 		CollectionDisplayName string
+		// TODO: New field as structs cannot be extended in Go
+		NewmanCollection string
 	}
 
 	templ, err := template.New("template").Parse(config.NewmanRunCommand)
@@ -101,8 +114,9 @@ func resolveTemplate(config *executeNewmanOptions, collectionDisplayName string)
 	buf := new(bytes.Buffer)
 	// TODO: Config and CollectionDisplayName must be capitalized <-> was small letter in groovy --> Templates must be adapted
 	err = templ.Execute(buf, TemplateConfig{
-		Config:                "", //config.plus([newmanCollection:collection]) // TODO
+		Config:                config,
 		CollectionDisplayName: collectionDisplayName,
+		NewmanCollection:      collection,
 	})
 	if err != nil {
 		return "", errors.Wrap(err, "error on executing template")
