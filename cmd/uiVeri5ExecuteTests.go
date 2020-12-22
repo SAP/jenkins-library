@@ -32,7 +32,13 @@ func runUIVeri5(config *uiVeri5ExecuteTestsOptions, command command.ExecRunner) 
 
 	//command.SetDir(config.ModulePath)
 	//command.SetEnv([]string{"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/node/.npm-global/bin"})
-	err = command.RunExecutable(config.RunCommand, config.TestOptions...)
+	options := []string{}
+	if config.TestOptions != "" {
+		options = append(options, config.TestOptions)
+	} else {
+		options = append(options, config.RunOptions...)
+	}
+	err = command.RunExecutable(config.RunCommand, options...)
 	if err != nil {
 		log.Entry().WithError(err).WithField("command", config.RunCommand).Fatal("failed to execute run command")
 		return err

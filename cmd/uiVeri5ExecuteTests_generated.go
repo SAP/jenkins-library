@@ -17,7 +17,8 @@ type uiVeri5ExecuteTestsOptions struct {
 	InstallCommand string   `json:"installCommand,omitempty"`
 	ModulePath     string   `json:"modulePath,omitempty"`
 	RunCommand     string   `json:"runCommand,omitempty"`
-	TestOptions    []string `json:"testOptions,omitempty"`
+	RunOptions     []string `json:"runOptions,omitempty"`
+	TestOptions    string   `json:"testOptions,omitempty"`
 }
 
 // UiVeri5ExecuteTestsCommand Executes UI5 e2e tests using uiVeri5
@@ -80,12 +81,13 @@ func addUiVeri5ExecuteTestsFlags(cmd *cobra.Command, stepConfig *uiVeri5ExecuteT
 	cmd.Flags().StringVar(&stepConfig.InstallCommand, "installCommand", `npm install @ui5/uiveri5 --global --quiet`, "The command that is executed to install the uiveri5 test tool.")
 	cmd.Flags().StringVar(&stepConfig.ModulePath, "modulePath", `.`, "Define the path of the module to execute tests on.")
 	cmd.Flags().StringVar(&stepConfig.RunCommand, "runCommand", `/home/node/.npm-global/bin/uiveri5`, "The command that is executed to start the tests.")
-	cmd.Flags().StringSliceVar(&stepConfig.TestOptions, "testOptions", []string{`--seleniumAddress='http://localhost:4444/wd/hub'`}, "Options to append to the runComman")
+	cmd.Flags().StringSliceVar(&stepConfig.RunOptions, "runOptions", []string{`--seleniumAddress='http://localhost:4444/wd/hub'`}, "Options to append to the runCommand")
+	cmd.Flags().StringVar(&stepConfig.TestOptions, "testOptions", os.Getenv("PIPER_testOptions"), "Deprecated (please use runOptions): Options to append to the runCommand")
 
 	cmd.MarkFlagRequired("installCommand")
 	cmd.MarkFlagRequired("modulePath")
 	cmd.MarkFlagRequired("runCommand")
-	cmd.MarkFlagRequired("testOptions")
+	cmd.MarkFlagRequired("runOptions")
 }
 
 // retrieve step metadata
@@ -124,17 +126,25 @@ func uiVeri5ExecuteTestsMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "testOptions",
+						Name:        "runOptions",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
 					},
+					{
+						Name:        "testOptions",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
 				},
 			},
 			Containers: []config.Container{
-				{Name: "uiVeri5", Image: "node:10.23.0-stretch", EnvVars: []config.EnvVar{{Name: "no_proxy", Value: "localhost,selenium,$no_proxy"}, {Name: "NO_PROXY", Value: "localhost,selenium,$NO_PROXY"}}, WorkingDir: "/home/node"},
+				{Name: "uiVeri5", Image: "node:lts-stretch", EnvVars: []config.EnvVar{{Name: "no_proxy", Value: "localhost,selenium,$no_proxy"}, {Name: "NO_PROXY", Value: "localhost,selenium,$NO_PROXY"}}, WorkingDir: "/home/node"},
 			},
 			Sidecars: []config.Container{
 				{Name: "selenium", Image: "selenium/standalone-chrome", EnvVars: []config.EnvVar{{Name: "NO_PROXY", Value: "localhost,selenium,$NO_PROXY"}, {Name: "no_proxy", Value: "localhost,selenium,$no_proxy"}}},

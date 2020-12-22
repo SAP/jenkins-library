@@ -42,19 +42,25 @@ spec:
           - STAGES
           - STEPS
         mandatory: true
-      - name: testOptions
+      - name: runOptions
         type: "[]string"
-        description: Options to append to the runComman
+        description: Options to append to the runCommand
         default: [--seleniumAddress='http://localhost:4444/wd/hub']
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
         mandatory: true
-  #outputs:
+      - name: testOptions
+        type: string
+        description: "Deprecated (please use runOptions): Options to append to the runCommand"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   containers:
     - name: uiVeri5
-      image: node:10.23.0-stretch #node:lts-stretch
+      image: node:lts-stretch #node:lts-stretch 10.23.0-stretch
       env:
         - name: no_proxy
           value: localhost,selenium,$no_proxy
