@@ -7,6 +7,7 @@ import (
 )
 
 func TestAbapAddonAssemblyKitReleasePackagesCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := AbapAddonAssemblyKitReleasePackagesCommand()
 

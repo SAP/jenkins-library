@@ -7,6 +7,7 @@ import (
 )
 
 func TestAbapEnvironmentCheckoutBranchCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := AbapEnvironmentCheckoutBranchCommand()
 
