@@ -12,6 +12,11 @@ type executeNewmanMockUtils struct {
 	errorOnGlob          bool
 	errorOnNewmanInstall bool
 	errorOnRunShell      bool
+	errorOnRunExecutable bool
+	errorOnLoggingNode   bool
+	errorOnLoggingNpm    bool
+	executedExecutable   string
+	executedParams       []string
 	executedShell        string
 	executedScript       string
 	filesToFind          []string
@@ -56,6 +61,20 @@ func TestRunExecuteNewman(t *testing.T) {
 
 		// assert
 		assert.EqualError(t, err, "error installing newman: error on newman install")
+	})
+
+	t.Run("error on npm version logging", func(t *testing.T) {
+		t.Parallel()
+		// init
+
+		utils := newExecuteNewmanMockUtils()
+		utils.errorOnLoggingNpm = true
+
+		// test
+		err := runExecuteNewman(&allFineConfig, &utils)
+
+		// assert
+		assert.EqualError(t, err, "error logging npm version: error on RunExecutable")
 	})
 
 	t.Run("error on template resolution", func(t *testing.T) {
@@ -208,6 +227,37 @@ func TestInstallNewman(t *testing.T) {
 	})
 }
 
+func TestLogVersions(t *testing.T) {
+	t.Parallel()
+
+	t.Run("happy path", func(t *testing.T) {
+		utils := newExecuteNewmanMockUtils()
+
+		err := logVersions(&utils)
+		assert.NoError(t, err)
+		assert.Equal(t, "npm", utils.executedExecutable)
+		assert.Equal(t, "--version", utils.executedParams[0])
+	})
+
+	t.Run("error in node execution", func(t *testing.T) {
+		utils := newExecuteNewmanMockUtils()
+		utils.errorOnLoggingNode = true
+
+		err := logVersions(&utils)
+		assert.EqualError(t, err, "error logging node version: error on RunExecutable")
+	})
+
+	t.Run("error in npm execution", func(t *testing.T) {
+		utils := newExecuteNewmanMockUtils()
+		utils.errorOnLoggingNpm = true
+
+		err := logVersions(&utils)
+		assert.EqualError(t, err, "error logging npm version: error on RunExecutable")
+		assert.Equal(t, "node", utils.executedExecutable)
+		assert.Equal(t, "--version", utils.executedParams[0])
+	})
+}
+
 func (e *executeNewmanMockUtils) Glob(string) (matches []string, err error) {
 	if e.errorOnGlob {
 		return nil, fmt.Errorf("error on Glob")
@@ -226,5 +276,21 @@ func (e *executeNewmanMockUtils) RunShell(shell, script string) error {
 
 	e.executedShell = shell
 	e.executedScript = script
+	return nil
+}
+
+func (e *executeNewmanMockUtils) RunExecutable(executable string, params ...string) error {
+	if e.errorOnRunExecutable {
+		return fmt.Errorf("error on RunExecutable")
+	}
+	if e.errorOnLoggingNode && executable == "node" && params[0] == "--version" {
+		return fmt.Errorf("error on RunExecutable")
+	}
+	if e.errorOnLoggingNpm && executable == "npm" && params[0] == "--version" {
+		return fmt.Errorf("error on RunExecutable")
+	}
+
+	e.executedExecutable = executable
+	e.executedParams = params
 	return nil
 }

@@ -98,14 +98,14 @@ func logVersions(utils executeNewmanUtils) error {
 	//returnStatus: true // TODO: How to do this? If necessary at all.
 	err := utils.RunExecutable("node", "--version")
 	if err != nil {
-		return errors.Wrap(err, "error installing newman")
+		return errors.Wrap(err, "error logging node version")
 	}
 
 	//utils.SetDir(".") // TODO: Need this?
 	//returnStatus: true // TODO: How to do this? If necessary at all.
 	err = utils.RunExecutable("npm", "--version")
 	if err != nil {
-		return errors.Wrap(err, "error installing newman")
+		return errors.Wrap(err, "error logging npm version")
 	}
 
 	return nil
