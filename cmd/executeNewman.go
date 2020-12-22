@@ -40,7 +40,7 @@ func newExecuteNewmanUtils() executeNewmanUtils {
 	return &utils
 }
 
-func executeNewman(config executeNewmanOptions, telemetryData *telemetry.CustomData) {
+func executeNewman(config executeNewmanOptions, _ *telemetry.CustomData) {
 	// Utils can be used wherever the command.ExecRunner interface is expected.
 	// It can also be used for example as a mavenExecRunner.
 	utils := newExecuteNewmanUtils()
@@ -51,13 +51,13 @@ func executeNewman(config executeNewmanOptions, telemetryData *telemetry.CustomD
 
 	// Error situations should be bubbled up until they reach the line below which will then stop execution
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
-	err := runExecuteNewman(&config, telemetryData, utils)
+	err := runExecuteNewman(&config, utils)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runExecuteNewman(config *executeNewmanOptions, telemetryData *telemetry.CustomData, utils executeNewmanUtils) error {
+func runExecuteNewman(config *executeNewmanOptions, utils executeNewmanUtils) error {
 
 	collectionList, err := utils.Glob(config.NewmanCollection)
 	if err != nil {

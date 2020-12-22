@@ -36,7 +36,7 @@ func TestRunExecuteNewman(t *testing.T) {
 		utils := newExecuteNewmanMockUtils()
 
 		// test
-		err := runExecuteNewman(&allFineConfig, nil, &utils)
+		err := runExecuteNewman(&allFineConfig, &utils)
 
 		// assert
 		assert.NoError(t, err)
@@ -50,7 +50,7 @@ func TestRunExecuteNewman(t *testing.T) {
 		utils.errorOnRunShell = true
 
 		// test
-		err := runExecuteNewman(&allFineConfig, nil, &utils)
+		err := runExecuteNewman(&allFineConfig, &utils)
 
 		// assert
 		assert.EqualError(t, err, "error installing newman: error on RunShell")
@@ -65,7 +65,7 @@ func TestRunExecuteNewman(t *testing.T) {
 		config.NewmanRunCommand = "this is my erroneous command {{.collectionDisplayName}"
 
 		// test
-		err := runExecuteNewman(&config, nil, &utils)
+		err := runExecuteNewman(&config, &utils)
 
 		// assert
 		assert.EqualError(t, err, "could not parse newman command template: template: template:1: unexpected \"}\" in operand")
@@ -79,7 +79,7 @@ func TestRunExecuteNewman(t *testing.T) {
 		utils.filesToFind = nil
 
 		// test
-		err := runExecuteNewman(&allFineConfig, nil, &utils)
+		err := runExecuteNewman(&allFineConfig, &utils)
 
 		// assert
 		assert.EqualError(t, err, "no collection found with pattern 'localFile.txt'")
@@ -93,7 +93,7 @@ func TestRunExecuteNewman(t *testing.T) {
 		utils.errorOnGlob = true
 
 		// test
-		err := runExecuteNewman(&allFineConfig, nil, &utils)
+		err := runExecuteNewman(&allFineConfig, &utils)
 
 		// assert
 		assert.EqualError(t, err, "Could not execute global search for 'localFile.txt': error on Glob")
