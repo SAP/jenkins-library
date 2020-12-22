@@ -17,6 +17,7 @@ type executeNewmanUtils interface {
 	Glob(pattern string) (matches []string, err error)
 
 	RunShell(shell, script string) error
+	RunExecutable(executable string, params ...string) error
 }
 
 type executeNewmanUtilsBundle struct {
@@ -70,6 +71,12 @@ func runExecuteNewman(config *executeNewmanOptions, utils executeNewmanUtils) er
 		log.Entry().Infof("Found files '%v'", collectionList)
 	}
 
+	err = logVersions(utils)
+	// TODO: should error in version logging cause failure?
+	if err != nil {
+		return err
+	}
+
 	err = installNewman(config.NewmanInstallCommand, utils)
 	if err != nil {
 		return err
@@ -80,7 +87,25 @@ func runExecuteNewman(config *executeNewmanOptions, utils executeNewmanUtils) er
 		if err != nil {
 			return err
 		}
-		log.Entry().Debug(cmd) // TODO
+		log.Entry().Debug(cmd) // TODO continue developing
+	}
+
+	return nil
+}
+
+func logVersions(utils executeNewmanUtils) error {
+	//utils.SetDir(".") // TODO: Need this?
+	//returnStatus: true // TODO: How to do this? If necessary at all.
+	err := utils.RunExecutable("node", "--version")
+	if err != nil {
+		return errors.Wrap(err, "error installing newman")
+	}
+
+	//utils.SetDir(".") // TODO: Need this?
+	//returnStatus: true // TODO: How to do this? If necessary at all.
+	err = utils.RunExecutable("npm", "--version")
+	if err != nil {
+		return errors.Wrap(err, "error installing newman")
 	}
 
 	return nil
