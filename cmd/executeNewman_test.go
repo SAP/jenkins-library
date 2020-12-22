@@ -4,15 +4,17 @@ import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
 type executeNewmanMockUtils struct {
-	errorOnGlob     bool
-	errorOnRunShell bool
-	executedShell   string
-	executedScript  string
-	filesToFind     []string
+	errorOnGlob          bool
+	errorOnNewmanInstall bool
+	errorOnRunShell      bool
+	executedShell        string
+	executedScript       string
+	filesToFind          []string
 }
 
 func newExecuteNewmanMockUtils() executeNewmanMockUtils {
@@ -47,13 +49,13 @@ func TestRunExecuteNewman(t *testing.T) {
 		// init
 
 		utils := newExecuteNewmanMockUtils()
-		utils.errorOnRunShell = true
+		utils.errorOnNewmanInstall = true
 
 		// test
 		err := runExecuteNewman(&allFineConfig, &utils)
 
 		// assert
-		assert.EqualError(t, err, "error installing newman: error on RunShell")
+		assert.EqualError(t, err, "error installing newman: error on newman install")
 	})
 
 	t.Run("error on template resolution", func(t *testing.T) {
@@ -217,6 +219,9 @@ func (e *executeNewmanMockUtils) Glob(string) (matches []string, err error) {
 func (e *executeNewmanMockUtils) RunShell(shell, script string) error {
 	if e.errorOnRunShell {
 		return fmt.Errorf("error on RunShell")
+	}
+	if e.errorOnNewmanInstall && strings.Contains(script, "NPM_CONFIG_PREFIX=~/.npm-global") {
+		return fmt.Errorf("error on newman install")
 	}
 
 	e.executedShell = shell
