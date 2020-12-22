@@ -32,20 +32,21 @@ spec:
           - STAGES
           - STEPS
         mandatory: true
-      - name: confPath
-        type: string
-        description: Define the path of the uiVeri5 conf.js.
-        default: "./conf.js"
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
       - name: runCommand
         type: string
         description: The command that is executed to start the tests.
-        default: uiveri5 --seleniumAddress='http://localhost:4444/wd/hub'
+        default: /home/node/.npm-global/bin/uiveri5
         scope:
           - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+      - name: testOptions
+        type: "[]string"
+        description: Options to append to the runComman
+        default: [--seleniumAddress='http://localhost:4444/wd/hub']
+        scope:
           - PARAMETERS
           - STAGES
           - STEPS

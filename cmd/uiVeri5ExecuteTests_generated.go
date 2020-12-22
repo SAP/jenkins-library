@@ -14,10 +14,10 @@ import (
 )
 
 type uiVeri5ExecuteTestsOptions struct {
-	InstallCommand string `json:"installCommand,omitempty"`
-	ModulePath     string `json:"modulePath,omitempty"`
-	ConfPath       string `json:"confPath,omitempty"`
-	RunCommand     string `json:"runCommand,omitempty"`
+	InstallCommand string   `json:"installCommand,omitempty"`
+	ModulePath     string   `json:"modulePath,omitempty"`
+	RunCommand     string   `json:"runCommand,omitempty"`
+	TestOptions    []string `json:"testOptions,omitempty"`
 }
 
 // UiVeri5ExecuteTestsCommand Executes UI5 e2e tests using uiVeri5
@@ -79,12 +79,13 @@ func UiVeri5ExecuteTestsCommand() *cobra.Command {
 func addUiVeri5ExecuteTestsFlags(cmd *cobra.Command, stepConfig *uiVeri5ExecuteTestsOptions) {
 	cmd.Flags().StringVar(&stepConfig.InstallCommand, "installCommand", `npm install @ui5/uiveri5 --global --quiet`, "The command that is executed to install the uiveri5 test tool.")
 	cmd.Flags().StringVar(&stepConfig.ModulePath, "modulePath", `.`, "Define the path of the module to execute tests on.")
-	cmd.Flags().StringVar(&stepConfig.ConfPath, "confPath", `./conf.js`, "Define the path of the uiVeri5 conf.js.")
-	cmd.Flags().StringVar(&stepConfig.RunCommand, "runCommand", `uiveri5 --seleniumAddress='http://localhost:4444/wd/hub'`, "The command that is executed to start the tests.")
+	cmd.Flags().StringVar(&stepConfig.RunCommand, "runCommand", `/home/node/.npm-global/bin/uiveri5`, "The command that is executed to start the tests.")
+	cmd.Flags().StringSliceVar(&stepConfig.TestOptions, "testOptions", []string{`--seleniumAddress='http://localhost:4444/wd/hub'`}, "Options to append to the runComman")
 
 	cmd.MarkFlagRequired("installCommand")
 	cmd.MarkFlagRequired("modulePath")
 	cmd.MarkFlagRequired("runCommand")
+	cmd.MarkFlagRequired("testOptions")
 }
 
 // retrieve step metadata
@@ -115,18 +116,18 @@ func uiVeri5ExecuteTestsMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "confPath",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
 						Name:        "runCommand",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "testOptions",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
 					},
