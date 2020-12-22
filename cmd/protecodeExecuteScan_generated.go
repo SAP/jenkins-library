@@ -321,6 +321,12 @@ func protecodeExecuteScanMetadata() config.StepData {
 								Param: "username",
 								Type:  "secret",
 							},
+
+							{
+								Name:  "",
+								Paths: []string{"$(vaultPath)/protecode", "$(vaultBasePath)/$(vaultPipelineName)/protecode", "$(vaultBasePath)/GROUP-SECRETS/protecode"},
+								Type:  "vaultSecret",
+							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
@@ -334,6 +340,12 @@ func protecodeExecuteScanMetadata() config.StepData {
 								Name:  "protecodeCredentialsId",
 								Param: "password",
 								Type:  "secret",
+							},
+
+							{
+								Name:  "",
+								Paths: []string{"$(vaultPath)/protecode", "$(vaultBasePath)/$(vaultPipelineName)/protecode", "$(vaultBasePath)/GROUP-SECRETS/protecode"},
+								Type:  "vaultSecret",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
