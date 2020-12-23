@@ -101,5 +101,5 @@ func runDeployIntegrationArtifact(config *deployIntegrationArtifactOptions, tele
 	}
 
 	log.Entry().Errorf("a HTTP error occurred! Response Status Code: %v", deployResp.StatusCode)
-	return errors.Wrap(httpErr, "Deploying the integration flow failed")
+	return errors.New("Deploying the integration flow failed")
 }

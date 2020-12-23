@@ -64,7 +64,7 @@ func (tokenParameters TokenParameters) GetBearerToken() (string, error) {
 	return token, nil
 }
 
-//GetCPIFunctionMockResponse - mock response payload for different CPI functions
+//GetCPIFunctionMockResponse -Generate mock response payload for different CPI functions
 func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, error) {
 	switch functionName {
 	case "DeployIntegrationDesigntimeArtifact":
