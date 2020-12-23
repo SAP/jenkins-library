@@ -14,28 +14,39 @@ type fileUtils interface {
 
 var files fileUtils = piperutils.Files{}
 
-// CTSConnection ...
+// CTSConnection Everything wee need for connecting to CTS
 type CTSConnection struct {
+	// The endpoint in for form <protocol>://<host>:<port>, no path
 	Endpoint string
+	// The ABAP client, like e.g. "001"
 	Client   string
 	User     string
 	Password string
 }
 
-// CTSApplication ...
+// CTSApplication The details of the application
 type CTSApplication struct {
+	// Name of the application
 	Name string
+	// The ABAP package
 	Pack string
+	// A description. Only taken into account for initial upload, not
+	// in case of a re-deployment.
 	Desc string
 }
 
-// CTSNode ...
+// CTSNode The details for configuring the node image
 type CTSNode struct {
+	// The dependencies which are installed on a basic node image in order
+	// to enable it for fiori deployment. If left empty we assume the
+	// provided base image has already everything installed.
 	DeployDependencies []string
-	InstallOpts        []string
+	// Additional options for the npm install command. Useful e.g.
+	// for providing additional registries or for triggering verbose mode
+	InstallOpts []string
 }
 
-// CTSUploadAction ...
+// CTSUploadAction Collects all the properties we need for the deployment
 type CTSUploadAction struct {
 	Connection         CTSConnection
 	Application        CTSApplication
@@ -81,7 +92,7 @@ func (action *CTSUploadAction) WithDeployUser(deployUser string) {
 	action.DeployUser = deployUser
 }
 
-// Perform ...
+// Perform Performs the upload
 func (action *CTSUploadAction) Perform(command command.ShellRunner) error {
 
 	command.AppendEnv(
@@ -90,7 +101,7 @@ func (action *CTSUploadAction) Perform(command command.ShellRunner) error {
 			fmt.Sprintf("%s=%s", abapPasswordKey, action.Connection.Password),
 		})
 
-	cmd := []string{"/bin/bash -e"}
+	cmd := []string{"#!/bin/bash -e"}
 
 	noInstall := len(action.Node.DeployDependencies) == 0
 	if !noInstall {
@@ -133,53 +144,53 @@ func getFioriDeployStatement(
 		desc = "Deployed with Piper based on SAP Fiori tools"
 	}
 
-	useConfigFile, noConfig, err := handleConfigFile(configFile)
+	useConfigFileOptionInCommandInvocation, useNoConfigFileOptionInCommandInvocation, err := handleConfigFileOptions(configFile)
 	if err != nil {
 		return "", err
 	}
 	cmd := []string{
 		"fiori",
 		"deploy",
-		"-f", // failfast --> provide return code != 0 in case of any failure
-		"-y", // autoconfirm --> no need to press 'y' key in order to confirm the params and trigger the deployment
+		"--failfast", // provide return code != 0 in case of any failure
+		"--yes",      // autoconfirm --> no need to press 'y' key in order to confirm the params and trigger the deployment
 		"--username", abapUserKey,
 		"--password", abapPasswordKey,
-		"-e", fmt.Sprintf("\"%s\"", desc),
+		"--description", fmt.Sprintf("\"%s\"", desc),
 	}
 
-	if noConfig {
+	if useNoConfigFileOptionInCommandInvocation {
 		cmd = append(cmd, "--noConfig") // no config file, but we will provide our parameters
 	}
-	if useConfigFile {
-		cmd = append(cmd, "-c", fmt.Sprintf("\"%s\"", configFile))
+	if useConfigFileOptionInCommandInvocation {
+		cmd = append(cmd, "--config", fmt.Sprintf("\"%s\"", configFile))
 	}
 	if len(cts.Endpoint) > 0 {
 		log.Entry().Debugf("Endpoint '%s' used from piper config", cts.Endpoint)
-		cmd = append(cmd, "-u", cts.Endpoint)
+		cmd = append(cmd, "--url", cts.Endpoint)
 	} else {
 		log.Entry().Debug("No endpoint found in piper config.")
 	}
 	if len(cts.Client) > 0 {
 		log.Entry().Debugf("Client '%s' used from piper config", cts.Client)
-		cmd = append(cmd, "-l", cts.Client)
+		cmd = append(cmd, "--client", cts.Client)
 	} else {
 		log.Entry().Debug("No client found in piper config.")
 	}
 	if len(transportRequestID) > 0 {
 		log.Entry().Debugf("TransportRequestID '%s' used from piper config", transportRequestID)
-		cmd = append(cmd, "-t", transportRequestID)
+		cmd = append(cmd, "--transport", transportRequestID)
 	} else {
 		log.Entry().Debug("No transportRequestID found in piper config.")
 	}
 	if len(app.Pack) > 0 {
 		log.Entry().Debugf("application package '%s' used from piper config", app.Pack)
-		cmd = append(cmd, "-p", app.Pack)
+		cmd = append(cmd, "--package", app.Pack)
 	} else {
 		log.Entry().Debug("No application package found in piper config.")
 	}
 	if len(app.Name) > 0 {
 		log.Entry().Debugf("application name '%s' used from piper config", app.Name)
-		cmd = append(cmd, "-n", app.Name)
+		cmd = append(cmd, "--name", app.Name)
 	} else {
 		log.Entry().Debug("No application name found in piper config.")
 	}
@@ -191,37 +202,34 @@ func getSwitchUserStatement(user string) string {
 	return fmt.Sprintf("su %s", user)
 }
 
-func handleConfigFile(path string) (bool, bool, error) {
+func handleConfigFileOptions(path string) (useConfigFileOptionInCommandInvocation, useNoConfigFileOptionInCommandInvoction bool, err error) {
 
-	useConfigFile := true
-	noConfig := false
-
+	exists := false
 	if len(path) == 0 {
-		useConfigFile = false
-		exists, err := files.FileExists(defaultConfigFileName)
+		exists, err = files.FileExists(defaultConfigFileName)
 		if err != nil {
-			return false, false, err
+			return
 		}
-		noConfig = !exists
-	} else {
-		exists, err := files.FileExists(path)
-		if err != nil {
-			return false, false, err
-		}
-		if exists {
-			useConfigFile = true
-			noConfig = false
-		} else {
-			if path == defaultConfigFileName {
-				// in this case this is most likely provided by the piper default config and
-				// it was not explicitly configured. Hence we assume not having a config file
-				useConfigFile = false
-				noConfig = true
-			} else {
-				err = fmt.Errorf("Configured deploy config file '%s' does not exists", path)
-				return false, false, err
-			}
-		}
+		useConfigFileOptionInCommandInvocation = false
+		useNoConfigFileOptionInCommandInvoction = !exists
+		return
 	}
-	return useConfigFile, noConfig, nil
+	exists, err = files.FileExists(path)
+	if err != nil {
+		return
+	}
+	if exists {
+		useConfigFileOptionInCommandInvocation = true
+		useNoConfigFileOptionInCommandInvoction = false
+	} else {
+		if path != defaultConfigFileName {
+			err = fmt.Errorf("Configured deploy config file '%s' does not exists", path)
+			return
+		}
+		// in this case this is most likely provided by the piper default config and
+		// it was not explicitly configured. Hence we assume not having a config file
+		useConfigFileOptionInCommandInvocation = false
+		useNoConfigFileOptionInCommandInvoction = true
+	}
+	return
 }

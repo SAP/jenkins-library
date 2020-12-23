@@ -9,8 +9,8 @@ import (
 
 func TestUploadCTS(t *testing.T) {
 
-	filesMock := mock.FilesMock{}
-	files = &filesMock
+	fMock := &mock.FilesMock{}
+	files = fMock
 	defer func() { files = piperutils.Files{} }()
 
 	t.Run("npm install command tests", func(t *testing.T) {
@@ -28,15 +28,17 @@ func TestUploadCTS(t *testing.T) {
 		}
 		err := action.Perform(&cmd)
 		if assert.NoError(t, err) {
-			assert.Contains(
+			assert.Regexp(
 				t,
+				"(?m)^npm install --global --verbose --registry https://registry.example.org @sap/my-dep$",
 				cmd.Calls[0],
-				"npm install --global --verbose --registry https://registry.example.org @sap/my-dep",
+				"Expected npm install command not found",
 			)
-			assert.Contains(
+			assert.Regexp(
 				t,
+				"(?m)^su node$",
 				cmd.Calls[0],
-				"su node",
+				"Expected switch user statement not found",
 			)
 		}
 	})
@@ -58,10 +60,11 @@ func TestUploadCTS(t *testing.T) {
 
 			err := action.Perform(&cmd)
 			if assert.NoError(t, err) {
-				assert.Contains(
+				assert.Regexp(
 					t,
+					"(?m)^fiori deploy --failfast --yes --username ABAP_USER --password ABAP_PASSWORD --description \"the Desc\" --noConfig --url https://example.org:8080/cts --client 001 --transport 12345678 --package abapPackage --name appName$",
 					cmd.Calls[0],
-					"fiori deploy -f -y --username ABAP_USER --password ABAP_PASSWORD -e \"the Desc\" --noConfig -u https://example.org:8080/cts -l 001 -t 12345678 -p abapPackage -n appName",
+					"Expected fiori deploy command not found",
 				)
 				assert.Equal(t, []string{"ABAP_USER=me", "ABAP_PASSWORD=******"}, cmd.Env)
 			}
@@ -82,11 +85,13 @@ func TestUploadCTS(t *testing.T) {
 				DeployUser:         "doesNotMatterInThisCase",
 			}
 			err := action.Perform(&cmd)
+
 			if assert.NoError(t, err) {
-				assert.Contains(
+				assert.Regexp(
 					t,
+					"(?m)^fiori deploy --failfast --yes --username ABAP_USER --password ABAP_PASSWORD --description \"Deployed with Piper based on SAP Fiori tools\" --noConfig --transport 12345678$",
 					cmd.Calls[0],
-					"fiori deploy -f -y --username ABAP_USER --password ABAP_PASSWORD -e \"Deployed with Piper based on SAP Fiori tools\" --noConfig -t 12345678",
+					"Expected fiori deploy command not found",
 				)
 				assert.Equal(t, []string{"ABAP_USER=me", "ABAP_PASSWORD=******"}, cmd.Env)
 			}
@@ -104,7 +109,7 @@ func TestUploadCTS(t *testing.T) {
 			filesMock := mock.FilesMock{}
 			filesMock.AddFile("ui5-deploy.yaml", []byte{})
 			files = &filesMock
-			defer func() { files = piperutils.Files{} }()
+			defer func() { files = fMock }()
 			cmd := mock.ShellMockRunner{}
 			action := CTSUploadAction{
 				Connection:         connection,
@@ -116,14 +121,14 @@ func TestUploadCTS(t *testing.T) {
 			}
 			err := action.Perform(&cmd)
 			if assert.NoError(t, err) {
-				assert.Contains(t, cmd.Calls[0], "-c \"ui5-deploy.yaml\"")
+				assert.Contains(t, cmd.Calls[0], " --config \"ui5-deploy.yaml\" ")
 			}
 		})
 		t.Run("Config file exists", func(t *testing.T) {
 			filesMock := mock.FilesMock{}
 			filesMock.AddFile("my-ui5-deploy.yaml", []byte{})
 			files = &filesMock
-			defer func() { files = piperutils.Files{} }()
+			defer func() { files = fMock }()
 			cmd := mock.ShellMockRunner{}
 			action := CTSUploadAction{
 				Connection:         connection,
@@ -136,7 +141,7 @@ func TestUploadCTS(t *testing.T) {
 
 			err := action.Perform(&cmd)
 			if assert.NoError(t, err) {
-				assert.Contains(t, cmd.Calls[0], "-c \"my-ui5-deploy.yaml\"")
+				assert.Contains(t, cmd.Calls[0], " --config \"my-ui5-deploy.yaml\" ")
 			}
 		})
 		t.Run("Config file missing", func(t *testing.T) {
