@@ -93,14 +93,6 @@ func (c *httpMockCpis) SendRequest(method string, url string, r io.Reader, heade
 
 	c.Method = method
 	c.URL = url
-	if r != nil {
-		_, err := ioutil.ReadAll(r)
-
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	if c.Options.Token == "" {
 		c.ResponseBody = "{\r\n\t\t\t\"access_token\": \"demotoken\",\r\n\t\t\t\"token_type\": \"Bearer\",\r\n\t\t\t\"expires_in\": 3600,\r\n\t\t\t\"scope\": \"\"\r\n\t\t}"
 		c.StatusCode = 200
