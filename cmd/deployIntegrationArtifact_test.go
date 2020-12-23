@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -67,7 +66,6 @@ func TestRunDeployIntegrationArtifact(t *testing.T) {
 			ResponseBody: ``, TestType: "Negative"}
 
 		err := runDeployIntegrationArtifact(&config, nil, &httpClient)
-		fmt.Printf("%s.\n", err)
 		// assert
 		assert.EqualError(t, err, "Integration Flow deployment failed")
 	})
