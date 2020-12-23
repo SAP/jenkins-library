@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"net/http"
-	"net/http/cookiejar"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	cpi "github.com/SAP/jenkins-library/pkg/cpi"
@@ -60,15 +59,8 @@ func deployIntegrationArtifact(config deployIntegrationArtifactOptions, telemetr
 }
 
 func runDeployIntegrationArtifact(config *deployIntegrationArtifactOptions, telemetryData *telemetry.CustomData, httpClient piperhttp.Sender) error {
-	cookieJar, cookieErr := cookiejar.New(nil)
-	if cookieErr != nil {
-		return errors.Wrap(cookieErr, "creating a cookie jar failed")
-	}
-	clientOptions := piperhttp.ClientOptions{
-		CookieJar: cookieJar,
-	}
+	clientOptions := piperhttp.ClientOptions{}
 	httpClient.SetOptions(clientOptions)
-
 	header := make(http.Header)
 	header.Add("Accept", "application/json")
 
