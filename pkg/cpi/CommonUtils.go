@@ -1,6 +1,7 @@
 package cpi
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -18,21 +19,14 @@ type CommonUtils interface {
 //TokenParameters struct
 type TokenParameters struct {
 	TokenURL, User, Pwd string
+	MyClient            piperhttp.Sender
 }
 
 // GetBearerToken -Provides the bearer token for making CPI OData calls
 func (tokenParameters TokenParameters) GetBearerToken() (string, error) {
 
-	var testURL = "https://demo/oauth/token"
-	// for supporting tests
-	// with httpMockGcts we want to try only on actual odata API calls but not for OAuth token fetch calls
-	// so we skip OAuth call for mock tests
-	if tokenParameters.TokenURL == testURL {
-		result := "demotoken"
-		return result, nil
-	}
+	httpClient := tokenParameters.MyClient
 
-	httpClient := &piperhttp.Client{}
 	clientOptions := piperhttp.ClientOptions{
 		Username: tokenParameters.User,
 		Password: tokenParameters.Pwd,
@@ -54,14 +48,6 @@ func (tokenParameters TokenParameters) GetBearerToken() (string, error) {
 		return "", errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
 	}
 
-	// for supporting tests
-	// with httpMockGcts we want to try only on actual odata API calls but not for OAuth token fetch calls
-	// so we pass Oauth token in advance and skip OAuth call for mock tests
-	if resp.Header.Get("Authorization") != "" {
-		result := resp.Header.Get("Authorization")
-		return result, nil
-	}
-
 	if resp.StatusCode != 200 {
 		return "", errors.Errorf("did not retrieve a valid HTTP response code: %v", httpErr)
 	}
@@ -74,6 +60,38 @@ func (tokenParameters TokenParameters) GetBearerToken() (string, error) {
 	if parsingErr != nil {
 		return "", errors.Wrapf(parsingErr, "HTTP response body could not be parsed as JSON: %v", string(bodyText))
 	}
-	finalResult := jsonResponse.Path("access_token").Data().(string)
-	return finalResult, nil
+	token := jsonResponse.Path("access_token").Data().(string)
+	return token, nil
+}
+
+//GetCPIFunctionMockResponse - mock response payload for different CPI functions
+func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, error) {
+	switch functionName {
+	case "DeployIntegrationDesigntimeArtifact":
+		if testType == "Positive" {
+			res := http.Response{
+				StatusCode: 202,
+				Body:       ioutil.NopCloser(bytes.NewReader([]byte(``))),
+			}
+			return &res, nil
+		}
+		res := http.Response{
+			StatusCode: 500,
+			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+						"code": "Internal Server Error",
+						"message": {
+						"@lang": "en",
+						"#text": "Cannot deploy artifact with Id 'flow1'!"
+						}
+					}`))),
+		}
+		return &res, errors.New("Internal Server Error")
+
+	default:
+		res := http.Response{
+			StatusCode: 404,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(``))),
+		}
+		return &res, errors.New("Service not Found")
+	}
 }
