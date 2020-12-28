@@ -7,6 +7,7 @@ import (
 )
 
 func TestMavenExecuteStaticCodeChecksCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := MavenExecuteStaticCodeChecksCommand()
 
