@@ -9,17 +9,18 @@ import (
 )
 
 type executeNewmanMockUtils struct {
-	errorOnGlob          bool
-	errorOnNewmanInstall bool
-	errorOnRunShell      bool
-	errorOnRunExecutable bool
-	errorOnLoggingNode   bool
-	errorOnLoggingNpm    bool
-	executedExecutable   string
-	executedParams       []string
-	executedShell        string
-	executedScript       string
-	filesToFind          []string
+	errorOnGlob                 bool
+	errorOnNewmanInstall        bool
+	errorOnRunShell             bool
+	errorOnFinalScriptExecution bool
+	errorOnRunExecutable        bool
+	errorOnLoggingNode          bool
+	errorOnLoggingNpm           bool
+	executedExecutable          string
+	executedParams              []string
+	executedShell               string
+	executedScript              string
+	filesToFind                 []string
 }
 
 func newExecuteNewmanMockUtils() executeNewmanMockUtils {
@@ -32,8 +33,9 @@ func TestRunExecuteNewman(t *testing.T) {
 	t.Parallel()
 
 	allFineConfig := executeNewmanOptions{
-		NewmanCollection: "localFile.txt",
-		NewmanRunCommand: "runcommand",
+		NewmanCollection:  "localFile.txt",
+		NewmanRunCommand:  "runcommand",
+		CfAppsWithSecrets: false,
 	}
 
 	t.Run("happy path", func(t *testing.T) {
@@ -47,6 +49,39 @@ func TestRunExecuteNewman(t *testing.T) {
 
 		// assert
 		assert.NoError(t, err)
+		assert.Equal(t, "/bin/sh", utils.executedShell)
+		assert.Equal(t, "PATH=\\$PATH:~/.npm-global/bin newman runcommand --suppress-exit-code", utils.executedScript)
+	})
+
+	t.Run("happy path with fail on error", func(t *testing.T) {
+		t.Parallel()
+		// init
+
+		utils := newExecuteNewmanMockUtils()
+		fineConfig := allFineConfig
+		fineConfig.FailOnError = true
+
+		// test
+		err := runExecuteNewman(&fineConfig, &utils)
+
+		// assert
+		assert.NoError(t, err)
+		assert.Equal(t, "/bin/sh", utils.executedShell)
+		assert.Equal(t, "PATH=\\$PATH:~/.npm-global/bin newman runcommand", utils.executedScript)
+	})
+
+	t.Run("error on shell execution", func(t *testing.T) {
+		t.Parallel()
+		// init
+
+		utils := newExecuteNewmanMockUtils()
+		utils.errorOnFinalScriptExecution = true
+
+		// test
+		err := runExecuteNewman(&allFineConfig, &utils)
+
+		// assert
+		assert.EqualError(t, err, "The execution of the newman tests failed, see the log for details.: error on newman execution")
 	})
 
 	t.Run("error on newman installation", func(t *testing.T) {
@@ -177,7 +212,7 @@ func TestResolveTemplate(t *testing.T) {
 
 		config := executeNewmanOptions{
 			NewmanRunCommand: "this is my fancy command {{.Config.Verbose}}",
-			Verbose:          "false",
+			Verbose:          false,
 		}
 
 		cmd, err := resolveTemplate(&config, "theDisplayName")
@@ -272,6 +307,9 @@ func (e *executeNewmanMockUtils) RunShell(shell, script string) error {
 	}
 	if e.errorOnNewmanInstall && strings.Contains(script, "NPM_CONFIG_PREFIX=~/.npm-global") {
 		return fmt.Errorf("error on newman install")
+	}
+	if e.errorOnFinalScriptExecution && strings.Contains(script, "PATH=\\$PATH:~/.npm-global/bin newman") {
+		return fmt.Errorf("error on newman execution")
 	}
 
 	e.executedShell = shell

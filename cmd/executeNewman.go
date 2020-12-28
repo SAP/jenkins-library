@@ -87,7 +87,48 @@ func runExecuteNewman(config *executeNewmanOptions, utils executeNewmanUtils) er
 		if err != nil {
 			return err
 		}
-		log.Entry().Debug(cmd) // TODO continue developing
+
+		commandSecrets := ""
+		//if(config.cfAppsWithSecrets){
+		//	CloudFoundry cfUtils = new CloudFoundry(script);
+		//	config.cfAppsWithSecrets.each { appName ->
+		//		def xsuaaCredentials = cfUtils.getXsuaaCredentials(config.cloudFoundry.apiEndpoint,
+		//		config.cloudFoundry.org,
+		//		config.cloudFoundry.space,
+		//		config.cloudFoundry.credentialsId,
+		//		appName,
+		//		config.verbose ? true : false ) //to avoid config.verbose as "null" if undefined in yaml and since function parameter boolean
+		//		command_secrets += " --env-var ${appName}_clientid=${xsuaaCredentials.clientid}  --env-var ${appName}_clientsecret=${xsuaaCredentials.clientsecret}"
+		//		echo "Exposing client id and secret for ${appName}: as ${appName}_clientid and ${appName}_clientsecret to newman"
+		//	}
+		//}
+
+		if !config.FailOnError {
+			cmd += " --suppress-exit-code"
+		}
+
+		//try {
+		hasSecrests := config.CfAppsWithSecrets && commandSecrets != ""
+		if hasSecrests {
+			//	echo "PATH=\$PATH:~/.npm-global/bin newman ${command} **env/secrets**" // TODO: How to do this?
+
+			//utils.SetDir(".") // TODO: Need this?
+			err := utils.RunShell("/bin/sh", "set +x")
+			if err != nil {
+				return errors.Wrap(err, "The execution of the newman tests failed, see the log for details.")
+			}
+		}
+
+		args := []string{"PATH=\\$PATH:~/.npm-global/bin newman", cmd}
+		if hasSecrests {
+			args = append(args, commandSecrets)
+		}
+		script := strings.Join(args, " ")
+		//utils.SetDir(".") // TODO: Need this?
+		err = utils.RunShell("/bin/sh", script)
+		if err != nil {
+			return errors.Wrap(err, "The execution of the newman tests failed, see the log for details.")
+		}
 	}
 
 	return nil
@@ -128,8 +169,8 @@ func resolveTemplate(config *executeNewmanOptions, collection string) (string, e
 	type TemplateConfig struct {
 		Config                interface{}
 		CollectionDisplayName string
+		NewmanCollection      string
 		// TODO: New field as structs cannot be extended in Go
-		NewmanCollection string
 	}
 
 	templ, err := template.New("template").Parse(config.NewmanRunCommand)

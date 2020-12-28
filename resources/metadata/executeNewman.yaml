@@ -27,12 +27,9 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        type: string
+        type: bool
         default: false
         mandatory: true
-        possibleValues:
-          - true
-          - false
       - name: newmanCollection
         description: The test collection that should be executed. This could also be a file pattern.
         scope:
@@ -56,6 +53,25 @@ spec:
           - STAGES
           - STEPS
         type: string
+        mandatory: true
+      - name: failOnError
+        description: Defines the behavior, in case tests fail.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: bool
+        mandatory: true
+      - name: cfAppsWithSecrets # TODO: What is this?
+        description: Define name array of cloud foundry apps deployed for which secrets (clientid and clientsecret) will be appended
+        longDescription: |
+          to the newman command that overrides the environment json entries
+          (--env-var <appName_clientid>=${clientid} & --env-var <appName_clientsecret>=${clientsecret})
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: bool
         mandatory: true
 #      - name: commitMessage
 #        description: The commit message of the commit that will be done to do the changes.
