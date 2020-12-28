@@ -62,7 +62,7 @@ spec:
           - STEPS
         type: bool
         mandatory: true
-      - name: cfAppsWithSecrets # TODO: What is this?
+      - name: cfAppsWithSecrets
         description: Define name array of cloud foundry apps deployed for which secrets (clientid and clientsecret) will be appended
         longDescription: |
           to the newman command that overrides the environment json entries
@@ -71,7 +71,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        type: bool
+        type: "[]string"
         mandatory: true
 #      - name: commitMessage
 #        description: The commit message of the commit that will be done to do the changes.

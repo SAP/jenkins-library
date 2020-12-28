@@ -89,27 +89,29 @@ func runExecuteNewman(config *executeNewmanOptions, utils executeNewmanUtils) er
 		}
 
 		commandSecrets := ""
-		//if(config.cfAppsWithSecrets){
-		//	CloudFoundry cfUtils = new CloudFoundry(script);
-		//	config.cfAppsWithSecrets.each { appName ->
-		//		def xsuaaCredentials = cfUtils.getXsuaaCredentials(config.cloudFoundry.apiEndpoint,
-		//		config.cloudFoundry.org,
-		//		config.cloudFoundry.space,
-		//		config.cloudFoundry.credentialsId,
-		//		appName,
-		//		config.verbose ? true : false ) //to avoid config.verbose as "null" if undefined in yaml and since function parameter boolean
-		//		command_secrets += " --env-var ${appName}_clientid=${xsuaaCredentials.clientid}  --env-var ${appName}_clientsecret=${xsuaaCredentials.clientsecret}"
-		//		echo "Exposing client id and secret for ${appName}: as ${appName}_clientid and ${appName}_clientsecret to newman"
-		//	}
-		//}
+		hasSecrets := len(config.CfAppsWithSecrets) > 0
+		if hasSecrets {
+			//	CloudFoundry cfUtils = new CloudFoundry(script); // TODO: ???
+			for _, appName := range config.CfAppsWithSecrets {
+				var clientId, clientSecret string
+				// def xsuaaCredentials = cfUtils.getXsuaaCredentials(config.cloudFoundry.apiEndpoint, // TODO: ???
+				// config.cloudFoundry.org,
+				// config.cloudFoundry.space,
+				// config.cloudFoundry.credentialsId,
+				// appName,
+				// config.verbose ? true : false ) //to avoid config.verbose as "null" if undefined in yaml and since function parameter boolean
+
+				commandSecrets += " --env-var " + appName + "_clientid=" + clientId + " --env-var " + appName + "_clientsecret=" + clientSecret
+				// TODO: How to do echo in golang?
+				// echo "Exposing client id and secret for ${appName}: as ${appName}_clientid and ${appName}_clientsecret to newman"
+			}
+		}
 
 		if !config.FailOnError {
 			cmd += " --suppress-exit-code"
 		}
 
-		//try {
-		hasSecrests := config.CfAppsWithSecrets && commandSecrets != ""
-		if hasSecrests {
+		if hasSecrets {
 			//	echo "PATH=\$PATH:~/.npm-global/bin newman ${command} **env/secrets**" // TODO: How to do this?
 
 			//utils.SetDir(".") // TODO: Need this?
@@ -120,7 +122,7 @@ func runExecuteNewman(config *executeNewmanOptions, utils executeNewmanUtils) er
 		}
 
 		args := []string{"PATH=\\$PATH:~/.npm-global/bin newman", cmd}
-		if hasSecrests {
+		if hasSecrets {
 			args = append(args, commandSecrets)
 		}
 		script := strings.Join(args, " ")
@@ -195,3 +197,66 @@ func defineCollectionDisplayName(collection string) string {
 	replacedSeparators := strings.Replace(collection, string(filepath.Separator), "_", -1)
 	return strings.Split(replacedSeparators, ".")[0]
 }
+
+//type xsuaaCredentials struct {
+//}
+//
+//func getXsuaaCredentials(apiEndpoint, org, space, credentialsId, appName string, verbose bool) (string, string, error) {
+//	return getAppEnvironment(apiEndpoint, org, space, credentialsId, appName, verbose)
+//}
+//
+//func getAppEnvironment(apiEndpoint, org, space, credentialsId, appName string, verbose bool) (string, string, error) {
+//
+//	authEndpoint, err := getAuthEndPoint(apiEndpoint, verbose)
+//	if err != nil {
+//		return "", "", err
+//	}
+//
+//	bearerToken := getBearerToken(authEndpoint, credentialsId, verbose)
+//
+//	appUrl := getAppRefUrl(apiEndpoint, org, space, bearerToken, appName, verbose)
+//
+//	response := script.httpRequest
+//url:
+//	"${appUrl}/env", quiet: !verbose,
+//		customHeaders:[[name: 'Authorization', value: "${bearerToken}"]]
+//def envJson = script.readJSON text:"${response.content}"
+//return envJson
+//}
+//
+//func getAuthEndPoint(apiEndpoint string, verbose bool) (string, error) {
+//	// TODO: need full struct here?
+//	type responseJson struct {
+//		authorization_endpoint string
+//	}
+//
+//	response, err := http.Get(apiEndpoint + "/v2/info") // TODO: Verbose
+//	if err != nil {
+//		return "", err
+//	}
+//	resJson := responseJson{}
+//	err = piperhttp.ParseHTTPResponseBodyJSON(response, resJson)
+//	if err != nil {
+//		return "", err
+//	}
+//	return resJson.authorization_endpoint, nil
+//}
+//
+//func getBearerToken(authorizationEndpoint, credentialsId string, verbose bool) (string, error) {
+//
+//	client := &http.Client{}
+//	req, err := http.NewRequest("GET", "mydomain.com", nil)
+//	if err != nil {
+//		return "", err
+//	}
+//	req.SetBasicAuth(username, passwd)
+//	resp, err := client.Do(req)
+//	script.withCredentials([script.usernamePassword(credentialsId: credentialsId, usernameVariable: 'usercf', passwordVariable: 'passwordcf')]) {
+//def token = script.httpRequest url:"${authorizationEndpoint}/oauth/token", quiet: !verbose,
+//httpMode:'POST',
+//requestBody: "username=${script.usercf}&password=${script.passwordcf}&client_id=cf&grant_type=password&response_type=token",
+//customHeaders: [[name: 'Content-Type', value: 'application/x-www-form-urlencoded'], [name: 'Authorization', value: 'Basic Y2Y6']]
+//def responseJson = script.readJSON text:"${token.content}"
+//return "Bearer ${responseJson.access_token.trim()}"
+//}
+//}
