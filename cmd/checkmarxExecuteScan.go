@@ -652,7 +652,7 @@ func zipFolder(source string, zipFile io.Writer, patterns []string) error {
 }
 
 // filterFileGlob checks if file path matches one of the patterns.
-// If it matches a negative pattern, {starting} with '!', then false is returned.
+// If it matches a negative pattern ('!') then false is returned.
 //
 // If it is a directory, false is returned.
 // If no patterns are provided, false is returned.
