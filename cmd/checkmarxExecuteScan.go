@@ -28,6 +28,7 @@ import (
 type checkmarxExecuteScanUtils interface {
 	FileInfoHeader(fi os.FileInfo) (*zip.FileHeader, error)
 	Stat(name string) (os.FileInfo, error)
+	Open(name string) (*os.File, error)
 }
 
 type checkmarxExecuteScanUtilsBundle struct {
@@ -57,6 +58,9 @@ func (checkmarxExecuteScanUtilsBundle) FileInfoHeader(fi os.FileInfo) (*zip.File
 
 func (checkmarxExecuteScanUtilsBundle) Stat(name string) (os.FileInfo, error) {
 	return os.Stat(name)
+}
+func (checkmarxExecuteScanUtilsBundle) Open(name string) (*os.File, error) {
+	return os.Open(name)
 }
 
 func checkmarxExecuteScan(config checkmarxExecuteScanOptions, _ *telemetry.CustomData, influx *checkmarxExecuteScanInflux) {
@@ -672,7 +676,7 @@ func zipFolder(source string, zipFile io.Writer, patterns []string, utils checkm
 			return nil
 		}
 
-		file, err := os.Open(path)
+		file, err := utils.Open(path)
 		if err != nil {
 			return err
 		}

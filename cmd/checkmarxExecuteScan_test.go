@@ -234,6 +234,7 @@ func (sys *systemMockForExistingProject) GetTeams() []checkmarx.Team {
 type checkmarxExecuteScanUtilsMock struct {
 	errorOnFileInfoHeader bool
 	errorOnStat           bool
+	errorOnOpen           bool
 }
 
 func newCheckmarxExecuteScanUtilsMock() checkmarxExecuteScanUtilsMock {
@@ -252,6 +253,13 @@ func (c checkmarxExecuteScanUtilsMock) Stat(name string) (os.FileInfo, error) {
 		return nil, fmt.Errorf("error on Stat")
 	}
 	return os.Stat(name)
+}
+
+func (c checkmarxExecuteScanUtilsMock) Open(name string) (*os.File, error) {
+	if c.errorOnOpen {
+		return nil, fmt.Errorf("error on Open")
+	}
+	return os.Open(name)
 }
 
 func TestFilterFileGlob(t *testing.T) {
@@ -365,6 +373,34 @@ func TestZipFolder(t *testing.T) {
 		err = zipFolder(dir, &zipFileMock, []string{"!abc_test.go", "**/abcd.txt", "**/abcd.go"}, mock)
 
 		assert.NoError(t, err)
+	})
+
+	t.Run("error on os Open", func(t *testing.T) {
+		t.Parallel()
+		dir, err := ioutil.TempDir("", "test zip files")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		// clean up tmp dir
+		defer os.RemoveAll(dir)
+
+		err = ioutil.WriteFile(filepath.Join(dir, "abcd.go"), []byte("abcd.go"), 0700)
+		assert.NoError(t, err)
+		err = os.Mkdir(filepath.Join(dir, "somepath"), 0700)
+		assert.NoError(t, err)
+		err = ioutil.WriteFile(filepath.Join(dir, "somepath", "abcd.txt"), []byte("somepath/abcd.txt"), 0700)
+		assert.NoError(t, err)
+		err = ioutil.WriteFile(filepath.Join(dir, "abcd_test.go"), []byte("abcd_test.go"), 0700)
+		assert.NoError(t, err)
+		err = ioutil.WriteFile(filepath.Join(dir, "abc_test.go"), []byte("abc_test.go"), 0700)
+		assert.NoError(t, err)
+
+		var zipFileMock bytes.Buffer
+		mock := newCheckmarxExecuteScanUtilsMock()
+		mock.errorOnOpen = true
+		err = zipFolder(dir, &zipFileMock, []string{"!abc_test.go", "**/abcd.txt", "**/abcd.go"}, mock)
+
+		assert.EqualError(t, err, "error on Open")
 	})
 }
 
