@@ -268,14 +268,14 @@ func TestFilterFileGlob(t *testing.T) {
 		fInfo    fileInfo
 		expected bool
 	}{
-		{input: "somepath/node_modules/someOther/some.file", fInfo: fileInfo{}, expected: true},
-		{input: "somepath/non_modules/someOther/some.go", fInfo: fileInfo{}, expected: false},
-		{input: ".xmake/someOther/some.go", fInfo: fileInfo{}, expected: true},
-		{input: "another/vendor/some.html", fInfo: fileInfo{}, expected: false},
-		{input: "another/vendor/some.pdf", fInfo: fileInfo{}, expected: true},
-		{input: "another/vendor/some.test", fInfo: fileInfo{}, expected: true},
-		{input: "some.test", fInfo: fileInfo{}, expected: false},
-		{input: "a/b/c", fInfo: fileInfo{dir: true}, expected: false},
+		{input: filepath.Join("somepath", "node_modules", "someOther", "some.file"), fInfo: fileInfo{}, expected: true},
+		{input: filepath.Join("somepath", "non_modules", "someOther", "some.go"), fInfo: fileInfo{}, expected: false},
+		{input: filepath.Join(".xmake", "someOther", "some.go"), fInfo: fileInfo{}, expected: true},
+		{input: filepath.Join("another", "vendor", "some.html"), fInfo: fileInfo{}, expected: false},
+		{input: filepath.Join("another", "vendor", "some.pdf"), fInfo: fileInfo{}, expected: true},
+		{input: filepath.Join("another", "vendor", "some.test"), fInfo: fileInfo{}, expected: true},
+		{input: filepath.Join("some.test"), fInfo: fileInfo{}, expected: false},
+		{input: filepath.Join("a", "b", "c"), fInfo: fileInfo{dir: true}, expected: false},
 	}
 
 	for k, v := range tt {
