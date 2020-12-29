@@ -25,7 +25,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func checkmarxExecuteScan(config checkmarxExecuteScanOptions, telemetryData *telemetry.CustomData, influx *checkmarxExecuteScanInflux) {
+func checkmarxExecuteScan(config checkmarxExecuteScanOptions, _ *telemetry.CustomData, influx *checkmarxExecuteScanInflux) {
 	client := &piperHttp.Client{}
 	options := piperHttp.ClientOptions{MaxRetries: config.MaxRetries}
 	client.SetOptions(options)
@@ -140,7 +140,7 @@ func zipWorkspaceFiles(workspace, filterPattern string) (*os.File, error) {
 		return zipFile, errors.Wrap(err, "failed to create archive of project sources")
 	}
 	defer zipFile.Close()
-	zipFolder(workspace, zipFile, patterns)
+	_ = zipFolder(workspace, zipFile, patterns)
 	return zipFile, nil
 }
 
@@ -178,7 +178,7 @@ func uploadAndScan(config checkmarxExecuteScanOptions, sys checkmarx.System, pro
 			return errors.Wrapf(err, "invalid configuration value for fullScanCycle %v, must be a positive int", config.FullScanCycle)
 		}
 
-		if incremental && config.FullScansScheduled && fullScanCycle > 0 && (getNumCoherentIncrementalScans(sys, previousScans)+1)%fullScanCycle == 0 {
+		if incremental && config.FullScansScheduled && fullScanCycle > 0 && (getNumCoherentIncrementalScans(previousScans)+1)%fullScanCycle == 0 {
 			incremental = false
 		}
 
@@ -341,7 +341,7 @@ func downloadAndSaveReport(sys checkmarx.System, reportFileName string, scanID i
 		return errors.Wrap(err, "failed to download the report")
 	}
 	log.Entry().Debugf("Saving report to file %v...", reportFileName)
-	ioutil.WriteFile(reportFileName, report, 0700)
+	_ = ioutil.WriteFile(reportFileName, report, 0700)
 	return nil
 }
 
@@ -504,7 +504,7 @@ func generateAndDownloadReport(sys checkmarx.System, scanID int, reportType stri
 	return []byte{}, fmt.Errorf("unexpected status %v recieved", finalStatus)
 }
 
-func getNumCoherentIncrementalScans(sys checkmarx.System, scans []checkmarx.ScanStatus) int {
+func getNumCoherentIncrementalScans(scans []checkmarx.ScanStatus) int {
 	count := 0
 	for _, scan := range scans {
 		if !scan.IsIncremental {
@@ -522,7 +522,7 @@ func getDetailedResults(sys checkmarx.System, reportFileName string, scanID int)
 		return resultMap, errors.Wrap(err, "failed to download xml report")
 	}
 	if len(data) > 0 {
-		ioutil.WriteFile(reportFileName, data, 0700)
+		_ = ioutil.WriteFile(reportFileName, data, 0700)
 		var xmlResult checkmarx.DetailedResult
 		err := xml.Unmarshal(data, &xmlResult)
 		if err != nil {
@@ -605,7 +605,7 @@ func zipFolder(source string, zipFile io.Writer, patterns []string) error {
 	}
 
 	fileCount := 0
-	filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
+	_ = filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -651,22 +651,26 @@ func zipFolder(source string, zipFile io.Writer, patterns []string) error {
 	return err
 }
 
+// filterFileGlob checks if file path matches one of the patterns.
+// If it matches a negative pattern, {starting} with '!', then false is returned.
+//
+// If it is a directory, false is returned.
+// If no patterns are provided, false is returned.
 func filterFileGlob(patterns []string, path string, info os.FileInfo) bool {
+	if len(patterns) == 0 || info.IsDir() {
+		return false
+	}
+
 	for _, pattern := range patterns {
 		negative := false
 		if strings.HasPrefix(pattern, "!") {
 			pattern = strings.TrimLeft(pattern, "!")
 			negative = true
 		}
-		match, _ := doublestar.Match(pattern, path)
-		if !info.IsDir() {
-			if match && negative {
-				return true
-			} else if match && !negative {
-				return false
-			}
-		} else {
-			return false
+		match, _ := doublestar.PathMatch(pattern, path)
+
+		if match {
+			return negative
 		}
 	}
 	return true

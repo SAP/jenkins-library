@@ -55,16 +55,16 @@ type systemMock struct {
 	updateProjectConfigurationCalled bool
 }
 
-func (sys *systemMock) FilterPresetByName(presets []checkmarx.Preset, presetName string) checkmarx.Preset {
+func (sys *systemMock) FilterPresetByName(_ []checkmarx.Preset, presetName string) checkmarx.Preset {
 	if presetName == "CX_Default" {
 		return checkmarx.Preset{ID: 16, Name: "CX_Default", OwnerName: "16"}
 	}
 	return checkmarx.Preset{ID: 10050, Name: "SAP_JS_Default", OwnerName: "16"}
 }
-func (sys *systemMock) FilterPresetByID(presets []checkmarx.Preset, presetID int) checkmarx.Preset {
+func (sys *systemMock) FilterPresetByID([]checkmarx.Preset, int) checkmarx.Preset {
 	return checkmarx.Preset{ID: 10048, Name: "SAP_Default", OwnerName: "16"}
 }
-func (sys *systemMock) FilterProjectByName(projects []checkmarx.Project, projectName string) checkmarx.Project {
+func (sys *systemMock) FilterProjectByName([]checkmarx.Project, string) checkmarx.Project {
 	return checkmarx.Project{ID: 1, Name: "Test", TeamID: "16", IsPublic: true}
 }
 func (sys *systemMock) GetProjectByID(projectID int) (checkmarx.Project, error) {
@@ -87,57 +87,57 @@ func (sys *systemMock) GetProjectsByNameAndTeam(projectName, teamID string) ([]c
 	sys.previousPName = projectName
 	return []checkmarx.Project{}, fmt.Errorf("no project error")
 }
-func (sys *systemMock) FilterTeamByName(teams []checkmarx.Team, teamName string) checkmarx.Team {
+func (sys *systemMock) FilterTeamByName(_ []checkmarx.Team, teamName string) checkmarx.Team {
 	if teamName == "OpenSource/Cracks/16" {
 		return checkmarx.Team{ID: json.RawMessage(`"16"`), FullName: "OpenSource/Cracks/16"}
 	}
 	return checkmarx.Team{ID: json.RawMessage(`15`), FullName: "OpenSource/Cracks/15"}
 }
-func (sys *systemMock) FilterTeamByID(teams []checkmarx.Team, teamID json.RawMessage) checkmarx.Team {
+func (sys *systemMock) FilterTeamByID(_ []checkmarx.Team, teamID json.RawMessage) checkmarx.Team {
 	teamIDBytes, _ := teamID.MarshalJSON()
 	if bytes.Compare(teamIDBytes, []byte(`"16"`)) == 0 {
 		return checkmarx.Team{ID: json.RawMessage(`"16"`), FullName: "OpenSource/Cracks/16"}
 	}
 	return checkmarx.Team{ID: json.RawMessage(`15`), FullName: "OpenSource/Cracks/15"}
 }
-func (sys *systemMock) DownloadReport(reportID int) ([]byte, error) {
+func (sys *systemMock) DownloadReport(int) ([]byte, error) {
 	return sys.response.([]byte), nil
 }
-func (sys *systemMock) GetReportStatus(reportID int) (checkmarx.ReportStatusResponse, error) {
+func (sys *systemMock) GetReportStatus(int) (checkmarx.ReportStatusResponse, error) {
 	return checkmarx.ReportStatusResponse{Status: checkmarx.ReportStatus{ID: 2, Value: "Created"}}, nil
 }
-func (sys *systemMock) RequestNewReport(scanID int, reportType string) (checkmarx.Report, error) {
+func (sys *systemMock) RequestNewReport(int, string) (checkmarx.Report, error) {
 	return checkmarx.Report{ReportID: 17}, nil
 }
-func (sys *systemMock) GetResults(scanID int) checkmarx.ResultsStatistics {
+func (sys *systemMock) GetResults(int) checkmarx.ResultsStatistics {
 	return checkmarx.ResultsStatistics{}
 }
-func (sys *systemMock) GetScans(projectID int) ([]checkmarx.ScanStatus, error) {
+func (sys *systemMock) GetScans(int) ([]checkmarx.ScanStatus, error) {
 	return []checkmarx.ScanStatus{{IsIncremental: true}, {IsIncremental: true}, {IsIncremental: true}, {IsIncremental: false}}, nil
 }
-func (sys *systemMock) GetScanStatusAndDetail(scanID int) (string, checkmarx.ScanStatusDetail) {
+func (sys *systemMock) GetScanStatusAndDetail(int) (string, checkmarx.ScanStatusDetail) {
 	return "Finished", checkmarx.ScanStatusDetail{Stage: "Step 1 of 25", Step: "Scan something"}
 }
-func (sys *systemMock) ScanProject(projectID int, isIncrementalV, isPublicV, forceScanV bool) (checkmarx.Scan, error) {
+func (sys *systemMock) ScanProject(_ int, isIncrementalV, isPublicV, forceScanV bool) (checkmarx.Scan, error) {
 	sys.isIncremental = isIncrementalV
 	sys.isPublic = isPublicV
 	sys.forceScan = forceScanV
 	return checkmarx.Scan{ID: 16}, nil
 }
-func (sys *systemMock) UpdateProjectConfiguration(projectID int, presetID int, engineConfigurationID string) error {
+func (sys *systemMock) UpdateProjectConfiguration(int, int, string) error {
 	sys.updateProjectConfigurationCalled = true
 	return nil
 }
-func (sys *systemMock) UpdateProjectExcludeSettings(projectID int, excludeFolders string, excludeFiles string) error {
+func (sys *systemMock) UpdateProjectExcludeSettings(int, string, string) error {
 	return nil
 }
-func (sys *systemMock) UploadProjectSourceCode(projectID int, zipFile string) error {
+func (sys *systemMock) UploadProjectSourceCode(int, string) error {
 	return nil
 }
-func (sys *systemMock) CreateProject(projectName string, teamID string) (checkmarx.ProjectCreateResult, error) {
+func (sys *systemMock) CreateProject(string, string) (checkmarx.ProjectCreateResult, error) {
 	return checkmarx.ProjectCreateResult{ID: 20}, nil
 }
-func (sys *systemMock) CreateBranch(projectID int, branchName string) int {
+func (sys *systemMock) CreateBranch(int, string) int {
 	return 18
 }
 func (sys *systemMock) GetPresets() []checkmarx.Preset {
@@ -159,65 +159,65 @@ type systemMockForExistingProject struct {
 	scanProjectCalled bool
 }
 
-func (sys *systemMockForExistingProject) FilterPresetByName(presets []checkmarx.Preset, presetName string) checkmarx.Preset {
+func (sys *systemMockForExistingProject) FilterPresetByName([]checkmarx.Preset, string) checkmarx.Preset {
 	return checkmarx.Preset{ID: 10050, Name: "SAP_JS_Default", OwnerName: "16"}
 }
-func (sys *systemMockForExistingProject) FilterPresetByID(presets []checkmarx.Preset, presetID int) checkmarx.Preset {
+func (sys *systemMockForExistingProject) FilterPresetByID([]checkmarx.Preset, int) checkmarx.Preset {
 	return checkmarx.Preset{ID: 10048, Name: "SAP_Default", OwnerName: "16"}
 }
-func (sys *systemMockForExistingProject) FilterProjectByName(projects []checkmarx.Project, projectName string) checkmarx.Project {
+func (sys *systemMockForExistingProject) FilterProjectByName([]checkmarx.Project, string) checkmarx.Project {
 	return checkmarx.Project{ID: 1, Name: "TestExisting", TeamID: "16", IsPublic: true}
 }
-func (sys *systemMockForExistingProject) GetProjectByID(projectID int) (checkmarx.Project, error) {
+func (sys *systemMockForExistingProject) GetProjectByID(int) (checkmarx.Project, error) {
 	return checkmarx.Project{}, nil
 }
 func (sys *systemMockForExistingProject) GetProjectsByNameAndTeam(projectName, teamID string) ([]checkmarx.Project, error) {
 	return []checkmarx.Project{{ID: 19, Name: projectName, TeamID: teamID, IsPublic: true}}, nil
 }
-func (sys *systemMockForExistingProject) FilterTeamByName(teams []checkmarx.Team, teamName string) checkmarx.Team {
+func (sys *systemMockForExistingProject) FilterTeamByName([]checkmarx.Team, string) checkmarx.Team {
 	return checkmarx.Team{ID: json.RawMessage(`"16"`), FullName: "OpenSource/Cracks/16"}
 }
-func (sys *systemMockForExistingProject) FilterTeamByID(teams []checkmarx.Team, teamID json.RawMessage) checkmarx.Team {
+func (sys *systemMockForExistingProject) FilterTeamByID([]checkmarx.Team, json.RawMessage) checkmarx.Team {
 	return checkmarx.Team{ID: json.RawMessage(`"15"`), FullName: "OpenSource/Cracks/15"}
 }
-func (sys *systemMockForExistingProject) DownloadReport(reportID int) ([]byte, error) {
+func (sys *systemMockForExistingProject) DownloadReport(int) ([]byte, error) {
 	return sys.response.([]byte), nil
 }
-func (sys *systemMockForExistingProject) GetReportStatus(reportID int) (checkmarx.ReportStatusResponse, error) {
+func (sys *systemMockForExistingProject) GetReportStatus(int) (checkmarx.ReportStatusResponse, error) {
 	return checkmarx.ReportStatusResponse{Status: checkmarx.ReportStatus{ID: 2, Value: "Created"}}, nil
 }
-func (sys *systemMockForExistingProject) RequestNewReport(scanID int, reportType string) (checkmarx.Report, error) {
+func (sys *systemMockForExistingProject) RequestNewReport(int, string) (checkmarx.Report, error) {
 	return checkmarx.Report{ReportID: 17}, nil
 }
-func (sys *systemMockForExistingProject) GetResults(scanID int) checkmarx.ResultsStatistics {
+func (sys *systemMockForExistingProject) GetResults(int) checkmarx.ResultsStatistics {
 	return checkmarx.ResultsStatistics{}
 }
-func (sys *systemMockForExistingProject) GetScans(projectID int) ([]checkmarx.ScanStatus, error) {
+func (sys *systemMockForExistingProject) GetScans(int) ([]checkmarx.ScanStatus, error) {
 	return []checkmarx.ScanStatus{{IsIncremental: true}, {IsIncremental: true}, {IsIncremental: true}, {IsIncremental: false}}, nil
 }
-func (sys *systemMockForExistingProject) GetScanStatusAndDetail(scanID int) (string, checkmarx.ScanStatusDetail) {
+func (sys *systemMockForExistingProject) GetScanStatusAndDetail(int) (string, checkmarx.ScanStatusDetail) {
 	return "Finished", checkmarx.ScanStatusDetail{Stage: "", Step: ""}
 }
-func (sys *systemMockForExistingProject) ScanProject(projectID int, isIncrementalV, isPublicV, forceScanV bool) (checkmarx.Scan, error) {
+func (sys *systemMockForExistingProject) ScanProject(_ int, isIncrementalV, isPublicV, forceScanV bool) (checkmarx.Scan, error) {
 	sys.scanProjectCalled = true
 	sys.isIncremental = isIncrementalV
 	sys.isPublic = isPublicV
 	sys.forceScan = forceScanV
 	return checkmarx.Scan{ID: 16}, nil
 }
-func (sys *systemMockForExistingProject) UpdateProjectConfiguration(projectID int, presetID int, engineConfigurationID string) error {
+func (sys *systemMockForExistingProject) UpdateProjectConfiguration(int, int, string) error {
 	return nil
 }
-func (sys *systemMockForExistingProject) UpdateProjectExcludeSettings(projectID int, excludeFolders string, excludeFiles string) error {
+func (sys *systemMockForExistingProject) UpdateProjectExcludeSettings(int, string, string) error {
 	return nil
 }
-func (sys *systemMockForExistingProject) UploadProjectSourceCode(projectID int, zipFile string) error {
+func (sys *systemMockForExistingProject) UploadProjectSourceCode(int, string) error {
 	return nil
 }
-func (sys *systemMockForExistingProject) CreateProject(projectName string, teamID string) (checkmarx.ProjectCreateResult, error) {
+func (sys *systemMockForExistingProject) CreateProject(string, string) (checkmarx.ProjectCreateResult, error) {
 	return checkmarx.ProjectCreateResult{}, fmt.Errorf("create project error")
 }
-func (sys *systemMockForExistingProject) CreateBranch(projectID int, branchName string) int {
+func (sys *systemMockForExistingProject) CreateBranch(int, string) int {
 	return 0
 }
 func (sys *systemMockForExistingProject) GetPresets() []checkmarx.Preset {
@@ -252,8 +252,10 @@ func TestFilterFileGlob(t *testing.T) {
 }
 
 func TestZipFolder(t *testing.T) {
+	t.Parallel()
 
 	t.Run("zip files", func(t *testing.T) {
+		t.Parallel()
 		dir, err := ioutil.TempDir("", "test zip files")
 		if err != nil {
 			t.Fatal("Failed to create temporary directory")
@@ -261,19 +263,28 @@ func TestZipFolder(t *testing.T) {
 		// clean up tmp dir
 		defer os.RemoveAll(dir)
 
-		ioutil.WriteFile(filepath.Join(dir, "abcd.go"), []byte{byte(1), byte(2), byte(3)}, 0700)
-		ioutil.WriteFile(filepath.Join(dir, "somepath", "abcd.txt"), []byte{byte(1), byte(2), byte(3)}, 0700)
-		ioutil.WriteFile(filepath.Join(dir, "abcd_test.go"), []byte{byte(1), byte(2), byte(3)}, 0700)
+		err = ioutil.WriteFile(filepath.Join(dir, "abcd.go"), []byte("abcd.go"), 0700)
+		assert.NoError(t, err)
+		err = os.Mkdir(filepath.Join(dir, "somepath"), 0700)
+		assert.NoError(t, err)
+		err = ioutil.WriteFile(filepath.Join(dir, "somepath", "abcd.txt"), []byte("somepath/abcd.txt"), 0700)
+		assert.NoError(t, err)
+		err = ioutil.WriteFile(filepath.Join(dir, "abcd_test.go"), []byte("abcd_test.go"), 0700)
+		assert.NoError(t, err)
+		err = ioutil.WriteFile(filepath.Join(dir, "abc_test.go"), []byte("abc_test.go"), 0700)
+		assert.NoError(t, err)
 
 		var zipFileMock bytes.Buffer
-		zipFolder(dir, &zipFileMock, []string{"!abc_test.go", "**/abcd.txt", "**/abc.go"})
+		err = zipFolder(dir, &zipFileMock, []string{"!abc_test.go", "**/abcd.txt", "**/abcd.go"})
+		assert.NoError(t, err)
 
-		got := zipFileMock.Len()
-		want := 164
+		zipString := zipFileMock.String()
 
-		if got != want {
-			t.Errorf("Zipping test failed expected %v but got %v", want, got)
-		}
+		assert.Equal(t, 724, zipFileMock.Len(), "Expected length of 724, but got %v", zipFileMock.Len())
+		assert.True(t, strings.Contains(zipString, "abcd.go"), "Expected 'abcd.go' contained")
+		assert.True(t, strings.Contains(zipString, filepath.Join("somepath", "abcd.txt")), "Expected 'somepath/abcd.txt' contained")
+		assert.False(t, strings.Contains(zipString, "abcd_test.go"), "Not expected 'abcd_test.go' contained")
+		assert.False(t, strings.Contains(zipString, "abc_test.go"), "Not expected 'abc_test.go' contained")
 	})
 }
 
