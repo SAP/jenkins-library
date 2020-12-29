@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/command"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/pkg/errors"
+	"net/http"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -198,65 +200,68 @@ func defineCollectionDisplayName(collection string) string {
 	return strings.Split(replacedSeparators, ".")[0]
 }
 
-//type xsuaaCredentials struct {
-//}
-//
-//func getXsuaaCredentials(apiEndpoint, org, space, credentialsId, appName string, verbose bool) (string, string, error) {
-//	return getAppEnvironment(apiEndpoint, org, space, credentialsId, appName, verbose)
-//}
-//
-//func getAppEnvironment(apiEndpoint, org, space, credentialsId, appName string, verbose bool) (string, string, error) {
-//
-//	authEndpoint, err := getAuthEndPoint(apiEndpoint, verbose)
-//	if err != nil {
-//		return "", "", err
-//	}
-//
-//	bearerToken := getBearerToken(authEndpoint, credentialsId, verbose)
-//
-//	appUrl := getAppRefUrl(apiEndpoint, org, space, bearerToken, appName, verbose)
-//
-//	response := script.httpRequest
-//url:
-//	"${appUrl}/env", quiet: !verbose,
-//		customHeaders:[[name: 'Authorization', value: "${bearerToken}"]]
-//def envJson = script.readJSON text:"${response.content}"
-//return envJson
-//}
-//
-//func getAuthEndPoint(apiEndpoint string, verbose bool) (string, error) {
-//	// TODO: need full struct here?
-//	type responseJson struct {
-//		authorization_endpoint string
-//	}
-//
-//	response, err := http.Get(apiEndpoint + "/v2/info") // TODO: Verbose
-//	if err != nil {
-//		return "", err
-//	}
-//	resJson := responseJson{}
-//	err = piperhttp.ParseHTTPResponseBodyJSON(response, resJson)
-//	if err != nil {
-//		return "", err
-//	}
-//	return resJson.authorization_endpoint, nil
-//}
-//
-//func getBearerToken(authorizationEndpoint, credentialsId string, verbose bool) (string, error) {
-//
-//	client := &http.Client{}
-//	req, err := http.NewRequest("GET", "mydomain.com", nil)
-//	if err != nil {
-//		return "", err
-//	}
-//	req.SetBasicAuth(username, passwd)
-//	resp, err := client.Do(req)
-//	script.withCredentials([script.usernamePassword(credentialsId: credentialsId, usernameVariable: 'usercf', passwordVariable: 'passwordcf')]) {
-//def token = script.httpRequest url:"${authorizationEndpoint}/oauth/token", quiet: !verbose,
-//httpMode:'POST',
-//requestBody: "username=${script.usercf}&password=${script.passwordcf}&client_id=cf&grant_type=password&response_type=token",
-//customHeaders: [[name: 'Content-Type', value: 'application/x-www-form-urlencoded'], [name: 'Authorization', value: 'Basic Y2Y6']]
-//def responseJson = script.readJSON text:"${token.content}"
-//return "Bearer ${responseJson.access_token.trim()}"
-//}
-//}
+func getXsuaaCredentials(apiEndpoint, org, space, credentialsId, appName string, verbose bool) (string, string, error) {
+	return getAppEnvironment(apiEndpoint, org, space, credentialsId, appName, verbose)
+}
+
+func getAppEnvironment(apiEndpoint, org, space, credentialsId, appName string, verbose bool) (string, string, error) {
+
+	authEndpoint, err := getAuthEndPoint(apiEndpoint, verbose)
+	if err != nil {
+		return "", "", err
+	}
+
+	_, err = getBearerToken(authEndpoint, credentialsId, verbose)
+	if err != nil {
+		return "", "", err
+	}
+
+	//	appUrl := getAppRefUrl(apiEndpoint, org, space, bearerToken, appName, verbose)
+	//
+	//	response := script.httpRequest
+	//url:
+	//	"${appUrl}/env", quiet: !verbose,
+	//		customHeaders:[[name: 'Authorization', value: "${bearerToken}"]]
+	//def envJson = script.readJSON text:"${response.content}"
+	//return envJson
+	return "", "", nil
+}
+
+func getAuthEndPoint(apiEndpoint string, verbose bool) (string, error) {
+	// TODO: need full struct here?
+	type responseJson struct {
+		authorization_endpoint string
+	}
+
+	response, err := http.Get(apiEndpoint + "/v2/info") // TODO: Verbose
+	if err != nil {
+		return "", err
+	}
+	resJson := responseJson{}
+	err = piperhttp.ParseHTTPResponseBodyJSON(response, resJson)
+	if err != nil {
+		return "", err
+	}
+	return resJson.authorization_endpoint, nil
+}
+
+func getBearerToken(authorizationEndpoint, credentialsId string, verbose bool) (string, error) {
+	return "", nil
+
+	//	client := &http.Client{}
+	//	req, err := http.NewRequest("GET", "mydomain.com", nil)
+	//	if err != nil {
+	//		return "", err
+	//	}
+	//	req.SetBasicAuth(username, passwd)
+	//	resp, err := client.Do(req)
+	// TODO: How to handle multiple credentials in GO?
+	//	script.withCredentials([script.usernamePassword(credentialsId: credentialsId, usernameVariable: 'usercf', passwordVariable: 'passwordcf')]) {
+	//def token = script.httpRequest url:"${authorizationEndpoint}/oauth/token", quiet: !verbose,
+	//httpMode:'POST',
+	//requestBody: "username=${script.usercf}&password=${script.passwordcf}&client_id=cf&grant_type=password&response_type=token",
+	//customHeaders: [[name: 'Content-Type', value: 'application/x-www-form-urlencoded'], [name: 'Authorization', value: 'Basic Y2Y6']]
+	//def responseJson = script.readJSON text:"${token.content}"
+	//return "Bearer ${responseJson.access_token.trim()}"
+	//}
+}
