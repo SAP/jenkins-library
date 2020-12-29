@@ -263,6 +263,7 @@ func (c checkmarxExecuteScanUtilsMock) Open(name string) (*os.File, error) {
 }
 
 func TestFilterFileGlob(t *testing.T) {
+	t.Parallel()
 	tt := []struct {
 		input    string
 		fInfo    fileInfo
