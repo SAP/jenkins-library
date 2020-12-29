@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"archive/zip"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -230,6 +231,29 @@ func (sys *systemMockForExistingProject) GetTeams() []checkmarx.Team {
 	return []checkmarx.Team{{ID: json.RawMessage(`"16"`), FullName: "OpenSource/Cracks/16"}, {ID: json.RawMessage(`"15"`), FullName: "OpenSource/Cracks/15"}}
 }
 
+type checkmarxExecuteScanUtilsMock struct {
+	errorOnFileInfoHeader bool
+	errorOnStat           bool
+}
+
+func newCheckmarxExecuteScanUtilsMock() checkmarxExecuteScanUtilsMock {
+	return checkmarxExecuteScanUtilsMock{}
+}
+
+func (c checkmarxExecuteScanUtilsMock) FileInfoHeader(fi os.FileInfo) (*zip.FileHeader, error) {
+	if c.errorOnFileInfoHeader {
+		return nil, fmt.Errorf("error on FileInfoHeader")
+	}
+	return zip.FileInfoHeader(fi)
+}
+
+func (c checkmarxExecuteScanUtilsMock) Stat(name string) (os.FileInfo, error) {
+	if c.errorOnStat {
+		return nil, fmt.Errorf("error on Stat")
+	}
+	return os.Stat(name)
+}
+
 func TestFilterFileGlob(t *testing.T) {
 	tt := []struct {
 		input    string
@@ -254,7 +278,7 @@ func TestFilterFileGlob(t *testing.T) {
 func TestZipFolder(t *testing.T) {
 	t.Parallel()
 
-	t.Run("zip files", func(t *testing.T) {
+	t.Run("zip files successfully", func(t *testing.T) {
 		t.Parallel()
 		dir, err := ioutil.TempDir("", "test zip files")
 		if err != nil {
@@ -275,7 +299,7 @@ func TestZipFolder(t *testing.T) {
 		assert.NoError(t, err)
 
 		var zipFileMock bytes.Buffer
-		err = zipFolder(dir, &zipFileMock, []string{"!abc_test.go", "**/abcd.txt", "**/abcd.go"})
+		err = zipFolder(dir, &zipFileMock, []string{"!abc_test.go", "**/abcd.txt", "**/abcd.go"}, newCheckmarxExecuteScanUtilsMock())
 		assert.NoError(t, err)
 
 		zipString := zipFileMock.String()
@@ -285,6 +309,62 @@ func TestZipFolder(t *testing.T) {
 		assert.True(t, strings.Contains(zipString, filepath.Join("somepath", "abcd.txt")), "Expected 'somepath/abcd.txt' contained")
 		assert.False(t, strings.Contains(zipString, "abcd_test.go"), "Not expected 'abcd_test.go' contained")
 		assert.False(t, strings.Contains(zipString, "abc_test.go"), "Not expected 'abc_test.go' contained")
+	})
+
+	t.Run("error on query file info header", func(t *testing.T) {
+		t.Parallel()
+		dir, err := ioutil.TempDir("", "test zip files")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		// clean up tmp dir
+		defer os.RemoveAll(dir)
+
+		err = ioutil.WriteFile(filepath.Join(dir, "abcd.go"), []byte("abcd.go"), 0700)
+		assert.NoError(t, err)
+		err = os.Mkdir(filepath.Join(dir, "somepath"), 0700)
+		assert.NoError(t, err)
+		err = ioutil.WriteFile(filepath.Join(dir, "somepath", "abcd.txt"), []byte("somepath/abcd.txt"), 0700)
+		assert.NoError(t, err)
+		err = ioutil.WriteFile(filepath.Join(dir, "abcd_test.go"), []byte("abcd_test.go"), 0700)
+		assert.NoError(t, err)
+		err = ioutil.WriteFile(filepath.Join(dir, "abc_test.go"), []byte("abc_test.go"), 0700)
+		assert.NoError(t, err)
+
+		var zipFileMock bytes.Buffer
+		mock := newCheckmarxExecuteScanUtilsMock()
+		mock.errorOnFileInfoHeader = true
+		err = zipFolder(dir, &zipFileMock, []string{"!abc_test.go", "**/abcd.txt", "**/abcd.go"}, mock)
+
+		assert.EqualError(t, err, "error on FileInfoHeader")
+	})
+
+	t.Run("error on os stat", func(t *testing.T) {
+		t.Parallel()
+		dir, err := ioutil.TempDir("", "test zip files")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		// clean up tmp dir
+		defer os.RemoveAll(dir)
+
+		err = ioutil.WriteFile(filepath.Join(dir, "abcd.go"), []byte("abcd.go"), 0700)
+		assert.NoError(t, err)
+		err = os.Mkdir(filepath.Join(dir, "somepath"), 0700)
+		assert.NoError(t, err)
+		err = ioutil.WriteFile(filepath.Join(dir, "somepath", "abcd.txt"), []byte("somepath/abcd.txt"), 0700)
+		assert.NoError(t, err)
+		err = ioutil.WriteFile(filepath.Join(dir, "abcd_test.go"), []byte("abcd_test.go"), 0700)
+		assert.NoError(t, err)
+		err = ioutil.WriteFile(filepath.Join(dir, "abc_test.go"), []byte("abc_test.go"), 0700)
+		assert.NoError(t, err)
+
+		var zipFileMock bytes.Buffer
+		mock := newCheckmarxExecuteScanUtilsMock()
+		mock.errorOnStat = true
+		err = zipFolder(dir, &zipFileMock, []string{"!abc_test.go", "**/abcd.txt", "**/abcd.go"}, mock)
+
+		assert.NoError(t, err)
 	})
 }
 

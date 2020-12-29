@@ -25,6 +25,40 @@ import (
 	"github.com/pkg/errors"
 )
 
+type checkmarxExecuteScanUtils interface {
+	FileInfoHeader(fi os.FileInfo) (*zip.FileHeader, error)
+	Stat(name string) (os.FileInfo, error)
+}
+
+type checkmarxExecuteScanUtilsBundle struct {
+	//*command.Command
+	//*piperutils.Files
+
+	// Embed more structs as necessary to implement methods or interfaces you add to executeNewmanUtils.
+	// Structs embedded in this way must each have a unique set of methods attached.
+	// If there is no struct which implements the method you need, attach the method to
+	// executeNewmanUtilsBundle and forward to the implementation of the dependency.
+}
+
+func newCheckmarxExecuteScanUtils() checkmarxExecuteScanUtils {
+	utils := checkmarxExecuteScanUtilsBundle{
+		//Command: &command.Command{},
+		//Files:   &piperutils.Files{},
+	}
+	// Reroute command output to logging framework
+	//utils.Stdout(log.Writer())
+	//utils.Stderr(log.Writer())
+	return &utils
+}
+
+func (checkmarxExecuteScanUtilsBundle) FileInfoHeader(fi os.FileInfo) (*zip.FileHeader, error) {
+	return zip.FileInfoHeader(fi)
+}
+
+func (checkmarxExecuteScanUtilsBundle) Stat(name string) (os.FileInfo, error) {
+	return os.Stat(name)
+}
+
 func checkmarxExecuteScan(config checkmarxExecuteScanOptions, _ *telemetry.CustomData, influx *checkmarxExecuteScanInflux) {
 	client := &piperHttp.Client{}
 	options := piperHttp.ClientOptions{MaxRetries: config.MaxRetries}
@@ -140,7 +174,7 @@ func zipWorkspaceFiles(workspace, filterPattern string) (*os.File, error) {
 		return zipFile, errors.Wrap(err, "failed to create archive of project sources")
 	}
 	defer zipFile.Close()
-	_ = zipFolder(workspace, zipFile, patterns)
+	_ = zipFolder(workspace, zipFile, patterns, newCheckmarxExecuteScanUtils())
 	return zipFile, nil
 }
 
@@ -590,11 +624,11 @@ func getDetailedResults(sys checkmarx.System, reportFileName string, scanID int)
 	return resultMap, nil
 }
 
-func zipFolder(source string, zipFile io.Writer, patterns []string) error {
+func zipFolder(source string, zipFile io.Writer, patterns []string, utils checkmarxExecuteScanUtils) error {
 	archive := zip.NewWriter(zipFile)
 	defer archive.Close()
 
-	info, err := os.Stat(source)
+	info, err := utils.Stat(source)
 	if err != nil {
 		return nil
 	}
@@ -605,7 +639,7 @@ func zipFolder(source string, zipFile io.Writer, patterns []string) error {
 	}
 
 	fileCount := 0
-	_ = filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
+	err = filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -614,7 +648,7 @@ func zipFolder(source string, zipFile io.Writer, patterns []string) error {
 			return nil
 		}
 
-		header, err := zip.FileInfoHeader(info)
+		header, err := utils.FileInfoHeader(info)
 		if err != nil {
 			return err
 		}
