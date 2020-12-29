@@ -33,9 +33,8 @@ func TestRunExecuteNewman(t *testing.T) {
 	t.Parallel()
 
 	allFineConfig := executeNewmanOptions{
-		NewmanCollection:  "localFile.txt",
-		NewmanRunCommand:  "runcommand",
-		CfAppsWithSecrets: false,
+		NewmanCollection: "localFile.txt",
+		NewmanRunCommand: "runcommand",
 	}
 
 	t.Run("happy path", func(t *testing.T) {
