@@ -406,8 +406,10 @@ func TestZipFolder(t *testing.T) {
 }
 
 func TestGetDetailedResults(t *testing.T) {
+	t.Parallel()
 
 	t.Run("success case", func(t *testing.T) {
+		t.Parallel()
 		sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?>
 		<CxXMLResults InitiatorName="admin" Owner="admin" ScanId="1000005" ProjectId="2" ProjectName="Project 1" TeamFullPathOnReportDate="CxServer" DeepLink="http://WIN2K12-TEMP/CxWebClient/ViewerMain.aspx?scanid=1000005&amp;projectid=2" ScanStart="Sunday, December 3, 2017 4:50:34 PM" Preset="Checkmarx Default" ScanTime="00h:03m:18s" LinesOfCodeScanned="6838" FilesScanned="34" ReportCreationTime="Sunday, December 3, 2017 6:13:45 PM" Team="CxServer" CheckmarxVersion="8.6.0" ScanComments="" ScanType="Incremental" SourceOrigin="LocalPath" Visibility="Public">
 		<Query id="430" categories="PCI DSS v3.2;PCI DSS (3.2) - 6.5.1 - Injection flaws - particularly SQL injection,OWASP Top 10 2013;A1-Injection,FISMA 2014;System And Information Integrity,NIST SP 800-53;SI-10 Information Input Validation (P1),OWASP Top 10 2017;A1-Injection" cweId="89" name="SQL_Injection" group="CSharp_High_Risk" Severity="High" Language="CSharp" LanguageHash="1363215419077432" LanguageChangeDate="2017-12-03T00:00:00.0000000" SeverityIndex="3" QueryPath="CSharp\Cx\CSharp High Risk\SQL Injection Version:0" QueryVersionCode="430">
@@ -446,6 +448,8 @@ func TestGetDetailedResults(t *testing.T) {
 }
 
 func TestRunScan(t *testing.T) {
+	t.Parallel()
+
 	sys := &systemMockForExistingProject{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`)}
 	options := checkmarxExecuteScanOptions{ProjectName: "TestExisting", VulnerabilityThresholdUnit: "absolute", FullScanCycle: "2", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
 	workspace, err := ioutil.TempDir("", "workspace1")
@@ -466,6 +470,8 @@ func TestRunScan(t *testing.T) {
 }
 
 func TestSetPresetForProjectWithIDProvided(t *testing.T) {
+	t.Parallel()
+
 	sys := &systemMock{}
 	err := setPresetForProject(sys, 12345, 16, "testProject", "CX_Default", "")
 	assert.NoError(t, err, "error occured but none expected")
@@ -474,6 +480,8 @@ func TestSetPresetForProjectWithIDProvided(t *testing.T) {
 }
 
 func TestSetPresetForProjectWithNameProvided(t *testing.T) {
+	t.Parallel()
+
 	sys := &systemMock{}
 	presetID, _ := strconv.Atoi("CX_Default")
 	err := setPresetForProject(sys, 12345, presetID, "testProject", "CX_Default", "")
@@ -483,6 +491,8 @@ func TestSetPresetForProjectWithNameProvided(t *testing.T) {
 }
 
 func TestVerifyOnly(t *testing.T) {
+	t.Parallel()
+
 	sys := &systemMockForExistingProject{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`)}
 	options := checkmarxExecuteScanOptions{VerifyOnly: true, ProjectName: "TestExisting", VulnerabilityThresholdUnit: "absolute", FullScanCycle: "2", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamName: "OpenSource/Cracks/15", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
 	workspace, err := ioutil.TempDir("", "workspace1")
@@ -500,6 +510,8 @@ func TestVerifyOnly(t *testing.T) {
 }
 
 func TestRunScanWOtherCycle(t *testing.T) {
+	t.Parallel()
+
 	sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`), createProject: true}
 	options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "SAP_JS_Default", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
 	workspace, err := ioutil.TempDir("", "workspace2")
@@ -519,6 +531,8 @@ func TestRunScanWOtherCycle(t *testing.T) {
 }
 
 func TestRunScanForPullRequest(t *testing.T) {
+	t.Parallel()
+
 	sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`)}
 	options := checkmarxExecuteScanOptions{PullRequestName: "PR-19", ProjectName: "Test", VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "SAP_JS_Default", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true, AvoidDuplicateProjectScans: false}
 	workspace, err := ioutil.TempDir("", "workspace3")
@@ -537,6 +551,8 @@ func TestRunScanForPullRequest(t *testing.T) {
 }
 
 func TestRunScanForPullRequestProjectNew(t *testing.T) {
+	t.Parallel()
+
 	sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`), createProject: true}
 	options := checkmarxExecuteScanOptions{PullRequestName: "PR-17", ProjectName: "Test", AvoidDuplicateProjectScans: true, VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamName: "OpenSource/Cracks/15", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
 	workspace, err := ioutil.TempDir("", "workspace4")
@@ -556,6 +572,8 @@ func TestRunScanForPullRequestProjectNew(t *testing.T) {
 }
 
 func TestRunScanHighViolationPercentage(t *testing.T) {
+	t.Parallel()
+
 	sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?>
 	<CxXMLResults InitiatorName="admin" Owner="admin" ScanId="1000005" ProjectId="2" ProjectName="Project 1" TeamFullPathOnReportDate="CxServer" DeepLink="http://WIN2K12-TEMP/CxWebClient/ViewerMain.aspx?scanid=1000005&amp;projectid=2" ScanStart="Sunday, December 3, 2017 4:50:34 PM" Preset="Checkmarx Default" ScanTime="00h:03m:18s" LinesOfCodeScanned="6838" FilesScanned="34" ReportCreationTime="Sunday, December 3, 2017 6:13:45 PM" Team="CxServer" CheckmarxVersion="8.6.0" ScanComments="" ScanType="Incremental" SourceOrigin="LocalPath" Visibility="Public">
 	<Query id="430" categories="PCI DSS v3.2;PCI DSS (3.2) - 6.5.1 - Injection flaws - particularly SQL injection,OWASP Top 10 2013;A1-Injection,FISMA 2014;System And Information Integrity,NIST SP 800-53;SI-10 Information Input Validation (P1),OWASP Top 10 2017;A1-Injection" cweId="89" name="SQL_Injection" group="CSharp_High_Risk" Severity="High" Language="CSharp" LanguageHash="1363215419077432" LanguageChangeDate="2017-12-03T00:00:00.0000000" SeverityIndex="3" QueryPath="CSharp\Cx\CSharp High Risk\SQL Injection Version:0" QueryVersionCode="430">
@@ -591,6 +609,8 @@ func TestRunScanHighViolationPercentage(t *testing.T) {
 }
 
 func TestRunScanHighViolationAbsolute(t *testing.T) {
+	t.Parallel()
+
 	sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?>
 		<CxXMLResults InitiatorName="admin" Owner="admin" ScanId="1000005" ProjectId="2" ProjectName="Project 1" TeamFullPathOnReportDate="CxServer" DeepLink="http://WIN2K12-TEMP/CxWebClient/ViewerMain.aspx?scanid=1000005&amp;projectid=2" ScanStart="Sunday, December 3, 2017 4:50:34 PM" Preset="Checkmarx Default" ScanTime="00h:03m:18s" LinesOfCodeScanned="6838" FilesScanned="34" ReportCreationTime="Sunday, December 3, 2017 6:13:45 PM" Team="CxServer" CheckmarxVersion="8.6.0" ScanComments="" ScanType="Incremental" SourceOrigin="LocalPath" Visibility="Public">
 		<Query id="430" categories="PCI DSS v3.2;PCI DSS (3.2) - 6.5.1 - Injection flaws - particularly SQL injection,OWASP Top 10 2013;A1-Injection,FISMA 2014;System And Information Integrity,NIST SP 800-53;SI-10 Information Input Validation (P1),OWASP Top 10 2017;A1-Injection" cweId="89" name="SQL_Injection" group="CSharp_High_Risk" Severity="High" Language="CSharp" LanguageHash="1363215419077432" LanguageChangeDate="2017-12-03T00:00:00.0000000" SeverityIndex="3" QueryPath="CSharp\Cx\CSharp High Risk\SQL Injection Version:0" QueryVersionCode="430">
@@ -626,6 +646,8 @@ func TestRunScanHighViolationAbsolute(t *testing.T) {
 }
 
 func TestEnforceThresholds(t *testing.T) {
+	t.Parallel()
+
 	results := map[string]interface{}{}
 	results["High"] = map[string]int{}
 	results["Medium"] = map[string]int{}
@@ -642,6 +664,8 @@ func TestEnforceThresholds(t *testing.T) {
 	results["Low"].(map[string]int)["Issues"] = 10
 
 	t.Run("percentage high violation", func(t *testing.T) {
+		t.Parallel()
+
 		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "percentage", VulnerabilityThresholdHigh: 100, VulnerabilityThresholdEnabled: true}
 		insecure := enforceThresholds(options, results)
 
@@ -649,6 +673,8 @@ func TestEnforceThresholds(t *testing.T) {
 	})
 
 	t.Run("absolute high violation", func(t *testing.T) {
+		t.Parallel()
+
 		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "absolute", VulnerabilityThresholdHigh: 5, VulnerabilityThresholdEnabled: true}
 		insecure := enforceThresholds(options, results)
 
@@ -656,6 +682,8 @@ func TestEnforceThresholds(t *testing.T) {
 	})
 
 	t.Run("percentage medium violation", func(t *testing.T) {
+		t.Parallel()
+
 		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "percentage", VulnerabilityThresholdMedium: 100, VulnerabilityThresholdEnabled: true}
 		insecure := enforceThresholds(options, results)
 
@@ -663,6 +691,8 @@ func TestEnforceThresholds(t *testing.T) {
 	})
 
 	t.Run("absolute medium violation", func(t *testing.T) {
+		t.Parallel()
+
 		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "absolute", VulnerabilityThresholdMedium: 5, VulnerabilityThresholdEnabled: true}
 		insecure := enforceThresholds(options, results)
 
@@ -670,6 +700,8 @@ func TestEnforceThresholds(t *testing.T) {
 	})
 
 	t.Run("percentage low violation", func(t *testing.T) {
+		t.Parallel()
+
 		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "percentage", VulnerabilityThresholdLow: 100, VulnerabilityThresholdEnabled: true}
 		insecure := enforceThresholds(options, results)
 
@@ -677,6 +709,8 @@ func TestEnforceThresholds(t *testing.T) {
 	})
 
 	t.Run("absolute low violation", func(t *testing.T) {
+		t.Parallel()
+
 		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "absolute", VulnerabilityThresholdLow: 5, VulnerabilityThresholdEnabled: true}
 		insecure := enforceThresholds(options, results)
 
@@ -684,6 +718,8 @@ func TestEnforceThresholds(t *testing.T) {
 	})
 
 	t.Run("percentage no violation", func(t *testing.T) {
+		t.Parallel()
+
 		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "percentage", VulnerabilityThresholdLow: 0, VulnerabilityThresholdEnabled: true}
 		insecure := enforceThresholds(options, results)
 
@@ -691,6 +727,8 @@ func TestEnforceThresholds(t *testing.T) {
 	})
 
 	t.Run("absolute no violation", func(t *testing.T) {
+		t.Parallel()
+
 		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "absolute", VulnerabilityThresholdLow: 15, VulnerabilityThresholdMedium: 15, VulnerabilityThresholdHigh: 15, VulnerabilityThresholdEnabled: true}
 		insecure := enforceThresholds(options, results)
 
@@ -699,15 +737,21 @@ func TestEnforceThresholds(t *testing.T) {
 }
 
 func TestLoadPreset(t *testing.T) {
+	t.Parallel()
+
 	sys := &systemMock{}
 
 	t.Run("resolve via name", func(t *testing.T) {
+		t.Parallel()
+
 		preset, err := loadPreset(sys, "SAP_JS_Default")
 		assert.NoError(t, err, "Expected success but failed")
 		assert.Equal(t, "SAP_JS_Default", preset.Name, "Expected result but got none")
 	})
 
 	t.Run("error case", func(t *testing.T) {
+		t.Parallel()
+
 		preset, err := loadPreset(sys, "")
 		assert.Contains(t, fmt.Sprint(err), "preset SAP_JS_Default not found", "Expected different error")
 		assert.Equal(t, 0, preset.ID, "Expected result but got none")
