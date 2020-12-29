@@ -31,24 +31,10 @@ type checkmarxExecuteScanUtils interface {
 	Open(name string) (*os.File, error)
 }
 
-type checkmarxExecuteScanUtilsBundle struct {
-	//*command.Command
-	//*piperutils.Files
-
-	// Embed more structs as necessary to implement methods or interfaces you add to executeNewmanUtils.
-	// Structs embedded in this way must each have a unique set of methods attached.
-	// If there is no struct which implements the method you need, attach the method to
-	// executeNewmanUtilsBundle and forward to the implementation of the dependency.
-}
+type checkmarxExecuteScanUtilsBundle struct{}
 
 func newCheckmarxExecuteScanUtils() checkmarxExecuteScanUtils {
-	utils := checkmarxExecuteScanUtilsBundle{
-		//Command: &command.Command{},
-		//Files:   &piperutils.Files{},
-	}
-	// Reroute command output to logging framework
-	//utils.Stdout(log.Writer())
-	//utils.Stderr(log.Writer())
+	utils := checkmarxExecuteScanUtilsBundle{}
 	return &utils
 }
 
@@ -59,6 +45,7 @@ func (checkmarxExecuteScanUtilsBundle) FileInfoHeader(fi os.FileInfo) (*zip.File
 func (checkmarxExecuteScanUtilsBundle) Stat(name string) (os.FileInfo, error) {
 	return os.Stat(name)
 }
+
 func (checkmarxExecuteScanUtilsBundle) Open(name string) (*os.File, error) {
 	return os.Open(name)
 }
