@@ -643,7 +643,7 @@ func TestRunScan(t *testing.T) {
 		influx := checkmarxExecuteScanInflux{}
 
 		err = runScan(options, sys, workspace, &influx, newCheckmarxExecuteScanUtilsMock())
-		assert.EqualError(t, err, "error occured but none expected")
+		assert.EqualError(t, err, "failed to set preset 10048 for project TestExisting: updating configuration of project TestExisting failed: error on UpdateProjectConfiguration")
 	})
 
 	t.Run("error on unmarshal json", func(t *testing.T) {
@@ -764,21 +764,42 @@ func TestRunScanWOtherCycle(t *testing.T) {
 func TestRunScanForPullRequest(t *testing.T) {
 	t.Parallel()
 
-	sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`)}
-	options := checkmarxExecuteScanOptions{PullRequestName: "PR-19", ProjectName: "Test", VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "SAP_JS_Default", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true, AvoidDuplicateProjectScans: false}
-	workspace, err := ioutil.TempDir("", "workspace3")
-	if err != nil {
-		t.Fatal("Failed to create temporary workspace directory")
-	}
-	// clean up tmp dir
-	defer os.RemoveAll(workspace)
+	t.Run("happy path", func(t *testing.T) {
+		t.Parallel()
+		sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`)}
+		options := checkmarxExecuteScanOptions{PullRequestName: "PR-19", ProjectName: "Test", VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "SAP_JS_Default", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true, AvoidDuplicateProjectScans: false}
+		workspace, err := ioutil.TempDir("", "workspace3")
+		if err != nil {
+			t.Fatal("Failed to create temporary workspace directory")
+		}
+		// clean up tmp dir
+		defer os.RemoveAll(workspace)
 
-	influx := checkmarxExecuteScanInflux{}
+		influx := checkmarxExecuteScanInflux{}
 
-	err = runScan(options, sys, workspace, &influx, newCheckmarxExecuteScanUtilsMock())
-	assert.Equal(t, true, sys.isIncremental, "isIncremental has wrong value")
-	assert.Equal(t, true, sys.isPublic, "isPublic has wrong value")
-	assert.Equal(t, true, sys.forceScan, "forceScan has wrong value")
+		err = runScan(options, sys, workspace, &influx, newCheckmarxExecuteScanUtilsMock())
+		assert.Equal(t, true, sys.isIncremental, "isIncremental has wrong value")
+		assert.Equal(t, true, sys.isPublic, "isPublic has wrong value")
+		assert.Equal(t, true, sys.forceScan, "forceScan has wrong value")
+	})
+
+	t.Run("error on UpdateProjectConfiguration", func(t *testing.T) {
+		t.Parallel()
+		sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`),
+			errorOnUpdateProjectConfiguration: true}
+		options := checkmarxExecuteScanOptions{PullRequestName: "PR-19", ProjectName: "Test", VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "SAP_JS_Default", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true, AvoidDuplicateProjectScans: false}
+		workspace, err := ioutil.TempDir("", "workspace3")
+		if err != nil {
+			t.Fatal("Failed to create temporary workspace directory")
+		}
+		// clean up tmp dir
+		defer os.RemoveAll(workspace)
+
+		influx := checkmarxExecuteScanInflux{}
+
+		err = runScan(options, sys, workspace, &influx, newCheckmarxExecuteScanUtilsMock())
+		assert.EqualError(t, err, "failed to set preset SAP_JS_Default for project Test_PR-19: updating configuration of project Test_PR-19 failed: error on UpdateProjectConfiguration")
+	})
 }
 
 func TestRunScanForPullRequestProject(t *testing.T) {
