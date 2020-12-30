@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"archive/zip"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -14,8 +15,6 @@ import (
 	"time"
 
 	"encoding/json"
-	"encoding/xml"
-
 	"github.com/SAP/jenkins-library/pkg/checkmarx"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -30,6 +29,7 @@ type checkmarxExecuteScanUtils interface {
 	Stat(name string) (os.FileInfo, error)
 	Open(name string) (*os.File, error)
 	Sleep(d time.Duration)
+	Unmarshal(data []byte, v interface{}) error
 }
 
 type checkmarxExecuteScanUtilsBundle struct{}
@@ -53,6 +53,10 @@ func (checkmarxExecuteScanUtilsBundle) Open(name string) (*os.File, error) {
 
 func (checkmarxExecuteScanUtilsBundle) Sleep(d time.Duration) {
 	time.Sleep(d)
+}
+
+func (checkmarxExecuteScanUtilsBundle) Unmarshal(data []byte, v interface{}) error {
+	return xml.Unmarshal(data, v)
 }
 
 func checkmarxExecuteScan(config checkmarxExecuteScanOptions, _ *telemetry.CustomData, influx *checkmarxExecuteScanInflux) {
@@ -554,7 +558,7 @@ func getDetailedResults(sys checkmarx.System, reportFileName string, scanID int,
 	if len(data) > 0 {
 		_ = ioutil.WriteFile(reportFileName, data, 0700)
 		var xmlResult checkmarx.DetailedResult
-		err := xml.Unmarshal(data, &xmlResult)
+		err := utils.Unmarshal(data, &xmlResult)
 		if err != nil {
 			return resultMap, errors.Wrapf(err, "failed to unmarshal XML report for scan %v", scanID)
 		}

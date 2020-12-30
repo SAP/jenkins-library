@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -252,6 +253,7 @@ type checkmarxExecuteScanUtilsMock struct {
 	errorOnFileInfoHeader bool
 	errorOnStat           bool
 	errorOnOpen           bool
+	errorOnUnmarshal      bool
 	numberOfSecondsSlept  int
 }
 
@@ -282,6 +284,13 @@ func (c checkmarxExecuteScanUtilsMock) Open(name string) (*os.File, error) {
 
 func (c *checkmarxExecuteScanUtilsMock) Sleep(d time.Duration) {
 	c.numberOfSecondsSlept += int(d.Seconds())
+}
+
+func (c checkmarxExecuteScanUtilsMock) Unmarshal(data []byte, v interface{}) error {
+	if c.errorOnUnmarshal {
+		return fmt.Errorf("error on Unmarshal")
+	}
+	return xml.Unmarshal(data, v)
 }
 
 func TestFilterFileGlob(t *testing.T) {
@@ -532,6 +541,21 @@ func TestGetDetailedResults(t *testing.T) {
 		defer os.RemoveAll(dir)
 		_, err = getDetailedResults(sys, filepath.Join(dir, "abc.xml"), 2635, newCheckmarxExecuteScanUtilsMock())
 		assert.EqualError(t, err, "failed to download xml report: failed to get report status: error on GetReportStatus")
+	})
+
+	t.Run("error in Unmarshal", func(t *testing.T) {
+		t.Parallel()
+		sys := &systemMock{response: []byte(responseText)}
+		dir, err := ioutil.TempDir("", "test detailed results")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		// clean up tmp dir
+		defer os.RemoveAll(dir)
+		utilsMock := newCheckmarxExecuteScanUtilsMock()
+		utilsMock.errorOnUnmarshal = true
+		_, err = getDetailedResults(sys, filepath.Join(dir, "abc.xml"), 2635, utilsMock)
+		assert.EqualError(t, err, "failed to unmarshal XML report for scan 2635: error on Unmarshal")
 	})
 }
 
