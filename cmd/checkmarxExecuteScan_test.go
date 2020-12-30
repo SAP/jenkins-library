@@ -47,20 +47,24 @@ func (fi fileInfo) Sys() interface{} {
 }
 
 type systemMock struct {
-	response                                interface{}
-	isIncremental                           bool
-	isPublic                                bool
-	forceScan                               bool
-	createProject                           bool
-	previousPName                           string
-	getPresetsCalled                        bool
-	updateProjectConfigurationCalled        bool
-	errorOnRequestNewReport                 bool
-	unexpectedFinalStatusInDownloadedReport bool
-	errorOnGetReportStatus                  bool
-	returnNonFinalStatusFirst               bool
-	errorOnUpdateProjectConfiguration       bool
-	returnNoNameFromFilterPresetByName      bool
+	response                                   interface{}
+	isIncremental                              bool
+	isPublic                                   bool
+	forceScan                                  bool
+	createProject                              bool
+	previousPName                              string
+	getPresetsCalled                           bool
+	updateProjectConfigurationCalled           bool
+	errorOnRequestNewReport                    bool
+	unexpectedFinalStatusInDownloadedReport    bool
+	errorOnGetReportStatus                     bool
+	returnNonFinalStatusFirst                  bool
+	errorOnUpdateProjectConfiguration          bool
+	returnNoNameFromFilterPresetByName         bool
+	errorOnCreateProject                       bool
+	errorOnGetProjectsByNameAndTeam            bool
+	errorOnGetProjectsByNameAndTeamForTestPR17 bool
+	returnNoProjectOnGetProjectsByNameAndTeam  bool
 }
 
 func (sys *systemMock) FilterPresetByName(_ []checkmarx.Preset, presetName string) checkmarx.Preset {
@@ -86,6 +90,15 @@ func (sys *systemMock) GetProjectByID(projectID int) (checkmarx.Project, error) 
 }
 
 func (sys *systemMock) GetProjectsByNameAndTeam(projectName, teamID string) ([]checkmarx.Project, error) {
+	if sys.errorOnGetProjectsByNameAndTeam {
+		return []checkmarx.Project{}, fmt.Errorf("error on GetProjectsByNameAndTeam")
+	}
+	if sys.returnNoProjectOnGetProjectsByNameAndTeam {
+		return []checkmarx.Project{}, nil
+	}
+	if sys.errorOnGetProjectsByNameAndTeamForTestPR17 && projectName == "Test_PR-17" {
+		return []checkmarx.Project{}, fmt.Errorf("error on GetProjectsByNameAndTeam for project Test_PR-17")
+	}
 	if !sys.createProject || sys.previousPName == projectName {
 		if strings.Contains(projectName, "PR-17") {
 			return []checkmarx.Project{{ID: 17, Name: projectName, TeamID: teamID, IsPublic: true}}, nil
@@ -162,6 +175,9 @@ func (sys *systemMock) UploadProjectSourceCode(int, string) error {
 	return nil
 }
 func (sys *systemMock) CreateProject(string, string) (checkmarx.ProjectCreateResult, error) {
+	if sys.errorOnCreateProject {
+		return checkmarx.ProjectCreateResult{}, fmt.Errorf("error on CreateProject")
+	}
 	return checkmarx.ProjectCreateResult{ID: 20}, nil
 }
 func (sys *systemMock) CreateBranch(int, string) int {
@@ -691,25 +707,126 @@ func TestRunScanForPullRequest(t *testing.T) {
 	assert.Equal(t, true, sys.forceScan, "forceScan has wrong value")
 }
 
-func TestRunScanForPullRequestProjectNew(t *testing.T) {
+func TestRunScanForPullRequestProject(t *testing.T) {
+
 	t.Parallel()
 
-	sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`), createProject: true}
-	options := checkmarxExecuteScanOptions{PullRequestName: "PR-17", ProjectName: "Test", AvoidDuplicateProjectScans: true, VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamName: "OpenSource/Cracks/15", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
-	workspace, err := ioutil.TempDir("", "workspace4")
-	if err != nil {
-		t.Fatal("Failed to create temporary workspace directory")
-	}
-	// clean up tmp dir
-	defer os.RemoveAll(workspace)
+	t.Run("happy path", func(t *testing.T) {
+		t.Parallel()
+		sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`), createProject: true}
+		options := checkmarxExecuteScanOptions{PullRequestName: "PR-17", ProjectName: "Test", AvoidDuplicateProjectScans: true, VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamName: "OpenSource/Cracks/15", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+		workspace, err := ioutil.TempDir("", "workspace4")
+		if err != nil {
+			t.Fatal("Failed to create temporary workspace directory")
+		}
+		// clean up tmp dir
+		defer os.RemoveAll(workspace)
 
-	influx := checkmarxExecuteScanInflux{}
+		influx := checkmarxExecuteScanInflux{}
 
-	err = runScan(options, sys, workspace, &influx)
-	assert.NoError(t, err, "Unexpected error caught")
-	assert.Equal(t, true, sys.isIncremental, "isIncremental has wrong value")
-	assert.Equal(t, true, sys.isPublic, "isPublic has wrong value")
-	assert.Equal(t, false, sys.forceScan, "forceScan has wrong value")
+		err = runScan(options, sys, workspace, &influx)
+		assert.NoError(t, err, "Unexpected error caught")
+		assert.Equal(t, true, sys.isIncremental, "isIncremental has wrong value")
+		assert.Equal(t, true, sys.isPublic, "isPublic has wrong value")
+		assert.Equal(t, false, sys.forceScan, "forceScan has wrong value")
+	})
+
+	t.Run("error as no preset values given", func(t *testing.T) {
+		t.Parallel()
+		sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`), createProject: true}
+		options := checkmarxExecuteScanOptions{PullRequestName: "PR-17", ProjectName: "Test", AvoidDuplicateProjectScans: true, VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "", TeamName: "OpenSource/Cracks/15", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+		workspace, err := ioutil.TempDir("", "workspace4")
+		if err != nil {
+			t.Fatal("Failed to create temporary workspace directory")
+		}
+		// clean up tmp dir
+		defer os.RemoveAll(workspace)
+
+		influx := checkmarxExecuteScanInflux{}
+
+		err = runScan(options, sys, workspace, &influx)
+		assert.EqualError(t, err, "failed to create and configure new project Test_PR-17: preset not specified, creation of project Test_PR-17 failed")
+	})
+
+	t.Run("error on project creation", func(t *testing.T) {
+		t.Parallel()
+		sys := &systemMock{
+			response:             []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`),
+			createProject:        true,
+			errorOnCreateProject: true}
+		options := checkmarxExecuteScanOptions{PullRequestName: "PR-17", ProjectName: "Test", AvoidDuplicateProjectScans: true, VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamName: "OpenSource/Cracks/15", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+		workspace, err := ioutil.TempDir("", "workspace4")
+		if err != nil {
+			t.Fatal("Failed to create temporary workspace directory")
+		}
+		// clean up tmp dir
+		defer os.RemoveAll(workspace)
+
+		influx := checkmarxExecuteScanInflux{}
+
+		err = runScan(options, sys, workspace, &influx)
+		assert.EqualError(t, err, "failed to create and configure new project Test_PR-17: cannot create project Test_PR-17: error on CreateProject")
+	})
+
+	t.Run("error on set preset for project", func(t *testing.T) {
+		t.Parallel()
+		sys := &systemMock{
+			response:                          []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`),
+			createProject:                     true,
+			errorOnUpdateProjectConfiguration: true}
+		options := checkmarxExecuteScanOptions{PullRequestName: "PR-17", ProjectName: "Test", AvoidDuplicateProjectScans: true, VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamName: "OpenSource/Cracks/15", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+		workspace, err := ioutil.TempDir("", "workspace4")
+		if err != nil {
+			t.Fatal("Failed to create temporary workspace directory")
+		}
+		// clean up tmp dir
+		defer os.RemoveAll(workspace)
+
+		influx := checkmarxExecuteScanInflux{}
+
+		err = runScan(options, sys, workspace, &influx)
+		assert.EqualError(t, err, "failed to create and configure new project Test_PR-17: failed to set preset 10048 for project: updating configuration of project Test_PR-17 failed: error on UpdateProjectConfiguration")
+	})
+
+	t.Run("no projects on get project by name and team", func(t *testing.T) {
+		t.Parallel()
+		sys := &systemMock{
+			response:      []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`),
+			createProject: true,
+			returnNoProjectOnGetProjectsByNameAndTeam: true}
+		options := checkmarxExecuteScanOptions{PullRequestName: "PR-17", ProjectName: "Test", AvoidDuplicateProjectScans: true, VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamName: "OpenSource/Cracks/15", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+		workspace, err := ioutil.TempDir("", "workspace4")
+		if err != nil {
+			t.Fatal("Failed to create temporary workspace directory")
+		}
+		// clean up tmp dir
+		defer os.RemoveAll(workspace)
+
+		influx := checkmarxExecuteScanInflux{}
+
+		err = runScan(options, sys, workspace, &influx)
+		assert.NoError(t, err)
+	})
+
+	t.Run("error on get project by name and team", func(t *testing.T) {
+		t.Parallel()
+		sys := &systemMock{
+			response:      []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`),
+			createProject: true,
+			errorOnGetProjectsByNameAndTeamForTestPR17: true}
+		options := checkmarxExecuteScanOptions{PullRequestName: "PR-17", ProjectName: "Test", AvoidDuplicateProjectScans: true, VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamName: "OpenSource/Cracks/15", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+		workspace, err := ioutil.TempDir("", "workspace4")
+		if err != nil {
+			t.Fatal("Failed to create temporary workspace directory")
+		}
+		// clean up tmp dir
+		defer os.RemoveAll(workspace)
+
+		influx := checkmarxExecuteScanInflux{}
+
+		err = runScan(options, sys, workspace, &influx)
+		assert.EqualError(t, err, "failed to create and configure new project Test_PR-17: failed to load newly created project Test_PR-17: error on GetProjectsByNameAndTeam for project Test_PR-17")
+	})
 }
 
 func TestRunScanHighViolationPercentage(t *testing.T) {
