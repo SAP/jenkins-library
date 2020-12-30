@@ -60,9 +60,13 @@ type systemMock struct {
 	errorOnGetReportStatus                  bool
 	returnNonFinalStatusFirst               bool
 	errorOnUpdateProjectConfiguration       bool
+	returnNoNameFromFilterPresetByName      bool
 }
 
 func (sys *systemMock) FilterPresetByName(_ []checkmarx.Preset, presetName string) checkmarx.Preset {
+	if sys.returnNoNameFromFilterPresetByName {
+		return checkmarx.Preset{ID: 10050, Name: "", OwnerName: "16"}
+	}
 	if presetName == "CX_Default" {
 		return checkmarx.Preset{ID: 16, Name: "CX_Default", OwnerName: "16"}
 	}
@@ -607,6 +611,13 @@ func TestSetPresetForProject(t *testing.T) {
 		sys := &systemMock{errorOnUpdateProjectConfiguration: true}
 		err := setPresetForProject(sys, 12345, 16, "testProject", "CX_Default", "")
 		assert.EqualError(t, err, "updating configuration of project testProject failed: error on UpdateProjectConfiguration")
+	})
+
+	t.Run("no preset found for project", func(t *testing.T) {
+		t.Parallel()
+		sys := &systemMock{returnNoNameFromFilterPresetByName: true}
+		err := setPresetForProject(sys, 12345, -1, "testProject", "CX_Default", "")
+		assert.EqualError(t, err, "preset CX_Default not found, configuration of project testProject failed: preset  not found")
 	})
 
 	t.Run("with Name provided", func(t *testing.T) {
