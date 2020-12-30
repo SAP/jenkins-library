@@ -59,6 +59,7 @@ type systemMock struct {
 	unexpectedFinalStatusInDownloadedReport bool
 	errorOnGetReportStatus                  bool
 	returnNonFinalStatusFirst               bool
+	errorOnUpdateProjectConfiguration       bool
 }
 
 func (sys *systemMock) FilterPresetByName(_ []checkmarx.Preset, presetName string) checkmarx.Preset {
@@ -144,6 +145,9 @@ func (sys *systemMock) ScanProject(_ int, isIncrementalV, isPublicV, forceScanV 
 	return checkmarx.Scan{ID: 16}, nil
 }
 func (sys *systemMock) UpdateProjectConfiguration(int, int, string) error {
+	if sys.errorOnUpdateProjectConfiguration {
+		return fmt.Errorf("error on UpdateProjectConfiguration")
+	}
 	sys.updateProjectConfigurationCalled = true
 	return nil
 }
@@ -586,25 +590,34 @@ func TestRunScan(t *testing.T) {
 	assert.Equal(t, true, sys.scanProjectCalled, "ScanProject was not invoked")
 }
 
-func TestSetPresetForProjectWithIDProvided(t *testing.T) {
+func TestSetPresetForProject(t *testing.T) {
 	t.Parallel()
 
-	sys := &systemMock{}
-	err := setPresetForProject(sys, 12345, 16, "testProject", "CX_Default", "")
-	assert.NoError(t, err, "error occured but none expected")
-	assert.Equal(t, false, sys.getPresetsCalled, "GetPresets was called")
-	assert.Equal(t, true, sys.updateProjectConfigurationCalled, "UpdateProjectConfiguration was not called")
-}
+	t.Run("with ID provided", func(t *testing.T) {
+		t.Parallel()
+		sys := &systemMock{}
+		err := setPresetForProject(sys, 12345, 16, "testProject", "CX_Default", "")
+		assert.NoError(t, err, "error occured but none expected")
+		assert.Equal(t, false, sys.getPresetsCalled, "GetPresets was called")
+		assert.Equal(t, true, sys.updateProjectConfigurationCalled, "UpdateProjectConfiguration was not called")
+	})
 
-func TestSetPresetForProjectWithNameProvided(t *testing.T) {
-	t.Parallel()
+	t.Run("error in UpdateProjectConfiguration", func(t *testing.T) {
+		t.Parallel()
+		sys := &systemMock{errorOnUpdateProjectConfiguration: true}
+		err := setPresetForProject(sys, 12345, 16, "testProject", "CX_Default", "")
+		assert.EqualError(t, err, "updating configuration of project testProject failed: error on UpdateProjectConfiguration")
+	})
 
-	sys := &systemMock{}
-	presetID, _ := strconv.Atoi("CX_Default")
-	err := setPresetForProject(sys, 12345, presetID, "testProject", "CX_Default", "")
-	assert.NoError(t, err, "error occured but none expected")
-	assert.Equal(t, true, sys.getPresetsCalled, "GetPresets was not called")
-	assert.Equal(t, true, sys.updateProjectConfigurationCalled, "UpdateProjectConfiguration was not called")
+	t.Run("with Name provided", func(t *testing.T) {
+		t.Parallel()
+		sys := &systemMock{}
+		presetID, _ := strconv.Atoi("CX_Default")
+		err := setPresetForProject(sys, 12345, presetID, "testProject", "CX_Default", "")
+		assert.NoError(t, err, "error occured but none expected")
+		assert.Equal(t, true, sys.getPresetsCalled, "GetPresets was not called")
+		assert.Equal(t, true, sys.updateProjectConfigurationCalled, "UpdateProjectConfiguration was not called")
+	})
 }
 
 func TestVerifyOnly(t *testing.T) {
