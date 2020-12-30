@@ -29,6 +29,7 @@ type checkmarxExecuteScanUtils interface {
 	FileInfoHeader(fi os.FileInfo) (*zip.FileHeader, error)
 	Stat(name string) (os.FileInfo, error)
 	Open(name string) (*os.File, error)
+	Sleep(d time.Duration)
 }
 
 type checkmarxExecuteScanUtilsBundle struct{}
@@ -48,6 +49,10 @@ func (checkmarxExecuteScanUtilsBundle) Stat(name string) (os.FileInfo, error) {
 
 func (checkmarxExecuteScanUtilsBundle) Open(name string) (*os.File, error) {
 	return os.Open(name)
+}
+
+func (checkmarxExecuteScanUtilsBundle) Sleep(d time.Duration) {
+	time.Sleep(d)
 }
 
 func checkmarxExecuteScan(config checkmarxExecuteScanOptions, _ *telemetry.CustomData, influx *checkmarxExecuteScanInflux) {
@@ -243,7 +248,7 @@ func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx
 	}
 
 	xmlReportName := createReportName(workspace, "CxSASTResults_%v.xml")
-	results, err := getDetailedResults(sys, xmlReportName, scanID)
+	results, err := getDetailedResults(sys, xmlReportName, scanID, newCheckmarxExecuteScanUtils())
 	if err != nil {
 		return errors.Wrap(err, "failed to get detailed results")
 	}
@@ -361,7 +366,7 @@ func reportToInflux(results map[string]interface{}, influx *checkmarxExecuteScan
 }
 
 func downloadAndSaveReport(sys checkmarx.System, reportFileName string, scanID int) error {
-	report, err := generateAndDownloadReport(sys, scanID, "PDF")
+	report, err := generateAndDownloadReport(sys, scanID, "PDF", newCheckmarxExecuteScanUtils())
 	if err != nil {
 		return errors.Wrap(err, "failed to download the report")
 	}
@@ -506,7 +511,7 @@ func setPresetForProject(sys checkmarx.System, projectID, presetIDValue int, pro
 	return nil
 }
 
-func generateAndDownloadReport(sys checkmarx.System, scanID int, reportType string) ([]byte, error) {
+func generateAndDownloadReport(sys checkmarx.System, scanID int, reportType string, utils checkmarxExecuteScanUtils) ([]byte, error) {
 	report, err := sys.RequestNewReport(scanID, reportType)
 	if err != nil {
 		return []byte{}, errors.Wrap(err, "failed to request new report")
@@ -521,12 +526,12 @@ func generateAndDownloadReport(sys checkmarx.System, scanID int, reportType stri
 		if finalStatus != 1 {
 			break
 		}
-		time.Sleep(10 * time.Second)
+		utils.Sleep(10 * time.Second)
 	}
 	if finalStatus == 2 {
 		return sys.DownloadReport(report.ReportID)
 	}
-	return []byte{}, fmt.Errorf("unexpected status %v recieved", finalStatus)
+	return []byte{}, fmt.Errorf("unexpected status %v received", finalStatus)
 }
 
 func getNumCoherentIncrementalScans(scans []checkmarx.ScanStatus) int {
@@ -540,9 +545,9 @@ func getNumCoherentIncrementalScans(scans []checkmarx.ScanStatus) int {
 	return count
 }
 
-func getDetailedResults(sys checkmarx.System, reportFileName string, scanID int) (map[string]interface{}, error) {
+func getDetailedResults(sys checkmarx.System, reportFileName string, scanID int, utils checkmarxExecuteScanUtils) (map[string]interface{}, error) {
 	resultMap := map[string]interface{}{}
-	data, err := generateAndDownloadReport(sys, scanID, "XML")
+	data, err := generateAndDownloadReport(sys, scanID, "XML", utils)
 	if err != nil {
 		return resultMap, errors.Wrap(err, "failed to download xml report")
 	}
