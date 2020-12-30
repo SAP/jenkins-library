@@ -66,6 +66,7 @@ type systemMock struct {
 	errorOnGetProjectsByNameAndTeamForTestPR17 bool
 	returnNoProjectOnGetProjectsByNameAndTeam  bool
 	returnNoTeamsOnGetTeams                    bool
+	errorOnGetProjectByID                      bool
 }
 
 func (sys *systemMock) FilterPresetByName(_ []checkmarx.Preset, presetName string) checkmarx.Preset {
@@ -84,6 +85,9 @@ func (sys *systemMock) FilterProjectByName([]checkmarx.Project, string) checkmar
 	return checkmarx.Project{ID: 1, Name: "Test", TeamID: "16", IsPublic: true}
 }
 func (sys *systemMock) GetProjectByID(projectID int) (checkmarx.Project, error) {
+	if sys.errorOnGetProjectByID {
+		return checkmarx.Project{}, fmt.Errorf("error on GetProjectByID")
+	}
 	if projectID == 17 {
 		return checkmarx.Project{ID: 17, Name: "Test_PR-17", TeamID: "16", IsPublic: true}, nil
 	}
@@ -824,6 +828,24 @@ func TestRunScanForPullRequestProject(t *testing.T) {
 		assert.Equal(t, true, sys.isIncremental, "isIncremental has wrong value")
 		assert.Equal(t, true, sys.isPublic, "isPublic has wrong value")
 		assert.Equal(t, false, sys.forceScan, "forceScan has wrong value")
+	})
+
+	t.Run("error on GetProjectByID", func(t *testing.T) {
+		t.Parallel()
+		sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`), createProject: true,
+			errorOnGetProjectByID: true}
+		options := checkmarxExecuteScanOptions{PullRequestName: "PR-17", ProjectName: "Test", AvoidDuplicateProjectScans: true, VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamName: "OpenSource/Cracks/15", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+		workspace, err := ioutil.TempDir("", "workspace4")
+		if err != nil {
+			t.Fatal("Failed to create temporary workspace directory")
+		}
+		// clean up tmp dir
+		defer os.RemoveAll(workspace)
+
+		influx := checkmarxExecuteScanInflux{}
+
+		err = runScan(options, sys, workspace, &influx, newCheckmarxExecuteScanUtilsMock())
+		assert.EqualError(t, err, "error when trying to load project: failed to create branch Test_PR-17 for project Test")
 	})
 
 	t.Run("error on GetProjectsByNameAndTeam", func(t *testing.T) {
