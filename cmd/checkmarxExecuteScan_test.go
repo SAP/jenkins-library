@@ -65,6 +65,7 @@ type systemMock struct {
 	errorOnGetProjectsByNameAndTeam            bool
 	errorOnGetProjectsByNameAndTeamForTestPR17 bool
 	returnNoProjectOnGetProjectsByNameAndTeam  bool
+	returnNoTeamsOnGetTeams                    bool
 }
 
 func (sys *systemMock) FilterPresetByName(_ []checkmarx.Preset, presetName string) checkmarx.Preset {
@@ -191,6 +192,9 @@ func (sys *systemMock) GetProjects() ([]checkmarx.Project, error) {
 	return []checkmarx.Project{{ID: 15, Name: "OtherTest", TeamID: "16"}, {ID: 1, Name: "Test", TeamID: "16"}}, nil
 }
 func (sys *systemMock) GetTeams() []checkmarx.Team {
+	if sys.returnNoTeamsOnGetTeams {
+		return []checkmarx.Team{}
+	}
 	return []checkmarx.Team{{ID: json.RawMessage(`"16"`), FullName: "OpenSource/Cracks/16"}, {ID: json.RawMessage(`15`), FullName: "OpenSource/Cracks/15"}}
 }
 
@@ -591,23 +595,44 @@ func TestGetDetailedResults(t *testing.T) {
 func TestRunScan(t *testing.T) {
 	t.Parallel()
 
-	sys := &systemMockForExistingProject{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`)}
-	options := checkmarxExecuteScanOptions{ProjectName: "TestExisting", VulnerabilityThresholdUnit: "absolute", FullScanCycle: "2", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
-	workspace, err := ioutil.TempDir("", "workspace1")
-	if err != nil {
-		t.Fatal("Failed to create temporary workspace directory")
-	}
-	// clean up tmp dir
-	defer os.RemoveAll(workspace)
+	t.Run("happy path", func(t *testing.T) {
+		t.Parallel()
+		sys := &systemMockForExistingProject{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`)}
+		options := checkmarxExecuteScanOptions{ProjectName: "TestExisting", VulnerabilityThresholdUnit: "absolute", FullScanCycle: "2", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+		workspace, err := ioutil.TempDir("", "workspace1")
+		if err != nil {
+			t.Fatal("Failed to create temporary workspace directory")
+		}
+		// clean up tmp dir
+		defer os.RemoveAll(workspace)
 
-	influx := checkmarxExecuteScanInflux{}
+		influx := checkmarxExecuteScanInflux{}
 
-	err = runScan(options, sys, workspace, &influx)
-	assert.NoError(t, err, "error occured but none expected")
-	assert.Equal(t, false, sys.isIncremental, "isIncremental has wrong value")
-	assert.Equal(t, true, sys.isPublic, "isPublic has wrong value")
-	assert.Equal(t, true, sys.forceScan, "forceScan has wrong value")
-	assert.Equal(t, true, sys.scanProjectCalled, "ScanProject was not invoked")
+		err = runScan(options, sys, workspace, &influx)
+		assert.NoError(t, err, "error occured but none expected")
+		assert.Equal(t, false, sys.isIncremental, "isIncremental has wrong value")
+		assert.Equal(t, true, sys.isPublic, "isPublic has wrong value")
+		assert.Equal(t, true, sys.forceScan, "forceScan has wrong value")
+		assert.Equal(t, true, sys.scanProjectCalled, "ScanProject was not invoked")
+	})
+
+	t.Run("failed to load team by name", func(t *testing.T) {
+		t.Parallel()
+		sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`),
+			returnNoTeamsOnGetTeams: true}
+		options := checkmarxExecuteScanOptions{ProjectName: "TestExisting", VulnerabilityThresholdUnit: "absolute", FullScanCycle: "2", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamID: "", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true, TeamName: "teamName"}
+		workspace, err := ioutil.TempDir("", "workspace1")
+		if err != nil {
+			t.Fatal("Failed to create temporary workspace directory")
+		}
+		// clean up tmp dir
+		defer os.RemoveAll(workspace)
+
+		influx := checkmarxExecuteScanInflux{}
+
+		err = runScan(options, sys, workspace, &influx)
+		assert.EqualError(t, err, "failed to load team: failed to identify team by teamName teamName")
+	})
 }
 
 func TestSetPresetForProject(t *testing.T) {
