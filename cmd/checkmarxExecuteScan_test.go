@@ -281,8 +281,9 @@ type checkmarxExecuteScanUtilsMock struct {
 	errorOnFileInfoHeader bool
 	errorOnStat           bool
 	errorOnOpen           bool
-	errorOnUnmarshal      bool
+	errorOnXmlUnmarshal   bool
 	numberOfSecondsSlept  int
+	errorOnJsonUnmarshal  bool
 }
 
 func newCheckmarxExecuteScanUtilsMock() *checkmarxExecuteScanUtilsMock {
@@ -314,11 +315,18 @@ func (c *checkmarxExecuteScanUtilsMock) Sleep(d time.Duration) {
 	c.numberOfSecondsSlept += int(d.Seconds())
 }
 
-func (c checkmarxExecuteScanUtilsMock) Unmarshal(data []byte, v interface{}) error {
-	if c.errorOnUnmarshal {
-		return fmt.Errorf("error on Unmarshal")
+func (c checkmarxExecuteScanUtilsMock) XmlUnmarshal(data []byte, v interface{}) error {
+	if c.errorOnXmlUnmarshal {
+		return fmt.Errorf("error on XmlUnmarshal")
 	}
 	return xml.Unmarshal(data, v)
+}
+
+func (c checkmarxExecuteScanUtilsMock) JsonUnmarshal(data []byte, v interface{}) error {
+	if c.errorOnJsonUnmarshal {
+		return fmt.Errorf("error on JsonUnmarshal")
+	}
+	return json.Unmarshal(data, v)
 }
 
 func TestFilterFileGlob(t *testing.T) {
@@ -576,7 +584,7 @@ func TestGetDetailedResults(t *testing.T) {
 		assert.EqualError(t, err, "failed to download xml report: failed to get report status: error on GetReportStatus")
 	})
 
-	t.Run("error in Unmarshal", func(t *testing.T) {
+	t.Run("error in XmlUnmarshal", func(t *testing.T) {
 		t.Parallel()
 		sys := &systemMock{response: []byte(responseText)}
 		dir, err := ioutil.TempDir("", "test detailed results")
@@ -586,9 +594,9 @@ func TestGetDetailedResults(t *testing.T) {
 		// clean up tmp dir
 		defer os.RemoveAll(dir)
 		utilsMock := newCheckmarxExecuteScanUtilsMock()
-		utilsMock.errorOnUnmarshal = true
+		utilsMock.errorOnXmlUnmarshal = true
 		_, err = getDetailedResults(sys, filepath.Join(dir, "abc.xml"), 2635, utilsMock)
-		assert.EqualError(t, err, "failed to unmarshal XML report for scan 2635: error on Unmarshal")
+		assert.EqualError(t, err, "failed to unmarshal XML report for scan 2635: error on XmlUnmarshal")
 	})
 }
 
@@ -608,12 +616,31 @@ func TestRunScan(t *testing.T) {
 
 		influx := checkmarxExecuteScanInflux{}
 
-		err = runScan(options, sys, workspace, &influx)
+		err = runScan(options, sys, workspace, &influx, newCheckmarxExecuteScanUtilsMock())
 		assert.NoError(t, err, "error occured but none expected")
 		assert.Equal(t, false, sys.isIncremental, "isIncremental has wrong value")
 		assert.Equal(t, true, sys.isPublic, "isPublic has wrong value")
 		assert.Equal(t, true, sys.forceScan, "forceScan has wrong value")
 		assert.Equal(t, true, sys.scanProjectCalled, "ScanProject was not invoked")
+	})
+
+	t.Run("error on unmarshal json", func(t *testing.T) {
+		t.Parallel()
+		sys := &systemMockForExistingProject{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`)}
+		options := checkmarxExecuteScanOptions{ProjectName: "TestExisting", VulnerabilityThresholdUnit: "absolute", FullScanCycle: "2", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamID: "", TeamName: "team name", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+		workspace, err := ioutil.TempDir("", "workspace1")
+		if err != nil {
+			t.Fatal("Failed to create temporary workspace directory")
+		}
+		// clean up tmp dir
+		defer os.RemoveAll(workspace)
+
+		influx := checkmarxExecuteScanInflux{}
+
+		mock := newCheckmarxExecuteScanUtilsMock()
+		mock.errorOnJsonUnmarshal = true
+		err = runScan(options, sys, workspace, &influx, mock)
+		assert.EqualError(t, err, "failed to unmarshall team.ID: error on JsonUnmarshal")
 	})
 
 	t.Run("failed to load team by name", func(t *testing.T) {
@@ -630,7 +657,7 @@ func TestRunScan(t *testing.T) {
 
 		influx := checkmarxExecuteScanInflux{}
 
-		err = runScan(options, sys, workspace, &influx)
+		err = runScan(options, sys, workspace, &influx, newCheckmarxExecuteScanUtilsMock())
 		assert.EqualError(t, err, "failed to load team: failed to identify team by teamName teamName")
 	})
 }
@@ -686,7 +713,7 @@ func TestVerifyOnly(t *testing.T) {
 
 	influx := checkmarxExecuteScanInflux{}
 
-	err = runScan(options, sys, workspace, &influx)
+	err = runScan(options, sys, workspace, &influx, newCheckmarxExecuteScanUtilsMock())
 	assert.NoError(t, err, "error occured but none expected")
 	assert.Equal(t, false, sys.scanProjectCalled, "ScanProject was invoked but shouldn't")
 }
@@ -705,7 +732,7 @@ func TestRunScanWOtherCycle(t *testing.T) {
 
 	influx := checkmarxExecuteScanInflux{}
 
-	err = runScan(options, sys, workspace, &influx)
+	err = runScan(options, sys, workspace, &influx, newCheckmarxExecuteScanUtilsMock())
 	assert.NoError(t, err, "error occured but none expected")
 	assert.Equal(t, true, sys.isIncremental, "isIncremental has wrong value")
 	assert.Equal(t, true, sys.isPublic, "isPublic has wrong value")
@@ -726,7 +753,7 @@ func TestRunScanForPullRequest(t *testing.T) {
 
 	influx := checkmarxExecuteScanInflux{}
 
-	err = runScan(options, sys, workspace, &influx)
+	err = runScan(options, sys, workspace, &influx, newCheckmarxExecuteScanUtilsMock())
 	assert.Equal(t, true, sys.isIncremental, "isIncremental has wrong value")
 	assert.Equal(t, true, sys.isPublic, "isPublic has wrong value")
 	assert.Equal(t, true, sys.forceScan, "forceScan has wrong value")
@@ -749,7 +776,7 @@ func TestRunScanForPullRequestProject(t *testing.T) {
 
 		influx := checkmarxExecuteScanInflux{}
 
-		err = runScan(options, sys, workspace, &influx)
+		err = runScan(options, sys, workspace, &influx, newCheckmarxExecuteScanUtilsMock())
 		assert.NoError(t, err, "Unexpected error caught")
 		assert.Equal(t, true, sys.isIncremental, "isIncremental has wrong value")
 		assert.Equal(t, true, sys.isPublic, "isPublic has wrong value")
@@ -769,7 +796,7 @@ func TestRunScanForPullRequestProject(t *testing.T) {
 
 		influx := checkmarxExecuteScanInflux{}
 
-		err = runScan(options, sys, workspace, &influx)
+		err = runScan(options, sys, workspace, &influx, newCheckmarxExecuteScanUtilsMock())
 		assert.EqualError(t, err, "failed to create and configure new project Test_PR-17: preset not specified, creation of project Test_PR-17 failed")
 	})
 
@@ -789,7 +816,7 @@ func TestRunScanForPullRequestProject(t *testing.T) {
 
 		influx := checkmarxExecuteScanInflux{}
 
-		err = runScan(options, sys, workspace, &influx)
+		err = runScan(options, sys, workspace, &influx, newCheckmarxExecuteScanUtilsMock())
 		assert.EqualError(t, err, "failed to create and configure new project Test_PR-17: cannot create project Test_PR-17: error on CreateProject")
 	})
 
@@ -809,7 +836,7 @@ func TestRunScanForPullRequestProject(t *testing.T) {
 
 		influx := checkmarxExecuteScanInflux{}
 
-		err = runScan(options, sys, workspace, &influx)
+		err = runScan(options, sys, workspace, &influx, newCheckmarxExecuteScanUtilsMock())
 		assert.EqualError(t, err, "failed to create and configure new project Test_PR-17: failed to set preset 10048 for project: updating configuration of project Test_PR-17 failed: error on UpdateProjectConfiguration")
 	})
 
@@ -829,7 +856,7 @@ func TestRunScanForPullRequestProject(t *testing.T) {
 
 		influx := checkmarxExecuteScanInflux{}
 
-		err = runScan(options, sys, workspace, &influx)
+		err = runScan(options, sys, workspace, &influx, newCheckmarxExecuteScanUtilsMock())
 		assert.NoError(t, err)
 	})
 
@@ -849,7 +876,7 @@ func TestRunScanForPullRequestProject(t *testing.T) {
 
 		influx := checkmarxExecuteScanInflux{}
 
-		err = runScan(options, sys, workspace, &influx)
+		err = runScan(options, sys, workspace, &influx, newCheckmarxExecuteScanUtilsMock())
 		assert.EqualError(t, err, "failed to create and configure new project Test_PR-17: failed to load newly created project Test_PR-17: error on GetProjectsByNameAndTeam for project Test_PR-17")
 	})
 }
@@ -887,7 +914,7 @@ func TestRunScanHighViolationPercentage(t *testing.T) {
 
 	influx := checkmarxExecuteScanInflux{}
 
-	err = runScan(options, sys, workspace, &influx)
+	err = runScan(options, sys, workspace, &influx, newCheckmarxExecuteScanUtilsMock())
 	assert.Contains(t, fmt.Sprint(err), "the project is not compliant", "Expected different error")
 }
 
@@ -924,7 +951,7 @@ func TestRunScanHighViolationAbsolute(t *testing.T) {
 
 	influx := checkmarxExecuteScanInflux{}
 
-	err = runScan(options, sys, workspace, &influx)
+	err = runScan(options, sys, workspace, &influx, newCheckmarxExecuteScanUtilsMock())
 	assert.Contains(t, fmt.Sprint(err), "the project is not compliant", "Expected different error")
 }
 
