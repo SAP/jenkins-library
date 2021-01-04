@@ -38,7 +38,7 @@ func abapEnvironmentAssemblePackages(config abapEnvironmentAssemblePackagesOptio
 	}
 }
 
-func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender, cpe *abapEnvironmentAssemblePackagesCommonPipelineEnvironment) error {
+func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesOptions, _ *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender, cpe *abapEnvironmentAssemblePackagesCommonPipelineEnvironment) error {
 	conn := new(abapbuild.Connector)
 	var connConfig abapbuild.ConnectorConfiguration
 	connConfig.CfAPIEndpoint = config.CfAPIEndpoint
@@ -61,13 +61,13 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 	if err != nil {
 		return err
 	}
-	delayBetweenPostsInSeconds := time.Duration(3 * time.Second)
+	delayBetweenPostsInSeconds := 3 * time.Second
 	builds, buildsAlreadyReleased, err := starting(addonDescriptor.Repositories, *conn, delayBetweenPostsInSeconds)
 	if err != nil {
 		return err
 	}
 	maxRuntimeInMinutes := time.Duration(config.MaxRuntimeInMinutes) * time.Minute
-	pollIntervalsInSeconds := time.Duration(60 * time.Second)
+	pollIntervalsInSeconds := 60 * time.Second
 	err = polling(builds, maxRuntimeInMinutes, pollIntervalsInSeconds)
 	if err != nil {
 		return err
@@ -114,13 +114,13 @@ func downloadSARXML(builds []buildWithRepository) ([]abaputils.Repository, error
 }
 
 func checkIfFailedAndPrintLogs(builds []buildWithRepository) error {
-	var buildFailed bool = false
+	var buildFailed = false
 	for i := range builds {
 		if builds[i].build.RunState == abapbuild.Failed {
 			log.Entry().Errorf("Assembly of %s failed", builds[i].repo.PackageName)
 			buildFailed = true
 		}
-		builds[i].build.PrintLogs()
+		_ = builds[i].build.PrintLogs()
 	}
 	if buildFailed {
 		return errors.New("At least the assembly of one package failed")
@@ -164,9 +164,9 @@ func polling(builds []buildWithRepository, maxRuntimeInMinutes time.Duration, po
 		case <-timeout:
 			return errors.New("Timed out")
 		case <-ticker:
-			var allFinished bool = true
+			var allFinished = true
 			for i := range builds {
-				builds[i].build.Get()
+				_ = builds[i].build.Get()
 				if !builds[i].build.IsFinished() {
 					log.Entry().Infof("Assembly of %s is not yet finished, check again in %s", builds[i].repo.PackageName, pollIntervalsInSeconds)
 					allFinished = false
