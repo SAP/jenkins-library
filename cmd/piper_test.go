@@ -104,7 +104,7 @@ func TestPrepareConfig(t *testing.T) {
 			},
 		}
 
-		PrepareConfig(testCmd, &metadata, "testStep", &testOptions, mock.OpenFileMock)
+		_ = PrepareConfig(testCmd, &metadata, "testStep", &testOptions, mock.OpenFileMock)
 		assert.Equal(t, "testValueJSON", testOptions.TestParam, "wrong value retrieved from config")
 	})
 
@@ -199,7 +199,7 @@ func TestGetProjectConfigFile(t *testing.T) {
 			}
 
 			for _, file := range test.filesAvailable {
-				ioutil.WriteFile(filepath.Join(dir, file), []byte("general:"), 0700)
+				_ = ioutil.WriteFile(filepath.Join(dir, file), []byte("general:"), 0700)
 			}
 
 			assert.Equal(t, filepath.Join(dir, test.expected), getProjectConfigFile(filepath.Join(dir, test.filename)))
