@@ -105,7 +105,7 @@ func TestMtaBuild(t *testing.T) {
 
 		err := runMtaBuild(options, &cpe, utilsMock)
 
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		type MtaResult struct {
 			Version    string
@@ -162,6 +162,22 @@ func TestMtaBuild(t *testing.T) {
 		assert.True(t, utilsMock.HasWrittenFile("mta.yaml"))
 	})
 
+	t.Run("Test mta build invalid toolset", func(t *testing.T) {
+		t.Parallel()
+
+		utilsMock := newMtaBuildTestUtilsBundle()
+
+		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "invalid", BuildTarget: "CF", MtarName: "myName.mtar"}
+
+		cpe.mtarFilePath = ""
+
+		utilsMock.AddFile("package.json", []byte("{\"name\": \"myName\", \"version\": \"1.2.3\"}"))
+
+		err := runMtaBuild(options, &cpe, utilsMock)
+
+		assert.EqualError(t, err, "Unknown mta build tool: \"invalid\"")
+	})
+
 	t.Run("Test mta build classic toolset", func(t *testing.T) {
 		t.Parallel()
 
@@ -183,6 +199,22 @@ func TestMtaBuild(t *testing.T) {
 		}
 
 		assert.Equal(t, "myName.mtar", cpe.mtarFilePath)
+	})
+
+	t.Run("Test mta build classic toolset, invalid build target", func(t *testing.T) {
+		t.Parallel()
+
+		utilsMock := newMtaBuildTestUtilsBundle()
+
+		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "ERR", MtarName: "myName.mtar"}
+
+		cpe.mtarFilePath = ""
+
+		utilsMock.AddFile("package.json", []byte("{\"name\": \"myName\", \"version\": \"1.2.3\"}"))
+
+		err := runMtaBuild(options, &cpe, utilsMock)
+
+		assert.EqualError(t, err, "Unknown BuildTarget/Platform: 'ERR'")
 	})
 
 	t.Run("Test mta build classic toolset, mtarName from already existing mta.yaml", func(t *testing.T) {
