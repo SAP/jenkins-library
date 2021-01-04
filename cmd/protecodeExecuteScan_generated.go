@@ -173,8 +173,9 @@ func addProtecodeExecuteScanFlags(cmd *cobra.Command, stepConfig *protecodeExecu
 func protecodeExecuteScanMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "protecodeExecuteScan",
-			Aliases: []config.Alias{},
+			Name:        "protecodeExecuteScan",
+			Aliases:     []config.Alias{},
+			Description: "Protecode is an Open Source Vulnerability Scanner that is capable of scanning binaries. It can be used to scan docker images but is supports many other programming languages especially those of the C family.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -320,6 +321,12 @@ func protecodeExecuteScanMetadata() config.StepData {
 								Param: "username",
 								Type:  "secret",
 							},
+
+							{
+								Name:  "",
+								Paths: []string{"$(vaultPath)/protecode", "$(vaultBasePath)/$(vaultPipelineName)/protecode", "$(vaultBasePath)/GROUP-SECRETS/protecode"},
+								Type:  "vaultSecret",
+							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
@@ -333,6 +340,12 @@ func protecodeExecuteScanMetadata() config.StepData {
 								Name:  "protecodeCredentialsId",
 								Param: "password",
 								Type:  "secret",
+							},
+
+							{
+								Name:  "",
+								Paths: []string{"$(vaultPath)/protecode", "$(vaultBasePath)/$(vaultPipelineName)/protecode", "$(vaultBasePath)/GROUP-SECRETS/protecode"},
+								Type:  "vaultSecret",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -360,6 +373,17 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+					},
+				},
+			},
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{
+						Name: "influx",
+						Type: "influx",
+						Parameters: []map[string]interface{}{
+							{"Name": "protecode_data"}, {"fields": []map[string]string{{"name": "historical_vulnerabilities"}, {"name": "triaged_vulnerabilities"}, {"name": "excluded_vulnerabilities"}, {"name": "minor_vulnerabilities"}, {"name": "major_vulnerabilities"}, {"name": "vulnerabilities"}}},
+						},
 					},
 				},
 			},

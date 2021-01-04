@@ -59,6 +59,11 @@ spec:
         resourceRef:
           - name: githubTokenCredentialsId
             type: secret
+          - type: vaultSecret
+            paths:
+            - $(vaultPath)/github
+            - $(vaultBasePath)/$(vaultPipelineName)/github
+            - $(vaultBasePath)/GROUP-SECRETS/github
       - name: autoCreate
         type: bool
         description:
@@ -530,9 +535,18 @@ spec:
           - STAGES
           - STEPS
         default: false
+      - name: installArtifacts
+        type: bool
+        description:
+          "If enabled, it will install all artifacts to the local maven repository to make them available before running Fortify.
+          This is required if any maven module has dependencies to other modules in the repository and they were not installed before."
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
   containers:
-    - image: "<<please bring your own fortify image>>"
-      workingDir: "/home/piper"
+    - image: ""
   outputs:
     resources:
       - name: influx

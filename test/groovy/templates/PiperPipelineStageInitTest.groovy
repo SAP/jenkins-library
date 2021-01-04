@@ -102,7 +102,7 @@ class PiperPipelineStageInitTest extends BasePiperTest {
     @Test
     void testInitBuildToolDoesNotMatchProject() {
 
-        thrown.expectMessage('[piperPipelineStageInit] buildTool configuration \'npm\' does not fit to your project, please set buildTool as genereal setting in your .pipeline/config.yml correctly, see also https://sap.github.io/jenkins-library/configuration/')
+        thrown.expectMessage('[piperPipelineStageInit] buildTool configuration \'npm\' does not fit to your project, please set buildTool as general setting in your .pipeline/config.yml correctly, see also https://sap.github.io/jenkins-library/configuration/')
         jsr.step.piperPipelineStageInit(
             script: nullScript,
             juStabUtils: utils,
@@ -122,7 +122,7 @@ class PiperPipelineStageInitTest extends BasePiperTest {
             stashSettings: 'com.sap.piper/pipeline/stashSettings.yml'
         )
 
-        assertThat(stepsCalled, hasItems('checkout', 'setupCommonPipelineEnvironment', 'piperInitRunStageConfiguration', 'artifactSetVersion', 'pipelineStashFilesBeforeBuild'))
+        assertThat(stepsCalled, hasItems('checkout', 'setupCommonPipelineEnvironment', 'piperInitRunStageConfiguration', 'artifactPrepareVersion', 'pipelineStashFilesBeforeBuild'))
         assertThat(stepsCalled, not(hasItems('slackSendNotification')))
 
     }
@@ -176,7 +176,7 @@ class PiperPipelineStageInitTest extends BasePiperTest {
             'checkout',
             'setupCommonPipelineEnvironment',
             'piperInitRunStageConfiguration',
-            'artifactSetVersion',
+            'artifactPrepareVersion',
             'slackSendNotification',
             'pipelineStashFilesBeforeBuild'
         ))
@@ -211,7 +211,7 @@ class PiperPipelineStageInitTest extends BasePiperTest {
             'checkout',
             'setupCommonPipelineEnvironment',
             'piperInitRunStageConfiguration',
-            'artifactSetVersion',
+            'artifactPrepareVersion',
             'pipelineStashFilesBeforeBuild'
         ))
     }
@@ -228,25 +228,4 @@ class PiperPipelineStageInitTest extends BasePiperTest {
         assertThat(stepParams.setupCommonPipelineEnvironment?.customDefaultsFromFiles, is(['my-custom-default-file.yml']))
     }
 
-    @Test
-    void testInitWithCloudSdkStashInit() {
-        jsr.step.piperPipelineStageInit(script: nullScript, juStabUtils: utils, initCloudSdkStashSettings: true, buildTool: 'maven')
-
-        assertThat(nullScript.commonPipelineEnvironment.configuration.stageStashes, hasKey('init'))
-    }
-
-    @Test
-    void testLegacyConfigSettings() {
-        boolean checkForLegacyConfigurationCalled = false
-        helper.registerAllowedMethod('checkForLegacyConfiguration', [Map.class], {
-            checkForLegacyConfigurationCalled = true
-        })
-        nullScript.commonPipelineEnvironment.configuration = [
-            general: [legacyConfigSettings: 'com.sap.piper/pipeline/cloudSdkLegacyConfigSettings.yml']
-        ]
-
-        jsr.step.piperPipelineStageInit(script: nullScript, juStabUtils: utils, buildTool: 'maven')
-
-        assertTrue(checkForLegacyConfigurationCalled)
-    }
 }

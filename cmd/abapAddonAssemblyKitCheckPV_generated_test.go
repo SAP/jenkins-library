@@ -7,6 +7,7 @@ import (
 )
 
 func TestAbapAddonAssemblyKitCheckPVCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := AbapAddonAssemblyKitCheckPVCommand()
 

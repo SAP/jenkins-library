@@ -83,8 +83,8 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'deployTool',
     /**
-     * Defines the type of deployment, either `standard` deployment which results in a system downtime or a zero-downtime `blue-green` deployment.
-     * If 'cf_native' as deployType and 'blue-green' as deployTool is used in combination, your manifest.yaml may only contain one application.
+     * Defines the type of deployment, either `standard` deployment, which results in a system downtime, or a zero-downtime `blue-green` deployment.
+     * If 'cf_native' as deployTool and 'blue-green' as deployType is used in combination, your manifest.yaml may only contain one application.
      * If this application has the option 'no-route' active the deployType will be changed to 'standard'.
      * @possibleValues 'standard', 'blue-green'
      */
@@ -160,6 +160,10 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'dockerCredentialsId',
     /**
+     * Output the CloudFoundry trace logs. If not specified, takes the value of config.verbose.
+     */
+    'cfTrace',
+    /**
      * Toggle to activate the new go-implementation of the step. Off by default.
      * @possibleValues true, false
      */
@@ -231,7 +235,10 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('cloudFoundry/credentialsId', null, {c -> return !c.containsKey('vaultAppRoleTokenCredentialsId') || !c.containsKey('vaultAppRoleSecretTokenCredentialsId')})
             .use()
 
+        if (config.cfTrace == null) config.cfTrace = true
+
         if (config.useGoStep == true) {
+            utils.unstashAll(["deployDescriptor"])
             List credentials = [
                 [type: 'usernamePassword', id: 'cfCredentialsId', env: ['PIPER_username', 'PIPER_password']],
                 [type: 'usernamePassword', id: 'dockerCredentialsId', env: ['PIPER_dockerUsername', 'PIPER_dockerPassword']]
@@ -587,7 +594,7 @@ private deploy(String cfApiStatement, String cfDeployStatement, config, Closure 
             set +x
             set -e
             export HOME=${config.dockerWorkspace}
-            export CF_TRACE=${cfTraceFile}
+            ${config.cfTrace ? "export CF_TRACE=${cfTraceFile}" : ""}
             ${cfApiStatement ?: ''}
             cf login -u \"${username}\" -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\" ${config.loginParameters}
             cf plugins

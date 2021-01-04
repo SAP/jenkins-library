@@ -31,11 +31,6 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'inferProjectName',
     /**
-     * Toggle for initialization of the stash settings for Cloud SDK Pipeline.
-     * If this is set to true, the stashSettings parameter is **not** configurable.
-     */
-    'initCloudSdkStashSettings',
-    /**
      * Defines the library resource containing the legacy configuration definition.
      */
     'legacyConfigSettings',
@@ -68,6 +63,12 @@ import static com.sap.piper.Prerequisites.checkScript
      * Enables the use of technical stage names.
      */
     'useTechnicalStageNames',
+    /**
+     * Provides a clone from the specified repository.
+     * This map contains attributes, such as, `branches`, `extensions`, `userRemoteConfigs` etc.
+     * Example: `[$class: 'GitSCM', branches: [[name: <branch_to_be_cloned>]], userRemoteConfigs: [[credentialsId: <credential_to_access_repository>, url: <repository_url>]]]`.
+     */
+    'checkoutMap',
     /**
      * Optional path to the pipeline configuration file defining project specific settings.
      */
@@ -105,7 +106,7 @@ void call(Map parameters = [:]) {
     def stageName = StageNameProvider.instance.getStageName(script, parameters, this)
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], ordinal: 1, telemetryDisabled: true) {
-        def scmInfo = checkout scm
+        def scmInfo = checkout(parameters.checkoutMap ?: scm)
 
         setupCommonPipelineEnvironment(script: script, customDefaults: parameters.customDefaults, scmInfo: scmInfo,
             configFile: parameters.configFile, customDefaultsFromFiles: parameters.customDefaultsFromFiles)
@@ -138,25 +139,7 @@ void call(Map parameters = [:]) {
             ContainerMap.instance.initFromResource(script, config.containerMapResource, buildTool)
         }
 
-        //perform stashing based on library resource piper-stash-settings.yml if not configured otherwise or Cloud SDK Pipeline is initialized
-        if (config.initCloudSdkStashSettings) {
-            switch (buildTool) {
-                case 'maven':
-                    initStashConfiguration(script, "com.sap.piper/pipeline/cloudSdkJavaStashSettings.yml", config.verbose?: false)
-                    break
-                case 'npm':
-                    initStashConfiguration(script, "com.sap.piper/pipeline/cloudSdkJavascriptStashSettings.yml", config.verbose?: false)
-                    break
-                case 'mta':
-                    initStashConfiguration(script, "com.sap.piper/pipeline/cloudSdkMtaStashSettings.yml", config.verbose?: false)
-                    break
-                default:
-                    error "[${STEP_NAME}] No stash settings for build tool ${buildTool} can be found. With `initCloudSdkStashSettings` active, only Maven, MTA or NPM projects are supported."
-                    break
-            }
-        } else {
-            initStashConfiguration(script, config.stashSettings, config.verbose?: false)
-        }
+        initStashConfiguration(script, config.stashSettings, config.verbose?: false)
 
         if (config.verbose) {
             echo "piper-lib-os  configuration: ${script.commonPipelineEnvironment.configuration}"
@@ -183,7 +166,6 @@ void call(Map parameters = [:]) {
                 echo "[${STEP_NAME}] GitHub labels could not be retrieved from Pull Request, please make sure that credentials are maintained on multi-branch job."
             }
 
-
             setPullRequestStageStepActivation(script, config, prActions)
         }
 
@@ -191,15 +173,19 @@ void call(Map parameters = [:]) {
             if (parameters.script.commonPipelineEnvironment.configuration.runStep?.get('Init')?.slackSendNotification) {
                 slackSendNotification script: script, message: "STARTED: Job <${env.BUILD_URL}|${URLDecoder.decode(env.JOB_NAME, java.nio.charset.StandardCharsets.UTF_8.name())} ${env.BUILD_DISPLAY_NAME}>", color: 'WARNING'
             }
-            if (config.inferBuildTool && env.ON_K8S) {
-                // We set dockerImage: "" for the K8S case to avoid the execution of artifactPrepareVersion in a K8S Pod.
-                // In addition, a mvn executable is available on the Jenkins instance which can be used directly instead of executing the command in a container.
-                artifactPrepareVersion script: script, buildTool: buildTool, dockerImage: ""
-            } else if (config.inferBuildTool) {
-                artifactPrepareVersion script: script, buildTool: buildTool
-            } else {
-                artifactSetVersion script: script
+            Map prepareVersionParams = [script: script]
+            if (config.inferBuildTool) {
+                prepareVersionParams.buildTool = buildTool
             }
+            if (env.ON_K8S) {
+                // We force dockerImage: "" for the K8S case to avoid the execution of artifactPrepareVersion in a K8S Pod.
+                // Since artifactPrepareVersion may need the ".git" folder in order to push a tag, it would need to be part of the stashing.
+                // There are however problems with tar-ing this folder, which results in a failure to copy the stash back -- without a failure of the pipeline.
+                // This then also has the effect that any changes made to the build descriptors by the step (updated version) are not visible in the relevant stashes.
+                // In addition, a mvn executable is available on the Jenkins instance which can be used directly instead of executing the command in a container.
+                prepareVersionParams.dockerImage = ""
+            }
+            artifactPrepareVersion prepareVersionParams
         }
         pipelineStashFilesBeforeBuild script: script
     }
@@ -237,7 +223,7 @@ private String checkBuildTool(config) {
             break
     }
     if (buildDescriptorPattern && !findFiles(glob: buildDescriptorPattern)) {
-        error "[${STEP_NAME}] buildTool configuration '${config.buildTool}' does not fit to your project, please set buildTool as genereal setting in your .pipeline/config.yml correctly, see also https://sap.github.io/jenkins-library/configuration/"
+        error "[${STEP_NAME}] buildTool configuration '${config.buildTool}' does not fit to your project, please set buildTool as general setting in your .pipeline/config.yml correctly, see also https://sap.github.io/jenkins-library/configuration/"
     }
     return buildTool
 }

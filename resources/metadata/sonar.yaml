@@ -202,6 +202,11 @@ spec:
         resourceRef:
           - name: githubTokenCredentialsId
             type: secret
+          - type: vaultSecret
+            paths:
+            - $(vaultPath)/github
+            - $(vaultBasePath)/$(vaultPipelineName)/github
+            - $(vaultBasePath)/GROUP-SECRETS/github
       - name: disableInlineComments
         type: bool
         description: "Pull-Request only: Disables the pull-request decoration with inline comments.

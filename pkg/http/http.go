@@ -169,7 +169,7 @@ func (c *Client) Upload(data UploadRequestData) (*http.Response, error) {
 		return response, errors.Wrapf(err, "HTTP %v request to %v failed with error", data.Method, data.URL)
 	}
 
-	return c.handleResponse(response)
+	return c.handleResponse(response, data.URL)
 }
 
 // SendRequest sends an http request with a defined method
@@ -186,7 +186,7 @@ func (c *Client) SendRequest(method, url string, body io.Reader, header http.Hea
 		return response, errors.Wrapf(err, "error calling %v", url)
 	}
 
-	return c.handleResponse(response)
+	return c.handleResponse(response, url)
 }
 
 // SetOptions sets options used for the http client
@@ -375,7 +375,7 @@ func (c *Client) createRequest(method, url string, body io.Reader, header *http.
 	return request, nil
 }
 
-func (c *Client) handleResponse(response *http.Response) (*http.Response, error) {
+func (c *Client) handleResponse(response *http.Response, url string) (*http.Response, error) {
 	// 2xx codes do not create an error
 	if response.StatusCode >= 200 && response.StatusCode < 300 {
 		return response, nil
@@ -387,7 +387,7 @@ func (c *Client) handleResponse(response *http.Response) (*http.Response, error)
 	case http.StatusForbidden:
 		c.logger.WithField("HTTP Error", "403 (Forbidden)").Error("Permission issue, please check your user permissions!")
 	case http.StatusNotFound:
-		c.logger.WithField("HTTP Error", "404 (Not Found)").Error("Requested resource could not be found")
+		c.logger.WithField("HTTP Error", "404 (Not Found)").Errorf("Requested resource ('%s') could not be found", url)
 	case http.StatusInternalServerError:
 		c.logger.WithField("HTTP Error", "500 (Internal Server Error)").Error("Unknown error occurred.")
 	}

@@ -12,11 +12,12 @@ import (
 )
 
 func mockReader(path string) ([]byte, error) {
-	var file []byte
 	if path == "exists" {
-		return file, nil
+		return []byte("test"), nil
+	} else if path == "null" {
+		return []byte(""), nil
 	}
-	return file, errors.New("error reading the file")
+	return nil, errors.New("error reading the file")
 }
 
 func TestRegisterPackagesStep(t *testing.T) {
@@ -48,7 +49,25 @@ func TestRegisterPackagesStep(t *testing.T) {
 		json.Unmarshal([]byte(cpe.abap.addonDescriptor), &addonDescriptorFinal)
 		assert.Equal(t, "L", addonDescriptorFinal.Repositories[0].Status)
 	})
+	t.Run("step error - null file", func(t *testing.T) {
+		client := &abaputils.ClientMock{
+			BodyList: []string{responseRegisterPackagesPost, "myToken", "dummyResponseUpload"},
+		}
+		addonDescriptor := abaputils.AddonDescriptor{
+			Repositories: []abaputils.Repository{
+				{
+					PackageName:    "SAPK-002AAINDRNMSPC",
+					Status:         "P",
+					SarXMLFilePath: "null",
+				},
+			},
+		}
+		adoDesc, _ := json.Marshal(addonDescriptor)
+		config.AddonDescriptor = string(adoDesc)
+		err := runAbapAddonAssemblyKitRegisterPackages(&config, nil, client, &cpe, mockReader)
 
+		assert.Error(t, err, "Did expect error")
+	})
 	t.Run("step error - uploadSarFiles", func(t *testing.T) {
 		client := &abaputils.ClientMock{
 			Body:  "ErrorBody",
