@@ -53,6 +53,8 @@ type FilesMock struct {
 	removedFiles []string
 	CurrentDir   string
 	Separator    string
+
+	FilesWithFailingWrites []string
 }
 
 func (f *FilesMock) init() {
@@ -218,6 +220,10 @@ func (f *FilesMock) FileRead(path string) ([]byte, error) {
 
 // FileWrite just forwards to AddFile(), i.e. the content is associated with the given path.
 func (f *FilesMock) FileWrite(path string, content []byte, mode os.FileMode) error {
+	if contains(f.FilesWithFailingWrites, path) {
+		return fmt.Errorf("cannot write file " + path)
+	}
+
 	f.init()
 	// NOTE: FilesMock could be extended to have a set of paths for which FileWrite should fail.
 	// This is why AddFile() exists separately, to differentiate the notion of setting up the mocking
@@ -225,6 +231,15 @@ func (f *FilesMock) FileWrite(path string, content []byte, mode os.FileMode) err
 	f.writtenFiles = append(f.writtenFiles, f.toAbsPath(path))
 	f.AddFileWithMode(path, content, mode)
 	return nil
+}
+
+func contains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
 }
 
 // FileRemove deletes the association of the given path with any content and records the removal of the file.

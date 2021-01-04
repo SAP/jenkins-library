@@ -9,14 +9,24 @@ import (
 	"github.com/evanphx/json-patch"
 )
 
-func jsonApplyPatch(config jsonApplyPatchOptions, telemetryData *telemetry.CustomData) {
-	err := runJsonApplyPatch(&config, &piperutils.Files{})
+type jsonApplyPatchUtils interface {
+	Indent(dst *bytes.Buffer, src []byte, prefix, indent string) error
+}
+
+type jsonApplyPatchUtilsBundle struct{}
+
+func (j jsonApplyPatchUtilsBundle) Indent(dst *bytes.Buffer, src []byte, prefix, indent string) error {
+	return json.Indent(dst, src, prefix, indent)
+}
+
+func jsonApplyPatch(config jsonApplyPatchOptions, _ *telemetry.CustomData) {
+	err := runJsonApplyPatch(&config, &piperutils.Files{}, jsonApplyPatchUtilsBundle{})
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runJsonApplyPatch(config *jsonApplyPatchOptions, fileUtils piperutils.FileUtils) error {
+func runJsonApplyPatch(config *jsonApplyPatchOptions, fileUtils piperutils.FileUtils, utils jsonApplyPatchUtils) error {
 	schema, err := fileUtils.FileRead(config.Input)
 	if err != nil {
 		return err
@@ -36,7 +46,7 @@ func runJsonApplyPatch(config *jsonApplyPatchOptions, fileUtils piperutils.FileU
 		return err
 	}
 
-	formattedJson, err := formatJson(patchedSchema)
+	formattedJson, err := formatJson(patchedSchema, utils)
 	if err != nil {
 		// Ignore error and just use original result.
 		formattedJson = patchedSchema
@@ -49,9 +59,9 @@ func runJsonApplyPatch(config *jsonApplyPatchOptions, fileUtils piperutils.FileU
 	return nil
 }
 
-func formatJson(input []byte) ([]byte, error) {
+func formatJson(input []byte, utils jsonApplyPatchUtils) ([]byte, error) {
 	var output bytes.Buffer
-	err := json.Indent(&output, input, "", "    ")
+	err := utils.Indent(&output, input, "", "    ")
 	if err != nil {
 		return nil, err
 	}
