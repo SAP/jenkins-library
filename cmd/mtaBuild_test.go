@@ -45,11 +45,13 @@ func newMtaBuildTestUtilsBundle() *mtaBuildTestUtilsBundle {
 	return &utilsBundle
 }
 
-func TestMarBuild(t *testing.T) {
+func TestMtaBuild(t *testing.T) {
+	t.Parallel()
 
 	cpe := mtaBuildCommonPipelineEnvironment{}
 
 	t.Run("Application name not set", func(t *testing.T) {
+		t.Parallel()
 
 		utilsMock := newMtaBuildTestUtilsBundle()
 		options := mtaBuildOptions{}
@@ -62,6 +64,7 @@ func TestMarBuild(t *testing.T) {
 	})
 
 	t.Run("Provide default npm registry", func(t *testing.T) {
+		t.Parallel()
 
 		utilsMock := newMtaBuildTestUtilsBundle()
 		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF", DefaultNpmRegistry: "https://example.org/npm", MtarName: "myName"}
@@ -76,6 +79,7 @@ func TestMarBuild(t *testing.T) {
 	})
 
 	t.Run("Package json does not exist", func(t *testing.T) {
+		t.Parallel()
 
 		utilsMock := newMtaBuildTestUtilsBundle()
 
@@ -90,6 +94,7 @@ func TestMarBuild(t *testing.T) {
 	})
 
 	t.Run("Write yaml file", func(t *testing.T) {
+		t.Parallel()
 
 		utilsMock := newMtaBuildTestUtilsBundle()
 
@@ -127,6 +132,7 @@ func TestMarBuild(t *testing.T) {
 	})
 
 	t.Run("Dont write mta yaml file when already present no timestamp placeholder", func(t *testing.T) {
+		t.Parallel()
 
 		utilsMock := newMtaBuildTestUtilsBundle()
 
@@ -141,6 +147,7 @@ func TestMarBuild(t *testing.T) {
 	})
 
 	t.Run("Write mta yaml file when already present with timestamp placeholder", func(t *testing.T) {
+		t.Parallel()
 
 		utilsMock := newMtaBuildTestUtilsBundle()
 
@@ -155,6 +162,7 @@ func TestMarBuild(t *testing.T) {
 	})
 
 	t.Run("Test mta build classic toolset", func(t *testing.T) {
+		t.Parallel()
 
 		utilsMock := newMtaBuildTestUtilsBundle()
 
@@ -177,6 +185,7 @@ func TestMarBuild(t *testing.T) {
 	})
 
 	t.Run("Test mta build classic toolset, mtarName from already existing mta.yaml", func(t *testing.T) {
+		t.Parallel()
 
 		utilsMock := newMtaBuildTestUtilsBundle()
 
@@ -198,6 +207,7 @@ func TestMarBuild(t *testing.T) {
 	})
 
 	t.Run("Test mta build classic toolset with configured mta jar", func(t *testing.T) {
+		t.Parallel()
 
 		utilsMock := newMtaBuildTestUtilsBundle()
 
@@ -216,6 +226,7 @@ func TestMarBuild(t *testing.T) {
 	})
 
 	t.Run("Mta build mbt toolset", func(t *testing.T) {
+		t.Parallel()
 
 		utilsMock := newMtaBuildTestUtilsBundle()
 
@@ -237,7 +248,9 @@ func TestMarBuild(t *testing.T) {
 	})
 
 	t.Run("M2Path related tests", func(t *testing.T) {
+		t.Parallel()
 		t.Run("Mta build mbt toolset with m2Path", func(t *testing.T) {
+			t.Parallel()
 
 			utilsMock := newMtaBuildTestUtilsBundle()
 			utilsMock.CurrentDir = "root_folder/workspace"
@@ -255,8 +268,10 @@ func TestMarBuild(t *testing.T) {
 	})
 
 	t.Run("Settings file releatd tests", func(t *testing.T) {
+		t.Parallel()
 
 		t.Run("Copy global settings file", func(t *testing.T) {
+			t.Parallel()
 
 			utilsMock := newMtaBuildTestUtilsBundle()
 			utilsMock.AddFile("mta.yaml", []byte("ID: \"myNameFromMtar\""))
@@ -272,6 +287,7 @@ func TestMarBuild(t *testing.T) {
 		})
 
 		t.Run("Copy project settings file", func(t *testing.T) {
+			t.Parallel()
 
 			utilsMock := newMtaBuildTestUtilsBundle()
 			utilsMock.AddFile("mta.yaml", []byte("ID: \"myNameFromMtar\""))
