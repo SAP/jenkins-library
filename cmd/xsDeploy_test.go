@@ -26,27 +26,27 @@ func (f *FileUtilsMock) Copy(src, dest string) (int64, error) {
 	return 0, nil
 }
 
-func (f *FileUtilsMock) FileRead(path string) ([]byte, error) {
+func (f *FileUtilsMock) FileRead(string) ([]byte, error) {
 	return []byte{}, nil
 }
 
-func (f *FileUtilsMock) FileWrite(path string, content []byte, perm os.FileMode) error {
+func (f *FileUtilsMock) FileWrite(string, []byte, os.FileMode) error {
 	return nil
 }
 
-func (f *FileUtilsMock) MkdirAll(path string, perm os.FileMode) error {
+func (f *FileUtilsMock) MkdirAll(string, os.FileMode) error {
 	return nil
 }
 
-func (f *FileUtilsMock) Chmod(path string, mode os.FileMode) error {
+func (f *FileUtilsMock) Chmod(string, os.FileMode) error {
 	return fmt.Errorf("not implemented. func is only present in order to fullfil the interface contract. Needs to be ajusted in case it gets used.")
 }
 
-func (f *FileUtilsMock) Abs(path string) (string, error) {
+func (f *FileUtilsMock) Abs(string) (string, error) {
 	return "", fmt.Errorf("not implemented. func is only present in order to fullfil the interface contract. Needs to be ajusted in case it gets used.")
 }
 
-func (f *FileUtilsMock) Glob(pattern string) (matches []string, err error) {
+func (f *FileUtilsMock) Glob(string) (matches []string, err error) {
 	return nil, fmt.Errorf("not implemented. func is only present in order to fullfil the interface contract. Needs to be ajusted in case it gets used.")
 }
 
@@ -96,14 +96,14 @@ func TestDeploy(t *testing.T) {
 
 		go func() {
 			buf := new(bytes.Buffer)
-			io.Copy(buf, rStdout)
+			_, _ = io.Copy(buf, rStdout)
 			stdout = buf.String()
 			wg.Done()
 		}()
 
 		e := runXsDeploy(myXsDeployOptions, &cpeOut, &s, &fileUtilsMock, fRemove, wStdout)
 
-		wStdout.Close()
+		_ = wStdout.Close()
 		wg.Wait()
 
 		assert.NoError(t, e)
@@ -133,6 +133,74 @@ func TestDeploy(t *testing.T) {
 			assert.NotEmpty(t, stdout)
 			assert.NotContains(t, stdout, myXsDeployOptions.Password)
 		})
+	})
+
+	t.Run("invalid deploy mode", func(t *testing.T) {
+
+		defer func() {
+			fileUtilsMock.copiedFiles = nil
+			removedFiles = nil
+			s.Calls = nil
+			stdout = ""
+		}()
+
+		rStdout, wStdout := io.Pipe()
+
+		var wg sync.WaitGroup
+		wg.Add(1)
+
+		go func() {
+			buf := new(bytes.Buffer)
+			_, _ = io.Copy(buf, rStdout)
+			stdout = buf.String()
+			wg.Done()
+		}()
+
+		options := myXsDeployOptions
+		options.Mode = "ERROR"
+		e := runXsDeploy(options, &cpeOut, &s, &fileUtilsMock, fRemove, wStdout)
+
+		_ = wStdout.Close()
+		wg.Wait()
+
+		assert.EqualError(t, e, "Extracting mode failed: 'ERROR': Unknown DeployMode: 'ERROR'")
+	})
+
+	t.Run("no deploy mode", func(t *testing.T) {
+
+		defer func() {
+			fileUtilsMock.copiedFiles = nil
+			removedFiles = nil
+			s.Calls = nil
+			stdout = ""
+		}()
+
+		rStdout, wStdout := io.Pipe()
+
+		var wg sync.WaitGroup
+		wg.Add(1)
+
+		go func() {
+			buf := new(bytes.Buffer)
+			_, _ = io.Copy(buf, rStdout)
+			stdout = buf.String()
+			wg.Done()
+		}()
+
+		options := myXsDeployOptions
+		options.Mode = "NONE"
+		e := runXsDeploy(options, &cpeOut, &s, &fileUtilsMock, fRemove, wStdout)
+
+		_ = wStdout.Close()
+		wg.Wait()
+
+		assert.NoError(t, e, "Extracting mode failed: 'ERROR': Unknown DeployMode: 'ERROR'")
+		assert.Len(t, s.Calls, 0)
+	})
+
+	t.Run("Invalid deploy command", func(t *testing.T) {
+		_, err := NoDeploy.GetDeployCommand()
+		assert.EqualError(t, err, "Invalid deploy mode: 'NONE'.")
 	})
 
 	t.Run("Standard deploy fails, deployable missing", func(t *testing.T) {
