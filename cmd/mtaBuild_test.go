@@ -3,6 +3,7 @@ package cmd
 import (
 	"errors"
 	"net/http"
+	"path/filepath"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
@@ -263,7 +264,7 @@ func TestMtaBuild(t *testing.T) {
 			err := runMtaBuild(options, &cpe, utilsMock)
 
 			assert.Nil(t, err)
-			assert.Contains(t, utilsMock.Env, "MAVEN_OPTS=-Dmaven.repo.local=/root_folder/workspace/.pipeline/local_repo")
+			assert.Contains(t, utilsMock.Env, filepath.Join("MAVEN_OPTS=-Dmaven.repo.local=", "root_folder", "workspace", ".pipeline", "local_repo"))
 		})
 	})
 
