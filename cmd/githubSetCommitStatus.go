@@ -16,19 +16,19 @@ type gitHubCommitStatusRepositoriesService interface {
 	CreateStatus(ctx context.Context, owner, repo, ref string, status *github.RepoStatus) (*github.RepoStatus, *github.Response, error)
 }
 
-func githubSetCommitStatus(config githubSetCommitStatusOptions, telemetryData *telemetry.CustomData) {
+func githubSetCommitStatus(config githubSetCommitStatusOptions, _ *telemetry.CustomData) {
 	ctx, client, err := piperGithub.NewClient(config.Token, config.APIURL, "")
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to get GitHub client")
 	}
 
-	err = runGithubSetCommitStatus(ctx, &config, telemetryData, client.Repositories)
+	err = runGithubSetCommitStatus(ctx, &config, client.Repositories)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("GitHub status update failed")
 	}
 }
 
-func runGithubSetCommitStatus(ctx context.Context, config *githubSetCommitStatusOptions, telemetryData *telemetry.CustomData, ghRepositoriesService gitHubCommitStatusRepositoriesService) error {
+func runGithubSetCommitStatus(ctx context.Context, config *githubSetCommitStatusOptions, ghRepositoriesService gitHubCommitStatusRepositoriesService) error {
 	status := github.RepoStatus{Context: &config.Context, Description: &config.Description, State: &config.Status, TargetURL: &config.TargetURL}
 	_, _, err := ghRepositoriesService.CreateStatus(ctx, config.Owner, config.Repository, config.CommitID, &status)
 	if err != nil {
