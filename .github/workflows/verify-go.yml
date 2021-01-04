@@ -72,7 +72,7 @@ jobs:
     - name: generate
       run: go run pkg/generator/step-metadata.go
     - name: verify
-      run: git diff --name-only --exit-code
+      run: git diff --exit-code
   dependencies:
     runs-on: ubuntu-latest
     steps:
