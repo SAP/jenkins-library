@@ -17,7 +17,7 @@ type ghSetCommitRepoService struct {
 	status       *github.RepoStatus
 }
 
-func (g *ghSetCommitRepoService) CreateStatus(ctx context.Context, owner, repo, ref string, status *github.RepoStatus) (*github.RepoStatus, *github.Response, error) {
+func (g *ghSetCommitRepoService) CreateStatus(_ context.Context, owner, repo, ref string, status *github.RepoStatus) (*github.RepoStatus, *github.Response, error) {
 	g.owner = owner
 	g.repo = repo
 	g.ref = ref
