@@ -108,7 +108,7 @@ const completeScript = `#!/bin/bash
 xs {{.Mode.GetDeployCommand}} -i {{.OperationID}} -a {{.Action.GetAction}}
 `
 
-func xsDeploy(config xsDeployOptions, telemetryData *telemetry.CustomData, piperEnvironment *xsDeployCommonPipelineEnvironment) {
+func xsDeploy(config xsDeployOptions, _ *telemetry.CustomData, piperEnvironment *xsDeployCommonPipelineEnvironment) {
 	c := command.Command{}
 	fileUtils := piperutils.Files{}
 	err := runXsDeploy(config, piperEnvironment, &c, fileUtils, os.Remove, os.Stdout)
@@ -177,7 +177,7 @@ func runXsDeploy(XsDeployOptions xsDeployOptions, piperEnvironment *xsDeployComm
 	go func() {
 		buf := new(bytes.Buffer)
 		r := io.TeeReader(prOut, os.Stderr)
-		io.Copy(buf, r)
+		_, _ = io.Copy(buf, r)
 		o = buf.String()
 		wg.Done()
 	}()
@@ -185,7 +185,7 @@ func runXsDeploy(XsDeployOptions xsDeployOptions, piperEnvironment *xsDeployComm
 	go func() {
 		buf := new(bytes.Buffer)
 		r := io.TeeReader(prErr, os.Stderr)
-		io.Copy(buf, r)
+		_, _ = io.Copy(buf, r)
 		e = buf.String()
 		wg.Done()
 	}()
@@ -216,7 +216,7 @@ func runXsDeploy(XsDeployOptions xsDeployOptions, piperEnvironment *xsDeployComm
 			}
 		}
 
-		copyFileFromPwdToHome(xsSessionFile, fileUtils)
+		_ = copyFileFromPwdToHome(xsSessionFile, fileUtils)
 
 		switch action {
 		case Resume, Abort, Retry:
@@ -258,14 +258,14 @@ func runXsDeploy(XsDeployOptions xsDeployOptions, piperEnvironment *xsDeployComm
 		}
 	}
 
-	pwOut.Close()
-	pwErr.Close()
+	_ = pwOut.Close()
+	_ = pwErr.Close()
 
 	wg.Wait()
 
 	if err == nil && (mode == BGDeploy && action == None) {
 		piperEnvironment.operationID = retrieveOperationID(o, XsDeployOptions.OperationIDLogPattern)
-		if len(piperEnvironment.operationID) == 0 && err == nil {
+		if len(piperEnvironment.operationID) == 0 {
 			err = errors.New("No operationID found")
 		}
 		XsDeployOptions.OperationID = piperEnvironment.operationID // for backward compatibility as long as we render that struc to stdout (printStatus)
@@ -290,7 +290,7 @@ func printStatus(XsDeployOptions xsDeployOptions, stdout io.Writer) error {
 
 	var e error
 	if b, e := json.Marshal(XsDeployOptionsCopy); e == nil {
-		fmt.Fprintln(stdout, string(b))
+		_, _ = fmt.Fprintln(stdout, string(b))
 	}
 	return e
 }
@@ -321,7 +321,7 @@ func handleLog(logDir string) error {
 						}
 						return e
 					} else {
-						os.Stderr.WriteString(string(buf[:n]))
+						_, _ = os.Stderr.WriteString(string(buf[:n]))
 					}
 				}
 			} else {
@@ -431,7 +431,7 @@ func executeCmd(templateID string, commandPattern string, properties interface{}
 	}
 
 	var script bytes.Buffer
-	tmpl.Execute(&script, properties)
+	_ = tmpl.Execute(&script, properties)
 	if e := s.RunShell("/bin/bash", script.String()); e != nil {
 		return e
 	}
