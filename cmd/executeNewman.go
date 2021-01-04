@@ -64,10 +64,12 @@ func runExecuteNewman(config *executeNewmanOptions, utils executeNewmanUtils) er
 
 	collectionList, err := utils.Glob(config.NewmanCollection)
 	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.Wrapf(err, "Could not execute global search for '%v'", config.NewmanCollection)
 	}
 
 	if collectionList == nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
 		return fmt.Errorf("no collection found with pattern '%v'", config.NewmanCollection)
 	} else {
 		log.Entry().Infof("Found files '%v'", collectionList)
@@ -119,6 +121,7 @@ func runExecuteNewman(config *executeNewmanOptions, utils executeNewmanUtils) er
 			//utils.SetDir(".") // TODO: Need this?
 			err := utils.RunShell("/bin/sh", "set +x")
 			if err != nil {
+				log.SetErrorCategory(log.ErrorService)
 				return errors.Wrap(err, "The execution of the newman tests failed, see the log for details.")
 			}
 		}
@@ -131,6 +134,7 @@ func runExecuteNewman(config *executeNewmanOptions, utils executeNewmanUtils) er
 		//utils.SetDir(".") // TODO: Need this?
 		err = utils.RunShell("/bin/sh", script)
 		if err != nil {
+			log.SetErrorCategory(log.ErrorService)
 			return errors.Wrap(err, "The execution of the newman tests failed, see the log for details.")
 		}
 	}
@@ -143,6 +147,7 @@ func logVersions(utils executeNewmanUtils) error {
 	//returnStatus: true // TODO: How to do this? If necessary at all.
 	err := utils.RunExecutable("node", "--version")
 	if err != nil {
+		log.SetErrorCategory(log.ErrorInfrastructure)
 		return errors.Wrap(err, "error logging node version")
 	}
 
@@ -150,6 +155,7 @@ func logVersions(utils executeNewmanUtils) error {
 	//returnStatus: true // TODO: How to do this? If necessary at all.
 	err = utils.RunExecutable("npm", "--version")
 	if err != nil {
+		log.SetErrorCategory(log.ErrorInfrastructure)
 		return errors.Wrap(err, "error logging npm version")
 	}
 
@@ -162,6 +168,7 @@ func installNewman(newmanInstallCommand string, utils executeNewmanUtils) error 
 	//utils.SetDir(".") // TODO: Need this?
 	err := utils.RunShell("/bin/sh", script)
 	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.Wrap(err, "error installing newman")
 	}
 	return nil
@@ -179,6 +186,7 @@ func resolveTemplate(config *executeNewmanOptions, collection string) (string, e
 
 	templ, err := template.New("template").Parse(config.NewmanRunCommand)
 	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
 		return "", errors.Wrap(err, "could not parse newman command template")
 	}
 	buf := new(bytes.Buffer)
@@ -189,6 +197,7 @@ func resolveTemplate(config *executeNewmanOptions, collection string) (string, e
 		NewmanCollection:      collection,
 	})
 	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
 		return "", errors.Wrap(err, "error on executing template")
 	}
 	cmd := buf.String()
