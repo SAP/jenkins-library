@@ -31,7 +31,7 @@ func TestNpmExecuteScripts(t *testing.T) {
 		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
 		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
 
-		npmExecutor := npm.NpmExecutorMock{Utils: utils, Received: npm.NpmConfig{}}
+		npmExecutor := npm.NpmExecutorMock{Utils: utils}
 		err := runNpmExecuteScripts(&npmExecutor, &config)
 
 		if assert.NoError(t, err) {
@@ -56,7 +56,7 @@ func TestNpmExecuteScripts(t *testing.T) {
 		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
 		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
 
-		npmExecutor := npm.NpmExecutorMock{Utils: utils, Received: npm.NpmConfig{}}
+		npmExecutor := npm.NpmExecutorMock{Utils: utils}
 		err := runNpmExecuteScripts(&npmExecutor, &config)
 
 		if assert.NoError(t, err) {
@@ -81,7 +81,7 @@ func TestNpmExecuteScripts(t *testing.T) {
 		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
 		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
 
-		npmExecutor := npm.NpmExecutorMock{Utils: utils, Received: npm.NpmConfig{}}
+		npmExecutor := npm.NpmExecutorMock{Utils: utils}
 		err := runNpmExecuteScripts(&npmExecutor, &config)
 
 		if assert.NoError(t, err) {
@@ -106,7 +106,7 @@ func TestNpmExecuteScripts(t *testing.T) {
 		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
 		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
 
-		npmExecutor := npm.NpmExecutorMock{Utils: utils, Received: npm.NpmConfig{}}
+		npmExecutor := npm.NpmExecutorMock{Utils: utils}
 		err := runNpmExecuteScripts(&npmExecutor, &config)
 
 		if assert.NoError(t, err) {
@@ -133,7 +133,7 @@ func TestNpmExecuteScripts(t *testing.T) {
 		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
 		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
 
-		npmExecutor := npm.NpmExecutorMock{Utils: utils, Received: npm.NpmConfig{}}
+		npmExecutor := npm.NpmExecutorMock{Utils: utils}
 		err := runNpmExecuteScripts(&npmExecutor, &config)
 
 		if assert.NoError(t, err) {
@@ -156,7 +156,7 @@ func TestNpmExecuteScripts(t *testing.T) {
 		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
 		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
 
-		npmExecutor := npm.NpmExecutorMock{Utils: utils, Received: npm.NpmConfig{}}
+		npmExecutor := npm.NpmExecutorMock{Utils: utils}
 		err := runNpmExecuteScripts(&npmExecutor, &config)
 
 		if assert.NoError(t, err) {

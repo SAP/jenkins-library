@@ -7,6 +7,7 @@ import (
 )
 
 func TestFortifyExecuteScanCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := FortifyExecuteScanCommand()
 
