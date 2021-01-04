@@ -208,6 +208,8 @@ func TestGetProjectConfigFile(t *testing.T) {
 }
 
 func TestConvertTypes(t *testing.T) {
+	t.Parallel()
+
 	t.Run("Converts strings to booleans", func(t *testing.T) {
 		// Init
 		hasFailed := false
@@ -242,6 +244,7 @@ func TestConvertTypes(t *testing.T) {
 		assert.Equal(t, true, options.Bar)
 		assert.False(t, hasFailed, "Expected checkTypes() NOT to exit via logging framework")
 	})
+
 	t.Run("Converts numbers to strings", func(t *testing.T) {
 		// Init
 		hasFailed := false
@@ -274,6 +277,73 @@ func TestConvertTypes(t *testing.T) {
 		assert.Equal(t, "42", options.Bar)
 		assert.False(t, hasFailed, "Expected checkTypes() NOT to exit via logging framework")
 	})
+
+	t.Run("Converts numbers to float32", func(t *testing.T) {
+		// Init
+		hasFailed := false
+
+		exitFunc := log.Entry().Logger.ExitFunc
+		log.Entry().Logger.ExitFunc = func(int) {
+			hasFailed = true
+		}
+		defer func() { log.Entry().Logger.ExitFunc = exitFunc }()
+
+		options := struct {
+			Foo float32 `json:"foo,omitempty"`
+			Bar float32 `json:"bar,omitempty"`
+		}{}
+
+		stepConfig := map[string]interface{}{}
+		stepConfig["foo"] = 1.5
+		stepConfig["bar"] = 42
+
+		// Test
+		stepConfig = checkTypes(stepConfig, options)
+
+		confJSON, _ := json.Marshal(stepConfig)
+		_ = json.Unmarshal(confJSON, &options)
+
+		// Assert
+		assert.Equal(t, float32(1.5), stepConfig["foo"])
+		assert.Equal(t, float32(42.0), stepConfig["bar"])
+		assert.Equal(t, float32(1.5), options.Foo)
+		assert.Equal(t, float32(42.0), options.Bar)
+		assert.False(t, hasFailed, "Expected checkTypes() NOT to exit via logging framework")
+	})
+
+	t.Run("Converts numbers to float64", func(t *testing.T) {
+		// Init
+		hasFailed := false
+
+		exitFunc := log.Entry().Logger.ExitFunc
+		log.Entry().Logger.ExitFunc = func(int) {
+			hasFailed = true
+		}
+		defer func() { log.Entry().Logger.ExitFunc = exitFunc }()
+
+		options := struct {
+			Foo float64 `json:"foo,omitempty"`
+			Bar float64 `json:"bar,omitempty"`
+		}{}
+
+		stepConfig := map[string]interface{}{}
+		stepConfig["foo"] = 1.5
+		stepConfig["bar"] = 42
+
+		// Test
+		stepConfig = checkTypes(stepConfig, options)
+
+		confJSON, _ := json.Marshal(stepConfig)
+		_ = json.Unmarshal(confJSON, &options)
+
+		// Assert
+		assert.Equal(t, 1.5, stepConfig["foo"])
+		assert.Equal(t, 42.0, stepConfig["bar"])
+		assert.Equal(t, 1.5, options.Foo)
+		assert.Equal(t, 42.0, options.Bar)
+		assert.False(t, hasFailed, "Expected checkTypes() NOT to exit via logging framework")
+	})
+
 	t.Run("Keeps numbers", func(t *testing.T) {
 		// Init
 		hasFailed := false
@@ -285,8 +355,9 @@ func TestConvertTypes(t *testing.T) {
 		defer func() { log.Entry().Logger.ExitFunc = exitFunc }()
 
 		options := struct {
-			Foo int     `json:"foo,omitempty"`
-			Bar float32 `json:"bar,omitempty"`
+			Foo    int     `json:"foo,omitempty"`
+			Bar    float32 `json:"bar,omitempty"`
+			FooBar float64 `json:"foobar,omitempty"`
 		}{}
 
 		stepConfig := map[string]interface{}{}
@@ -294,6 +365,7 @@ func TestConvertTypes(t *testing.T) {
 		content := []byte(`
 foo: 1
 bar: 42
+foobar: 73
 `)
 		err := yaml.Unmarshal(content, &stepConfig)
 		assert.NoError(t, err)
@@ -307,10 +379,13 @@ bar: 42
 		// Assert
 		assert.Equal(t, 1, stepConfig["foo"])
 		assert.Equal(t, float32(42.0), stepConfig["bar"])
+		assert.Equal(t, 73.0, stepConfig["foobar"])
 		assert.Equal(t, 1, options.Foo)
 		assert.Equal(t, float32(42.0), options.Bar)
+		assert.Equal(t, 73.0, options.FooBar)
 		assert.False(t, hasFailed, "Expected checkTypes() NOT to exit via logging framework")
 	})
+
 	t.Run("Exits because string found, slice expected", func(t *testing.T) {
 		// Init
 		hasFailed := false
@@ -334,6 +409,7 @@ bar: 42
 		// Assert
 		assert.True(t, hasFailed, "Expected checkTypes() to exit via logging framework")
 	})
+
 	t.Run("Exits because float found, int expected", func(t *testing.T) {
 		// Init
 		hasFailed := false
@@ -361,6 +437,7 @@ bar: 42
 		assert.Equal(t, 1.1, stepConfig["foo"])
 		assert.True(t, hasFailed, "Expected checkTypes() to exit via logging framework")
 	})
+
 	t.Run("Exits in case number beyond length", func(t *testing.T) {
 		// Init
 		hasFailed := false
@@ -387,6 +464,7 @@ bar: 42
 		// Assert
 		assert.True(t, hasFailed, "Expected checkTypes() to exit via logging framework")
 	})
+
 	t.Run("Properly handle small ints", func(t *testing.T) {
 		// Init
 		hasFailed := false
@@ -413,6 +491,7 @@ bar: 42
 		// Assert
 		assert.False(t, hasFailed, "Expected checkTypes() NOT to exit via logging framework")
 	})
+
 	t.Run("Ignores nil values", func(t *testing.T) {
 		// Init
 		hasFailed := false
@@ -444,6 +523,7 @@ bar: 42
 		assert.Equal(t, "", options.Bar)
 		assert.False(t, hasFailed, "Expected checkTypes() NOT to exit via logging framework")
 	})
+
 	t.Run("Logs warning for unknown type-mismatches", func(t *testing.T) {
 		// Init
 		hasFailed := false
