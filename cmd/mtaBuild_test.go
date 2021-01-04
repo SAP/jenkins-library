@@ -23,8 +23,8 @@ func (m *mtaBuildTestUtilsBundle) SetNpmRegistries(defaultNpmRegistry string) er
 	return nil
 }
 
-func (m *mtaBuildTestUtilsBundle) InstallAllDependencies(defaultNpmRegistry string) error {
-	return errors.New("Test should not install dependencies.") //TODO implement test
+func (m *mtaBuildTestUtilsBundle) InstallAllDependencies(string) error {
+	return errors.New("test should not install dependencies") //TODO implement test
 }
 
 func (m *mtaBuildTestUtilsBundle) DownloadAndCopySettingsFiles(globalSettingsFile string, projectSettingsFile string) error {
@@ -33,8 +33,8 @@ func (m *mtaBuildTestUtilsBundle) DownloadAndCopySettingsFiles(globalSettingsFil
 	return nil
 }
 
-func (m *mtaBuildTestUtilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
-	return errors.New("Test should not download files.")
+func (m *mtaBuildTestUtilsBundle) DownloadFile(string, string, http.Header, []*http.Cookie) error {
+	return errors.New("test should not download files")
 }
 
 func newMtaBuildTestUtilsBundle() *mtaBuildTestUtilsBundle {
@@ -121,7 +121,7 @@ func TestMtaBuild(t *testing.T) {
 
 		var result MtaResult
 		mtaContent, _ := utilsMock.FileRead("mta.yaml")
-		yaml.Unmarshal(mtaContent, &result)
+		_ = yaml.Unmarshal(mtaContent, &result)
 
 		assert.Equal(t, "myName", result.ID)
 		assert.Equal(t, "1.2.3", result.Version)

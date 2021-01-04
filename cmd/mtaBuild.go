@@ -124,7 +124,7 @@ func newMtaBuildUtilsBundle() mtaBuildUtils {
 }
 
 func mtaBuild(config mtaBuildOptions,
-	telemetryData *telemetry.CustomData,
+	_ *telemetry.CustomData,
 	commonPipelineEnvironment *mtaBuildCommonPipelineEnvironment) {
 	log.Entry().Debugf("Launching mta build")
 	utils := newMtaBuildUtilsBundle()
@@ -364,7 +364,7 @@ func createMtaYamlFile(mtaYamlFile, applicationName string, utils mtaBuildUtils)
 	if err != nil {
 		return err
 	}
-	json.Unmarshal(pContent, &result)
+	_ = json.Unmarshal(pContent, &result)
 
 	version, ok := result["version"].(string)
 	if !ok {
@@ -381,7 +381,7 @@ func createMtaYamlFile(mtaYamlFile, applicationName string, utils mtaBuildUtils)
 		return err
 	}
 
-	utils.FileWrite(mtaYamlFile, []byte(mtaConfig), 0644)
+	_ = utils.FileWrite(mtaYamlFile, []byte(mtaConfig), 0644)
 	log.Entry().Infof("\"%s\" created.", mtaYamlFile)
 
 	return nil
@@ -417,7 +417,7 @@ func generateMta(id, applicationName, version string) (string, error) {
 	props := properties{ID: id, ApplicationName: applicationName, Version: version}
 
 	var script bytes.Buffer
-	tmpl.Execute(&script, props)
+	_ = tmpl.Execute(&script, props)
 	return script.String(), nil
 }
 
