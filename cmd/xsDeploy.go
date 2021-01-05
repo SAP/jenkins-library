@@ -12,11 +12,22 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
 	"text/template"
 )
+
+type xsDeployUtils interface {
+	Getenv(key string) string
+}
+
+type xsDeployUtilsBundle struct{}
+
+func (x xsDeployUtilsBundle) Getenv(key string) string {
+	return os.Getenv(key)
+}
 
 // DeployMode ...
 type DeployMode int
@@ -111,7 +122,7 @@ xs {{.Mode.GetDeployCommand}} -i {{.OperationID}} -a {{.Action.GetAction}}
 func xsDeploy(config xsDeployOptions, _ *telemetry.CustomData, piperEnvironment *xsDeployCommonPipelineEnvironment) {
 	c := command.Command{}
 	fileUtils := piperutils.Files{}
-	err := runXsDeploy(config, piperEnvironment, &c, fileUtils, os.Remove, os.Stdout)
+	err := runXsDeploy(config, piperEnvironment, &c, fileUtils, os.Remove, os.Stdout, xsDeployUtilsBundle{})
 	if err != nil {
 		log.Entry().
 			WithError(err).
@@ -122,7 +133,8 @@ func xsDeploy(config xsDeployOptions, _ *telemetry.CustomData, piperEnvironment 
 func runXsDeploy(XsDeployOptions xsDeployOptions, piperEnvironment *xsDeployCommonPipelineEnvironment, s command.ShellRunner,
 	fileUtils piperutils.FileUtils,
 	fRemove func(string) error,
-	stdout io.Writer) error {
+	stdout io.Writer,
+	utils xsDeployUtils) error {
 
 	mode, err := ValueOfMode(XsDeployOptions.Mode)
 	if err != nil {
@@ -253,7 +265,7 @@ func runXsDeploy(XsDeployOptions xsDeployOptions, piperEnvironment *xsDeployComm
 	}
 
 	if err != nil {
-		if e := handleLog(fmt.Sprintf("%s/%s", os.Getenv("HOME"), ".xs_logs")); e != nil {
+		if e := handleLog(filepath.Join(utils.Getenv("HOME"), ".xs_logs")); e != nil {
 			log.Entry().Warningf("Cannot provide the logs: %s", e.Error())
 		}
 	}
