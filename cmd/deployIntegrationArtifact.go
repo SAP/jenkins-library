@@ -66,11 +66,11 @@ func runDeployIntegrationArtifact(config *deployIntegrationArtifactOptions, tele
 
 	deployURL := fmt.Sprintf("%s/api/v1/DeployIntegrationDesigntimeArtifact?Id='%s'&Version='%s'", config.Host, config.IntegrationFlowID, config.IntegrationFlowVersion)
 	tokenParameters := cpi.TokenParameters{TokenURL: config.OAuthTokenProviderURL, User: config.Username, Pwd: config.Password, MyClient: httpClient}
-	finalResult, err := cpi.CommonUtils.GetBearerToken(tokenParameters)
+	token, err := cpi.CommonUtils.GetBearerToken(tokenParameters)
 	if err != nil {
 		return errors.Wrap(err, "failed to fetch Bearer Token")
 	}
-	clientOptions.Token = "Bearer " + finalResult
+	clientOptions.Token = "Bearer " + token
 	httpClient.SetOptions(clientOptions)
 
 	deployResp, httpErr := httpClient.SendRequest("POST", deployURL, nil, header, nil)
