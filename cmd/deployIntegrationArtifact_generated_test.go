@@ -7,7 +7,7 @@ import (
 )
 
 func TestDeployIntegrationArtifactCommand(t *testing.T) {
-
+	t.Parallel()
 	testCmd := DeployIntegrationArtifactCommand()
 
 	// only high level testing performed - details are tested in step generation procedure
