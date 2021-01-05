@@ -205,6 +205,37 @@ func TestDeploy(t *testing.T) {
 		assert.EqualError(t, e, "error on FileExists for .xs_session")
 	})
 
+	t.Run("xs_session does not exist", func(t *testing.T) {
+		t.Parallel()
+
+		defer func() {
+			removedFiles = nil
+			s.Calls = nil
+			stdout = ""
+		}()
+
+		rStdout, wStdout := io.Pipe()
+
+		var wg sync.WaitGroup
+		wg.Add(1)
+
+		go func() {
+			buf := new(bytes.Buffer)
+			_, _ = io.Copy(buf, rStdout)
+			stdout = buf.String()
+			wg.Done()
+		}()
+
+		fileUtils := fileUtilsMock
+		fileUtils.existingFiles = []string{"dummy.mtar"}
+		e := runXsDeploy(myXsDeployOptions, &cpeOut, &s, &fileUtils, fRemove, wStdout)
+
+		_ = wStdout.Close()
+		wg.Wait()
+
+		assert.EqualError(t, e, "xs session file does not exist (.xs_session)")
+	})
+
 	t.Run("invalid deploy mode", func(t *testing.T) {
 		t.Parallel()
 
