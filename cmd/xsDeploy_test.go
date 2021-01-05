@@ -57,9 +57,18 @@ func (f *FileUtilsMock) Glob(string) (matches []string, err error) {
 	return nil, errors.New("not implemented. Func is only present in order to fulfill the interface contract. Needs to be adjusted in case it gets used")
 }
 
-type xsDeployUtilsMock struct{}
+func (f *FileUtilsMock) TempDir(dir, pattern string) (directoryName string, err error) {
+	return ioutil.TempDir(dir, pattern)
+}
+
+type xsDeployUtilsMock struct {
+	envVariables map[string]string
+}
 
 func (x *xsDeployUtilsMock) Getenv(key string) string {
+	if x.envVariables[key] != "" {
+		return x.envVariables[key]
+	}
 	return os.Getenv(key)
 }
 
@@ -170,13 +179,16 @@ func TestDeploy(t *testing.T) {
 	t.Run("handle log but no log files exists", func(t *testing.T) {
 		t.Parallel()
 
-		err := os.Mkdir(filepath.Join(os.Getenv("HOME"), ".xs_logs"), 0777)
-		assert.NoError(t, err)
+		fileUtilsMock := FileUtilsMock{
+			existingFiles: []string{"dummy.mtar", ".xs_session"},
+		}
 
-		defer func() {
-			err := os.RemoveAll(filepath.Join(os.Getenv("HOME"), ".xs_logs"))
-			assert.NoError(t, err, "Directory HOME/.xs_logs could not be deleted. Please delete manually.")
-		}()
+		tempDir, err := fileUtilsMock.TempDir(".", "logTest")
+		assert.NoError(t, err)
+		defer os.RemoveAll(tempDir)
+
+		err = os.Mkdir(filepath.Join(tempDir, ".xs_logs"), 0777)
+		assert.NoError(t, err)
 
 		shellMock := mock.ShellMockRunner{}
 		shellMock.ShouldFailOnCommand = map[string]error{}
@@ -184,10 +196,12 @@ func TestDeploy(t *testing.T) {
 
 		var removedFiles []string
 
-		fileUtilsMock := FileUtilsMock{
-			existingFiles: []string{"dummy.mtar", ".xs_session"},
+		deployUtilsMock := xsDeployUtilsMock{
+			envVariables: map[string]string{
+				"HOME": tempDir,
+			},
 		}
-		e := runXsDeploy(myXsDeployOptions, &cpeOut, &shellMock, &fileUtilsMock, removeFilesFuncBuilder(&removedFiles), ioutil.Discard, &xsDeployUtilsMock{})
+		e := runXsDeploy(myXsDeployOptions, &cpeOut, &shellMock, &fileUtilsMock, removeFilesFuncBuilder(&removedFiles), ioutil.Discard, &deployUtilsMock)
 
 		assert.EqualError(t, e, "error on logout")
 	})
