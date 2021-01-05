@@ -143,7 +143,7 @@ func TestDeploy(t *testing.T) {
 		})
 	})
 
-	t.Run("error on file read", func(t *testing.T) {
+	t.Run("error on file read dummy.mtar", func(t *testing.T) {
 		t.Parallel()
 
 		defer func() {
@@ -174,7 +174,7 @@ func TestDeploy(t *testing.T) {
 		assert.EqualError(t, e, "error on FileExists for dummy.mtar")
 	})
 
-	t.Run("error on file read", func(t *testing.T) {
+	t.Run("error on file read xs_session", func(t *testing.T) {
 		t.Parallel()
 
 		defer func() {
