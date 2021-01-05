@@ -143,6 +143,39 @@ func TestDeploy(t *testing.T) {
 		})
 	})
 
+	t.Run("error on logout", func(t *testing.T) {
+
+		defer func() {
+			fileUtilsMock.copiedFiles = nil
+			removedFiles = nil
+			s.Calls = nil
+			stdout = ""
+		}()
+
+		rStdout, wStdout := io.Pipe()
+
+		var wg sync.WaitGroup
+		wg.Add(1)
+
+		go func() {
+			buf := new(bytes.Buffer)
+			_, _ = io.Copy(buf, rStdout)
+			stdout = buf.String()
+			wg.Done()
+		}()
+
+		shellMock := s
+		shellMock.ShouldFailOnCommand = map[string]error{}
+		shellMock.ShouldFailOnCommand["#!/bin/bash\nxs logout"] = fmt.Errorf("error on logout")
+
+		e := runXsDeploy(myXsDeployOptions, &cpeOut, &shellMock, &fileUtilsMock, fRemove, wStdout)
+
+		_ = wStdout.Close()
+		wg.Wait()
+
+		assert.EqualError(t, e, "error on logout")
+	})
+
 	t.Run("error on file read dummy.mtar", func(t *testing.T) {
 		t.Parallel()
 
