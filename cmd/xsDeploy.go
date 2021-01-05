@@ -336,6 +336,7 @@ func handleLog(logDir string) error {
 						_, _ = os.Stderr.WriteString(string(buf[:n]))
 					}
 				}
+				f.Close()
 			} else {
 				return e
 			}

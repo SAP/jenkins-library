@@ -19,6 +19,7 @@ type FileUtilsMock struct {
 	copiedFiles       []string
 	fileThrowingError []string
 	existingFiles     []string
+	writtenFiles      map[string][]byte
 }
 
 func (f *FileUtilsMock) FileExists(path string) (bool, error) {
@@ -37,7 +38,11 @@ func (f *FileUtilsMock) FileRead(string) ([]byte, error) {
 	return []byte{}, nil
 }
 
-func (f *FileUtilsMock) FileWrite(string, []byte, os.FileMode) error {
+func (f *FileUtilsMock) FileWrite(path string, content []byte, _ os.FileMode) error {
+	if len(f.writtenFiles) == 0 {
+		f.writtenFiles = map[string][]byte{}
+	}
+	f.writtenFiles[path] = content
 	return nil
 }
 
@@ -188,6 +193,43 @@ func TestDeploy(t *testing.T) {
 		defer os.RemoveAll(tempDir)
 
 		err = os.Mkdir(filepath.Join(tempDir, ".xs_logs"), 0777)
+		assert.NoError(t, err)
+
+		shellMock := mock.ShellMockRunner{}
+		shellMock.ShouldFailOnCommand = map[string]error{}
+		shellMock.ShouldFailOnCommand["#!/bin/bash\nxs logout"] = errors.New("error on logout")
+
+		var removedFiles []string
+
+		deployUtilsMock := xsDeployUtilsMock{
+			envVariables: map[string]string{
+				"HOME": tempDir,
+			},
+		}
+		e := runXsDeploy(myXsDeployOptions, &cpeOut, &shellMock, &fileUtilsMock, removeFilesFuncBuilder(&removedFiles), ioutil.Discard, &deployUtilsMock)
+
+		assert.EqualError(t, e, "error on logout")
+	})
+
+	t.Run("handle log with file", func(t *testing.T) {
+		t.Parallel()
+
+		fileUtilsMock := FileUtilsMock{
+			existingFiles: []string{"dummy.mtar", ".xs_session"},
+		}
+
+		tempDir, err := fileUtilsMock.TempDir(".", "logTest")
+		assert.NoError(t, err)
+		defer func() {
+			err = os.RemoveAll(tempDir)
+			assert.NoError(t, err)
+		}()
+
+		logDirectory := filepath.Join(tempDir, ".xs_logs")
+
+		err = os.Mkdir(logDirectory, 0777)
+		assert.NoError(t, err)
+		err = ioutil.WriteFile(filepath.Join(logDirectory, "logs1.txt"), []byte("Hello World. These are logs."), 0777)
 		assert.NoError(t, err)
 
 		shellMock := mock.ShellMockRunner{}
