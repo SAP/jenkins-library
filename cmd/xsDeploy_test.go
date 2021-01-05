@@ -14,10 +14,14 @@ import (
 )
 
 type FileUtilsMock struct {
-	copiedFiles []string
+	copiedFiles       []string
+	errorOnFileExists bool
 }
 
 func (f *FileUtilsMock) FileExists(path string) (bool, error) {
+	if f.errorOnFileExists {
+		return false, fmt.Errorf("error on FileExists")
+	}
 	return path == "dummy.mtar" || path == ".xs_session", nil
 }
 
@@ -135,7 +139,38 @@ func TestDeploy(t *testing.T) {
 		})
 	})
 
+	t.Run("error on file read", func(t *testing.T) {
+		t.Parallel()
+
+		defer func() {
+			removedFiles = nil
+			s.Calls = nil
+			stdout = ""
+		}()
+
+		rStdout, wStdout := io.Pipe()
+
+		var wg sync.WaitGroup
+		wg.Add(1)
+
+		go func() {
+			buf := new(bytes.Buffer)
+			_, _ = io.Copy(buf, rStdout)
+			stdout = buf.String()
+			wg.Done()
+		}()
+
+		fileUtils := &FileUtilsMock{errorOnFileExists: true}
+		e := runXsDeploy(myXsDeployOptions, &cpeOut, &s, fileUtils, fRemove, wStdout)
+
+		_ = wStdout.Close()
+		wg.Wait()
+
+		assert.EqualError(t, e, "error on FileExists")
+	})
+
 	t.Run("invalid deploy mode", func(t *testing.T) {
+		t.Parallel()
 
 		defer func() {
 			fileUtilsMock.copiedFiles = nil
@@ -167,6 +202,7 @@ func TestDeploy(t *testing.T) {
 	})
 
 	t.Run("no deploy mode", func(t *testing.T) {
+		t.Parallel()
 
 		defer func() {
 			fileUtilsMock.copiedFiles = nil
@@ -199,6 +235,7 @@ func TestDeploy(t *testing.T) {
 	})
 
 	t.Run("invalid action", func(t *testing.T) {
+		t.Parallel()
 
 		defer func() {
 			fileUtilsMock.copiedFiles = nil
@@ -230,6 +267,7 @@ func TestDeploy(t *testing.T) {
 	})
 
 	t.Run("Invalid deploy command", func(t *testing.T) {
+		t.Parallel()
 		_, err := NoDeploy.GetDeployCommand()
 		assert.EqualError(t, err, "Invalid deploy mode: 'NONE'.")
 	})
