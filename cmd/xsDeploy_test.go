@@ -458,6 +458,29 @@ func TestDeploy(t *testing.T) {
 		}
 	})
 
+	t.Run("BG deploy resume succeeds", func(t *testing.T) {
+		t.Parallel()
+
+		testOptions := myXsDeployOptions
+		testOptions.Mode = "BG_DEPLOY"
+		testOptions.Action = "RESUME"
+		testOptions.OperationID = "12345"
+
+		shellMockRunner := mock.ShellMockRunner{}
+		fileUtilsMock := FileUtilsMock{
+			existingFiles: []string{"dummy.mtar", ".xs_session"},
+		}
+		e := runXsDeploy(testOptions, &cpeOut, &shellMockRunner, &fileUtilsMock, removeFilesFuncBuilder(&[]string{}), ioutil.Discard)
+
+		if assert.NoError(t, e) {
+			if assert.Len(t, shellMockRunner.Calls, 2) { // There is no login --> we have two calls
+				assert.Contains(t, shellMockRunner.Calls[0], "xs bg-deploy -i 12345 -a resume")
+				assert.Contains(t, shellMockRunner.Calls[1], "xs logout")
+			}
+
+		}
+	})
+
 	t.Run("BG deploy abort fails due to missing operationId", func(t *testing.T) {
 		t.Parallel()
 
