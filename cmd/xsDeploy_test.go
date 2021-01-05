@@ -467,6 +467,25 @@ func TestDeploy(t *testing.T) {
 		}
 	})
 
+	t.Run("BG deploy resume succeeds", func(t *testing.T) {
+		t.Parallel()
+
+		testOptions := myXsDeployOptions
+		testOptions.Mode = "BG_DEPLOY"
+		testOptions.Action = "RESUME"
+		testOptions.OperationID = "12345"
+
+		shellMockRunner := mock.ShellMockRunner{}
+		shellMockRunner.ShouldFailOnCommand = map[string]error{}
+		shellMockRunner.ShouldFailOnCommand["#!/bin/bash\nxs bg-deploy -i 12345 -a resume\n"] = errors.New("error on complete script")
+		fileUtilsMock := FileUtilsMock{
+			existingFiles: []string{"dummy.mtar", ".xs_session"},
+		}
+		e := runXsDeploy(testOptions, &cpeOut, &shellMockRunner, &fileUtilsMock, removeFilesFuncBuilder(&[]string{}), ioutil.Discard, &xsDeployUtilsMock{}, os.Stderr)
+
+		assert.EqualError(t, e, "error on complete script")
+	})
+
 	t.Run("BG deploy abort fails due to missing operationId", func(t *testing.T) {
 		t.Parallel()
 
