@@ -22,7 +22,7 @@ type FileUtilsMock struct {
 
 func (f *FileUtilsMock) FileExists(path string) (bool, error) {
 	if sliceUtils.ContainsString(f.fileThrowingError, path) {
-		return false, fmt.Errorf("error on FileExists for " + path)
+		return false, errors.New("error on FileExists for " + path)
 	}
 	return sliceUtils.ContainsString(f.existingFiles, path), nil
 }
@@ -45,15 +45,15 @@ func (f *FileUtilsMock) MkdirAll(string, os.FileMode) error {
 }
 
 func (f *FileUtilsMock) Chmod(string, os.FileMode) error {
-	return fmt.Errorf("not implemented. func is only present in order to fullfil the interface contract. Needs to be ajusted in case it gets used.")
+	return errors.New("not implemented. Func is only present in order to fulfill the interface contract. Needs to be adjusted in case it gets used")
 }
 
 func (f *FileUtilsMock) Abs(string) (string, error) {
-	return "", fmt.Errorf("not implemented. func is only present in order to fullfil the interface contract. Needs to be ajusted in case it gets used.")
+	return "", errors.New("not implemented. Func is only present in order to fulfill the interface contract. Needs to be adjusted in case it gets used")
 }
 
 func (f *FileUtilsMock) Glob(string) (matches []string, err error) {
-	return nil, fmt.Errorf("not implemented. func is only present in order to fullfil the interface contract. Needs to be ajusted in case it gets used.")
+	return nil, errors.New("not implemented. Func is only present in order to fulfill the interface contract. Needs to be adjusted in case it gets used")
 }
 
 func TestDeploy(t *testing.T) {
@@ -144,7 +144,7 @@ func TestDeploy(t *testing.T) {
 		}()
 
 		remove := func(path string) error {
-			return fmt.Errorf("error removing file " + path)
+			return errors.New("error removing file " + path)
 		}
 		fileUtilsMock := FileUtilsMock{
 			existingFiles: []string{"dummy.mtar", ".xs_session"},
@@ -173,7 +173,7 @@ func TestDeploy(t *testing.T) {
 
 		shellMock := mock.ShellMockRunner{}
 		shellMock.ShouldFailOnCommand = map[string]error{}
-		shellMock.ShouldFailOnCommand["#!/bin/bash\nxs logout"] = fmt.Errorf("error on logout")
+		shellMock.ShouldFailOnCommand["#!/bin/bash\nxs logout"] = errors.New("error on logout")
 
 		var removedFiles []string
 
