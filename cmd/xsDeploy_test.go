@@ -143,6 +143,38 @@ func TestDeploy(t *testing.T) {
 		})
 	})
 
+	t.Run("error on file remove", func(t *testing.T) {
+
+		defer func() {
+			fileUtilsMock.copiedFiles = nil
+			removedFiles = nil
+			s.Calls = nil
+			stdout = ""
+		}()
+
+		rStdout, wStdout := io.Pipe()
+
+		var wg sync.WaitGroup
+		wg.Add(1)
+
+		go func() {
+			buf := new(bytes.Buffer)
+			_, _ = io.Copy(buf, rStdout)
+			stdout = buf.String()
+			wg.Done()
+		}()
+
+		remove := func(path string) error {
+			return fmt.Errorf("error removing file " + path)
+		}
+		e := runXsDeploy(myXsDeployOptions, &cpeOut, &s, &fileUtilsMock, remove, wStdout)
+
+		_ = wStdout.Close()
+		wg.Wait()
+
+		assert.EqualError(t, e, "error removing file .xs_session")
+	})
+
 	t.Run("error on logout", func(t *testing.T) {
 
 		defer func() {
