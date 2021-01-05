@@ -194,8 +194,39 @@ func TestDeploy(t *testing.T) {
 		_ = wStdout.Close()
 		wg.Wait()
 
-		assert.NoError(t, e, "Extracting mode failed: 'ERROR': Unknown DeployMode: 'ERROR'")
+		assert.NoError(t, e)
 		assert.Len(t, s.Calls, 0)
+	})
+
+	t.Run("invalid action", func(t *testing.T) {
+
+		defer func() {
+			fileUtilsMock.copiedFiles = nil
+			removedFiles = nil
+			s.Calls = nil
+			stdout = ""
+		}()
+
+		rStdout, wStdout := io.Pipe()
+
+		var wg sync.WaitGroup
+		wg.Add(1)
+
+		go func() {
+			buf := new(bytes.Buffer)
+			_, _ = io.Copy(buf, rStdout)
+			stdout = buf.String()
+			wg.Done()
+		}()
+
+		options := myXsDeployOptions
+		options.Action = "INVALID"
+		e := runXsDeploy(options, &cpeOut, &s, &fileUtilsMock, fRemove, wStdout)
+
+		_ = wStdout.Close()
+		wg.Wait()
+
+		assert.EqualError(t, e, "Extracting action failed: 'INVALID': Unknown Action: 'INVALID'")
 	})
 
 	t.Run("Invalid deploy command", func(t *testing.T) {
