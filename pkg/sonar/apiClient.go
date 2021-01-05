@@ -31,37 +31,41 @@ func NewBasicAuthClient(username, password, host string, client Sender) *Client 
 	}
 }
 
-// Search Search for issues.<br>At most one of the following parameters can be provided at the same time: componentKeys, componentUuids, components, componentRootUuids, componentRoots.<br>Requires the 'Browse' permission on the specified project(s).
-func (s *Client) SearchIssues(opt *sonargo.IssuesSearchOption) (v *sonargo.IssuesSearchObject, resp *http.Response, err error) {
+// SearchIssues Search for issues.<br>At most one of the following parameters can be provided at the same time: componentKeys, componentUuids, components, componentRootUuids, componentRoots.<br>Requires the 'Browse' permission on the specified project(s).
+func (s *Client) SearchIssues(options *sonargo.IssuesSearchOption) (result *sonargo.IssuesSearchObject, response *http.Response, err error) {
 	sonarClient, err := sonargo.NewClient(s.Host, s.Username, s.Password)
-
-	err = sonarClient.Issues.ValidateSearchOpt(opt)
+	// reuse parameter validation from sonargo
+	err = sonarClient.Issues.ValidateSearchOpt(options)
 	if err != nil {
 		return
 	}
-
-	req, err := sonarClient.NewRequest("GET", "issues/search", opt)
+	// reuse request creation from sonargo
+	req, err := sonarClient.NewRequest("GET", "issues/search", options)
 	if err != nil {
 		return
 	}
-
-	resp, err = s.HTTPClient.Send(req)
+	// use custom HTTP client to send request
+	response, err = s.HTTPClient.Send(req)
 	if err != nil {
 		return
 	}
-
-	err = sonargo.CheckResponse(resp)
+	// reuse response verrification from sonargo
+	err = sonargo.CheckResponse(response)
 	if err != nil {
 		return
 	}
+	// decode JSON response
+	result = new(sonargo.IssuesSearchObject)
+	err = s.decode(response, result)
+	if err != nil {
+		return nil, response, err
+	}
+	return
+}
 
-	v = new(sonargo.IssuesSearchObject)
+func (s *Client) decode(resp *http.Response, v interface{}) (err error) {
 	defer resp.Body.Close()
 	decoder := json.NewDecoder(resp.Body)
 	decoder.DisallowUnknownFields()
-	err = decoder.Decode(v)
-	if err != nil {
-		return nil, resp, err
-	}
-	return
+	return decoder.Decode(v)
 }

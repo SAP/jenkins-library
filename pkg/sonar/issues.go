@@ -22,40 +22,41 @@ func (s issueSeverity) ToString() string {
 }
 
 const (
-	issueSeverityBlocker  issueSeverity = "BLOCKER"
-	issueSeverityCritical issueSeverity = "CRITICAL"
-	issueSeverityMajor    issueSeverity = "MAJOR"
-	issueSeverityMinor    issueSeverity = "MINOR"
-	issueSeverityInfo     issueSeverity = "INFO"
+	blocker  issueSeverity = "BLOCKER"
+	critical issueSeverity = "CRITICAL"
+	major    issueSeverity = "MAJOR"
+	minor    issueSeverity = "MINOR"
+	info     issueSeverity = "INFO"
 )
 
-func (api *IssueService) GetNumberOfBlockerIssues() (int, error) {
-	return api.getIssueCount(issueSeverityBlocker)
+func (service *IssueService) GetNumberOfBlockerIssues() (int, error) {
+	return service.getIssueCount(blocker)
 }
 
-func (api *IssueService) GetNumberOfCriticalIssues() (int, error) {
-	return api.getIssueCount(issueSeverityCritical)
+func (service *IssueService) GetNumberOfCriticalIssues() (int, error) {
+	return service.getIssueCount(critical)
 }
 
-func (api *IssueService) GetNumberOfMajorIssues() (int, error) {
-	return api.getIssueCount(issueSeverityMajor)
+func (service *IssueService) GetNumberOfMajorIssues() (int, error) {
+	return service.getIssueCount(major)
 }
 
-func (api *IssueService) GetNumberOfMinorIssues() (int, error) {
-	return api.getIssueCount(issueSeverityMinor)
+func (service *IssueService) GetNumberOfMinorIssues() (int, error) {
+	return service.getIssueCount(minor)
 }
 
-func (api *IssueService) GetNumberOfInfoIssues() (int, error) {
-	return api.getIssueCount(issueSeverityInfo)
+func (service *IssueService) GetNumberOfInfoIssues() (int, error) {
+	return service.getIssueCount(info)
 }
 
-func (api *IssueService) getIssueCount(severity issueSeverity) (int, error) {
-	if api.apiClient == nil {
-		api.apiClient = NewBasicAuthClient(api.Token, "", api.Host, api.HTTPClient)
+func (service *IssueService) getIssueCount(severity issueSeverity) (int, error) {
+	if service.apiClient == nil {
+		log.Entry().Debugf("creating new api client for '%s'", service.Host)
+		service.apiClient = NewBasicAuthClient(service.Token, "", service.Host, service.HTTPClient)
 	}
-	log.Entry().Debugf("using api client for '%s'", api.Host)
-	result, _, err := api.apiClient.SearchIssues(&sonargo.IssuesSearchOption{
-		ComponentKeys: api.Project,
+	log.Entry().Debugf("using api client for '%s'", service.Host)
+	result, _, err := service.apiClient.SearchIssues(&sonargo.IssuesSearchOption{
+		ComponentKeys: service.Project,
 		Severities:    severity.ToString(),
 		Resolved:      "false",
 		Ps:            "1",
