@@ -118,7 +118,7 @@ func TestDeploy(t *testing.T) {
 		fileUtilsMock := FileUtilsMock{
 			existingFiles: []string{"dummy.mtar", ".xs_session"},
 		}
-		e := runXsDeploy(myXsDeployOptions, &cpeOut, &shellMockRunner, &fileUtilsMock, removeFilesFuncBuilder(&removedFiles), wStdout, &xsDeployUtilsMock{})
+		e := runXsDeploy(myXsDeployOptions, &cpeOut, &shellMockRunner, &fileUtilsMock, removeFilesFuncBuilder(&removedFiles), wStdout, &xsDeployUtilsMock{}, os.Stderr)
 
 		_ = wStdout.Close()
 		wg.Wait()
@@ -159,7 +159,7 @@ func TestDeploy(t *testing.T) {
 		fileUtilsMock := FileUtilsMock{
 			existingFiles: []string{"dummy.mtar", ".xs_session"},
 		}
-		e := runXsDeploy(myXsDeployOptions, &cpeOut, &mock.ShellMockRunner{}, &fileUtilsMock, remove, ioutil.Discard, &xsDeployUtilsMock{})
+		e := runXsDeploy(myXsDeployOptions, &cpeOut, &mock.ShellMockRunner{}, &fileUtilsMock, remove, ioutil.Discard, &xsDeployUtilsMock{}, os.Stderr)
 
 		assert.EqualError(t, e, "error removing file .xs_session")
 	})
@@ -176,7 +176,7 @@ func TestDeploy(t *testing.T) {
 		fileUtilsMock := FileUtilsMock{
 			existingFiles: []string{"dummy.mtar", ".xs_session"},
 		}
-		e := runXsDeploy(myXsDeployOptions, &cpeOut, &shellMock, &fileUtilsMock, removeFilesFuncBuilder(&removedFiles), ioutil.Discard, &xsDeployUtilsMock{})
+		e := runXsDeploy(myXsDeployOptions, &cpeOut, &shellMock, &fileUtilsMock, removeFilesFuncBuilder(&removedFiles), ioutil.Discard, &xsDeployUtilsMock{}, os.Stderr)
 
 		assert.EqualError(t, e, "error on logout")
 	})
@@ -190,7 +190,10 @@ func TestDeploy(t *testing.T) {
 
 		tempDir, err := fileUtilsMock.TempDir(".", "logTest")
 		assert.NoError(t, err)
-		defer os.RemoveAll(tempDir)
+		defer func() {
+			err = os.RemoveAll(tempDir)
+			assert.NoError(t, err)
+		}()
 
 		err = os.Mkdir(filepath.Join(tempDir, ".xs_logs"), 0777)
 		assert.NoError(t, err)
@@ -199,15 +202,19 @@ func TestDeploy(t *testing.T) {
 		shellMock.ShouldFailOnCommand = map[string]error{}
 		shellMock.ShouldFailOnCommand["#!/bin/bash\nxs logout"] = errors.New("error on logout")
 
-		var removedFiles []string
-
 		deployUtilsMock := xsDeployUtilsMock{
 			envVariables: map[string]string{
 				"HOME": tempDir,
 			},
 		}
-		e := runXsDeploy(myXsDeployOptions, &cpeOut, &shellMock, &fileUtilsMock, removeFilesFuncBuilder(&removedFiles), ioutil.Discard, &deployUtilsMock)
 
+		var removedFiles []string
+
+		stderr := &bytes.Buffer{}
+
+		e := runXsDeploy(myXsDeployOptions, &cpeOut, &shellMock, &fileUtilsMock, removeFilesFuncBuilder(&removedFiles), ioutil.Discard, &deployUtilsMock, os.Stderr)
+
+		assert.Empty(t, stderr.String())
 		assert.EqualError(t, e, "error on logout")
 	})
 
@@ -243,8 +250,11 @@ func TestDeploy(t *testing.T) {
 				"HOME": tempDir,
 			},
 		}
-		e := runXsDeploy(myXsDeployOptions, &cpeOut, &shellMock, &fileUtilsMock, removeFilesFuncBuilder(&removedFiles), ioutil.Discard, &deployUtilsMock)
+		stderr := &bytes.Buffer{}
+		e := runXsDeploy(myXsDeployOptions, &cpeOut, &shellMock, &fileUtilsMock, removeFilesFuncBuilder(&removedFiles), ioutil.Discard, &deployUtilsMock, stderr)
 
+		writtenStderr := stderr.String()
+		assert.Contains(t, writtenStderr, "Hello World. These are logs.")
 		assert.EqualError(t, e, "error on logout")
 	})
 
@@ -255,7 +265,7 @@ func TestDeploy(t *testing.T) {
 			existingFiles: []string{"dummy.mtar", ".xs_session"},
 		}
 		fileUtils.fileThrowingError = []string{"dummy.mtar"}
-		e := runXsDeploy(myXsDeployOptions, &cpeOut, &mock.ShellMockRunner{}, &fileUtils, removeFilesFuncBuilder(&[]string{}), ioutil.Discard, &xsDeployUtilsMock{})
+		e := runXsDeploy(myXsDeployOptions, &cpeOut, &mock.ShellMockRunner{}, &fileUtils, removeFilesFuncBuilder(&[]string{}), ioutil.Discard, &xsDeployUtilsMock{}, os.Stderr)
 
 		assert.EqualError(t, e, "error on FileExists for dummy.mtar")
 	})
@@ -267,7 +277,7 @@ func TestDeploy(t *testing.T) {
 			existingFiles: []string{"dummy.mtar", ".xs_session"},
 		}
 		fileUtils.fileThrowingError = []string{".xs_session"}
-		e := runXsDeploy(myXsDeployOptions, &cpeOut, &mock.ShellMockRunner{}, &fileUtils, removeFilesFuncBuilder(&[]string{}), ioutil.Discard, &xsDeployUtilsMock{})
+		e := runXsDeploy(myXsDeployOptions, &cpeOut, &mock.ShellMockRunner{}, &fileUtils, removeFilesFuncBuilder(&[]string{}), ioutil.Discard, &xsDeployUtilsMock{}, os.Stderr)
 
 		assert.EqualError(t, e, "error on FileExists for .xs_session")
 	})
@@ -279,7 +289,7 @@ func TestDeploy(t *testing.T) {
 			existingFiles: []string{"dummy.mtar", ".xs_session"},
 		}
 		fileUtils.existingFiles = []string{"dummy.mtar"}
-		e := runXsDeploy(myXsDeployOptions, &cpeOut, &mock.ShellMockRunner{}, &fileUtils, removeFilesFuncBuilder(&[]string{}), ioutil.Discard, &xsDeployUtilsMock{})
+		e := runXsDeploy(myXsDeployOptions, &cpeOut, &mock.ShellMockRunner{}, &fileUtils, removeFilesFuncBuilder(&[]string{}), ioutil.Discard, &xsDeployUtilsMock{}, os.Stderr)
 
 		assert.EqualError(t, e, "xs session file does not exist (.xs_session)")
 	})
@@ -292,7 +302,7 @@ func TestDeploy(t *testing.T) {
 		fileUtilsMock := FileUtilsMock{
 			existingFiles: []string{"dummy.mtar", ".xs_session"},
 		}
-		e := runXsDeploy(options, &cpeOut, &mock.ShellMockRunner{}, &fileUtilsMock, removeFilesFuncBuilder(&[]string{}), ioutil.Discard, &xsDeployUtilsMock{})
+		e := runXsDeploy(options, &cpeOut, &mock.ShellMockRunner{}, &fileUtilsMock, removeFilesFuncBuilder(&[]string{}), ioutil.Discard, &xsDeployUtilsMock{}, os.Stderr)
 
 		assert.EqualError(t, e, "Extracting mode failed: 'ERROR': Unknown DeployMode: 'ERROR'")
 	})
@@ -306,7 +316,7 @@ func TestDeploy(t *testing.T) {
 		fileUtilsMock := FileUtilsMock{
 			existingFiles: []string{"dummy.mtar", ".xs_session"},
 		}
-		e := runXsDeploy(options, &cpeOut, &shellMockRunner, &fileUtilsMock, removeFilesFuncBuilder(&[]string{}), ioutil.Discard, &xsDeployUtilsMock{})
+		e := runXsDeploy(options, &cpeOut, &shellMockRunner, &fileUtilsMock, removeFilesFuncBuilder(&[]string{}), ioutil.Discard, &xsDeployUtilsMock{}, os.Stderr)
 
 		assert.NoError(t, e)
 		assert.Len(t, shellMockRunner.Calls, 0)
@@ -320,7 +330,7 @@ func TestDeploy(t *testing.T) {
 		fileUtilsMock := FileUtilsMock{
 			existingFiles: []string{"dummy.mtar", ".xs_session"},
 		}
-		e := runXsDeploy(options, &cpeOut, &mock.ShellMockRunner{}, &fileUtilsMock, removeFilesFuncBuilder(&[]string{}), ioutil.Discard, &xsDeployUtilsMock{})
+		e := runXsDeploy(options, &cpeOut, &mock.ShellMockRunner{}, &fileUtilsMock, removeFilesFuncBuilder(&[]string{}), ioutil.Discard, &xsDeployUtilsMock{}, os.Stderr)
 
 		assert.EqualError(t, e, "Extracting action failed: 'INVALID': Unknown Action: 'INVALID'")
 	})
@@ -341,7 +351,7 @@ func TestDeploy(t *testing.T) {
 		fileUtilsMock := FileUtilsMock{
 			existingFiles: []string{"dummy.mtar", ".xs_session"},
 		}
-		e := runXsDeploy(testOptions, &cpeOut, &mock.ShellMockRunner{}, &fileUtilsMock, removeFilesFuncBuilder(&[]string{}), ioutil.Discard, &xsDeployUtilsMock{})
+		e := runXsDeploy(testOptions, &cpeOut, &mock.ShellMockRunner{}, &fileUtilsMock, removeFilesFuncBuilder(&[]string{}), ioutil.Discard, &xsDeployUtilsMock{}, os.Stderr)
 		assert.EqualError(t, e, "Deployable 'doesNotExist' does not exist")
 	})
 
@@ -354,7 +364,7 @@ func TestDeploy(t *testing.T) {
 		fileUtilsMock := FileUtilsMock{
 			existingFiles: []string{"dummy.mtar", ".xs_session"},
 		}
-		e := runXsDeploy(testOptions, &cpeOut, &mock.ShellMockRunner{}, &fileUtilsMock, removeFilesFuncBuilder(&[]string{}), ioutil.Discard, &xsDeployUtilsMock{})
+		e := runXsDeploy(testOptions, &cpeOut, &mock.ShellMockRunner{}, &fileUtilsMock, removeFilesFuncBuilder(&[]string{}), ioutil.Discard, &xsDeployUtilsMock{}, os.Stderr)
 		assert.EqualError(t, e, "Cannot perform action 'RETRY' in mode 'DEPLOY'. Only action 'NONE' is allowed.")
 	})
 
@@ -367,7 +377,7 @@ func TestDeploy(t *testing.T) {
 		fileUtilsMock := FileUtilsMock{
 			existingFiles: []string{"dummy.mtar", ".xs_session"},
 		}
-		e := runXsDeploy(myXsDeployOptions, &cpeOut, &mockRunner, &fileUtilsMock, removeFilesFuncBuilder(&[]string{}), ioutil.Discard, &xsDeployUtilsMock{})
+		e := runXsDeploy(myXsDeployOptions, &cpeOut, &mockRunner, &fileUtilsMock, removeFilesFuncBuilder(&[]string{}), ioutil.Discard, &xsDeployUtilsMock{}, os.Stderr)
 		assert.EqualError(t, e, "error from underlying process")
 	})
 
@@ -384,7 +394,7 @@ func TestDeploy(t *testing.T) {
 		fileUtilsMock := FileUtilsMock{
 			existingFiles: []string{"dummy.mtar", ".xs_session"},
 		}
-		e := runXsDeploy(testOptions, &cpeOut, &shellMockRunner, &fileUtilsMock, removeFilesFuncBuilder(&[]string{}), ioutil.Discard, &xsDeployUtilsMock{})
+		e := runXsDeploy(testOptions, &cpeOut, &shellMockRunner, &fileUtilsMock, removeFilesFuncBuilder(&[]string{}), ioutil.Discard, &xsDeployUtilsMock{}, os.Stderr)
 
 		if assert.NoError(t, e) {
 			if assert.Len(t, (shellMockRunner).Calls, 2) { // There are two entries --> no logout in this case.
@@ -407,7 +417,7 @@ func TestDeploy(t *testing.T) {
 		fileUtilsMock := FileUtilsMock{
 			existingFiles: []string{"dummy.mtar", ".xs_session"},
 		}
-		e := runXsDeploy(testOptions, &cpeOut, &shellMockRunner, &fileUtilsMock, removeFilesFuncBuilder(&[]string{}), ioutil.Discard, &xsDeployUtilsMock{})
+		e := runXsDeploy(testOptions, &cpeOut, &shellMockRunner, &fileUtilsMock, removeFilesFuncBuilder(&[]string{}), ioutil.Discard, &xsDeployUtilsMock{}, os.Stderr)
 		assert.EqualError(t, e, "No operationID found")
 	})
 
@@ -423,7 +433,7 @@ func TestDeploy(t *testing.T) {
 		fileUtilsMock := FileUtilsMock{
 			existingFiles: []string{"dummy.mtar", ".xs_session"},
 		}
-		e := runXsDeploy(testOptions, &cpeOut, &shellMockRunner, &fileUtilsMock, removeFilesFuncBuilder(&[]string{}), ioutil.Discard, &xsDeployUtilsMock{})
+		e := runXsDeploy(testOptions, &cpeOut, &shellMockRunner, &fileUtilsMock, removeFilesFuncBuilder(&[]string{}), ioutil.Discard, &xsDeployUtilsMock{}, os.Stderr)
 
 		if assert.NoError(t, e) {
 			if assert.Len(t, shellMockRunner.Calls, 2) { // There is no login --> we have two calls
@@ -446,7 +456,7 @@ func TestDeploy(t *testing.T) {
 		fileUtilsMock := FileUtilsMock{
 			existingFiles: []string{"dummy.mtar", ".xs_session"},
 		}
-		e := runXsDeploy(testOptions, &cpeOut, &shellMockRunner, &fileUtilsMock, removeFilesFuncBuilder(&[]string{}), ioutil.Discard, &xsDeployUtilsMock{})
+		e := runXsDeploy(testOptions, &cpeOut, &shellMockRunner, &fileUtilsMock, removeFilesFuncBuilder(&[]string{}), ioutil.Discard, &xsDeployUtilsMock{}, os.Stderr)
 
 		if assert.NoError(t, e) {
 			if assert.Len(t, shellMockRunner.Calls, 2) { // There is no login --> we have two calls
@@ -467,7 +477,7 @@ func TestDeploy(t *testing.T) {
 		fileUtilsMock := FileUtilsMock{
 			existingFiles: []string{"dummy.mtar", ".xs_session"},
 		}
-		e := runXsDeploy(testOptions, &cpeOut, &mock.ShellMockRunner{}, &fileUtilsMock, removeFilesFuncBuilder(&[]string{}), ioutil.Discard, &xsDeployUtilsMock{})
+		e := runXsDeploy(testOptions, &cpeOut, &mock.ShellMockRunner{}, &fileUtilsMock, removeFilesFuncBuilder(&[]string{}), ioutil.Discard, &xsDeployUtilsMock{}, os.Stderr)
 		assert.EqualError(t, e, "OperationID was not provided. This is required for action 'ABORT'.")
 	})
 }

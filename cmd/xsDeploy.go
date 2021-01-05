@@ -122,7 +122,7 @@ xs {{.Mode.GetDeployCommand}} -i {{.OperationID}} -a {{.Action.GetAction}}
 func xsDeploy(config xsDeployOptions, _ *telemetry.CustomData, piperEnvironment *xsDeployCommonPipelineEnvironment) {
 	c := command.Command{}
 	fileUtils := piperutils.Files{}
-	err := runXsDeploy(config, piperEnvironment, &c, fileUtils, os.Remove, os.Stdout, xsDeployUtilsBundle{})
+	err := runXsDeploy(config, piperEnvironment, &c, fileUtils, os.Remove, os.Stdout, xsDeployUtilsBundle{}, os.Stderr)
 	if err != nil {
 		log.Entry().
 			WithError(err).
@@ -134,7 +134,8 @@ func runXsDeploy(XsDeployOptions xsDeployOptions, piperEnvironment *xsDeployComm
 	fileUtils piperutils.FileUtils,
 	fRemove func(string) error,
 	stdout io.Writer,
-	utils xsDeployUtils) error {
+	utils xsDeployUtils,
+	stderr io.Writer) error {
 
 	mode, err := ValueOfMode(XsDeployOptions.Mode)
 	if err != nil {
@@ -265,7 +266,7 @@ func runXsDeploy(XsDeployOptions xsDeployOptions, piperEnvironment *xsDeployComm
 	}
 
 	if err != nil {
-		if e := handleLog(filepath.Join(utils.Getenv("HOME"), ".xs_logs")); e != nil {
+		if e := handleLog(filepath.Join(utils.Getenv("HOME"), ".xs_logs"), stderr); e != nil {
 			log.Entry().Warningf("Cannot provide the logs: %s", e.Error())
 		}
 	}
@@ -307,7 +308,7 @@ func printStatus(XsDeployOptions xsDeployOptions, stdout io.Writer) error {
 	return e
 }
 
-func handleLog(logDir string) error {
+func handleLog(logDir string, stderr io.Writer) error {
 
 	if _, e := os.Stat(logDir); !os.IsNotExist(e) {
 		log.Entry().Warningf(fmt.Sprintf("Here are the logs (%s):", logDir))
@@ -333,7 +334,7 @@ func handleLog(logDir string) error {
 						}
 						return e
 					} else {
-						_, _ = os.Stderr.WriteString(string(buf[:n]))
+						_, _ = stderr.Write(buf[:n])
 					}
 				}
 				f.Close()
