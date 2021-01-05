@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/mock"
+	sliceUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/stretchr/testify/assert"
 	"io"
 	"io/ioutil"
@@ -15,14 +16,15 @@ import (
 
 type FileUtilsMock struct {
 	copiedFiles       []string
-	errorOnFileExists bool
+	fileThrowingError []string
+	existingFiles     []string
 }
 
 func (f *FileUtilsMock) FileExists(path string) (bool, error) {
-	if f.errorOnFileExists {
-		return false, fmt.Errorf("error on FileExists")
+	if sliceUtils.ContainsString(f.fileThrowingError, path) {
+		return false, fmt.Errorf("error on FileExists for " + path)
 	}
-	return path == "dummy.mtar" || path == ".xs_session", nil
+	return sliceUtils.ContainsString(f.existingFiles, path), nil
 }
 
 func (f *FileUtilsMock) Copy(src, dest string) (int64, error) {
@@ -75,7 +77,9 @@ func TestDeploy(t *testing.T) {
 	var removedFiles []string
 
 	cpeOut := xsDeployCommonPipelineEnvironment{}
-	fileUtilsMock := FileUtilsMock{}
+	fileUtilsMock := FileUtilsMock{
+		existingFiles: []string{"dummy.mtar", ".xs_session"},
+	}
 
 	fRemove := func(path string) error {
 		removedFiles = append(removedFiles, path)
@@ -160,13 +164,45 @@ func TestDeploy(t *testing.T) {
 			wg.Done()
 		}()
 
-		fileUtils := &FileUtilsMock{errorOnFileExists: true}
-		e := runXsDeploy(myXsDeployOptions, &cpeOut, &s, fileUtils, fRemove, wStdout)
+		fileUtils := fileUtilsMock
+		fileUtils.fileThrowingError = []string{"dummy.mtar"}
+		e := runXsDeploy(myXsDeployOptions, &cpeOut, &s, &fileUtils, fRemove, wStdout)
 
 		_ = wStdout.Close()
 		wg.Wait()
 
-		assert.EqualError(t, e, "error on FileExists")
+		assert.EqualError(t, e, "error on FileExists for dummy.mtar")
+	})
+
+	t.Run("error on file read", func(t *testing.T) {
+		t.Parallel()
+
+		defer func() {
+			removedFiles = nil
+			s.Calls = nil
+			stdout = ""
+		}()
+
+		rStdout, wStdout := io.Pipe()
+
+		var wg sync.WaitGroup
+		wg.Add(1)
+
+		go func() {
+			buf := new(bytes.Buffer)
+			_, _ = io.Copy(buf, rStdout)
+			stdout = buf.String()
+			wg.Done()
+		}()
+
+		fileUtils := fileUtilsMock
+		fileUtils.fileThrowingError = []string{".xs_session"}
+		e := runXsDeploy(myXsDeployOptions, &cpeOut, &s, &fileUtils, fRemove, wStdout)
+
+		_ = wStdout.Close()
+		wg.Wait()
+
+		assert.EqualError(t, e, "error on FileExists for .xs_session")
 	})
 
 	t.Run("invalid deploy mode", func(t *testing.T) {
