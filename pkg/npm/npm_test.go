@@ -337,4 +337,17 @@ func TestNpm(t *testing.T) {
 			assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "foo"}}, utils.execRunner.Calls[2])
 		}
 	})
+
+	t.Run("Invoke npm command", func(t *testing.T) {
+		utils := newNpmMockUtilsBundle()
+		exec := &Execute{
+			Utils:   &utils,
+			Options: ExecutorOptions{},
+		}
+		err := exec.RunNpm([]string{"install", "--global", "myDep"})
+		if assert.NoError(t, err) {
+			assert.Len(t, utils.execRunner.Calls, 1)
+			assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install", "--global", "myDep"}}, utils.execRunner.Calls[0])
+		}
+	})
 }
