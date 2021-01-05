@@ -350,4 +350,30 @@ func TestNpm(t *testing.T) {
 			assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install", "--global", "myDep"}}, utils.execRunner.Calls[0])
 		}
 	})
+
+	t.Run("Set config", func(t *testing.T) {
+		utils := newNpmMockUtilsBundle()
+		exec := &Execute{
+			Utils:   &utils,
+			Options: ExecutorOptions{},
+		}
+		err := exec.SetConfig("@my:registry", "http://example.org/npm")
+		if assert.NoError(t, err) {
+			assert.Len(t, utils.execRunner.Calls, 1)
+			assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"config", "set", "@my:registry", "http://example.org/npm"}}, utils.execRunner.Calls[0])
+		}
+	})
+
+	t.Run("Set config with impicit true", func(t *testing.T) {
+		utils := newNpmMockUtilsBundle()
+		exec := &Execute{
+			Utils:   &utils,
+			Options: ExecutorOptions{},
+		}
+		err := exec.SetConfig("verbose", "")
+		if assert.NoError(t, err) {
+			assert.Len(t, utils.execRunner.Calls, 1)
+			assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"config", "set", "verbose", "true"}}, utils.execRunner.Calls[0])
+		}
+	})
 }

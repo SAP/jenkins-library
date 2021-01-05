@@ -27,6 +27,7 @@ type Executor interface {
 	InstallAllDependencies(packageJSONFiles []string) error
 	SetNpmRegistries() error
 	RunNpm(args []string) error
+	SetConfig(key, value string) error
 }
 
 // ExecutorOptions holds common parameters for functions of Executor
@@ -100,13 +101,22 @@ func (exec *Execute) SetNpmRegistries() error {
 
 	if exec.Options.DefaultNpmRegistry != "" && registryRequiresConfiguration(preConfiguredRegistry, "https://registry.npmjs.org") {
 		log.Entry().Info("npm registry " + npmRegistry + " was not configured, setting it to " + exec.Options.DefaultNpmRegistry)
-		err = exec.RunNpm([]string{"config", "set", npmRegistry, exec.Options.DefaultNpmRegistry})
+		err = exec.SetConfig(npmRegistry, exec.Options.DefaultNpmRegistry)
 		if err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+// SetConfig set a config entry, if key is empty we set `true`
+// CAUTION: This will change the npm configuration in the user's home directory.
+func (exec *Execute) SetConfig(key, value string) error {
+	if len(value) == 0 {
+		value = "true"
+	}
+	return exec.RunNpm([]string{"config", "set", key, value})
 }
 
 // RunNpm Executes an npm comman
