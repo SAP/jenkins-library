@@ -1,17 +1,18 @@
 package sonar
 
 import (
-	sonarAPI "github.com/magicsong/sonargo/sonar"
+	sonargo "github.com/magicsong/sonargo/sonar"
 	"github.com/pkg/errors"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 type IssueService struct {
-	Host    string
-	Token   string
-	Project string
-	client  *sonarAPI.Client
+	Host       string
+	Token      string
+	Project    string
+	apiClient  *Client
+	HTTPClient Sender
 }
 
 type issueSeverity string
@@ -49,13 +50,11 @@ func (api *IssueService) GetNumberOfInfoIssues() (int, error) {
 }
 
 func (api *IssueService) getIssueCount(severity issueSeverity) (int, error) {
-	if api.client == nil {
-		if err := api.createClient(); err != nil {
-			return -1, err
-		}
+	if api.apiClient == nil {
+		api.apiClient = NewBasicAuthClient(api.Token, "", api.Host, api.HTTPClient)
 	}
 	log.Entry().Debugf("using api client for '%s'", api.Host)
-	result, _, err := api.client.Issues.Search(&sonarAPI.IssuesSearchOption{
+	result, _, err := api.apiClient.SearchIssues(&sonargo.IssuesSearchOption{
 		ComponentKeys: api.Project,
 		Severities:    severity.ToString(),
 		Resolved:      "false",
