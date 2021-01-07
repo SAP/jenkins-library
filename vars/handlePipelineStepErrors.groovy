@@ -79,7 +79,11 @@ void call(Map parameters = [:], body) {
                 echo "DEBUG2: ${debug2} - ${debug2.getClass()}"
             }
         } else {
+            def debug1 = cpe?.getValue('unstableSteps')
+            echo "DEBUG1: ${debug1} - ${debug1.getClass()}"
             body()
+            def debug2 = cpe?.getValue('unstableSteps')
+            echo "DEBUG2: ${debug2} - ${debug2.getClass()}"
         }
     } catch (AbortException | FlowInterruptedException ex) {
         if (config.echoDetails)
