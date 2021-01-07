@@ -39,7 +39,7 @@ func (tokenParameters TokenParameters) GetBearerToken() (string, error) {
 	resp, httpErr := httpClient.SendRequest(method, tokenFinalURL, nil, header, nil)
 	defer func() {
 		if resp != nil && resp.Body != nil {
-			CloseResponseBodyIfNecessary(resp)
+			defer CloseResponseBodyIfNecessary(resp)
 		}
 	}()
 
@@ -65,11 +65,7 @@ func (tokenParameters TokenParameters) GetBearerToken() (string, error) {
 
 //CloseResponseBodyIfNecessary - close the http response object
 func CloseResponseBodyIfNecessary(response *http.Response) {
-
 	if response != nil && response.Body != nil {
-
 		response.Body.Close()
-
 	}
-
 }

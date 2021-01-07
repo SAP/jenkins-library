@@ -77,7 +77,7 @@ func runDeployIntegrationArtifact(config *deployIntegrationArtifactOptions, tele
 
 	defer func() {
 		if deployResp != nil && deployResp.Body != nil {
-			deployResp.Body.Close()
+			defer cpi.CloseResponseBodyIfNecessary(deployResp)
 		}
 	}()
 
