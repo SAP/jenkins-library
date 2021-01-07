@@ -64,7 +64,6 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
             dockerWrapper(script, stepName, config) {
                 handleErrorDetails(stepName) {
                     script.commonPipelineEnvironment.writeToDisk(script)
-                    
                     try {
                         credentialWrapper(config, credentialInfo) {
                             sh "${piperGoPath} ${stepName}${defaultConfigArgs}${customConfigArg}"
