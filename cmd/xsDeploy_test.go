@@ -20,6 +20,7 @@ type FileUtilsMock struct {
 	fileThrowingError []string
 	existingFiles     []string
 	writtenFiles      map[string][]byte
+	errorOnCopy       bool
 }
 
 func (f *FileUtilsMock) FileExists(path string) (bool, error) {
@@ -30,6 +31,9 @@ func (f *FileUtilsMock) FileExists(path string) (bool, error) {
 }
 
 func (f *FileUtilsMock) Copy(src, dest string) (int64, error) {
+	if f.errorOnCopy {
+		return 0, errors.New("error on Copy")
+	}
 	f.copiedFiles = append(f.copiedFiles, fmt.Sprintf("%s->%s", src, dest))
 	return 0, nil
 }
@@ -484,7 +488,7 @@ func TestDeploy(t *testing.T) {
 		}
 	})
 
-	t.Run("BG deploy resume succeeds", func(t *testing.T) {
+	t.Run("BG deploy resume fails on complete script", func(t *testing.T) {
 		t.Parallel()
 
 		testOptions := myXsDeployOptions
@@ -501,6 +505,30 @@ func TestDeploy(t *testing.T) {
 		e := runXsDeploy(testOptions, &cpeOut, &shellMockRunner, &fileUtilsMock, removeFilesFuncBuilder(&[]string{}), ioutil.Discard, &xsDeployUtilsMock{}, os.Stderr)
 
 		assert.EqualError(t, e, "error on complete script")
+	})
+
+	t.Run("BG deploy resume - copy of files fail is ignored", func(t *testing.T) {
+		t.Parallel()
+
+		testOptions := myXsDeployOptions
+		testOptions.Mode = "BG_DEPLOY"
+		testOptions.Action = "RESUME"
+		testOptions.OperationID = "12345"
+
+		shellMockRunner := mock.ShellMockRunner{}
+		fileUtilsMock := FileUtilsMock{
+			existingFiles: []string{"dummy.mtar", ".xs_session"},
+			errorOnCopy:   true,
+		}
+		e := runXsDeploy(testOptions, &cpeOut, &shellMockRunner, &fileUtilsMock, removeFilesFuncBuilder(&[]string{}), ioutil.Discard, &xsDeployUtilsMock{}, os.Stderr)
+
+		if assert.NoError(t, e) {
+			if assert.Len(t, shellMockRunner.Calls, 2) { // There is no login --> we have two calls
+				assert.Contains(t, shellMockRunner.Calls[0], "xs bg-deploy -i 12345 -a resume")
+				assert.Contains(t, shellMockRunner.Calls[1], "xs logout")
+			}
+
+		}
 	})
 
 	t.Run("BG deploy abort fails due to missing operationId", func(t *testing.T) {
