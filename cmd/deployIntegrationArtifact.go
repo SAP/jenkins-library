@@ -75,7 +75,7 @@ func runDeployIntegrationArtifact(config *deployIntegrationArtifactOptions, tele
 
 	deployResp, httpErr := httpClient.SendRequest("POST", deployURL, nil, header, nil)
 
-	defer func() {
+	func() {
 		if deployResp != nil && deployResp.Body != nil {
 			defer cpi.CloseResponseBodyIfNecessary(deployResp)
 		}

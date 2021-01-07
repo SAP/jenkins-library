@@ -37,7 +37,7 @@ func (tokenParameters TokenParameters) GetBearerToken() (string, error) {
 	tokenFinalURL := fmt.Sprintf("%s?grant_type=client_credentials", tokenParameters.TokenURL)
 	method := "POST"
 	resp, httpErr := httpClient.SendRequest(method, tokenFinalURL, nil, header, nil)
-	defer func() {
+	func() {
 		if resp != nil && resp.Body != nil {
 			defer CloseResponseBodyIfNecessary(resp)
 		}
