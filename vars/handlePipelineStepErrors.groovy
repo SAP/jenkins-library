@@ -64,9 +64,7 @@ void call(Map parameters = [:], body) {
         .addIfEmpty('stepNameDoc' , parameters.stepName)
         .use()
 
-
-    def debug1 = cpe?.getValue('unstableSteps')
-    echo "DEBUG1: ${debug1} - ${debug1.getClass()} - CPE: ${cpe}"
+    // load 'unstableSteps' here as loading it in catch results in list transforming to string
     List unstableSteps  = cpe?.getValue('unstableSteps') ?: []
     def message = ''
     try {
@@ -74,7 +72,11 @@ void call(Map parameters = [:], body) {
             echo "--- Begin library step of: ${config.stepName} ---"
         if (!config.failOnError && config.stepTimeouts?.get(config.stepName)) {
             timeout(time: config.stepTimeouts[config.stepName]) {
+                def debug1 = cpe?.getValue('unstableSteps')
+                echo "DEBUG1: ${debug1} - ${debug1.getClass()}"
                 body()
+                def debug2 = cpe?.getValue('unstableSteps')
+                echo "DEBUG2: ${debug2} - ${debug2.getClass()}"
             }
         } else {
             body()
@@ -104,20 +106,10 @@ void call(Map parameters = [:], body) {
             echo failureMessage
         }
 
-        def debug2 = cpe?.getValue('unstableSteps')
-        echo "DEBUG1: ${debug1} - ${debug1.getClass()} - CPE: ${cpe}"
-        echo "DEBUG2: ${debug2} - ${debug2.getClass()} - CPE: ${cpe}"
-        
-        //List unstableSteps = cpe?.getValue('unstableSteps') ?: []
-
         // add information about unstable steps to pipeline environment
         // this helps to bring this information to users in a consolidated manner inside a pipeline
         unstableSteps.add(config.stepName)
         cpe?.setValue('unstableSteps', unstableSteps)
-
-        def debug3 = cpe?.getValue('unstableSteps')
-        echo "DEBUG3: ${debug3} - ${debug3.getClass()} - CPE: ${cpe}"
-
     } catch (Throwable error) {
         if (config.echoDetails)
             message += formatErrorMessage(config, error)
