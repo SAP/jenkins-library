@@ -86,6 +86,8 @@ void call(Map parameters = [:], body) {
             echo "DEBUG2: ${debug2} - ${debug2.getClass()}"
         }
     } catch (AbortException | FlowInterruptedException ex) {
+                def debug2 = cpe?.getValue('unstableSteps')
+                echo "DEBUG2: ${debug2} - ${debug2.getClass()}"
         if (config.echoDetails)
             message += formatErrorMessage(config, ex)
         writeErrorToInfluxData(config, ex)
@@ -115,6 +117,8 @@ void call(Map parameters = [:], body) {
         unstableSteps.add(config.stepName)
         cpe?.setValue('unstableSteps', unstableSteps)
     } catch (Throwable error) {
+                def debug3 = cpe?.getValue('unstableSteps')
+                echo "DEBUG3: ${debug3} - ${debug3.getClass()}"
         if (config.echoDetails)
             message += formatErrorMessage(config, error)
         writeErrorToInfluxData(config, error)
@@ -123,6 +127,8 @@ void call(Map parameters = [:], body) {
 
         throw error
     } finally {
+                def debug4 = cpe?.getValue('unstableSteps')
+                echo "DEBUG4: ${debug4} - ${debug4.getClass()}"
         if (config.echoDetails)
             message += "--- End library step of: ${config.stepName} ---"
         echo message
