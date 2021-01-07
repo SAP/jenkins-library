@@ -18,17 +18,6 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
         handlePipelineStepErrorsParameters.failOnError = true
     }
 
-    echo "${handlePipelineStepErrorsParameters}"
-    echo "${handlePipelineStepErrorsParameters.stepParameters.script.commonPipelineEnvironment.getValue('unstableSteps')}"
-    echo "${handlePipelineStepErrorsParameters.stepParameters.script.commonPipelineEnvironment.getValue('unstableSteps').getClass()}"
-    
-    def cpe = handlePipelineStepErrorsParameters.stepParameters?.script?.commonPipelineEnvironment ?: null
-    echo "CPE: ${cpe}"
-    List unstableSteps = cpe?.getValue('unstableSteps') ?: []
-    echo "unstableSteps: ${unstableSteps}"
-    unstableSteps.add(stepName)
-    cpe?.setValue('unstableSteps', unstableSteps)
-
     handlePipelineStepErrors(handlePipelineStepErrorsParameters) {
 
         Script script = checkScript(this, parameters) ?: this
