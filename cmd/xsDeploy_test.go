@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/mock"
@@ -71,7 +72,8 @@ func (f *FileUtilsMock) TempDir(dir, pattern string) (directoryName string, err 
 }
 
 type xsDeployUtilsMock struct {
-	envVariables map[string]string
+	envVariables   map[string]string
+	errorOnMarshal bool
 }
 
 func (x *xsDeployUtilsMock) Getenv(key string) string {
@@ -79,6 +81,13 @@ func (x *xsDeployUtilsMock) Getenv(key string) string {
 		return x.envVariables[key]
 	}
 	return os.Getenv(key)
+}
+
+func (x *xsDeployUtilsMock) Marshal(v interface{}) ([]byte, error) {
+	if x.errorOnMarshal {
+		return []byte{}, errors.New("error on marshal")
+	}
+	return json.Marshal(v)
 }
 
 func TestDeploy(t *testing.T) {
@@ -463,6 +472,24 @@ func TestDeploy(t *testing.T) {
 			}
 
 		}
+	})
+
+	t.Run("BG deploy fails - deploy options cannot be marshalled", func(t *testing.T) {
+		t.Parallel()
+
+		testOptions := myXsDeployOptions
+		testOptions.Mode = "BG_DEPLOY"
+		testOptions.Action = "ABORT"
+		testOptions.OperationID = "12345"
+
+		shellMockRunner := mock.ShellMockRunner{}
+		fileUtilsMock := FileUtilsMock{
+			existingFiles: []string{"dummy.mtar", ".xs_session"},
+		}
+		deployUtilsMock := xsDeployUtilsMock{errorOnMarshal: true}
+		e := runXsDeploy(testOptions, &cpeOut, &shellMockRunner, &fileUtilsMock, removeFilesFuncBuilder(&[]string{}), ioutil.Discard, &deployUtilsMock, os.Stderr)
+
+		assert.EqualError(t, e, "error on marshal")
 	})
 
 	t.Run("BG deploy resume succeeds", func(t *testing.T) {

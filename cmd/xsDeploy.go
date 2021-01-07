@@ -21,12 +21,17 @@ import (
 
 type xsDeployUtils interface {
 	Getenv(key string) string
+	Marshal(v interface{}) ([]byte, error)
 }
 
 type xsDeployUtilsBundle struct{}
 
-func (x xsDeployUtilsBundle) Getenv(key string) string {
+func (xsDeployUtilsBundle) Getenv(key string) string {
 	return os.Getenv(key)
+}
+
+func (xsDeployUtilsBundle) Marshal(v interface{}) ([]byte, error) {
+	return json.Marshal(v)
 }
 
 // DeployMode ...
@@ -288,7 +293,7 @@ func runXsDeploy(XsDeployOptions xsDeployOptions, piperEnvironment *xsDeployComm
 		log.Entry().Errorf("An error occurred. Stdout from underlying process: >>%s<<. Stderr from underlying process: >>%s<<", o, e)
 	}
 
-	if e := printStatus(XsDeployOptions, stdout); e != nil {
+	if e := printStatus(XsDeployOptions, stdout, utils); e != nil {
 		if err == nil {
 			err = e
 		}
@@ -297,12 +302,12 @@ func runXsDeploy(XsDeployOptions xsDeployOptions, piperEnvironment *xsDeployComm
 	return err
 }
 
-func printStatus(XsDeployOptions xsDeployOptions, stdout io.Writer) error {
+func printStatus(XsDeployOptions xsDeployOptions, stdout io.Writer, utils xsDeployUtils) error {
 	XsDeployOptionsCopy := XsDeployOptions
 	XsDeployOptionsCopy.Password = ""
 
-	var e error
-	if b, e := json.Marshal(XsDeployOptionsCopy); e == nil {
+	b, e := utils.Marshal(XsDeployOptionsCopy)
+	if e == nil {
 		_, _ = fmt.Fprintln(stdout, string(b))
 	}
 	return e
