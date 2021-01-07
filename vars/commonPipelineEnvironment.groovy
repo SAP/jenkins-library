@@ -49,7 +49,7 @@ class commonPipelineEnvironment implements Serializable {
 
     private Map valueMap = [:]
 
-    void setValue(String property, value) {
+    void setValue(String property, def value) {
         valueMap[property] = value
     }
 
