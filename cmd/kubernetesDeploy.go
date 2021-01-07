@@ -149,11 +149,14 @@ func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, s
 	upgradeParams = append(
 		upgradeParams,
 		"--install",
-		"--force",
 		"--namespace", config.Namespace,
 		"--set",
 		fmt.Sprintf("image.repository=%v/%v,image.tag=%v%v%v", containerRegistry, containerImageName, containerImageTag, secretsData, ingressHosts),
 	)
+
+	if config.ForceUpdates {
+		upgradeParams = append(upgradeParams, "--force")
+	}
 
 	if config.DeployTool == "helm" {
 		upgradeParams = append(upgradeParams, "--wait", "--timeout", strconv.Itoa(config.HelmDeployWaitSeconds))
