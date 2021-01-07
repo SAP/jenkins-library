@@ -64,6 +64,9 @@ void call(Map parameters = [:], body) {
         .addIfEmpty('stepNameDoc' , parameters.stepName)
         .use()
 
+
+    def debug1 = cpe?.getValue('unstableSteps')
+    echo "DEBUG1: ${debug1} - ${debug1.getClass().getName()}"
     def message = ''
     try {
         if (config.echoDetails)
@@ -100,6 +103,9 @@ void call(Map parameters = [:], body) {
             echo failureMessage
         }
 
+        def debug2 = cpe?.getValue('unstableSteps')
+        echo "DEBUG2: ${debug2} - ${debug2.getClass().getName()}"
+        
         List unstableSteps = cpe?.getValue('unstableSteps') ?: []
 
         // add information about unstable steps to pipeline environment
