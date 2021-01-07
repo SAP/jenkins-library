@@ -257,6 +257,7 @@ void call(Map parameters = [:], body) {
                                     if (config.sidecarReadyCommand) {
                                         sidecarUtils.waitForSidecarReadyOnDocker(container.id, config.sidecarReadyCommand)
                                     }
+                                    sh "docker images"
                                     image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
                                         echo "[INFO][${STEP_NAME}] Running with sidecar container."
                                         body()
