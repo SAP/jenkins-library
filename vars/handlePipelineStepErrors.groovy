@@ -66,7 +66,7 @@ void call(Map parameters = [:], body) {
 
 
     def debug1 = cpe?.getValue('unstableSteps')
-    echo "DEBUG1: ${debug1} - ${debug1.getClass()}"
+    echo "DEBUG1: ${debug1} - ${debug1.getClass()} - CPE: ${cpe}"
     def message = ''
     try {
         if (config.echoDetails)
@@ -104,7 +104,7 @@ void call(Map parameters = [:], body) {
         }
 
         def debug2 = cpe?.getValue('unstableSteps')
-        echo "DEBUG2: ${debug2} - ${debug2.getClass()}"
+        echo "DEBUG2: ${debug2} - ${debug2.getClass()} - CPE: ${cpe}"
         
         List unstableSteps = cpe?.getValue('unstableSteps') ?: []
 
@@ -114,7 +114,7 @@ void call(Map parameters = [:], body) {
         cpe?.setValue('unstableSteps', unstableSteps)
 
         def debug3 = cpe?.getValue('unstableSteps')
-        echo "DEBUG3: ${debug3} - ${debug3.getClass()}"
+        echo "DEBUG3: ${debug3} - ${debug3.getClass()} - CPE: ${cpe}"
 
     } catch (Throwable error) {
         if (config.echoDetails)
