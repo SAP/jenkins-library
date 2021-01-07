@@ -52,7 +52,7 @@ spec:
           - STEPS
   containers:
     - name: uiVeri5
-      image: node:10.23.0-stretch #node:lts-stretch 10.23.0-stretch
+      image: node:lts-stretch #node:lts-stretch 10.23.0-stretch
       env:
         - name: no_proxy
           value: localhost,selenium,$no_proxy
