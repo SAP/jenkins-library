@@ -249,8 +249,6 @@ void call(Map parameters = [:], body) {
                                 if (config.sidecarName)
                                     config.sidecarOptions.add("--network-alias ${config.sidecarName}")
                                 config.sidecarOptions.add("--network ${networkName}")
-                                sh "docker images"
-                                sh "git rev-parse --abbrev-ref HEAD"
                                 sidecarImage.withRun(getDockerOptions(config.sidecarEnvVars, config.sidecarVolumeBind, config.sidecarOptions)) { container ->
                                     config.dockerOptions = config.dockerOptions ?: []
                                     if (config.dockerName)
