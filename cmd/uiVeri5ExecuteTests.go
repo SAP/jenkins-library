@@ -33,6 +33,7 @@ func runUIVeri5(config *uiVeri5ExecuteTestsOptions, command command.ExecRunner) 
 
 	options := []string{}
 	if config.TestOptions != "" {
+		// use testOptions (deprecated) if configured
 		options = append(options, config.TestOptions)
 	} else {
 		options = append(options, config.RunOptions...)
