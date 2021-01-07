@@ -71,14 +71,17 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
             dockerWrapper(script, stepName, config) {
                 handleErrorDetails(stepName) {
                     script.commonPipelineEnvironment.writeToDisk(script)
+                    
+    echo "CPE6: ${parameters.script.commonPipelineEnvironment?.getValue('unstableSteps')} - ${parameters.script.commonPipelineEnvironment?.getValue('unstableSteps').getClass()}"
                     try {
                         credentialWrapper(config, credentialInfo) {
                             sh "${piperGoPath} ${stepName}${defaultConfigArgs}${customConfigArg}"
                         }
                     } finally {
-    echo "CPE6: ${parameters.script.commonPipelineEnvironment?.getValue('unstableSteps')} - ${parameters.script.commonPipelineEnvironment?.getValue('unstableSteps').getClass()}"
+    echo "CPE7: ${parameters.script.commonPipelineEnvironment?.getValue('unstableSteps')} - ${parameters.script.commonPipelineEnvironment?.getValue('unstableSteps').getClass()}"
                         jenkinsUtils.handleStepResults(stepName, failOnMissingReports, failOnMissingLinks)
                         script.commonPipelineEnvironment.readFromDisk(script)
+    echo "CPE8: ${parameters.script.commonPipelineEnvironment?.getValue('unstableSteps')} - ${parameters.script.commonPipelineEnvironment?.getValue('unstableSteps').getClass()}"
                     }
                 }
             }
