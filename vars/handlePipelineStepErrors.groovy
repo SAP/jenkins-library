@@ -113,6 +113,9 @@ void call(Map parameters = [:], body) {
         unstableSteps.add(config.stepName)
         cpe?.setValue('unstableSteps', unstableSteps)
 
+        def debug3 = cpe?.getValue('unstableSteps')
+        echo "DEBUG3: ${debug3} - ${debug3.getClass()}"
+
     } catch (Throwable error) {
         if (config.echoDetails)
             message += formatErrorMessage(config, error)
