@@ -65,7 +65,7 @@ void call(Map parameters = [:], body) {
         .use()
 
     // load 'unstableSteps' here as loading it later will result in list transforming to JSONArray (only in piperExecuteBin)
-    List unstableSteps  = cpe?.getValue('unstableSteps') ?: []
+    List unstableSteps = cpe?.getValue('unstableSteps') ?: []
     def message = ''
     try {
         if (config.echoDetails)
