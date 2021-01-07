@@ -65,7 +65,7 @@ void call(Map parameters = [:], body) {
         .use()
 
     // load 'unstableSteps' here as loading it in catch results in list transforming to string
-    List unstableSteps  = cpe?.getValue('unstableSteps') ?: []
+ //   List unstableSteps  = cpe?.getValue('unstableSteps') ?: []
     def message = ''
     try {
         if (config.echoDetails)
@@ -112,6 +112,7 @@ void call(Map parameters = [:], body) {
             echo failureMessage
         }
 
+        List unstableSteps  = cpe?.getValue('unstableSteps') ?: []
         // add information about unstable steps to pipeline environment
         // this helps to bring this information to users in a consolidated manner inside a pipeline
         unstableSteps.add(config.stepName)
