@@ -24,7 +24,7 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
     
     def cpe = handlePipelineStepErrorsParameters.stepParameters?.script?.commonPipelineEnvironment ?: null
     List unstableSteps = cpe?.getValue('unstableSteps') ?: []
-    unstableSteps.add(config.stepName)
+    unstableSteps.add(stepName)
     cpe?.setValue('unstableSteps', unstableSteps)
 
     handlePipelineStepErrors(handlePipelineStepErrorsParameters) {
