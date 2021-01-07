@@ -554,3 +554,11 @@ func removeFilesFuncBuilder(removedFiles *[]string) func(path string) error {
 		return nil
 	}
 }
+
+func TestExecuteCmdWithWrongPattern(t *testing.T) {
+	t.Parallel()
+
+	err := executeCmd("id", `#!/bin/bash xs login -a {{.APIURL}} -u {{.Username}} -p '{{.Password}}' -o {{.Org}} -s {{.Space}} {{.LoginOpts}`, "", &mock.ShellMockRunner{})
+
+	assert.EqualError(t, err, "template: id:1: unexpected \"}\" in operand")
+}
