@@ -249,6 +249,7 @@ void call(Map parameters = [:], body) {
                                 if (config.sidecarName)
                                     config.sidecarOptions.add("--network-alias ${config.sidecarName}")
                                 config.sidecarOptions.add("--network ${networkName}")
+                                sh "docker images"
                                 sidecarImage.withRun(getDockerOptions(config.sidecarEnvVars, config.sidecarVolumeBind, config.sidecarOptions)) { container ->
                                     config.dockerOptions = config.dockerOptions ?: []
                                     if (config.dockerName)
@@ -257,7 +258,6 @@ void call(Map parameters = [:], body) {
                                     if (config.sidecarReadyCommand) {
                                         sidecarUtils.waitForSidecarReadyOnDocker(container.id, config.sidecarReadyCommand)
                                     }
-                                    sh "docker images"
                                     image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
                                         echo "[INFO][${STEP_NAME}] Running with sidecar container."
                                         body()
