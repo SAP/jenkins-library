@@ -64,30 +64,20 @@ void call(Map parameters = [:], body) {
         .addIfEmpty('stepNameDoc' , parameters.stepName)
         .use()
 
-    // load 'unstableSteps' here as loading it in catch results in list transforming to string
- //   List unstableSteps  = cpe?.getValue('unstableSteps') ?: []
+    // load 'unstableSteps' here as loading it later will result in list transforming to JSONArray (only in piperExecuteBin)
+    List unstableSteps  = cpe?.getValue('unstableSteps') ?: []
     def message = ''
     try {
         if (config.echoDetails)
             echo "--- Begin library step of: ${config.stepName} ---"
         if (!config.failOnError && config.stepTimeouts?.get(config.stepName)) {
             timeout(time: config.stepTimeouts[config.stepName]) {
-                def debug1 = cpe?.getValue('unstableSteps')
-                echo "DEBUG1: ${debug1} - ${debug1.getClass()}"
                 body()
-                def debug2 = cpe?.getValue('unstableSteps')
-                echo "DEBUG2: ${debug2} - ${debug2.getClass()}"
             }
         } else {
-            def debug1 = cpe?.getValue('unstableSteps')
-            echo "DEBUG1: ${debug1} - ${debug1.getClass()}"
             body()
-            def debug2 = cpe?.getValue('unstableSteps')
-            echo "DEBUG2: ${debug2} - ${debug2.getClass()}"
         }
     } catch (AbortException | FlowInterruptedException ex) {
-                def debug2 = cpe?.getValue('unstableSteps')
-                echo "DEBUG2: ${debug2} - ${debug2.getClass()}"
         if (config.echoDetails)
             message += formatErrorMessage(config, ex)
         writeErrorToInfluxData(config, ex)
@@ -112,14 +102,11 @@ void call(Map parameters = [:], body) {
             echo failureMessage
         }
 
-        List unstableSteps  = cpe?.getValue('unstableSteps') ?: []
         // add information about unstable steps to pipeline environment
         // this helps to bring this information to users in a consolidated manner inside a pipeline
         unstableSteps.add(config.stepName)
         cpe?.setValue('unstableSteps', unstableSteps)
     } catch (Throwable error) {
-                def debug3 = cpe?.getValue('unstableSteps')
-                echo "DEBUG3: ${debug3} - ${debug3.getClass()}"
         if (config.echoDetails)
             message += formatErrorMessage(config, error)
         writeErrorToInfluxData(config, error)
@@ -128,8 +115,6 @@ void call(Map parameters = [:], body) {
 
         throw error
     } finally {
-                def debug4 = cpe?.getValue('unstableSteps')
-                echo "DEBUG4: ${debug4} - ${debug4.getClass()}"
         if (config.echoDetails)
             message += "--- End library step of: ${config.stepName} ---"
         echo message
