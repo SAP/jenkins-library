@@ -13,28 +13,22 @@ import static com.sap.piper.Prerequisites.checkScript
 
 void call(Map parameters = [:], String stepName, String metadataFile, List credentialInfo, boolean failOnMissingReports = false, boolean failOnMissingLinks = false, boolean failOnError = false) {
 
-    echo "CPE1: ${parameters.script.commonPipelineEnvironment?.getValue('unstableSteps')} - ${parameters.script.commonPipelineEnvironment?.getValue('unstableSteps').getClass()}"
-    
     Map handlePipelineStepErrorsParameters = [stepName: stepName, stepParameters: parameters]
     if (failOnError) {
         handlePipelineStepErrorsParameters.failOnError = true
     }
 
     handlePipelineStepErrors(handlePipelineStepErrorsParameters) {
-    echo "CPE2: ${parameters.script.commonPipelineEnvironment?.getValue('unstableSteps')} - ${parameters.script.commonPipelineEnvironment?.getValue('unstableSteps').getClass()}"
-
         Script script = checkScript(this, parameters) ?: this
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
         def utils = parameters.juStabUtils ?: new Utils()
 
         String piperGoPath = parameters.piperGoPath ?: './piper'
-    echo "CPE3: ${parameters.script.commonPipelineEnvironment?.getValue('unstableSteps')} - ${parameters.script.commonPipelineEnvironment?.getValue('unstableSteps').getClass()}"
 
         prepareExecution(script, utils, parameters)
         prepareMetadataResource(script, metadataFile)
         Map stepParameters = prepareStepParameters(parameters)
 
-    echo "CPE4: ${parameters.script.commonPipelineEnvironment?.getValue('unstableSteps')} - ${parameters.script.commonPipelineEnvironment?.getValue('unstableSteps').getClass()}"
         withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(stepParameters)}",
             "PIPER_correlationID=${env.BUILD_URL}",
@@ -67,21 +61,17 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
                 config.stashNoDefaultExcludes = parameters.stashNoDefaultExcludes
             }
 
-    echo "CPE5: ${parameters.script.commonPipelineEnvironment?.getValue('unstableSteps')} - ${parameters.script.commonPipelineEnvironment?.getValue('unstableSteps').getClass()}"
             dockerWrapper(script, stepName, config) {
                 handleErrorDetails(stepName) {
                     script.commonPipelineEnvironment.writeToDisk(script)
                     
-    echo "CPE6: ${parameters.script.commonPipelineEnvironment?.getValue('unstableSteps')} - ${parameters.script.commonPipelineEnvironment?.getValue('unstableSteps').getClass()}"
                     try {
                         credentialWrapper(config, credentialInfo) {
                             sh "${piperGoPath} ${stepName}${defaultConfigArgs}${customConfigArg}"
                         }
                     } finally {
-    echo "CPE7: ${parameters.script.commonPipelineEnvironment?.getValue('unstableSteps')} - ${parameters.script.commonPipelineEnvironment?.getValue('unstableSteps').getClass()}"
                         jenkinsUtils.handleStepResults(stepName, failOnMissingReports, failOnMissingLinks)
                         script.commonPipelineEnvironment.readFromDisk(script)
-    echo "CPE8: ${parameters.script.commonPipelineEnvironment?.getValue('unstableSteps')} - ${parameters.script.commonPipelineEnvironment?.getValue('unstableSteps').getClass()}"
                     }
                 }
             }
