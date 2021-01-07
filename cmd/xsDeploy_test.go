@@ -421,6 +421,23 @@ func TestDeploy(t *testing.T) {
 		assert.EqualError(t, e, "No operationID found")
 	})
 
+	t.Run("BG deploy fails, error in command execution", func(t *testing.T) {
+		t.Parallel()
+
+		shellMockRunner := mock.ShellMockRunner{}
+		shellMockRunner.ShouldFailOnCommand = make(map[string]error)
+		shellMockRunner.ShouldFailOnCommand["#!/bin/bash\nxs bg-deploy dummy.mtar --dummy-deploy-opts"] = errors.New("error on command execution")
+
+		testOptions := myXsDeployOptions
+		testOptions.Mode = "BG_DEPLOY"
+
+		fileUtilsMock := FileUtilsMock{
+			existingFiles: []string{"dummy.mtar", ".xs_session"},
+		}
+		e := runXsDeploy(testOptions, &cpeOut, &shellMockRunner, &fileUtilsMock, removeFilesFuncBuilder(&[]string{}), ioutil.Discard, &xsDeployUtilsMock{}, os.Stderr)
+		assert.EqualError(t, e, "error on command execution")
+	})
+
 	t.Run("BG deploy abort succeeds", func(t *testing.T) {
 		t.Parallel()
 
