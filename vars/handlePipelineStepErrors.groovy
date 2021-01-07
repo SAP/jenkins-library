@@ -67,7 +67,7 @@ void call(Map parameters = [:], body) {
 
     def debug1 = cpe?.getValue('unstableSteps')
     echo "DEBUG1: ${debug1} - ${debug1.getClass()} - CPE: ${cpe}"
-    List unstableSteps  = cpe?.getValue('unstableSteps')
+    List unstableSteps  = cpe?.getValue('unstableSteps') ?: []
     def message = ''
     try {
         if (config.echoDetails)
