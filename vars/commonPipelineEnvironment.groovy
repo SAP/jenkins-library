@@ -216,7 +216,7 @@ class commonPipelineEnvironment implements Serializable {
                 if(value in CharSequence) {
                     script.writeFile file: fileName, text: value
                 } else {
-                    script.writeFile file: fileName, text: groovy.json.JsonOutput.toJson(value)
+                    script.writeFile file: fileName + ".json", text: groovy.json.JsonOutput.toJson(value)
                 }
             }
         })
