@@ -38,6 +38,7 @@ func runUIVeri5(config *uiVeri5ExecuteTestsOptions, command command.ExecRunner) 
 	} else {
 		options = append(options, config.RunOptions...)
 	}
+	err = command.RunExecutable("ls", "-la")
 	err = command.RunExecutable(config.RunCommand, options...)
 	if err != nil {
 		log.Entry().WithError(err).WithField("command", config.RunCommand).Fatal("failed to execute run command")
