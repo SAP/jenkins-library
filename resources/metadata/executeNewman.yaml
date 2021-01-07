@@ -54,6 +54,25 @@ spec:
           - STEPS
         type: string
         mandatory: true
+        default: npm install newman
+      - name: newmanEnvironment
+        description: Specify an environment file path or URL. Environments provide a set of variables that one can use within collections.
+        longDescription: see also [Newman docs](https://github.com/postmanlabs/newman#newman-run-collection-file-source-options)
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        mandatory: true
+      - name: newmanGlobals
+        description: Specify the file path or URL for global variables. Global variables are similar to environment variables but have a lower precedence and can be overridden by environment variables having the same name.
+        longDescription: see also [Newman docs](https://github.com/postmanlabs/newman#newman-run-collection-file-source-options)
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        mandatory: true
       - name: failOnError
         description: Defines the behavior, in case tests fail.
         scope:

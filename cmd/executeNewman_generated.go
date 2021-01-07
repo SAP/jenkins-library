@@ -18,6 +18,8 @@ type executeNewmanOptions struct {
 	NewmanCollection     string   `json:"newmanCollection,omitempty"`
 	NewmanRunCommand     string   `json:"newmanRunCommand,omitempty"`
 	NewmanInstallCommand string   `json:"newmanInstallCommand,omitempty"`
+	NewmanEnvironment    string   `json:"newmanEnvironment,omitempty"`
+	NewmanGlobals        string   `json:"newmanGlobals,omitempty"`
 	FailOnError          bool     `json:"failOnError,omitempty"`
 	CfAppsWithSecrets    []string `json:"cfAppsWithSecrets,omitempty"`
 }
@@ -82,7 +84,9 @@ func addExecuteNewmanFlags(cmd *cobra.Command, stepConfig *executeNewmanOptions)
 	cmd.Flags().BoolVar(&stepConfig.Verbose, "verbose", false, "Print more detailed information into the log.")
 	cmd.Flags().StringVar(&stepConfig.NewmanCollection, "newmanCollection", os.Getenv("PIPER_newmanCollection"), "The test collection that should be executed. This could also be a file pattern.")
 	cmd.Flags().StringVar(&stepConfig.NewmanRunCommand, "newmanRunCommand", os.Getenv("PIPER_newmanRunCommand"), "The newman command that will be executed inside the docker container.")
-	cmd.Flags().StringVar(&stepConfig.NewmanInstallCommand, "newmanInstallCommand", os.Getenv("PIPER_newmanInstallCommand"), "The shell command that will be executed inside the docker container to install Newman.")
+	cmd.Flags().StringVar(&stepConfig.NewmanInstallCommand, "newmanInstallCommand", `npm install newman`, "The shell command that will be executed inside the docker container to install Newman.")
+	cmd.Flags().StringVar(&stepConfig.NewmanEnvironment, "newmanEnvironment", os.Getenv("PIPER_newmanEnvironment"), "Specify an environment file path or URL. Environments provide a set of variables that one can use within collections.")
+	cmd.Flags().StringVar(&stepConfig.NewmanGlobals, "newmanGlobals", os.Getenv("PIPER_newmanGlobals"), "Specify the file path or URL for global variables. Global variables are similar to environment variables but have a lower precedence and can be overridden by environment variables having the same name.")
 	cmd.Flags().BoolVar(&stepConfig.FailOnError, "failOnError", false, "Defines the behavior, in case tests fail.")
 	cmd.Flags().StringSliceVar(&stepConfig.CfAppsWithSecrets, "cfAppsWithSecrets", []string{}, "Define name array of cloud foundry apps deployed for which secrets (clientid and clientsecret) will be appended")
 
@@ -90,6 +94,8 @@ func addExecuteNewmanFlags(cmd *cobra.Command, stepConfig *executeNewmanOptions)
 	cmd.MarkFlagRequired("newmanCollection")
 	cmd.MarkFlagRequired("newmanRunCommand")
 	cmd.MarkFlagRequired("newmanInstallCommand")
+	cmd.MarkFlagRequired("newmanEnvironment")
+	cmd.MarkFlagRequired("newmanGlobals")
 	cmd.MarkFlagRequired("failOnError")
 	cmd.MarkFlagRequired("cfAppsWithSecrets")
 }
@@ -131,6 +137,22 @@ func executeNewmanMetadata() config.StepData {
 					},
 					{
 						Name:        "newmanInstallCommand",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "newmanEnvironment",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "newmanGlobals",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",

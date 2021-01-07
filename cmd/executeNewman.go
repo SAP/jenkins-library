@@ -4,12 +4,10 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/command"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/pkg/errors"
-	"net/http"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -20,6 +18,7 @@ type executeNewmanUtils interface {
 
 	RunShell(shell, script string) error
 	RunExecutable(executable string, params ...string) error
+	SetEnv(env []string)
 }
 
 type executeNewmanUtilsBundle struct {
@@ -76,7 +75,6 @@ func runExecuteNewman(config *executeNewmanOptions, utils executeNewmanUtils) er
 	}
 
 	err = logVersions(utils)
-	// TODO: should error in version logging cause failure?
 	if err != nil {
 		return err
 	}
@@ -116,23 +114,22 @@ func runExecuteNewman(config *executeNewmanOptions, utils executeNewmanUtils) er
 		}
 
 		if hasSecrets {
-			//	echo "PATH=\$PATH:~/.npm-global/bin newman ${command} **env/secrets**" // TODO: How to do this?
+			log.Entry().Info("PATH=$PATH:~/.npm-global/bin newman " + cmd + " **env/secrets**")
 
 			//utils.SetDir(".") // TODO: Need this?
-			err := utils.RunShell("/bin/sh", "set +x")
+			err := utils.RunShell("/bin/sh", "set +x") // TODO: Does this help for later call?
 			if err != nil {
 				log.SetErrorCategory(log.ErrorService)
+				//TODO: other message here
 				return errors.Wrap(err, "The execution of the newman tests failed, see the log for details.")
 			}
 		}
 
-		args := []string{"PATH=\\$PATH:~/.npm-global/bin newman", cmd}
-		if hasSecrets {
-			args = append(args, commandSecrets)
-		}
-		script := strings.Join(args, " ")
-		//utils.SetDir(".") // TODO: Need this?
-		err = utils.RunShell("/bin/sh", script)
+		installCommandTokens := strings.Split(cmd, " ")
+		//utils.SetEnv([]string{"NPM_CONFIG_PREFIX=/home/node/.npm-global",
+		//	"PATH=$PATH:.\\node_modules\\.bin"})
+		err = utils.RunExecutable(installCommandTokens[0], installCommandTokens[1:]...)
+
 		if err != nil {
 			log.SetErrorCategory(log.ErrorService)
 			return errors.Wrap(err, "The execution of the newman tests failed, see the log for details.")
@@ -144,7 +141,6 @@ func runExecuteNewman(config *executeNewmanOptions, utils executeNewmanUtils) er
 
 func logVersions(utils executeNewmanUtils) error {
 	//utils.SetDir(".") // TODO: Need this?
-	//returnStatus: true // TODO: How to do this? If necessary at all.
 	err := utils.RunExecutable("node", "--version")
 	if err != nil {
 		log.SetErrorCategory(log.ErrorInfrastructure)
@@ -152,7 +148,6 @@ func logVersions(utils executeNewmanUtils) error {
 	}
 
 	//utils.SetDir(".") // TODO: Need this?
-	//returnStatus: true // TODO: How to do this? If necessary at all.
 	err = utils.RunExecutable("npm", "--version")
 	if err != nil {
 		log.SetErrorCategory(log.ErrorInfrastructure)
@@ -163,10 +158,14 @@ func logVersions(utils executeNewmanUtils) error {
 }
 
 func installNewman(newmanInstallCommand string, utils executeNewmanUtils) error {
-	args := []string{"NPM_CONFIG_PREFIX=~/.npm-global", newmanInstallCommand}
-	script := strings.Join(args, " ")
-	//utils.SetDir(".") // TODO: Need this?
-	err := utils.RunShell("/bin/sh", script)
+	//args := []string{ /*"NPM_CONFIG_PREFIX=~/.npm-global", */ newmanInstallCommand}
+	//script := strings.Join(args, " ")
+	////utils.SetDir(".") // TODO: Need this?
+	//err := utils.RunExecutable("npm", script)
+
+	installCommandTokens := strings.Split(newmanInstallCommand, " ")
+	//utils.SetEnv([]string{"NPM_CONFIG_PREFIX=/home/node/.npm-global"})
+	err := utils.RunExecutable(installCommandTokens[0], installCommandTokens[1:]...)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.Wrap(err, "error installing newman")
@@ -209,68 +208,69 @@ func defineCollectionDisplayName(collection string) string {
 	return strings.Split(replacedSeparators, ".")[0]
 }
 
-func getXsuaaCredentials(apiEndpoint, org, space, credentialsId, appName string, verbose bool) (string, string, error) {
-	return getAppEnvironment(apiEndpoint, org, space, credentialsId, appName, verbose)
-}
-
-func getAppEnvironment(apiEndpoint, org, space, credentialsId, appName string, verbose bool) (string, string, error) {
-
-	authEndpoint, err := getAuthEndPoint(apiEndpoint, verbose)
-	if err != nil {
-		return "", "", err
-	}
-
-	_, err = getBearerToken(authEndpoint, credentialsId, verbose)
-	if err != nil {
-		return "", "", err
-	}
-
-	//	appUrl := getAppRefUrl(apiEndpoint, org, space, bearerToken, appName, verbose)
-	//
-	//	response := script.httpRequest
-	//url:
-	//	"${appUrl}/env", quiet: !verbose,
-	//		customHeaders:[[name: 'Authorization', value: "${bearerToken}"]]
-	//def envJson = script.readJSON text:"${response.content}"
-	//return envJson
-	return "", "", nil
-}
-
-func getAuthEndPoint(apiEndpoint string, verbose bool) (string, error) {
-	// TODO: need full struct here?
-	type responseJson struct {
-		authorization_endpoint string
-	}
-
-	response, err := http.Get(apiEndpoint + "/v2/info") // TODO: Verbose
-	if err != nil {
-		return "", err
-	}
-	resJson := responseJson{}
-	err = piperhttp.ParseHTTPResponseBodyJSON(response, resJson)
-	if err != nil {
-		return "", err
-	}
-	return resJson.authorization_endpoint, nil
-}
-
-func getBearerToken(authorizationEndpoint, credentialsId string, verbose bool) (string, error) {
-	return "", nil
-
-	//	client := &http.Client{}
-	//	req, err := http.NewRequest("GET", "mydomain.com", nil)
-	//	if err != nil {
-	//		return "", err
-	//	}
-	//	req.SetBasicAuth(username, passwd)
-	//	resp, err := client.Do(req)
-	// TODO: How to handle multiple credentials in GO?
-	//	script.withCredentials([script.usernamePassword(credentialsId: credentialsId, usernameVariable: 'usercf', passwordVariable: 'passwordcf')]) {
-	//def token = script.httpRequest url:"${authorizationEndpoint}/oauth/token", quiet: !verbose,
-	//httpMode:'POST',
-	//requestBody: "username=${script.usercf}&password=${script.passwordcf}&client_id=cf&grant_type=password&response_type=token",
-	//customHeaders: [[name: 'Content-Type', value: 'application/x-www-form-urlencoded'], [name: 'Authorization', value: 'Basic Y2Y6']]
-	//def responseJson = script.readJSON text:"${token.content}"
-	//return "Bearer ${responseJson.access_token.trim()}"
-	//}
-}
+//
+//func getXsuaaCredentials(apiEndpoint, org, space, credentialsId, appName string, verbose bool) (string, string, error) {
+//	return getAppEnvironment(apiEndpoint, org, space, credentialsId, appName, verbose)
+//}
+//
+//func getAppEnvironment(apiEndpoint, org, space, credentialsId, appName string, verbose bool) (string, string, error) {
+//
+//	authEndpoint, err := getAuthEndPoint(apiEndpoint, verbose)
+//	if err != nil {
+//		return "", "", err
+//	}
+//
+//	_, err = getBearerToken(authEndpoint, credentialsId, verbose)
+//	if err != nil {
+//		return "", "", err
+//	}
+//
+//	//	appUrl := getAppRefUrl(apiEndpoint, org, space, bearerToken, appName, verbose)
+//	//
+//	//	response := script.httpRequest
+//	//url:
+//	//	"${appUrl}/env", quiet: !verbose,
+//	//		customHeaders:[[name: 'Authorization', value: "${bearerToken}"]]
+//	//def envJson = script.readJSON text:"${response.content}"
+//	//return envJson
+//	return "", "", nil
+//}
+//
+//func getAuthEndPoint(apiEndpoint string, verbose bool) (string, error) {
+//	// TODO: need full struct here?
+//	type responseJson struct {
+//		authorization_endpoint string
+//	}
+//
+//	response, err := http.Get(apiEndpoint + "/v2/info") // TODO: Verbose
+//	if err != nil {
+//		return "", err
+//	}
+//	resJson := responseJson{}
+//	err = piperhttp.ParseHTTPResponseBodyJSON(response, resJson)
+//	if err != nil {
+//		return "", err
+//	}
+//	return resJson.authorization_endpoint, nil
+//}
+//
+//func getBearerToken(authorizationEndpoint, credentialsId string, verbose bool) (string, error) {
+//	return "", nil
+//
+//	//	client := &http.Client{}
+//	//	req, err := http.NewRequest("GET", "mydomain.com", nil)
+//	//	if err != nil {
+//	//		return "", err
+//	//	}
+//	//	req.SetBasicAuth(username, passwd)
+//	//	resp, err := client.Do(req)
+//	// TODO: How to handle multiple credentials in GO?
+//	//	script.withCredentials([script.usernamePassword(credentialsId: credentialsId, usernameVariable: 'usercf', passwordVariable: 'passwordcf')]) {
+//	//def token = script.httpRequest url:"${authorizationEndpoint}/oauth/token", quiet: !verbose,
+//	//httpMode:'POST',
+//	//requestBody: "username=${script.usercf}&password=${script.passwordcf}&client_id=cf&grant_type=password&response_type=token",
+//	//customHeaders: [[name: 'Content-Type', value: 'application/x-www-form-urlencoded'], [name: 'Authorization', value: 'Basic Y2Y6']]
+//	//def responseJson = script.readJSON text:"${token.content}"
+//	//return "Bearer ${responseJson.access_token.trim()}"
+//	//}
+//}
