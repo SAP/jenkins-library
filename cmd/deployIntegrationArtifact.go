@@ -65,12 +65,12 @@ func runDeployIntegrationArtifact(config *deployIntegrationArtifactOptions, tele
 	header.Add("Accept", "application/json")
 
 	deployURL := fmt.Sprintf("%s/api/v1/DeployIntegrationDesigntimeArtifact?Id='%s'&Version='%s'", config.Host, config.IntegrationFlowID, config.IntegrationFlowVersion)
-	tokenParameters := cpi.TokenParameters{TokenURL: config.OAuthTokenProviderURL, User: config.Username, Pwd: config.Password, MyClient: httpClient}
+	tokenParameters := cpi.TokenParameters{TokenURL: config.OAuthTokenProviderURL, Username: config.Username, Password: config.Password, Client: httpClient}
 	token, err := cpi.CommonUtils.GetBearerToken(tokenParameters)
 	if err != nil {
 		return errors.Wrap(err, "failed to fetch Bearer Token")
 	}
-	clientOptions.Token = "Bearer " + token
+	clientOptions.Token = fmt.Sprintf("Bearer %s", token)
 	httpClient.SetOptions(clientOptions)
 
 	deployResp, httpErr := httpClient.SendRequest("POST", deployURL, nil, header, nil)
@@ -93,5 +93,5 @@ func runDeployIntegrationArtifact(config *deployIntegrationArtifactOptions, tele
 	}
 
 	log.Entry().Errorf("a HTTP error occurred! Response Status Code: %v", deployResp.StatusCode)
-	return errors.New("Integration Flow deployment failed")
+	return errors.Errorf("Integration Flow deployment failed, Response Status code: %v", deployResp.StatusCode)
 }

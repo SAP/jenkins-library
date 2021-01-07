@@ -17,18 +17,18 @@ type CommonUtils interface {
 
 //TokenParameters struct
 type TokenParameters struct {
-	TokenURL, User, Pwd string
-	MyClient            piperhttp.Sender
+	TokenURL, Username, Password string
+	Client                       piperhttp.Sender
 }
 
 // GetBearerToken -Provides the bearer token for making CPI OData calls
 func (tokenParameters TokenParameters) GetBearerToken() (string, error) {
 
-	httpClient := tokenParameters.MyClient
+	httpClient := tokenParameters.Client
 
 	clientOptions := piperhttp.ClientOptions{
-		Username: tokenParameters.User,
-		Password: tokenParameters.Pwd,
+		Username: tokenParameters.Username,
+		Password: tokenParameters.Password,
 	}
 	httpClient.SetOptions(clientOptions)
 
@@ -39,7 +39,7 @@ func (tokenParameters TokenParameters) GetBearerToken() (string, error) {
 	resp, httpErr := httpClient.SendRequest(method, tokenFinalURL, nil, header, nil)
 	defer func() {
 		if resp != nil && resp.Body != nil {
-			resp.Body.Close()
+			CloseResponseBodyIfNecessary(resp)
 		}
 	}()
 
@@ -61,4 +61,15 @@ func (tokenParameters TokenParameters) GetBearerToken() (string, error) {
 	}
 	token := jsonResponse.Path("access_token").Data().(string)
 	return token, nil
+}
+
+//CloseResponseBodyIfNecessary - close the http response object
+func CloseResponseBodyIfNecessary(response *http.Response) {
+
+	if response != nil && response.Body != nil {
+
+		response.Body.Close()
+
+	}
+
 }

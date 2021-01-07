@@ -30,7 +30,6 @@ func TestRunDeployIntegrationArtifact(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Successfull Integration Flow Deploy Test", func(t *testing.T) {
-		// init
 
 		config := deployIntegrationArtifactOptions{
 			Host:                   "https://demo",
@@ -42,8 +41,7 @@ func TestRunDeployIntegrationArtifact(t *testing.T) {
 			Platform:               "cf",
 		}
 
-		httpClient := httpMockCpis{CPIFunction: "DeployIntegrationDesigntimeArtifact", StatusCode: 202,
-			ResponseBody: ``, TestType: "Positive"}
+		httpClient := httpMockCpis{CPIFunction: "DeployIntegrationDesigntimeArtifact", ResponseBody: ``, TestType: "Positive"}
 
 		err := runDeployIntegrationArtifact(&config, nil, &httpClient)
 		// assert
@@ -51,7 +49,6 @@ func TestRunDeployIntegrationArtifact(t *testing.T) {
 	})
 
 	t.Run("Failed case of Integration Flow Deploy Test", func(t *testing.T) {
-		// init
 		config := deployIntegrationArtifactOptions{
 			Host:                   "https://demo",
 			OAuthTokenProviderURL:  "https://demo/oauth/token",
@@ -62,25 +59,24 @@ func TestRunDeployIntegrationArtifact(t *testing.T) {
 			Platform:               "cf",
 		}
 
-		httpClient := httpMockCpis{CPIFunction: "DeployIntegrationDesigntimeArtifact", StatusCode: 202,
-			ResponseBody: ``, TestType: "Negative"}
+		httpClient := httpMockCpis{CPIFunction: "DeployIntegrationDesigntimeArtifact", ResponseBody: ``, TestType: "Negative"}
 
 		err := runDeployIntegrationArtifact(&config, nil, &httpClient)
 		// assert
-		assert.EqualError(t, err, "Integration Flow deployment failed")
+		assert.EqualError(t, err, "Integration Flow deployment failed, Response Status code: 500")
 	})
 
 }
 
 type httpMockCpis struct {
-	Method       string                  // is set during test execution
-	URL          string                  // is set before test execution
-	Header       map[string][]string     // is set before test execution
-	ResponseBody string                  // is set before test execution
-	Options      piperhttp.ClientOptions // is set during test
-	StatusCode   int                     // is set during test
-	CPIFunction  string                  // is set during test
-	TestType     string                  // is set during test
+	Method       string
+	URL          string
+	Header       map[string][]string
+	ResponseBody string
+	Options      piperhttp.ClientOptions
+	StatusCode   int
+	CPIFunction  string
+	TestType     string
 }
 
 func (c *httpMockCpis) SetOptions(options piperhttp.ClientOptions) {
