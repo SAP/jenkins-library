@@ -247,7 +247,7 @@ void call(Map parameters = [:], body) {
                             pullWrapper(config.sidecarPullImage, sidecarImage, config.sidecarRegistryUrl, config.sidecarRegistryCredentialsId) {
                                 config.sidecarOptions = config.sidecarOptions ?: []
                                 if (config.sidecarName)
-                                    config.sidecarOptions.add("--network-alias docker.wdf.sap.corp:50000/${config.sidecarName}")
+                                    config.sidecarOptions.add("--network-alias ${config.sidecarName}")
                                 config.sidecarOptions.add("--network ${networkName}")
                                 sidecarImage.withRun(getDockerOptions(config.sidecarEnvVars, config.sidecarVolumeBind, config.sidecarOptions)) { container ->
                                     config.dockerOptions = config.dockerOptions ?: []
