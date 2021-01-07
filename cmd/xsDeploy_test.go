@@ -590,3 +590,10 @@ func TestExecuteCmdWithWrongPattern(t *testing.T) {
 
 	assert.EqualError(t, err, "template: id:1: unexpected \"}\" in operand")
 }
+
+func TestGetActionWithInvalidAction(t *testing.T) {
+	str, err := None.GetAction()
+
+	assert.Equal(t, "", str)
+	assert.EqualError(t, err, "Invalid deploy mode: 'NONE'.")
+}
