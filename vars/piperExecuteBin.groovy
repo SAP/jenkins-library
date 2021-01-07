@@ -76,12 +76,12 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
                             sh "${piperGoPath} ${stepName}${defaultConfigArgs}${customConfigArg}"
                         }
                     } finally {
+    echo "CPE6: ${parameters.script.commonPipelineEnvironment?.getValue('unstableSteps')} - ${parameters.script.commonPipelineEnvironment?.getValue('unstableSteps').getClass()}"
                         jenkinsUtils.handleStepResults(stepName, failOnMissingReports, failOnMissingLinks)
                         script.commonPipelineEnvironment.readFromDisk(script)
                     }
                 }
             }
-    echo "CPE6: ${parameters.script.commonPipelineEnvironment?.getValue('unstableSteps')} - ${parameters.script.commonPipelineEnvironment?.getValue('unstableSteps').getClass()}"
         }
     }
 }
