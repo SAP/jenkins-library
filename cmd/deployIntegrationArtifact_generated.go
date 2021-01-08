@@ -23,7 +23,7 @@ type deployIntegrationArtifactOptions struct {
 	OAuthTokenProviderURL  string `json:"oAuthTokenProviderUrl,omitempty"`
 }
 
-// DeployIntegrationArtifactCommand Deploy an CPI integration flow
+// DeployIntegrationArtifactCommand Deploy a CPI integration flow
 func DeployIntegrationArtifactCommand() *cobra.Command {
 	const STEP_NAME = "deployIntegrationArtifact"
 
@@ -33,7 +33,7 @@ func DeployIntegrationArtifactCommand() *cobra.Command {
 
 	var createDeployIntegrationArtifactCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Deploy an CPI integration flow",
+		Short: "Deploy a CPI integration flow",
 		Long:  `This function deploys an CPI Design time integration flow artifact, in to the integration runtime using OData API.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
@@ -104,7 +104,7 @@ func deployIntegrationArtifactMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "deployIntegrationArtifact",
 			Aliases:     []config.Alias{},
-			Description: "Deploy an CPI integration flow",
+			Description: "Deploy a CPI integration flow",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{

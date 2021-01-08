@@ -38,9 +38,7 @@ func (tokenParameters TokenParameters) GetBearerToken() (string, error) {
 	method := "POST"
 	resp, httpErr := httpClient.SendRequest(method, tokenFinalURL, nil, header, nil)
 	func() {
-		if resp != nil && resp.Body != nil {
-			defer CloseResponseBodyIfNecessary(resp)
-		}
+		defer CloseResponseBodyIfNecessary(resp)
 	}()
 
 	if resp == nil {
