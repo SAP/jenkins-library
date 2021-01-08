@@ -72,10 +72,10 @@ func runDeployIntegrationArtifact(config *deployIntegrationArtifactOptions, tele
 	}
 	clientOptions.Token = fmt.Sprintf("Bearer %s", token)
 	httpClient.SetOptions(clientOptions)
-
-	deployResp, httpErr := httpClient.SendRequest("POST", deployURL, nil, header, nil)
+	httpMethod := "POST"
+	deployResp, httpErr := httpClient.SendRequest(httpMethod, deployURL, nil, header, nil)
 	if httpErr != nil {
-		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error", "POST", deployURL)
+		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error", httpMethod, deployURL)
 	}
 
 	defer deployResp.Body.Close()
