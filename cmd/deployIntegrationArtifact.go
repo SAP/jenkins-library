@@ -74,12 +74,11 @@ func runDeployIntegrationArtifact(config *deployIntegrationArtifactOptions, tele
 	httpClient.SetOptions(clientOptions)
 
 	deployResp, httpErr := httpClient.SendRequest("POST", deployURL, nil, header, nil)
+	if httpErr != nil {
+		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error", "POST", deployURL)
+	}
 
-	defer func() {
-		if deployResp != nil && deployResp.Body != nil {
-			deployResp.Body.Close()
-		}
-	}()
+	defer deployResp.Body.Close()
 
 	if deployResp == nil {
 		return errors.Errorf("did not retrieve a HTTP response: %v", httpErr)

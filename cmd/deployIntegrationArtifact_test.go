@@ -63,7 +63,7 @@ func TestRunDeployIntegrationArtifact(t *testing.T) {
 
 		err := runDeployIntegrationArtifact(&config, nil, &httpClient)
 		// assert
-		assert.EqualError(t, err, "Integration Flow deployment failed, Response Status code: 500")
+		assert.EqualError(t, err, "HTTP POST request to https://demo/api/v1/DeployIntegrationDesigntimeArtifact?Id='flow1'&Version='1.0.1' failed with error: Internal Server Error")
 	})
 
 }

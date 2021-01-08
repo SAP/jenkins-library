@@ -37,12 +37,10 @@ func (tokenParameters TokenParameters) GetBearerToken() (string, error) {
 	tokenFinalURL := fmt.Sprintf("%s?grant_type=client_credentials", tokenParameters.TokenURL)
 	method := "POST"
 	resp, httpErr := httpClient.SendRequest(method, tokenFinalURL, nil, header, nil)
-
-	defer func() {
-		if resp != nil && resp.Body != nil {
-			resp.Body.Close()
-		}
-	}()
+	if httpErr != nil {
+		return "", errors.Wrapf(httpErr, "HTTP %v request to %v failed with error", method, tokenFinalURL)
+	}
+	defer resp.Body.Close()
 
 	if resp == nil {
 		return "", errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
