@@ -37,6 +37,7 @@ require (
 	github.com/hashicorp/vault/api v1.0.4
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/imdario/mergo v0.3.11 // indirect
+	github.com/jarcoal/httpmock v1.0.6
 	github.com/magiconair/properties v1.8.4
 	github.com/magicsong/color-glog v0.0.1 // indirect
 	github.com/magicsong/sonargo v0.0.1
@@ -48,6 +49,7 @@ require (
 	github.com/pierrec/lz4 v2.5.2+incompatible // indirect
 	github.com/piper-validation/fortify-client-go v0.0.0-20200206215926-532b5b150d22
 	github.com/pkg/errors v0.9.1
+	github.com/prometheus/common v0.4.1
 	github.com/sirupsen/logrus v1.7.0
 	github.com/smartystreets/assertions v1.0.0 // indirect
 	github.com/spf13/cobra v1.0.0

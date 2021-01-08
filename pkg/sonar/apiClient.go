@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	sonargo "github.com/magicsong/sonargo/sonar"
+	"github.com/prometheus/common/log"
 )
 
 type Client struct {
@@ -44,6 +45,8 @@ func (s *Client) SearchIssues(options *sonargo.IssuesSearchOption) (result *sona
 	if err != nil {
 		return
 	}
+	req.URL.Opaque = "//" + req.URL.Host + req.URL.Opaque
+	log.Warnf("REQUEST: %v", req)
 	// use custom HTTP client to send request
 	response, err = s.HTTPClient.Send(req)
 	if err != nil {
