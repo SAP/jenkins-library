@@ -37,6 +37,7 @@ func runUIVeri5(config *uiVeri5ExecuteTestsOptions, command command.ExecRunner) 
 		options = append(options, config.TestOptions)
 	} else {
 		options = append(options, config.RunOptions...)
+		options = append(options, "-v")
 	}
 	err = command.RunExecutable("ls", "-la", "uiveri5/")
 	err = command.RunExecutable(config.RunCommand, options...)

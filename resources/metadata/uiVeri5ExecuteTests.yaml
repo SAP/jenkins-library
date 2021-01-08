@@ -38,7 +38,6 @@ spec:
         description: Options to append to the runCommand
         default:
           - --seleniumAddress='http://localhost:4444/wd/hub'
-          - -v
         scope:
           - PARAMETERS
           - STAGES
@@ -64,7 +63,7 @@ spec:
       #   - mountPath: /dev/shm
       #     name: dev-shm
   sidecars:
-    - image: docker.wdf.sap.corp:50000/selenium/standalone-chrome #selenium/standalone-chrome
+    - image: selenium/standalone-chrome #selenium/standalone-chrome
       name: selenium
       securityContext:
         privileged: true
