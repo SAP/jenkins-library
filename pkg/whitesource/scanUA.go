@@ -12,6 +12,8 @@ func (s *Scan) ExecuteUAScan(config *ScanOptions, utils Utils) error {
 		return err
 	}
 
+	//ToDo: Download & install Java if required
+
 	// Auto generate a config file based on the working directory's contents.
 	// TODO/NOTE: Currently this scans the UA jar file as a dependency since it is downloaded beforehand
 	if err := autoGenerateWhitesourceConfig(config, utils); err != nil {
@@ -25,6 +27,8 @@ func (s *Scan) ExecuteUAScan(config *ScanOptions, utils Utils) error {
 	return utils.RunExecutable("java", "-jar", config.AgentFileName, "-d", ".", "-c", config.ConfigFilePath,
 		"-apiKey", config.OrgToken, "-userKey", config.UserToken, "-project", s.AggregateProjectName,
 		"-product", config.ProductName, "-productVersion", s.ProductVersion)
+
+	//ToDo: Remove Java if it has been installed before
 }
 
 // downloadAgent downloads the unified agent jar file if one does not exist
