@@ -38,7 +38,11 @@ func (tokenParameters TokenParameters) GetBearerToken() (string, error) {
 	method := "POST"
 	resp, httpErr := httpClient.SendRequest(method, tokenFinalURL, nil, header, nil)
 
-	defer CloseResponseBodyIfNecessary(resp)
+	defer func() {
+		if resp != nil && resp.Body != nil {
+			resp.Body.Close()
+		}
+	}()
 
 	if resp == nil {
 		return "", errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
@@ -58,11 +62,4 @@ func (tokenParameters TokenParameters) GetBearerToken() (string, error) {
 	}
 	token := jsonResponse.Path("access_token").Data().(string)
 	return token, nil
-}
-
-//CloseResponseBodyIfNecessary - close the http response object
-func CloseResponseBodyIfNecessary(response *http.Response) {
-	if response != nil && response.Body != nil {
-		response.Body.Close()
-	}
 }
