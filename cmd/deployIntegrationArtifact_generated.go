@@ -34,7 +34,8 @@ func DeployIntegrationArtifactCommand() *cobra.Command {
 	var createDeployIntegrationArtifactCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Deploy a CPI integration flow",
-		Long:  `This function deploys an CPI Design time integration flow artifact, in to the integration runtime using OData API.`,
+		Long: `With this step you can deploy a integration flow artifact in to SAP Cloud Platform integration runtime using OData API.
+Learn more about the SAP Cloud Integration remote API for deploying an integration artifact [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/08632076a1114bc1b6a1ecafef8f0178.html)`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
