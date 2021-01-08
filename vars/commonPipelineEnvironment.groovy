@@ -49,7 +49,7 @@ class commonPipelineEnvironment implements Serializable {
 
     private Map valueMap = [:]
 
-    void setValue(String property, def value) {
+    void setValue(String property, value) {
         valueMap[property] = value
     }
 
@@ -216,7 +216,7 @@ class commonPipelineEnvironment implements Serializable {
                 if(value in CharSequence) {
                     script.writeFile file: fileName, text: value
                 } else {
-                    script.writeFile file: fileName + ".json", text: groovy.json.JsonOutput.toJson(value)
+                    script.writeFile file: fileName, text: groovy.json.JsonOutput.toJson(value)
                 }
             }
         })
