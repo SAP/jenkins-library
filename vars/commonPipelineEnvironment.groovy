@@ -212,9 +212,9 @@ class commonPipelineEnvironment implements Serializable {
             filename += '.json'
             value = groovy.json.JsonOutput.toJson(value)
         }
-        if (script.fileExists(fileName))
+        if (script.fileExists(filename))
             return
-        script.writeFile file: fileName, text: value
+        script.writeFile file: filename, text: value
     }
 
     void readFromDisk(script) {
