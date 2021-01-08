@@ -38,6 +38,7 @@ spec:
         description: Options to append to the runCommand
         default:
           - --seleniumAddress='http://localhost:4444/wd/hub'
+          - -v
         scope:
           - PARAMETERS
           - STAGES

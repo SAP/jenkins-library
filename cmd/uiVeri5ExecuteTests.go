@@ -38,7 +38,6 @@ func runUIVeri5(config *uiVeri5ExecuteTestsOptions, command command.ExecRunner) 
 	} else {
 		options = append(options, config.RunOptions...)
 	}
-	command.SetDir(".") // try this
 	err = command.RunExecutable("ls", "-la", "uiveri5/")
 	err = command.RunExecutable(config.RunCommand, options...)
 	if err != nil {
