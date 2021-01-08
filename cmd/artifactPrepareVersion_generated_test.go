@@ -7,6 +7,7 @@ import (
 )
 
 func TestArtifactPrepareVersionCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := ArtifactPrepareVersionCommand()
 

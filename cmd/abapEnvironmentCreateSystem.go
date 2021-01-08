@@ -73,6 +73,7 @@ func runAbapEnvironmentCreateSystem(config *abapEnvironmentCreateSystemOptions, 
 func generateManifestYAML(config *abapEnvironmentCreateSystemOptions) ([]byte, error) {
 	addonProduct := ""
 	addonVersion := ""
+	parentSaaSAppName := ""
 	if config.AddonDescriptorFileName != "" && config.IncludeAddon {
 		descriptor, err := abaputils.ReadAddonDescriptor(config.AddonDescriptorFileName)
 		if err != nil {
@@ -80,6 +81,8 @@ func generateManifestYAML(config *abapEnvironmentCreateSystemOptions) ([]byte, e
 		}
 		addonProduct = descriptor.AddonProduct
 		addonVersion = descriptor.AddonVersionYAML
+		parentSaaSAppName = "addon_test"
+
 	}
 	params := abapSystemParameters{
 		AdminEmail:           config.AbapSystemAdminEmail,
@@ -90,6 +93,7 @@ func generateManifestYAML(config *abapEnvironmentCreateSystemOptions) ([]byte, e
 		SizeOfRuntime:        config.AbapSystemSizeOfRuntime,
 		AddonProductName:     addonProduct,
 		AddonProductVersion:  addonVersion,
+		ParentSaaSAppName:    parentSaaSAppName,
 	}
 
 	serviceParameters, err := json.Marshal(params)
@@ -138,6 +142,7 @@ type abapSystemParameters struct {
 	SizeOfRuntime        int    `json:"size_of_runtime,omitempty"`
 	AddonProductName     string `json:"addon_product_name,omitempty"`
 	AddonProductVersion  string `json:"addon_product_version,omitempty"`
+	ParentSaaSAppName    string `json:"parent_saas_appname,omitempty"`
 }
 
 type serviceManifest struct {
