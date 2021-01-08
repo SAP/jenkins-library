@@ -24,7 +24,7 @@ func uiVeri5ExecuteTests(config uiVeri5ExecuteTestsOptions, telemetryData *telem
 
 func runUIVeri5(config *uiVeri5ExecuteTestsOptions, command command.ExecRunner) error {
 	installCommandTokens := strings.Split(config.InstallCommand, " ")
-	command.SetEnv([]string{"NPM_CONFIG_PREFIX=/home/node/.npm-global"})
+	//command.SetEnv([]string{"NPM_CONFIG_PREFIX=/home/node/.npm-global"})
 	err := command.RunExecutable(installCommandTokens[0], installCommandTokens[1:]...)
 	if err != nil {
 		log.Entry().WithError(err).WithField("command", config.InstallCommand).Fatal("failed to execute install command")
