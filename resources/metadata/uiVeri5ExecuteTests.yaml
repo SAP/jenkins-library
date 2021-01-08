@@ -50,6 +50,13 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: testServerURL
+        type: string
+        description: "Link pointing to the deployment"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   containers:
     - name: uiVeri5
       image: node:lts-stretch #node:lts-stretch 10.23.0-stretch

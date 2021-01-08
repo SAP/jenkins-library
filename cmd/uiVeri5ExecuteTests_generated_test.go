@@ -7,6 +7,7 @@ import (
 )
 
 func TestUiVeri5ExecuteTestsCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := UiVeri5ExecuteTestsCommand()
 

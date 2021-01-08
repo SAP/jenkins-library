@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"os"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -31,6 +32,7 @@ func runUIVeri5(config *uiVeri5ExecuteTestsOptions, command command.ExecRunner) 
 		return err
 	}
 
+	os.Setenv("TARGET_SERVER_URL", config.TestServerURL)
 	options := []string{}
 	if config.TestOptions != "" {
 		// use testOptions (deprecated) if configured
@@ -38,7 +40,6 @@ func runUIVeri5(config *uiVeri5ExecuteTestsOptions, command command.ExecRunner) 
 	} else {
 		options = append(options, config.RunOptions...)
 	}
-	err = command.RunExecutable("ls", "-la", "uiveri5/")
 	err = command.RunExecutable(config.RunCommand, options...)
 	if err != nil {
 		log.Entry().WithError(err).WithField("command", config.RunCommand).Fatal("failed to execute run command")
