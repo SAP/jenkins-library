@@ -1,31 +1,38 @@
 package cmd
 
 import (
-	"fmt"
+	"errors"
+	sliceUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/stretchr/testify/assert"
 	"path/filepath"
 	"strings"
 	"testing"
 )
 
+type executedExecutables struct {
+	executable string
+	params     []string
+	envs       []string
+}
+
 type executeNewmanMockUtils struct {
-	errorOnGlob                 bool
-	errorOnNewmanInstall        bool
-	errorOnRunShell             bool
-	errorOnFinalScriptExecution bool
-	errorOnRunExecutable        bool
-	errorOnLoggingNode          bool
-	errorOnLoggingNpm           bool
-	executedExecutable          string
-	executedParams              []string
-	executedShell               string
-	executedScript              string
-	filesToFind                 []string
+	errorOnGlob            bool
+	errorOnNewmanInstall   bool
+	errorOnRunShell        bool
+	errorOnNewmanExecution bool
+	errorOnRunExecutable   bool
+	errorOnLoggingNode     bool
+	errorOnLoggingNpm      bool
+	executedExecutables    []executedExecutables
+	executedShell          string
+	executedScript         string
+	filesToFind            []string
+	commandIndex           int
 }
 
 func newExecuteNewmanMockUtils() executeNewmanMockUtils {
 	return executeNewmanMockUtils{
-		filesToFind: []string{"localFile.txt", "2localFile.txt"},
+		filesToFind: []string{"localFile.json", "2localFile.json"},
 	}
 }
 
@@ -33,8 +40,9 @@ func TestRunExecuteNewman(t *testing.T) {
 	t.Parallel()
 
 	allFineConfig := executeNewmanOptions{
-		NewmanCollection: "localFile.txt",
-		NewmanRunCommand: "runcommand",
+		NewmanCollection:     "**.json",
+		NewmanRunCommand:     ".\\node_modules\\.bin\\newman run {{.NewmanCollection}} --environment {{.Config.NewmanEnvironment}} --globals {{.Config.NewmanGlobals}} --reporters junit,html --reporter-junit-export target/newman/TEST-{{.CollectionDisplayName}}.xml --reporter-html-export target/newman/TEST-{{.CollectionDisplayName}}.html",
+		NewmanInstallCommand: "npm install newman --quiet",
 	}
 
 	t.Run("happy path", func(t *testing.T) {
@@ -48,8 +56,11 @@ func TestRunExecuteNewman(t *testing.T) {
 
 		// assert
 		assert.NoError(t, err)
-		assert.Equal(t, "/bin/sh", utils.executedShell)
-		assert.Equal(t, "PATH=\\$PATH:~/.npm-global/bin newman runcommand --suppress-exit-code", utils.executedScript)
+		assert.Contains(t, utils.executedExecutables, executedExecutables{executable: "npm", params: []string{"--version"}})
+		assert.Contains(t, utils.executedExecutables, executedExecutables{executable: "node", params: []string{"--version"}})
+		assert.Contains(t, utils.executedExecutables, executedExecutables{executable: "npm", params: []string{"install", "newman", "--quiet"}})
+		assert.Contains(t, utils.executedExecutables, executedExecutables{executable: ".\\node_modules\\.bin\\newman", params: []string{"run", "localFile.json", "--environment", "", "--globals", "", "--reporters", "junit,html", "--reporter-junit-export", "target/newman/TEST-localFile.xml", "--reporter-html-export", "target/newman/TEST-localFile.html", "--suppress-exit-code"}})
+		assert.Contains(t, utils.executedExecutables, executedExecutables{executable: ".\\node_modules\\.bin\\newman", params: []string{"run", "2localFile.json", "--environment", "", "--globals", "", "--reporters", "junit,html", "--reporter-junit-export", "target/newman/TEST-2localFile.xml", "--reporter-html-export", "target/newman/TEST-2localFile.html", "--suppress-exit-code"}})
 	})
 
 	t.Run("happy path with fail on error", func(t *testing.T) {
@@ -65,16 +76,19 @@ func TestRunExecuteNewman(t *testing.T) {
 
 		// assert
 		assert.NoError(t, err)
-		assert.Equal(t, "/bin/sh", utils.executedShell)
-		assert.Equal(t, "PATH=\\$PATH:~/.npm-global/bin newman runcommand", utils.executedScript)
+		assert.Contains(t, utils.executedExecutables, executedExecutables{executable: "npm", params: []string{"--version"}})
+		assert.Contains(t, utils.executedExecutables, executedExecutables{executable: "node", params: []string{"--version"}})
+		assert.Contains(t, utils.executedExecutables, executedExecutables{executable: "npm", params: []string{"install", "newman", "--quiet"}})
+		assert.Contains(t, utils.executedExecutables, executedExecutables{executable: ".\\node_modules\\.bin\\newman", params: []string{"run", "localFile.json", "--environment", "", "--globals", "", "--reporters", "junit,html", "--reporter-junit-export", "target/newman/TEST-localFile.xml", "--reporter-html-export", "target/newman/TEST-localFile.html"}})
+		assert.Contains(t, utils.executedExecutables, executedExecutables{executable: ".\\node_modules\\.bin\\newman", params: []string{"run", "2localFile.json", "--environment", "", "--globals", "", "--reporters", "junit,html", "--reporter-junit-export", "target/newman/TEST-2localFile.xml", "--reporter-html-export", "target/newman/TEST-2localFile.html"}})
 	})
 
-	t.Run("error on shell execution", func(t *testing.T) {
+	t.Run("error on newman execution", func(t *testing.T) {
 		t.Parallel()
 		// init
 
 		utils := newExecuteNewmanMockUtils()
-		utils.errorOnFinalScriptExecution = true
+		utils.errorOnNewmanExecution = true
 
 		// test
 		err := runExecuteNewman(&allFineConfig, &utils)
@@ -137,7 +151,7 @@ func TestRunExecuteNewman(t *testing.T) {
 		err := runExecuteNewman(&allFineConfig, &utils)
 
 		// assert
-		assert.EqualError(t, err, "no collection found with pattern 'localFile.txt'")
+		assert.EqualError(t, err, "no collection found with pattern '**.json'")
 	})
 
 	t.Run("no newman file", func(t *testing.T) {
@@ -151,7 +165,7 @@ func TestRunExecuteNewman(t *testing.T) {
 		err := runExecuteNewman(&allFineConfig, &utils)
 
 		// assert
-		assert.EqualError(t, err, "Could not execute global search for 'localFile.txt': error on Glob")
+		assert.EqualError(t, err, "Could not execute global search for '**.json': error on Glob")
 	})
 }
 
@@ -238,29 +252,6 @@ func TestResolveTemplate(t *testing.T) {
 	})
 }
 
-func TestInstallNewman(t *testing.T) {
-	t.Parallel()
-
-	t.Run("happy path", func(t *testing.T) {
-		t.Parallel()
-		utils := newExecuteNewmanMockUtils()
-
-		err := installNewman("command", &utils)
-		assert.NoError(t, err)
-		assert.Equal(t, "/bin/sh", utils.executedShell)
-		assert.Equal(t, "NPM_CONFIG_PREFIX=~/.npm-global command", utils.executedScript)
-	})
-
-	t.Run("error on run shell", func(t *testing.T) {
-		t.Parallel()
-		utils := newExecuteNewmanMockUtils()
-		utils.errorOnRunShell = true
-
-		err := installNewman("command", &utils)
-		assert.EqualError(t, err, "error installing newman: error on RunShell")
-	})
-}
-
 func TestLogVersions(t *testing.T) {
 	t.Parallel()
 
@@ -269,8 +260,7 @@ func TestLogVersions(t *testing.T) {
 
 		err := logVersions(&utils)
 		assert.NoError(t, err)
-		assert.Equal(t, "npm", utils.executedExecutable)
-		assert.Equal(t, "--version", utils.executedParams[0])
+		assert.Contains(t, utils.executedExecutables, executedExecutables{executable: "npm", params: []string{"--version"}})
 	})
 
 	t.Run("error in node execution", func(t *testing.T) {
@@ -287,14 +277,13 @@ func TestLogVersions(t *testing.T) {
 
 		err := logVersions(&utils)
 		assert.EqualError(t, err, "error logging npm version: error on RunExecutable")
-		assert.Equal(t, "node", utils.executedExecutable)
-		assert.Equal(t, "--version", utils.executedParams[0])
+		assert.Contains(t, utils.executedExecutables, executedExecutables{executable: "node", params: []string{"--version"}})
 	})
 }
 
 func (e *executeNewmanMockUtils) Glob(string) (matches []string, err error) {
 	if e.errorOnGlob {
-		return nil, fmt.Errorf("error on Glob")
+		return nil, errors.New("error on Glob")
 	}
 
 	return e.filesToFind, nil
@@ -302,13 +291,7 @@ func (e *executeNewmanMockUtils) Glob(string) (matches []string, err error) {
 
 func (e *executeNewmanMockUtils) RunShell(shell, script string) error {
 	if e.errorOnRunShell {
-		return fmt.Errorf("error on RunShell")
-	}
-	if e.errorOnNewmanInstall && strings.Contains(script, "NPM_CONFIG_PREFIX=~/.npm-global") {
-		return fmt.Errorf("error on newman install")
-	}
-	if e.errorOnFinalScriptExecution && strings.Contains(script, "PATH=\\$PATH:~/.npm-global/bin newman") {
-		return fmt.Errorf("error on newman execution")
+		return errors.New("error on RunShell")
 	}
 
 	e.executedShell = shell
@@ -318,16 +301,39 @@ func (e *executeNewmanMockUtils) RunShell(shell, script string) error {
 
 func (e *executeNewmanMockUtils) RunExecutable(executable string, params ...string) error {
 	if e.errorOnRunExecutable {
-		return fmt.Errorf("error on RunExecutable")
+		return errors.New("error on RunExecutable")
 	}
 	if e.errorOnLoggingNode && executable == "node" && params[0] == "--version" {
-		return fmt.Errorf("error on RunExecutable")
+		return errors.New("error on RunExecutable")
 	}
 	if e.errorOnLoggingNpm && executable == "npm" && params[0] == "--version" {
-		return fmt.Errorf("error on RunExecutable")
+		return errors.New("error on RunExecutable")
+	}
+	if e.errorOnNewmanExecution && strings.Contains(executable, "newman") {
+		return errors.New("error on newman execution")
+	}
+	if e.errorOnNewmanInstall && sliceUtils.ContainsString(params, "install") {
+		return errors.New("error on newman install")
 	}
 
-	e.executedExecutable = executable
-	e.executedParams = params
+	length := len(e.executedExecutables)
+	if length < e.commandIndex+1 {
+		e.executedExecutables = append(e.executedExecutables, executedExecutables{})
+		length++
+	}
+
+	e.executedExecutables[length-1].executable = executable
+	e.executedExecutables[length-1].params = params
+	e.commandIndex++
 	return nil
+}
+
+func (e *executeNewmanMockUtils) SetEnv(env []string) {
+	length := len(e.executedExecutables)
+	if length < e.commandIndex+1 {
+		e.executedExecutables = append(e.executedExecutables, executedExecutables{})
+		length++
+	}
+
+	e.executedExecutables[length-1].envs = append(e.executedExecutables[length-1].envs, env...)
 }
