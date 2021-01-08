@@ -78,7 +78,11 @@ func runDeployIntegrationArtifact(config *deployIntegrationArtifactOptions, tele
 		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error", httpMethod, deployURL)
 	}
 
-	defer deployResp.Body.Close()
+	defer func() {
+		if deployResp != nil && deployResp.Body != nil {
+			deployResp.Body.Close()
+		}
+	}()
 
 	if deployResp == nil {
 		return errors.Errorf("did not retrieve a HTTP response")
