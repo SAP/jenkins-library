@@ -43,7 +43,7 @@ func (tokenParameters TokenParameters) GetBearerToken() (string, error) {
 	defer resp.Body.Close()
 
 	if resp == nil {
-		return "", errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
+		return "", errors.Errorf("did not retrieve a HTTP response")
 	}
 
 	if resp.StatusCode != 200 {

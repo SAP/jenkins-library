@@ -81,7 +81,7 @@ func runDeployIntegrationArtifact(config *deployIntegrationArtifactOptions, tele
 	defer deployResp.Body.Close()
 
 	if deployResp == nil {
-		return errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
+		return errors.Errorf("did not retrieve a HTTP response")
 	}
 
 	if deployResp.StatusCode == 202 {
