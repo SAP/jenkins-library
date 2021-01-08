@@ -2,7 +2,7 @@ package com.sap.piper
 
 import com.cloudbees.groovy.cps.NonCPS
 
-class project implements Serializable {
+class WhitesourceConfigurationHelper implements Serializable {
 
     static def extendUAConfigurationFile(script, utils, config, path) {
         def mapping = []
