@@ -64,7 +64,8 @@ void call(Map parameters = [:], body) {
         .addIfEmpty('stepNameDoc' , parameters.stepName)
         .use()
 
-    // load 'unstableSteps' here as loading it later will result in list transforming to JSONArray (only in piperExecuteBin)
+    // Load 'unstableSteps' before 'body' execution.
+    // If piperExecuteBin is used in the 'body', the transformation of CPE to filesystem and back will turn the ArrayList into an JSONArray.
     List unstableSteps = cpe?.getValue('unstableSteps') ?: []
     def message = ''
     try {
