@@ -23,7 +23,7 @@ func TestRewriteUAConfigurationFile(t *testing.T) {
 		uaFile := filepath.Join(dir, "ua.props")
 		ioutil.WriteFile(uaFile, []byte{}, 0666)
 
-		config := Config{
+		config := ScanOptions{
 			BuildTool:      "npm",
 			ConfigFilePath: uaFile,
 		}
@@ -45,7 +45,7 @@ func TestRewriteUAConfigurationFile(t *testing.T) {
 
 		uaFile := filepath.Join(dir, "ua_na.props")
 
-		config := Config{
+		config := ScanOptions{
 			BuildTool:      "npm",
 			ConfigFilePath: uaFile,
 		}
@@ -97,7 +97,7 @@ func TestAddGeneralDefaults(t *testing.T) {
 
 	t.Run("default", func(t *testing.T) {
 		testConfig := ConfigOptions{}
-		whitesourceConfig := Config{
+		whitesourceConfig := ScanOptions{
 			OrgToken:       "testOrgToken",
 			ProductName:    "Test",
 			ProductToken:   "testProductToken",
@@ -122,7 +122,7 @@ func TestAddGeneralDefaults(t *testing.T) {
 
 	t.Run("verbose", func(t *testing.T) {
 		testConfig := ConfigOptions{}
-		whitesourceConfig := Config{
+		whitesourceConfig := ScanOptions{
 			Verbose: true,
 		}
 		testConfig.addGeneralDefaults(&whitesourceConfig)
@@ -134,7 +134,7 @@ func TestAddGeneralDefaults(t *testing.T) {
 
 	t.Run("DIST product", func(t *testing.T) {
 		testConfig := ConfigOptions{}
-		whitesourceConfig := Config{
+		whitesourceConfig := ScanOptions{
 			OrgToken:       "testOrgToken",
 			ProductName:    "DIST - Test",
 			ProductToken:   "testProductToken",

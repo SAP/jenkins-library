@@ -23,41 +23,28 @@ type ConfigOption struct {
 // ConfigOptions contains a list of config options (ConfigOption)
 type ConfigOptions []ConfigOption
 
-// Config specifies WhiteSource-specific configuration used for configuring the Unified Agent
-type Config struct {
-	BuildTool      string
-	ConfigFilePath string
-	OrgToken       string
-	ProductName    string
-	ProductToken   string
-	ProductVersion string
-	ProjectName    string
-	UserKey        string
-	Verbose        bool
-}
-
 // RewriteUAConfigurationFile updates the user's Unified Agent configuration with configuration which should be enforced or just eases the overall configuration
 // It then returns the path to the file containing the updated configuration
-func (c *Config) RewriteUAConfigurationFile() (string, error) {
+func (s *ScanOptions) RewriteUAConfigurationFile() (string, error) {
 
 	// read config from inputFilePath or config.whitesource.configFilePath
-	uaConfig, err := properties.LoadFile(c.ConfigFilePath, properties.UTF8)
+	uaConfig, err := properties.LoadFile(s.ConfigFilePath, properties.UTF8)
 	uaConfigMap := map[string]string{}
 	if err != nil {
-		log.Entry().Warningf("Failed to load configuration file '%v'. Creating a configuration file from scratch.", c.ConfigFilePath)
+		log.Entry().Warningf("Failed to load configuration file '%v'. Creating a configuration file from scratch.", s.ConfigFilePath)
 	} else {
 		uaConfigMap = uaConfig.Map()
 	}
 
 	cOptions := ConfigOptions{}
-	cOptions.addGeneralDefaults(c)
-	cOptions.addBuildToolDefaults(c.BuildTool)
+	cOptions.addGeneralDefaults(s)
+	cOptions.addBuildToolDefaults(s.BuildTool)
 
 	newConfigMap := cOptions.updateConfig(&uaConfigMap)
 	newConfig := properties.LoadMap(newConfigMap)
 
 	now := time.Now().Format("20060102150405")
-	newConfigFilePath := fmt.Sprintf("%v.%v", c.ConfigFilePath, now)
+	newConfigFilePath := fmt.Sprintf("%v.%v", s.ConfigFilePath, now)
 
 	var configContent bytes.Buffer
 	_, err = newConfig.Write(&configContent, properties.UTF8)
@@ -91,7 +78,7 @@ func (c *ConfigOptions) updateConfig(originalConfig *map[string]string) map[stri
 	return newConfig
 }
 
-func (c *ConfigOptions) addGeneralDefaults(config *Config) {
+func (c *ConfigOptions) addGeneralDefaults(config *ScanOptions) {
 	cOptions := ConfigOptions{}
 	if strings.HasPrefix(config.ProductName, "DIST - ") {
 		cOptions = append(cOptions, []ConfigOption{

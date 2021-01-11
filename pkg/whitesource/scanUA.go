@@ -3,6 +3,8 @@ package whitesource
 import (
 	"fmt"
 	"os"
+
+	"github.com/pkg/errors"
 )
 
 // ExecuteUAScan executes a scan with the Whitesource Unified Agent.
@@ -12,19 +14,31 @@ func (s *Scan) ExecuteUAScan(config *ScanOptions, utils Utils) error {
 		return err
 	}
 
-	//ToDo: Download & install Java if required
-
-	// Auto generate a config file based on the working directory's contents.
-	// TODO/NOTE: Currently this scans the UA jar file as a dependency since it is downloaded beforehand
-	if err := autoGenerateWhitesourceConfig(config, utils); err != nil {
+	javaExec, err := downloadJre(config, utils)
+	if err != nil {
 		return err
 	}
 
+	//ToDo: Download Docker/container image if required
+
+	// ToDo: What to do with auto generation? Completely replace with confighelper?
+	// Auto generate a config file based on the working directory's contents.
+	// TODO/NOTE: Currently this scans the UA jar file as a dependency since it is downloaded beforehand
+	//if err := autoGenerateWhitesourceConfig(config, utils); err != nil {
+	//	return err
+	//}
+
+	// ToDo: check if this is required
 	if err := s.AppendScannedProject(s.AggregateProjectName); err != nil {
 		return err
 	}
 
-	return utils.RunExecutable("java", "-jar", config.AgentFileName, "-d", ".", "-c", config.ConfigFilePath,
+	configPath, err := config.RewriteUAConfigurationFile()
+	if err != nil {
+		return err
+	}
+
+	return utils.RunExecutable(javaExec, "-jar", config.AgentFileName, "-d", ".", "-c", configPath,
 		"-apiKey", config.OrgToken, "-userKey", config.UserToken, "-project", s.AggregateProjectName,
 		"-product", config.ProductName, "-productVersion", s.ProductVersion)
 
@@ -46,6 +60,22 @@ func downloadAgent(config *ScanOptions, utils Utils) error {
 		}
 	}
 	return nil
+}
+
+// downloadJre downloads the a JRE in case no java command can be executed
+func downloadJre(config *ScanOptions, utils Utils) (string, error) {
+	err := utils.RunExecutable("java", "--version")
+	if err != nil {
+		err := utils.DownloadFile(config.JreDownloadURL, "jvm.tar.gz", nil, nil)
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to download unified agent from URL '%s'", config.JreDownloadURL)
+		}
+		// ToDo: replace tar call with go library call
+		// ToDo: extract to subdirectory to make deletion & exclusion easier
+		err = utils.RunExecutable("tar", "--strip-components=1", "-xzf", "jvm.tar.gz")
+		return "./bin/java", nil
+	}
+	return "java", nil
 }
 
 // autoGenerateWhitesourceConfig
