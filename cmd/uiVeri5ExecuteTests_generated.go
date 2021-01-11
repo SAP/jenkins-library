@@ -14,11 +14,12 @@ import (
 )
 
 type uiVeri5ExecuteTestsOptions struct {
-	InstallCommand string   `json:"installCommand,omitempty"`
-	RunCommand     string   `json:"runCommand,omitempty"`
-	RunOptions     []string `json:"runOptions,omitempty"`
-	TestOptions    string   `json:"testOptions,omitempty"`
-	TestServerURL  string   `json:"testServerUrl,omitempty"`
+	InstallCommand  string   `json:"installCommand,omitempty"`
+	RunCommand      string   `json:"runCommand,omitempty"`
+	RunOptions      []string `json:"runOptions,omitempty"`
+	TestOptions     string   `json:"testOptions,omitempty"`
+	TestServerURL   string   `json:"testServerUrl,omitempty"`
+	NpmConfigPrefix string   `json:"npmConfigPrefix,omitempty"`
 }
 
 // UiVeri5ExecuteTestsCommand Executes UI5 e2e tests using uiVeri5
@@ -83,10 +84,12 @@ func addUiVeri5ExecuteTestsFlags(cmd *cobra.Command, stepConfig *uiVeri5ExecuteT
 	cmd.Flags().StringSliceVar(&stepConfig.RunOptions, "runOptions", []string{`--seleniumAddress='http://localhost:4444/wd/hub'`}, "Options to append to the runCommand")
 	cmd.Flags().StringVar(&stepConfig.TestOptions, "testOptions", os.Getenv("PIPER_testOptions"), "Deprecated (please use runOptions): Options to append to the runCommand")
 	cmd.Flags().StringVar(&stepConfig.TestServerURL, "testServerUrl", os.Getenv("PIPER_testServerUrl"), "Link pointing to the deployment")
+	cmd.Flags().StringVar(&stepConfig.NpmConfigPrefix, "npmConfigPrefix", `/home/node/.npm-global`, "Sets the NPM_CONFIG_PREFIX env variable")
 
 	cmd.MarkFlagRequired("installCommand")
 	cmd.MarkFlagRequired("runCommand")
 	cmd.MarkFlagRequired("runOptions")
+	cmd.MarkFlagRequired("npmConfigPrefix")
 }
 
 // retrieve step metadata
@@ -138,6 +141,14 @@ func uiVeri5ExecuteTestsMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "npmConfigPrefix",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
 						Aliases:     []config.Alias{},
 					},
 				},

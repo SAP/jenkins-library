@@ -57,6 +57,15 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: npmConfigPrefix
+        type: string
+        description: "Sets the NPM_CONFIG_PREFIX env variable"
+        mandatory: true
+        default: "/home/node/.npm-global"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   containers:
     - name: uiVeri5
       image: node:lts-stretch #node:lts-stretch 10.23.0-stretch
