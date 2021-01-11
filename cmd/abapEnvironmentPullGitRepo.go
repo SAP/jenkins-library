@@ -124,11 +124,13 @@ func triggerPull(repo abaputils.Repository, pullConnectionDetails abaputils.Conn
 
 	// Loging into the ABAP System - getting the x-csrf-token and cookies
 	resp, err := abaputils.GetHTTPResponse("HEAD", pullConnectionDetails, nil, client)
+	if resp != nil && resp.Body != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		err = abaputils.HandleHTTPError(resp, err, "Authentication on the ABAP system failed", pullConnectionDetails)
 		return uriConnectionDetails, err
 	}
-	defer resp.Body.Close()
 
 	// workaround until golang version 1.16 is used
 	time.Sleep(100 * time.Millisecond)
@@ -144,11 +146,13 @@ func triggerPull(repo abaputils.Repository, pullConnectionDetails abaputils.Conn
 	commitQuery, commitString := abaputils.GetCommitStrings(repo.CommitID)
 	jsonBody := []byte(`{"sc_name":"` + repo.Name + `"` + commitQuery + `}`)
 	resp, err = abaputils.GetHTTPResponse("POST", pullConnectionDetails, jsonBody, client)
+	if resp != nil && resp.Body != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		err = abaputils.HandleHTTPError(resp, err, "Could not pull the Repository / Software Component '"+repo.Name+"'"+commitString, uriConnectionDetails)
 		return uriConnectionDetails, err
 	}
-	defer resp.Body.Close()
 	log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repo.Name).WithField("commitID", repo.CommitID).Debug("Triggered Pull of Repository / Software Component")
 
 	// Parse Response

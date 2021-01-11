@@ -22,10 +22,12 @@ func (c *Client) DownloadFile(url, filename string, header http.Header, cookies 
 // DownloadRequest ...
 func (c *Client) DownloadRequest(method, url, filename string, header http.Header, cookies []*http.Cookie) error {
 	response, err := c.SendRequest(method, url, nil, header, cookies)
+	if response != nil && response.Body != nil {
+		defer response.Body.Close()
+	}
 	if err != nil {
 		return errors.Wrapf(err, "HTTP %v request to %v failed with error", method, url)
 	}
-	defer response.Body.Close()
 	parent := filepath.Dir(filename)
 	if len(parent) > 0 {
 		if err = os.MkdirAll(parent, 0775); err != nil {

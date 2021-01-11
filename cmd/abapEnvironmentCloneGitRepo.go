@@ -107,11 +107,13 @@ func triggerClone(repo abaputils.Repository, cloneConnectionDetails abaputils.Co
 
 	// Loging into the ABAP System - getting the x-csrf-token and cookies
 	resp, err := abaputils.GetHTTPResponse("HEAD", cloneConnectionDetails, nil, client)
+	if resp != nil && resp.Body != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		err = abaputils.HandleHTTPError(resp, err, "Authentication on the ABAP system failed", cloneConnectionDetails)
 		return uriConnectionDetails, err
 	}
-	defer resp.Body.Close()
 
 	// workaround until golang version 1.16 is used
 	time.Sleep(100 * time.Millisecond)
@@ -129,11 +131,13 @@ func triggerClone(repo abaputils.Repository, cloneConnectionDetails abaputils.Co
 
 	jsonBody := []byte(`{"sc_name":"` + repo.Name + `", "branch_name":"` + repo.Branch + `"` + commitQuery + `}`)
 	resp, err = abaputils.GetHTTPResponse("POST", cloneConnectionDetails, jsonBody, client)
+	if resp != nil && resp.Body != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		err = abaputils.HandleHTTPError(resp, err, "Could not clone the Repository / Software Component "+repo.Name+", branch "+repo.Branch+commitString, uriConnectionDetails)
 		return uriConnectionDetails, err
 	}
-	defer resp.Body.Close()
 	log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repo.Name).WithField("branchName", repo.Branch).WithField("commitID", repo.CommitID).Info("Triggered Clone of Repository / Software Component")
 
 	// Parse Response

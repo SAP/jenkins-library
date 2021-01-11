@@ -21,11 +21,13 @@ func PollEntity(repositoryName string, connectionDetails ConnectionDetailsHTTP, 
 
 	for {
 		var resp, err = GetHTTPResponse("GET", connectionDetails, nil, client)
+		if resp != nil && resp.Body != nil {
+			defer resp.Body.Close()
+		}
 		if err != nil {
 			err = HandleHTTPError(resp, err, "Could not pull the Repository / Software Component "+repositoryName, connectionDetails)
 			return "", err
 		}
-		defer resp.Body.Close()
 
 		// Parse response
 		var abapResp map[string]*json.RawMessage

@@ -412,12 +412,14 @@ func (sys *SystemInstance) UploadProjectSourceCode(projectID int, zipFile string
 	header.Add("Accept-Encoding", "gzip,deflate")
 	header.Add("Accept", "text/plain")
 	resp, err := sys.client.UploadFile(fmt.Sprintf("%v/cxrestapi/projects/%v/sourceCode/attachments", sys.serverURL, projectID), zipFile, "zippedSource", header, nil)
+	if resp != nil && resp.Body != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		return errors.Wrap(err, "failed to uploaded zipped sources")
 	}
 
 	data, err := ioutil.ReadAll(resp.Body)
-	defer resp.Body.Close()
 	if err != nil {
 		return errors.Wrap(err, "error reading the response data")
 	}

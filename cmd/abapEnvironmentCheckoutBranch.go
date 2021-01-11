@@ -102,11 +102,13 @@ func triggerCheckout(repositoryName string, branchName string, checkoutConnectio
 
 	// Loging into the ABAP System - getting the x-csrf-token and cookies
 	resp, err := abaputils.GetHTTPResponse("HEAD", checkoutConnectionDetails, nil, client)
+	if resp != nil && resp.Body != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		err = abaputils.HandleHTTPError(resp, err, "Authentication on the ABAP system failed", checkoutConnectionDetails)
 		return uriConnectionDetails, err
 	}
-	defer resp.Body.Close()
 
 	// workaround until golang version 1.16 is used
 	time.Sleep(100 * time.Millisecond)
@@ -121,11 +123,13 @@ func triggerCheckout(repositoryName string, branchName string, checkoutConnectio
 
 	// no JSON body needed
 	resp, err = abaputils.GetHTTPResponse("POST", checkoutConnectionDetails, jsonBody, client)
+	if resp != nil && resp.Body != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		err = abaputils.HandleHTTPError(resp, err, "Could not trigger checkout of branch "+branchName, uriConnectionDetails)
 		return uriConnectionDetails, err
 	}
-	defer resp.Body.Close()
 	log.Entry().WithField("StatusCode", resp.StatusCode).WithField("repositoryName", repositoryName).WithField("branchName", branchName).Debug("Triggered checkout of branch")
 
 	// Parse Response

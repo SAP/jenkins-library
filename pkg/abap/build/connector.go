@@ -43,16 +43,17 @@ func (conn *Connector) GetToken(appendum string) error {
 	url := conn.Baseurl + appendum
 	conn.Header["X-CSRF-Token"] = []string{"Fetch"}
 	response, err := conn.Client.SendRequest("HEAD", url, nil, conn.Header, nil)
+	if response != nil && response.Body != nil {
+		defer response.Body.Close()
+	}
 	if err != nil {
 		if response == nil {
 			return errors.Wrap(err, "Fetching X-CSRF-Token failed")
 		}
-		defer response.Body.Close()
 		errorbody, _ := ioutil.ReadAll(response.Body)
 		return errors.Wrapf(err, "Fetching X-CSRF-Token failed: %v", string(errorbody))
 
 	}
-	defer response.Body.Close()
 	token := response.Header.Get("X-CSRF-Token")
 	conn.Header["X-CSRF-Token"] = []string{token}
 	return nil
@@ -62,16 +63,17 @@ func (conn *Connector) GetToken(appendum string) error {
 func (conn Connector) Get(appendum string) ([]byte, error) {
 	url := conn.Baseurl + appendum
 	response, err := conn.Client.SendRequest("GET", url, nil, conn.Header, nil)
+	if response != nil && response.Body != nil {
+		defer response.Body.Close()
+	}
 	if err != nil {
 		if response == nil || response.Body == nil {
 			return nil, errors.Wrap(err, "Get failed")
 		}
-		defer response.Body.Close()
 		errorbody, _ := ioutil.ReadAll(response.Body)
 		return errorbody, errors.Wrapf(err, "Get failed: %v", string(errorbody))
 
 	}
-	defer response.Body.Close()
 	body, err := ioutil.ReadAll(response.Body)
 	return body, err
 }
@@ -86,16 +88,17 @@ func (conn Connector) Post(appendum string, importBody string) ([]byte, error) {
 	} else {
 		response, err = conn.Client.SendRequest("POST", url, bytes.NewBuffer([]byte(importBody)), conn.Header, nil)
 	}
+	if response != nil && response.Body != nil {
+		defer response.Body.Close()
+	}
 	if err != nil {
 		if response == nil {
 			return nil, errors.Wrap(err, "Post failed")
 		}
-		defer response.Body.Close()
 		errorbody, _ := ioutil.ReadAll(response.Body)
 		return errorbody, errors.Wrapf(err, "Post failed: %v", string(errorbody))
 
 	}
-	defer response.Body.Close()
 	body, err := ioutil.ReadAll(response.Body)
 	return body, err
 }
@@ -168,12 +171,13 @@ func (conn *Connector) InitBuildFramework(config ConnectorConfiguration, com aba
 func (conn Connector) UploadSarFile(appendum string, sarFile []byte) error {
 	url := conn.Baseurl + appendum
 	response, err := conn.Client.SendRequest("PUT", url, bytes.NewBuffer(sarFile), conn.Header, nil)
-	if err != nil {
+	if response != nil && response.Body != nil {
 		defer response.Body.Close()
+	}
+	if err != nil {
 		errorbody, _ := ioutil.ReadAll(response.Body)
 		return errors.Wrapf(err, "Upload of SAR file failed: %v", string(errorbody))
 	}
-	defer response.Body.Close()
 	return nil
 }
 
@@ -203,13 +207,13 @@ func (conn Connector) UploadSarFileInChunks(appendum string, fileName string, sa
 		log.Entry().Info(header["Content-Range"])
 
 		response, err := conn.Client.SendRequest("POST", url, nextChunk, header, nil)
+		if response != nil && response.Body != nil {
+			defer response.Body.Close()
+		}
 		if err != nil {
 			errorbody, _ := ioutil.ReadAll(response.Body)
-			response.Body.Close()
 			return errors.Wrapf(err, "Upload of SAR file failed: %v", string(errorbody))
 		}
-
-		response.Body.Close()
 	}
 	return nil
 }

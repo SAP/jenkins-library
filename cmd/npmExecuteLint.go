@@ -48,12 +48,13 @@ func (u *lintUtilsBundle) getExecRunner() command.ExecRunner {
 
 func (u *lintUtilsBundle) getGeneralPurposeConfig(configURL string) {
 	response, err := u.client.SendRequest(http.MethodGet, configURL, nil, nil, nil)
+	if response != nil && response.Body != nil {
+		defer response.Body.Close()
+	}
 	if err != nil {
 		log.Entry().Warnf("failed to download general purpose configuration: %v", err)
 		return
 	}
-
-	defer response.Body.Close()
 
 	content, err := ioutil.ReadAll(response.Body)
 	if err != nil {

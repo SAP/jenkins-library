@@ -83,6 +83,9 @@ func handleATCresults(resp *http.Response, details abaputils.ConnectionDetailsHT
 	if err == nil {
 		details.URL = abapEndpoint + location
 		resp, err = getResultATCRun("GET", details, nil, client)
+		if resp != nil && resp.Body != nil {
+			defer resp.Body.Close()
+		}
 	}
 	//Parse response
 	var body []byte
@@ -90,7 +93,6 @@ func handleATCresults(resp *http.Response, details abaputils.ConnectionDetailsHT
 		body, err = ioutil.ReadAll(resp.Body)
 	}
 	if err == nil {
-		defer resp.Body.Close()
 		err = parseATCResult(body, atcResultFileName)
 	}
 	if err != nil {
@@ -217,10 +219,12 @@ func runATC(requestType string, details abaputils.ConnectionDetailsHTTP, body []
 	header["Content-Type"] = []string{"application/vnd.sap.atc.run.parameters.v1+xml; charset=utf-8;"}
 
 	req, err := client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
+	if req != nil && req.Body != nil {
+		defer req.Body.Close()
+	}
 	if err != nil {
 		return req, fmt.Errorf("Triggering ATC run failed: %w", err)
 	}
-	defer req.Body.Close()
 	return req, err
 }
 
@@ -234,10 +238,12 @@ func fetchXcsrfToken(requestType string, details abaputils.ConnectionDetailsHTTP
 	header["X-Csrf-Token"] = []string{details.XCsrfToken}
 	header["Accept"] = []string{"application/vnd.sap.atc.run.v1+xml"}
 	req, err := client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
+	if req != nil && req.Body != nil {
+		defer req.Body.Close()
+	}
 	if err != nil {
 		return "", fmt.Errorf("Fetching Xcsrf-Token failed: %w", err)
 	}
-	defer req.Body.Close()
 
 	// workaround until golang version 1.16 is used
 	time.Sleep(1 * time.Second)

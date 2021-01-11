@@ -121,6 +121,9 @@ func certificateUpdate(certLinks []string, httpClient piperhttp.Sender, fileUtil
 	}
 	for _, link := range certLinks {
 		response, err := httpClient.SendRequest(http.MethodGet, link, nil, nil, nil)
+		if response != nil && response.Body != nil {
+			defer response.Body.Close()
+		}
 		if err != nil {
 			return errors.Wrap(err, "failed to load certificate from url")
 		}
@@ -129,7 +132,6 @@ func certificateUpdate(certLinks []string, httpClient piperhttp.Sender, fileUtil
 		if err != nil {
 			return errors.Wrap(err, "error reading response")
 		}
-		_ = response.Body.Close()
 		content = append(content, []byte("\n")...)
 		caCerts = append(caCerts, content...)
 	}

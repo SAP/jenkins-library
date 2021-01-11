@@ -701,11 +701,13 @@ func (sys *SystemInstance) downloadFile(endpoint, method, acceptType, tokenType 
 	} else {
 		response, err = sys.httpClient.SendRequest(method, fmt.Sprintf("%v%v", sys.serverURL, endpoint), strings.NewReader(body.Encode()), header, nil)
 	}
+	if response != nil && response.Body != nil {
+		defer response.Body.Close()
+	}
 	if err != nil {
 		return nil, err
 	}
 	data, err := ioutil.ReadAll(response.Body)
-	defer response.Body.Close()
 	if err != nil {
 		return nil, errors.Wrap(err, "Error reading the response data")
 	}
