@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -25,15 +24,17 @@ func uiVeri5ExecuteTests(config uiVeri5ExecuteTestsOptions, telemetryData *telem
 }
 
 func runUIVeri5(config *uiVeri5ExecuteTestsOptions, command command.ExecRunner) error {
+	envs := []string{"NPM_CONFIG_PREFIX=/home/node/.npm-global"}
+	envs = append(envs, "TARGET_SERVER_URL="+config.TestServerURL)
+	command.SetEnv(envs)
+
 	installCommandTokens := strings.Split(config.InstallCommand, " ")
-	command.SetEnv([]string{"NPM_CONFIG_PREFIX=/home/node/.npm-global"})
 	err := command.RunExecutable(installCommandTokens[0], installCommandTokens[1:]...)
 	if err != nil {
 		log.Entry().WithError(err).WithField("command", config.InstallCommand).Fatal("failed to execute install command")
 		return err
 	}
 
-	os.Setenv("TARGET_SERVER_URL", config.TestServerURL)
 	options := []string{}
 	fmt.Println(config.TestOptions)
 	fmt.Println(config.RunOptions)
