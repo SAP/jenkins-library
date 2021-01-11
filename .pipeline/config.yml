@@ -1,8 +1,4 @@
 steps:
-
-  uiVeri5ExecuteTests:
-
-
   githubPublishRelease:
     addClosedIssues: true
     addDeltaToLastRelease: true
