@@ -106,7 +106,7 @@ func (c *ConfigOptions) addGeneralDefaults(config *ScanOptions) {
 		{Name: "projectName", Value: config.ProjectName, Force: true},
 		{Name: "projectVersion", Value: config.ProductVersion, Force: true},
 		{Name: "productToken", Value: config.ProductToken, OmitIfPresent: "projectToken", Force: true},
-		{Name: "userKey", Value: config.UserKey, Force: true},
+		{Name: "userKey", Value: config.UserToken, Force: true},
 		{Name: "forceUpdate", Value: true, Force: true},
 		{Name: "offline", Value: false, Force: true},
 		{Name: "ignoreSourceFiles", Value: true, Force: true},

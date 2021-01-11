@@ -107,9 +107,11 @@ func removeJre(javaPath string, utils Utils) {
 	if err := utils.RemoveAll(jvmDir); err != nil {
 		log.Entry().Warning("Failed to remove downloaded and extracted jvm")
 	}
+	log.Entry().Infof("Java successfully removed from %v", jvmDir)
 	if err := utils.FileRemove(jvmTarGz); err != nil {
 		log.Entry().Warningf("Failed to remove downloaded %v", jvmTarGz)
 	}
+	log.Entry().Infof("%v successfully removed", jvmTarGz)
 }
 
 // autoGenerateWhitesourceConfig

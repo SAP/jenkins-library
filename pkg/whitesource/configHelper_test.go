@@ -103,7 +103,7 @@ func TestAddGeneralDefaults(t *testing.T) {
 			ProductToken:   "testProductToken",
 			ProductVersion: "testVersion",
 			ProjectName:    "testProject",
-			UserKey:        "testuserKey",
+			UserToken:      "testuserKey",
 		}
 		testConfig.addGeneralDefaults(&whitesourceConfig)
 		assert.Equal(t, "checkPolicies", testConfig[0].Name)
@@ -140,7 +140,7 @@ func TestAddGeneralDefaults(t *testing.T) {
 			ProductToken:   "testProductToken",
 			ProductVersion: "testVersion",
 			ProjectName:    "testProject",
-			UserKey:        "testuserKey",
+			UserToken:      "testuserKey",
 		}
 		testConfig.addGeneralDefaults(&whitesourceConfig)
 		assert.Equal(t, "checkPolicies", testConfig[0].Name)

@@ -13,7 +13,6 @@ type ScanOptions struct {
 	// ProjectName is an optional name for an "aggregator" project.
 	// All scanned maven modules will be reflected in the aggregate project.
 	ProjectName string
-	UserKey     string
 
 	BuildDescriptorExcludeList []string
 	// PomPath is the path to root build descriptor file.
