@@ -122,6 +122,14 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: excludes
+        type: string
+        description: Space separated list of file path patterns to exclude in the scan
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: "tests/**/*.py **/src/test/**/*.java"
       - name: includes
         type: string
         description: "Space separated list of file path patterns to include in the scan, slashes must be escaped for sed."
