@@ -18,7 +18,7 @@ type uiVeri5ExecuteTestsOptions struct {
 	RunCommand     string   `json:"runCommand,omitempty"`
 	RunOptions     []string `json:"runOptions,omitempty"`
 	TestOptions    string   `json:"testOptions,omitempty"`
-	TestServerURL  string   `json:"testServerURL,omitempty"`
+	TestServerURL  string   `json:"testServerUrl,omitempty"`
 }
 
 // UiVeri5ExecuteTestsCommand Executes UI5 e2e tests using uiVeri5
@@ -82,7 +82,7 @@ func addUiVeri5ExecuteTestsFlags(cmd *cobra.Command, stepConfig *uiVeri5ExecuteT
 	cmd.Flags().StringVar(&stepConfig.RunCommand, "runCommand", `uiveri5`, "The command that is executed to start the tests.")
 	cmd.Flags().StringSliceVar(&stepConfig.RunOptions, "runOptions", []string{`--seleniumAddress='http://localhost:4444/wd/hub'`}, "Options to append to the runCommand")
 	cmd.Flags().StringVar(&stepConfig.TestOptions, "testOptions", os.Getenv("PIPER_testOptions"), "Deprecated (please use runOptions): Options to append to the runCommand")
-	cmd.Flags().StringVar(&stepConfig.TestServerURL, "testServerURL", os.Getenv("PIPER_testServerURL"), "Link pointing to the deployment")
+	cmd.Flags().StringVar(&stepConfig.TestServerURL, "testServerUrl", os.Getenv("PIPER_testServerUrl"), "Link pointing to the deployment")
 
 	cmd.MarkFlagRequired("installCommand")
 	cmd.MarkFlagRequired("runCommand")
@@ -133,7 +133,7 @@ func uiVeri5ExecuteTestsMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "testServerURL",
+						Name:        "testServerUrl",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
