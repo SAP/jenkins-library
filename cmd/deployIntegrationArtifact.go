@@ -79,7 +79,6 @@ func runDeployIntegrationArtifact(config *deployIntegrationArtifactOptions, tele
 	}
 
 	if deployResp != nil && deployResp.Body != nil {
-
 		defer deployResp.Body.Close()
 	}
 

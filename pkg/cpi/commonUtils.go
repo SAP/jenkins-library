@@ -41,7 +41,6 @@ func (tokenParameters TokenParameters) GetBearerToken() (string, error) {
 		return "", errors.Wrapf(httpErr, "HTTP %v request to %v failed with error", method, tokenFinalURL)
 	}
 	if resp != nil && resp.Body != nil {
-
 		defer resp.Body.Close()
 	}
 
