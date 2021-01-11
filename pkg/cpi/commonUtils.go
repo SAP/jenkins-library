@@ -40,11 +40,7 @@ func (tokenParameters TokenParameters) GetBearerToken() (string, error) {
 	if httpErr != nil {
 		return "", errors.Wrapf(httpErr, "HTTP %v request to %v failed with error", method, tokenFinalURL)
 	}
-	defer func() {
-		if resp != nil && resp.Body != nil {
-			resp.Body.Close()
-		}
-	}()
+	defer CloseResponseBodyIfNecessary(resp)
 
 	if resp == nil {
 		return "", errors.Errorf("did not retrieve a HTTP response")
@@ -64,4 +60,11 @@ func (tokenParameters TokenParameters) GetBearerToken() (string, error) {
 	}
 	token := jsonResponse.Path("access_token").Data().(string)
 	return token, nil
+}
+
+//CloseResponseBodyIfNecessary - close http response object
+func CloseResponseBodyIfNecessary(response *http.Response) {
+	if response != nil && response.Body != nil {
+		response.Body.Close()
+	}
 }
