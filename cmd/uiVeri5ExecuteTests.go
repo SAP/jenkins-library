@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
@@ -34,6 +35,8 @@ func runUIVeri5(config *uiVeri5ExecuteTestsOptions, command command.ExecRunner) 
 
 	os.Setenv("TARGET_SERVER_URL", config.TestServerURL)
 	options := []string{}
+	fmt.Println(config.TestOptions)
+	fmt.Println(config.RunOptions)
 	if config.TestOptions != "" {
 		// use testOptions (deprecated) if configured
 		options = append(options, config.TestOptions)
