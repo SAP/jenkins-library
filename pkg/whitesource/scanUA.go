@@ -87,7 +87,6 @@ func downloadJre(config *ScanOptions, utils Utils) (string, error) {
 		}
 
 		// ToDo: replace tar call with go library call
-		// ToDo: extract to subdirectory to make deletion & exclusion easier
 		err = utils.MkdirAll(jvmDir, 0755)
 
 		err = utils.RunExecutable("tar", fmt.Sprintf("--directory=%v", jvmDir), "--strip-components=1", "-xzf", jvmTarGz)
