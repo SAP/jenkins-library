@@ -422,6 +422,10 @@ spec:
       conditions:
         - conditionRef: strings-equal
           params:
+            - name: buildTool
+              value: maven
+        - conditionRef: strings-equal
+          params:
             - name: scanType
               value: maven
     - image: node:lts-stretch

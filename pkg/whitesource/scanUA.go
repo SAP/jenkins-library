@@ -3,6 +3,8 @@ package whitesource
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
@@ -39,11 +41,19 @@ func (s *Scan) ExecuteUAScan(config *ScanOptions, utils Utils) error {
 		return err
 	}
 
-	return utils.RunExecutable(javaExec, "-jar", config.AgentFileName, "-d", ".", "-c", configPath,
+	//ToDo: remove parameters which are added to UA config via RewriteUAConfigurationFile()
+	err = utils.RunExecutable(javaExec, "-jar", config.AgentFileName, "-d", ".", "-c", configPath,
 		"-apiKey", config.OrgToken, "-userKey", config.UserToken, "-project", s.AggregateProjectName,
 		"-product", config.ProductName, "-productVersion", s.ProductVersion)
 
-	//ToDo: Remove Java if it has been installed before
+	if javaExec != "java" {
+		removeJre(javaExec, utils)
+	}
+	if err != nil {
+		//ToDo: check exit code and categorize error?
+		return errors.Wrapf(err, "failed to execute WhiteSource scan")
+	}
+	return nil
 }
 
 // downloadAgent downloads the unified agent jar file if one does not exist
@@ -74,14 +84,24 @@ func downloadJre(config *ScanOptions, utils Utils) (string, error) {
 		}
 		// ToDo: replace tar call with go library call
 		// ToDo: extract to subdirectory to make deletion & exclusion easier
-		err = utils.RunExecutable("tar", "--strip-components=1", "-xzf", "jvm.tar.gz")
+		err = utils.RunExecutable("tar", "--directory=./java", "--strip-components=1", "-xzf", "jvm.tar.gz")
 		if err != nil {
 			return "", errors.Wrap(err, "failed to extract jvm.tar.gz")
 		}
 		log.Entry().Info("Java successfully installed")
-		return "./bin/java", nil
+		return ".java/bin/java", nil
 	}
 	return "java", nil
+}
+
+func removeJre(javaExec string, utils Utils) {
+	javaDir, _ := filepath.Split(javaExec)
+	if err := utils.RemoveAll(strings.Split(javaDir, string(filepath.Separator))[0]); err != nil {
+		log.Entry().Warning("Failed to remove downloaded and extracted jvm")
+	}
+	if err := utils.FileRemove("jvm.tar.gz"); err != nil {
+		log.Entry().Warning("Failed to remove downloaded jvm.tar.gz")
+	}
 }
 
 // autoGenerateWhitesourceConfig
