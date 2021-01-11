@@ -430,6 +430,10 @@ spec:
       conditions:
         - conditionRef: strings-equal
           params:
+            - name: buildTool
+              value: npm
+        - conditionRef: strings-equal
+          params:
             - name: scanType
               value: npm
     - image: hseeberger/scala-sbt:8u181_2.12.8_1.2.8

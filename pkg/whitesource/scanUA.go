@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
 )
 
@@ -66,6 +67,7 @@ func downloadAgent(config *ScanOptions, utils Utils) error {
 func downloadJre(config *ScanOptions, utils Utils) (string, error) {
 	err := utils.RunExecutable("java", "--version")
 	if err != nil {
+		log.Entry().Infof("No Java installation found, downloading JVM from %v", config.JreDownloadURL)
 		err := utils.DownloadFile(config.JreDownloadURL, "jvm.tar.gz", nil, nil)
 		if err != nil {
 			return "", errors.Wrapf(err, "failed to download unified agent from URL '%s'", config.JreDownloadURL)
@@ -73,6 +75,10 @@ func downloadJre(config *ScanOptions, utils Utils) (string, error) {
 		// ToDo: replace tar call with go library call
 		// ToDo: extract to subdirectory to make deletion & exclusion easier
 		err = utils.RunExecutable("tar", "--strip-components=1", "-xzf", "jvm.tar.gz")
+		if err != nil {
+			return "", errors.Wrap(err, "failed to extract jvm.tar.gz")
+		}
+		log.Entry().Info("Java successfully installed")
 		return "./bin/java", nil
 	}
 	return "java", nil
