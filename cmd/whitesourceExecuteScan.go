@@ -337,12 +337,15 @@ func validateProductVersion(version string) string {
 
 func wsScanOptions(config *ScanOptions) *ws.ScanOptions {
 	return &ws.ScanOptions{
+		BuildTool:                  config.BuildTool,
 		ScanType:                   config.ScanType,
 		OrgToken:                   config.OrgToken,
 		UserToken:                  config.UserToken,
 		ProductName:                config.ProductName,
 		ProductToken:               config.ProductToken,
+		ProductVersion:             config.ProductVersion,
 		ProjectName:                config.ProjectName,
+		UserKey:                    config.UserToken,
 		BuildDescriptorExcludeList: config.BuildDescriptorExcludeList,
 		PomPath:                    config.BuildDescriptorFile,
 		M2Path:                     config.M2Path,
@@ -355,6 +358,8 @@ func wsScanOptions(config *ScanOptions) *ws.ScanOptions {
 		ConfigFilePath:             config.ConfigFilePath,
 		Includes:                   config.Includes,
 		Excludes:                   config.Excludes,
+		JreDownloadURL:             config.JreDownloadURL,
+		Verbose:                    GeneralConfig.Verbose,
 	}
 }
 
