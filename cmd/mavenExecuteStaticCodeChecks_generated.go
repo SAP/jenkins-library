@@ -22,7 +22,7 @@ type mavenExecuteStaticCodeChecksOptions struct {
 	SpotBugsMaxAllowedViolations int      `json:"spotBugsMaxAllowedViolations,omitempty"`
 	PmdFailurePriority           int      `json:"pmdFailurePriority,omitempty"`
 	PmdMaxAllowedViolations      int      `json:"pmdMaxAllowedViolations,omitempty"`
-	FailOnViolation              bool     `json:"failOnViolation,omitempty"`
+	PmdFailOnViolation           bool     `json:"pmdFailOnViolation,omitempty"`
 	ProjectSettingsFile          string   `json:"projectSettingsFile,omitempty"`
 	GlobalSettingsFile           string   `json:"globalSettingsFile,omitempty"`
 	M2Path                       string   `json:"m2Path,omitempty"`
@@ -100,9 +100,9 @@ func addMavenExecuteStaticCodeChecksFlags(cmd *cobra.Command, stepConfig *mavenE
 	cmd.Flags().StringVar(&stepConfig.SpotBugsExcludeFilterFile, "spotBugsExcludeFilterFile", os.Getenv("PIPER_spotBugsExcludeFilterFile"), "Path to a filter file with bug definitions which should be excluded.")
 	cmd.Flags().StringVar(&stepConfig.SpotBugsIncludeFilterFile, "spotBugsIncludeFilterFile", os.Getenv("PIPER_spotBugsIncludeFilterFile"), "Path to a filter file with bug definitions which should be included.")
 	cmd.Flags().IntVar(&stepConfig.SpotBugsMaxAllowedViolations, "spotBugsMaxAllowedViolations", 0, "The maximum number of failures allowed before execution fails.")
-	cmd.Flags().IntVar(&stepConfig.PmdFailurePriority, "pmdFailurePriority", 0, "What priority level to fail the build on. PMD violations are assigned a priority from 1 (most severe) to 5 (least severe) according to the rule's priority. Violations at or less than this priority level are considered failures and will fail the build if failOnViolation=true and the count exceeds maxAllowedViolations. The parameter `failOnVialotion`needs to be set on the level of maven pmd plugin. It is not possbile to set this prameter on the step configuration. The other violations will be regarded as warnings and will be displayed in the build output if verbose=true. Setting a value of 5 will treat all violations as failures, which may cause the build to fail. Setting a value of 1 will treat all violations as warnings. Only values from 1 to 5 are valid.")
-	cmd.Flags().IntVar(&stepConfig.PmdMaxAllowedViolations, "pmdMaxAllowedViolations", 0, "The maximum number of failures allowed before execution fails. Used in conjunction with failOnViolation=true (parameter configured in the maven pmd plugin) and utilizes failurePriority. This value has no meaning if failOnViolation=false. If the number of failures is greater than this number, the build will be failed. If the number of failures is less than or equal to this value, then the build will not be failed.")
-	cmd.Flags().BoolVar(&stepConfig.FailOnViolation, "failOnViolation", false, "Whether to fail the build if the validation check fails. The properties `pmdFailurePriority` and `pmdMaxAllowedViolations` control under which conditions exactly the build should be failed.")
+	cmd.Flags().IntVar(&stepConfig.PmdFailurePriority, "pmdFailurePriority", 0, "What priority level to fail the build on. PMD violations are assigned a priority from 1 (most severe) to 5 (least severe) according to the rule's priority. Violations at or less than this priority level are considered failures and will fail the build if failOnViolation=true and the count exceeds maxAllowedViolations. The other violations will be regarded as warnings and will be displayed in the build output if verbose=true. Setting a value of 5 will treat all violations as failures, which may cause the build to fail. Setting a value of 1 will treat all violations as warnings. Only values from 1 to 5 are valid.")
+	cmd.Flags().IntVar(&stepConfig.PmdMaxAllowedViolations, "pmdMaxAllowedViolations", 0, "The maximum number of failures allowed before execution fails. Used in conjunction with failOnViolation=true and utilizes failurePriority. This value has no meaning if failOnViolation=false. If the number of failures is greater than this number, the build will be failed. If the number of failures is less than or equal to this value, then the build will not be failed.")
+	cmd.Flags().BoolVar(&stepConfig.PmdFailOnViolation, "pmdFailOnViolation", false, "Whether to fail the build if the validation check fails. The properties `pmdFailurePriority` and `pmdMaxAllowedViolations` control under which conditions exactly the build should be failed.")
 	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Path to the mvn settings file that should be used as project settings file.")
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Path to the mvn settings file that should be used as global settings file.")
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
@@ -186,7 +186,7 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "pmd/maxAllowedViolations"}},
 					},
 					{
-						Name:        "failOnViolation",
+						Name:        "pmdFailOnViolation",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
