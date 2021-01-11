@@ -85,6 +85,15 @@ spec:
           - STEPS
         aliases:
           - name: pmd/maxAllowedViolations
+      - name: failOnViolation
+        description: Whether to fail the build if the validation check fails. The properties `pmdFailurePriority` and `pmdMaxAllowedViolations` control under which conditions exactly the build should be failed.
+        type: bool
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        aliases:
+          - name: pmd/failOnViolation
 
       # Global maven settings, should be added to all maven steps
       - name: projectSettingsFile
