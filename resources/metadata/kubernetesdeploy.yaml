@@ -170,6 +170,15 @@ spec:
           - kubectl
           - helm
           - helm3
+      - name: forceUpdates
+        type: bool
+        description: "Helm only: force resource updates with helm parameter `--force`"
+        mandatory: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: true
       - name: helmDeployWaitSeconds
         type: int
         description: Number of seconds before helm deploy returns.
