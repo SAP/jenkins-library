@@ -4,20 +4,23 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
 )
 
+const jvmTarGz = "jvm.tar.gz"
+const jvmDir = "./jvm"
+
 // ExecuteUAScan executes a scan with the Whitesource Unified Agent.
 func (s *Scan) ExecuteUAScan(config *ScanOptions, utils Utils) error {
 	// Download the unified agent jar file if one does not exist
-	if err := downloadAgent(config, utils); err != nil {
+	err := downloadAgent(config, utils)
+	if err != nil {
 		return err
 	}
 
-	javaExec, err := downloadJre(config, utils)
+	javaPath, err := downloadJre(config, utils)
 	if err != nil {
 		return err
 	}
@@ -42,13 +45,12 @@ func (s *Scan) ExecuteUAScan(config *ScanOptions, utils Utils) error {
 	}
 
 	//ToDo: remove parameters which are added to UA config via RewriteUAConfigurationFile()
-	err = utils.RunExecutable(javaExec, "-jar", config.AgentFileName, "-d", ".", "-c", configPath,
+	err = utils.RunExecutable(javaPath, "-jar", config.AgentFileName, "-d", ".", "-c", configPath,
 		"-apiKey", config.OrgToken, "-userKey", config.UserToken, "-project", s.AggregateProjectName,
 		"-product", config.ProductName, "-productVersion", s.ProductVersion)
 
-	if javaExec != "java" {
-		removeJre(javaExec, utils)
-	}
+	removeJre(javaPath, utils)
+
 	if err != nil {
 		//ToDo: check exit code and categorize error?
 		return errors.Wrapf(err, "failed to execute WhiteSource scan")
@@ -76,31 +78,37 @@ func downloadAgent(config *ScanOptions, utils Utils) error {
 // downloadJre downloads the a JRE in case no java command can be executed
 func downloadJre(config *ScanOptions, utils Utils) (string, error) {
 	err := utils.RunExecutable("java", "--version")
+	javaPath := "java"
 	if err != nil {
 		log.Entry().Infof("No Java installation found, downloading JVM from %v", config.JreDownloadURL)
-		err := utils.DownloadFile(config.JreDownloadURL, "jvm.tar.gz", nil, nil)
+		err := utils.DownloadFile(config.JreDownloadURL, jvmTarGz, nil, nil)
 		if err != nil {
-			return "", errors.Wrapf(err, "failed to download unified agent from URL '%s'", config.JreDownloadURL)
+			errors.Wrapf(err, "failed to download unified agent from URL '%s'", config.JreDownloadURL)
 		}
+
 		// ToDo: replace tar call with go library call
 		// ToDo: extract to subdirectory to make deletion & exclusion easier
-		err = utils.RunExecutable("tar", "--directory=./java", "--strip-components=1", "-xzf", "jvm.tar.gz")
+		err = utils.MkdirAll(jvmDir, 0755)
+
+		err = utils.RunExecutable("tar", fmt.Sprintf("--directory=%v", jvmDir), "--strip-components=1", "-xzf", jvmTarGz)
 		if err != nil {
-			return "", errors.Wrap(err, "failed to extract jvm.tar.gz")
+			errors.Wrapf(err, "failed to extract %v", jvmTarGz)
 		}
 		log.Entry().Info("Java successfully installed")
-		return ".java/bin/java", nil
+		javaPath = filepath.Join(jvmDir, "bin", "java")
 	}
-	return "java", nil
+	return javaPath, nil
 }
 
-func removeJre(javaExec string, utils Utils) {
-	javaDir, _ := filepath.Split(javaExec)
-	if err := utils.RemoveAll(strings.Split(javaDir, string(filepath.Separator))[0]); err != nil {
+func removeJre(javaPath string, utils Utils) {
+	if javaPath == "java" {
+		return
+	}
+	if err := utils.RemoveAll(jvmDir); err != nil {
 		log.Entry().Warning("Failed to remove downloaded and extracted jvm")
 	}
-	if err := utils.FileRemove("jvm.tar.gz"); err != nil {
-		log.Entry().Warning("Failed to remove downloaded jvm.tar.gz")
+	if err := utils.FileRemove(jvmTarGz); err != nil {
+		log.Entry().Warningf("Failed to remove downloaded %v", jvmTarGz)
 	}
 }
 
