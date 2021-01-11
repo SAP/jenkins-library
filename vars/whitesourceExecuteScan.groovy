@@ -268,7 +268,7 @@ void call(Map parameters = [:]) {
             .addIfEmpty('scanType', script.commonPipelineEnvironment.getBuildTool())
             .use()
 
-        if (config.useGoStep == true && config.scanType != "unified-agent") {
+        if (config.useGoStep == true) {
             parameters = DownloadCacheUtils.injectDownloadCacheInParameters(script, parameters, BuildTool.MTA)
 
             List credentials = [
