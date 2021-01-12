@@ -9,7 +9,7 @@ import (
 
 type transportRequestUploadUtils interface {
 	command.ShellRunner
-	GetAction() CTSUploadAction
+	getAction() CTSUploadAction
 
 	// Add more methods here, or embed additional interfaces, or remove/replace as required.
 	// The transportRequestUploadUtils interface should be descriptive of your runtime dependencies,
@@ -33,8 +33,8 @@ type CTSUploadAction interface {
 	WithDeployUser(string)
 }
 
-// GetAction ...
-func (provider *ActionProvider) GetAction() CTSUploadAction {
+// getAction ...
+func (provider *ActionProvider) getAction() CTSUploadAction {
 	return provider.action
 }
 
@@ -80,7 +80,7 @@ func runTransportRequestUploadCTS(config *transportRequestUploadCTSOptions, tele
 
 	log.Entry().Debugf("Entering 'runTransportRequestUpload' with config: %v", config)
 
-	action := utils.GetAction()
+	action := utils.getAction()
 
 	action.WithConnection(transportrequest.CTSConnection{
 		Endpoint: config.Endpoint,

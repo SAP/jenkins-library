@@ -119,7 +119,7 @@ func TestRunTransportRequestUploadCTS(t *testing.T) {
 				TransportRequestID: "XXXK123456",
 				ConfigFile:         "ui5-deploy.yaml",
 				DeployUser:         "node",
-			}, utils.GetAction())
+			}, utils.getAction())
 		}
 	})
 
