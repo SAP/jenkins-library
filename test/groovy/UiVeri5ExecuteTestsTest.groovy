@@ -21,166 +21,45 @@ import util.JenkinsStepRule
 import util.Rules
 
 class UiVeri5ExecuteTestsTest extends BasePiperTest {
-    private ExpectedException thrown = ExpectedException.none()
+
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
-    private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
-    private JenkinsDockerExecuteRule dockerRule = new JenkinsDockerExecuteRule(this)
+    private JenkinsReadYamlRule readYamlRule = new JenkinsReadYamlRule(this)
 
     @Rule
-    public RuleChain rules = Rules
+    public RuleChain ruleChain = Rules
         .getCommonRules(this)
-        .around(thrown)
-        .around(new JenkinsReadYamlRule(this))
-        .around(dockerRule)
-        .around(loggingRule)
         .around(stepRule)
+        .around(readYamlRule)
 
-    def gitParams = [:]
-    def shellCommands = []
-    def seleniumMap = [:]
+    @Test
+    void testCallGoWrapper() {
 
-    class MockBuild {
-        MockBuild(){}
-        def getRootDir(){
-            return new MockPath()
-        }
-        class MockPath {
-            MockPath(){}
-            // return default
-            String getAbsolutePath(){
-                return 'myPath'
+        def calledWithParameters,
+            calledWithStepName,
+            calledWithMetadata,
+            calledWithCredentials
+
+        helper.registerAllowedMethod(
+            'piperExecuteBin',
+            [Map, String, String, List],
+            {
+                params, stepName, metaData, creds ->
+                calledWithParameters = params
+                calledWithStepName = stepName
+                calledWithMetadata = metaData
+                calledWithCredentials = creds
             }
-        }
-    }
+        )
+        helper.registerAllowedMethod('dockerExecute', [Map, Closure], null)
 
-    @Before
-    void init() {
+        stepRule.step.uiVeri5ExecuteTests(script: nullScript)
 
-        binding.setVariable('currentBuild', [
-            result: 'SUCCESS',
-            rawBuild: new MockBuild()
-        ])
+        assert calledWithParameters.size() == 1
+        assert calledWithParameters.script == nullScript
 
-        helper.registerAllowedMethod("git", [Map.class], { map -> gitParams = map})
-        helper.registerAllowedMethod("stash", [String.class], null)
-        helper.registerAllowedMethod("unstash", [String.class], { s -> return [s]})
-        helper.registerAllowedMethod("sh", [String.class], { s ->
-            if (s.contains('failure')) throw new RuntimeException('Test Error')
-            shellCommands.add(s.toString())
-        })
-        helper.registerAllowedMethod("sh", [Map.class], { map ->
-            return 'available'
-        })
-        helper.registerAllowedMethod('seleniumExecuteTests', [Map.class, Closure.class], { m, body ->
-            seleniumMap = m
-            return body()
-        })
-        Utils.metaClass.echo = { def m -> }
-    }
+        assert calledWithStepName == 'uiVeri5ExecuteTests'
+	    assert calledWithMetadata == 'metadata/uiVeri5ExecuteTests.yaml'
+        assert calledWithCredentials.size == 1
 
-    @After
-    public void tearDown() {
-        Utils.metaClass = null
-    }
-
-    @Test
-    void testDefault() throws Exception {
-        // execute test
-        stepRule.step.uiVeri5ExecuteTests([
-            script: nullScript,
-            juStabUtils: utils,
-        ])
-        // asserts
-        assertThat(shellCommands, hasItem(containsString('npm install @ui5/uiveri5 --global --quiet')))
-        assertThat(shellCommands, hasItem(containsString('uiveri5 --seleniumAddress=\'http://selenium:4444/wd/hub\'')))
-        assertThat(seleniumMap.dockerImage, isEmptyOrNullString())
-        assertThat(seleniumMap.dockerWorkspace, isEmptyOrNullString())
-    }
-
-    @Test
-    void testDefaultOnK8s() throws Exception {
-        // prepare
-        binding.variables.env.ON_K8S = 'true'
-        // execute test
-        stepRule.step.uiVeri5ExecuteTests([
-            script: nullScript,
-            juStabUtils: utils,
-        ])
-        // asserts
-        assertThat(shellCommands, hasItem(containsString('npm install @ui5/uiveri5 --global --quiet')))
-        assertThat(shellCommands, hasItem(containsString('uiveri5 --seleniumAddress=\'http://localhost:4444/wd/hub\'')))
-    }
-
-    @Test
-    void testWithCustomSidecar() throws Exception {
-        // execute test
-        stepRule.step.uiVeri5ExecuteTests([
-            script: nullScript,
-            juStabUtils: utils,
-            sidecarEnvVars: [myEnv: 'testValue'],
-            sidecarImage: 'myImage'
-        ])
-        // asserts
-        assertThat(seleniumMap.sidecarImage, is('myImage'))
-        assertThat(seleniumMap.sidecarEnvVars.myEnv, is('testValue'))
-    }
-
-    @Test
-    void testWithTestRepository() throws Exception {
-        // execute test
-        stepRule.step.uiVeri5ExecuteTests([
-            script: nullScript,
-            juStabUtils: utils,
-            testRepository: 'git@myGitUrl'
-        ])
-        // asserts
-        assertThat(seleniumMap, hasKey('stashContent'))
-        assertThat(seleniumMap.stashContent, hasItem(startsWith('testContent-')))
-        assertThat(gitParams, hasEntry('url', 'git@myGitUrl'))
-        assertThat(gitParams, not(hasKey('credentialsId')))
-        assertThat(gitParams, not(hasKey('branch')))
-        assertJobStatusSuccess()
-    }
-
-    @Test
-    void testWithTestRepositoryWithGitBranchAndCredentials() throws Exception {
-        // execute test
-        stepRule.step.uiVeri5ExecuteTests([
-            script: nullScript,
-            juStabUtils: utils,
-            testRepository: 'git@myGitUrl',
-            gitSshKeyCredentialsId: 'myCredentials',
-            gitBranch: 'myBranch'
-        ])
-        // asserts
-        assertThat(gitParams, hasEntry('url', 'git@myGitUrl'))
-        assertThat(gitParams, hasEntry('credentialsId', 'myCredentials'))
-        assertThat(gitParams, hasEntry('branch', 'myBranch'))
-        assertJobStatusSuccess()
-    }
-
-    @Test
-    void testWithFailOnError() throws Exception {
-        thrown.expect(AbortException)
-        thrown.expectMessage('ERROR: The execution of the uiveri5 tests failed, see the log for details.')
-        // execute test
-        stepRule.step.uiVeri5ExecuteTests([
-            juStabUtils: utils,
-            failOnError: true,
-            testOptions: 'failure',
-            script: nullScript
-        ])
-    }
-
-    @Test
-    void testWithoutFailOnError() throws Exception {
-        // execute test
-        stepRule.step.uiVeri5ExecuteTests([
-            juStabUtils: utils,
-            testOptions: 'failure',
-            script: nullScript
-        ])
-        // asserts
-        assertJobStatusSuccess()
     }
 }
