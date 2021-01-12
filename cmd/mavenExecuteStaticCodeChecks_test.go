@@ -23,6 +23,7 @@ func TestRunMavenStaticCodeChecks(t *testing.T) {
 			Pmd:                       true,
 			PmdMaxAllowedViolations:   10,
 			PmdFailurePriority:        2,
+			PmdFailOnViolation:        true,
 			SpotBugsExcludeFilterFile: "excludeFilter.xml",
 			SpotBugsIncludeFilterFile: "includeFilter.xml",
 			MavenModulesExcludes:      []string{"testing-lib", "test-helpers"},
@@ -35,6 +36,7 @@ func TestRunMavenStaticCodeChecks(t *testing.T) {
 				"-Dspotbugs.excludeFilterFile=excludeFilter.xml",
 				"-Dpmd.maxAllowedViolations=10",
 				"-Dpmd.failurePriority=2",
+				"-Dpmd.failOnViolation=true",
 				"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
 				"--batch-mode",
 				"com.github.spotbugs:spotbugs-maven-plugin:4.1.4:check",
@@ -67,15 +69,16 @@ func TestRunMavenStaticCodeChecks(t *testing.T) {
 }
 
 func TestGetPmdMavenParameters(t *testing.T) {
-	t.Run("should return maven options with max allowed violations and failrure priority", func(t *testing.T) {
+	t.Run("should return maven options with max allowed violations and failure priority", func(t *testing.T) {
 		config := mavenExecuteStaticCodeChecksOptions{
 			Pmd:                     true,
 			PmdFailurePriority:      2,
 			PmdMaxAllowedViolations: 5,
+			PmdFailOnViolation:      true,
 		}
 		expected := maven.ExecuteOptions{
 			Goals:   []string{"org.apache.maven.plugins:maven-pmd-plugin:3.13.0:check"},
-			Defines: []string{"-Dpmd.maxAllowedViolations=5", "-Dpmd.failurePriority=2"},
+			Defines: []string{"-Dpmd.maxAllowedViolations=5", "-Dpmd.failurePriority=2", "-Dpmd.failOnViolation=true"},
 		}
 
 		assert.Equal(t, &expected, getPmdMavenParameters(&config))
@@ -85,6 +88,7 @@ func TestGetPmdMavenParameters(t *testing.T) {
 			Pmd:                     true,
 			PmdFailurePriority:      123,
 			PmdMaxAllowedViolations: 5,
+			PmdFailOnViolation:      true,
 		}
 		expected := maven.ExecuteOptions{
 			Goals:   []string{"org.apache.maven.plugins:maven-pmd-plugin:3.13.0:check"},
