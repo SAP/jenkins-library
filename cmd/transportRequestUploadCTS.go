@@ -9,17 +9,11 @@ import (
 
 type transportRequestUploadUtils interface {
 	command.ShellRunner
-	getAction() CTSUploadAction
 
 	// Add more methods here, or embed additional interfaces, or remove/replace as required.
 	// The transportRequestUploadUtils interface should be descriptive of your runtime dependencies,
 	// i.e. include everything you need to be able to mock in tests.
 	// Unit tests shall be executable in parallel (not depend on global state), and don't (re-)test dependencies.
-}
-
-// ActionProvider ...
-type ActionProvider struct {
-	action CTSUploadAction
 }
 
 // CTSUploadAction ...
@@ -33,14 +27,8 @@ type CTSUploadAction interface {
 	WithDeployUser(string)
 }
 
-// getAction ...
-func (provider *ActionProvider) getAction() CTSUploadAction {
-	return provider.action
-}
-
 type transportRequestUploadCTSUtilsBundle struct {
 	*command.Command
-	*ActionProvider
 
 	// Embed more structs as necessary to implement methods or interfaces you add to transportRequestUploadUtils.
 	// Structs embedded in this way must each have a unique set of methods attached.
@@ -50,8 +38,7 @@ type transportRequestUploadCTSUtilsBundle struct {
 
 func newTransportRequestUploadCTSUtils() transportRequestUploadUtils {
 	utils := transportRequestUploadCTSUtilsBundle{
-		Command:        &command.Command{},
-		ActionProvider: &ActionProvider{action: &transportrequest.CTSUploadAction{}},
+		Command: &command.Command{},
 	}
 	// Reroute command output to logging framework
 	utils.Stdout(log.Writer())
@@ -70,17 +57,19 @@ func transportRequestUploadCTS(config transportRequestUploadCTSOptions, telemetr
 
 	// Error situations should be bubbled up until they reach the line below which will then stop execution
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
-	err := runTransportRequestUploadCTS(&config, telemetryData, utils)
+	err := runTransportRequestUploadCTS(&config, &transportrequest.CTSUploadAction{}, telemetryData, utils)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runTransportRequestUploadCTS(config *transportRequestUploadCTSOptions, telemetryData *telemetry.CustomData, utils transportRequestUploadUtils) error {
+func runTransportRequestUploadCTS(
+	config *transportRequestUploadCTSOptions,
+	action CTSUploadAction,
+	telemetryData *telemetry.CustomData,
+	cmd command.ShellRunner) error {
 
 	log.Entry().Debugf("Entering 'runTransportRequestUpload' with config: %v", config)
-
-	action := utils.getAction()
 
 	action.WithConnection(transportrequest.CTSConnection{
 		Endpoint: config.Endpoint,
@@ -102,5 +91,5 @@ func runTransportRequestUploadCTS(config *transportRequestUploadCTSOptions, tele
 	action.WithConfigFile(config.DeployConfigFile)
 	action.WithDeployUser(config.OsDeployUser)
 
-	return action.Perform(utils)
+	return action.Perform(cmd)
 }

@@ -55,13 +55,11 @@ func (action *CTSUploadActionMock) Perform(cmd command.ShellRunner) error {
 
 type transportRequestUploadMockUtils struct {
 	*mock.ShellMockRunner
-	*ActionProvider
 }
 
-func newTransportRequestUploadCTSTestsUtils(thrown error) transportRequestUploadMockUtils {
+func newTransportRequestUploadCTSTestsUtils() transportRequestUploadMockUtils {
 	utils := transportRequestUploadMockUtils{
 		ShellMockRunner: &mock.ShellMockRunner{},
-		ActionProvider:  &ActionProvider{action: &CTSUploadActionMock{thrown: thrown}},
 	}
 	return utils
 }
@@ -86,10 +84,9 @@ func TestRunTransportRequestUploadCTS(t *testing.T) {
 			NpmInstallOpts:         []string{"--verbose", "--registry", "https://registry.example.org/"},
 		}
 
-		utils := newTransportRequestUploadCTSTestsUtils(nil)
-
+		actionMock := &CTSUploadActionMock{thrown: nil}
 		// test
-		err := runTransportRequestUploadCTS(&config, nil, utils)
+		err := runTransportRequestUploadCTS(&config, actionMock, nil, newTransportRequestUploadCTSTestsUtils())
 
 		// assert
 		if assert.NoError(t, err) {
@@ -119,12 +116,11 @@ func TestRunTransportRequestUploadCTS(t *testing.T) {
 				TransportRequestID: "XXXK123456",
 				ConfigFile:         "ui5-deploy.yaml",
 				DeployUser:         "node",
-			}, utils.getAction())
+			}, actionMock)
 		}
 	})
 
 	t.Run("error case", func(t *testing.T) {
-		utils := newTransportRequestUploadCTSTestsUtils(fmt.Errorf("something went wrong"))
 
 		config := transportRequestUploadCTSOptions{
 			Endpoint:               "https://example.org:8000",
@@ -141,7 +137,11 @@ func TestRunTransportRequestUploadCTS(t *testing.T) {
 			NpmInstallOpts:         []string{"--verbose", "--registry", "https://registry.example.org/"},
 		}
 
-		err := runTransportRequestUploadCTS(&config, nil, utils)
+		err := runTransportRequestUploadCTS(
+			&config,
+			&CTSUploadActionMock{thrown: fmt.Errorf("something went wrong")},
+			nil,
+			newTransportRequestUploadCTSTestsUtils())
 		assert.EqualError(t, err, "something went wrong")
 	})
 }
