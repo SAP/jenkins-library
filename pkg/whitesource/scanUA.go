@@ -49,13 +49,43 @@ func (s *Scan) ExecuteUAScan(config *ScanOptions, utils Utils) error {
 		"-apiKey", config.OrgToken, "-userKey", config.UserToken, "-project", s.AggregateProjectName,
 		"-product", config.ProductName, "-productVersion", s.ProductVersion)
 
-	removeJre(javaPath, utils)
+	if err := removeJre(javaPath, utils); err != nil {
+		log.Entry().Warning(err)
+	}
 
 	if err != nil {
-		//ToDo: check exit code and categorize error?
-		return errors.Wrapf(err, "failed to execute WhiteSource scan")
+		exitCode := utils.GetExitCode()
+		log.Entry().Infof("WhiteSource scan failed with exit code %v", exitCode)
+		evaluateExitCode(exitCode)
+		return errors.Wrapf(err, "failed to execute WhiteSource scan with exit code %v", exitCode)
 	}
 	return nil
+}
+
+func evaluateExitCode(exitCode int) {
+	switch exitCode {
+	case 255:
+		log.Entry().Info("General error has occurred.")
+		log.SetErrorCategory(log.ErrorUndefined)
+	case 254:
+		log.Entry().Info("Whitesource found one or multiple policy violations.")
+		log.SetErrorCategory(log.ErrorCompliance)
+	case 253:
+		log.Entry().Info("The local scan client failed to execute the scan.")
+		log.SetErrorCategory(log.ErrorUndefined)
+	case 252:
+		log.Entry().Info("There was a failure in the connection to the WhiteSource servers.")
+		log.SetErrorCategory(log.ErrorInfrastructure)
+	case 251:
+		log.Entry().Info("The server failed to analyze the scan.")
+		log.SetErrorCategory(log.ErrorService)
+	case 250:
+		log.Entry().Info("One of the package manager's prerequisite steps (e.g. npm install) failed.")
+		log.SetErrorCategory(log.ErrorCustom)
+	default:
+		log.Entry().Info("Whitesource scan failed with unknown error code")
+		log.SetErrorCategory(log.ErrorUndefined)
+	}
 }
 
 // downloadAgent downloads the unified agent jar file if one does not exist
@@ -63,13 +93,12 @@ func downloadAgent(config *ScanOptions, utils Utils) error {
 	agentFile := config.AgentFileName
 	exists, err := utils.FileExists(agentFile)
 	if err != nil {
-		return fmt.Errorf("could not check whether the file '%s' exists: %w", agentFile, err)
+		return errors.Wrapf(err, "failed to check if file '%s' exists", agentFile)
 	}
 	if !exists {
 		err := utils.DownloadFile(config.AgentDownloadURL, agentFile, nil, nil)
 		if err != nil {
-			return fmt.Errorf("failed to download unified agent from URL '%s' to file '%s': %w",
-				config.AgentDownloadURL, agentFile, err)
+			return errors.Wrapf(err, "failed to download unified agent from URL '%s' to file '%s'", config.AgentDownloadURL, agentFile)
 		}
 	}
 	return nil
@@ -83,7 +112,7 @@ func downloadJre(config *ScanOptions, utils Utils) (string, error) {
 		log.Entry().Infof("No Java installation found, downloading JVM from %v", config.JreDownloadURL)
 		err := utils.DownloadFile(config.JreDownloadURL, jvmTarGz, nil, nil)
 		if err != nil {
-			errors.Wrapf(err, "failed to download unified agent from URL '%s'", config.JreDownloadURL)
+			return "", errors.Wrapf(err, "failed to download jre from URL '%s'", config.JreDownloadURL)
 		}
 
 		// ToDo: replace tar call with go library call
@@ -91,7 +120,7 @@ func downloadJre(config *ScanOptions, utils Utils) (string, error) {
 
 		err = utils.RunExecutable("tar", fmt.Sprintf("--directory=%v", jvmDir), "--strip-components=1", "-xzf", jvmTarGz)
 		if err != nil {
-			errors.Wrapf(err, "failed to extract %v", jvmTarGz)
+			return "", errors.Wrapf(err, "failed to extract %v", jvmTarGz)
 		}
 		log.Entry().Info("Java successfully installed")
 		javaPath = filepath.Join(jvmDir, "bin", "java")
@@ -99,18 +128,19 @@ func downloadJre(config *ScanOptions, utils Utils) (string, error) {
 	return javaPath, nil
 }
 
-func removeJre(javaPath string, utils Utils) {
+func removeJre(javaPath string, utils Utils) error {
 	if javaPath == "java" {
-		return
+		return nil
 	}
 	if err := utils.RemoveAll(jvmDir); err != nil {
-		log.Entry().Warning("Failed to remove downloaded and extracted jvm")
+		return fmt.Errorf("failed to remove downloaded and extracted jvm from %v", jvmDir)
 	}
-	log.Entry().Infof("Java successfully removed from %v", jvmDir)
+	log.Entry().Debugf("Java successfully removed from %v", jvmDir)
 	if err := utils.FileRemove(jvmTarGz); err != nil {
-		log.Entry().Warningf("Failed to remove downloaded %v", jvmTarGz)
+		return fmt.Errorf("failed to remove downloaded %v", jvmTarGz)
 	}
-	log.Entry().Infof("%v successfully removed", jvmTarGz)
+	log.Entry().Debugf("%v successfully removed", jvmTarGz)
+	return nil
 }
 
 // autoGenerateWhitesourceConfig

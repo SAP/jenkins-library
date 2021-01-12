@@ -47,12 +47,13 @@ func (p *fileProperties) isDir() bool {
 
 //FilesMock implements the functions from piperutils.Files with an in-memory file system.
 type FilesMock struct {
-	files        map[string]*fileProperties
-	writtenFiles []string
-	copiedFiles  map[string]string
-	removedFiles []string
-	CurrentDir   string
-	Separator    string
+	files                  map[string]*fileProperties
+	writtenFiles           []string
+	copiedFiles            map[string]string
+	removedFiles           []string
+	CurrentDir             string
+	Separator              string
+	FileExistsErrorMessage string
 }
 
 func (f *FilesMock) init() {
@@ -147,6 +148,9 @@ func (f *FilesMock) HasCopiedFile(src string, dest string) bool {
 // FileExists returns true if file content has been associated with the given path, false otherwise.
 // Only relative paths are supported.
 func (f *FilesMock) FileExists(path string) (bool, error) {
+	if len(f.FileExistsErrorMessage) > 0 {
+		return false, fmt.Errorf(f.FileExistsErrorMessage)
+	}
 	if f.files == nil {
 		return false, nil
 	}

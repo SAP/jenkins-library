@@ -3,10 +3,12 @@
 package whitesource
 
 import (
-	"github.com/SAP/jenkins-library/pkg/mock"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"fmt"
 	"net/http"
 	"os"
+
+	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 func newTestScan(config *ScanOptions) *Scan {
@@ -32,13 +34,20 @@ type DownloadedFile struct {
 type ScanUtilsMock struct {
 	*mock.FilesMock
 	*mock.ExecMockRunner
-	NpmInstalledModules []NpmInstall
-	DownloadedFiles     []DownloadedFile
+	NpmInstalledModules   []NpmInstall
+	DownloadedFiles       []DownloadedFile
+	DownloadErrorMessage  string
+	RemoveAllDirs         []string
+	RemoveAllErrorMessage string
 }
 
 // RemoveAll mimics os.RemoveAll().
-func (m *ScanUtilsMock) RemoveAll(_ string) error {
+func (m *ScanUtilsMock) RemoveAll(dir string) error {
 	// Can be removed once implemented in mock.FilesMock.
+	m.RemoveAllDirs = append(m.RemoveAllDirs, dir)
+	if len(m.RemoveAllErrorMessage) > 0 {
+		return fmt.Errorf(m.RemoveAllErrorMessage)
+	}
 	return nil
 }
 
@@ -59,6 +68,9 @@ func (m *ScanUtilsMock) InstallAllNPMDependencies(_ *ScanOptions, packageJSONs [
 
 // DownloadFile mimics http.Downloader and records the downloaded file.
 func (m *ScanUtilsMock) DownloadFile(url, filename string, _ http.Header, _ []*http.Cookie) error {
+	if len(m.DownloadErrorMessage) > 0 {
+		return fmt.Errorf(m.DownloadErrorMessage)
+	}
 	m.DownloadedFiles = append(m.DownloadedFiles, DownloadedFile{SourceURL: url, FilePath: filename})
 	return nil
 }
