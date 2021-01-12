@@ -16,8 +16,7 @@ type CTSUploadActionMock struct {
 	TransportRequestID string
 	ConfigFile         string
 	DeployUser         string
-
-	thrown error
+	thrown             error
 }
 
 // WithConnection ...
