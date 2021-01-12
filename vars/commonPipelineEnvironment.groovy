@@ -192,34 +192,26 @@ class commonPipelineEnvironment implements Serializable {
     ]
 
     void writeToDisk(script) {
-
         files.each({f  ->
-            if (this[f.property] && !script.fileExists(f.filename)) {
-                script.writeFile file: f.filename, text: this[f.property]
-            }
+            writeValueToFile(script, f.filename, this[f.property])
         })
 
         containerProperties.each({key, value ->
-            def fileName = ".pipeline/commonPipelineEnvironment/container/${key}"
-            if (value && !script.fileExists(fileName)) {
-                if(value in CharSequence) {
-                    script.writeFile file: fileName, text: value
-                } else {
-                    script.writeFile file: fileName, text: groovy.json.JsonOutput.toJson(value)
-                }
-            }
+            writeValueToFile(script, ".pipeline/commonPipelineEnvironment/container/${key}", value)
         })
 
         valueMap.each({key, value ->
-            def fileName = ".pipeline/commonPipelineEnvironment/custom/${key}"
-            if (value && !script.fileExists(fileName)) {
-                if(value in CharSequence) {
-                    script.writeFile file: fileName, text: value
-                } else {
-                    script.writeFile file: fileName, text: groovy.json.JsonOutput.toJson(value)
-                }
-            }
+            writeValueToFile(script, ".pipeline/commonPipelineEnvironment/custom/${key}", value)
         })
+    }
+
+    void writeValueToFile(script, String filename, value){
+        if (value){
+            if (!value in CharSequence) filename += '.json'
+            if (script.fileExists(filename)) return
+            if (!value in CharSequence) value = groovy.json.JsonOutput.toJson(value)
+            script.writeFile file: filename, text: value
+        }
     }
 
     void readFromDisk(script) {

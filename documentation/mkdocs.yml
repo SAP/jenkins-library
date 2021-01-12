@@ -12,6 +12,16 @@ nav:
         - 'ABAP Environment pipeline':
             - 'Introduction': pipelines/abapEnvironment/introduction.md
             - 'Configuration': pipelines/abapEnvironment/configuration.md
+            - 'Stages':
+              - 'Initial Checks': pipelines/abapEnvironment/stages/initialChecks.md
+              - 'Prepare System': pipelines/abapEnvironment/stages/prepareSystem.md
+              - 'Clone Repositories': pipelines/abapEnvironment/stages/cloneRepositories.md
+              - 'ATC': pipelines/abapEnvironment/stages/ATC.md
+              - 'Build': pipelines/abapEnvironment/stages/build.md
+              - 'Integration Tests': pipelines/abapEnvironment/stages/integrationTest.md
+              - 'Confirm': pipelines/abapEnvironment/stages/confirm.md
+              - 'Publish': pipelines/abapEnvironment/stages/publish.md
+              - 'Post': pipelines/abapEnvironment/stages/post.md
         - 'General purpose pipeline':
             - 'Introduction': stages/introduction.md
             - 'Examples': stages/examples.md
@@ -81,6 +91,8 @@ nav:
         - gctsExecuteABAPUnitTests: steps/gctsExecuteABAPUnitTests.md
         - gctsRollback: steps/gctsRollback.md
         - githubCheckBranchProtection: steps/githubCheckBranchProtection.md
+        - githubCommentIssue: steps/githubCommentIssue.md
+        - githubCreateIssue: steps/githubCreateIssue.md
         - githubCreatePullRequest: steps/githubCreatePullRequest.md
         - githubPublishRelease: steps/githubPublishRelease.md
         - githubSetCommitStatus: steps/githubSetCommitStatus.md
