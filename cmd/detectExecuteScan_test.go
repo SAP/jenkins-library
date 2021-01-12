@@ -260,6 +260,7 @@ func TestAddDetectArgs(t *testing.T) {
 				IncludedPackageManagers: []string{"maven", "GRADLE"},
 				ExcludedPackageManagers: []string{"npm", "NUGET"},
 				MavenExcludedScopes:     []string{"TEST", "compile"},
+				DetectTools:             []string{"DETECTOR"},
 			},
 			expected: []string{
 				"--testProp1=1",
@@ -276,6 +277,7 @@ func TestAddDetectArgs(t *testing.T) {
 				"--detect.included.detector.types=MAVEN,GRADLE",
 				"--detect.excluded.detector.types=NPM,NUGET",
 				"--detect.maven.excluded.scopes=test,compile",
+				"--detect.tools=DETECTOR",
 			},
 		},
 	}
