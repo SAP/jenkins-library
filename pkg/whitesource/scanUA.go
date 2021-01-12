@@ -2,7 +2,6 @@ package whitesource
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -25,29 +24,24 @@ func (s *Scan) ExecuteUAScan(config *ScanOptions, utils Utils) error {
 		return err
 	}
 
-	//ToDo: Download Docker/container image if required
-
-	// ToDo: What to do with auto generation? Completely replace with confighelper?
-	// Auto generate a config file based on the working directory's contents.
-	// TODO/NOTE: Currently this scans the UA jar file as a dependency since it is downloaded beforehand
-	//if err := autoGenerateWhitesourceConfig(config, utils); err != nil {
-	//	return err
-	//}
+	// ToDo: Download Docker/container image if required
 
 	// ToDo: check if this is required
 	if err := s.AppendScannedProject(s.AggregateProjectName); err != nil {
 		return err
 	}
 
-	configPath, err := config.RewriteUAConfigurationFile()
+	configPath, err := config.RewriteUAConfigurationFile(utils)
 	if err != nil {
 		return err
 	}
 
-	//ToDo: remove parameters which are added to UA config via RewriteUAConfigurationFile()
+	// ToDo: remove parameters which are added to UA config via RewriteUAConfigurationFile()
+	// let the scanner resolve project name on its own?
+	// Check: WhiteSource url needs to be passed! current service URL is API endpoint and not /agent endpoint!
 	err = utils.RunExecutable(javaPath, "-jar", config.AgentFileName, "-d", ".", "-c", configPath,
 		"-apiKey", config.OrgToken, "-userKey", config.UserToken, "-project", s.AggregateProjectName,
-		"-product", config.ProductName, "-productVersion", s.ProductVersion)
+		"-product", config.ProductName, "-productVersion", s.ProductVersion, "-wss.url", config.AgentURL)
 
 	if err := removeJre(javaPath, utils); err != nil {
 		log.Entry().Warning(err)
@@ -140,53 +134,5 @@ func removeJre(javaPath string, utils Utils) error {
 		return fmt.Errorf("failed to remove downloaded %v", jvmTarGz)
 	}
 	log.Entry().Debugf("%v successfully removed", jvmTarGz)
-	return nil
-}
-
-// autoGenerateWhitesourceConfig
-// Auto generate a config file based on the current directory structure, renames it to user specified configFilePath
-// Generated file name will be 'wss-generated-file.config'
-func autoGenerateWhitesourceConfig(config *ScanOptions, utils Utils) error {
-	// TODO: Should we rely on -detect, or set the parameters manually?
-	if err := utils.RunExecutable("java", "-jar", config.AgentFileName, "-d", ".", "-detect"); err != nil {
-		return err
-	}
-
-	// Rename generated config file to config.ConfigFilePath parameter
-	if err := utils.FileRename("wss-generated-file.config", config.ConfigFilePath); err != nil {
-		return err
-	}
-
-	// Append aggregateModules=true parameter to config file (consolidates multi-module projects into one)
-	f, err := utils.FileOpen(config.ConfigFilePath, os.O_APPEND|os.O_WRONLY, 0600)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = f.Close() }()
-
-	// Append additional config parameters to prevent multiple projects being generated
-	m2Path := config.M2Path
-	if m2Path == "" {
-		m2Path = ".m2"
-	}
-	cfg := fmt.Sprintf("\ngradle.aggregateModules=true\nmaven.aggregateModules=true\ngradle.localRepositoryPath=.gradle\nmaven.m2RepositoryPath=%s\nexcludes=%s",
-		m2Path,
-		config.Excludes)
-	if _, err = f.WriteString(cfg); err != nil {
-		return err
-	}
-
-	// archiveExtractionDepth=0
-	if err := utils.RunExecutable("sed", "-ir", `s/^[#]*\s*archiveExtractionDepth=.*/archiveExtractionDepth=0/`,
-		config.ConfigFilePath); err != nil {
-		return err
-	}
-
-	// config.Includes defaults to "**/*.java **/*.jar **/*.py **/*.go **/*.js **/*.ts"
-	regex := fmt.Sprintf(`s/^[#]*\s*includes=.*/includes="%s"/`, config.Includes)
-	if err := utils.RunExecutable("sed", "-ir", regex, config.ConfigFilePath); err != nil {
-		return err
-	}
-
 	return nil
 }

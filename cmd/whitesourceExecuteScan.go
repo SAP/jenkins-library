@@ -358,6 +358,8 @@ func wsScanOptions(config *ScanOptions) *ws.ScanOptions {
 		Includes:                   config.Includes,
 		Excludes:                   config.Excludes,
 		JreDownloadURL:             config.JreDownloadURL,
+		AgentURL:                   config.AgentURL,
+		ServiceURL:                 config.ServiceURL,
 		Verbose:                    GeneralConfig.Verbose,
 	}
 }

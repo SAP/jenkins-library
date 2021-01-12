@@ -3,7 +3,6 @@ package whitesource
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"strings"
 	"time"
 
@@ -25,7 +24,7 @@ type ConfigOptions []ConfigOption
 
 // RewriteUAConfigurationFile updates the user's Unified Agent configuration with configuration which should be enforced or just eases the overall configuration
 // It then returns the path to the file containing the updated configuration
-func (s *ScanOptions) RewriteUAConfigurationFile() (string, error) {
+func (s *ScanOptions) RewriteUAConfigurationFile(utils Utils) (string, error) {
 
 	// read config from inputFilePath or config.whitesource.configFilePath
 	uaConfig, err := properties.LoadFile(s.ConfigFilePath, properties.UTF8)
@@ -51,7 +50,8 @@ func (s *ScanOptions) RewriteUAConfigurationFile() (string, error) {
 	if err != nil {
 		return "", errors.Wrap(err, "failed to write properties")
 	}
-	err = ioutil.WriteFile(newConfigFilePath, configContent.Bytes(), 0666)
+
+	err = utils.FileWrite(newConfigFilePath, configContent.Bytes(), 0666)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to write file")
 	}
@@ -99,6 +99,19 @@ func (c *ConfigOptions) addGeneralDefaults(config *ScanOptions) {
 		}...)
 	}
 
+	if len(config.Includes) > 0 {
+		cOptions = append(cOptions, ConfigOption{Name: "includes", Value: config.Includes, Force: true})
+	}
+
+	if len(config.Excludes) > 0 {
+		cOptions = append(cOptions, ConfigOption{Name: "excludes", Value: config.Excludes, Force: true})
+	}
+
+	//ToDo: handle m2 path - previously done in autoGenerateWhitesourceConfig()
+	if config.BuildTool == "maven" && len(config.M2Path) > 0 {
+		cOptions = append(cOptions, ConfigOption{Name: "maven.m2RepositoryPath", Value: config.M2Path, Force: true})
+	}
+
 	cOptions = append(cOptions, []ConfigOption{
 		{Name: "apiKey", Value: config.OrgToken, Force: true},
 		{Name: "productName", Value: config.ProductName, Force: true},
@@ -126,8 +139,7 @@ func (c *ConfigOptions) addBuildToolDefaults(buildTool string) error {
 		"docker": {
 			{Name: "docker.scanImages", Value: true, Force: true},
 			{Name: "docker.scanTarFiles", Value: true, Force: true},
-			//ToDo: check value! Was /.*.tar/ in groovy
-			{Name: "docker.includes", Value: "/.*.tar/", Force: true},
+			{Name: "docker.includes", Value: ".*.tar", Force: true},
 			{Name: "ignoreSourceFiles", Value: true, Force: true},
 			{Name: "python.resolveGlobalPackages", Value: true, Force: false},
 			{Name: "resolveAllDependencies", Value: true, Force: false},
@@ -136,7 +148,8 @@ func (c *ConfigOptions) addBuildToolDefaults(buildTool string) error {
 		"dub": {
 			{Name: "includes", Value: "**/*.d **/*.di"},
 		},
-		//ToDo: rename to gomod?
+		//ToDo: rename to go?
+		//ToDo: switch to gomod as dependency manager
 		"golang": {
 			{Name: "go.resolveDependencies", Value: true, Force: true},
 			{Name: "go.ignoreSourceFiles", Value: true, Force: true},
@@ -144,6 +157,9 @@ func (c *ConfigOptions) addBuildToolDefaults(buildTool string) error {
 			{Name: "go.dependencyManager", Value: "dep"},
 			{Name: "includes", Value: "**/*.lock"},
 			{Name: "excludes", Value: "**/*sources.jar **/*javadoc.jar"},
+		},
+		"gradle": {
+			{Name: "gradle.localRepositoryPath", Value: ".gradle", Force: false},
 		},
 		"maven": {
 			{Name: "updateEmptyProject", Value: true, Force: true},
@@ -196,6 +212,23 @@ func (c *ConfigOptions) addBuildToolDefaults(buildTool string) error {
 		return nil
 	}
 
+	//ToDo: Do we want to auto generate the config via autoGenerateWhitesourceConfig() here?
+	// -> try to load original config file -> if not available generate?
+
 	log.Entry().Infof("Configuration for buildTool: '%v' is not yet hardened, please do a quality assessment of your scan results.", buildTool)
 	return fmt.Errorf("configuration not hardened")
+}
+
+//ToDo: Check if we want to optionally allow auto generation for unknown projects
+func autoGenerateWhitesourceConfig(config *ScanOptions, utils Utils) error {
+	// TODO: Should we rely on -detect, or set the parameters manually?
+	if err := utils.RunExecutable("java", "-jar", config.AgentFileName, "-d", ".", "-detect"); err != nil {
+		return err
+	}
+
+	// Rename generated config file to config.ConfigFilePath parameter
+	if err := utils.FileRename("wss-generated-file.config", config.ConfigFilePath); err != nil {
+		return err
+	}
+	return nil
 }

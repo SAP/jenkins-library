@@ -3,7 +3,6 @@
 package whitesource
 
 import (
-	"fmt"
 	"net/http"
 	"os"
 
@@ -14,7 +13,7 @@ import (
 func newTestScan(config *ScanOptions) *Scan {
 	return &Scan{
 		AggregateProjectName: config.ProjectName,
-		ProductVersion:       "product-version",
+		ProductVersion:       config.ProductVersion,
 	}
 }
 
@@ -34,19 +33,19 @@ type DownloadedFile struct {
 type ScanUtilsMock struct {
 	*mock.FilesMock
 	*mock.ExecMockRunner
-	NpmInstalledModules   []NpmInstall
-	DownloadedFiles       []DownloadedFile
-	DownloadErrorMessage  string
-	RemoveAllDirs         []string
-	RemoveAllErrorMessage string
+	NpmInstalledModules []NpmInstall
+	DownloadedFiles     []DownloadedFile
+	DownloadError       map[string]error
+	RemoveAllDirs       []string
+	RemoveAllError      map[string]error
 }
 
 // RemoveAll mimics os.RemoveAll().
 func (m *ScanUtilsMock) RemoveAll(dir string) error {
 	// Can be removed once implemented in mock.FilesMock.
 	m.RemoveAllDirs = append(m.RemoveAllDirs, dir)
-	if len(m.RemoveAllErrorMessage) > 0 {
-		return fmt.Errorf(m.RemoveAllErrorMessage)
+	if m.RemoveAllError[dir] != nil {
+		return m.RemoveAllError[dir]
 	}
 	return nil
 }
@@ -68,8 +67,8 @@ func (m *ScanUtilsMock) InstallAllNPMDependencies(_ *ScanOptions, packageJSONs [
 
 // DownloadFile mimics http.Downloader and records the downloaded file.
 func (m *ScanUtilsMock) DownloadFile(url, filename string, _ http.Header, _ []*http.Cookie) error {
-	if len(m.DownloadErrorMessage) > 0 {
-		return fmt.Errorf(m.DownloadErrorMessage)
+	if m.DownloadError[url] != nil {
+		return m.DownloadError[url]
 	}
 	m.DownloadedFiles = append(m.DownloadedFiles, DownloadedFile{SourceURL: url, FilePath: filename})
 	return nil

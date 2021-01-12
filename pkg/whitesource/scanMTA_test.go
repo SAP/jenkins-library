@@ -1,10 +1,11 @@
 package whitesource
 
 import (
+	"testing"
+
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestExecuteScanMTA(t *testing.T) {
@@ -18,11 +19,12 @@ func TestExecuteScanMTA(t *testing.T) {
 </project>
 `
 	config := ScanOptions{
-		ScanType:    "mta",
-		OrgToken:    "org-token",
-		UserToken:   "user-token",
-		ProductName: "mock-product",
-		ProjectName: "mock-project",
+		ScanType:       "mta",
+		OrgToken:       "org-token",
+		UserToken:      "user-token",
+		ProductName:    "mock-product",
+		ProductVersion: "product-version",
+		ProjectName:    "mock-project",
 	}
 
 	t.Parallel()

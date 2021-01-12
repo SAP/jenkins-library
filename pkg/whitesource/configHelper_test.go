@@ -1,6 +1,7 @@
 package whitesource
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -21,40 +22,48 @@ func TestRewriteUAConfigurationFile(t *testing.T) {
 		defer os.RemoveAll(dir)
 
 		uaFile := filepath.Join(dir, "ua.props")
-		ioutil.WriteFile(uaFile, []byte{}, 0666)
+		ioutil.WriteFile(uaFile, []byte("test = dummy"), 0666)
 
 		config := ScanOptions{
 			BuildTool:      "npm",
 			ConfigFilePath: uaFile,
 		}
-		path, err := config.RewriteUAConfigurationFile()
-		assert.NoError(t, err)
+		utilsMock := NewScanUtilsMock()
+		utilsMock.FileWrite(config.ConfigFilePath, []byte{}, 0666)
 
-		newUAConfig, err := ioutil.ReadFile(path)
+		path, err := config.RewriteUAConfigurationFile(utilsMock)
 		assert.NoError(t, err)
+		newUAConfig, err := utilsMock.FileRead(path)
+		assert.NoError(t, err)
+		assert.Contains(t, string(newUAConfig), "test = dummy")
 		assert.Contains(t, string(newUAConfig), "failErrorLevel = ALL")
 	})
 
 	t.Run("accept non-existing file", func(t *testing.T) {
-		dir, err := ioutil.TempDir("", "")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
-		// clean up tmp dir
-		defer os.RemoveAll(dir)
-
-		uaFile := filepath.Join(dir, "ua_na.props")
-
 		config := ScanOptions{
 			BuildTool:      "npm",
-			ConfigFilePath: uaFile,
+			ConfigFilePath: "ua.props",
 		}
-		path, err := config.RewriteUAConfigurationFile()
+		utilsMock := NewScanUtilsMock()
+
+		path, err := config.RewriteUAConfigurationFile(utilsMock)
 		assert.NoError(t, err)
 
-		newUAConfig, err := ioutil.ReadFile(path)
+		newUAConfig, err := utilsMock.FileRead(path)
 		assert.NoError(t, err)
 		assert.Contains(t, string(newUAConfig), "failErrorLevel = ALL")
+	})
+
+	t.Run("error - write file", func(t *testing.T) {
+		config := ScanOptions{
+			BuildTool:      "npm",
+			ConfigFilePath: "ua.props",
+		}
+		utilsMock := NewScanUtilsMock()
+		utilsMock.FileWriteError = fmt.Errorf("failed to write file")
+
+		_, err := config.RewriteUAConfigurationFile(utilsMock)
+		assert.Contains(t, fmt.Sprint(err), "failed to write file")
 	})
 }
 

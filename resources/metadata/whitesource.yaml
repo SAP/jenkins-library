@@ -54,6 +54,17 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: agentUrl
+        alias:
+          - name: whitesourceAgentUrl
+        type: string
+        description: "URL to the WhiteSource agent endpoint."
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: "https://saas.whitesourcesoftware.com/agent"
       - name: aggregateVersionWideReport
         type: bool
         description: "This does not run a scan, instead just generated a report for all projects with
@@ -124,20 +135,18 @@ spec:
           - STEPS
       - name: excludes
         type: string
-        description: Space separated list of file path patterns to exclude in the scan
+        description: Space separated list of file path patterns to exclude in the scan.
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: "tests/**/*.py **/src/test/**/*.java"
       - name: includes
         type: string
-        description: "Space separated list of file path patterns to include in the scan, slashes must be escaped for sed."
+        description: Space separated list of file path patterns to include in the scan.
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: '**\/src\/main\/**\/*.java **\/*.py **\/*.go **\/*.js **\/*.ts'
       - name: installCommand
         type: string
         description: "[NOT IMPLEMENTED] Install command that can be used to populate the default docker image for some scenarios."
@@ -282,8 +291,10 @@ spec:
           - STEPS
         default: true
       - name: serviceUrl
+        aliases:
+          - name: whitesourceServiceUrl
         type: string
-        description: "URL to the WhiteSource server API used for communication."
+        description: "URL to the WhiteSource API endpoint."
         scope:
           - GENERAL
           - PARAMETERS

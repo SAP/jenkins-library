@@ -5,97 +5,129 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestExecuteScanUA(t *testing.T) {
 	t.Parallel()
-	t.Run("happy path UA", func(t *testing.T) {
-		// init
-		config := ScanOptions{
-			ScanType:         "unified-agent",
-			OrgToken:         "org-token",
-			UserToken:        "user-token",
-			ProductName:      "mock-product",
-			ProjectName:      "mock-project",
-			AgentDownloadURL: "https://download.ua.org/agent.jar",
-			AgentFileName:    "unified-agent.jar",
-			ConfigFilePath:   "ua.cfg",
-			M2Path:           ".pipeline/m2",
-		}
-		utilsMock := NewScanUtilsMock()
-		utilsMock.AddFile("wss-generated-file.config", []byte("key=value"))
-		scan := newTestScan(&config)
-		// test
-		err := scan.ExecuteUAScan(&config, utilsMock)
-		// assert
-		require.NoError(t, err)
-		content, err := utilsMock.FileRead("ua.cfg")
-		require.NoError(t, err)
-		contentAsString := string(content)
-		assert.Contains(t, contentAsString, "key=value\n")
-		assert.Contains(t, contentAsString, "gradle.aggregateModules=true\n")
-		assert.Contains(t, contentAsString, "maven.aggregateModules=true\n")
-		assert.Contains(t, contentAsString, "maven.m2RepositoryPath=.pipeline/m2\n")
-		assert.Contains(t, contentAsString, "excludes=")
 
-		require.Len(t, utilsMock.Calls, 4)
-		fmt.Printf("calls: %v\n", utilsMock.Calls)
-		expectedCall := mock.ExecCall{
-			Exec: "java",
-			Params: []string{
-				"-jar",
-				config.AgentFileName,
-				"-d", ".",
-				"-c", config.ConfigFilePath,
-				"-apiKey", config.OrgToken,
-				"-userKey", config.UserToken,
-				"-project", config.ProjectName,
-				"-product", config.ProductName,
-				"-productVersion", scan.ProductVersion,
-			},
-		}
-		assert.Equal(t, expectedCall, utilsMock.Calls[3])
-	})
-	t.Run("UA is downloaded", func(t *testing.T) {
-		// init
+	t.Run("success", func(t *testing.T) {
 		config := ScanOptions{
-			ScanType:         "unified-agent",
-			ProjectName:      "mock-project",
-			AgentDownloadURL: "https://download.ua.org/agent.jar",
-			AgentFileName:    "unified-agent.jar",
+			AgentFileName:  "unified-agent.jar",
+			ConfigFilePath: "ua.props",
+			ProductName:    "test-product",
+			ProductVersion: "1",
+			ProjectName:    "test-project",
+			OrgToken:       "orgTestToken",
+			UserToken:      "userTestToken",
+			AgentURL:       "https://ws.service.url/agent",
 		}
 		utilsMock := NewScanUtilsMock()
-		utilsMock.AddFile("wss-generated-file.config", []byte("dummy"))
 		scan := newTestScan(&config)
-		// test
+
 		err := scan.ExecuteUAScan(&config, utilsMock)
-		// assert
-		require.NoError(t, err)
-		require.Len(t, utilsMock.DownloadedFiles, 1)
-		assert.Equal(t, "https://download.ua.org/agent.jar", utilsMock.DownloadedFiles[0].SourceURL)
-		assert.Equal(t, "unified-agent.jar", utilsMock.DownloadedFiles[0].FilePath)
+		assert.NoError(t, err)
+		assert.Equal(t, "java", utilsMock.Calls[1].Exec)
+		assert.Equal(t, 18, len(utilsMock.Calls[1].Params))
+		assert.Contains(t, utilsMock.Calls[1].Params, "-jar")
+		assert.Contains(t, utilsMock.Calls[1].Params, "-d")
+		assert.Contains(t, utilsMock.Calls[1].Params, "-c")
+		// name of config file not tested since it is dynamic. This is acceptable here since we test also the size
+		assert.Contains(t, utilsMock.Calls[1].Params, "-apiKey")
+		assert.Contains(t, utilsMock.Calls[1].Params, config.OrgToken)
+		assert.Contains(t, utilsMock.Calls[1].Params, "-userKey")
+		assert.Contains(t, utilsMock.Calls[1].Params, config.UserToken)
+		assert.Contains(t, utilsMock.Calls[1].Params, "-project")
+		assert.Contains(t, utilsMock.Calls[1].Params, config.ProjectName)
+		assert.Contains(t, utilsMock.Calls[1].Params, "-product")
+		assert.Contains(t, utilsMock.Calls[1].Params, config.ProductName)
+		assert.Contains(t, utilsMock.Calls[1].Params, "-productVersion")
+		assert.Contains(t, utilsMock.Calls[1].Params, config.ProductVersion)
+		assert.Contains(t, utilsMock.Calls[1].Params, "-wss.url")
+		assert.Contains(t, utilsMock.Calls[1].Params, config.AgentURL)
+
 	})
-	t.Run("UA is NOT downloaded", func(t *testing.T) {
-		// init
+
+	t.Run("error - download agent", func(t *testing.T) {
 		config := ScanOptions{
-			ScanType:         "unified-agent",
-			ProjectName:      "mock-project",
 			AgentDownloadURL: "https://download.ua.org/agent.jar",
-			AgentFileName:    "unified-agent.jar",
 		}
 		utilsMock := NewScanUtilsMock()
-		utilsMock.AddFile("wss-generated-file.config", []byte("dummy"))
-		utilsMock.AddFile("unified-agent.jar", []byte("dummy"))
+		utilsMock.DownloadError = map[string]error{"https://download.ua.org/agent.jar": fmt.Errorf("failed to download file")}
 		scan := newTestScan(&config)
-		// test
+
 		err := scan.ExecuteUAScan(&config, utilsMock)
-		// assert
-		require.NoError(t, err)
-		assert.Len(t, utilsMock.DownloadedFiles, 0)
+		assert.Contains(t, fmt.Sprint(err), "failed to download unified agent from URL 'https://download.ua.org/agent.jar'")
 	})
+
+	t.Run("error - download jre", func(t *testing.T) {
+		config := ScanOptions{
+			JreDownloadURL: "https://download.jre.org/jvm.jar",
+		}
+		utilsMock := NewScanUtilsMock()
+		utilsMock.DownloadError = map[string]error{"https://download.jre.org/jvm.jar": fmt.Errorf("failed to download file")}
+		utilsMock.ShouldFailOnCommand = map[string]error{"java": fmt.Errorf("failed to run java")}
+		scan := newTestScan(&config)
+
+		err := scan.ExecuteUAScan(&config, utilsMock)
+		assert.Contains(t, fmt.Sprint(err), "failed to download jre from URL 'https://download.jre.org/jvm.jar'")
+	})
+
+	t.Run("error - append scanned projects", func(t *testing.T) {
+		config := ScanOptions{}
+		utilsMock := NewScanUtilsMock()
+		scan := newTestScan(&config)
+
+		err := scan.ExecuteUAScan(&config, utilsMock)
+		assert.EqualError(t, err, "projectName must not be empty")
+	})
+
+	t.Run("error - rewrite config", func(t *testing.T) {
+		config := ScanOptions{
+			ProjectName: "test-project",
+		}
+		utilsMock := NewScanUtilsMock()
+		utilsMock.FileWriteError = fmt.Errorf("failed to write file")
+		scan := newTestScan(&config)
+
+		err := scan.ExecuteUAScan(&config, utilsMock)
+		assert.Contains(t, fmt.Sprint(err), "failed to write file")
+	})
+
+	t.Run("error - scan error", func(t *testing.T) {
+		config := ScanOptions{
+			ProjectName: "test-project",
+		}
+		utilsMock := NewScanUtilsMock()
+		utilsMock.ShouldFailOnCommand = map[string]error{
+			"java": fmt.Errorf("failed to run java"),
+		}
+		scan := newTestScan(&config)
+
+		err := scan.ExecuteUAScan(&config, utilsMock)
+		assert.Contains(t, fmt.Sprint(err), "failed to execute WhiteSource scan with exit code")
+	})
+}
+
+func TestEvaluateExitCode(t *testing.T) {
+	tt := []struct {
+		exitCode int
+		expected log.ErrorCategory
+	}{
+		{exitCode: 255, expected: log.ErrorUndefined},
+		{exitCode: 254, expected: log.ErrorCompliance},
+		{exitCode: 253, expected: log.ErrorUndefined},
+		{exitCode: 252, expected: log.ErrorInfrastructure},
+		{exitCode: 251, expected: log.ErrorService},
+		{exitCode: 250, expected: log.ErrorCustom},
+		{exitCode: 200, expected: log.ErrorUndefined},
+	}
+
+	for _, test := range tt {
+		evaluateExitCode(test.exitCode)
+		assert.Equal(t, test.expected, log.GetErrorCategory(), fmt.Sprintf("test for exit code %v failed", test.exitCode))
+	}
 }
 
 func TestDownloadAgent(t *testing.T) {
@@ -134,7 +166,7 @@ func TestDownloadAgent(t *testing.T) {
 			AgentFileName:    "unified-agent.jar",
 		}
 		utilsMock := NewScanUtilsMock()
-		utilsMock.FileExistsErrorMessage = "failed to check existence"
+		utilsMock.FileExistsErrors = map[string]error{"unified-agent.jar": fmt.Errorf("failed to check existence")}
 
 		err := downloadAgent(&config, utilsMock)
 		assert.Contains(t, fmt.Sprint(err), "failed to check if file 'unified-agent.jar' exists")
@@ -146,7 +178,7 @@ func TestDownloadAgent(t *testing.T) {
 			AgentFileName:    "unified-agent.jar",
 		}
 		utilsMock := NewScanUtilsMock()
-		utilsMock.DownloadErrorMessage = "failed to download file"
+		utilsMock.DownloadError = map[string]error{"https://download.ua.org/agent.jar": fmt.Errorf("failed to download file")}
 
 		err := downloadAgent(&config, utilsMock)
 		assert.Contains(t, fmt.Sprint(err), "failed to download unified agent from URL")
@@ -192,7 +224,7 @@ func TestDownloadJre(t *testing.T) {
 		}
 		utilsMock := NewScanUtilsMock()
 		utilsMock.ShouldFailOnCommand = map[string]error{"java": fmt.Errorf("failed to run java")}
-		utilsMock.DownloadErrorMessage = "failed to download file"
+		utilsMock.DownloadError = map[string]error{"https://download.jre.org/jvm.jar": fmt.Errorf("failed to download file")}
 
 		_, err := downloadJre(&config, utilsMock)
 		assert.Contains(t, fmt.Sprint(err), "failed to download jre from URL")
@@ -232,7 +264,7 @@ func TestRemoveJre(t *testing.T) {
 
 	t.Run("error - remove jvm directory", func(t *testing.T) {
 		utilsMock := NewScanUtilsMock()
-		utilsMock.RemoveAllErrorMessage = "failed to remove directory"
+		utilsMock.RemoveAllError = map[string]error{jvmDir: fmt.Errorf("failed to remove directory")}
 
 		err := removeJre("./jvm/bin/java", utilsMock)
 		assert.Contains(t, fmt.Sprint(err), "failed to remove downloaded and extracted jvm")
@@ -244,9 +276,4 @@ func TestRemoveJre(t *testing.T) {
 		err := removeJre("./jvm/bin/java", utilsMock)
 		assert.Contains(t, fmt.Sprint(err), "failed to remove downloaded")
 	})
-}
-
-func TestAutoGenerateWhitesourceConfig(t *testing.T) {
-	t.Parallel()
-
 }

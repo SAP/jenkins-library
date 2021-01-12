@@ -38,5 +38,8 @@ type ScanOptions struct {
 	Includes string
 	Excludes string
 
+	AgentURL   string
+	ServiceURL string
+
 	Verbose bool
 }
