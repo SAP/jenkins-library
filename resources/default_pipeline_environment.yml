@@ -603,14 +603,12 @@ steps:
       verbose: false
   uiVeri5ExecuteTests:
     failOnError: false
-    dockerEnvVars: {}
     installCommand: 'npm install @ui5/uiveri5 --global --quiet'
-    seleniumPort: 4444
     stashContent:
       - 'buildDescriptor'
       - 'tests'
-    testOptions: ''
-    runCommand: "uiveri5 --seleniumAddress='http://${config.seleniumHost}:${config.seleniumPort}/wd/hub'"
+    runCommand: "/home/node/.npm-global/bin/uiveri5"
+    runOptions: ["--seleniumAddress='http://selenium:4444/wd/hub'"]
   writeTemporaryCredentials:
     credentialsDirectories:
       - './'
