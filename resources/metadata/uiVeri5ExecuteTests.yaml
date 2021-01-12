@@ -4,10 +4,10 @@ metadata:
   longDescription: |
     In this step the ([UIVeri5 tests](https://github.com/SAP/ui5-uiveri5)) are executed.
 
-#    The step is using the `seleniumExecuteTest` step to spin up two containers in a Docker network:
+#    The step is using `dockerExecute` step to spin up two containers in a Docker network:
 #    * a Selenium/Chrome container (`selenium/standalone-chrome`)
 #    * a NodeJS container (`node:lts-stretch`)
-#    In the Docker network, the containers can be referenced by the values provided in `dockerName` and `sidecarName`, the default values are `karma` and `selenium`. These values must be used in the `hostname` properties of the test configuration ([Karma](https://karma-runner.github.io/1.0/config/configuration-file.html) and [WebDriver](https://github.com/karma-runner/karma-webdriver-launcher#usage)).
+#    In the Docker network, the containers can be referenced by the values provided in `dockerName` and `sidecarName`, the default values are `uiVeri5` and `selenium`.
 #   !!! note
 #        In a Kubernetes environment, the containers both need to be referenced with `localhost`.
 spec:
@@ -25,7 +25,7 @@ spec:
         mandatory: true
       - name: runCommand
         type: string
-        description: The command that is executed to start the tests.
+        description: "The command that is executed to start the tests."
         default: /home/node/.npm-global/bin/uiveri5
         scope:
           - GENERAL
@@ -35,7 +35,7 @@ spec:
         mandatory: true
       - name: runOptions
         type: "[]string"
-        description: Options to append to the runCommand
+        description: "Options to append to the runCommand, last parameter has to be path to conf.js (default if missing: ./conf.js)."
         default:
           - --seleniumAddress='http://localhost:4444/wd/hub'
         scope:
@@ -45,21 +45,21 @@ spec:
         mandatory: true
       - name: testOptions
         type: string
-        description: "Deprecated (please use runOptions): Options to append to the runCommand"
+        description: "Deprecated and will result in an error if set. Please use runOptions instead."
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
       - name: testServerUrl
         type: string
-        description: "Link pointing to the deployment"
+        description: "URL pointing to the deployment."
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
       - name: npmConfigPrefix
         type: string
-        description: "Sets the NPM_CONFIG_PREFIX env variable"
+        description: "Sets the NPM_CONFIG_PREFIX env variable. Use /usr/local for local test on Linux/MacOS."
         mandatory: true
         default: "/home/node/.npm-global"
         scope:
@@ -68,18 +68,15 @@ spec:
           - STEPS
   containers:
     - name: uiVeri5
-      image: node:lts-stretch #node:lts-stretch 10.23.0-stretch
+      image: node:lts-stretch
       env:
         - name: no_proxy
           value: localhost,selenium,$no_proxy
         - name: NO_PROXY
           value: localhost,selenium,$NO_PROXY
       workingDir: /home/node
-      # volumeMounts:
-      #   - mountPath: /dev/shm
-      #     name: dev-shm
   sidecars:
-    - image: selenium/standalone-chrome #selenium/standalone-chrome
+    - image: selenium/standalone-chrome
       name: selenium
       securityContext:
         privileged: true

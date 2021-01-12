@@ -1,12 +1,12 @@
 package cmd
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/pkg/errors"
 )
 
 func uiVeri5ExecuteTests(config uiVeri5ExecuteTestsOptions, telemetryData *telemetry.CustomData) {
@@ -35,16 +35,10 @@ func runUIVeri5(config *uiVeri5ExecuteTestsOptions, command command.ExecRunner) 
 		return err
 	}
 
-	options := []string{}
-	fmt.Println(config.TestOptions)
-	fmt.Println(config.RunOptions)
 	if config.TestOptions != "" {
-		// use testOptions (deprecated) if configured
-		options = append(options, config.TestOptions)
-	} else {
-		options = append(options, config.RunOptions...)
+		return errors.Errorf("parameter testOptions no longer supported, please use runOptions parameter instead.")
 	}
-	err = command.RunExecutable(config.RunCommand, options...)
+	err = command.RunExecutable(config.RunCommand, config.RunOptions...)
 	if err != nil {
 		log.Entry().WithError(err).WithField("command", config.RunCommand).Fatal("failed to execute run command")
 		return err

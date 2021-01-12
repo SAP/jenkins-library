@@ -81,10 +81,10 @@ func UiVeri5ExecuteTestsCommand() *cobra.Command {
 func addUiVeri5ExecuteTestsFlags(cmd *cobra.Command, stepConfig *uiVeri5ExecuteTestsOptions) {
 	cmd.Flags().StringVar(&stepConfig.InstallCommand, "installCommand", `npm install @ui5/uiveri5 --global --quiet`, "The command that is executed to install the uiveri5 test tool.")
 	cmd.Flags().StringVar(&stepConfig.RunCommand, "runCommand", `/home/node/.npm-global/bin/uiveri5`, "The command that is executed to start the tests.")
-	cmd.Flags().StringSliceVar(&stepConfig.RunOptions, "runOptions", []string{`--seleniumAddress='http://localhost:4444/wd/hub'`}, "Options to append to the runCommand")
-	cmd.Flags().StringVar(&stepConfig.TestOptions, "testOptions", os.Getenv("PIPER_testOptions"), "Deprecated (please use runOptions): Options to append to the runCommand")
-	cmd.Flags().StringVar(&stepConfig.TestServerURL, "testServerUrl", os.Getenv("PIPER_testServerUrl"), "Link pointing to the deployment")
-	cmd.Flags().StringVar(&stepConfig.NpmConfigPrefix, "npmConfigPrefix", `/home/node/.npm-global`, "Sets the NPM_CONFIG_PREFIX env variable")
+	cmd.Flags().StringSliceVar(&stepConfig.RunOptions, "runOptions", []string{`--seleniumAddress='http://localhost:4444/wd/hub'`}, "Options to append to the runCommand, last parameter has to be path to conf.js (default if missing: ./conf.js).")
+	cmd.Flags().StringVar(&stepConfig.TestOptions, "testOptions", os.Getenv("PIPER_testOptions"), "Deprecated and will result in an error if set. Please use runOptions instead.")
+	cmd.Flags().StringVar(&stepConfig.TestServerURL, "testServerUrl", os.Getenv("PIPER_testServerUrl"), "URL pointing to the deployment.")
+	cmd.Flags().StringVar(&stepConfig.NpmConfigPrefix, "npmConfigPrefix", `/home/node/.npm-global`, "Sets the NPM_CONFIG_PREFIX env variable. Use /usr/local for local test on Linux/MacOS.")
 
 	cmd.MarkFlagRequired("installCommand")
 	cmd.MarkFlagRequired("runCommand")

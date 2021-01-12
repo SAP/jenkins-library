@@ -13,7 +13,13 @@ import (
 
 func TestRunUIVeri5(t *testing.T) {
 	t.Run("success case", func(t *testing.T) {
-		opts := &uiVeri5ExecuteTestsOptions{InstallCommand: "npm install ui5/uiveri5", RunCommand: "uiveri5", TestOptions: "conf.js", TestServerURL: "http://path/to/deployment"} //ConfPath: "conf.js"
+		opts := &uiVeri5ExecuteTestsOptions{
+			InstallCommand:  "npm install ui5/uiveri5",
+			RunCommand:      "uiveri5",
+			RunOptions:      []string{"conf.js"},
+			TestServerURL:   "http://path/to/deployment",
+			NpmConfigPrefix: "/path/to/node",
+		}
 
 		e := mock.ExecMockRunner{}
 		runUIVeri5(opts, &e)
@@ -22,7 +28,7 @@ func TestRunUIVeri5(t *testing.T) {
 		fmt.Println(e.Calls)
 		fmt.Println(e.Env)
 
-		assert.Equal(t, e.Env[0], "NPM_CONFIG_PREFIX=/home/node/.npm-global", "NPM_CONFIG_PREFIX not set as expected")
+		assert.Equal(t, e.Env[0], "NPM_CONFIG_PREFIX=/path/to/node", "NPM_CONFIG_PREFIX not set as expected")
 		assert.Equal(t, e.Env[1], "TARGET_SERVER_URL=http://path/to/deployment", "TARGET_SERVER_URL not set as expected")
 
 		assert.Equal(t, e.Calls[0], mock.ExecCall{Exec: "npm", Params: []string{"install", "ui5/uiveri5"}}, "install command/params incorrect")
