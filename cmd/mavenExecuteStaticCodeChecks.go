@@ -91,11 +91,11 @@ func getPmdMavenParameters(config *mavenExecuteStaticCodeChecksOptions) *maven.E
 	var defines []string
 	if config.PmdMaxAllowedViolations != 0 && config.PmdFailOnViolation == true {
 		defines = append(defines, "-Dpmd.maxAllowedViolations="+strconv.Itoa(config.PmdMaxAllowedViolations))
-		defines = append(defines, "-Dpmd.failOnViolation="+config.PmdFailOnViolation)
+		defines = append(defines, "-Dpmd.failOnViolation="+strconv.FormatBool(config.PmdFailOnViolation))
 	}
 	if config.PmdFailurePriority >= 1 && config.PmdFailurePriority <= 5 && config.PmdFailOnViolation == true {
 		defines = append(defines, "-Dpmd.failurePriority="+strconv.Itoa(config.PmdFailurePriority))
-		defines = append(defines, "-Dpmd.failOnViolation="+config.PmdFailOnViolation)
+		defines = append(defines, "-Dpmd.failOnViolation="+strconv.FormatBool(config.PmdFailOnViolation))
 	} else if config.PmdFailurePriority != 0 {
 		log.Entry().Warningf("Pmd failure priority must be a value between 1 and 5. %v was configured. Defaulting to 5.", config.PmdFailurePriority)
 	}
