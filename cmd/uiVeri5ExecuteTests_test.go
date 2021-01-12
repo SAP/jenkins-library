@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -23,10 +22,6 @@ func TestRunUIVeri5(t *testing.T) {
 
 		e := mock.ExecMockRunner{}
 		runUIVeri5(opts, &e)
-
-		fmt.Println(e.Dir)
-		fmt.Println(e.Calls)
-		fmt.Println(e.Env)
 
 		assert.Equal(t, e.Env[0], "NPM_CONFIG_PREFIX=/path/to/node", "NPM_CONFIG_PREFIX not set as expected")
 		assert.Equal(t, e.Env[1], "TARGET_SERVER_URL=http://path/to/deployment", "TARGET_SERVER_URL not set as expected")

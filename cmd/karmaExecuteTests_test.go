@@ -2,9 +2,8 @@ package cmd
 
 import (
 	"errors"
-	"testing"
-
 	"github.com/SAP/jenkins-library/pkg/mock"
+	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/stretchr/testify/assert"
