@@ -33,15 +33,15 @@ func TestNpmExecuteLint(t *testing.T) {
 		lintUtils := newLintMockUtilsBundle()
 		lintUtils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"\" } }"))
 
-		npmUtils := newNpmMockUtilsBundle()
-		npmUtils.execRunner = lintUtils.execRunner
+		npmUtils := npm.NewNpmMockUtilsBundle()
+		npmUtils.ExecRunner = lintUtils.execRunner
 		npmUtils.FilesMock = lintUtils.FilesMock
 
 		config := npmExecuteLintOptions{
 			FailOnError: true,
 		}
 
-		npmExecutor := npmExecutorMock{utils: npmUtils, config: npmConfig{runScripts: []string{"ci-lint"}, runOptions: []string{"--silent"}}}
+		npmExecutor := npm.NpmExecutorMock{Utils: npmUtils, Config: npm.NpmConfig{RunScripts: []string{"ci-lint"}, RunOptions: []string{"--silent"}}}
 		err := runNpmExecuteLint(&npmExecutor, &lintUtils, &config)
 
 		assert.NoError(t, err)
