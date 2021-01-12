@@ -7,6 +7,7 @@ import (
 )
 
 func TestTransportRequestUploadCTSCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := TransportRequestUploadCTSCommand()
 
