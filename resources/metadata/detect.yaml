@@ -238,6 +238,37 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: includedPackageManagers
+        description:
+          "The package managers that need to be included for this scan. Providing the package manager names with this parameter will ensure that the build descriptor file of that package manager will be searched in the scan folder
+          For the complete list of possible values for this parameter, please check https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/631407160/Configuring+Detect+General+Properties#Detector-types-included-(Advanced)"
+        aliases:
+          - name: detect/includedPackageManagers
+        type: "[]string"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: excludedPackageManagers
+        description:
+          "The package managers that need to be excluded for this scan. Providing the package manager names with this parameter will ensure that the build descriptor file of that package manager will be ignored in the scan folder
+          For the complete list of possible values for this parameter, please check https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/631407160/Configuring+Detect+General+Properties#%5BhardBreak%5DDetector-types-excluded-(Advanced)"
+        aliases:
+          - name: detect/excludedPackageManagers
+        type: "[]string"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: mavenExcludedScopes
+        description: "The maven scopes that need to be excluded from the scan. For example, setting the value 'test' will exclude all components which are defined with a test scope in maven"
+        aliases:
+          - name: detect/mavenExcludedScopes
+        type: "[]string"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   containers:
     - name: openjdk
       image: openjdk:11

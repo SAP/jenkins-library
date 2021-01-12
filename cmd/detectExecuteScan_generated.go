@@ -14,23 +14,26 @@ import (
 )
 
 type detectExecuteScanOptions struct {
-	Token               string   `json:"token,omitempty"`
-	CodeLocation        string   `json:"codeLocation,omitempty"`
-	ProjectName         string   `json:"projectName,omitempty"`
-	Scanners            []string `json:"scanners,omitempty"`
-	ScanPaths           []string `json:"scanPaths,omitempty"`
-	DependencyPath      string   `json:"dependencyPath,omitempty"`
-	Unmap               bool     `json:"unmap,omitempty"`
-	ScanProperties      []string `json:"scanProperties,omitempty"`
-	ServerURL           string   `json:"serverUrl,omitempty"`
-	Groups              []string `json:"groups,omitempty"`
-	FailOn              []string `json:"failOn,omitempty"`
-	Version             string   `json:"version,omitempty"`
-	VersioningModel     string   `json:"versioningModel,omitempty"`
-	ProjectSettingsFile string   `json:"projectSettingsFile,omitempty"`
-	GlobalSettingsFile  string   `json:"globalSettingsFile,omitempty"`
-	M2Path              string   `json:"m2Path,omitempty"`
-	InstallArtifacts    bool     `json:"installArtifacts,omitempty"`
+	Token                   string   `json:"token,omitempty"`
+	CodeLocation            string   `json:"codeLocation,omitempty"`
+	ProjectName             string   `json:"projectName,omitempty"`
+	Scanners                []string `json:"scanners,omitempty"`
+	ScanPaths               []string `json:"scanPaths,omitempty"`
+	DependencyPath          string   `json:"dependencyPath,omitempty"`
+	Unmap                   bool     `json:"unmap,omitempty"`
+	ScanProperties          []string `json:"scanProperties,omitempty"`
+	ServerURL               string   `json:"serverUrl,omitempty"`
+	Groups                  []string `json:"groups,omitempty"`
+	FailOn                  []string `json:"failOn,omitempty"`
+	Version                 string   `json:"version,omitempty"`
+	VersioningModel         string   `json:"versioningModel,omitempty"`
+	ProjectSettingsFile     string   `json:"projectSettingsFile,omitempty"`
+	GlobalSettingsFile      string   `json:"globalSettingsFile,omitempty"`
+	M2Path                  string   `json:"m2Path,omitempty"`
+	InstallArtifacts        bool     `json:"installArtifacts,omitempty"`
+	IncludedPackageManagers []string `json:"includedPackageManagers,omitempty"`
+	ExcludedPackageManagers []string `json:"excludedPackageManagers,omitempty"`
+	MavenExcludedScopes     []string `json:"mavenExcludedScopes,omitempty"`
 }
 
 // DetectExecuteScanCommand Executes Synopsys Detect scan
@@ -110,6 +113,9 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Path or url to the mvn settings file that should be used as global settings file")
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
 	cmd.Flags().BoolVar(&stepConfig.InstallArtifacts, "installArtifacts", false, "If enabled, it will install all artifacts to the local maven repository to make them available before running detect. This is required if any maven module has dependencies to other modules in the repository and they were not installed before.")
+	cmd.Flags().StringSliceVar(&stepConfig.IncludedPackageManagers, "includedPackageManagers", []string{}, "The package managers that need to be included for this scan. Providing the package manager names with this parameter will ensure that the build descriptor file of that package manager will be searched in the scan folder For the complete list of possible values for this parameter, please check https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/631407160/Configuring+Detect+General+Properties#Detector-types-included-(Advanced)")
+	cmd.Flags().StringSliceVar(&stepConfig.ExcludedPackageManagers, "excludedPackageManagers", []string{}, "The package managers that need to be excluded for this scan. Providing the package manager names with this parameter will ensure that the build descriptor file of that package manager will be ignored in the scan folder For the complete list of possible values for this parameter, please check https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/631407160/Configuring+Detect+General+Properties#%5BhardBreak%5DDetector-types-excluded-(Advanced)")
+	cmd.Flags().StringSliceVar(&stepConfig.MavenExcludedScopes, "mavenExcludedScopes", []string{}, "The maven scopes that need to be excluded from the scan. For example, setting the value 'test' will exclude all components which are defined with a test scope in maven")
 
 	cmd.MarkFlagRequired("token")
 	cmd.MarkFlagRequired("projectName")
@@ -278,6 +284,30 @@ func detectExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "includedPackageManagers",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "detect/includedPackageManagers"}},
+					},
+					{
+						Name:        "excludedPackageManagers",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "detect/excludedPackageManagers"}},
+					},
+					{
+						Name:        "mavenExcludedScopes",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "detect/mavenExcludedScopes"}},
 					},
 				},
 			},

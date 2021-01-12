@@ -167,6 +167,18 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		args = append(args, fmt.Sprintf("--detect.project.codelocation.unmap=true"))
 	}
 
+	if len(config.IncludedPackageManagers) > 0 {
+		args = append(args, fmt.Sprintf("--detect.included.detector.types=%v", strings.ToUpper(strings.Join(config.IncludedPackageManagers, ","))))
+	}
+
+	if len(config.ExcludedPackageManagers) > 0 {
+		args = append(args, fmt.Sprintf("--detect.excluded.detector.types=%v", strings.ToUpper(strings.Join(config.ExcludedPackageManagers, ","))))
+	}
+
+	if len(config.MavenExcludedScopes) > 0 {
+		args = append(args, fmt.Sprintf("--detect.maven.excluded.scopes=%v", strings.ToLower(strings.Join(config.MavenExcludedScopes, ","))))
+	}
+
 	mavenArgs, err := maven.DownloadAndGetMavenParameters(config.GlobalSettingsFile, config.ProjectSettingsFile, utils)
 	if err != nil {
 		return nil, err
