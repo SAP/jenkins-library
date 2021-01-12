@@ -14,9 +14,6 @@ spec:
       - name: dockerCredentialsId
         description: Jenkins 'Username with password' credentials ID containing user and password to authenticate to the Docker registry.
         type: jenkins
-    resources:
-      - name: deployDescriptor
-        type: stash
     params:
       - name: apiEndpoint
         type: string
@@ -313,9 +310,9 @@ spec:
             param: password
           - type: vaultSecret
             paths:
-              - $(vaultPath)/cloudfoundry-$(cfOrg)-$(cfSpace)
-              - $(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(cfOrg)-$(cfSpace)
-              - $(vaultBasePath)/GROUP-SECRETS/cloudfoundry-$(cfOrg)-$(cfSpace)
+              - $(vaultPath)/cloudfoundry-$(org)-$(space)
+              - $(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(org)-$(space)
+              - $(vaultBasePath)/GROUP-SECRETS/cloudfoundry-$(org)-$(space)
       - name: smokeTestScript
         type: string
         description:
@@ -368,9 +365,9 @@ spec:
             param: username
           - type: vaultSecret
             paths:
-              - $(vaultPath)/cloudfoundry-$(cfOrg)-$(cfSpace)
-              - $(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(cfOrg)-$(cfSpace)
-              - $(vaultBasePath)/GROUP-SECRETS/cloudfoundry-$(cfOrg)-$(cfSpace)
+              - $(vaultPath)/cloudfoundry-$(org)-$(space)
+              - $(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(org)-$(space)
+              - $(vaultBasePath)/GROUP-SECRETS/cloudfoundry-$(org)-$(space)
   containers:
     - name: cfDeploy
       image: ppiper/cf-cli

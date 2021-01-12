@@ -242,6 +242,7 @@ import (
 )
 
 func Test{{.CobraCmdFuncName}}(t *testing.T) {
+	t.Parallel()
 
 	testCmd := {{.CobraCmdFuncName}}()
 
@@ -355,6 +356,7 @@ func TestRun{{.StepName | title}}(t *testing.T) {
 	t.Parallel()
 
 	t.Run("happy path", func(t *testing.T) {
+		t.Parallel()
 		// init
 		config := {{.StepName}}Options{}
 
@@ -369,6 +371,7 @@ func TestRun{{.StepName | title}}(t *testing.T) {
 	})
 
 	t.Run("error path", func(t *testing.T) {
+		t.Parallel()
 		// init
 		config := {{.StepName}}Options{}
 

@@ -7,6 +7,7 @@ import (
 )
 
 func TestNpmExecuteLintCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := NpmExecuteLintCommand()
 
