@@ -59,6 +59,7 @@ func GetAllStepMetadata() map[string]config.StepData {
 		"protecodeExecuteScan":                    protecodeExecuteScanMetadata(),
 		"containerSaveImage":                      containerSaveImageMetadata(),
 		"sonarExecuteScan":                        sonarExecuteScanMetadata(),
+		"transportRequestUploadCTS":               transportRequestUploadCTSMetadata(),
 		"vaultRotateSecretId":                     vaultRotateSecretIdMetadata(),
 		"artifactPrepareVersion":                  artifactPrepareVersionMetadata(),
 		"whitesourceExecuteScan":                  whitesourceExecuteScanMetadata(),
