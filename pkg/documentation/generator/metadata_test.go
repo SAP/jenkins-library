@@ -106,6 +106,11 @@ func Test_interfaceArrayLength(t *testing.T) {
 			args: args{[]interface{}{"string1", "string1"}},
 			want: 2,
 		},
+		{
+			name: "string array type",
+			args: args{[]string{"string1", "string1"}},
+			want: 2,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

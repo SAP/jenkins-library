@@ -79,6 +79,8 @@ func applyCustomDefaultValues(stepMetadata *config.StepData, stepConfiguration c
 // check length only if interface type is a slice
 func interfaceArrayLength(i interface{}) int {
 	switch i.(type) {
+	case []string:
+		return len(i.([]string))
 	case []interface{}:
 		return len(i.([]interface{}))
 	default:
