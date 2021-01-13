@@ -87,7 +87,7 @@ void call(Map parameters = [:]) {
         publishCucumberReport(configuration.get('cucumber'))
         publishHtmlReport(configuration.get('htmlPublisher'))
 
-        if (configuration.failOnError && JenkinsUtils.hasTestFailures(script.currentBuild)) {
+        if (configuration.failOnError && (JenkinsUtils.hasTestFailures(script.currentBuild) || 'FAILURE' == script.currentBuild?.result)){
             script.currentBuild.result = 'FAILURE'
             error "[${STEP_NAME}] Some tests failed!"
         }

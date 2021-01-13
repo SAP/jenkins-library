@@ -68,6 +68,7 @@ It can for example be used for GitOps scenarios or for scenarios where you want 
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
@@ -113,8 +114,9 @@ func addGithubCreatePullRequestFlags(cmd *cobra.Command, stepConfig *githubCreat
 func githubCreatePullRequestMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "githubCreatePullRequest",
-			Aliases: []config.Alias{},
+			Name:        "githubCreatePullRequest",
+			Aliases:     []config.Alias{},
+			Description: "Create a pull request on GitHub",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -207,6 +209,12 @@ func githubCreatePullRequestMetadata() config.StepData {
 							{
 								Name: "githubTokenCredentialsId",
 								Type: "secret",
+							},
+
+							{
+								Name:  "",
+								Paths: []string{"$(vaultPath)/github", "$(vaultBasePath)/$(vaultPipelineName)/github", "$(vaultBasePath)/GROUP-SECRETS/github"},
+								Type:  "vaultSecret",
 							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},

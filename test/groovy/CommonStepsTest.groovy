@@ -55,7 +55,7 @@ public class CommonStepsTest extends BasePiperTest{
             'piperPipeline',
             'prepareDefaultValues',
             'runClosures',
-            'setupCommonPipelineEnvironment'
+            'setupCommonPipelineEnvironment',
         ]
 
         List steps = getSteps().stream()
@@ -119,6 +119,7 @@ public class CommonStepsTest extends BasePiperTest{
         'abapEnvironmentPullGitRepo', //implementing new golang pattern without fields
         'abapEnvironmentPipeline', // special step (infrastructure)
         'abapEnvironmentRunATCCheck', //implementing new golang pattern without fields
+        'abapEnvironmentCreateSystem', //implementing new golang pattern without fields
         'artifactPrepareVersion',
         'cloudFoundryCreateService', //implementing new golang pattern without fields
         'cloudFoundryCreateServiceKey', //implementing new golang pattern without fields
@@ -138,8 +139,10 @@ public class CommonStepsTest extends BasePiperTest{
         'buildSetResult',
         'runClosures',
         'checkmarxExecuteScan', //implementing new golang pattern without fields
+        'githubCreateIssue', //implementing new golang pattern without fields
         'githubPublishRelease', //implementing new golang pattern without fields
         'githubCheckBranchProtection', //implementing new golang pattern without fields
+        'githubCommentIssue', //implementing new golang pattern without fields
         'githubSetCommitStatus', //implementing new golang pattern without fields
         'kubernetesDeploy', //implementing new golang pattern without fields
         'piperExecuteBin', //implementing new golang pattern without fields
@@ -164,7 +167,10 @@ public class CommonStepsTest extends BasePiperTest{
         'gctsDeploy', //implementing new golang pattern without fields
         'containerSaveImage', //implementing new golang pattern without fields
         'detectExecuteScan', //implementing new golang pattern without fields
-        'kanikoExecute' //implementing new golang pattern without fields
+        'kanikoExecute', //implementing new golang pattern without fields
+        'gitopsUpdateDeployment', //implementing new golang pattern without fields
+        'vaultRotateSecretId', //implementing new golang pattern without fields
+        'deployIntegrationArtifact' //implementing new golang pattern without fields
     ]
 
     @Test

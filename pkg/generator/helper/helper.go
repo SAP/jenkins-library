@@ -31,6 +31,9 @@ type stepInfo struct {
 	StepFunc         string
 	StepName         string
 	StepSecrets      []string
+	Containers       []config.Container
+	Sidecars         []config.Container
+	Outputs          config.StepOutputs
 }
 
 //StepGoTemplate ...
@@ -114,6 +117,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				{{- range $notused, $oRes := .OutputResources }}
 				{{ index $oRes "name" }}.persist({{if $.ExportPrefix}}{{ $.ExportPrefix }}.{{end}}GeneralConfig.EnvRootPath, "{{ index $oRes "name" }}"){{ end }}
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
@@ -135,7 +139,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 
 func {{.FlagsFunc}}(cmd *cobra.Command, stepConfig *{{.StepName}}Options) {
 	{{- range $key, $value := uniqueName .StepParameters }}
-	cmd.Flags().{{ $value.Type | flagType }}(&stepConfig.{{ $value.Name | golangName }}, "{{ $value.Name }}", {{ $value.Default }}, "{{ $value.Description }}"){{ end }}
+	{{ if isCLIParam $value.Type }}cmd.Flags().{{ $value.Type | flagType }}(&stepConfig.{{ $value.Name | golangName }}, "{{ $value.Name }}", {{ $value.Default }}, "{{ $value.Description }}"){{end}}{{ end }}
 	{{- printf "\n" }}
 	{{- range $key, $value := .StepParameters }}{{ if $value.Mandatory }}
 	cmd.MarkFlagRequired("{{ $value.Name }}"){{ end }}{{ end }}
@@ -163,6 +167,7 @@ func {{ .StepName }}Metadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:    "{{ .StepName }}",
 			Aliases: []config.Alias{{ "{" }}{{ range $notused, $alias := .StepAliases }}{{ "{" }}Name: "{{ $alias.Name }}", Deprecated: {{ $alias.Deprecated }}{{ "}" }},{{ end }}{{ "}" }},
+			Description: "{{ .Short }}",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -178,6 +183,49 @@ func {{ .StepName }}Metadata() config.StepData {
 					},{{ end }}
 				},
 			},
+			{{ if .Containers -}}
+			Containers: []config.Container{
+				{{- range $container := .Containers }}
+				{
+					{{- if $container.Name -}} Name: "{{$container.Name}}",{{- end }}
+					{{- if $container.Image -}} Image: "{{$container.Image}}",{{- end }}
+					{{- if $container.EnvVars -}} EnvVars: []config.EnvVar{ {{- range $i, $env := $container.EnvVars }} {Name: "{{$env.Name}}", Value: "{{$env.Value}}"}, {{ end -}}  },{{- end }}
+					{{- if $container.WorkingDir -}} WorkingDir: "{{$container.WorkingDir}}",{{- end }}
+					{{- if $container.Options -}} Options: []config.Option{ {{- range $i, $option := $container.Options }} {Name: "{{$option.Name}}", Value: "{{$option.Value}}"}, {{ end -}} },{{ end }}
+					{{- if $container.Conditions -}} Conditions: []config.Condition{ {{- range $i, $cond := $container.Conditions }} {ConditionRef: "{{$cond.ConditionRef}}", Params: []config.Param{ {{- range $j, $p := $cond.Params}} { Name: "{{$p.Name}}", Value: "{{$p.Value}}" }, {{end -}} } }, {{ end -}} },{{ end }}
+				}, {{ end }}
+			},
+			{{ end -}}
+			{{ if .Sidecars -}}
+			Sidecars: []config.Container{
+				{{- range $container := .Sidecars }}
+				{
+					{{- if $container.Name -}} Name: "{{$container.Name}}", {{- end }}
+					{{- if $container.Image -}} Image: "{{$container.Image}}", {{- end }}
+					{{- if $container.EnvVars -}} EnvVars: []config.EnvVar{ {{- range $i, $env := $container.EnvVars }} {Name: "{{$env.Name}}", Value: "{{$env.Value}}"}, {{ end -}}  }, {{- end }}
+					{{- if $container.WorkingDir -}} WorkingDir: "{{$container.WorkingDir}}", {{- end }}
+					{{- if $container.Options -}} Options: []config.Option{ {{- range $i, $option := $container.Options }} {Name: "{{$option.Name}}", Value: "{{$option.Value}}"}, {{ end -}} }, {{- end }}
+					{{- if $container.Conditions -}} Conditions: []config.Condition{ {{- range $i, $cond := $container.Conditions }} {ConditionRef: "{{$cond.ConditionRef}}", Params: []config.Param{ {{- range $j, $p := $cond.Params}} { Name: "{{$p.Name}}", Value: "{{$p.Value}}" }, {{end -}} } }, {{ end -}} }, {{- end }}
+				}, {{ end }}
+			},
+			{{ end -}}
+			{{- if .Outputs.Resources -}}
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{{- range $res := .Outputs.Resources }}
+					{
+						{{ if $res.Name }}Name: "{{$res.Name}}", {{- end }}
+						{{ if $res.Type }}Type: "{{$res.Type}}", {{- end }}
+						{{ if $res.Parameters }}Parameters: []map[string]interface{}{ {{- end -}}
+						{{ range $i, $p := $res.Parameters }}
+							{{ if $p.name}}{"Name": "{{$p.name}}"},{{ end -}}
+							{{ if $p.fields}}{"fields": []map[string]string{ {{- range $j, $f := $p.fields}} {"name": "{{$f.name}}"}, {{end -}} } },{{ end -}}
+							{{ if $p.tags}}{"tags": []map[string]string{ {{- range $j, $t := $p.tags}} {"name": "{{$t.name}}"}, {{end -}} } },{{ end -}}
+						{{ end }}
+						{{ if $res.Parameters -}} }, {{- end }}
+					}, {{- end }}
+				},
+			}, {{- end }}
 		},
 	}
 	return theMetaData
@@ -194,6 +242,7 @@ import (
 )
 
 func Test{{.CobraCmdFuncName}}(t *testing.T) {
+	t.Parallel()
 
 	testCmd := {{.CobraCmdFuncName}}()
 
@@ -205,38 +254,158 @@ func Test{{.CobraCmdFuncName}}(t *testing.T) {
 
 const stepGoImplementationTemplate = `package cmd
 import (
+	"fmt"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
-func {{.StepName}}(config {{ .StepName }}Options, telemetryData *telemetry.CustomData{{ range $notused, $oRes := .OutputResources}}, {{ index $oRes "name" }} *{{ index $oRes "objectname" }}{{ end }}) {
-	// for command execution use Command
-	c := command.Command{}
-	// reroute command output to logging framework
-	c.Stdout(log.Writer())
-	c.Stderr(log.Writer())
+type {{.StepName}}Utils interface {
+	command.ExecRunner
 
-	// for http calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	FileExists(filename string) (bool, error)
+
+	// Add more methods here, or embed additional interfaces, or remove/replace as required.
+	// The {{.StepName}}Utils interface should be descriptive of your runtime dependencies,
+	// i.e. include everything you need to be able to mock in tests.
+	// Unit tests shall be executable in parallel (not depend on global state), and don't (re-)test dependencies.
+}
+
+type {{.StepName}}UtilsBundle struct {
+	*command.Command
+	*piperutils.Files
+
+	// Embed more structs as necessary to implement methods or interfaces you add to {{.StepName}}Utils.
+	// Structs embedded in this way must each have a unique set of methods attached.
+	// If there is no struct which implements the method you need, attach the method to
+	// {{.StepName}}UtilsBundle and forward to the implementation of the dependency.
+}
+
+func new{{.StepName | title}}Utils() {{.StepName}}Utils {
+	utils := {{.StepName}}UtilsBundle{
+		Command: &command.Command{},
+		Files:   &piperutils.Files{},
+	}
+	// Reroute command output to logging framework
+	utils.Stdout(log.Writer())
+	utils.Stderr(log.Writer())
+	return &utils
+}
+
+func {{.StepName}}(config {{ .StepName }}Options, telemetryData *telemetry.CustomData{{ range $notused, $oRes := .OutputResources}}, {{ index $oRes "name" }} *{{ index $oRes "objectname" }}{{ end }}) {
+	// Utils can be used wherever the command.ExecRunner interface is expected.
+	// It can also be used for example as a mavenExecRunner.
+	utils := new{{.StepName | title}}Utils()
+
+	// For HTTP calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	// and use a  &piperhttp.Client{} in a custom system
 	// Example: step checkmarxExecuteScan.go
 
-	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := run{{.StepName | title}}(&config, telemetryData, &c{{ range $notused, $oRes := .OutputResources}}, &{{ index $oRes "name" }}{{ end }})
+	// Error situations should be bubbled up until they reach the line below which will then stop execution
+	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
+	err := run{{.StepName | title}}(&config, telemetryData, utils{{ range $notused, $oRes := .OutputResources}}, &{{ index $oRes "name" }}{{ end }})
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func run{{.StepName | title}}(config *{{ .StepName }}Options, telemetryData *telemetry.CustomData, command execRunner{{ range $notused, $oRes := .OutputResources}}, {{ index $oRes "name" }} *{{ index $oRes "objectname" }} {{ end }}) error {
+func run{{.StepName | title}}(config *{{ .StepName }}Options, telemetryData *telemetry.CustomData, utils {{.StepName}}Utils{{ range $notused, $oRes := .OutputResources}}, {{ index $oRes "name" }} *{{ index $oRes "objectname" }} {{ end }}) error {
 	log.Entry().WithField("LogField", "Log field content").Info("This is just a demo for a simple step.")
+
+	// Example of calling methods from external dependencies directly on utils:
+	exists, err := utils.FileExists("file.txt")
+	if err != nil {
+		// It is good practice to set an error category.
+		// Most likely you want to do this at the place where enough context is known.
+		log.SetErrorCategory(log.ErrorConfiguration)
+		// Always wrap non-descriptive errors to enrich them with context for when they appear in the log:
+		return fmt.Errorf("failed to check for important file: %w", err)
+	}
+	if !exists {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return fmt.Errorf("cannot run without important file")
+	}
+
 	return nil
+}
+`
+
+const stepGoImplementationTestTemplate = `package cmd
+
+import (
+	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/stretchr/testify/assert"
+	"testing"
+)
+
+type {{.StepName}}MockUtils struct {
+	*mock.ExecMockRunner
+	*mock.FilesMock
+}
+
+func new{{.StepName | title}}TestsUtils() {{.StepName}}MockUtils {
+	utils := {{.StepName}}MockUtils{
+		ExecMockRunner: &mock.ExecMockRunner{},
+		FilesMock:      &mock.FilesMock{},
+	}
+	return utils
+}
+
+func TestRun{{.StepName | title}}(t *testing.T) {
+	t.Parallel()
+
+	t.Run("happy path", func(t *testing.T) {
+		t.Parallel()
+		// init
+		config := {{.StepName}}Options{}
+
+		utils := new{{.StepName | title}}TestsUtils()
+		utils.AddFile("file.txt", []byte("dummy content"))
+
+		// test
+		err := run{{.StepName | title}}(&config, nil, utils)
+
+		// assert
+		assert.NoError(t, err)
+	})
+
+	t.Run("error path", func(t *testing.T) {
+		t.Parallel()
+		// init
+		config := {{.StepName}}Options{}
+
+		utils := new{{.StepName | title}}TestsUtils()
+
+		// test
+		err := run{{.StepName | title}}(&config, nil, utils)
+
+		// assert
+		assert.EqualError(t, err, "cannot run without important file")
+	})
+}
+`
+
+const metadataGeneratedFileName = "metadata_generated.go"
+const metadataGeneratedTemplate = `// Code generated by piper's step-generator. DO NOT EDIT.
+
+package cmd
+
+import "github.com/SAP/jenkins-library/pkg/config"
+
+// GetStepMetadata return a map with all the step metadata mapped to their stepName
+func GetAllStepMetadata() map[string]config.StepData {
+	return map[string]config.StepData{
+		{{range $stepName := .Steps }} "{{$stepName}}": {{$stepName}}Metadata(),
+		{{end}}
+	}
 }
 `
 
 // ProcessMetaFiles generates step coding based on step configuration provided in yaml files
 func ProcessMetaFiles(metadataFiles []string, targetDir string, stepHelperData StepHelperData) error {
 
+	allSteps := struct{ Steps []string }{}
 	for key := range metadataFiles {
 
 		var stepData config.StepData
@@ -252,9 +421,10 @@ func ProcessMetaFiles(metadataFiles []string, targetDir string, stepHelperData S
 		err = stepData.ReadPipelineStepData(metadataFile)
 		checkError(err)
 
-		fmt.Printf("Step name: %v\n", stepData.Metadata.Name)
+		stepName := stepData.Metadata.Name
+		fmt.Printf("Step name: %v\n", stepName)
+		allSteps.Steps = append(allSteps.Steps, stepName)
 
-		//Switch Docu or Step Files
 		osImport := false
 		osImport, err = setDefaultParameters(&stepData)
 		checkError(err)
@@ -262,21 +432,33 @@ func ProcessMetaFiles(metadataFiles []string, targetDir string, stepHelperData S
 		myStepInfo, err := getStepInfo(&stepData, osImport, stepHelperData.ExportPrefix)
 		checkError(err)
 
-		step := stepTemplate(myStepInfo)
-		err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_generated.go", stepData.Metadata.Name)), step, 0644)
+		step := stepTemplate(myStepInfo, "step", stepGoTemplate)
+		err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_generated.go", stepName)), step, 0644)
 		checkError(err)
 
-		test := stepTestTemplate(myStepInfo)
-		err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_generated_test.go", stepData.Metadata.Name)), test, 0644)
+		test := stepTemplate(myStepInfo, "stepTest", stepTestGoTemplate)
+		err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_generated_test.go", stepName)), test, 0644)
 		checkError(err)
 
-		exists, _ := piperutils.FileExists(filepath.Join(targetDir, fmt.Sprintf("%v.go", stepData.Metadata.Name)))
+		exists, _ := piperutils.FileExists(filepath.Join(targetDir, fmt.Sprintf("%v.go", stepName)))
 		if !exists {
-			impl := stepImplementation(myStepInfo)
-			err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v.go", stepData.Metadata.Name)), impl, 0644)
+			impl := stepImplementation(myStepInfo, "impl", stepGoImplementationTemplate)
+			err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v.go", stepName)), impl, 0644)
+			checkError(err)
+		}
+
+		exists, _ = piperutils.FileExists(filepath.Join(targetDir, fmt.Sprintf("%v_test.go", stepName)))
+		if !exists {
+			impl := stepImplementation(myStepInfo, "implTest", stepGoImplementationTestTemplate)
+			err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_test.go", stepName)), impl, 0644)
 			checkError(err)
 		}
 	}
+	// expose metadata functions
+	code := generateCode(allSteps, "metadata", metadataGeneratedTemplate, nil)
+	err := stepHelperData.WriteFile(filepath.Join(targetDir, metadataGeneratedFileName), code, 0644)
+	checkError(err)
+
 	return nil
 }
 
@@ -306,6 +488,10 @@ func setDefaultParameters(stepData *config.StepData) (bool, error) {
 			case "[]string":
 				// ToDo: Check if default should be read from env
 				param.Default = "[]string{}"
+			case "map[string]interface{}":
+				// Currently we don't need to set a default here since in this case the default
+				// is never used. Needs to be changed in case we enable cli parameter handling
+				// for that type.
 			default:
 				return false, fmt.Errorf("Meta data type not set or not known: '%v'", param.Type)
 			}
@@ -323,6 +509,10 @@ func setDefaultParameters(stepData *config.StepData) (bool, error) {
 				param.Default = fmt.Sprintf("`%v`", param.Default)
 			case "[]string":
 				param.Default = fmt.Sprintf("[]string{`%v`}", strings.Join(getStringSliceFromInterface(param.Default), "`, `"))
+			case "map[string]interface{}":
+				// Currently we don't need to set a default here since in this case the default
+				// is never used. Needs to be changed in case we enable cli parameter handling
+				// for that type.
 			default:
 				return false, fmt.Errorf("Meta data type not set or not known: '%v'", param.Type)
 			}
@@ -349,6 +539,9 @@ func getStepInfo(stepData *config.StepData, osImport bool, exportPrefix string) 
 			OutputResources:  oRes,
 			ExportPrefix:     exportPrefix,
 			StepSecrets:      getSecretFields(stepData),
+			Containers:       stepData.Spec.Containers,
+			Sidecars:         stepData.Spec.Sidecars,
+			Outputs:          stepData.Spec.Outputs,
 		},
 		err
 }
@@ -387,7 +580,7 @@ func getOutputResourceDetails(stepData *config.StepData) ([]map[string]string, e
 						envResource.Categories = append(envResource.Categories, category)
 					}
 				}
-				envParam := PiperEnvironmentParameter{Category: category, Name: name}
+				envParam := PiperEnvironmentParameter{Category: category, Name: name, Type: fmt.Sprint(param["type"])}
 				envResource.Parameters = append(envResource.Parameters, envParam)
 			}
 			def, err := envResource.StructString()
@@ -406,7 +599,7 @@ func getOutputResourceDetails(stepData *config.StepData) ([]map[string]string, e
 				if fields, ok := measurement["fields"].([]interface{}); ok {
 					for _, field := range fields {
 						if fieldParams, ok := field.(map[string]interface{}); ok {
-							influxMeasurement.Fields = append(influxMeasurement.Fields, InfluxMetric{Name: fmt.Sprintf("%v", fieldParams["name"])})
+							influxMeasurement.Fields = append(influxMeasurement.Fields, InfluxMetric{Name: fmt.Sprintf("%v", fieldParams["name"]), Type: fmt.Sprintf("%v", fieldParams["type"])})
 						}
 					}
 				}
@@ -450,54 +643,36 @@ func MetadataFiles(sourceDirectory string) ([]string, error) {
 	return metadataFiles, nil
 }
 
-func stepTemplate(myStepInfo stepInfo) []byte {
+func isCLIParam(myType string) bool {
+	return myType != "map[string]interface{}"
+}
 
+func stepTemplate(myStepInfo stepInfo, templateName, goTemplate string) []byte {
 	funcMap := sprig.HermeticTxtFuncMap()
 	funcMap["flagType"] = flagType
 	funcMap["golangName"] = golangNameTitle
 	funcMap["title"] = strings.Title
 	funcMap["longName"] = longName
 	funcMap["uniqueName"] = mustUniqName
+	funcMap["isCLIParam"] = isCLIParam
 
-	tmpl, err := template.New("step").Funcs(funcMap).Parse(stepGoTemplate)
-	checkError(err)
-
-	var generatedCode bytes.Buffer
-	err = tmpl.Execute(&generatedCode, myStepInfo)
-	checkError(err)
-
-	return generatedCode.Bytes()
+	return generateCode(myStepInfo, templateName, goTemplate, funcMap)
 }
 
-func stepTestTemplate(myStepInfo stepInfo) []byte {
-
-	funcMap := sprig.HermeticTxtFuncMap()
-	funcMap["flagType"] = flagType
-	funcMap["golangName"] = golangNameTitle
-	funcMap["title"] = strings.Title
-	funcMap["uniqueName"] = mustUniqName
-
-	tmpl, err := template.New("stepTest").Funcs(funcMap).Parse(stepTestGoTemplate)
-	checkError(err)
-
-	var generatedCode bytes.Buffer
-	err = tmpl.Execute(&generatedCode, myStepInfo)
-	checkError(err)
-
-	return generatedCode.Bytes()
-}
-
-func stepImplementation(myStepInfo stepInfo) []byte {
-
+func stepImplementation(myStepInfo stepInfo, templateName, goTemplate string) []byte {
 	funcMap := sprig.HermeticTxtFuncMap()
 	funcMap["title"] = strings.Title
 	funcMap["uniqueName"] = mustUniqName
 
-	tmpl, err := template.New("impl").Funcs(funcMap).Parse(stepGoImplementationTemplate)
+	return generateCode(myStepInfo, templateName, goTemplate, funcMap)
+}
+
+func generateCode(dataObject interface{}, templateName, goTemplate string, funcMap template.FuncMap) []byte {
+	tmpl, err := template.New(templateName).Funcs(funcMap).Parse(goTemplate)
 	checkError(err)
 
 	var generatedCode bytes.Buffer
-	err = tmpl.Execute(&generatedCode, myStepInfo)
+	err = tmpl.Execute(&generatedCode, dataObject)
 	checkError(err)
 
 	return generatedCode.Bytes()
@@ -507,6 +682,14 @@ func longName(long string) string {
 	l := strings.ReplaceAll(long, "`", "` + \"`\" + `")
 	l = strings.TrimSpace(l)
 	return l
+}
+
+func resourceFieldType(fieldType string) string {
+	//TODO: clarify why fields are initialized with <nil> and tags are initialized with ''
+	if len(fieldType) == 0 || fieldType == "<nil>" {
+		return "string"
+	}
+	return fieldType
 }
 
 func golangName(name string) string {

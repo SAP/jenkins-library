@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"encoding/json"
 	"encoding/xml"
 
 	"github.com/SAP/jenkins-library/pkg/checkmarx"
@@ -26,6 +27,8 @@ import (
 
 func checkmarxExecuteScan(config checkmarxExecuteScanOptions, telemetryData *telemetry.CustomData, influx *checkmarxExecuteScanInflux) {
 	client := &piperHttp.Client{}
+	options := piperHttp.ClientOptions{MaxRetries: config.MaxRetries}
+	client.SetOptions(options)
 	sys, err := checkmarx.NewSystemInstance(client, config.ServerURL, config.Username, config.Password)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Failed to create Checkmarx client talking to URL %v", config.ServerURL)
@@ -36,26 +39,40 @@ func checkmarxExecuteScan(config checkmarxExecuteScanOptions, telemetryData *tel
 }
 
 func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace string, influx *checkmarxExecuteScanInflux) error {
-
-	team, err := loadTeam(sys, config.TeamName, config.TeamID)
-	if err != nil {
-		return errors.Wrap(err, "failed to load team")
+	teamID := config.TeamID
+	if len(teamID) == 0 {
+		team, err := loadTeam(sys, config.TeamName)
+		if err != nil {
+			return errors.Wrap(err, "failed to load team")
+		}
+		teamIDBytes, _ := team.ID.MarshalJSON()
+		err = json.Unmarshal(teamIDBytes, &teamID)
+		if err != nil {
+			var teamIDInt int
+			err = json.Unmarshal(teamIDBytes, &teamIDInt)
+			if err != nil {
+				return errors.Wrap(err, "failed to unmarshall team.ID")
+			}
+			teamID = strconv.Itoa(teamIDInt)
+		}
 	}
-	project, projectName, err := loadExistingProject(sys, config.ProjectName, config.PullRequestName, team.ID)
+	project, projectName, err := loadExistingProject(sys, config.ProjectName, config.PullRequestName, teamID)
 	if err != nil {
 		return errors.Wrap(err, "error when trying to load project")
 	}
 	if project.Name == projectName {
 		log.Entry().Infof("Project %v exists...", projectName)
 		if len(config.Preset) > 0 {
-			err := setPresetForProject(sys, project.ID, projectName, config.Preset, config.SourceEncoding)
+			presetID, _ := strconv.Atoi(config.Preset)
+			err := setPresetForProject(sys, project.ID, presetID, projectName, config.Preset, config.SourceEncoding)
 			if err != nil {
 				return errors.Wrapf(err, "failed to set preset %v for project %v", config.Preset, projectName)
 			}
 		}
 	} else {
 		log.Entry().Infof("Project %v does not exist, starting to create it...", projectName)
-		project, err = createAndConfigureNewProject(sys, projectName, team.ID, config.Preset, config.SourceEncoding)
+		presetID, _ := strconv.Atoi(config.Preset)
+		project, err = createAndConfigureNewProject(sys, projectName, teamID, presetID, config.Preset, config.SourceEncoding)
 		if err != nil {
 			return errors.Wrapf(err, "failed to create and configure new project %v", projectName)
 		}
@@ -68,20 +85,13 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace
 	return nil
 }
 
-func loadTeam(sys checkmarx.System, teamName, teamID string) (checkmarx.Team, error) {
+func loadTeam(sys checkmarx.System, teamName string) (checkmarx.Team, error) {
 	teams := sys.GetTeams()
 	team := checkmarx.Team{}
-	if len(teams) > 0 {
-		if len(teamName) > 0 {
-			team = sys.FilterTeamByName(teams, teamName)
-		} else {
-			team = sys.FilterTeamByID(teams, teamID)
-		}
+	if len(teams) > 0 && len(teamName) > 0 {
+		return sys.FilterTeamByName(teams, teamName), nil
 	}
-	if len(team.ID) == 0 {
-		return team, fmt.Errorf("failed to identify team by teamName %v as well as by checkmarxGroupId %v", teamName, teamID)
-	}
-	return team, nil
+	return team, fmt.Errorf("failed to identify team by teamName %v", teamName)
 }
 
 func loadExistingProject(sys checkmarx.System, initialProjectName, pullRequestName, teamID string) (checkmarx.Project, string, error) {
@@ -311,7 +321,7 @@ func reportToInflux(results map[string]interface{}, influx *checkmarxExecuteScan
 	influx.checkmarx_data.fields.owner = results["Owner"].(string)
 	influx.checkmarx_data.fields.scan_id = results["ScanId"].(string)
 	influx.checkmarx_data.fields.project_id = results["ProjectId"].(string)
-	influx.checkmarx_data.fields.project_name = results["ProjectName"].(string)
+	influx.checkmarx_data.fields.projectName = results["ProjectName"].(string)
 	influx.checkmarx_data.fields.team = results["Team"].(string)
 	influx.checkmarx_data.fields.team_full_path_on_report_date = results["TeamFullPathOnReportDate"].(string)
 	influx.checkmarx_data.fields.scan_start = results["ScanStart"].(string)
@@ -409,7 +419,7 @@ func enforceThresholds(config checkmarxExecuteScanOptions, results map[string]in
 	return insecure
 }
 
-func createAndConfigureNewProject(sys checkmarx.System, projectName, teamID, presetValue, engineConfiguration string) (checkmarx.Project, error) {
+func createAndConfigureNewProject(sys checkmarx.System, projectName, teamID string, presetIDValue int, presetValue, engineConfiguration string) (checkmarx.Project, error) {
 	if len(presetValue) == 0 {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return checkmarx.Project{}, fmt.Errorf("preset not specified, creation of project %v failed", projectName)
@@ -420,7 +430,7 @@ func createAndConfigureNewProject(sys checkmarx.System, projectName, teamID, pre
 		return checkmarx.Project{}, errors.Wrapf(err, "cannot create project %v", projectName)
 	}
 
-	if err := setPresetForProject(sys, projectCreateResult.ID, projectName, presetValue, engineConfiguration); err != nil {
+	if err := setPresetForProject(sys, projectCreateResult.ID, presetIDValue, projectName, presetValue, engineConfiguration); err != nil {
 		return checkmarx.Project{}, errors.Wrapf(err, "failed to set preset %v for project", presetValue)
 	}
 
@@ -438,22 +448,13 @@ func createAndConfigureNewProject(sys checkmarx.System, projectName, teamID, pre
 func loadPreset(sys checkmarx.System, presetValue string) (checkmarx.Preset, error) {
 	presets := sys.GetPresets()
 	var preset checkmarx.Preset
-	presetID, err := strconv.Atoi(presetValue)
-	var configuredPresetID int
 	var configuredPresetName string
-	if err != nil {
-		preset = sys.FilterPresetByName(presets, presetValue)
-		configuredPresetName = presetValue
-	} else {
-		preset = sys.FilterPresetByID(presets, presetID)
-		configuredPresetID = presetID
-	}
-
-	if configuredPresetID > 0 && preset.ID == configuredPresetID || len(configuredPresetName) > 0 && preset.Name == configuredPresetName {
+	preset = sys.FilterPresetByName(presets, presetValue)
+	configuredPresetName = presetValue
+	if len(configuredPresetName) > 0 && preset.Name == configuredPresetName {
 		log.Entry().Infof("Loaded preset %v", preset.Name)
 		return preset, nil
 	}
-
 	log.Entry().Infof("Preset '%s' not found. Available presets are:", presetValue)
 	for _, prs := range presets {
 		log.Entry().Infof("preset id: %v, name: '%v'", prs.ID, prs.Name)
@@ -463,13 +464,16 @@ func loadPreset(sys checkmarx.System, presetValue string) (checkmarx.Preset, err
 
 // setPresetForProject is only called when it has already been established that the preset needs to be set.
 // It will exit via the logging framework in case the preset could be found, or the project could not be updated.
-func setPresetForProject(sys checkmarx.System, projectID int, projectName, presetValue, engineConfiguration string) error {
-	preset, err := loadPreset(sys, presetValue)
-	if err != nil {
-		return errors.Wrapf(err, "preset %v not found, configuration of project %v failed", presetValue, projectName)
+func setPresetForProject(sys checkmarx.System, projectID, presetIDValue int, projectName, presetValue, engineConfiguration string) error {
+	presetID := presetIDValue
+	if presetID <= 0 {
+		preset, err := loadPreset(sys, presetValue)
+		if err != nil {
+			return errors.Wrapf(err, "preset %v not found, configuration of project %v failed", presetValue, projectName)
+		}
+		presetID = preset.ID
 	}
-
-	err = sys.UpdateProjectConfiguration(projectID, preset.ID, engineConfiguration)
+	err := sys.UpdateProjectConfiguration(projectID, presetID, engineConfiguration)
 	if err != nil {
 		return errors.Wrapf(err, "updating configuration of project %v failed", projectName)
 	}

@@ -28,6 +28,7 @@ type detectExecuteScanOptions struct {
 	ProjectSettingsFile string   `json:"projectSettingsFile,omitempty"`
 	GlobalSettingsFile  string   `json:"globalSettingsFile,omitempty"`
 	M2Path              string   `json:"m2Path,omitempty"`
+	InstallArtifacts    bool     `json:"installArtifacts,omitempty"`
 }
 
 // DetectExecuteScanCommand Executes Synopsys Detect scan
@@ -71,6 +72,7 @@ Please configure your BlackDuck server Url using the serverUrl parameter and the
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
@@ -103,6 +105,7 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Path or url to the mvn settings file that should be used as project settings file.")
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Path or url to the mvn settings file that should be used as global settings file")
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
+	cmd.Flags().BoolVar(&stepConfig.InstallArtifacts, "installArtifacts", false, "If enabled, it will install all artifacts to the local maven repository to make them available before running detect. This is required if any maven module has dependencies to other modules in the repository and they were not installed before.")
 
 	cmd.MarkFlagRequired("token")
 	cmd.MarkFlagRequired("projectName")
@@ -113,8 +116,9 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 func detectExecuteScanMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "detectExecuteScan",
-			Aliases: []config.Alias{},
+			Name:        "detectExecuteScan",
+			Aliases:     []config.Alias{},
+			Description: "Executes Synopsys Detect scan",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -125,6 +129,12 @@ func detectExecuteScanMetadata() config.StepData {
 							{
 								Name: "detectTokenCredentialsId",
 								Type: "secret",
+							},
+
+							{
+								Name:  "",
+								Paths: []string{"$(vaultPath)/detect", "$(vaultBasePath)/$(vaultPipelineName)/detect", "$(vaultBasePath)/GROUP-SECRETS/detect"},
+								Type:  "vaultSecret",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -241,7 +251,18 @@ func detectExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
 					},
+					{
+						Name:        "installArtifacts",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
 				},
+			},
+			Containers: []config.Container{
+				{Name: "openjdk", Image: "openjdk:11", WorkingDir: "/root", Options: []config.Option{{Name: "-u", Value: "0"}}},
 			},
 		},
 	}

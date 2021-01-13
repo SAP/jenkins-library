@@ -300,12 +300,12 @@ func TestGetContextParameterFilters(t *testing.T) {
 
 	t.Run("Vault", func(t *testing.T) {
 		filters := metadata4.GetContextParameterFilters()
-		assert.Equal(t, []string{"vaultAppRoleCredentialId", "vaultAppRoleSecretCredentialId"}, filters.All, "incorrect filter All")
-		assert.Equal(t, []string{"vaultAppRoleCredentialId", "vaultAppRoleSecretCredentialId"}, filters.General, "incorrect filter General")
-		assert.Equal(t, []string{"vaultAppRoleCredentialId", "vaultAppRoleSecretCredentialId"}, filters.Steps, "incorrect filter Steps")
-		assert.Equal(t, []string{"vaultAppRoleCredentialId", "vaultAppRoleSecretCredentialId"}, filters.Stages, "incorrect filter Stages")
-		assert.Equal(t, []string{"vaultAppRoleCredentialId", "vaultAppRoleSecretCredentialId"}, filters.Parameters, "incorrect filter Parameters")
-		assert.Equal(t, []string{"vaultAppRoleCredentialId", "vaultAppRoleSecretCredentialId"}, filters.Env, "incorrect filter Env")
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId"}, filters.All, "incorrect filter All")
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId"}, filters.General, "incorrect filter General")
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId"}, filters.Steps, "incorrect filter Steps")
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId"}, filters.Stages, "incorrect filter Stages")
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId"}, filters.Parameters, "incorrect filter Parameters")
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId"}, filters.Env, "incorrect filter Env")
 	})
 }
 
@@ -360,10 +360,11 @@ func TestGetContextDefaults(t *testing.T) {
 							{Name: "env1", Value: "val1"},
 							{Name: "env2", Value: "val2"},
 						},
-						Name:       "testcontainer",
-						Image:      "testImage:tag",
-						Shell:      "/bin/bash",
-						WorkingDir: "/test/dir",
+						Name:            "testcontainer",
+						Image:           "testImage:tag",
+						ImagePullPolicy: "Always",
+						Shell:           "/bin/bash",
+						WorkingDir:      "/test/dir",
 						Options: []Option{
 							{Name: "opt1", Value: "optValue1"},
 							{Name: "opt2", Value: "optValue2"},
@@ -484,6 +485,33 @@ func TestGetContextDefaults(t *testing.T) {
 		assert.Equal(t, "testImage1:tag", notMetParameter["dockerImage"])
 	})
 
+	t.Run("If ImagePullPolicy not defined pullImage parameter not set", func(t *testing.T) {
+		metadata := StepData{
+			Spec: StepSpec{
+				Containers: []Container{
+					{
+						Image: "testImage1:tag",
+					},
+				},
+				Sidecars: []Container{
+					{
+						Image: "testImage1:tag",
+					},
+				},
+			},
+		}
+
+		cd, err := metadata.GetContextDefaults("testStep")
+
+		assert.NoError(t, err)
+
+		var d PipelineDefaults
+		d.ReadPipelineDefaults([]io.ReadCloser{cd})
+
+		assert.Equal(t, nil, d.Defaults[0].Steps["testStep"]["dockerPullImage"], "dockerPullImage default not available")
+		assert.Equal(t, nil, d.Defaults[0].Steps["testStep"]["sidecarPullImage"], "sidecarPullImage default not available")
+	})
+
 	t.Run("Negative case", func(t *testing.T) {
 		metadataErr := []StepData{
 			{},
@@ -600,4 +628,47 @@ func TestGetResourceParameters(t *testing.T) {
 			assert.Equal(t, test.expected, got)
 		})
 	}
+}
+
+func TestAvoidEmptyFields(t *testing.T) {
+	t.Parallel()
+	t.Run("ignore empty string", func(t *testing.T) {
+		t.Parallel()
+		m := make(map[string]interface{})
+		putStringIfNotEmpty(m, "key", "")
+		assert.Len(t, m, 0)
+	})
+	t.Run("add non-empty string", func(t *testing.T) {
+		t.Parallel()
+		m := make(map[string]interface{})
+		putStringIfNotEmpty(m, "key", "value")
+		assert.Equal(t, "value", m["key"])
+	})
+	t.Run("ignore empty slice", func(t *testing.T) {
+		t.Parallel()
+		m := make(map[string]interface{})
+		putSliceIfNotEmpty(m, "key", []string{})
+		assert.Len(t, m, 0)
+	})
+	t.Run("add non-empty slice", func(t *testing.T) {
+		t.Parallel()
+		m := make(map[string]interface{})
+		putSliceIfNotEmpty(m, "key", []string{"value"})
+		assert.Equal(t, []string{"value"}, m["key"])
+	})
+	t.Run("ignore empty map", func(t *testing.T) {
+		t.Parallel()
+		m := make(map[string]interface{})
+		value := make(map[string]string)
+		putMapIfNotEmpty(m, "key", value)
+		assert.Len(t, m, 0)
+	})
+	t.Run("add non-empty map", func(t *testing.T) {
+		t.Parallel()
+		m := make(map[string]interface{})
+		value := make(map[string]string)
+		value["param"] = "value"
+		putMapIfNotEmpty(m, "key", value)
+		assert.Equal(t, value, m["key"])
+	})
 }

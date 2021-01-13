@@ -63,6 +63,7 @@ supports ci friendly versioning by flattening the pom before installing.`,
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
@@ -95,8 +96,9 @@ func addMavenBuildFlags(cmd *cobra.Command, stepConfig *mavenBuildOptions) {
 func mavenBuildMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "mavenBuild",
-			Aliases: []config.Alias{{Name: "mavenExecute", Deprecated: false}},
+			Name:        "mavenBuild",
+			Aliases:     []config.Alias{{Name: "mavenExecute", Deprecated: false}},
+			Description: "This step will install the maven project into the local maven repository.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -158,6 +160,9 @@ func mavenBuildMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "maven/logSuccessfulMavenTransfers"}},
 					},
 				},
+			},
+			Containers: []config.Container{
+				{Name: "mvn", Image: "maven:3.6-jdk-8"},
 			},
 		},
 	}

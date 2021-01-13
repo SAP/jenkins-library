@@ -100,7 +100,7 @@ class TemporaryCredentialsUtilsTest extends BasePiperTest {
         thrown.expect(hudson.AbortException)
         thrown.expectMessage("None of the directories [./, integration-tests/src/test/resources/] contains any of the files systems.yml, systems.yaml or systems.json. " +
             "One of those files is required in order to activate the integration test credentials configured in the pipeline configuration file of this project. " +
-            "Please add the file as explained in the SAP Cloud SDK documentation.")
+            "Please add the file as explained in project 'Piper' documentation.")
 
         credUtils.writeCredentials([credential], directories, filename )
     }
