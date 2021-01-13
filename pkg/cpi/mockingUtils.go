@@ -15,11 +15,7 @@ func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, 
 	switch functionName {
 	case "DeployIntegrationDesigntimeArtifact":
 		if testType == "Positive" {
-			res := http.Response{
-				StatusCode: 202,
-				Body:       ioutil.NopCloser(bytes.NewReader([]byte(``))),
-			}
-			return &res, nil
+			return GetEmptyBodyResponse()
 		}
 		res := http.Response{
 			StatusCode: 500,
@@ -34,11 +30,7 @@ func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, 
 		return &res, errors.New("Internal Server Error")
 	case "UpdateIntegrationArtifactConfiguration":
 		if testType == "Positive" {
-			res := http.Response{
-				StatusCode: 202,
-				Body:       ioutil.NopCloser(bytes.NewReader([]byte(`Update triggered for configuration parameter.`))),
-			}
-			return &res, nil
+			return GetEmptyBodyResponse()
 		}
 		res := http.Response{
 			StatusCode: 404,
@@ -58,4 +50,13 @@ func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, 
 		}
 		return &res, errors.New("Service not Found")
 	}
+}
+
+//GetEmptyBodyResponse -Get emty response body
+func GetEmptyBodyResponse() (*http.Response, error) {
+	res := http.Response{
+		StatusCode: 202,
+		Body:       ioutil.NopCloser(bytes.NewReader([]byte(``))),
+	}
+	return &res, nil
 }
