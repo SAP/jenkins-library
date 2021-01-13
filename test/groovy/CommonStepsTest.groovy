@@ -169,7 +169,8 @@ public class CommonStepsTest extends BasePiperTest{
         'detectExecuteScan', //implementing new golang pattern without fields
         'kanikoExecute', //implementing new golang pattern without fields
         'gitopsUpdateDeployment', //implementing new golang pattern without fields
-        'vaultRotateSecretId' //implementing new golang pattern without fields
+        'vaultRotateSecretId', //implementing new golang pattern without fields
+        'deployIntegrationArtifact' //implementing new golang pattern without fields
     ]
 
     @Test
