@@ -129,18 +129,6 @@ func TestAddGeneralDefaults(t *testing.T) {
 		assert.Equal(t, "testuserKey", testConfig[8].Value)
 	})
 
-	t.Run("verbose", func(t *testing.T) {
-		testConfig := ConfigOptions{}
-		whitesourceConfig := ScanOptions{
-			Verbose: true,
-		}
-		testConfig.addGeneralDefaults(&whitesourceConfig)
-		assert.Equal(t, "log.level", testConfig[2].Name)
-		assert.Equal(t, "debug", testConfig[2].Value)
-		assert.Equal(t, "log.files.level", testConfig[3].Name)
-		assert.Equal(t, "debug", testConfig[3].Value)
-	})
-
 	t.Run("DIST product", func(t *testing.T) {
 		testConfig := ConfigOptions{}
 		whitesourceConfig := ScanOptions{
@@ -156,6 +144,45 @@ func TestAddGeneralDefaults(t *testing.T) {
 		assert.Equal(t, false, testConfig[0].Value)
 		assert.Equal(t, "forceCheckAllDependencies", testConfig[1].Name)
 		assert.Equal(t, false, testConfig[1].Value)
+	})
+
+	t.Run("verbose", func(t *testing.T) {
+		testConfig := ConfigOptions{}
+		whitesourceConfig := ScanOptions{
+			Verbose: true,
+		}
+		testConfig.addGeneralDefaults(&whitesourceConfig)
+		assert.Equal(t, "log.level", testConfig[2].Name)
+		assert.Equal(t, "debug", testConfig[2].Value)
+		assert.Equal(t, "log.files.level", testConfig[3].Name)
+		assert.Equal(t, "debug", testConfig[3].Value)
+	})
+
+	t.Run("includes and excludes", func(t *testing.T) {
+		testConfig := ConfigOptions{}
+		whitesourceConfig := ScanOptions{
+			Excludes: "**/excludes",
+			Includes: "**/includes",
+		}
+		testConfig.addGeneralDefaults(&whitesourceConfig)
+		assert.Equal(t, "excludes", testConfig[2].Name)
+		assert.Equal(t, "**/excludes", testConfig[2].Value)
+		assert.Equal(t, true, testConfig[2].Force)
+		assert.Equal(t, "includes", testConfig[3].Name)
+		assert.Equal(t, "**/includes", testConfig[3].Value)
+		assert.Equal(t, true, testConfig[3].Force)
+	})
+
+	t.Run("maven - m2 path", func(t *testing.T) {
+		testConfig := ConfigOptions{}
+		whitesourceConfig := ScanOptions{
+			BuildTool: "maven",
+			M2Path:    "test/.m2",
+		}
+		testConfig.addGeneralDefaults(&whitesourceConfig)
+		assert.Equal(t, "maven.m2RepositoryPath", testConfig[2].Name)
+		assert.Equal(t, "test/.m2", testConfig[2].Value)
+		assert.Equal(t, true, testConfig[2].Force)
 	})
 }
 

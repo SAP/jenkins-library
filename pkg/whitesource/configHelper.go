@@ -99,12 +99,12 @@ func (c *ConfigOptions) addGeneralDefaults(config *ScanOptions) {
 		}...)
 	}
 
-	if len(config.Includes) > 0 {
-		cOptions = append(cOptions, ConfigOption{Name: "includes", Value: config.Includes, Force: true})
-	}
-
 	if len(config.Excludes) > 0 {
 		cOptions = append(cOptions, ConfigOption{Name: "excludes", Value: config.Excludes, Force: true})
+	}
+
+	if len(config.Includes) > 0 {
+		cOptions = append(cOptions, ConfigOption{Name: "includes", Value: config.Includes, Force: true})
 	}
 
 	//ToDo: handle m2 path - previously done in autoGenerateWhitesourceConfig()

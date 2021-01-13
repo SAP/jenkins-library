@@ -221,6 +221,8 @@ spec:
           - STAGES
           - STEPS
       - name: productVersion
+        aliases:
+          - name: whitesourceProductVersion
         type: string
         description: "Version of the WhiteSource product to be created and used for results aggregation,
           usually determined automatically."
