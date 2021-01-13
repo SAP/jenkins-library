@@ -1,5 +1,5 @@
 metadata:
-  name: executeNewman
+  name: newmanExecute
   description: This script executes [Postman](https://www.getpostman.com) tests from a collection via the [Newman](https://www.getpostman.com/docs/v6/postman/collection_runs/command_line_integration_with_newman) command line tool.
 #  longDescription: |
 #    This step allows you to update the deployment manifest for Kubernetes in a git repository.

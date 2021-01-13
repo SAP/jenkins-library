@@ -6,12 +6,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestExecuteNewmanCommand(t *testing.T) {
+func TestNewmanExecuteCommand(t *testing.T) {
 	t.Parallel()
 
-	testCmd := ExecuteNewmanCommand()
+	testCmd := NewmanExecuteCommand()
 
 	// only high level testing performed - details are tested in step generation procedure
-	assert.Equal(t, "executeNewman", testCmd.Use, "command name incorrect")
+	assert.Equal(t, "newmanExecute", testCmd.Use, "command name incorrect")
 
 }

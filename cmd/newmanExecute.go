@@ -3,17 +3,22 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"path/filepath"
+	"strings"
+	"text/template"
+
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/pkg/errors"
-	"path/filepath"
-	"strings"
-	"text/template"
 )
 
-type executeNewmanUtils interface {
+type newmanExecuteUtils interface {
+	// Add more methods here, or embed additional interfaces, or remove/replace as required.
+	// The newmanExecuteUtils interface should be descriptive of your runtime dependencies,
+	// i.e. include everything you need to be able to mock in tests.
+	// Unit tests shall be executable in parallel (not depend on global state), and don't (re-)test dependencies.
 	Glob(pattern string) (matches []string, err error)
 
 	RunShell(shell, script string) error
@@ -21,18 +26,18 @@ type executeNewmanUtils interface {
 	SetEnv(env []string)
 }
 
-type executeNewmanUtilsBundle struct {
+type newmanExecuteUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
 
-	// Embed more structs as necessary to implement methods or interfaces you add to executeNewmanUtils.
+	// Embed more structs as necessary to implement methods or interfaces you add to newmanExecuteUtils.
 	// Structs embedded in this way must each have a unique set of methods attached.
 	// If there is no struct which implements the method you need, attach the method to
-	// executeNewmanUtilsBundle and forward to the implementation of the dependency.
+	// newmanExecuteUtilsBundle and forward to the implementation of the dependency.
 }
 
-func newExecuteNewmanUtils() executeNewmanUtils {
-	utils := executeNewmanUtilsBundle{
+func newNewmanExecuteUtils() newmanExecuteUtils {
+	utils := newmanExecuteUtilsBundle{
 		Command: &command.Command{},
 		Files:   &piperutils.Files{},
 	}
@@ -42,10 +47,10 @@ func newExecuteNewmanUtils() executeNewmanUtils {
 	return &utils
 }
 
-func executeNewman(config executeNewmanOptions, _ *telemetry.CustomData) {
+func newmanExecute(config newmanExecuteOptions, _ *telemetry.CustomData) {
 	// Utils can be used wherever the command.ExecRunner interface is expected.
 	// It can also be used for example as a mavenExecRunner.
-	utils := newExecuteNewmanUtils()
+	utils := newNewmanExecuteUtils()
 
 	// For HTTP calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	// and use a  &piperhttp.Client{} in a custom system
@@ -53,14 +58,13 @@ func executeNewman(config executeNewmanOptions, _ *telemetry.CustomData) {
 
 	// Error situations should be bubbled up until they reach the line below which will then stop execution
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
-	err := runExecuteNewman(&config, utils)
+	err := runNewmanExecute(&config, utils)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runExecuteNewman(config *executeNewmanOptions, utils executeNewmanUtils) error {
-
+func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) error {
 	collectionList, err := utils.Glob(config.NewmanCollection)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
@@ -139,7 +143,7 @@ func runExecuteNewman(config *executeNewmanOptions, utils executeNewmanUtils) er
 	return nil
 }
 
-func logVersions(utils executeNewmanUtils) error {
+func logVersions(utils newmanExecuteUtils) error {
 	//utils.SetDir(".") // TODO: Need this?
 	err := utils.RunExecutable("node", "--version")
 	if err != nil {
@@ -157,7 +161,7 @@ func logVersions(utils executeNewmanUtils) error {
 	return nil
 }
 
-func installNewman(newmanInstallCommand string, utils executeNewmanUtils) error {
+func installNewman(newmanInstallCommand string, utils newmanExecuteUtils) error {
 	//args := []string{ /*"NPM_CONFIG_PREFIX=~/.npm-global", */ newmanInstallCommand}
 	//script := strings.Join(args, " ")
 	////utils.SetDir(".") // TODO: Need this?
@@ -173,7 +177,7 @@ func installNewman(newmanInstallCommand string, utils executeNewmanUtils) error 
 	return nil
 }
 
-func resolveTemplate(config *executeNewmanOptions, collection string) (string, error) {
+func resolveTemplate(config *newmanExecuteOptions, collection string) (string, error) {
 	collectionDisplayName := defineCollectionDisplayName(collection)
 
 	type TemplateConfig struct {
@@ -207,70 +211,3 @@ func defineCollectionDisplayName(collection string) string {
 	replacedSeparators := strings.Replace(collection, string(filepath.Separator), "_", -1)
 	return strings.Split(replacedSeparators, ".")[0]
 }
-
-//
-//func getXsuaaCredentials(apiEndpoint, org, space, credentialsId, appName string, verbose bool) (string, string, error) {
-//	return getAppEnvironment(apiEndpoint, org, space, credentialsId, appName, verbose)
-//}
-//
-//func getAppEnvironment(apiEndpoint, org, space, credentialsId, appName string, verbose bool) (string, string, error) {
-//
-//	authEndpoint, err := getAuthEndPoint(apiEndpoint, verbose)
-//	if err != nil {
-//		return "", "", err
-//	}
-//
-//	_, err = getBearerToken(authEndpoint, credentialsId, verbose)
-//	if err != nil {
-//		return "", "", err
-//	}
-//
-//	//	appUrl := getAppRefUrl(apiEndpoint, org, space, bearerToken, appName, verbose)
-//	//
-//	//	response := script.httpRequest
-//	//url:
-//	//	"${appUrl}/env", quiet: !verbose,
-//	//		customHeaders:[[name: 'Authorization', value: "${bearerToken}"]]
-//	//def envJson = script.readJSON text:"${response.content}"
-//	//return envJson
-//	return "", "", nil
-//}
-//
-//func getAuthEndPoint(apiEndpoint string, verbose bool) (string, error) {
-//	// TODO: need full struct here?
-//	type responseJson struct {
-//		authorization_endpoint string
-//	}
-//
-//	response, err := http.Get(apiEndpoint + "/v2/info") // TODO: Verbose
-//	if err != nil {
-//		return "", err
-//	}
-//	resJson := responseJson{}
-//	err = piperhttp.ParseHTTPResponseBodyJSON(response, resJson)
-//	if err != nil {
-//		return "", err
-//	}
-//	return resJson.authorization_endpoint, nil
-//}
-//
-//func getBearerToken(authorizationEndpoint, credentialsId string, verbose bool) (string, error) {
-//	return "", nil
-//
-//	//	client := &http.Client{}
-//	//	req, err := http.NewRequest("GET", "mydomain.com", nil)
-//	//	if err != nil {
-//	//		return "", err
-//	//	}
-//	//	req.SetBasicAuth(username, passwd)
-//	//	resp, err := client.Do(req)
-//	// TODO: How to handle multiple credentials in GO?
-//	//	script.withCredentials([script.usernamePassword(credentialsId: credentialsId, usernameVariable: 'usercf', passwordVariable: 'passwordcf')]) {
-//	//def token = script.httpRequest url:"${authorizationEndpoint}/oauth/token", quiet: !verbose,
-//	//httpMode:'POST',
-//	//requestBody: "username=${script.usercf}&password=${script.passwordcf}&client_id=cf&grant_type=password&response_type=token",
-//	//customHeaders: [[name: 'Content-Type', value: 'application/x-www-form-urlencoded'], [name: 'Authorization', value: 'Basic Y2Y6']]
-//	//def responseJson = script.readJSON text:"${token.content}"
-//	//return "Bearer ${responseJson.access_token.trim()}"
-//	//}
-//}

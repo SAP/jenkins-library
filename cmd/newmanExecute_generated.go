@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type executeNewmanOptions struct {
+type newmanExecuteOptions struct {
 	Verbose              bool     `json:"verbose,omitempty"`
 	NewmanCollection     string   `json:"newmanCollection,omitempty"`
 	NewmanRunCommand     string   `json:"newmanRunCommand,omitempty"`
@@ -24,15 +24,15 @@ type executeNewmanOptions struct {
 	CfAppsWithSecrets    []string `json:"cfAppsWithSecrets,omitempty"`
 }
 
-// ExecuteNewmanCommand This script executes [Postman](https://www.getpostman.com) tests from a collection via the [Newman](https://www.getpostman.com/docs/v6/postman/collection_runs/command_line_integration_with_newman) command line tool.
-func ExecuteNewmanCommand() *cobra.Command {
-	const STEP_NAME = "executeNewman"
+// NewmanExecuteCommand This script executes [Postman](https://www.getpostman.com) tests from a collection via the [Newman](https://www.getpostman.com/docs/v6/postman/collection_runs/command_line_integration_with_newman) command line tool.
+func NewmanExecuteCommand() *cobra.Command {
+	const STEP_NAME = "newmanExecute"
 
-	metadata := executeNewmanMetadata()
-	var stepConfig executeNewmanOptions
+	metadata := newmanExecuteMetadata()
+	var stepConfig newmanExecuteOptions
 	var startTime time.Time
 
-	var createExecuteNewmanCmd = &cobra.Command{
+	var createNewmanExecuteCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "This script executes [Postman](https://www.getpostman.com) tests from a collection via the [Newman](https://www.getpostman.com/docs/v6/postman/collection_runs/command_line_integration_with_newman) command line tool.",
 		Long:  ``,
@@ -70,17 +70,17 @@ func ExecuteNewmanCommand() *cobra.Command {
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			executeNewman(stepConfig, &telemetryData)
+			newmanExecute(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
 
-	addExecuteNewmanFlags(createExecuteNewmanCmd, &stepConfig)
-	return createExecuteNewmanCmd
+	addNewmanExecuteFlags(createNewmanExecuteCmd, &stepConfig)
+	return createNewmanExecuteCmd
 }
 
-func addExecuteNewmanFlags(cmd *cobra.Command, stepConfig *executeNewmanOptions) {
+func addNewmanExecuteFlags(cmd *cobra.Command, stepConfig *newmanExecuteOptions) {
 	cmd.Flags().BoolVar(&stepConfig.Verbose, "verbose", false, "Print more detailed information into the log.")
 	cmd.Flags().StringVar(&stepConfig.NewmanCollection, "newmanCollection", os.Getenv("PIPER_newmanCollection"), "The test collection that should be executed. This could also be a file pattern.")
 	cmd.Flags().StringVar(&stepConfig.NewmanRunCommand, "newmanRunCommand", os.Getenv("PIPER_newmanRunCommand"), "The newman command that will be executed inside the docker container.")
@@ -101,10 +101,10 @@ func addExecuteNewmanFlags(cmd *cobra.Command, stepConfig *executeNewmanOptions)
 }
 
 // retrieve step metadata
-func executeNewmanMetadata() config.StepData {
+func newmanExecuteMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:        "executeNewman",
+			Name:        "newmanExecute",
 			Aliases:     []config.Alias{},
 			Description: "This script executes [Postman](https://www.getpostman.com) tests from a collection via the [Newman](https://www.getpostman.com/docs/v6/postman/collection_runs/command_line_integration_with_newman) command line tool.",
 		},
