@@ -36,6 +36,16 @@ import hudson.AbortException
         'additionalPodProperties',
         'resources',
     /**
+     * Set this to 'false' to bypass a docker image pull.
+     * Useful during development process. Allows testing of images which are available in the local registry only.
+     */
+    'dockerPullImage',
+    /**
+     * Set this to 'false' to bypass a docker image pull.
+     * Useful during development process. Allows testing of images which are available in the local registry only.
+     */
+    'sidecarPullImage',
+    /**
      * Print more detailed information into the log.
      * @possibleValues `true`, `false`
      */
@@ -109,11 +119,6 @@ import hudson.AbortException
      */
     'dockerImage',
     /**
-     * Set this to 'false' to bypass a docker image pull.
-     * Useful during development process. Allows testing of images which are available in the local registry only.
-     */
-    'dockerPullImage',
-    /**
      * Specifies a dedicated user home directory for the container which will be passed as value for environment variable `HOME`.
      */
     'dockerWorkspace',
@@ -126,11 +131,6 @@ import hudson.AbortException
      * Name of the container in local network.
      */
     'sidecarName',
-    /**
-     * Set this to 'false' to bypass a docker image pull.
-     * Useful during development process. Allows testing of images which are available in the local registry only.
-     */
-    'sidecarPullImage',
     /**
      * Command executed inside the container which returns exit code 0 when the container is ready to be used.
      */
