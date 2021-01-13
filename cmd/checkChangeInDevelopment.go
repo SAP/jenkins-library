@@ -65,12 +65,12 @@ func runCheckChangeInDevelopment(config *checkChangeInDevelopmentOptions, teleme
 
 	if isInDevelopment {
 		log.Entry().Infof("Change '%s' is in status 'in development'.", config.ChangeDocumentID)
-	} else {
-		if config.FailIfStatusIsNotInDevelopment {
-			return fmt.Errorf("Change '%s' is not in status 'in development'", config.ChangeDocumentID)
-		}
-		log.Entry().Warningf("Change '%s' is not in status 'in development'. Failing the step has been explicitly disabled.", config.ChangeDocumentID)
+		return nil
 	}
+	if config.FailIfStatusIsNotInDevelopment {
+		return fmt.Errorf("Change '%s' is not in status 'in development'", config.ChangeDocumentID)
+	}
+	log.Entry().Warningf("Change '%s' is not in status 'in development'. Failing the step has been explicitly disabled.", config.ChangeDocumentID)
 	return nil
 }
 
