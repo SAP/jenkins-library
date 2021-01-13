@@ -173,6 +173,9 @@ func (c *Client) Upload(data UploadRequestData) (*http.Response, error) {
 }
 
 // SendRequest sends an http request with a defined method
+//
+// On error, any Response can be ignored and the Response.Body
+// does not need to be closed.
 func (c *Client) SendRequest(method, url string, body io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
 	httpClient := c.initialize()
 
