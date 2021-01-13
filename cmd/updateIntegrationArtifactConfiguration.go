@@ -45,9 +45,6 @@ func newUpdateIntegrationArtifactConfigurationUtils() updateIntegrationArtifactC
 func updateIntegrationArtifactConfiguration(config updateIntegrationArtifactConfigurationOptions, telemetryData *telemetry.CustomData) {
 	// Utils can be used wherever the command.ExecRunner interface is expected.
 	// It can also be used for example as a mavenExecRunner.
-	utils := newUpdateIntegrationArtifactConfigurationUtils()
-
-	utils.Stdout(log.Writer())
 	httpClient := &piperhttp.Client{}
 	// For HTTP calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	// and use a  &piperhttp.Client{} in a custom system

@@ -29,6 +29,6 @@ steps:
     integrationFlowVersion: 'MY_INTEGRATION_FLOW_VERSION'
     host: https://CPI_HOST_ITSPACES_URL
     oAuthTokenProviderUrl: https://CPI_HOST_OAUTH_URL
-	parameterKey: "MY_INTEGRATION_FLOW_CONFIG_PARAMETER_NAME",
-	parameterValue: "MY_INTEGRATION_FLOW_CONFIG_PARAMETER_VALUE",
+	  parameterKey: "MY_INTEGRATION_FLOW_CONFIG_PARAMETER_NAME",
+	  parameterValue: "MY_INTEGRATION_FLOW_CONFIG_PARAMETER_VALUE",
 ```

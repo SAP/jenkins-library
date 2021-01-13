@@ -36,21 +36,19 @@ func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, 
 		if testType == "Positive" {
 			res := http.Response{
 				StatusCode: 202,
-				Body:       ioutil.NopCloser(bytes.NewReader([]byte(``))),
+				Body:       ioutil.NopCloser(bytes.NewReader([]byte(`Update triggered for configuration parameter.`))),
 			}
 			return &res, nil
 		}
 		res := http.Response{
 			StatusCode: 404,
 			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-				"error": {
-				  "code": "Not Found",
-				  "message": {
-					"lang": "en",
-					"value": "Parameter key 'Parameter1' not found."
-				  }
-				}
-			  }`))),
+						"code": "Not Found",
+						"message": {
+						"@lang": "en",
+						"#text": "Parameter key 'Parameter1' not found."
+						}
+					}`))),
 		}
 		return &res, errors.New("Not found - either wrong version for the given Id or wrong parameter key")
 	default:
