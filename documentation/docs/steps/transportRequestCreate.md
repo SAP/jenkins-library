@@ -21,6 +21,10 @@
 | 7.53                  |  >= SP01            |
 | 7.54                  |  >= SP01            |
 
+CM Client version v2.x is preconfigured. In order to switch to
+version v1.x update `changeManagement/cts/docker/image` with
+`ppiper/cm-client:1.0.0.0`.
+
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}
