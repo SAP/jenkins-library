@@ -278,7 +278,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: ScanImageIncludeLayers
+      - name: scanImageIncludeLayers
         type: bool
         description: "For `buildTool: docker`: Defines if layers should be included."
         scope:
