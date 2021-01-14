@@ -37,6 +37,9 @@ func (s *Scan) ExecuteUAScan(config *ScanOptions, utils Utils) error {
 		return err
 	}
 
+	// ToDo: use flexible path instead of '-d .', depending on build descriptor passed in.
+	// We likely require this for more complex cases like mta
+
 	// ToDo: remove parameters which are added to UA config via RewriteUAConfigurationFile()
 	// let the scanner resolve project name on its own?
 	// Check: WhiteSource url needs to be passed! current service URL is API endpoint and not /agent endpoint!

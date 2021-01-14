@@ -254,6 +254,8 @@ func resolveProjectIdentifiers(config *ScanOptions, scan *ws.Scan, utils whiteso
 			return fmt.Errorf("failed to get build artifact description: %w", err)
 		}
 
+		//ToDo: fill version in coordinates with version from pipeline environment
+
 		nameTmpl := `{{list .GroupID .ArtifactID | join "-" | trimAll "-"}}`
 		name, version := versioning.DetermineProjectCoordinates(nameTmpl, config.VersioningModel, coordinates)
 		if scan.AggregateProjectName == "" {

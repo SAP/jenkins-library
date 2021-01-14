@@ -107,10 +107,11 @@ func (c *ConfigOptions) addGeneralDefaults(config *ScanOptions) {
 		cOptions = append(cOptions, ConfigOption{Name: "includes", Value: config.Includes, Force: true})
 	}
 
-	//ToDo: handle m2 path - previously done in autoGenerateWhitesourceConfig()
 	if config.BuildTool == "maven" && len(config.M2Path) > 0 {
 		cOptions = append(cOptions, ConfigOption{Name: "maven.m2RepositoryPath", Value: config.M2Path, Force: true})
 	}
+
+	// ToDo: handle further maven options and pass in as maven.additionalArguments
 
 	cOptions = append(cOptions, []ConfigOption{
 		{Name: "apiKey", Value: config.OrgToken, Force: true},
