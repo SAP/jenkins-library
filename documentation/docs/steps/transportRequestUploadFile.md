@@ -2,8 +2,6 @@
 
 ## ${docGenDescription}
 
-CTS upload is currently not supported. We are working on a new way to handle CTS uploads.
-
 ## Prerequisites
 
 * No prerequisites
