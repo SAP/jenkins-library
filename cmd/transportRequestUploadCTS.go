@@ -4,7 +4,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/SAP/jenkins-library/pkg/transportrequest"
+	transportrequest "github.com/SAP/jenkins-library/pkg/transportrequest/cts"
 )
 
 type transportRequestUploadUtils interface {

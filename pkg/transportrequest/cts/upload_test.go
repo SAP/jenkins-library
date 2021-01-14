@@ -1,4 +1,4 @@
-package transportrequest
+package cts
 
 import (
 	"github.com/SAP/jenkins-library/pkg/mock"

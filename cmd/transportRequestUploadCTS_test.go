@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/mock"
-	"github.com/SAP/jenkins-library/pkg/transportrequest"
+	transportrequest "github.com/SAP/jenkins-library/pkg/transportrequest/cts"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
