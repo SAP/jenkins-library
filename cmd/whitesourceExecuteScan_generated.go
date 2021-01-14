@@ -42,6 +42,9 @@ type whitesourceExecuteScanOptions struct {
 	ProjectToken                         string   `json:"projectToken,omitempty"`
 	ReportDirectoryName                  string   `json:"reportDirectoryName,omitempty"`
 	Reporting                            bool     `json:"reporting,omitempty"`
+	ScanImage                            string   `json:"scanImage,omitempty"`
+	ScanImageIncludeLayers               bool     `json:"ScanImageIncludeLayers,omitempty"`
+	ScanImageRegistryURL                 string   `json:"scanImageRegistryUrl,omitempty"`
 	ScanType                             string   `json:"scanType,omitempty"`
 	SecurityVulnerabilities              bool     `json:"securityVulnerabilities,omitempty"`
 	ServiceURL                           string   `json:"serviceUrl,omitempty"`
@@ -186,6 +189,9 @@ func addWhitesourceExecuteScanFlags(cmd *cobra.Command, stepConfig *whitesourceE
 	cmd.Flags().StringVar(&stepConfig.ProjectToken, "projectToken", os.Getenv("PIPER_projectToken"), "Project token to execute scan on. Ignored for scan types `maven`, `mta` and `npm`. Used for project aggregation when scanning with the Unified Agent and can be provided as an alternative to `projectName`.")
 	cmd.Flags().StringVar(&stepConfig.ReportDirectoryName, "reportDirectoryName", `whitesource-reports`, "Name of the directory to save vulnerability/risk reports to")
 	cmd.Flags().BoolVar(&stepConfig.Reporting, "reporting", true, "Whether assessment is being done at all, defaults to `true`")
+	cmd.Flags().StringVar(&stepConfig.ScanImage, "scanImage", os.Getenv("PIPER_scanImage"), "For `buildTool: docker`: Defines the docker image which should be scanned.")
+	cmd.Flags().BoolVar(&stepConfig.ScanImageIncludeLayers, "ScanImageIncludeLayers", true, "For `buildTool: docker`: Defines if layers should be included.")
+	cmd.Flags().StringVar(&stepConfig.ScanImageRegistryURL, "scanImageRegistryUrl", os.Getenv("PIPER_scanImageRegistryUrl"), "For `buildTool: docker`: Defines the registry where the scanImage is located.")
 	cmd.Flags().StringVar(&stepConfig.ScanType, "scanType", os.Getenv("PIPER_scanType"), "Type of development stack used to implement the solution. For scan types other than `mta`, `maven`, and `npm`, the WhiteSource Unified Agent is downloaded and used to perform the scan. If the parameter is not provided, it is derived from the parameter `buildTool`, which is usually configured in the general section of the pipeline config file.")
 	cmd.Flags().BoolVar(&stepConfig.SecurityVulnerabilities, "securityVulnerabilities", true, "Whether security compliance is considered and reported as part of the assessment.")
 	cmd.Flags().StringVar(&stepConfig.ServiceURL, "serviceUrl", `https://saas.whitesourcesoftware.com/api`, "URL to the WhiteSource API endpoint.")
@@ -431,6 +437,30 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "scanImage",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "ScanImageIncludeLayers",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "scanImageRegistryUrl",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},

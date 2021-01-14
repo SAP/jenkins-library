@@ -9,16 +9,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/SAP/jenkins-library/pkg/npm"
+	piperDocker "github.com/SAP/jenkins-library/pkg/docker"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	ws "github.com/SAP/jenkins-library/pkg/whitesource"
 
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
 	"github.com/SAP/jenkins-library/pkg/command"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/npm"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/versioning"
-	ws "github.com/SAP/jenkins-library/pkg/whitesource"
+	"github.com/pkg/errors"
 )
 
 // just to make the lines less long
@@ -147,11 +149,30 @@ func runWhitesourceExecuteScan(config *ScanOptions, scan *ws.Scan, utils whiteso
 }
 
 func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment) error {
+	// Download Docker image for container scan
+	// ToDo: move it to improve testability
+	if config.BuildTool == "docker" {
+		saveImageOptions := containerSaveImageOptions{
+			ContainerImage:       config.ScanImage,
+			ContainerRegistryURL: config.ScanImageRegistryURL,
+			IncludeLayers:        config.ScanImageIncludeLayers,
+		}
+		dClientOptions := piperDocker.ClientOptions{ImageName: saveImageOptions.ContainerImage, RegistryURL: saveImageOptions.ContainerRegistryURL, LocalPath: "", IncludeLayers: saveImageOptions.IncludeLayers}
+		dClient := &piperDocker.Client{}
+		dClient.SetOptions(dClientOptions)
+		if err := runContainerSaveImage(&saveImageOptions, &telemetry.CustomData{}, "./cache", "", dClient); err != nil {
+			return errors.Wrapf(err, "failed to dowload Docker image %v", config.ScanImage)
+		}
+
+	}
+
 	// Start the scan
 	if err := executeScan(config, scan, utils); err != nil {
 		return err
 	}
 
+	// ToDo: Check this:
+	// Why is this required at all, resolveProjectIdentifiers() is already called before the scan in runWhitesourceExecuteScan()
 	// Could perhaps use scan.updateProjects(sys) directly... have not investigated what could break
 	if err := resolveProjectIdentifiers(config, scan, utils, sys); err != nil {
 		return err
@@ -414,25 +435,35 @@ func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource
 	}
 	if config.ProjectToken != "" {
 		project := ws.Project{Name: config.ProjectName, Token: config.ProjectToken}
-		if err := checkProjectSecurityViolations(cvssSeverityLimit, project, sys); err != nil {
+		if _, err := checkProjectSecurityViolations(cvssSeverityLimit, project, sys); err != nil {
 			return err
 		}
 	} else {
+		vulnerabilitiesCount := 0
+		var errorsOccured []string
 		for _, project := range scan.ScannedProjects() {
-			if err := checkProjectSecurityViolations(cvssSeverityLimit, project, sys); err != nil {
-				return err
+			// collect errors and aggregate vulnerabilities from all projects
+			if vulCount, err := checkProjectSecurityViolations(cvssSeverityLimit, project, sys); err != nil {
+				vulnerabilitiesCount += vulCount
+				errorsOccured = append(errorsOccured, fmt.Sprint(err))
 			}
+		}
+		if len(errorsOccured) > 0 {
+			if vulnerabilitiesCount > 0 {
+				log.SetErrorCategory(log.ErrorCompliance)
+			}
+			return fmt.Errorf(strings.Join(errorsOccured, ": "))
 		}
 	}
 	return nil
 }
 
 // checkSecurityViolations checks security violations and returns an error if the configured severity limit is crossed.
-func checkProjectSecurityViolations(cvssSeverityLimit float64, project ws.Project, sys whitesource) error {
+func checkProjectSecurityViolations(cvssSeverityLimit float64, project ws.Project, sys whitesource) (int, error) {
 	// get project alerts (vulnerabilities)
 	alerts, err := sys.GetProjectAlerts(project.Token)
 	if err != nil {
-		return fmt.Errorf("failed to retrieve project alerts from Whitesource: %w", err)
+		return 0, fmt.Errorf("failed to retrieve project alerts from Whitesource: %w", err)
 	}
 
 	severeVulnerabilities := 0
@@ -462,11 +493,11 @@ func checkProjectSecurityViolations(cvssSeverityLimit float64, project ws.Projec
 
 	// https://github.com/SAP/jenkins-library/blob/master/vars/whitesourceExecuteScan.groovy#L558
 	if severeVulnerabilities > 0 {
-		return fmt.Errorf("%v Open Source Software Security vulnerabilities with CVSS score greater "+
+		return severeVulnerabilities, fmt.Errorf("%v Open Source Software Security vulnerabilities with CVSS score greater "+
 			"or equal to %.1f detected in project %s",
 			severeVulnerabilities, cvssSeverityLimit, project.Name)
 	}
-	return nil
+	return 0, nil
 }
 
 func aggregateVersionWideLibraries(config *ScanOptions, utils whitesourceUtils, sys whitesource) error {

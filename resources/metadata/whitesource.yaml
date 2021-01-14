@@ -271,6 +271,28 @@ spec:
           - STAGES
           - STEPS
         default: true
+      - name: scanImage
+        type: string
+        description: "For `buildTool: docker`: Defines the docker image which should be scanned."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: ScanImageIncludeLayers
+        type: bool
+        description: "For `buildTool: docker`: Defines if layers should be included."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: true
+      - name: scanImageRegistryUrl
+        type: string
+        description: "For `buildTool: docker`: Defines the registry where the scanImage is located."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: scanType
         type: string
         description: "Type of development stack used to implement the solution.

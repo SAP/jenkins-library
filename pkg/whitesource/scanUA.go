@@ -19,6 +19,7 @@ func (s *Scan) ExecuteUAScan(config *ScanOptions, utils Utils) error {
 		return err
 	}
 
+	// Download JRE in case none is available
 	javaPath, err := downloadJre(config, utils)
 	if err != nil {
 		return err
