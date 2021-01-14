@@ -152,15 +152,16 @@ func (d *Docker) versionFromBaseImageTag() string {
 // GetCoordinates returns the coordinates
 func (d *Docker) GetCoordinates() (Coordinates, error) {
 	result := DockerDescriptor{}
-	var err error
 
 	result.GroupID = ""
 	result.ArtifactID, _ = d.GetArtifactID()
 
-	result.Version, err = d.GetVersion()
-	if err != nil {
-		return nil, err
-	}
+	result.Version = ""
+	// cannot properly resolve version unless all options are provided. Can we ensure proper parameterization?
+	// result.Version, err = d.GetVersion()
+	// if err != nil {
+	//	return nil, err
+	// }
 
 	return result, nil
 }
