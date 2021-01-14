@@ -154,9 +154,7 @@ func (c *ConfigOptions) addBuildToolDefaults(buildTool string) error {
 			{Name: "go.resolveDependencies", Value: true, Force: true},
 			{Name: "go.ignoreSourceFiles", Value: true, Force: true},
 			{Name: "go.collectDependenciesAtRuntime", Value: false},
-			{Name: "go.dependencyManager", Value: "dep"},
-			{Name: "includes", Value: "**/*.lock"},
-			{Name: "excludes", Value: "**/*sources.jar **/*javadoc.jar"},
+			{Name: "go.dependencyManager", Value: "modules"},
 		},
 		"gradle": {
 			{Name: "gradle.localRepositoryPath", Value: ".gradle", Force: false},
