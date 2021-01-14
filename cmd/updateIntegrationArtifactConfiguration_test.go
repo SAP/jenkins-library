@@ -23,7 +23,7 @@ func newUpdateIntegrationArtifactConfigurationTestsUtils() updateIntegrationArti
 func TestRunUpdateIntegrationArtifactConfiguration(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Successfull update of Integration Flow configuration parameter test", func(t *testing.T) {
+	t.Run("Successfully update of Integration Flow configuration parameter test", func(t *testing.T) {
 		config := updateIntegrationArtifactConfigurationOptions{
 			Host:                   "https://demo",
 			OAuthTokenProviderURL:  "https://demo/oauth/token",
@@ -35,7 +35,7 @@ func TestRunUpdateIntegrationArtifactConfiguration(t *testing.T) {
 			ParameterValue:         "def",
 		}
 
-		httpClient := httpMockCpis{CPIFunction: "UpdateIntegrationArtifactConfiguration", ResponseBody: ``, TestType: "Positive"}
+		httpClient := httpMockCpis{CPIFunction: "UpdateIntegrationArtifactConfiguration", ResponseBody: ``, TestType: "Positive", Method: "PUT", URL: "https://demo/api/v1/IntegrationDesigntimeArtifacts(Id='flow1',Version='1.0.1')"}
 
 		err := runUpdateIntegrationArtifactConfiguration(&config, nil, &httpClient)
 		// assert
@@ -58,6 +58,6 @@ func TestRunUpdateIntegrationArtifactConfiguration(t *testing.T) {
 
 		err := runUpdateIntegrationArtifactConfiguration(&config, nil, &httpClient)
 		// assert
-		assert.EqualError(t, err, "HTTP PUT request to https://demo/api/v1/IntegrationDesigntimeArtifacts(Id='flow1',Version='1.0.1')/$links/Configurations('myheader') failed with error: Not found - either wrong version for the given Id or wrong parameter key")
+		assert.EqualError(t, err, "HTTP \"PUT\" request to \"https://demo/api/v1/IntegrationDesigntimeArtifacts(Id='flow1',Version='1.0.1')/$links/Configurations('myheader')\" failed with error: Not found - either wrong version for the given Id or wrong parameter key")
 	})
 }

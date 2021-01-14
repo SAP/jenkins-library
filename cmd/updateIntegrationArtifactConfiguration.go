@@ -75,14 +75,14 @@ func runUpdateIntegrationArtifactConfiguration(config *updateIntegrationArtifact
 	header.Add("Accept", "application/json")
 	jsonObj := gabs.New()
 	jsonObj.Set(config.ParameterValue, "ParameterValue")
-	jsonBody, httpErr := json.Marshal(jsonObj)
+	jsonBody, jsonErr := json.Marshal(jsonObj)
 
-	if httpErr != nil {
-		return errors.Wrap(httpErr, "input json body is invalid")
+	if jsonErr != nil {
+		return errors.Wrap(jsonErr, "input json body is invalid")
 	}
 	configUpdateResp, httpErr := httpClient.SendRequest(httpMethod, configUpdateURL, bytes.NewBuffer(jsonBody), header, nil)
 	if httpErr != nil {
-		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error", httpMethod, configUpdateURL)
+		return errors.Wrapf(httpErr, "HTTP %q request to %q failed with error", httpMethod, configUpdateURL)
 	}
 
 	if configUpdateResp != nil && configUpdateResp.Body != nil {
@@ -93,7 +93,7 @@ func runUpdateIntegrationArtifactConfiguration(config *updateIntegrationArtifact
 		return errors.Errorf("did not retrieve a HTTP response")
 	}
 
-	if configUpdateResp.StatusCode == 202 {
+	if configUpdateResp.StatusCode == http.StatusAccepted {
 		log.Entry().
 			WithField("IntegrationFlowID", config.IntegrationFlowID).
 			Info("successfully updated the integration flow configuration parameter")
