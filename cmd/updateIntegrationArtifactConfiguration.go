@@ -8,7 +8,7 @@ import (
 
 	"github.com/Jeffail/gabs/v2"
 	"github.com/SAP/jenkins-library/pkg/command"
-	cpi "github.com/SAP/jenkins-library/pkg/cpi"
+	"github.com/SAP/jenkins-library/pkg/cpi"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -60,7 +60,6 @@ func updateIntegrationArtifactConfiguration(config updateIntegrationArtifactConf
 
 func runUpdateIntegrationArtifactConfiguration(config *updateIntegrationArtifactConfigurationOptions, telemetryData *telemetry.CustomData, httpClient piperhttp.Sender) error {
 	clientOptions := piperhttp.ClientOptions{}
-	httpClient.SetOptions(clientOptions)
 
 	configUpdateURL := fmt.Sprintf("%s/api/v1/IntegrationDesigntimeArtifacts(Id='%s',Version='%s')/$links/Configurations('%s')", config.Host, config.IntegrationFlowID, config.IntegrationFlowVersion, config.ParameterKey)
 	tokenParameters := cpi.TokenParameters{TokenURL: config.OAuthTokenProviderURL, Username: config.Username, Password: config.Password, Client: httpClient}

@@ -54,7 +54,7 @@ func TestRunUpdateIntegrationArtifactConfiguration(t *testing.T) {
 			ParameterValue:         "def",
 		}
 
-		httpClient := httpMockCpis{CPIFunction: "UpdateIntegrationArtifactConfiguration", ResponseBody: ``, TestType: "Negative"}
+		httpClient := httpMockCpis{CPIFunction: "UpdateIntegrationArtifactConfiguration", ResponseBody: ``, TestType: "Negative", Method: "PUT", URL: "https://demo/api/v1/IntegrationDesigntimeArtifacts(Id='flow1',Version='1.0.1')"}
 
 		err := runUpdateIntegrationArtifactConfiguration(&config, nil, &httpClient)
 		// assert
