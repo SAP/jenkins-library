@@ -244,6 +244,7 @@ func createWhiteSourceProduct(config *ScanOptions, sys whitesource) (string, err
 func resolveProjectIdentifiers(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource) error {
 	if scan.AggregateProjectName == "" || config.ProductVersion == "" {
 		options := &versioning.Options{
+			DockerImage:         config.ScanImage,
 			ProjectSettingsFile: config.ProjectSettingsFile,
 			GlobalSettingsFile:  config.GlobalSettingsFile,
 			M2Path:              config.M2Path,

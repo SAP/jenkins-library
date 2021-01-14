@@ -25,7 +25,7 @@ func (s *Scan) ExecuteUAScan(config *ScanOptions, utils Utils) error {
 		return err
 	}
 
-	// ToDo: Download Docker/container image if required
+	// ToDo: Check if Download of Docker/container image should be done here instead of in cmd/whitesourceExecuteScan.go
 
 	// ToDo: check if this is required
 	if err := s.AppendScannedProject(s.AggregateProjectName); err != nil {
