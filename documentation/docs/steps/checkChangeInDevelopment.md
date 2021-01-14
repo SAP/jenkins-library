@@ -4,7 +4,22 @@
 
 ## Prerequisites
 
-* No prerequisites
+* For type SOLMAN
+
+| SOLMAN Version | cm client version |
+|-----------------------------------------|----------------|
+|SAP Solution Manager 7.2 SP6, SP7        | cm_client v1.x |
+|SAP Solution Manager 7.2 SP 8 and higher | cm_client v2.0 |
+
+* For type CTS (without SOLMAN)
+
+| AS ABAP Version       |     Service Pack    |
+|-----------------------|---------------------|
+| 7.50                  |  >= SP12            |
+| 7.51                  |  >= SP07            |
+| 7.52                  |  >= SP03            |
+| 7.53                  |  >= SP01            |
+| 7.54                  |  >= SP01            |
 
 ## ${docGenParameters}
 
