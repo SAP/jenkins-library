@@ -5,6 +5,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/pkg/errors"
 	"strings"
 )
 
@@ -80,7 +81,7 @@ func isChangeInDevelopment(config *checkChangeInDevelopmentOptions, utils checkC
 		utils.AppendEnv([]string{fmt.Sprintf("CMCLIENT_OPTS=%s", strings.Join(config.ClientOpts, " "))})
 	}
 
-	utils.RunExecutable("cmclient",
+	err := utils.RunExecutable("cmclient",
 		"--endpoint", config.Endpoint,
 		"--user", config.Username,
 		"--password", config.Password,
@@ -88,6 +89,10 @@ func isChangeInDevelopment(config *checkChangeInDevelopmentOptions, utils checkC
 		"is-change-in-development",
 		"--change-id", config.ChangeDocumentID,
 		"--return-code")
+
+	if err != nil {
+		return false, errors.Wrap(err, "Cannot retrieve change status")
+	}
 
 	exitCode := utils.GetExitCode()
 

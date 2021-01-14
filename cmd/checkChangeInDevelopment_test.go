@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -95,7 +96,7 @@ func TestRunCheckChangeInDevelopment(t *testing.T) {
 		}
 	})
 
-	t.Run("generic failure", func(t *testing.T) {
+	t.Run("generic failure reported via exit code", func(t *testing.T) {
 
 		cmd := newCheckChangeInDevelopmentTestsUtils()
 		cmd.ExitCode = 1 // this exit code indicates something went wrong
@@ -103,6 +104,18 @@ func TestRunCheckChangeInDevelopment(t *testing.T) {
 		err := runCheckChangeInDevelopment(&config, nil, cmd)
 
 		if assert.EqualError(t, err, "Cannot retrieve change status: Check log for details") {
+			assert.Equal(t, []mock.ExecCall{expectedShellCall}, cmd.Calls)
+		}
+	})
+
+	t.Run("generic failure reported via error", func(t *testing.T) {
+
+		cmd := newCheckChangeInDevelopmentTestsUtils()
+		cmd.ShouldFailOnCommand = map[string]error{"cm.*": fmt.Errorf("%v", "Something went wrong")}
+
+		err := runCheckChangeInDevelopment(&config, nil, cmd)
+
+		if assert.EqualError(t, err, "Cannot retrieve change status: Something went wrong") {
 			assert.Equal(t, []mock.ExecCall{expectedShellCall}, cmd.Calls)
 		}
 	})
