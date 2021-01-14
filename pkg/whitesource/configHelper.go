@@ -167,7 +167,8 @@ func (c *ConfigOptions) addBuildToolDefaults(buildTool string) error {
 			{Name: "maven.ignoredScopes", Value: "test provided"},
 			{Name: "maven.ignorePomModules", Value: false},
 			{Name: "maven.runPreStep", Value: true},
-			{Name: "maven.projectNameFromDependencyFile", Value: true},
+			// ToDo: check with Klaus since when set to true name will not include groupId any longer
+			{Name: "maven.projectNameFromDependencyFile", Value: false},
 			{Name: "includes", Value: "**/*.jar"},
 			{Name: "excludes", Value: "**/*sources.jar **/*javadoc.jar"},
 		},
