@@ -100,6 +100,6 @@ func runUpdateIntegrationArtifactConfiguration(config *updateIntegrationArtifact
 		return nil
 	}
 
-	log.Entry().Errorf("a HTTP error occurred! Response Status Code: %v", configUpdateResp.StatusCode)
+	log.Entry().Errorf("a HTTP error occurred! Response Status: %v", configUpdateResp.Status)
 	return errors.Errorf("Failed to update the integration flow configuration parameter, Response Status code: %v", configUpdateResp.StatusCode)
 }
