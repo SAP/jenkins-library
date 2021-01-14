@@ -74,9 +74,8 @@ func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) er
 	if collectionList == nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return fmt.Errorf("no collection found with pattern '%v'", config.NewmanCollection)
-	} else {
-		log.Entry().Infof("Found files '%v'", collectionList)
 	}
+	log.Entry().Infof("Found files '%v'", collectionList)
 
 	err = logVersions(utils)
 	if err != nil {
@@ -89,7 +88,7 @@ func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) er
 	}
 
 	for _, collection := range collectionList {
-		cmd, err := resolveTemplate(config, collection)
+		runCommand, err := resolveTemplate(config, collection)
 		if err != nil {
 			return err
 		}
@@ -97,43 +96,41 @@ func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) er
 		commandSecrets := ""
 		hasSecrets := len(config.CfAppsWithSecrets) > 0
 		if hasSecrets {
-			//	CloudFoundry cfUtils = new CloudFoundry(script); // TODO: ???
+			//	CloudFoundry cfUtils = new CloudFoundry(script);
 			for _, appName := range config.CfAppsWithSecrets {
-				var clientId, clientSecret string
-				// def xsuaaCredentials = cfUtils.getXsuaaCredentials(config.cloudFoundry.apiEndpoint, // TODO: ???
+				var clientID, clientSecret string
+				// def xsuaaCredentials = cfUtils.getXsuaaCredentials(config.cloudFoundry.apiEndpoint,
 				// config.cloudFoundry.org,
 				// config.cloudFoundry.space,
 				// config.cloudFoundry.credentialsId,
 				// appName,
 				// config.verbose ? true : false ) //to avoid config.verbose as "null" if undefined in yaml and since function parameter boolean
 
-				commandSecrets += " --env-var " + appName + "_clientid=" + clientId + " --env-var " + appName + "_clientsecret=" + clientSecret
+				commandSecrets += " --env-var " + appName + "_clientid=" + clientID + " --env-var " + appName + "_clientsecret=" + clientSecret
 				// TODO: How to do echo in golang?
 				// echo "Exposing client id and secret for ${appName}: as ${appName}_clientid and ${appName}_clientsecret to newman"
 			}
 		}
 
 		if !config.FailOnError {
-			cmd += " --suppress-exit-code"
+			runCommand += " --suppress-exit-code"
 		}
 
-		if hasSecrets {
-			log.Entry().Info("PATH=$PATH:~/.npm-global/bin newman " + cmd + " **env/secrets**")
+		// if hasSecrets {
+		// 	log.Entry().Info("PATH=$PATH:~/.npm-global/bin newman " + runCommand + " **env/secrets**")
 
-			//utils.SetDir(".") // TODO: Need this?
-			err := utils.RunShell("/bin/sh", "set +x") // TODO: Does this help for later call?
-			if err != nil {
-				log.SetErrorCategory(log.ErrorService)
-				//TODO: other message here
-				return errors.Wrap(err, "The execution of the newman tests failed, see the log for details.")
-			}
-		}
+		// 	err := utils.RunShell("/bin/sh", "set +x") // Does this help for later call?
+		// 	if err != nil {
+		// 		log.SetErrorCategory(log.ErrorService)
+		// 		//TODO: other message here
+		// 		return errors.Wrap(err, "The execution of the newman tests failed, see the log for details.")
+		// 	}
+		// }
 
-		installCommandTokens := strings.Split(cmd, " ")
+		runCommandTokens := strings.Split(runCommand, " ")
 		//utils.SetEnv([]string{"NPM_CONFIG_PREFIX=/home/node/.npm-global",
 		//	"PATH=$PATH:.\\node_modules\\.bin"})
-		err = utils.RunExecutable(installCommandTokens[0], installCommandTokens[1:]...)
-
+		err = utils.RunExecutable(runCommandTokens[0], runCommandTokens[1:]...)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorService)
 			return errors.Wrap(err, "The execution of the newman tests failed, see the log for details.")
@@ -144,29 +141,20 @@ func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) er
 }
 
 func logVersions(utils newmanExecuteUtils) error {
-	//utils.SetDir(".") // TODO: Need this?
 	err := utils.RunExecutable("node", "--version")
 	if err != nil {
 		log.SetErrorCategory(log.ErrorInfrastructure)
 		return errors.Wrap(err, "error logging node version")
 	}
-
-	//utils.SetDir(".") // TODO: Need this?
 	err = utils.RunExecutable("npm", "--version")
 	if err != nil {
 		log.SetErrorCategory(log.ErrorInfrastructure)
 		return errors.Wrap(err, "error logging npm version")
 	}
-
 	return nil
 }
 
 func installNewman(newmanInstallCommand string, utils newmanExecuteUtils) error {
-	//args := []string{ /*"NPM_CONFIG_PREFIX=~/.npm-global", */ newmanInstallCommand}
-	//script := strings.Join(args, " ")
-	////utils.SetDir(".") // TODO: Need this?
-	//err := utils.RunExecutable("npm", script)
-
 	installCommandTokens := strings.Split(newmanInstallCommand, " ")
 	//utils.SetEnv([]string{"NPM_CONFIG_PREFIX=/home/node/.npm-global"})
 	err := utils.RunExecutable(installCommandTokens[0], installCommandTokens[1:]...)
