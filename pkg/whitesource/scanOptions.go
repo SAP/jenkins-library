@@ -35,8 +35,8 @@ type ScanOptions struct {
 
 	JreDownloadURL string
 
-	Includes string
-	Excludes string
+	Includes []string
+	Excludes []string
 
 	AgentURL   string
 	ServiceURL string

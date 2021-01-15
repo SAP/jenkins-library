@@ -161,15 +161,15 @@ func TestAddGeneralDefaults(t *testing.T) {
 	t.Run("includes and excludes", func(t *testing.T) {
 		testConfig := ConfigOptions{}
 		whitesourceConfig := ScanOptions{
-			Excludes: "**/excludes",
-			Includes: "**/includes",
+			Excludes: []string{"**/excludes1", "**/excludes2"},
+			Includes: []string{"**/includes1", "**/includes2"},
 		}
 		testConfig.addGeneralDefaults(&whitesourceConfig)
 		assert.Equal(t, "excludes", testConfig[2].Name)
-		assert.Equal(t, "**/excludes", testConfig[2].Value)
+		assert.Equal(t, "**/excludes1 **/excludes2", testConfig[2].Value)
 		assert.Equal(t, true, testConfig[2].Force)
 		assert.Equal(t, "includes", testConfig[3].Name)
-		assert.Equal(t, "**/includes", testConfig[3].Value)
+		assert.Equal(t, "**/includes1 **/includes2", testConfig[3].Value)
 		assert.Equal(t, true, testConfig[3].Force)
 	})
 

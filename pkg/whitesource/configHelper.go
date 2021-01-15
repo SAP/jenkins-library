@@ -100,11 +100,11 @@ func (c *ConfigOptions) addGeneralDefaults(config *ScanOptions) {
 	}
 
 	if len(config.Excludes) > 0 {
-		cOptions = append(cOptions, ConfigOption{Name: "excludes", Value: config.Excludes, Force: true})
+		cOptions = append(cOptions, ConfigOption{Name: "excludes", Value: strings.Join(config.Excludes, " "), Force: true})
 	}
 
 	if len(config.Includes) > 0 {
-		cOptions = append(cOptions, ConfigOption{Name: "includes", Value: config.Includes, Force: true})
+		cOptions = append(cOptions, ConfigOption{Name: "includes", Value: strings.Join(config.Includes, " "), Force: true})
 	}
 
 	if config.BuildTool == "maven" && len(config.M2Path) > 0 {

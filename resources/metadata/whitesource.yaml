@@ -134,15 +134,15 @@ spec:
           - STAGES
           - STEPS
       - name: excludes
-        type: string
-        description: Space separated list of file path patterns to exclude in the scan.
+        type: "[]string"
+        description: List of file path patterns to exclude in the scan.
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
       - name: includes
-        type: string
-        description: Space separated list of file path patterns to include in the scan.
+        type: "[]string"
+        description: List of file path patterns to include in the scan.
         scope:
           - PARAMETERS
           - STAGES

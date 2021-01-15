@@ -9,7 +9,91 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestExecuteScanUA(t *testing.T) {
+func TestExecuteUAScan(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success - non mta", func(t *testing.T) {
+		config := ScanOptions{
+			BuildTool:   "maven",
+			ProjectName: "test-project",
+			ProductName: "test-product",
+		}
+		utilsMock := NewScanUtilsMock()
+		scan := newTestScan(&config)
+
+		err := scan.ExecuteUAScan(&config, utilsMock)
+		assert.NoError(t, err)
+		assert.Equal(t, "maven", config.BuildTool)
+		assert.Contains(t, utilsMock.Calls[1].Params, config.ProductName)
+		assert.Contains(t, utilsMock.Calls[1].Params, ".")
+	})
+
+	t.Run("success - mta", func(t *testing.T) {
+		config := ScanOptions{
+			BuildTool:   "mta",
+			ProjectName: "test-project",
+			ProductName: "test-product",
+		}
+		utilsMock := NewScanUtilsMock()
+		utilsMock.AddFile("pom.xml", []byte("dummy"))
+		utilsMock.AddFile("package.json", []byte(`{"name":"my-module-name"}`))
+		scan := newTestScan(&config)
+
+		err := scan.ExecuteUAScan(&config, utilsMock)
+		assert.NoError(t, err)
+		assert.Equal(t, "mta", config.BuildTool)
+		assert.Contains(t, utilsMock.Calls[1].Params, config.ProductName)
+		assert.Contains(t, utilsMock.Calls[1].Params, ".")
+	})
+
+	t.Run("error - maven", func(t *testing.T) {
+		config := ScanOptions{
+			AgentDownloadURL: "https://download.ua.org/agent.jar",
+			BuildTool:        "mta",
+			ProjectName:      "test-project",
+			ProductName:      "test-product",
+		}
+		utilsMock := NewScanUtilsMock()
+		utilsMock.AddFile("pom.xml", []byte("dummy"))
+		utilsMock.AddFile("package.json", []byte(`{"name":"my-module-name"}`))
+		utilsMock.DownloadError = map[string]error{"https://download.ua.org/agent.jar": fmt.Errorf("failed to download file")}
+
+		scan := newTestScan(&config)
+		err := scan.ExecuteUAScan(&config, utilsMock)
+		assert.Contains(t, fmt.Sprint(err), "failed to run scan for maven modules of mta")
+	})
+
+	t.Run("error - no pom.xml", func(t *testing.T) {
+		config := ScanOptions{
+			BuildTool:   "mta",
+			ProjectName: "test-project",
+			ProductName: "test-product",
+		}
+		utilsMock := NewScanUtilsMock()
+		scan := newTestScan(&config)
+
+		err := scan.ExecuteUAScan(&config, utilsMock)
+		assert.EqualError(t, err, "mta project does not contain an aggregator pom.xml in the root - this is mandatory")
+	})
+
+	t.Run("error - npm no name", func(t *testing.T) {
+		config := ScanOptions{
+			BuildTool:   "mta",
+			ProjectName: "test-project",
+			ProductName: "test-product",
+		}
+		utilsMock := NewScanUtilsMock()
+		utilsMock.AddFile("pom.xml", []byte("dummy"))
+		utilsMock.AddFile("package.json", []byte(`{}`))
+		scan := newTestScan(&config)
+
+		err := scan.ExecuteUAScan(&config, utilsMock)
+		assert.EqualError(t, err, "failed retrieve project name")
+	})
+
+}
+
+func TestExecuteUAScanInPath(t *testing.T) {
 	t.Parallel()
 
 	t.Run("success", func(t *testing.T) {
@@ -26,12 +110,13 @@ func TestExecuteScanUA(t *testing.T) {
 		utilsMock := NewScanUtilsMock()
 		scan := newTestScan(&config)
 
-		err := scan.ExecuteUAScan(&config, utilsMock)
+		err := scan.ExecuteUAScanInPath(&config, utilsMock, "")
 		assert.NoError(t, err)
 		assert.Equal(t, "java", utilsMock.Calls[1].Exec)
 		assert.Equal(t, 18, len(utilsMock.Calls[1].Params))
 		assert.Contains(t, utilsMock.Calls[1].Params, "-jar")
 		assert.Contains(t, utilsMock.Calls[1].Params, "-d")
+		assert.Contains(t, utilsMock.Calls[1].Params, ".")
 		assert.Contains(t, utilsMock.Calls[1].Params, "-c")
 		// name of config file not tested since it is dynamic. This is acceptable here since we test also the size
 		assert.Contains(t, utilsMock.Calls[1].Params, "-apiKey")
@@ -46,7 +131,26 @@ func TestExecuteScanUA(t *testing.T) {
 		assert.Contains(t, utilsMock.Calls[1].Params, config.ProductVersion)
 		assert.Contains(t, utilsMock.Calls[1].Params, "-wss.url")
 		assert.Contains(t, utilsMock.Calls[1].Params, config.AgentURL)
+	})
 
+	t.Run("success - dedicated path", func(t *testing.T) {
+		config := ScanOptions{
+			AgentFileName:  "unified-agent.jar",
+			ConfigFilePath: "ua.props",
+			ProductName:    "test-product",
+			ProductVersion: "1",
+			ProjectName:    "test-project",
+			OrgToken:       "orgTestToken",
+			UserToken:      "userTestToken",
+			AgentURL:       "https://ws.service.url/agent",
+		}
+		utilsMock := NewScanUtilsMock()
+		scan := newTestScan(&config)
+
+		err := scan.ExecuteUAScanInPath(&config, utilsMock, "./my/test/path")
+		assert.NoError(t, err)
+		assert.Contains(t, utilsMock.Calls[1].Params, "-d")
+		assert.Contains(t, utilsMock.Calls[1].Params, "./my/test/path")
 	})
 
 	t.Run("error - download agent", func(t *testing.T) {
@@ -57,7 +161,7 @@ func TestExecuteScanUA(t *testing.T) {
 		utilsMock.DownloadError = map[string]error{"https://download.ua.org/agent.jar": fmt.Errorf("failed to download file")}
 		scan := newTestScan(&config)
 
-		err := scan.ExecuteUAScan(&config, utilsMock)
+		err := scan.ExecuteUAScanInPath(&config, utilsMock, "")
 		assert.Contains(t, fmt.Sprint(err), "failed to download unified agent from URL 'https://download.ua.org/agent.jar'")
 	})
 
@@ -70,7 +174,7 @@ func TestExecuteScanUA(t *testing.T) {
 		utilsMock.ShouldFailOnCommand = map[string]error{"java": fmt.Errorf("failed to run java")}
 		scan := newTestScan(&config)
 
-		err := scan.ExecuteUAScan(&config, utilsMock)
+		err := scan.ExecuteUAScanInPath(&config, utilsMock, "")
 		assert.Contains(t, fmt.Sprint(err), "failed to download jre from URL 'https://download.jre.org/jvm.jar'")
 	})
 
@@ -79,7 +183,7 @@ func TestExecuteScanUA(t *testing.T) {
 		utilsMock := NewScanUtilsMock()
 		scan := newTestScan(&config)
 
-		err := scan.ExecuteUAScan(&config, utilsMock)
+		err := scan.ExecuteUAScanInPath(&config, utilsMock, "")
 		assert.EqualError(t, err, "projectName must not be empty")
 	})
 
@@ -91,7 +195,7 @@ func TestExecuteScanUA(t *testing.T) {
 		utilsMock.FileWriteError = fmt.Errorf("failed to write file")
 		scan := newTestScan(&config)
 
-		err := scan.ExecuteUAScan(&config, utilsMock)
+		err := scan.ExecuteUAScanInPath(&config, utilsMock, "")
 		assert.Contains(t, fmt.Sprint(err), "failed to write file")
 	})
 
@@ -105,7 +209,7 @@ func TestExecuteScanUA(t *testing.T) {
 		}
 		scan := newTestScan(&config)
 
-		err := scan.ExecuteUAScan(&config, utilsMock)
+		err := scan.ExecuteUAScanInPath(&config, utilsMock, "")
 		assert.Contains(t, fmt.Sprint(err), "failed to execute WhiteSource scan with exit code")
 	})
 }
@@ -199,6 +303,18 @@ func TestDownloadJre(t *testing.T) {
 		assert.Equal(t, "java", jre)
 		assert.Equal(t, "java", utilsMock.Calls[0].Exec)
 		assert.Equal(t, []string{"--version"}, utilsMock.Calls[0].Params)
+	})
+
+	t.Run("success - previously downloaded", func(t *testing.T) {
+		config := ScanOptions{
+			JreDownloadURL: "https://download.jre.org/jvm.jar",
+		}
+		utilsMock := NewScanUtilsMock()
+		utilsMock.AddFile(filepath.Join(jvmDir, "bin", "java"), []byte("dummy"))
+
+		jre, err := downloadJre(&config, utilsMock)
+		assert.NoError(t, err)
+		assert.Equal(t, filepath.Join(jvmDir, "bin", "java"), jre)
 	})
 
 	t.Run("success - jre downloaded", func(t *testing.T) {

@@ -28,8 +28,8 @@ type whitesourceExecuteScanOptions struct {
 	CreateProductFromPipeline            bool     `json:"createProductFromPipeline,omitempty"`
 	CvssSeverityLimit                    string   `json:"cvssSeverityLimit,omitempty"`
 	EmailAddressesOfInitialProductAdmins []string `json:"emailAddressesOfInitialProductAdmins,omitempty"`
-	Excludes                             string   `json:"excludes,omitempty"`
-	Includes                             string   `json:"includes,omitempty"`
+	Excludes                             []string `json:"excludes,omitempty"`
+	Includes                             []string `json:"includes,omitempty"`
 	InstallCommand                       string   `json:"installCommand,omitempty"`
 	JreDownloadURL                       string   `json:"jreDownloadUrl,omitempty"`
 	LicensingVulnerabilities             bool     `json:"licensingVulnerabilities,omitempty"`
@@ -175,8 +175,8 @@ func addWhitesourceExecuteScanFlags(cmd *cobra.Command, stepConfig *whitesourceE
 	cmd.Flags().BoolVar(&stepConfig.CreateProductFromPipeline, "createProductFromPipeline", true, "Whether to create the related WhiteSource product on the fly based on the supplied pipeline configuration.")
 	cmd.Flags().StringVar(&stepConfig.CvssSeverityLimit, "cvssSeverityLimit", `-1`, "Limit of tolerable CVSS v3 score upon assessment and in consequence fails the build, defaults to  `-1`.")
 	cmd.Flags().StringSliceVar(&stepConfig.EmailAddressesOfInitialProductAdmins, "emailAddressesOfInitialProductAdmins", []string{}, "The list of email addresses to assign as product admins for newly created WhiteSource products.")
-	cmd.Flags().StringVar(&stepConfig.Excludes, "excludes", os.Getenv("PIPER_excludes"), "Space separated list of file path patterns to exclude in the scan.")
-	cmd.Flags().StringVar(&stepConfig.Includes, "includes", os.Getenv("PIPER_includes"), "Space separated list of file path patterns to include in the scan.")
+	cmd.Flags().StringSliceVar(&stepConfig.Excludes, "excludes", []string{}, "List of file path patterns to exclude in the scan.")
+	cmd.Flags().StringSliceVar(&stepConfig.Includes, "includes", []string{}, "List of file path patterns to include in the scan.")
 	cmd.Flags().StringVar(&stepConfig.InstallCommand, "installCommand", os.Getenv("PIPER_installCommand"), "[NOT IMPLEMENTED] Install command that can be used to populate the default docker image for some scenarios.")
 	cmd.Flags().StringVar(&stepConfig.JreDownloadURL, "jreDownloadUrl", `https://github.com/SAP/SapMachine/releases/download/sapmachine-11.0.2/sapmachine-jre-11.0.2_linux-x64_bin.tar.gz`, "URL used for downloading the Java Runtime Environment (JRE) required to run the WhiteSource Unified Agent.")
 	cmd.Flags().BoolVar(&stepConfig.LicensingVulnerabilities, "licensingVulnerabilities", true, "[NOT IMPLEMENTED] Whether license compliance is considered and reported as part of the assessment.")
@@ -327,7 +327,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Name:        "excludes",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
+						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
@@ -335,7 +335,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Name:        "includes",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
+						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
