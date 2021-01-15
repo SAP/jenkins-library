@@ -54,10 +54,29 @@ func TestRunUpdateIntegrationArtifactConfiguration(t *testing.T) {
 			ParameterValue:         "def",
 		}
 
-		httpClient := httpMockCpis{CPIFunction: "UpdateIntegrationArtifactConfiguration", ResponseBody: ``, TestType: "Negative", Method: "PUT", URL: "https://demo/api/v1/IntegrationDesigntimeArtifacts(Id='flow1',Version='1.0.1')"}
+		httpClient := httpMockCpis{CPIFunction: "UpdateIntegrationArtifactConfiguration", ResponseBody: ``, TestType: "Negative"}
 
 		err := runUpdateIntegrationArtifactConfiguration(&config, nil, &httpClient)
 		// assert
 		assert.EqualError(t, err, "HTTP \"PUT\" request to \"https://demo/api/v1/IntegrationDesigntimeArtifacts(Id='flow1',Version='1.0.1')/$links/Configurations('myheader')\" failed with error: Not found - either wrong version for the given Id or wrong parameter key")
+	})
+
+	t.Run("Failed case of Integration Flow configuration parameter test with error body", func(t *testing.T) {
+		config := updateIntegrationArtifactConfigurationOptions{
+			Host:                   "https://demo",
+			OAuthTokenProviderURL:  "https://demo/oauth/token",
+			Username:               "demouser",
+			Password:               "******",
+			IntegrationFlowID:      "flow1",
+			IntegrationFlowVersion: "1.0.1",
+			ParameterKey:           "myheader",
+			ParameterValue:         "def",
+		}
+
+		httpClient := httpMockCpis{CPIFunction: "UpdateIntegrationArtifactConfiguration", ResponseBody: ``, TestType: "Negative_With_ResponseBody"}
+
+		err := runUpdateIntegrationArtifactConfiguration(&config, nil, &httpClient)
+		// assert
+		assert.EqualError(t, err, "Failed to update the integration flow configuration parameter, Response Status code: 400")
 	})
 }

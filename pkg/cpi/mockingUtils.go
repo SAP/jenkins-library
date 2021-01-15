@@ -33,6 +33,19 @@ func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, 
 		if testType == "Positive" {
 			return GetEmptyHTTPResponseBody()
 		}
+		if testType == "Negative_With_ResponseBody" {
+			res := http.Response{
+				StatusCode: 400,
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+							"code": "Bad Request",
+							"message": {
+							"@lang": "en",
+							"#text": "Wrong body format for the expected parameter value"
+							}
+						}`))),
+			}
+			return &res, nil
+		}
 		res := http.Response{
 			StatusCode: 404,
 			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 
 	"github.com/Jeffail/gabs/v2"
@@ -99,7 +100,18 @@ func runUpdateIntegrationArtifactConfiguration(config *updateIntegrationArtifact
 			Info("successfully updated the integration flow configuration parameter")
 		return nil
 	}
+	bodyText, readErr := ioutil.ReadAll(configUpdateResp.Body)
 
-	log.Entry().Errorf("a HTTP error occurred! Response Status: %v", configUpdateResp.Status)
+	if readErr != nil {
+		return errors.Wrap(readErr, "HTTP response body could not be read")
+	}
+
+	response, parsingErr := gabs.ParseJSON([]byte(bodyText))
+
+	if parsingErr != nil {
+		return errors.Wrapf(parsingErr, "HTTP response body could not be parsed as JSON: %v", string(bodyText))
+	}
+
+	log.Entry().Errorf("a HTTP error occurred! Response body: %v", response)
 	return errors.Errorf("Failed to update the integration flow configuration parameter, Response Status code: %v", configUpdateResp.StatusCode)
 }
