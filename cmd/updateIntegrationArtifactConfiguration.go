@@ -106,6 +106,6 @@ func runUpdateIntegrationArtifactConfiguration(config *updateIntegrationArtifact
 		return errors.Wrap(readErr, "HTTP response body could not be read")
 	}
 
-	log.Entry().Errorf("a HTTP error occurred! Response body: %v", response)
+	log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code : %v", response, configUpdateResp.StatusCode)
 	return errors.Errorf("Failed to update the integration flow configuration parameter, Response Status code: %v", configUpdateResp.StatusCode)
 }
