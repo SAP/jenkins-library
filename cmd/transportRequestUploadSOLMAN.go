@@ -1,17 +1,19 @@
 package cmd
 
 import (
-	"fmt"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/transportrequest/solman"
 )
 
 type transportRequestUploadSOLMANUtils interface {
 	command.ExecRunner
 
 	FileExists(filename string) (bool, error)
+
+	GetExitCode() int
 
 	// Add more methods here, or embed additional interfaces, or remove/replace as required.
 	// The transportRequestUploadSOLMANUtils interface should be descriptive of your runtime dependencies,
@@ -51,28 +53,31 @@ func transportRequestUploadSOLMAN(config transportRequestUploadSOLMANOptions, te
 
 	// Error situations should be bubbled up until they reach the line below which will then stop execution
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
-	err := runTransportRequestUploadSOLMAN(&config, telemetryData, utils)
+	err := runTransportRequestUploadSOLMAN(&config, &solman.UploadAction{}, telemetryData, utils)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runTransportRequestUploadSOLMAN(config *transportRequestUploadSOLMANOptions, telemetryData *telemetry.CustomData, utils transportRequestUploadSOLMANUtils) error {
-	log.Entry().WithField("LogField", "Log field content").Info("This is just a demo for a simple step.")
+func runTransportRequestUploadSOLMAN(config *transportRequestUploadSOLMANOptions, action solman.Action, telemetryData *telemetry.CustomData, utils transportRequestUploadSOLMANUtils) error {
+	action.WithConnection(solman.Connection{
+		Endpoint: config.Endpoint,
+		User:     config.Username,
+		Password: config.Password,
+	})
+	action.WithChangeDocumentID(config.ChangeDocumentID)
+	action.WithTransportRequestID(config.TransportRequestID)
+	action.WithApplicationID(config.ApplicationID)
+	action.WithFile(config.FilePath)
+	action.WithCMOpts(config.Cmclientops)
+	err := action.Perform(utils, utils)
 
-	// Example of calling methods from external dependencies directly on utils:
-	exists, err := utils.FileExists("file.txt")
-	if err != nil {
-		// It is good practice to set an error category.
-		// Most likely you want to do this at the place where enough context is known.
-		log.SetErrorCategory(log.ErrorConfiguration)
-		// Always wrap non-descriptive errors to enrich them with context for when they appear in the log:
-		return fmt.Errorf("failed to check for important file: %w", err)
+	if err == nil {
+		log.Entry().Infof("Upload of artifact '%s' to SAP Solution Manager succeeded (ChangeDocumentId: '%s', TransportRequestId: '%s').",
+			config.FilePath,
+			config.ChangeDocumentID,
+			config.TransportRequestID,
+		)
 	}
-	if !exists {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		return fmt.Errorf("cannot run without important file")
-	}
-
-	return nil
+	return err
 }
