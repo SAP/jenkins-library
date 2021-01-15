@@ -7,11 +7,11 @@ import (
 	"strings"
 )
 
-type fileSystem interface {
+type FileSystem interface {
 	FileExists(path string) (bool, error)
 }
 
-type exec interface {
+type Exec interface {
 	command.ExecRunner
 	GetExitCode() int
 }
@@ -33,7 +33,7 @@ type SOLMANUploadAction struct {
 	CMOpts             []string
 }
 
-func (a *SOLMANUploadAction) Perform(fs fileSystem, command exec) error {
+func (a *SOLMANUploadAction) Perform(fs FileSystem, command Exec) error {
 
 	missingParameters, err := FindEmptyStrings(*a)
 	if err != nil {
