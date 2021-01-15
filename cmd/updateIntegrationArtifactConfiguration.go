@@ -100,16 +100,10 @@ func runUpdateIntegrationArtifactConfiguration(config *updateIntegrationArtifact
 			Info("successfully updated the integration flow configuration parameter")
 		return nil
 	}
-	bodyText, readErr := ioutil.ReadAll(configUpdateResp.Body)
+	response, readErr := ioutil.ReadAll(configUpdateResp.Body)
 
 	if readErr != nil {
 		return errors.Wrap(readErr, "HTTP response body could not be read")
-	}
-
-	response, parsingErr := gabs.ParseJSON([]byte(bodyText))
-
-	if parsingErr != nil {
-		return errors.Wrapf(parsingErr, "HTTP response body could not be parsed as JSON: %v", string(bodyText))
 	}
 
 	log.Entry().Errorf("a HTTP error occurred! Response body: %v", response)
