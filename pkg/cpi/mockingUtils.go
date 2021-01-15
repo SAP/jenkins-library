@@ -34,17 +34,7 @@ func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, 
 			return GetEmptyHTTPResponseBody()
 		}
 		if testType == "Negative_With_ResponseBody" {
-			res := http.Response{
-				StatusCode: 400,
-				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-							"code": "Bad Request",
-							"message": {
-							"@lang": "en",
-							"#text": "Wrong body format for the expected parameter value"
-							}
-						}`))),
-			}
-			return &res, nil
+			return GetNegativeCaseHTTPResponseBody()
 		}
 		res := http.Response{
 			StatusCode: 404,
@@ -72,6 +62,21 @@ func GetEmptyHTTPResponseBody() (*http.Response, error) {
 	res := http.Response{
 		StatusCode: 202,
 		Body:       ioutil.NopCloser(bytes.NewReader([]byte(``))),
+	}
+	return &res, nil
+}
+
+//GetNegativeCaseHTTPResponseBody -Negative case http respose body
+func GetNegativeCaseHTTPResponseBody() (*http.Response, error) {
+	res := http.Response{
+		StatusCode: 400,
+		Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+					"code": "Bad Request",
+					"message": {
+					"@lang": "en",
+					"#text": "Wrong body format for the expected parameter value"
+					}
+				}`))),
 	}
 	return &res, nil
 }
