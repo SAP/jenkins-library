@@ -3,12 +3,12 @@ package fortify
 import (
 	"fmt"
 	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
 	"time"
-	"net/http"
-	"net/http/httptest"
 
 	"github.com/go-openapi/strfmt"
 	ff "github.com/piper-validation/fortify-client-go/fortify"
