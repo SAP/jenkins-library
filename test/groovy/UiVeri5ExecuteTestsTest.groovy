@@ -58,7 +58,7 @@ class UiVeri5ExecuteTestsTest extends BasePiperTest {
         assert calledWithParameters.script == nullScript
 
         assert calledWithStepName == 'uiVeri5ExecuteTests'
-	    assert calledWithMetadata == 'metadata/uiVeri5ExecuteTests.yaml'
+        assert calledWithMetadata == 'metadata/uiVeri5ExecuteTests.yaml'
         assert calledWithCredentials.size == 1
 
     }
