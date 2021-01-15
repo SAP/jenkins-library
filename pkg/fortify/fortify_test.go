@@ -7,7 +7,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
 	"net/http"
 	"net/http/httptest"
 
