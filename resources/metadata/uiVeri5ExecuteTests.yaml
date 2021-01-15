@@ -56,15 +56,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: npmConfigPrefix
-        type: string
-        description: "Sets the NPM_CONFIG_PREFIX env variable. Use /usr/local for local test on Linux/MacOS."
-        mandatory: true
-        default: "/home/node/.npm-global"
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
   containers:
     - name: uiVeri5
       image: node:lts-stretch

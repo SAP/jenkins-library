@@ -12,8 +12,10 @@
 
 ## Exceptions
 
+The parameter `testOptions` is deprecated and is replaced by `runOptions`.
+
 If you see an error like `fatal: Not a git repository (or any parent up to mount point /home/jenkins)` it is likely that your test description cannot be found.<br />
-Please make sure to point parameter `testOptions` to your `conf.js` file like `testOptions: './path/to/my/tests/conf.js'`
+Please make sure to point parameter `runOptions` to your `conf.js` file like `runOptions: ['./path/to/my/tests/conf.js']`
 
 ## Examples
 
@@ -65,7 +67,7 @@ withCredentials([usernamePassword(
     passwordVariable: 'password',
     usernameVariable: 'username'
 )]) {
-    uiVeri5ExecuteTests script: this, testOptions: "./uiveri5/conf.js --params.user=\${username} --params.pass=\${password}"
+    uiVeri5ExecuteTests script: this, runOptions: ["./uiveri5/conf.js", "--params.user=\${username}", "--params.pass=\${password}"]
 }
 ```
 
