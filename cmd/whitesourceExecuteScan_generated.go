@@ -374,7 +374,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Aliases:   []config.Alias{},
+						Aliases:   []config.Alias{{Name: "whitesourceOrgToken"}, {Name: "whitesource/orgToken"}},
 					},
 					{
 						Name:        "parallelLimit",
@@ -390,7 +390,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "whitesourceProductName"}},
+						Aliases:     []config.Alias{{Name: "whitesourceProductName"}, {Name: "whitesource/productName"}},
 					},
 					{
 						Name:        "productToken",
@@ -398,7 +398,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "whitesourceProductToken"}},
+						Aliases:     []config.Alias{{Name: "whitesourceProductToken"}, {Name: "whitesource/productToken"}},
 					},
 					{
 						Name:        "productVersion",
@@ -406,7 +406,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "whitesourceProductVersion"}},
+						Aliases:     []config.Alias{{Name: "whitesourceProductVersion"}, {Name: "whitesource/productVersion"}},
 					},
 					{
 						Name:        "projectName",
@@ -486,7 +486,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "whitesourceServiceUrl"}},
+						Aliases:     []config.Alias{{Name: "whitesourceServiceUrl"}, {Name: "whitesource/serviceUrl"}},
 					},
 					{
 						Name:        "timeout",

@@ -107,11 +107,27 @@ func (c *ConfigOptions) addGeneralDefaults(config *ScanOptions) {
 		cOptions = append(cOptions, ConfigOption{Name: "includes", Value: strings.Join(config.Includes, " "), Force: true})
 	}
 
-	if config.BuildTool == "maven" && len(config.M2Path) > 0 {
-		cOptions = append(cOptions, ConfigOption{Name: "maven.m2RepositoryPath", Value: config.M2Path, Force: true})
-	}
+	if config.BuildTool == "maven" {
+		if len(config.M2Path) > 0 {
+			cOptions = append(cOptions, ConfigOption{Name: "maven.m2RepositoryPath", Value: config.M2Path, Force: true})
+		}
 
-	// ToDo: handle further maven options and pass in as maven.additionalArguments
+		mvnAdditionalArguments := []string{}
+		if len(config.ProjectSettingsFile) > 0 {
+			mvnAdditionalArguments = append(mvnAdditionalArguments, "--settings", config.ProjectSettingsFile)
+		}
+
+		if len(config.GlobalSettingsFile) > 0 {
+			mvnAdditionalArguments = append(mvnAdditionalArguments, "--global-settings", config.GlobalSettingsFile)
+		}
+
+		// ToDo: handle further maven options and pass in as maven.additionalArguments, e.g. modules to exclude: --projects !integration-tests
+
+		if len(mvnAdditionalArguments) > 0 {
+			cOptions = append(cOptions, ConfigOption{Name: "maven.additionalArguments", Value: strings.Join(mvnAdditionalArguments, " "), Force: true})
+		}
+
+	}
 
 	cOptions = append(cOptions, []ConfigOption{
 		{Name: "apiKey", Value: config.OrgToken, Force: true},

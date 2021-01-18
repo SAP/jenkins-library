@@ -23,11 +23,15 @@ spec:
       - name: userTokenCredentialsId
         aliases:
           - name: whitesourceUserTokenCredentialsId
+          - name: whitesource/userTokenCredentialsId
+            deprecated: true
         description: Jenkins 'Secret text' credentials ID containing Whitesource user token.
         type: jenkins
       - name: orgAdminUserTokenCredentialsId
         aliases:
           - name: whitesourceOrgAdminUserTokenCredentialsId
+          - name: whitesource/orgAdminUserTokenCredentialsId
+            deprecated: true
         description: Jenkins 'Secret text' credentials ID containing Whitesource org admin token.
         type: jenkins
     params:
@@ -157,6 +161,7 @@ spec:
       - name: jreDownloadUrl
         aliases:
           - name: whitesource/jreDownloadUrl
+            deprecated: true
         type: string
         description: "URL used for downloading the Java Runtime Environment (JRE) required to run the
           WhiteSource Unified Agent."
@@ -175,6 +180,10 @@ spec:
           - STEPS
         default: true
       - name: orgToken
+        aliases:
+          - name: whitesourceOrgToken
+          - name: whitesource/orgToken
+            deprecated: true
         type: string
         description: "WhiteSource token identifying your organization."
         scope:
@@ -199,6 +208,8 @@ spec:
       - name: productName
         aliases:
           - name: whitesourceProductName
+          - name: whitesource/productName
+            deprecated: true
         type: string
         description: "Name of the WhiteSource product used for results aggregation.
           This parameter is mandatory if the parameter `createProductFromPipeline` is set to `true`
@@ -212,6 +223,8 @@ spec:
       - name: productToken
         aliases:
           - name: whitesourceProductToken
+          - name: whitesource/productToken
+            deprecated: true
         type: string
         description: "Token of the WhiteSource product to be created and used for results aggregation,
           usually determined automatically. Can optionally be provided as an alternative to `productName`."
@@ -223,6 +236,8 @@ spec:
       - name: productVersion
         aliases:
           - name: whitesourceProductVersion
+          - name: whitesource/productVersion
+            deprecated: true
         type: string
         description: "Version of the WhiteSource product to be created and used for results aggregation,
           usually determined automatically."
@@ -317,6 +332,8 @@ spec:
       - name: serviceUrl
         aliases:
           - name: whitesourceServiceUrl
+          - name: whitesource/serviceUrl
+            deprecated: true
         type: string
         description: "URL to the WhiteSource API endpoint."
         scope:

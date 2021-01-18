@@ -183,6 +183,20 @@ func TestAddGeneralDefaults(t *testing.T) {
 		assert.Equal(t, "maven.m2RepositoryPath", testConfig[2].Name)
 		assert.Equal(t, "test/.m2", testConfig[2].Value)
 		assert.Equal(t, true, testConfig[2].Force)
+		assert.NotEqual(t, "maven.additionalArguments", testConfig[3].Name)
+	})
+
+	t.Run("maven - settings", func(t *testing.T) {
+		testConfig := ConfigOptions{}
+		whitesourceConfig := ScanOptions{
+			BuildTool:           "maven",
+			ProjectSettingsFile: "project-settings.xml",
+			GlobalSettingsFile:  "global-settings.xml",
+		}
+		testConfig.addGeneralDefaults(&whitesourceConfig)
+		assert.Equal(t, "maven.additionalArguments", testConfig[2].Name)
+		assert.Equal(t, "--settings project-settings.xml --global-settings global-settings.xml", testConfig[2].Value)
+		assert.Equal(t, true, testConfig[2].Force)
 	})
 }
 
