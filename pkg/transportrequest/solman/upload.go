@@ -16,8 +16,8 @@ type Exec interface {
 	GetExitCode() int
 }
 
-// SOLMANConnection Everything wee need for connecting to CTS
-type SOLMANConnection struct {
+// Connection Everything wee need for connecting to CTS
+type Connection struct {
 	Endpoint string
 	User     string
 	Password string
@@ -25,7 +25,7 @@ type SOLMANConnection struct {
 
 // SOLMANUploadAction Collects all the properties we need for the deployment
 type SOLMANUploadAction struct {
-	Connection         SOLMANConnection
+	Connection         Connection
 	ChangeDocumentId   string
 	TransportRequestId string
 	ApplicationID      string
@@ -34,7 +34,7 @@ type SOLMANUploadAction struct {
 }
 
 type Action interface {
-	WithConnection(SOLMANConnection)
+	WithConnection(Connection)
 	WithChangeDocumentId(string)
 	WithTransportRequestId(string)
 	WithApplicationID(string)
@@ -43,7 +43,7 @@ type Action interface {
 	Perform(fs FileSystem, command Exec) error
 }
 
-func (a *SOLMANUploadAction) WithConnection(c SOLMANConnection) {
+func (a *SOLMANUploadAction) WithConnection(c Connection) {
 	a.Connection = c
 }
 func (a *SOLMANUploadAction) WithChangeDocumentId(id string) {
