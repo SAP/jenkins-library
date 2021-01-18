@@ -171,7 +171,6 @@ public class CommonStepsTest extends BasePiperTest{
         'gitopsUpdateDeployment', //implementing new golang pattern without fields
         'vaultRotateSecretId', //implementing new golang pattern without fields
         'integrationArtifactDeploy', //implementing new golang pattern without fields
-        'integrationArtifactUpdateConfiguration' //implementing new golang pattern without fields
     ]
 
     @Test
