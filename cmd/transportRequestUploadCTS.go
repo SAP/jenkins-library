@@ -4,7 +4,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	transportrequest "github.com/SAP/jenkins-library/pkg/transportrequest/cts"
+	"github.com/SAP/jenkins-library/pkg/transportrequest/cts"
 )
 
 type transportRequestUploadUtils interface {
@@ -19,9 +19,9 @@ type transportRequestUploadUtils interface {
 // CTSUploadAction ...
 type CTSUploadAction interface {
 	Perform(command.ShellRunner) error
-	WithConnection(transportrequest.CTSConnection)
-	WithApplication(transportrequest.CTSApplication)
-	WithNodeProperties(transportrequest.CTSNode)
+	WithConnection(cts.CTSConnection)
+	WithApplication(cts.CTSApplication)
+	WithNodeProperties(cts.CTSNode)
 	WithTransportRequestID(string)
 	WithConfigFile(string)
 	WithDeployUser(string)
@@ -57,7 +57,7 @@ func transportRequestUploadCTS(config transportRequestUploadCTSOptions, telemetr
 
 	// Error situations should be bubbled up until they reach the line below which will then stop execution
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
-	err := runTransportRequestUploadCTS(&config, &transportrequest.CTSUploadAction{}, telemetryData, utils)
+	err := runTransportRequestUploadCTS(&config, &cts.CTSUploadAction{}, telemetryData, utils)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
@@ -71,18 +71,18 @@ func runTransportRequestUploadCTS(
 
 	log.Entry().Debugf("Entering 'runTransportRequestUpload' with config: %v", config)
 
-	action.WithConnection(transportrequest.CTSConnection{
+	action.WithConnection(cts.CTSConnection{
 		Endpoint: config.Endpoint,
 		Client:   config.Client,
 		User:     config.Username,
 		Password: config.Password,
 	})
-	action.WithApplication(transportrequest.CTSApplication{
+	action.WithApplication(cts.CTSApplication{
 		Name: config.ApplicationName,
 		Pack: config.AbapPackage,
 		Desc: config.Description,
 	})
-	action.WithNodeProperties(transportrequest.CTSNode{
+	action.WithNodeProperties(cts.CTSNode{
 		DeployDependencies: config.DeployToolDependencies,
 		InstallOpts:        config.NpmInstallOpts,
 	})
