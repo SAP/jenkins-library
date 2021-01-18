@@ -34,19 +34,15 @@ func runUIVeri5(config *uiVeri5ExecuteTestsOptions, command command.ExecRunner) 
 	command.SetEnv(envs)
 
 	installCommandTokens := strings.Split(config.InstallCommand, " ")
-	err := command.RunExecutable(installCommandTokens[0], installCommandTokens[1:]...)
-	if err != nil {
-		log.Entry().WithError(err).WithField("command", config.InstallCommand).Fatal("failed to execute install command")
-		return err
+	if err := command.RunExecutable(installCommandTokens[0], installCommandTokens[1:]...); err != nil {
+		return errors.Wrapf(err, "failed to execute install command: %v", config.InstallCommand)
 	}
 
 	if config.TestOptions != "" {
 		return errors.Errorf("parameter testOptions no longer supported, please use runOptions parameter instead.")
 	}
-	err = command.RunExecutable(config.RunCommand, config.RunOptions...)
-	if err != nil {
-		log.Entry().WithError(err).WithField("command", config.RunCommand).Fatal("failed to execute run command")
-		return err
+	if err := command.RunExecutable(config.RunCommand, config.RunOptions...); err != nil {
+		return errors.Wrapf(err, "failed to execute run command: %v %v", config.RunCommand, config.RunOptions)
 	}
 	return nil
 }
