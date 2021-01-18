@@ -88,7 +88,7 @@ func (p *whitesourceExecuteScanCommonPipelineEnvironment) persist(path, resource
 	}
 }
 
-// WhitesourceExecuteScanCommand BETA
+// WhitesourceExecuteScanCommand Execute a WhiteSource scan
 func WhitesourceExecuteScanCommand() *cobra.Command {
 	const STEP_NAME = "whitesourceExecuteScan"
 
@@ -99,22 +99,17 @@ func WhitesourceExecuteScanCommand() *cobra.Command {
 
 	var createWhitesourceExecuteScanCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "BETA",
-		Long: `BETA
-With this step [WhiteSource](https://www.whitesourcesoftware.com) security and license compliance scans can be executed and assessed.
+		Short: "Execute a WhiteSource scan",
+		Long: `With this step [WhiteSource](https://www.whitesourcesoftware.com) security and license compliance scans can be executed and assessed.
 WhiteSource is a Software as a Service offering based on a so called unified agent that locally determines the dependency
 tree of a node.js, Java, Python, Ruby, or Scala based solution and sends it to the WhiteSource server for a policy based license compliance
 check and additional Free and Open Source Software Publicly Known Vulnerabilities detection.
+
+The step uses the so-called WhiteSource Unified Agent. For details please refer to the [WhiteSource Unified Agent Documentation](https://whitesource.atlassian.net/wiki/spaces/WD/pages/33718339/Unified+Agent).
+
 !!! note "Docker Images"
     The underlying Docker images are public and specific to the solution's programming language(s) and therefore may have to be exchanged
-    to fit to and support the relevant scenario. The default Python environment used is i.e. Python 3 based.
-!!! warn "Restrictions"
-    Currently the step does contain hardened scan configurations for ` + "`" + `scanType` + "`" + ` ` + "`" + `'pip'` + "`" + ` and ` + "`" + `'go'` + "`" + `. Other environments are still being elaborated,
-    so please thoroughly check your results and do not take them for granted by default.
-    Also not all environments have been thoroughly tested already therefore you might need to tweak around with the default containers used or
-    create your own ones to adequately support your scenario. To do so please modify ` + "`" + `dockerImage` + "`" + ` and ` + "`" + `dockerWorkspace` + "`" + ` parameters.
-    The step expects an environment containing the programming language related compiler/interpreter as well as the related build tool. For a list
-    of the supported build tools per environment please refer to the [WhiteSource Unified Agent Documentation](https://whitesource.atlassian.net/wiki/spaces/WD/pages/33718339/Unified+Agent).`,
+    to fit to and support the relevant scenario. The default Python environment used is i.e. Python 3 based.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -217,7 +212,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "whitesourceExecuteScan",
 			Aliases:     []config.Alias{},
-			Description: "BETA",
+			Description: "Execute a WhiteSource scan",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -576,11 +571,12 @@ func whitesourceExecuteScanMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Image: "devxci/mbtci:1.0.14", WorkingDir: "/home/mta", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "scanType", Value: "mta"}}}}},
-				{Image: "maven:3.5-jdk-8", WorkingDir: "/home/java", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "maven"}}}, {ConditionRef: "strings-equal", Params: []config.Param{{Name: "scanType", Value: "maven"}}}}},
+				{Image: "devxci/mbtci:1.0.14", WorkingDir: "/home/mta", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "mta"}}}, {ConditionRef: "strings-equal", Params: []config.Param{{Name: "scanType", Value: "mta"}}}}},
+				{Image: "maven:3.5-jdk-8", WorkingDir: "/tmp", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "maven"}}}, {ConditionRef: "strings-equal", Params: []config.Param{{Name: "scanType", Value: "maven"}}}}},
 				{Image: "node:lts-stretch", WorkingDir: "/home/node", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "npm"}}}, {ConditionRef: "strings-equal", Params: []config.Param{{Name: "scanType", Value: "npm"}}}}},
-				{Image: "hseeberger/scala-sbt:8u181_2.12.8_1.2.8", WorkingDir: "/home/scala", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "scanType", Value: "sbt"}}}}},
-				{Image: "buildpack-deps:stretch-curl", WorkingDir: "/home/dub", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "scanType", Value: "dub"}}}}},
+				{Image: "golang:1", WorkingDir: "/go", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "go"}}}}},
+				{Image: "hseeberger/scala-sbt:8u181_2.12.8_1.2.8", WorkingDir: "/tmp", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "scanType", Value: "sbt"}}}}},
+				{Image: "buildpack-deps:stretch-curl", WorkingDir: "/tmp", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "scanType", Value: "dub"}}}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
