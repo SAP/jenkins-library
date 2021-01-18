@@ -1,6 +1,8 @@
 package sonar
 
 import (
+	"strings"
+
 	sonargo "github.com/magicsong/sonargo/sonar"
 	"github.com/pkg/errors"
 
@@ -8,6 +10,14 @@ import (
 )
 
 func NewIssuesService(host, token, project string, client Sender) *IssueService {
+	// Make sure the given URL end with a slash
+	if !strings.HasSuffix(host, "/") {
+		host += "/"
+	}
+	// Make sure the given URL end with a api/
+	if !strings.HasSuffix(host, "api/") {
+		host += "api/"
+	}
 	return &IssueService{
 		Host:      host,
 		Token:     token,
