@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type deployIntegrationArtifactOptions struct {
+type integrationArtifactUpdateConfigurationOptions struct {
 	Username               string `json:"username,omitempty"`
 	Password               string `json:"password,omitempty"`
 	IntegrationFlowID      string `json:"integrationFlowId,omitempty"`
@@ -21,20 +21,22 @@ type deployIntegrationArtifactOptions struct {
 	Platform               string `json:"platform,omitempty"`
 	Host                   string `json:"host,omitempty"`
 	OAuthTokenProviderURL  string `json:"oAuthTokenProviderUrl,omitempty"`
+	ParameterKey           string `json:"parameterKey,omitempty"`
+	ParameterValue         string `json:"parameterValue,omitempty"`
 }
 
-// DeployIntegrationArtifactCommand Deploy a CPI integration flow
-func DeployIntegrationArtifactCommand() *cobra.Command {
-	const STEP_NAME = "deployIntegrationArtifact"
+// IntegrationArtifactUpdateConfigurationCommand Update integration flow Configuration parameter
+func IntegrationArtifactUpdateConfigurationCommand() *cobra.Command {
+	const STEP_NAME = "integrationArtifactUpdateConfiguration"
 
-	metadata := deployIntegrationArtifactMetadata()
-	var stepConfig deployIntegrationArtifactOptions
+	metadata := integrationArtifactUpdateConfigurationMetadata()
+	var stepConfig integrationArtifactUpdateConfigurationOptions
 	var startTime time.Time
 
-	var createDeployIntegrationArtifactCmd = &cobra.Command{
+	var createIntegrationArtifactUpdateConfigurationCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Deploy a CPI integration flow",
-		Long:  `With this step you can deploy a integration flow artifact in to SAP Cloud Platform integration runtime using OData API.Learn more about the SAP Cloud Integration remote API for deploying an integration artifact [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/08632076a1114bc1b6a1ecafef8f0178.html)`,
+		Short: "Update integration flow Configuration parameter",
+		Long:  `With this step you can update the value for a configuration parameters of a designtime integration flow using the OData API. Learn more about the SAP Cloud Integration remote API for configuration update of the integration flow parameter [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/83733a65c0214aa6acba035e8640bb5a.html).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -71,17 +73,17 @@ func DeployIntegrationArtifactCommand() *cobra.Command {
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			deployIntegrationArtifact(stepConfig, &telemetryData)
+			integrationArtifactUpdateConfiguration(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
 
-	addDeployIntegrationArtifactFlags(createDeployIntegrationArtifactCmd, &stepConfig)
-	return createDeployIntegrationArtifactCmd
+	addIntegrationArtifactUpdateConfigurationFlags(createIntegrationArtifactUpdateConfigurationCmd, &stepConfig)
+	return createIntegrationArtifactUpdateConfigurationCmd
 }
 
-func addDeployIntegrationArtifactFlags(cmd *cobra.Command, stepConfig *deployIntegrationArtifactOptions) {
+func addIntegrationArtifactUpdateConfigurationFlags(cmd *cobra.Command, stepConfig *integrationArtifactUpdateConfigurationOptions) {
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User to authenticate to the SAP Cloud Platform Integration Service")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password to authenticate to the SAP Cloud Platform Integration Service")
 	cmd.Flags().StringVar(&stepConfig.IntegrationFlowID, "integrationFlowId", os.Getenv("PIPER_integrationFlowId"), "Specifies the ID of the Integration Flow artifact")
@@ -89,6 +91,8 @@ func addDeployIntegrationArtifactFlags(cmd *cobra.Command, stepConfig *deployInt
 	cmd.Flags().StringVar(&stepConfig.Platform, "platform", os.Getenv("PIPER_platform"), "Specifies the running platform of the SAP Cloud platform integraion service")
 	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the protocol and host address, including the port. Please provide in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.")
 	cmd.Flags().StringVar(&stepConfig.OAuthTokenProviderURL, "oAuthTokenProviderUrl", os.Getenv("PIPER_oAuthTokenProviderUrl"), "Specifies the oAuth Provider protocol and host address, including the port. Please provide in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.")
+	cmd.Flags().StringVar(&stepConfig.ParameterKey, "parameterKey", os.Getenv("PIPER_parameterKey"), "Specifies the externalized parameter name.")
+	cmd.Flags().StringVar(&stepConfig.ParameterValue, "parameterValue", os.Getenv("PIPER_parameterValue"), "Specifies the externalized parameter value.")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
@@ -96,15 +100,16 @@ func addDeployIntegrationArtifactFlags(cmd *cobra.Command, stepConfig *deployInt
 	cmd.MarkFlagRequired("integrationFlowVersion")
 	cmd.MarkFlagRequired("host")
 	cmd.MarkFlagRequired("oAuthTokenProviderUrl")
+	cmd.MarkFlagRequired("parameterKey")
+	cmd.MarkFlagRequired("parameterValue")
 }
 
 // retrieve step metadata
-func deployIntegrationArtifactMetadata() config.StepData {
+func integrationArtifactUpdateConfigurationMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:        "deployIntegrationArtifact",
-			Aliases:     []config.Alias{},
-			Description: "Deploy a CPI integration flow",
+			Name:    "integrationArtifactUpdateConfiguration",
+			Aliases: []config.Alias{},
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -171,6 +176,22 @@ func deployIntegrationArtifactMetadata() config.StepData {
 					},
 					{
 						Name:        "oAuthTokenProviderUrl",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "parameterKey",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "parameterValue",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",

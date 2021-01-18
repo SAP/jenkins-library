@@ -170,8 +170,8 @@ public class CommonStepsTest extends BasePiperTest{
         'kanikoExecute', //implementing new golang pattern without fields
         'gitopsUpdateDeployment', //implementing new golang pattern without fields
         'vaultRotateSecretId', //implementing new golang pattern without fields
-        'deployIntegrationArtifact', //implementing new golang pattern without fields
-        'updateIntegrationArtifactConfiguration' //implementing new golang pattern without fields
+        'integrationArtifactDeploy', //implementing new golang pattern without fields
+        'integrationArtifactUpdateConfiguration' //implementing new golang pattern without fields
     ]
 
     @Test

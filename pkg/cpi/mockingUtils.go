@@ -13,7 +13,7 @@ import (
 //GetCPIFunctionMockResponse -Generate mock response payload for different CPI functions
 func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, error) {
 	switch functionName {
-	case "DeployIntegrationDesigntimeArtifact":
+	case "IntegrationArtifactDeploy":
 		if testType == "Positive" {
 			return GetEmptyHTTPResponseBody()
 		}
@@ -29,7 +29,7 @@ func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, 
 		}
 		return &res, errors.New("Internal Server Error")
 
-	case "UpdateIntegrationArtifactConfiguration":
+	case "IntegrationArtifactUpdateConfiguration":
 		if testType == "Positive" {
 			return GetEmptyHTTPResponseBody()
 		}
