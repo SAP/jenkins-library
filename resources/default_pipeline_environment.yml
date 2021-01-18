@@ -599,14 +599,6 @@ steps:
       verbose: false
   transportRequestRelease:
       verbose: false
-  uiVeri5ExecuteTests:
-    failOnError: false
-    installCommand: 'npm install @ui5/uiveri5 --global --quiet'
-    stashContent:
-      - 'buildDescriptor'
-      - 'tests'
-    runCommand: "/home/node/.npm-global/bin/uiveri5"
-    runOptions: ["--seleniumAddress='http://selenium:4444/wd/hub'"]
   writeTemporaryCredentials:
     credentialsDirectories:
       - './'
