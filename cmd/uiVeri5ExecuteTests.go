@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"os"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -25,6 +26,8 @@ func uiVeri5ExecuteTests(config uiVeri5ExecuteTestsOptions, telemetryData *telem
 
 func runUIVeri5(config *uiVeri5ExecuteTestsOptions, command command.ExecRunner) error {
 	envs := []string{"NPM_CONFIG_PREFIX=/home/node/.npm-global/bin"}
+	path := "PATH=" + os.Getenv("PATH") + ":~/.npm-global/bin"
+	envs = append(envs, path)
 	if config.TestServerURL != "" {
 		envs = append(envs, "TARGET_SERVER_URL="+config.TestServerURL)
 	}
