@@ -173,12 +173,7 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 	sender := &piperhttp.Client{}
 	sender.SetOptions(piperhttp.ClientOptions{TransportSkipVerification: true})
 
-	issues := SonarUtils.IssueService{
-		Host:       taskReport.ServerURL,
-		Token:      config.Token,
-		Project:    taskReport.ProjectKey,
-		HTTPClient: sender,
-	}
+	issues := SonarUtils.NewIssuesService(taskReport.ServerURL, config.Token, taskReport.ProjectKey, sender)
 	blocker, err := issues.GetNumberOfBlockerIssues()
 	if err != nil {
 		log.Entry().Warn(err)

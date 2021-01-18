@@ -8,33 +8,37 @@ import (
 	"github.com/prometheus/common/log"
 )
 
-type Client struct {
-	Username   string
-	Password   string
-	Host       string
-	HTTPClient Sender
+// Basic Authentication
+type BasicAuth struct {
+	Username string
+	Password string
+}
+
+type Requester struct {
+	Host      string
+	BasicAuth *BasicAuth
+	Client    Sender
 	// Certificates [][]byte
+	// CACert    []byte
+	// SslVerify bool
 }
 
 // Sender provides an interface to the piper http client for uid/pwd and token authenticated requests
 type Sender interface {
 	Send(*http.Request) (*http.Response, error)
-	// SendRequest(method, url string, body io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error)
-	// SetOptions(options piperHttp.ClientOptions)
 }
 
-func NewBasicAuthClient(username, password, host string, client Sender) *Client {
-	return &Client{
-		Username:   username,
-		Password:   password,
-		Host:       host,
-		HTTPClient: client,
+func NewBasicAuthClient(username, password, host string, client Sender) *Requester {
+	return &Requester{
+		Host:      host,
+		BasicAuth: &BasicAuth{Username: username, Password: password},
+		Client:    client,
 	}
 }
 
 // SearchIssues Search for issues.<br>At most one of the following parameters can be provided at the same time: componentKeys, componentUuids, components, componentRootUuids, componentRoots.<br>Requires the 'Browse' permission on the specified project(s).
-func (s *Client) SearchIssues(options *sonargo.IssuesSearchOption) (result *sonargo.IssuesSearchObject, response *http.Response, err error) {
-	sonarClient, err := sonargo.NewClient(s.Host, s.Username, s.Password)
+func (s *Requester) SearchIssues(options *sonargo.IssuesSearchOption) (result *sonargo.IssuesSearchObject, response *http.Response, err error) {
+	sonarClient, err := sonargo.NewClient(s.Host, s.BasicAuth.Username, s.BasicAuth.Password)
 	// reuse parameter validation from sonargo
 	err = sonarClient.Issues.ValidateSearchOpt(options)
 	if err != nil {
@@ -51,7 +55,7 @@ func (s *Client) SearchIssues(options *sonargo.IssuesSearchOption) (result *sona
 	req.URL.Path = sonarClient.BaseURL().Path + "issues/search"
 	log.Warnf("REQUEST: %v", req)
 	// use custom HTTP client to send request
-	response, err = s.HTTPClient.Send(req)
+	response, err = s.Client.Send(req)
 	if err != nil {
 		return
 	}
@@ -69,7 +73,7 @@ func (s *Client) SearchIssues(options *sonargo.IssuesSearchOption) (result *sona
 	return
 }
 
-func (s *Client) decode(resp *http.Response, v interface{}) (err error) {
+func (s *Requester) decode(resp *http.Response, v interface{}) (err error) {
 	defer resp.Body.Close()
 	decoder := json.NewDecoder(resp.Body)
 	decoder.DisallowUnknownFields()

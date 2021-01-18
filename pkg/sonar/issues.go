@@ -7,12 +7,20 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
+func NewIssuesService(host, token, project string, client Sender) *IssueService {
+	return &IssueService{
+		Host:      host,
+		Token:     token,
+		Project:   project,
+		apiClient: NewBasicAuthClient(token, "", host, client),
+	}
+}
+
 type IssueService struct {
-	Host       string
-	Token      string
-	Project    string
-	apiClient  *Client
-	HTTPClient Sender
+	Host      string
+	Token     string
+	Project   string
+	apiClient *Requester
 }
 
 type issueSeverity string
@@ -50,10 +58,6 @@ func (service *IssueService) GetNumberOfInfoIssues() (int, error) {
 }
 
 func (service *IssueService) getIssueCount(severity issueSeverity) (int, error) {
-	if service.apiClient == nil {
-		log.Entry().Debugf("creating new api client for '%s'", service.Host)
-		service.apiClient = NewBasicAuthClient(service.Token, "", service.Host, service.HTTPClient)
-	}
 	log.Entry().Debugf("using api client for '%s'", service.Host)
 	result, _, err := service.apiClient.SearchIssues(&sonargo.IssuesSearchOption{
 		ComponentKeys: service.Project,
