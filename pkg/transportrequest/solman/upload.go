@@ -23,8 +23,8 @@ type Connection struct {
 	Password string
 }
 
-// SOLMANUploadAction Collects all the properties we need for the deployment
-type SOLMANUploadAction struct {
+// UploadAction Collects all the properties we need for the deployment
+type UploadAction struct {
 	Connection         Connection
 	ChangeDocumentId   string
 	TransportRequestId string
@@ -43,26 +43,26 @@ type Action interface {
 	Perform(fs FileSystem, command Exec) error
 }
 
-func (a *SOLMANUploadAction) WithConnection(c Connection) {
+func (a *UploadAction) WithConnection(c Connection) {
 	a.Connection = c
 }
-func (a *SOLMANUploadAction) WithChangeDocumentId(id string) {
+func (a *UploadAction) WithChangeDocumentId(id string) {
 	a.ChangeDocumentId = id
 }
-func (a *SOLMANUploadAction) WithTransportRequestId(id string) {
+func (a *UploadAction) WithTransportRequestId(id string) {
 	a.TransportRequestId = id
 }
-func (a *SOLMANUploadAction) WithApplicationID(id string) {
+func (a *UploadAction) WithApplicationID(id string) {
 	a.ApplicationID = id
 }
-func (a *SOLMANUploadAction) WithFile(f string) {
+func (a *UploadAction) WithFile(f string) {
 	a.File = f
 }
-func (a *SOLMANUploadAction) WithCMOpts(opts []string) {
+func (a *UploadAction) WithCMOpts(opts []string) {
 	a.CMOpts = opts
 }
 
-func (a *SOLMANUploadAction) Perform(fs FileSystem, command Exec) error {
+func (a *UploadAction) Perform(fs FileSystem, command Exec) error {
 
 	missingParameters, err := FindEmptyStrings(*a)
 	if err != nil {

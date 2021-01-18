@@ -12,7 +12,7 @@ func TestSolmanUpload(t *testing.T) {
 	f := &mock.FilesMock{}
 	f.AddFile("myDeployable.xxx", []byte(""))
 
-	defaultUploadAction := SOLMANUploadAction{
+	defaultUploadAction := UploadAction{
 		Connection: Connection{
 			Endpoint: "https://example.org/solman",
 			User:     "me",
@@ -100,7 +100,7 @@ func TestSolmanUpload(t *testing.T) {
 }
 
 func TestFindEmptyStringsInConfig(t *testing.T) {
-	uploadAction := SOLMANUploadAction{
+	uploadAction := UploadAction{
 		Connection: Connection{
 			Endpoint: "<set>",
 			User:     "",
