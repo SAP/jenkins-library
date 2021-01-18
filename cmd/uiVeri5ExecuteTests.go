@@ -25,7 +25,7 @@ func uiVeri5ExecuteTests(config uiVeri5ExecuteTestsOptions, telemetryData *telem
 }
 
 func runUIVeri5(config *uiVeri5ExecuteTestsOptions, command command.ExecRunner) error {
-	envs := []string{"NPM_CONFIG_PREFIX=/home/node/.npm-global/bin"}
+	envs := []string{"NPM_CONFIG_PREFIX=~/.npm-global"}
 	path := "PATH=" + os.Getenv("PATH") + ":~/.npm-global/bin"
 	envs = append(envs, path)
 	if config.TestServerURL != "" {
