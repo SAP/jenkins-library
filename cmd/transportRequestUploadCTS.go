@@ -16,12 +16,12 @@ type transportRequestUploadUtils interface {
 	// Unit tests shall be executable in parallel (not depend on global state), and don't (re-)test dependencies.
 }
 
-// CTSUploadAction ...
-type CTSUploadAction interface {
+// UploadAction ...
+type UploadAction interface {
 	Perform(command.ShellRunner) error
-	WithConnection(cts.CTSConnection)
-	WithApplication(cts.CTSApplication)
-	WithNodeProperties(cts.CTSNode)
+	WithConnection(cts.Connection)
+	WithApplication(cts.Application)
+	WithNodeProperties(cts.Node)
 	WithTransportRequestID(string)
 	WithConfigFile(string)
 	WithDeployUser(string)
@@ -57,7 +57,7 @@ func transportRequestUploadCTS(config transportRequestUploadCTSOptions, telemetr
 
 	// Error situations should be bubbled up until they reach the line below which will then stop execution
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
-	err := runTransportRequestUploadCTS(&config, &cts.CTSUploadAction{}, telemetryData, utils)
+	err := runTransportRequestUploadCTS(&config, &cts.UploadAction{}, telemetryData, utils)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
@@ -65,24 +65,24 @@ func transportRequestUploadCTS(config transportRequestUploadCTSOptions, telemetr
 
 func runTransportRequestUploadCTS(
 	config *transportRequestUploadCTSOptions,
-	action CTSUploadAction,
+	action UploadAction,
 	telemetryData *telemetry.CustomData,
 	cmd command.ShellRunner) error {
 
 	log.Entry().Debugf("Entering 'runTransportRequestUpload' with config: %v", config)
 
-	action.WithConnection(cts.CTSConnection{
+	action.WithConnection(cts.Connection{
 		Endpoint: config.Endpoint,
 		Client:   config.Client,
 		User:     config.Username,
 		Password: config.Password,
 	})
-	action.WithApplication(cts.CTSApplication{
+	action.WithApplication(cts.Application{
 		Name: config.ApplicationName,
 		Pack: config.AbapPackage,
 		Desc: config.Description,
 	})
-	action.WithNodeProperties(cts.CTSNode{
+	action.WithNodeProperties(cts.Node{
 		DeployDependencies: config.DeployToolDependencies,
 		InstallOpts:        config.NpmInstallOpts,
 	})

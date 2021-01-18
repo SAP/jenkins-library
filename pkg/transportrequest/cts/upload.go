@@ -14,8 +14,8 @@ type fileUtils interface {
 
 var files fileUtils = piperutils.Files{}
 
-// CTSConnection Everything wee need for connecting to CTS
-type CTSConnection struct {
+// Connection Everything wee need for connecting to CTS
+type Connection struct {
 	// The endpoint in for form <protocol>://<host>:<port>, no path
 	Endpoint string
 	// The ABAP client, like e.g. "001"
@@ -24,8 +24,8 @@ type CTSConnection struct {
 	Password string
 }
 
-// CTSApplication The details of the application
-type CTSApplication struct {
+// Application The details of the application
+type Application struct {
 	// Name of the application
 	Name string
 	// The ABAP package
@@ -35,8 +35,8 @@ type CTSApplication struct {
 	Desc string
 }
 
-// CTSNode The details for configuring the node image
-type CTSNode struct {
+// Node The details for configuring the node image
+type Node struct {
 	// The dependencies which are installed on a basic node image in order
 	// to enable it for fiori deployment. If left empty we assume the
 	// provided base image has already everything installed.
@@ -46,11 +46,11 @@ type CTSNode struct {
 	InstallOpts []string
 }
 
-// CTSUploadAction Collects all the properties we need for the deployment
-type CTSUploadAction struct {
-	Connection         CTSConnection
-	Application        CTSApplication
-	Node               CTSNode
+// UploadAction Collects all the properties we need for the deployment
+type UploadAction struct {
+	Connection         Connection
+	Application        Application
+	Node               Node
 	TransportRequestID string
 	ConfigFile         string
 	DeployUser         string
@@ -63,37 +63,37 @@ const (
 )
 
 // WithConnection ...
-func (action *CTSUploadAction) WithConnection(connection CTSConnection) {
+func (action *UploadAction) WithConnection(connection Connection) {
 	action.Connection = connection
 }
 
 // WithApplication ...
-func (action *CTSUploadAction) WithApplication(app CTSApplication) {
+func (action *UploadAction) WithApplication(app Application) {
 	action.Application = app
 }
 
 // WithNodeProperties ...
-func (action *CTSUploadAction) WithNodeProperties(node CTSNode) {
+func (action *UploadAction) WithNodeProperties(node Node) {
 	action.Node = node
 }
 
 // WithTransportRequestID ...
-func (action *CTSUploadAction) WithTransportRequestID(id string) {
+func (action *UploadAction) WithTransportRequestID(id string) {
 	action.TransportRequestID = id
 }
 
 // WithConfigFile ...
-func (action *CTSUploadAction) WithConfigFile(configFile string) {
+func (action *UploadAction) WithConfigFile(configFile string) {
 	action.ConfigFile = configFile
 }
 
 // WithDeployUser ...
-func (action *CTSUploadAction) WithDeployUser(deployUser string) {
+func (action *UploadAction) WithDeployUser(deployUser string) {
 	action.DeployUser = deployUser
 }
 
 // Perform Performs the upload
-func (action *CTSUploadAction) Perform(command command.ShellRunner) error {
+func (action *UploadAction) Perform(command command.ShellRunner) error {
 
 	command.AppendEnv(
 		[]string{
@@ -136,8 +136,8 @@ func getPrepareFioriEnvironmentStatement(deps []string, npmInstallOpts []string)
 func getFioriDeployStatement(
 	transportRequestID string,
 	configFile string,
-	app CTSApplication,
-	cts CTSConnection,
+	app Application,
+	cts Connection,
 ) (string, error) {
 	desc := app.Desc
 	if len(desc) == 0 {

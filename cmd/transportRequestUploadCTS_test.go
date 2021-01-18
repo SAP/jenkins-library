@@ -9,10 +9,10 @@ import (
 	"testing"
 )
 
-type CTSUploadActionMock struct {
-	Connection         transportrequest.CTSConnection
-	Application        transportrequest.CTSApplication
-	Node               transportrequest.CTSNode
+type UploadActionMock struct {
+	Connection         transportrequest.Connection
+	Application        transportrequest.Application
+	Node               transportrequest.Node
 	TransportRequestID string
 	ConfigFile         string
 	DeployUser         string
@@ -20,36 +20,36 @@ type CTSUploadActionMock struct {
 }
 
 // WithConnection ...
-func (action *CTSUploadActionMock) WithConnection(connection transportrequest.CTSConnection) {
+func (action *UploadActionMock) WithConnection(connection transportrequest.Connection) {
 	action.Connection = connection
 }
 
 // WithApplication ...
-func (action *CTSUploadActionMock) WithApplication(app transportrequest.CTSApplication) {
+func (action *UploadActionMock) WithApplication(app transportrequest.Application) {
 	action.Application = app
 }
 
 // WithNodeProperties ...
-func (action *CTSUploadActionMock) WithNodeProperties(node transportrequest.CTSNode) {
+func (action *UploadActionMock) WithNodeProperties(node transportrequest.Node) {
 	action.Node = node
 }
 
 // WithTransportRequestID ...
-func (action *CTSUploadActionMock) WithTransportRequestID(id string) {
+func (action *UploadActionMock) WithTransportRequestID(id string) {
 	action.TransportRequestID = id
 }
 
 // WithConfigFile ...
-func (action *CTSUploadActionMock) WithConfigFile(configFile string) {
+func (action *UploadActionMock) WithConfigFile(configFile string) {
 	action.ConfigFile = configFile
 }
 
 // WithDeployUser ...
-func (action *CTSUploadActionMock) WithDeployUser(deployUser string) {
+func (action *UploadActionMock) WithDeployUser(deployUser string) {
 	action.DeployUser = deployUser
 }
 
-func (action *CTSUploadActionMock) Perform(cmd command.ShellRunner) error {
+func (action *UploadActionMock) Perform(cmd command.ShellRunner) error {
 	return action.thrown
 }
 
@@ -84,25 +84,25 @@ func TestRunTransportRequestUploadCTS(t *testing.T) {
 			NpmInstallOpts:         []string{"--verbose", "--registry", "https://registry.example.org/"},
 		}
 
-		actionMock := &CTSUploadActionMock{thrown: nil}
+		actionMock := &UploadActionMock{thrown: nil}
 		// test
 		err := runTransportRequestUploadCTS(&config, actionMock, nil, newTransportRequestUploadCTSTestsUtils())
 
 		// assert
 		if assert.NoError(t, err) {
-			assert.Equal(t, &CTSUploadActionMock{
-				Connection: transportrequest.CTSConnection{
+			assert.Equal(t, &UploadActionMock{
+				Connection: transportrequest.Connection{
 					Endpoint: "https://example.org:8000",
 					Client:   "001",
 					User:     "me",
 					Password: "********",
 				},
-				Application: transportrequest.CTSApplication{
+				Application: transportrequest.Application{
 					Name: "myApp",
 					Pack: "myPackage",
 					Desc: "lorem ipsum",
 				},
-				Node: transportrequest.CTSNode{
+				Node: transportrequest.Node{
 					DeployDependencies: []string{
 						"@ui5/cli",
 						"@sap/ux-ui5-tooling",
@@ -139,7 +139,7 @@ func TestRunTransportRequestUploadCTS(t *testing.T) {
 
 		err := runTransportRequestUploadCTS(
 			&config,
-			&CTSUploadActionMock{thrown: fmt.Errorf("something went wrong")},
+			&UploadActionMock{thrown: fmt.Errorf("something went wrong")},
 			nil,
 			newTransportRequestUploadCTSTestsUtils())
 		assert.EqualError(t, err, "something went wrong")

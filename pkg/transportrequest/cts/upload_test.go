@@ -15,10 +15,10 @@ func TestUploadCTS(t *testing.T) {
 
 	t.Run("npm install command tests", func(t *testing.T) {
 		cmd := mock.ShellMockRunner{}
-		action := CTSUploadAction{
-			Connection:  CTSConnection{Endpoint: "", Client: "", User: "me", Password: "******"},
-			Application: CTSApplication{Pack: "", Name: "", Desc: ""},
-			Node: CTSNode{
+		action := UploadAction{
+			Connection:  Connection{Endpoint: "", Client: "", User: "me", Password: "******"},
+			Application: Application{Pack: "", Name: "", Desc: ""},
+			Node: Node{
 				DeployDependencies: []string{"@sap/my-dep"},
 				InstallOpts:        []string{"--verbose", "--registry", "https://registry.example.org"},
 			},
@@ -46,10 +46,10 @@ func TestUploadCTS(t *testing.T) {
 	t.Run("deploy command tests", func(t *testing.T) {
 		t.Run("all possible values provided", func(t *testing.T) {
 			cmd := mock.ShellMockRunner{}
-			action := CTSUploadAction{
-				Connection:  CTSConnection{Endpoint: "https://example.org:8080/cts", Client: "001", User: "me", Password: "******"},
-				Application: CTSApplication{Pack: "abapPackage", Name: "appName", Desc: "the Desc"},
-				Node: CTSNode{
+			action := UploadAction{
+				Connection:  Connection{Endpoint: "https://example.org:8080/cts", Client: "001", User: "me", Password: "******"},
+				Application: Application{Pack: "abapPackage", Name: "appName", Desc: "the Desc"},
+				Node: Node{
 					DeployDependencies: []string{},
 					InstallOpts:        []string{},
 				},
@@ -73,10 +73,10 @@ func TestUploadCTS(t *testing.T) {
 		t.Run("all possible values omitted", func(t *testing.T) {
 			// In this case the values are expected inside the fiori deploy config file
 			cmd := mock.ShellMockRunner{}
-			action := CTSUploadAction{
-				Connection:  CTSConnection{Endpoint: "", Client: "", User: "me", Password: "******"},
-				Application: CTSApplication{Pack: "", Name: "", Desc: ""},
-				Node: CTSNode{
+			action := UploadAction{
+				Connection:  Connection{Endpoint: "", Client: "", User: "me", Password: "******"},
+				Application: Application{Pack: "", Name: "", Desc: ""},
+				Node: Node{
 					DeployDependencies: []string{},
 					InstallOpts:        []string{},
 				},
@@ -99,9 +99,9 @@ func TestUploadCTS(t *testing.T) {
 	})
 
 	t.Run("config file releated tests", func(t *testing.T) {
-		connection := CTSConnection{Endpoint: "", Client: "", User: "me", Password: "******"}
-		app := CTSApplication{Pack: "", Name: "", Desc: ""}
-		node := CTSNode{
+		connection := Connection{Endpoint: "", Client: "", User: "me", Password: "******"}
+		app := Application{Pack: "", Name: "", Desc: ""}
+		node := Node{
 			DeployDependencies: []string{},
 			InstallOpts:        []string{},
 		}
@@ -111,7 +111,7 @@ func TestUploadCTS(t *testing.T) {
 			files = &filesMock
 			defer func() { files = fMock }()
 			cmd := mock.ShellMockRunner{}
-			action := CTSUploadAction{
+			action := UploadAction{
 				Connection:         connection,
 				Application:        app,
 				Node:               node,
@@ -130,7 +130,7 @@ func TestUploadCTS(t *testing.T) {
 			files = &filesMock
 			defer func() { files = fMock }()
 			cmd := mock.ShellMockRunner{}
-			action := CTSUploadAction{
+			action := UploadAction{
 				Connection:         connection,
 				Application:        app,
 				Node:               node,
@@ -146,7 +146,7 @@ func TestUploadCTS(t *testing.T) {
 		})
 		t.Run("Config file missing", func(t *testing.T) {
 			cmd := mock.ShellMockRunner{}
-			action := CTSUploadAction{
+			action := UploadAction{
 				Connection:         connection,
 				Application:        app,
 				Node:               node,
