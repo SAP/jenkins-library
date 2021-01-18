@@ -33,6 +33,35 @@ type SOLMANUploadAction struct {
 	CMOpts             []string
 }
 
+type Action interface {
+	WithConnection(SOLMANConnection)
+	WithChangeDocumentId(string)
+	WithTransportRequestId(string)
+	WithApplicationID(string)
+	WithFile(string)
+	WithCMOpts([]string)
+	Perform(fs FileSystem, command Exec) error
+}
+
+func (a *SOLMANUploadAction) WithConnection(c SOLMANConnection) {
+	a.Connection = c
+}
+func (a *SOLMANUploadAction) WithChangeDocumentId(id string) {
+	a.ChangeDocumentId = id
+}
+func (a *SOLMANUploadAction) WithTransportRequestId(id string) {
+	a.TransportRequestId = id
+}
+func (a *SOLMANUploadAction) WithApplicationID(id string) {
+	a.ApplicationID = id
+}
+func (a *SOLMANUploadAction) WithFile(f string) {
+	a.File = f
+}
+func (a *SOLMANUploadAction) WithCMOpts(opts []string) {
+	a.CMOpts = opts
+}
+
 func (a *SOLMANUploadAction) Perform(fs FileSystem, command Exec) error {
 
 	missingParameters, err := FindEmptyStrings(*a)
