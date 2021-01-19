@@ -7,12 +7,13 @@ import (
 	sonargo "github.com/magicsong/sonargo/sonar"
 )
 
-// Basic Authentication
+// BasicAuth Basic Authentication
 type BasicAuth struct {
 	Username string
 	Password string
 }
 
+// Requester ...
 type Requester struct {
 	Host      string
 	BasicAuth *BasicAuth
@@ -27,6 +28,7 @@ type Sender interface {
 	Send(*http.Request) (*http.Response, error)
 }
 
+// NewBasicAuthClient ...
 func NewBasicAuthClient(username, password, host string, client Sender) *Requester {
 	return &Requester{
 		Host:      host,
@@ -35,40 +37,27 @@ func NewBasicAuthClient(username, password, host string, client Sender) *Request
 	}
 }
 
-// SearchIssues Search for issues.<br>At most one of the following parameters can be provided at the same time: componentKeys, componentUuids, components, componentRootUuids, componentRoots.<br>Requires the 'Browse' permission on the specified project(s).
-func (s *Requester) SearchIssues(options *IssuesSearchOption) (result *sonargo.IssuesSearchObject, response *http.Response, err error) {
-	sonarClient, err := sonargo.NewClient(s.Host, s.BasicAuth.Username, s.BasicAuth.Password)
+func (requester *Requester) create(method, path string, options interface{}) (request *http.Request, err error) {
+	sonarGoClient, err := sonargo.NewClient(requester.Host, requester.BasicAuth.Username, requester.BasicAuth.Password)
 	// reuse request creation from sonargo
-	req, err := sonarClient.NewRequest("GET", "issues/search", options)
+	request, err = sonarGoClient.NewRequest(method, path, options)
 	if err != nil {
 		return
 	}
 	// request created by sonarGO uses .Opaque without the host parameter leading to a request against https://api/issues/search
 	// https://github.com/magicsong/sonargo/blob/103eda7abc20bd192a064b6eb94ba26329e339f1/sonar/sonarqube.go#L55
-	req.URL.Opaque = ""
-	req.URL.Path = sonarClient.BaseURL().Path + "issues/search"
-	// use custom HTTP client to send request
-	response, err = s.Client.Send(req)
-	if err != nil {
-		return
-	}
-	// reuse response verrification from sonargo
-	err = sonargo.CheckResponse(response)
-	if err != nil {
-		return
-	}
-	// decode JSON response
-	result = new(sonargo.IssuesSearchObject)
-	err = s.decode(response, result)
-	if err != nil {
-		return nil, response, err
-	}
+	request.URL.Opaque = ""
+	request.URL.Path = sonarGoClient.BaseURL().Path + path
 	return
 }
 
-func (s *Requester) decode(resp *http.Response, v interface{}) (err error) {
-	defer resp.Body.Close()
-	decoder := json.NewDecoder(resp.Body)
+func (requester *Requester) send(request *http.Request) (*http.Response, error) {
+	return requester.Client.Send(request)
+}
+
+func (requester *Requester) decode(response *http.Response, result interface{}) error {
+	defer response.Body.Close()
+	decoder := json.NewDecoder(response.Body)
 	decoder.DisallowUnknownFields()
-	return decoder.Decode(v)
+	return decoder.Decode(result)
 }

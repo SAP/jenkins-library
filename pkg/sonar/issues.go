@@ -1,8 +1,10 @@
 package sonar
 
 import (
+	"net/http"
 	"strings"
 
+	sonargo "github.com/magicsong/sonargo/sonar"
 	"github.com/pkg/errors"
 
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -123,9 +125,34 @@ func (service *IssueService) getIssueCount(severity issueSeverity) (int, error) 
 	if len(service.PullRequest) > 0 {
 		options.PullRequest = service.PullRequest
 	}
-	result, _, err := service.apiClient.SearchIssues(options)
+	result, _, err := service.SearchIssues(options)
 	if err != nil {
 		return -1, errors.Wrapf(err, "failed to fetch the numer of '%s' issues", severity)
 	}
 	return result.Total, nil
+}
+
+// SearchIssues Search for issues.<br>At most one of the following parameters can be provided at the same time: componentKeys, componentUuids, components, componentRootUuids, componentRoots.<br>Requires the 'Browse' permission on the specified project(s).
+func (service *IssueService) SearchIssues(options *IssuesSearchOption) (result *sonargo.IssuesSearchObject, response *http.Response, err error) {
+	request, err := service.apiClient.create("GET", "issues/search", options)
+	if err != nil {
+		return
+	}
+	// use custom HTTP client to send request
+	response, err = service.apiClient.send(request)
+	if err != nil {
+		return
+	}
+	// reuse response verrification from sonargo
+	err = sonargo.CheckResponse(response)
+	if err != nil {
+		return
+	}
+	// decode JSON response
+	result = new(sonargo.IssuesSearchObject)
+	err = service.apiClient.decode(response, result)
+	if err != nil {
+		return nil, response, err
+	}
+	return
 }
