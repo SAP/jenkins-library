@@ -2,8 +2,9 @@ package cmd
 
 import (
 	"fmt"
-
-	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/spf13/cobra"
+	"os"
 )
 
 // GitCommit ...
@@ -12,7 +13,29 @@ var GitCommit string
 // GitTag ...
 var GitTag string
 
-func version(config versionOptions, telemetryData *telemetry.CustomData) {
+// VersionCommand Returns the version of the piper binary
+func VersionCommand() *cobra.Command {
+	const STEP_NAME = "version"
+
+	var createVersionCmd = &cobra.Command{
+		Use:   STEP_NAME,
+		Short: "Returns the version of the piper binary",
+		Long:  `Writes the commit hash and the tag (if any) to stdout and exits with 0.`,
+		PreRun: func(cmd *cobra.Command, args []string) {
+			log.SetStepName(STEP_NAME)
+			path, _ := os.Getwd()
+			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
+			log.RegisterHook(fatalHook)
+		},
+		Run: func(cmd *cobra.Command, args []string) {
+			version()
+		},
+	}
+
+	return createVersionCmd
+}
+
+func version() {
 
 	gitCommit, gitTag := "<n/a>", "<n/a>"
 

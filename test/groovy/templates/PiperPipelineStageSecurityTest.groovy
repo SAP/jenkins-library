@@ -29,10 +29,34 @@ class PiperPipelineStageSecurityTest extends BasePiperTest {
 
     @Before
     void init()  {
-        binding.variables.env.STAGE_NAME = 'Security'
+        nullScript.env.STAGE_NAME = 'Security'
+
+        helper.registerAllowedMethod("deleteDir", [], null)
         helper.registerAllowedMethod('piperStageWrapper', [Map.class, Closure.class], {m, body ->
             assertThat(m.stageName, is('Security'))
             return body()
+        })
+
+        def parallelMap = [:]
+        helper.registerAllowedMethod("parallel", [Map.class], { map ->
+            parallelMap = map
+            parallelMap.each {key, value ->
+                if (key != 'failFast') {
+                    value()
+                }
+            }
+        })
+
+        helper.registerAllowedMethod('checkmarxExecuteScan', [Map.class], {m ->
+            stepsCalled.add('checkmarxExecuteScan')
+        })
+
+        helper.registerAllowedMethod('detectExecuteScan', [Map.class], {m ->
+            stepsCalled.add('detectExecuteScan')
+        })
+
+        helper.registerAllowedMethod('fortifyExecuteScan', [Map.class], {m ->
+            stepsCalled.add('fortifyExecuteScan')
         })
 
         helper.registerAllowedMethod('whitesourceExecuteScan', [Map.class], {m ->
@@ -48,7 +72,10 @@ class PiperPipelineStageSecurityTest extends BasePiperTest {
             script: nullScript,
             juStabUtils: utils,
         )
-        assertThat(stepsCalled, not(hasItems('whitesourceExecuteScan')))
+        assertThat(stepsCalled, not(hasItem('whitesourceExecuteScan')))
+        assertThat(stepsCalled, not(hasItem('checkmarxExecuteScan')))
+        assertThat(stepsCalled, not(hasItem('detectExecuteScan')))
+        assertThat(stepsCalled, not(hasItem('fortifyExecuteScan')))
     }
 
     @Test
@@ -61,5 +88,65 @@ class PiperPipelineStageSecurityTest extends BasePiperTest {
         )
 
         assertThat(stepsCalled, hasItem('whitesourceExecuteScan'))
+        assertThat(stepsCalled, not(hasItem('checkmarxExecuteScan')))
+        assertThat(stepsCalled, not(hasItem('detectExecuteScan')))
+        assertThat(stepsCalled, not(hasItem('fortifyExecuteScan')))
+    }
+
+    @Test
+    void testSecurityStageCheckmarx() {
+
+        nullScript.commonPipelineEnvironment.configuration = [
+            runStep: [Security: [checkmarxExecuteScan: true]]
+        ]
+
+        jsr.step.piperPipelineStageSecurity(
+            script: nullScript,
+            juStabUtils: utils,
+            checkmarxExecuteScan: true
+        )
+
+        assertThat(stepsCalled, hasItem('checkmarxExecuteScan'))
+        assertThat(stepsCalled, not(hasItem('detectExecuteScan')))
+        assertThat(stepsCalled, not(hasItem('whitesourceExecuteScan')))
+        assertThat(stepsCalled, not(hasItem('fortifyExecuteScan')))
+    }
+
+    @Test
+    void testSecurityStageDetect() {
+
+        nullScript.commonPipelineEnvironment.configuration = [
+            runStep: [Security: [detectExecuteScan: true]]
+        ]
+
+        jsr.step.piperPipelineStageSecurity(
+            script: nullScript,
+            juStabUtils: utils,
+            detectExecuteScan: true
+        )
+
+        assertThat(stepsCalled, hasItem('detectExecuteScan'))
+        assertThat(stepsCalled, not(hasItem('checkmarxExecuteScan')))
+        assertThat(stepsCalled, not(hasItem('whitesourceExecuteScan')))
+        assertThat(stepsCalled, not(hasItem('fortifyExecuteScan')))
+    }
+
+    @Test
+    void testSecurityStageFortify() {
+
+        nullScript.commonPipelineEnvironment.configuration = [
+            runStep: [Security: [fortifyExecuteScan: true]]
+        ]
+
+        jsr.step.piperPipelineStageSecurity(
+            script: nullScript,
+            juStabUtils: utils,
+            fortifyExecuteScan: true
+        )
+
+        assertThat(stepsCalled, hasItem('fortifyExecuteScan'))
+        assertThat(stepsCalled, not(hasItem('detectExecuteScan')))
+        assertThat(stepsCalled, not(hasItem('whitesourceExecuteScan')))
+        assertThat(stepsCalled, not(hasItem('checkmarxExecuteScan')))
     }
 }

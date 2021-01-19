@@ -11,6 +11,10 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String STEP_NAME = getClass().getName()
 
 @Field Set GENERAL_CONFIG_KEYS = [
+    /**
+     * This is set in the common pipeline environment by the build tool, e.g. during the mtaBuild step.
+     */
+    'buildTool',
     'cloudFoundry',
         /**
          * Cloud Foundry API endpoint.
@@ -59,6 +63,7 @@ import static com.sap.piper.Prerequisites.checkScript
          * Note: variables defined via `manifestVariables` always win over conflicting variables defined via any file given
          * by `manifestVariablesFiles` - no matter what is declared before. This is the same behavior as can be
          * observed when using `cf push --var` in combination with `cf push --vars-file`.
+         * @parentConfigKey cloudFoundry
          */
         'manifestVariables',
         /**
@@ -73,12 +78,13 @@ import static com.sap.piper.Prerequisites.checkScript
         'space',
     /**
      * Defines the tool which should be used for deployment.
+     * If it is not set it will be inferred automatically based on the buildTool, i.e., for MTA projects `mtaDeployPlugin` will be used and `cf_native` for other types of projects.
      * @possibleValues 'cf_native', 'mtaDeployPlugin'
      */
     'deployTool',
     /**
-     * Defines the type of deployment, either `standard` deployment which results in a system downtime or a zero-downtime `blue-green` deployment.
-     * If 'cf_native' as deployType and 'blue-green' as deployTool is used in combination, your manifest.yaml may only contain one application.
+     * Defines the type of deployment, either `standard` deployment, which results in a system downtime, or a zero-downtime `blue-green` deployment.
+     * If 'cf_native' as deployTool and 'blue-green' as deployType is used in combination, your manifest.yaml may only contain one application.
      * If this application has the option 'no-route' active the deployType will be changed to 'standard'.
      * @possibleValues 'standard', 'blue-green'
      */
@@ -113,11 +119,16 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'mtaDeployParameters',
     /**
+     * Defines a map of credentials that need to be replaced in the `mtaExtensionDescriptor`.
+     * This map needs to be created as `value-to-be-replaced`:`id-of-a-credential-in-jenkins`
+     */
+    'mtaExtensionCredentials',
+    /**
      * Defines additional extension descriptor file for deployment with the mtaDeployPlugin.
      */
     'mtaExtensionDescriptor',
     /**
-     * Defines the path to *.mtar for deployment with the mtaDeployPlugin.
+     * Defines the path to *.mtar for deployment with the mtaDeployPlugin. If not specified, it will use the mta file created in mtaBuild or search for an mtar file in the workspace.
      */
     'mtaPath',
     /**
@@ -148,11 +159,32 @@ import static com.sap.piper.Prerequisites.checkScript
      * this defines the credentials to be used.
      */
     'dockerCredentialsId',
+    /**
+     * Output the CloudFoundry trace logs. If not specified, takes the value of config.verbose.
+     */
+    'cfTrace',
+    /**
+     * Toggle to activate the new go-implementation of the step. Off by default.
+     * @possibleValues true, false
+     */
+    'useGoStep',
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
-@Field Map CONFIG_KEY_COMPATIBILITY = [cloudFoundry: [apiEndpoint: 'cfApiEndpoint', appName:'cfAppName', credentialsId: 'cfCredentialsId', manifest: 'cfManifest', manifestVariablesFiles: 'cfManifestVariablesFiles', manifestVariables: 'cfManifestVariables',  org: 'cfOrg', space: 'cfSpace']]
+@Field Map CONFIG_KEY_COMPATIBILITY = [
+    cloudFoundry: [
+        apiEndpoint: 'cfApiEndpoint',
+        appName:'cfAppName',
+        credentialsId: 'cfCredentialsId',
+        manifest: 'cfManifest',
+        manifestVariablesFiles: 'cfManifestVariablesFiles',
+        manifestVariables: 'cfManifestVariables',
+        org: 'cfOrg',
+        space: 'cfSpace',
+    ],
+    mtaExtensionDescriptor: 'cloudFoundry/mtaExtensionDescriptor'
+]
 
 /**
  * Deploys an application to a test or production space within Cloud Foundry.
@@ -168,12 +200,12 @@ import static com.sap.piper.Prerequisites.checkScript
  *     * [MTA CF CLI Plugin](https://github.com/cloudfoundry-incubator/multiapps-cli-plugin)
  *
  * !!! note
- * Due to [an incompatible change](https://github.com/cloudfoundry/cli/issues/1445) in the Cloud Foundry CLI, multiple buildpacks are not supported by this step.
- * If your `application` contains a list of `buildpacks` instead a single `buildpack`, this will be automatically re-written by the step when blue-green deployment is used.
+ *     Due to [an incompatible change](https://github.com/cloudfoundry/cli/issues/1445) in the Cloud Foundry CLI, multiple buildpacks are not supported by this step.
+ *     If your `application` contains a list of `buildpacks` instead a single `buildpack`, this will be automatically re-written by the step when blue-green deployment is used.
  *
  * !!! note
- * Cloud Foundry supports the deployment of multiple applications using a single manifest file.
- * This option is supported with Piper.
+ *     Cloud Foundry supports the deployment of multiple applications using a single manifest file.
+ *     This option is supported with Piper.
  *
  * In this case define `appName: ''` since the app name for the individual applications have to be defined via the manifest.
  * You can find details in the [Cloud Foundry Documentation](https://docs.cloudfoundry.org/devguide/deploy-apps/manifest.html#multi-apps)
@@ -183,23 +215,44 @@ void call(Map parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
+        final script = checkScript(this, parameters) ?: this
         def utils = parameters.juStabUtils ?: new Utils()
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
-
-        final script = checkScript(this, parameters) ?: this
+        String stageName = parameters.stageName ?: env.STAGE_NAME
 
         Map config = ConfigurationHelper.newInstance(this)
-            .loadStepDefaults()
+            .loadStepDefaults([:], stageName)
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
             .mixin(parameters, PARAMETER_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .addIfEmpty('buildTool', script.commonPipelineEnvironment.getBuildTool())
+            .dependingOn('buildTool').mixin('deployTool')
             .dependingOn('deployTool').mixin('dockerImage')
             .dependingOn('deployTool').mixin('dockerWorkspace')
             .withMandatoryProperty('cloudFoundry/org')
             .withMandatoryProperty('cloudFoundry/space')
-            .withMandatoryProperty('cloudFoundry/credentialsId')
+            .withMandatoryProperty('cloudFoundry/credentialsId', null, {c -> return !c.containsKey('vaultAppRoleTokenCredentialsId') || !c.containsKey('vaultAppRoleSecretTokenCredentialsId')})
             .use()
+
+        if (config.cfTrace == null) config.cfTrace = true
+
+        if (config.useGoStep == true) {
+            utils.unstashAll(["deployDescriptor"])
+            List credentials = [
+                [type: 'usernamePassword', id: 'cfCredentialsId', env: ['PIPER_username', 'PIPER_password']],
+                [type: 'usernamePassword', id: 'dockerCredentialsId', env: ['PIPER_dockerUsername', 'PIPER_dockerPassword']]
+            ]
+
+            if (config.mtaExtensionCredentials) {
+                config.mtaExtensionCredentials.each { key, credentialsId ->
+                    echo "[INFO]${STEP_NAME}] Preparing credential for being used by piper-go. key: ${key}, credentialsId is: ${credentialsId}, exposed as environment variable ${toEnvVarKey(credentialsId)}"
+                    credentials << [type: 'token', id: credentialsId, env: [toEnvVarKey(credentialsId)], resolveCredentialsId: false]
+                }
+            }
+            piperExecuteBin(parameters, STEP_NAME, 'metadata/cloudFoundryDeploy.yaml', credentials)
+            return
+        }
 
         utils.pushToSWA([
             step: STEP_NAME,
@@ -217,6 +270,30 @@ void call(Map parameters = [:]) {
         utils.unstashAll(config.stashContent)
         //make sure that for further execution whole workspace, e.g. also downloaded artifacts are considered
         config.stashContent = []
+
+        // validate cf app name to avoid a failing deployment due to invalid chars
+        if (config.cloudFoundry.appName) {
+            String appName = config.cloudFoundry.appName.toString()
+            boolean isValidCfAppName = appName.matches("^[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9]\$")
+
+            if (!isValidCfAppName) {
+                echo "WARNING: Your application name $appName contains non-alphanumeric characters which may lead to errors in the future, as they are not supported by CloudFoundry.\n" +
+                    "For more details please visit https://docs.cloudfoundry.org/devguide/deploy-apps/deploy-app.html#basic-settings"
+
+                // Underscore in the app name will lead to errors because cf uses the appname as part of the url which may not contain underscores
+                if (appName.contains("_")) {
+                    error("Your application name $appName contains a '_' (underscore) which is not allowed, only letters, dashes and numbers can be used. " +
+                        "Please change the name to fit this requirement.\n" +
+                        "For more details please visit https://docs.cloudfoundry.org/devguide/deploy-apps/deploy-app.html#basic-settings.")
+                }
+
+                if (appName.startsWith("-") || appName.endsWith("-")) {
+                    error("Your application name $appName contains a starts or ends with a '-' (dash) which is not allowed, only letters, dashes and numbers can be used. " +
+                        "Please change the name to fit this requirement.\n" +
+                        "For more details please visit https://docs.cloudfoundry.org/devguide/deploy-apps/deploy-app.html#basic-settings.")
+                }
+            }
+        }
 
         boolean deployTriggered = false
         boolean deploySuccess = true
@@ -246,11 +323,22 @@ void call(Map parameters = [:]) {
     }
 }
 
+/*
+ * Inserts underscores before all upper case letters which are not already
+ * have an underscore before, replaces any non letters/digits with underscore
+ * and transforms all lower case letters to upper case.
+ */
+private static String toEnvVarKey(String key) {
+    key = key.replaceAll(/[^A-Za-z0-9]/, "_")
+    key = key.replaceAll(/(.)(?<!_)([A-Z])/, "\$1_\$2")
+    return key.toUpperCase()
+}
+
 private void handleMTADeployment(Map config, script) {
     // set default mtar path
-    config = ConfigurationHelper.newInstance(this, config)
-        .addIfEmpty('mtaPath', config.mtaPath ?: findMtar())
-        .use()
+    if(!config.mtaPath) {
+        config.mtaPath = script.commonPipelineEnvironment.mtarFilePath ?: findMtar()
+    }
 
     dockerExecute(script: script, dockerImage: config.dockerImage, dockerWorkspace: config.dockerWorkspace, stashContent: config.stashContent) {
         deployMta(config)
@@ -270,8 +358,19 @@ def findMtar(){
 }
 
 def deployMta(config) {
-    if (config.mtaExtensionDescriptor == null) config.mtaExtensionDescriptor = ''
-    if (!config.mtaExtensionDescriptor.isEmpty() && !config.mtaExtensionDescriptor.startsWith('-e ')) config.mtaExtensionDescriptor = "-e ${config.mtaExtensionDescriptor}"
+    String mtaExtensionDescriptorParam = ''
+
+    if (config.mtaExtensionDescriptor) {
+        if (!fileExists(config.mtaExtensionDescriptor)) {
+            error "[${STEP_NAME}] The mta extension descriptor file ${config.mtaExtensionDescriptor} does not exist at the configured location."
+        }
+
+        mtaExtensionDescriptorParam = "-e ${config.mtaExtensionDescriptor}"
+
+        if (config.mtaExtensionCredentials) {
+            handleMtaExtensionCredentials(config)
+        }
+    }
 
     def deployCommand = 'deploy'
     if (config.deployType == 'blue-green') {
@@ -281,11 +380,40 @@ def deployMta(config) {
         }
     }
 
-    def deployStatement = "cf ${deployCommand} ${config.mtaPath} ${config.mtaDeployParameters} ${config.mtaExtensionDescriptor}"
+    def deployStatement = "cf ${deployCommand} ${config.mtaPath} ${config.mtaDeployParameters} ${mtaExtensionDescriptorParam}"
     def apiStatement = "cf api ${config.cloudFoundry.apiEndpoint} ${config.apiParameters}"
 
-    echo "[${STEP_NAME}] Deploying MTA (${config.mtaPath}) with following parameters: ${config.mtaExtensionDescriptor} ${config.mtaDeployParameters}"
-    deploy(apiStatement, deployStatement, config, null)
+    echo "[${STEP_NAME}] Deploying MTA (${config.mtaPath}) with following parameters: ${mtaExtensionDescriptorParam} ${config.mtaDeployParameters}"
+    try {
+        deploy(apiStatement, deployStatement, config, null)
+    } finally {
+        if (config.mtaExtensionCredentials && config.mtaExtensionDescriptor && fileExists(config.mtaExtensionDescriptor)) {
+            sh "mv --force ${config.mtaExtensionDescriptor}.original ${config.mtaExtensionDescriptor} || echo 'The file ${config.mtaExtensionDescriptor}.original could not be renamed.'"
+        }
+    }
+}
+
+private void handleMtaExtensionCredentials(Map<?, ?> config) {
+    echo "[${STEP_NAME}] Modifying ${config.mtaExtensionDescriptor}. Adding credential values from Jenkins."
+    sh "cp ${config.mtaExtensionDescriptor} ${config.mtaExtensionDescriptor}.original"
+
+    Map mtaExtensionCredentials = config.mtaExtensionCredentials
+
+    String fileContent = ''
+
+    try {
+        fileContent = readFile config.mtaExtensionDescriptor
+    } catch (Exception e) {
+        error("[${STEP_NAME}] Unable to read mta extension file ${config.mtaExtensionDescriptor}. (${e.getMessage()})")
+    }
+
+    mtaExtensionCredentials.each { key, credentialsId ->
+        withCredentials([string(credentialsId: credentialsId, variable: 'mtaExtensionCredential')]) {
+            fileContent = fileContent.replace('<%= ' + key.toString() + ' %>', mtaExtensionCredential.toString())
+        }
+    }
+
+    writeFile file: config.mtaExtensionDescriptor, text: fileContent
 }
 
 private checkAndUpdateDeployTypeForNotSupportedManifest(Map config){
@@ -484,7 +612,7 @@ private deploy(String cfApiStatement, String cfDeployStatement, config, Closure 
             set +x
             set -e
             export HOME=${config.dockerWorkspace}
-            export CF_TRACE=${cfTraceFile}
+            ${config.cfTrace ? "export CF_TRACE=${cfTraceFile}" : ""}
             ${cfApiStatement ?: ''}
             cf login -u \"${username}\" -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\" ${config.loginParameters}
             cf plugins

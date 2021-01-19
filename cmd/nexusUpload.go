@@ -2,8 +2,10 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/bmatcuk/doublestar"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/pkg/errors"
+	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -23,103 +25,66 @@ import (
 // nexusUploadUtils defines an interface for utility functionality used from external packages,
 // so it can be easily mocked for testing.
 type nexusUploadUtils interface {
-	fileExists(path string) (bool, error)
-	fileRead(path string) ([]byte, error)
-	fileWrite(path string, content []byte, perm os.FileMode) error
-	fileRemove(path string)
-	dirExists(path string) (bool, error)
-	usesMta() bool
-	usesMaven() bool
-	usesNpm() bool
+	Stdout(out io.Writer)
+	Stderr(err io.Writer)
+	SetEnv(env []string)
+	RunExecutable(e string, p ...string) error
+
+	FileExists(path string) (bool, error)
+	FileRead(path string) ([]byte, error)
+	FileWrite(path string, content []byte, perm os.FileMode) error
+	FileRemove(path string) error
+	DirExists(path string) (bool, error)
+	Glob(pattern string) (matches []string, err error)
+	Copy(src, dest string) (int64, error)
+	MkdirAll(path string, perm os.FileMode) error
+
+	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
+
+	UsesMta() bool
+	UsesMaven() bool
+	UsesNpm() bool
+
 	getEnvParameter(path, name string) string
-	getExecRunner() execRunner
-	evaluate(pomFile, expression string) (string, error)
-	glob(pattern string) (matches []string, err error)
+	evaluate(options *maven.EvaluateOptions, expression string) (string, error)
 }
 
 type utilsBundle struct {
-	projectStructure piperutils.ProjectStructure
-	fileUtils        piperutils.Files
-	execRunner       *command.Command
+	*piperutils.ProjectStructure
+	*piperutils.Files
+	*command.Command
+	*piperhttp.Client
 }
 
 func newUtilsBundle() *utilsBundle {
-	return &utilsBundle{
-		projectStructure: piperutils.ProjectStructure{},
-		fileUtils:        piperutils.Files{},
+	utils := utilsBundle{
+		ProjectStructure: &piperutils.ProjectStructure{},
+		Files:            &piperutils.Files{},
+		Command:          &command.Command{},
+		Client:           &piperhttp.Client{},
 	}
+	utils.Stdout(log.Writer())
+	utils.Stderr(log.Writer())
+	return &utils
 }
 
-func (u *utilsBundle) fileExists(path string) (bool, error) {
-	return u.fileUtils.FileExists(path)
-}
-
-func (u *utilsBundle) fileRead(path string) ([]byte, error) {
-	return u.fileUtils.FileRead(path)
-}
-
-func (u *utilsBundle) fileWrite(filePath string, content []byte, perm os.FileMode) error {
+func (u *utilsBundle) FileWrite(filePath string, content []byte, perm os.FileMode) error {
 	parent := filepath.Dir(filePath)
 	if parent != "" {
-		err := u.fileUtils.MkdirAll(parent, 0775)
+		err := u.Files.MkdirAll(parent, 0775)
 		if err != nil {
 			return err
 		}
 	}
-	return u.fileUtils.FileWrite(filePath, content, perm)
-}
-
-func (u *utilsBundle) fileRemove(path string) {
-	err := os.Remove(path)
-	if err != nil {
-		log.Entry().WithError(err).Warnf("Failed to remove file '%s'.", path)
-	}
-}
-
-func (u *utilsBundle) dirExists(path string) (bool, error) {
-	info, err := os.Stat(path)
-
-	if os.IsNotExist(err) {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-
-	return info.IsDir(), nil
-}
-
-func (u *utilsBundle) usesMta() bool {
-	return u.projectStructure.UsesMta()
-}
-
-func (u *utilsBundle) usesMaven() bool {
-	return u.projectStructure.UsesMaven()
-}
-
-func (u *utilsBundle) usesNpm() bool {
-	return u.projectStructure.UsesNpm()
+	return u.Files.FileWrite(filePath, content, perm)
 }
 
 func (u *utilsBundle) getEnvParameter(path, name string) string {
 	return piperenv.GetParameter(path, name)
 }
 
-func (u *utilsBundle) getExecRunner() execRunner {
-	if u.execRunner == nil {
-		u.execRunner = &command.Command{}
-		u.execRunner.Stdout(log.Entry().Writer())
-		u.execRunner.Stderr(log.Entry().Writer())
-	}
-	return u.execRunner
-}
-
-func (u *utilsBundle) evaluate(pomFile, expression string) (string, error) {
-	return maven.Evaluate(pomFile, expression, u.getExecRunner())
-}
-
-func (u *utilsBundle) glob(pattern string) (matches []string, err error) {
-	return doublestar.Glob(pattern)
+func (u *utilsBundle) evaluate(options *maven.EvaluateOptions, expression string) (string, error) {
+	return maven.Evaluate(options, expression, u)
 }
 
 func nexusUpload(options nexusUploadOptions, _ *telemetry.CustomData) {
@@ -135,12 +100,17 @@ func nexusUpload(options nexusUploadOptions, _ *telemetry.CustomData) {
 func runNexusUpload(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions) error {
 	performMavenUpload := len(options.MavenRepository) > 0
 	performNpmUpload := len(options.NpmRepository) > 0
+
+	if !performMavenUpload && !performNpmUpload {
+		return fmt.Errorf("none of the parameters 'mavenRepository' and 'npmRepository' are configured")
+	}
+
 	err := uploader.SetRepoURL(options.Url, options.Version, options.MavenRepository, options.NpmRepository)
 	if err != nil {
 		return err
 	}
 
-	if utils.usesNpm() && performNpmUpload {
+	if utils.UsesNpm() && performNpmUpload {
 		log.Entry().Info("NPM project structure detected")
 		err = uploadNpmArtifacts(utils, uploader, options)
 	} else {
@@ -151,10 +121,10 @@ func runNexusUpload(utils nexusUploadUtils, uploader nexus.Uploader, options *ne
 	}
 
 	if performMavenUpload {
-		if utils.usesMta() {
+		if utils.UsesMta() {
 			log.Entry().Info("MTA project structure detected")
 			return uploadMTA(utils, uploader, options)
-		} else if utils.usesMaven() {
+		} else if utils.UsesMaven() {
 			log.Entry().Info("Maven project structure detected")
 			return uploadMaven(utils, uploader, options)
 		}
@@ -166,16 +136,15 @@ func runNexusUpload(utils nexusUploadUtils, uploader nexus.Uploader, options *ne
 }
 
 func uploadNpmArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions) error {
-	execRunner := utils.getExecRunner()
 	environment := []string{"npm_config_registry=http://" + uploader.GetNpmRepoURL(), "npm_config_email=project-piper@no-reply.com"}
-	if options.User != "" && options.Password != "" {
-		auth := b64.StdEncoding.EncodeToString([]byte(options.User + ":" + options.Password))
+	if options.Username != "" && options.Password != "" {
+		auth := b64.StdEncoding.EncodeToString([]byte(options.Username + ":" + options.Password))
 		environment = append(environment, "npm_config__auth="+auth)
 	} else {
 		log.Entry().Info("No credentials provided for npm upload, trying to upload anonymously.")
 	}
-	execRunner.SetEnv(environment)
-	err := execRunner.RunExecutable("npm", "publish")
+	utils.SetEnv(environment)
+	err := utils.RunExecutable("npm", "publish")
 	return err
 }
 
@@ -184,7 +153,7 @@ func uploadMTA(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUp
 		return fmt.Errorf("the 'groupId' parameter needs to be provided for MTA projects")
 	}
 	var mtaPath string
-	exists, _ := utils.fileExists("mta.yaml")
+	exists, _ := utils.FileExists("mta.yaml")
 	if exists {
 		mtaPath = "mta.yaml"
 		// Give this file precedence, but it would be even better if
@@ -223,7 +192,7 @@ type mtaYaml struct {
 }
 
 func getInfoFromMtaFile(utils nexusUploadUtils, filePath string) (*mtaYaml, error) {
-	mtaYamlContent, err := utils.fileRead(filePath)
+	mtaYamlContent, err := utils.FileRead(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("could not read from required project descriptor file '%s'",
 			filePath)
@@ -269,17 +238,17 @@ const settingsPath = ".pipeline/nexusMavenSettings.xml"
 
 func setupNexusCredentialsSettingsFile(utils nexusUploadUtils, options *nexusUploadOptions,
 	mavenOptions *maven.ExecuteOptions) (string, error) {
-	if options.User == "" || options.Password == "" {
+	if options.Username == "" || options.Password == "" {
 		return "", nil
 	}
 
-	err := utils.fileWrite(settingsPath, []byte(nexusMavenSettings), os.ModePerm)
+	err := utils.FileWrite(settingsPath, []byte(nexusMavenSettings), os.ModePerm)
 	if err != nil {
 		return "", fmt.Errorf("failed to write maven settings file to '%s': %w", settingsPath, err)
 	}
 
 	log.Entry().Debugf("Writing nexus credentials to environment")
-	utils.getExecRunner().SetEnv([]string{"NEXUS_username=" + options.User, "NEXUS_password=" + options.Password})
+	utils.SetEnv([]string{"NEXUS_username=" + options.Username, "NEXUS_password=" + options.Password})
 
 	mavenOptions.ProjectSettingsFile = settingsPath
 	mavenOptions.Defines = append(mavenOptions.Defines, "-DrepositoryId="+settingsServerID)
@@ -322,7 +291,7 @@ func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *n
 		return fmt.Errorf("writing credential settings for maven failed: %w", err)
 	}
 	if settingsFile != "" {
-		defer utils.fileRemove(settingsFile)
+		defer func() { _ = utils.FileRemove(settingsFile) }()
 	}
 
 	// iterate over the artifact descriptions, the first one is the main artifact, the following ones are
@@ -342,7 +311,7 @@ func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *n
 		}
 	}
 
-	err = uploadArtifactsBundle(d, generatePOM, mavenOptions, utils.getExecRunner())
+	err = uploadArtifactsBundle(d, generatePOM, mavenOptions, utils)
 	if err != nil {
 		return fmt.Errorf("uploading artifacts for ID '%s' failed: %w", uploader.GetArtifactsID(), err)
 	}
@@ -360,7 +329,7 @@ func appendItemToString(list, item string, first bool) string {
 }
 
 func uploadArtifactsBundle(d artifactDefines, generatePOM bool, mavenOptions maven.ExecuteOptions,
-	execRunner execRunner) error {
+	utils nexusUploadUtils) error {
 	if d.file == "" {
 		return fmt.Errorf("no file specified")
 	}
@@ -380,12 +349,12 @@ func uploadArtifactsBundle(d artifactDefines, generatePOM bool, mavenOptions mav
 	}
 
 	mavenOptions.Defines = append(mavenOptions.Defines, defines...)
-	_, err := maven.Execute(&mavenOptions, execRunner)
+	_, err := maven.Execute(&mavenOptions, utils)
 	return err
 }
 
 func addArtifact(utils nexusUploadUtils, uploader nexus.Uploader, filePath, classifier, fileType string) error {
-	exists, _ := utils.fileExists(filePath)
+	exists, _ := utils.FileExists(filePath)
 	if !exists {
 		return fmt.Errorf("artifact file not found '%s'", filePath)
 	}
@@ -400,7 +369,7 @@ func addArtifact(utils nexusUploadUtils, uploader nexus.Uploader, filePath, clas
 var errPomNotFound = errors.New("pom.xml not found")
 
 func uploadMaven(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions) error {
-	pomFiles, _ := utils.glob("**/pom.xml")
+	pomFiles, _ := utils.Glob("**/pom.xml")
 	if len(pomFiles) == 0 {
 		return errPomNotFound
 	}
@@ -422,33 +391,39 @@ func uploadMavenArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, optio
 	pomPath, targetFolder string) error {
 	pomFile := composeFilePath(pomPath, "pom", "xml")
 
-	packaging, _ := utils.evaluate(pomFile, "project.packaging")
+	evaluateOptions := &maven.EvaluateOptions{
+		PomPath:            pomFile,
+		GlobalSettingsFile: options.GlobalSettingsFile,
+		M2Path:             options.M2Path,
+	}
+
+	packaging, _ := utils.evaluate(evaluateOptions, "project.packaging")
 	if packaging == "" {
 		packaging = "jar"
 	}
 	if packaging != "pom" {
 		// Ignore this module if there is no 'target' folder
-		hasTarget, _ := utils.dirExists(targetFolder)
+		hasTarget, _ := utils.DirExists(targetFolder)
 		if !hasTarget {
 			log.Entry().Warnf("Ignoring module '%s' as it has no 'target' folder", pomPath)
 			return nil
 		}
 	}
-	groupID, _ := utils.evaluate(pomFile, "project.groupId")
+	groupID, _ := utils.evaluate(evaluateOptions, "project.groupId")
 	if groupID == "" {
 		groupID = options.GroupID
 	}
-	artifactID, err := utils.evaluate(pomFile, "project.artifactId")
+	artifactID, err := utils.evaluate(evaluateOptions, "project.artifactId")
 	var artifactsVersion string
 	if err == nil {
-		artifactsVersion, err = utils.evaluate(pomFile, "project.version")
+		artifactsVersion, err = utils.evaluate(evaluateOptions, "project.version")
 	}
 	if err == nil {
 		err = uploader.SetInfo(groupID, artifactID, artifactsVersion)
 	}
 	var finalBuildName string
 	if err == nil {
-		finalBuildName, _ = utils.evaluate(pomFile, "project.build.finalName")
+		finalBuildName, _ = utils.evaluate(evaluateOptions, "project.build.finalName")
 		if finalBuildName == "" {
 			// Fallback to composing final build name, see http://maven.apache.org/pom.html#BaseBuild_Element
 			finalBuildName = artifactID + "-" + artifactsVersion
@@ -475,7 +450,7 @@ func addMavenTargetArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, po
 
 	for _, fileType := range fileTypes {
 		pattern := targetFolder + "/*." + fileType
-		matches, _ := utils.glob(pattern)
+		matches, _ := utils.Glob(pattern)
 		if len(matches) == 0 && fileType == packaging {
 			return fmt.Errorf("target artifact not found for packaging '%s'", packaging)
 		}

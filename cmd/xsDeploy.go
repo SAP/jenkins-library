@@ -95,7 +95,7 @@ func (a Action) String() string {
 }
 
 const loginScript = `#!/bin/bash
-xs login -a {{.APIURL}} -u {{.User}} -p '{{.Password}}' -o {{.Org}} -s {{.Space}} {{.LoginOpts}}
+xs login -a {{.APIURL}} -u {{.Username}} -p '{{.Password}}' -o {{.Org}} -s {{.Space}} {{.LoginOpts}}
 `
 
 const logoutScript = `#!/bin/bash
@@ -119,7 +119,7 @@ func xsDeploy(config xsDeployOptions, telemetryData *telemetry.CustomData, piper
 	}
 }
 
-func runXsDeploy(XsDeployOptions xsDeployOptions, piperEnvironment *xsDeployCommonPipelineEnvironment, s shellRunner,
+func runXsDeploy(XsDeployOptions xsDeployOptions, piperEnvironment *xsDeployCommonPipelineEnvironment, s command.ShellRunner,
 	fileUtils piperutils.FileUtils,
 	fRemove func(string) error,
 	stdout io.Writer) error {
@@ -272,7 +272,7 @@ func runXsDeploy(XsDeployOptions xsDeployOptions, piperEnvironment *xsDeployComm
 	}
 
 	if err != nil {
-		log.Entry().Errorf("An error occured. Stdout from underlying process: >>%s<<. Stderr from underlying process: >>%s<<", o, e)
+		log.Entry().Errorf("An error occurred. Stdout from underlying process: >>%s<<. Stderr from underlying process: >>%s<<", o, e)
 	}
 
 	if e := printStatus(XsDeployOptions, stdout); e != nil {
@@ -355,7 +355,7 @@ func retrieveOperationID(deployLog, pattern string) string {
 	return operationID
 }
 
-func xsLogin(XsDeployOptions xsDeployOptions, s shellRunner) error {
+func xsLogin(XsDeployOptions xsDeployOptions, s command.ShellRunner) error {
 
 	log.Entry().Debugf("Performing xs login. api-url: '%s', org: '%s', space: '%s'",
 		XsDeployOptions.APIURL, XsDeployOptions.Org, XsDeployOptions.Space)
@@ -371,7 +371,7 @@ func xsLogin(XsDeployOptions xsDeployOptions, s shellRunner) error {
 	return nil
 }
 
-func xsLogout(XsDeployOptions xsDeployOptions, s shellRunner) error {
+func xsLogout(XsDeployOptions xsDeployOptions, s command.ShellRunner) error {
 
 	log.Entry().Debug("Performing xs logout.")
 
@@ -383,7 +383,7 @@ func xsLogout(XsDeployOptions xsDeployOptions, s shellRunner) error {
 	return nil
 }
 
-func deploy(mode DeployMode, XsDeployOptions xsDeployOptions, s shellRunner) error {
+func deploy(mode DeployMode, XsDeployOptions xsDeployOptions, s command.ShellRunner) error {
 
 	deployCommand, err := mode.GetDeployCommand()
 	if err != nil {
@@ -404,7 +404,7 @@ func deploy(mode DeployMode, XsDeployOptions xsDeployOptions, s shellRunner) err
 	return nil
 }
 
-func complete(mode DeployMode, action Action, operationID string, s shellRunner) error {
+func complete(mode DeployMode, action Action, operationID string, s command.ShellRunner) error {
 	log.Entry().Debugf("Performing xs %s", action)
 
 	type completeProperties struct {
@@ -423,7 +423,7 @@ func complete(mode DeployMode, action Action, operationID string, s shellRunner)
 	return nil
 }
 
-func executeCmd(templateID string, commandPattern string, properties interface{}, s shellRunner) error {
+func executeCmd(templateID string, commandPattern string, properties interface{}, s command.ShellRunner) error {
 
 	tmpl, e := template.New(templateID).Parse(commandPattern)
 	if e != nil {

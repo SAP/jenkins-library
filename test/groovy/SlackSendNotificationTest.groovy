@@ -1,3 +1,4 @@
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -7,6 +8,7 @@ import util.JenkinsLoggingRule
 import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
 import util.Rules
+import com.sap.piper.Utils
 
 import static org.junit.Assert.*
 
@@ -26,6 +28,12 @@ class SlackSendNotificationTest extends BasePiperTest {
     @Before
     void init() throws Exception {
         helper.registerAllowedMethod("slackSend", [Map.class], {m -> slackCallMap = m})
+        Utils.metaClass.echo = { def m -> }
+    }
+
+    @After
+    public void tearDown() {
+        Utils.metaClass = null
     }
 
     @Test
@@ -34,7 +42,7 @@ class SlackSendNotificationTest extends BasePiperTest {
         // asserts
         assertEquals('Message not set correctly', 'SUCCESS: Job p <http://build.url|#1>', slackCallMap.message.toString())
         assertNull('Channel not set correctly', slackCallMap.channel)
-        assertEquals('Color not set correctly', '#008000', slackCallMap.color)
+        assertEquals('Color not set correctly', '#8cc04f', slackCallMap.color)
         assertJobStatusSuccess()
     }
 
@@ -51,7 +59,7 @@ class SlackSendNotificationTest extends BasePiperTest {
         stepRule.step.slackSendNotification(script: [currentBuild: [result: 'FAILURE']])
         // asserts
         assertEquals('Message not set correctly', 'FAILURE: Job p <http://build.url|#1>', slackCallMap.message.toString())
-        assertEquals('Color not set correctly', '#E60000', slackCallMap.color)
+        assertEquals('Color not set correctly', '#d54c53', slackCallMap.color)
     }
 
     @Test

@@ -2,6 +2,8 @@ package log
 
 import (
 	"fmt"
+	"io"
+	"net/url"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -23,13 +25,29 @@ const (
 func (formatter *PiperLogFormatter) Format(entry *logrus.Entry) (bytes []byte, err error) {
 	message := ""
 
+	stepName := entry.Data["stepName"]
+	if stepName == nil {
+		stepName = "(noStepName)"
+	}
+
+	errorMessageSnippet := ""
+	if entry.Data[logrus.ErrorKey] != nil {
+		errorMessageSnippet = fmt.Sprintf(" - %s", entry.Data[logrus.ErrorKey])
+	}
+
+	level, _ := entry.Level.MarshalText()
+	levelString := string(level)
+	if levelString == "warning" {
+		levelString = "warn"
+	}
+
 	switch formatter.logFormat {
 	case logFormatDefault:
-		message = fmt.Sprintf("%-5s %-6s - %s\n", entry.Level, entry.Data["stepName"], entry.Message)
+		message = fmt.Sprintf("%-5s %-6s - %s%s\n", levelString, stepName, entry.Message, errorMessageSnippet)
 	case logFormatWithTimestamp:
-		message = fmt.Sprintf("%s %-5s %-6s - %s\n", entry.Time.Format("15:04:05"), entry.Level, entry.Data["stepName"], entry.Message)
+		message = fmt.Sprintf("%s %-5s %-6s %s%s\n", entry.Time.Format("15:04:05"), levelString, stepName, entry.Message, errorMessageSnippet)
 	case logFormatPlain:
-		message = entry.Message + "\n"
+		message = fmt.Sprintf("%s%s\n", entry.Message, errorMessageSnippet)
 	default:
 		formattedMessage, err := formatter.TextFormatter.Format(entry)
 		if err != nil {
@@ -60,6 +78,11 @@ func Entry() *logrus.Entry {
 	return logger
 }
 
+// Writer returns an io.Writer into which a tool's output can be redirected.
+func Writer() io.Writer {
+	return &logrusWriter{logger: Entry()}
+}
+
 // SetVerbose sets the log level with respect to verbose flag.
 func SetVerbose(verbose bool) {
 	if verbose {
@@ -88,8 +111,13 @@ func RegisterHook(hook logrus.Hook) {
 	logrus.AddHook(hook)
 }
 
+// RegisterSecret registers a value which should be masked in every log message
 func RegisterSecret(secret string) {
 	if len(secret) > 0 {
 		secrets = append(secrets, secret)
+		encoded := url.QueryEscape(secret)
+		if secret != encoded {
+			secrets = append(secrets, encoded)
+		}
 	}
 }

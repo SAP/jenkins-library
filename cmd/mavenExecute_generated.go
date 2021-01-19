@@ -37,7 +37,7 @@ func MavenExecuteCommand() *cobra.Command {
 		Use:   STEP_NAME,
 		Short: "This step allows to run maven commands",
 		Long:  `This step runs a maven command based on the parameters provided to the step.`,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
@@ -48,6 +48,7 @@ func MavenExecuteCommand() *cobra.Command {
 
 			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
 
@@ -58,11 +59,13 @@ func MavenExecuteCommand() *cobra.Command {
 
 			return nil
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
 			}
 			log.DeferExitHandler(handler)
@@ -70,6 +73,7 @@ func MavenExecuteCommand() *cobra.Command {
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			mavenExecute(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
+			log.Entry().Info("SUCCESS")
 		},
 	}
 
@@ -95,8 +99,9 @@ func addMavenExecuteFlags(cmd *cobra.Command, stepConfig *mavenExecuteOptions) {
 func mavenExecuteMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "mavenExecute",
-			Aliases: []config.Alias{},
+			Name:        "mavenExecute",
+			Aliases:     []config.Alias{},
+			Description: "This step allows to run maven commands",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -174,6 +179,9 @@ func mavenExecuteMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "maven/logSuccessfulMavenTransfers"}},
 					},
 				},
+			},
+			Containers: []config.Container{
+				{Name: "mvn", Image: "maven:3.6-jdk-8"},
 			},
 		},
 	}

@@ -31,6 +31,7 @@ func (f *FatalHook) Fire(entry *logrus.Entry) error {
 
 	details["message"] = entry.Message
 	details["error"] = fmt.Sprint(details["error"])
+	details["category"] = GetErrorCategory().String()
 	details["result"] = "failure"
 	details["correlationId"] = f.CorrelationID
 
@@ -45,7 +46,7 @@ func (f *FatalHook) Fire(entry *logrus.Entry) error {
 	if err != nil {
 		// ignore errors, since we don't want to break the logging flow
 		errDetails, _ := json.Marshal(&details)
-		ioutil.WriteFile(filePath, errDetails, 0655)
+		ioutil.WriteFile(filePath, errDetails, 0666)
 	}
 
 	return nil

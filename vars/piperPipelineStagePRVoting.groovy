@@ -1,11 +1,13 @@
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateStageDocumentation
+import com.sap.piper.StageNameProvider
 import com.sap.piper.Utils
 import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
+@Field String TECHNICAL_STAGE_NAME = 'pullRequestVoting'
 
 @Field Set GENERAL_CONFIG_KEYS = [
     /**
@@ -27,6 +29,17 @@ import static com.sap.piper.Prerequisites.checkScript
      * * explicit activation via stage configuration.
      */
     'karmaExecuteTests',
+    /** Runs backend integration tests via maven in the module integration-tests/pom.xml */
+    'mavenExecuteIntegration',
+    /** Executes static code checks for Maven based projects. The plugins SpotBugs and PMD are used. */
+    'mavenExecuteStaticCodeChecks',
+    /** Executes linting for npm projects. */
+    'npmExecuteLint',
+    /** Executes npm scripts to run frontend unit tests.
+     * If custom names for the npm scripts are configured via the `runScripts` parameter the step npmExecuteScripts needs **explicit activation via stage configuration**. */
+    'npmExecuteScripts',
+    /** Executes a Sonar scan.*/
+    'sonarExecuteScan',
     /** Publishes test results to Jenkins. It will always be active. */
     'testsPublishResults',
     /** Executes a WhiteSource scan
@@ -70,8 +83,7 @@ void call(Map parameters = [:]) {
 
     def script = checkScript(this, parameters) ?: this
     def utils = parameters.juStabUtils ?: new Utils()
-
-    def stageName = parameters.stageName?:env.STAGE_NAME
+    def stageName = StageNameProvider.instance.getStageName(script, parameters, this)
 
     Map config = ConfigurationHelper.newInstance(this)
         .loadStepDefaults()
@@ -79,6 +91,10 @@ void call(Map parameters = [:]) {
         .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
         .mixin(parameters, PARAMETER_KEYS)
         .addIfEmpty('karmaExecuteTests', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.karmaExecuteTests)
+        .addIfEmpty('mavenExecuteIntegration', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.mavenExecuteIntegration)
+        .addIfEmpty('mavenExecuteStaticCodeChecks', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.mavenExecuteStaticCodeChecks)
+        .addIfEmpty('npmExecuteLint', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.npmExecuteLint)
+        .addIfEmpty('npmExecuteScripts', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.npmExecuteScripts)
         .addIfEmpty('whitesourceExecuteScan', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.whitesourceExecuteScan)
         .use()
 
@@ -96,19 +112,56 @@ void call(Map parameters = [:]) {
             }
 
             buildExecute script: script, buildTool: config.buildTool, dockerRegistryUrl: dockerRegistryUrl
-
-            //needs to run right after build, otherwise we may face "ERROR: Test reports were found but none of them are new"
-            testsPublishResults script: script
-            checksPublishResults script: script
+            try {
+                //needs to run right after build, otherwise we may face "ERROR: Test reports were found but none of them are new"
+                testsPublishResults script: script
+                checksPublishResults script: script
+            } finally {
+                if (config.sonarExecuteScan) {
+                    sonarExecuteScan script: script
+                }
+            }
 
             if (config.karmaExecuteTests) {
                 karmaExecuteTests script: script
                 testsPublishResults script: script
             }
 
+            if (config.mavenExecuteIntegration) {
+                runMavenIntegrationTests(script)
+            }
+
+            if (config.mavenExecuteStaticCodeChecks) {
+                mavenExecuteStaticCodeChecks script: script
+            }
+
+            if (config.npmExecuteLint) {
+                npmExecuteLint script: script
+            }
+
+            if (config.npmExecuteScripts) {
+                npmExecuteScripts script: script
+                testsPublishResults script: script
+            }
+
             if (config.whitesourceExecuteScan) {
                 whitesourceExecuteScan script: script, productVersion: env.BRANCH_NAME
             }
+        }
+    }
+}
+
+private runMavenIntegrationTests(script){
+    boolean publishResults = false
+    try {
+        writeTemporaryCredentials(script: script) {
+            publishResults = true
+            mavenExecuteIntegration script: script
+        }
+    }
+    finally {
+        if (publishResults) {
+            testsPublishResults script: script
         }
     }
 }

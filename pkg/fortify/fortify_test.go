@@ -3,13 +3,12 @@ package fortify
 import (
 	"fmt"
 	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
 	"time"
-
-	"net/http"
-	"net/http/httptest"
 
 	"github.com/go-openapi/strfmt"
 	ff "github.com/piper-validation/fortify-client-go/fortify"
@@ -435,7 +434,7 @@ func TestProjectVersionCopyFromPartial(t *testing.T) {
 	defer server.Close()
 
 	t.Run("test success", func(t *testing.T) {
-		expected := `{"copyAnalysisProcessingRules":true,"copyBugTrackerConfiguration":true,"copyCurrentStateFpr":true,"copyCustomTags":true,"previousProjectVersionId":10172,"projectVersionId":10173}
+		expected := `{"copyAnalysisProcessingRules":true,"copyBugTrackerConfiguration":true,"copyCustomTags":true,"previousProjectVersionId":10172,"projectVersionId":10173}
 `
 		err := sys.ProjectVersionCopyFromPartial(10172, 10173)
 		assert.NoError(t, err, "ProjectVersionCopyFromPartial call not successful")
@@ -474,7 +473,7 @@ func TestProjectVersionCopyCurrentState(t *testing.T) {
 	defer server.Close()
 
 	t.Run("test success", func(t *testing.T) {
-		expected := `{"copyCurrentStateFpr":true,"previousProjectVersionId":10172,"projectVersionId":10173}
+		expected := `{"previousProjectVersionId":10172,"projectVersionId":10173}
 `
 		err := sys.ProjectVersionCopyCurrentState(10172, 10173)
 		assert.NoError(t, err, "ProjectVersionCopyCurrentState call not successful")

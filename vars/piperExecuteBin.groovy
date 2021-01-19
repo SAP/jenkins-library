@@ -11,35 +11,23 @@ import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
 
-void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, failOnMissingReports = false, failOnMissingLinks = false, failOnError = false) {
+void call(Map parameters = [:], String stepName, String metadataFile, List credentialInfo, boolean failOnMissingReports = false, boolean failOnMissingLinks = false, boolean failOnError = false) {
 
-    handlePipelineStepErrorsParameters = [stepName: stepName, stepParameters: parameters]
+    Map handlePipelineStepErrorsParameters = [stepName: stepName, stepParameters: parameters]
     if (failOnError) {
         handlePipelineStepErrorsParameters.failOnError = true
     }
 
     handlePipelineStepErrors(handlePipelineStepErrorsParameters) {
-
-        def stepParameters = [:].plus(parameters)
-
-        def script = checkScript(this, parameters) ?: this
-        stepParameters.remove('script')
-
-        def utils = parameters.juStabUtils ?: new Utils()
-        stepParameters.remove('juStabUtils')
-
+        Script script = checkScript(this, parameters) ?: this
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
-        stepParameters.remove('jenkinsUtilsStub')
+        def utils = parameters.juStabUtils ?: new Utils()
 
-        new PiperGoUtils(this, utils).unstashPiperBin()
-        utils.unstash('pipelineConfigAndTests')
-        script.commonPipelineEnvironment.writeToDisk(script)
+        String piperGoPath = parameters.piperGoPath ?: './piper'
 
-        writeFile(file: ".pipeline/tmp/${metadataFile}", text: libraryResource(metadataFile))
-
-        // When converting to JSON and back again, entries which had a 'null' value will now have a value
-        // of type 'net.sf.json.JSONNull', for which the Groovy Truth resolves to 'true' in for example if-conditions
-        stepParameters = MapUtils.pruneNulls(stepParameters)
+        prepareExecution(script, utils, parameters)
+        prepareMetadataResource(script, metadataFile)
+        Map stepParameters = prepareStepParameters(parameters)
 
         withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(stepParameters)}",
@@ -49,21 +37,77 @@ void call(Map parameters = [:], stepName, metadataFile, List credentialInfo, fai
             String defaultConfigArgs = getCustomDefaultConfigsArg()
             String customConfigArg = getCustomConfigArg(script)
 
-            // get context configuration
-            Map config = readJSON(text: sh(returnStdout: true, script: "./piper getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'${defaultConfigArgs}${customConfigArg}"))
-            echo "Context Config: ${config}"
+            echo "PIPER_parametersJSON: ${groovy.json.JsonOutput.toJson(stepParameters)}"
 
-            dockerWrapper(script, config) {
+            // get context configuration
+            Map config
+            handleErrorDetails(stepName) {
+                config = getStepContextConfig(script, piperGoPath, metadataFile, defaultConfigArgs, customConfigArg)
+                echo "Context Config: ${config}"
+            }
+
+            // prepare stashes
+            // first eliminate empty stashes
+            config.stashContent = utils.unstashAll(config.stashContent)
+            // then make sure that commonPipelineEnvironment, config, ... is also available when step stashing is active
+            if (config.stashContent?.size() > 0) {
+                config.stashContent.add('pipelineConfigAndTests')
+                config.stashContent.add('piper-bin')
+            }
+
+            if (parameters.stashNoDefaultExcludes) {
+                // Merge this parameter which is only relevant in Jenkins context
+                // (for dockerExecuteOnKubernetes step) and go binary doesn't know about
+                config.stashNoDefaultExcludes = parameters.stashNoDefaultExcludes
+            }
+
+            dockerWrapper(script, stepName, config) {
                 handleErrorDetails(stepName) {
-                    credentialWrapper(config, credentialInfo) {
-                        sh "./piper ${stepName}${defaultConfigArgs}${customConfigArg}"
+                    script.commonPipelineEnvironment.writeToDisk(script)
+                    try {
+                        credentialWrapper(config, credentialInfo) {
+                            sh "${piperGoPath} ${stepName}${defaultConfigArgs}${customConfigArg}"
+                        }
+                    } finally {
+                        jenkinsUtils.handleStepResults(stepName, failOnMissingReports, failOnMissingLinks)
+                        script.commonPipelineEnvironment.readFromDisk(script)
                     }
-                    jenkinsUtils.handleStepResults(stepName, failOnMissingReports, failOnMissingLinks)
-                    script.commonPipelineEnvironment.readFromDisk(script)
                 }
             }
         }
     }
+}
+
+// reused in sonarExecuteScan
+static void prepareExecution(Script script, Utils utils, Map parameters = [:]) {
+    def piperGoUtils = parameters.piperGoUtils ?: new PiperGoUtils(script, utils)
+    piperGoUtils.unstashPiperBin()
+    utils.unstash('pipelineConfigAndTests')
+}
+
+// reused in sonarExecuteScan
+static Map prepareStepParameters(Map parameters) {
+    Map stepParameters = [:].plus(parameters)
+
+    stepParameters.remove('script')
+    stepParameters.remove('jenkinsUtilsStub')
+    stepParameters.remove('piperGoPath')
+    stepParameters.remove('juStabUtils')
+    stepParameters.remove('piperGoUtils')
+
+    // When converting to JSON and back again, entries which had a 'null' value will now have a value
+    // of type 'net.sf.json.JSONNull', for which the Groovy Truth resolves to 'true' in for example if-conditions
+    return MapUtils.pruneNulls(stepParameters)
+}
+
+// reused in sonarExecuteScan
+static void prepareMetadataResource(Script script, String metadataFile) {
+    script.writeFile(file: ".pipeline/tmp/${metadataFile}", text: script.libraryResource(metadataFile))
+}
+
+// reused in sonarExecuteScan
+static Map getStepContextConfig(Script script, String piperGoPath, String metadataFile, String defaultConfigArgs, String customConfigArg) {
+    return script.readJSON(text: script.sh(returnStdout: true, script: "${piperGoPath} getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'${defaultConfigArgs}${customConfigArg}"))
 }
 
 static String getCustomDefaultConfigs() {
@@ -76,14 +120,16 @@ static String getCustomDefaultConfigs() {
     return customDefaults.join(',')
 }
 
+// reused in sonarExecuteScan
 static String getCustomDefaultConfigsArg() {
     String customDefaults = getCustomDefaultConfigs()
     if (customDefaults) {
-        return " --defaultConfig ${customDefaults}"
+        return " --defaultConfig ${customDefaults} --ignoreCustomDefaults"
     }
     return ''
 }
 
+// reused in sonarExecuteScan
 static String getCustomConfigArg(def script) {
     if (script?.commonPipelineEnvironment?.configurationFile
         && script.commonPipelineEnvironment.configurationFile != '.pipeline/config.yml'
@@ -93,15 +139,13 @@ static String getCustomConfigArg(def script) {
     return ''
 }
 
-void dockerWrapper(script, config, body) {
+// reused in sonarExecuteScan
+void dockerWrapper(script, stepName, config, body) {
     if (config.dockerImage) {
-        dockerExecute(
-            script: script,
-            dockerImage: config.dockerImage,
-            dockerWorkspace: config.dockerWorkspace,
-            dockerOptions: config.dockerOptions,
-            //ToDo: add additional dockerExecute parameters
-        ) {
+        echo "[INFO] executing pipeline step '${stepName}' with docker image '${config.dockerImage}'"
+        Map dockerExecuteParameters = [:].plus(config)
+        dockerExecuteParameters.script = script
+        dockerExecute(dockerExecuteParameters) {
             body()
         }
     } else {
@@ -109,26 +153,39 @@ void dockerWrapper(script, config, body) {
     }
 }
 
+// reused in sonarExecuteScan
 void credentialWrapper(config, List credentialInfo, body) {
+    if (config.containsKey('vaultAppRoleTokenCredentialsId') && config.containsKey('vaultAppRoleSecretTokenCredentialsId')) {
+        credentialInfo = [[type: 'token', id: 'vaultAppRoleTokenCredentialsId', env: ['PIPER_vaultAppRoleID']],
+                            [type: 'token', id: 'vaultAppRoleSecretTokenCredentialsId', env: ['PIPER_vaultAppRoleSecretID']]]
+    }
     if (credentialInfo.size() > 0) {
         def creds = []
         def sshCreds = []
         credentialInfo.each { cred ->
-            switch(cred.type) {
-                case "file":
-                    if (config[cred.id]) creds.add(file(credentialsId: config[cred.id], variable: cred.env[0]))
-                    break
-                case "token":
-                    if (config[cred.id]) creds.add(string(credentialsId: config[cred.id], variable: cred.env[0]))
-                    break
-                case "usernamePassword":
-                    if (config[cred.id]) creds.add(usernamePassword(credentialsId: config[cred.id], usernameVariable: cred.env[0], passwordVariable: cred.env[1]))
-                    break
-                case "ssh":
-                    if (config[cred.id]) sshCreds.add(config[cred.id])
-                    break
-                default:
-                    error ("invalid credential type: ${cred.type}")
+            def credentialsId
+            if (cred.resolveCredentialsId == false) {
+                credentialsId = cred.id
+            } else {
+                credentialsId = config[cred.id]
+            }
+            if (credentialsId) {
+                switch(cred.type) {
+                    case "file":
+                        creds.add(file(credentialsId: credentialsId, variable: cred.env[0]))
+                        break
+                    case "token":
+                        creds.add(string(credentialsId: credentialsId, variable: cred.env[0]))
+                        break
+                    case "usernamePassword":
+                        creds.add(usernamePassword(credentialsId: credentialsId, usernameVariable: cred.env[0], passwordVariable: cred.env[1]))
+                        break
+                    case "ssh":
+                        sshCreds.add(credentialsId)
+                        break
+                    default:
+                        error ("invalid credential type: ${cred.type}")
+                }
             }
         }
 
@@ -148,6 +205,7 @@ void credentialWrapper(config, List credentialInfo, body) {
     }
 }
 
+// reused in sonarExecuteScan
 void handleErrorDetails(String stepName, Closure body) {
     try {
         body()
@@ -162,6 +220,6 @@ void handleErrorDetails(String stepName, Closure body) {
             }
             error "[${stepName}] Step execution failed${errorCategory}. Error: ${errorDetails.error?:errorDetails.message}"
         }
-        error "[${stepName}] Step execution failed. Error: ${ex}"
+        error "[${stepName}] Step execution failed. Error: ${ex}, please see log file for more details."
     }
 }

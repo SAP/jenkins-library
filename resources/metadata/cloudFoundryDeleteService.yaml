@@ -7,16 +7,17 @@ spec:
   inputs:
     secrets:
       - name: cfCredentialsId
-        description: Jenkins credentials ID containing user and password to authenticate to the Cloud Foundry API
+        description: Jenkins 'Username with password' credentials ID containing user and password to authenticate to the Cloud Foundry API.
         type: jenkins
     params:
       - name: cfApiEndpoint
         type: string
         description: Cloud Foundry API endpoint
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
         mandatory: true
         aliases:
           - name: cloudFoundry/apiEndpoint
@@ -24,27 +25,46 @@ spec:
         type: string
         description: User or E-Mail for CF
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: true
         secret: true
+        resourceRef:
+          - name: cfCredentialsId
+            type: secret
+            param: username
+          - type: vaultSecret
+            paths:
+              - $(vaultPath)/cloudfoundry-$(org)-$(space)
+              - $(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(org)-$(space)
+              - $(vaultBasePath)/GROUP-SECRETS/cloudfoundry-$(org)-$(space)
       - name: password
         type: string
         description: User Password for CF User
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: true
         secret: true
+        resourceRef:
+          - name: cfCredentialsId
+            type: secret
+            param: password
+          - type: vaultSecret
+            paths:
+              - $(vaultPath)/cloudfoundry-$(org)-$(space)
+              - $(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(org)-$(space)
+              - $(vaultBasePath)/GROUP-SECRETS/cloudfoundry-$(org)-$(space)
       - name: cfOrg
         type: string
         description: CF org
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
         mandatory: true
         aliases:
           - name: cloudFoundry/org
@@ -52,9 +72,10 @@ spec:
         type: string
         description: CF Space
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
         mandatory: true
         aliases:
           - name: cloudFoundry/space
@@ -62,9 +83,10 @@ spec:
         type: string
         description: Parameter of ServiceInstance Name to delete CloudFoundry Service
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
         mandatory: true
         aliases:
           - name: cloudFoundry/serviceInstance
@@ -72,14 +94,13 @@ spec:
         type: bool
         description: Parameter to force deletion of Cloud Foundry Service Keys
         scope:
-        - PARAMETERS
-        - STAGES
-        - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
         mandatory: false
         aliases:
           - name: cloudFoundry/cfDeleteServiceKeys
   containers:
     - name: cf
       image: ppiper/cf-cli
-      dockerWorkspace: '/home/piper'
-      imagePullPolicy: Never
+      workingDir: "/home/piper"

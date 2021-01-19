@@ -3,9 +3,12 @@ import com.sap.piper.Utils
 
 import groovy.lang.Script
 import hudson.AbortException
+import util.JenkinsReadJsonRule
 
 import static org.hamcrest.Matchers.allOf
+import static org.hamcrest.Matchers.contains
 import static org.hamcrest.Matchers.containsString
+import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.not
 import static org.junit.Assert.assertThat
 
@@ -40,6 +43,7 @@ class NeoDeployTest extends BasePiperTest {
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
+    private JenkinsFileExistsRule fileExistsRule = new JenkinsFileExistsRule(this, ['warArchive.war', 'archive.mtar', 'war.properties'])
 
     @Rule
     public RuleChain ruleChain = Rules
@@ -51,11 +55,13 @@ class NeoDeployTest extends BasePiperTest {
         .around(shellRule)
         .around(new JenkinsCredentialsRule(this)
         .withCredentials('myCredentialsId', 'anonymous', '********')
-        .withCredentials('CI_CREDENTIALS_ID', 'defaultUser', '********'))
+        .withCredentials('CI_CREDENTIALS_ID', 'defaultUser', '********')
+        .withCredentials('testOauthId', 'clientId', '********'))
+        .around(new JenkinsReadJsonRule(this))
         .around(stepRule)
         .around(new JenkinsLockRule(this))
         .around(new JenkinsWithEnvRule(this))
-        .around(new JenkinsFileExistsRule(this, ['warArchive.war', 'archive.mtar', 'war.properties']))
+        .around(fileExistsRule)
 
 
     private static warArchiveName = 'warArchive.war'
@@ -76,11 +82,14 @@ class NeoDeployTest extends BasePiperTest {
         helper.registerAllowedMethod('pwd', [], { return './' })
 
         nullScript.commonPipelineEnvironment.configuration = [steps: [neoDeploy: [neo: [host: 'test.deploy.host.com', account: 'trialuser123']]]]
+
+        Utils.metaClass.echo = { def m -> }
     }
 
     @After
     void tearDown() {
         GroovySystem.metaClassRegistry.removeMetaClass(StepAssertions)
+        GroovySystem.metaClassRegistry.removeMetaClass(Utils)
     }
 
     @Test
@@ -371,13 +380,12 @@ class NeoDeployTest extends BasePiperTest {
         // using this deploy mode 'account' and 'host' are provided by the properties file
         thrown.expectMessage(
             allOf(
-                containsString('ERROR - NO VALUE AVAILABLE FOR source'),
                 not(containsString('neo/host')),
                 not(containsString('neo/account'))))
 
         nullScript.commonPipelineEnvironment.configuration = [:]
 
-        stepRule.step.neoDeploy(script: nullScript, deployMode: 'warPropertiesFile')
+        stepRule.step.neoDeploy(script: nullScript, deployMode: 'warPropertiesFile', source: warArchiveName)
     }
 
     @Test
@@ -387,7 +395,6 @@ class NeoDeployTest extends BasePiperTest {
         thrown.expectMessage(
             allOf(
                 containsString('ERROR - NO VALUE AVAILABLE FOR:'),
-                containsString('source'),
                 containsString('neo/application'),
                 containsString('neo/runtime'),
                 containsString('neo/runtimeVersion'),
@@ -396,7 +403,7 @@ class NeoDeployTest extends BasePiperTest {
 
         nullScript.commonPipelineEnvironment.configuration = [:]
 
-        stepRule.step.neoDeploy(script: nullScript, deployMode: 'warParams')
+        stepRule.step.neoDeploy(script: nullScript, deployMode: 'warParams', source: warArchiveName)
     }
 
     @Test
@@ -413,6 +420,43 @@ class NeoDeployTest extends BasePiperTest {
                 .hasSingleQuotedOption('password', '\\*\\*\\*\\*\\*\\*\\*\\*')
                 .hasSingleQuotedOption('source', '.*'))
 
+    }
+
+    @Test
+    void invalidateCache_Success_Test() {
+
+        nullScript.commonPipelineEnvironment.configuration = [steps: [neoDeploy: [neo: [host: 'test.deploy.host.com', account: 'trialuser123', invalidateCache: true, oauthCredentialId: 'testOauthId', siteId: "12346"]]]]
+        fileExistsRule.registerExistingFile('./target/artifact.war')
+
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, "https:\\/\\/oauthasservices-trialuser123\\.test\\.deploy\\.host\\.com\\/oauth2\\/api\\/v1\\/token", "{\"access_token\":\"xxx\"}")
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, "fiori\\/api\\/v1\\/csrf", "X-CSRF-Token=xxx")
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, "fiori\\/v1\\/operations\\/invalidateCache", "{\"statusCode\":\"200\"}")
+
+        stepRule.step.neoDeploy(script: nullScript,
+            source: archiveName,
+            deployMode: 'mta')
+
+        Assert.assertThat(shellRule.shell, hasItem(containsString("curl -X POST -u \"clientId:********\" --fail \"https://oauthasservices-trialuser123.test.deploy.host.com/oauth2/api/v1/token?grant_type=client_credentials&scope=write,read")))
+        Assert.assertThat(shellRule.shell[3], containsString("#!/bin/bash curl -i -L -c 'cookies.jar' -H 'X-CSRF-Token: Fetch' -H \"Authorization: Bearer xxx\" --fail \"https://cloudnwcportal-trialuser123.test.deploy.host.com/fiori/api/v1/csrf\""))
+    }
+
+    @Test
+    void invalidateCache_notPerformed_warFiles() {
+
+        nullScript.commonPipelineEnvironment.configuration = [steps: [neoDeploy: [neo: [host: 'test.deploy.host.com', account: 'trialuser123', invalidateCache: true]]]]
+
+        stepRule.step.neoDeploy(script: nullScript,
+            neo: [
+                application: 'testApp',
+                runtime: 'neo-javaee6-wp',
+                runtimeVersion: '2.125',
+                size: 'lite',
+            ],
+            deployMode: 'warParams',
+            warAction: 'deploy',
+            source: warArchiveName)
+
+        assertThat(loggingRule.log, containsString("Invalidation of cache is ignored. It is performed only for html5 applications."))
     }
 
     @Test
@@ -647,7 +691,7 @@ class NeoDeployTest extends BasePiperTest {
 
         helper.registerAllowedMethod("sh", [String],
             { cmd ->
-                if (cmd == 'cat logs/neo/*')
+                if (cmd.toString().contains('cat logs/neo/'))
                     throw new AbortException('Cannot provide logs.')
                 if (cmd.toString().contains('neo.sh deploy-mta'))
                     throw new AbortException('Something went wrong during neo deployment.')
@@ -673,5 +717,41 @@ class NeoDeployTest extends BasePiperTest {
                         propertiesFile: warPropertiesFileName],
                   deployMode: "$deployProps.deployMode",
                   source: archiveName)
+    }
+
+    @Test
+    public void DefaultMavenDeploymentModuleNoPomTest() {
+
+        thrown.expect(AbortException)
+        thrown.expectMessage(containsString('does not contain a pom file'))
+
+        nullScript.commonPipelineEnvironment.configuration = [:]
+        stepRule.step.neoDeploy(script: nullScript, deployMode: 'warPropertiesFile')
+    }
+
+    @Test
+    public void DefaultMavenDeploymentModuleTest() {
+
+        helper.registerAllowedMethod('readMavenPom', [Map], { return [artifactId:'artifact', packaging: 'war'] })
+
+        fileExistsRule.registerExistingFile('./pom.xml')
+        fileExistsRule.registerExistingFile('./target/artifact.war')
+
+        nullScript.commonPipelineEnvironment.configuration = [:]
+        stepRule.step.neoDeploy([
+            script: nullScript,
+            deployMode: 'warParams',
+            neo: [
+                application: 'testApp',
+                runtime: 'neo-javaee6-wp',
+                runtimeVersion: '2.125',
+                host: 'host',
+                account: 'account'
+            ]
+        ])
+
+        Assert.assertThat(shellRule.shell,
+            new CommandLineMatcher().hasProlog("neo.sh deploy")
+                .hasSingleQuotedOption('source', './target/artifact.war'))
     }
 }

@@ -16,13 +16,30 @@ import (
 )
 
 func kubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetry.CustomData) {
-	c := command.Command{}
+	c := command.Command{
+		ErrorCategoryMapping: map[string][]string{
+			log.ErrorConfiguration.String(): {
+				"Error: Get * no such host",
+				"Error: path * not found",
+				"Error: rendered manifests contain a resource that already exists.",
+				"Error: unknown flag",
+				"Error: UPGRADE FAILED: * failed to replace object: * is invalid",
+				"Error: UPGRADE FAILED: * failed to create resource: * is invalid",
+				"Error: UPGRADE FAILED: an error occurred * not found",
+				"Error: UPGRADE FAILED: query: failed to query with labels:",
+				"Invalid value: \"\": field is immutable",
+			},
+			log.ErrorCustom.String(): {
+				"Error: release * failed, * timed out waiting for the condition",
+			},
+		},
+	}
 	// reroute stderr output to logging framework, stdout will be used for command interactions
-	c.Stderr(log.Entry().Writer())
-	runKubernetesDeploy(config, &c, log.Entry().Writer())
+	c.Stderr(log.Writer())
+	runKubernetesDeploy(config, &c, log.Writer())
 }
 
-func runKubernetesDeploy(config kubernetesDeployOptions, command execRunner, stdout io.Writer) {
+func runKubernetesDeploy(config kubernetesDeployOptions, command command.ExecRunner, stdout io.Writer) {
 	if config.DeployTool == "helm" || config.DeployTool == "helm3" {
 		runHelmDeploy(config, command, stdout)
 	} else {
@@ -30,7 +47,7 @@ func runKubernetesDeploy(config kubernetesDeployOptions, command execRunner, std
 	}
 }
 
-func runHelmDeploy(config kubernetesDeployOptions, command execRunner, stdout io.Writer) {
+func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, stdout io.Writer) {
 	_, containerRegistry, err := splitRegistryURL(config.ContainerRegistryURL)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Container registry url '%v' incorrect", config.ContainerRegistryURL)
@@ -62,38 +79,58 @@ func runHelmDeploy(config kubernetesDeployOptions, command execRunner, stdout io
 		}
 	}
 
-	var dockerRegistrySecret bytes.Buffer
-	command.Stdout(&dockerRegistrySecret)
-	kubeParams := []string{
-		"--insecure-skip-tls-verify=true",
-		"create",
-		"secret",
-		"docker-registry",
-		"regsecret",
-		fmt.Sprintf("--docker-server=%v", containerRegistry),
-		fmt.Sprintf("--docker-username=%v", config.ContainerRegistryUser),
-		fmt.Sprintf("--docker-password=%v", config.ContainerRegistryPassword),
-		"--dry-run=true",
-		"--output=json",
-	}
-	log.Entry().Infof("Calling kubectl create secret --dry-run=true ...")
-	log.Entry().Debugf("kubectl parameters %v", kubeParams)
-	if err := command.RunExecutable("kubectl", kubeParams...); err != nil {
-		log.Entry().WithError(err).Fatal("Retrieving Docker config via kubectl failed")
-	}
-	log.Entry().Debugf("Secret created: %v", string(dockerRegistrySecret.Bytes()))
+	var secretsData string
+	if len(config.ContainerRegistryUser) == 0 || len(config.ContainerRegistryPassword) == 0 {
+		log.Entry().Info("No container registry credentials provided or credentials incomplete: skipping secret creation")
+		if len(config.ContainerRegistrySecret) > 0 {
+			secretsData = fmt.Sprintf(",imagePullSecrets[0].name=%v", config.ContainerRegistrySecret)
+		}
+	} else {
+		var dockerRegistrySecret bytes.Buffer
+		command.Stdout(&dockerRegistrySecret)
+		kubeParams := []string{
+			"--insecure-skip-tls-verify=true",
+			"create",
+			"secret",
+			"docker-registry",
+			config.ContainerRegistrySecret,
+			fmt.Sprintf("--docker-server=%v", containerRegistry),
+			fmt.Sprintf("--docker-username=%v", config.ContainerRegistryUser),
+			fmt.Sprintf("--docker-password=%v", config.ContainerRegistryPassword),
+			"--dry-run=true",
+			"--output=json",
+		}
+		log.Entry().Infof("Calling kubectl create secret --dry-run=true ...")
+		log.Entry().Debugf("kubectl parameters %v", kubeParams)
+		if err := command.RunExecutable("kubectl", kubeParams...); err != nil {
+			log.Entry().WithError(err).Fatal("Retrieving Docker config via kubectl failed")
+		}
 
-	var dockerRegistrySecretData struct {
-		Kind string `json:"kind"`
-		Data struct {
-			DockerConfJSON string `json:".dockerconfigjson"`
-		} `json:"data"`
-		Type string `json:"type"`
-	}
-	if err := json.Unmarshal(dockerRegistrySecret.Bytes(), &dockerRegistrySecretData); err != nil {
-		log.Entry().WithError(err).Fatal("Reading docker registry secret json failed")
+		var dockerRegistrySecretData struct {
+			Kind string `json:"kind"`
+			Data struct {
+				DockerConfJSON string `json:".dockerconfigjson"`
+			} `json:"data"`
+			Type string `json:"type"`
+		}
+		if err := json.Unmarshal(dockerRegistrySecret.Bytes(), &dockerRegistrySecretData); err != nil {
+			log.Entry().WithError(err).Fatal("Reading docker registry secret json failed")
+		}
+		// make sure that secret is hidden in log output
+		log.RegisterSecret(dockerRegistrySecretData.Data.DockerConfJSON)
+
+		log.Entry().Debugf("Secret created: %v", string(dockerRegistrySecret.Bytes()))
+
+		// pass secret in helm default template way and in Piper backward compatible way
+		secretsData = fmt.Sprintf(",secret.name=%v,secret.dockerconfigjson=%v,imagePullSecrets[0].name=%v", config.ContainerRegistrySecret, dockerRegistrySecretData.Data.DockerConfJSON, config.ContainerRegistrySecret)
 	}
 
+	// Deprecated functionality
+	// only for backward compatible handling of ingress.hosts
+	// this requires an adoption of the default ingress.yaml template
+	// Due to the way helm is implemented it is currently not possible to overwrite a part of a list:
+	// see: https://github.com/helm/helm/issues/5711#issuecomment-636177594
+	// Recommended way is to use a custom values file which contains the appropriate data
 	ingressHosts := ""
 	for i, h := range config.IngressHosts {
 		ingressHosts += fmt.Sprintf(",ingress.hosts[%v]=%v", i, h)
@@ -103,11 +140,22 @@ func runHelmDeploy(config kubernetesDeployOptions, command execRunner, stdout io
 		"upgrade",
 		config.DeploymentName,
 		config.ChartPath,
+	}
+
+	for _, v := range config.HelmValues {
+		upgradeParams = append(upgradeParams, "--values", v)
+	}
+
+	upgradeParams = append(
+		upgradeParams,
 		"--install",
-		"--force",
 		"--namespace", config.Namespace,
 		"--set",
-		fmt.Sprintf("image.repository=%v/%v,image.tag=%v,secret.dockerconfigjson=%v%v", containerRegistry, containerImageName, containerImageTag, dockerRegistrySecretData.Data.DockerConfJSON, ingressHosts),
+		fmt.Sprintf("image.repository=%v/%v,image.tag=%v%v%v", containerRegistry, containerImageName, containerImageTag, secretsData, ingressHosts),
+	)
+
+	if config.ForceUpdates {
+		upgradeParams = append(upgradeParams, "--force")
 	}
 
 	if config.DeployTool == "helm" {
@@ -115,7 +163,11 @@ func runHelmDeploy(config kubernetesDeployOptions, command execRunner, stdout io
 	}
 
 	if config.DeployTool == "helm3" {
-		upgradeParams = append(upgradeParams, "--atomic", "--timeout", fmt.Sprintf("%vs", config.HelmDeployWaitSeconds))
+		upgradeParams = append(upgradeParams, "--wait", "--timeout", fmt.Sprintf("%vs", config.HelmDeployWaitSeconds))
+	}
+
+	if !config.KeepFailedDeployments {
+		upgradeParams = append(upgradeParams, "--atomic")
 	}
 
 	if len(config.KubeContext) > 0 {
@@ -129,14 +181,13 @@ func runHelmDeploy(config kubernetesDeployOptions, command execRunner, stdout io
 	command.Stdout(stdout)
 	log.Entry().Info("Calling helm upgrade ...")
 	log.Entry().Debugf("Helm parameters %v", upgradeParams)
-	command.RunExecutable("helm", upgradeParams...)
 	if err := command.RunExecutable("helm", upgradeParams...); err != nil {
 		log.Entry().WithError(err).Fatal("Helm upgrade call failed")
 	}
 
 }
 
-func runKubectlDeploy(config kubernetesDeployOptions, command execRunner) {
+func runKubectlDeploy(config kubernetesDeployOptions, command command.ExecRunner) {
 	_, containerRegistry, err := splitRegistryURL(config.ContainerRegistryURL)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Container registry url '%v' incorrect", config.ContainerRegistryURL)

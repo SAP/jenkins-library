@@ -16,6 +16,7 @@ class PiperPipelineStageConfirmTest extends BasePiperTest {
 
     private Map timeoutSettings
     private Map inputSettings
+    private milestoneCalled = false
 
     @Rule
     public RuleChain rules = Rules
@@ -37,6 +38,10 @@ class PiperPipelineStageConfirmTest extends BasePiperTest {
             inputSettings = m
             return [reason: 'this is my test reason for failing step 1 and step 3', acknowledgement: true]
         })
+
+        helper.registerAllowedMethod('milestone', [],{
+            milestoneCalled = true
+        })
     }
 
     @Test
@@ -57,9 +62,8 @@ class PiperPipelineStageConfirmTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.setValue('unstableSteps', ['step1', 'step3'])
 
         helper.registerAllowedMethod('text', [Map.class], {m ->
-            assertThat(m.defaultValue, containsString('step1:'))
-            assertThat(m.defaultValue, containsString('step3:'))
-            assertThat(m.description, is('Please provide a reason for overruling following failed steps:'))
+            assertThat(m.defaultValue, is(''))
+            assertThat(m.description, containsString('Please provide a reason for overruling the failed steps step1, step3, with 10 characters or more:'))
             assertThat(m.name, is('reason'))
         })
 
@@ -73,7 +77,18 @@ class PiperPipelineStageConfirmTest extends BasePiperTest {
         )
         assertThat(inputSettings.message, is('Approve continuation of pipeline, although some steps failed.'))
 
+        assertThat(jlr.log, containsString('step1'))
+        assertThat(jlr.log, containsString('step3'))
         assertThat(jlr.log, containsString('this is my test reason'))
-        assertThat(jlr.log, containsString('Acknowledged:\n-------------\ntrue'))
+        assertThat(jlr.log, containsString('Acknowledgement\n---------------\n☑ I acknowledge that for traceability purposes the approval reason is stored together with my user name / user id'))
+    }
+
+    @Test
+    void callsMilestone(){
+        jsr.step.piperPipelineStageConfirm(
+            script: nullScript
+        )
+
+        assertThat(milestoneCalled, is(true))
     }
 }

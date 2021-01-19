@@ -11,7 +11,7 @@ import (
 
 func TestSentryHookLevels(t *testing.T) {
 	hook := NewSentryHook("", "")
-	assert.Equal(t, []logrus.Level{logrus.PanicLevel, logrus.FatalLevel, logrus.ErrorLevel}, hook.Levels())
+	assert.Equal(t, []logrus.Level{logrus.PanicLevel, logrus.FatalLevel}, hook.Levels())
 }
 
 func TestSentryHookDsn(t *testing.T) {

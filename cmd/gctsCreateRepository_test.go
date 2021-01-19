@@ -3,12 +3,13 @@ package cmd
 import (
 	"bytes"
 	"errors"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/stretchr/testify/assert"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"testing"
+
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGctsCreateRepositorySuccess(t *testing.T) {
@@ -24,7 +25,7 @@ func TestGctsCreateRepositorySuccess(t *testing.T) {
 		VSID:                "TST",
 	}
 
-	t.Run("creating repository on ABAP system successfull", func(t *testing.T) {
+	t.Run("creating repository on ABAP system successful", func(t *testing.T) {
 
 		httpClient := httpMockGcts{StatusCode: 200, ResponseBody: `{
 			"repository": {

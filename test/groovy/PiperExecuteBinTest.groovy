@@ -147,8 +147,35 @@ class PiperExecuteBinTest extends BasePiperTest {
         assertThat(credentials[2], allOf(hasEntry('credentialsId', 'credUsernamePassword'), hasEntry('usernameVariable', 'PIPER_user') , hasEntry('passwordVariable', 'PIPER_password')))
 
         assertThat(dockerExecuteRule.dockerParams.dockerImage, is('my.Registry/my/image:latest'))
+        assertThat(dockerExecuteRule.dockerParams.stashContent, is([]))
 
         assertThat(artifacts[0], allOf(hasEntry('artifacts', '1234.pdf'), hasEntry('allowEmptyArchive', false)))
+    }
+
+    @Test
+    void testPiperExecuteBinDontResolveCredentialsAndNoCredId() {
+
+        // In case we have a credential entry without Id we drop that silenty.
+        // Maybe we should revisit that and fail in this case.
+
+        shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/test.yaml\'', '{"dockerImage":"my.Registry/my/image:latest"}')
+
+        List stepCredentials = [
+            [type: 'token', env: ['PIPER_credTokenNoResolve'], resolveCredentialsId: false],
+        ]
+
+        stepRule.step.piperExecuteBin(
+            [
+                juStabUtils: utils,
+                jenkinsUtilsStub: jenkinsUtils,
+                testParam: "This is test content",
+                script: nullScript
+            ],
+            'testStep',
+            'metadata/test.yaml',
+            stepCredentials
+        )
+        assertThat(credentials.size(), is(0))
     }
 
     @Test
@@ -158,6 +185,9 @@ class PiperExecuteBinTest extends BasePiperTest {
         List stepCredentials = [
             [type: 'file', id: 'fileCredentialsId', env: ['PIPER_credFile']],
             [type: 'token', id: 'tokenCredentialsId', env: ['PIPER_credToken']],
+            // for the entry below we don't have a config lookup.
+            [type: 'token', id: 'tokenCredentialsIdNoResolve', env: ['PIPER_credTokenNoResolve'], resolveCredentialsId: false],
+            [type: 'token', id: 'tokenCredentialsIdNotContainedInConfig', env: ['PIPER_credToken_doesNotMatter']],
             [type: 'usernamePassword', id: 'credentialsId', env: ['PIPER_user', 'PIPER_password']],
         ]
         stepRule.step.piperExecuteBin(
@@ -172,9 +202,10 @@ class PiperExecuteBinTest extends BasePiperTest {
             stepCredentials
         )
         // asserts
-        assertThat(credentials.size(), is(2))
+        assertThat(credentials.size(), is(3))
         assertThat(credentials[0], allOf(hasEntry('credentialsId', 'credFile'), hasEntry('variable', 'PIPER_credFile')))
         assertThat(credentials[1], allOf(hasEntry('credentialsId', 'credToken'), hasEntry('variable', 'PIPER_credToken')))
+        assertThat(credentials[2], allOf(hasEntry('credentialsId', 'tokenCredentialsIdNoResolve'), hasEntry('variable', 'PIPER_credTokenNoResolve')))
     }
 
     @Test
@@ -315,7 +346,7 @@ class PiperExecuteBinTest extends BasePiperTest {
         helper.registerAllowedMethod('sh', [String.class], {s -> throw new AbortException('exit code 1')})
 
         exception.expect(AbortException)
-        exception.expectMessage("[noDetailsStep] Step execution failed. Error: hudson.AbortException: exit code 1")
+        exception.expectMessage("[noDetailsStep] Step execution failed. Error: hudson.AbortException: exit code 1, please see log file for more details.")
 
         stepRule.step.piperExecuteBin(
             [
@@ -358,5 +389,23 @@ class PiperExecuteBinTest extends BasePiperTest {
         }
         assertThat(unstableCalled, is(true))
 
+    }
+
+    @Test
+    void testProperStashHandling() {
+        shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/test.yaml\'', '{"dockerImage":"test","stashContent":["buildDescriptor"]}')
+
+        stepRule.step.piperExecuteBin(
+            [
+                juStabUtils: utils,
+                jenkinsUtilsStub: jenkinsUtils,
+                script: nullScript
+            ],
+            'testStep',
+            'metadata/test.yaml',
+            []
+        )
+
+        assertThat(dockerExecuteRule.dockerParams.stashContent, is(["buildDescriptor", "pipelineConfigAndTests", "piper-bin"]))
     }
 }

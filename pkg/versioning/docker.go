@@ -12,14 +12,15 @@ import (
 
 // Docker defines an artifact based on a Dockerfile
 type Docker struct {
-	artifact      Artifact
-	content       []byte
-	execRunner    mavenExecRunner
-	options       *Options
-	path          string
-	versionSource string
-	readFile      func(string) ([]byte, error)
-	writeFile     func(string, []byte, os.FileMode) error
+	artifact         Artifact
+	content          []byte
+	utils            Utils
+	options          *Options
+	path             string
+	versionSource    string
+	versioningScheme string
+	readFile         func(string) ([]byte, error)
+	writeFile        func(string, []byte, os.FileMode) error
 }
 
 func (d *Docker) init() {
@@ -40,7 +41,10 @@ func (d *Docker) initDockerfile() {
 
 // VersioningScheme returns the relevant versioning scheme
 func (d *Docker) VersioningScheme() string {
-	return "maven"
+	if len(d.versioningScheme) == 0 {
+		return "docker"
+	}
+	return d.versioningScheme
 }
 
 // GetVersion returns the current version of the artifact
@@ -71,7 +75,7 @@ func (d *Docker) GetVersion() (string, error) {
 		if d.options == nil {
 			d.options = &Options{}
 		}
-		d.artifact, err = GetArtifact(d.versionSource, d.path, d.options, d.execRunner)
+		d.artifact, err = GetArtifact(d.versionSource, d.path, d.options, d.utils)
 		if err != nil {
 			return "", err
 		}
@@ -136,4 +140,9 @@ func (d *Docker) versionFromBaseImageTag() string {
 		}
 	}
 	return ""
+}
+
+// GetCoordinates returns the coordinates
+func (d *Docker) GetCoordinates() (Coordinates, error) {
+	return nil, nil
 }

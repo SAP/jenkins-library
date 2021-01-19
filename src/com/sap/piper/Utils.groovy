@@ -23,16 +23,6 @@ def stash(name, include = '**/*.*', exclude = '', useDefaultExcludes = true) {
     steps.stash stashParams
 }
 
-@NonCPS
-def runClosures(Map closures) {
-
-    def closuresToRun = closures.values().asList()
-    Collections.shuffle(closuresToRun) // Shuffle the list so no one tries to rely on the order of execution
-    for (int i = 0; i < closuresToRun.size(); i++) {
-        (closuresToRun[i] as Closure).run()
-    }
-}
-
 def stashList(script, List stashes) {
     for (def stash : stashes) {
         def name = stash.name
@@ -40,7 +30,8 @@ def stashList(script, List stashes) {
         def exclude = stash.excludes
 
         if (stash?.merge == true) {
-            String lockName = "${script.commonPipelineEnvironment.configuration.stashFiles}/${stash.name}"
+            String lockingResourceGroup = script.commonPipelineEnvironment.projectName?:env.JOB_NAME
+            String lockName = "${lockingResourceGroup}/${stash.name}"
             lock(lockName) {
                 unstash stash.name
                 echo "Stash content: ${name} (include: ${include}, exclude: ${exclude})"
@@ -102,7 +93,7 @@ def unstash(name, msg = "Unstash failed:") {
 def unstashAll(stashContent) {
     def unstashedContent = []
     if (stashContent) {
-        for (i = 0; i < stashContent.size(); i++) {
+        for (int i = 0; i < stashContent.size(); i++) {
             if (stashContent[i]) {
                 unstashedContent += unstash(stashContent[i])
             }
@@ -123,12 +114,13 @@ void pushToSWA(Map parameters, Map config) {
     try {
         parameters.actionName = parameters.get('actionName') ?: 'Piper Library OS'
         parameters.eventType = parameters.get('eventType') ?: 'library-os'
-        parameters.jobUrlSha1 = generateSha1(env.JOB_URL)
-        parameters.buildUrlSha1 = generateSha1(env.BUILD_URL)
+        parameters.jobUrlSha1 = generateSha1(env.JOB_URL ?: '')
+        parameters.buildUrlSha1 = generateSha1(env.BUILD_URL ?: '')
 
         Telemetry.notify(this, config, parameters)
     } catch (ignore) {
         // some error occured in telemetry reporting. This should not break anything though.
+        echo "[${parameters.step}] Telemetry Report failed: ${ignore.getMessage()}"
     }
 }
 
@@ -159,8 +151,8 @@ static String evaluateFromMavenPom(Script script, String pomFileName, String pom
     String resolvedExpression = script.mavenExecute(
         script: script,
         pomPath: pomFileName,
-        goals: 'org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate',
-        defines: "-Dexpression=$pomPathExpression -DforceStdout -q",
+        goals: ['org.apache.maven.plugins:maven-help-plugin:3.1.0:evaluate'],
+        defines: ["-Dexpression=$pomPathExpression", "-DforceStdout", "-q"],
         returnStdout: true
     )
     if (resolvedExpression.startsWith('null object or invalid expression')) {
@@ -172,4 +164,16 @@ static String evaluateFromMavenPom(Script script, String pomFileName, String pom
             "missing property or invalid expression '${pomPathExpression}'.")
     }
     return resolvedExpression
+}
+
+static List appendParameterToStringList(List list, Map parameters, String paramName) {
+    def value = parameters[paramName]
+    List result = []
+    result.addAll(list)
+    if (value in CharSequence) {
+        result.add(value)
+    } else if (value in List) {
+        result.addAll(value)
+    }
+    return result
 }

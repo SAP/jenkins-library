@@ -30,7 +30,7 @@ func TestGetArtifact(t *testing.T) {
 		assert.Equal(t, "test.ini", theType.path)
 		assert.Equal(t, "theversion", theType.options.VersionField)
 		assert.Equal(t, "test", theType.options.VersionSection)
-		assert.Equal(t, "maven", docker.VersioningScheme())
+		assert.Equal(t, "docker", docker.VersioningScheme())
 	})
 
 	t.Run("dub", func(t *testing.T) {
@@ -61,7 +61,19 @@ func TestGetArtifact(t *testing.T) {
 		fileExists = func(string) (bool, error) { return false, nil }
 		_, err := GetArtifact("golang", "", &Options{}, nil)
 
-		assert.EqualError(t, err, "no build descriptor available, supported: [VERSION version.txt]")
+		assert.EqualError(t, err, "no build descriptor available, supported: [VERSION version.txt go.mod]")
+	})
+
+	t.Run("gradle", func(t *testing.T) {
+		gradle, err := GetArtifact("gradle", "", &Options{VersionField: "theversion"}, nil)
+
+		assert.NoError(t, err)
+
+		theType, ok := gradle.(*Gradle)
+		assert.True(t, ok)
+		assert.Equal(t, "gradle.properties", theType.path)
+		assert.Equal(t, "theversion", theType.versionField)
+		assert.Equal(t, "semver2", gradle.VersioningScheme())
 	})
 
 	t.Run("maven", func(t *testing.T) {
@@ -75,10 +87,10 @@ func TestGetArtifact(t *testing.T) {
 
 		theType, ok := maven.(*Maven)
 		assert.True(t, ok)
-		assert.Equal(t, "pom.xml", theType.pomPath)
-		assert.Equal(t, opts.ProjectSettingsFile, theType.projectSettingsFile)
-		assert.Equal(t, opts.GlobalSettingsFile, theType.globalSettingsFile)
-		assert.Equal(t, opts.M2Path, theType.m2Path)
+		assert.Equal(t, "pom.xml", theType.options.PomPath)
+		assert.Equal(t, opts.ProjectSettingsFile, theType.options.ProjectSettingsFile)
+		assert.Equal(t, opts.GlobalSettingsFile, theType.options.GlobalSettingsFile)
+		assert.Equal(t, opts.M2Path, theType.options.M2Path)
 		assert.Equal(t, "maven", maven.VersioningScheme())
 	})
 
@@ -112,7 +124,7 @@ func TestGetArtifact(t *testing.T) {
 
 		assert.NoError(t, err)
 
-		theType, ok := pip.(*Versionfile)
+		theType, ok := pip.(*Pip)
 		assert.True(t, ok)
 		assert.Equal(t, "version.txt", theType.path)
 		assert.Equal(t, "pep440", pip.VersioningScheme())
@@ -122,10 +134,11 @@ func TestGetArtifact(t *testing.T) {
 		fileExists = func(string) (bool, error) { return false, nil }
 		_, err := GetArtifact("pip", "", &Options{}, nil)
 
-		assert.EqualError(t, err, "no build descriptor available, supported: [version.txt VERSION]")
+		assert.EqualError(t, err, "no build descriptor available, supported: [version.txt VERSION setup.py]")
 	})
 
 	t.Run("sbt", func(t *testing.T) {
+		fileExists = func(string) (bool, error) { return true, nil }
 		sbt, err := GetArtifact("sbt", "", &Options{VersionField: "theversion"}, nil)
 
 		assert.NoError(t, err)

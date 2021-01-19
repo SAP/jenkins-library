@@ -13,12 +13,15 @@ import static org.junit.Assert.assertThat
 
 import org.hamcrest.Matchers
 import org.junit.Assert
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
 import com.sap.piper.JenkinsUtils
+import com.sap.piper.Utils
 
 import util.BasePiperTest
 import util.JenkinsCredentialsRule
@@ -34,7 +37,7 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
         turn makes use of the 'sap/grunt-sapui5-bestpractice-build' plugin.
         The dependencies are resolved via npm.
 
-        In order to run the scenario the project needs to fullfill these
+        In order to run the scenario the project needs to fulfill these
         prerequisites:
 
         Build tools:
@@ -50,7 +53,8 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
             Gruntfile.js and configure default tasks (e.g. lint, clean, build)
         *   mta.yaml
     */
-
+    private ExpectedException thrown = new ExpectedException().none()
+  
     JenkinsStepRule stepRule = new JenkinsStepRule(this)
     JenkinsReadYamlRule readYamlRule = new JenkinsReadYamlRule(this)
     JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
@@ -61,6 +65,7 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
         .around(readYamlRule)
+        .around(thrown)
         .around(stepRule)
         .around(shellRule)
         .around(jlr)
@@ -69,10 +74,18 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
         .around(new JenkinsCredentialsRule(this)
         .withCredentials('CI_CREDENTIALS_ID', 'foo', 'terceSpot'))
 
+    private writeInfluxMap = [:]
+
+    class JenkinsUtilsMock extends JenkinsUtils {
+        def isJobStartedByUser() {
+            return true
+        }
+    }
+
     @Before
     void setup() {
         //
-        // needed since we have dockerExecute inside mtaBuild
+        // needed since we have dockerExecute inside neoDeploy
         JenkinsUtils.metaClass.static.isPluginActive = {def s -> false}
 
         //
@@ -81,39 +94,46 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
 
             it ->
 
-            // called inside mtaBuild, this file contains build config
-            it == 'mta.yaml' ||
-
             // called inside neo deploy, this file gets deployed
             it == 'test.mtar'
         })
 
         helper.registerAllowedMethod("deleteDir",[], null)
 
-        //
-        // the properties below we read out of the yaml file
-        readYamlRule.registerYaml('mta.yaml', ('''
-                                       |ID : "test"
-                                       |PATH : "."
-                                       |''' as CharSequence).stripMargin())
-
-        //
-        // we need the path variable since we extend the path in the mtaBuild step. In order
-        // to be able to extend the path we have to have some initial value.
-        binding.setVariable('PATH', '/usr/bin')
-
         binding.setVariable('scm', null)
 
         helper.registerAllowedMethod('pwd', [], { return "./" })
+
+        helper.registerAllowedMethod('mtaBuild', [Map], {
+            m ->  m.script.commonPipelineEnvironment.mtarFilePath = 'test.mtar'
+        })
+
+        Utils.metaClass.echo = { def m -> }
+
+        helper.registerAllowedMethod('influxWriteData', [Map.class], { m ->
+            writeInfluxMap = m
+        })
+
+        UUID.metaClass.static.randomUUID = { -> 1 }
+    }
+
+    @After
+    public void tearDown() {
+        Utils.metaClass = null
+        UUID.metaClass = null
     }
 
     @Test
-    void straightForwardTest() {
+    void straightForwardTestNeo() {
 
         nullScript
             .commonPipelineEnvironment
                 .configuration =  [steps:
-                                    [neoDeploy:
+                                    [mtaBuild:
+                                         [
+                                           platform: 'NEO'
+                                         ],
+                                     neoDeploy:
                                          [neo:
                                               [ host: 'hana.example.com',
                                                 account: 'myTestAccount',
@@ -122,21 +142,12 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
                                     ]
                                 ]
 
-        stepRule.step.fioriOnCloudPlatformPipeline(script: nullScript,
-            platform: 'NEO',
-        )
-
-        //
-        // the mta build call:
-
-        assertThat(shellRule.shell, hasItem(
-                                allOf(  containsString('mbt build'),
-                                        containsString('--mtar test.mtar'),
-                                        containsString('--platform NEO'),
-                                        containsString('--target ./'))))
+        stepRule.step.fioriOnCloudPlatformPipeline(script: nullScript)
 
         //
         // the deployable is exchanged between the involved steps via this property:
+        // From the presence of this value we can conclude that mtaBuild has been called
+        // this value is set on the commonPipelineEnvironment in the corresponding mock.
         assertThat(nullScript.commonPipelineEnvironment.getMtarFilePath(), is(equalTo('test.mtar')))
 
         //
@@ -150,5 +161,76 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
                 .hasSingleQuotedOption('user', 'foo')
                 .hasSingleQuotedOption('source', 'test.mtar')
                 .hasArgument('synchronous'))
+    }
+    
+    @Test
+    void straightForwardTestCF() {
+
+        nullScript
+            .commonPipelineEnvironment
+                .configuration =  [steps:
+                                     [mtaBuild:
+                                         [
+                                           platform: 'CF'
+                                         ],
+                                     cloudFoundryDeploy:
+                                         [ deployTool: 'mtaDeployPlugin',
+                                           cloudFoundry:
+                                              [ apiEndpoint: 'https://api.cf.hana.example.com',
+                                                org: 'testOrg',
+                                                space: 'testSpace',
+                                                credentialsId: 'CI_CREDENTIALS_ID'
+                                              ]
+                                         ]
+                                    ]
+                                ]
+
+        stepRule.step.fioriOnCloudPlatformPipeline(
+          script: nullScript,
+          jenkinsUtilsStub: new JenkinsUtilsMock()
+          )
+        
+        assertThat(shellRule.shell, hasItem(containsString('cf login -u "foo" -p \'terceSpot\' -a https://api.cf.hana.example.com -o "testOrg" -s "testSpace"')))
+    }
+
+    @Test
+    void errorNoTargetDefined() {
+
+        nullScript
+            .commonPipelineEnvironment
+                .configuration =  [steps:
+                                    [neoDeploy:
+                                         [neo:
+                                              [ host: 'hana.example.com',
+                                                account: 'myTestAccount',
+                                              ]
+                                         ]
+                                    ]
+                                ]
+
+        thrown.expect(Exception)
+        thrown.expectMessage('Deployment failed: no valid deployment target defined')
+
+        stepRule.step.fioriOnCloudPlatformPipeline(script: nullScript)
+
+    }
+    
+    @Test
+    void errorUnknownTargetDefined() {
+
+        nullScript
+            .commonPipelineEnvironment
+                .configuration =  [steps:
+                                     [mtaBuild:
+                                         [
+                                           platform: 'UNKNOWN'
+                                         ]
+                                    ]
+                                ]
+
+        thrown.expect(Exception)
+        thrown.expectMessage('Deployment failed: no valid deployment target defined')
+
+        stepRule.step.fioriOnCloudPlatformPipeline(script: nullScript)
     }
 }

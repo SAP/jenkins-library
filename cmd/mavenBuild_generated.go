@@ -37,7 +37,7 @@ func MavenBuildCommand() *cobra.Command {
 		Long: `This step will install the maven project into the local maven repository.
 It will also prepare jacoco to record the code coverage and
 supports ci friendly versioning by flattening the pom before installing.`,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
@@ -48,6 +48,7 @@ supports ci friendly versioning by flattening the pom before installing.`,
 
 			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
 
@@ -58,11 +59,13 @@ supports ci friendly versioning by flattening the pom before installing.`,
 
 			return nil
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
 			}
 			log.DeferExitHandler(handler)
@@ -70,6 +73,7 @@ supports ci friendly versioning by flattening the pom before installing.`,
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			mavenBuild(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
+			log.Entry().Info("SUCCESS")
 		},
 	}
 
@@ -78,7 +82,7 @@ supports ci friendly versioning by flattening the pom before installing.`,
 }
 
 func addMavenBuildFlags(cmd *cobra.Command, stepConfig *mavenBuildOptions) {
-	cmd.Flags().StringVar(&stepConfig.PomPath, "pomPath", "pom.xml", "Path to the pom file which should be installed including all children.")
+	cmd.Flags().StringVar(&stepConfig.PomPath, "pomPath", `pom.xml`, "Path to the pom file which should be installed including all children.")
 	cmd.Flags().BoolVar(&stepConfig.Flatten, "flatten", true, "Defines if the pom files should be flattened to support ci friendly maven versioning.")
 	cmd.Flags().BoolVar(&stepConfig.Verify, "verify", false, "Instead of installing the artifact only the verify lifecycle phase is executed.")
 	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Path to the mvn settings file that should be used as project settings file.")
@@ -92,8 +96,9 @@ func addMavenBuildFlags(cmd *cobra.Command, stepConfig *mavenBuildOptions) {
 func mavenBuildMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "mavenBuild",
-			Aliases: []config.Alias{{Name: "mavenExecute", Deprecated: false}},
+			Name:        "mavenBuild",
+			Aliases:     []config.Alias{{Name: "mavenExecute", Deprecated: false}},
+			Description: "This step will install the maven project into the local maven repository.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -155,6 +160,9 @@ func mavenBuildMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "maven/logSuccessfulMavenTransfers"}},
 					},
 				},
+			},
+			Containers: []config.Container{
+				{Name: "mvn", Image: "maven:3.6-jdk-8"},
 			},
 		},
 	}

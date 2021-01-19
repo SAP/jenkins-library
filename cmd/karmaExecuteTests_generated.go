@@ -41,7 +41,7 @@ In the Docker network, the containers can be referenced by the values provided i
 
 !!! note
     In a Kubernetes environment, the containers both need to be referenced with ` + "`" + `localhost` + "`" + `.`,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
@@ -52,6 +52,7 @@ In the Docker network, the containers can be referenced by the values provided i
 
 			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
 
@@ -62,11 +63,13 @@ In the Docker network, the containers can be referenced by the values provided i
 
 			return nil
 		},
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
 			}
 			log.DeferExitHandler(handler)
@@ -74,6 +77,7 @@ In the Docker network, the containers can be referenced by the values provided i
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
 			karmaExecuteTests(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
+			log.Entry().Info("SUCCESS")
 		},
 	}
 
@@ -82,9 +86,9 @@ In the Docker network, the containers can be referenced by the values provided i
 }
 
 func addKarmaExecuteTestsFlags(cmd *cobra.Command, stepConfig *karmaExecuteTestsOptions) {
-	cmd.Flags().StringVar(&stepConfig.InstallCommand, "installCommand", "npm install --quiet", "The command that is executed to install the test tool.")
-	cmd.Flags().StringVar(&stepConfig.ModulePath, "modulePath", ".", "Define the path of the module to execute tests on.")
-	cmd.Flags().StringVar(&stepConfig.RunCommand, "runCommand", "npm run karma", "The command that is executed to start the tests.")
+	cmd.Flags().StringVar(&stepConfig.InstallCommand, "installCommand", `npm install --quiet`, "The command that is executed to install the test tool.")
+	cmd.Flags().StringVar(&stepConfig.ModulePath, "modulePath", `.`, "Define the path of the module to execute tests on.")
+	cmd.Flags().StringVar(&stepConfig.RunCommand, "runCommand", `npm run karma`, "The command that is executed to start the tests.")
 
 	cmd.MarkFlagRequired("installCommand")
 	cmd.MarkFlagRequired("modulePath")
@@ -95,8 +99,9 @@ func addKarmaExecuteTestsFlags(cmd *cobra.Command, stepConfig *karmaExecuteTests
 func karmaExecuteTestsMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "karmaExecuteTests",
-			Aliases: []config.Alias{},
+			Name:        "karmaExecuteTests",
+			Aliases:     []config.Alias{},
+			Description: "Executes the Karma test runner",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -126,6 +131,12 @@ func karmaExecuteTestsMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 				},
+			},
+			Containers: []config.Container{
+				{Name: "karma", Image: "node:lts-stretch", EnvVars: []config.EnvVar{{Name: "no_proxy", Value: "localhost,selenium,$no_proxy"}, {Name: "NO_PROXY", Value: "localhost,selenium,$NO_PROXY"}}, WorkingDir: "/home/node"},
+			},
+			Sidecars: []config.Container{
+				{Name: "selenium", Image: "selenium/standalone-chrome", EnvVars: []config.EnvVar{{Name: "NO_PROXY", Value: "localhost,karma,$NO_PROXY"}, {Name: "no_proxy", Value: "localhost,selenium,$no_proxy"}}},
 			},
 		},
 	}

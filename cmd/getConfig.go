@@ -2,11 +2,15 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/config"
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
 	"io"
 	"os"
+	"path"
+	"path/filepath"
+
+	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
 )
 
 type configCommandOptions struct {
@@ -27,8 +31,18 @@ func ConfigCommand() *cobra.Command {
 	var createConfigCmd = &cobra.Command{
 		Use:   "getConfig",
 		Short: "Loads the project 'Piper' configuration respecting defaults and parameters.",
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			return generateConfig()
+		PreRun: func(cmd *cobra.Command, args []string) {
+			path, _ := os.Getwd()
+			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
+			log.RegisterHook(fatalHook)
+			initStageName(false)
+		},
+		Run: func(cmd *cobra.Command, _ []string) {
+			err := generateConfig()
+			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				log.Entry().WithError(err).Fatal("failed to retrieve configuration")
+			}
 		},
 	}
 
@@ -51,6 +65,12 @@ func generateConfig() error {
 	if err != nil {
 		return errors.Wrap(err, "metadata: read failed")
 	}
+
+	// prepare output resource directories:
+	// this is needed in order to have proper directory permissions in case
+	// resources written inside a container image with a different user
+	// Remark: This is so far only relevant for Jenkins environments where getConfig is executed
+	prepareOutputEnvironment(metadata.Spec.Outputs.Resources, GeneralConfig.EnvRootPath)
 
 	resourceParams := metadata.GetResourceParameters(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 
@@ -87,7 +107,7 @@ func generateConfig() error {
 		params = metadata.Spec.Inputs.Parameters
 	}
 
-	stepConfig, err = myConfig.GetStepConfig(flags, GeneralConfig.ParametersJSON, customConfig, defaultConfig, paramFilter, params, metadata.Spec.Inputs.Secrets, resourceParams, GeneralConfig.StageName, metadata.Metadata.Name, metadata.Metadata.Aliases)
+	stepConfig, err = myConfig.GetStepConfig(flags, GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, paramFilter, params, metadata.Spec.Inputs.Secrets, resourceParams, GeneralConfig.StageName, metadata.Metadata.Name, metadata.Metadata.Aliases)
 	if err != nil {
 		return errors.Wrap(err, "getting step config failed")
 	}
@@ -133,27 +153,28 @@ func applyContextConditions(metadata config.StepData, stepConfig *config.StepCon
 	//consider conditions for context configuration
 
 	//containers
-	applyContainerConditions(metadata.Spec.Containers, stepConfig)
+	config.ApplyContainerConditions(metadata.Spec.Containers, stepConfig)
 
 	//sidecars
-	applyContainerConditions(metadata.Spec.Sidecars, stepConfig)
+	config.ApplyContainerConditions(metadata.Spec.Sidecars, stepConfig)
 
 	//ToDo: remove all unnecessary sub maps?
 	// e.g. extract delete() from applyContainerConditions - loop over all stepConfig.Config[param.Value] and remove ...
 }
 
-func applyContainerConditions(containers []config.Container, stepConfig *config.StepConfig) {
-	for _, container := range containers {
-		if len(container.Conditions) > 0 {
-			for _, param := range container.Conditions[0].Params {
-				if container.Conditions[0].ConditionRef == "strings-equal" && stepConfig.Config[param.Name] == param.Value {
-					var containerConf map[string]interface{}
-					containerConf = stepConfig.Config[param.Value].(map[string]interface{})
-					for key, value := range containerConf {
-						stepConfig.Config[key] = value
-					}
-					delete(stepConfig.Config, param.Value)
+func prepareOutputEnvironment(outputResources []config.StepResources, envRootPath string) {
+	for _, oResource := range outputResources {
+		for _, oParam := range oResource.Parameters {
+			paramPath := path.Join(envRootPath, oResource.Name, fmt.Sprint(oParam["name"]))
+			if oParam["fields"] != nil {
+				paramFields, ok := oParam["fields"].([]map[string]string)
+				if ok && len(paramFields) > 0 {
+					paramPath = path.Join(paramPath, paramFields[0]["name"])
 				}
+			}
+			if _, err := os.Stat(filepath.Dir(paramPath)); os.IsNotExist(err) {
+				log.Entry().Debugf("Creating directory: %v", filepath.Dir(paramPath))
+				os.MkdirAll(filepath.Dir(paramPath), 0777)
 			}
 		}
 	}

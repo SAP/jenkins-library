@@ -7,10 +7,11 @@ import (
 )
 
 func TestGithubCreatePullRequestCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := GithubCreatePullRequestCommand()
 
-	// only high level testing performed - details are tested in step generation procudure
+	// only high level testing performed - details are tested in step generation procedure
 	assert.Equal(t, "githubCreatePullRequest", testCmd.Use, "command name incorrect")
 
 }

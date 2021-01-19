@@ -2,11 +2,12 @@ package config
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"path/filepath"
 
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 
 	"github.com/ghodss/yaml"
@@ -60,8 +61,11 @@ type StepParameters struct {
 
 // ResourceReference defines the parameters of a resource reference
 type ResourceReference struct {
-	Name  string `json:"name"`
-	Param string `json:"param"`
+	Name    string   `json:"name"`
+	Type    string   `json:"type,omitempty"`
+	Param   string   `json:"param,omitempty"`
+	Paths   []string `json:"paths,omitempty"`
+	Aliases []Alias  `json:"aliases,omitempty"`
 }
 
 // Alias defines a step input parameter alias
@@ -196,18 +200,21 @@ func (m *StepData) GetParameterFilters() StepFilters {
 // GetContextParameterFilters retrieves all scope dependent parameter filters
 func (m *StepData) GetContextParameterFilters() StepFilters {
 	var filters StepFilters
+	contextFilters := []string{}
 	for _, secret := range m.Spec.Inputs.Secrets {
-		filters.All = append(filters.All, secret.Name)
-		filters.General = append(filters.General, secret.Name)
-		filters.Steps = append(filters.Steps, secret.Name)
-		filters.Stages = append(filters.Stages, secret.Name)
-		filters.Parameters = append(filters.Parameters, secret.Name)
-		filters.Env = append(filters.Env, secret.Name)
+		contextFilters = append(contextFilters, secret.Name)
 	}
 
-	containerFilters := []string{}
+	if len(m.Spec.Inputs.Resources) > 0 {
+		for _, res := range m.Spec.Inputs.Resources {
+			if res.Type == "stash" {
+				contextFilters = append(contextFilters, "stashContent")
+				break
+			}
+		}
+	}
 	if len(m.Spec.Containers) > 0 {
-		parameterKeys := []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace"}
+		parameterKeys := []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerName", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace"}
 		for _, container := range m.Spec.Containers {
 			for _, condition := range container.Conditions {
 				for _, dependentParam := range condition.Params {
@@ -216,18 +223,27 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 				}
 			}
 		}
-		containerFilters = append(containerFilters, parameterKeys...)
+		// ToDo: append dependentParam.Value & dependentParam.Name only according to correct parameter scope and not generally
+		contextFilters = append(contextFilters, parameterKeys...)
 	}
 	if len(m.Spec.Sidecars) > 0 {
 		//ToDo: support fallback for "dockerName" configuration property -> via aliasing?
-		containerFilters = append(containerFilters, []string{"containerName", "containerPortMappings", "dockerName", "sidecarEnvVars", "sidecarImage", "sidecarName", "sidecarOptions", "sidecarPullImage", "sidecarReadyCommand", "sidecarVolumeBind", "sidecarWorkspace"}...)
+		contextFilters = append(contextFilters, []string{"containerName", "containerPortMappings", "dockerName", "sidecarEnvVars", "sidecarImage", "sidecarName", "sidecarOptions", "sidecarPullImage", "sidecarReadyCommand", "sidecarVolumeBind", "sidecarWorkspace"}...)
 		//ToDo: add condition param.Value and param.Name to filter as for Containers
 	}
-	if len(containerFilters) > 0 {
-		filters.All = append(filters.All, containerFilters...)
-		filters.Steps = append(filters.Steps, containerFilters...)
-		filters.Stages = append(filters.Stages, containerFilters...)
-		filters.Parameters = append(filters.Parameters, containerFilters...)
+
+	if m.HasReference("vaultSecret") {
+		contextFilters = append(contextFilters, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId"}...)
+	}
+
+	if len(contextFilters) > 0 {
+		filters.All = append(filters.All, contextFilters...)
+		filters.General = append(filters.General, contextFilters...)
+		filters.Steps = append(filters.Steps, contextFilters...)
+		filters.Stages = append(filters.Stages, contextFilters...)
+		filters.Parameters = append(filters.Parameters, contextFilters...)
+		filters.Env = append(filters.Env, contextFilters...)
+
 	}
 	return filters
 }
@@ -242,30 +258,33 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 	if len(m.Spec.Containers) > 0 {
 		for _, container := range m.Spec.Containers {
 			key := ""
+			conditionParam := ""
 			if len(container.Conditions) > 0 {
 				key = container.Conditions[0].Params[0].Value
+				conditionParam = container.Conditions[0].Params[0].Name
 			}
 			p := map[string]interface{}{}
 			if key != "" {
 				root[key] = p
+				//add default for condition parameter if available
+				for _, inputParam := range m.Spec.Inputs.Parameters {
+					if inputParam.Name == conditionParam {
+						root[conditionParam] = inputParam.Default
+					}
+				}
 			} else {
 				p = root
 			}
 			if len(container.Command) > 0 {
 				p["containerCommand"] = container.Command[0]
 			}
-			p["containerName"] = container.Name
-			p["containerShell"] = container.Shell
-			p["dockerEnvVars"] = envVarsAsStringSlice(container.EnvVars)
-			p["dockerImage"] = container.Image
-			p["dockerName"] = container.Name
-			p["dockerPullImage"] = container.ImagePullPolicy != "Never"
-			p["dockerWorkspace"] = container.WorkingDir
-			p["dockerOptions"] = optionsAsStringSlice(container.Options)
-			//p["dockerVolumeBind"] = volumeMountsAsStringSlice(container.VolumeMounts)
+
+			putStringIfNotEmpty(p, "containerName", container.Name)
+			putStringIfNotEmpty(p, "containerShell", container.Shell)
+			container.commonConfiguration("docker", &p)
 
 			// Ready command not relevant for main runtime container so far
-			//p[] = container.ReadyCommand
+			//putStringIfNotEmpty(p, ..., container.ReadyCommand)
 		}
 
 	}
@@ -274,18 +293,12 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 		if len(m.Spec.Sidecars[0].Command) > 0 {
 			root["sidecarCommand"] = m.Spec.Sidecars[0].Command[0]
 		}
-		root["sidecarEnvVars"] = envVarsAsStringSlice(m.Spec.Sidecars[0].EnvVars)
-		root["sidecarImage"] = m.Spec.Sidecars[0].Image
-		root["sidecarName"] = m.Spec.Sidecars[0].Name
-		root["sidecarPullImage"] = m.Spec.Sidecars[0].ImagePullPolicy != "Never"
-		root["sidecarReadyCommand"] = m.Spec.Sidecars[0].ReadyCommand
-		root["sidecarWorkspace"] = m.Spec.Sidecars[0].WorkingDir
-		root["sidecarOptions"] = optionsAsStringSlice(m.Spec.Sidecars[0].Options)
-		//root["sidecarVolumeBind"] = volumeMountsAsStringSlice(m.Spec.Sidecars[0].VolumeMounts)
-	}
+		m.Spec.Sidecars[0].commonConfiguration("sidecar", &root)
+		putStringIfNotEmpty(root, "sidecarReadyCommand", m.Spec.Sidecars[0].ReadyCommand)
 
-	// not filled for now since this is not relevant in Kubernetes case
-	//root["containerPortMappings"] = m.Spec.Sidecars[0].
+		// not filled for now since this is not relevant in Kubernetes case
+		//putStringIfNotEmpty(root, "containerPortMappings", m.Spec.Sidecars[0].)
+	}
 
 	if len(m.Spec.Inputs.Resources) > 0 {
 		keys := []string{}
@@ -342,9 +355,7 @@ func (m *StepData) GetResourceParameters(path, name string) map[string]interface
 	for _, param := range m.Spec.Inputs.Parameters {
 		for _, res := range param.ResourceRef {
 			if res.Name == name {
-				if val := piperenv.GetParameter(filepath.Join(path, name), res.Param); len(val) > 0 {
-					resourceParams[param.Name] = val
-				}
+				resourceParams[param.Name] = getParameterValue(path, res, param)
 			}
 		}
 	}
@@ -352,20 +363,88 @@ func (m *StepData) GetResourceParameters(path, name string) map[string]interface
 	return resourceParams
 }
 
-func envVarsAsStringSlice(envVars []EnvVar) []string {
-	e := []string{}
+func (container *Container) commonConfiguration(keyPrefix string, config *map[string]interface{}) {
+	putMapIfNotEmpty(*config, keyPrefix+"EnvVars", EnvVarsAsMap(container.EnvVars))
+	putStringIfNotEmpty(*config, keyPrefix+"Image", container.Image)
+	putStringIfNotEmpty(*config, keyPrefix+"Name", container.Name)
+	if container.ImagePullPolicy != "" {
+		(*config)[keyPrefix+"PullImage"] = container.ImagePullPolicy != "Never"
+	}
+	putStringIfNotEmpty(*config, keyPrefix+"Workspace", container.WorkingDir)
+	putSliceIfNotEmpty(*config, keyPrefix+"Options", OptionsAsStringSlice(container.Options))
+	//putSliceIfNotEmpty(*config, keyPrefix+"VolumeBind", volumeMountsAsStringSlice(container.VolumeMounts))
+
+}
+
+func getParameterValue(path string, res ResourceReference, param StepParameters) interface{} {
+	if val := piperenv.GetResourceParameter(path, res.Name, res.Param); len(val) > 0 {
+		if param.Type != "string" {
+			var unmarshalledValue interface{}
+			err := json.Unmarshal([]byte(val), &unmarshalledValue)
+			if err != nil {
+				log.Entry().Debugf("Failed to unmarshal: %v", val)
+			}
+			return unmarshalledValue
+		}
+		return val
+	}
+	return nil
+}
+
+// GetReference returns the ResourceReference of the given type
+func (m *StepParameters) GetReference(refType string) *ResourceReference {
+	for _, ref := range m.ResourceRef {
+		if refType == ref.Type {
+			return &ref
+		}
+	}
+	return nil
+}
+
+// HasReference checks whether StepData contains a parameter that has Reference with the given type
+func (m *StepData) HasReference(refType string) bool {
+	for _, param := range m.Spec.Inputs.Parameters {
+		if param.GetReference(refType) != nil {
+			return true
+		}
+	}
+	return false
+}
+
+// EnvVarsAsMap converts container EnvVars into a map as required by dockerExecute
+func EnvVarsAsMap(envVars []EnvVar) map[string]string {
+	e := map[string]string{}
 	for _, v := range envVars {
-		e = append(e, fmt.Sprintf("%v=%v", v.Name, v.Value))
+		e[v.Name] = v.Value
 	}
 	return e
 }
 
-func optionsAsStringSlice(options []Option) []string {
+// OptionsAsStringSlice converts container options into a string slice as required by dockerExecute
+func OptionsAsStringSlice(options []Option) []string {
 	e := []string{}
 	for _, v := range options {
 		e = append(e, fmt.Sprintf("%v %v", v.Name, v.Value))
 	}
 	return e
+}
+
+func putStringIfNotEmpty(config map[string]interface{}, key, value string) {
+	if value != "" {
+		config[key] = value
+	}
+}
+
+func putMapIfNotEmpty(config map[string]interface{}, key string, value map[string]string) {
+	if len(value) > 0 {
+		config[key] = value
+	}
+}
+
+func putSliceIfNotEmpty(config map[string]interface{}, key string, value []string) {
+	if len(value) > 0 {
+		config[key] = value
+	}
 }
 
 //ToDo: Enable this when the Volumes part is also implemented

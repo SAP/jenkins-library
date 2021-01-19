@@ -7,10 +7,11 @@ import (
 )
 
 func TestGctsCreateRepositoryCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := GctsCreateRepositoryCommand()
 
-	// only high level testing performed - details are tested in step generation procudure
+	// only high level testing performed - details are tested in step generation procedure
 	assert.Equal(t, "gctsCreateRepository", testCmd.Use, "command name incorrect")
 
 }

@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -9,24 +8,33 @@ import (
 )
 
 func mavenExecuteStaticCodeChecks(config mavenExecuteStaticCodeChecksOptions, telemetryData *telemetry.CustomData) {
-	c := command.Command{}
-	c.Stdout(log.Entry().Writer())
-	c.Stderr(log.Entry().Writer())
-	err := runMavenStaticCodeChecks(&config, telemetryData, &c)
+	err := runMavenStaticCodeChecks(&config, telemetryData, maven.NewUtilsBundle())
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runMavenStaticCodeChecks(config *mavenExecuteStaticCodeChecksOptions, telemetryData *telemetry.CustomData, command execRunner) error {
+func runMavenStaticCodeChecks(config *mavenExecuteStaticCodeChecksOptions, telemetryData *telemetry.CustomData, utils maven.Utils) error {
 	var defines []string
 	var goals []string
 
 	if !config.SpotBugs && !config.Pmd {
-		log.Entry().Fatal("Neither SpotBugs nor Pmd are configured. At least one of those tools have to be enabled")
+		log.Entry().Warnf("Neither SpotBugs nor Pmd are configured. Skipping step execution")
+		return nil
 	}
 
-	if testModulesExcludes := maven.GetTestModulesExcludes(); testModulesExcludes != nil {
+	if config.InstallArtifacts {
+		err := maven.InstallMavenArtifacts(&maven.EvaluateOptions{
+			M2Path:              config.M2Path,
+			ProjectSettingsFile: config.ProjectSettingsFile,
+			GlobalSettingsFile:  config.GlobalSettingsFile,
+		}, utils)
+		if err != nil {
+			return err
+		}
+	}
+
+	if testModulesExcludes := maven.GetTestModulesExcludes(utils); testModulesExcludes != nil {
 		defines = append(defines, testModulesExcludes...)
 	}
 	if config.MavenModulesExcludes != nil {
@@ -54,7 +62,7 @@ func runMavenStaticCodeChecks(config *mavenExecuteStaticCodeChecksOptions, telem
 		M2Path:                      config.M2Path,
 		LogSuccessfulMavenTransfers: config.LogSuccessfulMavenTransfers,
 	}
-	_, err := maven.Execute(&finalMavenOptions, command)
+	_, err := maven.Execute(&finalMavenOptions, utils)
 	return err
 }
 
@@ -72,7 +80,7 @@ func getSpotBugsMavenParameters(config *mavenExecuteStaticCodeChecksOptions) *ma
 
 	mavenOptions := maven.ExecuteOptions{
 		// check goal executes spotbugs goal first and fails the build if any bugs were found
-		Goals:   []string{"com.github.spotbugs:spotbugs-maven-plugin:3.1.12:check"},
+		Goals:   []string{"com.github.spotbugs:spotbugs-maven-plugin:4.1.4:check"},
 		Defines: defines,
 	}
 

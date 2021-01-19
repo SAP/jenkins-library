@@ -5,6 +5,7 @@ on:
     branches:
       - master
       - it/**
+  workflow_dispatch:
 
 jobs:
 
@@ -54,7 +55,7 @@ jobs:
           curl --location --request POST 'https://api.github.com/repos/SAP/jenkins-library/statuses/${{ steps.commitId.outputs.commitId }}' -H 'Content-Type: application/json' --data '{"state": "pending", "context": "Go / integration-tests", "target_url": "https://github.com/SAP/jenkins-library/actions/runs/${{ github.run_id }}"}' -H 'Authorization: token ${{secrets.INTEGRATION_TEST_VOTING_TOKEN}}'
       - uses: actions/setup-go@v1
         with:
-          go-version: '1.13.x'
+          go-version: '1.15.x'
       - name: build
         env:
           CGO_ENABLED: 0
@@ -63,7 +64,7 @@ jobs:
       - name: test
         env:
           PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
-        run: go test -tags=integration ./integration/...
+        run: go test -tags=integration -timeout 20m ./integration/...
       - name: update status
         if: success()
         run: |
