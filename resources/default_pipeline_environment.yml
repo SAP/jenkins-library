@@ -373,6 +373,8 @@ steps:
     install: true
   whitesourceExecuteScan:
     vulnerabilityReportFileName: 'piper_whitesource_vulnerability_report'
+    stashExcludes:
+      stashBack: '.pipeline/** whitesourceExecuteScan_*.* whitesource-reports/**'
   pipelineExecute:
     branch: 'master'
     path: 'Jenkinsfile'

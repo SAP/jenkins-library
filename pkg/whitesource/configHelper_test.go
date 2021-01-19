@@ -189,15 +189,32 @@ func TestAddGeneralDefaults(t *testing.T) {
 	t.Run("maven - settings", func(t *testing.T) {
 		testConfig := ConfigOptions{}
 		whitesourceConfig := ScanOptions{
-			BuildTool:           "maven",
-			ProjectSettingsFile: "project-settings.xml",
-			GlobalSettingsFile:  "global-settings.xml",
+			BuildTool:                  "maven",
+			ProjectSettingsFile:        "project-settings.xml",
+			GlobalSettingsFile:         "global-settings.xml",
+			BuildDescriptorExcludeList: []string{"unit-tests/pom.xml"},
 		}
 		testConfig.addGeneralDefaults(&whitesourceConfig)
 		assert.Equal(t, "maven.additionalArguments", testConfig[2].Name)
-		assert.Equal(t, "--settings project-settings.xml --global-settings global-settings.xml", testConfig[2].Value)
+		assert.Equal(t, "--settings project-settings.xml --global-settings global-settings.xml --projects !unit-tests", testConfig[2].Value)
 		assert.Equal(t, true, testConfig[2].Force)
 	})
+}
+
+func TestMvnProjectExcludes(t *testing.T) {
+	tt := []struct {
+		buildDescriptorExcludeList []string
+		expected                   []string
+	}{
+		{buildDescriptorExcludeList: []string{}, expected: []string{}},
+		{buildDescriptorExcludeList: []string{"unit-tests/package.json", "integration-tests/package.json"}, expected: []string{}},
+		{buildDescriptorExcludeList: []string{"unit-tests/pom.xml"}, expected: []string{"--projects", "!unit-tests"}},
+		{buildDescriptorExcludeList: []string{"unit-tests/pom.xml", "integration-tests/pom.xml"}, expected: []string{"--projects", "!unit-tests,!integration-tests"}},
+	}
+
+	for _, test := range tt {
+		assert.Equal(t, test.expected, mvnProjectExcludes(test.buildDescriptorExcludeList), test.buildDescriptorExcludeList)
+	}
 }
 
 func TestAddBuildToolDefaults(t *testing.T) {

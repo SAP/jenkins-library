@@ -3,6 +3,7 @@ package whitesource
 import (
 	"bytes"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -121,7 +122,7 @@ func (c *ConfigOptions) addGeneralDefaults(config *ScanOptions) {
 			mvnAdditionalArguments = append(mvnAdditionalArguments, "--global-settings", config.GlobalSettingsFile)
 		}
 
-		// ToDo: handle further maven options and pass in as maven.additionalArguments, e.g. modules to exclude: --projects !integration-tests
+		mvnAdditionalArguments = append(mvnAdditionalArguments, mvnProjectExcludes(config.BuildDescriptorExcludeList)...)
 
 		if len(mvnAdditionalArguments) > 0 {
 			cOptions = append(cOptions, ConfigOption{Name: "maven.additionalArguments", Value: strings.Join(mvnAdditionalArguments, " "), Force: true})
@@ -149,6 +150,21 @@ func (c *ConfigOptions) addGeneralDefaults(config *ScanOptions) {
 	for _, cOpt := range cOptions {
 		*c = append(*c, cOpt)
 	}
+}
+
+// handle modules to exclude based on buildDescriptorExcludeList returning e.g. --projects !integration-tests
+func mvnProjectExcludes(buildDescriptorExcludeList []string) []string {
+	projectExcludes := []string{}
+	for _, buildDescriptor := range buildDescriptorExcludeList {
+		if strings.Contains(buildDescriptor, "pom.xml") {
+			module, _ := filepath.Split(buildDescriptor)
+			projectExcludes = append(projectExcludes, fmt.Sprintf("!%v", strings.TrimSuffix(module, "/")))
+		}
+	}
+	if len(projectExcludes) > 0 {
+		return []string{"--projects", strings.Join(projectExcludes, ",")}
+	}
+	return []string{}
 }
 
 func (c *ConfigOptions) addBuildToolDefaults(buildTool string) error {

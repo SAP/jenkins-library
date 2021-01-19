@@ -461,8 +461,10 @@ spec:
       conditions:
         - conditionRef: strings-equal
           params:
-            - name: scanType
+            - name: buildTool
               value: dub
+            - name: buildTool
+              value: docker
     - image: devxci/mbtci:1.0.14
       workingDir: /home/mta
       env: [ ]
@@ -489,7 +491,7 @@ spec:
       conditions:
         - conditionRef: strings-equal
           params:
-            - name: scanType
+            - name: buildTool
               value: sbt
     - image: maven:3.5-jdk-8
       workingDir: /tmp

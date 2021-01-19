@@ -302,7 +302,7 @@ func TestDownloadJre(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "java", jre)
 		assert.Equal(t, "java", utilsMock.Calls[0].Exec)
-		assert.Equal(t, []string{"--version"}, utilsMock.Calls[0].Params)
+		assert.Equal(t, []string{"-version"}, utilsMock.Calls[0].Params)
 	})
 
 	t.Run("success - previously downloaded", func(t *testing.T) {
