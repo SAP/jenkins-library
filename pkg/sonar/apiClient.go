@@ -36,7 +36,7 @@ func NewBasicAuthClient(username, password, host string, client Sender) *Request
 }
 
 // SearchIssues Search for issues.<br>At most one of the following parameters can be provided at the same time: componentKeys, componentUuids, components, componentRootUuids, componentRoots.<br>Requires the 'Browse' permission on the specified project(s).
-func (s *Requester) SearchIssues(options *sonargo.IssuesSearchOption) (result *sonargo.IssuesSearchObject, response *http.Response, err error) {
+func (s *Requester) SearchIssues(options *IssuesSearchOption) (result *sonargo.IssuesSearchObject, response *http.Response, err error) {
 	sonarClient, err := sonargo.NewClient(s.Host, s.BasicAuth.Username, s.BasicAuth.Password)
 	// reuse request creation from sonargo
 	req, err := sonarClient.NewRequest("GET", "issues/search", options)
