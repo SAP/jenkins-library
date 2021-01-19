@@ -63,6 +63,8 @@ general:
   productiveBranch: 'master'
   whitesource:
     serviceUrl: 'https://saas.whitesourcesoftware.com/api'
+  dockerPullImage: true
+  sidecarPullImage: true
 
 #Steps Specific Configuration
 steps:
@@ -236,12 +238,8 @@ steps:
   debugReportArchive:
     shareConfidentialInformation: false
   dockerExecute:
-    dockerPullImage: true
-    sidecarPullImage: true
     stashContent: []
   dockerExecuteOnKubernetes:
-    dockerPullImage: true
-    sidecarPullImage: true
     stashContent: []
     stashIncludes:
       workspace: '**/*'
@@ -559,6 +557,7 @@ steps:
     deployIdLogPattern: '^.*"xs bg-deploy -i (.*) -a .*".*$'
     loginOpts: ''
     deployOpts: ''
+    dockerPullImage: false
     docker:
       dockerImage: ''
       dockerPullImage: false

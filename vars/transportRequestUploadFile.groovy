@@ -98,7 +98,7 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
          * By default we use a standard node docker iamge and prepare some fiori related packages
          * performing the deployment. The additional dependencies can be provided here. In case you
          * use an already prepared docker image which contains the required dependencies, the empty
-         * list can be provide here. Caused hereby installing additional dependencies will be skipped.
+         * list can be provided here. Caused hereby installing additional dependencies will be skipped.
          *
          * @parentConfigKey changeManagement
          */
