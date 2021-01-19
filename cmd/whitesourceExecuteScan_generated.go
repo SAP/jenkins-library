@@ -18,7 +18,7 @@ import (
 type whitesourceExecuteScanOptions struct {
 	AgentDownloadURL                     string   `json:"agentDownloadUrl,omitempty"`
 	AgentFileName                        string   `json:"agentFileName,omitempty"`
-	AgentParameters                      string   `json:"agentParameters,omitempty"`
+	AgentParameters                      []string `json:"agentParameters,omitempty"`
 	AgentURL                             string   `json:"agentUrl,omitempty"`
 	AggregateVersionWideReport           bool     `json:"aggregateVersionWideReport,omitempty"`
 	BuildDescriptorExcludeList           []string `json:"buildDescriptorExcludeList,omitempty"`
@@ -160,13 +160,13 @@ The step uses the so-called WhiteSource Unified Agent. For details please refer 
 func addWhitesourceExecuteScanFlags(cmd *cobra.Command, stepConfig *whitesourceExecuteScanOptions) {
 	cmd.Flags().StringVar(&stepConfig.AgentDownloadURL, "agentDownloadUrl", `https://github.com/whitesource/unified-agent-distribution/releases/latest/download/wss-unified-agent.jar`, "URL used to download the latest version of the WhiteSource Unified Agent.")
 	cmd.Flags().StringVar(&stepConfig.AgentFileName, "agentFileName", `wss-unified-agent.jar`, "Locally used name for the Unified Agent jar file after download.")
-	cmd.Flags().StringVar(&stepConfig.AgentParameters, "agentParameters", os.Getenv("PIPER_agentParameters"), "[NOT IMPLEMENTED] Additional parameters passed to the Unified Agent command line.")
+	cmd.Flags().StringSliceVar(&stepConfig.AgentParameters, "agentParameters", []string{}, "[NOT IMPLEMENTED] List of additional parameters passed to the Unified Agent command line.")
 	cmd.Flags().StringVar(&stepConfig.AgentURL, "agentUrl", `https://saas.whitesourcesoftware.com/agent`, "URL to the WhiteSource agent endpoint.")
 	cmd.Flags().BoolVar(&stepConfig.AggregateVersionWideReport, "aggregateVersionWideReport", false, "This does not run a scan, instead just generated a report for all projects with projectVersion = config.ProductVersion")
 	cmd.Flags().StringSliceVar(&stepConfig.BuildDescriptorExcludeList, "buildDescriptorExcludeList", []string{`unit-tests/pom.xml`, `integration-tests/pom.xml`}, "List of build descriptors and therefore modules to exclude from the scan and assessment activities.")
 	cmd.Flags().StringVar(&stepConfig.BuildDescriptorFile, "buildDescriptorFile", os.Getenv("PIPER_buildDescriptorFile"), "Explicit path to the build descriptor file.")
 	cmd.Flags().StringVar(&stepConfig.BuildTool, "buildTool", os.Getenv("PIPER_buildTool"), "Defines the tool which is used for building the artifact.")
-	cmd.Flags().StringVar(&stepConfig.ConfigFilePath, "configFilePath", `./wss-generated-file.config`, "Explicit path to the WhiteSource Unified Agent configuration file.")
+	cmd.Flags().StringVar(&stepConfig.ConfigFilePath, "configFilePath", `./wss-unified-agent.config`, "Explicit path to the WhiteSource Unified Agent configuration file.")
 	cmd.Flags().BoolVar(&stepConfig.CreateProductFromPipeline, "createProductFromPipeline", true, "Whether to create the related WhiteSource product on the fly based on the supplied pipeline configuration.")
 	cmd.Flags().StringVar(&stepConfig.CvssSeverityLimit, "cvssSeverityLimit", `-1`, "Limit of tolerable CVSS v3 score upon assessment and in consequence fails the build, defaults to  `-1`.")
 	cmd.Flags().StringSliceVar(&stepConfig.EmailAddressesOfInitialProductAdmins, "emailAddressesOfInitialProductAdmins", []string{}, "The list of email addresses to assign as product admins for newly created WhiteSource products.")
@@ -237,7 +237,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Name:        "agentParameters",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
+						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},

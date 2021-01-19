@@ -47,8 +47,8 @@ spec:
           - STEPS
         default: "wss-unified-agent.jar"
       - name: agentParameters
-        type: string
-        description: "[NOT IMPLEMENTED] Additional parameters passed to the Unified Agent command line."
+        type: "[]string"
+        description: "[NOT IMPLEMENTED] List of additional parameters passed to the Unified Agent command line."
         scope:
           - PARAMETERS
           - STAGES
@@ -106,7 +106,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: ./wss-generated-file.config
+        default: ./wss-unified-agent.config
       - name: createProductFromPipeline
         type: bool
         description: "Whether to create the related WhiteSource product on the fly based on the supplied pipeline
