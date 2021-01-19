@@ -125,7 +125,7 @@ func (c *ConfigOptions) addGeneralDefaults(config *ScanOptions, utils Utils) {
 			}
 		*/
 
-		mvnAdditionalArguments = append(mvnAdditionalArguments, mvnProjectExcludes(config.BuildDescriptorExcludeList)...)
+		mvnAdditionalArguments = append(mvnAdditionalArguments, mvnProjectExcludes(config.BuildDescriptorExcludeList, utils)...)
 
 		if len(mvnAdditionalArguments) > 0 {
 			cOptions = append(cOptions, ConfigOption{Name: "maven.additionalArguments", Value: strings.Join(mvnAdditionalArguments, " "), Force: true})
@@ -156,10 +156,11 @@ func (c *ConfigOptions) addGeneralDefaults(config *ScanOptions, utils Utils) {
 }
 
 // handle modules to exclude based on buildDescriptorExcludeList returning e.g. --projects !integration-tests
-func mvnProjectExcludes(buildDescriptorExcludeList []string) []string {
+func mvnProjectExcludes(buildDescriptorExcludeList []string, utils Utils) []string {
 	projectExcludes := []string{}
 	for _, buildDescriptor := range buildDescriptorExcludeList {
-		if strings.Contains(buildDescriptor, "pom.xml") {
+		exists, _ := utils.FileExists(buildDescriptor)
+		if strings.Contains(buildDescriptor, "pom.xml") && exists {
 			module, _ := filepath.Split(buildDescriptor)
 			projectExcludes = append(projectExcludes, fmt.Sprintf("!%v", strings.TrimSuffix(module, "/")))
 		}

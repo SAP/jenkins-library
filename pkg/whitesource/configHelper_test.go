@@ -196,14 +196,19 @@ func TestAddGeneralDefaults(t *testing.T) {
 			GlobalSettingsFile:         "global-settings.xml",
 			BuildDescriptorExcludeList: []string{"unit-tests/pom.xml"},
 		}
+		utilsMock.AddFile("unit-tests/pom.xml", []byte("dummy"))
 		testConfig.addGeneralDefaults(&whitesourceConfig, utilsMock)
 		assert.Equal(t, "maven.additionalArguments", testConfig[2].Name)
-		assert.Equal(t, "--settings project-settings.xml --global-settings global-settings.xml --projects !unit-tests", testConfig[2].Value)
+		assert.Equal(t, "--global-settings global-settings.xml --settings project-settings.xml --projects !unit-tests", testConfig[2].Value)
 		assert.Equal(t, true, testConfig[2].Force)
 	})
 }
 
 func TestMvnProjectExcludes(t *testing.T) {
+	utilsMock := NewScanUtilsMock()
+	utilsMock.AddFile("unit-tests/package.json", []byte("dummy"))
+	utilsMock.AddFile("unit-tests/pom.xml", []byte("dummy"))
+	utilsMock.AddFile("integration-tests/pom.xml", []byte("dummy"))
 	tt := []struct {
 		buildDescriptorExcludeList []string
 		expected                   []string
@@ -215,7 +220,7 @@ func TestMvnProjectExcludes(t *testing.T) {
 	}
 
 	for _, test := range tt {
-		assert.Equal(t, test.expected, mvnProjectExcludes(test.buildDescriptorExcludeList), test.buildDescriptorExcludeList)
+		assert.Equal(t, test.expected, mvnProjectExcludes(test.buildDescriptorExcludeList, utilsMock), test.buildDescriptorExcludeList)
 	}
 }
 
