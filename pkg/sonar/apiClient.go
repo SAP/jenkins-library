@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	sonargo "github.com/magicsong/sonargo/sonar"
-	"github.com/prometheus/common/log"
 )
 
 // Basic Authentication
@@ -53,7 +52,6 @@ func (s *Requester) SearchIssues(options *sonargo.IssuesSearchOption) (result *s
 	// https://github.com/magicsong/sonargo/blob/103eda7abc20bd192a064b6eb94ba26329e339f1/sonar/sonarqube.go#L55
 	req.URL.Opaque = ""
 	req.URL.Path = sonarClient.BaseURL().Path + "issues/search"
-	log.Warnf("REQUEST: %v", req)
 	// use custom HTTP client to send request
 	response, err = s.Client.Send(req)
 	if err != nil {

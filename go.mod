@@ -49,7 +49,6 @@ require (
 	github.com/pierrec/lz4 v2.5.2+incompatible // indirect
 	github.com/piper-validation/fortify-client-go v0.0.0-20200206215926-532b5b150d22
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/common v0.4.1
 	github.com/sirupsen/logrus v1.7.0
 	github.com/smartystreets/assertions v1.0.0 // indirect
 	github.com/spf13/cobra v1.0.0
