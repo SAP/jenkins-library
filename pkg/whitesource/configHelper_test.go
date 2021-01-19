@@ -104,6 +104,8 @@ func TestUpdateConfig(t *testing.T) {
 func TestAddGeneralDefaults(t *testing.T) {
 	t.Parallel()
 
+	utilsMock := NewScanUtilsMock()
+
 	t.Run("default", func(t *testing.T) {
 		testConfig := ConfigOptions{}
 		whitesourceConfig := ScanOptions{
@@ -114,7 +116,7 @@ func TestAddGeneralDefaults(t *testing.T) {
 			ProjectName:    "testProject",
 			UserToken:      "testuserKey",
 		}
-		testConfig.addGeneralDefaults(&whitesourceConfig)
+		testConfig.addGeneralDefaults(&whitesourceConfig, utilsMock)
 		assert.Equal(t, "checkPolicies", testConfig[0].Name)
 		assert.Equal(t, true, testConfig[0].Value)
 		assert.Equal(t, "forceCheckAllDependencies", testConfig[1].Name)
@@ -139,7 +141,7 @@ func TestAddGeneralDefaults(t *testing.T) {
 			ProjectName:    "testProject",
 			UserToken:      "testuserKey",
 		}
-		testConfig.addGeneralDefaults(&whitesourceConfig)
+		testConfig.addGeneralDefaults(&whitesourceConfig, utilsMock)
 		assert.Equal(t, "checkPolicies", testConfig[0].Name)
 		assert.Equal(t, false, testConfig[0].Value)
 		assert.Equal(t, "forceCheckAllDependencies", testConfig[1].Name)
@@ -151,7 +153,7 @@ func TestAddGeneralDefaults(t *testing.T) {
 		whitesourceConfig := ScanOptions{
 			Verbose: true,
 		}
-		testConfig.addGeneralDefaults(&whitesourceConfig)
+		testConfig.addGeneralDefaults(&whitesourceConfig, utilsMock)
 		assert.Equal(t, "log.level", testConfig[2].Name)
 		assert.Equal(t, "debug", testConfig[2].Value)
 		assert.Equal(t, "log.files.level", testConfig[3].Name)
@@ -164,7 +166,7 @@ func TestAddGeneralDefaults(t *testing.T) {
 			Excludes: []string{"**/excludes1", "**/excludes2"},
 			Includes: []string{"**/includes1", "**/includes2"},
 		}
-		testConfig.addGeneralDefaults(&whitesourceConfig)
+		testConfig.addGeneralDefaults(&whitesourceConfig, utilsMock)
 		assert.Equal(t, "excludes", testConfig[2].Name)
 		assert.Equal(t, "**/excludes1 **/excludes2", testConfig[2].Value)
 		assert.Equal(t, true, testConfig[2].Force)
@@ -179,7 +181,7 @@ func TestAddGeneralDefaults(t *testing.T) {
 			BuildTool: "maven",
 			M2Path:    "test/.m2",
 		}
-		testConfig.addGeneralDefaults(&whitesourceConfig)
+		testConfig.addGeneralDefaults(&whitesourceConfig, utilsMock)
 		assert.Equal(t, "maven.m2RepositoryPath", testConfig[2].Name)
 		assert.Equal(t, "test/.m2", testConfig[2].Value)
 		assert.Equal(t, true, testConfig[2].Force)
@@ -194,7 +196,7 @@ func TestAddGeneralDefaults(t *testing.T) {
 			GlobalSettingsFile:         "global-settings.xml",
 			BuildDescriptorExcludeList: []string{"unit-tests/pom.xml"},
 		}
-		testConfig.addGeneralDefaults(&whitesourceConfig)
+		testConfig.addGeneralDefaults(&whitesourceConfig, utilsMock)
 		assert.Equal(t, "maven.additionalArguments", testConfig[2].Name)
 		assert.Equal(t, "--settings project-settings.xml --global-settings global-settings.xml --projects !unit-tests", testConfig[2].Value)
 		assert.Equal(t, true, testConfig[2].Force)

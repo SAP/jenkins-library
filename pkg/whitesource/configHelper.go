@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/magiconair/properties"
 	"github.com/pkg/errors"
 )
@@ -37,7 +38,7 @@ func (s *ScanOptions) RewriteUAConfigurationFile(utils Utils) (string, error) {
 	}
 
 	cOptions := ConfigOptions{}
-	cOptions.addGeneralDefaults(s)
+	cOptions.addGeneralDefaults(s, utils)
 	cOptions.addBuildToolDefaults(s.BuildTool)
 
 	newConfigMap := cOptions.updateConfig(&uaConfigMap)
@@ -79,7 +80,7 @@ func (c *ConfigOptions) updateConfig(originalConfig *map[string]string) map[stri
 	return newConfig
 }
 
-func (c *ConfigOptions) addGeneralDefaults(config *ScanOptions) {
+func (c *ConfigOptions) addGeneralDefaults(config *ScanOptions, utils Utils) {
 	cOptions := ConfigOptions{}
 	if strings.HasPrefix(config.ProductName, "DIST - ") {
 		cOptions = append(cOptions, []ConfigOption{
@@ -113,14 +114,16 @@ func (c *ConfigOptions) addGeneralDefaults(config *ScanOptions) {
 			cOptions = append(cOptions, ConfigOption{Name: "maven.m2RepositoryPath", Value: config.M2Path, Force: true})
 		}
 
-		mvnAdditionalArguments := []string{}
-		if len(config.ProjectSettingsFile) > 0 {
-			mvnAdditionalArguments = append(mvnAdditionalArguments, "--settings", config.ProjectSettingsFile)
-		}
+		mvnAdditionalArguments, _ := maven.DownloadAndGetMavenParameters(config.GlobalSettingsFile, config.ProjectSettingsFile, utils)
+		/*
+			if len(config.ProjectSettingsFile) > 0 {
+				mvnAdditionalArguments = append(mvnAdditionalArguments, "--settings", config.ProjectSettingsFile)
+			}
 
-		if len(config.GlobalSettingsFile) > 0 {
-			mvnAdditionalArguments = append(mvnAdditionalArguments, "--global-settings", config.GlobalSettingsFile)
-		}
+			if len(config.GlobalSettingsFile) > 0 {
+				mvnAdditionalArguments = append(mvnAdditionalArguments, "--global-settings", config.GlobalSettingsFile)
+			}
+		*/
 
 		mvnAdditionalArguments = append(mvnAdditionalArguments, mvnProjectExcludes(config.BuildDescriptorExcludeList)...)
 
