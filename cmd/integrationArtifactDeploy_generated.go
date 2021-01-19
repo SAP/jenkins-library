@@ -102,8 +102,9 @@ func addIntegrationArtifactDeployFlags(cmd *cobra.Command, stepConfig *integrati
 func integrationArtifactDeployMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "integrationArtifactDeploy",
-			Aliases: []config.Alias{},
+			Name:        "integrationArtifactDeploy",
+			Aliases:     []config.Alias{},
+			Description: "Deploy a CPI integration flow",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
