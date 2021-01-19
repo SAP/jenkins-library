@@ -18,6 +18,7 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	"encoding/base64"
+
 	"github.com/sirupsen/logrus"
 )
 
@@ -325,10 +326,18 @@ func TestMaxRetries(t *testing.T) {
 	testCases := []struct {
 		client       Client
 		countedCalls int
+		method       string
+		responseCode int
+		errorText    string
 	}{
-		{client: Client{maxRetries: 0}, countedCalls: 1},
-		{client: Client{maxRetries: 2}, countedCalls: 3},
-		{client: Client{maxRetries: 3}, countedCalls: 4},
+		{client: Client{maxRetries: 0}, countedCalls: 1, method: http.MethodGet, responseCode: 500, errorText: "Internal Server Error"},
+		{client: Client{maxRetries: 2}, countedCalls: 3, method: http.MethodGet, responseCode: 500, errorText: "Internal Server Error"},
+		{client: Client{maxRetries: 3}, countedCalls: 4, method: http.MethodPost, responseCode: 503, errorText: "Service Unavailable"},
+		{client: Client{maxRetries: 3}, countedCalls: 4, method: http.MethodPut, responseCode: 506, errorText: "Variant Also Negotiates"},
+		{client: Client{maxRetries: 3}, countedCalls: 4, method: http.MethodHead, responseCode: 502, errorText: "Bad Gateway"},
+		{client: Client{maxRetries: 3}, countedCalls: 1, method: http.MethodHead, responseCode: 404, errorText: "Not Found"},
+		{client: Client{maxRetries: 3}, countedCalls: 1, method: http.MethodHead, responseCode: 401, errorText: "Authentication Error"},
+		{client: Client{maxRetries: 3}, countedCalls: 1, method: http.MethodHead, responseCode: 403, errorText: "Authorization Error"},
 	}
 
 	for _, testCase := range testCases {
@@ -336,14 +345,14 @@ func TestMaxRetries(t *testing.T) {
 		count := 0
 		svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			count++
-			w.WriteHeader(500)
+			w.WriteHeader(testCase.responseCode)
 		}))
 		defer svr.Close()
 		// test
-		_, err := testCase.client.SendRequest(http.MethodGet, svr.URL, &bytes.Buffer{}, nil, nil)
+		_, err := testCase.client.SendRequest(testCase.method, svr.URL, &bytes.Buffer{}, nil, nil)
 		// assert
-		assert.Error(t, err)
-		assert.Equal(t, testCase.countedCalls, count)
+		assert.Error(t, err, fmt.Sprintf("%v: %v", testCase.errorText, "Expected error but did not detect one"))
+		assert.Equal(t, testCase.countedCalls, count, fmt.Sprintf("%v: %v", testCase.errorText, "Number of invocations mismatch"))
 	}
 }
 
