@@ -178,27 +178,27 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 	if err != nil {
 		log.Entry().Warn(err)
 	}
-	log.Entry().Infof("Number of Blocker Issues: ", blocker)
+	log.Entry().Infof("Number of Blocker Issues: %v", blocker)
 	critical, err := issues.GetNumberOfCriticalIssues()
 	if err != nil {
 		log.Entry().Warn(err)
 	}
-	log.Entry().Infof("Number of Critical Issues: ", critical)
+	log.Entry().Infof("Number of Critical Issues: %v", critical)
 	major, err := issues.GetNumberOfMajorIssues()
 	if err != nil {
 		log.Entry().Warn(err)
 	}
-	log.Entry().Infof("Number of Major Issues: ", major)
+	log.Entry().Infof("Number of Major Issues: %v", major)
 	minor, err := issues.GetNumberOfMinorIssues()
 	if err != nil {
 		log.Entry().Warn(err)
 	}
-	log.Entry().Infof("Number of Minor Issues: ", minor)
+	log.Entry().Infof("Number of Minor Issues: %v", minor)
 	info, err := issues.GetNumberOfInfoIssues()
 	if err != nil {
 		log.Entry().Warn(err)
 	}
-	log.Entry().Infof("Number of Info Issues: ", info)
+	log.Entry().Infof("Number of Info Issues: %v", info)
 	// influx.sonarqube_data.fields.critical_issues, err = issues.GetNumberOfCriticalIssues()
 	// if err != nil {
 	// 	log.Entry().Warn(err)
