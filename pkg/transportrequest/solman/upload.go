@@ -7,10 +7,14 @@ import (
 	"strings"
 )
 
+// FileSystem interface collecting everything which is file system
+// related and needed in the context of a SOLMAN upload.
 type FileSystem interface {
 	FileExists(path string) (bool, error)
 }
 
+// Exec interface collecting everything which is execution related
+// and needed in the context of a SOLMAN upload.
 type Exec interface {
 	command.ExecRunner
 	GetExitCode() int
@@ -26,42 +30,60 @@ type Connection struct {
 // UploadAction Collects all the properties we need for the deployment
 type UploadAction struct {
 	Connection         Connection
-	ChangeDocumentId   string
-	TransportRequestId string
+	ChangeDocumentID   string
+	TransportRequestID string
 	ApplicationID      string
 	File               string
 	CMOpts             []string
 }
 
+// Action collects everything which is needed to perform a SOLMAN upload
 type Action interface {
 	WithConnection(Connection)
-	WithChangeDocumentId(string)
-	WithTransportRequestId(string)
+	WithChangeDocumentID(string)
+	WithTransportRequestID(string)
 	WithApplicationID(string)
 	WithFile(string)
 	WithCMOpts([]string)
 	Perform(fs FileSystem, command Exec) error
 }
 
+// WithConnection specifies all the connection details which
+// are required in order to connect so SOLMAN
 func (a *UploadAction) WithConnection(c Connection) {
 	a.Connection = c
 }
-func (a *UploadAction) WithChangeDocumentId(id string) {
-	a.ChangeDocumentId = id
+
+// WithChangeDocumentID specifies the change document which
+// receives the executable.
+func (a *UploadAction) WithChangeDocumentID(id string) {
+	a.ChangeDocumentID = id
 }
-func (a *UploadAction) WithTransportRequestId(id string) {
-	a.TransportRequestId = id
+
+// WithTransportRequestID specifies the transport request which
+// receives the executable.
+func (a *UploadAction) WithTransportRequestID(id string) {
+	a.TransportRequestID = id
 }
+
+// WithApplicationID specifies the application ID.
 func (a *UploadAction) WithApplicationID(id string) {
 	a.ApplicationID = id
 }
+
+// WithFile specifies the executable which should be uploaded into
+// a transport on SOLMAN
 func (a *UploadAction) WithFile(f string) {
 	a.File = f
 }
+
+// WithCMOpts sets additional options for calling the
+// cm client tool. E.g. -D options. Useful for troubleshooting
 func (a *UploadAction) WithCMOpts(opts []string) {
 	a.CMOpts = opts
 }
 
+// Perform performs the SOLMAN upload
 func (a *UploadAction) Perform(fs FileSystem, command Exec) error {
 
 	missingParameters, err := FindEmptyStrings(*a)
@@ -78,7 +100,7 @@ func (a *UploadAction) Perform(fs FileSystem, command Exec) error {
 		return fmt.Errorf("Cannot upload file: %w", err)
 	}
 	if !exists {
-		return fmt.Errorf("File '%s' does not exist.", a.File)
+		return fmt.Errorf("file '%s' does not exist", a.File)
 	}
 
 	command.SetEnv(a.CMOpts)
@@ -89,8 +111,8 @@ func (a *UploadAction) Perform(fs FileSystem, command Exec) error {
 		"--password", a.Connection.Password,
 		"--backend-type", "SOLMAN",
 		"upload-file-to-transport",
-		"-cID", a.ChangeDocumentId,
-		"-tID", a.TransportRequestId,
+		"-cID", a.ChangeDocumentID,
+		"-tID", a.TransportRequestID,
 		a.ApplicationID, a.File)
 
 	if err != nil {

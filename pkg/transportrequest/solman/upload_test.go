@@ -18,8 +18,8 @@ func TestSolmanUpload(t *testing.T) {
 			User:     "me",
 			Password: "******",
 		},
-		ChangeDocumentId:   "123456",
-		TransportRequestId: "000K11111111",
+		ChangeDocumentID:   "123456",
+		TransportRequestID: "000K11111111",
 		ApplicationID:      "MY_APP",
 		File:               "myDeployable.xxx",
 		CMOpts:             []string{"-Dmyprop=abc"},
@@ -33,19 +33,19 @@ func TestSolmanUpload(t *testing.T) {
 
 		err := uploadActionFileMissing.Perform(f, e)
 
-		assert.EqualError(t, err, "File 'myMissingDeployable.xxx' does not exist.")
+		assert.EqualError(t, err, "file 'myMissingDeployable.xxx' does not exist")
 	})
 
 	t.Run("Some deploy parameters are missing", func(t *testing.T) {
 
 		uploadActionMissingParameters := defaultUploadAction
 		uploadActionMissingParameters.Connection.Endpoint = ""
-		uploadActionMissingParameters.ChangeDocumentId = ""
+		uploadActionMissingParameters.ChangeDocumentID = ""
 		e := &mock.ExecMockRunner{}
 
 		err := uploadActionMissingParameters.Perform(f, e)
 
-		assert.EqualError(t, err, "Cannot perform artifact upload. The following parameters are not available [Connection.Endpoint ChangeDocumentId]")
+		assert.EqualError(t, err, "Cannot perform artifact upload. The following parameters are not available [Connection.Endpoint ChangeDocumentID]")
 	})
 
 	t.Run("Straight forward", func(t *testing.T) {
@@ -106,8 +106,8 @@ func TestFindEmptyStringsInConfig(t *testing.T) {
 			User:     "",
 			Password: "<set>",
 		},
-		ChangeDocumentId:   "",
-		TransportRequestId: "<set>",
+		ChangeDocumentID:   "",
+		TransportRequestID: "<set>",
 		ApplicationID:      "<set>",
 		File:               "<set>",
 		CMOpts:             []string{},
@@ -115,6 +115,6 @@ func TestFindEmptyStringsInConfig(t *testing.T) {
 	emptyStrings, err := FindEmptyStrings(uploadAction)
 	if assert.NoError(t, err) {
 		assert.Len(t, emptyStrings, 2)
-		assert.Subset(t, emptyStrings, []string{"Connection.User", "ChangeDocumentId"})
+		assert.Subset(t, emptyStrings, []string{"Connection.User", "ChangeDocumentID"})
 	}
 }
