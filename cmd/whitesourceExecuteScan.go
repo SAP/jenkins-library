@@ -211,7 +211,7 @@ func checkAndReportScanResults(config *ScanOptions, scan *ws.Scan, utils whiteso
 		if err != nil {
 			return err
 		}
-		piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", nil, paths)
+		piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", paths, nil)
 	}
 	if config.SecurityVulnerabilities {
 		if err := checkSecurityViolations(config, scan, sys); err != nil {
