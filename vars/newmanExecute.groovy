@@ -1,3 +1,4 @@
+import com.sap.piper.ConfigurationHelper
 import groovy.transform.Field
 
 @Field String STEP_NAME = getClass().getName()
