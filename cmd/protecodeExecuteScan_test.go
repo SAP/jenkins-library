@@ -404,6 +404,16 @@ func TestGetTarName(t *testing.T) {
 			"",
 			"abc.tar",
 		},
+		"with sha ": {
+			"ppiper/cf-cli@sha256:c25dbacb9ab6e912afe0fe926d8f9d949c60adfe55d16778bde5941e6c37be11",
+			"",
+			"ppiper_cf-cli_c25dbacb9ab6e912afe0fe926d8f9d949c60adfe55d16778bde5941e6c37be11.tar",
+		},
+		"with sha+version ": {
+			"ppiper/cf-cli@sha256:c25dbacb9ab6e912afe0fe926d8f9d949c60adfe55d16778bde5941e6c37be11",
+			"verZion",
+			"ppiper_cf-cli_c25dbacb9ab6e912afe0fe926d8f9d949c60adfe55d16778bde5941e6c37be11_verZion.tar",
+		},
 	}
 
 	for name, c := range cases {
