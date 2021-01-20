@@ -15,7 +15,7 @@ import groovy.transform.Field
 ]
 
 void call(Map parameters = [:]) {
-
+    String stageName = parameters.stageName ?: env.STAGE_NAME
     Map config = ConfigurationHelper.newInstance(this)
         .loadStepDefaults([:], stageName)
         .mixinGeneralConfig(script.commonPipelineEnvironment, CONFIG_KEYS)
