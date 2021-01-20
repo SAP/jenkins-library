@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -99,16 +100,14 @@ func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) er
 			//	CloudFoundry cfUtils = new CloudFoundry(script);
 			for _, appName := range config.CfAppsWithSecrets {
 				var clientID, clientSecret string
-				// def xsuaaCredentials = cfUtils.getXsuaaCredentials(config.cloudFoundry.apiEndpoint,
-				// config.cloudFoundry.org,
-				// config.cloudFoundry.space,
-				// config.cloudFoundry.credentialsId,
-				// appName,
-				// config.verbose ? true : false ) //to avoid config.verbose as "null" if undefined in yaml and since function parameter boolean
-
-				commandSecrets += " --env-var " + appName + "_clientid=" + clientID + " --env-var " + appName + "_clientsecret=" + clientSecret
-				// TODO: How to do echo in golang?
-				// echo "Exposing client id and secret for ${appName}: as ${appName}_clientid and ${appName}_clientsecret to newman"
+				clientID = os.Getenv("PIPER_NEWMAN_USER_" + appName)
+				clientSecret = os.Getenv("PIPER_NEWMAN_PASSWORD_" + appName)
+				if clientID != "" && clientSecret != "" {
+					commandSecrets += " --env-var " + appName + "_clientid=" + clientID + " --env-var " + appName + "_clientsecret=" + clientSecret
+					log.Entry().Infof("secrets found for app %v and forwarded to newman as --env-var parameter", appName)
+				} else {
+					log.Entry().Errorf("cannot fetch secrets from environment variables for app %v", appName)
+				}
 			}
 		}
 
@@ -127,9 +126,8 @@ func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) er
 		// 	}
 		// }
 
+		runCommand = runCommand + commandSecrets
 		runCommandTokens := strings.Split(runCommand, " ")
-		//utils.SetEnv([]string{"NPM_CONFIG_PREFIX=/home/node/.npm-global",
-		//	"PATH=$PATH:.\\node_modules\\.bin"})
 		err = utils.RunExecutable(runCommandTokens[0], runCommandTokens[1:]...)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorService)

@@ -7,12 +7,11 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String METADATA_FILE = 'metadata/newmanExecute.yaml'
 
 @Field Set CONFIG_KEYS = [
-    "dockerImage",
-    "newmanCollection",
-    "newmanEnvironment",
-    "newmanGlobals",
-    "newmanInstallCommand",
-    "newmanRunCommand",
+    /**
+     * Define name array of cloud foundry apps deployed for which secrets (clientid and clientsecret) will be appended
+     * to the newman command that overrides the environment json entries
+     * (--env-var <appName_clientid>=${clientid} & --env-var <appName_clientsecret>=${clientsecret})
+     */
     "cfAppsWithSecrets",
 ]
 
@@ -26,10 +25,7 @@ void call(Map parameters = [:]) {
         .mixinStageConfig(script.commonPipelineEnvironment, stageName, CONFIG_KEYS)
         .use()
 
-    List credentials = [
-        //[type: 'usernamePassword', id: 'seleniumHubCredentialsId', env: ['PIPER_SELENIUM_HUB_USER', 'PIPER_SELENIUM_HUB_PASSWORD']],
-    ]
-
+    List credentials = []
     if (config.cfAppsWithSecrets) {
         config.cfAppsWithSecrets.each {
             echo "[INFO]${STEP_NAME}] Preparing credential for being used by piper-go. key: ${it}, exposed as environment variable PIPER_NEWMAN_USER_${it} and PIPER_NEWMAN_PASSWORD_${it}"
