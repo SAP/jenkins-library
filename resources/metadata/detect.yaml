@@ -90,8 +90,7 @@ spec:
         aliases:
           - name: detect/dependencyPath
         type: "string"
-        default:
-          - "."
+        default: "."
         scope:
           - PARAMETERS
           - STAGES
