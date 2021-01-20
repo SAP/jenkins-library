@@ -97,7 +97,7 @@ func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) er
 		commandSecrets := ""
 		hasSecrets := len(config.CfAppsWithSecrets) > 0
 		if hasSecrets {
-			//	CloudFoundry cfUtils = new CloudFoundry(script);
+			fmt.Printf("Envs: %v", os.Environ())
 			for _, appName := range config.CfAppsWithSecrets {
 				var clientID, clientSecret string
 				clientID = os.Getenv("PIPER_NEWMAN_USER_" + appName)
