@@ -197,5 +197,6 @@ func resolveTemplate(config *newmanExecuteOptions, collection string) (string, e
 
 func defineCollectionDisplayName(collection string) string {
 	replacedSeparators := strings.Replace(collection, string(filepath.Separator), "_", -1)
-	return strings.Split(replacedSeparators, ".")[0]
+	//return strings.Split(replacedSeparators, ".")[0]
+	return strings.Replace(replacedSeparators, ".postman_collection.json", "", -1)
 }
