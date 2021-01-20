@@ -295,7 +295,8 @@ class XsDeployTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.configuration = [steps:
             [xsDeploy:
                 [
-                    dockerImage: 'xs1'
+                    dockerImage: 'xs1',
+                    dockerPullImage: true
                 ]
             ]
         ]
@@ -307,6 +308,7 @@ class XsDeployTest extends BasePiperTest {
 
         // 'xs' provided on the context config is superseded by the value set in the project
         assertThat(dockerRule.dockerParams.dockerImage, equalTo('xs1'))
+        assertThat(dockerRule.dockerParams.dockerPullImage, equalTo(true))
     }
 
     @Test
@@ -317,7 +319,8 @@ class XsDeployTest extends BasePiperTest {
             [xsDeploy:
                 [
                     docker: [
-                        dockerImage: 'xs1'
+                        dockerImage: 'xs1',
+                        dockerPullImage: true
                     ]
                 ]
             ]
@@ -330,6 +333,7 @@ class XsDeployTest extends BasePiperTest {
 
         // 'xs' provided on the context config is superseded by the value set in the project
         assertThat(dockerRule.dockerParams.dockerImage, equalTo('xs1'))
+        assertThat(dockerRule.dockerParams.dockerPullImage, equalTo(true))
     }
 
     @Test
