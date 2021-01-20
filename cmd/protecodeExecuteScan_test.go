@@ -399,20 +399,20 @@ func TestGetTarName(t *testing.T) {
 			"3.20.20-20200131085038+eeb7c1033339bfd404d21ec5e7dc05c80e9e985e",
 			"abc_3.tar",
 		},
-		"without version ": {
+		"without version": {
 			"abc",
 			"",
 			"abc.tar",
 		},
-		"with sha ": {
+		"with sha": {
 			"ppiper/cf-cli@sha256:c25dbacb9ab6e912afe0fe926d8f9d949c60adfe55d16778bde5941e6c37be11",
 			"",
 			"ppiper_cf-cli_c25dbacb9ab6e912afe0fe926d8f9d949c60adfe55d16778bde5941e6c37be11.tar",
 		},
-		"with sha+version ": {
+		"with sha+version": {
 			"ppiper/cf-cli@sha256:c25dbacb9ab6e912afe0fe926d8f9d949c60adfe55d16778bde5941e6c37be11",
-			"verZion",
-			"ppiper_cf-cli_c25dbacb9ab6e912afe0fe926d8f9d949c60adfe55d16778bde5941e6c37be11_verZion.tar",
+			"verZionNotIgnored12345asdf",
+			"ppiper_cf-cli_c25dbacb9ab6e912afe0fe926d8f9d949c60adfe55d16778bde5941e6c37be11_verZionNotIgnored12345asdf.tar",
 		},
 	}
 
