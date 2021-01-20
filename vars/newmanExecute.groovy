@@ -3,7 +3,26 @@ import groovy.transform.Field
 @Field String STEP_NAME = getClass().getName()
 @Field String METADATA_FILE = 'metadata/newmanExecute.yaml'
 
+@Field Set CONFIG_KEYS = [
+    "dockerImage",
+    "newmanCollection",
+    "newmanEnvironment",
+    "newmanGlobals",
+    "newmanInstallCommand",
+    "newmanRunCommand",
+    "cfAppsWithSecrets",
+]
+
 void call(Map parameters = [:]) {
+
+    Map config = ConfigurationHelper.newInstance(this)
+        .loadStepDefaults([:], stageName)
+        .mixinGeneralConfig(script.commonPipelineEnvironment, CONFIG_KEYS)
+        .mixinStepConfig(script.commonPipelineEnvironment, CONFIG_KEYS)
+        .mixinStageConfig(script.commonPipelineEnvironment, stageName, CONFIG_KEYS)
+        .mixin(parameters, PARAMETER_KEYS, CONFIG_KEY_COMPATIBILITY)
+        .use()
+
     List credentials = [
         //[type: 'usernamePassword', id: 'seleniumHubCredentialsId', env: ['PIPER_SELENIUM_HUB_USER', 'PIPER_SELENIUM_HUB_PASSWORD']],
     ]
