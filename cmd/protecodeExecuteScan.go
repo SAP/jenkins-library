@@ -336,5 +336,7 @@ func getTarName(config *protecodeExecuteScanOptions) string {
 	}
 	// replace unwanted chars
 	fileName = strings.ReplaceAll(fileName, "/", "_")
+	sha256 := "@sha256:"
+	fileName = strings.Replace(fileName, sha256, "_", 1)
 	return fileName + ".tar"
 }
