@@ -22,7 +22,6 @@ void call(Map parameters = [:]) {
         .mixinGeneralConfig(script.commonPipelineEnvironment, CONFIG_KEYS)
         .mixinStepConfig(script.commonPipelineEnvironment, CONFIG_KEYS)
         .mixinStageConfig(script.commonPipelineEnvironment, stageName, CONFIG_KEYS)
-        .mixin(parameters, PARAMETER_KEYS, CONFIG_KEY_COMPATIBILITY)
         .use()
 
     List credentials = [
