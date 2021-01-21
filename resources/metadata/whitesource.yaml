@@ -239,7 +239,6 @@ spec:
           This parameter is mandatory if the parameter `createProductFromPipeline` is set to `true`
           and the WhiteSource product does not yet exist.
           It is also mandatory if the parameter `productToken` is not provided."
-        mandatory: true
         scope:
           - GENERAL
           - PARAMETERS
@@ -323,6 +322,8 @@ spec:
           - STEPS
         default: "tests/**/*.py **/src/test/**/*.java"
       - name: productToken
+        aliases:
+          - name: whitesourceProductToken
         type: string
         description: "Token of the WhiteSource product to be created and used for results aggregation,
           usually determined automatically. Can optionally be provided as an alternative to `productName`."
@@ -407,6 +408,14 @@ spec:
           - name: custom/whitesourceProjectNames
             type: "[]string"
   containers:
+    - image: devxci/mbtci:1.0.14
+      workingDir: /home/mta
+      env: [ ]
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: scanType
+              value: mta
     - image: maven:3.5-jdk-8
       workingDir: /home/java
       env: []

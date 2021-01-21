@@ -7,6 +7,7 @@ import (
 )
 
 func TestGctsRollbackCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := GctsRollbackCommand()
 

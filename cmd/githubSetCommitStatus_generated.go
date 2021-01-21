@@ -115,8 +115,9 @@ func addGithubSetCommitStatusFlags(cmd *cobra.Command, stepConfig *githubSetComm
 func githubSetCommitStatusMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "githubSetCommitStatus",
-			Aliases: []config.Alias{},
+			Name:        "githubSetCommitStatus",
+			Aliases:     []config.Alias{},
+			Description: "Set a status of a certain commit.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -206,6 +207,12 @@ func githubSetCommitStatusMetadata() config.StepData {
 							{
 								Name: "githubTokenCredentialsId",
 								Type: "secret",
+							},
+
+							{
+								Name:  "",
+								Paths: []string{"$(vaultPath)/github", "$(vaultBasePath)/$(vaultPipelineName)/github", "$(vaultBasePath)/GROUP-SECRETS/github"},
+								Type:  "vaultSecret",
 							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},

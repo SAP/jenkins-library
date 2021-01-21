@@ -114,7 +114,7 @@ The new status "L"ocked is written back to the addonDescriptor in the commonPipe
 }
 
 func addAbapAddonAssemblyKitRegisterPackagesFlags(cmd *cobra.Command, stepConfig *abapAddonAssemblyKitRegisterPackagesOptions) {
-	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitEndpoint, "abapAddonAssemblyKitEndpoint", os.Getenv("PIPER_abapAddonAssemblyKitEndpoint"), "Base URL to the Addon Assembly Kit as a Service (AAKaaS) system")
+	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitEndpoint, "abapAddonAssemblyKitEndpoint", `https://apps.support.sap.com`, "Base URL to the Addon Assembly Kit as a Service (AAKaaS) system")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for the Addon Assembly Kit as a Service (AAKaaS) system")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for the Addon Assembly Kit as a Service (AAKaaS) system")
 	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions")
@@ -129,8 +129,9 @@ func addAbapAddonAssemblyKitRegisterPackagesFlags(cmd *cobra.Command, stepConfig
 func abapAddonAssemblyKitRegisterPackagesMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "abapAddonAssemblyKitRegisterPackages",
-			Aliases: []config.Alias{},
+			Name:        "abapAddonAssemblyKitRegisterPackages",
+			Aliases:     []config.Alias{},
+			Description: "This step uploads the SAR archives and creates physical Delivery Packages in in the File Content Management System of SAP.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -171,6 +172,17 @@ func abapAddonAssemblyKitRegisterPackagesMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+					},
+				},
+			},
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{
+						Name: "commonPipelineEnvironment",
+						Type: "piperEnvironment",
+						Parameters: []map[string]interface{}{
+							{"Name": "abap/addonDescriptor"},
+						},
 					},
 				},
 			},

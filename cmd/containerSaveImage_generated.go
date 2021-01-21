@@ -92,8 +92,9 @@ func addContainerSaveImageFlags(cmd *cobra.Command, stepConfig *containerSaveIma
 func containerSaveImageMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "containerSaveImage",
-			Aliases: []config.Alias{},
+			Name:        "containerSaveImage",
+			Aliases:     []config.Alias{},
+			Description: "Saves a container image as a tar file",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{

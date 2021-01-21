@@ -73,6 +73,7 @@ func runAbapEnvironmentCreateSystem(config *abapEnvironmentCreateSystemOptions, 
 func generateManifestYAML(config *abapEnvironmentCreateSystemOptions) ([]byte, error) {
 	addonProduct := ""
 	addonVersion := ""
+	parentSaaSAppName := ""
 	if config.AddonDescriptorFileName != "" && config.IncludeAddon {
 		descriptor, err := abaputils.ReadAddonDescriptor(config.AddonDescriptorFileName)
 		if err != nil {
@@ -80,16 +81,19 @@ func generateManifestYAML(config *abapEnvironmentCreateSystemOptions) ([]byte, e
 		}
 		addonProduct = descriptor.AddonProduct
 		addonVersion = descriptor.AddonVersionYAML
+		parentSaaSAppName = "addon_test"
+
 	}
 	params := abapSystemParameters{
 		AdminEmail:           config.AbapSystemAdminEmail,
 		Description:          config.AbapSystemDescription,
-		IsDevelopmentAllowed: config.AbapSystemIsDevelopmentAllowed,
+		IsDevelopmentAllowed: &config.AbapSystemIsDevelopmentAllowed,
 		SapSystemName:        config.AbapSystemID,
 		SizeOfPersistence:    config.AbapSystemSizeOfPersistence,
 		SizeOfRuntime:        config.AbapSystemSizeOfRuntime,
 		AddonProductName:     addonProduct,
 		AddonProductVersion:  addonVersion,
+		ParentSaaSAppName:    parentSaaSAppName,
 	}
 
 	serviceParameters, err := json.Marshal(params)
@@ -132,12 +136,13 @@ func generateManifestYAML(config *abapEnvironmentCreateSystemOptions) ([]byte, e
 type abapSystemParameters struct {
 	AdminEmail           string `json:"admin_email,omitempty"`
 	Description          string `json:"description,omitempty"`
-	IsDevelopmentAllowed bool   `json:"is_development_allowed,omitempty"`
+	IsDevelopmentAllowed *bool  `json:"is_development_allowed,omitempty"`
 	SapSystemName        string `json:"sapsystemname,omitempty"`
 	SizeOfPersistence    int    `json:"size_of_persistence,omitempty"`
 	SizeOfRuntime        int    `json:"size_of_runtime,omitempty"`
 	AddonProductName     string `json:"addon_product_name,omitempty"`
 	AddonProductVersion  string `json:"addon_product_version,omitempty"`
+	ParentSaaSAppName    string `json:"parent_saas_appname,omitempty"`
 }
 
 type serviceManifest struct {

@@ -13,7 +13,16 @@ import groovy.transform.Field
 @Field def STEP_NAME = getClass().getName()
 @Field def PLUGIN_ID_DOCKER_WORKFLOW = 'docker-workflow'
 
-@Field Set GENERAL_CONFIG_KEYS = []
+@Field Set GENERAL_CONFIG_KEYS = [
+    /**
+     * Set this to 'false' to bypass a docker image pull. Useful during development process. Allows testing of images which are available in the local registry only.
+     */
+    'dockerPullImage',
+    /**
+     * Set this to 'false' to bypass a docker image pull. Useful during development process. Allows testing of images which are available in the local registry only.
+     */
+    'sidecarPullImage'
+]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
     /**
      * Kubernetes only:
@@ -47,19 +56,19 @@ import groovy.transform.Field
     /**
       * The registry used for pulling the docker image, if left empty the default registry as defined by the `docker-commons-plugin` will be used.
       */
-    'dockerRegistry',
+    'dockerRegistryUrl',
     /**
       * The credentials for the docker registry. If left empty, images are pulled anonymously.
       */
-    'dockerRegistryCredentials',
+    'dockerRegistryCredentialsId',
     /**
-      * Same as `dockerRegistry`, but for the sidecar. If left empty, `dockerRegistry` is used instead.
+      * Same as `dockerRegistryUrl`, but for the sidecar. If left empty, `dockerRegistryUrl` is used instead.
       */
-    'dockerSidecarRegistry',
+    'sidecarRegistryUrl',
     /**
-      * Same as `dockerRegistryCredentials`, but for the sidecar. If left empty `dockerRegistryCredentials` is used instead.
+      * Same as `dockerRegistryCredentialsId`, but for the sidecar. If left empty `dockerRegistryCredentialsId` is used instead.
       */
-    'dockerSidecarRegistryCredentials',
+    'sidecarRegistryCredentialsId',
     /**
      * Kubernetes only:
      * Name of the container launching `dockerImage`.
@@ -77,10 +86,6 @@ import groovy.transform.Field
      * Volumes that should be mounted into the container.
      */
     'dockerVolumeBind',
-    /**
-     * Set this to 'false' to bypass a docker image pull. Useful during development process. Allows testing of images which are available in the local registry only.
-     */
-    'dockerPullImage',
     /**
      * Kubernetes only:
      * Specifies a dedicated user home directory for the container which will be passed as value for environment variable `HOME`.
@@ -107,10 +112,6 @@ import groovy.transform.Field
      */
     'sidecarVolumeBind',
     /**
-     * Set this to 'false' to bypass a docker image pull. Useful during development process. Allows testing of images which are available in the local registry only.
-     */
-    'sidecarPullImage',
-    /**
      * as `dockerWorkspace` for the sidecar container
      */
     'sidecarWorkspace',
@@ -132,6 +133,11 @@ import groovy.transform.Field
     'stashNoDefaultExcludes',
 ])
 
+@Field Map CONFIG_KEY_COMPATIBILITY = [
+    dockerRegistryCredentialsId: 'dockerRegistryCredentials',
+    sidecarRegistryCredentialsId: 'dockerSidecarRegistryCredentials',
+]
+
 /**
  * Executes a closure inside a docker container with the specified docker image.
  * The workspace is mounted into the docker image.
@@ -147,15 +153,15 @@ void call(Map parameters = [:], body) {
 
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults([:], stageName)
-            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
-            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-            .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
-            .mixin(parameters, PARAMETER_KEYS)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixin(parameters, PARAMETER_KEYS, CONFIG_KEY_COMPATIBILITY)
             .use()
 
         config = ConfigurationHelper.newInstance(this, config)
-            .addIfEmpty('dockerSidecarRegistry', config.dockerRegistry)
-            .addIfEmpty('dockerSidecarRegistryCredentials', config.dockerRegistryCredentials)
+            .addIfEmpty('sidecarRegistryUrl', config.dockerRegistryUrl)
+            .addIfEmpty('sidecarRegistryCredentialsId', config.dockerRegistryCredentialsId)
             .use()
 
         SidecarUtils sidecarUtils = new SidecarUtils(script)
@@ -229,38 +235,38 @@ void call(Map parameters = [:], body) {
             if (executeInsideDocker && config.dockerImage) {
                 utils.unstashAll(config.stashContent)
                 def image = docker.image(config.dockerImage)
-                if (config.dockerPullImage) pull(image, config.dockerRegistry, config.dockerRegistryCredentials)
-                else echo "[INFO][$STEP_NAME] Skipped pull of image '${config.dockerImage}'."
-                if (!config.sidecarImage) {
-                    image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
-                        body()
-                    }
-                } else {
-                    def networkName = "sidecar-${UUID.randomUUID()}"
-                    sh "docker network create ${networkName}"
-                    try {
-                        def sidecarImage = docker.image(config.sidecarImage)
-                        if (config.sidecarPullImage) pull(sidecarImage, config.dockerSidecarRegistry, config.dockerSidecarRegistryCredentials)
-                        else echo "[INFO][$STEP_NAME] Skipped pull of image '${config.sidecarImage}'."
-                        config.sidecarOptions = config.sidecarOptions ?: []
-                        if (config.sidecarName)
-                            config.sidecarOptions.add("--network-alias ${config.sidecarName}")
-                        config.sidecarOptions.add("--network ${networkName}")
-                        sidecarImage.withRun(getDockerOptions(config.sidecarEnvVars, config.sidecarVolumeBind, config.sidecarOptions)) { container ->
-                            config.dockerOptions = config.dockerOptions ?: []
-                            if (config.dockerName)
-                                config.dockerOptions.add("--network-alias ${config.dockerName}")
-                            config.dockerOptions.add("--network ${networkName}")
-                            if (config.sidecarReadyCommand) {
-                                sidecarUtils.waitForSidecarReadyOnDocker(container.id, config.sidecarReadyCommand)
-                            }
-                            image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
-                                echo "[INFO][${STEP_NAME}] Running with sidecar container."
-                                body()
-                            }
+                pullWrapper(config.dockerPullImage, image, config.dockerRegistryUrl, config.dockerRegistryCredentialsId) {
+                    if (!config.sidecarImage) {
+                        image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
+                            body()
                         }
-                    } finally {
-                        sh "docker network remove ${networkName}"
+                    } else {
+                        def networkName = "sidecar-${UUID.randomUUID()}"
+                        sh "docker network create ${networkName}"
+                        try {
+                            def sidecarImage = docker.image(config.sidecarImage)
+                            pullWrapper(config.sidecarPullImage, sidecarImage, config.sidecarRegistryUrl, config.sidecarRegistryCredentialsId) {
+                                config.sidecarOptions = config.sidecarOptions ?: []
+                                if (config.sidecarName)
+                                    config.sidecarOptions.add("--network-alias ${config.sidecarName}")
+                                config.sidecarOptions.add("--network ${networkName}")
+                                sidecarImage.withRun(getDockerOptions(config.sidecarEnvVars, config.sidecarVolumeBind, config.sidecarOptions)) { container ->
+                                    config.dockerOptions = config.dockerOptions ?: []
+                                    if (config.dockerName)
+                                        config.dockerOptions.add("--network-alias ${config.dockerName}")
+                                    config.dockerOptions.add("--network ${networkName}")
+                                    if (config.sidecarReadyCommand) {
+                                        sidecarUtils.waitForSidecarReadyOnDocker(container.id, config.sidecarReadyCommand)
+                                    }
+                                    image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
+                                        echo "[INFO][${STEP_NAME}] Running with sidecar container."
+                                        body()
+                                    }
+                                }
+                            }
+                        } finally {
+                            sh "docker network remove ${networkName}"
+                        }
                     }
                 }
             } else {
@@ -271,17 +277,27 @@ void call(Map parameters = [:], body) {
     }
 }
 
-void pull(def dockerImage, String dockerRegistry, String dockerCredentialsId) {
-
-    // docker registry can be provided empty and will default to 'https://index.docker.io/v1/' in this case.
-    dockerRegistry = dockerRegistry ?: ''
+void pullWrapper(boolean pullImage, def dockerImage, String dockerRegistryUrl, String dockerCredentialsId, Closure body) {
+    if (!pullImage) {
+        echo "[INFO][$STEP_NAME] Skipped pull of image '$dockerImage'."
+        body()
+        return
+    }
 
     if (dockerCredentialsId) {
-        docker.withRegistry(dockerRegistry, dockerCredentialsId) {
+        // docker registry can be provided empty and will default to 'https://index.docker.io/v1/' in this case.
+        docker.withRegistry(dockerRegistryUrl ?: '', dockerCredentialsId) {
             dockerImage.pull()
+            body()
+        }
+    } else if (dockerRegistryUrl) {
+        docker.withRegistry(dockerRegistryUrl) {
+            dockerImage.pull()
+            body()
         }
     } else {
         dockerImage.pull()
+        body()
     }
 }
 

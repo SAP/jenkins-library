@@ -90,8 +90,9 @@ func addJsonApplyPatchFlags(cmd *cobra.Command, stepConfig *jsonApplyPatchOption
 func jsonApplyPatchMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "jsonApplyPatch",
-			Aliases: []config.Alias{},
+			Name:        "jsonApplyPatch",
+			Aliases:     []config.Alias{},
+			Description: "Patches a json with a patch file",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{

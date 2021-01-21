@@ -169,10 +169,13 @@ func (c *Client) Upload(data UploadRequestData) (*http.Response, error) {
 		return response, errors.Wrapf(err, "HTTP %v request to %v failed with error", data.Method, data.URL)
 	}
 
-	return c.handleResponse(response)
+	return c.handleResponse(response, data.URL)
 }
 
 // SendRequest sends an http request with a defined method
+//
+// On error, any Response can be ignored and the Response.Body
+// does not need to be closed.
 func (c *Client) SendRequest(method, url string, body io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
 	httpClient := c.initialize()
 
@@ -186,7 +189,7 @@ func (c *Client) SendRequest(method, url string, body io.Reader, header http.Hea
 		return response, errors.Wrapf(err, "error calling %v", url)
 	}
 
-	return c.handleResponse(response)
+	return c.handleResponse(response, url)
 }
 
 // SetOptions sets options used for the http client
@@ -275,7 +278,7 @@ func (t *TransportWrapper) RoundTrip(req *http.Request) (*http.Response, error) 
 func (t *TransportWrapper) logRequest(req *http.Request) {
 	log.Entry().Debug("--------------------------------")
 	log.Entry().Debugf("--> %v request to %v", req.Method, req.URL)
-	log.Entry().Debugf("headers: %v", req.Header)
+	log.Entry().Debugf("headers: %v", transformHeaders(req.Header))
 	log.Entry().Debugf("cookies: %v", transformCookies(req.Cookies()))
 	if t.doLogRequestBodyOnDebug {
 		log.Entry().Debugf("body: %v", transformBody(req.Body))
@@ -298,6 +301,32 @@ func (t *TransportWrapper) logResponse(resp *http.Response) {
 		log.Entry().Debug("response <nil>")
 	}
 	log.Entry().Debug("--------------------------------")
+}
+
+func transformHeaders(header http.Header) http.Header {
+	var h http.Header = map[string][]string{}
+	for name, value := range header {
+		if name == "Authorization" {
+			for _, v := range value {
+				// The format of the Authorization header value is: <type> <cred>.
+				// We don't register the full string since only the part after
+				// the first token is the secret in the narrower sense (applies at
+				// least for basic auth)
+				log.RegisterSecret(strings.Join(strings.Split(v, " ")[1:], " "))
+			}
+			// Since
+			//   1.) The auth header type itself might serve as a vector for an
+			//       intrusion
+			//   2.) We cannot make assumtions about the structure of the auth
+			//       header value since that depends on the type, e.g. several tokens
+			//       where only some of the tokens define the secret
+			// we hide the full auth header value anyway in order to be on the
+			// save side.
+			value = []string{"<set>"}
+		}
+		h[name] = value
+	}
+	return h
 }
 
 func transformCookies(cookies []*http.Cookie) string {
@@ -349,7 +378,7 @@ func (c *Client) createRequest(method, url string, body io.Reader, header *http.
 	return request, nil
 }
 
-func (c *Client) handleResponse(response *http.Response) (*http.Response, error) {
+func (c *Client) handleResponse(response *http.Response, url string) (*http.Response, error) {
 	// 2xx codes do not create an error
 	if response.StatusCode >= 200 && response.StatusCode < 300 {
 		return response, nil
@@ -361,7 +390,7 @@ func (c *Client) handleResponse(response *http.Response) (*http.Response, error)
 	case http.StatusForbidden:
 		c.logger.WithField("HTTP Error", "403 (Forbidden)").Error("Permission issue, please check your user permissions!")
 	case http.StatusNotFound:
-		c.logger.WithField("HTTP Error", "404 (Not Found)").Error("Requested resource could not be found")
+		c.logger.WithField("HTTP Error", "404 (Not Found)").Errorf("Requested resource ('%s') could not be found", url)
 	case http.StatusInternalServerError:
 		c.logger.WithField("HTTP Error", "500 (Internal Server Error)").Error("Unknown error occurred.")
 	}

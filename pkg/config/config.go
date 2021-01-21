@@ -185,6 +185,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		stepConfig.mixIn(def.General, filters.General)
 		stepConfig.mixIn(def.Steps[stepName], filters.Steps)
 		stepConfig.mixIn(def.Stages[stageName], filters.Steps)
+		stepConfig.mixinVaultConfig(def.General, def.Steps[stepName], def.Stages[stageName])
 
 		// process hook configuration - this is only supported via defaults
 		if stepConfig.HookConfig == nil {
@@ -227,7 +228,13 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		stepConfig.mixIn(flagValues, filters.Parameters)
 	}
 
-	stepConfig.mixIn(c.General, vaultFilter)
+	if verbose, ok := stepConfig.Config["verbose"].(bool); ok && verbose {
+		log.SetVerbose(verbose)
+	} else if !ok && stepConfig.Config["verbose"] != nil {
+		log.Entry().Warnf("invalid value for parameter verbose: '%v'", stepConfig.Config["verbose"])
+	}
+
+	stepConfig.mixinVaultConfig(c.General, c.Steps[stepName], c.Stages[stageName])
 	// fetch secrets from vault
 	vaultClient, err := getVaultClientFromConfig(stepConfig, c.vaultCredentials)
 	if err != nil {
@@ -243,9 +250,9 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 			cp := p.Conditions[0].Params[0]
 			dependentValue := stepConfig.Config[cp.Name]
 			if cmp.Equal(dependentValue, cp.Value) && stepConfig.Config[p.Name] == nil {
-				subMapValue := stepConfig.Config[dependentValue.(string)].(map[string]interface{})[p.Name]
-				if subMapValue != nil {
-					stepConfig.Config[p.Name] = subMapValue
+				subMap, ok := stepConfig.Config[dependentValue.(string)].(map[string]interface{})
+				if ok && subMap[p.Name] != nil {
+					stepConfig.Config[p.Name] = subMap[p.Name]
 				} else {
 					stepConfig.Config[p.Name] = p.Default
 				}

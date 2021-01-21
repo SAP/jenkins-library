@@ -68,11 +68,14 @@ func Execute() {
 	rootCmd.AddCommand(CommandLineCompletionCommand())
 	rootCmd.AddCommand(VersionCommand())
 	rootCmd.AddCommand(DetectExecuteScanCommand())
+	rootCmd.AddCommand(HadolintExecuteCommand())
 	rootCmd.AddCommand(KarmaExecuteTestsCommand())
 	rootCmd.AddCommand(SonarExecuteScanCommand())
 	rootCmd.AddCommand(KubernetesDeployCommand())
 	rootCmd.AddCommand(XsDeployCommand())
 	rootCmd.AddCommand(GithubCheckBranchProtectionCommand())
+	rootCmd.AddCommand(GithubCommentIssueCommand())
+	rootCmd.AddCommand(GithubCreateIssueCommand())
 	rootCmd.AddCommand(GithubCreatePullRequestCommand())
 	rootCmd.AddCommand(GithubPublishReleaseCommand())
 	rootCmd.AddCommand(GithubSetCommitStatusCommand())
@@ -116,6 +119,9 @@ func Execute() {
 	rootCmd.AddCommand(AbapAddonAssemblyKitReserveNextPackagesCommand())
 	rootCmd.AddCommand(CloudFoundryCreateSpaceCommand())
 	rootCmd.AddCommand(CloudFoundryDeleteSpaceCommand())
+	rootCmd.AddCommand(VaultRotateSecretIdCommand())
+	rootCmd.AddCommand(TransportRequestUploadCTSCommand())
+	rootCmd.AddCommand(DeployIntegrationArtifactCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
@@ -263,14 +269,6 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 
 	if fmt.Sprintf("%v", stepConfig.Config["collectTelemetryData"]) == "false" {
 		GeneralConfig.NoTelemetry = true
-	}
-
-	if !GeneralConfig.Verbose && stepConfig.Config["verbose"] != nil {
-		if verboseValue, ok := stepConfig.Config["verbose"].(bool); ok {
-			log.SetVerbose(verboseValue)
-		} else {
-			return fmt.Errorf("invalid value for parameter verbose: '%v'", stepConfig.Config["verbose"])
-		}
 	}
 
 	stepConfig.Config = checkTypes(stepConfig.Config, options)

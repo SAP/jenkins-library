@@ -28,7 +28,7 @@ spec:
         type: bool
         default: false
       - name: addDeltaToLastRelease
-        description: "If set to `true`, a link will be added to the relese information that brings up all commits since the last release."
+        description: "If set to `true`, a link will be added to the release information that brings up all commits since the last release."
         scope:
           - PARAMETERS
           - STAGES
@@ -144,6 +144,11 @@ spec:
         resourceRef:
           - name: githubTokenCredentialsId
             type: secret
+          - type: vaultSecret
+            paths:
+            - $(vaultPath)/github
+            - $(vaultBasePath)/$(vaultPipelineName)/github
+            - $(vaultBasePath)/GROUP-SECRETS/github
       - name: uploadUrl
         aliases:
           - name: githubUploadUrl
