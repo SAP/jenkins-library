@@ -25,6 +25,7 @@ void call(Map parameters = [:]) {
             .mixin(parameters, CONFIG_KEYS)
             .use()
 
+    parameters.config.stashContent = []
     parameters.config.stashContent = config.testRepository ? [GitUtils.handleTestRepository(this, parameters.config)] : utils.unstashAll(parameters.config.stashContent)
 
     List credentials = [
