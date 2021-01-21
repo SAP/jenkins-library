@@ -8,7 +8,9 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String STEP_NAME = getClass().getName()
 @Field String METADATA_FILE = 'metadata/uiVeri5ExecuteTests.yaml'
 
-@Field String CONFIG_KEYS = ['testRepository']
+@Field Set CONFIG_KEYS = [
+    "testRepository",
+]
 
 void call(Map parameters = [:]) {
     final script = checkScript(this, parameters) ?: this
