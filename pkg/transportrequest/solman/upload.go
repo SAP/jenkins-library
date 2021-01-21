@@ -86,7 +86,7 @@ func (a *UploadAction) Perform(fs FileSystem, command Exec) error {
 
 	exists, err := fs.FileExists(a.File)
 	if err != nil {
-		return fmt.Errorf("Cannot upload file: %w", err)
+		return fmt.Errorf("cannot upload file: %w", err)
 	}
 	if !exists {
 		return fmt.Errorf("file '%s' does not exist", a.File)
@@ -105,13 +105,13 @@ func (a *UploadAction) Perform(fs FileSystem, command Exec) error {
 		a.ApplicationID, a.File)
 
 	if err != nil {
-		err = fmt.Errorf("Cannot upload '%s': %w", a.File, err)
+		err = fmt.Errorf("cannot upload '%s': %w", a.File, err)
 	}
 
 	exitCode := command.GetExitCode()
 
 	if exitCode != 0 {
-		err = fmt.Errorf("Cannot upload '%s': Upload command returned with exit code '%d'", a.File, exitCode)
+		err = fmt.Errorf("cannot upload '%s': Upload command returned with exit code '%d'", a.File, exitCode)
 	}
 	return err
 }

@@ -69,20 +69,20 @@ func TestSolmanUpload(t *testing.T) {
 
 		err := defaultUploadAction.Perform(f, e)
 
-		assert.EqualError(t, err, "Cannot upload 'myDeployable.xxx': Upload command returned with exit code '1'")
+		assert.EqualError(t, err, "cannot upload 'myDeployable.xxx': Upload command returned with exit code '1'")
 	})
 
 	t.Run("Deploy command cannot be executed", func(t *testing.T) {
 
 		e := &mock.ExecMockRunner{
 			ShouldFailOnCommand: map[string]error{
-				"cmclient.*": fmt.Errorf("Cannot execute upload command"),
+				"cmclient.*": fmt.Errorf("cannot execute upload command"),
 			},
 		}
 
 		err := defaultUploadAction.Perform(f, e)
 
-		assert.EqualError(t, err, "Cannot upload 'myDeployable.xxx': Cannot execute upload command")
+		assert.EqualError(t, err, "cannot upload 'myDeployable.xxx': cannot execute upload command")
 	})
 
 }
