@@ -21,6 +21,23 @@ type Dummy struct {
 	List       []string
 }
 
+func TestWeProvideNotAStruct(t *testing.T) {
+	_, err := FindEmptyStringsInConfigStruct("Hello World")
+	assert.EqualError(t, err, "'Hello World' (string) is not a struct")
+}
+
+func TestUnsupportedType(t *testing.T) {
+
+	type DummyWithUnsupportedType struct {
+		Dummy
+		NotExpected float32
+	}
+
+	_, err := FindEmptyStringsInConfigStruct(DummyWithUnsupportedType{})
+	assert.EqualError(t, err, "unexpected type 'float32' of field: 'NotExpected', value: '0'")
+
+}
+
 func TestFindEmptyStringsInConfig(t *testing.T) {
 	myStruct := Dummy{
 		Connection: Connection{
