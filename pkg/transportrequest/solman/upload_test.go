@@ -36,18 +36,6 @@ func TestSolmanUpload(t *testing.T) {
 		assert.EqualError(t, err, "file 'myMissingDeployable.xxx' does not exist")
 	})
 
-	t.Run("Some deploy parameters are missing", func(t *testing.T) {
-
-		uploadActionMissingParameters := defaultUploadAction
-		uploadActionMissingParameters.Connection.Endpoint = ""
-		uploadActionMissingParameters.ChangeDocumentID = ""
-		e := &mock.ExecMockRunner{}
-
-		err := uploadActionMissingParameters.Perform(f, e)
-
-		assert.EqualError(t, err, "Cannot perform artifact upload. The following parameters are not available [Connection.Endpoint ChangeDocumentID]")
-	})
-
 	t.Run("Straight forward", func(t *testing.T) {
 
 		e := &mock.ExecMockRunner{}
@@ -97,24 +85,4 @@ func TestSolmanUpload(t *testing.T) {
 		assert.EqualError(t, err, "Cannot upload 'myDeployable.xxx': Cannot execute upload command")
 	})
 
-}
-
-func TestFindEmptyStringsInConfig(t *testing.T) {
-	uploadAction := UploadAction{
-		Connection: Connection{
-			Endpoint: "<set>",
-			User:     "",
-			Password: "<set>",
-		},
-		ChangeDocumentID:   "",
-		TransportRequestID: "<set>",
-		ApplicationID:      "<set>",
-		File:               "<set>",
-		CMOpts:             []string{},
-	}
-	emptyStrings, err := FindEmptyStrings(uploadAction)
-	if assert.NoError(t, err) {
-		assert.Len(t, emptyStrings, 2)
-		assert.Subset(t, emptyStrings, []string{"Connection.User", "ChangeDocumentID"})
-	}
 }
