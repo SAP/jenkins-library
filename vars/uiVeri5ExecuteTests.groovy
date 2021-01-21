@@ -1,5 +1,6 @@
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GitUtils
+import com.sap.piper.Utils
 import groovy.text.GStringTemplateEngine
 import groovy.transform.Field
 
@@ -15,6 +16,7 @@ import static com.sap.piper.Prerequisites.checkScript
 void call(Map parameters = [:]) {
     final script = checkScript(this, parameters) ?: this
     String stageName = parameters.stageName ?: env.STAGE_NAME
+    def utils = parameters.juStabUtils ?: new Utils()
     Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults([:], stageName)
             .mixinGeneralConfig(script.commonPipelineEnvironment, CONFIG_KEYS)
@@ -22,7 +24,6 @@ void call(Map parameters = [:]) {
             .mixinStageConfig(script.commonPipelineEnvironment, stageName, CONFIG_KEYS)
             .mixin(parameters, CONFIG_KEYS)
             .use()
-
 
     parameters.config.stashContent = config.testRepository ? [GitUtils.handleTestRepository(this, parameters.config)] : utils.unstashAll(parameters.config.stashContent)
 
