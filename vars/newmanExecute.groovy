@@ -32,6 +32,6 @@ void call(Map parameters = [:]) {
             credentials << [type: 'usernamePassword', id: "${it}", env: ["PIPER_NEWMAN_USER_${it}", "PIPER_NEWMAN_PASSWORD_${it}"]]
         }
     }
-
+    print credentials
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
 }
