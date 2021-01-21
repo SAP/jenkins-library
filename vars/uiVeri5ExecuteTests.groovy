@@ -10,6 +10,8 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String METADATA_FILE = 'metadata/uiVeri5ExecuteTests.yaml'
 
 @Field Set CONFIG_KEYS = [
+    "gitBranch",
+    "gitSshKeyCredentialsId",
     "testRepository",
 ]
 
@@ -25,8 +27,9 @@ void call(Map parameters = [:]) {
             .mixin(parameters, CONFIG_KEYS)
             .use()
 
-    if (config.testRepository) {
-        parameters.config.stashContent = GitUtils.handleTestRepository(this, parameters.config)
+    parameters << config
+    if (parameters.testRepository) {
+        parameters.stashContent = GitUtils.handleTestRepository(this, parameters)
     }
 
     List credentials = [
