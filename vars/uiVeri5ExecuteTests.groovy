@@ -20,8 +20,7 @@ void call(Map parameters = [:]) {
             .mixinGeneralConfig(script.commonPipelineEnvironment, CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, stageName, CONFIG_KEYS)
-            .mixin(parameters, PARAMETER_KEYS)
-            .addIfEmpty('seleniumHost', isKubernetes()?'localhost':'selenium')
+            .mixin(parameters, CONFIG_KEYS)
             .use()
 
 
