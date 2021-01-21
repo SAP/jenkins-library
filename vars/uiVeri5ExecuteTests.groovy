@@ -9,6 +9,11 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String STEP_NAME = getClass().getName()
 @Field String METADATA_FILE = 'metadata/uiVeri5ExecuteTests.yaml'
 
+/*
+ * Parameters read from config for backwards compatibility of groovy wrapper step:
+ *
+ * testRepository, gitBranch, gitSshKeyCredentialsId used for test repository loading
+ */
 @Field Set CONFIG_KEYS = [
     "gitBranch",
     "gitSshKeyCredentialsId",
