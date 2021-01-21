@@ -1,3 +1,4 @@
+import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GitUtils
 import groovy.text.GStringTemplateEngine
 import groovy.transform.Field
