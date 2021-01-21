@@ -36,6 +36,7 @@ func findNestedEmptyStrings(v interface{}, emptyStrings *[]string, prefix []stri
 		case reflect.Int64:
 		case reflect.Bool:
 		case reflect.Slice:
+		// in case someone needs more types these types can be added here
 		default:
 			return fmt.Errorf("unexpected type '%v' of field: '%v', value: '%v'",
 				values.Field(i).Kind(),
