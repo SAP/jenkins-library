@@ -25,7 +25,7 @@ void call(Map parameters = [:]) {
             .mixin(parameters, CONFIG_KEYS)
             .use()
 
-    if (config.testRepository != '') {
+    if (config.testRepository) {
         parameters.config.stashContent = GitUtils.handleTestRepository(this, parameters.config)
     }
 
