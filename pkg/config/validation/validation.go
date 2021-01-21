@@ -7,7 +7,7 @@ import (
 )
 
 // FindEmptyStringsInConfigStruct finds empty strings in a struct.
-// in case the struct contains another struct, also this struct is checked.
+// In case the struct contains other nested structs, these struct are also checked.
 func FindEmptyStringsInConfigStruct(v interface{}) ([]string, error) {
 	emptyStrings := []string{}
 	if reflect.ValueOf(v).Kind() != reflect.Struct {
