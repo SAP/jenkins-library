@@ -13,8 +13,8 @@ func FindEmptyStringsInConfigStruct(v interface{}) ([]string, error) {
 	if reflect.ValueOf(v).Kind() != reflect.Struct {
 		return emptyStrings, fmt.Errorf("'%v' (%T) is not a struct", v, v)
 	}
-	findNestedEmptyStrings(v, &emptyStrings, []string{})
-	return emptyStrings, nil
+	err := findNestedEmptyStrings(v, &emptyStrings, []string{})
+	return emptyStrings, err
 }
 
 func findNestedEmptyStrings(v interface{}, emptyStrings *[]string, prefix []string) error {
