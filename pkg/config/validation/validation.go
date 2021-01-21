@@ -17,7 +17,7 @@ func FindEmptyStringsInConfigStruct(v interface{}) ([]string, error) {
 	return emptyStrings, nil
 }
 
-func findNestedEmptyStrings(v interface{}, emptyStrings *[]string, prefix []string) (bool, error) {
+func findNestedEmptyStrings(v interface{}, emptyStrings *[]string, prefix []string) error {
 	fields := reflect.TypeOf(v)
 	values := reflect.ValueOf(v)
 	for i := 0; i < fields.NumField(); i++ {
@@ -27,9 +27,9 @@ func findNestedEmptyStrings(v interface{}, emptyStrings *[]string, prefix []stri
 				*emptyStrings = append(*emptyStrings, strings.Join(append(prefix, fields.Field(i).Name), "."))
 			}
 		case reflect.Struct:
-			_, err := findNestedEmptyStrings(values.Field(i).Interface(), emptyStrings, append(prefix, fields.Field(i).Name))
+			err := findNestedEmptyStrings(values.Field(i).Interface(), emptyStrings, append(prefix, fields.Field(i).Name))
 			if err != nil {
-				return false, err
+				return err
 			}
 		case reflect.Int:
 		case reflect.Int32:
@@ -37,8 +37,12 @@ func findNestedEmptyStrings(v interface{}, emptyStrings *[]string, prefix []stri
 		case reflect.Bool:
 		case reflect.Slice:
 		default:
-			return false, fmt.Errorf("unexpected field: %v, value: %v", fields.Field(i), values.Field(i))
+			return fmt.Errorf("unexpected type '%v' of field: '%v', value: '%v'",
+				values.Field(i).Kind(),
+				fields.Field(i).Name,
+				values.Field(i),
+			)
 		}
 	}
-	return false, nil
+	return nil
 }
