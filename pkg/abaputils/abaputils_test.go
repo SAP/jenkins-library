@@ -8,7 +8,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/pkg/errors"
@@ -32,10 +31,8 @@ func TestCloudFoundryGetAbapCommunicationInfo(t *testing.T) {
 		//when
 		var connectionDetails ConnectionDetailsHTTP
 		var err error
-
-		m := &mock.ExecMockRunner{}
 		var autils = AbapUtils{
-			Exec: m,
+			Exec: &mock.ExecMockRunner{},
 		}
 		connectionDetails, err = autils.GetAbapCommunicationArrangementInfo(options, "")
 
@@ -48,9 +45,6 @@ func TestCloudFoundryGetAbapCommunicationInfo(t *testing.T) {
 		assert.EqualError(t, err, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
 	})
 	t.Run("CF GetAbapCommunicationArrangementInfo - Error - reading service Key", func(t *testing.T) {
-
-		expectedErrorMessage := "Read service key failed: Parsing the service key failed. Service key is empty"
-
 		//given
 		options := AbapEnvironmentOptions{
 			CfAPIEndpoint:     "https://api.endpoint.com",
@@ -65,9 +59,8 @@ func TestCloudFoundryGetAbapCommunicationInfo(t *testing.T) {
 		//when
 		var connectionDetails ConnectionDetailsHTTP
 		var err error
-		m := &mock.ExecMockRunner{}
 		var autils = AbapUtils{
-			Exec: m,
+			Exec: &mock.ExecMockRunner{},
 		}
 		connectionDetails, err = autils.GetAbapCommunicationArrangementInfo(options, "")
 
@@ -77,7 +70,7 @@ func TestCloudFoundryGetAbapCommunicationInfo(t *testing.T) {
 		assert.Equal(t, "", connectionDetails.Password)
 		assert.Equal(t, "", connectionDetails.XCsrfToken)
 
-		assert.EqualError(t, err, expectedErrorMessage)
+		assert.EqualError(t, err, "Read service key failed: Parsing the service key failed. Service key is empty")
 	})
 	t.Run("CF GetAbapCommunicationArrangementInfo - Success", func(t *testing.T) {
 
@@ -200,9 +193,6 @@ func TestHostGetAbapCommunicationInfo(t *testing.T) {
 
 func TestReadServiceKeyAbapEnvironment(t *testing.T) {
 	t.Run("CF ReadServiceKeyAbapEnvironment - Failed to login to Cloud Foundry", func(t *testing.T) {
-
-		expectedErrorMessage := "Login to Cloud Foundry failed: Failed to login to Cloud Foundry: running command 'cf' failed: cmd.Run() failed: exit status 1"
-
 		//given .
 		options := AbapEnvironmentOptions{
 			Username:          "testUser",
@@ -217,7 +207,7 @@ func TestReadServiceKeyAbapEnvironment(t *testing.T) {
 		//when
 		var abapKey AbapServiceKey
 		var err error
-		abapKey, err = ReadServiceKeyAbapEnvironment(options, &command.Command{})
+		abapKey, err = ReadServiceKeyAbapEnvironment(options, &mock.ExecMockRunner{})
 
 		//then
 		assert.Equal(t, "", abapKey.Abap.Password)
@@ -233,7 +223,7 @@ func TestReadServiceKeyAbapEnvironment(t *testing.T) {
 		assert.Equal(t, "", abapKey.SystemID)
 		assert.Equal(t, "", abapKey.URL)
 
-		assert.EqualError(t, err, expectedErrorMessage)
+		assert.EqualError(t, err, "Parsing the service key failed. Service key is empty")
 	})
 }
 
