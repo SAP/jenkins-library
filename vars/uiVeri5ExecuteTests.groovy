@@ -25,8 +25,9 @@ void call(Map parameters = [:]) {
             .mixin(parameters, CONFIG_KEYS)
             .use()
 
-    parameters.config.stashContent = []
-    parameters.config.stashContent = config.testRepository ? [GitUtils.handleTestRepository(this, parameters.config)] : utils.unstashAll(parameters.config.stashContent)
+    if (config.testRepository != '') {
+        parameters.config.stashContent = GitUtils.handleTestRepository(this, parameters.config)
+    }
 
     List credentials = [
         [type: 'usernamePassword', id: 'seleniumHubCredentialsId', env: ['PIPER_SELENIUM_HUB_USER', 'PIPER_SELENIUM_HUB_PASSWORD']],
