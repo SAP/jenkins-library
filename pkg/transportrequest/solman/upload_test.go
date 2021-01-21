@@ -33,7 +33,7 @@ func TestSolmanUpload(t *testing.T) {
 
 		err := uploadActionFileMissing.Perform(f, e)
 
-		assert.EqualError(t, err, "file 'myMissingDeployable.xxx' does not exist")
+		assert.EqualError(t, err, "cannot upload artifact 'myMissingDeployable.xxx': file 'myMissingDeployable.xxx' does not exist")
 	})
 
 	t.Run("Straight forward", func(t *testing.T) {
@@ -69,7 +69,7 @@ func TestSolmanUpload(t *testing.T) {
 
 		err := defaultUploadAction.Perform(f, e)
 
-		assert.EqualError(t, err, "cannot upload 'myDeployable.xxx': Upload command returned with exit code '1'")
+		assert.EqualError(t, err, "cannot upload artifact 'myDeployable.xxx': Upload command returned with exit code '1'")
 	})
 
 	t.Run("Deploy command cannot be executed", func(t *testing.T) {
@@ -82,7 +82,7 @@ func TestSolmanUpload(t *testing.T) {
 
 		err := defaultUploadAction.Perform(f, e)
 
-		assert.EqualError(t, err, "cannot upload 'myDeployable.xxx': cannot execute upload command")
+		assert.EqualError(t, err, "cannot upload artifact 'myDeployable.xxx': cannot execute upload command")
 	})
 
 }

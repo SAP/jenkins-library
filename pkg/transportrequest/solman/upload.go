@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -94,33 +95,29 @@ func (a *UploadAction) Perform(fs FileSystem, command Exec) error {
 	log.Entry().WithFields(logDetails).Info("Deploying artifact.")
 
 	exists, err := fs.FileExists(a.File)
-	if err != nil {
-		return fmt.Errorf("cannot upload file: %w", err)
-	}
+
 	if !exists {
-		return fmt.Errorf("file '%s' does not exist", a.File)
+		err = fmt.Errorf("file '%s' does not exist", a.File)
 	}
 
-	command.SetEnv(a.CMOpts)
+	if err == nil {
+		command.SetEnv(a.CMOpts)
 
-	err = command.RunExecutable("cmclient",
-		"--endpoint", a.Connection.Endpoint,
-		"--user", a.Connection.User,
-		"--password", a.Connection.Password,
-		"--backend-type", "SOLMAN",
-		"upload-file-to-transport",
-		"-cID", a.ChangeDocumentID,
-		"-tID", a.TransportRequestID,
-		a.ApplicationID, a.File)
+		err = command.RunExecutable("cmclient",
+			"--endpoint", a.Connection.Endpoint,
+			"--user", a.Connection.User,
+			"--password", a.Connection.Password,
+			"--backend-type", "SOLMAN",
+			"upload-file-to-transport",
+			"-cID", a.ChangeDocumentID,
+			"-tID", a.TransportRequestID,
+			a.ApplicationID, a.File)
 
-	if err != nil {
-		err = fmt.Errorf("cannot upload '%s': %w", a.File, err)
-	}
+		exitCode := command.GetExitCode()
 
-	exitCode := command.GetExitCode()
-
-	if exitCode != 0 {
-		err = fmt.Errorf("cannot upload '%s': Upload command returned with exit code '%d'", a.File, exitCode)
+		if exitCode != 0 {
+			err = fmt.Errorf("Upload command returned with exit code '%d'", exitCode)
+		}
 	}
 
 	if err == nil {
@@ -129,5 +126,5 @@ func (a *UploadAction) Perform(fs FileSystem, command Exec) error {
 		log.Entry().WithFields(logDetails).WithError(err).Warn("Deployment failed")
 	}
 
-	return err
+	return errors.Wrapf(err, "cannot upload artifact '%s'", a.File)
 }
