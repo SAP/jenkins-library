@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type deployIntegrationArtifactOptions struct {
+type integrationArtifactDeployOptions struct {
 	Username               string `json:"username,omitempty"`
 	Password               string `json:"password,omitempty"`
 	IntegrationFlowID      string `json:"integrationFlowId,omitempty"`
@@ -23,15 +23,15 @@ type deployIntegrationArtifactOptions struct {
 	OAuthTokenProviderURL  string `json:"oAuthTokenProviderUrl,omitempty"`
 }
 
-// DeployIntegrationArtifactCommand Deploy a CPI integration flow
-func DeployIntegrationArtifactCommand() *cobra.Command {
-	const STEP_NAME = "deployIntegrationArtifact"
+// IntegrationArtifactDeployCommand Deploy a CPI integration flow
+func IntegrationArtifactDeployCommand() *cobra.Command {
+	const STEP_NAME = "integrationArtifactDeploy"
 
-	metadata := deployIntegrationArtifactMetadata()
-	var stepConfig deployIntegrationArtifactOptions
+	metadata := integrationArtifactDeployMetadata()
+	var stepConfig integrationArtifactDeployOptions
 	var startTime time.Time
 
-	var createDeployIntegrationArtifactCmd = &cobra.Command{
+	var createIntegrationArtifactDeployCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Deploy a CPI integration flow",
 		Long:  `With this step you can deploy a integration flow artifact in to SAP Cloud Platform integration runtime using OData API.Learn more about the SAP Cloud Integration remote API for deploying an integration artifact [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/08632076a1114bc1b6a1ecafef8f0178.html)`,
@@ -71,17 +71,17 @@ func DeployIntegrationArtifactCommand() *cobra.Command {
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			deployIntegrationArtifact(stepConfig, &telemetryData)
+			integrationArtifactDeploy(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
 
-	addDeployIntegrationArtifactFlags(createDeployIntegrationArtifactCmd, &stepConfig)
-	return createDeployIntegrationArtifactCmd
+	addIntegrationArtifactDeployFlags(createIntegrationArtifactDeployCmd, &stepConfig)
+	return createIntegrationArtifactDeployCmd
 }
 
-func addDeployIntegrationArtifactFlags(cmd *cobra.Command, stepConfig *deployIntegrationArtifactOptions) {
+func addIntegrationArtifactDeployFlags(cmd *cobra.Command, stepConfig *integrationArtifactDeployOptions) {
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User to authenticate to the SAP Cloud Platform Integration Service")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password to authenticate to the SAP Cloud Platform Integration Service")
 	cmd.Flags().StringVar(&stepConfig.IntegrationFlowID, "integrationFlowId", os.Getenv("PIPER_integrationFlowId"), "Specifies the ID of the Integration Flow artifact")
@@ -99,10 +99,10 @@ func addDeployIntegrationArtifactFlags(cmd *cobra.Command, stepConfig *deployInt
 }
 
 // retrieve step metadata
-func deployIntegrationArtifactMetadata() config.StepData {
+func integrationArtifactDeployMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:        "deployIntegrationArtifact",
+			Name:        "integrationArtifactDeploy",
 			Aliases:     []config.Alias{},
 			Description: "Deploy a CPI integration flow",
 		},
