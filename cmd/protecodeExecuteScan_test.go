@@ -404,18 +404,18 @@ func TestGetTarName(t *testing.T) {
 			"",
 			"abc.tar",
 		},
-		"with sha": {
-			"ppiper/cf-cli@sha256:c25dbacb9ab6e912afe0fe926d8f9d949c60adfe55d16778bde5941e6c37be11",
+		"ScanImage without sha as artifactVersion": {
+			"abc@sha256:12345",
 			"",
+			"abc.tar",
+		},
+		"ScanImage with sha as artifactVersion": {
+			"ppiper/cf-cli@sha256:c25dbacb9ab6e912afe0fe926d8f9d949c60adfe55d16778bde5941e6c37be11",
+			"c25dbacb9ab6e912afe0fe926d8f9d949c60adfe55d16778bde5941e6c37be11",
 			"ppiper_cf-cli_c25dbacb9ab6e912afe0fe926d8f9d949c60adfe55d16778bde5941e6c37be11.tar",
 		},
-		"with sha+version": {
-			"ppiper/cf-cli@sha256:c25dbacb9ab6e912afe0fe926d8f9d949c60adfe55d16778bde5941e6c37be11",
-			"verZionNotIgnored12345asdf",
-			"ppiper_cf-cli_c25dbacb9ab6e912afe0fe926d8f9d949c60adfe55d16778bde5941e6c37be11_verZionNotIgnored12345asdf.tar",
-		},
 	}
-
+	
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
 			assert.Equal(t, c.expect, getTarName(&protecodeExecuteScanOptions{ScanImage: c.image, ArtifactVersion: c.version}))

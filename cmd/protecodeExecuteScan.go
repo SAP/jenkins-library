@@ -330,13 +330,15 @@ func correctDockerConfigEnvVar(config *protecodeExecuteScanOptions) {
 func getTarName(config *protecodeExecuteScanOptions) string {
 	// remove original version
 	fileName := strings.TrimSuffix(config.ScanImage, ":"+config.ArtifactVersion)
+	// remove sha digest if exists
+	sha256 := "@sha256"
+	if index := strings.Index(fileName, sha256); index > -1 {
+		fileName = fileName[:index]
+	}
 	// append trimmed version
 	if version := handleArtifactVersion(config.ArtifactVersion); len(version) > 0 {
 		fileName = fileName + "_" + version
 	}
-	// replace unwanted chars
 	fileName = strings.ReplaceAll(fileName, "/", "_")
-	sha256 := "@sha256:"
-	fileName = strings.Replace(fileName, sha256, "_", 1)
 	return fileName + ".tar"
 }
