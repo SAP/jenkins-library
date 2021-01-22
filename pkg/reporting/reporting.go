@@ -115,7 +115,7 @@ const reportHTMLTemplate = `<!DOCTYPE html>
 	.black-cell{
 		background-color: rgba(0, 0, 0, 0.75);
 		padding: 5px;
-	}		
+	}
 	</style>
 </head>
 <body>
