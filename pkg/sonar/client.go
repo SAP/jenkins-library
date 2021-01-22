@@ -7,17 +7,12 @@ import (
 	sonargo "github.com/magicsong/sonargo/sonar"
 )
 
-// BasicAuth Basic Authentication
-type BasicAuth struct {
-	Username string
-	Password string
-}
-
 // Requester ...
 type Requester struct {
-	Host      string
-	BasicAuth *BasicAuth
-	Client    Sender
+	Client   Sender
+	Host     string
+	Username string
+	Password string
 	// Certificates [][]byte
 	// CACert    []byte
 	// SslVerify bool
@@ -28,17 +23,8 @@ type Sender interface {
 	Send(*http.Request) (*http.Response, error)
 }
 
-// NewBasicAuthClient ...
-func NewBasicAuthClient(username, password, host string, client Sender) *Requester {
-	return &Requester{
-		Host:      host,
-		BasicAuth: &BasicAuth{Username: username, Password: password},
-		Client:    client,
-	}
-}
-
 func (requester *Requester) create(method, path string, options interface{}) (request *http.Request, err error) {
-	sonarGoClient, err := sonargo.NewClient(requester.Host, requester.BasicAuth.Username, requester.BasicAuth.Password)
+	sonarGoClient, err := sonargo.NewClient(requester.Host, requester.Username, requester.Password)
 	// reuse request creation from sonargo
 	request, err = sonarGoClient.NewRequest(method, path, options)
 	if err != nil {

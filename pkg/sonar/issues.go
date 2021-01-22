@@ -60,7 +60,12 @@ func NewIssuesService(host, token, project, organization, branch, pullRequest st
 		Project:      project,
 		Branch:       branch,
 		PullRequest:  pullRequest,
-		apiClient:    NewBasicAuthClient(token, "", host, client),
+		apiClient: &Requester{
+			Client:   client,
+			Host:     host,
+			Username: token,
+			Password: "",
+		},
 	}
 }
 
