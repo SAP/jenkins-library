@@ -53,9 +53,10 @@ func NewIssuesService(host, token, project, organization, branch, pullRequest st
 	if !strings.HasSuffix(host, "api/") {
 		host += "api/"
 	}
+
+	log.Entry().Debugf("using api client for '%s'", host)
+
 	return &IssueService{
-		Host:         host,
-		Token:        token,
 		Organization: organization,
 		Project:      project,
 		Branch:       branch,
@@ -70,8 +71,6 @@ func NewIssuesService(host, token, project, organization, branch, pullRequest st
 }
 
 type IssueService struct {
-	Host         string
-	Token        string
 	Organization string
 	Project      string
 	Branch       string
@@ -114,7 +113,6 @@ func (service *IssueService) GetNumberOfInfoIssues() (int, error) {
 }
 
 func (service *IssueService) getIssueCount(severity issueSeverity) (int, error) {
-	log.Entry().Debugf("using api client for '%s'", service.Host)
 	options := &IssuesSearchOption{
 		ComponentKeys: service.Project,
 		Severities:    severity.ToString(),
