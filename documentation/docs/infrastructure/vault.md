@@ -10,24 +10,27 @@ Parameters that support being fetched from Vault are marked with the Vault Label
 
 ## Authenticating Piper to Vault
 
-Piper currently supports Vault's `AppRole` and `Token` authentication. However, `Token` authentication is recommended
+Piper currently supports Vault's `AppRole` and `Token` authentication. However, `AppRole` authentication is recommended
 since Piper is able to regularly rotate the SecretID, which is not possible with a Token.
 
 ### AppRole Authentication
 
-To authenticate against Vault, using [AppRole](https://www.vaultproject.io/docs/auth/approle) Authentication, you first
-need to enable it in your vault instance. After that you have to
-[create an AppRole Role](https://www.vaultproject.io/api-docs/auth/approle#create-update-approle) for Piper and assign
-it the necessary policies.
+To authenticate against Vault, using [AppRole](https://www.vaultproject.io/docs/auth/approle) authentication you need to
+do the following things
 
-Then take the role ID from your Vault AppRole and create a Jenkins `Secret Text` credential. Do the same for the Vault
-AppRole secret ID.
+- Enable AppRole authentication in your vault instance.
+- After that you have
+  to [create an AppRole Role](https://www.vaultproject.io/api-docs/auth/approle#create-update-approle) for Piper
+- Assign the necessary policies to your newly created AppRole.
+- Take the **AppRole ID** and create a Jenkins `Secret Text` credential.
+- Take the **AppRole Secret ID** and create a Jenkins `Secret Text` credential.
 
 ![Create two jenkins secret text credentials](../images/jenkins-vault-credential.png)
 
 ### Token Authentication
 
-First step to use Token Authentication is to [Create a vault Token](https://www.vaultproject.io/api/auth/token#create-token)
+First step to use Token authentication is
+to [Create a vault Token](https://www.vaultproject.io/api/auth/token#create-token)
 In order to use a Vault Token for authentication you need to store the vault token inside your Jenkins instance as shown
 below.
 
