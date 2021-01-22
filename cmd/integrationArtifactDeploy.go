@@ -94,12 +94,12 @@ func runIntegrationArtifactDeploy(config *integrationArtifactDeployOptions, tele
 			Info("successfully deployed into CPI runtime")
 		return nil
 	}
-	response, readErr := ioutil.ReadAll(deployResp.Body)
+	responseBody, readErr := ioutil.ReadAll(deployResp.Body)
 
 	if readErr != nil {
 		return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code : %v", deployResp.StatusCode)
 	}
 
-	log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code : %v", response, deployResp.StatusCode)
+	log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code : %v", responseBody, deployResp.StatusCode)
 	return errors.Errorf("Integration Flow deployment failed, Response Status code: %v", deployResp.StatusCode)
 }
