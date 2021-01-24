@@ -13,13 +13,9 @@ import (
 //GetCPIFunctionMockResponse -Generate mock response payload for different CPI functions
 func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, error) {
 	switch functionName {
-	case "DeployIntegrationDesigntimeArtifact":
+	case "IntegrationArtifactDeploy":
 		if testType == "Positive" {
-			res := http.Response{
-				StatusCode: 202,
-				Body:       ioutil.NopCloser(bytes.NewReader([]byte(``))),
-			}
-			return &res, nil
+			return GetEmptyHTTPResponseBody()
 		}
 		res := http.Response{
 			StatusCode: 500,
@@ -32,7 +28,6 @@ func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, 
 					}`))),
 		}
 		return &res, errors.New("Internal Server Error")
-
 	default:
 		res := http.Response{
 			StatusCode: 404,
@@ -40,4 +35,13 @@ func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, 
 		}
 		return &res, errors.New("Service not Found")
 	}
+}
+
+//GetEmptyHTTPResponseBody -Empty http respose body
+func GetEmptyHTTPResponseBody() (*http.Response, error) {
+	res := http.Response{
+		StatusCode: 202,
+		Body:       ioutil.NopCloser(bytes.NewReader([]byte(``))),
+	}
+	return &res, nil
 }
