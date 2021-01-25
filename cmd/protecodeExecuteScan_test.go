@@ -415,7 +415,6 @@ func TestGetTarName(t *testing.T) {
 			"ppiper_cf-cli_c25dbacb9ab6e912afe0fe926d8f9d949c60adfe55d16778bde5941e6c37be11.tar",
 		},
 	}
-	
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
 			assert.Equal(t, c.expect, getTarName(&protecodeExecuteScanOptions{ScanImage: c.image, ArtifactVersion: c.version}))
