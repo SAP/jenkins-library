@@ -172,6 +172,7 @@ public class CommonStepsTest extends BasePiperTest{
         'vaultRotateSecretId', //implementing new golang pattern without fields
         'whitesourceExecuteScan' //implementing new golang pattern without fields
         'deployIntegrationArtifact' //implementing new golang pattern without fields
+        'integrationArtifactDeploy', //implementing new golang pattern without fields
     ]
 
     @Test
