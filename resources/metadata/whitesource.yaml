@@ -6,7 +6,7 @@ metadata:
     WhiteSource is a Software as a Service offering based on a so called unified agent that locally determines the dependency
     tree of a node.js, Java, Python, Ruby, or Scala based solution and sends it to the WhiteSource server for a policy based license compliance
     check and additional Free and Open Source Software Publicly Known Vulnerabilities detection.
-    
+
     The step uses the so-called WhiteSource Unified Agent. For details please refer to the [WhiteSource Unified Agent Documentation](https://whitesource.atlassian.net/wiki/spaces/WD/pages/33718339/Unified+Agent).
 
     !!! note "Docker Images"
