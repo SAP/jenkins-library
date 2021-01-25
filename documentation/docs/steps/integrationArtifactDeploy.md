@@ -15,7 +15,7 @@
 Example configuration for the use in a `Jenkinsfile`.
 
 ```groovy
-deployIntegrationArtifact script: this
+integrationArtifactDeploy script: this
 ```
 
 Example of a YAML configuration file (such as `.pipeline/config.yaml`).
@@ -23,7 +23,7 @@ Example of a YAML configuration file (such as `.pipeline/config.yaml`).
 ```yaml
 steps:
   <...>
-  deployIntegrationArtifact:
+  integrationArtifactDeploy:
     cpiCredentialsId: 'MY_CPI_OAUTH_CREDENTIALSID_IN_JENKINS'
     integrationFlowId: 'MY_INTEGRATION_FLOW_NAME'
     integrationFlowVersion: 'MY_INTEGRATION_FLOW_VERSION'
