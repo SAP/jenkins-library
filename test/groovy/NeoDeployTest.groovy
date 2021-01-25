@@ -295,7 +295,8 @@ class NeoDeployTest extends BasePiperTest {
     @Test
     void deployWithBearerTokenCredentials_success(){
 
-        helper.registerAllowedMethod( 'readFile', [Map.class], {m -> return load(m.file, m.encoding?m.encoding:'UTF-8')} )
+        nullScript.commonPipelineEnvironment.setMtarFilePath('archive.mtar')
+
 
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, "https:\\/\\/api\\.test\\.com\\/oauth2\\/apitoken\\/v1", "{\"access_token\":\"xxx\"}")
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, "https:\\/\\/slservice\\.test\\.host\\.com\\/slservice\\/v1\\/oauth\\/accounts\\/testUser123\\/mtars", "{\"id\":123}")
@@ -314,8 +315,8 @@ class NeoDeployTest extends BasePiperTest {
                     ],
         )
 
-        assertThat(loggingRule.log, containsString("[NeoDeploy] Retrieving oauth token..."))
-        assertThat(loggingRule.log, containsString("[NeoDeploy] Deployment has succeeded."))
+        Assert.assertThat(shellRule.shell[0], containsString("#!/bin/bash curl --fail --silent --show-error --retry 12 -XPOST -u \"abc123:testclientsecret123\" \"https://api.test.com/oauth2/apitoken/v1?grant_type=client_credentials\""))
+        Assert.assertThat(shellRule.shell[1], containsString("#!/bin/bash curl --fail --silent --show-error --retry 12 -XPOST -H \"Authorization: Bearer xxx\" -F file=@\"archive.mtar\" \"https://slservice.test.host.com/slservice/v1/oauth/accounts/testUser123/mtars\""))
     }
 
     @Test

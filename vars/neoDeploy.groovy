@@ -398,7 +398,7 @@ private deploy(script, Map configuration, NeoCommandHelper neoCommandHelper, doc
     }
 }
 
-private deployWithBearerToken(credentialFilePath, configuration, script){
+private deployWithBearerToken(def credentialFilePath, Map configuration, Script script){
 
     def deployArchive = script.commonPipelineEnvironment.getMtarFilePath()
     def host = configuration.neo.host
@@ -411,7 +411,7 @@ private deployWithBearerToken(credentialFilePath, configuration, script){
     def oauthClientSecret = credentialsMap.oauthClientSecret
     def oauthUrl = credentialsMap.oauthServiceUrl
 
-    echo "[NeoDeploy] Retrieving oauth token..."
+    echo "[${STEP_NAME}] Retrieving oauth token..."
 
     def myCurl = "curl --fail --silent --show-error --retry 12"
     def token_json = sh(
@@ -423,7 +423,7 @@ private deployWithBearerToken(credentialFilePath, configuration, script){
     def responseJson = readJSON text: token_json
     def token = responseJson.access_token
 
-    echo "[NeoDeploy] Deploying '${deployArchive}' to '${account}'..."
+    echo "[${STEP_NAME}] Deploying '${deployArchive}' to '${account}'..."
 
     def deploymentContentResponse = sh(
         script: """#!/bin/bash
@@ -434,7 +434,7 @@ private deployWithBearerToken(credentialFilePath, configuration, script){
     def deploymentJson = readJSON text: deploymentContentResponse
     def deploymentId = deploymentJson.id
 
-    echo "[NeoDeploy] Deployment Id is '${deploymentId}'."
+    echo "[${STEP_NAME}] Deployment Id is '${deploymentId}'."
 
     def statusPollScript = """#!/bin/bash
                                 ${myCurl} -XGET -H \"Authorization: Bearer ${token}\" \"https://slservice.${host}/slservice/v1/oauth/accounts/${account}/mtars/${deploymentId}\"
@@ -448,23 +448,23 @@ private deployWithBearerToken(credentialFilePath, configuration, script){
         statusResponse = sh(script: statusPollScript, returnStdout: true)
         statusJson = readJSON text: statusResponse
         state = statusJson.state
-        echo "[NeoDeploy] Deployment is still running..."
+        echo "${STEP_NAME}] Deployment is still running..."
     }
 
     if (state == 'DONE') {
-        echo "[NeoDeploy] Deployment has succeeded."
+        echo "[${STEP_NAME}] Deployment has succeeded."
     } else if (state == 'FAILED') {
         if(statusJson.progress[0]?.modules[0]?.error?.internalMessage) {
             def message = statusJson.progress[0].modules[0].error.internalMessage
-            echo "[NeoDeploy] Deployment has failed with the message: ${message}"
-            error "[NeoDeploy] Deployment failure message: ${message}"
+            echo "[${STEP_NAME}] Deployment has failed with the message: ${message}"
+            error "[${STEP_NAME}] Deployment failure message: ${message}"
         } else {
-            echo "[NeoDeploy] Deployment has failed with response: ${statusResponse}"
-            error "[NeoDeploy] Deployment failure reason: ${statusResponse}"
+            echo "[${STEP_NAME}] Deployment has failed with response: ${statusResponse}"
+            error "[${STEP_NAME}] Deployment failure reason: ${statusResponse}"
         }
     } else {
-        echo "[NeoDeploy] Unknown status '${state}'"
-        error "[NeoDeploy] Deployment failed with unknown status: ${state}"
+        echo "[${STEP_NAME}] Unknown status '${state}'"
+        error "[${STEP_NAME}] Deployment failed with unknown status: ${state}"
     }
 }
 
