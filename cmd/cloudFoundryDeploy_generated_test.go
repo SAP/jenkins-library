@@ -7,6 +7,7 @@ import (
 )
 
 func TestCloudFoundryDeployCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := CloudFoundryDeployCommand()
 

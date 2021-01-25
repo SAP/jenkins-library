@@ -7,6 +7,7 @@ import (
 )
 
 func TestContainerSaveImageCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := ContainerSaveImageCommand()
 

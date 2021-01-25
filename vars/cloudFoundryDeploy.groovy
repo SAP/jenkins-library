@@ -83,8 +83,8 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'deployTool',
     /**
-     * Defines the type of deployment, either `standard` deployment which results in a system downtime or a zero-downtime `blue-green` deployment.
-     * If 'cf_native' as deployType and 'blue-green' as deployTool is used in combination, your manifest.yaml may only contain one application.
+     * Defines the type of deployment, either `standard` deployment, which results in a system downtime, or a zero-downtime `blue-green` deployment.
+     * If 'cf_native' as deployTool and 'blue-green' as deployType is used in combination, your manifest.yaml may only contain one application.
      * If this application has the option 'no-route' active the deployType will be changed to 'standard'.
      * @possibleValues 'standard', 'blue-green'
      */
@@ -160,6 +160,10 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'dockerCredentialsId',
     /**
+     * Output the CloudFoundry trace logs. If not specified, takes the value of config.verbose.
+     */
+    'cfTrace',
+    /**
      * Toggle to activate the new go-implementation of the step. Off by default.
      * @possibleValues true, false
      */
@@ -231,11 +235,21 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('cloudFoundry/credentialsId', null, {c -> return !c.containsKey('vaultAppRoleTokenCredentialsId') || !c.containsKey('vaultAppRoleSecretTokenCredentialsId')})
             .use()
 
+        if (config.cfTrace == null) config.cfTrace = true
+
         if (config.useGoStep == true) {
+            utils.unstashAll(["deployDescriptor"])
             List credentials = [
                 [type: 'usernamePassword', id: 'cfCredentialsId', env: ['PIPER_username', 'PIPER_password']],
                 [type: 'usernamePassword', id: 'dockerCredentialsId', env: ['PIPER_dockerUsername', 'PIPER_dockerPassword']]
             ]
+
+            if (config.mtaExtensionCredentials) {
+                config.mtaExtensionCredentials.each { key, credentialsId ->
+                    echo "[INFO]${STEP_NAME}] Preparing credential for being used by piper-go. key: ${key}, credentialsId is: ${credentialsId}, exposed as environment variable ${toEnvVarKey(credentialsId)}"
+                    credentials << [type: 'token', id: credentialsId, env: [toEnvVarKey(credentialsId)], resolveCredentialsId: false]
+                }
+            }
             piperExecuteBin(parameters, STEP_NAME, 'metadata/cloudFoundryDeploy.yaml', credentials)
             return
         }
@@ -307,6 +321,17 @@ void call(Map parameters = [:]) {
         }
 
     }
+}
+
+/*
+ * Inserts underscores before all upper case letters which are not already
+ * have an underscore before, replaces any non letters/digits with underscore
+ * and transforms all lower case letters to upper case.
+ */
+private static String toEnvVarKey(String key) {
+    key = key.replaceAll(/[^A-Za-z0-9]/, "_")
+    key = key.replaceAll(/(.)(?<!_)([A-Z])/, "\$1_\$2")
+    return key.toUpperCase()
 }
 
 private void handleMTADeployment(Map config, script) {
@@ -587,7 +612,7 @@ private deploy(String cfApiStatement, String cfDeployStatement, config, Closure 
             set +x
             set -e
             export HOME=${config.dockerWorkspace}
-            export CF_TRACE=${cfTraceFile}
+            ${config.cfTrace ? "export CF_TRACE=${cfTraceFile}" : ""}
             ${cfApiStatement ?: ''}
             cf login -u \"${username}\" -p '${password}' -a ${config.cloudFoundry.apiEndpoint} -o \"${config.cloudFoundry.org}\" -s \"${config.cloudFoundry.space}\" ${config.loginParameters}
             cf plugins
