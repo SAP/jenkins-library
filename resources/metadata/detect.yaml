@@ -279,6 +279,17 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: scanOnChanges
+        description:
+          "This flag determines if the scan is submitted to the server. If set to true, then scan is submitted to the server only when changes are detected in the Open source Bill of materials
+          If the flag is set to false, then the scan is submitted to server regardless of any changes
+          For more details about the script, please refer the script specific documentation at https://github.com/blackducksoftware/detect_rescan/blob/master/README.md"
+        type: bool
+        default: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   containers:
     - name: openjdk
       image: openjdk:11

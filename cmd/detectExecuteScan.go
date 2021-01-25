@@ -77,7 +77,7 @@ func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData)
 
 func runDetect(config detectExecuteScanOptions, utils detectUtils) error {
 	// detect execution details, see https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/88440888/Sample+Synopsys+Detect+Scan+Configuration+Scenarios+for+Black+Duck
-	err := utils.DownloadFile("https://detect.synopsys.com/detect.sh", "detect.sh", nil, nil)
+	err := getDetectScript(config, utils)
 	if err != nil {
 		return fmt.Errorf("failed to download 'detect.sh' script: %w", err)
 	}
@@ -118,6 +118,14 @@ func runDetect(config detectExecuteScanOptions, utils detectUtils) error {
 	return utils.RunShell("/bin/bash", script)
 }
 
+func getDetectScript(config detectExecuteScanOptions, utils detectUtils) error {
+	if config.ScanOnChanges {
+		return utils.DownloadFile("https://raw.githubusercontent.com/blackducksoftware/detect_rescan/master/detect_rescan.sh", "detect.sh", nil, nil)
+	} else {
+		return utils.DownloadFile("https://detect.synopsys.com/detect.sh", "detect.sh", nil, nil)
+	}
+}
+
 func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectUtils) ([]string, error) {
 
 	coordinates := struct {
@@ -127,6 +135,10 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 	}
 
 	_, detectVersionName := versioning.DetermineProjectCoordinates("", config.VersioningModel, coordinates)
+
+	if config.ScanOnChanges {
+		args = append(args, fmt.Sprint("--report"))
+	}
 
 	args = append(args, config.ScanProperties...)
 
