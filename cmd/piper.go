@@ -121,6 +121,7 @@ func Execute() {
 	rootCmd.AddCommand(CloudFoundryDeleteSpaceCommand())
 	rootCmd.AddCommand(VaultRotateSecretIdCommand())
 	rootCmd.AddCommand(TransportRequestUploadCTSCommand())
+	rootCmd.AddCommand(TransportRequestUploadRFCCommand())
 	rootCmd.AddCommand(IntegrationArtifactDeployCommand())
 
 	addRootFlags(rootCmd)
