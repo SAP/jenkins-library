@@ -121,9 +121,8 @@ func runDetect(config detectExecuteScanOptions, utils detectUtils) error {
 func getDetectScript(config detectExecuteScanOptions, utils detectUtils) error {
 	if config.ScanOnChanges {
 		return utils.DownloadFile("https://raw.githubusercontent.com/blackducksoftware/detect_rescan/master/detect_rescan.sh", "detect.sh", nil, nil)
-	} else {
-		return utils.DownloadFile("https://detect.synopsys.com/detect.sh", "detect.sh", nil, nil)
 	}
+	return utils.DownloadFile("https://detect.synopsys.com/detect.sh", "detect.sh", nil, nil)
 }
 
 func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectUtils) ([]string, error) {
