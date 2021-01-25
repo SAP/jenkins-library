@@ -5,7 +5,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -194,92 +193,12 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		if err != nil {
 			return nil, err
 		}
-
-		if len(config.M2Path) > 0 {
-			absolutePath, err := fileUtils.Abs(config.M2Path)
-			if err != nil {
-				return nil, err
-			}
-			mavenArgs = append(mavenArgs, fmt.Sprintf("-Dmaven.repo.local=%v", absolutePath))
-		}
-
-		if len(mavenArgs) > 0 {
-			args = append(args, fmt.Sprintf("\"--detect.maven.build.command='%v'\"", strings.Join(mavenArgs, " ")))
-		}
-	} else {
-		c1 := command.Command{}
-		switch config.BuildTool {
-		case "maven", "mta":
-			mavenBuildCommand := []string{"clean", "install", "-DskipTests=true"}
-			mavenBuildArgs, err := maven.DownloadAndGetMavenParameters(config.GlobalSettingsFile, config.ProjectSettingsFile, fileUtils, httpClient)
-			if err != nil {
-				return nil, err
-			}
-			if len(config.M2Path) > 0 {
-				absolutePath, err := fileUtils.Abs(config.M2Path)
-				if err != nil {
-					return nil, err
-				}
-				mavenBuildArgs = append(mavenBuildArgs, fmt.Sprintf("-Dmaven.repo.local=%v", absolutePath))
-			}
-			mavenBuildCommand = append(mavenBuildCommand, mavenBuildArgs...)
-			pomFiles, err := newUtils().Glob(filepath.Join("**", "pom.xml"))
-			if err != nil {
-				log.Entry().Info("Build tool is " + config.BuildTool + " and no pom xml found. Detect scan will proceed without a build")
-			}
-			//When pom.xml is present in the workspace directory (parent pom) and if this has not been added to BuildDescriptorExcludeList we build the code
-			//if not then we find every pom xml in the current workspace and use it to build unless it is added in BuildDescriptorExcludeList*/
-			if findElement(pomFiles, "pom.xml") && !findElement(config.BuildDescriptorExcludeList, "pom.xml") {
-				args = append(args, fmt.Sprintf("\"--detect.maven.build.command='%v'\"", strings.Join(mavenBuildCommand, " ")))
-			} else {
-				localMavenBuild(fileUtils, config, &c1, pomFiles)
-			}
-		default:
-			log.Entry().Info("Detect scan will proceed without a build")
-		}
+		mavenArgs = append(mavenArgs, fmt.Sprintf("-Dmaven.repo.local=%v", absolutePath))
 	}
+
+	if len(mavenArgs) > 0 {
+		args = append(args, fmt.Sprintf("\"--detect.maven.build.command='%v'\"", strings.Join(mavenArgs, " ")))
+	}
+
 	return args, nil
-}
-
-func localMavenBuild(fileUtils piperutils.FileUtils, config detectExecuteScanOptions, command command.ExecRunner, pomFiles []string) {
-
-	for _, pomFile := range pomFiles {
-		if !findElement(config.BuildDescriptorExcludeList, pomFile) {
-			executeCleanOptions := maven.ExecuteOptions{
-				PomPath:             pomFile,
-				ProjectSettingsFile: config.ProjectSettingsFile,
-				GlobalSettingsFile:  config.GlobalSettingsFile,
-				M2Path:              config.M2Path,
-				Goals:               []string{"clean"},
-				Defines:             []string{"-DskipTests=true"},
-				ReturnStdout:        true,
-			}
-			_, errClean := maven.Execute(&executeCleanOptions, command)
-			if errClean != nil {
-				log.Entry().WithError(errClean).Warn("failed to clean : ", pomFile)
-			}
-			executeInstallOptions := maven.ExecuteOptions{
-				PomPath:             pomFile,
-				ProjectSettingsFile: config.ProjectSettingsFile,
-				GlobalSettingsFile:  config.GlobalSettingsFile,
-				M2Path:              config.M2Path,
-				Goals:               []string{"install"},
-				Defines:             []string{"-DskipTests=true"},
-				ReturnStdout:        true,
-			}
-			_, errInstall := maven.Execute(&executeInstallOptions, command)
-			if errInstall != nil {
-				log.Entry().WithError(errInstall).Warn("failed to clean : ", pomFile)
-			}
-		}
-	}
-}
-
-func findElement(slice []string, val string) bool {
-	for _, item := range slice {
-		if item == val {
-			return true
-		}
-	}
-	return false
 }
