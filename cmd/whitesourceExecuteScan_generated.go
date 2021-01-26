@@ -577,7 +577,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 				{Image: "hseeberger/scala-sbt:8u181_2.12.8_1.2.8", WorkingDir: "/tmp", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "sbt"}}}}},
 				{Image: "maven:3.5-jdk-8", WorkingDir: "/tmp", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "maven"}}}, {ConditionRef: "strings-equal", Params: []config.Param{{Name: "scanType", Value: "maven"}}}}},
 				{Image: "node:lts-stretch", WorkingDir: "/home/node", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "npm"}}}, {ConditionRef: "strings-equal", Params: []config.Param{{Name: "scanType", Value: "npm"}}}}},
-				{Image: "python:3.6-stretch", WorkingDir: "/tmp", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "pip"}}}}},
+				{Image: "python:3.6-stretch", WorkingDir: "/tmp", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "pip"}}}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
