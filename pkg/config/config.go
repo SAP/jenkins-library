@@ -185,6 +185,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		stepConfig.mixIn(def.General, filters.General)
 		stepConfig.mixIn(def.Steps[stepName], filters.Steps)
 		stepConfig.mixIn(def.Stages[stageName], filters.Steps)
+		stepConfig.mixinVaultConfig(def.General, def.Steps[stepName], def.Stages[stageName])
 
 		// process hook configuration - this is only supported via defaults
 		if stepConfig.HookConfig == nil {
@@ -233,7 +234,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		log.Entry().Warnf("invalid value for parameter verbose: '%v'", stepConfig.Config["verbose"])
 	}
 
-	stepConfig.mixIn(c.General, vaultFilter)
+	stepConfig.mixinVaultConfig(c.General, c.Steps[stepName], c.Stages[stageName])
 	// fetch secrets from vault
 	vaultClient, err := getVaultClientFromConfig(stepConfig, c.vaultCredentials)
 	if err != nil {
