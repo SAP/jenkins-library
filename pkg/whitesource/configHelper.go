@@ -222,7 +222,7 @@ func (c *ConfigOptions) addBuildToolDefaults(buildTool string) error {
 			{Name: "python.resolveDependencies", Value: true, Force: true},
 			{Name: "python.ignoreSourceFiles", Value: true, Force: true},
 			{Name: "python.ignorePipInstallErrors", Value: false},
-			{Name: "python.installVirtualenv", Value: true},
+			{Name: "python.installVirtualEnv", Value: true},
 			{Name: "python.resolveHierarchyTree", Value: true},
 			{Name: "python.requirementsFileIncludes", Value: "requirements.txt"},
 			{Name: "python.resolveSetupPyFiles", Value: true},
