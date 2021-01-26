@@ -135,7 +135,7 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, utils
 	case "pip":
 		if len(buildDescriptorFilePath) == 0 {
 			var err error
-			buildDescriptorFilePath, err = searchDescriptor([]string{"version.txt", "VERSION", "setup.py"}, fileExists)
+			buildDescriptorFilePath, err = searchDescriptor([]string{"setup.py", "version.txt", "VERSION"}, fileExists)
 			if err != nil {
 				return artifact, err
 			}
