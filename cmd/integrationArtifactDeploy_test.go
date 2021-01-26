@@ -7,31 +7,29 @@ import (
 	"net/http"
 	"testing"
 
-	cpi "github.com/SAP/jenkins-library/pkg/cpi"
+	"github.com/SAP/jenkins-library/pkg/cpi"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
 )
 
-type deployIntegrationArtifactMockUtils struct {
+type integrationArtifactDeployMockUtils struct {
 	*mock.ExecMockRunner
-	*mock.FilesMock
 }
 
-func newDeployIntegrationArtifactTestsUtils() deployIntegrationArtifactMockUtils {
-	utils := deployIntegrationArtifactMockUtils{
+func newIntegrationArtifactDeployTestsUtils() integrationArtifactDeployMockUtils {
+	utils := integrationArtifactDeployMockUtils{
 		ExecMockRunner: &mock.ExecMockRunner{},
-		FilesMock:      &mock.FilesMock{},
 	}
 	return utils
 }
 
-func TestRunDeployIntegrationArtifact(t *testing.T) {
+func TestRunIntegrationArtifactDeploy(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Successfull Integration Flow Deploy Test", func(t *testing.T) {
 
-		config := deployIntegrationArtifactOptions{
+		config := integrationArtifactDeployOptions{
 			Host:                   "https://demo",
 			OAuthTokenProviderURL:  "https://demo/oauth/token",
 			Username:               "demouser",
@@ -41,15 +39,24 @@ func TestRunDeployIntegrationArtifact(t *testing.T) {
 			Platform:               "cf",
 		}
 
-		httpClient := httpMockCpis{CPIFunction: "DeployIntegrationDesigntimeArtifact", ResponseBody: ``, TestType: "Positive"}
+		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactDeploy", ResponseBody: ``, TestType: "Positive"}
 
-		err := runDeployIntegrationArtifact(&config, nil, &httpClient)
-		// assert
-		assert.NoError(t, err)
+		err := runIntegrationArtifactDeploy(&config, nil, &httpClient)
+
+		if assert.NoError(t, err) {
+
+			t.Run("check url", func(t *testing.T) {
+				assert.Equal(t, "https://demo/api/v1/DeployIntegrationDesigntimeArtifact?Id='flow1'&Version='1.0.1'", httpClient.URL)
+			})
+
+			t.Run("check method", func(t *testing.T) {
+				assert.Equal(t, "POST", httpClient.Method)
+			})
+		}
 	})
 
 	t.Run("Failed case of Integration Flow Deploy Test", func(t *testing.T) {
-		config := deployIntegrationArtifactOptions{
+		config := integrationArtifactDeployOptions{
 			Host:                   "https://demo",
 			OAuthTokenProviderURL:  "https://demo/oauth/token",
 			Username:               "demouser",
@@ -59,10 +66,10 @@ func TestRunDeployIntegrationArtifact(t *testing.T) {
 			Platform:               "cf",
 		}
 
-		httpClient := httpMockCpis{CPIFunction: "DeployIntegrationDesigntimeArtifact", ResponseBody: ``, TestType: "Negative"}
+		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactDeploy", ResponseBody: ``, TestType: "Negative"}
 
-		err := runDeployIntegrationArtifact(&config, nil, &httpClient)
-		// assert
+		err := runIntegrationArtifactDeploy(&config, nil, &httpClient)
+
 		assert.EqualError(t, err, "HTTP POST request to https://demo/api/v1/DeployIntegrationDesigntimeArtifact?Id='flow1'&Version='1.0.1' failed with error: Internal Server Error")
 	})
 
