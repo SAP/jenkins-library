@@ -554,7 +554,7 @@ func aggregateVersionWideVulnerabilities(config *ScanOptions, utils whitesourceU
 	}
 
 	reportPath := filepath.Join(config.ReportDirectoryName, "project-names-aggregated.txt")
-	if err := utils.FileWrite(reportPath, []byte(projectNames), 0644); err != nil {
+	if err := utils.FileWrite(reportPath, []byte(projectNames), 0666); err != nil {
 		return err
 	}
 	if err := newVulnerabilityExcelReport(versionWideAlerts, config, utils); err != nil {
@@ -651,7 +651,7 @@ func newLibraryCSVReport(libraries map[string][]ws.Library, config *ScanOptions,
 	// Write result to file
 	fileName := fmt.Sprintf("%s/libraries-%s.csv", config.ReportDirectoryName,
 		utils.Now().Format(wsReportTimeStampLayout))
-	if err := utils.FileWrite(fileName, []byte(output), 0777); err != nil {
+	if err := utils.FileWrite(fileName, []byte(output), 0666); err != nil {
 		return err
 	}
 	return nil
