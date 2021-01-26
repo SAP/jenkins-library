@@ -88,7 +88,7 @@ func TestExecuteUAScan(t *testing.T) {
 		scan := newTestScan(&config)
 
 		err := scan.ExecuteUAScan(&config, utilsMock)
-		assert.EqualError(t, err, "failed retrieve project name")
+		assert.EqualError(t, err, "failed retrieve project name: the file 'package.json' must configure a name")
 	})
 
 }
