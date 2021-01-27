@@ -189,6 +189,43 @@ func TestAddGeneralDefaults(t *testing.T) {
 		assert.Equal(t, "--global-settings global-settings.xml --settings project-settings.xml --projects !unit-tests", testConfig[2].Value)
 		assert.Equal(t, true, testConfig[2].Force)
 	})
+
+	t.Run("Docker - default", func(t *testing.T) {
+		testConfig := ConfigOptions{}
+		whitesourceConfig := ScanOptions{
+			BuildTool: "docker",
+		}
+		utilsMock.AddFile("Dockerfile", []byte("dummy"))
+		testConfig.addGeneralDefaults(&whitesourceConfig, utilsMock)
+		// Name: "docker.dockerfilePath", Value: dockerFile, Force: false
+		assert.Equal(t, "docker.dockerfilePath", testConfig[2].Name)
+		assert.Equal(t, "Dockerfile", testConfig[2].Value)
+		assert.Equal(t, false, testConfig[2].Force)
+	})
+
+	t.Run("Docker - custom", func(t *testing.T) {
+		testConfig := ConfigOptions{}
+		whitesourceConfig := ScanOptions{
+			BuildTool:           "docker",
+			BuildDescriptorFile: "Dockerfile_custom",
+		}
+		utilsMock.AddFile("Dockerfile_custom", []byte("dummy"))
+		testConfig.addGeneralDefaults(&whitesourceConfig, utilsMock)
+		assert.Equal(t, "docker.dockerfilePath", testConfig[2].Name)
+		assert.Equal(t, "Dockerfile_custom", testConfig[2].Value)
+		assert.Equal(t, false, testConfig[2].Force)
+	})
+
+	t.Run("Docker - no builddescriptor found", func(t *testing.T) {
+		testConfig := ConfigOptions{}
+		whitesourceConfig := ScanOptions{
+			BuildTool:           "docker",
+			BuildDescriptorFile: "Dockerfile_nonExisting",
+		}
+		testConfig.addGeneralDefaults(&whitesourceConfig, utilsMock)
+		assert.NotEqual(t, "docker.dockerfilePath", testConfig[2].Name)
+		assert.NotEqual(t, "Dockerfile_custom", testConfig[2].Value)
+	})
 }
 
 func TestMvnProjectExcludes(t *testing.T) {

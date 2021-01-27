@@ -115,20 +115,21 @@ func (c *ConfigOptions) addGeneralDefaults(config *ScanOptions, utils Utils) {
 		}
 
 		mvnAdditionalArguments, _ := maven.DownloadAndGetMavenParameters(config.GlobalSettingsFile, config.ProjectSettingsFile, utils)
-		/*
-			if len(config.ProjectSettingsFile) > 0 {
-				mvnAdditionalArguments = append(mvnAdditionalArguments, "--settings", config.ProjectSettingsFile)
-			}
-
-			if len(config.GlobalSettingsFile) > 0 {
-				mvnAdditionalArguments = append(mvnAdditionalArguments, "--global-settings", config.GlobalSettingsFile)
-			}
-		*/
-
 		mvnAdditionalArguments = append(mvnAdditionalArguments, mvnProjectExcludes(config.BuildDescriptorExcludeList, utils)...)
 
 		if len(mvnAdditionalArguments) > 0 {
 			cOptions = append(cOptions, ConfigOption{Name: "maven.additionalArguments", Value: strings.Join(mvnAdditionalArguments, " "), Force: true})
+		}
+
+	}
+
+	if config.BuildTool == "docker" {
+		dockerFile := config.BuildDescriptorFile
+		if len(dockerFile) == 0 {
+			dockerFile = "Dockerfile"
+		}
+		if exists, _ := utils.FileExists(dockerFile); exists {
+			cOptions = append(cOptions, ConfigOption{Name: "docker.dockerfilePath", Value: dockerFile, Force: false})
 		}
 
 	}
@@ -181,6 +182,7 @@ func (c *ConfigOptions) addBuildToolDefaults(buildTool string) error {
 			{Name: "python.resolveGlobalPackages", Value: true, Force: false},
 			{Name: "resolveAllDependencies", Value: true, Force: false},
 			{Name: "updateType", Value: "OVERRIDE", Force: true},
+			{Name: "docker.excludeBaseImage", Value: "true", Force: false},
 		},
 		"dub": {
 			{Name: "includes", Value: "**/*.d **/*.di"},

@@ -14,6 +14,7 @@ type ScanOptions struct {
 	// All scanned maven modules will be reflected in the aggregate project.
 	ProjectName string
 
+	BuildDescriptorFile        string
 	BuildDescriptorExcludeList []string
 	// PomPath is the path to root build descriptor file.
 	PomPath string
