@@ -71,6 +71,9 @@ spec:
           - STEPS
           - GENERAL
       - name: cmclientops
+        aliases:
+          - name: clientOpts
+          - name: changeManagement/clientOpts
         type: "[]string"
         mandatory: true
         description: "additional options handed over to the cm client"
