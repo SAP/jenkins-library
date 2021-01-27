@@ -2,9 +2,6 @@ package whitesource
 
 import (
 	"fmt"
-	"io/ioutil"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,22 +11,12 @@ func TestRewriteUAConfigurationFile(t *testing.T) {
 	t.Parallel()
 
 	t.Run("default", func(t *testing.T) {
-		dir, err := ioutil.TempDir("", "")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
-		// clean up tmp dir
-		defer os.RemoveAll(dir)
-
-		uaFile := filepath.Join(dir, "ua.props")
-		ioutil.WriteFile(uaFile, []byte("test = dummy"), 0666)
-
 		config := ScanOptions{
 			BuildTool:      "npm",
-			ConfigFilePath: uaFile,
+			ConfigFilePath: "ua.props",
 		}
 		utilsMock := NewScanUtilsMock()
-		utilsMock.FileWrite(config.ConfigFilePath, []byte{}, 0666)
+		utilsMock.AddFile(config.ConfigFilePath, []byte("test = dummy"))
 
 		path, err := config.RewriteUAConfigurationFile(utilsMock)
 		assert.NoError(t, err)

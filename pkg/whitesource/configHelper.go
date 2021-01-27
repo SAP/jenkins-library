@@ -28,10 +28,10 @@ type ConfigOptions []ConfigOption
 // It then returns the path to the file containing the updated configuration
 func (s *ScanOptions) RewriteUAConfigurationFile(utils Utils) (string, error) {
 
-	// read config from inputFilePath or config.whitesource.configFilePath
-	uaConfig, err := properties.LoadFile(s.ConfigFilePath, properties.UTF8)
+	uaContent, err := utils.FileRead(s.ConfigFilePath)
+	uaConfig, propErr := properties.Load(uaContent, properties.UTF8)
 	uaConfigMap := map[string]string{}
-	if err != nil {
+	if err != nil || propErr != nil {
 		log.Entry().Warningf("Failed to load configuration file '%v'. Creating a configuration file from scratch.", s.ConfigFilePath)
 	} else {
 		uaConfigMap = uaConfig.Map()
