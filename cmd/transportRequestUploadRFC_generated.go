@@ -117,7 +117,7 @@ func transportRequestUploadRFCMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
 			Name:        "transportRequestUploadRFC",
-			Aliases:     []config.Alias{},
+			Aliases:     []config.Alias{{Name: "transportRequestUploadFile", Deprecated: false}},
 			Description: "Uploads content to a transport request",
 		},
 		Spec: config.StepSpec{
