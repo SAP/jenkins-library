@@ -1,8 +1,18 @@
-# Continuous Testing on SAP Cloud Platform ABAP Environment
+# Continuous Testing on SAP BTP ABAP Environment
 
 ## Introduction
 
-This scenario describes how to test ABAP development for the SAP Cloud Platform ABAP Environment (also known as Steampunk). In Steampunk, the development is done within [“software components”](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/58480f43e0b64de782196922bc5f1ca0.html) (also called: “repositories”) and "transported" via git-based approaches. The [ABAP Environment Pipeline](../pipelines/abapEnvironment/introduction.md) is a predefined pipeline, which can be used to import ABAP development into a quality system and execute tests.
+This scenario describes how to test ABAP development for the SAP BTP ABAP Environment (also known as Steampunk). In Steampunk, the development is done within [“software components”](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/58480f43e0b64de782196922bc5f1ca0.html) (also called: “repositories”) and "transported" via git-based approaches. The [ABAP Environment Pipeline](../pipelines/abapEnvironment/introduction.md) is a predefined pipeline, which can be used to import ABAP development into a quality system and execute tests.
+
+!!! caution "Upcoming 2102 release of SAP BTP ABAP Environment"
+    With the upcoming 2102 release of SAP BTP ABAP Environment some changes to the backend behavior of the MANAGE_GIT_REPOSITORY service are introduced. Specifically:
+    - To pull a software component to a system, the software component needs to be cloned first.
+    - It is planned to add the possibility to clone a software component repeatedly with the hotfix collection HFC03 of release 2102
+    **Implications for the “abapEnvironmentPipeline”:**
+    If you are using the “Prepare System” stage to create a new ABAP Environment system, it is no longer possible to use the “Clone Repositories” stage with the “Pull” strategy or with the default strategy (no strategy specified). Please use the strategy “Clone” instead. For more information, have a look at the [stage documentation](../pipelines/abapEnvironment/stages/cloneRepositories.md).
+    The strategy “AddonBuild” will execute the abapEnvironmentCloneGitRepo instead of the previous logic. No configuration changes should be necessary.
+    Please be aware that a repeated execution of a pipeline using the strategy “Clone” or “AddonBuild” will not be possible until hotfix collection HFC03 (planned).
+    The recommended workaround is to replace the strategy “AddonBuild” with “CheckoutPull”, whenever the system from a previous pipeline run is reused.
 
 ## Pipeline
 
@@ -18,7 +28,7 @@ This stage is responsible for cloning (or pulling) the defined software componen
 
 ### ATC
 
-This stage runs ATC checks on the SAP Cloud Platform ABAP Environment system. The results are returned in the "CheckStyle" format. With the help of a stage extension, a plugin can be used to visualize the check results.
+This stage runs ATC checks on the SAP BTP ABAP Environment system. The results are returned in the "CheckStyle" format. With the help of a stage extension, a plugin can be used to visualize the check results.
 
 ## Prerequisites
 
@@ -34,10 +44,10 @@ The pipeline configuration is done in a git repository (for example on GitHub). 
 
 ### Cloud Foundry Access
 
-ABAP Environment systems are created in the SAP Cloud Platform Cockpit. For this pipeline, the creation and deletion of the systems are automated via the Cloud Foundry Command Line Interface: [cf CLI](https://docs.cloudfoundry.org/cf-cli/). For this to work, two things need to be configured:
+ABAP Environment systems are created in the SAP BTP Cockpit. For this pipeline, the creation and deletion of the systems are automated via the Cloud Foundry Command Line Interface: [cf CLI](https://docs.cloudfoundry.org/cf-cli/). For this to work, two things need to be configured:
 
 - Cloud Foundry needs to be enabled on subaccount level. This can be done on the Subaccount Overview page. The subaccount is then mapped to a “Cloud Foundry Organization”, for which you must provide a suitable name during the creation. Have a look at the [documentation](https://help.sap.com/viewer/a96b1df8525f41f79484717368e30626/Cloud/en-US/dc18bac42270468d84b6c030a668e003.html) for more details.
-- A (technical) user is required to access the SAP Cloud Platform via the cf CLI. The user needs to be a [member of the global account](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/4a0491330a164f5a873fa630c7f45f06.html) and has to have the [Space Developer](https://help.sap.com/viewer/a96b1df8525f41f79484717368e30626/Cloud/en-US/967fc4e2b1314cf7afc7d7043b53e566.html) role. The user and password need to be stored in the Jenkins Credentials Store.
+- A (technical) user is required to access the SAP BTP via the cf CLI. The user needs to be a [member of the global account](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/4a0491330a164f5a873fa630c7f45f06.html) and has to have the [Space Developer](https://help.sap.com/viewer/a96b1df8525f41f79484717368e30626/Cloud/en-US/967fc4e2b1314cf7afc7d7043b53e566.html) role. The user and password need to be stored in the Jenkins Credentials Store.
 
 During the pipeline configuration, you will specify the Service Plan, which will be used for the creation of an ABAP Environment system. Please make sure, that there are enough entitlements for this [Service Plan in the Subaccount](https://help.sap.com/viewer/a96b1df8525f41f79484717368e30626/Cloud/en-US/c40cb18aeaa343389036fdcdd03c41d0.html).
 
