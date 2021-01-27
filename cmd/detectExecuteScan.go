@@ -136,7 +136,7 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 	_, detectVersionName := versioning.DetermineProjectCoordinates("", config.VersioningModel, coordinates)
 
 	if config.ScanOnChanges {
-		args = append(args, fmt.Sprint("--report"))
+		args = append(args, "--report")
 	}
 
 	args = append(args, config.ScanProperties...)
