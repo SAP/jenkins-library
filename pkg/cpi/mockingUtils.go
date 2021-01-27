@@ -64,15 +64,6 @@ func GetEmptyHTTPResponseBody() (*http.Response, error) {
 	return &res, nil
 }
 
-//GetEmptyHTTPResponseBody -Empty http respose body
-func GetEmptyHTTPResponseBody() (*http.Response, error) {
-	res := http.Response{
-		StatusCode: 202,
-		Body:       ioutil.NopCloser(bytes.NewReader([]byte(``))),
-	}
-	return &res, nil
-}
-
 //GetNegativeCaseHTTPResponseBody -Negative case http respose body
 func GetNegativeCaseHTTPResponseBody() (*http.Response, error) {
 	res := http.Response{
