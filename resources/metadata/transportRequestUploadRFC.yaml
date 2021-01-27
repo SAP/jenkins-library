@@ -1,5 +1,7 @@
 metadata:
   name: transportRequestUploadRFC
+  aliases:
+    - name: transportRequestUploadFile
   description: "Uploads content to a transport request"
   longDescription: |
     Uploads content to a transport request.
