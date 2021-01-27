@@ -525,6 +525,3 @@ spec:
           params:
             - name: buildTool
               value: pip
-      options:
-        - name: -u
-          value: "0"
