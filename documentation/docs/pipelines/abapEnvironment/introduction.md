@@ -5,7 +5,7 @@
 The goal of the ABAP Environment Pipeline is to enable Continuous Integration for the SAP BTP ABAP Environment, also known as Steampunk.
 The pipeline contains several stages and supports different scenarios. The general idea is that the user can choose a subset of these stages, which fits her/his use case, for example running nightly ATC checks or building an ABAP Add-on for Steampunk.
 
-!!! caution Upcoming 2102 release of SAP BTP ABAP Environment
+!!! caution "Upcoming 2102 release of SAP BTP ABAP Environment"
     With the upcoming 2102 release of SAP BTP ABAP Environment some changes to the backend behavior of the MANAGE_GIT_REPOSITORY service are introduced. Specifically:
     To pull a software component to a system, the software component needs to be cloned first.
     It is planned to add the possibility to clone a software component repeatedly with the hotfix collection HFC03 of release 2102

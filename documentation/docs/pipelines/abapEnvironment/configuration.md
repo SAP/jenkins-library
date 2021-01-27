@@ -18,7 +18,7 @@ You can have a look at different pipeline configurations in our [SAP-samples rep
 | [Publish](stages/publish.md)                  | [abapAddonAssemblyKitPublishTargetVector](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitPublishTargetVector/)|
 | [Post](stages/post.md)                     | [cloudFoundryDeleteService](https://sap.github.io/jenkins-library/steps/cloudFoundryDeleteService/)|
 
-!!! caution Upcoming 2102 release of SAP BTP ABAP Environment
+!!! caution "Upcoming 2102 release of SAP BTP ABAP Environment"
     With the upcoming 2102 release of SAP BTP ABAP Environment some changes to the backend behavior of the MANAGE_GIT_REPOSITORY service are introduced. Specifically:
     To pull a software component to a system, the software component needs to be cloned first.
     It is planned to add the possibility to clone a software component repeatedly with the hotfix collection HFC03 of release 2102

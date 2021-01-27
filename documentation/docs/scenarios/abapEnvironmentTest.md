@@ -4,7 +4,7 @@
 
 This scenario describes how to test ABAP development for the SAP BTP ABAP Environment (also known as Steampunk). In Steampunk, the development is done within [“software components”](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/58480f43e0b64de782196922bc5f1ca0.html) (also called: “repositories”) and "transported" via git-based approaches. The [ABAP Environment Pipeline](../pipelines/abapEnvironment/introduction.md) is a predefined pipeline, which can be used to import ABAP development into a quality system and execute tests.
 
-!!! caution Upcoming 2102 release of SAP BTP ABAP Environment
+!!! caution "Upcoming 2102 release of SAP BTP ABAP Environment"
     With the upcoming 2102 release of SAP BTP ABAP Environment some changes to the backend behavior of the MANAGE_GIT_REPOSITORY service are introduced. Specifically:
     To pull a software component to a system, the software component needs to be cloned first.
     It is planned to add the possibility to clone a software component repeatedly with the hotfix collection HFC03 of release 2102
