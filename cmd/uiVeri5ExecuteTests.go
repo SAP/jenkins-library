@@ -39,6 +39,7 @@ func runUIVeri5(config *uiVeri5ExecuteTestsOptions, command command.ExecRunner) 
 	}
 
 	if config.TestOptions != "" {
+		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.Errorf("parameter testOptions no longer supported, please use runOptions parameter instead.")
 	}
 	if err := command.RunExecutable(config.RunCommand, config.RunOptions...); err != nil {
