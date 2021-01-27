@@ -34,7 +34,7 @@ void call(Map parameters = [:]) {
 
     parameters << config
     if (parameters.testRepository) {
-        parameters.stashContent = GitUtils.handleTestRepository(this, parameters)
+        parameters.stashContent = GitUtils.handleTestRepository(this, [gitBranch: config.gitBranch, gitSshKeyCredentialsId: config.gitSshKeyCredentialsId, testRepository: config.testRepository])
     }
 
     List credentials = [
