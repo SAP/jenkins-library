@@ -107,7 +107,7 @@ func transportRequestUploadSOLMANMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
 			Name:        "transportRequestUploadSOLMAN",
-			Aliases:     []config.Alias{},
+			Aliases:     []config.Alias{{Name: "transportRequestUploadFile", Deprecated: false}},
 			Description: "Uploads content to a transport request",
 		},
 		Spec: config.StepSpec{
@@ -175,7 +175,7 @@ func transportRequestUploadSOLMANMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEP", "GENERAL"},
 						Type:        "[]string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "clientOpts"}, {Name: "changeManagement/clientOpts"}},
 					},
 				},
 			},
