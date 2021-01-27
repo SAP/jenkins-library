@@ -7,6 +7,7 @@
     You cannot build add-ons based on gCTS branching functionality.
 
 !!! caution "Upcoming 2102 release of SAP BTP ABAP Environment"
+
     With the upcoming 2102 release of SAP BTP ABAP Environment some changes to the backend behavior of the MANAGE_GIT_REPOSITORY service are introduced. Specifically:
 
       - To pull a software component to a system, the software component needs to be cloned first.
