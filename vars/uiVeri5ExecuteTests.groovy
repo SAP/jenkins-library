@@ -32,7 +32,6 @@ void call(Map parameters = [:]) {
             .mixin(parameters, CONFIG_KEYS)
             .use()
 
-    parameters << config
     if (parameters.testRepository) {
         parameters.stashContent = GitUtils.handleTestRepository(this, [gitBranch: config.gitBranch, gitSshKeyCredentialsId: config.gitSshKeyCredentialsId, testRepository: config.testRepository])
     }
