@@ -18,6 +18,14 @@ const (
 	SchemeFullVersion = "{{.Version}}"
 )
 
+func DetermineProjectCoordinatesWithCustomVersion(nameTemplate, versionScheme, customVersion string, gav Coordinates) (string, string) {
+	name, version := DetermineProjectCoordinates(nameTemplate, versionScheme, gav)
+	if len(customVersion) > 0 {
+		return name, customVersion
+	}
+	return name, version
+}
+
 // DetermineProjectCoordinates resolve the coordinates of the project for use in 3rd party scan tools
 func DetermineProjectCoordinates(nameTemplate, versionScheme string, gav Coordinates) (string, string) {
 	projectName, err := piperutils.ExecuteTemplateFunctions(nameTemplate, sprig.HermeticTxtFuncMap(), gav)
