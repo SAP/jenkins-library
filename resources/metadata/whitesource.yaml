@@ -234,8 +234,10 @@ spec:
           - name: whitesource/productVersion
             deprecated: true
         type: string
-        description: "Version of the WhiteSource product to be created and used for results aggregation,
-          usually determined automatically."
+        description: Version of the WhiteSource product to be created and used for results aggregation.
+        longDescription: |-
+          Version of the WhiteSource product to be created and used for results aggregation.
+          This is usually determined automatically based on the information in the buildTool specific build descriptor file.
         scope:
           - GENERAL
           - PARAMETERS
