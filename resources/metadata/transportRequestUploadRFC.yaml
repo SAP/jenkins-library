@@ -26,8 +26,8 @@ spec:
       - name: client
         type: string
         aliases:
-          - name: changeManagement/client
-        description: "The ABAP client"
+          - name: changeManagement/rfc/developmentClient
+        description: "AS ABAP client number"
         scope:
           - PARAMETERS
           - STAGES
@@ -36,8 +36,8 @@ spec:
       - name: instance
         type: string
         aliases:
-          - name: changeManagement/client
-        description: "The ABAP client"
+          - name: changeManagement/rfc/developmentInstance
+        description: "AS ABAP instance number"
         scope:
           - PARAMETERS
           - STAGES
@@ -126,6 +126,8 @@ spec:
       - name: failUploadOnWarning
         type: bool
         default: true
+        aliases:
+          - name: failOnWarning
         description: "If the upload should fail in case the log contains warnings"
         scope:
           - PARAMETERS
