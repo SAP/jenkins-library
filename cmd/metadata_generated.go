@@ -43,6 +43,7 @@ func GetAllStepMetadata() map[string]config.StepData {
 		"gitopsUpdateDeployment":                  gitopsUpdateDeploymentMetadata(),
 		"hadolintExecute":                         hadolintExecuteMetadata(),
 		"integrationArtifactDeploy":               integrationArtifactDeployMetadata(),
+		"integrationArtifactUpdateConfiguration":  integrationArtifactUpdateConfigurationMetadata(),
 		"jsonApplyPatch":                          jsonApplyPatchMetadata(),
 		"kanikoExecute":                           kanikoExecuteMetadata(),
 		"karmaExecuteTests":                       karmaExecuteTestsMetadata(),
