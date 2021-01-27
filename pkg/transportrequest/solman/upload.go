@@ -5,7 +5,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // FileSystem interface collecting everything which is file system
@@ -87,12 +86,8 @@ func (a *UploadAction) WithCMOpts(opts []string) {
 // Perform performs the SOLMAN upload
 func (a *UploadAction) Perform(fs FileSystem, command Exec) error {
 
-	logDetails := logrus.Fields{
-		"endpoint":   a.Connection.Endpoint,
-		"deployable": a.File,
-	}
-
-	log.Entry().WithFields(logDetails).Info("Deploying artifact.")
+	log.Entry().Infof("Deploying artifact '%s' to '%s'.",
+		a.File, a.Connection.Endpoint)
 
 	exists, err := fs.FileExists(a.File)
 
@@ -121,9 +116,11 @@ func (a *UploadAction) Perform(fs FileSystem, command Exec) error {
 	}
 
 	if err == nil {
-		log.Entry().WithFields(logDetails).Info("Deployment succeeded")
+		log.Entry().Infof("Deployment succeeded, artifact: '%s', endpoint: '%s'",
+			a.File, a.Connection.Endpoint)
 	} else {
-		log.Entry().WithFields(logDetails).WithError(err).Warn("Deployment failed")
+		log.Entry().WithError(err).Warnf("Deployment failed, artifact: '%s', endpoint: '%s'",
+			a.File, a.Connection.Endpoint)
 	}
 
 	return errors.Wrapf(err, "cannot upload artifact '%s'", a.File)
