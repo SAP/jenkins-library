@@ -89,8 +89,8 @@ func TransportRequestUploadRFCCommand() *cobra.Command {
 
 func addTransportRequestUploadRFCFlags(cmd *cobra.Command, stepConfig *transportRequestUploadRFCOptions) {
 	cmd.Flags().StringVar(&stepConfig.Endpoint, "endpoint", os.Getenv("PIPER_endpoint"), "The service endpoint")
-	cmd.Flags().StringVar(&stepConfig.Client, "client", os.Getenv("PIPER_client"), "The ABAP client")
-	cmd.Flags().StringVar(&stepConfig.Instance, "instance", os.Getenv("PIPER_instance"), "The ABAP client")
+	cmd.Flags().StringVar(&stepConfig.Client, "client", os.Getenv("PIPER_client"), "AS ABAP client number")
+	cmd.Flags().StringVar(&stepConfig.Instance, "instance", os.Getenv("PIPER_instance"), "AS ABAP instance number")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "The deploy user")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "The password for the deploy user")
 	cmd.Flags().StringVar(&stepConfig.ApplicationName, "applicationName", os.Getenv("PIPER_applicationName"), "The name of the application.")
@@ -137,7 +137,7 @@ func transportRequestUploadRFCMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "changeManagement/client"}},
+						Aliases:     []config.Alias{{Name: "changeManagement/rfc/developmentClient"}},
 					},
 					{
 						Name:        "instance",
@@ -145,7 +145,7 @@ func transportRequestUploadRFCMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "changeManagement/client"}},
+						Aliases:     []config.Alias{{Name: "changeManagement/rfc/developmentInstance"}},
 					},
 					{
 						Name:        "username",
@@ -225,7 +225,7 @@ func transportRequestUploadRFCMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "bool",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "failOnWarning"}},
 					},
 					{
 						Name:        "transportRequestId",
