@@ -28,6 +28,7 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
         prepareExecution(script, utils, parameters)
         prepareMetadataResource(script, metadataFile)
         Map stepParameters = prepareStepParameters(parameters)
+        echo "Step params $stepParameters"
 
         withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(stepParameters)}",
@@ -168,7 +169,7 @@ void credentialWrapper(config, List credentialInfo, body) {
                 credentialsId = config[cred.id]
             }
             if (credentialsId) {
-                switch(cred.type) {
+                switch (cred.type) {
                     case "file":
                         creds.add(file(credentialsId: credentialsId, variable: cred.env[0]))
                         break
@@ -182,9 +183,15 @@ void credentialWrapper(config, List credentialInfo, body) {
                         sshCreds.add(credentialsId)
                         break
                     default:
-                        error ("invalid credential type: ${cred.type}")
+                        error("invalid credential type: ${cred.type}")
                 }
             }
+        }
+
+        // remove credentialIds that were probably defaulted and which are not present in jenkins
+        if (containsVaultConfig(config)) {
+            creds = removeMissingCredentials(creds, config)
+            sshCreds = removeMissingCredentials(sshCreds, config)
         }
 
         if (sshCreds.size() > 0) {
@@ -203,8 +210,29 @@ void credentialWrapper(config, List credentialInfo, body) {
     }
 }
 
+List removeMissingCredentials(List creds, Map config) {
+    return creds.findAll { credentialExists(it, config) }
+}
+
+boolean credentialExists(cred, Map config) {
+    try {
+        withCredentials([cred]) {
+            return true
+        }
+    } catch (e) {
+        return false
+    }
+}
+
+boolean containsVaultConfig(Map config) {
+    def approleIsUsed = config.containsKey('vaultAppRoleTokenCredentialsId') && config.containsKey('vaultAppRoleSecretTokenCredentialsId')
+    def tokenIsUsed = config.containsKey('vaultTokenCredentialsId')
+
+    return approleIsUsed || tokenIsUsed
+}
+
 // Injects vaultCredentials if steps supports resolving parameters from vault
-List handleVaultCredentials( config, List credentialInfo) {
+List handleVaultCredentials(config, List credentialInfo) {
     if (config.containsKey('vaultAppRoleTokenCredentialsId') && config.containsKey('vaultAppRoleSecretTokenCredentialsId')) {
         credentialInfo += [[type: 'token', id: 'vaultAppRoleTokenCredentialsId', env: ['PIPER_vaultAppRoleID']],
                             [type: 'token', id: 'vaultAppRoleSecretTokenCredentialsId', env: ['PIPER_vaultAppRoleSecretID']]]
@@ -230,7 +258,7 @@ void handleErrorDetails(String stepName, Closure body) {
                 errorCategory = " (category: ${errorDetails.category})"
                 DebugReport.instance.failedBuild.category = errorDetails.category
             }
-            error "[${stepName}] Step execution failed${errorCategory}. Error: ${errorDetails.error?:errorDetails.message}"
+            error "[${stepName}] Step execution failed${errorCategory}. Error: ${errorDetails.error ?: errorDetails.message}"
         }
         error "[${stepName}] Step execution failed. Error: ${ex}, please see log file for more details."
     }
