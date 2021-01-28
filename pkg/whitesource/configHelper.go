@@ -39,7 +39,7 @@ func (s *ScanOptions) RewriteUAConfigurationFile(utils Utils) (string, error) {
 
 	cOptions := ConfigOptions{}
 	cOptions.addGeneralDefaults(s, utils)
-	cOptions.addBuildToolDefaults(s.BuildTool)
+	cOptions.addBuildToolDefaults(s, utils)
 
 	newConfigMap := cOptions.updateConfig(&uaConfigMap)
 	newConfig := properties.LoadMap(newConfigMap)
@@ -109,31 +109,6 @@ func (c *ConfigOptions) addGeneralDefaults(config *ScanOptions, utils Utils) {
 		cOptions = append(cOptions, ConfigOption{Name: "includes", Value: strings.Join(config.Includes, " "), Force: true})
 	}
 
-	if config.BuildTool == "maven" {
-		if len(config.M2Path) > 0 {
-			cOptions = append(cOptions, ConfigOption{Name: "maven.m2RepositoryPath", Value: config.M2Path, Force: true})
-		}
-
-		mvnAdditionalArguments, _ := maven.DownloadAndGetMavenParameters(config.GlobalSettingsFile, config.ProjectSettingsFile, utils)
-		mvnAdditionalArguments = append(mvnAdditionalArguments, mvnProjectExcludes(config.BuildDescriptorExcludeList, utils)...)
-
-		if len(mvnAdditionalArguments) > 0 {
-			cOptions = append(cOptions, ConfigOption{Name: "maven.additionalArguments", Value: strings.Join(mvnAdditionalArguments, " "), Force: true})
-		}
-
-	}
-
-	if config.BuildTool == "docker" {
-		dockerFile := config.BuildDescriptorFile
-		if len(dockerFile) == 0 {
-			dockerFile = "Dockerfile"
-		}
-		if exists, _ := utils.FileExists(dockerFile); exists {
-			cOptions = append(cOptions, ConfigOption{Name: "docker.dockerfilePath", Value: dockerFile, Force: false})
-		}
-
-	}
-
 	cOptions = append(cOptions, []ConfigOption{
 		{Name: "apiKey", Value: config.OrgToken, Force: true},
 		{Name: "productName", Value: config.ProductName, Force: true},
@@ -156,23 +131,7 @@ func (c *ConfigOptions) addGeneralDefaults(config *ScanOptions, utils Utils) {
 	}
 }
 
-// handle modules to exclude based on buildDescriptorExcludeList returning e.g. --projects !integration-tests
-func mvnProjectExcludes(buildDescriptorExcludeList []string, utils Utils) []string {
-	projectExcludes := []string{}
-	for _, buildDescriptor := range buildDescriptorExcludeList {
-		exists, _ := utils.FileExists(buildDescriptor)
-		if strings.Contains(buildDescriptor, "pom.xml") && exists {
-			module, _ := filepath.Split(buildDescriptor)
-			projectExcludes = append(projectExcludes, fmt.Sprintf("!%v", strings.TrimSuffix(module, "/")))
-		}
-	}
-	if len(projectExcludes) > 0 {
-		return []string{"--projects", strings.Join(projectExcludes, ",")}
-	}
-	return []string{}
-}
-
-func (c *ConfigOptions) addBuildToolDefaults(buildTool string) error {
+func (c *ConfigOptions) addBuildToolDefaults(config *ScanOptions, utils Utils) error {
 	buildToolDefaults := map[string]ConfigOptions{
 		"docker": {
 			{Name: "docker.scanImages", Value: true, Force: true},
@@ -243,8 +202,33 @@ func (c *ConfigOptions) addBuildToolDefaults(buildTool string) error {
 			{Name: "excludes", Value: "**/*sources.jar **/*javadoc.jar"},
 		},
 	}
-	if config := buildToolDefaults[buildTool]; config != nil {
-		for _, cOpt := range config {
+
+	if config.BuildTool == "maven" {
+		if len(config.M2Path) > 0 {
+			*c = append(*c, ConfigOption{Name: "maven.m2RepositoryPath", Value: config.M2Path, Force: true})
+		}
+
+		mvnAdditionalArguments, _ := maven.DownloadAndGetMavenParameters(config.GlobalSettingsFile, config.ProjectSettingsFile, utils)
+		mvnAdditionalArguments = append(mvnAdditionalArguments, mvnProjectExcludes(config.BuildDescriptorExcludeList, utils)...)
+
+		if len(mvnAdditionalArguments) > 0 {
+			*c = append(*c, ConfigOption{Name: "maven.additionalArguments", Value: strings.Join(mvnAdditionalArguments, " "), Force: true})
+		}
+
+	}
+
+	if config.BuildTool == "docker" {
+		// for now only support default name of Dockerfile
+		// ToDo: evaluate possibilities to allow also non-default Dockerfile names
+		dockerFile := "Dockerfile"
+		if exists, _ := utils.FileExists("Dockerfile"); exists {
+			*c = append(*c, ConfigOption{Name: "docker.dockerfilePath", Value: dockerFile, Force: false})
+		}
+
+	}
+
+	if cOptions := buildToolDefaults[config.BuildTool]; cOptions != nil {
+		for _, cOpt := range cOptions {
 			*c = append(*c, cOpt)
 		}
 		return nil
@@ -253,8 +237,24 @@ func (c *ConfigOptions) addBuildToolDefaults(buildTool string) error {
 	//ToDo: Do we want to auto generate the config via autoGenerateWhitesourceConfig() here?
 	// -> try to load original config file -> if not available generate?
 
-	log.Entry().Infof("Configuration for buildTool: '%v' is not yet hardened, please do a quality assessment of your scan results.", buildTool)
+	log.Entry().Infof("Configuration for buildTool: '%v' is not yet hardened, please do a quality assessment of your scan results.", config.BuildTool)
 	return fmt.Errorf("configuration not hardened")
+}
+
+// handle modules to exclude based on buildDescriptorExcludeList returning e.g. --projects !integration-tests
+func mvnProjectExcludes(buildDescriptorExcludeList []string, utils Utils) []string {
+	projectExcludes := []string{}
+	for _, buildDescriptor := range buildDescriptorExcludeList {
+		exists, _ := utils.FileExists(buildDescriptor)
+		if strings.Contains(buildDescriptor, "pom.xml") && exists {
+			module, _ := filepath.Split(buildDescriptor)
+			projectExcludes = append(projectExcludes, fmt.Sprintf("!%v", strings.TrimSuffix(module, "/")))
+		}
+	}
+	if len(projectExcludes) > 0 {
+		return []string{"--projects", strings.Join(projectExcludes, ",")}
+	}
+	return []string{}
 }
 
 //ToDo: Check if we want to optionally allow auto generation for unknown projects

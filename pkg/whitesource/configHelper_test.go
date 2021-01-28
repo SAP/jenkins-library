@@ -161,21 +161,46 @@ func TestAddGeneralDefaults(t *testing.T) {
 		assert.Equal(t, "**/includes1 **/includes2", testConfig[3].Value)
 		assert.Equal(t, true, testConfig[3].Force)
 	})
+}
+
+func TestAddBuildToolDefaults(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success case", func(t *testing.T) {
+		utilsMock := NewScanUtilsMock()
+		var testConfig ConfigOptions
+		whitesourceConfig := ScanOptions{
+			BuildTool: "dub",
+		}
+		err := testConfig.addBuildToolDefaults(&whitesourceConfig, utilsMock)
+		assert.NoError(t, err)
+		assert.Equal(t, ConfigOptions{{Name: "includes", Value: "**/*.d **/*.di"}}, testConfig)
+	})
+
+	t.Run("error case", func(t *testing.T) {
+		utilsMock := NewScanUtilsMock()
+		var testConfig ConfigOptions
+		whitesourceConfig := ScanOptions{
+			BuildTool: "notHardened",
+		}
+		err := testConfig.addBuildToolDefaults(&whitesourceConfig, utilsMock)
+		assert.EqualError(t, err, "configuration not hardened")
+	})
 
 	t.Run("maven - m2 path", func(t *testing.T) {
+		utilsMock := NewScanUtilsMock()
 		testConfig := ConfigOptions{}
 		whitesourceConfig := ScanOptions{
 			BuildTool: "maven",
 			M2Path:    "test/.m2",
 		}
-		testConfig.addGeneralDefaults(&whitesourceConfig, utilsMock)
-		assert.Equal(t, "maven.m2RepositoryPath", testConfig[2].Name)
-		assert.Equal(t, "test/.m2", testConfig[2].Value)
-		assert.Equal(t, true, testConfig[2].Force)
-		assert.NotEqual(t, "maven.additionalArguments", testConfig[3].Name)
+		testConfig.addBuildToolDefaults(&whitesourceConfig, utilsMock)
+		assert.Contains(t, testConfig, ConfigOption{Name: "maven.m2RepositoryPath", Value: "test/.m2", Force: true})
+		assert.NotContains(t, testConfig, ConfigOption{Name: "maven.additionalArguments", Value: "", Force: true})
 	})
 
 	t.Run("maven - settings", func(t *testing.T) {
+		utilsMock := NewScanUtilsMock()
 		testConfig := ConfigOptions{}
 		whitesourceConfig := ScanOptions{
 			BuildTool:                  "maven",
@@ -184,47 +209,29 @@ func TestAddGeneralDefaults(t *testing.T) {
 			BuildDescriptorExcludeList: []string{"unit-tests/pom.xml"},
 		}
 		utilsMock.AddFile("unit-tests/pom.xml", []byte("dummy"))
-		testConfig.addGeneralDefaults(&whitesourceConfig, utilsMock)
-		assert.Equal(t, "maven.additionalArguments", testConfig[2].Name)
-		assert.Equal(t, "--global-settings global-settings.xml --settings project-settings.xml --projects !unit-tests", testConfig[2].Value)
-		assert.Equal(t, true, testConfig[2].Force)
+		testConfig.addBuildToolDefaults(&whitesourceConfig, utilsMock)
+		assert.Contains(t, testConfig, ConfigOption{Name: "maven.additionalArguments", Value: "--global-settings global-settings.xml --settings project-settings.xml --projects !unit-tests", Force: true})
 	})
 
 	t.Run("Docker - default", func(t *testing.T) {
+		utilsMock := NewScanUtilsMock()
 		testConfig := ConfigOptions{}
 		whitesourceConfig := ScanOptions{
 			BuildTool: "docker",
 		}
 		utilsMock.AddFile("Dockerfile", []byte("dummy"))
-		testConfig.addGeneralDefaults(&whitesourceConfig, utilsMock)
-		// Name: "docker.dockerfilePath", Value: dockerFile, Force: false
-		assert.Equal(t, "docker.dockerfilePath", testConfig[2].Name)
-		assert.Equal(t, "Dockerfile", testConfig[2].Value)
-		assert.Equal(t, false, testConfig[2].Force)
-	})
-
-	t.Run("Docker - custom", func(t *testing.T) {
-		testConfig := ConfigOptions{}
-		whitesourceConfig := ScanOptions{
-			BuildTool:           "docker",
-			BuildDescriptorFile: "Dockerfile_custom",
-		}
-		utilsMock.AddFile("Dockerfile_custom", []byte("dummy"))
-		testConfig.addGeneralDefaults(&whitesourceConfig, utilsMock)
-		assert.Equal(t, "docker.dockerfilePath", testConfig[2].Name)
-		assert.Equal(t, "Dockerfile_custom", testConfig[2].Value)
-		assert.Equal(t, false, testConfig[2].Force)
+		testConfig.addBuildToolDefaults(&whitesourceConfig, utilsMock)
+		assert.Contains(t, testConfig, ConfigOption{Name: "docker.dockerfilePath", Value: "Dockerfile", Force: false})
 	})
 
 	t.Run("Docker - no builddescriptor found", func(t *testing.T) {
+		utilsMock := NewScanUtilsMock()
 		testConfig := ConfigOptions{}
 		whitesourceConfig := ScanOptions{
-			BuildTool:           "docker",
-			BuildDescriptorFile: "Dockerfile_nonExisting",
+			BuildTool: "docker",
 		}
-		testConfig.addGeneralDefaults(&whitesourceConfig, utilsMock)
-		assert.NotEqual(t, "docker.dockerfilePath", testConfig[2].Name)
-		assert.NotEqual(t, "Dockerfile_custom", testConfig[2].Value)
+		testConfig.addBuildToolDefaults(&whitesourceConfig, utilsMock)
+		assert.NotContains(t, testConfig, ConfigOption{Name: "docker.dockerfilePath", Value: "Dockerfile", Force: false})
 	})
 }
 
@@ -246,20 +253,4 @@ func TestMvnProjectExcludes(t *testing.T) {
 	for _, test := range tt {
 		assert.Equal(t, test.expected, mvnProjectExcludes(test.buildDescriptorExcludeList, utilsMock), test.buildDescriptorExcludeList)
 	}
-}
-
-func TestAddBuildToolDefaults(t *testing.T) {
-	t.Parallel()
-	t.Run("success case", func(t *testing.T) {
-		var testConfig ConfigOptions
-		err := testConfig.addBuildToolDefaults("dub")
-		assert.NoError(t, err)
-		assert.Equal(t, ConfigOptions{{Name: "includes", Value: "**/*.d **/*.di"}}, testConfig)
-	})
-
-	t.Run("error case", func(t *testing.T) {
-		var testConfig ConfigOptions
-		err := testConfig.addBuildToolDefaults("not_available")
-		assert.EqualError(t, err, "configuration not hardened")
-	})
 }
