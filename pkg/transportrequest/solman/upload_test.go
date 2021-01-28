@@ -62,6 +62,28 @@ func TestSolmanUpload(t *testing.T) {
 		}
 	})
 
+	t.Run("Missing parameters", func(t *testing.T) {
+		e := &mock.ExecMockRunner{}
+		uploadAction := defaultUploadAction
+		uploadAction.Connection.Endpoint = ""
+		uploadAction.TransportRequestID = ""
+		err := uploadAction.Perform(f, e)
+		if assert.Error(t, err) {
+			// we should not rely on the order of the missing parameters
+			assert.Contains(t, err.Error(), "cannot upload artifact 'myDeployable.xxx': the following parameters are not available")
+			assert.Contains(t, err.Error(), "Connection.Endpoint")
+			assert.Contains(t, err.Error(), "TransportRequestID")
+		}
+	})
+
+	t.Run("DeployableMissing", func(t *testing.T) {
+		f := &mock.FilesMock{}
+		e := &mock.ExecMockRunner{}
+		err := defaultUploadAction.Perform(f, e)
+		if assert.EqualError(t, err, "cannot upload artifact 'myDeployable.xxx': file 'myDeployable.xxx' does not exist") {
+		}
+	})
+
 	t.Run("Deploy command returns with return code not equal zero", func(t *testing.T) {
 
 		e := &mock.ExecMockRunner{}

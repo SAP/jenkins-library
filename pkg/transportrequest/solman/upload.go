@@ -3,6 +3,7 @@ package solman
 import (
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/config/validation"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
 	"strings"
@@ -90,10 +91,22 @@ func (a *UploadAction) Perform(fs FileSystem, command Exec) error {
 	log.Entry().Infof("Deploying artifact '%s' to '%s'.",
 		a.File, a.Connection.Endpoint)
 
-	exists, err := fs.FileExists(a.File)
+	missingParameters, err := validation.FindEmptyStringsInConfigStruct(*a)
 
-	if !exists {
-		err = fmt.Errorf("file '%s' does not exist", a.File)
+	if err == nil {
+		notInitialized := len(missingParameters) != 0
+		if notInitialized {
+			err = fmt.Errorf("the following parameters are not available %s", missingParameters)
+		}
+	}
+
+	if err == nil {
+		var exists bool
+		exists, err = fs.FileExists(a.File)
+
+		if err == nil && !exists {
+			err = fmt.Errorf("file '%s' does not exist", a.File)
+		}
 	}
 
 	if err == nil {
