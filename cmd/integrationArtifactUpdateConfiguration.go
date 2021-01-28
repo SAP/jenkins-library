@@ -81,7 +81,7 @@ func runIntegrationArtifactUpdateConfiguration(config *integrationArtifactUpdate
 	jsonBody, jsonErr := json.Marshal(jsonObj)
 
 	if jsonErr != nil {
-		return errors.Wrap(jsonErr, "input json body is invalid")
+		return errors.Wrapf(jsonErr, "input json body is invalid %v", config.ParameterValue)
 	}
 	configUpdateResp, httpErr := httpClient.SendRequest(httpMethod, configUpdateURL, bytes.NewBuffer(jsonBody), header, nil)
 	if httpErr != nil {
@@ -105,9 +105,9 @@ func runIntegrationArtifactUpdateConfiguration(config *integrationArtifactUpdate
 	response, readErr := ioutil.ReadAll(configUpdateResp.Body)
 
 	if readErr != nil {
-		return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code : %v", configUpdateResp.StatusCode)
+		return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", configUpdateResp.StatusCode)
 	}
 
-	log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code : %v", response, configUpdateResp.StatusCode)
+	log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", response, configUpdateResp.StatusCode)
 	return errors.Errorf("Failed to update the integration flow configuration parameter, Response Status code: %v", configUpdateResp.StatusCode)
 }
