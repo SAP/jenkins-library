@@ -174,35 +174,27 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 	sender.SetOptions(piperhttp.ClientOptions{TransportSkipVerification: true})
 
 	issues := SonarUtils.NewIssuesService(taskReport.ServerURL, config.Token, taskReport.ProjectKey, config.Organization, config.BranchName, config.ChangeID, sender)
-	blocker, err := issues.GetNumberOfBlockerIssues()
+	influx.sonarqube_data.fields.blocker_issues, err = issues.GetNumberOfBlockerIssues()
 	if err != nil {
 		log.Entry().Warn(err)
 	}
-	log.Entry().Infof("Number of Blocker Issues: %v", blocker)
-	critical, err := issues.GetNumberOfCriticalIssues()
+	influx.sonarqube_data.fields.critical_issues, err = issues.GetNumberOfCriticalIssues()
 	if err != nil {
 		log.Entry().Warn(err)
 	}
-	log.Entry().Infof("Number of Critical Issues: %v", critical)
-	major, err := issues.GetNumberOfMajorIssues()
+	influx.sonarqube_data.fields.major_issues, err = issues.GetNumberOfMajorIssues()
 	if err != nil {
 		log.Entry().Warn(err)
 	}
-	log.Entry().Infof("Number of Major Issues: %v", major)
-	minor, err := issues.GetNumberOfMinorIssues()
+	influx.sonarqube_data.fields.minor_issues, err = issues.GetNumberOfMinorIssues()
 	if err != nil {
 		log.Entry().Warn(err)
 	}
-	log.Entry().Infof("Number of Minor Issues: %v", minor)
-	info, err := issues.GetNumberOfInfoIssues()
+	influx.sonarqube_data.fields.info_issues, err = issues.GetNumberOfInfoIssues()
 	if err != nil {
 		log.Entry().Warn(err)
 	}
-	log.Entry().Infof("Number of Info Issues: %v", info)
-	// influx.sonarqube_data.fields.critical_issues, err = issues.GetNumberOfCriticalIssues()
-	// if err != nil {
-	// 	log.Entry().Warn(err)
-	// }
+	log.Entry().Debugf("Influx values: %v", influx.sonarqube_data.fields)
 	return nil
 }
 
