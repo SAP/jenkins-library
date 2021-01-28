@@ -81,7 +81,7 @@ func runIntegrationArtifactUpdateConfiguration(config *integrationArtifactUpdate
 	jsonBody, jsonErr := json.Marshal(jsonObj)
 
 	if jsonErr != nil {
-		return errors.Wrapf(jsonErr, "input json body is invalid %v", config.ParameterValue)
+		return errors.Wrapf(jsonErr, "input json body is invalid for parameterValue %q", config.ParameterValue)
 	}
 	configUpdateResp, httpErr := httpClient.SendRequest(httpMethod, configUpdateURL, bytes.NewBuffer(jsonBody), header, nil)
 	if httpErr != nil {

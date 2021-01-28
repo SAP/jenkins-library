@@ -15,7 +15,7 @@ func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, 
 	switch functionName {
 	case "IntegrationArtifactDeploy":
 		if testType == "Positive" {
-			return GetEmptyHTTPResponseBodyAndNilError()
+			return GetEmptyHTTPResponseBodyAndErrorNil()
 		}
 		res := http.Response{
 			StatusCode: 500,
@@ -30,7 +30,7 @@ func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, 
 		return &res, errors.New("Internal Server Error")
 	case "IntegrationArtifactUpdateConfiguration":
 		if testType == "Positive" {
-			return GetEmptyHTTPResponseBodyAndNilError()
+			return GetEmptyHTTPResponseBodyAndErrorNil()
 		}
 		if testType == "Negative_With_ResponseBody" {
 			return GetNegativeCaseHTTPResponseBodyAndErrorNil()
@@ -55,8 +55,8 @@ func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, 
 	}
 }
 
-//GetEmptyHTTPResponseBodyAndNilError -Empty http respose body
-func GetEmptyHTTPResponseBodyAndNilError() (*http.Response, error) {
+//GetEmptyHTTPResponseBodyAndErrorNil -Empty http respose body
+func GetEmptyHTTPResponseBodyAndErrorNil() (*http.Response, error) {
 	res := http.Response{
 		StatusCode: 202,
 		Body:       ioutil.NopCloser(bytes.NewReader([]byte(``))),
