@@ -70,10 +70,13 @@ func Execute() {
 	rootCmd.AddCommand(DetectExecuteScanCommand())
 	rootCmd.AddCommand(HadolintExecuteCommand())
 	rootCmd.AddCommand(KarmaExecuteTestsCommand())
+	rootCmd.AddCommand(UiVeri5ExecuteTestsCommand())
 	rootCmd.AddCommand(SonarExecuteScanCommand())
 	rootCmd.AddCommand(KubernetesDeployCommand())
 	rootCmd.AddCommand(XsDeployCommand())
 	rootCmd.AddCommand(GithubCheckBranchProtectionCommand())
+	rootCmd.AddCommand(GithubCommentIssueCommand())
+	rootCmd.AddCommand(GithubCreateIssueCommand())
 	rootCmd.AddCommand(GithubCreatePullRequestCommand())
 	rootCmd.AddCommand(GithubPublishReleaseCommand())
 	rootCmd.AddCommand(GithubSetCommitStatusCommand())
@@ -118,6 +121,8 @@ func Execute() {
 	rootCmd.AddCommand(CloudFoundryCreateSpaceCommand())
 	rootCmd.AddCommand(CloudFoundryDeleteSpaceCommand())
 	rootCmd.AddCommand(VaultRotateSecretIdCommand())
+	rootCmd.AddCommand(TransportRequestUploadCTSCommand())
+	rootCmd.AddCommand(IntegrationArtifactDeployCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
