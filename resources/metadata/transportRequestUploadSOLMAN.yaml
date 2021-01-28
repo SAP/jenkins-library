@@ -64,6 +64,9 @@ spec:
         scope:
           - PARAMETERS
       - name: filePath
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: mtarFilePath
         type: string
         mandatory: true
         description: "The name/path of the file which should be uploaded"
