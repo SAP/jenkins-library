@@ -5,6 +5,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
+	"strings"
 )
 
 // FileSystem interface collecting everything which is file system
@@ -96,7 +97,9 @@ func (a *UploadAction) Perform(fs FileSystem, command Exec) error {
 	}
 
 	if err == nil {
-		command.SetEnv(a.CMOpts)
+		if len(a.CMOpts) > 0 {
+			command.SetEnv([]string{fmt.Sprintf("CMCLIENT_OPTS=%s", strings.Join(a.CMOpts, " "))})
+		}
 
 		err = command.RunExecutable("cmclient",
 			"--endpoint", a.Connection.Endpoint,

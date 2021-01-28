@@ -22,7 +22,7 @@ func TestSolmanUpload(t *testing.T) {
 		TransportRequestID: "000K11111111",
 		ApplicationID:      "MY_APP",
 		File:               "myDeployable.xxx",
-		CMOpts:             []string{"-Dmyprop=abc"},
+		CMOpts:             []string{"-Dmyprop1=abc", "-Dmyprop2=def"},
 	}
 
 	t.Run("Deployable does not exist", func(t *testing.T) {
@@ -58,7 +58,7 @@ func TestSolmanUpload(t *testing.T) {
 					"myDeployable.xxx",
 				},
 			}, e.Calls[0])
-			assert.Equal(t, []string{"-Dmyprop=abc"}, e.Env)
+			assert.Equal(t, []string{"CMCLIENT_OPTS=-Dmyprop1=abc -Dmyprop2=def"}, e.Env)
 		}
 	})
 
