@@ -165,143 +165,17 @@ void call(Map parameters = [:]) {
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
             .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
-            .addIfEmpty('filePath', script.commonPipelineEnvironment.getMtarFilePath())
 
         Map configuration = configHelper.use()
 
         BackendType backendType = getBackendTypeAndLogInfoIfCMIntegrationDisabled(this, configuration)
         if(backendType == BackendType.NONE) return
 
-        configHelper
-            .collectValidationFailures()
-            .withMandatoryProperty('changeManagement/changeDocumentLabel')
-            .withMandatoryProperty('changeManagement/clientOpts')
-            .withMandatoryProperty('changeManagement/credentialsId')
-            .withMandatoryProperty('changeManagement/endpoint')
-            .withMandatoryProperty('changeManagement/client', null, {backendType == BackendType.CTS})
-            .withMandatoryProperty('changeManagement/type')
-            .withMandatoryProperty('changeManagement/git/from')
-            .withMandatoryProperty('changeManagement/git/to')
-            .withMandatoryProperty('changeManagement/git/format')
-            .withMandatoryProperty('filePath', null, { backendType == BackendType.SOLMAN })
-            .withMandatoryProperty('applicationUrl', null, { backendType == BackendType.RFC })
-            .withMandatoryProperty('codePage', null, { backendType == BackendType.RFC })
-            .withMandatoryProperty('acceptUnixStyleLineEndings', null, { backendType == BackendType.RFC })
-            .withMandatoryProperty('changeManagement/rfc/developmentInstance', null, { backendType == BackendType.RFC })
-            .withMandatoryProperty('changeManagement/rfc/developmentClient', null, { backendType == BackendType.RFC })
-            .withMandatoryProperty('changeManagement/rfc/docker/image', null, {backendType == BackendType.RFC})
-            .withMandatoryProperty('changeManagement/rfc/docker/options', null, {backendType == BackendType.RFC})
-            .withMandatoryProperty('changeManagement/rfc/docker/envVars', null, {backendType == BackendType.RFC})
-            .withMandatoryProperty('changeManagement/rfc/docker/pullImage', null, {backendType == BackendType.RFC})
-            .withMandatoryProperty('applicationDescription', null, { backendType == BackendType.RFC })
-            .withMandatoryProperty('abapPackage', null, { backendType in [BackendType.RFC, BackendType.CTS] })
-            .withMandatoryProperty('applicationId', null, {backendType == BackendType.SOLMAN})
-            .withMandatoryProperty('applicationName', null, {backendType in [BackendType.RFC, BackendType.CTS]})
-            .withMandatoryProperty('failOnWarning', null, {backendType == BackendType.RFC})
-            .withMandatoryProperty('verbose', null, {backendType == BackendType.RFC})
+        List credentials = [
+            [type: 'usernamePassword', id: 'CM', env: ['PIPER_username', 'PIPER_password'], resolveCredentialsId: false]
+        ]
 
-        new Utils().pushToSWA([
-            step: STEP_NAME,
-            stepParamKey1: 'changeManagementType',
-            stepParam1: configuration.changeManagement.type,
-            stepParamKey2: 'scriptMissing',
-            stepParam2: parameters?.script == null
-        ], configuration)
-
-        def changeDocumentId = null
-
-        if(backendType == BackendType.SOLMAN) {
-            changeDocumentId = getChangeDocumentId(cm, script, configuration)
-        }
-
-        def transportRequestId = getTransportRequestId(cm, script, configuration)
-
-        configHelper
-            .mixin([changeDocumentId: changeDocumentId?.trim() ?: null,
-                    transportRequestId: transportRequestId?.trim() ?: null], ['changeDocumentId', 'transportRequestId'] as Set)
-
-        if(backendType == BackendType.SOLMAN) {
-            configHelper
-                .withMandatoryProperty('changeDocumentId',
-                    "Change document id not provided (parameter: \'changeDocumentId\' provided to the step call or via commit history).")
-        }
-        configuration = configHelper
-            .withMandatoryProperty('transportRequestId',
-                "Transport request id not provided (parameter: \'transportRequestId\' provided to the step call or via commit history).")
-            .use()
-
-            try {
-
-                switch(backendType) {
-
-                    case BackendType.SOLMAN:
-
-                        echo "[INFO] Uploading file '${configuration.filePath}' to transport request '${configuration.transportRequestId}'" +
-                            " of change document '${configuration.changeDocumentId}'."
-
-                        cm.uploadFileToTransportRequestSOLMAN(
-                            configuration.changeManagement.solman?.docker ?: [:],
-                            configuration.changeDocumentId,
-                            configuration.transportRequestId,
-                            configuration.applicationId,
-                            configuration.filePath,
-                            configuration.changeManagement.endpoint,
-                            configuration.changeManagement.credentialsId,
-                            configuration.changeManagement.clientOpts)
-
-                        echo "[INFO] File '${configuration.filePath}' has been successfully uploaded to transport request '${configuration.transportRequestId}'" +
-                            " of change document '${configuration.changeDocumentId}'."
-
-                        break
-                    case BackendType.CTS:
-
-                        echo "[INFO] Uploading application '${configuration.applicationName}' to transport request '${configuration.transportRequestId}'."
-
-                        cm.uploadFileToTransportRequestCTS(
-                            configuration.changeManagement.cts?.nodeDocker ?: [:],
-                            configuration.transportRequestId,
-                            configuration.changeManagement.endpoint,
-                            configuration.changeManagement.client,
-                            configuration.applicationName,
-                            configuration.applicationDescription,
-                            configuration.abapPackage,
-                            configuration.changeManagement.cts.osDeployUser,
-                            configuration.changeManagement.cts.deployToolDependencies,
-                            configuration.changeManagement.cts.npmInstallOpts,
-                            configuration.changeManagement.cts.deployConfigFile,
-                            configuration.changeManagement.credentialsId)
-
-                        echo "[INFO] Application '${configuration.applicationName}' has been successfully uploaded to transport request '${configuration.transportRequestId}'."
-
-                        break
-                    case BackendType.RFC:
-
-                        echo "[INFO] Uploading file '${configuration.applicationUrl}' to transport request '${configuration.transportRequestId}'."
-
-                        cm.uploadFileToTransportRequestRFC(
-                            configuration.changeManagement.rfc.docker ?: [:],
-                            configuration.transportRequestId,
-                            configuration.applicationName,
-                            configuration.applicationUrl,
-                            configuration.changeManagement.endpoint,
-                            configuration.changeManagement.credentialsId,
-                            configuration.changeManagement.rfc.developmentInstance,
-                            configuration.changeManagement.rfc.developmentClient,
-                            configuration.applicationDescription,
-                            configuration.abapPackage,
-                            configuration.codePage,
-                            configuration.acceptUnixStyleLineEndings,
-                            configuration.failOnWarning,
-                            configuration.verbose
-                        )
-
-                        echo "[INFO] File 'configuration.applicationUrl' has been successfully uploaded to transport request '${configuration.transportRequestId}'."
-
-                        break
-                }
-
-            } catch(ChangeManagementException ex) {
-                throw new AbortException(ex.getMessage())
-            }
+        def goStepName = "transportRequestUpload${backendType}"
+        piperExecuteBin(parameters, "transportRequestUpload${backendType}", "metadata/transportRequestUpload${backendType}.yaml", credentials)
     }
 }
