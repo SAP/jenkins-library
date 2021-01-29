@@ -14,12 +14,13 @@ import (
 )
 
 type githubCreateIssueOptions struct {
-	APIURL     string `json:"apiUrl,omitempty"`
-	Body       string `json:"body,omitempty"`
-	Owner      string `json:"owner,omitempty"`
-	Repository string `json:"repository,omitempty"`
-	Title      string `json:"title,omitempty"`
-	Token      string `json:"token,omitempty"`
+	APIURL       string `json:"apiUrl,omitempty"`
+	Body         string `json:"body,omitempty"`
+	BodyFilePath string `json:"bodyFilePath,omitempty"`
+	Owner        string `json:"owner,omitempty"`
+	Repository   string `json:"repository,omitempty"`
+	Title        string `json:"title,omitempty"`
+	Token        string `json:"token,omitempty"`
 }
 
 // GithubCreateIssueCommand Create a new GitHub issue.
@@ -84,13 +85,13 @@ You will be able to use this step for example for regular jobs to report into yo
 func addGithubCreateIssueFlags(cmd *cobra.Command, stepConfig *githubCreateIssueOptions) {
 	cmd.Flags().StringVar(&stepConfig.APIURL, "apiUrl", `https://api.github.com`, "Set the GitHub API url.")
 	cmd.Flags().StringVar(&stepConfig.Body, "body", os.Getenv("PIPER_body"), "Defines the content of the issue, e.g. using markdown syntax.")
+	cmd.Flags().StringVar(&stepConfig.BodyFilePath, "bodyFilePath", os.Getenv("PIPER_bodyFilePath"), "Defines the path to a file containing the markdown content for the issue. This can be used instead of [`body`](#body)")
 	cmd.Flags().StringVar(&stepConfig.Owner, "owner", os.Getenv("PIPER_owner"), "Name of the GitHub organization.")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Name of the GitHub repository.")
 	cmd.Flags().StringVar(&stepConfig.Title, "title", os.Getenv("PIPER_title"), "Defines the title for the Issue.")
 	cmd.Flags().StringVar(&stepConfig.Token, "token", os.Getenv("PIPER_token"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line.")
 
 	cmd.MarkFlagRequired("apiUrl")
-	cmd.MarkFlagRequired("body")
 	cmd.MarkFlagRequired("owner")
 	cmd.MarkFlagRequired("repository")
 	cmd.MarkFlagRequired("title")
@@ -121,7 +122,15 @@ func githubCreateIssueMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "bodyFilePath",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
 					{
