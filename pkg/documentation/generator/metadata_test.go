@@ -76,3 +76,47 @@ func Test_adjustMandatoryFlags(t *testing.T) {
 		})
 	}
 }
+
+func Test_interfaceArrayLength(t *testing.T) {
+	type args struct {
+		i interface{}
+	}
+	tests := []struct {
+		name string
+		args args
+		want int
+	}{
+		{
+			name: "empty type",
+			args: args{},
+			want: -1,
+		},
+		{
+			name: "string type",
+			args: args{"string"},
+			want: -1,
+		},
+		{
+			name: "empty array type",
+			args: args{[]interface{}{}},
+			want: 0,
+		},
+		{
+			name: "string array type",
+			args: args{[]interface{}{"string1", "string1"}},
+			want: 2,
+		},
+		{
+			name: "string array type",
+			args: args{[]string{"string1", "string1"}},
+			want: 2,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := interfaceArrayLength(tt.args.i); got != tt.want {
+				t.Errorf("interfaceArrayLength() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

@@ -291,7 +291,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Aliases:   []config.Alias{{Name: "access_token"}},
 					},
 					{
 						Name:        "autoCreate",
