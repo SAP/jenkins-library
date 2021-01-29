@@ -1,10 +1,16 @@
 package cmd
 
 import (
+	"os"
+	"fmt"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/transportrequest/cts"
+	"github.com/go-git/go-git/v5"
+	//"github.com/go-git/go-git/v5/plumbing/object"
+	pipergitutils "github.com/SAP/jenkins-library/pkg/git"
+	"github.com/SAP/jenkins-library/pkg/transportrequest"
 )
 
 type transportRequestUploadUtils interface {
@@ -71,6 +77,28 @@ func runTransportRequestUploadCTS(
 
 	log.Entry().Debugf("Entering 'runTransportRequestUpload' with config: %v", config)
 
+	workdir, err := os.Getwd()
+	if err != nil {
+		fmt.Printf("Error: $v\n", err)
+		return err
+	}
+	fmt.Printf("Opening repo at '%s'\n", workdir)
+	r, err := git.PlainOpen(workdir)
+	if err != nil {
+		fmt.Printf("Error: $v\n", err)
+		return err
+	}
+
+	cIter, err := pipergitutils.LogRange(r, "github/master", "HEAD")
+
+	ids, err := transportrequest.FindLabelsInCommits(cIter, "TransportRequest")
+	if err != nil {
+		fmt.Printf("Error: $v\n", err)
+		return err
+	}
+	fmt.Printf("[MH] ids: %s\n", ids)
+
+	return nil
 	action.WithConnection(cts.Connection{
 		Endpoint: config.Endpoint,
 		Client:   config.Client,
