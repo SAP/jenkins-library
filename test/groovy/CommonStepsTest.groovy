@@ -173,6 +173,7 @@ public class CommonStepsTest extends BasePiperTest{
         'uiVeri5ExecuteTests', //implementing new golang pattern without fields
         'integrationArtifactDeploy', //implementing new golang pattern without fields
         'integrationArtifactUpdateConfiguration', //implementing new golang pattern without fields
+        'integrationArtifactGetMplStatus', //implementing new golang pattern without fields
     ]
 
     @Test
