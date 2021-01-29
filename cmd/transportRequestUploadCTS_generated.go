@@ -104,7 +104,6 @@ func addTransportRequestUploadCTSFlags(cmd *cobra.Command, stepConfig *transport
 	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("applicationName")
 	cmd.MarkFlagRequired("abapPackage")
-	cmd.MarkFlagRequired("transportRequestId")
 }
 
 // retrieve step metadata
@@ -195,7 +194,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
 					{
