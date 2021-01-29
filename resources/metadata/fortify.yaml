@@ -56,6 +56,8 @@ spec:
           - STEPS
         type: string
         secret: true
+        aliases:
+          - name: access_token
         resourceRef:
           - name: githubTokenCredentialsId
             type: secret
