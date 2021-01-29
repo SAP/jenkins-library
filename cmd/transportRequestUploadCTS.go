@@ -1,16 +1,13 @@
 package cmd
 
 import (
-	"fmt"
+
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/SAP/jenkins-library/pkg/transportrequest/cts"
-	"github.com/go-git/go-git/v5"
-	"os"
-	//"github.com/go-git/go-git/v5/plumbing/object"
-	pipergitutils "github.com/SAP/jenkins-library/pkg/git"
 	"github.com/SAP/jenkins-library/pkg/transportrequest"
+	"github.com/SAP/jenkins-library/pkg/transportrequest/cts"
+	"github.com/pkg/errors"
 )
 
 type transportRequestUploadUtils interface {
@@ -81,41 +78,15 @@ func runTransportRequestUploadCTS(
 
 	if len(transportRequestID) == 0 {
 
-		from := "origin/master"
-		to := "HEAD"
+		from := "origin/master" //TODO: make configurable
+		to := "HEAD" //TODO: make configurable
+		transportRequestIdLabel := "TransportRequestID" //TODO: make configurable
 
-		log.Entry().Infof("TransportRequestID not provided by configuration. Traversing commit history, range: '%s..%s'", from, to)
-		workdir, err := os.Getwd()
+		log.Entry().Infof("%s not provided by configuration. Traversing commit history, range: '%s..%s'", transportRequestIdLabel, from, to)
+		transportRequestID, err := transportrequest.FindIDInRange("TransportRequest", from, to)
 		if err != nil {
-			fmt.Printf("Error: $v\n", err)
-			return err
+			return errors.Wrapf(err, "Unable to retrieve '%s' from commit history (range: '%s..%s')", transportRequestIdLabel, from, to)
 		}
-		fmt.Printf("Opening repo at '%s'\n", workdir)
-		r, err := git.PlainOpen(workdir)
-		if err != nil {
-			fmt.Printf("Error: $v\n", err)
-			return err
-		}
-
-		cIter, err := pipergitutils.LogRange(r, from, to)
-		if err != nil {
-			fmt.Printf("Error: $v\n", err)
-			return err
-		}
-		ids, err := transportrequest.FindLabelsInCommits(cIter, "TransportRequest")
-		if err != nil {
-			fmt.Printf("Error: $v\n", err)
-			return err
-		}
-		fmt.Printf("[MH] ids: %s\n", ids)
-
-		if len(ids) > 1 {
-			return fmt.Errorf("More than one transportRequestID found: %v", ids)
-		}
-		if len(ids) == 0 {
-			return fmt.Errorf("No transportRequestID found.")
-		}
-		transportRequestID = ids[0]
 		log.Entry().Infof("Transport request ID '%s' retrieved from commit history (range: '%s..%s')", transportRequestID, from, to)
 	} else {
 		log.Entry().Infof("Transport request ID '%s' explicitly provided by configuration", transportRequestID)
