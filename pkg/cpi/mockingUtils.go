@@ -105,7 +105,7 @@ func GetIntegrationArtifactGetMplStatusCommandMockResponse(testType string) (*ht
 							"Receiver": null,
 							"IntegrationFlowName": "flow1",
 							"Status": "COMPLETED",
-							 "LogLevel": "INFO",
+							"LogLevel": "INFO",
 							"CustomStatus": "COMPLETED",
 							"TransactionId": "aa220151116748eeae69db3e88f2bbc8"
 						}
