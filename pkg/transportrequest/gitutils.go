@@ -12,6 +12,7 @@ import (
 	"regexp"
 )
 
+// needs to be replaced by mocks in the tests
 var getWorkDirectory = os.Getwd
 
 // FindIDInRange finds a ID according to the label in a commit range <from>..to.
@@ -22,7 +23,7 @@ func FindIDInRange(label, from, to string) (string, error) {
 		return "", errors.Wrapf(err, "Cannot retrieve %s", label)
 	}
 	log.Entry().Infof("Opening git repo at '%s'", workdir)
-	r, err := git.PlainOpen(workdir)
+	r, err := git.PlainOpen(workdir) // TODO this we need to mock also
 	if err != nil {
 		return "", errors.Wrapf(err, "Cannot retrieve '%s'. Unable to open git repository at '%s'", label, workdir)
 	}
@@ -32,7 +33,7 @@ func FindIDInRange(label, from, to string) (string, error) {
 		return "", errors.Wrapf(err, "Cannot retrieve '%s'. Unable to resolve commits in range '%s..%s'", label, from, to)
 	}
 
-	ids, err := FindLabelsInCommits(cIter, label)
+	ids, err := FindLabelsInCommits(cIter, label) // TOOD not sure if we should mock this since there are already tests ...
 	if err != nil {
 		return "", errors.Wrapf(err, "Cannot retrieve '%s'. Unable to traverse commits in range '%s..%s'", label, from, to)
 	}
