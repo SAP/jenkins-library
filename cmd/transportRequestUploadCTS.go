@@ -91,7 +91,6 @@ func runTransportRequestUploadCTS(
 	} else {
 		log.Entry().Infof("Transport request ID '%s' explicitly provided by configuration", transportRequestID)
 	}
-	return nil
 
 	action.WithConnection(cts.Connection{
 		Endpoint: config.Endpoint,
