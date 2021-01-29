@@ -83,7 +83,8 @@ func runTransportRequestUploadCTS(
 		transportRequestIdLabel := "TransportRequestID" //TODO: make configurable
 
 		log.Entry().Infof("%s not provided by configuration. Traversing commit history, range: '%s..%s'", transportRequestIdLabel, from, to)
-		transportRequestID, err := transportrequest.FindIDInRange("TransportRequest", from, to)
+		var err error
+		transportRequestID, err = transportrequest.FindIDInRange("TransportRequest", from, to)
 		if err != nil {
 			return errors.Wrapf(err, "Unable to retrieve '%s' from commit history (range: '%s..%s')", transportRequestIdLabel, from, to)
 		}
