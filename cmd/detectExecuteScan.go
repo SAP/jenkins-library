@@ -10,8 +10,6 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/maven"
 
-	sliceUtils "github.com/SAP/jenkins-library/pkg/piperutils"
-
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
@@ -79,7 +77,7 @@ func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData)
 
 func runDetect(config detectExecuteScanOptions, utils detectUtils) error {
 	// detect execution details, see https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/88440888/Sample+Synopsys+Detect+Scan+Configuration+Scenarios+for+Black+Duck
-	err := utils.DownloadFile("https://detect.synopsys.com/detect.sh", "detect.sh", nil, nil)
+	err := getDetectScript(config, utils)
 	if err != nil {
 		return fmt.Errorf("failed to download 'detect.sh' script: %w", err)
 	}
@@ -120,6 +118,13 @@ func runDetect(config detectExecuteScanOptions, utils detectUtils) error {
 	return utils.RunShell("/bin/bash", script)
 }
 
+func getDetectScript(config detectExecuteScanOptions, utils detectUtils) error {
+	if config.ScanOnChanges {
+		return utils.DownloadFile("https://raw.githubusercontent.com/blackducksoftware/detect_rescan/master/detect_rescan.sh", "detect.sh", nil, nil)
+	}
+	return utils.DownloadFile("https://detect.synopsys.com/detect.sh", "detect.sh", nil, nil)
+}
+
 func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectUtils) ([]string, error) {
 
 	coordinates := struct {
@@ -129,6 +134,10 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 	}
 
 	_, detectVersionName := versioning.DetermineProjectCoordinates("", config.VersioningModel, coordinates)
+
+	if config.ScanOnChanges {
+		args = append(args, "--report")
+	}
 
 	args = append(args, config.ScanProperties...)
 
@@ -155,12 +164,34 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 	}
 	args = append(args, fmt.Sprintf("--detect.code.location.name=\\\"%v\\\"", codeLocation))
 
-	if sliceUtils.ContainsString(config.Scanners, "signature") {
+	if len(config.ScanPaths) > 0 && len(config.ScanPaths[0]) > 0 {
 		args = append(args, fmt.Sprintf("--detect.blackduck.signature.scanner.paths=%v", strings.Join(config.ScanPaths, ",")))
 	}
 
-	if sliceUtils.ContainsString(config.Scanners, "source") {
-		args = append(args, fmt.Sprintf("--detect.source.path=%v", config.ScanPaths[0]))
+	if len(config.DependencyPath) > 0 {
+		args = append(args, fmt.Sprintf("--detect.source.path=%v", config.DependencyPath))
+	} else {
+		args = append(args, fmt.Sprintf("--detect.source.path='.'"))
+	}
+
+	if config.Unmap {
+		args = append(args, fmt.Sprintf("--detect.project.codelocation.unmap=true"))
+	}
+
+	if len(config.IncludedPackageManagers) > 0 {
+		args = append(args, fmt.Sprintf("--detect.included.detector.types=%v", strings.ToUpper(strings.Join(config.IncludedPackageManagers, ","))))
+	}
+
+	if len(config.ExcludedPackageManagers) > 0 {
+		args = append(args, fmt.Sprintf("--detect.excluded.detector.types=%v", strings.ToUpper(strings.Join(config.ExcludedPackageManagers, ","))))
+	}
+
+	if len(config.MavenExcludedScopes) > 0 {
+		args = append(args, fmt.Sprintf("--detect.maven.excluded.scopes=%v", strings.ToLower(strings.Join(config.MavenExcludedScopes, ","))))
+	}
+
+	if len(config.DetectTools) > 0 {
+		args = append(args, fmt.Sprintf("--detect.tools=%v", strings.Join(config.DetectTools, ",")))
 	}
 
 	mavenArgs, err := maven.DownloadAndGetMavenParameters(config.GlobalSettingsFile, config.ProjectSettingsFile, utils)

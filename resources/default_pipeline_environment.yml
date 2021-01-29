@@ -63,6 +63,8 @@ general:
   productiveBranch: 'master'
   whitesource:
     serviceUrl: 'https://saas.whitesourcesoftware.com/api'
+  dockerPullImage: true
+  sidecarPullImage: true
 
 #Steps Specific Configuration
 steps:
@@ -110,6 +112,7 @@ steps:
       - 'tests'
     testPackage: 'piper-bats'
   checksPublishResults:
+    failOnError: false
     tasks:
       pattern: '**/*.java'
       low: ''
@@ -208,10 +211,10 @@ steps:
       - 'deployDescriptor'
       - 'pipelineConfigAndTests'
     cf_native:
-      dockerImage: 'ppiper/cf-cli'
+      dockerImage: 'ppiper/cf-cli:v5'
       dockerWorkspace: '/home/piper'
     mtaDeployPlugin:
-      dockerImage: 'ppiper/cf-cli'
+      dockerImage: 'ppiper/cf-cli:v5'
       dockerWorkspace: '/home/piper'
     mta:
       deployTool: 'mtaDeployPlugin'
@@ -235,12 +238,8 @@ steps:
   debugReportArchive:
     shareConfidentialInformation: false
   dockerExecute:
-    dockerPullImage: true
-    sidecarPullImage: true
     stashContent: []
   dockerExecuteOnKubernetes:
-    dockerPullImage: true
-    sidecarPullImage: true
     stashContent: []
     stashIncludes:
       workspace: '**/*'
@@ -352,6 +351,7 @@ steps:
     neo:
       size: 'lite'
       credentialsId: 'CI_CREDENTIALS_ID'
+      credentialType: 'UsernamePassword'
       portalLandscape: "cloudnwcportal"
   multicloudDeploy:
     cfTargets: []
@@ -600,16 +600,6 @@ steps:
       verbose: false
   transportRequestRelease:
       verbose: false
-  uiVeri5ExecuteTests:
-    failOnError: false
-    dockerEnvVars: {}
-    installCommand: 'npm install @ui5/uiveri5 --global --quiet'
-    seleniumPort: 4444
-    stashContent:
-      - 'buildDescriptor'
-      - 'tests'
-    testOptions: ''
-    runCommand: "uiveri5 --seleniumAddress='http://${config.seleniumHost}:${config.seleniumPort}/wd/hub'"
   writeTemporaryCredentials:
     credentialsDirectories:
       - './'
@@ -627,6 +617,7 @@ steps:
     deployIdLogPattern: '^.*"xs bg-deploy -i (.*) -a .*".*$'
     loginOpts: ''
     deployOpts: ''
+    dockerPullImage: false
     docker:
       dockerImage: ''
       dockerPullImage: false
