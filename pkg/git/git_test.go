@@ -137,6 +137,11 @@ func TestLogRange(t *testing.T) {
 
 		// Creates a commit
 		c := func(r *git.Repository, fs billy.Filesystem, name string) (hash plumbing.Hash, err error) {
+
+			if val, ok := hashes[name]; ok {
+				err = fmt.Errorf("Cannot create commit for name '%s'. There is already a commit available (%s) for that name", name, val)
+				return
+			}
 			w, err := r.Worktree()
 			if err != nil {
 				return
@@ -297,11 +302,11 @@ func TestLogRange(t *testing.T) {
 		// Maybe we should check first if a commit with that hash exists and if so try
 		// another hash. paranoia :-)
 		_, err := LogRange(r, "0123456789012345678901234567890123456789", "HEAD")
-		assert.EqualError(t, err, "Cannot provide log range: Trouble resolving '0123456789012345678901234567890123456789': reference not found")
+		assert.EqualError(t, err, "Cannot provide log range (from: '0123456789012345678901234567890123456789' not found): Trouble resolving '0123456789012345678901234567890123456789': reference not found")
 	})
 	t.Run("Empty string as ref", func(t *testing.T) {
 		_, err := LogRange(r, "", "HEAD")
-		assert.EqualError(t, err, "Cannot provide log range: Cannot get a commit for an empty ref")
+		assert.EqualError(t, err, "Cannot provide log range (from: '' not found): Cannot get a commit for an empty ref")
 	})
 }
 

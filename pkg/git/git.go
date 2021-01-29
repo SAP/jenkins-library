@@ -118,11 +118,11 @@ func LogRange(repo *git.Repository, from, to string) (object.CommitIter, error) 
 
 	cTo, err := getCommitObject(to, repo)
 	if err != nil {
-		return nil, errors.Wrap(err, "Cannot provide log range")
+		return nil, errors.Wrapf(err, "Cannot provide log range (to: '%s' not found)", to)
 	}
 	cFrom, err := getCommitObject(from, repo)
 	if err != nil {
-		return nil, errors.Wrap(err, "Cannot provide log range")
+		return nil, errors.Wrapf(err, "Cannot provide log range (from: '%s' not found)", from)
 	}
 	ignore := []plumbing.Hash{}
 	err = object.NewCommitPreorderIter(

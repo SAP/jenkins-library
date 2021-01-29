@@ -208,11 +208,17 @@ func githubSetCommitStatusMetadata() config.StepData {
 								Name: "githubTokenCredentialsId",
 								Type: "secret",
 							},
+
+							{
+								Name:  "",
+								Paths: []string{"$(vaultPath)/github", "$(vaultBasePath)/$(vaultPipelineName)/github", "$(vaultBasePath)/GROUP-SECRETS/github"},
+								Type:  "vaultSecret",
+							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "githubToken"}},
+						Aliases:   []config.Alias{{Name: "githubToken"}, {Name: "access_token"}},
 					},
 				},
 			},
