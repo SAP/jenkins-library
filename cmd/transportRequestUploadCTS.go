@@ -1,13 +1,13 @@
 package cmd
 
 import (
-	"os"
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/transportrequest/cts"
 	"github.com/go-git/go-git/v5"
+	"os"
 	//"github.com/go-git/go-git/v5/plumbing/object"
 	pipergitutils "github.com/SAP/jenkins-library/pkg/git"
 	"github.com/SAP/jenkins-library/pkg/transportrequest"
@@ -77,28 +77,51 @@ func runTransportRequestUploadCTS(
 
 	log.Entry().Debugf("Entering 'runTransportRequestUpload' with config: %v", config)
 
-	workdir, err := os.Getwd()
-	if err != nil {
-		fmt.Printf("Error: $v\n", err)
-		return err
-	}
-	fmt.Printf("Opening repo at '%s'\n", workdir)
-	r, err := git.PlainOpen(workdir)
-	if err != nil {
-		fmt.Printf("Error: $v\n", err)
-		return err
-	}
+	transportRequestID := config.TransportRequestID
 
-	cIter, err := pipergitutils.LogRange(r, "github/master", "HEAD")
+	if len(transportRequestID) == 0 {
 
-	ids, err := transportrequest.FindLabelsInCommits(cIter, "TransportRequest")
-	if err != nil {
-		fmt.Printf("Error: $v\n", err)
-		return err
+		from := "origin/master"
+		to := "HEAD"
+
+		log.Entry().Infof("TransportRequestID not provided by configuration. Traversing commit history, range: '%s..%s'", from, to)
+		workdir, err := os.Getwd()
+		if err != nil {
+			fmt.Printf("Error: $v\n", err)
+			return err
+		}
+		fmt.Printf("Opening repo at '%s'\n", workdir)
+		r, err := git.PlainOpen(workdir)
+		if err != nil {
+			fmt.Printf("Error: $v\n", err)
+			return err
+		}
+
+		cIter, err := pipergitutils.LogRange(r, from, to)
+		if err != nil {
+			fmt.Printf("Error: $v\n", err)
+			return err
+		}
+		ids, err := transportrequest.FindLabelsInCommits(cIter, "TransportRequest")
+		if err != nil {
+			fmt.Printf("Error: $v\n", err)
+			return err
+		}
+		fmt.Printf("[MH] ids: %s\n", ids)
+
+		if len(ids) > 1 {
+			return fmt.Errorf("More than one transportRequestID found: %v", ids)
+		}
+		if len(ids) == 0 {
+			return fmt.Errorf("No transportRequestID found.")
+		}
+		transportRequestID = ids[0]
+		log.Entry().Infof("Transport request ID '%s' retrieved from commit history (range: '%s..%s')", transportRequestID, from, to)
+	} else {
+		log.Entry().Infof("Transport request ID '%s' explicitly provided by configuration", transportRequestID)
 	}
-	fmt.Printf("[MH] ids: %s\n", ids)
-
 	return nil
+
 	action.WithConnection(cts.Connection{
 		Endpoint: config.Endpoint,
 		Client:   config.Client,
@@ -115,7 +138,7 @@ func runTransportRequestUploadCTS(
 		InstallOpts:        config.NpmInstallOpts,
 	})
 
-	action.WithTransportRequestID(config.TransportRequestID)
+	action.WithTransportRequestID(transportRequestID)
 	action.WithConfigFile(config.DeployConfigFile)
 	action.WithDeployUser(config.OsDeployUser)
 
