@@ -56,9 +56,16 @@ spec:
           - STEPS
         type: string
         secret: true
+        aliases:
+          - name: access_token
         resourceRef:
           - name: githubTokenCredentialsId
             type: secret
+          - type: vaultSecret
+            paths:
+            - $(vaultPath)/github
+            - $(vaultBasePath)/$(vaultPipelineName)/github
+            - $(vaultBasePath)/GROUP-SECRETS/github
       - name: autoCreate
         type: bool
         description:

@@ -2,6 +2,7 @@ package http
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -14,6 +15,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -39,6 +41,10 @@ func TestSendRequest(t *testing.T) {
 	// Close the server when test finishes
 	defer server.Close()
 
+	oldLogLevel := logrus.GetLevel()
+	defer logrus.SetLevel(oldLogLevel)
+	logrus.SetLevel(logrus.DebugLevel)
+
 	tt := []struct {
 		client   Client
 		method   string
@@ -55,6 +61,11 @@ func TestSendRequest(t *testing.T) {
 
 	for key, test := range tt {
 		t.Run(fmt.Sprintf("Row %v", key+1), func(t *testing.T) {
+			oldLogOutput := test.client.logger.Logger.Out
+			defer func() { test.client.logger.Logger.Out = oldLogOutput }()
+			logBuffer := new(bytes.Buffer)
+			test.client.logger.Logger.Out = logBuffer
+
 			response, err := test.client.SendRequest("GET", server.URL, test.body, test.header, test.cookies)
 			assert.NoError(t, err, "Error occurred but none expected")
 			content, err := ioutil.ReadAll(response.Body)
@@ -70,12 +81,18 @@ func TestSendRequest(t *testing.T) {
 				assert.Equal(t, test.cookies, passedCookies, "Passed cookies not correct")
 			}
 
-			if len(test.client.username) > 0 {
+			if len(test.client.username) > 0 || len(test.client.password) > 0 {
+				if len(test.client.username) == 0 || len(test.client.password) == 0 {
+					//"User and password must both be provided"
+					t.Fail()
+				}
 				assert.Equal(t, test.client.username, passedUsername)
-			}
-
-			if len(test.client.password) > 0 {
 				assert.Equal(t, test.client.password, passedPassword)
+
+				log := fmt.Sprintf("%s", logBuffer)
+				credentialsEncoded := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", test.client.username, test.client.password)))
+				assert.NotContains(t, log, fmt.Sprintf("Authorization:[Basic %s]", credentialsEncoded))
+				assert.Contains(t, log, "Authorization:[<set>]")
 			}
 		})
 	}
@@ -307,10 +324,18 @@ func TestMaxRetries(t *testing.T) {
 	testCases := []struct {
 		client       Client
 		countedCalls int
+		method       string
+		responseCode int
+		errorText    string
 	}{
-		{client: Client{maxRetries: 0}, countedCalls: 1},
-		{client: Client{maxRetries: 2}, countedCalls: 3},
-		{client: Client{maxRetries: 3}, countedCalls: 4},
+		{client: Client{maxRetries: 0}, countedCalls: 1, method: http.MethodGet, responseCode: 500, errorText: "Internal Server Error"},
+		{client: Client{maxRetries: 2}, countedCalls: 3, method: http.MethodGet, responseCode: 500, errorText: "Internal Server Error"},
+		{client: Client{maxRetries: 3}, countedCalls: 4, method: http.MethodPost, responseCode: 503, errorText: "Service Unavailable"},
+		{client: Client{maxRetries: 3}, countedCalls: 4, method: http.MethodPut, responseCode: 506, errorText: "Variant Also Negotiates"},
+		{client: Client{maxRetries: 3}, countedCalls: 4, method: http.MethodHead, responseCode: 502, errorText: "Bad Gateway"},
+		{client: Client{maxRetries: 3}, countedCalls: 1, method: http.MethodHead, responseCode: 404, errorText: "Not Found"},
+		{client: Client{maxRetries: 3}, countedCalls: 1, method: http.MethodHead, responseCode: 401, errorText: "Authentication Error"},
+		{client: Client{maxRetries: 3}, countedCalls: 1, method: http.MethodHead, responseCode: 403, errorText: "Authorization Error"},
 	}
 
 	for _, testCase := range testCases {
@@ -318,14 +343,14 @@ func TestMaxRetries(t *testing.T) {
 		count := 0
 		svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			count++
-			w.WriteHeader(500)
+			w.WriteHeader(testCase.responseCode)
 		}))
 		defer svr.Close()
 		// test
-		_, err := testCase.client.SendRequest(http.MethodGet, svr.URL, &bytes.Buffer{}, nil, nil)
+		_, err := testCase.client.SendRequest(testCase.method, svr.URL, &bytes.Buffer{}, nil, nil)
 		// assert
-		assert.Error(t, err)
-		assert.Equal(t, testCase.countedCalls, count)
+		assert.Error(t, err, fmt.Sprintf("%v: %v", testCase.errorText, "Expected error but did not detect one"))
+		assert.Equal(t, testCase.countedCalls, count, fmt.Sprintf("%v: %v", testCase.errorText, "Number of invocations mismatch"))
 	}
 }
 
