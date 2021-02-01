@@ -163,9 +163,11 @@ repositories:
   - name: /NAMESPC/COMPONENT1
     branch: release-v.1.2.0
     version: 1.2.0
+    commitID: 'cd87a3cac2bc946b7629580e58598c3db56a26f8'
   - name: /NAMESPC/COMPONENT2
     branch: release-v.2.0.0
     version: 2.0.0
+    commitID: '1f34b135da79dad7d498a31c15296270ff81dbd2'
 ```
 
 Explanation of the keys:
