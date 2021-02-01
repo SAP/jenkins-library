@@ -189,6 +189,7 @@ class commonPipelineEnvironment implements Serializable {
         [filename: '.pipeline/commonPipelineEnvironment/git/commitMessage', property: 'gitCommitMessage'],
         [filename: '.pipeline/commonPipelineEnvironment/mtarFilePath', property: 'mtarFilePath'],
         [filename: '.pipeline/commonPipelineEnvironment/abap/addonDescriptor', property: 'abapAddonDescriptor'],
+        [filename: '.pipeline/commonPipelineEnvironment/iFlowMplStatus', property: 'iFlowMplStatus'],
     ]
 
     void writeToDisk(script) {
