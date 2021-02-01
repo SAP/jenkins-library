@@ -1,7 +1,6 @@
 package cmd
 
 import (
-
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -78,8 +77,8 @@ func runTransportRequestUploadCTS(
 
 	if len(transportRequestID) == 0 {
 
-		from := "origin/master" //TODO: make configurable
-		to := "HEAD" //TODO: make configurable
+		from := "origin/master"                         //TODO: make configurable
+		to := "HEAD"                                    //TODO: make configurable
 		transportRequestIdLabel := "TransportRequestID" //TODO: make configurable
 
 		log.Entry().Infof("%s not provided by configuration. Traversing commit history, range: '%s..%s'", transportRequestIdLabel, from, to)
