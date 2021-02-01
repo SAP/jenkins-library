@@ -143,10 +143,26 @@ func TestRetrieveLabelStraightForward(t *testing.T) {
 			}
 			labels, err := FindLabelsInCommits(commitIter, "TransportRequest")
 			if assert.NoError(t, err) {
-				expected := []string{"12345678", "87654321"}
-				if assert.Len(t, labels, len(expected)) {
-					assert.Subset(t, expected, labels)
-				}
+				assert.Equal(t, []string{"12345678", "87654321"}, labels)
+			}
+		})
+
+		t.Run("two different ids in different commits agains, order needs to be the same", func(t *testing.T) {
+			commitIter := &commitIteratorMock{
+				commits: []object.Commit{
+					object.Commit{
+						Hash:    plumbing.NewHash("1212121212121212121212121212121212121212"),
+						Message: "this is a commit with TransportRequestId\n\nThis is the first line of the message body\nTransportRequest: 87654321",
+					},
+					object.Commit{
+						Hash:    plumbing.NewHash("3434343434343434343434343434343434343434"),
+						Message: "this is a commit with TransportRequestId\n\nThis is the first line of the message body\nTransportRequest: 12345678",
+					},
+				},
+			}
+			labels, err := FindLabelsInCommits(commitIter, "TransportRequest")
+			if assert.NoError(t, err) {
+				assert.Equal(t, []string{"12345678", "87654321"}, labels)
 			}
 		})
 
