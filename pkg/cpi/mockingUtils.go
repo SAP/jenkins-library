@@ -125,5 +125,5 @@ func GetIntegrationArtifactGetMplStatusCommandMockResponse(testType string) (*ht
 					}
 				}`))),
 	}
-	return &res, nil
+	return &res, errors.New("Unable to get integration flow MPL status, Response Status code:400")
 }

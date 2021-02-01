@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"strings"
+	"net/url"
 
 	"github.com/Jeffail/gabs/v2"
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -64,8 +64,8 @@ func runIntegrationArtifactGetMplStatus(config *integrationArtifactGetMplStatusO
 	httpClient.SetOptions(clientOptions)
 	header := make(http.Header)
 	header.Add("Accept", "application/json")
-
-	mplStatusURL := fmt.Sprintf("%s/api/v1/MessageProcessingLogs?$filter=IntegrationArtifact/Id eq '%s'&$orderby=LogEnd desc&$top=1", config.Host, config.IntegrationFlowID)
+	mplStatusEncodedURL := fmt.Sprintf("%s/api/v1/MessageProcessingLogs?$filter=IntegrationArtifact/Id"+url.QueryEscape(" eq ")+"'%s'&$orderby="+
+		url.QueryEscape("LogEnd desc")+"&$top=1", config.Host, config.IntegrationFlowID)
 	tokenParameters := cpi.TokenParameters{TokenURL: config.OAuthTokenProviderURL, Username: config.Username, Password: config.Password, Client: httpClient}
 	token, err := cpi.CommonUtils.GetBearerToken(tokenParameters)
 	if err != nil {
@@ -73,7 +73,6 @@ func runIntegrationArtifactGetMplStatus(config *integrationArtifactGetMplStatusO
 	}
 	clientOptions.Token = fmt.Sprintf("Bearer %s", token)
 	httpClient.SetOptions(clientOptions)
-	mplStatusEncodedURL := strings.ReplaceAll(mplStatusURL, " ", "%20")
 	httpMethod := "GET"
 	mplStatusResp, httpErr := httpClient.SendRequest(httpMethod, mplStatusEncodedURL, nil, header, nil)
 	if httpErr != nil {
@@ -93,11 +92,11 @@ func runIntegrationArtifactGetMplStatus(config *integrationArtifactGetMplStatusO
 		if readErr != nil {
 			return errors.Wrap(readErr, "HTTP response body could not be read")
 		}
-		jsonresponse, parsingErr := gabs.ParseJSON([]byte(bodyText))
+		jsonResponse, parsingErr := gabs.ParseJSON([]byte(bodyText))
 		if parsingErr != nil {
 			return errors.Wrapf(parsingErr, "HTTP response body could not be parsed as JSON: %v", string(bodyText))
 		}
-		mplStatus := jsonresponse.Path("d.results.0.Status").Data().(string)
+		mplStatus := jsonResponse.Path("d.results.0.Status").Data().(string)
 		commonPipelineEnvironment.iFlowMplStatus = mplStatus
 		return nil
 	}

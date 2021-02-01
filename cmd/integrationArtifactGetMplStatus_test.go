@@ -41,7 +41,7 @@ func TestRunIntegrationArtifactGetMplStatus(t *testing.T) {
 		if assert.NoError(t, err) {
 
 			t.Run("check url", func(t *testing.T) {
-				assert.Equal(t, "https://demo/api/v1/MessageProcessingLogs?$filter=IntegrationArtifact/Id%20eq%20'flow1'&$orderby=LogEnd%20desc&$top=1", httpClient.URL)
+				assert.Equal(t, "https://demo/api/v1/MessageProcessingLogs?$filter=IntegrationArtifact/Id+eq+'flow1'&$orderby=LogEnd+desc&$top=1", httpClient.URL)
 			})
 
 			t.Run("check method", func(t *testing.T) {
@@ -66,7 +66,6 @@ func TestRunIntegrationArtifactGetMplStatus(t *testing.T) {
 		seOut := integrationArtifactGetMplStatusCommonPipelineEnvironment{}
 		err := runIntegrationArtifactGetMplStatus(&config, nil, &httpClient, &seOut)
 		assert.EqualValues(t, seOut.iFlowMplStatus, "")
-		assert.EqualError(t, err, "HTTP GET request to https://demo/api/v1/MessageProcessingLogs?$filter=IntegrationArtifact/Id%20eq%20'flow1'&$orderby=LogEnd%20desc&$top=1 failed with error: Internal Server Error")
+		assert.EqualError(t, err, "HTTP GET request to https://demo/api/v1/MessageProcessingLogs?$filter=IntegrationArtifact/Id+eq+'flow1'&$orderby=LogEnd+desc&$top=1 failed with error: Internal Server Error")
 	})
-
 }
