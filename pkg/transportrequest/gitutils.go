@@ -5,6 +5,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"regexp"
+	"sort"
 )
 
 // FindLabelsInCommits ...
@@ -27,5 +28,7 @@ func FindLabelsInCommits(commits object.CommitIter, label string) ([]string, err
 		return []string{}, fmt.Errorf("Cannot extract label: %w", err)
 	}
 
-	return piperutils.UniqueStrings(ids), nil
+	labels := piperutils.UniqueStrings(ids)
+	sort.Strings(labels)
+	return labels, nil
 }
