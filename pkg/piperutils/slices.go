@@ -1,6 +1,7 @@
 package piperutils
 
 import (
+	"sort"
 	"strings"
 )
 
@@ -94,7 +95,9 @@ func SplitAndTrim(in []string, separator string) (out []string) {
 	return
 }
 
-// UniqueStrings removes duplicates from values
+// UniqueStrings removes duplicates from values. The order of the values
+// in the returned slice is ascending according to
+//  sort.Strings([]string{})
 func UniqueStrings(values []string) []string {
 
 	u := map[string]bool{}
@@ -107,5 +110,6 @@ func UniqueStrings(values []string) []string {
 		keys[i] = k
 		i++
 	}
+	sort.Strings(keys)
 	return keys
 }
