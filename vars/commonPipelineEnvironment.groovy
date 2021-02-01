@@ -47,6 +47,8 @@ class commonPipelineEnvironment implements Serializable {
 
     String abapAddonDescriptor
 
+    String iFlowMplStatus
+
     private Map valueMap = [:]
 
     void setValue(String property, value) {
@@ -64,6 +66,8 @@ class commonPipelineEnvironment implements Serializable {
         projectName = null
 
         abapAddonDescriptor = null
+
+        iFlowMplStatus = null
 
         appContainerProperties = [:]
         artifactVersion = null
