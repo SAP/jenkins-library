@@ -44,7 +44,7 @@ spec:
         mandatory: true
       - name: testOptions
         type: string
-        description: "Deprecated and will result in an error if set. Please use runOptions instead."
+        description: "Deprecated and will result in an error if set. Please use runOptions instead. Be aware, you have to add --seleniumAddress='http://<url>:4444/wd/hub' to your runOptions now!"
         scope:
           - PARAMETERS
           - STAGES
