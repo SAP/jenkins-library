@@ -39,7 +39,7 @@ func FindIDInRange(label, from, to string) (string, error) {
 	}
 
 	if len(ids) > 1 {
-		return "", fmt.Errorf("More than one values found for '%s' in range '%s..%s': ", label, from, to, ids)
+		return "", fmt.Errorf("More than one values found for label '%s' in range '%s..%s': '%s'", label, from, to, ids)
 	}
 	if len(ids) == 0 {
 		return "", fmt.Errorf("No values found for '%s' in range '%s..%s'", label, from, to)
