@@ -8,7 +8,11 @@ import (
 	"sort"
 )
 
-// FindLabelsInCommits ...
+// FindLabelsInCommits a label is considered to be something like
+// key: label, e.g. TransportRequest: 123456
+// These labels are expected to be contained in the git commit message as
+// a separate line in the commit message body.
+// In case several labels are found they are returned in ascending order.
 func FindLabelsInCommits(commits object.CommitIter, label string) ([]string, error) {
 	labelRegex, err := regexp.Compile(fmt.Sprintf(`(?m)^\s*%s\s*:\s*(\S*)\s*$`, label))
 	if err != nil {
