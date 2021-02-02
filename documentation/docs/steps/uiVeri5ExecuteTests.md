@@ -19,6 +19,7 @@ The parameter `testOptions` is deprecated and is replaced by array type paramete
 
 Using the `runOptions` parameter the 'seleniumAddress' for uiveri5 can be set.
 The former groovy implementation included a default for seleniumAddress in the runCommand. Since this is not possible with the golang-based implementation, the seleniumAddress has to be added to the runOptions. For jenkins on kubernetes the host is 'localhost', in other environments, e.g. native jenkins installations, the host can be set to 'selenium'.
+
 ```yaml
 runOptions: ["--seleniumAddress=http://localhost:4444/wd/hub", ..... ]
 ```
