@@ -1,10 +1,14 @@
 package transportrequest
 
 import (
+	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/stretchr/testify/assert"
+	"github.com/go-git/go-git/v5/storage/memory"
+	"github.com/go-git/go-billy/v5/memfs"
+	pipergit "github.com/SAP/jenkins-library/pkg/git"
 	"io"
 	"testing"
 )
@@ -188,4 +192,94 @@ func TestRetrieveLabelStraightForward(t *testing.T) {
 			}
 		})
 	})
+}
+
+func TestFindIDInRange(t *testing.T) {
+
+	// The functions below are called inside the function under test ...
+	plainOpen = func() (*git.Repository, error) {
+		return git.Init(memory.NewStorage(), memfs.New())
+	}
+	// For these functions we have already tests. In order to avoid re-testing
+	// we set mocks for these functions.
+	logRange = func (repo *git.Repository, from, to string) (object.CommitIter, error) {
+		return &commitIteratorMock{}, nil
+	}
+
+	defer func() {
+		plainOpen = plainOpenInCurrentWorkDir
+		logRange = pipergit.LogRange
+		findLabelsInCommits = FindLabelsInCommits
+	}()
+
+	t.Run("range is forwarded correctly", func(t *testing.T) {
+
+		var receivedFrom, receivedTo string
+
+		oldLogRangeFunc := logRange
+		logRange = func (repo *git.Repository, from, to string) (object.CommitIter, error) {
+			receivedFrom = from
+			receivedTo= to
+			return &commitIteratorMock{}, nil
+		}
+		defer func() {
+			logRange = oldLogRangeFunc
+		}()
+
+		FindIDInRange("TransportRequest", "master", "HEAD")
+
+		assert.Equal(t, "master", receivedFrom)
+		assert.Equal(t, "HEAD", receivedTo)
+	})
+
+	t.Run("no label is found", func(t *testing.T) {
+
+		findLabelsInCommits = func(commits object.CommitIter, label string) ([]string, error) {
+			return []string{}, nil
+		}
+
+		defer func() {
+			findLabelsInCommits = FindLabelsInCommits
+		}()
+
+		_, err := FindIDInRange("TransportRequest", "master", "HEAD")
+		assert.EqualError(t, err, "No values found for 'TransportRequest' in range 'master..HEAD'")
+	})
+
+
+	t.Run("one label is found", func(t *testing.T) {
+
+		findLabelsInCommits = func(commits object.CommitIter, label string) ([]string, error) {
+			return []string{"123456789"}, nil
+		}
+
+		defer func() {
+			findLabelsInCommits = FindLabelsInCommits
+		}()
+
+		label, err := FindIDInRange("TransportRequest", "master", "HEAD")
+		if assert.NoError(t, err) {
+			assert.Equal(t, "123456789", label)
+		}
+	})
+
+	t.Run("more than one label is found", func(t *testing.T) {
+
+		findLabelsInCommits = func(commits object.CommitIter, label string) ([]string, error) {
+			return []string{"123456789", "987654321"}, nil
+		}
+
+		defer func() {
+			findLabelsInCommits = FindLabelsInCommits
+		}()
+
+		_, err := FindIDInRange("TransportRequest", "master", "HEAD")
+		if assert.Error(t, err) {
+			// don't want to rely on the order
+			assert.Contains(t, err.Error(), "More than one values found for label 'TransportRequest' in range 'master..HEAD'")
+			assert.Contains(t, err.Error(), "123456789")
+			assert.Contains(t, err.Error(), "987654321")
+		}
+	})
+
 }

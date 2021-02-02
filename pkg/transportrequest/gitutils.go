@@ -13,28 +13,38 @@ import (
 	"sort"
 )
 
-// needs to be replaced by mocks in the tests
-var getWorkDirectory = os.Getwd
+var plainOpen = plainOpenInCurrentWorkDir
+var logRange = pipergit.LogRange
+var findLabelsInCommits = FindLabelsInCommits
 
-// FindIDInRange finds a ID according to the label in a commit range <from>..to.
-// We assume the git repo is present in the current working directory.
-func FindIDInRange(label, from, to string) (string, error) {
-	workdir, err := getWorkDirectory()
+func plainOpenInCurrentWorkDir() (*git.Repository, error) {
+	workdir, err := os.Getwd()
 	if err != nil {
-		return "", errors.Wrapf(err, "Cannot retrieve %s", label)
+		return nil, errors.Wrapf(err, "Cannot open git repo in current working directory '%s'", workdir)
 	}
 	log.Entry().Infof("Opening git repo at '%s'", workdir)
-	r, err := git.PlainOpen(workdir) // TODO this we need to mock also
+	r, err := git.PlainOpen(workdir)
 	if err != nil {
-		return "", errors.Wrapf(err, "Cannot retrieve '%s'. Unable to open git repository at '%s'", label, workdir)
+		return nil, errors.Wrapf(err, "Unable to open git repository at '%s'", workdir)
+	}
+	return r, nil
+}
+
+// FindIDInRange finds a ID according to the label in a commit range <from>..<to>.
+// We assume the git repo is present in the current working directory.
+func FindIDInRange(label, from, to string) (string, error) {
+
+	r, err := plainOpen()
+	if err != nil {
+		return "", errors.Wrapf(err, "Cannot retrieve '%s'.", label)
 	}
 
-	cIter, err := pipergit.LogRange(r, from, to)
+	cIter, err := logRange(r, from, to)
 	if err != nil {
 		return "", errors.Wrapf(err, "Cannot retrieve '%s'. Unable to resolve commits in range '%s..%s'", label, from, to)
 	}
 
-	ids, err := FindLabelsInCommits(cIter, label) // TOOD not sure if we should mock this since there are already tests ...
+	ids, err := findLabelsInCommits(cIter, label)
 	if err != nil {
 		return "", errors.Wrapf(err, "Cannot retrieve '%s'. Unable to traverse commits in range '%s..%s'", label, from, to)
 	}
