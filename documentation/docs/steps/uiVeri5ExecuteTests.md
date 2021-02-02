@@ -1,5 +1,8 @@
 # ${docGenStepName}
 
+!!! warning "Deprecation notice"
+    Details of changes after the step migrated to a golang based step can be found [below](#exceptions).
+
 ## ${docGenDescription}
 
 ## Prerequisites
@@ -12,12 +15,16 @@
 
 ## Exceptions
 
-The parameter `testOptions` is deprecated and is replaced by `runOptions`.
+The parameter `testOptions` is deprecated and is replaced by array type parameter `runOptions`.
 
-Using the `runOptions` parameter the 'seleniumAddress' for uiveri5 can be set. For jenkins on kubernetes the host is 'localhost', in other environments, e.g. native jenkins installations, the host can be set to 'selenium'.
+Using the `runOptions` parameter the 'seleniumAddress' for uiveri5 can be set.
+The former groovy implementation included a default for seleniumAddress in the runCommand. Since this is not possible with the golang-based implementation, the seleniumAddress has to be added to the runOptions. For jenkins on kubernetes the host is 'localhost', in other environments, e.g. native jenkins installations, the host can be set to 'selenium'.
+```yaml
+runOptions: ["--seleniumAddress=http://localhost:4444/wd/hub", ..... ]
+```
 
 If you see an error like `fatal: Not a git repository (or any parent up to mount point /home/jenkins)` it is likely that your test description cannot be found.<br />
-Please make sure to point parameter `runOptions` to your `conf.js` file like `runOptions: ['./path/to/my/tests/conf.js']`
+Please make sure to point parameter `runOptions` to your `conf.js` file like `runOptions: [...., './path/to/my/tests/conf.js']`
 
 ## Examples
 
