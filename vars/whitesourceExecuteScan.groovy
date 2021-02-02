@@ -11,7 +11,7 @@ import static com.sap.piper.Prerequisites.checkScript
 
 void call(Map parameters = [:]) {
     final script = checkScript(this, parameters) ?: this
-    parameters = DownloadCacheUtils.injectDownloadCacheInParameters(script, parameters, BuildTool.MAVEN)
+    parameters = DownloadCacheUtils.injectDownloadCacheInParameters(script, parameters, BuildTool.MTA)
 
     List credentials = [
         [type: 'token', id: 'orgAdminUserTokenCredentialsId', env: ['PIPER_orgToken']],
