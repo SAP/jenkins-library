@@ -465,6 +465,8 @@ func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource
 // checkSecurityViolations checks security violations and returns an error if the configured severity limit is crossed.
 func checkProjectSecurityViolations(cvssSeverityLimit float64, project ws.Project, sys whitesource) (int, error) {
 	// get project alerts (vulnerabilities)
+	//ToDo: use getProjectAlertsByType with alertType : "SECURITY_VULNERABILITY"?
+	//ToDo: also return reference to alerts in order to use it for reporting later
 	alerts, err := sys.GetProjectAlerts(project.Token)
 	if err != nil {
 		return 0, fmt.Errorf("failed to retrieve project alerts from Whitesource: %w", err)
