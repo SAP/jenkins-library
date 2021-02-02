@@ -11,6 +11,7 @@ import (
 
 // ScanReport defines the elements of a scan report used by various scan steps
 type ScanReport struct {
+	StepName       string          `json:"stepName"`
 	Title          string          `json:"title"`
 	Subheaders     []string        `json:"subheaders"`
 	Overview       []string        `json:"overview"`
