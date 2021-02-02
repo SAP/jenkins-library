@@ -11,12 +11,13 @@ import (
 
 // ScanReport defines the elements of a scan report used by various scan steps
 type ScanReport struct {
-	Title       string          `json:"title"`
-	Subheaders  []string        `json:"subheaders"`
-	Overview    []string        `json:"overview"`
-	FurtherInfo string          `json:"furtherInfo"`
-	ReportTime  time.Time       `json:"reportTime"`
-	DetailTable ScanDetailTable `json:"detailTable"`
+	Title          string          `json:"title"`
+	Subheaders     []string        `json:"subheaders"`
+	Overview       []string        `json:"overview"`
+	FurtherInfo    string          `json:"furtherInfo"`
+	ReportTime     time.Time       `json:"reportTime"`
+	DetailTable    ScanDetailTable `json:"detailTable"`
+	SuccessfulScan bool            `json:"successfulScan"`
 }
 
 // ScanDetailTable defines a table containing scan result details

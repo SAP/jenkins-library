@@ -14,6 +14,7 @@ import (
 )
 
 type pipelineCreateScanSummaryOptions struct {
+	FailedOnly     bool   `json:"failedOnly,omitempty"`
 	OutputFilePath string `json:"outputFilePath,omitempty"`
 }
 
@@ -76,6 +77,7 @@ It is for example used to create a markdown file which can be used to create a G
 }
 
 func addPipelineCreateScanSummaryFlags(cmd *cobra.Command, stepConfig *pipelineCreateScanSummaryOptions) {
+	cmd.Flags().BoolVar(&stepConfig.FailedOnly, "failedOnly", false, "Defines if only failed scans should be included into the summary.")
 	cmd.Flags().StringVar(&stepConfig.OutputFilePath, "outputFilePath", `scanSummary.md`, "Defines the filepath to the target file which will be created by the step.")
 
 }
@@ -91,6 +93,14 @@ func pipelineCreateScanSummaryMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
+					{
+						Name:        "failedOnly",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
 					{
 						Name:        "outputFilePath",
 						ResourceRef: []config.ResourceReference{},

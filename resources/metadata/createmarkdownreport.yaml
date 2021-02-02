@@ -8,6 +8,13 @@ metadata:
 spec:
   inputs:
     params:
+      - name: failedOnly
+        description: Defines if only failed scans should be included into the summary.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: bool
       - name: outputFilePath
         description: Defines the filepath to the target file which will be created by the step.
         scope:

@@ -60,7 +60,9 @@ func runPipelineCreateScanSummary(config *pipelineCreateScanSummaryOptions, tele
 
 	output := []byte{}
 	for _, scanReport := range scanReports {
-		output = append(output, scanReport.ToMarkdown()...)
+		if (config.FailedOnly && !scanReport.SuccessfulScan) || !config.FailedOnly {
+			output = append(output, scanReport.ToMarkdown()...)
+		}
 	}
 
 	if err := utils.FileWrite(config.OutputFilePath, output, 0666); err != nil {

@@ -46,6 +46,31 @@ func TestRunPipelineCreateScanSummary(t *testing.T) {
 		assert.Contains(t, fileContentString, "Title Scan 3")
 	})
 
+	t.Run("success - failed only", func(t *testing.T) {
+		t.Parallel()
+
+		config := pipelineCreateScanSummaryOptions{
+			OutputFilePath: "scanSummary.md",
+			FailedOnly:     true,
+		}
+
+		utils := newPipelineCreateScanSummaryTestsUtils()
+		utils.AddFile(".pipeline/stepReports/step1.json", []byte(`{"title":"Title Scan 1", "successfulScan": true}`))
+		utils.AddFile(".pipeline/stepReports/step2.json", []byte(`{"title":"Title Scan 2", "successfulScan": false}`))
+		utils.AddFile(".pipeline/stepReports/step3.json", []byte(`{"title":"Title Scan 3", "successfulScan": false}`))
+
+		err := runPipelineCreateScanSummary(&config, nil, utils)
+
+		assert.NoError(t, err)
+		reportExists, _ := utils.FileExists("scanSummary.md")
+		assert.True(t, reportExists)
+		fileContent, _ := utils.FileRead("scanSummary.md")
+		fileContentString := string(fileContent)
+		assert.NotContains(t, fileContentString, "Title Scan 1")
+		assert.Contains(t, fileContentString, "Title Scan 2")
+		assert.Contains(t, fileContentString, "Title Scan 3")
+	})
+
 	t.Run("error - read file", func(t *testing.T) {
 		t.Skip()
 		//ToDo
