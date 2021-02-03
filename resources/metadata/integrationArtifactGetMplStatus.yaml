@@ -74,4 +74,4 @@ spec:
       - name: commonPipelineEnvironment
         type: piperEnvironment
         params:
-          - name: iFlowMplStatus
+          - name: custom/iFlowMplStatus

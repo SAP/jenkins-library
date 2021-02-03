@@ -36,7 +36,7 @@ func TestRunIntegrationArtifactGetMplStatus(t *testing.T) {
 		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactGetMplStatus", ResponseBody: ``, TestType: "Positive"}
 		seOut := integrationArtifactGetMplStatusCommonPipelineEnvironment{}
 		err := runIntegrationArtifactGetMplStatus(&config, nil, &httpClient, &seOut)
-		assert.EqualValues(t, seOut.iFlowMplStatus, "COMPLETED")
+		assert.EqualValues(t, seOut.custom.iFlowMplStatus, "COMPLETED")
 
 		if assert.NoError(t, err) {
 
@@ -65,7 +65,7 @@ func TestRunIntegrationArtifactGetMplStatus(t *testing.T) {
 
 		seOut := integrationArtifactGetMplStatusCommonPipelineEnvironment{}
 		err := runIntegrationArtifactGetMplStatus(&config, nil, &httpClient, &seOut)
-		assert.EqualValues(t, seOut.iFlowMplStatus, "")
+		assert.EqualValues(t, seOut.custom.iFlowMplStatus, "")
 		assert.EqualError(t, err, "HTTP GET request to https://demo/api/v1/MessageProcessingLogs?$filter=IntegrationArtifact/Id+eq+'flow1'&$orderby=LogEnd+desc&$top=1 failed with error: Internal Server Error")
 	})
 }

@@ -97,7 +97,7 @@ func runIntegrationArtifactGetMplStatus(config *integrationArtifactGetMplStatusO
 			return errors.Wrapf(parsingErr, "HTTP response body could not be parsed as JSON: %v", string(bodyText))
 		}
 		mplStatus := jsonResponse.Path("d.results.0.Status").Data().(string)
-		commonPipelineEnvironment.iFlowMplStatus = mplStatus
+		commonPipelineEnvironment.custom.iFlowMplStatus = mplStatus
 		return nil
 	}
 	responseBody, readErr := ioutil.ReadAll(mplStatusResp.Body)

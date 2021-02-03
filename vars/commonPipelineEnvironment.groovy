@@ -47,8 +47,6 @@ class commonPipelineEnvironment implements Serializable {
 
     String abapAddonDescriptor
 
-    String iFlowMplStatus
-
     private Map valueMap = [:]
 
     void setValue(String property, value) {
@@ -66,8 +64,6 @@ class commonPipelineEnvironment implements Serializable {
         projectName = null
 
         abapAddonDescriptor = null
-
-        iFlowMplStatus = null
 
         appContainerProperties = [:]
         artifactVersion = null
@@ -193,7 +189,6 @@ class commonPipelineEnvironment implements Serializable {
         [filename: '.pipeline/commonPipelineEnvironment/git/commitMessage', property: 'gitCommitMessage'],
         [filename: '.pipeline/commonPipelineEnvironment/mtarFilePath', property: 'mtarFilePath'],
         [filename: '.pipeline/commonPipelineEnvironment/abap/addonDescriptor', property: 'abapAddonDescriptor'],
-        [filename: '.pipeline/commonPipelineEnvironment/iFlowMplStatus', property: 'iFlowMplStatus'],
     ]
 
     void writeToDisk(script) {
