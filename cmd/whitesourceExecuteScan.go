@@ -203,6 +203,11 @@ func checkAndReportScanResults(config *ScanOptions, scan *ws.Scan, utils whiteso
 	if err := scan.BlockUntilReportsAreReady(sys); err != nil {
 		return err
 	}
+
+	// ToDo: separate into:
+	// 1. download PDFs
+	// 2. get scan results
+	// 3. create report based on scan results
 	if config.Reporting {
 		paths, err := scan.DownloadReports(ws.ReportOptions{
 			ReportDirectory:           config.ReportDirectoryName,
@@ -213,6 +218,7 @@ func checkAndReportScanResults(config *ScanOptions, scan *ws.Scan, utils whiteso
 		}
 		piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", paths, nil)
 	}
+	// ToDo: use previously retrieved scan results to perform the check
 	if config.SecurityVulnerabilities {
 		if err := checkSecurityViolations(config, scan, sys); err != nil {
 			return err
@@ -660,8 +666,8 @@ func newLibraryCSVReport(libraries map[string][]ws.Library, config *ScanOptions,
 	return nil
 }
 
-// persistScannedProjects writes all actually scanned WhiteSource project names as comma separated
-// string into the Common Pipeline Environment, from where it can be used by sub-sequent steps.
+// persistScannedProjects writes all actually scanned WhiteSource project names as list
+// into the Common Pipeline Environment, from where it can be used by sub-sequent steps.
 func persistScannedProjects(config *ScanOptions, scan *ws.Scan, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment) {
 	projectNames := []string{}
 	if config.ProjectName != "" {

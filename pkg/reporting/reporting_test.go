@@ -10,9 +10,12 @@ import (
 func TestToHTML(t *testing.T) {
 	t.Run("empty table", func(t *testing.T) {
 		report := ScanReport{
-			Title:       "Report Test Title",
-			Subheaders:  []string{"sub 1", "sub 2"},
-			Overview:    []string{"overview 1", "overview 2"},
+			Title:      "Report Test Title",
+			Subheaders: []subheader{{Text: "sub 1", Details: "1"}, {Text: "sub 2", Details: "2"}},
+			Overview: []OverviewRow{
+				{"overview 1", "1", Green},
+				{"overview 2", "2", Green},
+			},
 			FurtherInfo: "this is further information",
 			ReportTime:  time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
 			DetailTable: ScanDetailTable{
@@ -24,13 +27,13 @@ func TestToHTML(t *testing.T) {
 			},
 		}
 		expectedSub := `<span>
-		sub 1<br />
-		sub 2<br />
+		sub 1: 1<br />
+		sub 2: 2<br />
 		</span>
 	</h2>`
 		expectedOverview := `<h3>
-		overview 1<br />
-		overview 2<br />
+		overview 1: 1<br />
+		overview 2: 2<br />
 		</h3>`
 
 		res, err := report.ToHTML()

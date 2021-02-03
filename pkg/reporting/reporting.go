@@ -13,8 +13,8 @@ import (
 type ScanReport struct {
 	StepName       string          `json:"stepName"`
 	Title          string          `json:"title"`
-	Subheaders     []string        `json:"subheaders"`
-	Overview       []string        `json:"overview"`
+	Subheaders     []subheader     `json:"subheaders"`
+	Overview       []OverviewRow   `json:"overview"`
 	FurtherInfo    string          `json:"furtherInfo"`
 	ReportTime     time.Time       `json:"reportTime"`
 	DetailTable    ScanDetailTable `json:"detailTable"`
@@ -55,6 +55,22 @@ const (
 
 func (c ColumnStyle) String() string {
 	return [...]string{"", "green-cell", "yellow-cell", "red-cell", "grey-cell", "black-cell"}[c]
+}
+
+type OverviewRow struct {
+	Description string      `json:"description"`
+	Details     string      `json:"details,omitempty"`
+	Style       ColumnStyle `json:"style,omitempty"`
+}
+
+type subheader struct {
+	Text    string `json:"text"`
+	Details string `json:"details,omitempty"`
+}
+
+// AddSubHeader adds a sub header to the report containing of a text/title plus optional details
+func (s *ScanReport) AddSubHeader(header, details string) {
+	s.Subheaders = append(s.Subheaders, subheader{Text: header, Details: details})
 }
 
 const reportHTMLTemplate = `<!DOCTYPE html>
@@ -125,14 +141,14 @@ const reportHTMLTemplate = `<!DOCTYPE html>
 	<h2>
 		<span>
 		{{range $s := .Subheaders}}
-		{{- $s}}<br />
+		{{- $s.Text}}: {{$s.Details}}<br />
 		{{end -}}
 		</span>
 	</h2>
 	<div>
 		<h3>
 		{{range $o := .Overview}}
-		{{- $o}}<br />
+		{{- drawOverviewRow $o}}<br />
 		{{end -}}
 		</h3>
 		<span>{{.FurtherInfo}}</span>
@@ -169,8 +185,9 @@ func (s *ScanReport) ToHTML() ([]byte, error) {
 		"reportTime": func(currentTime time.Time) string {
 			return currentTime.Format("Jan 02, 2006 - 15:04:05 MST")
 		},
-		"columnCount": tableColumnCount,
-		"drawCell":    drawCell,
+		"columnCount":     tableColumnCount,
+		"drawCell":        drawCell,
+		"drawOverviewRow": drawOverviewRow,
 	}
 	report := []byte{}
 	tmpl, err := template.New("report").Funcs(funcMap).Parse(reportHTMLTemplate)
@@ -220,4 +237,15 @@ func drawCell(cell ScanCell) string {
 		return fmt.Sprintf(`<td class="%v">%v</td>`, cell.Style, cell.Content)
 	}
 	return fmt.Sprintf(`<td>%v</td>`, cell.Content)
+}
+
+func drawOverviewRow(row OverviewRow) string {
+	// so far accept only accept max. two columns for overview table: description and content
+	if len(row.Details) == 0 {
+		return row.Description
+	} else {
+		// ToDo: allow styling of details
+		return fmt.Sprintf("%v: %v", row.Description, row.Details)
+	}
+	return ""
 }
