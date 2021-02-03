@@ -44,6 +44,7 @@ func (requester *Requester) send(request *http.Request) (*http.Response, error) 
 func (requester *Requester) decode(response *http.Response, result interface{}) error {
 	defer response.Body.Close()
 	decoder := json.NewDecoder(response.Body)
-	decoder.DisallowUnknownFields()
+	//FIXME: sonargo.IssuesSearchObject does not imlement organizatios and thus decoding fails
+	// decoder.DisallowUnknownFields()
 	return decoder.Decode(result)
 }
