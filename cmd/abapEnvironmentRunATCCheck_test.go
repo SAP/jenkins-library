@@ -228,7 +228,6 @@ func TestGetResultATCRun(t *testing.T) {
 }
 
 func TestParseATCResult(t *testing.T) {
-	t.Parallel()
 	t.Run("succes case: test parsing example XML result", func(t *testing.T) {
 		dir, err := ioutil.TempDir("", "test get result ATC run")
 		if err != nil {

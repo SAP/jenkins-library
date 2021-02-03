@@ -11,6 +11,7 @@ import (
 )
 
 func TestCheckoutBranchStep(t *testing.T) {
+	t.Parallel()
 	t.Run("Run Step Successful - repositoryName and branchName config", func(t *testing.T) {
 		t.Parallel()
 		var autils = abaputils.AUtilsMock{}
