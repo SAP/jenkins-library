@@ -15,6 +15,7 @@ import (
 )
 
 func TestCloudFoundryGetAbapCommunicationInfo(t *testing.T) {
+	t.Parallel()
 	t.Run("CF GetAbapCommunicationArrangementInfo - Error - parameters missing", func(t *testing.T) {
 
 		//given
@@ -115,6 +116,7 @@ func TestCloudFoundryGetAbapCommunicationInfo(t *testing.T) {
 }
 
 func TestHostGetAbapCommunicationInfo(t *testing.T) {
+	t.Parallel()
 	t.Run("HOST GetAbapCommunicationArrangementInfo - Success", func(t *testing.T) {
 
 		//given
@@ -192,6 +194,7 @@ func TestHostGetAbapCommunicationInfo(t *testing.T) {
 }
 
 func TestReadServiceKeyAbapEnvironment(t *testing.T) {
+	t.Parallel()
 	t.Run("CF ReadServiceKeyAbapEnvironment - Failed to login to Cloud Foundry", func(t *testing.T) {
 		//given .
 		options := AbapEnvironmentOptions{
@@ -228,6 +231,7 @@ func TestReadServiceKeyAbapEnvironment(t *testing.T) {
 }
 
 func TestTimeConverter(t *testing.T) {
+	t.Parallel()
 	t.Run("Test example time", func(t *testing.T) {
 		inputDate := "/Date(1585576809000+0000)/"
 		expectedDate := "2020-03-30 14:00:09 +0000 UTC"
@@ -249,6 +253,7 @@ func TestTimeConverter(t *testing.T) {
 }
 
 func TestReadAddonDescriptor(t *testing.T) {
+	t.Parallel()
 	t.Run("Test: success case", func(t *testing.T) {
 
 		dir, err := ioutil.TempDir("", "test read addon descriptor")
@@ -358,6 +363,7 @@ repositories:
 }
 
 func TestHandleHTTPError(t *testing.T) {
+	t.Parallel()
 	t.Run("Test", func(t *testing.T) {
 
 		errorValue := "Received Error"
