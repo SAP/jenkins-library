@@ -119,6 +119,7 @@ repositories:
 }
 
 func TestCloneStepErrorMessages(t *testing.T) {
+	t.Parallel()
 	t.Run("Status Error", func(t *testing.T) {
 		var autils = abaputils.AUtilsMock{}
 		defer autils.Cleanup()

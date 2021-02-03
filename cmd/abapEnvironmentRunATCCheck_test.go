@@ -11,6 +11,7 @@ import (
 )
 
 func TestHostConfig(t *testing.T) {
+	t.Parallel()
 	t.Run("Check Host: ABAP Endpoint", func(t *testing.T) {
 		config := abaputils.AbapEnvironmentOptions{
 			Username: "testUser",
@@ -221,6 +222,7 @@ func TestGetResultATCRun(t *testing.T) {
 }
 
 func TestParseATCResult(t *testing.T) {
+	t.Parallel()
 	t.Run("succes case: test parsing example XML result", func(t *testing.T) {
 		dir, err := ioutil.TempDir("", "test get result ATC run")
 		if err != nil {
@@ -296,6 +298,7 @@ func TestParseATCResult(t *testing.T) {
 }
 
 func TestBuildATCCheckBody(t *testing.T) {
+	t.Parallel()
 	t.Run("Test build body with no software component and package", func(t *testing.T) {
 		expectedpackagestring := ""
 		expectedsoftwarecomponentstring := ""

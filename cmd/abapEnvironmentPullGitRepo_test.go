@@ -12,6 +12,7 @@ import (
 )
 
 func TestPullStep(t *testing.T) {
+	t.Parallel()
 	t.Run("Run Step Successful", func(t *testing.T) {
 
 		var autils = abaputils.AUtilsMock{}

@@ -11,6 +11,7 @@ import (
 )
 
 func TestCheckoutBranchStep(t *testing.T) {
+	t.Parallel()
 	t.Run("Run Step Successful - repositoryName and branchName config", func(t *testing.T) {
 
 		var autils = abaputils.AUtilsMock{}
@@ -259,6 +260,7 @@ repositories:
 }
 
 func TestTriggerCheckout(t *testing.T) {
+	t.Parallel()
 	t.Run("Test trigger checkout: success case", func(t *testing.T) {
 
 		// given
