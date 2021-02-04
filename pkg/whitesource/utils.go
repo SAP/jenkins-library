@@ -1,9 +1,10 @@
 package whitesource
 
 import (
-	"github.com/SAP/jenkins-library/pkg/maven"
 	"io"
 	"os"
+
+	"github.com/SAP/jenkins-library/pkg/maven"
 )
 
 // File defines the method subset we use from os.File
@@ -23,6 +24,7 @@ type Utils interface {
 	FileWrite(path string, content []byte, perm os.FileMode) error
 	FileRemove(path string) error
 	FileRename(oldPath, newPath string) error
+	GetExitCode() int
 	RemoveAll(path string) error
 	FileOpen(name string, flag int, perm os.FileMode) (File, error)
 
