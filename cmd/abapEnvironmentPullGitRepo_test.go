@@ -13,7 +13,6 @@ import (
 
 func TestPullStep(t *testing.T) {
 	t.Run("Run Step Successful", func(t *testing.T) {
-
 		var autils = abaputils.AUtilsMock{}
 		defer autils.Cleanup()
 		autils.ReturnedConnectionDetailsHTTP.Password = "password"
@@ -345,9 +344,9 @@ repositories:
 }
 
 func TestTriggerPull(t *testing.T) {
-
+	t.Parallel()
 	t.Run("Test trigger pull: success case", func(t *testing.T) {
-
+		t.Parallel()
 		receivedURI := "example.com/Entity"
 		uriExpected := receivedURI + "?$expand=to_Execution_log,to_Transport_log"
 		tokenExpected := "myToken"
@@ -373,7 +372,7 @@ func TestTriggerPull(t *testing.T) {
 	})
 
 	t.Run("Test trigger pull: ABAP Error", func(t *testing.T) {
-
+		t.Parallel()
 		errorMessage := "ABAP Error Message"
 		errorCode := "ERROR/001"
 		HTTPErrorMessage := "HTTP Error Message"
@@ -400,7 +399,9 @@ func TestTriggerPull(t *testing.T) {
 }
 
 func TestPullConfigChecker(t *testing.T) {
+	t.Parallel()
 	t.Run("Success case: check config file", func(t *testing.T) {
+		t.Parallel()
 		config := abapEnvironmentPullGitRepoOptions{
 			Repositories: "test.file",
 		}
@@ -408,6 +409,7 @@ func TestPullConfigChecker(t *testing.T) {
 		assert.NoError(t, err)
 	})
 	t.Run("Success case: check config", func(t *testing.T) {
+		t.Parallel()
 		config := abapEnvironmentPullGitRepoOptions{
 			RepositoryNames: []string{"testRepo", "testRepo2"},
 		}
@@ -415,6 +417,7 @@ func TestPullConfigChecker(t *testing.T) {
 		assert.NoError(t, err)
 	})
 	t.Run("Failure case: empty config", func(t *testing.T) {
+		t.Parallel()
 		errorMessage := "Checking configuration failed: You have not specified any repository configuration to be pulled into the ABAP Environment System. Please make sure that you specified the repositories that should be pulled either in a dedicated file or via the parameter 'repositoryNames'. For more information please read the User documentation"
 		config := abapEnvironmentPullGitRepoOptions{}
 		err := checkPullRepositoryConfiguration(config)
@@ -423,7 +426,9 @@ func TestPullConfigChecker(t *testing.T) {
 }
 
 func TestHelpFunctions(t *testing.T) {
+	t.Parallel()
 	t.Run("Ignore Commit", func(t *testing.T) {
+		t.Parallel()
 		repo1 := abaputils.Repository{
 			Name:     "Repo1",
 			CommitID: "ABCD1234",
@@ -440,6 +445,7 @@ func TestHelpFunctions(t *testing.T) {
 		assert.Equal(t, "", repoList[1].CommitID, "Expected emtpy CommitID")
 	})
 	t.Run("Not Ignore Commit", func(t *testing.T) {
+		t.Parallel()
 		repo1 := abaputils.Repository{
 			Name:     "Repo1",
 			CommitID: "ABCD1234",

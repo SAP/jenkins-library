@@ -8,7 +8,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/pkg/errors"
@@ -16,7 +15,9 @@ import (
 )
 
 func TestCloudFoundryGetAbapCommunicationInfo(t *testing.T) {
+	t.Parallel()
 	t.Run("CF GetAbapCommunicationArrangementInfo - Error - parameters missing", func(t *testing.T) {
+		t.Parallel()
 
 		//given
 		options := AbapEnvironmentOptions{
@@ -33,7 +34,7 @@ func TestCloudFoundryGetAbapCommunicationInfo(t *testing.T) {
 		var connectionDetails ConnectionDetailsHTTP
 		var err error
 		var autils = AbapUtils{
-			Exec: &command.Command{},
+			Exec: &mock.ExecMockRunner{},
 		}
 		connectionDetails, err = autils.GetAbapCommunicationArrangementInfo(options, "")
 
@@ -44,10 +45,9 @@ func TestCloudFoundryGetAbapCommunicationInfo(t *testing.T) {
 		assert.Equal(t, "", connectionDetails.XCsrfToken)
 
 		assert.EqualError(t, err, "Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
-		assert.Error(t, err)
 	})
 	t.Run("CF GetAbapCommunicationArrangementInfo - Error - reading service Key", func(t *testing.T) {
-
+		t.Parallel()
 		//given
 		options := AbapEnvironmentOptions{
 			CfAPIEndpoint:     "https://api.endpoint.com",
@@ -63,7 +63,7 @@ func TestCloudFoundryGetAbapCommunicationInfo(t *testing.T) {
 		var connectionDetails ConnectionDetailsHTTP
 		var err error
 		var autils = AbapUtils{
-			Exec: &command.Command{},
+			Exec: &mock.ExecMockRunner{},
 		}
 		connectionDetails, err = autils.GetAbapCommunicationArrangementInfo(options, "")
 
@@ -73,10 +73,10 @@ func TestCloudFoundryGetAbapCommunicationInfo(t *testing.T) {
 		assert.Equal(t, "", connectionDetails.Password)
 		assert.Equal(t, "", connectionDetails.XCsrfToken)
 
-		assert.Error(t, err)
+		assert.EqualError(t, err, "Read service key failed: Parsing the service key failed. Service key is empty")
 	})
 	t.Run("CF GetAbapCommunicationArrangementInfo - Success", func(t *testing.T) {
-
+		t.Parallel()
 		//given
 
 		const testURL = "https://testurl.com"
@@ -118,8 +118,9 @@ func TestCloudFoundryGetAbapCommunicationInfo(t *testing.T) {
 }
 
 func TestHostGetAbapCommunicationInfo(t *testing.T) {
+	t.Parallel()
 	t.Run("HOST GetAbapCommunicationArrangementInfo - Success", func(t *testing.T) {
-
+		t.Parallel()
 		//given
 
 		const testURL = "https://testurl.com"
@@ -156,7 +157,7 @@ func TestHostGetAbapCommunicationInfo(t *testing.T) {
 		assert.NoError(t, err)
 	})
 	t.Run("HOST GetAbapCommunicationArrangementInfo - Success - w/o https", func(t *testing.T) {
-
+		t.Parallel()
 		//given
 
 		const testURL = "testurl.com"
@@ -195,9 +196,10 @@ func TestHostGetAbapCommunicationInfo(t *testing.T) {
 }
 
 func TestReadServiceKeyAbapEnvironment(t *testing.T) {
+	t.Parallel()
 	t.Run("CF ReadServiceKeyAbapEnvironment - Failed to login to Cloud Foundry", func(t *testing.T) {
-
-		//given .
+		t.Parallel()
+		//given
 		options := AbapEnvironmentOptions{
 			Username:          "testUser",
 			Password:          "testPassword",
@@ -211,7 +213,7 @@ func TestReadServiceKeyAbapEnvironment(t *testing.T) {
 		//when
 		var abapKey AbapServiceKey
 		var err error
-		abapKey, err = ReadServiceKeyAbapEnvironment(options, &command.Command{})
+		abapKey, err = ReadServiceKeyAbapEnvironment(options, &mock.ExecMockRunner{})
 
 		//then
 		assert.Equal(t, "", abapKey.Abap.Password)
@@ -227,24 +229,28 @@ func TestReadServiceKeyAbapEnvironment(t *testing.T) {
 		assert.Equal(t, "", abapKey.SystemID)
 		assert.Equal(t, "", abapKey.URL)
 
-		assert.Error(t, err)
+		assert.EqualError(t, err, "Parsing the service key failed. Service key is empty")
 	})
 }
 
 func TestTimeConverter(t *testing.T) {
+	t.Parallel()
 	t.Run("Test example time", func(t *testing.T) {
+		t.Parallel()
 		inputDate := "/Date(1585576809000+0000)/"
 		expectedDate := "2020-03-30 14:00:09 +0000 UTC"
 		result := ConvertTime(inputDate)
 		assert.Equal(t, expectedDate, result.String(), "Dates do not match after conversion")
 	})
 	t.Run("Test Unix time", func(t *testing.T) {
+		t.Parallel()
 		inputDate := "/Date(0000000000000+0000)/"
 		expectedDate := "1970-01-01 00:00:00 +0000 UTC"
 		result := ConvertTime(inputDate)
 		assert.Equal(t, expectedDate, result.String(), "Dates do not match after conversion")
 	})
 	t.Run("Test unexpected format", func(t *testing.T) {
+		t.Parallel()
 		inputDate := "/Date(0012300000001+0000)/"
 		expectedDate := "1970-01-01 00:00:00 +0000 UTC"
 		result := ConvertTime(inputDate)
@@ -253,7 +259,9 @@ func TestTimeConverter(t *testing.T) {
 }
 
 func TestReadAddonDescriptor(t *testing.T) {
+	t.Parallel()
 	t.Run("Test: success case", func(t *testing.T) {
+		t.Parallel()
 
 		dir, err := ioutil.TempDir("", "test read addon descriptor")
 		if err != nil {
@@ -307,6 +315,7 @@ repositories:
 		assert.NoError(t, err)
 	})
 	t.Run("Test: file does not exist", func(t *testing.T) {
+		t.Parallel()
 		expectedErrorMessage := "AddonDescriptor doesn't contain any repositories"
 
 		addonDescriptor, err := ReadAddonDescriptor("filename.yaml")
@@ -317,6 +326,7 @@ repositories:
 		assert.EqualError(t, err, expectedErrorMessage)
 	})
 	t.Run("Test: empty config - failure case", func(t *testing.T) {
+		t.Parallel()
 		expectedErrorMessage := "AddonDescriptor doesn't contain any repositories"
 
 		addonDescriptor, err := ReadAddonDescriptor("")
@@ -362,8 +372,9 @@ repositories:
 }
 
 func TestHandleHTTPError(t *testing.T) {
+	t.Parallel()
 	t.Run("Test", func(t *testing.T) {
-
+		t.Parallel()
 		errorValue := "Received Error"
 		abapErrorCode := "abapErrorCode"
 		abapErrorMessage := "abapErrorMessage"
@@ -384,7 +395,7 @@ func TestHandleHTTPError(t *testing.T) {
 	})
 
 	t.Run("Non JSON Error", func(t *testing.T) {
-
+		t.Parallel()
 		errorValue := "Received Error"
 		bodyString := `Error message`
 		body := []byte(bodyString)
@@ -403,7 +414,7 @@ func TestHandleHTTPError(t *testing.T) {
 	})
 
 	t.Run("Different JSON Error", func(t *testing.T) {
-
+		t.Parallel()
 		errorValue := "Received Error"
 		bodyString := `{"abap" : { "key" : "value" } }`
 		body := []byte(bodyString)

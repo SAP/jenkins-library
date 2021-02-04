@@ -1,8 +1,8 @@
 metadata:
-  name: deployIntegrationArtifact
-  description: Deploy a CPI integration flow
+  name: integrationArtifactGetMplStatus
+  description: Get the MPL status of an integration flow
   longDescription: |
-    With this step you can deploy a integration flow artifact in to SAP Cloud Platform integration runtime using OData API.Learn more about the SAP Cloud Integration remote API for deploying an integration artifact [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/08632076a1114bc1b6a1ecafef8f0178.html)
+    With this step you can obtain information about the Message processing log status of integration flow using OData API.Learn more about the SAP Cloud Integration remote API for getting MPL status messages processed of an deployed integration artifact [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/05fa2a8b31d14c11a4e72e833e5e9f7d.html).
 
 spec:
   inputs:
@@ -45,14 +45,6 @@ spec:
           - STAGES
           - STEPS
         mandatory: true
-      - name: integrationFlowVersion
-        type: string
-        description: Specifies the version of the Integration Flow artifact
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        mandatory: true
       - name: platform
         type: string
         description: Specifies the running platform of the SAP Cloud platform integraion service
@@ -77,3 +69,9 @@ spec:
           - STAGES
           - STEPS
         mandatory: true
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: custom/iFlowMplStatus

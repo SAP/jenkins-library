@@ -60,9 +60,9 @@ func (p *Pip) GetVersion() (string, error) {
 	if strings.Contains(p.path, "setup.py") {
 		buildDescriptorFilePath, err = searchDescriptor([]string{"version.txt", "VERSION"}, p.fileExists)
 		if err != nil {
-			err = p.init()
-			if err != nil {
-				return "", errors.Wrapf(err, "failed to read file '%v'", p.path)
+			initErr := p.init()
+			if initErr != nil {
+				return "", errors.Wrapf(initErr, "failed to read file '%v'", p.path)
 			}
 			if evaluateResult(p.buildDescriptorContent, VersionRegex) {
 				compile := regexp.MustCompile(VersionRegex)
@@ -75,6 +75,7 @@ func (p *Pip) GetVersion() (string, error) {
 	artifact := &Versionfile{
 		path:             buildDescriptorFilePath,
 		versioningScheme: p.VersioningScheme(),
+		readFile:         p.readFile,
 	}
 	return artifact.GetVersion()
 }
@@ -86,9 +87,9 @@ func (p *Pip) SetVersion(v string) error {
 	if strings.Contains(p.path, "setup.py") {
 		buildDescriptorFilePath, err = searchDescriptor([]string{"version.txt", "VERSION"}, p.fileExists)
 		if err != nil {
-			err = p.init()
-			if err != nil {
-				return errors.Wrapf(err, "failed to read file '%v'", p.path)
+			initErr := p.init()
+			if initErr != nil {
+				return errors.Wrapf(initErr, "failed to read file '%v'", p.path)
 			}
 			if evaluateResult(p.buildDescriptorContent, VersionRegex) {
 				compile := regexp.MustCompile(VersionRegex)
@@ -104,6 +105,7 @@ func (p *Pip) SetVersion(v string) error {
 	artifact := &Versionfile{
 		path:             buildDescriptorFilePath,
 		versioningScheme: p.VersioningScheme(),
+		writeFile:        p.writeFile,
 	}
 	return artifact.SetVersion(v)
 }

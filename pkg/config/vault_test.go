@@ -160,6 +160,31 @@ func TestVaultSecretFiles(t *testing.T) {
 	})
 }
 
+func TestMixinVault(t *testing.T) {
+	vaultServerUrl := "https://testServer"
+	vaultPath := "testPath"
+	config := StepConfig{
+		Config:     map[string]interface{}{},
+		HookConfig: nil,
+	}
+	general := map[string]interface{}{
+		"vaultPath": vaultPath,
+	}
+	steps := map[string]interface{}{
+		"vaultServerUrl": vaultServerUrl,
+		"unknownConfig":  "test",
+	}
+
+	config.mixinVaultConfig(general, steps)
+
+	assert.Contains(t, config.Config, "vaultServerUrl")
+	assert.Equal(t, vaultServerUrl, config.Config["vaultServerUrl"])
+	assert.Contains(t, config.Config, "vaultPath")
+	assert.Equal(t, vaultPath, config.Config["vaultPath"])
+	assert.NotContains(t, config.Config, "unknownConfig")
+
+}
+
 func stepParam(name string, refType string, refPaths ...string) StepParameters {
 	return StepParameters{
 		Name:    name,
