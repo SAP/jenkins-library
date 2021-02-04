@@ -123,6 +123,7 @@ func Execute() {
 	rootCmd.AddCommand(VaultRotateSecretIdCommand())
 	rootCmd.AddCommand(TransportRequestUploadCTSCommand())
 	rootCmd.AddCommand(IntegrationArtifactDeployCommand())
+	rootCmd.AddCommand(IntegrationArtifactUpdateConfigurationCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
