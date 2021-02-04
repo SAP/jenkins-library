@@ -5,36 +5,66 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
 
-type deployIntegrationArtifactOptions struct {
-	Username               string `json:"username,omitempty"`
-	Password               string `json:"password,omitempty"`
-	IntegrationFlowID      string `json:"integrationFlowId,omitempty"`
-	IntegrationFlowVersion string `json:"integrationFlowVersion,omitempty"`
-	Platform               string `json:"platform,omitempty"`
-	Host                   string `json:"host,omitempty"`
-	OAuthTokenProviderURL  string `json:"oAuthTokenProviderUrl,omitempty"`
+type integrationArtifactGetMplStatusOptions struct {
+	Username              string `json:"username,omitempty"`
+	Password              string `json:"password,omitempty"`
+	IntegrationFlowID     string `json:"integrationFlowId,omitempty"`
+	Platform              string `json:"platform,omitempty"`
+	Host                  string `json:"host,omitempty"`
+	OAuthTokenProviderURL string `json:"oAuthTokenProviderUrl,omitempty"`
 }
 
-// DeployIntegrationArtifactCommand Deploy a CPI integration flow
-func DeployIntegrationArtifactCommand() *cobra.Command {
-	const STEP_NAME = "deployIntegrationArtifact"
+type integrationArtifactGetMplStatusCommonPipelineEnvironment struct {
+	custom struct {
+		iFlowMplStatus string
+	}
+}
 
-	metadata := deployIntegrationArtifactMetadata()
-	var stepConfig deployIntegrationArtifactOptions
+func (p *integrationArtifactGetMplStatusCommonPipelineEnvironment) persist(path, resourceName string) {
+	content := []struct {
+		category string
+		name     string
+		value    interface{}
+	}{
+		{category: "custom", name: "iFlowMplStatus", value: p.custom.iFlowMplStatus},
+	}
+
+	errCount := 0
+	for _, param := range content {
+		err := piperenv.SetResourceParameter(path, resourceName, filepath.Join(param.category, param.name), param.value)
+		if err != nil {
+			log.Entry().WithError(err).Error("Error persisting piper environment.")
+			errCount++
+		}
+	}
+	if errCount > 0 {
+		log.Entry().Fatal("failed to persist Piper environment")
+	}
+}
+
+// IntegrationArtifactGetMplStatusCommand Get the MPL status of an integration flow
+func IntegrationArtifactGetMplStatusCommand() *cobra.Command {
+	const STEP_NAME = "integrationArtifactGetMplStatus"
+
+	metadata := integrationArtifactGetMplStatusMetadata()
+	var stepConfig integrationArtifactGetMplStatusOptions
 	var startTime time.Time
+	var commonPipelineEnvironment integrationArtifactGetMplStatusCommonPipelineEnvironment
 
-	var createDeployIntegrationArtifactCmd = &cobra.Command{
+	var createIntegrationArtifactGetMplStatusCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Deploy a CPI integration flow",
-		Long:  `With this step you can deploy a integration flow artifact in to SAP Cloud Platform integration runtime using OData API.Learn more about the SAP Cloud Integration remote API for deploying an integration artifact [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/08632076a1114bc1b6a1ecafef8f0178.html)`,
+		Short: "Get the MPL status of an integration flow",
+		Long:  `With this step you can obtain information about the Message processing log status of integration flow using OData API.Learn more about the SAP Cloud Integration remote API for getting MPL status messages processed of an deployed integration artifact [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/05fa2a8b31d14c11a4e72e833e5e9f7d.html).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -64,6 +94,7 @@ func DeployIntegrationArtifactCommand() *cobra.Command {
 			telemetryData.ErrorCode = "1"
 			handler := func() {
 				config.RemoveVaultSecretFiles()
+				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
@@ -71,21 +102,20 @@ func DeployIntegrationArtifactCommand() *cobra.Command {
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			deployIntegrationArtifact(stepConfig, &telemetryData)
+			integrationArtifactGetMplStatus(stepConfig, &telemetryData, &commonPipelineEnvironment)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
 
-	addDeployIntegrationArtifactFlags(createDeployIntegrationArtifactCmd, &stepConfig)
-	return createDeployIntegrationArtifactCmd
+	addIntegrationArtifactGetMplStatusFlags(createIntegrationArtifactGetMplStatusCmd, &stepConfig)
+	return createIntegrationArtifactGetMplStatusCmd
 }
 
-func addDeployIntegrationArtifactFlags(cmd *cobra.Command, stepConfig *deployIntegrationArtifactOptions) {
+func addIntegrationArtifactGetMplStatusFlags(cmd *cobra.Command, stepConfig *integrationArtifactGetMplStatusOptions) {
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User to authenticate to the SAP Cloud Platform Integration Service")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password to authenticate to the SAP Cloud Platform Integration Service")
 	cmd.Flags().StringVar(&stepConfig.IntegrationFlowID, "integrationFlowId", os.Getenv("PIPER_integrationFlowId"), "Specifies the ID of the Integration Flow artifact")
-	cmd.Flags().StringVar(&stepConfig.IntegrationFlowVersion, "integrationFlowVersion", os.Getenv("PIPER_integrationFlowVersion"), "Specifies the version of the Integration Flow artifact")
 	cmd.Flags().StringVar(&stepConfig.Platform, "platform", os.Getenv("PIPER_platform"), "Specifies the running platform of the SAP Cloud platform integraion service")
 	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the protocol and host address, including the port. Please provide in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.")
 	cmd.Flags().StringVar(&stepConfig.OAuthTokenProviderURL, "oAuthTokenProviderUrl", os.Getenv("PIPER_oAuthTokenProviderUrl"), "Specifies the oAuth Provider protocol and host address, including the port. Please provide in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.")
@@ -93,18 +123,17 @@ func addDeployIntegrationArtifactFlags(cmd *cobra.Command, stepConfig *deployInt
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("integrationFlowId")
-	cmd.MarkFlagRequired("integrationFlowVersion")
 	cmd.MarkFlagRequired("host")
 	cmd.MarkFlagRequired("oAuthTokenProviderUrl")
 }
 
 // retrieve step metadata
-func deployIntegrationArtifactMetadata() config.StepData {
+func integrationArtifactGetMplStatusMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:        "deployIntegrationArtifact",
+			Name:        "integrationArtifactGetMplStatus",
 			Aliases:     []config.Alias{},
-			Description: "Deploy a CPI integration flow",
+			Description: "Get the MPL status of an integration flow",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -146,14 +175,6 @@ func deployIntegrationArtifactMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "integrationFlowVersion",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-					},
-					{
 						Name:        "platform",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -176,6 +197,17 @@ func deployIntegrationArtifactMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+					},
+				},
+			},
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{
+						Name: "commonPipelineEnvironment",
+						Type: "piperEnvironment",
+						Parameters: []map[string]interface{}{
+							{"Name": "custom/iFlowMplStatus"},
+						},
 					},
 				},
 			},

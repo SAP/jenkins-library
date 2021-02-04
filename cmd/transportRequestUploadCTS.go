@@ -4,7 +4,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/SAP/jenkins-library/pkg/transportrequest"
+	"github.com/SAP/jenkins-library/pkg/transportrequest/cts"
 )
 
 type transportRequestUploadUtils interface {
@@ -16,12 +16,12 @@ type transportRequestUploadUtils interface {
 	// Unit tests shall be executable in parallel (not depend on global state), and don't (re-)test dependencies.
 }
 
-// CTSUploadAction ...
-type CTSUploadAction interface {
+// UploadAction ...
+type UploadAction interface {
 	Perform(command.ShellRunner) error
-	WithConnection(transportrequest.CTSConnection)
-	WithApplication(transportrequest.CTSApplication)
-	WithNodeProperties(transportrequest.CTSNode)
+	WithConnection(cts.Connection)
+	WithApplication(cts.Application)
+	WithNodeProperties(cts.Node)
 	WithTransportRequestID(string)
 	WithConfigFile(string)
 	WithDeployUser(string)
@@ -57,7 +57,7 @@ func transportRequestUploadCTS(config transportRequestUploadCTSOptions, telemetr
 
 	// Error situations should be bubbled up until they reach the line below which will then stop execution
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
-	err := runTransportRequestUploadCTS(&config, &transportrequest.CTSUploadAction{}, telemetryData, utils)
+	err := runTransportRequestUploadCTS(&config, &cts.UploadAction{}, telemetryData, utils)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
@@ -65,24 +65,24 @@ func transportRequestUploadCTS(config transportRequestUploadCTSOptions, telemetr
 
 func runTransportRequestUploadCTS(
 	config *transportRequestUploadCTSOptions,
-	action CTSUploadAction,
+	action UploadAction,
 	telemetryData *telemetry.CustomData,
 	cmd command.ShellRunner) error {
 
 	log.Entry().Debugf("Entering 'runTransportRequestUpload' with config: %v", config)
 
-	action.WithConnection(transportrequest.CTSConnection{
+	action.WithConnection(cts.Connection{
 		Endpoint: config.Endpoint,
 		Client:   config.Client,
 		User:     config.Username,
 		Password: config.Password,
 	})
-	action.WithApplication(transportrequest.CTSApplication{
+	action.WithApplication(cts.Application{
 		Name: config.ApplicationName,
 		Pack: config.AbapPackage,
 		Desc: config.Description,
 	})
-	action.WithNodeProperties(transportrequest.CTSNode{
+	action.WithNodeProperties(cts.Node{
 		DeployDependencies: config.DeployToolDependencies,
 		InstallOpts:        config.NpmInstallOpts,
 	})

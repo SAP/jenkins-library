@@ -77,7 +77,6 @@ nav:
         - containerExecuteStructureTests: steps/containerExecuteStructureTests.md
         - containerPushToRegistry: steps/containerPushToRegistry.md
         - debugReportArchive: steps/debugReportArchive.md
-        - deployIntegrationArtifact: steps/deployIntegrationArtifact.md
         - detectExecuteScan: steps/detectExecuteScan.md
         - dockerExecute: steps/dockerExecute.md
         - dockerExecuteOnKubernetes: steps/dockerExecuteOnKubernetes.md
@@ -101,6 +100,9 @@ nav:
         - handlePipelineStepErrors: steps/handlePipelineStepErrors.md
         - healthExecuteCheck: steps/healthExecuteCheck.md
         - influxWriteData: steps/influxWriteData.md
+        - integrationArtifactDeploy: steps/integrationArtifactDeploy.md
+        - integrationArtifactGetMplStatus: steps/integrationArtifactGetMplStatus.md
+        - integrationArtifactUpdateConfiguration: steps/integrationArtifactUpdateConfiguration.md
         - jenkinsMaterializeLog: steps/jenkinsMaterializeLog.md
         - kanikoExecute: steps/kanikoExecute.md
         - karmaExecuteTests: steps/karmaExecuteTests.md

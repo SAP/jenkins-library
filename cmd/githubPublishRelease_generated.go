@@ -257,7 +257,7 @@ func githubPublishReleaseMetadata() config.StepData {
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "githubToken"}},
+						Aliases:   []config.Alias{{Name: "githubToken"}, {Name: "access_token"}},
 					},
 					{
 						Name:        "uploadUrl",
