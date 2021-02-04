@@ -186,7 +186,7 @@ func (c *Client) SendRequest(method, url string, body io.Reader, header http.Hea
 	response, err := httpClient.Do(request)		 	
 	if err != nil {
 		return response, errors.Wrapf(err, "HTTP %v request to %v failed", request.Method, request.URL)
-	}		 	}
+	}
 	return c.handleResponse(response, request.URL)
 }
 
