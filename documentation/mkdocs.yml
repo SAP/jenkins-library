@@ -91,6 +91,8 @@ nav:
         - gctsExecuteABAPUnitTests: steps/gctsExecuteABAPUnitTests.md
         - gctsRollback: steps/gctsRollback.md
         - githubCheckBranchProtection: steps/githubCheckBranchProtection.md
+        - githubCommentIssue: steps/githubCommentIssue.md
+        - githubCreateIssue: steps/githubCreateIssue.md
         - githubCreatePullRequest: steps/githubCreatePullRequest.md
         - githubPublishRelease: steps/githubPublishRelease.md
         - githubSetCommitStatus: steps/githubSetCommitStatus.md
@@ -98,6 +100,9 @@ nav:
         - handlePipelineStepErrors: steps/handlePipelineStepErrors.md
         - healthExecuteCheck: steps/healthExecuteCheck.md
         - influxWriteData: steps/influxWriteData.md
+        - integrationArtifactDeploy: steps/integrationArtifactDeploy.md
+        - integrationArtifactGetMplStatus: steps/integrationArtifactGetMplStatus.md
+        - integrationArtifactUpdateConfiguration: steps/integrationArtifactUpdateConfiguration.md
         - jenkinsMaterializeLog: steps/jenkinsMaterializeLog.md
         - kanikoExecute: steps/kanikoExecute.md
         - karmaExecuteTests: steps/karmaExecuteTests.md

@@ -7,6 +7,7 @@ import (
 )
 
 func TestTestStepCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := TestStepCommand()
 

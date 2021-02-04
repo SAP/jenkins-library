@@ -385,11 +385,17 @@ func sonarExecuteScanMetadata() config.StepData {
 								Name: "githubTokenCredentialsId",
 								Type: "secret",
 							},
+
+							{
+								Name:  "",
+								Paths: []string{"$(vaultPath)/github", "$(vaultBasePath)/$(vaultPipelineName)/github", "$(vaultBasePath)/GROUP-SECRETS/github"},
+								Type:  "vaultSecret",
+							},
 						},
 						Scope:     []string{"PARAMETERS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Aliases:   []config.Alias{{Name: "access_token"}},
 					},
 					{
 						Name:        "disableInlineComments",
