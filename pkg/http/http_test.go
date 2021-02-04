@@ -54,7 +54,7 @@ func TestDefaultTransport(t *testing.T) {
 		_, err := client.SendRequest("GET", testURL, nil, nil, nil)
 		// assert
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "Get \""+testURL+"\": dial tcp [::1]:443: connect: connection refused")
+		assert.Contains(t, err.Error(), "connect: connection refused")
 		assert.Equal(t, 0, httpmock.GetTotalCallCount(), "unexpected number of requests")
 	})
 }
