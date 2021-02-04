@@ -95,8 +95,7 @@ func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) er
 		}
 
 		commandSecrets := ""
-		hasSecrets := len(config.CfAppsWithSecrets) > 0
-		if hasSecrets {
+		if len(config.CfAppsWithSecrets) > 0 {
 			fmt.Printf("Envs: %v", os.Environ())
 			for _, appName := range config.CfAppsWithSecrets {
 				var clientID, clientSecret string
@@ -114,17 +113,6 @@ func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) er
 		if !config.FailOnError {
 			runCommand += " --suppress-exit-code"
 		}
-
-		// if hasSecrets {
-		// 	log.Entry().Info("PATH=$PATH:~/.npm-global/bin newman " + runCommand + " **env/secrets**")
-
-		// 	err := utils.RunShell("/bin/sh", "set +x") // Does this help for later call?
-		// 	if err != nil {
-		// 		log.SetErrorCategory(log.ErrorService)
-		// 		//TODO: other message here
-		// 		return errors.Wrap(err, "The execution of the newman tests failed, see the log for details.")
-		// 	}
-		// }
 
 		runCommand = runCommand + commandSecrets
 		runCommandTokens := strings.Split(runCommand, " ")
@@ -195,6 +183,5 @@ func resolveTemplate(config *newmanExecuteOptions, collection string) (string, e
 
 func defineCollectionDisplayName(collection string) string {
 	replacedSeparators := strings.Replace(collection, string(filepath.Separator), "_", -1)
-	//return strings.Split(replacedSeparators, ".")[0]
-	return strings.Replace(replacedSeparators, ".postman_collection.json", "", -1)
+	return strings.Split(replacedSeparators, ".")[0]
 }
