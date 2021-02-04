@@ -53,9 +53,8 @@ func TestDefaultTransport(t *testing.T) {
 		// test
 		_, err := client.SendRequest("GET", testURL, nil, nil, nil)
 		// assert
-		assert.EqualError(t, err, "HTTP GET request to https://localhost/api failed: "+
-			"Get \"https://localhost/api\": "+
-			"dial tcp [::1]:443: connect: connection refused")
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "Get \"https://localhost/api\": dial tcp [::1]:443: connect: connection refused")
 		assert.Equal(t, 0, httpmock.GetTotalCallCount(), "unexpected number of requests")
 	})
 }
