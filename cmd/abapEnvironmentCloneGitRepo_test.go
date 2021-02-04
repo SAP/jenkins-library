@@ -119,7 +119,9 @@ repositories:
 }
 
 func TestCloneStepErrorMessages(t *testing.T) {
+	t.Parallel()
 	t.Run("Status Error", func(t *testing.T) {
+		t.Parallel()
 		var autils = abaputils.AUtilsMock{}
 		defer autils.Cleanup()
 		autils.ReturnedConnectionDetailsHTTP.Password = "password"
@@ -178,6 +180,7 @@ repositories:
 	})
 
 	t.Run("Poll Request Error", func(t *testing.T) {
+		t.Parallel()
 		var autils = abaputils.AUtilsMock{}
 		defer autils.Cleanup()
 		autils.ReturnedConnectionDetailsHTTP.Password = "password"
@@ -214,6 +217,7 @@ repositories:
 	})
 
 	t.Run("Trigger Clone Error", func(t *testing.T) {
+		t.Parallel()
 		var autils = abaputils.AUtilsMock{}
 		defer autils.Cleanup()
 		autils.ReturnedConnectionDetailsHTTP.Password = "password"
@@ -249,6 +253,7 @@ repositories:
 	})
 
 	t.Run("Missing file error", func(t *testing.T) {
+		t.Parallel()
 		var autils = abaputils.AUtilsMock{}
 		defer autils.Cleanup()
 		autils.ReturnedConnectionDetailsHTTP.Password = "password"
