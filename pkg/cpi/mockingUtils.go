@@ -46,6 +46,8 @@ func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, 
 					}`))),
 		}
 		return &res, errors.New("Not found - either wrong version for the given Id or wrong parameter key")
+	case "IntegrationArtifactGetMplStatus":
+		return GetIntegrationArtifactGetMplStatusCommandMockResponse(testType)
 	default:
 		res := http.Response{
 			StatusCode: 404,
@@ -77,4 +79,51 @@ func GetNegativeCaseHTTPResponseBodyAndErrorNil() (*http.Response, error) {
 				}`))),
 	}
 	return &res, nil
+}
+
+//GetIntegrationArtifactGetMplStatusCommandMockResponse -Provide http respose body
+func GetIntegrationArtifactGetMplStatusCommandMockResponse(testType string) (*http.Response, error) {
+	if testType == "Positive" {
+		res := http.Response{
+			StatusCode: 200,
+			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+				"d": {
+					"results": [
+						{
+							"__metadata": {
+								"id": "https://roverpoc.it-accd002.cfapps.sap.hana.ondemand.com:443/api/v1/MessageProcessingLogs('AGAS1GcWkfBv-ZtpS6j7TKjReO7t')",
+								"uri": "https://roverpoc.it-accd002.cfapps.sap.hana.ondemand.com:443/api/v1/MessageProcessingLogs('AGAS1GcWkfBv-ZtpS6j7TKjReO7t')",
+								"type": "com.sap.hci.api.MessageProcessingLog"
+							},
+							"MessageGuid": "AGAS1GcWkfBv-ZtpS6j7TKjReO7t",
+							"CorrelationId": "AGAS1GevYrPodxieoYf4YSY4jd-8",
+							"ApplicationMessageId": null,
+							"ApplicationMessageType": null,
+							"LogStart": "/Date(1611846759005)/",
+							"LogEnd": "/Date(1611846759032)/",
+							"Sender": null,
+							"Receiver": null,
+							"IntegrationFlowName": "flow1",
+							"Status": "COMPLETED",
+							"LogLevel": "INFO",
+							"CustomStatus": "COMPLETED",
+							"TransactionId": "aa220151116748eeae69db3e88f2bbc8"
+						}
+					]
+				}
+			}`))),
+		}
+		return &res, nil
+	}
+	res := http.Response{
+		StatusCode: 400,
+		Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+					"code": "Bad Request",
+					"message": {
+					"@lang": "en",
+					"#text": "Invalid order by expression"
+					}
+				}`))),
+	}
+	return &res, errors.New("Unable to get integration flow MPL status, Response Status code:400")
 }
