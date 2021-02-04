@@ -25,7 +25,7 @@ import (
 
 func TestDefaultTransport(t *testing.T) {
 	const testURL string = "https://example.org/api"
-	
+
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	httpmock.RegisterResponder(http.MethodGet, testURL, httpmock.NewStringResponder(200, `OK`))
@@ -37,7 +37,7 @@ func TestDefaultTransport(t *testing.T) {
 	// assert
 	assert.NoError(t, err)
 	assert.Equal(t, 1, httpmock.GetTotalCallCount(), "unexpected number of requests")
-	
+
 	content, err := ioutil.ReadAll(response.Body)
 	defer response.Body.Close()
 	require.NoError(t, err, "unexpected error while reading response body")
