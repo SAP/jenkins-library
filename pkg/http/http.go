@@ -186,7 +186,7 @@ func (c *Client) Send(request *http.Request) (*http.Response, error) {
 	if err != nil {
 		return response, errors.Wrapf(err, "HTTP %v request to %v failed", request.Method, request.URL)
 	}
-	return c.handleResponse(response, request.URL)
+	return c.handleResponse(response, request.URL.String())
 }
 
 // SetOptions sets options used for the http client
