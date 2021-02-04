@@ -14,11 +14,35 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/jarcoal/httpmock"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+
+	"github.com/SAP/jenkins-library/pkg/log"
 )
+
+func TestDefaultTransport(t *testing.T) {
+	const testURL string = "https://example.org/api"
+	
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	httpmock.RegisterResponder(http.MethodGet, testURL, httpmock.NewStringResponder(200, `OK`))
+
+	client := Client{}
+	client.SetOptions(ClientOptions{UseDefaultTransport: true})
+	// test
+	response, err := client.SendRequest("GET", testURL, nil, nil, nil)
+	// assert
+	assert.NoError(t, err)
+	assert.Equal(t, 1, httpmock.GetTotalCallCount(), "unexpected number of requests")
+	
+	content, err := ioutil.ReadAll(response.Body)
+	defer response.Body.Close()
+	require.NoError(t, err, "unexpected error while reading response body")
+	assert.Equal(t, "OK", string(content), "unexpected response content")
+}
 
 func TestSendRequest(t *testing.T) {
 	var passedHeaders = map[string][]string{}
