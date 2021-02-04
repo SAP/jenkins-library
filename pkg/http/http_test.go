@@ -24,24 +24,40 @@ import (
 )
 
 func TestDefaultTransport(t *testing.T) {
-	const testURL string = "https://example.org/api"
+	const testURL string = "https://localhost/api"
 
-	httpmock.Activate()
-	defer httpmock.DeactivateAndReset()
-	httpmock.RegisterResponder(http.MethodGet, testURL, httpmock.NewStringResponder(200, `OK`))
+	t.Run("with default transport", func(t *testing.T) {
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
+		httpmock.RegisterResponder(http.MethodGet, testURL, httpmock.NewStringResponder(200, `OK`))
 
-	client := Client{}
-	client.SetOptions(ClientOptions{UseDefaultTransport: true})
-	// test
-	response, err := client.SendRequest("GET", testURL, nil, nil, nil)
-	// assert
-	assert.NoError(t, err)
-	assert.Equal(t, 1, httpmock.GetTotalCallCount(), "unexpected number of requests")
+		client := Client{}
+		client.SetOptions(ClientOptions{UseDefaultTransport: true})
+		// test
+		response, err := client.SendRequest("GET", testURL, nil, nil, nil)
+		// assert
+		assert.NoError(t, err)
+		// assert.NotEmpty(t, count)
+		assert.Equal(t, 1, httpmock.GetTotalCallCount(), "unexpected number of requests")
+		content, err := ioutil.ReadAll(response.Body)
+		defer response.Body.Close()
+		require.NoError(t, err, "unexpected error while reading response body")
+		assert.Equal(t, "OK", string(content), "unexpected response content")
+	})
+	t.Run("with custom transport", func(t *testing.T) {
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
+		httpmock.RegisterResponder(http.MethodGet, testURL, httpmock.NewStringResponder(200, `OK`))
 
-	content, err := ioutil.ReadAll(response.Body)
-	defer response.Body.Close()
-	require.NoError(t, err, "unexpected error while reading response body")
-	assert.Equal(t, "OK", string(content), "unexpected response content")
+		client := Client{}
+		// test
+		_, err := client.SendRequest("GET", testURL, nil, nil, nil)
+		// assert
+		assert.EqualError(t, err, "HTTP GET request to https://localhost/api failed: "+
+			"Get \"https://localhost/api\": "+
+			"dial tcp [::1]:443: connect: connection refused")
+		assert.Equal(t, 0, httpmock.GetTotalCallCount(), "unexpected number of requests")
+	})
 }
 
 func TestSendRequest(t *testing.T) {
