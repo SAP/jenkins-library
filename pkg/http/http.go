@@ -129,8 +129,6 @@ func (c *Client) Upload(data UploadRequestData) (*http.Response, error) {
 		return nil, errors.New(fmt.Sprintf("Http method %v is not allowed. Possible values are %v or %v", data.Method, http.MethodPost, http.MethodPut))
 	}
 
-	httpClient := c.initialize()
-
 	bodyBuffer := &bytes.Buffer{}
 	bodyWriter := multipart.NewWriter(bodyBuffer)
 
@@ -166,12 +164,7 @@ func (c *Client) Upload(data UploadRequestData) (*http.Response, error) {
 	request.Header.Add("Content-Type", "multipart/form-data; boundary=\""+boundary+"\"")
 	request.Header.Add("Connection", "Keep-Alive")
 
-	response, err := httpClient.Do(request)
-	if err != nil {
-		return response, errors.Wrapf(err, "HTTP %v request to %v failed with error", data.Method, data.URL)
-	}
-
-	return c.handleResponse(response, data.URL)
+ 	return c.Send(request)
 }
 
 // SendRequest sends an http request with a defined method
@@ -179,19 +172,22 @@ func (c *Client) Upload(data UploadRequestData) (*http.Response, error) {
 // On error, any Response can be ignored and the Response.Body
 // does not need to be closed.
 func (c *Client) SendRequest(method, url string, body io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
-	httpClient := c.initialize()
-
 	request, err := c.createRequest(method, url, body, &header, cookies)
 	if err != nil {
 		return &http.Response{}, errors.Wrapf(err, "error creating %v request to %v", method, url)
 	}
 
-	response, err := httpClient.Do(request)
-	if err != nil {
-		return response, errors.Wrapf(err, "error calling %v", url)
-	}
+ 	return c.Send(request)
+}
 
-	return c.handleResponse(response, url)
+// Send sends an http request
+ func (c *Client) Send(request *http.Request) (*http.Response, error) {
+	httpClient := c.initialize()
+	response, err := httpClient.Do(request)		 	
+	if err != nil {
+		return response, errors.Wrapf(err, "HTTP %v request to %v failed", request.Method, request.URL)
+	}		 	}
+	return c.handleResponse(response, request.URL)
 }
 
 // SetOptions sets options used for the http client
