@@ -9,16 +9,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/SAP/jenkins-library/pkg/npm"
+	piperDocker "github.com/SAP/jenkins-library/pkg/docker"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	ws "github.com/SAP/jenkins-library/pkg/whitesource"
 
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
 	"github.com/SAP/jenkins-library/pkg/command"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/npm"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/versioning"
-	ws "github.com/SAP/jenkins-library/pkg/whitesource"
+	"github.com/pkg/errors"
 )
 
 // just to make the lines less long
@@ -147,11 +149,30 @@ func runWhitesourceExecuteScan(config *ScanOptions, scan *ws.Scan, utils whiteso
 }
 
 func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment) error {
+	// Download Docker image for container scan
+	// ToDo: move it to improve testability
+	if config.BuildTool == "docker" {
+		saveImageOptions := containerSaveImageOptions{
+			ContainerImage:       config.ScanImage,
+			ContainerRegistryURL: config.ScanImageRegistryURL,
+			IncludeLayers:        config.ScanImageIncludeLayers,
+		}
+		dClientOptions := piperDocker.ClientOptions{ImageName: saveImageOptions.ContainerImage, RegistryURL: saveImageOptions.ContainerRegistryURL, LocalPath: "", IncludeLayers: saveImageOptions.IncludeLayers}
+		dClient := &piperDocker.Client{}
+		dClient.SetOptions(dClientOptions)
+		if err := runContainerSaveImage(&saveImageOptions, &telemetry.CustomData{}, "./cache", "", dClient); err != nil {
+			return errors.Wrapf(err, "failed to dowload Docker image %v", config.ScanImage)
+		}
+
+	}
+
 	// Start the scan
 	if err := executeScan(config, scan, utils); err != nil {
 		return err
 	}
 
+	// ToDo: Check this:
+	// Why is this required at all, resolveProjectIdentifiers() is already called before the scan in runWhitesourceExecuteScan()
 	// Could perhaps use scan.updateProjects(sys) directly... have not investigated what could break
 	if err := resolveProjectIdentifiers(config, scan, utils, sys); err != nil {
 		return err
@@ -190,7 +211,7 @@ func checkAndReportScanResults(config *ScanOptions, scan *ws.Scan, utils whiteso
 		if err != nil {
 			return err
 		}
-		piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", nil, paths)
+		piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", paths, nil)
 	}
 	if config.SecurityVulnerabilities {
 		if err := checkSecurityViolations(config, scan, sys); err != nil {
@@ -223,6 +244,7 @@ func createWhiteSourceProduct(config *ScanOptions, sys whitesource) (string, err
 func resolveProjectIdentifiers(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource) error {
 	if scan.AggregateProjectName == "" || config.ProductVersion == "" {
 		options := &versioning.Options{
+			DockerImage:         config.ScanImage,
 			ProjectSettingsFile: config.ProjectSettingsFile,
 			GlobalSettingsFile:  config.GlobalSettingsFile,
 			M2Path:              config.M2Path,
@@ -231,6 +253,8 @@ func resolveProjectIdentifiers(config *ScanOptions, scan *ws.Scan, utils whiteso
 		if err != nil {
 			return fmt.Errorf("failed to get build artifact description: %w", err)
 		}
+
+		//ToDo: fill version in coordinates with version from pipeline environment
 
 		nameTmpl := `{{list .GroupID .ArtifactID | join "-" | trimAll "-"}}`
 		name, version := versioning.DetermineProjectCoordinates(nameTmpl, config.VersioningModel, coordinates)
@@ -337,12 +361,15 @@ func validateProductVersion(version string) string {
 
 func wsScanOptions(config *ScanOptions) *ws.ScanOptions {
 	return &ws.ScanOptions{
+		BuildTool:                  config.BuildTool,
 		ScanType:                   config.ScanType,
 		OrgToken:                   config.OrgToken,
 		UserToken:                  config.UserToken,
 		ProductName:                config.ProductName,
 		ProductToken:               config.ProductToken,
+		ProductVersion:             config.ProductVersion,
 		ProjectName:                config.ProjectName,
+		BuildDescriptorFile:        config.BuildDescriptorFile,
 		BuildDescriptorExcludeList: config.BuildDescriptorExcludeList,
 		PomPath:                    config.BuildDescriptorFile,
 		M2Path:                     config.M2Path,
@@ -355,6 +382,10 @@ func wsScanOptions(config *ScanOptions) *ws.ScanOptions {
 		ConfigFilePath:             config.ConfigFilePath,
 		Includes:                   config.Includes,
 		Excludes:                   config.Excludes,
+		JreDownloadURL:             config.JreDownloadURL,
+		AgentURL:                   config.AgentURL,
+		ServiceURL:                 config.ServiceURL,
+		Verbose:                    GeneralConfig.Verbose,
 	}
 }
 
@@ -408,25 +439,37 @@ func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource
 	}
 	if config.ProjectToken != "" {
 		project := ws.Project{Name: config.ProjectName, Token: config.ProjectToken}
-		if err := checkProjectSecurityViolations(cvssSeverityLimit, project, sys); err != nil {
+		if _, err := checkProjectSecurityViolations(cvssSeverityLimit, project, sys); err != nil {
 			return err
 		}
 	} else {
+		vulnerabilitiesCount := 0
+		var errorsOccured []string
 		for _, project := range scan.ScannedProjects() {
-			if err := checkProjectSecurityViolations(cvssSeverityLimit, project, sys); err != nil {
-				return err
+			// collect errors and aggregate vulnerabilities from all projects
+			if vulCount, err := checkProjectSecurityViolations(cvssSeverityLimit, project, sys); err != nil {
+				vulnerabilitiesCount += vulCount
+				errorsOccured = append(errorsOccured, fmt.Sprint(err))
 			}
+		}
+		if len(errorsOccured) > 0 {
+			if vulnerabilitiesCount > 0 {
+				log.SetErrorCategory(log.ErrorCompliance)
+			}
+			return fmt.Errorf(strings.Join(errorsOccured, ": "))
 		}
 	}
 	return nil
 }
 
 // checkSecurityViolations checks security violations and returns an error if the configured severity limit is crossed.
-func checkProjectSecurityViolations(cvssSeverityLimit float64, project ws.Project, sys whitesource) error {
+func checkProjectSecurityViolations(cvssSeverityLimit float64, project ws.Project, sys whitesource) (int, error) {
 	// get project alerts (vulnerabilities)
+	//ToDo: use getProjectAlertsByType with alertType : "SECURITY_VULNERABILITY"?
+	//ToDo: also return reference to alerts in order to use it for reporting later
 	alerts, err := sys.GetProjectAlerts(project.Token)
 	if err != nil {
-		return fmt.Errorf("failed to retrieve project alerts from Whitesource: %w", err)
+		return 0, fmt.Errorf("failed to retrieve project alerts from Whitesource: %w", err)
 	}
 
 	severeVulnerabilities := 0
@@ -456,11 +499,11 @@ func checkProjectSecurityViolations(cvssSeverityLimit float64, project ws.Projec
 
 	// https://github.com/SAP/jenkins-library/blob/master/vars/whitesourceExecuteScan.groovy#L558
 	if severeVulnerabilities > 0 {
-		return fmt.Errorf("%v Open Source Software Security vulnerabilities with CVSS score greater "+
+		return severeVulnerabilities, fmt.Errorf("%v Open Source Software Security vulnerabilities with CVSS score greater "+
 			"or equal to %.1f detected in project %s",
 			severeVulnerabilities, cvssSeverityLimit, project.Name)
 	}
-	return nil
+	return 0, nil
 }
 
 func aggregateVersionWideLibraries(config *ScanOptions, utils whitesourceUtils, sys whitesource) error {
@@ -514,7 +557,7 @@ func aggregateVersionWideVulnerabilities(config *ScanOptions, utils whitesourceU
 	}
 
 	reportPath := filepath.Join(config.ReportDirectoryName, "project-names-aggregated.txt")
-	if err := utils.FileWrite(reportPath, []byte(projectNames), 0644); err != nil {
+	if err := utils.FileWrite(reportPath, []byte(projectNames), 0666); err != nil {
 		return err
 	}
 	if err := newVulnerabilityExcelReport(versionWideAlerts, config, utils); err != nil {
@@ -611,7 +654,7 @@ func newLibraryCSVReport(libraries map[string][]ws.Library, config *ScanOptions,
 	// Write result to file
 	fileName := fmt.Sprintf("%s/libraries-%s.csv", config.ReportDirectoryName,
 		utils.Now().Format(wsReportTimeStampLayout))
-	if err := utils.FileWrite(fileName, []byte(output), 0777); err != nil {
+	if err := utils.FileWrite(fileName, []byte(output), 0666); err != nil {
 		return err
 	}
 	return nil

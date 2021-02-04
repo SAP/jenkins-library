@@ -1,11 +1,12 @@
 package whitesource
 
 import (
+	"path/filepath"
+	"testing"
+
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"path/filepath"
-	"testing"
 )
 
 func TestExecuteScanMaven(t *testing.T) {
@@ -22,11 +23,12 @@ func TestExecuteScanMaven(t *testing.T) {
 </project>
 `
 		config := ScanOptions{
-			ScanType:    "maven",
-			OrgToken:    "org-token",
-			UserToken:   "user-token",
-			ProductName: "mock-product",
-			ProjectName: "mock-project",
+			ScanType:       "maven",
+			OrgToken:       "org-token",
+			UserToken:      "user-token",
+			ProductName:    "mock-product",
+			ProductVersion: "product-version",
+			ProjectName:    "mock-project",
 		}
 		utilsMock := NewScanUtilsMock()
 		utilsMock.AddFile("pom.xml", []byte(pomXML))
@@ -45,6 +47,7 @@ func TestExecuteScanMaven(t *testing.T) {
 					"-Dorg.whitesource.product=mock-product",
 					"-Dorg.whitesource.checkPolicies=true",
 					"-Dorg.whitesource.failOnError=true",
+					"-Dorg.whitesource.forceUpdate=true",
 					"-Dorg.whitesource.aggregateProjectName=mock-project",
 					"-Dorg.whitesource.aggregateModules=true",
 					"-Dorg.whitesource.userKey=user-token",
@@ -81,10 +84,12 @@ func TestExecuteScanMaven(t *testing.T) {
 </project>
 `
 		config := ScanOptions{
-			ScanType:    "maven",
-			OrgToken:    "org-token",
-			UserToken:   "user-token",
-			ProductName: "mock-product",
+			ScanType:       "maven",
+			OrgToken:       "org-token",
+			UserToken:      "user-token",
+			ProductName:    "mock-product",
+			ProductVersion: "product-version",
+			ProductToken:   "product-version",
 		}
 		utilsMock := NewScanUtilsMock()
 		utilsMock.AddFile("pom.xml", []byte(rootPomXML))
@@ -104,6 +109,7 @@ func TestExecuteScanMaven(t *testing.T) {
 					"-Dorg.whitesource.product=mock-product",
 					"-Dorg.whitesource.checkPolicies=true",
 					"-Dorg.whitesource.failOnError=true",
+					"-Dorg.whitesource.forceUpdate=true",
 					"-Dorg.whitesource.userKey=user-token",
 					"-Dorg.whitesource.productVersion=product-version",
 					"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",

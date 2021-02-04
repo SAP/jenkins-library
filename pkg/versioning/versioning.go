@@ -20,9 +20,10 @@ type Artifact interface {
 	GetCoordinates() (Coordinates, error)
 }
 
-// Options define build tool specific settings in order to properly retrieve e.g. the version of an artifact
+// Options define build tool specific settings in order to properly retrieve e.g. the version / coordinates of an artifact
 type Options struct {
 	ProjectSettingsFile string
+	DockerImage         string
 	GlobalSettingsFile  string
 	M2Path              string
 	VersionSource       string
@@ -134,7 +135,7 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, utils
 	case "pip":
 		if len(buildDescriptorFilePath) == 0 {
 			var err error
-			buildDescriptorFilePath, err = searchDescriptor([]string{"version.txt", "VERSION", "setup.py"}, fileExists)
+			buildDescriptorFilePath, err = searchDescriptor([]string{"setup.py", "version.txt", "VERSION"}, fileExists)
 			if err != nil {
 				return artifact, err
 			}
