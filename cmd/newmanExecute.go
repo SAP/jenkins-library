@@ -76,7 +76,7 @@ func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) er
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return fmt.Errorf("no collection found with pattern '%v'", config.NewmanCollection)
 	}
-	log.Entry().Infof("Found files '%v'", collectionList)
+	log.Entry().Infof("Found the following newman collections: %v", collectionList)
 
 	err = logVersions(utils)
 	if err != nil {
