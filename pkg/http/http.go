@@ -164,7 +164,7 @@ func (c *Client) Upload(data UploadRequestData) (*http.Response, error) {
 	request.Header.Add("Content-Type", "multipart/form-data; boundary=\""+boundary+"\"")
 	request.Header.Add("Connection", "Keep-Alive")
 
- 	return c.Send(request)
+	return c.Send(request)
 }
 
 // SendRequest sends an http request with a defined method
@@ -177,13 +177,13 @@ func (c *Client) SendRequest(method, url string, body io.Reader, header http.Hea
 		return &http.Response{}, errors.Wrapf(err, "error creating %v request to %v", method, url)
 	}
 
- 	return c.Send(request)
+	return c.Send(request)
 }
 
 // Send sends an http request
- func (c *Client) Send(request *http.Request) (*http.Response, error) {
+func (c *Client) Send(request *http.Request) (*http.Response, error) {
 	httpClient := c.initialize()
-	response, err := httpClient.Do(request)		 	
+	response, err := httpClient.Do(request)
 	if err != nil {
 		return response, errors.Wrapf(err, "HTTP %v request to %v failed", request.Method, request.URL)
 	}
