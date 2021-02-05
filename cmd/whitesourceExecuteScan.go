@@ -617,7 +617,10 @@ func createCustomVulnerabilityReport(config *ScanOptions, scan *ws.Scan, alerts 
 	}
 
 	// ignore templating errors since template is in our hands and issues will be detected with the automated tests
-	htmlReport, _ := scanReport.ToHTML()
+	htmlReport, err := scanReport.ToHTML()
+	if err != nil {
+		return reportPaths, errors.Wrapf(err, "failed to write html report")
+	}
 	htmlReportPath := filepath.Join(ws.ReportsDirectory, "piper_whitesource_vulnerability_report.html")
 	if err := utils.FileWrite(htmlReportPath, htmlReport, 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)

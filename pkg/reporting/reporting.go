@@ -151,7 +151,7 @@ const reportHTMLTemplate = `<!DOCTYPE html>
 	<h2>
 		<span>
 		{{range $s := .Subheaders}}
-		{{- $s.Text}}: {{$s.Details}}<br />
+		{{- $s.Description}}: {{$s.Details}}<br />
 		{{end -}}
 		</span>
 	</h2>
