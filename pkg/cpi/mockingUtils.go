@@ -131,9 +131,9 @@ func GetIntegrationArtifactGetMplStatusCommandMockResponse(testType string) (*ht
 }
 
 //GetIntegrationArtifactGetServiceEndpointCommandMockResponse -Provide http respose body
-func GetIntegrationArtifactGetServiceEndpointCommandMockResponse(testType string) (*http.Response, error) {
-	if testType == "PositiveAndGetetIntegrationArtifactGetServiceResBody" {
-		res := http.Response{
+func GetIntegrationArtifactGetServiceEndpointCommandMockResponse(testCaseType string) (*http.Response, error) {
+	if testCaseType == "PositiveAndGetetIntegrationArtifactGetServiceResBody" {
+		resp := http.Response{
 			StatusCode: 200,
 			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
 				"d": {
@@ -166,7 +166,7 @@ func GetIntegrationArtifactGetServiceEndpointCommandMockResponse(testType string
 				}
 			}`))),
 		}
-		return &res, nil
+		return &resp, nil
 	}
 	res := http.Response{
 		StatusCode: 400,
