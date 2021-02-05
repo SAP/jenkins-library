@@ -78,9 +78,10 @@ func (c *Command) GetStdout() io.Writer {
 }
 
 //GetStderr Retursn the writer for stderr
-func(c *Command) GetStderr() io.Writer {
+func (c *Command) GetStderr() io.Writer {
 	return c.stderr
 }
+
 // ExecCommand defines how to execute os commands
 var ExecCommand = exec.Command
 
