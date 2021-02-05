@@ -489,7 +489,7 @@ func checkProjectSecurityViolations(cvssSeverityLimit float64, project ws.Projec
 	// get project alerts (vulnerabilities)
 	alerts, err := sys.GetProjectAlertsByType(project.Token, "SECURITY_VULNERABILITY")
 	if err != nil {
-		return 0, alerts, fmt.Errorf("failed to retrieve project alerts from Whitesource: %w", err)
+		return 0, alerts, fmt.Errorf("failed to retrieve project alerts from WhiteSource: %w", err)
 	}
 
 	severeVulnerabilities, nonSevereVulnerabilities := countSecurityVulnerabilities(&alerts, cvssSeverityLimit)
@@ -524,8 +524,11 @@ func countSecurityVulnerabilities(alerts *[]ws.Alert, cvssSeverityLimit float64)
 }
 
 func isSevereVulnerability(alert ws.Alert, cvssSeverityLimit float64) bool {
-	vuln := alert.Vulnerability
-	if (vuln.Score >= cvssSeverityLimit || vuln.CVSS3Score >= cvssSeverityLimit) && cvssSeverityLimit >= 0 {
+
+	// ToDo: check if CVSS3 should always win
+	//vuln := alert.Vulnerability
+	//if (vuln.Score >= cvssSeverityLimit || vuln.CVSS3Score >= cvssSeverityLimit) && cvssSeverityLimit >= 0 {
+	if vulnerabilityScore(alert) >= cvssSeverityLimit && cvssSeverityLimit >= 0 {
 		return true
 	}
 	return false
@@ -559,7 +562,7 @@ func createCustomVulnerabilityReport(config *ScanOptions, scan *ws.Scan, alerts 
 			{Description: "Total number of vulnerabilities", Details: fmt.Sprint(len(alerts))},
 			{Description: "Total number of high/critical vulnerabilities with CVSS score >= 7.0", Details: fmt.Sprint(severe)},
 		},
-		ReportTime: time.Now(),
+		ReportTime: utils.Now(),
 	}
 
 	detailTable := reporting.ScanDetailTable{
@@ -620,11 +623,7 @@ func createCustomVulnerabilityReport(config *ScanOptions, scan *ws.Scan, alerts 
 	scanReport.DetailTable = detailTable
 
 	// ignore templating errors since template is in our hands and issues will be detected with the automated tests
-	htmlReport, err := scanReport.ToHTML()
-	//ToDo: remove again, just for debugging ...
-	if err != nil {
-		return reportPaths, errors.Wrapf(err, "failed to write html report")
-	}
+	htmlReport, _ := scanReport.ToHTML()
 	htmlReportPath := filepath.Join(ws.ReportsDirectory, "piper_whitesource_vulnerability_report.html")
 	if err := utils.FileWrite(htmlReportPath, htmlReport, 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 	"time"
@@ -317,19 +318,162 @@ func TestValidateProductVersion(t *testing.T) {
 }
 
 func TestCheckSecurityViolations(t *testing.T) {
+	t.Parallel()
 
+	t.Run("success - non-aggregated", func(t *testing.T) {
+		config := ScanOptions{
+			CvssSeverityLimit: "7",
+		}
+		scan := newWhitesourceScan(&config)
+		scan.AppendScannedProject("testProject1")
+		systemMock := ws.NewSystemMock("ignored")
+		systemMock.Alerts = []ws.Alert{
+			{Vulnerability: ws.Vulnerability{Name: "vul1", CVSS3Score: 6.0}},
+		}
+		utilsMock := newWhitesourceUtilsMock()
+
+		reportPaths, err := checkSecurityViolations(&config, scan, systemMock, utilsMock)
+		assert.NoError(t, err)
+		fileContent, err := utilsMock.FileRead(reportPaths[0].Target)
+		assert.NoError(t, err)
+		assert.True(t, len(fileContent) > 0)
+	})
+
+	t.Run("success - aggregated", func(t *testing.T) {
+		config := ScanOptions{
+			CvssSeverityLimit: "7",
+			ProjectToken:      "theProjectToken",
+		}
+		scan := newWhitesourceScan(&config)
+		systemMock := ws.NewSystemMock("ignored")
+		systemMock.Alerts = []ws.Alert{
+			{Vulnerability: ws.Vulnerability{Name: "vul1", CVSS3Score: 6.0}},
+		}
+		utilsMock := newWhitesourceUtilsMock()
+
+		reportPaths, err := checkSecurityViolations(&config, scan, systemMock, utilsMock)
+		assert.NoError(t, err)
+		assert.Equal(t, 0, len(reportPaths))
+	})
+
+	t.Run("error - wrong limit", func(t *testing.T) {
+		config := ScanOptions{CvssSeverityLimit: "x"}
+		scan := newWhitesourceScan(&config)
+		systemMock := ws.NewSystemMock("ignored")
+		utilsMock := newWhitesourceUtilsMock()
+
+		_, err := checkSecurityViolations(&config, scan, systemMock, utilsMock)
+		assert.Contains(t, fmt.Sprint(err), "failed to parse parameter cvssSeverityLimit")
+
+	})
+
+	t.Run("error - non-aggregated", func(t *testing.T) {
+		config := ScanOptions{
+			CvssSeverityLimit: "5",
+		}
+		scan := newWhitesourceScan(&config)
+		scan.AppendScannedProject("testProject1")
+		systemMock := ws.NewSystemMock("ignored")
+		systemMock.Alerts = []ws.Alert{
+			{Vulnerability: ws.Vulnerability{Name: "vul1", CVSS3Score: 6.0}},
+		}
+		utilsMock := newWhitesourceUtilsMock()
+
+		reportPaths, err := checkSecurityViolations(&config, scan, systemMock, utilsMock)
+		assert.Contains(t, fmt.Sprint(err), "1 Open Source Software Security vulnerabilities")
+		fileContent, err := utilsMock.FileRead(reportPaths[0].Target)
+		assert.NoError(t, err)
+		assert.True(t, len(fileContent) > 0)
+	})
+
+	t.Run("error - aggregated", func(t *testing.T) {
+		config := ScanOptions{
+			CvssSeverityLimit: "5",
+			ProjectToken:      "theProjectToken",
+		}
+		scan := newWhitesourceScan(&config)
+		systemMock := ws.NewSystemMock("ignored")
+		systemMock.Alerts = []ws.Alert{
+			{Vulnerability: ws.Vulnerability{Name: "vul1", CVSS3Score: 6.0}},
+		}
+		utilsMock := newWhitesourceUtilsMock()
+
+		reportPaths, err := checkSecurityViolations(&config, scan, systemMock, utilsMock)
+		assert.Contains(t, fmt.Sprint(err), "1 Open Source Software Security vulnerabilities")
+		assert.Equal(t, 0, len(reportPaths))
+	})
 }
 
 func TestCheckProjectSecurityViolations(t *testing.T) {
+	project := ws.Project{Name: "testProject - 1", Token: "testToken"}
+
+	t.Run("success - no alerts", func(t *testing.T) {
+		systemMock := ws.NewSystemMock("ignored")
+		systemMock.Alerts = []ws.Alert{}
+
+		severeVulnerabilities, alerts, err := checkProjectSecurityViolations(7.0, project, systemMock)
+		assert.NoError(t, err)
+		assert.Equal(t, 0, severeVulnerabilities)
+		assert.Equal(t, 0, len(alerts))
+	})
+
+	t.Run("error - some vulnerabilities", func(t *testing.T) {
+		systemMock := ws.NewSystemMock("ignored")
+		systemMock.Alerts = []ws.Alert{
+			{Vulnerability: ws.Vulnerability{CVSS3Score: 7}},
+			{Vulnerability: ws.Vulnerability{CVSS3Score: 6}},
+		}
+
+		severeVulnerabilities, alerts, err := checkProjectSecurityViolations(7.0, project, systemMock)
+		assert.Contains(t, fmt.Sprint(err), "1 Open Source Software Security vulnerabilities")
+		assert.Equal(t, 1, severeVulnerabilities)
+		assert.Equal(t, 2, len(alerts))
+	})
+
+	t.Run("error - WhiteSource failure", func(t *testing.T) {
+		systemMock := ws.NewSystemMock("ignored")
+		systemMock.AlertError = fmt.Errorf("failed to read alerts")
+		_, _, err := checkProjectSecurityViolations(7.0, project, systemMock)
+		assert.Contains(t, fmt.Sprint(err), "failed to retrieve project alerts from WhiteSource")
+	})
 
 }
 
 func TestCountSecurityVulnerabilities(t *testing.T) {
+	t.Parallel()
 
+	alerts := []ws.Alert{
+		{Vulnerability: ws.Vulnerability{CVSS3Score: 7.1}},
+		{Vulnerability: ws.Vulnerability{CVSS3Score: 7}},
+		{Vulnerability: ws.Vulnerability{CVSS3Score: 6}},
+	}
+
+	severe, nonSevere := countSecurityVulnerabilities(&alerts, 7.0)
+	assert.Equal(t, 2, severe)
+	assert.Equal(t, 1, nonSevere)
 }
 
 func TestIsSevereVulnerability(t *testing.T) {
+	tt := []struct {
+		alert    ws.Alert
+		limit    float64
+		expected bool
+	}{
+		{alert: ws.Alert{Vulnerability: ws.Vulnerability{CVSS3Score: 0}}, limit: 0, expected: true},
+		{alert: ws.Alert{Vulnerability: ws.Vulnerability{CVSS3Score: 6.9, Score: 6}}, limit: 7.0, expected: false},
+		{alert: ws.Alert{Vulnerability: ws.Vulnerability{CVSS3Score: 7.0, Score: 6}}, limit: 7.0, expected: true},
+		{alert: ws.Alert{Vulnerability: ws.Vulnerability{CVSS3Score: 7.1, Score: 6}}, limit: 7.0, expected: true},
+		{alert: ws.Alert{Vulnerability: ws.Vulnerability{CVSS3Score: 6, Score: 6.9}}, limit: 7.0, expected: false},
+		{alert: ws.Alert{Vulnerability: ws.Vulnerability{CVSS3Score: 6, Score: 7.0}}, limit: 7.0, expected: false},
+		{alert: ws.Alert{Vulnerability: ws.Vulnerability{CVSS3Score: 6, Score: 7.1}}, limit: 7.0, expected: false},
+		{alert: ws.Alert{Vulnerability: ws.Vulnerability{Score: 6.9}}, limit: 7.0, expected: false},
+		{alert: ws.Alert{Vulnerability: ws.Vulnerability{Score: 7.0}}, limit: 7.0, expected: true},
+		{alert: ws.Alert{Vulnerability: ws.Vulnerability{Score: 7.1}}, limit: 7.0, expected: true},
+	}
 
+	for i, test := range tt {
+		assert.Equalf(t, test.expected, isSevereVulnerability(test.alert, test.limit), "run %v failed", i)
+	}
 }
 
 func TestCreateCustomVulnerabilityReport(t *testing.T) {
@@ -337,7 +481,19 @@ func TestCreateCustomVulnerabilityReport(t *testing.T) {
 }
 
 func TestVulnerabilityScore(t *testing.T) {
+	t.Parallel()
 
+	tt := []struct {
+		alert    ws.Alert
+		expected float64
+	}{
+		{alert: ws.Alert{Vulnerability: ws.Vulnerability{CVSS3Score: 7.0, Score: 6}}, expected: 7.0},
+		{alert: ws.Alert{Vulnerability: ws.Vulnerability{CVSS3Score: 7.0}}, expected: 7.0},
+		{alert: ws.Alert{Vulnerability: ws.Vulnerability{Score: 6}}, expected: 6},
+	}
+	for i, test := range tt {
+		assert.Equalf(t, test.expected, vulnerabilityScore(test.alert), "run %v failed", i)
+	}
 }
 
 func TestAggregateVersionWideLibraries(t *testing.T) {
