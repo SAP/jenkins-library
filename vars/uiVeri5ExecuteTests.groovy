@@ -39,5 +39,8 @@ void call(Map parameters = [:]) {
     List credentials = [
         [type: 'usernamePassword', id: 'seleniumHubCredentialsId', env: ['PIPER_SELENIUM_HUB_USER', 'PIPER_SELENIUM_HUB_PASSWORD']],
     ]
-    piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
+    print "DEBUGGING"
+    print parameters
+    print config
+    piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials, false, false,  config.failOnError)
 }
