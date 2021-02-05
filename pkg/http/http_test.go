@@ -14,11 +14,50 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/jarcoal/httpmock"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+
+	"github.com/SAP/jenkins-library/pkg/log"
 )
+
+func TestDefaultTransport(t *testing.T) {
+	const testURL string = "https://localhost/api"
+
+	t.Run("with default transport", func(t *testing.T) {
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
+		httpmock.RegisterResponder(http.MethodGet, testURL, httpmock.NewStringResponder(200, `OK`))
+
+		client := Client{}
+		client.SetOptions(ClientOptions{UseDefaultTransport: true})
+		// test
+		response, err := client.SendRequest("GET", testURL, nil, nil, nil)
+		// assert
+		assert.NoError(t, err)
+		// assert.NotEmpty(t, count)
+		assert.Equal(t, 1, httpmock.GetTotalCallCount(), "unexpected number of requests")
+		content, err := ioutil.ReadAll(response.Body)
+		defer response.Body.Close()
+		require.NoError(t, err, "unexpected error while reading response body")
+		assert.Equal(t, "OK", string(content), "unexpected response content")
+	})
+	t.Run("with custom transport", func(t *testing.T) {
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
+		httpmock.RegisterResponder(http.MethodGet, testURL, httpmock.NewStringResponder(200, `OK`))
+
+		client := Client{}
+		// test
+		_, err := client.SendRequest("GET", testURL, nil, nil, nil)
+		// assert
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "connect: connection refused")
+		assert.Equal(t, 0, httpmock.GetTotalCallCount(), "unexpected number of requests")
+	})
+}
 
 func TestSendRequest(t *testing.T) {
 	var passedHeaders = map[string][]string{}
