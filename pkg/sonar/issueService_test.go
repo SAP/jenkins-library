@@ -11,17 +11,16 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 )
 
-const testURL string = "https://example.org/api"
-
 func TestIssueService(t *testing.T) {
-	t.Run("", func(t *testing.T) {
+	testURL := "https://example.org"
+	t.Run("success case", func(t *testing.T) {
 		httpmock.Activate()
 		defer httpmock.DeactivateAndReset()
 
 		sender := &piperhttp.Client{}
 		sender.SetOptions(piperhttp.ClientOptions{UseDefaultTransport: true})
 		// add response handler
-		httpmock.RegisterResponder(http.MethodGet, testURL+"/"+endpointIssuesSearch+"", httpmock.NewStringResponder(200, responseIssueSearchCritical))
+		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+endpointIssuesSearch+"", httpmock.NewStringResponder(200, responseIssueSearchCritical))
 		// create service instance
 		serviceUnderTest := NewIssuesService(testURL, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, sender)
 		// test
@@ -31,7 +30,32 @@ func TestIssueService(t *testing.T) {
 		assert.NotEmpty(t, count)
 		assert.Equal(t, 1, httpmock.GetTotalCallCount(), "unexpected number of requests")
 	})
+	t.Run("error case", func(t *testing.T) {
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
+
+		sender := &piperhttp.Client{}
+		sender.SetOptions(piperhttp.ClientOptions{UseDefaultTransport: true})
+		// add response handler
+		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+endpointIssuesSearch+"", httpmock.NewStringResponder(400, responseIssueSearchError))
+		// create service instance
+		serviceUnderTest := NewIssuesService(testURL, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, sender)
+		// test
+		count, err := serviceUnderTest.GetNumberOfCriticalIssues()
+		// assert
+		assert.Error(t, err)
+		assert.Equal(t, -1, count)
+		assert.Equal(t, 1, httpmock.GetTotalCallCount(), "unexpected number of requests")
+	})
 }
+
+const responseIssueSearchError = `{
+  "errors": [
+    {
+      "msg": "At least one of the following parameters must be specified: organization, projects, projectKeys (deprecated), componentKeys, componentUuids (deprecated), assignees, issues"
+    }
+  ]
+}`
 
 const responseIssueSearchCritical = `{
   "total": 111,

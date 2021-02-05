@@ -9,6 +9,7 @@ import (
 )
 
 func TestCreate(t *testing.T) {
+	testURL := "https://example.org/api"
 	t.Run("", func(t *testing.T) {
 		// init
 		requester := Requester{
