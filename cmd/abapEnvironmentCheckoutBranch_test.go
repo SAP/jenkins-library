@@ -11,9 +11,8 @@ import (
 )
 
 func TestCheckoutBranchStep(t *testing.T) {
-	t.Parallel()
 	t.Run("Run Step Successful - repositoryName and branchName config", func(t *testing.T) {
-		t.Parallel()
+
 		var autils = abaputils.AUtilsMock{}
 		defer autils.Cleanup()
 		autils.ReturnedConnectionDetailsHTTP.Password = "password"
@@ -47,7 +46,6 @@ func TestCheckoutBranchStep(t *testing.T) {
 		assert.NoError(t, err, "Did not expect error")
 	})
 	t.Run("Run Step Failure - empty config", func(t *testing.T) {
-		t.Parallel()
 		expectedErrorMessage := "Something failed during the checkout: Checking configuration failed: You have not specified any repository or branch configuration to be checked out in the ABAP Environment System. Please make sure that you specified the repositories with their branches that should be checked out either in a dedicated file or via the parameters 'repositoryName' and 'branchName'. For more information please read the User documentation"
 
 		var autils = abaputils.AUtilsMock{}
@@ -73,7 +71,6 @@ func TestCheckoutBranchStep(t *testing.T) {
 		assert.EqualError(t, err, expectedErrorMessage)
 	})
 	t.Run("Run Step Failure - wrong status", func(t *testing.T) {
-		t.Parallel()
 		expectedErrorMessage := "Something failed during the checkout: Checkout failed: Checkout of branch testBranch failed on the ABAP System"
 
 		var autils = abaputils.AUtilsMock{}
@@ -262,9 +259,8 @@ repositories:
 }
 
 func TestTriggerCheckout(t *testing.T) {
-	t.Parallel()
 	t.Run("Test trigger checkout: success case", func(t *testing.T) {
-		t.Parallel()
+
 		// given
 		receivedURI := "example.com/Branches"
 		uriExpected := receivedURI + "?$expand=to_Execution_log,to_Transport_log"
@@ -301,7 +297,7 @@ func TestTriggerCheckout(t *testing.T) {
 	})
 
 	t.Run("Test trigger checkout: ABAP Error case", func(t *testing.T) {
-		t.Parallel()
+
 		// given
 		errorMessage := "ABAP Error Message"
 		errorCode := "ERROR/001"
@@ -340,9 +336,7 @@ func TestTriggerCheckout(t *testing.T) {
 }
 
 func TestCheckoutConfigChecker(t *testing.T) {
-	t.Parallel()
 	t.Run("Success case: check config", func(t *testing.T) {
-		t.Parallel()
 		config := abapEnvironmentCheckoutBranchOptions{
 			RepositoryName: "testRepo1",
 			BranchName:     "feature-unit-test",
@@ -351,7 +345,6 @@ func TestCheckoutConfigChecker(t *testing.T) {
 		assert.NoError(t, err)
 	})
 	t.Run("Success case: check file config", func(t *testing.T) {
-		t.Parallel()
 		config := abapEnvironmentCheckoutBranchOptions{
 			Repositories: "test.file",
 			BranchName:   "feature-unit-test",
@@ -360,7 +353,6 @@ func TestCheckoutConfigChecker(t *testing.T) {
 		assert.NoError(t, err)
 	})
 	t.Run("Failure case: check empty config", func(t *testing.T) {
-		t.Parallel()
 		expectedErrorMessage := "Checking configuration failed: You have not specified any repository or branch configuration to be checked out in the ABAP Environment System. Please make sure that you specified the repositories with their branches that should be checked out either in a dedicated file or via the parameters 'repositoryName' and 'branchName'. For more information please read the User documentation"
 
 		config := abapEnvironmentCheckoutBranchOptions{}
