@@ -133,40 +133,7 @@ func GetIntegrationArtifactGetMplStatusCommandMockResponse(testType string) (*ht
 //GetIntegrationArtifactGetServiceEndpointCommandMockResponse -Provide http respose body
 func GetIntegrationArtifactGetServiceEndpointCommandMockResponse(testCaseType string) (*http.Response, error) {
 	if testCaseType == "PositiveAndGetetIntegrationArtifactGetServiceResBody" {
-		resp := http.Response{
-			StatusCode: 200,
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-				"d": {
-					"results": [
-						{
-							"__metadata": {
-								"id": "https://demo.cfapps.sap.hana.ondemand.com:443/api/v1/ServiceEndpoints('CPI_IFlow_Call_using_Cert%24endpointAddress%3Dtestwithcert')",
-								"uri": "https://demo.cfapps.sap.hana.ondemand.com:443/api/v1/ServiceEndpoints('CPI_IFlow_Call_using_Cert%24endpointAddress%3Dtestwithcert')",
-								"type": "com.sap.hci.api.ServiceEndpoint"
-							},
-							"Name": "CPI_IFlow_Call_using_Cert",
-							"Id": "CPI_IFlow_Call_using_Cert$endpointAddress=testwithcert",
-							"EntryPoints": {
-								"results": [
-									{
-										"__metadata": {
-											"id": "https://demo.cfapps.sap.hana.ondemand.com:443/api/v1/EntryPoints('https%3A%2F%2Froverpoc.it-accd002-rt.cfapps.sap.hana.ondemand.com%2Fhttp%2Ftestwithcert')",
-											"uri": "https://demo.cfapps.sap.hana.ondemand.com:443/api/v1/EntryPoints('https%3A%2F%2Froverpoc.it-accd002-rt.cfapps.sap.hana.ondemand.com%2Fhttp%2Ftestwithcert')",
-											"type": "com.sap.hci.api.EntryPoint"
-										},
-										"Name": "CPI_IFlow_Call_using_Cert",
-										"Url": "https://demo.cfapps.sap.hana.ondemand.com/http/testwithcert",
-										"Type": "PROD",
-										"AdditionalInformation": ""
-									}
-								]
-							}
-						}
-					]
-				}
-			}`))),
-		}
-		return &resp, nil
+		return GetIntegrationArtifactGetServiceEndpointPositiveCaseRespBody()
 	}
 	res := http.Response{
 		StatusCode: 400,
@@ -179,4 +146,43 @@ func GetIntegrationArtifactGetServiceEndpointCommandMockResponse(testCaseType st
 				}`))),
 	}
 	return &res, errors.New("Unable to get integration flow service endpoint, Response Status code:400")
+}
+
+//GetIntegrationArtifactGetServiceEndpointPositiveCaseRespBody -Provide http respose body for positive case
+func GetIntegrationArtifactGetServiceEndpointPositiveCaseRespBody() (*http.Response, error) {
+
+	resp := http.Response{
+		StatusCode: 200,
+		Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+			"d": {
+				"results": [
+					{
+						"__metadata": {
+							"id": "https://demo.cfapps.sap.hana.ondemand.com:443/api/v1/ServiceEndpoints('CPI_IFlow_Call_using_Cert%24endpointAddress%3Dtestwithcert')",
+							"uri": "https://demo.cfapps.sap.hana.ondemand.com:443/api/v1/ServiceEndpoints('CPI_IFlow_Call_using_Cert%24endpointAddress%3Dtestwithcert')",
+							"type": "com.sap.hci.api.ServiceEndpoint"
+						},
+						"Name": "CPI_IFlow_Call_using_Cert",
+						"Id": "CPI_IFlow_Call_using_Cert$endpointAddress=testwithcert",
+						"EntryPoints": {
+							"results": [
+								{
+									"__metadata": {
+										"id": "https://demo.cfapps.sap.hana.ondemand.com:443/api/v1/EntryPoints('https%3A%2F%2Froverpoc.it-accd002-rt.cfapps.sap.hana.ondemand.com%2Fhttp%2Ftestwithcert')",
+										"uri": "https://demo.cfapps.sap.hana.ondemand.com:443/api/v1/EntryPoints('https%3A%2F%2Froverpoc.it-accd002-rt.cfapps.sap.hana.ondemand.com%2Fhttp%2Ftestwithcert')",
+										"type": "com.sap.hci.api.EntryPoint"
+									},
+									"Name": "CPI_IFlow_Call_using_Cert",
+									"Url": "https://demo.cfapps.sap.hana.ondemand.com/http/testwithcert",
+									"Type": "PROD",
+									"AdditionalInformation": ""
+								}
+							]
+						}
+					}
+				]
+			}
+		}`))),
+	}
+	return &resp, nil
 }
