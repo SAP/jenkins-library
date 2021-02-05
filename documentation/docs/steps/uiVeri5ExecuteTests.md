@@ -24,6 +24,10 @@ The former groovy implementation included a default for seleniumAddress in the r
 runOptions: ["--seleniumAddress=http://localhost:4444/wd/hub", ..... ]
 ```
 
+The parameter `failOnError` is no longer supported on the step due to strategic reasons of pipeline resilience. To achieve the former behaviour with `failOnError: false` configured, the step can be wrapped using try/catch in your custom pipeline script.
+
+The `installCommand` does not support queueing shell commands using `&&` and `|` operator any longer.
+
 If you see an error like `fatal: Not a git repository (or any parent up to mount point /home/jenkins)` it is likely that your test description cannot be found.<br />
 Please make sure to point parameter `runOptions` to your `conf.js` file like `runOptions: [...., './path/to/my/tests/conf.js']`
 
