@@ -14,15 +14,16 @@ import (
 )
 
 type abapEnvironmentRunATCCheckOptions struct {
-	AtcConfig         string `json:"atcConfig,omitempty"`
-	CfAPIEndpoint     string `json:"cfApiEndpoint,omitempty"`
-	CfOrg             string `json:"cfOrg,omitempty"`
-	CfServiceInstance string `json:"cfServiceInstance,omitempty"`
-	CfServiceKeyName  string `json:"cfServiceKeyName,omitempty"`
-	CfSpace           string `json:"cfSpace,omitempty"`
-	Username          string `json:"username,omitempty"`
-	Password          string `json:"password,omitempty"`
-	Host              string `json:"host,omitempty"`
+	AtcConfig          string `json:"atcConfig,omitempty"`
+	CfAPIEndpoint      string `json:"cfApiEndpoint,omitempty"`
+	CfOrg              string `json:"cfOrg,omitempty"`
+	CfServiceInstance  string `json:"cfServiceInstance,omitempty"`
+	CfServiceKeyName   string `json:"cfServiceKeyName,omitempty"`
+	CfSpace            string `json:"cfSpace,omitempty"`
+	Username           string `json:"username,omitempty"`
+	Password           string `json:"password,omitempty"`
+	Host               string `json:"host,omitempty"`
+	AtcResultsFileName string `json:"atcResultsFileName,omitempty"`
 }
 
 // AbapEnvironmentRunATCCheckCommand Runs an ATC Check
@@ -36,10 +37,10 @@ func AbapEnvironmentRunATCCheckCommand() *cobra.Command {
 	var createAbapEnvironmentRunATCCheckCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Runs an ATC Check",
-		Long: `This step is for triggering an ATC test run on an SAP Cloud Platform ABAP Environment system.
+		Long: `This step is for triggering an [ATC](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/d8cec788fc104ff9ad9c3757b4dd13d4.html) test run on an SAP Cloud Platform ABAP Environment system.
 Please provide either of the following options:
 
-* The host and credentials the Cloud Platform ABAP Environment system itself. The credentials must be configured for the Communication Scenario SAP_COM_0510.
+* The host and credentials the Cloud Platform ABAP Environment system itself. The credentials must be configured for the Communication Scenario [SAP_COM_0510](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html).
 * The Cloud Foundry parameters (API endpoint, organization, space), credentials, the service instance for the ABAP service and the service key for the Communication Scenario SAP_COM_0510.
 * Only provide one of those options with the respective credentials. If all values are provided, the direct communication (via host) has priority.
 
@@ -58,6 +59,8 @@ Regardless of the option you chose, please make sure to provide the configuratio
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			log.RegisterSecret(stepConfig.Username)
+			log.RegisterSecret(stepConfig.Password)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -70,7 +73,9 @@ Regardless of the option you chose, please make sure to provide the configuratio
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
 			}
 			log.DeferExitHandler(handler)
@@ -93,9 +98,10 @@ func addAbapEnvironmentRunATCCheckFlags(cmd *cobra.Command, stepConfig *abapEnvi
 	cmd.Flags().StringVar(&stepConfig.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Parameter of ServiceInstance Name to delete CloudFoundry Service")
 	cmd.Flags().StringVar(&stepConfig.CfServiceKeyName, "cfServiceKeyName", os.Getenv("PIPER_cfServiceKeyName"), "Parameter of CloudFoundry Service Key to be created")
 	cmd.Flags().StringVar(&stepConfig.CfSpace, "cfSpace", os.Getenv("PIPER_cfSpace"), "CF Space")
-	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User or E-Mail for CF")
-	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "User Password for CF User")
+	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510")
+	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510")
 	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP Cloud Platform ABAP Environment system")
+	cmd.Flags().StringVar(&stepConfig.AtcResultsFileName, "atcResultsFileName", `ATCResults.xml`, "Specifies output file name for the results from the ATC run")
 
 	cmd.MarkFlagRequired("atcConfig")
 	cmd.MarkFlagRequired("username")
@@ -106,8 +112,9 @@ func addAbapEnvironmentRunATCCheckFlags(cmd *cobra.Command, stepConfig *abapEnvi
 func abapEnvironmentRunATCCheckMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "abapEnvironmentRunATCCheck",
-			Aliases: []config.Alias{},
+			Name:        "abapEnvironmentRunATCCheck",
+			Aliases:     []config.Alias{},
+			Description: "Runs an ATC Check",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -161,20 +168,32 @@ func abapEnvironmentRunATCCheckMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "cloudFoundry/space"}},
 					},
 					{
-						Name:        "username",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Name: "username",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "abapCredentialsId",
+								Param: "username",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "password",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Name: "password",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "abapCredentialsId",
+								Param: "password",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "host",
@@ -184,7 +203,18 @@ func abapEnvironmentRunATCCheckMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
+					{
+						Name:        "atcResultsFileName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
 				},
+			},
+			Containers: []config.Container{
+				{Name: "cf", Image: "ppiper/cf-cli"},
 			},
 		},
 	}

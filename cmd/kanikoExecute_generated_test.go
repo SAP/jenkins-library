@@ -7,10 +7,11 @@ import (
 )
 
 func TestKanikoExecuteCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := KanikoExecuteCommand()
 
-	// only high level testing performed - details are tested in step generation procudure
+	// only high level testing performed - details are tested in step generation procedure
 	assert.Equal(t, "kanikoExecute", testCmd.Use, "command name incorrect")
 
 }

@@ -1,0 +1,128 @@
+<?xml version='1.0' encoding='utf-8'?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <name>cloud-sdk-tomee-archetype - Application</name>
+    <description>cloud-sdk-tomee-archetype - Application</description>
+
+    <artifactId>cloud-sdk-tomee-archetype-application</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>war</packaging>
+
+    <parent>
+        <groupId>mydemo</groupId>
+        <artifactId>cloud-sdk-tomee-archetype</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.checkerframework</groupId>
+                        <artifactId>checker-qual</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.sap.cloud.sdk.cloudplatform</groupId>
+            <artifactId>scp-cf</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.sap.cloud.sdk.s4hana</groupId>
+            <artifactId>s4hana-all</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.sap.cloud.sdk.cloudplatform</groupId>
+            <artifactId>security-servlet</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>jcl-over-slf4j</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>javax.inject</groupId>
+            <artifactId>javax.inject</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>${project.artifactId}</finalName>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <version>3.2.3</version>
+                <configuration>
+                    <attachClasses>true</attachClasses>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.tomee.maven</groupId>
+                <artifactId>tomee-maven-plugin</artifactId>
+                <version>8.0.1</version>
+                <configuration>
+                    <tomeeClassifier>webprofile</tomeeClassifier>
+                    <context>ROOT</context>
+                    <libs>
+                        <lib>remove:slf4j-jdk14</lib>
+                    </libs>
+                    <tomeeShutdownPort>8006</tomeeShutdownPort>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>com.sap.cloud.sdk.plugins</groupId>
+                <artifactId>usage-analytics-maven-plugin</artifactId>
+                <version>3.22.0</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>usage-analytics</goal>
+                        </goals>
+                        <configuration>
+                            <skipUsageAnalytics>true</skipUsageAnalytics>
+                            <generateSalt>true</generateSalt>
+                            <!--
+                            Note: A random salt is auto-generated once the project is built for the first time.
+                            Please keep the generated salt in the POM file, for example, when pushing to git.
+
+                            To learn more, visit: https://blogs.sap.com/2018/10/23/usage-analytics-s4sdk/
+                            -->
+                            <salt />
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

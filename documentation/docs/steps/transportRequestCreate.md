@@ -4,7 +4,6 @@
 
 ## Prerequisites
 
-* **[Change Management Client 2.0.0 or compatible version](http://central.maven.org/maven2/com/sap/devops/cmclient/dist.cli/)** - available for download on Maven Central. **Note:** This is only required if you don't use a Docker-based environment.
 * Solution Manager version `ST720 SP08` or newer.
 
 ## ${docGenParameters}
@@ -46,7 +45,7 @@ general:
 ```
 
 The properties configured in section `'general/changeManagement'` are shared between
-all change managment related steps.
+all change management related steps.
 
 The properties can also be configured on a per-step basis:
 

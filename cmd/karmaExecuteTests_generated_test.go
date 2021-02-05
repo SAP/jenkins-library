@@ -7,10 +7,11 @@ import (
 )
 
 func TestKarmaExecuteTestsCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := KarmaExecuteTestsCommand()
 
-	// only high level testing performed - details are tested in step generation procudure
+	// only high level testing performed - details are tested in step generation procedure
 	assert.Equal(t, "karmaExecuteTests", testCmd.Use, "command name incorrect")
 
 }

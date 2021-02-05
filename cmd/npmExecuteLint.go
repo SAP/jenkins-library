@@ -69,7 +69,7 @@ func (u *lintUtilsBundle) getGeneralPurposeConfig(configURL string) {
 
 func npmExecuteLint(config npmExecuteLintOptions, telemetryData *telemetry.CustomData) {
 	utils := newLintUtilsBundle()
-	npmExecutorOptions := npm.ExecutorOptions{DefaultNpmRegistry: config.DefaultNpmRegistry, SapNpmRegistry: config.SapNpmRegistry, ExecRunner: utils.getExecRunner()}
+	npmExecutorOptions := npm.ExecutorOptions{DefaultNpmRegistry: config.DefaultNpmRegistry, ExecRunner: utils.getExecRunner()}
 	npmExecutor := npm.NewExecutor(npmExecutorOptions)
 
 	err := runNpmExecuteLint(npmExecutor, utils, &config)
@@ -100,7 +100,7 @@ func runCiLint(npmExecutor npm.Executor, failOnError bool) error {
 	runScripts := []string{"ci-lint"}
 	runOptions := []string{"--silent"}
 
-	err := npmExecutor.RunScriptsInAllPackages(runScripts, runOptions, nil, false)
+	err := npmExecutor.RunScriptsInAllPackages(runScripts, runOptions, nil, false, nil, nil)
 	if err != nil {
 		if failOnError {
 			return fmt.Errorf("ci-lint script execution failed with error: %w. This might be the result of severe linting findings, or some other issue while executing the script. Please examine the linting results in the UI, the cilint.xml file, if available, or the log above. ", err)

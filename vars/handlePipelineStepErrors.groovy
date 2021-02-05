@@ -52,17 +52,21 @@ import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 void call(Map parameters = [:], body) {
     // load default & individual configuration
     def cpe = parameters.stepParameters?.script?.commonPipelineEnvironment ?: null
+    String stageName = parameters.stepParameters?.stageName ?: env.STAGE_NAME
     Map config = ConfigurationHelper.newInstance(this)
-        .loadStepDefaults()
+        .loadStepDefaults([:], stageName)
         .mixinGeneralConfig(cpe, GENERAL_CONFIG_KEYS)
         .mixinStepConfig(cpe, STEP_CONFIG_KEYS)
-        .mixinStageConfig(cpe, parameters.stepParameters?.stageName?:env.STAGE_NAME, STEP_CONFIG_KEYS)
+        .mixinStageConfig(cpe, stageName, STEP_CONFIG_KEYS)
         .mixin(parameters, PARAMETER_KEYS)
         .withMandatoryProperty('stepParameters')
         .withMandatoryProperty('stepName')
         .addIfEmpty('stepNameDoc' , parameters.stepName)
         .use()
 
+    // Load 'unstableSteps' before 'body' execution.
+    // If piperExecuteBin is used in the 'body', the transformation of CPE to filesystem and back will turn the ArrayList into an JSONArray.
+    List unstableSteps = cpe?.getValue('unstableSteps') ?: []
     def message = ''
     try {
         if (config.echoDetails)
@@ -99,13 +103,10 @@ void call(Map parameters = [:], body) {
             echo failureMessage
         }
 
-        List unstableSteps = cpe?.getValue('unstableSteps') ?: []
-
         // add information about unstable steps to pipeline environment
         // this helps to bring this information to users in a consolidated manner inside a pipeline
         unstableSteps.add(config.stepName)
         cpe?.setValue('unstableSteps', unstableSteps)
-
     } catch (Throwable error) {
         if (config.echoDetails)
             message += formatErrorMessage(config, error)

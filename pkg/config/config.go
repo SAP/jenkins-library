@@ -19,20 +19,21 @@ import (
 
 // Config defines the structure of the config files
 type Config struct {
-	CustomDefaults []string                          `json:"customDefaults,omitempty"`
-	General        map[string]interface{}            `json:"general"`
-	Stages         map[string]map[string]interface{} `json:"stages"`
-	Steps          map[string]map[string]interface{} `json:"steps"`
-	Hooks          map[string]*json.RawMessage       `json:"hooks,omitempty"`
-	defaults       PipelineDefaults
-	initialized    bool
-	openFile       func(s string) (io.ReadCloser, error)
+	CustomDefaults   []string                          `json:"customDefaults,omitempty"`
+	General          map[string]interface{}            `json:"general"`
+	Stages           map[string]map[string]interface{} `json:"stages"`
+	Steps            map[string]map[string]interface{} `json:"steps"`
+	Hooks            *json.RawMessage                  `json:"hooks,omitempty"`
+	defaults         PipelineDefaults
+	initialized      bool
+	openFile         func(s string) (io.ReadCloser, error)
+	vaultCredentials VaultCredentials
 }
 
 // StepConfig defines the structure for merged step configuration
 type StepConfig struct {
 	Config     map[string]interface{}
-	HookConfig map[string]*json.RawMessage
+	HookConfig *json.RawMessage
 }
 
 // ReadConfig loads config and returns its content
@@ -184,6 +185,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		stepConfig.mixIn(def.General, filters.General)
 		stepConfig.mixIn(def.Steps[stepName], filters.Steps)
 		stepConfig.mixIn(def.Stages[stageName], filters.Steps)
+		stepConfig.mixinVaultConfig(def.General, def.Steps[stepName], def.Stages[stageName])
 
 		// process hook configuration - this is only supported via defaults
 		if stepConfig.HookConfig == nil {
@@ -213,6 +215,9 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 			for _, p := range parameters {
 				params = setParamValueFromAlias(params, filters.Parameters, p.Name, p.Aliases)
 			}
+			for _, s := range secrets {
+				params = setParamValueFromAlias(params, filters.Parameters, s.Name, s.Aliases)
+			}
 
 			stepConfig.mixIn(params, filters.Parameters)
 		}
@@ -223,15 +228,31 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		stepConfig.mixIn(flagValues, filters.Parameters)
 	}
 
+	if verbose, ok := stepConfig.Config["verbose"].(bool); ok && verbose {
+		log.SetVerbose(verbose)
+	} else if !ok && stepConfig.Config["verbose"] != nil {
+		log.Entry().Warnf("invalid value for parameter verbose: '%v'", stepConfig.Config["verbose"])
+	}
+
+	stepConfig.mixinVaultConfig(c.General, c.Steps[stepName], c.Stages[stageName])
+	// fetch secrets from vault
+	vaultClient, err := getVaultClientFromConfig(stepConfig, c.vaultCredentials)
+	if err != nil {
+		return StepConfig{}, err
+	}
+	if vaultClient != nil {
+		resolveAllVaultReferences(&stepConfig, vaultClient, parameters)
+	}
+
 	// finally do the condition evaluation post processing
 	for _, p := range parameters {
 		if len(p.Conditions) > 0 {
 			cp := p.Conditions[0].Params[0]
 			dependentValue := stepConfig.Config[cp.Name]
 			if cmp.Equal(dependentValue, cp.Value) && stepConfig.Config[p.Name] == nil {
-				subMapValue := stepConfig.Config[dependentValue.(string)].(map[string]interface{})[p.Name]
-				if subMapValue != nil {
-					stepConfig.Config[p.Name] = subMapValue
+				subMap, ok := stepConfig.Config[dependentValue.(string)].(map[string]interface{})
+				if ok && subMap[p.Name] != nil {
+					stepConfig.Config[p.Name] = subMap[p.Name]
 				} else {
 					stepConfig.Config[p.Name] = p.Default
 				}
@@ -239,6 +260,14 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		}
 	}
 	return stepConfig, nil
+}
+
+// SetVaultCredentials sets the appRoleID and the appRoleSecretID to load additional configuration from vault
+func (c *Config) SetVaultCredentials(appRoleID, appRoleSecretID string) {
+	c.vaultCredentials = VaultCredentials{
+		AppRoleID:       appRoleID,
+		AppRoleSecretID: appRoleSecretID,
+	}
 }
 
 // GetStepConfigWithJSON provides merged step configuration using a provided stepConfigJSON with additional flags provided

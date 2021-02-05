@@ -258,6 +258,16 @@ func TestGetContextParameterFilters(t *testing.T) {
 		},
 	}
 
+	metadata4 := StepData{
+		Spec: StepSpec{
+			Inputs: StepInputs{
+				Parameters: []StepParameters{
+					{ResourceRef: []ResourceReference{{Type: "vaultSecret"}}},
+				},
+			},
+		},
+	}
+
 	t.Run("Secrets and stashes", func(t *testing.T) {
 		filters := metadata1.GetContextParameterFilters()
 		assert.Equal(t, []string{"testSecret1", "testSecret2", "stashContent"}, filters.All, "incorrect filter All")
@@ -270,12 +280,12 @@ func TestGetContextParameterFilters(t *testing.T) {
 
 	t.Run("Containers", func(t *testing.T) {
 		filters := metadata2.GetContextParameterFilters()
-		assert.Equal(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip", "scanType"}, filters.All, "incorrect filter All")
-		assert.Equal(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip", "scanType"}, filters.General, "incorrect filter General")
-		assert.Equal(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip", "scanType"}, filters.Steps, "incorrect filter Steps")
-		assert.Equal(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip", "scanType"}, filters.Stages, "incorrect filter Stages")
-		assert.Equal(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip", "scanType"}, filters.Parameters, "incorrect filter Parameters")
-		assert.Equal(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip", "scanType"}, filters.Env, "incorrect filter Env")
+		assert.Equal(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerName", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip", "scanType"}, filters.All, "incorrect filter All")
+		assert.Equal(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerName", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip", "scanType"}, filters.General, "incorrect filter General")
+		assert.Equal(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerName", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip", "scanType"}, filters.Steps, "incorrect filter Steps")
+		assert.Equal(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerName", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip", "scanType"}, filters.Stages, "incorrect filter Stages")
+		assert.Equal(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerName", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip", "scanType"}, filters.Parameters, "incorrect filter Parameters")
+		assert.Equal(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerName", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip", "scanType"}, filters.Env, "incorrect filter Env")
 	})
 
 	t.Run("Sidecars", func(t *testing.T) {
@@ -286,6 +296,16 @@ func TestGetContextParameterFilters(t *testing.T) {
 		assert.Equal(t, []string{"containerName", "containerPortMappings", "dockerName", "sidecarEnvVars", "sidecarImage", "sidecarName", "sidecarOptions", "sidecarPullImage", "sidecarReadyCommand", "sidecarVolumeBind", "sidecarWorkspace"}, filters.Stages, "incorrect filter Stages")
 		assert.Equal(t, []string{"containerName", "containerPortMappings", "dockerName", "sidecarEnvVars", "sidecarImage", "sidecarName", "sidecarOptions", "sidecarPullImage", "sidecarReadyCommand", "sidecarVolumeBind", "sidecarWorkspace"}, filters.Parameters, "incorrect filter Parameters")
 		assert.Equal(t, []string{"containerName", "containerPortMappings", "dockerName", "sidecarEnvVars", "sidecarImage", "sidecarName", "sidecarOptions", "sidecarPullImage", "sidecarReadyCommand", "sidecarVolumeBind", "sidecarWorkspace"}, filters.Env, "incorrect filter Env")
+	})
+
+	t.Run("Vault", func(t *testing.T) {
+		filters := metadata4.GetContextParameterFilters()
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId"}, filters.All, "incorrect filter All")
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId"}, filters.General, "incorrect filter General")
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId"}, filters.Steps, "incorrect filter Steps")
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId"}, filters.Stages, "incorrect filter Stages")
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId"}, filters.Parameters, "incorrect filter Parameters")
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId"}, filters.Env, "incorrect filter Env")
 	})
 }
 
@@ -340,10 +360,11 @@ func TestGetContextDefaults(t *testing.T) {
 							{Name: "env1", Value: "val1"},
 							{Name: "env2", Value: "val2"},
 						},
-						Name:       "testcontainer",
-						Image:      "testImage:tag",
-						Shell:      "/bin/bash",
-						WorkingDir: "/test/dir",
+						Name:            "testcontainer",
+						Image:           "testImage:tag",
+						ImagePullPolicy: "Always",
+						Shell:           "/bin/bash",
+						WorkingDir:      "/test/dir",
 						Options: []Option{
 							{Name: "opt1", Value: "optValue1"},
 							{Name: "opt2", Value: "optValue2"},
@@ -464,6 +485,33 @@ func TestGetContextDefaults(t *testing.T) {
 		assert.Equal(t, "testImage1:tag", notMetParameter["dockerImage"])
 	})
 
+	t.Run("If ImagePullPolicy not defined pullImage parameter not set", func(t *testing.T) {
+		metadata := StepData{
+			Spec: StepSpec{
+				Containers: []Container{
+					{
+						Image: "testImage1:tag",
+					},
+				},
+				Sidecars: []Container{
+					{
+						Image: "testImage1:tag",
+					},
+				},
+			},
+		}
+
+		cd, err := metadata.GetContextDefaults("testStep")
+
+		assert.NoError(t, err)
+
+		var d PipelineDefaults
+		d.ReadPipelineDefaults([]io.ReadCloser{cd})
+
+		assert.Equal(t, nil, d.Defaults[0].Steps["testStep"]["dockerPullImage"], "dockerPullImage default not available")
+		assert.Equal(t, nil, d.Defaults[0].Steps["testStep"]["sidecarPullImage"], "sidecarPullImage default not available")
+	})
+
 	t.Run("Negative case", func(t *testing.T) {
 		metadataErr := []StepData{
 			{},
@@ -527,9 +575,32 @@ func TestGetResourceParameters(t *testing.T) {
 			in: StepData{
 				Spec: StepSpec{Inputs: StepInputs{Parameters: []StepParameters{
 					{Name: "param1", ResourceRef: []ResourceReference{{Name: "notAvailable", Param: "envparam1"}}},
-					{Name: "param2", ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: "envparam2"}}},
+					{Name: "param2", ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: "envparam2"}}, Type: "string"},
 				}}}},
 			expected: map[string]interface{}{"param2": "val2"},
+		},
+		{
+			in: StepData{
+				Spec: StepSpec{Inputs: StepInputs{Parameters: []StepParameters{
+					{Name: "param2", ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: "envparam2"}}, Type: "string"},
+					{Name: "param3", ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: "jsonList"}}, Type: "[]string"},
+				}}}},
+			expected: map[string]interface{}{"param2": "val2", "param3": []interface{}{"value1", "value2"}},
+		},
+		{
+			in: StepData{
+				Spec: StepSpec{Inputs: StepInputs{Parameters: []StepParameters{
+					{Name: "param4", ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: "jsonKeyValue"}}, Type: "map[string]interface{}"},
+				}}}},
+			expected: map[string]interface{}{"param4": map[string]interface{}{"key": "value"}},
+		},
+		{
+			in: StepData{
+				Spec: StepSpec{Inputs: StepInputs{Parameters: []StepParameters{
+					{Name: "param1", ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: "envparam1"}}, Type: "noString"},
+					{Name: "param4", ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: "jsonKeyValueString"}}, Type: "string"},
+				}}}},
+			expected: map[string]interface{}{"param1": interface{}(nil), "param4": "{\"key\":\"valueString\"}"},
 		},
 	}
 
@@ -548,6 +619,9 @@ func TestGetResourceParameters(t *testing.T) {
 
 	ioutil.WriteFile(filepath.Join(cpeDir, "envparam1"), []byte("val1"), 0700)
 	ioutil.WriteFile(filepath.Join(cpeDir, "envparam2"), []byte("val2"), 0700)
+	ioutil.WriteFile(filepath.Join(cpeDir, "jsonList.json"), []byte("[\"value1\",\"value2\"]"), 0700)
+	ioutil.WriteFile(filepath.Join(cpeDir, "jsonKeyValue.json"), []byte("{\"key\":\"value\"}"), 0700)
+	ioutil.WriteFile(filepath.Join(cpeDir, "jsonKeyValueString"), []byte("{\"key\":\"valueString\"}"), 0700)
 
 	for run, test := range tt {
 		t.Run(fmt.Sprintf("Run %v", run), func(t *testing.T) {
@@ -555,4 +629,47 @@ func TestGetResourceParameters(t *testing.T) {
 			assert.Equal(t, test.expected, got)
 		})
 	}
+}
+
+func TestAvoidEmptyFields(t *testing.T) {
+	t.Parallel()
+	t.Run("ignore empty string", func(t *testing.T) {
+		t.Parallel()
+		m := make(map[string]interface{})
+		putStringIfNotEmpty(m, "key", "")
+		assert.Len(t, m, 0)
+	})
+	t.Run("add non-empty string", func(t *testing.T) {
+		t.Parallel()
+		m := make(map[string]interface{})
+		putStringIfNotEmpty(m, "key", "value")
+		assert.Equal(t, "value", m["key"])
+	})
+	t.Run("ignore empty slice", func(t *testing.T) {
+		t.Parallel()
+		m := make(map[string]interface{})
+		putSliceIfNotEmpty(m, "key", []string{})
+		assert.Len(t, m, 0)
+	})
+	t.Run("add non-empty slice", func(t *testing.T) {
+		t.Parallel()
+		m := make(map[string]interface{})
+		putSliceIfNotEmpty(m, "key", []string{"value"})
+		assert.Equal(t, []string{"value"}, m["key"])
+	})
+	t.Run("ignore empty map", func(t *testing.T) {
+		t.Parallel()
+		m := make(map[string]interface{})
+		value := make(map[string]string)
+		putMapIfNotEmpty(m, "key", value)
+		assert.Len(t, m, 0)
+	})
+	t.Run("add non-empty map", func(t *testing.T) {
+		t.Parallel()
+		m := make(map[string]interface{})
+		value := make(map[string]string)
+		value["param"] = "value"
+		putMapIfNotEmpty(m, "key", value)
+		assert.Equal(t, value, m["key"])
+	})
 }

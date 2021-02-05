@@ -2,6 +2,8 @@ package http
 
 import (
 	"bytes"
+	"encoding/base64"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -12,9 +14,50 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/jarcoal/httpmock"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+
+	"github.com/SAP/jenkins-library/pkg/log"
 )
+
+func TestDefaultTransport(t *testing.T) {
+	const testURL string = "https://localhost/api"
+
+	t.Run("with default transport", func(t *testing.T) {
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
+		httpmock.RegisterResponder(http.MethodGet, testURL, httpmock.NewStringResponder(200, `OK`))
+
+		client := Client{}
+		client.SetOptions(ClientOptions{UseDefaultTransport: true})
+		// test
+		response, err := client.SendRequest("GET", testURL, nil, nil, nil)
+		// assert
+		assert.NoError(t, err)
+		// assert.NotEmpty(t, count)
+		assert.Equal(t, 1, httpmock.GetTotalCallCount(), "unexpected number of requests")
+		content, err := ioutil.ReadAll(response.Body)
+		defer response.Body.Close()
+		require.NoError(t, err, "unexpected error while reading response body")
+		assert.Equal(t, "OK", string(content), "unexpected response content")
+	})
+	t.Run("with custom transport", func(t *testing.T) {
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
+		httpmock.RegisterResponder(http.MethodGet, testURL, httpmock.NewStringResponder(200, `OK`))
+
+		client := Client{}
+		// test
+		_, err := client.SendRequest("GET", testURL, nil, nil, nil)
+		// assert
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "connect: connection refused")
+		assert.Equal(t, 0, httpmock.GetTotalCallCount(), "unexpected number of requests")
+	})
+}
 
 func TestSendRequest(t *testing.T) {
 	var passedHeaders = map[string][]string{}
@@ -37,6 +80,10 @@ func TestSendRequest(t *testing.T) {
 	// Close the server when test finishes
 	defer server.Close()
 
+	oldLogLevel := logrus.GetLevel()
+	defer logrus.SetLevel(oldLogLevel)
+	logrus.SetLevel(logrus.DebugLevel)
+
 	tt := []struct {
 		client   Client
 		method   string
@@ -46,15 +93,20 @@ func TestSendRequest(t *testing.T) {
 		expected string
 	}{
 		{client: Client{logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")}, method: "GET", expected: "OK"},
-		{client: Client{logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")}, method: "GET", header: map[string][]string{"Testheader": []string{"Test1", "Test2"}}, expected: "OK"},
+		{client: Client{logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")}, method: "GET", header: map[string][]string{"Testheader": {"Test1", "Test2"}}, expected: "OK"},
 		{client: Client{logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")}, cookies: []*http.Cookie{{Name: "TestCookie1", Value: "TestValue1"}, {Name: "TestCookie2", Value: "TestValue2"}}, method: "GET", expected: "OK"},
 		{client: Client{logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http"), username: "TestUser", password: "TestPwd"}, method: "GET", expected: "OK"},
 	}
 
 	for key, test := range tt {
 		t.Run(fmt.Sprintf("Row %v", key+1), func(t *testing.T) {
+			oldLogOutput := test.client.logger.Logger.Out
+			defer func() { test.client.logger.Logger.Out = oldLogOutput }()
+			logBuffer := new(bytes.Buffer)
+			test.client.logger.Logger.Out = logBuffer
+
 			response, err := test.client.SendRequest("GET", server.URL, test.body, test.header, test.cookies)
-			assert.NoError(t, err, "Error occured but none expected")
+			assert.NoError(t, err, "Error occurred but none expected")
 			content, err := ioutil.ReadAll(response.Body)
 			assert.Equal(t, test.expected, string(content), "Returned content incorrect")
 			response.Body.Close()
@@ -68,12 +120,18 @@ func TestSendRequest(t *testing.T) {
 				assert.Equal(t, test.cookies, passedCookies, "Passed cookies not correct")
 			}
 
-			if len(test.client.username) > 0 {
+			if len(test.client.username) > 0 || len(test.client.password) > 0 {
+				if len(test.client.username) == 0 || len(test.client.password) == 0 {
+					//"User and password must both be provided"
+					t.Fail()
+				}
 				assert.Equal(t, test.client.username, passedUsername)
-			}
-
-			if len(test.client.password) > 0 {
 				assert.Equal(t, test.client.password, passedPassword)
+
+				log := fmt.Sprintf("%s", logBuffer)
+				credentialsEncoded := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", test.client.username, test.client.password)))
+				assert.NotContains(t, log, fmt.Sprintf("Authorization:[Basic %s]", credentialsEncoded))
+				assert.Contains(t, log, "Authorization:[<set>]")
 			}
 		})
 	}
@@ -85,6 +143,7 @@ func TestSetOptions(t *testing.T) {
 	c.SetOptions(opts)
 
 	assert.Equal(t, opts.TransportTimeout, c.transportTimeout)
+	assert.Equal(t, opts.TransportSkipVerification, c.transportSkipVerification)
 	assert.Equal(t, opts.MaxRequestDuration, c.maxRequestDuration)
 	assert.Equal(t, opts.Username, c.username)
 	assert.Equal(t, opts.Password, c.password)
@@ -164,9 +223,10 @@ func TestUploadRequest(t *testing.T) {
 	}{
 		{clientOptions: ClientOptions{}, method: "PUT", expected: "OK"},
 		{clientOptions: ClientOptions{}, method: "POST", expected: "OK"},
-		{clientOptions: ClientOptions{}, method: "POST", header: map[string][]string{"Testheader": []string{"Test1", "Test2"}}, expected: "OK"},
+		{clientOptions: ClientOptions{}, method: "POST", header: map[string][]string{"Testheader": {"Test1", "Test2"}}, expected: "OK"},
 		{clientOptions: ClientOptions{}, cookies: []*http.Cookie{{Name: "TestCookie1", Value: "TestValue1"}, {Name: "TestCookie2", Value: "TestValue2"}}, method: "POST", expected: "OK"},
 		{clientOptions: ClientOptions{Username: "TestUser", Password: "TestPwd"}, method: "POST", expected: "OK"},
+		{clientOptions: ClientOptions{Username: "UserOnly", Password: ""}, method: "POST", expected: "OK"},
 	}
 
 	client := Client{logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")}
@@ -235,7 +295,7 @@ func TestUploadRequest(t *testing.T) {
 func TestUploadRequestWrongMethod(t *testing.T) {
 	client := Client{logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")}
 	_, err := client.UploadRequest("GET", "dummy", "testFile", "Field1", nil, nil)
-	assert.Error(t, err, "No error occured but was expected")
+	assert.Error(t, err, "No error occurred but was expected")
 }
 
 func TestTransportTimout(t *testing.T) {
@@ -272,4 +332,256 @@ func TestTransportTimout(t *testing.T) {
 		// assert
 		assert.NoError(t, err)
 	})
+}
+
+func TestTransportSkipVerification(t *testing.T) {
+	testCases := []struct {
+		client        Client
+		expectedError string
+	}{
+		{client: Client{}, expectedError: "certificate signed by unknown authority"},
+		{client: Client{transportSkipVerification: false}, expectedError: "certificate signed by unknown authority"},
+		{client: Client{transportSkipVerification: true}},
+	}
+
+	for _, testCase := range testCases {
+		// init
+		svr := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+		defer svr.Close()
+		// test
+		_, err := testCase.client.SendRequest(http.MethodGet, svr.URL, &bytes.Buffer{}, nil, nil)
+		// assert
+		if len(testCase.expectedError) > 0 {
+			assert.Error(t, err, "certificate signed by unknown authority")
+		} else {
+			assert.NoError(t, err)
+		}
+	}
+}
+
+func TestMaxRetries(t *testing.T) {
+	testCases := []struct {
+		client       Client
+		countedCalls int
+		method       string
+		responseCode int
+		errorText    string
+	}{
+		{client: Client{maxRetries: 0}, countedCalls: 1, method: http.MethodGet, responseCode: 500, errorText: "Internal Server Error"},
+		{client: Client{maxRetries: 2}, countedCalls: 3, method: http.MethodGet, responseCode: 500, errorText: "Internal Server Error"},
+		{client: Client{maxRetries: 3}, countedCalls: 4, method: http.MethodPost, responseCode: 503, errorText: "Service Unavailable"},
+		{client: Client{maxRetries: 3}, countedCalls: 4, method: http.MethodPut, responseCode: 506, errorText: "Variant Also Negotiates"},
+		{client: Client{maxRetries: 3}, countedCalls: 4, method: http.MethodHead, responseCode: 502, errorText: "Bad Gateway"},
+		{client: Client{maxRetries: 3}, countedCalls: 1, method: http.MethodHead, responseCode: 404, errorText: "Not Found"},
+		{client: Client{maxRetries: 3}, countedCalls: 1, method: http.MethodHead, responseCode: 401, errorText: "Authentication Error"},
+		{client: Client{maxRetries: 3}, countedCalls: 1, method: http.MethodHead, responseCode: 403, errorText: "Authorization Error"},
+	}
+
+	for _, testCase := range testCases {
+		// init
+		count := 0
+		svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			count++
+			w.WriteHeader(testCase.responseCode)
+		}))
+		defer svr.Close()
+		// test
+		_, err := testCase.client.SendRequest(testCase.method, svr.URL, &bytes.Buffer{}, nil, nil)
+		// assert
+		assert.Error(t, err, fmt.Sprintf("%v: %v", testCase.errorText, "Expected error but did not detect one"))
+		assert.Equal(t, testCase.countedCalls, count, fmt.Sprintf("%v: %v", testCase.errorText, "Number of invocations mismatch"))
+	}
+}
+
+func TestParseHTTPResponseBodyJSON(t *testing.T) {
+
+	type myJSONStruct struct {
+		FullName string `json:"full_name"`
+		Name     string `json:"name"`
+		Owner    struct {
+			Login string `json:"login"`
+		} `json:"owner"`
+	}
+
+	t.Run("parse JSON successful", func(t *testing.T) {
+
+		json := `{"name":"Test Name","full_name":"test full name","owner":{"login": "octocat"}}`
+		// create a new reader with that JSON
+		r := ioutil.NopCloser(bytes.NewReader([]byte(json)))
+		httpResponse := http.Response{
+			StatusCode: 200,
+			Body:       r,
+		}
+
+		var response myJSONStruct
+		err := ParseHTTPResponseBodyJSON(&httpResponse, &response)
+
+		if assert.NoError(t, err) {
+
+			t.Run("check correct parsing", func(t *testing.T) {
+				assert.Equal(t, myJSONStruct(myJSONStruct{FullName: "test full name", Name: "Test Name", Owner: struct {
+					Login string "json:\"login\""
+				}{Login: "octocat"}}), response)
+			})
+
+		}
+	})
+
+	t.Run("http response is nil", func(t *testing.T) {
+
+		var response myJSONStruct
+		err := ParseHTTPResponseBodyJSON(nil, &response)
+
+		t.Run("check error", func(t *testing.T) {
+			assert.EqualError(t, err, "cannot parse HTTP response with value <nil>")
+		})
+
+	})
+
+	t.Run("wrong JSON formatting", func(t *testing.T) {
+
+		json := `{"name":"Test Name","full_name":"test full name";"owner":{"login": "octocat"}}`
+		r := ioutil.NopCloser(bytes.NewReader([]byte(json)))
+		httpResponse := http.Response{
+			StatusCode: 200,
+			Body:       r,
+		}
+
+		var response myJSONStruct
+		err := ParseHTTPResponseBodyJSON(&httpResponse, &response)
+		println(response.FullName)
+
+		t.Run("check error", func(t *testing.T) {
+			assert.EqualError(t, err, "HTTP response body could not be parsed as JSON: {\"name\":\"Test Name\",\"full_name\":\"test full name\";\"owner\":{\"login\": \"octocat\"}}: invalid character ';' after object key:value pair")
+		})
+
+	})
+
+	t.Run("IO read error", func(t *testing.T) {
+
+		mockReadCloser := mockReadCloser{}
+		// if Read is called, it will return error
+		mockReadCloser.On("Read", mock.AnythingOfType("[]uint8")).Return(0, fmt.Errorf("error reading"))
+		// if Close is called, it will return error
+		mockReadCloser.On("Close").Return(fmt.Errorf("error closing"))
+
+		httpResponse := http.Response{
+			StatusCode: 200,
+			Body:       &mockReadCloser,
+		}
+
+		var response myJSONStruct
+		err := ParseHTTPResponseBodyJSON(&httpResponse, &response)
+
+		t.Run("check error", func(t *testing.T) {
+			assert.EqualError(t, err, "HTTP response body could not be read: error reading")
+		})
+
+	})
+
+}
+
+func TestParseHTTPResponseBodyXML(t *testing.T) {
+
+	type myXMLStruct struct {
+		XMLName xml.Name `xml:"service"`
+		Text    string   `xml:",chardata"`
+		App     string   `xml:"app,attr"`
+		Atom    string   `xml:"atom,attr"`
+	}
+
+	t.Run("parse XML successful", func(t *testing.T) {
+
+		myXML := `
+		<?xml version="1.0" encoding="utf-8"?>
+		<app:service xmlns:app="http://www.w3.org/2007/app" xmlns:atom="http://www.w3.org/2005/Atom"/>
+		`
+		// create a new reader with that xml
+		r := ioutil.NopCloser(bytes.NewReader([]byte(myXML)))
+		httpResponse := http.Response{
+			StatusCode: 200,
+			Body:       r,
+		}
+
+		var response myXMLStruct
+		err := ParseHTTPResponseBodyXML(&httpResponse, &response)
+
+		if assert.NoError(t, err) {
+
+			t.Run("check correct parsing", func(t *testing.T) {
+				// assert.Equal(t, "<?xml version=\"1.0\" encoding=\"utf-8\"?><app:service xmlns:app=\"http://www.w3.org/2007/app\" xmlns:atom=\"http://www.w3.org/2005/Atom\"/>", response)
+				assert.Equal(t, myXMLStruct(myXMLStruct{XMLName: xml.Name{Space: "http://www.w3.org/2007/app", Local: "service"}, Text: "", App: "http://www.w3.org/2007/app", Atom: "http://www.w3.org/2005/Atom"}), response)
+			})
+
+		}
+	})
+
+	t.Run("http response is nil", func(t *testing.T) {
+
+		var response myXMLStruct
+		err := ParseHTTPResponseBodyXML(nil, &response)
+
+		t.Run("check error", func(t *testing.T) {
+			assert.EqualError(t, err, "cannot parse HTTP response with value <nil>")
+		})
+
+	})
+
+	t.Run("wrong XML formatting", func(t *testing.T) {
+
+		myXML := `
+		<?xml version="1.0" encoding="utf-8"?>
+		<app:service xmlns:app=http://www.w3.org/2007/app" xmlns:atom="http://www.w3.org/2005/Atom"/>
+		`
+		r := ioutil.NopCloser(bytes.NewReader([]byte(myXML)))
+		httpResponse := http.Response{
+			StatusCode: 200,
+			Body:       r,
+		}
+
+		var response myXMLStruct
+		err := ParseHTTPResponseBodyXML(&httpResponse, &response)
+
+		t.Run("check error", func(t *testing.T) {
+			assert.EqualError(t, err, "HTTP response body could not be parsed as XML: \n\t\t<?xml version=\"1.0\" encoding=\"utf-8\"?>\n\t\t<app:service xmlns:app=http://www.w3.org/2007/app\" xmlns:atom=\"http://www.w3.org/2005/Atom\"/>\n\t\t: XML syntax error on line 3: unquoted or missing attribute value in element")
+		})
+
+	})
+
+	t.Run("IO read error", func(t *testing.T) {
+
+		mockReadCloser := mockReadCloser{}
+		// if Read is called, it will return error
+		mockReadCloser.On("Read", mock.AnythingOfType("[]uint8")).Return(0, fmt.Errorf("error reading"))
+		// if Close is called, it will return error
+		mockReadCloser.On("Close").Return(fmt.Errorf("error closing"))
+
+		httpResponse := http.Response{
+			StatusCode: 200,
+			Body:       &mockReadCloser,
+		}
+
+		var response myXMLStruct
+		err := ParseHTTPResponseBodyXML(&httpResponse, &response)
+
+		t.Run("check error", func(t *testing.T) {
+			assert.EqualError(t, err, "HTTP response body could not be read: error reading")
+		})
+
+	})
+
+}
+
+type mockReadCloser struct {
+	mock.Mock
+}
+
+func (m *mockReadCloser) Read(p []byte) (n int, err error) {
+	args := m.Called(p)
+	return args.Int(0), args.Error(1)
+}
+
+func (m *mockReadCloser) Close() error {
+	args := m.Called()
+	return args.Error(0)
 }

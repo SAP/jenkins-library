@@ -1,3 +1,4 @@
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -5,6 +6,7 @@ import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
 import com.sap.piper.GitUtils
+import com.sap.piper.Utils
 
 import hudson.AbortException
 import util.BasePiperTest
@@ -103,6 +105,13 @@ class ArtifactSetVersionTest extends BasePiperTest {
         shellRule.setReturnValue('git diff --quiet HEAD', 0)
 
         helper.registerAllowedMethod('fileExists', [String.class], {true})
+
+        Utils.metaClass.echo = { def m -> }
+    }
+
+    @After
+    public void tearDown() {
+        Utils.metaClass = null
     }
 
     @Test

@@ -70,7 +70,21 @@ func (f *kanikoFileMock) MkdirAll(path string, perm os.FileMode) error {
 	return nil
 }
 
+func (f *kanikoFileMock) Chmod(path string, mode os.FileMode) error {
+	return fmt.Errorf("not implemented. func is only present in order to fullfil the interface contract. Needs to be ajusted in case it gets used.")
+}
+
+func (f *kanikoFileMock) Abs(path string) (string, error) {
+	return "", fmt.Errorf("not implemented. func is only present in order to fullfil the interface contract. Needs to be ajusted in case it gets used.")
+}
+
+func (f *kanikoFileMock) Glob(pattern string) (matches []string, err error) {
+	return nil, fmt.Errorf("not implemented. func is only present in order to fullfil the interface contract. Needs to be ajusted in case it gets used.")
+}
+
 func TestRunKanikoExecute(t *testing.T) {
+
+	commonPipelineEnvironment := kanikoExecuteCommonPipelineEnvironment{}
 
 	t.Run("success case", func(t *testing.T) {
 		config := &kanikoExecuteOptions{
@@ -92,7 +106,7 @@ func TestRunKanikoExecute(t *testing.T) {
 			fileWriteContent: map[string]string{},
 		}
 
-		err := runKanikoExecute(config, &telemetry.CustomData{}, runner, certClient, fileUtils)
+		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, certClient, fileUtils)
 
 		assert.NoError(t, err)
 
@@ -105,6 +119,44 @@ func TestRunKanikoExecute(t *testing.T) {
 		assert.Equal(t, "/kaniko/executor", runner.Calls[1].Exec)
 		cwd, _ := os.Getwd()
 		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", cwd, "--skip-tls-verify-pull", "--destination", "myImage:tag"}, runner.Calls[1].Params)
+
+	})
+
+	t.Run("success case - image params", func(t *testing.T) {
+		config := &kanikoExecuteOptions{
+			BuildOptions:                []string{"--skip-tls-verify-pull"},
+			ContainerImageName:          "myImage",
+			ContainerImageTag:           "1.2.3-a+x",
+			ContainerRegistryURL:        "https://my.registry.com:50000",
+			ContainerPreparationCommand: "rm -f /kaniko/.docker/config.json",
+			CustomTLSCertificateLinks:   []string{"https://test.url/cert.crt"},
+			DockerfilePath:              "Dockerfile",
+			DockerConfigJSON:            "path/to/docker/config.json",
+		}
+
+		runner := &mock.ExecMockRunner{}
+
+		certClient := &kanikoMockClient{
+			responseBody: "testCert",
+		}
+		fileUtils := &kanikoFileMock{
+			fileReadContent:  map[string]string{"path/to/docker/config.json": `{"auths":{"custom":"test"}}`},
+			fileWriteContent: map[string]string{},
+		}
+
+		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, certClient, fileUtils)
+
+		assert.NoError(t, err)
+
+		assert.Equal(t, "rm", runner.Calls[0].Exec)
+		assert.Equal(t, []string{"-f", "/kaniko/.docker/config.json"}, runner.Calls[0].Params)
+
+		assert.Equal(t, config.CustomTLSCertificateLinks, certClient.urlsCalled)
+		assert.Equal(t, `{"auths":{"custom":"test"}}`, fileUtils.fileWriteContent["/kaniko/.docker/config.json"])
+
+		assert.Equal(t, "/kaniko/executor", runner.Calls[1].Exec)
+		cwd, _ := os.Getwd()
+		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", cwd, "--skip-tls-verify-pull", "--destination", "my.registry.com:50000/myImage:1.2.3-a-x"}, runner.Calls[1].Params)
 
 	})
 
@@ -125,7 +177,7 @@ func TestRunKanikoExecute(t *testing.T) {
 			fileWriteContent: map[string]string{},
 		}
 
-		err := runKanikoExecute(config, &telemetry.CustomData{}, runner, certClient, fileUtils)
+		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, certClient, fileUtils)
 
 		assert.NoError(t, err)
 
@@ -155,7 +207,7 @@ func TestRunKanikoExecute(t *testing.T) {
 			fileWriteContent: map[string]string{},
 		}
 
-		err := runKanikoExecute(config, &telemetry.CustomData{}, runner, certClient, fileUtils)
+		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, certClient, fileUtils)
 
 		assert.NoError(t, err)
 		cwd, _ := os.Getwd()
@@ -174,7 +226,7 @@ func TestRunKanikoExecute(t *testing.T) {
 		certClient := &kanikoMockClient{}
 		fileUtils := &kanikoFileMock{}
 
-		err := runKanikoExecute(config, &telemetry.CustomData{}, runner, certClient, fileUtils)
+		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, certClient, fileUtils)
 
 		assert.EqualError(t, err, "failed to initialize Kaniko container: rm failed")
 	})
@@ -191,7 +243,7 @@ func TestRunKanikoExecute(t *testing.T) {
 			fileWriteContent: map[string]string{},
 		}
 
-		err := runKanikoExecute(config, &telemetry.CustomData{}, runner, certClient, fileUtils)
+		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, certClient, fileUtils)
 
 		assert.EqualError(t, err, "execution of '/kaniko/executor' failed: kaniko run failed")
 	})
@@ -207,7 +259,7 @@ func TestRunKanikoExecute(t *testing.T) {
 			fileReadErr:      map[string]error{"/kaniko/ssl/certs/ca-certificates.crt": fmt.Errorf("read error")},
 		}
 
-		err := runKanikoExecute(config, &telemetry.CustomData{}, runner, certClient, fileUtils)
+		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, certClient, fileUtils)
 
 		assert.EqualError(t, err, "failed to update certificates: failed to load file '/kaniko/ssl/certs/ca-certificates.crt': read error")
 	})
@@ -225,7 +277,7 @@ func TestRunKanikoExecute(t *testing.T) {
 			fileReadErr:      map[string]error{"path/to/docker/config.json": fmt.Errorf("read error")},
 		}
 
-		err := runKanikoExecute(config, &telemetry.CustomData{}, runner, certClient, fileUtils)
+		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, certClient, fileUtils)
 
 		assert.EqualError(t, err, "failed to read file 'path/to/docker/config.json': read error")
 	})
@@ -243,7 +295,7 @@ func TestRunKanikoExecute(t *testing.T) {
 			fileWriteErr:     map[string]error{"/kaniko/.docker/config.json": fmt.Errorf("write error")},
 		}
 
-		err := runKanikoExecute(config, &telemetry.CustomData{}, runner, certClient, fileUtils)
+		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, certClient, fileUtils)
 
 		assert.EqualError(t, err, "failed to write file '/kaniko/.docker/config.json': write error")
 	})

@@ -1,0 +1,3 @@
+steps:
+  mtaBuild:
+    installArtifacts: true

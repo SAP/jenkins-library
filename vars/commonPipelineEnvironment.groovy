@@ -6,6 +6,9 @@ import groovy.json.JsonOutput
 
 class commonPipelineEnvironment implements Serializable {
 
+    //Project identifier which might be used to distinguish resources which are available globally, e.g. for locking
+    def projectName
+
     //stores version of the artifact which is build during pipeline run
     def artifactVersion
     def originalArtifactVersion
@@ -25,7 +28,7 @@ class commonPipelineEnvironment implements Serializable {
 
     String xsDeploymentId
 
-    //GiutHub specific information
+    //GitHub specific information
     String githubOrg
     String githubRepo
 
@@ -42,6 +45,8 @@ class commonPipelineEnvironment implements Serializable {
 
     String mtarFilePath = ""
 
+    String abapAddonDescriptor
+
     private Map valueMap = [:]
 
     void setValue(String property, value) {
@@ -55,6 +60,11 @@ class commonPipelineEnvironment implements Serializable {
     String changeDocumentId
 
     def reset() {
+
+        projectName = null
+
+        abapAddonDescriptor = null
+
         appContainerProperties = [:]
         artifactVersion = null
         originalArtifactVersion = null
@@ -162,7 +172,7 @@ class commonPipelineEnvironment implements Serializable {
             defaults = ConfigurationMerger.merge(ConfigurationLoader.defaultStepConfiguration(null, stepName), null, defaults)
             defaults = ConfigurationMerger.merge(ConfigurationLoader.defaultStageConfiguration(null, stageName), null, defaults)
         }
-        Map config = ConfigurationMerger.merge(configuration.get('general') ?: [:], null, defaults)
+        Map config = ConfigurationMerger.merge(configuration.get('general') ?: [:] as Map, null, defaults)
         config = ConfigurationMerger.merge(configuration.get('steps')?.get(stepName) ?: [:], null, config)
         config = ConfigurationMerger.merge(configuration.get('stages')?.get(stageName) ?: [:], null, config)
         return config
@@ -170,6 +180,7 @@ class commonPipelineEnvironment implements Serializable {
 
     def files = [
         [filename: '.pipeline/commonPipelineEnvironment/artifactVersion', property: 'artifactVersion'],
+        [filename: '.pipeline/commonPipelineEnvironment/buildTool', property: 'buildTool'],
         [filename: '.pipeline/commonPipelineEnvironment/originalArtifactVersion', property: 'originalArtifactVersion'],
         [filename: '.pipeline/commonPipelineEnvironment/github/owner', property: 'githubOrg'],
         [filename: '.pipeline/commonPipelineEnvironment/github/repository', property: 'githubRepo'],
@@ -177,41 +188,33 @@ class commonPipelineEnvironment implements Serializable {
         [filename: '.pipeline/commonPipelineEnvironment/git/commitId', property: 'gitCommitId'],
         [filename: '.pipeline/commonPipelineEnvironment/git/commitMessage', property: 'gitCommitMessage'],
         [filename: '.pipeline/commonPipelineEnvironment/mtarFilePath', property: 'mtarFilePath'],
+        [filename: '.pipeline/commonPipelineEnvironment/abap/addonDescriptor', property: 'abapAddonDescriptor'],
     ]
 
     void writeToDisk(script) {
-
         files.each({f  ->
-            if (this[f.property] && !script.fileExists(f.filename)) {
-                script.writeFile file: f.filename, text: this[f.property]
-            }
+            writeValueToFile(script, f.filename, this[f.property])
         })
 
         containerProperties.each({key, value ->
-            def fileName = ".pipeline/commonPipelineEnvironment/container/${key}"
-            if (value && !script.fileExists(fileName)) {
-                if(value instanceof String) {
-                    script.writeFile file: fileName, text: value
-                } else {
-                    script.writeFile file: fileName, text: groovy.json.JsonOutput.toJson(value)
-                }
-            }
+            writeValueToFile(script, ".pipeline/commonPipelineEnvironment/container/${key}", value)
         })
 
         valueMap.each({key, value ->
-            def fileName = ".pipeline/commonPipelineEnvironment/custom/${key}"
-            if (value && !script.fileExists(fileName)) {
-                if(value instanceof String) {
-                    script.writeFile file: fileName, text: value
-                } else {
-                    script.writeFile file: fileName, text: groovy.json.JsonOutput.toJson(value)
-                }
-            }
+            writeValueToFile(script, ".pipeline/commonPipelineEnvironment/custom/${key}", value)
         })
     }
 
-    void readFromDisk(script) {
+    void writeValueToFile(script, String filename, value){
+        if (value){
+            if (!(value in CharSequence)) filename += '.json'
+            if (script.fileExists(filename)) return
+            if (!(value in CharSequence)) value = groovy.json.JsonOutput.toJson(value)
+            script.writeFile file: filename, text: value
+        }
+    }
 
+    void readFromDisk(script) {
         files.each({f  ->
             if (script.fileExists(f.filename)) {
                 this[f.property] = script.readFile(f.filename)
@@ -219,11 +222,29 @@ class commonPipelineEnvironment implements Serializable {
         })
 
         def customValues = script.findFiles(glob: '.pipeline/commonPipelineEnvironment/custom/*')
-
         customValues.each({f ->
+            def fileContent = script.readFile(f.getPath())
             def fileName = f.getName()
             def param = fileName.split('/')[fileName.split('\\/').size()-1]
-            valueMap[param] = script.readFile(f.getPath())
+            if (param.endsWith(".json")){
+                param = param.replace(".json","")
+                valueMap[param] = script.readJSON(text: fileContent)
+            }else{
+                valueMap[param] = fileContent
+            }
+        })
+
+        def containerValues = script.findFiles(glob: '.pipeline/commonPipelineEnvironment/container/*')
+        containerValues.each({f ->
+            def fileContent = script.readFile(f.getPath())
+            def fileName = f.getName()
+            def param = fileName.split('/')[fileName.split('\\/').size()-1]
+            if (param.endsWith(".json")){
+                param = param.replace(".json","")
+                containerProperties[param] = script.readJSON(text: fileContent)
+            }else{
+                containerProperties[param] = fileContent
+            }
         })
     }
 

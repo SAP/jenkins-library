@@ -3,14 +3,16 @@ package maven
 import (
 	"bytes"
 	"fmt"
+	"github.com/SAP/jenkins-library/pkg/command"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"io"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 // ExecuteOptions are used by Execute() to construct the Maven command line.
@@ -36,48 +38,52 @@ type EvaluateOptions struct {
 	Defines             []string `json:"defines,omitempty"`
 }
 
-type mavenExecRunner interface {
+type Utils interface {
 	Stdout(out io.Writer)
 	Stderr(err io.Writer)
 	RunExecutable(e string, p ...string) error
-}
 
-type mavenUtils interface {
-	FileExists(path string) (bool, error)
 	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
 	Glob(pattern string) (matches []string, err error)
-	Getwd() (dir string, err error)
-	Chdir(dir string) error
+	FileExists(filename string) (bool, error)
+	Copy(src, dest string) (int64, error)
+	MkdirAll(path string, perm os.FileMode) error
 }
 
 type utilsBundle struct {
-	*piperhttp.Client
+	*command.Command
 	*piperutils.Files
+	*piperhttp.Client
 }
 
-func newUtils() *utilsBundle {
-	return &utilsBundle{
-		Client: &piperhttp.Client{},
-		Files:  &piperutils.Files{},
+func NewUtilsBundle() Utils {
+	utils := utilsBundle{
+		Command: &command.Command{},
+		Files:   &piperutils.Files{},
+		Client:  &piperhttp.Client{},
 	}
+	utils.Stdout(log.Writer())
+	utils.Stderr(log.Writer())
+	return &utils
 }
 
 const mavenExecutable = "mvn"
 
 // Execute constructs a mvn command line from the given options, and uses the provided
 // mavenExecRunner to execute it.
-func Execute(options *ExecuteOptions, command mavenExecRunner) (string, error) {
+func Execute(options *ExecuteOptions, utils Utils) (string, error) {
 	stdOutBuf, stdOut := evaluateStdOut(options)
-	command.Stdout(stdOut)
-	command.Stderr(log.Writer())
+	utils.Stdout(stdOut)
+	utils.Stderr(log.Writer())
 
-	parameters, err := getParametersFromOptions(options, newUtils())
+	parameters, err := getParametersFromOptions(options, utils)
 	if err != nil {
 		return "", fmt.Errorf("failed to construct parameters from options: %w", err)
 	}
 
-	err = command.RunExecutable(mavenExecutable, parameters...)
+	err = utils.RunExecutable(mavenExecutable, parameters...)
 	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
 		commandLine := append([]string{mavenExecutable}, parameters...)
 		return "", fmt.Errorf("failed to run executable, command: '%s', error: %w", commandLine, err)
 	}
@@ -91,7 +97,7 @@ func Execute(options *ExecuteOptions, command mavenExecRunner) (string, error) {
 // Evaluate constructs ExecuteOptions for using the maven-help-plugin's 'evaluate' goal to
 // evaluate a given expression from a pom file. This allows to retrieve the value of - for
 // example - 'project.version' from a pom file exactly as Maven itself evaluates it.
-func Evaluate(options *EvaluateOptions, expression string, command mavenExecRunner) (string, error) {
+func Evaluate(options *EvaluateOptions, expression string, utils Utils) (string, error) {
 	defines := []string{"-Dexpression=" + expression, "-DforceStdout", "-q"}
 	defines = append(defines, options.Defines...)
 	executeOptions := ExecuteOptions{
@@ -103,7 +109,7 @@ func Evaluate(options *EvaluateOptions, expression string, command mavenExecRunn
 		Defines:             defines,
 		ReturnStdout:        true,
 	}
-	value, err := Execute(&executeOptions, command)
+	value, err := Execute(&executeOptions, utils)
 	if err != nil {
 		return "", err
 	}
@@ -115,7 +121,7 @@ func Evaluate(options *EvaluateOptions, expression string, command mavenExecRunn
 
 // InstallFile installs a maven artifact and its pom into the local maven repository.
 // If "file" is empty, only the pom is installed. "pomFile" must not be empty.
-func InstallFile(file, pomFile, m2Path string, command mavenExecRunner) error {
+func InstallFile(file, pomFile string, options *EvaluateOptions, utils Utils) error {
 	if len(pomFile) == 0 {
 		return fmt.Errorf("pomFile can't be empty")
 	}
@@ -135,11 +141,13 @@ func InstallFile(file, pomFile, m2Path string, command mavenExecRunner) error {
 	}
 	defines = append(defines, "-DpomFile="+pomFile)
 	mavenOptionsInstall := ExecuteOptions{
-		Goals:   []string{"install:install-file"},
-		Defines: defines,
-		M2Path:  m2Path,
+		Goals:               []string{"install:install-file"},
+		Defines:             defines,
+		M2Path:              options.M2Path,
+		ProjectSettingsFile: options.ProjectSettingsFile,
+		GlobalSettingsFile:  options.GlobalSettingsFile,
 	}
-	_, err := Execute(&mavenOptionsInstall, command)
+	_, err := Execute(&mavenOptionsInstall, utils)
 	if err != nil {
 		return fmt.Errorf("failed to install maven artifacts: %w", err)
 	}
@@ -147,12 +155,12 @@ func InstallFile(file, pomFile, m2Path string, command mavenExecRunner) error {
 }
 
 // InstallMavenArtifacts finds maven modules (identified by pom.xml files) and installs the artifacts into the local maven repository.
-func InstallMavenArtifacts(command mavenExecRunner, options EvaluateOptions) error {
-	return doInstallMavenArtifacts(command, options, newUtils())
+func InstallMavenArtifacts(options *EvaluateOptions, utils Utils) error {
+	return doInstallMavenArtifacts(options, utils)
 }
 
-func doInstallMavenArtifacts(command mavenExecRunner, options EvaluateOptions, utils mavenUtils) error {
-	err := flattenPom(command, options)
+func doInstallMavenArtifacts(options *EvaluateOptions, utils Utils) error {
+	err := flattenPom(options, utils)
 	if err != nil {
 		return err
 	}
@@ -176,9 +184,9 @@ func doInstallMavenArtifacts(command mavenExecRunner, options EvaluateOptions, u
 
 		// Set this module's pom file as the pom file for evaluating the packaging,
 		// otherwise we would evaluate the root pom in all iterations.
-		evaluateProjectPackagingOptions := options
+		evaluateProjectPackagingOptions := *options
 		evaluateProjectPackagingOptions.PomPath = pomFile
-		packaging, err := Evaluate(&evaluateProjectPackagingOptions, "project.packaging", command)
+		packaging, err := Evaluate(&evaluateProjectPackagingOptions, "project.packaging", utils)
 		if err != nil {
 			return err
 		}
@@ -193,13 +201,13 @@ func doInstallMavenArtifacts(command mavenExecRunner, options EvaluateOptions, u
 		}
 
 		if packaging == "pom" {
-			err = InstallFile("", pathToPomFile, options.M2Path, command)
+			err = InstallFile("", pathToPomFile, options, utils)
 			if err != nil {
 				return err
 			}
 		} else {
 
-			err = installJarWarArtifacts(pathToPomFile, currentModuleDir, command, utils, options)
+			err = installJarWarArtifacts(pathToPomFile, currentModuleDir, options, utils)
 			if err != nil {
 				return err
 			}
@@ -208,15 +216,15 @@ func doInstallMavenArtifacts(command mavenExecRunner, options EvaluateOptions, u
 	return err
 }
 
-func installJarWarArtifacts(pomFile, dir string, command mavenExecRunner, utils mavenUtils, options EvaluateOptions) error {
+func installJarWarArtifacts(pomFile, dir string, options *EvaluateOptions, utils Utils) error {
 	options.PomPath = filepath.Join(dir, "pom.xml")
-	finalName, err := Evaluate(&options, "project.build.finalName", command)
+	finalName, err := Evaluate(options, "project.build.finalName", utils)
 	if err != nil {
 		return err
 	}
 	if finalName == "" {
 		log.Entry().Warn("project.build.finalName is empty, skipping install of artifact. Installing only the pom file.")
-		err = InstallFile("", pomFile, options.M2Path, command)
+		err = InstallFile("", pomFile, options, utils)
 		if err != nil {
 			return err
 		}
@@ -226,27 +234,35 @@ func installJarWarArtifacts(pomFile, dir string, command mavenExecRunner, utils 
 	jarExists, _ := utils.FileExists(jarFile(dir, finalName))
 	warExists, _ := utils.FileExists(warFile(dir, finalName))
 	classesJarExists, _ := utils.FileExists(classesJarFile(dir, finalName))
+	originalJarExists, _ := utils.FileExists(originalJarFile(dir, finalName))
 
 	log.Entry().Infof("JAR file with name %s does exist: %t", jarFile(dir, finalName), jarExists)
-	log.Entry().Infof("WAR file with name %s does exist: %t", warFile(dir, finalName), warExists)
 	log.Entry().Infof("Classes-JAR file with name %s does exist: %t", classesJarFile(dir, finalName), classesJarExists)
+	log.Entry().Infof("Original-JAR file with name %s does exist: %t", originalJarFile(dir, finalName), originalJarExists)
+	log.Entry().Infof("WAR file with name %s does exist: %t", warFile(dir, finalName), warExists)
 
-	if jarExists {
-		err = InstallFile(jarFile(dir, finalName), pomFile, options.M2Path, command)
+	// Due to spring's jar repackaging we need to check for an "original" jar file because the repackaged one is no suitable source for dependent maven modules
+	if originalJarExists {
+		err = InstallFile(originalJarFile(dir, finalName), pomFile, options, utils)
+		if err != nil {
+			return err
+		}
+	} else if jarExists {
+		err = InstallFile(jarFile(dir, finalName), pomFile, options, utils)
 		if err != nil {
 			return err
 		}
 	}
 
 	if warExists {
-		err = InstallFile(warFile(dir, finalName), pomFile, options.M2Path, command)
+		err = InstallFile(warFile(dir, finalName), pomFile, options, utils)
 		if err != nil {
 			return err
 		}
 	}
 
 	if classesJarExists {
-		err = InstallFile(classesJarFile(dir, finalName), pomFile, options.M2Path, command)
+		err = InstallFile(classesJarFile(dir, finalName), pomFile, options, utils)
 		if err != nil {
 			return err
 		}
@@ -262,18 +278,24 @@ func classesJarFile(dir, finalName string) string {
 	return filepath.Join(dir, "target", finalName+"-classes.jar")
 }
 
+func originalJarFile(dir, finalName string) string {
+	return filepath.Join(dir, "target", finalName+".jar.original")
+}
+
 func warFile(dir, finalName string) string {
 	return filepath.Join(dir, "target", finalName+".war")
 }
 
-func flattenPom(command mavenExecRunner, o EvaluateOptions) error {
+func flattenPom(options *EvaluateOptions, utils Utils) error {
 	mavenOptionsFlatten := ExecuteOptions{
-		Goals:   []string{"flatten:flatten"},
-		Defines: []string{"-Dflatten.mode=resolveCiFriendliesOnly"},
-		PomPath: "pom.xml",
-		M2Path:  o.M2Path,
+		Goals:               []string{"flatten:flatten"},
+		Defines:             []string{"-Dflatten.mode=resolveCiFriendliesOnly"},
+		PomPath:             options.PomPath,
+		M2Path:              options.M2Path,
+		ProjectSettingsFile: options.ProjectSettingsFile,
+		GlobalSettingsFile:  options.GlobalSettingsFile,
 	}
-	_, err := Execute(&mavenOptionsFlatten, command)
+	_, err := Execute(&mavenOptionsFlatten, utils)
 	return err
 }
 
@@ -287,23 +309,12 @@ func evaluateStdOut(options *ExecuteOptions) (*bytes.Buffer, io.Writer) {
 	return stdOutBuf, stdOut
 }
 
-func getParametersFromOptions(options *ExecuteOptions, utils mavenUtils) ([]string, error) {
+func getParametersFromOptions(options *ExecuteOptions, utils Utils) ([]string, error) {
 	var parameters []string
 
-	if options.GlobalSettingsFile != "" {
-		globalSettingsFileName, err := downloadSettingsIfURL(options.GlobalSettingsFile, ".pipeline/mavenGlobalSettings.xml", utils)
-		if err != nil {
-			return nil, err
-		}
-		parameters = append(parameters, "--global-settings", globalSettingsFileName)
-	}
-
-	if options.ProjectSettingsFile != "" {
-		projectSettingsFileName, err := downloadSettingsIfURL(options.ProjectSettingsFile, ".pipeline/mavenProjectSettings.xml", utils)
-		if err != nil {
-			return nil, err
-		}
-		parameters = append(parameters, "--settings", projectSettingsFileName)
+	parameters, err := DownloadAndGetMavenParameters(options.GlobalSettingsFile, options.ProjectSettingsFile, utils)
+	if err != nil {
+		return nil, err
 	}
 
 	if options.M2Path != "" {
@@ -333,38 +344,8 @@ func getParametersFromOptions(options *ExecuteOptions, utils mavenUtils) ([]stri
 	return parameters, nil
 }
 
-func downloadSettingsIfURL(settingsFileOption, settingsFile string, utils mavenUtils) (string, error) {
-	result := settingsFileOption
-	if strings.HasPrefix(settingsFileOption, "http:") || strings.HasPrefix(settingsFileOption, "https:") {
-		err := downloadSettingsFromURL(settingsFileOption, settingsFile, utils)
-		if err != nil {
-			return "", err
-		}
-		result = settingsFile
-	}
-	return result, nil
-}
-
-// ToDo replace with pkg/maven/settings GetSettingsFile
-func downloadSettingsFromURL(url, filename string, utils mavenUtils) error {
-	exists, _ := utils.FileExists(filename)
-	if exists {
-		log.Entry().Infof("Not downloading maven settings file, because it already exists at '%s'", filename)
-		return nil
-	}
-	err := utils.DownloadFile(url, filename, nil, nil)
-	if err != nil {
-		return fmt.Errorf("failed to download maven settings from URL '%s' to file '%s': %w",
-			url, filename, err)
-	}
-	return nil
-}
-
-func GetTestModulesExcludes() []string {
-	return getTestModulesExcludes(newUtils())
-}
-
-func getTestModulesExcludes(utils mavenUtils) []string {
+// GetTestModulesExcludes return testing modules that you be excluded from reactor
+func GetTestModulesExcludes(utils Utils) []string {
 	var excludes []string
 	exists, _ := utils.FileExists("unit-tests/pom.xml")
 	if exists {

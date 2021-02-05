@@ -2,224 +2,487 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
 
+	piperDocker "github.com/SAP/jenkins-library/pkg/docker"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	ws "github.com/SAP/jenkins-library/pkg/whitesource"
+
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/npm"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/versioning"
-	"github.com/SAP/jenkins-library/pkg/whitesource"
+	"github.com/pkg/errors"
 )
 
 // just to make the lines less long
 type ScanOptions = whitesourceExecuteScanOptions
-type System = whitesource.System
 
-func whitesourceExecuteScan(config ScanOptions, telemetry *telemetry.CustomData) {
-	// reroute cmd output to logging framework
-	c := command.Command{}
-	c.Stdout(log.Writer())
-	c.Stderr(log.Writer())
+// whitesource defines the functions that are expected by the step implementation to
+// be available from the whitesource system.
+type whitesource interface {
+	GetProductByName(productName string) (ws.Product, error)
+	CreateProduct(productName string) (string, error)
+	SetProductAssignments(productToken string, membership, admins, alertReceivers *ws.Assignment) error
+	GetProjectsMetaInfo(productToken string) ([]ws.Project, error)
+	GetProjectToken(productToken, projectName string) (string, error)
+	GetProjectByToken(projectToken string) (ws.Project, error)
+	GetProjectRiskReport(projectToken string) ([]byte, error)
+	GetProjectVulnerabilityReport(projectToken string, format string) ([]byte, error)
+	GetProjectAlerts(projectToken string) ([]ws.Alert, error)
+	GetProjectLibraryLocations(projectToken string) ([]ws.Library, error)
+}
 
-	sys := whitesource.NewSystem(config.ServiceURL, config.OrgToken, config.UserToken)
-	if err := resolveProjectIdentifiers(&c, sys, &config); err != nil {
-		log.Entry().WithError(err).Fatal("step execution failed on resolving project identifiers")
+type whitesourceUtils interface {
+	ws.Utils
+
+	GetArtifactCoordinates(buildTool, buildDescriptorFile string,
+		options *versioning.Options) (versioning.Coordinates, error)
+
+	Now() time.Time
+}
+
+type whitesourceUtilsBundle struct {
+	*piperhttp.Client
+	*command.Command
+	*piperutils.Files
+	npmExecutor npm.Executor
+}
+
+func (w *whitesourceUtilsBundle) FileOpen(name string, flag int, perm os.FileMode) (ws.File, error) {
+	return os.OpenFile(name, flag, perm)
+}
+
+func (w *whitesourceUtilsBundle) GetArtifactCoordinates(buildTool, buildDescriptorFile string,
+	options *versioning.Options) (versioning.Coordinates, error) {
+	artifact, err := versioning.GetArtifact(buildTool, buildDescriptorFile, options, w)
+	if err != nil {
+		return nil, err
+	}
+	return artifact.GetCoordinates()
+}
+
+func (w *whitesourceUtilsBundle) getNpmExecutor(config *ws.ScanOptions) npm.Executor {
+	if w.npmExecutor == nil {
+		w.npmExecutor = npm.NewExecutor(npm.ExecutorOptions{DefaultNpmRegistry: config.DefaultNpmRegistry})
+	}
+	return w.npmExecutor
+}
+
+func (w *whitesourceUtilsBundle) FindPackageJSONFiles(config *ws.ScanOptions) ([]string, error) {
+	return w.getNpmExecutor(config).FindPackageJSONFilesWithExcludes(config.BuildDescriptorExcludeList)
+}
+
+func (w *whitesourceUtilsBundle) InstallAllNPMDependencies(config *ws.ScanOptions, packageJSONFiles []string) error {
+	return w.getNpmExecutor(config).InstallAllDependencies(packageJSONFiles)
+}
+
+func (w *whitesourceUtilsBundle) Now() time.Time {
+	return time.Now()
+}
+
+func newWhitesourceUtils(config *ScanOptions) *whitesourceUtilsBundle {
+	utils := whitesourceUtilsBundle{
+		Client:  &piperhttp.Client{},
+		Command: &command.Command{},
+		Files:   &piperutils.Files{},
+	}
+	// Reroute cmd output to logging framework
+	utils.Stdout(log.Writer())
+	utils.Stderr(log.Writer())
+	// Configure HTTP Client
+	utils.SetOptions(piperhttp.ClientOptions{TransportTimeout: time.Duration(config.Timeout) * time.Second})
+	return &utils
+}
+
+func newWhitesourceScan(config *ScanOptions) *ws.Scan {
+	return &ws.Scan{
+		AggregateProjectName: config.ProjectName,
+		ProductVersion:       config.ProductVersion,
+	}
+}
+
+func whitesourceExecuteScan(config ScanOptions, _ *telemetry.CustomData, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment) {
+	utils := newWhitesourceUtils(&config)
+	scan := newWhitesourceScan(&config)
+	sys := ws.NewSystem(config.ServiceURL, config.OrgToken, config.UserToken, time.Duration(config.Timeout)*time.Second)
+	err := runWhitesourceExecuteScan(&config, scan, utils, sys, commonPipelineEnvironment)
+	if err != nil {
+		log.Entry().WithError(err).Fatal("step execution failed")
+	}
+}
+
+func runWhitesourceExecuteScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment) error {
+	if err := resolveAggregateProjectName(config, scan, sys); err != nil {
+		return err
 	}
 
-	// Generate a vulnerability report for all projects with version = config.ProjectVersion
+	if err := resolveProjectIdentifiers(config, scan, utils, sys); err != nil {
+		return fmt.Errorf("failed to resolve project identifiers: %w", err)
+	}
+
 	if config.AggregateVersionWideReport {
-		if err := aggregateVersionWideLibraries(sys, &config); err != nil {
-			log.Entry().WithError(err).Fatal("step execution failed on aggregating version wide libraries")
+		// Generate a vulnerability report for all projects with version = config.ProjectVersion
+		// Note that this is not guaranteed that all projects are from the same scan.
+		// For example, if a module was removed from the source code, the project may still
+		// exist in the WhiteSource system.
+		if err := aggregateVersionWideLibraries(config, utils, sys); err != nil {
+			return fmt.Errorf("failed to aggregate version wide libraries: %w", err)
 		}
-		if err := aggregateVersionWideVulnerabilities(sys, &config); err != nil {
-			log.Entry().WithError(err).Fatal("step execution failed on aggregating version wide vulnerabilities")
+		if err := aggregateVersionWideVulnerabilities(config, utils, sys); err != nil {
+			return fmt.Errorf("failed to aggregate version wide vulnerabilities: %w", err)
 		}
 	} else {
-		if err := runWhitesourceScan(&config, sys, telemetry, &c); err != nil {
-			log.Entry().WithError(err).Fatal("step execution failed on executing whitesource scan")
+		if err := runWhitesourceScan(config, scan, utils, sys, commonPipelineEnvironment); err != nil {
+			return fmt.Errorf("failed to execute WhiteSource scan: %w", err)
 		}
 	}
+	return nil
 }
 
-func runWhitesourceScan(config *ScanOptions, sys *System, _ *telemetry.CustomData, cmd *command.Command) error {
+func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment) error {
+	// Download Docker image for container scan
+	// ToDo: move it to improve testability
+	if config.BuildTool == "docker" {
+		saveImageOptions := containerSaveImageOptions{
+			ContainerImage:       config.ScanImage,
+			ContainerRegistryURL: config.ScanImageRegistryURL,
+			IncludeLayers:        config.ScanImageIncludeLayers,
+		}
+		dClientOptions := piperDocker.ClientOptions{ImageName: saveImageOptions.ContainerImage, RegistryURL: saveImageOptions.ContainerRegistryURL, LocalPath: "", IncludeLayers: saveImageOptions.IncludeLayers}
+		dClient := &piperDocker.Client{}
+		dClient.SetOptions(dClientOptions)
+		if err := runContainerSaveImage(&saveImageOptions, &telemetry.CustomData{}, "./cache", "", dClient); err != nil {
+			return errors.Wrapf(err, "failed to dowload Docker image %v", config.ScanImage)
+		}
+
+	}
+
 	// Start the scan
-	if err := triggerWhitesourceScan(cmd, config); err != nil {
+	if err := executeScan(config, scan, utils); err != nil {
 		return err
 	}
 
-	// Scan finished: we need to resolve project token again if the project was just created.
-	if err := resolveProjectIdentifiers(cmd, sys, config); err != nil {
+	// ToDo: Check this:
+	// Why is this required at all, resolveProjectIdentifiers() is already called before the scan in runWhitesourceExecuteScan()
+	// Could perhaps use scan.updateProjects(sys) directly... have not investigated what could break
+	if err := resolveProjectIdentifiers(config, scan, utils, sys); err != nil {
 		return err
 	}
 
 	log.Entry().Info("-----------------------------------------------------")
-	log.Entry().Infof("Project name: '%s'", config.ProjectName)
 	log.Entry().Infof("Product Version: '%s'", config.ProductVersion)
-	log.Entry().Infof("Project Token: %s", config.ProjectToken)
+	log.Entry().Info("Scanned projects:")
+	for _, project := range scan.ScannedProjects() {
+		log.Entry().Infof("  Name: '%s', token: %s", project.Name, project.Token)
+	}
 	log.Entry().Info("-----------------------------------------------------")
 
+	if err := checkAndReportScanResults(config, scan, utils, sys); err != nil {
+		return err
+	}
+
+	persistScannedProjects(config, scan, commonPipelineEnvironment)
+
+	return nil
+}
+
+func checkAndReportScanResults(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource) error {
+	if !config.Reporting && !config.SecurityVulnerabilities {
+		return nil
+	}
+	// Wait for WhiteSource backend to propagate the changes before downloading any reports.
+	if err := scan.BlockUntilReportsAreReady(sys); err != nil {
+		return err
+	}
 	if config.Reporting {
-		paths, err := downloadReports(config, sys)
+		paths, err := scan.DownloadReports(ws.ReportOptions{
+			ReportDirectory:           config.ReportDirectoryName,
+			VulnerabilityReportFormat: config.VulnerabilityReportFormat,
+		}, utils, sys)
 		if err != nil {
 			return err
 		}
-		piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", nil, paths)
+		piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", paths, nil)
 	}
-
-	// Check for security vulnerabilities and fail the build if cvssSeverityLimit threshold is crossed
 	if config.SecurityVulnerabilities {
-		if err := checkSecurityViolations(config, sys); err != nil {
+		if err := checkSecurityViolations(config, scan, sys); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func resolveProjectIdentifiers(cmd *command.Command, sys *System, config *ScanOptions) error {
-	if config.ProjectName == "" || config.ProductVersion == "" {
-		opts := &versioning.Options{}
-		artifact, err := versioning.GetArtifact(config.ScanType, config.BuildDescriptorFile, opts, cmd)
-		if err != nil {
-			return err
+func createWhiteSourceProduct(config *ScanOptions, sys whitesource) (string, error) {
+	log.Entry().Infof("Attempting to create new WhiteSource product for '%s'..", config.ProductName)
+	productToken, err := sys.CreateProduct(config.ProductName)
+	if err != nil {
+		return "", fmt.Errorf("failed to create WhiteSource product: %w", err)
+	}
+
+	var admins ws.Assignment
+	for _, address := range config.EmailAddressesOfInitialProductAdmins {
+		admins.UserAssignments = append(admins.UserAssignments, ws.UserAssignment{Email: address})
+	}
+
+	err = sys.SetProductAssignments(productToken, nil, &admins, nil)
+	if err != nil {
+		return "", fmt.Errorf("failed to set admins on new WhiteSource product: %w", err)
+	}
+
+	return productToken, nil
+}
+
+func resolveProjectIdentifiers(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource) error {
+	if scan.AggregateProjectName == "" || config.ProductVersion == "" {
+		options := &versioning.Options{
+			DockerImage:         config.ScanImage,
+			ProjectSettingsFile: config.ProjectSettingsFile,
+			GlobalSettingsFile:  config.GlobalSettingsFile,
+			M2Path:              config.M2Path,
 		}
-		gav, err := artifact.GetCoordinates()
+		coordinates, err := utils.GetArtifactCoordinates(config.BuildTool, config.BuildDescriptorFile, options)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to get build artifact description: %w", err)
 		}
+
+		//ToDo: fill version in coordinates with version from pipeline environment
 
 		nameTmpl := `{{list .GroupID .ArtifactID | join "-" | trimAll "-"}}`
-		pName, pVer := versioning.DetermineProjectCoordinates(nameTmpl, config.DefaultVersioningModel, gav)
-		if config.ProjectName == "" {
-			log.Entry().Infof("Resolved project name '%s' from descriptor file", pName)
-			config.ProjectName = pName
+		name, version := versioning.DetermineProjectCoordinates(nameTmpl, config.VersioningModel, coordinates)
+		if scan.AggregateProjectName == "" {
+			log.Entry().Infof("Resolved project name '%s' from descriptor file", name)
+			scan.AggregateProjectName = name
 		}
 		if config.ProductVersion == "" {
-			log.Entry().Infof("Resolved project version '%s' from descriptor file", pVer)
-			config.ProductVersion = pVer
+			log.Entry().Infof("Resolved product version '%s' from descriptor file with versioning '%s'",
+				version, config.VersioningModel)
+			config.ProductVersion = version
 		}
 	}
+	scan.ProductVersion = validateProductVersion(config.ProductVersion)
 
-	// Get product token if user did not specify one at runtime
-	if config.ProductToken == "" {
-		log.Entry().Infof("Attempting to resolve product token for product '%s'..", config.ProductName)
-		product, err := sys.GetProductByName(config.ProductName)
+	if err := resolveProductToken(config, sys); err != nil {
+		return err
+	}
+	if err := resolveAggregateProjectToken(config, sys); err != nil {
+		return err
+	}
+
+	return scan.UpdateProjects(config.ProductToken, sys)
+}
+
+// resolveProductToken resolves the token of the WhiteSource Product specified by config.ProductName,
+// unless the user provided a token in config.ProductToken already, or it was previously resolved.
+// If no Product can be found for the given config.ProductName, and the parameter
+// config.CreatePipelineFromProduct is set, an attempt will be made to create the product and
+// configure the initial product admins.
+func resolveProductToken(config *ScanOptions, sys whitesource) error {
+	if config.ProductToken != "" {
+		return nil
+	}
+	log.Entry().Infof("Attempting to resolve product token for product '%s'..", config.ProductName)
+	product, err := sys.GetProductByName(config.ProductName)
+	if err != nil && config.CreateProductFromPipeline {
+		product = ws.Product{}
+		product.Token, err = createWhiteSourceProduct(config, sys)
 		if err != nil {
 			return err
 		}
-		if product != nil {
-			log.Entry().Infof("Resolved product token: '%s'..", product.Token)
-			config.ProductToken = product.Token
-		}
 	}
+	if err != nil {
+		return err
+	}
+	log.Entry().Infof("Resolved product token: '%s'..", product.Token)
+	config.ProductToken = product.Token
+	return nil
+}
 
-	// Get project token  if user did not specify one at runtime
+// resolveAggregateProjectName checks if config.ProjectToken is configured, and if so, expects a WhiteSource
+// project with that token to exist. The AggregateProjectName in the ws.Scan is then configured with that
+// project's name.
+func resolveAggregateProjectName(config *ScanOptions, scan *ws.Scan, sys whitesource) error {
 	if config.ProjectToken == "" {
-		log.Entry().Infof("Attempting to resolve project token for project '%s'..", config.ProjectName)
-		fullProjName := fmt.Sprintf("%s - %s", config.ProjectName, config.ProductVersion)
-		projectToken, err := sys.GetProjectToken(config.ProductToken, fullProjName)
-		if err != nil {
-			return err
-		}
-		if projectToken != "" {
-			log.Entry().Infof("Resolved project token: '%s'..", projectToken)
-			config.ProjectToken = projectToken
-		}
+		return nil
+	}
+	log.Entry().Infof("Attempting to resolve aggregate project name for token '%s'..", config.ProjectToken)
+	// If the user configured the "projectToken" parameter, we expect this project to exist in the backend.
+	project, err := sys.GetProjectByToken(config.ProjectToken)
+	if err != nil {
+		return err
+	}
+	nameVersion := strings.Split(project.Name, " - ")
+	scan.AggregateProjectName = nameVersion[0]
+	log.Entry().Infof("Resolve aggregate project name '%s'..", scan.AggregateProjectName)
+	return nil
+}
+
+// resolveAggregateProjectToken fetches the token of the WhiteSource Project specified by config.ProjectName
+// and stores it in config.ProjectToken.
+// The user can configure a projectName or projectToken of the project to be used as for aggregation of scan results.
+func resolveAggregateProjectToken(config *ScanOptions, sys whitesource) error {
+	if config.ProjectToken != "" || config.ProjectName == "" {
+		return nil
+	}
+	log.Entry().Infof("Attempting to resolve project token for project '%s'..", config.ProjectName)
+	fullProjName := fmt.Sprintf("%s - %s", config.ProjectName, config.ProductVersion)
+	projectToken, err := sys.GetProjectToken(config.ProductToken, fullProjName)
+	if err != nil {
+		return err
+	}
+	// A project may not yet exist for this project name-version combo.
+	// It will be created by the scan, we retrieve the token again after scanning.
+	if projectToken != "" {
+		log.Entry().Infof("Resolved project token: '%s'..", projectToken)
+		config.ProjectToken = projectToken
+	} else {
+		log.Entry().Infof("Project '%s' not yet present in WhiteSource", fullProjName)
 	}
 	return nil
 }
 
-func triggerWhitesourceScan(cmd *command.Command, config *ScanOptions) error {
+// validateProductVersion makes sure that the version does not contain a dash "-".
+func validateProductVersion(version string) string {
+	// TrimLeft() removes all "-" from the beginning, unlike TrimPrefix()!
+	version = strings.TrimLeft(version, "-")
+	if strings.Contains(version, "-") {
+		version = strings.SplitN(version, "-", 1)[0]
+	}
+	return version
+}
+
+func wsScanOptions(config *ScanOptions) *ws.ScanOptions {
+	return &ws.ScanOptions{
+		BuildTool:                  config.BuildTool,
+		ScanType:                   config.ScanType,
+		OrgToken:                   config.OrgToken,
+		UserToken:                  config.UserToken,
+		ProductName:                config.ProductName,
+		ProductToken:               config.ProductToken,
+		ProductVersion:             config.ProductVersion,
+		ProjectName:                config.ProjectName,
+		BuildDescriptorFile:        config.BuildDescriptorFile,
+		BuildDescriptorExcludeList: config.BuildDescriptorExcludeList,
+		PomPath:                    config.BuildDescriptorFile,
+		M2Path:                     config.M2Path,
+		GlobalSettingsFile:         config.GlobalSettingsFile,
+		ProjectSettingsFile:        config.ProjectSettingsFile,
+		InstallArtifacts:           config.InstallArtifacts,
+		DefaultNpmRegistry:         config.DefaultNpmRegistry,
+		AgentDownloadURL:           config.AgentDownloadURL,
+		AgentFileName:              config.AgentFileName,
+		ConfigFilePath:             config.ConfigFilePath,
+		Includes:                   config.Includes,
+		Excludes:                   config.Excludes,
+		JreDownloadURL:             config.JreDownloadURL,
+		AgentURL:                   config.AgentURL,
+		ServiceURL:                 config.ServiceURL,
+		Verbose:                    GeneralConfig.Verbose,
+	}
+}
+
+// executeScan executes different types of scans depending on the scanType parameter.
+// The default is to download the Unified Agent and use it to perform the scan.
+func executeScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils) error {
+	if config.ScanType == "" {
+		config.ScanType = config.BuildTool
+	}
+
+	options := wsScanOptions(config)
+
 	switch config.ScanType {
+	case "mta":
+		// Execute scan for maven and all npm modules
+		if err := scan.ExecuteMTAScan(options, utils); err != nil {
+			return err
+		}
+	case "maven":
+		// Execute scan with maven plugin goal
+		if err := scan.ExecuteMavenScan(options, utils); err != nil {
+			return err
+		}
 	case "npm":
-		// Execute whitesource scan with
-		if err := executeNpmScan(config, cmd); err != nil {
+		// Execute scan with in each npm module using npm.Executor
+		if err := scan.ExecuteNpmScan(options, utils); err != nil {
+			return err
+		}
+	case "yarn":
+		// Execute scan with whitesource yarn plugin
+		if err := scan.ExecuteYarnScan(options, utils); err != nil {
 			return err
 		}
 	default:
-		// Download the unified agent jar file if one does not exist
-		if err := downloadAgent(config, cmd); err != nil {
-			return err
-		}
-
-		// Auto generate a config file based on the working directory's contents.
-		// TODO/NOTE: Currently this scans the UA jar file as a dependency since it is downloaded beforehand
-		if err := autoGenerateWhitesourceConfig(config, cmd); err != nil {
-			return err
-		}
-
-		// Execute whitesource scan with unified agent jar file
-		if err := executeUAScan(config, cmd); err != nil {
+		// Execute scan with Unified Agent jar file
+		if err := scan.ExecuteUAScan(options, utils); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-// executeUAScan
-// Executes a scan with the Whitesource Unified Agent
-// returns stdout buffer of the unified agent for token extraction in case of multi-module gradle project
-func executeUAScan(config *ScanOptions, cmd *command.Command) error {
-	return cmd.RunExecutable("java", "-jar", config.AgentFileName, "-d", ".", "-c", config.ConfigFilePath,
-		"-apiKey", config.OrgToken, "-userKey", config.UserToken, "-project", config.ProjectName,
-		"-product", config.ProductName, "-productVersion", config.ProductVersion)
-}
-
-// executeNpmScan
-// generates a configuration file whitesource.config.json with appropriate values from config,
-// installs whitesource yarn plugin and executes the scan
-func executeNpmScan(config *ScanOptions, cmd *command.Command) error {
-	npmConfig := []byte(fmt.Sprintf(`{
-		"apiKey": "%s",
-		"userKey": "%s",
-		"checkPolicies": true,
-		"productName": "%s",
-		"projectName": "%s",
-		"productVer": "%s",
-		"devDep": true
-	}`, config.OrgToken, config.UserToken, config.ProductName, config.ProjectName, config.ProductVersion))
-	if err := ioutil.WriteFile("whitesource.config.json", npmConfig, 0644); err != nil {
-		return err
-	}
-	if err := cmd.RunExecutable("yarn", "global", "add", "whitesource"); err != nil {
-		return err
-	}
-	if err := cmd.RunExecutable("yarn", "install"); err != nil {
-		return err
-	}
-	if err := cmd.RunExecutable("whitesource", "yarn"); err != nil {
-		return err
-	}
-	return nil
-}
-
-// checkSecurityViolations: checks security violations and fails build is severity limit is crossed
-func checkSecurityViolations(config *ScanOptions, sys *System) error {
-	severeVulnerabilities := 0
-
+func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource) error {
+	// Check for security vulnerabilities and fail the build if cvssSeverityLimit threshold is crossed
 	// convert config.CvssSeverityLimit to float64
 	cvssSeverityLimit, err := strconv.ParseFloat(config.CvssSeverityLimit, 64)
 	if err != nil {
-		return err
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return fmt.Errorf("failed to parse parameter cvssSeverityLimit (%s) "+
+			"as floating point number: %w", config.CvssSeverityLimit, err)
 	}
+	if config.ProjectToken != "" {
+		project := ws.Project{Name: config.ProjectName, Token: config.ProjectToken}
+		if _, err := checkProjectSecurityViolations(cvssSeverityLimit, project, sys); err != nil {
+			return err
+		}
+	} else {
+		vulnerabilitiesCount := 0
+		var errorsOccured []string
+		for _, project := range scan.ScannedProjects() {
+			// collect errors and aggregate vulnerabilities from all projects
+			if vulCount, err := checkProjectSecurityViolations(cvssSeverityLimit, project, sys); err != nil {
+				vulnerabilitiesCount += vulCount
+				errorsOccured = append(errorsOccured, fmt.Sprint(err))
+			}
+		}
+		if len(errorsOccured) > 0 {
+			if vulnerabilitiesCount > 0 {
+				log.SetErrorCategory(log.ErrorCompliance)
+			}
+			return fmt.Errorf(strings.Join(errorsOccured, ": "))
+		}
+	}
+	return nil
+}
 
+// checkSecurityViolations checks security violations and returns an error if the configured severity limit is crossed.
+func checkProjectSecurityViolations(cvssSeverityLimit float64, project ws.Project, sys whitesource) (int, error) {
 	// get project alerts (vulnerabilities)
-	alerts, err := sys.GetProjectAlerts(config.ProjectToken)
+	//ToDo: use getProjectAlertsByType with alertType : "SECURITY_VULNERABILITY"?
+	//ToDo: also return reference to alerts in order to use it for reporting later
+	alerts, err := sys.GetProjectAlerts(project.Token)
 	if err != nil {
-		return err
+		return 0, fmt.Errorf("failed to retrieve project alerts from Whitesource: %w", err)
 	}
 
+	severeVulnerabilities := 0
 	// https://github.com/SAP/jenkins-library/blob/master/vars/whitesourceExecuteScan.groovy#L537
 	for _, alert := range alerts {
 		vuln := alert.Vulnerability
 		if (vuln.Score >= cvssSeverityLimit || vuln.CVSS3Score >= cvssSeverityLimit) && cvssSeverityLimit >= 0 {
+			log.Entry().Infof("Vulnerability with Score %v / CVSS3Score %v treated as severe",
+				vuln.Score, vuln.CVSS3Score)
 			severeVulnerabilities++
+		} else {
+			log.Entry().Infof("Ignoring vulnerability with Score %v / CVSS3Score %v",
+				vuln.Score, vuln.CVSS3Score)
 		}
 	}
 
@@ -227,160 +490,23 @@ func checkSecurityViolations(config *ScanOptions, sys *System) error {
 	nonSevereVulnerabilities := len(alerts) - severeVulnerabilities
 	if nonSevereVulnerabilities > 0 {
 		log.Entry().Warnf("WARNING: %v Open Source Software Security vulnerabilities with "+
-			"CVSS score below threshold %s detected in project %s.", nonSevereVulnerabilities,
-			config.CvssSeverityLimit, config.ProjectName)
+			"CVSS score below threshold %.1f detected in project %s.", nonSevereVulnerabilities,
+			cvssSeverityLimit, project.Name)
 	} else if len(alerts) == 0 {
 		log.Entry().Infof("No Open Source Software Security vulnerabilities detected in project %s",
-			config.ProjectName)
+			project.Name)
 	}
 
 	// https://github.com/SAP/jenkins-library/blob/master/vars/whitesourceExecuteScan.groovy#L558
 	if severeVulnerabilities > 0 {
-		return fmt.Errorf("%v Open Source Software Security vulnerabilities with CVSS score greater "+
-			"or equal to %s detected in project %s",
-			severeVulnerabilities, config.CvssSeverityLimit, config.ProjectName)
+		return severeVulnerabilities, fmt.Errorf("%v Open Source Software Security vulnerabilities with CVSS score greater "+
+			"or equal to %.1f detected in project %s",
+			severeVulnerabilities, cvssSeverityLimit, project.Name)
 	}
-	return nil
+	return 0, nil
 }
 
-// pollProjectStatus polls project LastUpdateTime until it reflects the most recent scan
-func pollProjectStatus(config *ScanOptions, sys *System) error {
-	currentTime := time.Now()
-	for {
-		project, err := sys.GetProjectVitals(config.ProjectToken)
-		if err != nil {
-			return err
-		}
-
-		// Make sure the project was updated in whitesource backend before downloading any reports
-		lastUpdatedTime, err := time.Parse("2006-01-02 15:04:05 +0000", project.LastUpdateDate)
-		if currentTime.Sub(lastUpdatedTime) < 10*time.Second {
-			//done polling
-			break
-		}
-		log.Entry().Info("time since project was last updated > 10 seconds, polling status...")
-		time.Sleep(5 * time.Second)
-	}
-	return nil
-}
-
-// downloadReports downloads a project's risk and vulnerability reports
-func downloadReports(config *ScanOptions, sys *System) ([]piperutils.Path, error) {
-	utils := piperutils.Files{}
-
-	// Project was scanned, now we need to wait for Whitesource backend to propagate the changes
-	if err := pollProjectStatus(config, sys); err != nil {
-		return nil, err
-	}
-
-	if err := utils.MkdirAll(config.ReportDirectoryName, 0777); err != nil {
-		return nil, err
-	}
-	vulnPath, err := downloadVulnerabilityReport(config, sys)
-	if err != nil {
-		return nil, err
-	}
-	riskPath, err := downloadRiskReport(config, sys)
-	if err != nil {
-		return nil, err
-	}
-	return []piperutils.Path{*vulnPath, *riskPath}, nil
-}
-
-func downloadVulnerabilityReport(config *ScanOptions, sys *System) (*piperutils.Path, error) {
-	utils := piperutils.Files{}
-	if err := utils.MkdirAll(config.ReportDirectoryName, 0777); err != nil {
-		return nil, err
-	}
-
-	reportBytes, err := sys.GetProjectVulnerabilityReport(config.ProjectToken, config.VulnerabilityReportFormat)
-	if err != nil {
-		return nil, err
-	}
-
-	// Write report to file
-	rptFileName := fmt.Sprintf("%s-vulnerability-report.%s", config.ProjectName, config.VulnerabilityReportFormat)
-	rptFileName = filepath.Join(config.ReportDirectoryName, rptFileName)
-	if err := ioutil.WriteFile(rptFileName, reportBytes, 0644); err != nil {
-		return nil, err
-	}
-
-	log.Entry().Infof("Successfully downloaded vulnerability report to %s", rptFileName)
-	pathName := fmt.Sprintf("%s Vulnerability Report", config.ProjectName)
-	return &piperutils.Path{Name: pathName, Target: rptFileName}, nil
-}
-
-func downloadRiskReport(config *ScanOptions, sys *System) (*piperutils.Path, error) {
-	reportBytes, err := sys.GetProjectRiskReport(config.ProjectToken)
-	if err != nil {
-		return nil, err
-	}
-
-	rptFileName := fmt.Sprintf("%s-risk-report.pdf", config.ProjectName)
-	rptFileName = filepath.Join(config.ReportDirectoryName, rptFileName)
-	if err := ioutil.WriteFile(rptFileName, reportBytes, 0644); err != nil {
-		return nil, err
-	}
-
-	log.Entry().Infof("Successfully downloaded risk report to %s", rptFileName)
-	pathName := fmt.Sprintf("%s PDF Risk Report", config.ProjectName)
-	return &piperutils.Path{Name: pathName, Target: rptFileName}, nil
-}
-
-// downloadAgent: Downloads the unified agent jar file if one does not exist
-func downloadAgent(config *ScanOptions, cmd *command.Command) error {
-	agentFile := config.AgentFileName
-	if !fileExists(agentFile) {
-		if err := cmd.RunExecutable("curl", "-L", config.AgentDownloadURL, "-o", agentFile); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// autoGenerateWhitesourceConfig
-// Auto generate a config file based on the current directory structure, renames it to user specified configFilePath
-// Generated file name will be 'wss-generated-file.config'
-func autoGenerateWhitesourceConfig(config *ScanOptions, cmd *command.Command) error {
-	// TODO: Should we rely on -detect, or set the parameters manually?
-	if err := cmd.RunExecutable("java", "-jar", config.AgentFileName, "-d", ".", "-detect"); err != nil {
-		return err
-	}
-
-	// Rename generated config file to config.ConfigFilePath parameter
-	if err := os.Rename("wss-generated-file.config", config.ConfigFilePath); err != nil {
-		return err
-	}
-
-	// Append aggregateModules=true parameter to config file (consolidates multi-module projects into one)
-	f, err := os.OpenFile(config.ConfigFilePath, os.O_APPEND|os.O_WRONLY, 0600)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	// Append additional config parameters to prevent multiple projects being generated
-	cfg := fmt.Sprintf("gradle.aggregateModules=true\nmaven.aggregateModules=true\ngradle.localRepositoryPath=.gradle\nmaven.m2RepositoryPath=.m2\nexcludes=%s", config.Excludes)
-	if _, err = f.WriteString(cfg); err != nil {
-		return err
-	}
-
-	// archiveExtractionDepth=0
-	if err := cmd.RunExecutable("sed", "-ir", `s/^[#]*\s*archiveExtractionDepth=.*/archiveExtractionDepth=0/`,
-		config.ConfigFilePath); err != nil {
-		return err
-	}
-
-	// config.Includes defaults to "**/*.java **/*.jar **/*.py **/*.go **/*.js **/*.ts"
-	regex := fmt.Sprintf(`s/^[#]*\s*includes=.*/includes="%s"/`, config.Includes)
-	if err := cmd.RunExecutable("sed", "-ir", regex, config.ConfigFilePath); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func aggregateVersionWideLibraries(sys *System, config *ScanOptions) error {
+func aggregateVersionWideLibraries(config *ScanOptions, utils whitesourceUtils, sys whitesource) error {
 	log.Entry().Infof("Aggregating list of libraries used for all projects with version: %s", config.ProductVersion)
 
 	projects, err := sys.GetProjectsMetaInfo(config.ProductToken)
@@ -388,7 +514,7 @@ func aggregateVersionWideLibraries(sys *System, config *ScanOptions) error {
 		return err
 	}
 
-	versionWideLibraries := map[string][]whitesource.Library{} // maps project name to slice of libraries
+	versionWideLibraries := map[string][]ws.Library{} // maps project name to slice of libraries
 	for _, project := range projects {
 		projectVersion := strings.Split(project.Name, " - ")[1]
 		projectName := strings.Split(project.Name, " - ")[0]
@@ -401,13 +527,13 @@ func aggregateVersionWideLibraries(sys *System, config *ScanOptions) error {
 			versionWideLibraries[projectName] = libs
 		}
 	}
-	if err := newLibraryCSVReport(versionWideLibraries, config); err != nil {
+	if err := newLibraryCSVReport(versionWideLibraries, config, utils); err != nil {
 		return err
 	}
 	return nil
 }
 
-func aggregateVersionWideVulnerabilities(sys *System, config *ScanOptions) error {
+func aggregateVersionWideVulnerabilities(config *ScanOptions, utils whitesourceUtils, sys whitesource) error {
 	log.Entry().Infof("Aggregating list of vulnerabilities for all projects with version: %s", config.ProductVersion)
 
 	projects, err := sys.GetProjectsMetaInfo(config.ProductToken)
@@ -415,8 +541,8 @@ func aggregateVersionWideVulnerabilities(sys *System, config *ScanOptions) error
 		return err
 	}
 
-	var versionWideAlerts []whitesource.Alert // all alerts for a given project version
-	projectNames := ``                        // holds all project tokens considered a part of the report for debugging
+	var versionWideAlerts []ws.Alert // all alerts for a given project version
+	projectNames := ``               // holds all project tokens considered a part of the report for debugging
 	for _, project := range projects {
 		projectVersion := strings.Split(project.Name, " - ")[1]
 		if projectVersion == config.ProductVersion {
@@ -430,17 +556,20 @@ func aggregateVersionWideVulnerabilities(sys *System, config *ScanOptions) error
 		}
 	}
 
-	if err := ioutil.WriteFile("whitesource-reports/project-names-aggregated.txt", []byte(projectNames), 0777); err != nil {
+	reportPath := filepath.Join(config.ReportDirectoryName, "project-names-aggregated.txt")
+	if err := utils.FileWrite(reportPath, []byte(projectNames), 0666); err != nil {
 		return err
 	}
-	if err := newVulnerabilityExcelReport(versionWideAlerts, config); err != nil {
+	if err := newVulnerabilityExcelReport(versionWideAlerts, config, utils); err != nil {
 		return err
 	}
 	return nil
 }
 
+const wsReportTimeStampLayout = "20060102-150405"
+
 // outputs an slice of alerts to an excel file
-func newVulnerabilityExcelReport(alerts []whitesource.Alert, config *ScanOptions) error {
+func newVulnerabilityExcelReport(alerts []ws.Alert, config *ScanOptions, utils whitesourceUtils) error {
 	file := excelize.NewFile()
 	streamWriter, err := file.NewStreamWriter("Sheet1")
 	if err != nil {
@@ -450,20 +579,45 @@ func newVulnerabilityExcelReport(alerts []whitesource.Alert, config *ScanOptions
 	if err != nil {
 		return err
 	}
-	if err := streamWriter.SetRow("A1", []interface{}{excelize.Cell{StyleID: styleID, Value: "Severity"}}); err != nil {
+	if err := fillVulnerabilityExcelReport(alerts, streamWriter, styleID); err != nil {
 		return err
 	}
-	if err := streamWriter.SetRow("B1", []interface{}{excelize.Cell{StyleID: styleID, Value: "Library"}}); err != nil {
+	if err := streamWriter.Flush(); err != nil {
 		return err
 	}
-	if err := streamWriter.SetRow("C1", []interface{}{excelize.Cell{StyleID: styleID, Value: "Vulnerability ID"}}); err != nil {
+
+	if err := utils.MkdirAll(config.ReportDirectoryName, 0777); err != nil {
 		return err
 	}
-	if err := streamWriter.SetRow("D1", []interface{}{excelize.Cell{StyleID: styleID, Value: "Project"}}); err != nil {
+
+	fileName := filepath.Join(config.ReportDirectoryName,
+		fmt.Sprintf("vulnerabilities-%s.xlsx", utils.Now().Format(wsReportTimeStampLayout)))
+	stream, err := utils.FileOpen(fileName, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666)
+	if err != nil {
 		return err
 	}
-	if err := streamWriter.SetRow("E1", []interface{}{excelize.Cell{StyleID: styleID, Value: "Resolution"}}); err != nil {
+	if err := file.Write(stream); err != nil {
 		return err
+	}
+	return nil
+}
+
+func fillVulnerabilityExcelReport(alerts []ws.Alert, streamWriter *excelize.StreamWriter, styleID int) error {
+	rows := []struct {
+		axis  string
+		title string
+	}{
+		{"A1", "Severity"},
+		{"B1", "Library"},
+		{"C1", "Vulnerability ID"},
+		{"D1", "Project"},
+		{"E1", "Resolution"},
+	}
+	for _, row := range rows {
+		err := streamWriter.SetRow(row.axis, []interface{}{excelize.Cell{StyleID: styleID, Value: row.title}})
+		if err != nil {
+			return err
+		}
 	}
 
 	for i, alert := range alerts {
@@ -476,27 +630,14 @@ func newVulnerabilityExcelReport(alerts []whitesource.Alert, config *ScanOptions
 		row[4] = vuln.FixResolutionText
 		cell, _ := excelize.CoordinatesToCellName(1, i+2)
 		if err := streamWriter.SetRow(cell, row); err != nil {
-			fmt.Println(err)
+			log.Entry().Errorf("failed to write alert row: %v", err)
 		}
-	}
-	if err := streamWriter.Flush(); err != nil {
-		return err
-	}
-
-	utils := piperutils.Files{}
-	if err := utils.MkdirAll(config.ReportDirectoryName, 0777); err != nil {
-		return err
-	}
-
-	fileName := fmt.Sprintf("%s/vulnerabilities-%s.xlsx", config.ReportDirectoryName, time.Now().Format("2006-01-01 15:00:00"))
-	if err := file.SaveAs(fileName); err != nil {
-		return err
 	}
 	return nil
 }
 
 // outputs an slice of libraries to an excel file based on projects with version == config.ProductVersion
-func newLibraryCSVReport(libraries map[string][]whitesource.Library, config *ScanOptions) error {
+func newLibraryCSVReport(libraries map[string][]ws.Library, config *ScanOptions, utils whitesourceUtils) error {
 	output := "Library Name, Project Name\n"
 	for projectName, libraries := range libraries {
 		log.Entry().Infof("Writing %v libraries for project %s to excel report..", len(libraries), projectName)
@@ -506,15 +647,32 @@ func newLibraryCSVReport(libraries map[string][]whitesource.Library, config *Sca
 	}
 
 	// Ensure reporting directory exists
-	utils := piperutils.Files{}
 	if err := utils.MkdirAll(config.ReportDirectoryName, 0777); err != nil {
 		return err
 	}
 
 	// Write result to file
-	fileName := fmt.Sprintf("%s/libraries-%s.csv", config.ReportDirectoryName, time.Now().Format("2006-01-01 15:00:00"))
-	if err := ioutil.WriteFile(fileName, []byte(output), 0777); err != nil {
+	fileName := fmt.Sprintf("%s/libraries-%s.csv", config.ReportDirectoryName,
+		utils.Now().Format(wsReportTimeStampLayout))
+	if err := utils.FileWrite(fileName, []byte(output), 0666); err != nil {
 		return err
 	}
 	return nil
+}
+
+// persistScannedProjects writes all actually scanned WhiteSource project names as comma separated
+// string into the Common Pipeline Environment, from where it can be used by sub-sequent steps.
+func persistScannedProjects(config *ScanOptions, scan *ws.Scan, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment) {
+	projectNames := []string{}
+	if config.ProjectName != "" {
+		projectNames = []string{config.ProjectName + " - " + config.ProductVersion}
+	} else {
+		for _, project := range scan.ScannedProjects() {
+			projectNames = append(projectNames, project.Name)
+		}
+		// Sorting helps the list become stable across pipeline runs (and in the unit tests),
+		// as the order in which we travers map keys is not deterministic.
+		sort.Strings(projectNames)
+	}
+	commonPipelineEnvironment.custom.whitesourceProjectNames = projectNames
 }

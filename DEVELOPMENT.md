@@ -3,13 +3,14 @@
 **Table of contents:**
 
 1. [Getting started](#getting-started)
-1. [Build the project](build-the-project)
+1. [Build the project](#build-the-project)
 1. [Generating step framework](#generating-step-framework)
 1. [Best practices for writing piper-go steps](#best-practices-for-writing-piper-go-steps)
 1. [Testing](#testing)
 1. [Debugging](#debugging)
 1. [Release](#release)
 1. [Pipeline Configuration](#pipeline-configuration)
+1. [Security Setup](#security-setup)
 
 ## Getting started
 
@@ -96,8 +97,11 @@ docker rm piper
 
 ## Generating step framework
 
-The steps are generated based on the yaml files in `resources/metadata/` with the following command
-`go run pkg/generator/step-metadata.go`.
+The steps are generated based on the yaml files in `resources/metadata/` with the following command from the root of the project:
+
+```bash
+go generate
+```
 
 The yaml format is kept pretty close to Tekton's [task format](https://github.com/tektoncd/pipeline/blob/master/docs/tasks.md).
 Where the Tekton format was not sufficient some extenstions have been made.
@@ -219,6 +223,7 @@ With writing a fatal error
 ```golang
 log.Entry().WithError(err).Fatal("the error message")
 ```
+
 the category will be written into the file `errorDetails.json` and can be used from there in the further pipeline flow.
 Writing the file is handled by [`pkg/log/FatalHook`](pkg/log/fatalHook.go).
 
@@ -226,7 +231,8 @@ Writing the file is handled by [`pkg/log/FatalHook`](pkg/log/fatalHook.go).
 
 1. [Mocking](#mocking)
 1. [Mockable Interface](#mockable-interface)
-1. [Global function pointers](global-function-pointers)
+1. [Global function pointers](#global-function-pointers)
+1. [Test Parallelization](#test-parallelization)
 
 Unit tests are done using basic `golang` means.
 
@@ -412,6 +418,66 @@ in the actual implementation and give great flexibility in the tests, while mock
 tend to result in more code re-use and slim down the tests. The mocking implementation of a
 utils interface can facilitate implementations of related functions to be based on shared data.
 
+### Test Parallelization
+
+Tests that can be executed in parallel should be marked as such.
+With the command `t.Parallel()` the test framework can be notified that this test can run in parallel, and it can start running the next test.
+([Example in Stackoverflow](https://stackoverflow.com/questions/44325232/are-tests-executed-in-parallel-in-go-or-one-by-one))
+Therefore, this command shall be called at the beginning of a test method **and also** in each `t.Run()` sub tests.
+See also the [documentation](https://golang.org/pkg/testing/#T.Parallel) for `t.Parallel()` and `t.Run()`.
+
+```go
+func TestMethod(t *testing.T) {
+    t.Parallel() // indicates that this method can run parallel to other methods
+
+    t.Run("sub test 1", func(t *testing.T){
+        t.Parallel() // indicates that this sub test can run parallel to other sub tests
+        // execute test
+    })
+
+    t.Run("sub test 2", func(t *testing.T){
+        t.Parallel() // indicates that this sub test can run parallel to other sub tests
+        // execute test
+    })
+}
+```
+
+Go will first execute the non-parallelized tests in sequence and afterwards execute all the parallel tests in parallel, limited by the default number of parallel executions.
+
+It is important that tests executed in parallel use the variable values actually meant to be visible to them.
+Especially in table tests, it can happen easily that a variable injected into the `t.Run()`-closure via the outer scope is changed before or while the closure executes.
+To prevent this, it is possible to create shadowing instances of variables in the body of the test loop.
+(See [blog about it](https://eleni.blog/2019/05/11/parallel-test-execution-in-go/).)
+At the minimum, you need to capture the test case value from the loop iteration variable, by shadowing this variable in the loop body.
+Inside the `t.Run()` closure, this shadow copy is visible, and cannot be overwritten by later loop iterations.
+If you do not make this shadowing copy, what is visible in the closure is the variable which gets re-assigned with a new value in each loop iteration.
+The value of this variable is then not fixed for the test run.
+
+```go
+func TestMethod(t *testing.T) {
+    t.Parallel() // indicates that this method can parallel to other methods
+    testCases := []struct {
+        Name string
+    }{
+        {
+            Name: "Name1"
+        },
+        {
+            Name: "Name2"
+        },
+    }
+
+    for _, testCase := range testCases { // testCase defined here is re-assigned in each iteration
+        testCase := testCase // define new variable within loop to detach from overwriting of the outer testCase variable by next loop iteration
+        // The same variable name "testCase" is used for convenience.
+        t.Run(testCase.Name, func(t *testing.T) {
+            t.Parallel() // indicates that this sub test can run parallel to other sub tests
+            // execute test
+        })
+    }
+}
+```
+
 ## Debugging
 
 Debugging can be initiated with VS code fairly easily. Compile the binary with specific compiler flags to turn off optimizations `go build -gcflags "all=-N -l" -o piper.exe`.
@@ -478,3 +544,50 @@ On initialization, it merges the provided custom default configurations with the
 
 Note, the list of configurations cached by `DefaultValueCache` is used to pass path to the (custom) default configurations of each Go step.
 It only contains the paths of configurations which are **not** provided via `customDefaults` parameter of the project configuration, since the Go layer already resolves configurations provided via `customDefaults` parameter independently.
+
+## Additional Developer Hints
+
+You can find additional hints at [documentation/developer-hints](./documentation/developer_hints)
+
+## Security Setup
+
+Here some hints and tricks are described to enhance the security within the development process.
+
+1. [Signing Commits](#signing-commits)
+
+### Signing Commits
+
+In git, commits can be [signed](https://git-scm.com/book/en/v2/Git-Tools-Signing-Your-Work) to guarantee that that changes were made by the person named in the commit.
+The name and email used for commits can be easily modified in the local git setup and afterwards it cannot be distinguished anymore if the commit was done by the real person or by some potential attacker.
+
+In Windows, this can be done via [GnuPG](https://www.gnupg.org/(en)/download/index.html).
+Download and install the tool.
+Via the manager tool *Kleopatra* a new key pair can be easily created with a little wizard.
+Make sure that the name and email are the ones used in your git.
+
+The public key must then be added to the github's GPG section.
+The private key should be kept in a backup as this signature is bound to you and not your machine.
+
+The only thing left are some changes in the *.gitconfig* file.
+The file shall be located in your user directory.
+It might look something like the following.
+All parts that are not relevant for signing were removed.
+
+```
+[user]
+  name = My Name
+  email = my.name@sap.com
+  # Hash or email of you GPG key
+  signingkey = D3CF72CC4006DE245C049566242831AEEE9DA2DD
+[commit]
+  # enable signing for commits
+  gpgsign = true
+[tag]
+  # enable signing for tags (note the capital S)
+  gpgSign = true
+[gpg]
+  # Windows was not able to find the private key. Setting the gpg command to use solved this.
+  program = C:\\Program Files (x86)\\GnuPG\\bin\\gpg.exe
+```
+
+Add the three to four lines to you git config and this will do the necessary such that all your commits will be signed.

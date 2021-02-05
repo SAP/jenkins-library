@@ -27,7 +27,17 @@ import groovy.transform.Field
      * Publishes performance test results with the [Performance plugin](https://plugins.jenkins.io/performance).
      * @possibleValues `true`, `false`, `Map`
      */
-    'jmeter'
+    'jmeter',
+    /**
+     * Publishes test results with the [Cucumber plugin](https://plugins.jenkins.io/cucumber-testresult-plugin/).
+     * @possibleValues `true`, `false`, `Map`
+     */
+    'cucumber',
+    /**
+     * Publishes test results with the [HTML Publisher plugin](https://plugins.jenkins.io/htmlpublisher/).
+     * @possibleValues `true`, `false`, `Map`
+     */
+    'htmlPublisher'
 ]
 
 @Field def STEP_NAME = getClass().getName()
@@ -51,15 +61,16 @@ import groovy.transform.Field
 void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
         def script = checkScript(this, parameters) ?: this
+        String stageName = parameters.stageName ?: env.STAGE_NAME
 
         prepare(parameters)
 
         // load default & individual configuration
         Map configuration = ConfigurationHelper.newInstance(this)
-            .loadStepDefaults()
+            .loadStepDefaults([:], stageName)
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
             .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
+            .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
             .mixin(parameters, PARAMETER_KEYS)
             .use()
 
@@ -73,8 +84,10 @@ void call(Map parameters = [:]) {
         publishJacocoReport(configuration.get('jacoco'))
         publishCoberturaReport(configuration.get('cobertura'))
         publishJMeterReport(configuration.get('jmeter'))
+        publishCucumberReport(configuration.get('cucumber'))
+        publishHtmlReport(configuration.get('htmlPublisher'))
 
-        if (configuration.failOnError && JenkinsUtils.hasTestFailures(script.currentBuild)) {
+        if (configuration.failOnError && (JenkinsUtils.hasTestFailures(script.currentBuild) || 'FAILURE' == script.currentBuild?.result)){
             script.currentBuild.result = 'FAILURE'
             error "[${STEP_NAME}] Some tests failed!"
         }
@@ -82,7 +95,7 @@ void call(Map parameters = [:]) {
 }
 
 def publishJUnitReport(Map settings = [:]) {
-    if(settings.active){
+    if (settings.active) {
         def pattern = settings.get('pattern')
         def allowEmpty = settings.get('allowEmptyResults')
 
@@ -98,7 +111,7 @@ def publishJUnitReport(Map settings = [:]) {
 }
 
 def publishJacocoReport(Map settings = [:]) {
-    if(settings.active){
+    if (settings.active) {
         def pattern = settings.get('pattern')
         def allowEmpty = settings.get('allowEmptyResults')
 
@@ -112,7 +125,7 @@ def publishJacocoReport(Map settings = [:]) {
 }
 
 def publishCoberturaReport(Map settings = [:]) {
-    if(settings.active){
+    if (settings.active) {
         def pattern = settings.get('pattern')
         def allowEmpty = settings.get('allowEmptyResults')
 
@@ -132,7 +145,7 @@ def publishCoberturaReport(Map settings = [:]) {
 
 // publish Performance Report using "Jenkins Performance Plugin" https://wiki.jenkins.io/display/JENKINS/Performance+Plugin
 def publishJMeterReport(Map settings = [:]){
-    if(settings.active){
+    if (settings.active) {
         def pattern = settings.get('pattern')
 
         perfReport(
@@ -153,6 +166,31 @@ def publishJMeterReport(Map settings = [:]){
             compareBuildPrevious: settings.get('compareBuildPrevious')
         )
         archiveResults(settings.get('archive'), pattern, settings.get('allowEmptyResults'))
+    }
+}
+
+def publishCucumberReport(Map settings = [:]) {
+    if (settings.active) {
+        def pattern = settings.get('pattern')
+        def allowEmpty = settings.get('allowEmptyResults')
+
+        cucumber(
+            testResults: pattern
+        )
+        archiveResults(settings.get('archive'), pattern, allowEmpty)
+    }
+}
+
+def publishHtmlReport(Map settings = [:]) {
+    if (settings.active) {
+        publishHTML(target: [
+            allowMissing         : settings.get('allowMissing'),
+            alwaysLinkToLastBuild: settings.get('alwaysLinkToLastBuild'),
+            keepAll              : settings.get('keepAll'),
+            reportDir            : settings.get('reportDir'),
+            reportFiles          : settings.get('pattern'),
+            reportName           : settings.get('reportName')
+        ])
     }
 }
 

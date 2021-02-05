@@ -17,12 +17,14 @@ type abapEnvironmentPullGitRepoOptions struct {
 	Username          string   `json:"username,omitempty"`
 	Password          string   `json:"password,omitempty"`
 	RepositoryNames   []string `json:"repositoryNames,omitempty"`
+	Repositories      string   `json:"repositories,omitempty"`
 	Host              string   `json:"host,omitempty"`
 	CfAPIEndpoint     string   `json:"cfApiEndpoint,omitempty"`
 	CfOrg             string   `json:"cfOrg,omitempty"`
 	CfSpace           string   `json:"cfSpace,omitempty"`
 	CfServiceInstance string   `json:"cfServiceInstance,omitempty"`
 	CfServiceKeyName  string   `json:"cfServiceKeyName,omitempty"`
+	IgnoreCommit      bool     `json:"ignoreCommit,omitempty"`
 }
 
 // AbapEnvironmentPullGitRepoCommand Pulls a git repository to a SAP Cloud Platform ABAP Environment system
@@ -39,7 +41,7 @@ func AbapEnvironmentPullGitRepoCommand() *cobra.Command {
 		Long: `Pulls a git repository (Software Component) to a SAP Cloud Platform ABAP Environment system.
 Please provide either of the following options:
 
-* The host and credentials the Cloud Platform ABAP Environment system itself. The credentials must be configured for the Communication Scenario SAP_COM_0510.
+* The host and credentials the Cloud Platform ABAP Environment system itself. The credentials must be configured for the Communication Scenario [SAP_COM_0510](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html).
 * The Cloud Foundry parameters (API endpoint, organization, space), credentials, the service instance for the ABAP service and the service key for the Communication Scenario SAP_COM_0510.
 * Only provide one of those options with the respective credentials. If all values are provided, the direct communication (via host) has priority.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
@@ -70,7 +72,9 @@ Please provide either of the following options:
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
 			}
 			log.DeferExitHandler(handler)
@@ -90,50 +94,72 @@ func addAbapEnvironmentPullGitRepoFlags(cmd *cobra.Command, stepConfig *abapEnvi
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510")
 	cmd.Flags().StringSliceVar(&stepConfig.RepositoryNames, "repositoryNames", []string{}, "Specifies a list of Repositories (Software Components) on the SAP Cloud Platform ABAP Environment system")
+	cmd.Flags().StringVar(&stepConfig.Repositories, "repositories", os.Getenv("PIPER_repositories"), "Specifies a YAML file containing the repositories configuration")
 	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP Cloud Platform ABAP Environment system")
 	cmd.Flags().StringVar(&stepConfig.CfAPIEndpoint, "cfApiEndpoint", os.Getenv("PIPER_cfApiEndpoint"), "Cloud Foundry API Enpoint")
 	cmd.Flags().StringVar(&stepConfig.CfOrg, "cfOrg", os.Getenv("PIPER_cfOrg"), "Cloud Foundry target organization")
 	cmd.Flags().StringVar(&stepConfig.CfSpace, "cfSpace", os.Getenv("PIPER_cfSpace"), "Cloud Foundry target space")
 	cmd.Flags().StringVar(&stepConfig.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Cloud Foundry Service Instance")
 	cmd.Flags().StringVar(&stepConfig.CfServiceKeyName, "cfServiceKeyName", os.Getenv("PIPER_cfServiceKeyName"), "Cloud Foundry Service Key")
+	cmd.Flags().BoolVar(&stepConfig.IgnoreCommit, "ignoreCommit", false, "ingores a commit provided via the repositories file")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
-	cmd.MarkFlagRequired("repositoryNames")
 }
 
 // retrieve step metadata
 func abapEnvironmentPullGitRepoMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "abapEnvironmentPullGitRepo",
-			Aliases: []config.Alias{},
+			Name:        "abapEnvironmentPullGitRepo",
+			Aliases:     []config.Alias{},
+			Description: "Pulls a git repository to a SAP Cloud Platform ABAP Environment system",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name:        "username",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Name: "username",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "abapCredentialsId",
+								Param: "username",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "password",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Name: "password",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "abapCredentialsId",
+								Param: "password",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "repositoryNames",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
-						Mandatory:   true,
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "repositories",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -184,7 +210,18 @@ func abapEnvironmentPullGitRepoMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceKey"}, {Name: "cloudFoundry/serviceKeyName"}, {Name: "cfServiceKey"}},
 					},
+					{
+						Name:        "ignoreCommit",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
 				},
+			},
+			Containers: []config.Container{
+				{Name: "cf", Image: "ppiper/cf-cli"},
 			},
 		},
 	}

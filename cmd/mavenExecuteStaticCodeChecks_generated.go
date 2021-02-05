@@ -26,6 +26,7 @@ type mavenExecuteStaticCodeChecksOptions struct {
 	GlobalSettingsFile           string   `json:"globalSettingsFile,omitempty"`
 	M2Path                       string   `json:"m2Path,omitempty"`
 	LogSuccessfulMavenTransfers  bool     `json:"logSuccessfulMavenTransfers,omitempty"`
+	InstallArtifacts             bool     `json:"installArtifacts,omitempty"`
 }
 
 // MavenExecuteStaticCodeChecksCommand Execute static code checks for Maven based projects. The plugins SpotBugs and PMD are used.
@@ -73,7 +74,9 @@ For PMD the failure priority and the max allowed violations are configurable via
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
 			}
 			log.DeferExitHandler(handler)
@@ -102,6 +105,7 @@ func addMavenExecuteStaticCodeChecksFlags(cmd *cobra.Command, stepConfig *mavenE
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Path to the mvn settings file that should be used as global settings file.")
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
 	cmd.Flags().BoolVar(&stepConfig.LogSuccessfulMavenTransfers, "logSuccessfulMavenTransfers", false, "Configures maven to log successful downloads. This is set to `false` by default to reduce the noise in build logs.")
+	cmd.Flags().BoolVar(&stepConfig.InstallArtifacts, "installArtifacts", false, "If enabled, it will install all artifacts to the local maven repository to make them available before running the static code checks. This is required if any maven module has dependencies to other modules in the repository and they were not installed before.")
 
 }
 
@@ -109,8 +113,9 @@ func addMavenExecuteStaticCodeChecksFlags(cmd *cobra.Command, stepConfig *mavenE
 func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "mavenExecuteStaticCodeChecks",
-			Aliases: []config.Alias{{Name: "mavenExecute", Deprecated: false}},
+			Name:        "mavenExecuteStaticCodeChecks",
+			Aliases:     []config.Alias{{Name: "mavenExecute", Deprecated: false}},
+			Description: "Execute static code checks for Maven based projects. The plugins SpotBugs and PMD are used.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -211,7 +216,18 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/logSuccessfulMavenTransfers"}},
 					},
+					{
+						Name:        "installArtifacts",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
 				},
+			},
+			Containers: []config.Container{
+				{Name: "mvn", Image: "maven:3.6-jdk-8"},
 			},
 		},
 	}

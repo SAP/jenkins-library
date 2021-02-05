@@ -81,6 +81,10 @@ class CloudFoundryDeployTest extends BasePiperTest {
         helper.registerAllowedMethod('influxWriteData', [Map.class], { m ->
             writeInfluxMap = m
         })
+
+        helper.registerAllowedMethod('findFiles', [Map.class], { m ->
+            return [].toArray()
+        })
     }
 
     @After
@@ -169,7 +173,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
             cfManifest: 'test.yml'
         ])
         // asserts
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli:v5'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
         assertThat(dockerExecuteRule.dockerParams.dockerEnvVars, hasEntry('STATUS_CODE', "${200}"))
         assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
@@ -221,7 +225,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
             ]
         ])
         // asserts
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli:v5'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
         assertThat(dockerExecuteRule.dockerParams.dockerEnvVars, hasEntry('STATUS_CODE', "${200}"))
         assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
@@ -417,7 +421,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
             cfManifest: 'test.yml'
         ])
 
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli:v5'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
 
         assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
@@ -445,7 +449,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
             cfManifest: 'test.yml'
         ])
 
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli:v5'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
 
         assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
@@ -474,7 +478,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
             cfManifest: 'test.yml'
         ])
 
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli:v5'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
 
         assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
@@ -555,7 +559,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
             cfManifest: 'test.yml'
         ])
 
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli:v5'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
 
         assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
@@ -653,11 +657,28 @@ class CloudFoundryDeployTest extends BasePiperTest {
             mtaPath: 'target/test.mtar'
         ])
         // asserts
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli:v5'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
         assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
         assertThat(shellRule.shell, hasItem(containsString('cf deploy target/test.mtar -f')))
         assertThat(shellRule.shell, hasItem(containsString('cf logout')))
+    }
+
+    @Test
+    void useMtaFilePathFromPipelineEnvironment() {
+        environmentRule.env.mtarFilePath = 'target/test.mtar'
+
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            cfOrg: 'testOrg',
+            cfSpace: 'testSpace',
+            cfCredentialsId: 'test_cfCredentialsId',
+            deployTool: 'mtaDeployPlugin'
+        ])
+        // asserts
+        assertThat(shellRule.shell, hasItem(containsString('cf deploy target/test.mtar -f')))
     }
 
     @Test
@@ -729,7 +750,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
             cfManifestVariablesFiles: ['vars.yml']
         ])
 
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli:v5'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
         assertThat(dockerExecuteRule.dockerParams.dockerEnvVars, hasEntry('STATUS_CODE', "${200}"))
         assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
@@ -781,7 +802,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         ])
 
         // asserts
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli:v5'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
         assertThat(dockerExecuteRule.dockerParams.dockerEnvVars, hasEntry('STATUS_CODE', "${200}"))
         assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
@@ -834,7 +855,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         ])
 
         // asserts
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli:v5'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
         assertThat(dockerExecuteRule.dockerParams.dockerEnvVars, hasEntry('STATUS_CODE', "${200}"))
         assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
@@ -859,7 +880,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         ])
 
         // asserts
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli:v5'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
         assertThat(dockerExecuteRule.dockerParams.dockerEnvVars, hasEntry('STATUS_CODE', "${200}"))
         assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
@@ -904,7 +925,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         assertNotNull(testYamlData)
         assertThat(testYamlData.get("applications").get(0).get("name"), is("testApplication"))
 
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli:v5'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
         assertThat(dockerExecuteRule.dockerParams.dockerEnvVars, hasEntry('STATUS_CODE', "${200}"))
         assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
@@ -950,7 +971,7 @@ class CloudFoundryDeployTest extends BasePiperTest {
         assertNotNull(testYamlData)
         assertThat(testYamlData.get("applications").get(0).get("name"), is("testApplicationFromVarsList"))
 
-        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli'))
+        assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerImage', 'ppiper/cf-cli:v5'))
         assertThat(dockerExecuteRule.dockerParams, hasEntry('dockerWorkspace', '/home/piper'))
         assertThat(dockerExecuteRule.dockerParams.dockerEnvVars, hasEntry('STATUS_CODE', "${200}"))
         assertThat(shellRule.shell, hasItem(containsString('cf login -u "test_cf" -p \'********\' -a https://api.cf.eu10.hana.ondemand.com -o "testOrg" -s "testSpace"')))
@@ -1309,5 +1330,69 @@ class CloudFoundryDeployTest extends BasePiperTest {
                 testCred: 'mtaExtCredTest'
             ],
         ])
+    }
+
+    @Test
+    void testGoStepFeatureToggleOn() {
+        String calledStep = ''
+        String usedMetadataFile = ''
+        List credInfo = []
+        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
+            Map parameters, String stepName,
+            String metadataFile, List credentialInfo ->
+                calledStep = stepName
+                usedMetadataFile = metadataFile
+                credInfo = credentialInfo
+        })
+
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            useGoStep: true,
+            deployTool: 'irrelevant',
+            cfOrg: 'irrelevant',
+            cfSpace: 'irrelevant',
+            cfCredentialsId: 'irrelevant',
+            mtaExtensionCredentials: [myCred: 'Mta.ExtensionCredential~Credential_Id1'],
+        ])
+
+        assertEquals('cloudFoundryDeploy', calledStep)
+        assertEquals('metadata/cloudFoundryDeploy.yaml', usedMetadataFile)
+
+        // contains assertion does not work apparently when comparing a list of lists agains an expected list.
+        boolean found = false
+            credInfo.each { entry ->
+                if (entry == [type:'token', id:'Mta.ExtensionCredential~Credential_Id1', env:['MTA_EXTENSION_CREDENTIAL_CREDENTIAL_ID1'], resolveCredentialsId:false]) {
+                    found = true
+            }
+	    }
+        assertTrue(found)
+    }
+
+    @Test
+    void testGoStepFeatureToggleOff() {
+        String calledStep = ''
+        String usedMetadataFile = ''
+        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
+            Map parameters, String stepName,
+            String metadataFile, List credentialInfo ->
+                calledStep = stepName
+                usedMetadataFile = metadataFile
+        })
+
+        stepRule.step.cloudFoundryDeploy([
+            script: nullScript,
+            juStabUtils: utils,
+            jenkinsUtilsStub: new JenkinsUtilsMock(),
+            useGoStep: 'false',
+            deployTool: 'irrelevant',
+            cfOrg: 'irrelevant',
+            cfSpace: 'irrelevant',
+            cfCredentialsId: 'irrelevant',
+        ])
+
+        assertEquals('', calledStep)
+        assertEquals('', usedMetadataFile)
     }
 }

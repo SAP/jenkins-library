@@ -1,0 +1,157 @@
+<?xml version='1.0' encoding='utf-8'?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <name>cloud-sdk-spring-archetype - Application</name>
+    <description>cloud-sdk-spring-archetype - Application</description>
+
+    <artifactId>cloud-sdk-spring-archetype-application</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+
+    <parent>
+        <groupId>mydemo</groupId>
+        <artifactId>cloud-sdk-spring-archetype</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.sap.cloud.sdk.cloudplatform</groupId>
+            <artifactId>scp-cf</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.sap.cloud.sdk.s4hana</groupId>
+            <artifactId>s4hana-all</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>jcl-over-slf4j</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.sap.hcp.cf.logging</groupId>
+            <artifactId>cf-java-logging-support-logback</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-tomcat</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-webmvc</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-logging</groupId>
+                    <artifactId>commons-logging</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <!--
+        Since com.sap.xs2.security:java-container-security is not available in Maven Central as of today,
+        you need to download this dependency manually.
+
+        The library is available for download at:
+        https://launchpad.support.sap.com/#/softwarecenter/search/XS_JAVA
+        -->
+
+        <!-- Dependencies for security setup -->
+        <!--
+        <dependency>
+            <groupId>com.sap.xs2.security</groupId>
+            <artifactId>java-container-security</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.unboundid.components</groupId>
+                    <artifactId>json</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-log4j12</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.hibernate.validator</groupId>
+            <artifactId>hibernate-validator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-config</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security.oauth</groupId>
+            <artifactId>spring-security-oauth2</artifactId>
+        </dependency>
+        -->
+
+        <dependency>
+            <groupId>javax.inject</groupId>
+            <artifactId>javax.inject</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>${project.artifactId}</finalName>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>${spring-boot.version}</version>
+                <configuration>
+                    <attach>false</attach>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>com.sap.cloud.sdk.plugins</groupId>
+                <artifactId>usage-analytics-maven-plugin</artifactId>
+                <version>3.22.0</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>usage-analytics</goal>
+                        </goals>
+                        <configuration>
+                            <skipUsageAnalytics>true</skipUsageAnalytics>
+                            <generateSalt>true</generateSalt>
+                            <!--
+                            Note: A random salt is auto-generated once the project is built for the first time.
+                            Please keep the generated salt in the POM file, for example, when pushing to git.
+
+                            To learn more, visit: https://blogs.sap.com/2018/10/23/usage-analytics-s4sdk/
+                            -->
+                            <salt />
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

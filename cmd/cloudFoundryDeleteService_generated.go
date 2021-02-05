@@ -63,7 +63,9 @@ func CloudFoundryDeleteServiceCommand() *cobra.Command {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
+				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
 			}
 			log.DeferExitHandler(handler)
@@ -100,8 +102,9 @@ func addCloudFoundryDeleteServiceFlags(cmd *cobra.Command, stepConfig *cloudFoun
 func cloudFoundryDeleteServiceMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "cloudFoundryDeleteService",
-			Aliases: []config.Alias{},
+			Name:        "cloudFoundryDeleteService",
+			Aliases:     []config.Alias{},
+			Description: "DeleteCloudFoundryService",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -115,20 +118,44 @@ func cloudFoundryDeleteServiceMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "cloudFoundry/apiEndpoint"}},
 					},
 					{
-						Name:        "username",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Name: "username",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "cfCredentialsId",
+								Param: "username",
+								Type:  "secret",
+							},
+
+							{
+								Name:  "",
+								Paths: []string{"$(vaultPath)/cloudfoundry-$(org)-$(space)", "$(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(org)-$(space)", "$(vaultBasePath)/GROUP-SECRETS/cloudfoundry-$(org)-$(space)"},
+								Type:  "vaultSecret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "password",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Name: "password",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "cfCredentialsId",
+								Param: "password",
+								Type:  "secret",
+							},
+
+							{
+								Name:  "",
+								Paths: []string{"$(vaultPath)/cloudfoundry-$(org)-$(space)", "$(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(org)-$(space)", "$(vaultBasePath)/GROUP-SECRETS/cloudfoundry-$(org)-$(space)"},
+								Type:  "vaultSecret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "cfOrg",
@@ -163,6 +190,9 @@ func cloudFoundryDeleteServiceMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "cloudFoundry/cfDeleteServiceKeys"}},
 					},
 				},
+			},
+			Containers: []config.Container{
+				{Name: "cf", Image: "ppiper/cf-cli", WorkingDir: "/home/piper"},
 			},
 		},
 	}

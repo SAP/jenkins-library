@@ -3,8 +3,12 @@ package http
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
+	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"mime/multipart"
 	"net"
 	"net/http"
@@ -13,6 +17,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/motemen/go-nuts/roundtime"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -20,15 +25,18 @@ import (
 
 // Client defines an http client object
 type Client struct {
-	maxRequestDuration       time.Duration
-	transportTimeout         time.Duration
-	username                 string
-	password                 string
-	token                    string
-	logger                   *logrus.Entry
-	cookieJar                http.CookieJar
-	doLogRequestBodyOnDebug  bool
-	doLogResponseBodyOnDebug bool
+	maxRequestDuration        time.Duration
+	maxRetries                int
+	transportTimeout          time.Duration
+	transportSkipVerification bool
+	username                  string
+	password                  string
+	token                     string
+	logger                    *logrus.Entry
+	cookieJar                 http.CookieJar
+	doLogRequestBodyOnDebug   bool
+	doLogResponseBodyOnDebug  bool
+	useDefaultTransport       bool
 }
 
 // ClientOptions defines the options to be set on the client
@@ -38,16 +46,19 @@ type ClientOptions struct {
 	// for the request will be enforced. This should only be used if the
 	// length of the request bodies is known.
 	MaxRequestDuration time.Duration
+	MaxRetries         int
 	// TransportTimeout defaults to 3 minutes, if not specified. It is
 	// used for the transport layer and duration of handshakes and such.
-	TransportTimeout         time.Duration
-	Username                 string
-	Password                 string
-	Token                    string
-	Logger                   *logrus.Entry
-	CookieJar                http.CookieJar
-	DoLogRequestBodyOnDebug  bool
-	DoLogResponseBodyOnDebug bool
+	TransportTimeout          time.Duration
+	TransportSkipVerification bool
+	Username                  string
+	Password                  string
+	Token                     string
+	Logger                    *logrus.Entry
+	CookieJar                 http.CookieJar
+	DoLogRequestBodyOnDebug   bool
+	DoLogResponseBodyOnDebug  bool
+	UseDefaultTransport       bool
 }
 
 // TransportWrapper is a wrapper for central logging capabilities
@@ -160,10 +171,13 @@ func (c *Client) Upload(data UploadRequestData) (*http.Response, error) {
 		return response, errors.Wrapf(err, "HTTP %v request to %v failed with error", data.Method, data.URL)
 	}
 
-	return c.handleResponse(response)
+	return c.handleResponse(response, data.URL)
 }
 
 // SendRequest sends an http request with a defined method
+//
+// On error, any Response can be ignored and the Response.Body
+// does not need to be closed.
 func (c *Client) SendRequest(method, url string, body io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
 	httpClient := c.initialize()
 
@@ -177,18 +191,21 @@ func (c *Client) SendRequest(method, url string, body io.Reader, header http.Hea
 		return response, errors.Wrapf(err, "error calling %v", url)
 	}
 
-	return c.handleResponse(response)
+	return c.handleResponse(response, url)
 }
 
 // SetOptions sets options used for the http client
 func (c *Client) SetOptions(options ClientOptions) {
 	c.doLogRequestBodyOnDebug = options.DoLogRequestBodyOnDebug
 	c.doLogResponseBodyOnDebug = options.DoLogResponseBodyOnDebug
+	c.useDefaultTransport = options.UseDefaultTransport
 	c.transportTimeout = options.TransportTimeout
+	c.transportSkipVerification = options.TransportSkipVerification
 	c.maxRequestDuration = options.MaxRequestDuration
 	c.username = options.Username
 	c.password = options.Password
 	c.token = options.Token
+	c.maxRetries = options.MaxRetries
 
 	if options.Logger != nil {
 		c.logger = options.Logger
@@ -210,15 +227,37 @@ func (c *Client) initialize() *http.Client {
 			ResponseHeaderTimeout: c.transportTimeout,
 			ExpectContinueTimeout: c.transportTimeout,
 			TLSHandshakeTimeout:   c.transportTimeout,
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: c.transportSkipVerification,
+			},
 		},
 		doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,
 		doLogResponseBodyOnDebug: c.doLogResponseBodyOnDebug,
 	}
-	var httpClient = &http.Client{
-		Timeout:   c.maxRequestDuration,
-		Transport: transport,
-		Jar:       c.cookieJar,
+
+	var httpClient *http.Client
+	if c.maxRetries > 0 {
+		retryClient := retryablehttp.NewClient()
+		retryClient.HTTPClient.Timeout = c.maxRequestDuration
+		retryClient.HTTPClient.Jar = c.cookieJar
+		retryClient.RetryMax = c.maxRetries
+		if !c.useDefaultTransport {
+			retryClient.HTTPClient.Transport = transport
+		}
+		httpClient = retryClient.StandardClient()
+	} else {
+		httpClient = &http.Client{}
+		httpClient.Timeout = c.maxRequestDuration
+		httpClient.Jar = c.cookieJar
+		if !c.useDefaultTransport {
+			httpClient.Transport = transport
+		}
 	}
+
+	if c.transportSkipVerification {
+		c.logger.Debugf("TLS verification disabled")
+	}
+
 	c.logger.Debugf("Transport timeout: %v, max request duration: %v", c.transportTimeout, c.maxRequestDuration)
 
 	return httpClient
@@ -246,7 +285,7 @@ func (t *TransportWrapper) RoundTrip(req *http.Request) (*http.Response, error) 
 func (t *TransportWrapper) logRequest(req *http.Request) {
 	log.Entry().Debug("--------------------------------")
 	log.Entry().Debugf("--> %v request to %v", req.Method, req.URL)
-	log.Entry().Debugf("headers: %v", req.Header)
+	log.Entry().Debugf("headers: %v", transformHeaders(req.Header))
 	log.Entry().Debugf("cookies: %v", transformCookies(req.Cookies()))
 	if t.doLogRequestBodyOnDebug {
 		log.Entry().Debugf("body: %v", transformBody(req.Body))
@@ -269,6 +308,32 @@ func (t *TransportWrapper) logResponse(resp *http.Response) {
 		log.Entry().Debug("response <nil>")
 	}
 	log.Entry().Debug("--------------------------------")
+}
+
+func transformHeaders(header http.Header) http.Header {
+	var h http.Header = map[string][]string{}
+	for name, value := range header {
+		if name == "Authorization" {
+			for _, v := range value {
+				// The format of the Authorization header value is: <type> <cred>.
+				// We don't register the full string since only the part after
+				// the first token is the secret in the narrower sense (applies at
+				// least for basic auth)
+				log.RegisterSecret(strings.Join(strings.Split(v, " ")[1:], " "))
+			}
+			// Since
+			//   1.) The auth header type itself might serve as a vector for an
+			//       intrusion
+			//   2.) We cannot make assumtions about the structure of the auth
+			//       header value since that depends on the type, e.g. several tokens
+			//       where only some of the tokens define the secret
+			// we hide the full auth header value anyway in order to be on the
+			// save side.
+			value = []string{"<set>"}
+		}
+		h[name] = value
+	}
+	return h
 }
 
 func transformCookies(cookies []*http.Cookie) string {
@@ -308,7 +373,7 @@ func (c *Client) createRequest(method, url string, body io.Reader, header *http.
 		}
 	}
 
-	if len(c.username) > 0 && len(c.password) > 0 {
+	if len(c.username) > 0 {
 		request.SetBasicAuth(c.username, c.password)
 		c.logger.Debug("Using Basic Authentication ****/****")
 	}
@@ -320,7 +385,7 @@ func (c *Client) createRequest(method, url string, body io.Reader, header *http.
 	return request, nil
 }
 
-func (c *Client) handleResponse(response *http.Response) (*http.Response, error) {
+func (c *Client) handleResponse(response *http.Response, url string) (*http.Response, error) {
 	// 2xx codes do not create an error
 	if response.StatusCode >= 200 && response.StatusCode < 300 {
 		return response, nil
@@ -332,7 +397,7 @@ func (c *Client) handleResponse(response *http.Response) (*http.Response, error)
 	case http.StatusForbidden:
 		c.logger.WithField("HTTP Error", "403 (Forbidden)").Error("Permission issue, please check your user permissions!")
 	case http.StatusNotFound:
-		c.logger.WithField("HTTP Error", "404 (Not Found)").Error("Requested resource could not be found")
+		c.logger.WithField("HTTP Error", "404 (Not Found)").Errorf("Requested resource ('%s') could not be found", url)
 	case http.StatusInternalServerError:
 		c.logger.WithField("HTTP Error", "500 (Internal Server Error)").Error("Unknown error occurred.")
 	}
@@ -347,4 +412,42 @@ func (c *Client) applyDefaults() {
 	if c.logger == nil {
 		c.logger = log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")
 	}
+}
+
+// ParseHTTPResponseBodyXML parses a XML http response into a given interface
+func ParseHTTPResponseBodyXML(resp *http.Response, response interface{}) error {
+	if resp == nil {
+		return errors.Errorf("cannot parse HTTP response with value <nil>")
+	}
+
+	bodyText, readErr := ioutil.ReadAll(resp.Body)
+	if readErr != nil {
+		return errors.Wrap(readErr, "HTTP response body could not be read")
+	}
+
+	marshalErr := xml.Unmarshal(bodyText, &response)
+	if marshalErr != nil {
+		return errors.Wrapf(marshalErr, "HTTP response body could not be parsed as XML: %v", string(bodyText))
+	}
+
+	return nil
+}
+
+// ParseHTTPResponseBodyJSON parses a JSON http response into a given interface
+func ParseHTTPResponseBodyJSON(resp *http.Response, response interface{}) error {
+	if resp == nil {
+		return errors.Errorf("cannot parse HTTP response with value <nil>")
+	}
+
+	bodyText, readErr := ioutil.ReadAll(resp.Body)
+	if readErr != nil {
+		return errors.Wrapf(readErr, "HTTP response body could not be read")
+	}
+
+	marshalErr := json.Unmarshal(bodyText, &response)
+	if marshalErr != nil {
+		return errors.Wrapf(marshalErr, "HTTP response body could not be parsed as JSON: %v", string(bodyText))
+	}
+
+	return nil
 }

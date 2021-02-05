@@ -159,6 +159,26 @@ class AbapEnvironmentPipelineTest extends BasePiperTest {
             stepsCalled.add('abapEnvironmentPipelineStagePost')
         })
 
+        helper.registerAllowedMethod('abapEnvironmentPipelineStageBuild', [Map.class], {m ->
+            stepsCalled.add('abapEnvironmentPipelineStageBuild')
+        })
+
+        helper.registerAllowedMethod('abapEnvironmentPipelineStageInitialChecks', [Map.class], {m ->
+            stepsCalled.add('abapEnvironmentPipelineStageInitialChecks')
+        })
+
+        helper.registerAllowedMethod('abapEnvironmentPipelineStagePublish', [Map.class], {m ->
+            stepsCalled.add('abapEnvironmentPipelineStagePublish')
+        })
+
+        helper.registerAllowedMethod('abapEnvironmentPipelineStageConfirm', [Map.class], {m ->
+            stepsCalled.add('abapEnvironmentPipelineStageConfirm')
+        })
+
+        helper.registerAllowedMethod('abapEnvironmentPipelineStageIntegrationTests', [Map.class], {m ->
+            stepsCalled.add('abapEnvironmentPipelineStageIntegrationTests')
+        })
+
         nullScript.prepareDefaultValues(script: nullScript)
 
     }
@@ -205,6 +225,9 @@ class AbapEnvironmentPipelineTest extends BasePiperTest {
             'Prepare System': true,
             'Clone Repositories': true,
             'ATC': true,
+            'Build': true,
+            'Integration Tests': true,
+            'Publish': true
         ]
         jsr.step.abapEnvironmentPipeline(script: nullScript)
 
@@ -213,7 +236,12 @@ class AbapEnvironmentPipelineTest extends BasePiperTest {
             'abapEnvironmentPipelineStagePrepareSystem',
             'abapEnvironmentPipelineStageCloneRepositories',
             'abapEnvironmentPipelineStageATC',
-            'abapEnvironmentPipelineStagePost'
+            'abapEnvironmentPipelineStagePost',
+            'abapEnvironmentPipelineStageBuild',
+            'abapEnvironmentPipelineStageInitialChecks',
+            'abapEnvironmentPipelineStagePublish',
+            'abapEnvironmentPipelineStageConfirm',
+            'abapEnvironmentPipelineStageIntegrationTests'
         ))
     }
 }
