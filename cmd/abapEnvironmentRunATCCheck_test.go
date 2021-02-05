@@ -11,9 +11,7 @@ import (
 )
 
 func TestHostConfig(t *testing.T) {
-	t.Parallel()
 	t.Run("Check Host: ABAP Endpoint", func(t *testing.T) {
-		t.Parallel()
 		config := abaputils.AbapEnvironmentOptions{
 			Username: "testUser",
 			Password: "testPassword",
@@ -38,7 +36,6 @@ func TestHostConfig(t *testing.T) {
 		}
 	})
 	t.Run("No host/ServiceKey configuration", func(t *testing.T) {
-		t.Parallel()
 		//Testing without CfOrg parameter
 		config := abaputils.AbapEnvironmentOptions{
 			CfAPIEndpoint:     "https://api.endpoint.com",
@@ -69,7 +66,6 @@ func TestHostConfig(t *testing.T) {
 	})
 
 	t.Run("Check Host: CF Service Key", func(t *testing.T) {
-		t.Parallel()
 		config := abaputils.AbapEnvironmentOptions{
 			CfAPIEndpoint:     "https://api.endpoint.com",
 			CfSpace:           "testSpace",
@@ -121,9 +117,7 @@ func TestATCTrigger(t *testing.T) {
 }
 
 func TestFetchXcsrfToken(t *testing.T) {
-	t.Parallel()
 	t.Run("FetchXcsrfToken Test", func(t *testing.T) {
-		t.Parallel()
 		tokenExpected := "myToken"
 
 		client := &abaputils.ClientMock{
@@ -142,7 +136,6 @@ func TestFetchXcsrfToken(t *testing.T) {
 		}
 	})
 	t.Run("failure case: fetch token", func(t *testing.T) {
-		t.Parallel()
 		tokenExpected := ""
 
 		client := &abaputils.ClientMock{
@@ -303,9 +296,7 @@ func TestParseATCResult(t *testing.T) {
 }
 
 func TestBuildATCCheckBody(t *testing.T) {
-	t.Parallel()
 	t.Run("Test build body with no software component and package", func(t *testing.T) {
-		t.Parallel()
 		expectedpackagestring := ""
 		expectedsoftwarecomponentstring := ""
 		expectedcheckvariantstring := ""
@@ -322,7 +313,6 @@ func TestBuildATCCheckBody(t *testing.T) {
 		assert.EqualError(t, err, "Error while parsing ATC run config. Please provide the packages and/or the software components to be checked! No Package or Software Component specified. Please provide either one or both of them")
 	})
 	t.Run("success case: Test build body with example yaml config", func(t *testing.T) {
-		t.Parallel()
 		expectedcheckvariantstring := " checkVariant=\"SAP_CLOUD_PLATFORM_ATC_DEFAULT\""
 		expectedpackagestring := "<obj:packages><obj:package value=\"testPackage\" includeSubpackages=\"true\"/><obj:package value=\"testPackage2\" includeSubpackages=\"false\"/></obj:packages>"
 		expectedsoftwarecomponentstring := "<obj:softwarecomponents><obj:softwarecomponent value=\"testSoftwareComponent\"/><obj:softwarecomponent value=\"testSoftwareComponent2\"/></obj:softwarecomponents>"
@@ -355,7 +345,6 @@ func TestBuildATCCheckBody(t *testing.T) {
 		assert.Equal(t, nil, err)
 	})
 	t.Run("failure case: Test build body with example yaml config with only packages and no software components", func(t *testing.T) {
-		t.Parallel()
 		expectedcheckvariantstring := " checkVariant=\"SAP_CLOUD_PLATFORM_ATC_DEFAULT\""
 		expectedpackagestring := `<obj:packages><obj:package value="testPackage" includeSubpackages="true"/><obj:package value="testPackage2" includeSubpackages="false"/></obj:packages>`
 		expectedsoftwarecomponentstring := ""
@@ -385,7 +374,6 @@ func TestBuildATCCheckBody(t *testing.T) {
 
 	})
 	t.Run("success case: Test build body with example yaml config with no packages and only software components", func(t *testing.T) {
-		t.Parallel()
 		expectedcheckvariantstring := " checkVariant=\"SAP_CLOUD_PLATFORM_ATC_DEFAULT\""
 		expectedpackagestring := ""
 		expectedsoftwarecomponentstring := `<obj:softwarecomponents><obj:softwarecomponent value="testSoftwareComponent"/><obj:softwarecomponent value="testSoftwareComponent2"/></obj:softwarecomponents>`
@@ -414,7 +402,6 @@ func TestBuildATCCheckBody(t *testing.T) {
 		assert.Equal(t, nil, err)
 	})
 	t.Run("success case: Test build body with example yaml config with check variant configuration", func(t *testing.T) {
-		t.Parallel()
 		expectedcheckvariantstring := ` checkVariant="TestVariant" configuration="TestConfiguration"`
 		expectedpackagestring := `<obj:packages><obj:package value="testPackage" includeSubpackages="true"/><obj:package value="testPackage2" includeSubpackages="false"/></obj:packages>`
 		expectedsoftwarecomponentstring := `<obj:softwarecomponents><obj:softwarecomponent value="testSoftwareComponent"/><obj:softwarecomponent value="testSoftwareComponent2"/></obj:softwarecomponents>`
