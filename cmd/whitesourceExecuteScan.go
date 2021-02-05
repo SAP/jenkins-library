@@ -538,7 +538,9 @@ func createCustomVulnerabilityReport(config *ScanOptions, scan *ws.Scan, alerts 
 	severe, _ := countSecurityVulnerabilities(&alerts, cvssSeverityLimit)
 
 	// sort according to vulnarability severity
-	sort.Slice(alerts, func(i, j int) bool { return alerts[i].Vulnerability.Severity > alerts[j].Vulnerability.Severity })
+	sort.Slice(alerts, func(i, j int) bool {
+		return vulnerabilityScore(alerts[i]) > vulnerabilityScore(alerts[j])
+	})
 
 	projectNames := []string{}
 	for _, project := range scan.ScannedProjects() {
@@ -641,6 +643,13 @@ func createCustomVulnerabilityReport(config *ScanOptions, scan *ws.Scan, alerts 
 	// and there does not seem to be real benefit in archiving it.
 
 	return reportPaths, nil
+}
+
+func vulnerabilityScore(alert ws.Alert) float64 {
+	if alert.Vulnerability.CVSS3Score > 0 {
+		return alert.Vulnerability.CVSS3Score
+	}
+	return alert.Vulnerability.Score
 }
 
 func aggregateVersionWideLibraries(config *ScanOptions, utils whitesourceUtils, sys whitesource) error {
