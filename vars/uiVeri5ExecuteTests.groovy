@@ -18,6 +18,7 @@ import static com.sap.piper.Prerequisites.checkScript
     "gitBranch",
     "gitSshKeyCredentialsId",
     "testRepository",
+    "failOnError",
 ]
 
 void call(Map parameters = [:]) {
