@@ -36,6 +36,7 @@ type Client struct {
 	cookieJar                 http.CookieJar
 	doLogRequestBodyOnDebug   bool
 	doLogResponseBodyOnDebug  bool
+	useDefaultTransport       bool
 }
 
 // ClientOptions defines the options to be set on the client
@@ -57,6 +58,7 @@ type ClientOptions struct {
 	CookieJar                 http.CookieJar
 	DoLogRequestBodyOnDebug   bool
 	DoLogResponseBodyOnDebug  bool
+	UseDefaultTransport       bool
 }
 
 // TransportWrapper is a wrapper for central logging capabilities
@@ -196,6 +198,7 @@ func (c *Client) SendRequest(method, url string, body io.Reader, header http.Hea
 func (c *Client) SetOptions(options ClientOptions) {
 	c.doLogRequestBodyOnDebug = options.DoLogRequestBodyOnDebug
 	c.doLogResponseBodyOnDebug = options.DoLogResponseBodyOnDebug
+	c.useDefaultTransport = options.UseDefaultTransport
 	c.transportTimeout = options.TransportTimeout
 	c.transportSkipVerification = options.TransportSkipVerification
 	c.maxRequestDuration = options.MaxRequestDuration
@@ -237,14 +240,18 @@ func (c *Client) initialize() *http.Client {
 		retryClient := retryablehttp.NewClient()
 		retryClient.HTTPClient.Timeout = c.maxRequestDuration
 		retryClient.HTTPClient.Jar = c.cookieJar
-		retryClient.HTTPClient.Transport = transport
 		retryClient.RetryMax = c.maxRetries
+		if !c.useDefaultTransport {
+			retryClient.HTTPClient.Transport = transport
+		}
 		httpClient = retryClient.StandardClient()
 	} else {
 		httpClient = &http.Client{}
 		httpClient.Timeout = c.maxRequestDuration
 		httpClient.Jar = c.cookieJar
-		httpClient.Transport = transport
+		if !c.useDefaultTransport {
+			httpClient.Transport = transport
+		}
 	}
 
 	if c.transportSkipVerification {
