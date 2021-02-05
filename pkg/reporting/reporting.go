@@ -13,7 +13,7 @@ import (
 type ScanReport struct {
 	StepName       string          `json:"stepName"`
 	Title          string          `json:"title"`
-	Subheaders     []subheader     `json:"subheaders"`
+	Subheaders     []Subheader     `json:"subheaders"`
 	Overview       []OverviewRow   `json:"overview"`
 	FurtherInfo    string          `json:"furtherInfo"`
 	ReportTime     time.Time       `json:"reportTime"`
@@ -33,6 +33,13 @@ type ScanDetailTable struct {
 // ScanRow defines one row of a scan result table
 type ScanRow struct {
 	Columns []ScanCell `json:"columns"`
+}
+
+func (s *ScanRow) AddColumn(content interface{}, style ColumnStyle) {
+	if s.Columns == nil {
+		s.Columns = []ScanCell{}
+	}
+	s.Columns = append(s.Columns, ScanCell{Content: fmt.Sprint(content), Style: style})
 }
 
 // ScanCell defines one column of a scan result table
@@ -63,15 +70,18 @@ type OverviewRow struct {
 	Style       ColumnStyle `json:"style,omitempty"`
 }
 
-type subheader struct {
-	Text    string `json:"text"`
-	Details string `json:"details,omitempty"`
+type Subheader struct {
+	Description string `json:"text"`
+	Details     string `json:"details,omitempty"`
 }
 
 // AddSubHeader adds a sub header to the report containing of a text/title plus optional details
 func (s *ScanReport) AddSubHeader(header, details string) {
-	s.Subheaders = append(s.Subheaders, subheader{Text: header, Details: details})
+	s.Subheaders = append(s.Subheaders, Subheader{Description: header, Details: details})
 }
+
+// MarkdownReportDirectory specifies the default directory for markdown reports which can later be collected by step pipelineCreateSummary
+const MarkdownReportDirectory = ".pipeline/stepReports"
 
 const reportHTMLTemplate = `<!DOCTYPE html>
 <html>

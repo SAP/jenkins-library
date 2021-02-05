@@ -176,7 +176,6 @@ func TestRunWhitesourceExecuteScan(t *testing.T) {
 			BuildDescriptorFile:       "my-mta.yml",
 			VersioningModel:           "major",
 			AgentDownloadURL:          "https://whitesource.com/agent.jar",
-			ReportDirectoryName:       "ws-reports",
 			VulnerabilityReportFormat: "pdf",
 			Reporting:                 true,
 			AgentFileName:             "ua.jar",
@@ -207,8 +206,8 @@ func TestRunWhitesourceExecuteScan(t *testing.T) {
 		if assert.Len(t, cpe.custom.whitesourceProjectNames, 1) {
 			assert.Equal(t, []string{"mock-project - 1"}, cpe.custom.whitesourceProjectNames)
 		}
-		assert.True(t, utilsMock.HasWrittenFile("ws-reports/mock-project - 1-vulnerability-report.pdf"))
-		assert.True(t, utilsMock.HasWrittenFile("ws-reports/mock-project - 1-risk-report.pdf"))
+		assert.True(t, utilsMock.HasWrittenFile(filepath.Join(ws.ReportsDirectory, "mock-project - 1-vulnerability-report.pdf")))
+		assert.True(t, utilsMock.HasWrittenFile(filepath.Join(ws.ReportsDirectory, "mock-project - 1-vulnerability-report.pdf")))
 	})
 }
 
@@ -264,16 +263,15 @@ func TestAggregateVersionWideLibraries(t *testing.T) {
 	t.Run("happy path", func(t *testing.T) {
 		// init
 		config := &ScanOptions{
-			ProductToken:        "mock-product-token",
-			ProductVersion:      "1",
-			ReportDirectoryName: "mock-reports",
+			ProductToken:   "mock-product-token",
+			ProductVersion: "1",
 		}
 		utils := newWhitesourceUtilsMock()
 		system := ws.NewSystemMock("2010-05-30 00:15:00 +0100")
 		// test
 		err := aggregateVersionWideLibraries(config, utils, system)
 		// assert
-		resource := filepath.Join("mock-reports", "libraries-20100510-001542.csv")
+		resource := filepath.Join(ws.ReportsDirectory, "libraries-20100510-001542.csv")
 		if assert.NoError(t, err) && assert.True(t, utils.HasWrittenFile(resource)) {
 			contents, _ := utils.FileRead(resource)
 			asString := string(contents)
@@ -287,23 +285,22 @@ func TestAggregateVersionWideVulnerabilities(t *testing.T) {
 	t.Run("happy path", func(t *testing.T) {
 		// init
 		config := &ScanOptions{
-			ProductToken:        "mock-product-token",
-			ProductVersion:      "1",
-			ReportDirectoryName: "mock-reports",
+			ProductToken:   "mock-product-token",
+			ProductVersion: "1",
 		}
 		utils := newWhitesourceUtilsMock()
 		system := ws.NewSystemMock("2010-05-30 00:15:00 +0100")
 		// test
 		err := aggregateVersionWideVulnerabilities(config, utils, system)
 		// assert
-		resource := filepath.Join("mock-reports", "project-names-aggregated.txt")
+		resource := filepath.Join(ws.ReportsDirectory, "project-names-aggregated.txt")
 		assert.NoError(t, err)
 		if assert.True(t, utils.HasWrittenFile(resource)) {
 			contents, _ := utils.FileRead(resource)
 			asString := string(contents)
 			assert.Equal(t, "mock-project - 1\n", asString)
 		}
-		reportSheet := filepath.Join("mock-reports", "vulnerabilities-20100510-001542.xlsx")
+		reportSheet := filepath.Join(ws.ReportsDirectory, "vulnerabilities-20100510-001542.xlsx")
 		sheetContents, err := utils.FileRead(reportSheet)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, sheetContents)
@@ -315,10 +312,9 @@ func TestCheckAndReportScanResults(t *testing.T) {
 	t.Run("no reports requested", func(t *testing.T) {
 		// init
 		config := &ScanOptions{
-			ProductToken:        "mock-product-token",
-			ProjectToken:        "mock-project-token",
-			ProductVersion:      "1",
-			ReportDirectoryName: "mock-reports",
+			ProductToken:   "mock-product-token",
+			ProjectToken:   "mock-project-token",
+			ProductVersion: "1",
 		}
 		scan := newWhitesourceScan(config)
 		utils := newWhitesourceUtilsMock()
@@ -327,9 +323,9 @@ func TestCheckAndReportScanResults(t *testing.T) {
 		err := checkAndReportScanResults(config, scan, utils, system)
 		// assert
 		assert.NoError(t, err)
-		vPath := filepath.Join("mock-reports", "mock-project-vulnerability-report.txt")
+		vPath := filepath.Join(ws.ReportsDirectory, "mock-project-vulnerability-report.txt")
 		assert.False(t, utils.HasWrittenFile(vPath))
-		rPath := filepath.Join("mock-reports", "mock-project-risk-report.pdf")
+		rPath := filepath.Join(ws.ReportsDirectory, "mock-project-risk-report.pdf")
 		assert.False(t, utils.HasWrittenFile(rPath))
 	})
 	t.Run("check vulnerabilities - invalid limit", func(t *testing.T) {
@@ -352,7 +348,6 @@ func TestCheckAndReportScanResults(t *testing.T) {
 			ProductToken:            "mock-product-token",
 			ProjectToken:            "mock-project-token",
 			ProductVersion:          "1",
-			ReportDirectoryName:     "mock-reports",
 			SecurityVulnerabilities: true,
 			CvssSeverityLimit:       "6.0",
 		}
@@ -371,7 +366,6 @@ func TestCheckAndReportScanResults(t *testing.T) {
 			ProjectName:             "mock-project - 1",
 			ProjectToken:            "mock-project-token",
 			ProductVersion:          "1",
-			ReportDirectoryName:     "mock-reports",
 			SecurityVulnerabilities: true,
 			CvssSeverityLimit:       "4",
 		}

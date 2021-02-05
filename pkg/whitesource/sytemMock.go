@@ -14,6 +14,7 @@ type SystemMock struct {
 	Products            []Product
 	Projects            []Project
 	Alerts              []Alert
+	AlertType           string
 	Libraries           []Library
 	RiskReport          []byte
 	VulnerabilityReport []byte
@@ -104,6 +105,12 @@ func (m *SystemMock) GetProjectVulnerabilityReport(projectToken string, format s
 
 // GetProjectAlerts returns the alerts stored in the SystemMock.
 func (m *SystemMock) GetProjectAlerts(projectToken string) ([]Alert, error) {
+	return m.Alerts, nil
+}
+
+// GetProjectAlertsByType returns the alerts stored in the SystemMock and records the type.
+func (m *SystemMock) GetProjectAlertsByType(projectToken, alertType string) ([]Alert, error) {
+	m.AlertType = alertType
 	return m.Alerts, nil
 }
 

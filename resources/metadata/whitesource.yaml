@@ -267,14 +267,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: reportDirectoryName
-        type: string
-        description: "Name of the directory to save vulnerability/risk reports to"
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        default: "whitesource-reports"
       - name: reporting
         type: bool
         description: "Whether assessment is being done at all, defaults to `true`"

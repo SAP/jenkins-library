@@ -13,6 +13,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+const ReportsDirectory = "whitesource-reports"
+
 // Product defines a WhiteSource product with name and token
 type Product struct {
 	Name           string `json:"name"`
@@ -48,24 +50,41 @@ type Alert struct {
 
 // Library
 type Library struct {
-	Name     string `json:"name,omitempty"`
-	Filename string `json:"filename,omitempty"`
-	Version  string `json:"version,omitempty"`
-	Project  string `json:"project,omitempty"`
+	Name       string `json:"name,omitempty"`
+	Filename   string `json:"filename,omitempty"`
+	ArtifactID string `json:"artifactId,omitempty"`
+	GroupID    string `json:"groupId,omitempty"`
+	Version    string `json:"version,omitempty"`
+	Project    string `json:"project,omitempty"`
 }
 
-// Vulnerability
+// Vulnerability defines a vulnerability as returned by WhiteSource
 type Vulnerability struct {
 	Name              string  `json:"name,omitempty"`
 	Type              string  `json:"type,omitempty"`
-	Level             string  `json:"level,omitempty"`
-	Description       string  `json:"description,omitempty"`
 	Severity          string  `json:"severity,omitempty"`
+	Score             float64 `json:"score,omitempty"`
 	CVSS3Severity     string  `json:"cvss3_severity,omitempty"`
 	CVSS3Score        float64 `json:"cvss3_score,omitempty"`
-	Score             float64 `json:"score,omitempty"`
-	FixResolutionText string  `json:"fixResolutionText,omitempty"`
 	PublishDate       string  `json:"publishDate,omitempty"`
+	URL               string  `json:"url,omitempty"`
+	Description       string  `json:"description,omitempty"`
+	TopFix            Fix     `json:"topFix,omitempty"`
+	AllFixes          []Fix   `json:"allFixes,omitempty"`
+	Level             string  `json:"level,omitempty"`
+	FixResolutionText string  `json:"fixResolutionText,omitempty"`
+}
+
+// Fix defines a Fix as returned by WhiteSource
+type Fix struct {
+	Vulnerability string `json:"vulnerability,omitempty"`
+	Type          string `json:"type,omitempty"`
+	Origin        string `json:"origin,omitempty"`
+	URL           string `json:"url,omitempty"`
+	FixResolution string `json:"fixResolution,omitempty"`
+	Date          string `json:"date,omitempty"`
+	Message       string `json:"message,omitempty"`
+	ExtraData     string `json:"extraData,omitempty"`
 }
 
 // Project defines a WhiteSource project with name and token
@@ -88,6 +107,7 @@ type Request struct {
 	ProjectToken         string      `json:"projectToken,omitempty"`
 	OrgToken             string      `json:"orgToken,omitempty"`
 	Format               string      `json:"format,omitempty"`
+	AlertType            string      `json:"alertType,omitempty"`
 	ProductAdmins        *Assignment `json:"productAdmins,omitempty"`
 	ProductMembership    *Assignment `json:"productMembership,omitempty"`
 	AlertsEmailReceivers *Assignment `json:"alertsEmailReceivers,omitempty"`
@@ -370,6 +390,28 @@ func (s *System) GetProjectAlerts(projectToken string) ([]Alert, error) {
 	req := Request{
 		RequestType:  "getProjectAlerts",
 		ProjectToken: projectToken,
+	}
+
+	err := s.sendRequestAndDecodeJSON(req, &wsResponse)
+	if err != nil {
+		return nil, errors.Wrap(err, "WhiteSource request failed")
+	}
+
+	return wsResponse.Alerts, nil
+}
+
+// GetProjectAlertsByType returns all alerts of a certain type for a given project
+func (s *System) GetProjectAlertsByType(projectToken, alertType string) ([]Alert, error) {
+	wsResponse := struct {
+		Alerts []Alert `json:"alerts"`
+	}{
+		Alerts: []Alert{},
+	}
+
+	req := Request{
+		RequestType:  "getProjectAlertsByType",
+		ProjectToken: projectToken,
+		AlertType:    alertType,
 	}
 
 	err := s.sendRequestAndDecodeJSON(req, &wsResponse)

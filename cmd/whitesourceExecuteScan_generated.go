@@ -40,7 +40,6 @@ type whitesourceExecuteScanOptions struct {
 	ProductVersion                       string   `json:"productVersion,omitempty"`
 	ProjectName                          string   `json:"projectName,omitempty"`
 	ProjectToken                         string   `json:"projectToken,omitempty"`
-	ReportDirectoryName                  string   `json:"reportDirectoryName,omitempty"`
 	Reporting                            bool     `json:"reporting,omitempty"`
 	ScanImage                            string   `json:"scanImage,omitempty"`
 	ScanImageIncludeLayers               bool     `json:"scanImageIncludeLayers,omitempty"`
@@ -182,7 +181,6 @@ func addWhitesourceExecuteScanFlags(cmd *cobra.Command, stepConfig *whitesourceE
 	cmd.Flags().StringVar(&stepConfig.ProductVersion, "productVersion", os.Getenv("PIPER_productVersion"), "Version of the WhiteSource product to be created and used for results aggregation.")
 	cmd.Flags().StringVar(&stepConfig.ProjectName, "projectName", os.Getenv("PIPER_projectName"), "The project name used for reporting results in WhiteSource. When provided, all source modules will be scanned into one aggregated WhiteSource project. For scan types `maven`, `mta`, `npm`, the default is to generate one WhiteSource project per module, whereas the project name is derived from the module's build descriptor. For NPM modules, project aggregation is not supported, the last scanned NPM module will override all previously aggregated scan results!")
 	cmd.Flags().StringVar(&stepConfig.ProjectToken, "projectToken", os.Getenv("PIPER_projectToken"), "Project token to execute scan on. Ignored for scan types `maven`, `mta` and `npm`. Used for project aggregation when scanning with the Unified Agent and can be provided as an alternative to `projectName`.")
-	cmd.Flags().StringVar(&stepConfig.ReportDirectoryName, "reportDirectoryName", `whitesource-reports`, "Name of the directory to save vulnerability/risk reports to")
 	cmd.Flags().BoolVar(&stepConfig.Reporting, "reporting", true, "Whether assessment is being done at all, defaults to `true`")
 	cmd.Flags().StringVar(&stepConfig.ScanImage, "scanImage", os.Getenv("PIPER_scanImage"), "For `buildTool: docker`: Defines the docker image which should be scanned.")
 	cmd.Flags().BoolVar(&stepConfig.ScanImageIncludeLayers, "scanImageIncludeLayers", true, "For `buildTool: docker`: Defines if layers should be included.")
@@ -415,14 +413,6 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Name:        "projectToken",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "reportDirectoryName",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},

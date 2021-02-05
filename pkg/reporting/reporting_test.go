@@ -11,7 +11,7 @@ func TestToHTML(t *testing.T) {
 	t.Run("empty table", func(t *testing.T) {
 		report := ScanReport{
 			Title:      "Report Test Title",
-			Subheaders: []subheader{{Text: "sub 1", Details: "1"}, {Text: "sub 2", Details: "2"}},
+			Subheaders: []Subheader{{Description: "sub 1", Details: "1"}, {Description: "sub 2", Details: "2"}},
 			Overview: []OverviewRow{
 				{"overview 1", "1", Green},
 				{"overview 2", "2", Green},
