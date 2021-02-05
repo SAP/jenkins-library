@@ -132,7 +132,7 @@ func GetIntegrationArtifactGetMplStatusCommandMockResponse(testType string) (*ht
 
 //GetIntegrationArtifactGetServiceEndpointCommandMockResponse -Provide http respose body
 func GetIntegrationArtifactGetServiceEndpointCommandMockResponse(testType string) (*http.Response, error) {
-	if testType == "Positive" {
+	if testType == "PositiveAndGetetIntegrationArtifactGetServiceResBody" {
 		res := http.Response{
 			StatusCode: 200,
 			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
@@ -146,12 +146,6 @@ func GetIntegrationArtifactGetServiceEndpointCommandMockResponse(testType string
 							},
 							"Name": "CPI_IFlow_Call_using_Cert",
 							"Id": "CPI_IFlow_Call_using_Cert$endpointAddress=testwithcert",
-							"Title": "CPI_IFlow_Call_using_Cert",
-							"Version": "1.0.0",
-							"Summary": "CPI IFlow Call using Cert",
-							"Description": "CPI IFlow Call using Cert",
-							"LastUpdated": "/Date(1602150925645)/",
-							"Protocol": "REST",
 							"EntryPoints": {
 								"results": [
 									{
@@ -166,11 +160,6 @@ func GetIntegrationArtifactGetServiceEndpointCommandMockResponse(testType string
 										"AdditionalInformation": ""
 									}
 								]
-							},
-							"ApiDefinitions": {
-								"__deferred": {
-									"uri": "https://demo.cfapps.sap.hana.ondemand.com:443/api/v1/ServiceEndpoints('CPI_IFlow_Call_using_Cert%24endpointAddress%3Dtestwithcert')/ApiDefinitions"
-								}
 							}
 						}
 					]

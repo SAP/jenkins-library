@@ -33,7 +33,7 @@ func TestRunIntegrationArtifactGetServiceEndpoint(t *testing.T) {
 			Platform:              "cf",
 		}
 
-		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactGetServiceEndpoint", ResponseBody: ``, TestType: "Positive"}
+		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactGetServiceEndpoint", ResponseBody: ``, TestType: "PositiveAndGetetIntegrationArtifactGetServiceResBody"}
 		seOut := integrationArtifactGetServiceEndpointCommonPipelineEnvironment{}
 		err := runIntegrationArtifactGetServiceEndpoint(&config, nil, &httpClient, &seOut)
 		assert.EqualValues(t, seOut.custom.iFlowServiceEndpoint, "https://demo.cfapps.sap.hana.ondemand.com/http/testwithcert")
