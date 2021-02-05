@@ -618,6 +618,7 @@ func createCustomVulnerabilityReport(config *ScanOptions, scan *ws.Scan, alerts 
 
 	// ignore templating errors since template is in our hands and issues will be detected with the automated tests
 	htmlReport, err := scanReport.ToHTML()
+	//ToDo: remove again, just for debugging ...
 	if err != nil {
 		return reportPaths, errors.Wrapf(err, "failed to write html report")
 	}
