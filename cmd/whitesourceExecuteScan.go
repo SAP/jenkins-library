@@ -615,6 +615,7 @@ func createCustomVulnerabilityReport(config *ScanOptions, scan *ws.Scan, alerts 
 
 		detailTable.Rows = append(detailTable.Rows, row)
 	}
+	scanReport.DetailTable = detailTable
 
 	// ignore templating errors since template is in our hands and issues will be detected with the automated tests
 	htmlReport, err := scanReport.ToHTML()
