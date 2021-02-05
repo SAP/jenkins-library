@@ -62,7 +62,6 @@ func integrationArtifactGetServiceEndpoint(config integrationArtifactGetServiceE
 
 func runIntegrationArtifactGetServiceEndpoint(config *integrationArtifactGetServiceEndpointOptions, telemetryData *telemetry.CustomData, httpClient piperhttp.Sender, commonPipelineEnvironment *integrationArtifactGetServiceEndpointCommonPipelineEnvironment) error {
 	clientOptions := piperhttp.ClientOptions{}
-	httpClient.SetOptions(clientOptions)
 	header := make(http.Header)
 	header.Add("Accept", "application/json")
 
@@ -94,12 +93,12 @@ func runIntegrationArtifactGetServiceEndpoint(config *integrationArtifactGetServ
 		if readErr != nil {
 			return errors.Wrap(readErr, "HTTP response body could not be read")
 		}
-		jsonresponse, parsingErr := gabs.ParseJSON([]byte(bodyText))
+		jsonResponse, parsingErr := gabs.ParseJSON([]byte(bodyText))
 		if parsingErr != nil {
 			return errors.Wrapf(parsingErr, "HTTP response body could not be parsed as JSON: %v", string(bodyText))
 		}
 
-		for _, child := range jsonresponse.S("d", "results").Children() {
+		for _, child := range jsonResponse.S("d", "results").Children() {
 			iflowID := strings.ReplaceAll(child.Path("Name").String(), "\"", "")
 			if iflowID == config.IntegrationFlowID {
 				entryPoints := child.S("EntryPoints")
