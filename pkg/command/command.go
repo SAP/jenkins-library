@@ -72,12 +72,12 @@ func (c *Command) Stderr(stderr io.Writer) {
 	c.stderr = stderr
 }
 
-// GetStdout ...
+// GetStdout Returns the writer for stdout
 func (c *Command) GetStdout() io.Writer {
 	return c.stdout
 }
 
-//GetStderr ...
+//GetStderr Retursn the writer for stderr
 func(c *Command) GetStderr() io.Writer {
 	return c.stderr
 }
