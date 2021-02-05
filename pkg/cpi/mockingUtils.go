@@ -48,6 +48,8 @@ func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, 
 		return &res, errors.New("Not found - either wrong version for the given Id or wrong parameter key")
 	case "IntegrationArtifactGetMplStatus":
 		return GetIntegrationArtifactGetMplStatusCommandMockResponse(testType)
+	case "IntegrationArtifactGetServiceEndpoint":
+		return GetIntegrationArtifactGetServiceEndpointCommandMockResponse(testType)
 	default:
 		res := http.Response{
 			StatusCode: 404,
@@ -126,4 +128,66 @@ func GetIntegrationArtifactGetMplStatusCommandMockResponse(testType string) (*ht
 				}`))),
 	}
 	return &res, errors.New("Unable to get integration flow MPL status, Response Status code:400")
+}
+
+//GetIntegrationArtifactGetServiceEndpointCommandMockResponse -Provide http respose body
+func GetIntegrationArtifactGetServiceEndpointCommandMockResponse(testType string) (*http.Response, error) {
+	if testType == "Positive" {
+		res := http.Response{
+			StatusCode: 200,
+			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+				"d": {
+					"results": [
+						{
+							"__metadata": {
+								"id": "https://demo.cfapps.sap.hana.ondemand.com:443/api/v1/ServiceEndpoints('CPI_IFlow_Call_using_Cert%24endpointAddress%3Dtestwithcert')",
+								"uri": "https://demo.cfapps.sap.hana.ondemand.com:443/api/v1/ServiceEndpoints('CPI_IFlow_Call_using_Cert%24endpointAddress%3Dtestwithcert')",
+								"type": "com.sap.hci.api.ServiceEndpoint"
+							},
+							"Name": "CPI_IFlow_Call_using_Cert",
+							"Id": "CPI_IFlow_Call_using_Cert$endpointAddress=testwithcert",
+							"Title": "CPI_IFlow_Call_using_Cert",
+							"Version": "1.0.0",
+							"Summary": "CPI IFlow Call using Cert",
+							"Description": "CPI IFlow Call using Cert",
+							"LastUpdated": "/Date(1602150925645)/",
+							"Protocol": "REST",
+							"EntryPoints": {
+								"results": [
+									{
+										"__metadata": {
+											"id": "https://demo.cfapps.sap.hana.ondemand.com:443/api/v1/EntryPoints('https%3A%2F%2Froverpoc.it-accd002-rt.cfapps.sap.hana.ondemand.com%2Fhttp%2Ftestwithcert')",
+											"uri": "https://demo.cfapps.sap.hana.ondemand.com:443/api/v1/EntryPoints('https%3A%2F%2Froverpoc.it-accd002-rt.cfapps.sap.hana.ondemand.com%2Fhttp%2Ftestwithcert')",
+											"type": "com.sap.hci.api.EntryPoint"
+										},
+										"Name": "CPI_IFlow_Call_using_Cert",
+										"Url": "https://demo.cfapps.sap.hana.ondemand.com/http/testwithcert",
+										"Type": "PROD",
+										"AdditionalInformation": ""
+									}
+								]
+							},
+							"ApiDefinitions": {
+								"__deferred": {
+									"uri": "https://demo.cfapps.sap.hana.ondemand.com:443/api/v1/ServiceEndpoints('CPI_IFlow_Call_using_Cert%24endpointAddress%3Dtestwithcert')/ApiDefinitions"
+								}
+							}
+						}
+					]
+				}
+			}`))),
+		}
+		return &res, nil
+	}
+	res := http.Response{
+		StatusCode: 400,
+		Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+					"code": "Bad Request",
+					"message": {
+					"@lang": "en",
+					"#text": "invalid service endpoint query"
+					}
+				}`))),
+	}
+	return &res, errors.New("Unable to get integration flow service endpoint, Response Status code:400")
 }

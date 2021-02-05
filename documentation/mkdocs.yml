@@ -102,6 +102,7 @@ nav:
         - influxWriteData: steps/influxWriteData.md
         - integrationArtifactDeploy: steps/integrationArtifactDeploy.md
         - integrationArtifactGetMplStatus: steps/integrationArtifactGetMplStatus.md
+        - integrationArtifactGetServiceEndpoint: steps/integrationArtifactGetServiceEndpoint.md
         - integrationArtifactUpdateConfiguration: steps/integrationArtifactUpdateConfiguration.md
         - jenkinsMaterializeLog: steps/jenkinsMaterializeLog.md
         - kanikoExecute: steps/kanikoExecute.md
