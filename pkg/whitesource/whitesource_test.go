@@ -75,7 +75,7 @@ func TestCreateProduct(t *testing.T) {
 		// test
 		productToken, err := sys.CreateProduct("test_product_name")
 		// assert
-		assert.EqualError(t, err, "WhiteSource request failed: invalid request, error code 5001, message 'User is not allowed to perform this action'")
+		assert.EqualError(t, err, "invalid request, error code 5001, message 'User is not allowed to perform this action'")
 		requestBody, err := ioutil.ReadAll(myTestClient.requestBody)
 		require.NoError(t, err)
 		assert.Equal(t, "", productToken)
