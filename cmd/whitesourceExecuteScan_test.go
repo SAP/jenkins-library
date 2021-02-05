@@ -320,7 +320,7 @@ func TestCheckAndReportScanResults(t *testing.T) {
 		utils := newWhitesourceUtilsMock()
 		system := ws.NewSystemMock(time.Now().Format(ws.DateTimeLayout))
 		// test
-		err := checkAndReportScanResults(config, scan, utils, system)
+		_, err := checkAndReportScanResults(config, scan, utils, system)
 		// assert
 		assert.NoError(t, err)
 		vPath := filepath.Join(ws.ReportsDirectory, "mock-project-vulnerability-report.txt")
@@ -338,7 +338,7 @@ func TestCheckAndReportScanResults(t *testing.T) {
 		utils := newWhitesourceUtilsMock()
 		system := ws.NewSystemMock(time.Now().Format(ws.DateTimeLayout))
 		// test
-		err := checkAndReportScanResults(config, scan, utils, system)
+		_, err := checkAndReportScanResults(config, scan, utils, system)
 		// assert
 		assert.EqualError(t, err, "failed to parse parameter cvssSeverityLimit (invalid) as floating point number: strconv.ParseFloat: parsing \"invalid\": invalid syntax")
 	})
@@ -355,7 +355,7 @@ func TestCheckAndReportScanResults(t *testing.T) {
 		utils := newWhitesourceUtilsMock()
 		system := ws.NewSystemMock(time.Now().Format(ws.DateTimeLayout))
 		// test
-		err := checkAndReportScanResults(config, scan, utils, system)
+		_, err := checkAndReportScanResults(config, scan, utils, system)
 		// assert
 		assert.NoError(t, err)
 	})
@@ -373,7 +373,7 @@ func TestCheckAndReportScanResults(t *testing.T) {
 		utils := newWhitesourceUtilsMock()
 		system := ws.NewSystemMock(time.Now().Format(ws.DateTimeLayout))
 		// test
-		err := checkAndReportScanResults(config, scan, utils, system)
+		_, err := checkAndReportScanResults(config, scan, utils, system)
 		// assert
 		assert.EqualError(t, err, "1 Open Source Software Security vulnerabilities with CVSS score greater or equal to 4.0 detected in project mock-project - 1")
 	})

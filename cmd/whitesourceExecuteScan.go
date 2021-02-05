@@ -188,44 +188,47 @@ func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUti
 	}
 	log.Entry().Info("-----------------------------------------------------")
 
-	if err := checkAndReportScanResults(config, scan, utils, sys); err != nil {
+	paths, err := checkAndReportScanResults(config, scan, utils, sys)
+	piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", paths, nil)
+	persistScannedProjects(config, scan, commonPipelineEnvironment)
+	if err != nil {
 		return err
 	}
-
-	persistScannedProjects(config, scan, commonPipelineEnvironment)
-
 	return nil
 }
 
-func checkAndReportScanResults(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource) error {
+func checkAndReportScanResults(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource) ([]piperutils.Path, error) {
+	reportPaths := []piperutils.Path{}
 	if !config.Reporting && !config.SecurityVulnerabilities {
-		return nil
+		return reportPaths, nil
 	}
 	// Wait for WhiteSource backend to propagate the changes before downloading any reports.
 	if err := scan.BlockUntilReportsAreReady(sys); err != nil {
-		return err
+		return reportPaths, err
 	}
 
 	if config.Reporting {
-		paths, err := scan.DownloadReports(ws.ReportOptions{
+		var err error
+		reportPaths, err = scan.DownloadReports(ws.ReportOptions{
 			ReportDirectory:           ws.ReportsDirectory,
 			VulnerabilityReportFormat: config.VulnerabilityReportFormat,
 		}, utils, sys)
 		if err != nil {
-			return err
+			return reportPaths, err
 		}
-		piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", paths, nil)
 	}
 
 	// ToDo: create policy violations report
 	// formerly checkPolicies() in step.groovy
 
 	if config.SecurityVulnerabilities {
-		if err := checkSecurityViolations(config, scan, sys, utils); err != nil {
-			return err
+		rPaths, err := checkSecurityViolations(config, scan, sys, utils)
+		reportPaths = append(reportPaths, rPaths...)
+		if err != nil {
+			return reportPaths, err
 		}
 	}
-	return nil
+	return reportPaths, nil
 }
 
 func createWhiteSourceProduct(config *ScanOptions, sys whitesource) (string, error) {
@@ -435,13 +438,14 @@ func executeScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils) err
 	return nil
 }
 
-func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource, utils whitesourceUtils) error {
+func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource, utils whitesourceUtils) ([]piperutils.Path, error) {
+	var reportPaths []piperutils.Path
 	// Check for security vulnerabilities and fail the build if cvssSeverityLimit threshold is crossed
 	// convert config.CvssSeverityLimit to float64
 	cvssSeverityLimit, err := strconv.ParseFloat(config.CvssSeverityLimit, 64)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return fmt.Errorf("failed to parse parameter cvssSeverityLimit (%s) "+
+		return reportPaths, fmt.Errorf("failed to parse parameter cvssSeverityLimit (%s) "+
 			"as floating point number: %w", config.CvssSeverityLimit, err)
 	}
 
@@ -450,7 +454,7 @@ func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource
 		// ToDo: see if HTML report generation is really required here
 		// we anyway need to do some refactoring here since config.ProjectToken != "" essentially indicates an aggregated project
 		if _, _, err := checkProjectSecurityViolations(cvssSeverityLimit, project, sys); err != nil {
-			return err
+			return reportPaths, err
 		}
 	} else {
 		vulnerabilitiesCount := 0
@@ -465,7 +469,8 @@ func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource
 			}
 		}
 
-		if err := createCustomVulnerabilityReport(config, scan, allAlerts, cvssSeverityLimit, utils); err != nil {
+		reportPaths, err = createCustomVulnerabilityReport(config, scan, allAlerts, cvssSeverityLimit, utils)
+		if err != nil {
 			errorsOccured = append(errorsOccured, fmt.Sprint(err))
 		}
 
@@ -473,10 +478,10 @@ func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource
 			if vulnerabilitiesCount > 0 {
 				log.SetErrorCategory(log.ErrorCompliance)
 			}
-			return fmt.Errorf(strings.Join(errorsOccured, ": "))
+			return reportPaths, fmt.Errorf(strings.Join(errorsOccured, ": "))
 		}
 	}
-	return nil
+	return reportPaths, nil
 }
 
 // checkSecurityViolations checks security violations and returns an error if the configured severity limit is crossed.
@@ -526,7 +531,9 @@ func isSevereVulnerability(alert ws.Alert, cvssSeverityLimit float64) bool {
 	return false
 }
 
-func createCustomVulnerabilityReport(config *ScanOptions, scan *ws.Scan, alerts []ws.Alert, cvssSeverityLimit float64, utils whitesourceUtils) error {
+func createCustomVulnerabilityReport(config *ScanOptions, scan *ws.Scan, alerts []ws.Alert, cvssSeverityLimit float64, utils whitesourceUtils) ([]piperutils.Path, error) {
+
+	reportPaths := []piperutils.Path{}
 
 	severe, _ := countSecurityVulnerabilities(&alerts, cvssSeverityLimit)
 
@@ -611,19 +618,24 @@ func createCustomVulnerabilityReport(config *ScanOptions, scan *ws.Scan, alerts 
 
 	// ignore templating errors since template is in our hands and issues will be detected with the automated tests
 	htmlReport, _ := scanReport.ToHTML()
-	if err := utils.FileWrite(filepath.Join(ws.ReportsDirectory, "piper_whitesource_vulnerability_report.html"), htmlReport, 0666); err != nil {
+	htmlReportPath := filepath.Join(ws.ReportsDirectory, "piper_whitesource_vulnerability_report.html")
+	if err := utils.FileWrite(htmlReportPath, htmlReport, 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.Wrapf(err, "failed to write html report")
+		return reportPaths, errors.Wrapf(err, "failed to write html report")
 	}
+	reportPaths = append(reportPaths, piperutils.Path{Name: "WhiteSource Vulnerability Report", Target: htmlReportPath})
 
 	// markdown reports are used by step pipelineCreateSummary in order to e.g. prepare an issue creation in GitHub
 	mdReport := scanReport.ToMarkdown()
 	if err := utils.FileWrite(filepath.Join(reporting.MarkdownReportDirectory, fmt.Sprintf("whitesourceExecuteScan_%v.md", time.Now().Format("20060102150405"))), mdReport, 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.Wrapf(err, "failed to write markdown report")
+		return reportPaths, errors.Wrapf(err, "failed to write markdown report")
 	}
+	// we do not add the markdown report to the overall list of reports for now,
+	// since it is just an intermediary report used as input for later
+	// and there does not seem to be real benefit in archiving it.
 
-	return nil
+	return reportPaths, nil
 }
 
 func aggregateVersionWideLibraries(config *ScanOptions, utils whitesourceUtils, sys whitesource) error {
