@@ -152,7 +152,7 @@ func (s *System) GetProductsMetaInfo() ([]Product, error) {
 
 	err := s.sendRequestAndDecodeJSON(req, &wsResponse)
 	if err != nil {
-		return wsResponse.ProductVitals, errors.Wrap(err, "WhiteSource request failed")
+		return wsResponse.ProductVitals, err
 	}
 
 	return wsResponse.ProductVitals, nil
@@ -189,7 +189,7 @@ func (s *System) CreateProduct(productName string) (string, error) {
 
 	err := s.sendRequestAndDecodeJSON(req, &wsResponse)
 	if err != nil {
-		return "", errors.Wrap(err, "WhiteSource request failed")
+		return "", err
 	}
 
 	return wsResponse.ProductToken, nil
@@ -207,7 +207,7 @@ func (s *System) SetProductAssignments(productToken string, membership, admins, 
 
 	err := s.sendRequestAndDecodeJSON(req, nil)
 	if err != nil {
-		return errors.Wrap(err, "WhiteSource request failed")
+		return err
 	}
 
 	return nil
@@ -228,7 +228,7 @@ func (s *System) GetProjectsMetaInfo(productToken string) ([]Project, error) {
 
 	err := s.sendRequestAndDecodeJSON(req, &wsResponse)
 	if err != nil {
-		return nil, errors.Wrap(err, "WhiteSource request failed")
+		return nil, err
 	}
 
 	return wsResponse.ProjectVitals, nil
@@ -258,7 +258,7 @@ func (s *System) GetProjectByToken(projectToken string) (Project, error) {
 
 	err := s.sendRequestAndDecodeJSON(req, &wsResponse)
 	if err != nil {
-		return Project{}, errors.Wrap(err, "WhiteSource request failed")
+		return Project{}, err
 	}
 
 	if len(wsResponse.ProjectVitals) == 0 {
@@ -338,7 +338,7 @@ func (s *System) GetProductName(productToken string) (string, error) {
 
 	err := s.sendRequestAndDecodeJSON(req, &wsResponse)
 	if err != nil {
-		return "", errors.Wrap(err, "WhiteSource request failed")
+		return "", err
 	}
 
 	if len(wsResponse.ProductTags) == 0 {
@@ -394,7 +394,7 @@ func (s *System) GetProjectAlerts(projectToken string) ([]Alert, error) {
 
 	err := s.sendRequestAndDecodeJSON(req, &wsResponse)
 	if err != nil {
-		return nil, errors.Wrap(err, "WhiteSource request failed")
+		return nil, err
 	}
 
 	return wsResponse.Alerts, nil
@@ -416,7 +416,7 @@ func (s *System) GetProjectAlertsByType(projectToken, alertType string) ([]Alert
 
 	err := s.sendRequestAndDecodeJSON(req, &wsResponse)
 	if err != nil {
-		return nil, errors.Wrap(err, "WhiteSource request failed")
+		return nil, err
 	}
 
 	return wsResponse.Alerts, nil
@@ -437,7 +437,7 @@ func (s *System) GetProjectLibraryLocations(projectToken string) ([]Library, err
 
 	err := s.sendRequestAndDecodeJSON(req, &wsResponse)
 	if err != nil {
-		return nil, errors.Wrap(err, "WhiteSource request failed")
+		return nil, err
 	}
 
 	return wsResponse.Libraries, nil
@@ -446,7 +446,7 @@ func (s *System) GetProjectLibraryLocations(projectToken string) ([]Library, err
 func (s *System) sendRequestAndDecodeJSON(req Request, result interface{}) error {
 	respBody, err := s.sendRequest(req)
 	if err != nil {
-		return errors.Wrap(err, "WhiteSource request failed")
+		return errors.Wrap(err, "sending whiteSource request failed")
 	}
 
 	log.Entry().Debugf("response: %v", string(respBody))

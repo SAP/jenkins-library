@@ -54,6 +54,161 @@ func newWhitesourceUtilsMock() *whitesourceUtilsMock {
 	}
 }
 
+func TestNewWhitesourceUtils(t *testing.T) {
+	t.Parallel()
+	config := ScanOptions{}
+	utils := newWhitesourceUtils(&config)
+
+	assert.NotNil(t, utils.Client)
+	assert.NotNil(t, utils.Command)
+	assert.NotNil(t, utils.Files)
+}
+
+func TestRunWhitesourceExecuteScan(t *testing.T) {
+	t.Parallel()
+	t.Run("fails for invalid configured project token", func(t *testing.T) {
+		// init
+		config := ScanOptions{
+			ScanType:            "unified-agent",
+			BuildDescriptorFile: "my-mta.yml",
+			VersioningModel:     "major",
+			ProductName:         "mock-product",
+			ProjectToken:        "no-such-project-token",
+			AgentDownloadURL:    "https://whitesource.com/agent.jar",
+			AgentFileName:       "ua.jar",
+		}
+		utilsMock := newWhitesourceUtilsMock()
+		utilsMock.AddFile("wss-generated-file.config", []byte("key=value"))
+		systemMock := ws.NewSystemMock("ignored")
+		scan := newWhitesourceScan(&config)
+		cpe := whitesourceExecuteScanCommonPipelineEnvironment{}
+		// test
+		err := runWhitesourceExecuteScan(&config, scan, utilsMock, systemMock, &cpe)
+		// assert
+		assert.EqualError(t, err, "no project with token 'no-such-project-token' found in Whitesource")
+		assert.Equal(t, "", config.ProjectName)
+		assert.Equal(t, "", scan.AggregateProjectName)
+	})
+	t.Run("retrieves aggregate project name by configured token", func(t *testing.T) {
+		// init
+		config := ScanOptions{
+			BuildDescriptorFile:       "my-mta.yml",
+			VersioningModel:           "major",
+			AgentDownloadURL:          "https://whitesource.com/agent.jar",
+			VulnerabilityReportFormat: "pdf",
+			Reporting:                 true,
+			AgentFileName:             "ua.jar",
+			ProductName:               "mock-product",
+			ProjectToken:              "mock-project-token",
+			ScanType:                  "unified-agent",
+		}
+		utilsMock := newWhitesourceUtilsMock()
+		utilsMock.AddFile("wss-generated-file.config", []byte("key=value"))
+		lastUpdatedDate := time.Now().Format(ws.DateTimeLayout)
+		systemMock := ws.NewSystemMock(lastUpdatedDate)
+		scan := newWhitesourceScan(&config)
+		cpe := whitesourceExecuteScanCommonPipelineEnvironment{}
+		// test
+		err := runWhitesourceExecuteScan(&config, scan, utilsMock, systemMock, &cpe)
+		// assert
+		assert.NoError(t, err)
+		// Retrieved project name is stored in scan.AggregateProjectName, but not in config.ProjectName
+		// in order to differentiate between aggregate-project scanning and multi-project scanning.
+		assert.Equal(t, "", config.ProjectName)
+		assert.Equal(t, "mock-project", scan.AggregateProjectName)
+		if assert.Len(t, utilsMock.DownloadedFiles, 1) {
+			assert.Equal(t, ws.DownloadedFile{
+				SourceURL: "https://whitesource.com/agent.jar",
+				FilePath:  "ua.jar",
+			}, utilsMock.DownloadedFiles[0])
+		}
+		if assert.Len(t, cpe.custom.whitesourceProjectNames, 1) {
+			assert.Equal(t, []string{"mock-project - 1"}, cpe.custom.whitesourceProjectNames)
+		}
+		assert.True(t, utilsMock.HasWrittenFile(filepath.Join(ws.ReportsDirectory, "mock-project - 1-vulnerability-report.pdf")))
+		assert.True(t, utilsMock.HasWrittenFile(filepath.Join(ws.ReportsDirectory, "mock-project - 1-vulnerability-report.pdf")))
+	})
+}
+
+func TestRunWhitesourceScan(t *testing.T) {
+}
+
+func TestCheckAndReportScanResults(t *testing.T) {
+	t.Parallel()
+	t.Run("no reports requested", func(t *testing.T) {
+		// init
+		config := &ScanOptions{
+			ProductToken:   "mock-product-token",
+			ProjectToken:   "mock-project-token",
+			ProductVersion: "1",
+		}
+		scan := newWhitesourceScan(config)
+		utils := newWhitesourceUtilsMock()
+		system := ws.NewSystemMock(time.Now().Format(ws.DateTimeLayout))
+		// test
+		_, err := checkAndReportScanResults(config, scan, utils, system)
+		// assert
+		assert.NoError(t, err)
+		vPath := filepath.Join(ws.ReportsDirectory, "mock-project-vulnerability-report.txt")
+		assert.False(t, utils.HasWrittenFile(vPath))
+		rPath := filepath.Join(ws.ReportsDirectory, "mock-project-risk-report.pdf")
+		assert.False(t, utils.HasWrittenFile(rPath))
+	})
+	t.Run("check vulnerabilities - invalid limit", func(t *testing.T) {
+		// init
+		config := &ScanOptions{
+			SecurityVulnerabilities: true,
+			CvssSeverityLimit:       "invalid",
+		}
+		scan := newWhitesourceScan(config)
+		utils := newWhitesourceUtilsMock()
+		system := ws.NewSystemMock(time.Now().Format(ws.DateTimeLayout))
+		// test
+		_, err := checkAndReportScanResults(config, scan, utils, system)
+		// assert
+		assert.EqualError(t, err, "failed to parse parameter cvssSeverityLimit (invalid) as floating point number: strconv.ParseFloat: parsing \"invalid\": invalid syntax")
+	})
+	t.Run("check vulnerabilities - limit not hit", func(t *testing.T) {
+		// init
+		config := &ScanOptions{
+			ProductToken:            "mock-product-token",
+			ProjectToken:            "mock-project-token",
+			ProductVersion:          "1",
+			SecurityVulnerabilities: true,
+			CvssSeverityLimit:       "6.0",
+		}
+		scan := newWhitesourceScan(config)
+		utils := newWhitesourceUtilsMock()
+		system := ws.NewSystemMock(time.Now().Format(ws.DateTimeLayout))
+		// test
+		_, err := checkAndReportScanResults(config, scan, utils, system)
+		// assert
+		assert.NoError(t, err)
+	})
+	t.Run("check vulnerabilities - limit exceeded", func(t *testing.T) {
+		// init
+		config := &ScanOptions{
+			ProductToken:            "mock-product-token",
+			ProjectName:             "mock-project - 1",
+			ProjectToken:            "mock-project-token",
+			ProductVersion:          "1",
+			SecurityVulnerabilities: true,
+			CvssSeverityLimit:       "4",
+		}
+		scan := newWhitesourceScan(config)
+		utils := newWhitesourceUtilsMock()
+		system := ws.NewSystemMock(time.Now().Format(ws.DateTimeLayout))
+		// test
+		_, err := checkAndReportScanResults(config, scan, utils, system)
+		// assert
+		assert.EqualError(t, err, "1 Open Source Software Security vulnerabilities with CVSS score greater or equal to 4.0 detected in project mock-project - 1")
+	})
+}
+
+func TestCreateWhitesourceProduct(t *testing.T) {
+
+}
+
 func TestResolveProjectIdentifiers(t *testing.T) {
 	t.Parallel()
 	t.Run("happy path", func(t *testing.T) {
@@ -145,117 +300,44 @@ func TestResolveProjectIdentifiers(t *testing.T) {
 	})
 }
 
-func TestRunWhitesourceExecuteScan(t *testing.T) {
-	t.Parallel()
-	t.Run("fails for invalid configured project token", func(t *testing.T) {
-		// init
-		config := ScanOptions{
-			ScanType:            "unified-agent",
-			BuildDescriptorFile: "my-mta.yml",
-			VersioningModel:     "major",
-			ProductName:         "mock-product",
-			ProjectToken:        "no-such-project-token",
-			AgentDownloadURL:    "https://whitesource.com/agent.jar",
-			AgentFileName:       "ua.jar",
-		}
-		utilsMock := newWhitesourceUtilsMock()
-		utilsMock.AddFile("wss-generated-file.config", []byte("key=value"))
-		systemMock := ws.NewSystemMock("ignored")
-		scan := newWhitesourceScan(&config)
-		cpe := whitesourceExecuteScanCommonPipelineEnvironment{}
-		// test
-		err := runWhitesourceExecuteScan(&config, scan, utilsMock, systemMock, &cpe)
-		// assert
-		assert.EqualError(t, err, "no project with token 'no-such-project-token' found in Whitesource")
-		assert.Equal(t, "", config.ProjectName)
-		assert.Equal(t, "", scan.AggregateProjectName)
-	})
-	t.Run("retrieves aggregate project name by configured token", func(t *testing.T) {
-		// init
-		config := ScanOptions{
-			BuildDescriptorFile:       "my-mta.yml",
-			VersioningModel:           "major",
-			AgentDownloadURL:          "https://whitesource.com/agent.jar",
-			VulnerabilityReportFormat: "pdf",
-			Reporting:                 true,
-			AgentFileName:             "ua.jar",
-			ProductName:               "mock-product",
-			ProjectToken:              "mock-project-token",
-			ScanType:                  "unified-agent",
-		}
-		utilsMock := newWhitesourceUtilsMock()
-		utilsMock.AddFile("wss-generated-file.config", []byte("key=value"))
-		lastUpdatedDate := time.Now().Format(ws.DateTimeLayout)
-		systemMock := ws.NewSystemMock(lastUpdatedDate)
-		scan := newWhitesourceScan(&config)
-		cpe := whitesourceExecuteScanCommonPipelineEnvironment{}
-		// test
-		err := runWhitesourceExecuteScan(&config, scan, utilsMock, systemMock, &cpe)
-		// assert
-		assert.NoError(t, err)
-		// Retrieved project name is stored in scan.AggregateProjectName, but not in config.ProjectName
-		// in order to differentiate between aggregate-project scanning and multi-project scanning.
-		assert.Equal(t, "", config.ProjectName)
-		assert.Equal(t, "mock-project", scan.AggregateProjectName)
-		if assert.Len(t, utilsMock.DownloadedFiles, 1) {
-			assert.Equal(t, ws.DownloadedFile{
-				SourceURL: "https://whitesource.com/agent.jar",
-				FilePath:  "ua.jar",
-			}, utilsMock.DownloadedFiles[0])
-		}
-		if assert.Len(t, cpe.custom.whitesourceProjectNames, 1) {
-			assert.Equal(t, []string{"mock-project - 1"}, cpe.custom.whitesourceProjectNames)
-		}
-		assert.True(t, utilsMock.HasWrittenFile(filepath.Join(ws.ReportsDirectory, "mock-project - 1-vulnerability-report.pdf")))
-		assert.True(t, utilsMock.HasWrittenFile(filepath.Join(ws.ReportsDirectory, "mock-project - 1-vulnerability-report.pdf")))
-	})
+func TestResolveProductToken(t *testing.T) {
+
 }
 
-func TestPersistScannedProjects(t *testing.T) {
-	t.Parallel()
-	t.Run("write 1 scanned projects", func(t *testing.T) {
-		// init
-		cpe := whitesourceExecuteScanCommonPipelineEnvironment{}
-		config := &ScanOptions{ProductVersion: "1"}
-		scan := newWhitesourceScan(config)
-		_ = scan.AppendScannedProject("project")
-		// test
-		persistScannedProjects(config, scan, &cpe)
-		// assert
-		assert.Equal(t, []string{"project - 1"}, cpe.custom.whitesourceProjectNames)
-	})
-	t.Run("write 2 scanned projects", func(t *testing.T) {
-		// init
-		cpe := whitesourceExecuteScanCommonPipelineEnvironment{}
-		config := &ScanOptions{ProductVersion: "1"}
-		scan := newWhitesourceScan(config)
-		_ = scan.AppendScannedProject("project-app")
-		_ = scan.AppendScannedProject("project-db")
-		// test
-		persistScannedProjects(config, scan, &cpe)
-		// assert
-		assert.Equal(t, []string{"project-app - 1", "project-db - 1"}, cpe.custom.whitesourceProjectNames)
-	})
-	t.Run("write no projects", func(t *testing.T) {
-		// init
-		cpe := whitesourceExecuteScanCommonPipelineEnvironment{}
-		config := &ScanOptions{ProductVersion: "1"}
-		scan := newWhitesourceScan(config)
-		// test
-		persistScannedProjects(config, scan, &cpe)
-		// assert
-		assert.Equal(t, []string{}, cpe.custom.whitesourceProjectNames)
-	})
-	t.Run("write aggregated project", func(t *testing.T) {
-		// init
-		cpe := whitesourceExecuteScanCommonPipelineEnvironment{}
-		config := &ScanOptions{ProjectName: "project", ProductVersion: "1"}
-		scan := newWhitesourceScan(config)
-		// test
-		persistScannedProjects(config, scan, &cpe)
-		// assert
-		assert.Equal(t, []string{"project - 1"}, cpe.custom.whitesourceProjectNames)
-	})
+func TestResolveAggregateProjectName(t *testing.T) {
+
+}
+
+func TestResolveAggregateProjectToken(t *testing.T) {
+
+}
+
+func TestValidateProductVersion(t *testing.T) {
+
+}
+
+func TestCheckSecurityViolations(t *testing.T) {
+
+}
+
+func TestCheckProjectSecurityViolations(t *testing.T) {
+
+}
+
+func TestCountSecurityVulnerabilities(t *testing.T) {
+
+}
+
+func TestIsSevereVulnerability(t *testing.T) {
+
+}
+
+func TestCreateCustomVulnerabilityReport(t *testing.T) {
+
+}
+
+func TestVulnerabilityScore(t *testing.T) {
+
 }
 
 func TestAggregateVersionWideLibraries(t *testing.T) {
@@ -307,74 +389,49 @@ func TestAggregateVersionWideVulnerabilities(t *testing.T) {
 	})
 }
 
-func TestCheckAndReportScanResults(t *testing.T) {
+func TestPersistScannedProjects(t *testing.T) {
 	t.Parallel()
-	t.Run("no reports requested", func(t *testing.T) {
+	t.Run("write 1 scanned projects", func(t *testing.T) {
 		// init
-		config := &ScanOptions{
-			ProductToken:   "mock-product-token",
-			ProjectToken:   "mock-project-token",
-			ProductVersion: "1",
-		}
+		cpe := whitesourceExecuteScanCommonPipelineEnvironment{}
+		config := &ScanOptions{ProductVersion: "1"}
 		scan := newWhitesourceScan(config)
-		utils := newWhitesourceUtilsMock()
-		system := ws.NewSystemMock(time.Now().Format(ws.DateTimeLayout))
+		_ = scan.AppendScannedProject("project")
 		// test
-		_, err := checkAndReportScanResults(config, scan, utils, system)
+		persistScannedProjects(config, scan, &cpe)
 		// assert
-		assert.NoError(t, err)
-		vPath := filepath.Join(ws.ReportsDirectory, "mock-project-vulnerability-report.txt")
-		assert.False(t, utils.HasWrittenFile(vPath))
-		rPath := filepath.Join(ws.ReportsDirectory, "mock-project-risk-report.pdf")
-		assert.False(t, utils.HasWrittenFile(rPath))
+		assert.Equal(t, []string{"project - 1"}, cpe.custom.whitesourceProjectNames)
 	})
-	t.Run("check vulnerabilities - invalid limit", func(t *testing.T) {
+	t.Run("write 2 scanned projects", func(t *testing.T) {
 		// init
-		config := &ScanOptions{
-			SecurityVulnerabilities: true,
-			CvssSeverityLimit:       "invalid",
-		}
+		cpe := whitesourceExecuteScanCommonPipelineEnvironment{}
+		config := &ScanOptions{ProductVersion: "1"}
 		scan := newWhitesourceScan(config)
-		utils := newWhitesourceUtilsMock()
-		system := ws.NewSystemMock(time.Now().Format(ws.DateTimeLayout))
+		_ = scan.AppendScannedProject("project-app")
+		_ = scan.AppendScannedProject("project-db")
 		// test
-		_, err := checkAndReportScanResults(config, scan, utils, system)
+		persistScannedProjects(config, scan, &cpe)
 		// assert
-		assert.EqualError(t, err, "failed to parse parameter cvssSeverityLimit (invalid) as floating point number: strconv.ParseFloat: parsing \"invalid\": invalid syntax")
+		assert.Equal(t, []string{"project-app - 1", "project-db - 1"}, cpe.custom.whitesourceProjectNames)
 	})
-	t.Run("check vulnerabilities - limit not hit", func(t *testing.T) {
+	t.Run("write no projects", func(t *testing.T) {
 		// init
-		config := &ScanOptions{
-			ProductToken:            "mock-product-token",
-			ProjectToken:            "mock-project-token",
-			ProductVersion:          "1",
-			SecurityVulnerabilities: true,
-			CvssSeverityLimit:       "6.0",
-		}
+		cpe := whitesourceExecuteScanCommonPipelineEnvironment{}
+		config := &ScanOptions{ProductVersion: "1"}
 		scan := newWhitesourceScan(config)
-		utils := newWhitesourceUtilsMock()
-		system := ws.NewSystemMock(time.Now().Format(ws.DateTimeLayout))
 		// test
-		_, err := checkAndReportScanResults(config, scan, utils, system)
+		persistScannedProjects(config, scan, &cpe)
 		// assert
-		assert.NoError(t, err)
+		assert.Equal(t, []string{}, cpe.custom.whitesourceProjectNames)
 	})
-	t.Run("check vulnerabilities - limit exceeded", func(t *testing.T) {
+	t.Run("write aggregated project", func(t *testing.T) {
 		// init
-		config := &ScanOptions{
-			ProductToken:            "mock-product-token",
-			ProjectName:             "mock-project - 1",
-			ProjectToken:            "mock-project-token",
-			ProductVersion:          "1",
-			SecurityVulnerabilities: true,
-			CvssSeverityLimit:       "4",
-		}
+		cpe := whitesourceExecuteScanCommonPipelineEnvironment{}
+		config := &ScanOptions{ProjectName: "project", ProductVersion: "1"}
 		scan := newWhitesourceScan(config)
-		utils := newWhitesourceUtilsMock()
-		system := ws.NewSystemMock(time.Now().Format(ws.DateTimeLayout))
 		// test
-		_, err := checkAndReportScanResults(config, scan, utils, system)
+		persistScannedProjects(config, scan, &cpe)
 		// assert
-		assert.EqualError(t, err, "1 Open Source Software Security vulnerabilities with CVSS score greater or equal to 4.0 detected in project mock-project - 1")
+		assert.Equal(t, []string{"project - 1"}, cpe.custom.whitesourceProjectNames)
 	})
 }
