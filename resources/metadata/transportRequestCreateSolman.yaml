@@ -1,0 +1,77 @@
+metadata:
+  name: transportRequestCreateSOLMAN
+  aliases:
+    - name: transportRequestCreate
+  description: "Creates a transport request"
+  longDescription: |
+    Creates a transport request.
+spec:
+  inputs:
+    secrets:
+      - name: uploadCredentialsId
+        description: Jenkins 'Username with password' credentials ID containing user and password to authenticate against the ABAP backend.
+        type: jenkins
+        aliases:
+          - name: changeManagement/credentialsId
+    params:
+      - name: endpoint
+        type: string
+        mandatory: true
+        description: "The service endpoint"
+        aliases:
+          - name: changeManagement/endpoint
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: username
+        type: string
+        mandatory: true
+        description: "The deploy user"
+        secret: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: password
+        type: string
+        mandatory: true
+        description: "The password for the deploy user"
+        secret: true
+        scope:
+          - PARAMETERS
+      - name: developmentSystemId
+        type: string
+        mandatory: true
+        description: "The id of the associated development system."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: changeDocumentId
+        type: string
+        mandatory: true
+        description: "The id of the change document for that the transport request is created. This parameter is only taken into account when provided via signature to the step."
+        scope:
+          - PARAMETERS
+      - name: cmclientops
+        aliases:
+          - name: clientOpts
+          - name: changeManagement/clientOpts
+        type: "[]string"
+        mandatory: true
+        description: "additional options handed over to the cm client"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEP
+          - GENERAL
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: custom/transportRequestID
