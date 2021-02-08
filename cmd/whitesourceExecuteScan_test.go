@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/SAP/jenkins-library/pkg/reporting"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 	ws "github.com/SAP/jenkins-library/pkg/whitesource"
 	"github.com/stretchr/testify/assert"
@@ -477,6 +478,88 @@ func TestIsSevereVulnerability(t *testing.T) {
 }
 
 func TestCreateCustomVulnerabilityReport(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success case", func(t *testing.T) {
+		config := &ScanOptions{}
+		scan := newWhitesourceScan(config)
+		scan.AppendScannedProject("testProject")
+		alerts := []ws.Alert{
+			{Library: ws.Library{Filename: "vul1"}, Vulnerability: ws.Vulnerability{CVSS3Score: 7.0, Score: 6}},
+			{Library: ws.Library{Filename: "vul2"}, Vulnerability: ws.Vulnerability{CVSS3Score: 8.0, TopFix: ws.Fix{Message: "this is the top fix"}}},
+			{Library: ws.Library{Filename: "vul3"}, Vulnerability: ws.Vulnerability{Score: 6}},
+		}
+		utilsMock := newWhitesourceUtilsMock()
+
+		scanReport := createCustomVulnerabilityReport(config, scan, alerts, 7.0, utilsMock)
+
+		assert.Equal(t, "WhiteSource Security Vulnerability Report", scanReport.Title)
+		assert.Equal(t, 3, len(scanReport.DetailTable.Rows))
+
+		// assert that library info is filled and sorting has been executed
+		assert.Equal(t, "vul2", scanReport.DetailTable.Rows[0].Columns[5].Content)
+		assert.Equal(t, "vul1", scanReport.DetailTable.Rows[1].Columns[5].Content)
+		assert.Equal(t, "vul3", scanReport.DetailTable.Rows[2].Columns[5].Content)
+
+		// assert that CVSS version identification has been done
+		assert.Equal(t, "v3", scanReport.DetailTable.Rows[0].Columns[3].Content)
+		assert.Equal(t, "v3", scanReport.DetailTable.Rows[1].Columns[3].Content)
+		assert.Equal(t, "v2", scanReport.DetailTable.Rows[2].Columns[3].Content)
+
+		// assert proper rating and styling of high prio issues
+		assert.Equal(t, "8", scanReport.DetailTable.Rows[0].Columns[2].Content)
+		assert.Equal(t, "7", scanReport.DetailTable.Rows[1].Columns[2].Content)
+		assert.Equal(t, "6", scanReport.DetailTable.Rows[2].Columns[2].Content)
+		assert.Equal(t, "red-cell", scanReport.DetailTable.Rows[0].Columns[2].Style.String())
+		assert.Equal(t, "red-cell", scanReport.DetailTable.Rows[1].Columns[2].Style.String())
+		assert.Equal(t, "yellow-cell", scanReport.DetailTable.Rows[2].Columns[2].Style.String())
+
+		assert.Contains(t, "this is the top fix", scanReport.DetailTable.Rows[0].Columns[10])
+
+	})
+}
+
+func TestWriteCustomVulnerabilityReports(t *testing.T) {
+
+	t.Run("success", func(t *testing.T) {
+		scanReport := reporting.ScanReport{}
+		utilsMock := newWhitesourceUtilsMock()
+
+		reportPaths, err := writeCustomVulnerabilityReports(scanReport, utilsMock)
+
+		assert.NoError(t, err)
+		assert.Equal(t, 1, len(reportPaths))
+
+		exists, err := utilsMock.FileExists(reportPaths[0].Target)
+		assert.NoError(t, err)
+		assert.True(t, exists)
+
+		exists, err = utilsMock.FileExists(filepath.Join(reporting.MarkdownReportDirectory, "whitesourceExecuteScan_20100510001542.md"))
+		assert.NoError(t, err)
+		assert.True(t, exists)
+	})
+
+	t.Run("failed to write HTML report", func(t *testing.T) {
+		scanReport := reporting.ScanReport{}
+		utilsMock := newWhitesourceUtilsMock()
+		utilsMock.FileWriteErrors = map[string]error{
+			filepath.Join(ws.ReportsDirectory, "piper_whitesource_vulnerability_report.html"): fmt.Errorf("write error"),
+		}
+
+		_, err := writeCustomVulnerabilityReports(scanReport, utilsMock)
+		assert.Contains(t, fmt.Sprint(err), "failed to write html report")
+	})
+
+	t.Run("failed to write markdown report", func(t *testing.T) {
+		scanReport := reporting.ScanReport{}
+		utilsMock := newWhitesourceUtilsMock()
+		utilsMock.FileWriteErrors = map[string]error{
+			filepath.Join(reporting.MarkdownReportDirectory, "whitesourceExecuteScan_20100510001542.md"): fmt.Errorf("write error"),
+		}
+
+		_, err := writeCustomVulnerabilityReports(scanReport, utilsMock)
+		assert.Contains(t, fmt.Sprint(err), "failed to write markdown report")
+	})
 
 }
 

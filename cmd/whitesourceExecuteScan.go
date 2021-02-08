@@ -469,7 +469,8 @@ func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource
 			}
 		}
 
-		reportPaths, err = createCustomVulnerabilityReport(config, scan, allAlerts, cvssSeverityLimit, utils)
+		scanReport := createCustomVulnerabilityReport(config, scan, allAlerts, cvssSeverityLimit, utils)
+		reportPaths, err = writeCustomVulnerabilityReports(scanReport, utils)
 		if err != nil {
 			errorsOccured = append(errorsOccured, fmt.Sprint(err))
 		}
@@ -534,9 +535,7 @@ func isSevereVulnerability(alert ws.Alert, cvssSeverityLimit float64) bool {
 	return false
 }
 
-func createCustomVulnerabilityReport(config *ScanOptions, scan *ws.Scan, alerts []ws.Alert, cvssSeverityLimit float64, utils whitesourceUtils) ([]piperutils.Path, error) {
-
-	reportPaths := []piperutils.Path{}
+func createCustomVulnerabilityReport(config *ScanOptions, scan *ws.Scan, alerts []ws.Alert, cvssSeverityLimit float64, utils whitesourceUtils) reporting.ScanReport {
 
 	severe, _ := countSecurityVulnerabilities(&alerts, cvssSeverityLimit)
 
@@ -622,6 +621,12 @@ func createCustomVulnerabilityReport(config *ScanOptions, scan *ws.Scan, alerts 
 	}
 	scanReport.DetailTable = detailTable
 
+	return scanReport
+}
+
+func writeCustomVulnerabilityReports(scanReport reporting.ScanReport, utils whitesourceUtils) ([]piperutils.Path, error) {
+	reportPaths := []piperutils.Path{}
+
 	// ignore templating errors since template is in our hands and issues will be detected with the automated tests
 	htmlReport, _ := scanReport.ToHTML()
 	htmlReportPath := filepath.Join(ws.ReportsDirectory, "piper_whitesource_vulnerability_report.html")
@@ -633,7 +638,7 @@ func createCustomVulnerabilityReport(config *ScanOptions, scan *ws.Scan, alerts 
 
 	// markdown reports are used by step pipelineCreateSummary in order to e.g. prepare an issue creation in GitHub
 	mdReport := scanReport.ToMarkdown()
-	if err := utils.FileWrite(filepath.Join(reporting.MarkdownReportDirectory, fmt.Sprintf("whitesourceExecuteScan_%v.md", time.Now().Format("20060102150405"))), mdReport, 0666); err != nil {
+	if err := utils.FileWrite(filepath.Join(reporting.MarkdownReportDirectory, fmt.Sprintf("whitesourceExecuteScan_%v.md", utils.Now().Format("20060102150405"))), mdReport, 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return reportPaths, errors.Wrapf(err, "failed to write markdown report")
 	}
