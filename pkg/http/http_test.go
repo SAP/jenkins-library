@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -22,6 +23,40 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/log"
 )
+
+func TestSend(t *testing.T) {
+	testURL := "https://example.org"
+
+	request, err := http.NewRequest(http.MethodGet, testURL, nil)
+	require.NoError(t, err)
+
+	t.Run("success", func(t *testing.T) {
+		// given
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
+		httpmock.RegisterResponder(http.MethodGet, testURL, httpmock.NewStringResponder(200, `OK`))
+		client := Client{}
+		client.SetOptions(ClientOptions{UseDefaultTransport: true})
+		// when
+		response, err := client.Send(request)
+		// then
+		assert.NoError(t, err)
+		assert.NotNil(t, response)
+	})
+	t.Run("failure", func(t *testing.T) {
+		// given
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
+		httpmock.RegisterResponder(http.MethodGet, testURL, httpmock.NewErrorResponder(errors.New("failure")))
+		client := Client{}
+		client.SetOptions(ClientOptions{UseDefaultTransport: true})
+		// when
+		response, err := client.Send(request)
+		// then
+		assert.Error(t, err)
+		assert.Nil(t, response)
+	})
+}
 
 func TestDefaultTransport(t *testing.T) {
 	const testURL string = "https://localhost/api"
