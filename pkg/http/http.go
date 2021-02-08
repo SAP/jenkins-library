@@ -176,6 +176,7 @@ func (c *Client) SendRequest(method, url string, body io.Reader, header http.Hea
 	if err != nil {
 		return &http.Response{}, errors.Wrapf(err, "error creating %v request to %v", method, url)
 	}
+
 	return c.Send(request)
 }
 
