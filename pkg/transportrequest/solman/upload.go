@@ -2,7 +2,6 @@ package solman
 
 import (
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/config/validation"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
@@ -13,20 +12,6 @@ import (
 // related and needed in the context of a SOLMAN upload.
 type FileSystem interface {
 	FileExists(path string) (bool, error)
-}
-
-// Exec interface collecting everything which is execution related
-// and needed in the context of a SOLMAN upload.
-type Exec interface {
-	command.ExecRunner
-	GetExitCode() int
-}
-
-// Connection Everything wee need for connecting to CTS
-type Connection struct {
-	Endpoint string
-	User     string
-	Password string
 }
 
 // UploadAction Collects all the properties we need for the deployment
