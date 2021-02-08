@@ -22,28 +22,28 @@ type IssueService struct {
 }
 
 // SearchIssues ...
-func (service *IssueService) SearchIssues(options *IssuesSearchOption) (result *sonargo.IssuesSearchObject, response *http.Response, err error) {
+func (service *IssueService) SearchIssues(options *IssuesSearchOption) (*sonargo.IssuesSearchObject, *http.Response, error) {
 	request, err := service.apiClient.create("GET", endpointIssuesSearch, options)
 	if err != nil {
-		return
+		return nil, nil, err
 	}
 	// use custom HTTP client to send request
-	response, err = service.apiClient.send(request)
+	response, err := service.apiClient.send(request)
 	if err != nil {
-		return
+		return nil, nil, err
 	}
 	// reuse response verrification from sonargo
 	err = sonargo.CheckResponse(response)
 	if err != nil {
-		return
+		return nil, response, err
 	}
 	// decode JSON response
-	result = new(sonargo.IssuesSearchObject)
+	result := new(sonargo.IssuesSearchObject)
 	err = service.apiClient.decode(response, result)
 	if err != nil {
 		return nil, response, err
 	}
-	return
+	return result, response, nil
 }
 
 func (service *IssueService) getIssueCount(severity issueSeverity) (int, error) {
@@ -116,7 +116,7 @@ func NewIssuesService(host, token, project, organization, branch, pullRequest st
 			Client:   client,
 			Host:     host,
 			Username: token,
-			Password: "",
+			// Password: "",
 		},
 	}
 }
