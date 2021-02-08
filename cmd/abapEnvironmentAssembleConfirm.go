@@ -101,8 +101,8 @@ func startingConfirm(repos []abaputils.Repository, conn abapbuild.Connector, del
 }
 
 func (b *buildWithRepository) startConfirm() error {
-	if b.repo.Name == "" || b.repo.Version == "" || b.repo.SpLevel == "" || b.repo.Namespace == "" || b.repo.PackageType == "" || b.repo.PackageName == "" {
-		return errors.New("Parameters missing. Please provide software component name, version, sp-level, namespace, packagetype and packagename")
+	if b.repo.Name == "" || b.repo.Namespace == "" || b.repo.PackageName == "" {
+		return errors.New("Parameters missing. Please provide software component name, namespace and packagename")
 	}
 	valuesInput := abapbuild.Values{
 		Values: []abapbuild.Value{
