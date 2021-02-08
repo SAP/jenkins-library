@@ -35,7 +35,7 @@ func (r *RepositoryExt) LogExt(ox *LogOptionsExt) (object.CommitIter, error) {
 	it, err := r.Repo.Log(ox.Options)
 
 	if !ox.Except.IsZero() {
-		it, err = r.logDifference(it, ox.Except, ox)
+		it, err = r.logDifference(it, ox.Except, ox.Options)
 
 		if err != nil {
 			return nil, err
@@ -45,11 +45,10 @@ func (r *RepositoryExt) LogExt(ox *LogOptionsExt) (object.CommitIter, error) {
 	return it, nil
 }
 
-func (r *RepositoryExt) logDifference(ci object.CommitIter, except plumbing.Hash, o *LogOptionsExt) (object.CommitIter, error) {
+func (r *RepositoryExt) logDifference(ci object.CommitIter, except plumbing.Hash, o *git.LogOptions) (object.CommitIter, error) {
 	options := *o
-	options.Except = plumbing.Hash{}
-	options.Options.From = except
-	exceptLogs, err := r.LogExt(&options)
+	options.From = except
+	exceptLogs, err := r.Repo.Log(&options)
 
 	if err != nil {
 		return nil, err
