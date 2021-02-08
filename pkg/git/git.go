@@ -112,6 +112,50 @@ func changeBranch(branchName string, worktree utilsWorkTree) error {
 	return nil
 }
 
+// LogRange Returns a CommitIterator providing all commits reachable from 'to', but
+// not reachable by 'from'.
+func LogRange(repo *git.Repository, from, to string) (object.CommitIter, error) {
+
+	cTo, err := getCommitObject(to, repo)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Cannot provide log range (to: '%s' not found)", to)
+	}
+	cFrom, err := getCommitObject(from, repo)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Cannot provide log range (from: '%s' not found)", from)
+	}
+	ignore := []plumbing.Hash{}
+	err = object.NewCommitPreorderIter(
+		cFrom,
+		map[plumbing.Hash]bool{},
+		[]plumbing.Hash{},
+	).ForEach(func(c *object.Commit) error {
+		ignore = append(ignore, c.ID())
+		return nil
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "Cannot provide log range")
+	}
+
+	return object.NewCommitPreorderIter(cTo, map[plumbing.Hash]bool{}, ignore), nil
+}
+
+func getCommitObject(ref string, repo *git.Repository) (*object.Commit, error) {
+	if len(ref) == 0 {
+		// with go-git v5.1.0 we panic otherwise inside ResolveRevision
+		return nil, errors.New("Cannot get a commit for an empty ref")
+	}
+	r, err := repo.ResolveRevision(plumbing.Revision(ref))
+	if err != nil {
+		return nil, errors.Wrapf(err, "Trouble resolving '%s'", ref)
+	}
+	c, err := repo.CommitObject(*r)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Trouble resolving '%s'", ref)
+	}
+	return c, nil
+}
+
 type abstractionGit struct{}
 
 func (abstractionGit) plainClone(path string, isBare bool, o *git.CloneOptions) (*git.Repository, error) {

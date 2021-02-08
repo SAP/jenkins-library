@@ -11,32 +11,34 @@ import (
 
 // ScanReport defines the elements of a scan report used by various scan steps
 type ScanReport struct {
-	Title       string
-	Subheaders  []string
-	Overview    []string
-	FurtherInfo string
-	ReportTime  time.Time
-	DetailTable ScanDetailTable
+	StepName       string          `json:"stepName"`
+	Title          string          `json:"title"`
+	Subheaders     []string        `json:"subheaders"`
+	Overview       []string        `json:"overview"`
+	FurtherInfo    string          `json:"furtherInfo"`
+	ReportTime     time.Time       `json:"reportTime"`
+	DetailTable    ScanDetailTable `json:"detailTable"`
+	SuccessfulScan bool            `json:"successfulScan"`
 }
 
 // ScanDetailTable defines a table containing scan result details
 type ScanDetailTable struct {
-	Headers       []string
-	Rows          []ScanRow
-	WithCounter   bool
-	CounterHeader string
-	NoRowsMessage string
+	Headers       []string  `json:"headers"`
+	Rows          []ScanRow `json:"rows"`
+	WithCounter   bool      `json:"withCounter"`
+	CounterHeader string    `json:"counterHeader"`
+	NoRowsMessage string    `json:"noRowsMessage"`
 }
 
 // ScanRow defines one row of a scan result table
 type ScanRow struct {
-	Columns []ScanCell
+	Columns []ScanCell `json:"columns"`
 }
 
 // ScanCell defines one column of a scan result table
 type ScanCell struct {
-	Content string
-	Style   ColumnStyle
+	Content string      `json:"content"`
+	Style   ColumnStyle `json:"style"`
 }
 
 // ColumnStyle defines style for a specific column
@@ -184,7 +186,7 @@ func (s *ScanReport) ToHTML() ([]byte, error) {
 }
 
 // ToMarkdown creates a markdown version of the report content
-func (s *ScanReport) ToMarkdown() string {
+func (s *ScanReport) ToMarkdown() []byte {
 	//ToDo: create collapsible markdown?
 	/*
 		## collapsible markdown?
@@ -201,7 +203,8 @@ func (s *ScanReport) ToMarkdown() string {
 		</p>
 		</details>
 	*/
-	return ""
+
+	return []byte(fmt.Sprintf("<summary>%v</summary>", s.Title))
 }
 
 func tableColumnCount(scanDetails ScanDetailTable) int {
