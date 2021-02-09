@@ -29,5 +29,5 @@ steps:
     integrationFlowVersion: 'MY_INTEGRATION_FLOW_VERSION'
     host: https://CPI_HOST_ITSPACES_URL
     oAuthTokenProviderUrl: https://CPI_HOST_OAUTH_URL
-	downloadPath: /MY_INTEGRATION_FLOW_DOWNLOAD_PATH
+    downloadPath: MY_INTEGRATION_FLOW_DOWNLOAD_PATH
 ```
