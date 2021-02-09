@@ -154,12 +154,17 @@ func transportRequestUploadSOLMANMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "transportRequestId",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Name: "transportRequestId",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/transportRequestId",
+							},
+						},
+						Scope:     []string{"PARAMETERS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name: "filePath",
