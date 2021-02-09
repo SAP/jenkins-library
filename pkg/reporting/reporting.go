@@ -35,6 +35,7 @@ type ScanRow struct {
 	Columns []ScanCell `json:"columns"`
 }
 
+// AddColumn adds a column to a dedicated ScanRow
 func (s *ScanRow) AddColumn(content interface{}, style ColumnStyle) {
 	if s.Columns == nil {
 		s.Columns = []ScanCell{}
@@ -64,12 +65,15 @@ func (c ColumnStyle) String() string {
 	return [...]string{"", "green-cell", "yellow-cell", "red-cell", "grey-cell", "black-cell"}[c]
 }
 
+// OverviewRow defines a row in the report's overview section
+// it can consist of a description and some details where the details can have a style attached
 type OverviewRow struct {
 	Description string      `json:"description"`
 	Details     string      `json:"details,omitempty"`
 	Style       ColumnStyle `json:"style,omitempty"`
 }
 
+// Subheader defines a dedicated sub header in a report
 type Subheader struct {
 	Description string `json:"text"`
 	Details     string `json:"details,omitempty"`
