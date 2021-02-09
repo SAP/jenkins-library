@@ -26,6 +26,7 @@ type whitesourceExecuteScanOptions struct {
 	BuildTool                            string   `json:"buildTool,omitempty"`
 	ConfigFilePath                       string   `json:"configFilePath,omitempty"`
 	CreateProductFromPipeline            bool     `json:"createProductFromPipeline,omitempty"`
+	CustomScanVersion                    string   `json:"customScanVersion,omitempty"`
 	CvssSeverityLimit                    string   `json:"cvssSeverityLimit,omitempty"`
 	EmailAddressesOfInitialProductAdmins []string `json:"emailAddressesOfInitialProductAdmins,omitempty"`
 	Excludes                             []string `json:"excludes,omitempty"`
@@ -37,7 +38,7 @@ type whitesourceExecuteScanOptions struct {
 	ParallelLimit                        string   `json:"parallelLimit,omitempty"`
 	ProductName                          string   `json:"productName,omitempty"`
 	ProductToken                         string   `json:"productToken,omitempty"`
-	ProductVersion                       string   `json:"productVersion,omitempty"`
+	Version                              string   `json:"version,omitempty"`
 	ProjectName                          string   `json:"projectName,omitempty"`
 	ProjectToken                         string   `json:"projectToken,omitempty"`
 	Reporting                            bool     `json:"reporting,omitempty"`
@@ -167,6 +168,7 @@ func addWhitesourceExecuteScanFlags(cmd *cobra.Command, stepConfig *whitesourceE
 	cmd.Flags().StringVar(&stepConfig.BuildTool, "buildTool", os.Getenv("PIPER_buildTool"), "Defines the tool which is used for building the artifact.")
 	cmd.Flags().StringVar(&stepConfig.ConfigFilePath, "configFilePath", `./wss-unified-agent.config`, "Explicit path to the WhiteSource Unified Agent configuration file.")
 	cmd.Flags().BoolVar(&stepConfig.CreateProductFromPipeline, "createProductFromPipeline", true, "Whether to create the related WhiteSource product on the fly based on the supplied pipeline configuration.")
+	cmd.Flags().StringVar(&stepConfig.CustomScanVersion, "customScanVersion", os.Getenv("PIPER_customScanVersion"), "Custom version of the WhiteSource project used as source.")
 	cmd.Flags().StringVar(&stepConfig.CvssSeverityLimit, "cvssSeverityLimit", `-1`, "Limit of tolerable CVSS v3 score upon assessment and in consequence fails the build, defaults to  `-1`.")
 	cmd.Flags().StringSliceVar(&stepConfig.EmailAddressesOfInitialProductAdmins, "emailAddressesOfInitialProductAdmins", []string{}, "The list of email addresses to assign as product admins for newly created WhiteSource products.")
 	cmd.Flags().StringSliceVar(&stepConfig.Excludes, "excludes", []string{}, "List of file path patterns to exclude in the scan.")
@@ -178,7 +180,7 @@ func addWhitesourceExecuteScanFlags(cmd *cobra.Command, stepConfig *whitesourceE
 	cmd.Flags().StringVar(&stepConfig.ParallelLimit, "parallelLimit", `15`, "[NOT IMPLEMENTED] Limit of parallel jobs being run at once in case of `scanType: 'mta'` based scenarios, defaults to `15`.")
 	cmd.Flags().StringVar(&stepConfig.ProductName, "productName", os.Getenv("PIPER_productName"), "Name of the WhiteSource product used for results aggregation. This parameter is mandatory if the parameter `createProductFromPipeline` is set to `true` and the WhiteSource product does not yet exist. It is also mandatory if the parameter `productToken` is not provided.")
 	cmd.Flags().StringVar(&stepConfig.ProductToken, "productToken", os.Getenv("PIPER_productToken"), "Token of the WhiteSource product to be created and used for results aggregation, usually determined automatically. Can optionally be provided as an alternative to `productName`.")
-	cmd.Flags().StringVar(&stepConfig.ProductVersion, "productVersion", os.Getenv("PIPER_productVersion"), "Version of the WhiteSource product to be created and used for results aggregation.")
+	cmd.Flags().StringVar(&stepConfig.Version, "version", os.Getenv("PIPER_version"), "Version of the WhiteSource product to be created and used for results aggregation.")
 	cmd.Flags().StringVar(&stepConfig.ProjectName, "projectName", os.Getenv("PIPER_projectName"), "The project name used for reporting results in WhiteSource. When provided, all source modules will be scanned into one aggregated WhiteSource project. For scan types `maven`, `mta`, `npm`, the default is to generate one WhiteSource project per module, whereas the project name is derived from the module's build descriptor. For NPM modules, project aggregation is not supported, the last scanned NPM module will override all previously aggregated scan results!")
 	cmd.Flags().StringVar(&stepConfig.ProjectToken, "projectToken", os.Getenv("PIPER_projectToken"), "Project token to execute scan on. Ignored for scan types `maven`, `mta` and `npm`. Used for project aggregation when scanning with the Unified Agent and can be provided as an alternative to `projectName`.")
 	cmd.Flags().BoolVar(&stepConfig.Reporting, "reporting", true, "Whether assessment is being done at all, defaults to `true`")
@@ -301,6 +303,14 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
+						Name:        "customScanVersion",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
 						Name:        "cvssSeverityLimit",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -394,12 +404,17 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "whitesourceProductToken"}, {Name: "whitesource/productToken"}},
 					},
 					{
-						Name:        "productVersion",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "whitesourceProductVersion"}, {Name: "whitesource/productVersion"}},
+						Name: "version",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "artifactVersion",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "productVersion"}, {Name: "whitesourceProductVersion"}, {Name: "whitesource/productVersion"}},
 					},
 					{
 						Name:        "projectName",

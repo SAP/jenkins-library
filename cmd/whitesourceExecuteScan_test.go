@@ -140,9 +140,9 @@ func TestCheckAndReportScanResults(t *testing.T) {
 	t.Run("no reports requested", func(t *testing.T) {
 		// init
 		config := &ScanOptions{
-			ProductToken:   "mock-product-token",
-			ProjectToken:   "mock-project-token",
-			ProductVersion: "1",
+			ProductToken: "mock-product-token",
+			ProjectToken: "mock-project-token",
+			Version:      "1",
 		}
 		scan := newWhitesourceScan(config)
 		utils := newWhitesourceUtilsMock()
@@ -175,7 +175,7 @@ func TestCheckAndReportScanResults(t *testing.T) {
 		config := &ScanOptions{
 			ProductToken:            "mock-product-token",
 			ProjectToken:            "mock-project-token",
-			ProductVersion:          "1",
+			Version:                 "1",
 			SecurityVulnerabilities: true,
 			CvssSeverityLimit:       "6.0",
 		}
@@ -193,7 +193,7 @@ func TestCheckAndReportScanResults(t *testing.T) {
 			ProductToken:            "mock-product-token",
 			ProjectName:             "mock-project - 1",
 			ProjectToken:            "mock-project-token",
-			ProductVersion:          "1",
+			Version:                 "1",
 			SecurityVulnerabilities: true,
 			CvssSeverityLimit:       "4",
 		}
@@ -232,7 +232,7 @@ func TestResolveProjectIdentifiers(t *testing.T) {
 		// assert
 		if assert.NoError(t, err) {
 			assert.Equal(t, "mock-group-id-mock-artifact-id", scan.AggregateProjectName)
-			assert.Equal(t, "1", config.ProductVersion)
+			assert.Equal(t, "1", config.Version)
 			assert.Equal(t, "mock-product-token", config.ProductToken)
 			assert.Equal(t, "mta", utilsMock.usedBuildTool)
 			assert.Equal(t, "my-mta.yml", utilsMock.usedBuildDescriptorFile)
@@ -258,7 +258,7 @@ func TestResolveProjectIdentifiers(t *testing.T) {
 		// assert
 		if assert.NoError(t, err) {
 			assert.Equal(t, "mock-project", scan.AggregateProjectName)
-			assert.Equal(t, "1", config.ProductVersion)
+			assert.Equal(t, "1", config.Version)
 			assert.Equal(t, "mock-product-token", config.ProductToken)
 			assert.Equal(t, "mta", utilsMock.usedBuildTool)
 			assert.Equal(t, "my-mta.yml", utilsMock.usedBuildDescriptorFile)
@@ -514,7 +514,7 @@ func TestCreateCustomVulnerabilityReport(t *testing.T) {
 		assert.Equal(t, "red-cell", scanReport.DetailTable.Rows[1].Columns[2].Style.String())
 		assert.Equal(t, "yellow-cell", scanReport.DetailTable.Rows[2].Columns[2].Style.String())
 
-		assert.Contains(t, "this is the top fix", scanReport.DetailTable.Rows[0].Columns[10])
+		assert.Contains(t, scanReport.DetailTable.Rows[0].Columns[10].Content, "this is the top fix")
 
 	})
 }
@@ -584,8 +584,8 @@ func TestAggregateVersionWideLibraries(t *testing.T) {
 	t.Run("happy path", func(t *testing.T) {
 		// init
 		config := &ScanOptions{
-			ProductToken:   "mock-product-token",
-			ProductVersion: "1",
+			ProductToken: "mock-product-token",
+			Version:      "1",
 		}
 		utils := newWhitesourceUtilsMock()
 		system := ws.NewSystemMock("2010-05-30 00:15:00 +0100")
@@ -606,8 +606,8 @@ func TestAggregateVersionWideVulnerabilities(t *testing.T) {
 	t.Run("happy path", func(t *testing.T) {
 		// init
 		config := &ScanOptions{
-			ProductToken:   "mock-product-token",
-			ProductVersion: "1",
+			ProductToken: "mock-product-token",
+			Version:      "1",
 		}
 		utils := newWhitesourceUtilsMock()
 		system := ws.NewSystemMock("2010-05-30 00:15:00 +0100")
@@ -633,7 +633,7 @@ func TestPersistScannedProjects(t *testing.T) {
 	t.Run("write 1 scanned projects", func(t *testing.T) {
 		// init
 		cpe := whitesourceExecuteScanCommonPipelineEnvironment{}
-		config := &ScanOptions{ProductVersion: "1"}
+		config := &ScanOptions{Version: "1"}
 		scan := newWhitesourceScan(config)
 		_ = scan.AppendScannedProject("project")
 		// test
@@ -644,7 +644,7 @@ func TestPersistScannedProjects(t *testing.T) {
 	t.Run("write 2 scanned projects", func(t *testing.T) {
 		// init
 		cpe := whitesourceExecuteScanCommonPipelineEnvironment{}
-		config := &ScanOptions{ProductVersion: "1"}
+		config := &ScanOptions{Version: "1"}
 		scan := newWhitesourceScan(config)
 		_ = scan.AppendScannedProject("project-app")
 		_ = scan.AppendScannedProject("project-db")
@@ -656,7 +656,7 @@ func TestPersistScannedProjects(t *testing.T) {
 	t.Run("write no projects", func(t *testing.T) {
 		// init
 		cpe := whitesourceExecuteScanCommonPipelineEnvironment{}
-		config := &ScanOptions{ProductVersion: "1"}
+		config := &ScanOptions{Version: "1"}
 		scan := newWhitesourceScan(config)
 		// test
 		persistScannedProjects(config, scan, &cpe)
@@ -666,7 +666,7 @@ func TestPersistScannedProjects(t *testing.T) {
 	t.Run("write aggregated project", func(t *testing.T) {
 		// init
 		cpe := whitesourceExecuteScanCommonPipelineEnvironment{}
-		config := &ScanOptions{ProjectName: "project", ProductVersion: "1"}
+		config := &ScanOptions{ProjectName: "project", Version: "1"}
 		scan := newWhitesourceScan(config)
 		// test
 		persistScannedProjects(config, scan, &cpe)

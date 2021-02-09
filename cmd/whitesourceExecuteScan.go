@@ -63,8 +63,7 @@ func (w *whitesourceUtilsBundle) FileOpen(name string, flag int, perm os.FileMod
 	return os.OpenFile(name, flag, perm)
 }
 
-func (w *whitesourceUtilsBundle) GetArtifactCoordinates(buildTool, buildDescriptorFile string,
-	options *versioning.Options) (versioning.Coordinates, error) {
+func (w *whitesourceUtilsBundle) GetArtifactCoordinates(buildTool, buildDescriptorFile string, options *versioning.Options) (versioning.Coordinates, error) {
 	artifact, err := versioning.GetArtifact(buildTool, buildDescriptorFile, options, w)
 	if err != nil {
 		return nil, err
@@ -108,7 +107,7 @@ func newWhitesourceUtils(config *ScanOptions) *whitesourceUtilsBundle {
 func newWhitesourceScan(config *ScanOptions) *ws.Scan {
 	return &ws.Scan{
 		AggregateProjectName: config.ProjectName,
-		ProductVersion:       config.ProductVersion,
+		ProductVersion:       config.Version,
 	}
 }
 
@@ -181,7 +180,7 @@ func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUti
 	}
 
 	log.Entry().Info("-----------------------------------------------------")
-	log.Entry().Infof("Product Version: '%s'", config.ProductVersion)
+	log.Entry().Infof("Product Version: '%s'", config.Version)
 	log.Entry().Info("Scanned projects:")
 	for _, project := range scan.ScannedProjects() {
 		log.Entry().Infof("  Name: '%s', token: %s", project.Name, project.Token)
@@ -252,7 +251,11 @@ func createWhiteSourceProduct(config *ScanOptions, sys whitesource) (string, err
 }
 
 func resolveProjectIdentifiers(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource) error {
-	if scan.AggregateProjectName == "" || config.ProductVersion == "" {
+	if len(scan.AggregateProjectName) > 0 && (len(config.Version)+len(config.CustomScanVersion) > 0) {
+		if config.Version == "" {
+			config.Version = config.CustomScanVersion
+		}
+	} else {
 		options := &versioning.Options{
 			DockerImage:         config.ScanImage,
 			ProjectSettingsFile: config.ProjectSettingsFile,
@@ -264,21 +267,19 @@ func resolveProjectIdentifiers(config *ScanOptions, scan *ws.Scan, utils whiteso
 			return fmt.Errorf("failed to get build artifact description: %w", err)
 		}
 
-		//ToDo: fill version in coordinates with version from pipeline environment
-
 		nameTmpl := `{{list .GroupID .ArtifactID | join "-" | trimAll "-"}}`
-		name, version := versioning.DetermineProjectCoordinates(nameTmpl, config.VersioningModel, coordinates)
+		name, version := versioning.DetermineProjectCoordinatesWithCustomVersion(nameTmpl, config.VersioningModel, config.CustomScanVersion, coordinates)
 		if scan.AggregateProjectName == "" {
 			log.Entry().Infof("Resolved project name '%s' from descriptor file", name)
 			scan.AggregateProjectName = name
 		}
-		if config.ProductVersion == "" {
-			log.Entry().Infof("Resolved product version '%s' from descriptor file with versioning '%s'",
-				version, config.VersioningModel)
-			config.ProductVersion = version
+		if config.Version == "" {
+			log.Entry().Infof("Resolved product version '%s' from descriptor file with versioning '%s'", version, config.VersioningModel)
+			config.Version = version
 		}
 	}
-	scan.ProductVersion = validateProductVersion(config.ProductVersion)
+
+	scan.ProductVersion = validateProductVersion(config.Version)
 
 	if err := resolveProductToken(config, sys); err != nil {
 		return err
@@ -343,7 +344,7 @@ func resolveAggregateProjectToken(config *ScanOptions, sys whitesource) error {
 		return nil
 	}
 	log.Entry().Infof("Attempting to resolve project token for project '%s'..", config.ProjectName)
-	fullProjName := fmt.Sprintf("%s - %s", config.ProjectName, config.ProductVersion)
+	fullProjName := fmt.Sprintf("%s - %s", config.ProjectName, config.Version)
 	projectToken, err := sys.GetProjectToken(config.ProductToken, fullProjName)
 	if err != nil {
 		return err
@@ -377,7 +378,7 @@ func wsScanOptions(config *ScanOptions) *ws.ScanOptions {
 		UserToken:                  config.UserToken,
 		ProductName:                config.ProductName,
 		ProductToken:               config.ProductToken,
-		ProductVersion:             config.ProductVersion,
+		ProductVersion:             config.Version,
 		ProjectName:                config.ProjectName,
 		BuildDescriptorFile:        config.BuildDescriptorFile,
 		BuildDescriptorExcludeList: config.BuildDescriptorExcludeList,
@@ -657,7 +658,7 @@ func vulnerabilityScore(alert ws.Alert) float64 {
 }
 
 func aggregateVersionWideLibraries(config *ScanOptions, utils whitesourceUtils, sys whitesource) error {
-	log.Entry().Infof("Aggregating list of libraries used for all projects with version: %s", config.ProductVersion)
+	log.Entry().Infof("Aggregating list of libraries used for all projects with version: %s", config.Version)
 
 	projects, err := sys.GetProjectsMetaInfo(config.ProductToken)
 	if err != nil {
@@ -668,7 +669,7 @@ func aggregateVersionWideLibraries(config *ScanOptions, utils whitesourceUtils, 
 	for _, project := range projects {
 		projectVersion := strings.Split(project.Name, " - ")[1]
 		projectName := strings.Split(project.Name, " - ")[0]
-		if projectVersion == config.ProductVersion {
+		if projectVersion == config.Version {
 			libs, err := sys.GetProjectLibraryLocations(project.Token)
 			if err != nil {
 				return err
@@ -684,7 +685,7 @@ func aggregateVersionWideLibraries(config *ScanOptions, utils whitesourceUtils, 
 }
 
 func aggregateVersionWideVulnerabilities(config *ScanOptions, utils whitesourceUtils, sys whitesource) error {
-	log.Entry().Infof("Aggregating list of vulnerabilities for all projects with version: %s", config.ProductVersion)
+	log.Entry().Infof("Aggregating list of vulnerabilities for all projects with version: %s", config.Version)
 
 	projects, err := sys.GetProjectsMetaInfo(config.ProductToken)
 	if err != nil {
@@ -695,7 +696,7 @@ func aggregateVersionWideVulnerabilities(config *ScanOptions, utils whitesourceU
 	projectNames := ``               // holds all project tokens considered a part of the report for debugging
 	for _, project := range projects {
 		projectVersion := strings.Split(project.Name, " - ")[1]
-		if projectVersion == config.ProductVersion {
+		if projectVersion == config.Version {
 			projectNames += project.Name + "\n"
 			alerts, err := sys.GetProjectAlerts(project.Token)
 			if err != nil {
@@ -786,7 +787,7 @@ func fillVulnerabilityExcelReport(alerts []ws.Alert, streamWriter *excelize.Stre
 	return nil
 }
 
-// outputs an slice of libraries to an excel file based on projects with version == config.ProductVersion
+// outputs an slice of libraries to an excel file based on projects with version == config.Version
 func newLibraryCSVReport(libraries map[string][]ws.Library, config *ScanOptions, utils whitesourceUtils) error {
 	output := "Library Name, Project Name\n"
 	for projectName, libraries := range libraries {
@@ -815,7 +816,7 @@ func newLibraryCSVReport(libraries map[string][]ws.Library, config *ScanOptions,
 func persistScannedProjects(config *ScanOptions, scan *ws.Scan, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment) {
 	projectNames := []string{}
 	if config.ProjectName != "" {
-		projectNames = []string{config.ProjectName + " - " + config.ProductVersion}
+		projectNames = []string{config.ProjectName + " - " + config.Version}
 	} else {
 		for _, project := range scan.ScannedProjects() {
 			projectNames = append(projectNames, project.Name)
