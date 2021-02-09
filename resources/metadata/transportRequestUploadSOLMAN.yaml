@@ -58,6 +58,9 @@ spec:
         scope:
           - PARAMETERS
       - name: transportRequestId
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/transportRequestId
         type: string
         mandatory: true
         description: "The id of the transport request to upload the file. This parameter is only taken into account when provided via signature to the step."
