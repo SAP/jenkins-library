@@ -638,7 +638,8 @@ func writeCustomVulnerabilityReports(scanReport reporting.ScanReport, utils whit
 	reportPaths = append(reportPaths, piperutils.Path{Name: "WhiteSource Vulnerability Report", Target: htmlReportPath})
 
 	// markdown reports are used by step pipelineCreateSummary in order to e.g. prepare an issue creation in GitHub
-	mdReport := scanReport.ToMarkdown()
+	// ignore templating errors since template is in our hands and issues will be detected with the automated tests
+	mdReport, _ := scanReport.ToMarkdown()
 	if err := utils.FileWrite(filepath.Join(reporting.MarkdownReportDirectory, fmt.Sprintf("whitesourceExecuteScan_%v.md", utils.Now().Format("20060102150405"))), mdReport, 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return reportPaths, errors.Wrapf(err, "failed to write markdown report")
