@@ -1,9 +1,11 @@
 package cmd
 
 import (
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"testing"
 
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
 )
@@ -24,21 +26,55 @@ func newIntegrationArtifactDownloadTestsUtils() integrationArtifactDownloadMockU
 func TestRunIntegrationArtifactDownload(t *testing.T) {
 	t.Parallel()
 
-	t.Run("happy path", func(t *testing.T) {
-		// init
+	t.Run("Successfull Download of Integration flow Artifact", func(t *testing.T) {
+		tempDir, tmpErr := ioutil.TempDir("", "")
+		assert.NoError(t, tmpErr, "Error when creating temp dir")
 		config := integrationArtifactDownloadOptions{
-			Host:                   "https://roverpoc.it-accd002.cfapps.sap.hana.ondemand.com",
-			DownloadPath:           "iflows",
-			Username:               "sb-8ff0b149-c3e6-417e-ad27-21fa5a3349dd!b15187|it!b11463",
-			Password:               "9f4e13b3-312f-4644-9607-7c21974cb0d6$a1sii7gpT3h_242UKSJLbKnV8wKyeQ6qCsQTxEmvDfE=",
+			Host:                   "https://demo",
+			OAuthTokenProviderURL:  "https://demo/oauth/token",
+			Username:               "demouser",
+			Password:               "******",
 			IntegrationFlowID:      "flow1",
-			IntegrationFlowVersion: "1.0.24",
-			OAuthTokenProviderURL:  "https://roverpoc.authentication.sap.hana.ondemand.com/oauth/token",
+			IntegrationFlowVersion: "1.0.1",
+			DownloadPath:           tempDir,
 		}
-		httpClient := &piperhttp.Client{}
-		// test
-		err := runIntegrationArtifactDownload(&config, nil, httpClient)
-		// assert
-		assert.NoError(t, err)
+
+		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactDownload", ResponseBody: ``, TestType: "Positive"}
+
+		err := runIntegrationArtifactDownload(&config, nil, &httpClient)
+		absolutePath := filepath.Join(tempDir, "flow1.zip")
+		assert.Equal(t, fileExists(absolutePath), true)
+		if assert.NoError(t, err) {
+
+			t.Run("check url", func(t *testing.T) {
+				assert.Equal(t, "https://demo/api/v1/IntegrationDesigntimeArtifacts(Id='flow1',Version='1.0.1')/$value", httpClient.URL)
+			})
+
+			t.Run("check method", func(t *testing.T) {
+				assert.Equal(t, "GET", httpClient.Method)
+			})
+		}
+		defer os.RemoveAll(tempDir) // clean up
+	})
+
+	t.Run("Failed case of Integration Flow artifact Download", func(t *testing.T) {
+		tempDir, tmpErr := ioutil.TempDir("", "")
+		assert.NoError(t, tmpErr, "Error when creating temp dir")
+		config := integrationArtifactDownloadOptions{
+			Host:                   "https://demo",
+			OAuthTokenProviderURL:  "https://demo/oauth/token",
+			Username:               "demouser",
+			Password:               "******",
+			IntegrationFlowID:      "flow1",
+			IntegrationFlowVersion: "1.0.1",
+			DownloadPath:           tempDir,
+		}
+
+		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactDownload", ResponseBody: ``, TestType: "Negative"}
+
+		err := runIntegrationArtifactDownload(&config, nil, &httpClient)
+
+		assert.EqualError(t, err, "HTTP GET request to https://demo/api/v1/IntegrationDesigntimeArtifacts(Id='flow1',Version='1.0.1')/$value failed with error: Unable to download integration artifact, Response Status code:400")
+		defer os.RemoveAll(tempDir) // clean up
 	})
 }

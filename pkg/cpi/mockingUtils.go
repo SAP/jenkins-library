@@ -190,10 +190,11 @@ func GetIntegrationArtifactGetServiceEndpointPositiveCaseRespBody() (*http.Respo
 }
 
 //IntegrationArtifactDownloadCommandMockResponse -Provide http respose body
-func IntegrationArtifactDownloadCommandMockResponse(testCaseType string) (*http.Response, error) {
-	if testCaseType != "Negative" {
+func IntegrationArtifactDownloadCommandMockResponse(testType string) (*http.Response, error) {
+	if testType != "Negative" {
 		return IntegrationArtifactDownloadCommandMockResponsePositiveCaseRespBody()
 	}
+
 	res := http.Response{
 		StatusCode: 400,
 		Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
