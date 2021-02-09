@@ -30,6 +30,8 @@ type runner interface {
 	AppendEnv(env []string)
 	Stdout(out io.Writer)
 	Stderr(err io.Writer)
+	GetStdout() io.Writer
+	GetStderr() io.Writer
 }
 
 // ExecRunner mock for intercepting calls to executables
@@ -68,6 +70,16 @@ func (c *Command) Stdout(stdout io.Writer) {
 // Stderr ..
 func (c *Command) Stderr(stderr io.Writer) {
 	c.stderr = stderr
+}
+
+// GetStdout Returns the writer for stdout
+func (c *Command) GetStdout() io.Writer {
+	return c.stdout
+}
+
+//GetStderr Retursn the writer for stderr
+func (c *Command) GetStderr() io.Writer {
+	return c.stderr
 }
 
 // ExecCommand defines how to execute os commands

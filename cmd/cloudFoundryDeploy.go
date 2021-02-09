@@ -838,14 +838,18 @@ func cfDeploy(
 	// TODO set HOME to config.DockerWorkspace
 	command.SetEnv(additionalEnvironment)
 
-	err = _cfLogin(command, cloudfoundry.LoginOptions{
-		CfAPIEndpoint: config.APIEndpoint,
-		CfOrg:         config.Org,
-		CfSpace:       config.Space,
-		Username:      config.Username,
-		Password:      config.Password,
-		CfLoginOpts:   strings.Fields(config.LoginParameters),
-	})
+	err = command.RunExecutable("cf", "version")
+
+	if err == nil {
+		err = _cfLogin(command, cloudfoundry.LoginOptions{
+			CfAPIEndpoint: config.APIEndpoint,
+			CfOrg:         config.Org,
+			CfSpace:       config.Space,
+			Username:      config.Username,
+			Password:      config.Password,
+			CfLoginOpts:   strings.Fields(config.LoginParameters),
+		})
+	}
 
 	if err == nil {
 		loginPerformed = true
