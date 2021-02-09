@@ -81,6 +81,30 @@ func TestToHTML(t *testing.T) {
 	})
 }
 
+func TestToMarkdown(t *testing.T) {
+	report := ScanReport{
+		Title:      "Report Test Title",
+		Subheaders: []Subheader{{Description: "sub 1", Details: "1"}, {Description: "sub 2", Details: "2"}},
+		Overview: []OverviewRow{
+			{"overview 1", "1", Green},
+			{"overview 2", "2", Green},
+		},
+		FurtherInfo: "this is further information",
+		ReportTime:  time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
+	}
+
+	res, err := report.ToMarkdown()
+	result := string(res)
+	assert.NoError(t, err)
+	assert.Contains(t, result, `<details><summary>Report Test Title</summary>`)
+	assert.Contains(t, result, `sub 1: 1`)
+	assert.Contains(t, result, `sub 2: 2`)
+	assert.Contains(t, result, `overview 1: 1`)
+	assert.Contains(t, result, `overview 2: 2`)
+	assert.Contains(t, result, `this is further information`)
+	assert.Contains(t, result, "Snapshot taken: _Jan 01, 2021 - 00:00:00 UTC_")
+}
+
 func TestTableColumnCount(t *testing.T) {
 	t.Run("table without counter", func(t *testing.T) {
 		details := ScanDetailTable{

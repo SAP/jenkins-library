@@ -212,26 +212,40 @@ func (s *ScanReport) ToHTML() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+const reportMdTemplate = `<details><summary>{{.Title}}</summary>
+<p>
+
+{{range $s := .Subheaders}}
+{{- $s.Description}}: {{$s.Details}}
+{{end}}
+
+{{range $o := .Overview}}
+{{- drawOverviewRow $o}}
+{{end}}
+
+{{.FurtherInfo}}
+
+Snapshot taken: _{{reportTime .ReportTime}}_`
+
 // ToMarkdown creates a markdown version of the report content
-func (s *ScanReport) ToMarkdown() []byte {
-	//ToDo: create collapsible markdown?
-	/*
-		## collapsible markdown?
-
-		<details><summary>CLICK ME</summary>
-		<p>
-
-		#### yes, even hidden code blocks!
-
-		```python
-		print("hello world!")
-		```
-
-		</p>
-		</details>
-	*/
-
-	return []byte(fmt.Sprintf("<summary>%v</summary>", s.Title))
+func (s *ScanReport) ToMarkdown() ([]byte, error) {
+	funcMap := template.FuncMap{
+		"reportTime": func(currentTime time.Time) string {
+			return currentTime.Format("Jan 02, 2006 - 15:04:05 MST")
+		},
+		"drawOverviewRow": drawOverviewRow,
+	}
+	report := []byte{}
+	tmpl, err := template.New("report").Funcs(funcMap).Parse(reportMdTemplate)
+	if err != nil {
+		return report, errors.Wrap(err, "failed to create Markdown report template")
+	}
+	buf := new(bytes.Buffer)
+	err = tmpl.Execute(buf, s)
+	if err != nil {
+		return report, errors.Wrap(err, "failed to execute Markdown report template")
+	}
+	return buf.Bytes(), nil
 }
 
 func tableColumnCount(scanDetails ScanDetailTable) int {
@@ -253,9 +267,7 @@ func drawOverviewRow(row OverviewRow) string {
 	// so far accept only accept max. two columns for overview table: description and content
 	if len(row.Details) == 0 {
 		return row.Description
-	} else {
-		// ToDo: allow styling of details
-		return fmt.Sprintf("%v: %v", row.Description, row.Details)
 	}
-	return ""
+	// ToDo: allow styling of details
+	return fmt.Sprintf("%v: %v", row.Description, row.Details)
 }
