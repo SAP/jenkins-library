@@ -13,7 +13,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-const ReportsDirectory = "whitesource-reports"
+// ReportsDirectory defines the subfolder for the WhiteSource reports which are generated
+const ReportsDirectory = "whitesource"
 
 // Product defines a WhiteSource product with name and token
 type Product struct {
