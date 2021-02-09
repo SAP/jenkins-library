@@ -94,21 +94,7 @@ func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) er
 			return err
 		}
 
-		commandSecrets := ""
-		if len(config.CfAppsWithSecrets) > 0 {
-			fmt.Printf("Envs: %v", os.Environ())
-			for _, appName := range config.CfAppsWithSecrets {
-				var clientID, clientSecret string
-				clientID = os.Getenv("PIPER_NEWMAN_USER_" + appName)
-				clientSecret = os.Getenv("PIPER_NEWMAN_PASSWORD_" + appName)
-				if clientID != "" && clientSecret != "" {
-					commandSecrets += " --env-var " + appName + "_clientid=" + clientID + " --env-var " + appName + "_clientsecret=" + clientSecret
-					log.Entry().Infof("secrets found for app %v and forwarded to newman as --env-var parameter", appName)
-				} else {
-					log.Entry().Errorf("cannot fetch secrets from environment variables for app %v", appName)
-				}
-			}
-		}
+		commandSecrets := handleCfAppCredentials(config)
 
 		if !config.FailOnError {
 			runCommand += " --suppress-exit-code"
@@ -184,4 +170,22 @@ func resolveTemplate(config *newmanExecuteOptions, collection string) (string, e
 func defineCollectionDisplayName(collection string) string {
 	replacedSeparators := strings.Replace(collection, string(filepath.Separator), "_", -1)
 	return strings.Split(replacedSeparators, ".")[0]
+}
+
+func handleCfAppCredentials(config *newmanExecuteOptions) string {
+	commandSecrets := ""
+	if len(config.CfAppsWithSecrets) > 0 {
+		for _, appName := range config.CfAppsWithSecrets {
+			var clientID, clientSecret string
+			clientID = os.Getenv("PIPER_NEWMANEXECUTE_" + appName + "_clientid")
+			clientSecret = os.Getenv("PIPER_NEWMANEXECUTE_" + appName + "_clientsecret")
+			if clientID != "" && clientSecret != "" {
+				commandSecrets += " --env-var " + appName + "_clientid=" + clientID + " --env-var " + appName + "_clientsecret=" + clientSecret
+				log.Entry().Infof("secrets found for app %v and forwarded to newman as --env-var parameter", appName)
+			} else {
+				log.Entry().Errorf("cannot fetch secrets from environment variables for app %v", appName)
+			}
+		}
+	}
+	return commandSecrets
 }
