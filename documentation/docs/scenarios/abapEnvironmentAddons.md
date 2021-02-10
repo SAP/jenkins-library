@@ -111,7 +111,7 @@ The pipeline configuration is done in a git repository (for example on GitHub). 
 
 #### Add-on Assembly Kit as a Service (=AAKaaS)
 
-The communication with the AAKaaS needs a technical S-User. The creation and activation of such a user is described in [SAP note 2174416](https://launchpad.support.sap.com/#/notes/2174416). Make sure that this S-User is assigned to the customer number under which the “SAP CP ABAP ENVIRONMENT” tenants are licensed and for which the development namespace was reserved. The user and password need to be stored in the Jenkins Credentials Store.
+The communication with the AAKaaS needs a technical communication user. The creation and activation of such a user is described in [SAP note 2174416](https://launchpad.support.sap.com/#/notes/2174416). Make sure that this technical communication user is assigned to the customer number under which the “SAP CP ABAP ENVIRONMENT” tenants are licensed and for which the development namespace was reserved. The user and password need to be stored in the Jenkins Credentials Store.
 
 #### Cloud Foundry Access
 
