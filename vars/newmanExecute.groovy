@@ -13,6 +13,20 @@ import static com.sap.piper.Prerequisites.checkScript
      * (--env-var <appName_clientid>=${clientid} & --env-var <appName_clientsecret>=${clientsecret})
      */
     "cfAppsWithSecrets",
+    /**
+     * Define an additional repository where the test implementation is located.
+     * For protected repositories the `testRepository` needs to contain the ssh git url.
+     */
+    'testRepository',
+    /**
+     * Only if `testRepository` is provided: Branch of testRepository, defaults to master.
+     */
+    'gitBranch',
+    /**
+     * Only if `testRepository` is provided: Credentials for a protected testRepository
+     * @possibleValues Jenkins credentials id
+     */
+    'gitSshKeyCredentialsId',
 ]
 
 void call(Map parameters = [:]) {
@@ -23,7 +37,12 @@ void call(Map parameters = [:]) {
         .mixinGeneralConfig(script.commonPipelineEnvironment, CONFIG_KEYS)
         .mixinStepConfig(script.commonPipelineEnvironment, CONFIG_KEYS)
         .mixinStageConfig(script.commonPipelineEnvironment, stageName, CONFIG_KEYS)
+        .mixin(parameters, CONFIG_KEYS)
         .use()
+
+    if (parameters.testRepository || config.testRepository ) {
+        parameters.stashContent = GitUtils.handleTestRepository(this, [gitBranch: config.gitBranch, gitSshKeyCredentialsId: config.gitSshKeyCredentialsId, testRepository: config.testRepository])
+    }
 
     List<Map> cfCredentials = []
     if (config.cfAppsWithSecrets) {
