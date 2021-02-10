@@ -126,6 +126,7 @@ func Execute() {
 	rootCmd.AddCommand(IntegrationArtifactUpdateConfigurationCommand())
 	rootCmd.AddCommand(IntegrationArtifactGetMplStatusCommand())
 	rootCmd.AddCommand(AbapEnvironmentAssembleConfirmCommand())
+	rootCmd.AddCommand(TransportRequestCreateCTSCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
