@@ -67,7 +67,7 @@ func (w *whitesourceUtilsBundle) FileOpen(name string, flag int, perm os.FileMod
 func (w *whitesourceUtilsBundle) GetArtifactCoordinates(buildTool, buildDescriptorFile string, options *versioning.Options) (versioning.Coordinates, error) {
 	artifact, err := versioning.GetArtifact(buildTool, buildDescriptorFile, options, w)
 	if err != nil {
-		return nil, err
+		return versioning.Coordinates{}, err
 	}
 	return artifact.GetCoordinates()
 }
@@ -276,16 +276,20 @@ func resolveProjectIdentifiers(config *ScanOptions, scan *ws.Scan, utils whiteso
 			return fmt.Errorf("failed to get build artifact description: %w", err)
 		}
 
+		if len(config.Version) > 0 {
+			log.Entry().Infof("Resolving product version from default provided '%s' with versioning '%s'", config.Version, config.VersioningModel)
+			coordinates.Version = config.Version
+		}
+
 		nameTmpl := `{{list .GroupID .ArtifactID | join "-" | trimAll "-"}}`
 		name, version := versioning.DetermineProjectCoordinatesWithCustomVersion(nameTmpl, config.VersioningModel, config.CustomScanVersion, coordinates)
 		if scan.AggregateProjectName == "" {
 			log.Entry().Infof("Resolved project name '%s' from descriptor file", name)
 			scan.AggregateProjectName = name
 		}
-		if config.Version == "" {
-			log.Entry().Infof("Resolved product version '%s' from descriptor file with versioning '%s'", version, config.VersioningModel)
-			config.Version = version
-		}
+
+		config.Version = version
+		log.Entry().Infof("Resolved product version '%s'", version)
 	}
 
 	scan.ProductVersion = validateProductVersion(config.Version)

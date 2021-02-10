@@ -14,15 +14,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type whitesourceCoordinatesMock struct {
-	GroupID    string
-	ArtifactID string
-	Version    string
-}
-
 type whitesourceUtilsMock struct {
 	*ws.ScanUtilsMock
-	coordinates             whitesourceCoordinatesMock
+	coordinates             versioning.Coordinates
 	usedBuildTool           string
 	usedBuildDescriptorFile string
 	usedOptions             versioning.Options
@@ -49,7 +43,7 @@ func newWhitesourceUtilsMock() *whitesourceUtilsMock {
 			FilesMock:      &mock.FilesMock{},
 			ExecMockRunner: &mock.ExecMockRunner{},
 		},
-		coordinates: whitesourceCoordinatesMock{
+		coordinates: versioning.Coordinates{
 			GroupID:    "mock-group-id",
 			ArtifactID: "mock-artifact-id",
 			Version:    "1.0.42",
@@ -213,6 +207,35 @@ func TestResolveProjectIdentifiers(t *testing.T) {
 		config := ScanOptions{
 			BuildTool:           "mta",
 			BuildDescriptorFile: "my-mta.yml",
+			VersioningModel:     "major",
+			ProductName:         "mock-product",
+			M2Path:              "m2/path",
+			ProjectSettingsFile: "project-settings.xml",
+			GlobalSettingsFile:  "global-settings.xml",
+		}
+		utilsMock := newWhitesourceUtilsMock()
+		systemMock := ws.NewSystemMock("ignored")
+		scan := newWhitesourceScan(&config)
+		// test
+		err := resolveProjectIdentifiers(&config, scan, utilsMock, systemMock)
+		// assert
+		if assert.NoError(t, err) {
+			assert.Equal(t, "mock-group-id-mock-artifact-id", scan.AggregateProjectName)
+			assert.Equal(t, "1", config.Version)
+			assert.Equal(t, "mock-product-token", config.ProductToken)
+			assert.Equal(t, "mta", utilsMock.usedBuildTool)
+			assert.Equal(t, "my-mta.yml", utilsMock.usedBuildDescriptorFile)
+			assert.Equal(t, "project-settings.xml", utilsMock.usedOptions.ProjectSettingsFile)
+			assert.Equal(t, "global-settings.xml", utilsMock.usedOptions.GlobalSettingsFile)
+			assert.Equal(t, "m2/path", utilsMock.usedOptions.M2Path)
+		}
+	})
+	t.Run("success - with version from default", func(t *testing.T) {
+		// init
+		config := ScanOptions{
+			BuildTool:           "mta",
+			BuildDescriptorFile: "my-mta.yml",
+			Version:             "1.2.3-20200101",
 			VersioningModel:     "major",
 			ProductName:         "mock-product",
 			M2Path:              "m2/path",
