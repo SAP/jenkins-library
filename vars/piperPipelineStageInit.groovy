@@ -117,7 +117,11 @@ void call(Map parameters = [:]) {
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], ordinal: 1, telemetryDisabled: true) {
         def scmInfo = parameters.scmInfo
-        if (!parameters.skipCheckout) {
+        def skipCheckout = parameters.skipCheckout
+        if (skipCheckout != null && !(skipCheckout instanceof Boolean)) {
+            error "[${STEP_NAME}] Parameter skipCheckout has to be of type boolean. Instead got '${skipCheckout.class.getName()}'"
+        }
+        if (!skipCheckout) {
             scmInfo = checkout(parameters.checkoutMap ?: scm)
         }
 

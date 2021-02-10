@@ -243,4 +243,17 @@ class PiperPipelineStageInitTest extends BasePiperTest {
         assertThat(stepsCalled, not(hasItem('checkout')))
     }
 
+    @Test
+    void "Try to skip checkout with parameter skipCheckout not boolean throws error"() {
+        thrown.expectMessage('[piperPipelineStageInit] Parameter skipCheckout has to be of type boolean. Instead got \'java.lang.String\'')
+
+        jsr.step.piperPipelineStageInit(
+            script: nullScript,
+            juStabUtils: utils,
+            buildTool: 'maven',
+            stashSettings: 'com.sap.piper/pipeline/stashSettings.yml',
+            skipCheckout: "false"
+        )
+    }
+
 }
