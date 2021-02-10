@@ -68,13 +68,6 @@ void call(parameters) {
                 }
             }
 
-            stage('Build Confirm') {
-                when {expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}}
-                steps {
-                    abapEnvironmentPipelineStageBuildConfirm script: parameters.script
-                }
-            }
-
         }
         post {
             /* https://jenkins.io/doc/book/pipeline/syntax/#post */
