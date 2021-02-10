@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"mime"
 	"net/http"
@@ -78,10 +79,13 @@ func runIntegrationArtifactDownload(config *integrationArtifactDownloadOptions, 
 	if httpErr != nil {
 		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error", httpMethod, downloadArtifactURL)
 	}
+	if downloadResp == nil {
+		return errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
+	}
 	contentDisposition := downloadResp.Header.Get("Content-Disposition")
 	disposition, params, err := mime.ParseMediaType(contentDisposition)
 	if err != nil {
-		return errors.Wrap(err, "failed to read filename from http response headers, Content-Disposition "+disposition)
+		return errors.Wrapf(err, "failed to read filename from http response headers, Content-Disposition "+disposition)
 	}
 	filename := params["filename"]
 
@@ -89,22 +93,12 @@ func runIntegrationArtifactDownload(config *integrationArtifactDownloadOptions, 
 		defer downloadResp.Body.Close()
 	}
 
-	if downloadResp == nil {
-		return errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
-	}
-
 	if downloadResp.StatusCode == 200 {
-		workspace := config.DownloadPath
-		os.MkdirAll(workspace, os.ModePerm)
-		zipFileName := filepath.Join(workspace, filename)
-		var body []byte
-		body, readErr := ioutil.ReadAll(downloadResp.Body)
-		if readErr != nil {
-			return errors.Wrap(readErr, "HTTP response body could not be read")
-		}
-
+		workspaceRelativePath := config.DownloadPath
+		os.MkdirAll(workspaceRelativePath, 755)
+		zipFileName := filepath.Join(workspaceRelativePath, filename)
 		file, _ := os.Create(zipFileName)
-		file.Write([]byte(body))
+		io.Copy(file, downloadResp.Body)
 		return nil
 	}
 	responseBody, readErr := ioutil.ReadAll(downloadResp.Body)

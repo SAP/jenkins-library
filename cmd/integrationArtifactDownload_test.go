@@ -28,6 +28,7 @@ func TestRunIntegrationArtifactDownload(t *testing.T) {
 
 	t.Run("Successfull Download of Integration flow Artifact", func(t *testing.T) {
 		tempDir, tmpErr := ioutil.TempDir("", "")
+		defer os.RemoveAll(tempDir) // clean up
 		assert.NoError(t, tmpErr, "Error when creating temp dir")
 		config := integrationArtifactDownloadOptions{
 			Host:                   "https://demo",
@@ -43,9 +44,9 @@ func TestRunIntegrationArtifactDownload(t *testing.T) {
 
 		err := runIntegrationArtifactDownload(&config, nil, &httpClient)
 		absolutePath := filepath.Join(tempDir, "flow1.zip")
-		assert.Equal(t, fileExists(absolutePath), true)
+		assert.DirExists(t, tempDir)
 		if assert.NoError(t, err) {
-
+			assert.Equal(t, fileExists(absolutePath), true)
 			t.Run("check url", func(t *testing.T) {
 				assert.Equal(t, "https://demo/api/v1/IntegrationDesigntimeArtifacts(Id='flow1',Version='1.0.1')/$value", httpClient.URL)
 			})
@@ -54,12 +55,9 @@ func TestRunIntegrationArtifactDownload(t *testing.T) {
 				assert.Equal(t, "GET", httpClient.Method)
 			})
 		}
-		defer os.RemoveAll(tempDir) // clean up
 	})
 
 	t.Run("Failed case of Integration Flow artifact Download", func(t *testing.T) {
-		tempDir, tmpErr := ioutil.TempDir("", "")
-		assert.NoError(t, tmpErr, "Error when creating temp dir")
 		config := integrationArtifactDownloadOptions{
 			Host:                   "https://demo",
 			OAuthTokenProviderURL:  "https://demo/oauth/token",
@@ -67,7 +65,7 @@ func TestRunIntegrationArtifactDownload(t *testing.T) {
 			Password:               "******",
 			IntegrationFlowID:      "flow1",
 			IntegrationFlowVersion: "1.0.1",
-			DownloadPath:           tempDir,
+			DownloadPath:           "tmp",
 		}
 
 		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactDownload", ResponseBody: ``, TestType: "Negative"}
@@ -75,6 +73,5 @@ func TestRunIntegrationArtifactDownload(t *testing.T) {
 		err := runIntegrationArtifactDownload(&config, nil, &httpClient)
 
 		assert.EqualError(t, err, "HTTP GET request to https://demo/api/v1/IntegrationDesigntimeArtifacts(Id='flow1',Version='1.0.1')/$value failed with error: Unable to download integration artifact, Response Status code:400")
-		defer os.RemoveAll(tempDir) // clean up
 	})
 }
