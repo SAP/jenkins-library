@@ -70,7 +70,7 @@ func TestRetrieveLabelStraightForward(t *testing.T) {
 			t.Run(testConfig[0], func(t *testing.T) {
 				commitIter := &commitIteratorMock{
 					commits: []object.Commit{
-						object.Commit{
+						{
 							Hash:    plumbing.NewHash("3434343434343434343434343434343434343434"),
 							Message: testConfig[1],
 						},
@@ -87,45 +87,45 @@ func TestRetrieveLabelStraightForward(t *testing.T) {
 		}
 
 		tests := [][]string{
-			[]string{
+			{
 				"straight forward",
 				"this is a commit with TransportRequestId\n\nThis is the first line of the message body\nTransportRequest: 12345678",
 				"12345678",
 			},
-			[]string{
+			{
 				"trailing spaces after our value",
 				"this is a commit with TransportRequestId\n\nThis is the first line of the message body\nTransportRequest: 12345678  ",
 				"12345678",
 			},
-			[]string{
+			{
 				"trailing text after our value",
 				"this is a commit with TransportRequestId\n\nThis is the first line of the message body\nTransportRequest: 12345678 aaa",
 			},
-			[]string{
+			{
 				"leading whitespace before our label",
 				"this is a commit with TransportRequestId\n\nThis is the first line of the message body\n   TransportRequest: 12345678",
 				"12345678",
 			},
-			[]string{
+			{
 				"leading text before our label",
 				"this is a commit with TransportRequestId\n\nThis is the first line of the message body\naaa TransportRequest: 12345678",
 			},
-			[]string{
+			{
 				"whitespaces before column",
 				"this is a commit with TransportRequestId\n\nThis is the first line of the message body\nTransportRequest  : 12345678",
 				"12345678",
 			},
-			[]string{
+			{
 				"no whitespaces after column",
 				"this is a commit with TransportRequestId\n\nThis is the first line of the message body\nTransportRequest  :12345678",
 				"12345678",
 			},
-			[]string{
+			{
 				"two times the same id in the same commit",
 				"this is a commit with TransportRequestId\n\nThis is the first line of the message body\nTransportRequest : 12345678\nTransportRequest : 12345678",
 				"12345678",
 			},
-			[]string{
+			{
 				// we report the ids, this is basically an invalid state, but needs to be filtered out by the caller
 				"two different ids in the same commit",
 				"this is a commit with TransportRequestId\n\nThis is the first line of the message body\nTransportRequest : 12345678\nTransportRequest : 87654321",
@@ -143,11 +143,11 @@ func TestRetrieveLabelStraightForward(t *testing.T) {
 		t.Run("two different ids in different commits", func(t *testing.T) {
 			commitIter := &commitIteratorMock{
 				commits: []object.Commit{
-					object.Commit{
+					{
 						Hash:    plumbing.NewHash("3434343434343434343434343434343434343434"),
 						Message: "this is a commit with TransportRequestId\n\nThis is the first line of the message body\nTransportRequest: 12345678",
 					},
-					object.Commit{
+					{
 						Hash:    plumbing.NewHash("1212121212121212121212121212121212121212"),
 						Message: "this is a commit with TransportRequestId\n\nThis is the first line of the message body\nTransportRequest: 87654321",
 					},
@@ -162,11 +162,11 @@ func TestRetrieveLabelStraightForward(t *testing.T) {
 		t.Run("two different ids in different commits agains, order needs to be the same", func(t *testing.T) {
 			commitIter := &commitIteratorMock{
 				commits: []object.Commit{
-					object.Commit{
+					{
 						Hash:    plumbing.NewHash("1212121212121212121212121212121212121212"),
 						Message: "this is a commit with TransportRequestId\n\nThis is the first line of the message body\nTransportRequest: 87654321",
 					},
-					object.Commit{
+					{
 						Hash:    plumbing.NewHash("3434343434343434343434343434343434343434"),
 						Message: "this is a commit with TransportRequestId\n\nThis is the first line of the message body\nTransportRequest: 12345678",
 					},
@@ -181,11 +181,11 @@ func TestRetrieveLabelStraightForward(t *testing.T) {
 		t.Run("the same id in different commits", func(t *testing.T) {
 			commitIter := &commitIteratorMock{
 				commits: []object.Commit{
-					object.Commit{
+					{
 						Hash:    plumbing.NewHash("3434343434343434343434343434343434343434"),
 						Message: "this is a commit with TransportRequestId\n\nThis is the first line of the message body\nTransportRequest: 12345678",
 					},
-					object.Commit{
+					{
 						Hash:    plumbing.NewHash("1212121212121212121212121212121212121212"),
 						Message: "this is a commit with TransportRequestId\n\nThis is the first line of the message body\nTransportRequest: 12345678",
 					},
