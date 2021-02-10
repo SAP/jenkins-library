@@ -208,7 +208,7 @@ func TestCheckAndReportScanResults(t *testing.T) {
 
 func TestResolveProjectIdentifiers(t *testing.T) {
 	t.Parallel()
-	t.Run("happy path", func(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
 		// init
 		config := ScanOptions{
 			BuildTool:           "mta",
@@ -228,6 +228,35 @@ func TestResolveProjectIdentifiers(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.Equal(t, "mock-group-id-mock-artifact-id", scan.AggregateProjectName)
 			assert.Equal(t, "1", config.Version)
+			assert.Equal(t, "mock-product-token", config.ProductToken)
+			assert.Equal(t, "mta", utilsMock.usedBuildTool)
+			assert.Equal(t, "my-mta.yml", utilsMock.usedBuildDescriptorFile)
+			assert.Equal(t, "project-settings.xml", utilsMock.usedOptions.ProjectSettingsFile)
+			assert.Equal(t, "global-settings.xml", utilsMock.usedOptions.GlobalSettingsFile)
+			assert.Equal(t, "m2/path", utilsMock.usedOptions.M2Path)
+		}
+	})
+	t.Run("success - with custom scan version", func(t *testing.T) {
+		// init
+		config := ScanOptions{
+			BuildTool:           "mta",
+			BuildDescriptorFile: "my-mta.yml",
+			CustomScanVersion:   "2.3.4",
+			VersioningModel:     "major",
+			ProductName:         "mock-product",
+			M2Path:              "m2/path",
+			ProjectSettingsFile: "project-settings.xml",
+			GlobalSettingsFile:  "global-settings.xml",
+		}
+		utilsMock := newWhitesourceUtilsMock()
+		systemMock := ws.NewSystemMock("ignored")
+		scan := newWhitesourceScan(&config)
+		// test
+		err := resolveProjectIdentifiers(&config, scan, utilsMock, systemMock)
+		// assert
+		if assert.NoError(t, err) {
+			assert.Equal(t, "mock-group-id-mock-artifact-id", scan.AggregateProjectName)
+			assert.Equal(t, "2.3.4", config.Version)
 			assert.Equal(t, "mock-product-token", config.ProductToken)
 			assert.Equal(t, "mta", utilsMock.usedBuildTool)
 			assert.Equal(t, "my-mta.yml", utilsMock.usedBuildDescriptorFile)
