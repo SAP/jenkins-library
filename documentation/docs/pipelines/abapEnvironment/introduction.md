@@ -47,6 +47,7 @@ The following stages and steps are part of the pipeline:
 | [Integration Tests](stages/integrationTest.md)        | [cloudFoundryCreateService](https://sap.github.io/jenkins-library/steps/cloudFoundryCreateService/)|
 | [Confirm](stages/confirm.md)                  | -     |
 | [Publish](stages/publish.md)                  | [abapAddonAssemblyKitPublishTargetVector](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitPublishTargetVector/)|
+| [Build Confirm](stages/buildConfirm.md)                  | [abapEnvironmentAssembleConfirm](https://sap.github.io/jenkins-library/steps/abapEnvironmentAssembleConfirm/)|
 | [Post](stages/post.md)                     | [cloudFoundryDeleteService](https://sap.github.io/jenkins-library/steps/cloudFoundryDeleteService/)|
 
 Please navigate to a stage or step to learn more details. [Here](configuration.md) you can find a step-by-step example on how to configure your pipeline.

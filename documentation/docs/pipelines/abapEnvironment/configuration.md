@@ -16,6 +16,7 @@ You can have a look at different pipeline configurations in our [SAP-samples rep
 | [Integration Tests](stages/integrationTest.md)        | [cloudFoundryCreateService](https://sap.github.io/jenkins-library/steps/cloudFoundryCreateService/)|
 | [Confirm](stages/confirm.md)                  | -     |
 | [Publish](stages/publish.md)                  | [abapAddonAssemblyKitPublishTargetVector](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitPublishTargetVector/)|
+| [Build Confirm](stages/buildConfirm.md)                  | [abapEnvironmentAssembleConfirm](https://sap.github.io/jenkins-library/steps/abapEnvironmentAssembleConfirm/)|
 | [Post](stages/post.md)                     | [cloudFoundryDeleteService](https://sap.github.io/jenkins-library/steps/cloudFoundryDeleteService/)|
 
 !!! caution "Upcoming 2102 release of SAP BTP ABAP Environment"
