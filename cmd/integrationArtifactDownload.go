@@ -95,9 +95,15 @@ func runIntegrationArtifactDownload(config *integrationArtifactDownloadOptions, 
 
 	if downloadResp.StatusCode == 200 {
 		workspaceRelativePath := config.DownloadPath
-		os.MkdirAll(workspaceRelativePath, 755)
+		err = os.MkdirAll(workspaceRelativePath, 755)
+		if err != nil {
+			return errors.Wrapf(err, "Failed to create workspace directory")
+		}
 		zipFileName := filepath.Join(workspaceRelativePath, filename)
-		file, _ := os.Create(zipFileName)
+		file, err := os.Create(zipFileName)
+		if err != nil {
+			return errors.Wrapf(err, "Failed to create integration flow artifact file")
+		}
 		io.Copy(file, downloadResp.Body)
 		return nil
 	}
