@@ -45,6 +45,7 @@ func GetAllStepMetadata() map[string]config.StepData {
 		"gitopsUpdateDeployment":                  gitopsUpdateDeploymentMetadata(),
 		"hadolintExecute":                         hadolintExecuteMetadata(),
 		"integrationArtifactDeploy":               integrationArtifactDeployMetadata(),
+		"integrationArtifactDownload":             integrationArtifactDownloadMetadata(),
 		"integrationArtifactGetMplStatus":         integrationArtifactGetMplStatusMetadata(),
 		"integrationArtifactGetServiceEndpoint":   integrationArtifactGetServiceEndpointMetadata(),
 		"integrationArtifactUpdateConfiguration":  integrationArtifactUpdateConfigurationMetadata(),
