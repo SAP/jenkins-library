@@ -2,30 +2,31 @@ package transportrequest
 
 import (
 	"fmt"
-	pipergit "github.com/SAP/jenkins-library/pkg/git"
+	"os"
+	"regexp"
+	"sort"
+
+	gitUtils "github.com/SAP/jenkins-library/pkg/git"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/pkg/errors"
-	"os"
-	"regexp"
-	"sort"
 )
 
-var plainOpen = plainOpenInCurrentWorkDir
-var logRange = pipergit.LogRange
+var logRange = gitUtils.LogRange
 var findLabelsInCommits = FindLabelsInCommits
 
-func plainOpenInCurrentWorkDir() (*git.Repository, error) {
-	workdir, err := os.Getwd()
+type iTransportRequestGitUtils interface {
+	PlainOpen(directory string) (*git.Repository, error)
+}
+type transportRequestGitUtils struct {
+}
+
+func (g *transportRequestGitUtils) PlainOpen(directory string) (*git.Repository, error) {
+	r, err := gitUtils.PlainOpen(directory)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Cannot open git repo in current working directory '%s'", workdir)
-	}
-	log.Entry().Infof("Opening git repo at '%s'", workdir)
-	r, err := git.PlainOpen(workdir)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Unable to open git repository at '%s'", workdir)
+		return nil, errors.Wrapf(err, "Unable to open git repository at '%s'", directory)
 	}
 	return r, nil
 }
@@ -34,9 +35,20 @@ func plainOpenInCurrentWorkDir() (*git.Repository, error) {
 // We assume the git repo is present in the current working directory.
 func FindIDInRange(label, from, to string) (string, error) {
 
-	r, err := plainOpen()
+	return findIDInRange(label, from, to, &transportRequestGitUtils{})
+}
+
+func findIDInRange(label, from, to string, trGitUtils iTransportRequestGitUtils) (string, error) {
+
+	workdir, err := os.Getwd()
 	if err != nil {
-		return "", errors.Wrapf(err, "Cannot retrieve '%s'.", label)
+		return "", errors.Wrapf(err, "Cannot open git repo in current working directory '%s'", workdir)
+	}
+	log.Entry().Infof("Opening git repo at '%s'", workdir)
+
+	r, err := trGitUtils.PlainOpen(workdir)
+	if err != nil {
+		return "", errors.Wrapf(err, "Unable to open git repository at '%s'", workdir)
 	}
 
 	cIter, err := logRange(r, from, to)

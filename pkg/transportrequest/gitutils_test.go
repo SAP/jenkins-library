@@ -1,16 +1,17 @@
 package transportrequest
 
 import (
+	"io"
+	"testing"
+
+	pipergit "github.com/SAP/jenkins-library/pkg/git"
+	"github.com/go-git/go-billy/v5/memfs"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/storer"
-	"github.com/stretchr/testify/assert"
 	"github.com/go-git/go-git/v5/storage/memory"
-	"github.com/go-git/go-billy/v5/memfs"
-	pipergit "github.com/SAP/jenkins-library/pkg/git"
-	"io"
-	"testing"
+	"github.com/stretchr/testify/assert"
 )
 
 type commitIteratorMock struct {
@@ -52,6 +53,13 @@ func (iter *commitIteratorMock) ForEach(cb func(c *object.Commit) error) error {
 
 func (iter *commitIteratorMock) Close() {
 
+}
+
+type TrGitUtilsMock struct {
+}
+
+func (m *TrGitUtilsMock) PlainOpen(path string) (*git.Repository, error) {
+	return git.Init(memory.NewStorage(), memfs.New())
 }
 
 func TestRetrieveLabelStraightForward(t *testing.T) {
@@ -196,18 +204,13 @@ func TestRetrieveLabelStraightForward(t *testing.T) {
 
 func TestFindIDInRange(t *testing.T) {
 
-	// The functions below are called inside the function under test ...
-	plainOpen = func() (*git.Repository, error) {
-		return git.Init(memory.NewStorage(), memfs.New())
-	}
 	// For these functions we have already tests. In order to avoid re-testing
 	// we set mocks for these functions.
-	logRange = func (repo *git.Repository, from, to string) (object.CommitIter, error) {
+	logRange = func(repo *git.Repository, from, to string) (object.CommitIter, error) {
 		return &commitIteratorMock{}, nil
 	}
 
 	defer func() {
-		plainOpen = plainOpenInCurrentWorkDir
 		logRange = pipergit.LogRange
 		findLabelsInCommits = FindLabelsInCommits
 	}()
@@ -217,16 +220,16 @@ func TestFindIDInRange(t *testing.T) {
 		var receivedFrom, receivedTo string
 
 		oldLogRangeFunc := logRange
-		logRange = func (repo *git.Repository, from, to string) (object.CommitIter, error) {
+		logRange = func(repo *git.Repository, from, to string) (object.CommitIter, error) {
 			receivedFrom = from
-			receivedTo= to
+			receivedTo = to
 			return &commitIteratorMock{}, nil
 		}
 		defer func() {
 			logRange = oldLogRangeFunc
 		}()
 
-		FindIDInRange("TransportRequest", "master", "HEAD")
+		findIDInRange("TransportRequest", "master", "HEAD", &TrGitUtilsMock{})
 
 		assert.Equal(t, "master", receivedFrom)
 		assert.Equal(t, "HEAD", receivedTo)
@@ -242,10 +245,10 @@ func TestFindIDInRange(t *testing.T) {
 			findLabelsInCommits = FindLabelsInCommits
 		}()
 
-		_, err := FindIDInRange("TransportRequest", "master", "HEAD")
+		_, err := findIDInRange("TransportRequest", "master", "HEAD", &TrGitUtilsMock{})
+
 		assert.EqualError(t, err, "No values found for 'TransportRequest' in range 'master..HEAD'")
 	})
-
 
 	t.Run("one label is found", func(t *testing.T) {
 
@@ -257,7 +260,7 @@ func TestFindIDInRange(t *testing.T) {
 			findLabelsInCommits = FindLabelsInCommits
 		}()
 
-		label, err := FindIDInRange("TransportRequest", "master", "HEAD")
+		label, err := findIDInRange("TransportRequest", "master", "HEAD", &TrGitUtilsMock{})
 		if assert.NoError(t, err) {
 			assert.Equal(t, "123456789", label)
 		}
@@ -273,7 +276,7 @@ func TestFindIDInRange(t *testing.T) {
 			findLabelsInCommits = FindLabelsInCommits
 		}()
 
-		_, err := FindIDInRange("TransportRequest", "master", "HEAD")
+		_, err := findIDInRange("TransportRequest", "master", "HEAD", &TrGitUtilsMock{})
 		if assert.Error(t, err) {
 			// don't want to rely on the order
 			assert.Contains(t, err.Error(), "More than one values found for label 'TransportRequest' in range 'master..HEAD'")
