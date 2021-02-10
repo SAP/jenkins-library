@@ -220,7 +220,7 @@ const reportMdTemplate = `<details><summary>{{.Title}}</summary>
 <p>
 
 {{range $s := .Subheaders}}
-{{- $s.Description}}: {{$s.Details}}
+**{{- $s.Description}}**: {{$s.Details}}
 {{end}}
 
 {{range $o := .Overview}}
@@ -229,7 +229,9 @@ const reportMdTemplate = `<details><summary>{{.Title}}</summary>
 
 {{.FurtherInfo}}
 
-Snapshot taken: _{{reportTime .ReportTime}}_`
+Snapshot taken: _{{reportTime .ReportTime}}_
+</p>
+</details>`
 
 // ToMarkdown creates a markdown version of the report content
 func (s *ScanReport) ToMarkdown() ([]byte, error) {
@@ -237,7 +239,7 @@ func (s *ScanReport) ToMarkdown() ([]byte, error) {
 		"reportTime": func(currentTime time.Time) string {
 			return currentTime.Format("Jan 02, 2006 - 15:04:05 MST")
 		},
-		"drawOverviewRow": drawOverviewRow,
+		"drawOverviewRow": drawOverviewRowMarkdown,
 	}
 	report := []byte{}
 	tmpl, err := template.New("report").Funcs(funcMap).Parse(reportMdTemplate)
@@ -274,4 +276,13 @@ func drawOverviewRow(row OverviewRow) string {
 	}
 	// ToDo: allow styling of details
 	return fmt.Sprintf("%v: %v", row.Description, row.Details)
+}
+
+func drawOverviewRowMarkdown(row OverviewRow) string {
+	// so far accept only accept max. two columns for overview table: description and content
+	if len(row.Details) == 0 {
+		return row.Description
+	}
+	// ToDo: allow styling of details
+	return fmt.Sprintf("**%v**: %v", row.Description, row.Details)
 }
