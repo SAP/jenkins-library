@@ -40,7 +40,7 @@ func TestRunIntegrationArtifactDownload(t *testing.T) {
 			DownloadPath:           tempDir,
 		}
 
-		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactDownload", ResponseBody: ``, TestType: "Positive"}
+		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactDownload", ResponseBody: ``, TestType: "PositiveAndGetetIntegrationArtifactDownloadResBody"}
 
 		err := runIntegrationArtifactDownload(&config, nil, &httpClient)
 		absolutePath := filepath.Join(tempDir, "flow1.zip")

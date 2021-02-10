@@ -191,21 +191,24 @@ func GetIntegrationArtifactGetServiceEndpointPositiveCaseRespBody() (*http.Respo
 
 //IntegrationArtifactDownloadCommandMockResponse -Provide http respose body
 func IntegrationArtifactDownloadCommandMockResponse(testType string) (*http.Response, error) {
-	if testType != "Negative" {
-		return IntegrationArtifactDownloadCommandMockResponsePositiveCaseRespBody()
-	}
 
-	res := http.Response{
-		StatusCode: 400,
-		Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+	response, error := GetPositiveCaseResponseByTestType(testType)
+
+	if response == nil && error == nil {
+
+		res := http.Response{
+			StatusCode: 400,
+			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
 					"code": "Bad Request",
 					"message": {
 					"@lang": "en",
 					"#text": "invalid request"
 					}
 				}`))),
+		}
+		return &res, errors.New("Unable to download integration artifact, Response Status code:400")
 	}
-	return &res, errors.New("Unable to download integration artifact, Response Status code:400")
+	return response, error
 }
 
 //IntegrationArtifactDownloadCommandMockResponsePositiveCaseRespBody -Provide http respose body for positive case
@@ -219,4 +222,14 @@ func IntegrationArtifactDownloadCommandMockResponsePositiveCaseRespBody() (*http
 		Body:       ioutil.NopCloser(bytes.NewReader([]byte(`UEsDBBQACAgIADQ2clAAAAAAAAAAAAAAAAAUAAQATU`))),
 	}
 	return &resp, nil
+}
+
+//GetPositiveCaseResponseByTestType - get postive response by test case type
+func GetPositiveCaseResponseByTestType(testType string) (*http.Response, error) {
+	switch testType {
+	case "PositiveAndGetetIntegrationArtifactDownloadResBody":
+		return IntegrationArtifactDownloadCommandMockResponsePositiveCaseRespBody()
+	default:
+		return nil, nil
+	}
 }
