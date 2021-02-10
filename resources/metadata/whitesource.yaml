@@ -357,7 +357,7 @@ spec:
         default: 900
       - name: userToken
         type: string
-        description: "WhiteSource token identifying the user executing the scan."
+        description: User token to access WhiteSource. In Jenkins use case this is automatically filled through the credentials.
         scope:
           - GENERAL
           - PARAMETERS
@@ -368,6 +368,11 @@ spec:
         resourceRef:
           - name: userTokenCredentialsId
             type: secret
+          - type: vaultSecret
+            paths:
+              - $(vaultPath)/whitesource
+              - $(vaultBasePath)/$(vaultPipelineName)/whitesource
+              - $(vaultBasePath)/GROUP-SECRETS/whitesource
       - name: versioningModel
         type: string
         description: "The default project versioning model used in case `projectVersion` parameter is

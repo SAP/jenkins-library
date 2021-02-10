@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -217,15 +218,23 @@ func checkAndReportScanResults(config *ScanOptions, scan *ws.Scan, utils whiteso
 		}
 	}
 
-	// ToDo: create policy violations report
-	// formerly checkPolicies() in step.groovy
+	checkErrors := []string{}
+
+	rPath, err := checkPolicyViolations(config, scan, sys, utils, reportPaths)
+	if err != nil {
+		checkErrors = append(checkErrors, fmt.Sprint(err))
+	}
+	reportPaths = append(reportPaths, rPath)
 
 	if config.SecurityVulnerabilities {
 		rPaths, err := checkSecurityViolations(config, scan, sys, utils)
 		reportPaths = append(reportPaths, rPaths...)
 		if err != nil {
-			return reportPaths, err
+			checkErrors = append(checkErrors, fmt.Sprint(err))
 		}
+	}
+	if len(checkErrors) > 0 {
+		return reportPaths, fmt.Errorf(strings.Join(checkErrors, ": "))
 	}
 	return reportPaths, nil
 }
@@ -439,6 +448,49 @@ func executeScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils) err
 	return nil
 }
 
+func checkPolicyViolations(config *ScanOptions, scan *ws.Scan, sys whitesource, utils whitesourceUtils, reportPaths []piperutils.Path) (piperutils.Path, error) {
+
+	policyViolationCount := 0
+	for _, project := range scan.ScannedProjects() {
+		alerts, err := sys.GetProjectAlertsByType(project.Token, "REJECTED_BY_POLICY_RESOURCE")
+		if err != nil {
+			return piperutils.Path{}, fmt.Errorf("failed to retrieve project policy alerts from WhiteSource: %w", err)
+		}
+		policyViolationCount += len(alerts)
+	}
+
+	violations := struct {
+		PolicyViolations int      `json:"policyViolations"`
+		Reports          []string `json:"reports"`
+	}{
+		PolicyViolations: policyViolationCount,
+		Reports:          []string{},
+	}
+	for _, report := range reportPaths {
+		violations.Reports = append(violations.Reports, report.Target)
+	}
+
+	violationContent, err := json.Marshal(violations)
+	if err != nil {
+		return piperutils.Path{}, fmt.Errorf("failed to marshal policy violation data: %w", err)
+	}
+
+	jsonViolationReportPath := filepath.Join(ws.ReportsDirectory, "whitesource-ip.json")
+	err = utils.FileWrite(jsonViolationReportPath, violationContent, 0666)
+	if err != nil {
+		return piperutils.Path{}, fmt.Errorf("failed to write policy violation report: %w", err)
+	}
+
+	policyReport := piperutils.Path{Name: "WhiteSource Policy Violation Report", Target: jsonViolationReportPath}
+
+	if policyViolationCount > 0 {
+		log.SetErrorCategory(log.ErrorCompliance)
+		return policyReport, fmt.Errorf("%v policy violation(s) found", policyViolationCount)
+	}
+
+	return policyReport, nil
+}
+
 func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource, utils whitesourceUtils) ([]piperutils.Path, error) {
 	var reportPaths []piperutils.Path
 	// Check for security vulnerabilities and fail the build if cvssSeverityLimit threshold is crossed
@@ -527,9 +579,6 @@ func countSecurityVulnerabilities(alerts *[]ws.Alert, cvssSeverityLimit float64)
 
 func isSevereVulnerability(alert ws.Alert, cvssSeverityLimit float64) bool {
 
-	// ToDo: check if CVSS3 should always win
-	//vuln := alert.Vulnerability
-	//if (vuln.Score >= cvssSeverityLimit || vuln.CVSS3Score >= cvssSeverityLimit) && cvssSeverityLimit >= 0 {
 	if vulnerabilityScore(alert) >= cvssSeverityLimit && cvssSeverityLimit >= 0 {
 		return true
 	}

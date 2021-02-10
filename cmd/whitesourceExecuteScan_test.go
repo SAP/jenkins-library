@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 	ws "github.com/SAP/jenkins-library/pkg/whitesource"
@@ -108,6 +109,7 @@ func TestRunWhitesourceExecuteScan(t *testing.T) {
 		utilsMock.AddFile("wss-generated-file.config", []byte("key=value"))
 		lastUpdatedDate := time.Now().Format(ws.DateTimeLayout)
 		systemMock := ws.NewSystemMock(lastUpdatedDate)
+		systemMock.Alerts = []ws.Alert{}
 		scan := newWhitesourceScan(&config)
 		cpe := whitesourceExecuteScanCommonPipelineEnvironment{}
 		// test
@@ -130,9 +132,6 @@ func TestRunWhitesourceExecuteScan(t *testing.T) {
 		assert.True(t, utilsMock.HasWrittenFile(filepath.Join(ws.ReportsDirectory, "mock-project - 1-vulnerability-report.pdf")))
 		assert.True(t, utilsMock.HasWrittenFile(filepath.Join(ws.ReportsDirectory, "mock-project - 1-vulnerability-report.pdf")))
 	})
-}
-
-func TestRunWhitesourceScan(t *testing.T) {
 }
 
 func TestCheckAndReportScanResults(t *testing.T) {
@@ -205,10 +204,6 @@ func TestCheckAndReportScanResults(t *testing.T) {
 		// assert
 		assert.EqualError(t, err, "1 Open Source Software Security vulnerabilities with CVSS score greater or equal to 4.0 detected in project mock-project - 1")
 	})
-}
-
-func TestCreateWhitesourceProduct(t *testing.T) {
-
 }
 
 func TestResolveProjectIdentifiers(t *testing.T) {
@@ -302,20 +297,98 @@ func TestResolveProjectIdentifiers(t *testing.T) {
 	})
 }
 
-func TestResolveProductToken(t *testing.T) {
+func TestCheckPolicyViolations(t *testing.T) {
+	t.Parallel()
 
-}
+	t.Run("success - no violations", func(t *testing.T) {
+		config := ScanOptions{}
+		scan := newWhitesourceScan(&config)
+		scan.AppendScannedProject("testProject1")
+		systemMock := ws.NewSystemMock("ignored")
+		systemMock.Alerts = []ws.Alert{}
+		utilsMock := newWhitesourceUtilsMock()
+		reportPaths := []piperutils.Path{
+			{Target: "report1.pdf"},
+			{Target: "report2.pdf"},
+		}
 
-func TestResolveAggregateProjectName(t *testing.T) {
+		path, err := checkPolicyViolations(&config, scan, systemMock, utilsMock, reportPaths)
+		assert.NoError(t, err)
+		assert.Equal(t, filepath.Join(ws.ReportsDirectory, "whitesource-ip.json"), path.Target)
 
-}
+		fileContent, _ := utilsMock.FileRead(path.Target)
+		content := string(fileContent)
+		assert.Contains(t, content, `"policyViolations":0`)
+		assert.Contains(t, content, `"reports":["report1.pdf","report2.pdf"]`)
+	})
 
-func TestResolveAggregateProjectToken(t *testing.T) {
+	t.Run("success - no reports", func(t *testing.T) {
+		config := ScanOptions{}
+		scan := newWhitesourceScan(&config)
+		scan.AppendScannedProject("testProject1")
+		systemMock := ws.NewSystemMock("ignored")
+		systemMock.Alerts = []ws.Alert{}
+		utilsMock := newWhitesourceUtilsMock()
+		reportPaths := []piperutils.Path{}
 
-}
+		path, err := checkPolicyViolations(&config, scan, systemMock, utilsMock, reportPaths)
+		assert.NoError(t, err)
 
-func TestValidateProductVersion(t *testing.T) {
+		fileContent, _ := utilsMock.FileRead(path.Target)
+		content := string(fileContent)
+		assert.Contains(t, content, `reports":[]`)
+	})
 
+	t.Run("error - policy violations", func(t *testing.T) {
+		config := ScanOptions{}
+		scan := newWhitesourceScan(&config)
+		scan.AppendScannedProject("testProject1")
+		systemMock := ws.NewSystemMock("ignored")
+		systemMock.Alerts = []ws.Alert{
+			{Vulnerability: ws.Vulnerability{Name: "policyVul1"}},
+			{Vulnerability: ws.Vulnerability{Name: "policyVul2"}},
+		}
+		utilsMock := newWhitesourceUtilsMock()
+		reportPaths := []piperutils.Path{
+			{Target: "report1.pdf"},
+			{Target: "report2.pdf"},
+		}
+
+		path, err := checkPolicyViolations(&config, scan, systemMock, utilsMock, reportPaths)
+		assert.Contains(t, fmt.Sprint(err), "2 policy violation(s) found")
+
+		fileContent, _ := utilsMock.FileRead(path.Target)
+		content := string(fileContent)
+		assert.Contains(t, content, `"policyViolations":2`)
+		assert.Contains(t, content, `"reports":["report1.pdf","report2.pdf"]`)
+	})
+
+	t.Run("error - get alerts", func(t *testing.T) {
+		config := ScanOptions{}
+		scan := newWhitesourceScan(&config)
+		scan.AppendScannedProject("testProject1")
+		systemMock := ws.NewSystemMock("ignored")
+		systemMock.AlertError = fmt.Errorf("failed to read alerts")
+		utilsMock := newWhitesourceUtilsMock()
+		reportPaths := []piperutils.Path{}
+
+		_, err := checkPolicyViolations(&config, scan, systemMock, utilsMock, reportPaths)
+		assert.Contains(t, fmt.Sprint(err), "failed to retrieve project policy alerts from WhiteSource")
+	})
+
+	t.Run("error - write file", func(t *testing.T) {
+		config := ScanOptions{}
+		scan := newWhitesourceScan(&config)
+		scan.AppendScannedProject("testProject1")
+		systemMock := ws.NewSystemMock("ignored")
+		systemMock.Alerts = []ws.Alert{}
+		utilsMock := newWhitesourceUtilsMock()
+		utilsMock.FileWriteError = fmt.Errorf("failed to write file")
+		reportPaths := []piperutils.Path{}
+
+		_, err := checkPolicyViolations(&config, scan, systemMock, utilsMock, reportPaths)
+		assert.Contains(t, fmt.Sprint(err), "failed to write policy violation report:")
+	})
 }
 
 func TestCheckSecurityViolations(t *testing.T) {

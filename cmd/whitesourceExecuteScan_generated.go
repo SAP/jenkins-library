@@ -191,7 +191,7 @@ func addWhitesourceExecuteScanFlags(cmd *cobra.Command, stepConfig *whitesourceE
 	cmd.Flags().BoolVar(&stepConfig.SecurityVulnerabilities, "securityVulnerabilities", true, "Whether security compliance is considered and reported as part of the assessment.")
 	cmd.Flags().StringVar(&stepConfig.ServiceURL, "serviceUrl", `https://saas.whitesourcesoftware.com/api`, "URL to the WhiteSource API endpoint.")
 	cmd.Flags().IntVar(&stepConfig.Timeout, "timeout", 900, "Timeout in seconds until an HTTP call is forcefully terminated.")
-	cmd.Flags().StringVar(&stepConfig.UserToken, "userToken", os.Getenv("PIPER_userToken"), "WhiteSource token identifying the user executing the scan.")
+	cmd.Flags().StringVar(&stepConfig.UserToken, "userToken", os.Getenv("PIPER_userToken"), "User token to access WhiteSource. In Jenkins use case this is automatically filled through the credentials.")
 	cmd.Flags().StringVar(&stepConfig.VersioningModel, "versioningModel", `major`, "The default project versioning model used in case `projectVersion` parameter is empty for creating the version based on the build descriptor version to report results in Whitesource, can be one of `'major'`, `'major-minor'`, `'semantic'`, `'full'`")
 	cmd.Flags().StringVar(&stepConfig.VulnerabilityReportFormat, "vulnerabilityReportFormat", `xlsx`, "Format of the file the vulnerability report is written to.")
 	cmd.Flags().StringVar(&stepConfig.VulnerabilityReportTitle, "vulnerabilityReportTitle", `WhiteSource Security Vulnerability Report`, "Title of vulnerability report written during the assessment phase.")
@@ -502,6 +502,12 @@ func whitesourceExecuteScanMetadata() config.StepData {
 							{
 								Name: "userTokenCredentialsId",
 								Type: "secret",
+							},
+
+							{
+								Name:  "",
+								Paths: []string{"$(vaultPath)/whitesource", "$(vaultBasePath)/$(vaultPipelineName)/whitesource", "$(vaultBasePath)/GROUP-SECRETS/whitesource"},
+								Type:  "vaultSecret",
 							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
