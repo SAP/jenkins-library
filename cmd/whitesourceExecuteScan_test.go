@@ -360,8 +360,8 @@ func TestCheckPolicyViolations(t *testing.T) {
 		systemMock.Alerts = []ws.Alert{}
 		utilsMock := newWhitesourceUtilsMock()
 		reportPaths := []piperutils.Path{
-			{Target: "report1.pdf"},
-			{Target: "report2.pdf"},
+			{Target: filepath.Join("whitesource", "report1.pdf")},
+			{Target: filepath.Join("whitesource", "report2.pdf")},
 		}
 
 		path, err := checkPolicyViolations(&config, scan, systemMock, utilsMock, reportPaths)

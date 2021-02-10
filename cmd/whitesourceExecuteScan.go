@@ -471,7 +471,8 @@ func checkPolicyViolations(config *ScanOptions, scan *ws.Scan, sys whitesource, 
 		Reports:          []string{},
 	}
 	for _, report := range reportPaths {
-		violations.Reports = append(violations.Reports, report.Target)
+		_, reportFile := filepath.Split(report.Target)
+		violations.Reports = append(violations.Reports, reportFile)
 	}
 
 	violationContent, err := json.Marshal(violations)
