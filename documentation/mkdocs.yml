@@ -21,6 +21,7 @@ nav:
               - 'Integration Tests': pipelines/abapEnvironment/stages/integrationTest.md
               - 'Confirm': pipelines/abapEnvironment/stages/confirm.md
               - 'Publish': pipelines/abapEnvironment/stages/publish.md
+              - 'Build Confirm': pipelines/abapEnvironment/stages/buildConfirm.md
               - 'Post': pipelines/abapEnvironment/stages/post.md
         - 'General purpose pipeline':
             - 'Introduction': stages/introduction.md
