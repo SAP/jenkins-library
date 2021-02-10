@@ -2,10 +2,11 @@ package whitesource
 
 import (
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"os"
 	"path/filepath"
+
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 // ReportOptions defines options for downloading reports after scanning.
