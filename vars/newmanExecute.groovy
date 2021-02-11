@@ -51,38 +51,32 @@ void call(Map parameters = [:]) {
     if (config.cfAppsWithSecrets) {
         CloudFoundry cfUtils = new CloudFoundry(script);
         config.cfAppsWithSecrets.each { appName ->
-            // def xsuaaCredentials = cfUtils.getXsuaaCredentials(config.cloudFoundry.apiEndpoint,
-            //                                                 config.cloudFoundry.org,
-            //                                                 config.cloudFoundry.space,
-            //                                                 config.cloudFoundry.credentialsId,
-            //                                                 appName,
-            //                                                 config.verbose ? true : false ) //to avoid config.verbose as "null" if undefined in yaml and since function parameter boolean
-            //command_secrets += " --env-var ${appName}_clientid=${xsuaaCredentials.clientid}  --env-var ${appName}_clientsecret=${xsuaaCredentials.clientsecret}"
-            def xsuaaCredentials = [clientid: "testClientID", clientsecret: "testClientSecret"]
+            def xsuaaCredentials = cfUtils.getXsuaaCredentials(config.cloudFoundry.apiEndpoint,
+                                                            config.cloudFoundry.org,
+                                                            config.cloudFoundry.space,
+                                                            config.cloudFoundry.credentialsId,
+                                                            appName,
+                                                            config.verbose ? true : false )
             cfCredentials.add([var: "PIPER_NEWMANEXECUTE_${appName}_clientid", password: "${xsuaaCredentials.clientid}"])
             cfCredentials.add([var: "PIPER_NEWMANEXECUTE_${appName}_clientsecret", password: "${xsuaaCredentials.clientsecret}"])
             echo "Exposing client id and secret for ${appName}: as ${appName}_clientid and ${appName}_clientsecret to newmanExecute"
-            //echo "[INFO]${STEP_NAME}] Preparing credential for being used by piper-go. key: ${it}, exposed as environment variable PIPER_NEWMAN_USER_${it} and PIPER_NEWMAN_PASSWORD_${it}"
-            //credentials << [type: 'usernamePassword', id: "${it}", env: ["PIPER_NEWMAN_USER_${it}", "PIPER_NEWMAN_PASSWORD_${it}"], resolveCredentialsId: false]
         }
     }
-    print cfCredentials
     withSecretEnv(cfCredentials) {
         piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, [])
     }
 }
 
 /**
- * Runs code with secret environment variables and hides the values.
+ * Runs code with secret environment variables and hides the values using Mask Passwords Plugin
  *
- * @param varAndPasswordList - A list of Maps with a 'var' and 'password' key.  Example: `[[var: 'TOKEN', password: 'sekret']]`
- * @param Closure - The code to run in
- * @return {void}
+ * @param credentials - a list of maps with a 'var' and 'password' keys
+ * @param body - the code to run in
  */
-def withSecretEnv(List<Map> varAndPasswordList, Closure closure) {
-    wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: varAndPasswordList]) {
-        withEnv(varAndPasswordList.collect { "${it.var}=${it.password}" }) {
-            closure()
+def withSecretEnv(List<Map> credentials, Closure body) {
+    wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: credentials]) {
+        withEnv(credentials.collect { "${it.var}=${it.password}" }) {
+            body()
         }
     }
 }
