@@ -70,6 +70,16 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'checkoutMap',
     /**
+     * The map returned from a Jenkins git checkout. Used to set the git information in the
+     * common pipeline environment.
+     */
+    'scmInfo',
+    /**
+     * Optional skip of checkout if checkout was done before this step already.
+     * @possibleValues `true`, `false`
+     */
+    'skipCheckout',
+    /**
      * Optional path to the pipeline configuration file defining project specific settings.
      */
     'configFile',
@@ -106,7 +116,21 @@ void call(Map parameters = [:]) {
     def stageName = StageNameProvider.instance.getStageName(script, parameters, this)
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], ordinal: 1, telemetryDisabled: true) {
-        def scmInfo = checkout(parameters.checkoutMap ?: scm)
+        def skipCheckout = parameters.skipCheckout
+        if (skipCheckout != null && !(skipCheckout instanceof Boolean)) {
+            error "[${STEP_NAME}] Parameter skipCheckout has to be of type boolean. Instead got '${skipCheckout.class.getName()}'"
+        }
+        def scmInfo = parameters.scmInfo
+        if (skipCheckout && !scmInfo) {
+            error "[${STEP_NAME}] Need am scmInfo map retrieved from a checkout. " +
+                "If you want to skip the checkout the scm info needs to be provided by you with parameter scmInfo, " +
+                "for example as follows:\n" +
+                "  def scmInfo = checkout scm\n" +
+                "  piperPipelineStageInit script:this, skipCheckout: true, scmInfo: scmInfo"
+        }
+        if (!skipCheckout) {
+            scmInfo = checkout(parameters.checkoutMap ?: scm)
+        }
 
         setupCommonPipelineEnvironment(script: script, customDefaults: parameters.customDefaults, scmInfo: scmInfo,
             configFile: parameters.configFile, customDefaultsFromFiles: parameters.customDefaultsFromFiles)
@@ -139,7 +163,7 @@ void call(Map parameters = [:]) {
             ContainerMap.instance.initFromResource(script, config.containerMapResource, buildTool)
         }
 
-        initStashConfiguration(script, config.stashSettings, config.verbose?: false)
+        initStashConfiguration(script, config.stashSettings, config.verbose ?: false)
 
         if (config.verbose) {
             echo "piper-lib-os  configuration: ${script.commonPipelineEnvironment.configuration}"
