@@ -13,8 +13,8 @@ import (
 type ScanReport struct {
 	StepName       string          `json:"stepName"`
 	Title          string          `json:"title"`
-	Subheaders     []string        `json:"subheaders"`
-	Overview       []string        `json:"overview"`
+	Subheaders     []Subheader     `json:"subheaders"`
+	Overview       []OverviewRow   `json:"overview"`
 	FurtherInfo    string          `json:"furtherInfo"`
 	ReportTime     time.Time       `json:"reportTime"`
 	DetailTable    ScanDetailTable `json:"detailTable"`
@@ -33,6 +33,14 @@ type ScanDetailTable struct {
 // ScanRow defines one row of a scan result table
 type ScanRow struct {
 	Columns []ScanCell `json:"columns"`
+}
+
+// AddColumn adds a column to a dedicated ScanRow
+func (s *ScanRow) AddColumn(content interface{}, style ColumnStyle) {
+	if s.Columns == nil {
+		s.Columns = []ScanCell{}
+	}
+	s.Columns = append(s.Columns, ScanCell{Content: fmt.Sprint(content), Style: style})
 }
 
 // ScanCell defines one column of a scan result table
@@ -56,6 +64,28 @@ const (
 func (c ColumnStyle) String() string {
 	return [...]string{"", "green-cell", "yellow-cell", "red-cell", "grey-cell", "black-cell"}[c]
 }
+
+// OverviewRow defines a row in the report's overview section
+// it can consist of a description and some details where the details can have a style attached
+type OverviewRow struct {
+	Description string      `json:"description"`
+	Details     string      `json:"details,omitempty"`
+	Style       ColumnStyle `json:"style,omitempty"`
+}
+
+// Subheader defines a dedicated sub header in a report
+type Subheader struct {
+	Description string `json:"text"`
+	Details     string `json:"details,omitempty"`
+}
+
+// AddSubHeader adds a sub header to the report containing of a text/title plus optional details
+func (s *ScanReport) AddSubHeader(header, details string) {
+	s.Subheaders = append(s.Subheaders, Subheader{Description: header, Details: details})
+}
+
+// MarkdownReportDirectory specifies the default directory for markdown reports which can later be collected by step pipelineCreateSummary
+const MarkdownReportDirectory = ".pipeline/stepReports"
 
 const reportHTMLTemplate = `<!DOCTYPE html>
 <html>
@@ -125,14 +155,14 @@ const reportHTMLTemplate = `<!DOCTYPE html>
 	<h2>
 		<span>
 		{{range $s := .Subheaders}}
-		{{- $s}}<br />
+		{{- $s.Description}}: {{$s.Details}}<br />
 		{{end -}}
 		</span>
 	</h2>
 	<div>
 		<h3>
 		{{range $o := .Overview}}
-		{{- $o}}<br />
+		{{- drawOverviewRow $o}}<br />
 		{{end -}}
 		</h3>
 		<span>{{.FurtherInfo}}</span>
@@ -169,8 +199,9 @@ func (s *ScanReport) ToHTML() ([]byte, error) {
 		"reportTime": func(currentTime time.Time) string {
 			return currentTime.Format("Jan 02, 2006 - 15:04:05 MST")
 		},
-		"columnCount": tableColumnCount,
-		"drawCell":    drawCell,
+		"columnCount":     tableColumnCount,
+		"drawCell":        drawCell,
+		"drawOverviewRow": drawOverviewRow,
 	}
 	report := []byte{}
 	tmpl, err := template.New("report").Funcs(funcMap).Parse(reportHTMLTemplate)
@@ -185,26 +216,42 @@ func (s *ScanReport) ToHTML() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+const reportMdTemplate = `<details><summary>{{.Title}}</summary>
+<p>
+
+{{range $s := .Subheaders}}
+**{{- $s.Description}}**: {{$s.Details}}
+{{end}}
+
+{{range $o := .Overview}}
+{{- drawOverviewRow $o}}
+{{end}}
+
+{{.FurtherInfo}}
+
+Snapshot taken: _{{reportTime .ReportTime}}_
+</p>
+</details>`
+
 // ToMarkdown creates a markdown version of the report content
-func (s *ScanReport) ToMarkdown() []byte {
-	//ToDo: create collapsible markdown?
-	/*
-		## collapsible markdown?
-
-		<details><summary>CLICK ME</summary>
-		<p>
-
-		#### yes, even hidden code blocks!
-
-		```python
-		print("hello world!")
-		```
-
-		</p>
-		</details>
-	*/
-
-	return []byte(fmt.Sprintf("<summary>%v</summary>", s.Title))
+func (s *ScanReport) ToMarkdown() ([]byte, error) {
+	funcMap := template.FuncMap{
+		"reportTime": func(currentTime time.Time) string {
+			return currentTime.Format("Jan 02, 2006 - 15:04:05 MST")
+		},
+		"drawOverviewRow": drawOverviewRowMarkdown,
+	}
+	report := []byte{}
+	tmpl, err := template.New("report").Funcs(funcMap).Parse(reportMdTemplate)
+	if err != nil {
+		return report, errors.Wrap(err, "failed to create Markdown report template")
+	}
+	buf := new(bytes.Buffer)
+	err = tmpl.Execute(buf, s)
+	if err != nil {
+		return report, errors.Wrap(err, "failed to execute Markdown report template")
+	}
+	return buf.Bytes(), nil
 }
 
 func tableColumnCount(scanDetails ScanDetailTable) int {
@@ -220,4 +267,22 @@ func drawCell(cell ScanCell) string {
 		return fmt.Sprintf(`<td class="%v">%v</td>`, cell.Style, cell.Content)
 	}
 	return fmt.Sprintf(`<td>%v</td>`, cell.Content)
+}
+
+func drawOverviewRow(row OverviewRow) string {
+	// so far accept only accept max. two columns for overview table: description and content
+	if len(row.Details) == 0 {
+		return row.Description
+	}
+	// ToDo: allow styling of details
+	return fmt.Sprintf("%v: %v", row.Description, row.Details)
+}
+
+func drawOverviewRowMarkdown(row OverviewRow) string {
+	// so far accept only accept max. two columns for overview table: description and content
+	if len(row.Details) == 0 {
+		return row.Description
+	}
+	// ToDo: allow styling of details
+	return fmt.Sprintf("**%v**: %v", row.Description, row.Details)
 }

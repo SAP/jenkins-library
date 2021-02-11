@@ -15,7 +15,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type abapEnvironmentAssemblePackagesOptions struct {
+type abapEnvironmentAssembleConfirmOptions struct {
 	CfAPIEndpoint       string `json:"cfApiEndpoint,omitempty"`
 	CfOrg               string `json:"cfOrg,omitempty"`
 	CfSpace             string `json:"cfSpace,omitempty"`
@@ -28,13 +28,13 @@ type abapEnvironmentAssemblePackagesOptions struct {
 	MaxRuntimeInMinutes int    `json:"maxRuntimeInMinutes,omitempty"`
 }
 
-type abapEnvironmentAssemblePackagesCommonPipelineEnvironment struct {
+type abapEnvironmentAssembleConfirmCommonPipelineEnvironment struct {
 	abap struct {
 		addonDescriptor string
 	}
 }
 
-func (p *abapEnvironmentAssemblePackagesCommonPipelineEnvironment) persist(path, resourceName string) {
+func (p *abapEnvironmentAssembleConfirmCommonPipelineEnvironment) persist(path, resourceName string) {
 	content := []struct {
 		category string
 		name     string
@@ -56,20 +56,19 @@ func (p *abapEnvironmentAssemblePackagesCommonPipelineEnvironment) persist(path,
 	}
 }
 
-// AbapEnvironmentAssemblePackagesCommand Assembly of installation, support package or patch in SAP Cloud Platform ABAP Environment system
-func AbapEnvironmentAssemblePackagesCommand() *cobra.Command {
-	const STEP_NAME = "abapEnvironmentAssemblePackages"
+// AbapEnvironmentAssembleConfirmCommand Confirm the Delivery of Assembly for installation, support package or patch in SAP Cloud Platform ABAP Environment system
+func AbapEnvironmentAssembleConfirmCommand() *cobra.Command {
+	const STEP_NAME = "abapEnvironmentAssembleConfirm"
 
-	metadata := abapEnvironmentAssemblePackagesMetadata()
-	var stepConfig abapEnvironmentAssemblePackagesOptions
+	metadata := abapEnvironmentAssembleConfirmMetadata()
+	var stepConfig abapEnvironmentAssembleConfirmOptions
 	var startTime time.Time
-	var commonPipelineEnvironment abapEnvironmentAssemblePackagesCommonPipelineEnvironment
+	var commonPipelineEnvironment abapEnvironmentAssembleConfirmCommonPipelineEnvironment
 
-	var createAbapEnvironmentAssemblePackagesCmd = &cobra.Command{
+	var createAbapEnvironmentAssembleConfirmCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Assembly of installation, support package or patch in SAP Cloud Platform ABAP Environment system",
-		Long: `This step runs the assembly of a list of provided [installations, support packages or patches](https://help.sap.com/viewer/9043aa5d2f834ad385e1cdfdadc06b6f/LATEST/en-US/9a81f55473568c77e10000000a174cb4.html) in SAP Cloud
-Platform ABAP Environment system and saves the corresponding [SAR archive](https://launchpad.support.sap.com/#/notes/212876) to the filesystem.`,
+		Short: "Confirm the Delivery of Assembly for installation, support package or patch in SAP Cloud Platform ABAP Environment system",
+		Long:  `This step confirms the assemblies of provided [installations, support packages or patches] in SAP Cloud Platform ABAP Environment system`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -107,17 +106,17 @@ Platform ABAP Environment system and saves the corresponding [SAR archive](https
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			abapEnvironmentAssemblePackages(stepConfig, &telemetryData, &commonPipelineEnvironment)
+			abapEnvironmentAssembleConfirm(stepConfig, &telemetryData, &commonPipelineEnvironment)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
 
-	addAbapEnvironmentAssemblePackagesFlags(createAbapEnvironmentAssemblePackagesCmd, &stepConfig)
-	return createAbapEnvironmentAssemblePackagesCmd
+	addAbapEnvironmentAssembleConfirmFlags(createAbapEnvironmentAssembleConfirmCmd, &stepConfig)
+	return createAbapEnvironmentAssembleConfirmCmd
 }
 
-func addAbapEnvironmentAssemblePackagesFlags(cmd *cobra.Command, stepConfig *abapEnvironmentAssemblePackagesOptions) {
+func addAbapEnvironmentAssembleConfirmFlags(cmd *cobra.Command, stepConfig *abapEnvironmentAssembleConfirmOptions) {
 	cmd.Flags().StringVar(&stepConfig.CfAPIEndpoint, "cfApiEndpoint", os.Getenv("PIPER_cfApiEndpoint"), "Cloud Foundry API endpoint")
 	cmd.Flags().StringVar(&stepConfig.CfOrg, "cfOrg", os.Getenv("PIPER_cfOrg"), "Cloud Foundry target organization")
 	cmd.Flags().StringVar(&stepConfig.CfSpace, "cfSpace", os.Getenv("PIPER_cfSpace"), "Cloud Foundry target space")
@@ -136,12 +135,12 @@ func addAbapEnvironmentAssemblePackagesFlags(cmd *cobra.Command, stepConfig *aba
 }
 
 // retrieve step metadata
-func abapEnvironmentAssemblePackagesMetadata() config.StepData {
+func abapEnvironmentAssembleConfirmMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:        "abapEnvironmentAssemblePackages",
+			Name:        "abapEnvironmentAssembleConfirm",
 			Aliases:     []config.Alias{},
-			Description: "Assembly of installation, support package or patch in SAP Cloud Platform ABAP Environment system",
+			Description: "Confirm the Delivery of Assembly for installation, support package or patch in SAP Cloud Platform ABAP Environment system",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -234,7 +233,7 @@ func abapEnvironmentAssemblePackagesMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "cf", Image: "ppiper/cf-cli:6"},
+				{Name: "cf", Image: "ppiper/cf-cli"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

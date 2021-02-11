@@ -127,9 +127,7 @@ func getDetectScript(config detectExecuteScanOptions, utils detectUtils) error {
 
 func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectUtils) ([]string, error) {
 
-	coordinates := struct {
-		Version string
-	}{
+	coordinates := versioning.Coordinates{
 		Version: config.Version,
 	}
 
