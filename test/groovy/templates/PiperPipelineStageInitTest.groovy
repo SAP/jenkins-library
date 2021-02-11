@@ -236,7 +236,8 @@ class PiperPipelineStageInitTest extends BasePiperTest {
             juStabUtils: utils,
             buildTool: 'maven',
             stashSettings: 'com.sap.piper/pipeline/stashSettings.yml',
-            skipCheckout: true
+            skipCheckout: true,
+            scmInfo: ["dummyScmKey":"dummyScmKey"]
         )
 
         assertThat(stepsCalled, hasItems('setupCommonPipelineEnvironment', 'piperInitRunStageConfiguration', 'artifactPrepareVersion', 'pipelineStashFilesBeforeBuild'))
@@ -253,6 +254,23 @@ class PiperPipelineStageInitTest extends BasePiperTest {
             buildTool: 'maven',
             stashSettings: 'com.sap.piper/pipeline/stashSettings.yml',
             skipCheckout: "false"
+        )
+    }
+
+    @Test
+    void "Try to skip checkout without scmInfo parameter throws error"() {
+        thrown.expectMessage('[piperPipelineStageInit] Need am scmInfo map retrieved from a checkout. ' +
+            'If you want to skip the checkout the scm info needs to be provided by you with parameter scmInfo, ' +
+            'for example as follows:\n' +
+            '  def scmInfo = checkout scm\n' +
+            '  piperPipelineStageInit script:this, skipCheckout: true, scmInfo: scmInfo')
+
+        jsr.step.piperPipelineStageInit(
+            script: nullScript,
+            juStabUtils: utils,
+            buildTool: 'maven',
+            stashSettings: 'com.sap.piper/pipeline/stashSettings.yml',
+            skipCheckout: true
         )
     }
 

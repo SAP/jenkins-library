@@ -116,10 +116,17 @@ void call(Map parameters = [:]) {
     def stageName = StageNameProvider.instance.getStageName(script, parameters, this)
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], ordinal: 1, telemetryDisabled: true) {
-        def scmInfo = parameters.scmInfo
         def skipCheckout = parameters.skipCheckout
         if (skipCheckout != null && !(skipCheckout instanceof Boolean)) {
             error "[${STEP_NAME}] Parameter skipCheckout has to be of type boolean. Instead got '${skipCheckout.class.getName()}'"
+        }
+        def scmInfo = parameters.scmInfo
+        if (skipCheckout && !scmInfo) {
+            error "[${STEP_NAME}] Need am scmInfo map retrieved from a checkout. " +
+                "If you want to skip the checkout the scm info needs to be provided by you with parameter scmInfo, " +
+                "for example as follows:\n" +
+                "  def scmInfo = checkout scm\n" +
+                "  piperPipelineStageInit script:this, skipCheckout: true, scmInfo: scmInfo"
         }
         if (!skipCheckout) {
             scmInfo = checkout(parameters.checkoutMap ?: scm)
