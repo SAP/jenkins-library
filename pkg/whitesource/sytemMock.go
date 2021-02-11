@@ -123,6 +123,7 @@ func (m *SystemMock) GetProjectLibraryLocations(projectToken string) ([]Library,
 	return m.Libraries, nil
 }
 
+// NewSystemMockWithProjectName returns a pointer to a new instance of SystemMock using a project with a defined name.
 func NewSystemMockWithProjectName(lastUpdateDate, projectName string) *SystemMock {
 	mockLibrary := Library{
 		Name:     "mock-library",
