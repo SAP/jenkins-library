@@ -180,6 +180,7 @@ func handleCfAppCredentials(config *newmanExecuteOptions) string {
 			clientID = os.Getenv("PIPER_NEWMANEXECUTE_" + appName + "_clientid")
 			clientSecret = os.Getenv("PIPER_NEWMANEXECUTE_" + appName + "_clientsecret")
 			if clientID != "" && clientSecret != "" {
+				log.RegisterSecret(clientSecret)
 				commandSecrets += " --env-var " + appName + "_clientid=" + clientID + " --env-var " + appName + "_clientsecret=" + clientSecret
 				log.Entry().Infof("secrets found for app %v and forwarded to newman as --env-var parameter", appName)
 			} else {

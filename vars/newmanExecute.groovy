@@ -75,9 +75,9 @@ void call(Map parameters = [:]) {
  * @return {void}
  */
 def withSecretEnv(List<Map> varAndPasswordList, Closure closure) {
-  wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: varAndPasswordList]) {
-    withEnv(varAndPasswordList.collect { "${it.var}=${it.password}" }) {
-      closure()
+    wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: varAndPasswordList]) {
+        withEnv(varAndPasswordList.collect { "${it.var}=${it.password}" }) {
+            closure()
+        }
     }
-  }
 }
