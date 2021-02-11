@@ -50,7 +50,7 @@ void call(Map parameters = [:]) {
     List<Map> cfCredentials = []
     if (config.cfAppsWithSecrets) {
         CloudFoundry cfUtils = new CloudFoundry(script);
-        config.cfAppsWithSecrets.each {
+        config.cfAppsWithSecrets.each { appName ->
             // def xsuaaCredentials = cfUtils.getXsuaaCredentials(config.cloudFoundry.apiEndpoint,
             //                                                 config.cloudFoundry.org,
             //                                                 config.cloudFoundry.space,
