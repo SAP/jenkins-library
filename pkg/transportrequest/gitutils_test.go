@@ -1,10 +1,10 @@
 package transportrequest
 
 import (
+	"errors"
 	"io"
 	"testing"
 
-	pipergit "github.com/SAP/jenkins-library/pkg/git"
 	"github.com/go-git/go-billy/v5/memfs"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -56,10 +56,18 @@ func (iter *commitIteratorMock) Close() {
 }
 
 type TrGitUtilsMock struct {
+	cbLogRange func(repo *git.Repository, from, to string) (object.CommitIter, error)
 }
 
 func (m *TrGitUtilsMock) PlainOpen(path string) (*git.Repository, error) {
 	return git.Init(memory.NewStorage(), memfs.New())
+}
+
+func (m *TrGitUtilsMock) LogRange(repo *git.Repository, from, to string) (object.CommitIter, error) {
+	if m.cbLogRange == nil {
+		return nil, errors.New("uninitialized LogRange mock")
+	}
+	return m.cbLogRange(repo, from, to)
 }
 
 func TestRetrieveLabelStraightForward(t *testing.T) {
@@ -206,12 +214,11 @@ func TestFindIDInRange(t *testing.T) {
 
 	// For these functions we have already tests. In order to avoid re-testing
 	// we set mocks for these functions.
-	logRange = func(repo *git.Repository, from, to string) (object.CommitIter, error) {
+	var cbLogRangeDefault = func(repo *git.Repository, from, to string) (object.CommitIter, error) {
 		return &commitIteratorMock{}, nil
 	}
 
 	defer func() {
-		logRange = pipergit.LogRange
 		findLabelsInCommits = FindLabelsInCommits
 	}()
 
@@ -219,17 +226,11 @@ func TestFindIDInRange(t *testing.T) {
 
 		var receivedFrom, receivedTo string
 
-		oldLogRangeFunc := logRange
-		logRange = func(repo *git.Repository, from, to string) (object.CommitIter, error) {
+		findIDInRange("TransportRequest", "master", "HEAD", &TrGitUtilsMock{cbLogRange: func(repo *git.Repository, from, to string) (object.CommitIter, error) {
 			receivedFrom = from
 			receivedTo = to
 			return &commitIteratorMock{}, nil
-		}
-		defer func() {
-			logRange = oldLogRangeFunc
-		}()
-
-		findIDInRange("TransportRequest", "master", "HEAD", &TrGitUtilsMock{})
+		}})
 
 		assert.Equal(t, "master", receivedFrom)
 		assert.Equal(t, "HEAD", receivedTo)
@@ -245,7 +246,7 @@ func TestFindIDInRange(t *testing.T) {
 			findLabelsInCommits = FindLabelsInCommits
 		}()
 
-		_, err := findIDInRange("TransportRequest", "master", "HEAD", &TrGitUtilsMock{})
+		_, err := findIDInRange("TransportRequest", "master", "HEAD", &TrGitUtilsMock{cbLogRange: cbLogRangeDefault})
 
 		assert.EqualError(t, err, "No values found for 'TransportRequest' in range 'master..HEAD'")
 	})
@@ -260,7 +261,7 @@ func TestFindIDInRange(t *testing.T) {
 			findLabelsInCommits = FindLabelsInCommits
 		}()
 
-		label, err := findIDInRange("TransportRequest", "master", "HEAD", &TrGitUtilsMock{})
+		label, err := findIDInRange("TransportRequest", "master", "HEAD", &TrGitUtilsMock{cbLogRange: cbLogRangeDefault})
 		if assert.NoError(t, err) {
 			assert.Equal(t, "123456789", label)
 		}
@@ -276,7 +277,7 @@ func TestFindIDInRange(t *testing.T) {
 			findLabelsInCommits = FindLabelsInCommits
 		}()
 
-		_, err := findIDInRange("TransportRequest", "master", "HEAD", &TrGitUtilsMock{})
+		_, err := findIDInRange("TransportRequest", "master", "HEAD", &TrGitUtilsMock{cbLogRange: cbLogRangeDefault})
 		if assert.Error(t, err) {
 			// don't want to rely on the order
 			assert.Contains(t, err.Error(), "More than one values found for label 'TransportRequest' in range 'master..HEAD'")

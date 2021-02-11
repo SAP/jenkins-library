@@ -14,21 +14,21 @@ import (
 	"github.com/pkg/errors"
 )
 
-var logRange = gitUtils.LogRange
 var findLabelsInCommits = FindLabelsInCommits
 
 type iTransportRequestGitUtils interface {
+	LogRange(repo *git.Repository, from, to string) (object.CommitIter, error)
 	PlainOpen(directory string) (*git.Repository, error)
 }
 type transportRequestGitUtils struct {
 }
 
+func (g *transportRequestGitUtils) LogRange(repo *git.Repository, from, to string) (object.CommitIter, error) {
+	return gitUtils.LogRange(repo, from, to)
+}
+
 func (g *transportRequestGitUtils) PlainOpen(directory string) (*git.Repository, error) {
-	r, err := gitUtils.PlainOpen(directory)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Unable to open git repository at '%s'", directory)
-	}
-	return r, nil
+	return gitUtils.PlainOpen(directory)
 }
 
 // FindIDInRange finds a ID according to the label in a commit range <from>..<to>.
@@ -51,7 +51,7 @@ func findIDInRange(label, from, to string, trGitUtils iTransportRequestGitUtils)
 		return "", errors.Wrapf(err, "Unable to open git repository at '%s'", workdir)
 	}
 
-	cIter, err := logRange(r, from, to)
+	cIter, err := trGitUtils.LogRange(r, from, to)
 	if err != nil {
 		return "", errors.Wrapf(err, "Cannot retrieve '%s'. Unable to resolve commits in range '%s..%s'", label, from, to)
 	}
