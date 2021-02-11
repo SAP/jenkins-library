@@ -1,4 +1,5 @@
 import com.sap.piper.ConfigurationHelper
+import com.sap.piper.integration.CloudFoundry
 import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
@@ -29,6 +30,8 @@ import static com.sap.piper.Prerequisites.checkScript
     'gitSshKeyCredentialsId',
 ]
 
+@Field Map CONFIG_KEY_COMPATIBILITY = [cloudFoundry: [apiEndpoint: 'cfApiEndpoint', credentialsId: 'cfCredentialsId', org: 'cfOrg', space: 'cfSpace']]
+
 void call(Map parameters = [:]) {
     final script = checkScript(this, parameters) ?: this
     String stageName = parameters.stageName ?: env.STAGE_NAME
@@ -37,7 +40,7 @@ void call(Map parameters = [:]) {
         .mixinGeneralConfig(script.commonPipelineEnvironment, CONFIG_KEYS)
         .mixinStepConfig(script.commonPipelineEnvironment, CONFIG_KEYS)
         .mixinStageConfig(script.commonPipelineEnvironment, stageName, CONFIG_KEYS)
-        .mixin(parameters, CONFIG_KEYS)
+        .mixin(parameters, CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
         .use()
 
     if (parameters.testRepository || config.testRepository ) {
@@ -46,6 +49,7 @@ void call(Map parameters = [:]) {
 
     List<Map> cfCredentials = []
     if (config.cfAppsWithSecrets) {
+        CloudFoundry cfUtils = new CloudFoundry(script);
         config.cfAppsWithSecrets.each {
             def xsuaaCredentials = cfUtils.getXsuaaCredentials(config.cloudFoundry.apiEndpoint,
                                                             config.cloudFoundry.org,
