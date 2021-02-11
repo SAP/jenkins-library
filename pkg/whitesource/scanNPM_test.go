@@ -3,11 +3,12 @@ package whitesource
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
+	"testing"
+
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"path/filepath"
-	"testing"
 )
 
 func TestExecuteScanNPM(t *testing.T) {
@@ -137,11 +138,12 @@ func TestExecuteScanNPM(t *testing.T) {
 
 func TestWriteWhitesourceConfigJSON(t *testing.T) {
 	config := &ScanOptions{
-		OrgToken:     "org-token",
-		UserToken:    "user-token",
-		ProductName:  "mock-product",
-		ProjectName:  "mock-project",
-		ProductToken: "mock-product-token",
+		OrgToken:       "org-token",
+		UserToken:      "user-token",
+		ProductName:    "mock-product",
+		ProductVersion: "product-version",
+		ProjectName:    "mock-project",
+		ProductToken:   "mock-product-token",
 	}
 
 	expected := make(map[string]interface{})

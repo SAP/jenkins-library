@@ -106,15 +106,15 @@ func (y *YAMLfile) SetVersion(version string) error {
 
 // GetCoordinates returns the coordinates
 func (y *YAMLfile) GetCoordinates() (Coordinates, error) {
-	result := &YAMLDescriptor{}
+	result := Coordinates{}
 	var err error
 	result.ArtifactID, err = y.GetArtifactID()
 	if err != nil {
-		return nil, err
+		return result, err
 	}
 	result.Version, err = y.GetVersion()
 	if err != nil {
-		return nil, err
+		return result, err
 	}
 	return result, nil
 }

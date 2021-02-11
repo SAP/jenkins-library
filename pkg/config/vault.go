@@ -36,6 +36,12 @@ type vaultClient interface {
 	GetKvSecret(string) (map[string]string, error)
 }
 
+func (s *StepConfig) mixinVaultConfig(configs ...map[string]interface{}) {
+	for _, config := range configs {
+		s.mixIn(config, vaultFilter)
+	}
+}
+
 func getVaultClientFromConfig(config StepConfig, creds VaultCredentials) (vaultClient, error) {
 	address, addressOk := config.Config["vaultServerUrl"].(string)
 	// if vault isn't used it's not an error
