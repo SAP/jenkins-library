@@ -1,14 +1,13 @@
 package git
 
 import (
-	"time"
-
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/pkg/errors"
+	"time"
 )
 
 // utilsWorkTree interface abstraction of git.Worktree to enable tests
@@ -134,8 +133,6 @@ func changeBranch(branchName string, worktree utilsWorkTree) error {
 // not reachable by 'from'.
 func LogRange(repo *git.Repository, from, to string) (object.CommitIter, error) {
 
-	rx := &RepositoryExt{Repo: repo}
-
 	cTo, err := getCommitObject(to, repo)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Cannot provide log range (to: '%s' not found)", to)
@@ -144,18 +141,20 @@ func LogRange(repo *git.Repository, from, to string) (object.CommitIter, error) 
 	if err != nil {
 		return nil, errors.Wrapf(err, "Cannot provide log range (from: '%s' not found)", from)
 	}
-	toHash := cTo.Hash
-	fromHash := cFrom.Hash
-
-	o := &git.LogOptions{From: toHash}
-	ox := &LogOptionsExt{Options: o, Except: fromHash}
-
-	ci, err := rx.LogExt(ox)
+	ignore := []plumbing.Hash{}
+	err = object.NewCommitPreorderIter(
+		cFrom,
+		map[plumbing.Hash]bool{},
+		[]plumbing.Hash{},
+	).ForEach(func(c *object.Commit) error {
+		ignore = append(ignore, c.ID())
+		return nil
+	})
 	if err != nil {
 		return nil, errors.Wrap(err, "Cannot provide log range")
 	}
 
-	return ci, nil
+	return object.NewCommitPreorderIter(cTo, map[plumbing.Hash]bool{}, ignore), nil
 }
 
 func getCommitObject(ref string, repo *git.Repository) (*object.Commit, error) {
