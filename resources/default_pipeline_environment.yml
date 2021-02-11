@@ -195,6 +195,7 @@ steps:
           unstable: false
     archive: false
   cloudFoundryDeploy:
+    useGoStep: true
     cloudFoundry:
       apiEndpoint: 'https://api.cf.eu10.hana.ondemand.com'
     apiParameters: ''
