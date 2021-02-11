@@ -123,9 +123,7 @@ func (m *SystemMock) GetProjectLibraryLocations(projectToken string) ([]Library,
 	return m.Libraries, nil
 }
 
-// NewSystemMock returns a pointer to a new instance of SystemMock.
-func NewSystemMock(lastUpdateDate string) *SystemMock {
-	const projectName = "mock-project - 1"
+func NewSystemMockWithProjectName(lastUpdateDate, projectName string) *SystemMock {
 	mockLibrary := Library{
 		Name:     "mock-library",
 		Filename: "mock-library-file",
@@ -168,4 +166,10 @@ func NewSystemMock(lastUpdateDate string) *SystemMock {
 		RiskReport:          []byte("mock-risk-report"),
 		VulnerabilityReport: []byte("mock-vulnerability-report"),
 	}
+}
+
+// NewSystemMock returns a pointer to a new instance of SystemMock.
+func NewSystemMock(lastUpdateDate string) *SystemMock {
+	const projectName = "mock-project - 1"
+	return NewSystemMockWithProjectName(lastUpdateDate, projectName)
 }
