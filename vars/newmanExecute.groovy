@@ -51,13 +51,14 @@ void call(Map parameters = [:]) {
     if (config.cfAppsWithSecrets) {
         CloudFoundry cfUtils = new CloudFoundry(script);
         config.cfAppsWithSecrets.each {
-            def xsuaaCredentials = cfUtils.getXsuaaCredentials(config.cloudFoundry.apiEndpoint,
-                                                            config.cloudFoundry.org,
-                                                            config.cloudFoundry.space,
-                                                            config.cloudFoundry.credentialsId,
-                                                            appName,
-                                                            config.verbose ? true : false ) //to avoid config.verbose as "null" if undefined in yaml and since function parameter boolean
+            // def xsuaaCredentials = cfUtils.getXsuaaCredentials(config.cloudFoundry.apiEndpoint,
+            //                                                 config.cloudFoundry.org,
+            //                                                 config.cloudFoundry.space,
+            //                                                 config.cloudFoundry.credentialsId,
+            //                                                 appName,
+            //                                                 config.verbose ? true : false ) //to avoid config.verbose as "null" if undefined in yaml and since function parameter boolean
             //command_secrets += " --env-var ${appName}_clientid=${xsuaaCredentials.clientid}  --env-var ${appName}_clientsecret=${xsuaaCredentials.clientsecret}"
+            def xsuaaCredentials = [clientid: "testClientID", clientsecret: "testClientSecret"]
             cfCredentials.add([var: "PIPER_NEWMANEXECUTE_${appName}_clientid", password: "${xsuaaCredentials.clientid}"])
             cfCredentials.add([var: "PIPER_NEWMANEXECUTE_${appName}_clientsecret", password: "${xsuaaCredentials.clientsecret}"])
             echo "Exposing client id and secret for ${appName}: as ${appName}_clientid and ${appName}_clientsecret to newmanExecute"
