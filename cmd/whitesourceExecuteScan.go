@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -18,12 +19,13 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/npm"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/reporting"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 	"github.com/pkg/errors"
 )
 
-// just to make the lines less long
+// ScanOptions is just used to make the lines less long
 type ScanOptions = whitesourceExecuteScanOptions
 
 // whitesource defines the functions that are expected by the step implementation to
@@ -38,12 +40,13 @@ type whitesource interface {
 	GetProjectRiskReport(projectToken string) ([]byte, error)
 	GetProjectVulnerabilityReport(projectToken string, format string) ([]byte, error)
 	GetProjectAlerts(projectToken string) ([]ws.Alert, error)
+	GetProjectAlertsByType(projectToken, alertType string) ([]ws.Alert, error)
 	GetProjectLibraryLocations(projectToken string) ([]ws.Library, error)
 }
 
 type whitesourceUtils interface {
 	ws.Utils
-
+	DirExists(path string) (bool, error)
 	GetArtifactCoordinates(buildTool, buildDescriptorFile string,
 		options *versioning.Options) (versioning.Coordinates, error)
 
@@ -61,11 +64,10 @@ func (w *whitesourceUtilsBundle) FileOpen(name string, flag int, perm os.FileMod
 	return os.OpenFile(name, flag, perm)
 }
 
-func (w *whitesourceUtilsBundle) GetArtifactCoordinates(buildTool, buildDescriptorFile string,
-	options *versioning.Options) (versioning.Coordinates, error) {
+func (w *whitesourceUtilsBundle) GetArtifactCoordinates(buildTool, buildDescriptorFile string, options *versioning.Options) (versioning.Coordinates, error) {
 	artifact, err := versioning.GetArtifact(buildTool, buildDescriptorFile, options, w)
 	if err != nil {
-		return nil, err
+		return versioning.Coordinates{}, err
 	}
 	return artifact.GetCoordinates()
 }
@@ -106,7 +108,7 @@ func newWhitesourceUtils(config *ScanOptions) *whitesourceUtilsBundle {
 func newWhitesourceScan(config *ScanOptions) *ws.Scan {
 	return &ws.Scan{
 		AggregateProjectName: config.ProjectName,
-		ProductVersion:       config.ProductVersion,
+		ProductVersion:       config.Version,
 	}
 }
 
@@ -179,46 +181,62 @@ func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUti
 	}
 
 	log.Entry().Info("-----------------------------------------------------")
-	log.Entry().Infof("Product Version: '%s'", config.ProductVersion)
+	log.Entry().Infof("Product Version: '%s'", config.Version)
 	log.Entry().Info("Scanned projects:")
 	for _, project := range scan.ScannedProjects() {
 		log.Entry().Infof("  Name: '%s', token: %s", project.Name, project.Token)
 	}
 	log.Entry().Info("-----------------------------------------------------")
 
-	if err := checkAndReportScanResults(config, scan, utils, sys); err != nil {
+	paths, err := checkAndReportScanResults(config, scan, utils, sys)
+	piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", paths, nil)
+	persistScannedProjects(config, scan, commonPipelineEnvironment)
+	if err != nil {
 		return err
 	}
-
-	persistScannedProjects(config, scan, commonPipelineEnvironment)
-
 	return nil
 }
 
-func checkAndReportScanResults(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource) error {
+func checkAndReportScanResults(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource) ([]piperutils.Path, error) {
+	reportPaths := []piperutils.Path{}
 	if !config.Reporting && !config.SecurityVulnerabilities {
-		return nil
+		return reportPaths, nil
 	}
 	// Wait for WhiteSource backend to propagate the changes before downloading any reports.
 	if err := scan.BlockUntilReportsAreReady(sys); err != nil {
-		return err
+		return reportPaths, err
 	}
+
 	if config.Reporting {
-		paths, err := scan.DownloadReports(ws.ReportOptions{
-			ReportDirectory:           config.ReportDirectoryName,
+		var err error
+		reportPaths, err = scan.DownloadReports(ws.ReportOptions{
+			ReportDirectory:           ws.ReportsDirectory,
 			VulnerabilityReportFormat: config.VulnerabilityReportFormat,
 		}, utils, sys)
 		if err != nil {
-			return err
+			return reportPaths, err
 		}
-		piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", paths, nil)
 	}
+
+	checkErrors := []string{}
+
+	rPath, err := checkPolicyViolations(config, scan, sys, utils, reportPaths)
+	if err != nil {
+		checkErrors = append(checkErrors, fmt.Sprint(err))
+	}
+	reportPaths = append(reportPaths, rPath)
+
 	if config.SecurityVulnerabilities {
-		if err := checkSecurityViolations(config, scan, sys); err != nil {
-			return err
+		rPaths, err := checkSecurityViolations(config, scan, sys, utils)
+		reportPaths = append(reportPaths, rPaths...)
+		if err != nil {
+			checkErrors = append(checkErrors, fmt.Sprint(err))
 		}
 	}
-	return nil
+	if len(checkErrors) > 0 {
+		return reportPaths, fmt.Errorf(strings.Join(checkErrors, ": "))
+	}
+	return reportPaths, nil
 }
 
 func createWhiteSourceProduct(config *ScanOptions, sys whitesource) (string, error) {
@@ -242,7 +260,11 @@ func createWhiteSourceProduct(config *ScanOptions, sys whitesource) (string, err
 }
 
 func resolveProjectIdentifiers(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource) error {
-	if scan.AggregateProjectName == "" || config.ProductVersion == "" {
+	if len(scan.AggregateProjectName) > 0 && (len(config.Version)+len(config.CustomScanVersion) > 0) {
+		if config.Version == "" {
+			config.Version = config.CustomScanVersion
+		}
+	} else {
 		options := &versioning.Options{
 			DockerImage:         config.ScanImage,
 			ProjectSettingsFile: config.ProjectSettingsFile,
@@ -254,21 +276,23 @@ func resolveProjectIdentifiers(config *ScanOptions, scan *ws.Scan, utils whiteso
 			return fmt.Errorf("failed to get build artifact description: %w", err)
 		}
 
-		//ToDo: fill version in coordinates with version from pipeline environment
+		if len(config.Version) > 0 {
+			log.Entry().Infof("Resolving product version from default provided '%s' with versioning '%s'", config.Version, config.VersioningModel)
+			coordinates.Version = config.Version
+		}
 
 		nameTmpl := `{{list .GroupID .ArtifactID | join "-" | trimAll "-"}}`
-		name, version := versioning.DetermineProjectCoordinates(nameTmpl, config.VersioningModel, coordinates)
+		name, version := versioning.DetermineProjectCoordinatesWithCustomVersion(nameTmpl, config.VersioningModel, config.CustomScanVersion, coordinates)
 		if scan.AggregateProjectName == "" {
 			log.Entry().Infof("Resolved project name '%s' from descriptor file", name)
 			scan.AggregateProjectName = name
 		}
-		if config.ProductVersion == "" {
-			log.Entry().Infof("Resolved product version '%s' from descriptor file with versioning '%s'",
-				version, config.VersioningModel)
-			config.ProductVersion = version
-		}
+
+		config.Version = version
+		log.Entry().Infof("Resolved product version '%s'", version)
 	}
-	scan.ProductVersion = validateProductVersion(config.ProductVersion)
+
+	scan.ProductVersion = validateProductVersion(config.Version)
 
 	if err := resolveProductToken(config, sys); err != nil {
 		return err
@@ -333,7 +357,7 @@ func resolveAggregateProjectToken(config *ScanOptions, sys whitesource) error {
 		return nil
 	}
 	log.Entry().Infof("Attempting to resolve project token for project '%s'..", config.ProjectName)
-	fullProjName := fmt.Sprintf("%s - %s", config.ProjectName, config.ProductVersion)
+	fullProjName := fmt.Sprintf("%s - %s", config.ProjectName, config.Version)
 	projectToken, err := sys.GetProjectToken(config.ProductToken, fullProjName)
 	if err != nil {
 		return err
@@ -367,7 +391,7 @@ func wsScanOptions(config *ScanOptions) *ws.ScanOptions {
 		UserToken:                  config.UserToken,
 		ProductName:                config.ProductName,
 		ProductToken:               config.ProductToken,
-		ProductVersion:             config.ProductVersion,
+		ProductVersion:             config.Version,
 		ProjectName:                config.ProjectName,
 		BuildDescriptorFile:        config.BuildDescriptorFile,
 		BuildDescriptorExcludeList: config.BuildDescriptorExcludeList,
@@ -428,66 +452,106 @@ func executeScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils) err
 	return nil
 }
 
-func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource) error {
+func checkPolicyViolations(config *ScanOptions, scan *ws.Scan, sys whitesource, utils whitesourceUtils, reportPaths []piperutils.Path) (piperutils.Path, error) {
+
+	policyViolationCount := 0
+	for _, project := range scan.ScannedProjects() {
+		alerts, err := sys.GetProjectAlertsByType(project.Token, "REJECTED_BY_POLICY_RESOURCE")
+		if err != nil {
+			return piperutils.Path{}, fmt.Errorf("failed to retrieve project policy alerts from WhiteSource: %w", err)
+		}
+		policyViolationCount += len(alerts)
+	}
+
+	violations := struct {
+		PolicyViolations int      `json:"policyViolations"`
+		Reports          []string `json:"reports"`
+	}{
+		PolicyViolations: policyViolationCount,
+		Reports:          []string{},
+	}
+	for _, report := range reportPaths {
+		_, reportFile := filepath.Split(report.Target)
+		violations.Reports = append(violations.Reports, reportFile)
+	}
+
+	violationContent, err := json.Marshal(violations)
+	if err != nil {
+		return piperutils.Path{}, fmt.Errorf("failed to marshal policy violation data: %w", err)
+	}
+
+	jsonViolationReportPath := filepath.Join(ws.ReportsDirectory, "whitesource-ip.json")
+	err = utils.FileWrite(jsonViolationReportPath, violationContent, 0666)
+	if err != nil {
+		return piperutils.Path{}, fmt.Errorf("failed to write policy violation report: %w", err)
+	}
+
+	policyReport := piperutils.Path{Name: "WhiteSource Policy Violation Report", Target: jsonViolationReportPath}
+
+	if policyViolationCount > 0 {
+		log.SetErrorCategory(log.ErrorCompliance)
+		return policyReport, fmt.Errorf("%v policy violation(s) found", policyViolationCount)
+	}
+
+	return policyReport, nil
+}
+
+func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource, utils whitesourceUtils) ([]piperutils.Path, error) {
+	var reportPaths []piperutils.Path
 	// Check for security vulnerabilities and fail the build if cvssSeverityLimit threshold is crossed
 	// convert config.CvssSeverityLimit to float64
 	cvssSeverityLimit, err := strconv.ParseFloat(config.CvssSeverityLimit, 64)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return fmt.Errorf("failed to parse parameter cvssSeverityLimit (%s) "+
+		return reportPaths, fmt.Errorf("failed to parse parameter cvssSeverityLimit (%s) "+
 			"as floating point number: %w", config.CvssSeverityLimit, err)
 	}
+
 	if config.ProjectToken != "" {
 		project := ws.Project{Name: config.ProjectName, Token: config.ProjectToken}
-		if _, err := checkProjectSecurityViolations(cvssSeverityLimit, project, sys); err != nil {
-			return err
+		// ToDo: see if HTML report generation is really required here
+		// we anyway need to do some refactoring here since config.ProjectToken != "" essentially indicates an aggregated project
+		if _, _, err := checkProjectSecurityViolations(cvssSeverityLimit, project, sys); err != nil {
+			return reportPaths, err
 		}
 	} else {
 		vulnerabilitiesCount := 0
 		var errorsOccured []string
+		allAlerts := []ws.Alert{}
 		for _, project := range scan.ScannedProjects() {
 			// collect errors and aggregate vulnerabilities from all projects
-			if vulCount, err := checkProjectSecurityViolations(cvssSeverityLimit, project, sys); err != nil {
+			if vulCount, alerts, err := checkProjectSecurityViolations(cvssSeverityLimit, project, sys); err != nil {
+				allAlerts = append(allAlerts, alerts...)
 				vulnerabilitiesCount += vulCount
 				errorsOccured = append(errorsOccured, fmt.Sprint(err))
 			}
 		}
+
+		scanReport := createCustomVulnerabilityReport(config, scan, allAlerts, cvssSeverityLimit, utils)
+		reportPaths, err = writeCustomVulnerabilityReports(scanReport, utils)
+		if err != nil {
+			errorsOccured = append(errorsOccured, fmt.Sprint(err))
+		}
+
 		if len(errorsOccured) > 0 {
 			if vulnerabilitiesCount > 0 {
 				log.SetErrorCategory(log.ErrorCompliance)
 			}
-			return fmt.Errorf(strings.Join(errorsOccured, ": "))
+			return reportPaths, fmt.Errorf(strings.Join(errorsOccured, ": "))
 		}
 	}
-	return nil
+	return reportPaths, nil
 }
 
 // checkSecurityViolations checks security violations and returns an error if the configured severity limit is crossed.
-func checkProjectSecurityViolations(cvssSeverityLimit float64, project ws.Project, sys whitesource) (int, error) {
+func checkProjectSecurityViolations(cvssSeverityLimit float64, project ws.Project, sys whitesource) (int, []ws.Alert, error) {
 	// get project alerts (vulnerabilities)
-	//ToDo: use getProjectAlertsByType with alertType : "SECURITY_VULNERABILITY"?
-	//ToDo: also return reference to alerts in order to use it for reporting later
-	alerts, err := sys.GetProjectAlerts(project.Token)
+	alerts, err := sys.GetProjectAlertsByType(project.Token, "SECURITY_VULNERABILITY")
 	if err != nil {
-		return 0, fmt.Errorf("failed to retrieve project alerts from Whitesource: %w", err)
+		return 0, alerts, fmt.Errorf("failed to retrieve project alerts from WhiteSource: %w", err)
 	}
 
-	severeVulnerabilities := 0
-	// https://github.com/SAP/jenkins-library/blob/master/vars/whitesourceExecuteScan.groovy#L537
-	for _, alert := range alerts {
-		vuln := alert.Vulnerability
-		if (vuln.Score >= cvssSeverityLimit || vuln.CVSS3Score >= cvssSeverityLimit) && cvssSeverityLimit >= 0 {
-			log.Entry().Infof("Vulnerability with Score %v / CVSS3Score %v treated as severe",
-				vuln.Score, vuln.CVSS3Score)
-			severeVulnerabilities++
-		} else {
-			log.Entry().Infof("Ignoring vulnerability with Score %v / CVSS3Score %v",
-				vuln.Score, vuln.CVSS3Score)
-		}
-	}
-
-	//https://github.com/SAP/jenkins-library/blob/master/vars/whitesourceExecuteScan.groovy#L547
-	nonSevereVulnerabilities := len(alerts) - severeVulnerabilities
+	severeVulnerabilities, nonSevereVulnerabilities := countSecurityVulnerabilities(&alerts, cvssSeverityLimit)
 	if nonSevereVulnerabilities > 0 {
 		log.Entry().Warnf("WARNING: %v Open Source Software Security vulnerabilities with "+
 			"CVSS score below threshold %.1f detected in project %s.", nonSevereVulnerabilities,
@@ -499,15 +563,163 @@ func checkProjectSecurityViolations(cvssSeverityLimit float64, project ws.Projec
 
 	// https://github.com/SAP/jenkins-library/blob/master/vars/whitesourceExecuteScan.groovy#L558
 	if severeVulnerabilities > 0 {
-		return severeVulnerabilities, fmt.Errorf("%v Open Source Software Security vulnerabilities with CVSS score greater "+
+		return severeVulnerabilities, alerts, fmt.Errorf("%v Open Source Software Security vulnerabilities with CVSS score greater "+
 			"or equal to %.1f detected in project %s",
 			severeVulnerabilities, cvssSeverityLimit, project.Name)
 	}
-	return 0, nil
+	return 0, alerts, nil
+}
+
+func countSecurityVulnerabilities(alerts *[]ws.Alert, cvssSeverityLimit float64) (int, int) {
+	severeVulnerabilities := 0
+	for _, alert := range *alerts {
+		if isSevereVulnerability(alert, cvssSeverityLimit) {
+			severeVulnerabilities++
+		}
+	}
+
+	nonSevereVulnerabilities := len(*alerts) - severeVulnerabilities
+	return severeVulnerabilities, nonSevereVulnerabilities
+}
+
+func isSevereVulnerability(alert ws.Alert, cvssSeverityLimit float64) bool {
+
+	if vulnerabilityScore(alert) >= cvssSeverityLimit && cvssSeverityLimit >= 0 {
+		return true
+	}
+	return false
+}
+
+func createCustomVulnerabilityReport(config *ScanOptions, scan *ws.Scan, alerts []ws.Alert, cvssSeverityLimit float64, utils whitesourceUtils) reporting.ScanReport {
+
+	severe, _ := countSecurityVulnerabilities(&alerts, cvssSeverityLimit)
+
+	// sort according to vulnarability severity
+	sort.Slice(alerts, func(i, j int) bool {
+		return vulnerabilityScore(alerts[i]) > vulnerabilityScore(alerts[j])
+	})
+
+	projectNames := []string{}
+	for _, project := range scan.ScannedProjects() {
+		projectNames = append(projectNames, project.Name)
+	}
+	// Sorting helps the list become stable across pipeline runs (and in the unit tests)
+	sort.Strings(projectNames)
+
+	scanReport := reporting.ScanReport{
+		Title: "WhiteSource Security Vulnerability Report",
+		Subheaders: []reporting.Subheader{
+			{Description: "WhiteSource product name", Details: config.ProductName},
+			{Description: "Filtered project names", Details: strings.Join(projectNames, ", ")},
+		},
+		Overview: []reporting.OverviewRow{
+			{Description: "Total number of vulnerabilities", Details: fmt.Sprint(len(alerts))},
+			{Description: "Total number of high/critical vulnerabilities with CVSS score >= 7.0", Details: fmt.Sprint(severe)},
+		},
+		ReportTime: utils.Now(),
+	}
+
+	detailTable := reporting.ScanDetailTable{
+		NoRowsMessage: "No publicly known vulnerabilities detected",
+		Headers: []string{
+			"Date",
+			"CVE",
+			"CVSS Score",
+			"CVSS Version",
+			"Project",
+			"Library file name",
+			"Library group ID",
+			"Library artifact ID",
+			"Library version",
+			"Description",
+			"Top fix",
+		},
+		WithCounter:   true,
+		CounterHeader: "Entry #",
+	}
+
+	for _, alert := range alerts {
+		var score float64
+		var scoreStyle reporting.ColumnStyle = reporting.Yellow
+		if isSevereVulnerability(alert, cvssSeverityLimit) {
+			scoreStyle = reporting.Red
+		}
+		var cveVersion string
+		if alert.Vulnerability.CVSS3Score > 0 {
+			score = alert.Vulnerability.CVSS3Score
+			cveVersion = "v3"
+		} else {
+			score = alert.Vulnerability.Score
+			cveVersion = "v2"
+		}
+
+		var topFix string
+		emptyFix := ws.Fix{}
+		if alert.Vulnerability.TopFix != emptyFix {
+			topFix = fmt.Sprintf(`%v<br>%v<br><a href="%v">%v</a>}"`, alert.Vulnerability.TopFix.Message, alert.Vulnerability.TopFix.FixResolution, alert.Vulnerability.TopFix.URL, alert.Vulnerability.TopFix.URL)
+		}
+
+		row := reporting.ScanRow{}
+		row.AddColumn(alert.Vulnerability.PublishDate, 0)
+		row.AddColumn(fmt.Sprintf(`<a href="%v">%v</a>`, alert.Vulnerability.URL, alert.Vulnerability.Name), 0)
+		row.AddColumn(score, scoreStyle)
+		row.AddColumn(cveVersion, 0)
+		row.AddColumn(alert.Project, 0)
+		row.AddColumn(alert.Library.Filename, 0)
+		row.AddColumn(alert.Library.GroupID, 0)
+		row.AddColumn(alert.Library.ArtifactID, 0)
+		row.AddColumn(alert.Library.Version, 0)
+		row.AddColumn(alert.Vulnerability.Description, 0)
+		row.AddColumn(topFix, 0)
+
+		detailTable.Rows = append(detailTable.Rows, row)
+	}
+	scanReport.DetailTable = detailTable
+
+	return scanReport
+}
+
+func writeCustomVulnerabilityReports(scanReport reporting.ScanReport, utils whitesourceUtils) ([]piperutils.Path, error) {
+	reportPaths := []piperutils.Path{}
+
+	// ignore templating errors since template is in our hands and issues will be detected with the automated tests
+	htmlReport, _ := scanReport.ToHTML()
+	htmlReportPath := filepath.Join(ws.ReportsDirectory, "piper_whitesource_vulnerability_report.html")
+	if err := utils.FileWrite(htmlReportPath, htmlReport, 0666); err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return reportPaths, errors.Wrapf(err, "failed to write html report")
+	}
+	reportPaths = append(reportPaths, piperutils.Path{Name: "WhiteSource Vulnerability Report", Target: htmlReportPath})
+
+	// markdown reports are used by step pipelineCreateSummary in order to e.g. prepare an issue creation in GitHub
+	// ignore templating errors since template is in our hands and issues will be detected with the automated tests
+	mdReport, _ := scanReport.ToMarkdown()
+	if exists, _ := utils.DirExists(reporting.MarkdownReportDirectory); !exists {
+		err := utils.MkdirAll(reporting.MarkdownReportDirectory, 0777)
+		if err != nil {
+			return reportPaths, errors.Wrap(err, "failed to create reporting directory")
+		}
+	}
+	if err := utils.FileWrite(filepath.Join(reporting.MarkdownReportDirectory, fmt.Sprintf("whitesourceExecuteScan_%v.md", utils.Now().Format("20060102150405"))), mdReport, 0666); err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return reportPaths, errors.Wrapf(err, "failed to write markdown report")
+	}
+	// we do not add the markdown report to the overall list of reports for now,
+	// since it is just an intermediary report used as input for later
+	// and there does not seem to be real benefit in archiving it.
+
+	return reportPaths, nil
+}
+
+func vulnerabilityScore(alert ws.Alert) float64 {
+	if alert.Vulnerability.CVSS3Score > 0 {
+		return alert.Vulnerability.CVSS3Score
+	}
+	return alert.Vulnerability.Score
 }
 
 func aggregateVersionWideLibraries(config *ScanOptions, utils whitesourceUtils, sys whitesource) error {
-	log.Entry().Infof("Aggregating list of libraries used for all projects with version: %s", config.ProductVersion)
+	log.Entry().Infof("Aggregating list of libraries used for all projects with version: %s", config.Version)
 
 	projects, err := sys.GetProjectsMetaInfo(config.ProductToken)
 	if err != nil {
@@ -518,7 +730,7 @@ func aggregateVersionWideLibraries(config *ScanOptions, utils whitesourceUtils, 
 	for _, project := range projects {
 		projectVersion := strings.Split(project.Name, " - ")[1]
 		projectName := strings.Split(project.Name, " - ")[0]
-		if projectVersion == config.ProductVersion {
+		if projectVersion == config.Version {
 			libs, err := sys.GetProjectLibraryLocations(project.Token)
 			if err != nil {
 				return err
@@ -534,7 +746,7 @@ func aggregateVersionWideLibraries(config *ScanOptions, utils whitesourceUtils, 
 }
 
 func aggregateVersionWideVulnerabilities(config *ScanOptions, utils whitesourceUtils, sys whitesource) error {
-	log.Entry().Infof("Aggregating list of vulnerabilities for all projects with version: %s", config.ProductVersion)
+	log.Entry().Infof("Aggregating list of vulnerabilities for all projects with version: %s", config.Version)
 
 	projects, err := sys.GetProjectsMetaInfo(config.ProductToken)
 	if err != nil {
@@ -545,7 +757,7 @@ func aggregateVersionWideVulnerabilities(config *ScanOptions, utils whitesourceU
 	projectNames := ``               // holds all project tokens considered a part of the report for debugging
 	for _, project := range projects {
 		projectVersion := strings.Split(project.Name, " - ")[1]
-		if projectVersion == config.ProductVersion {
+		if projectVersion == config.Version {
 			projectNames += project.Name + "\n"
 			alerts, err := sys.GetProjectAlerts(project.Token)
 			if err != nil {
@@ -556,7 +768,7 @@ func aggregateVersionWideVulnerabilities(config *ScanOptions, utils whitesourceU
 		}
 	}
 
-	reportPath := filepath.Join(config.ReportDirectoryName, "project-names-aggregated.txt")
+	reportPath := filepath.Join(ws.ReportsDirectory, "project-names-aggregated.txt")
 	if err := utils.FileWrite(reportPath, []byte(projectNames), 0666); err != nil {
 		return err
 	}
@@ -586,11 +798,11 @@ func newVulnerabilityExcelReport(alerts []ws.Alert, config *ScanOptions, utils w
 		return err
 	}
 
-	if err := utils.MkdirAll(config.ReportDirectoryName, 0777); err != nil {
+	if err := utils.MkdirAll(ws.ReportsDirectory, 0777); err != nil {
 		return err
 	}
 
-	fileName := filepath.Join(config.ReportDirectoryName,
+	fileName := filepath.Join(ws.ReportsDirectory,
 		fmt.Sprintf("vulnerabilities-%s.xlsx", utils.Now().Format(wsReportTimeStampLayout)))
 	stream, err := utils.FileOpen(fileName, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666)
 	if err != nil {
@@ -636,7 +848,7 @@ func fillVulnerabilityExcelReport(alerts []ws.Alert, streamWriter *excelize.Stre
 	return nil
 }
 
-// outputs an slice of libraries to an excel file based on projects with version == config.ProductVersion
+// outputs an slice of libraries to an excel file based on projects with version == config.Version
 func newLibraryCSVReport(libraries map[string][]ws.Library, config *ScanOptions, utils whitesourceUtils) error {
 	output := "Library Name, Project Name\n"
 	for projectName, libraries := range libraries {
@@ -647,12 +859,12 @@ func newLibraryCSVReport(libraries map[string][]ws.Library, config *ScanOptions,
 	}
 
 	// Ensure reporting directory exists
-	if err := utils.MkdirAll(config.ReportDirectoryName, 0777); err != nil {
+	if err := utils.MkdirAll(ws.ReportsDirectory, 0777); err != nil {
 		return err
 	}
 
 	// Write result to file
-	fileName := fmt.Sprintf("%s/libraries-%s.csv", config.ReportDirectoryName,
+	fileName := fmt.Sprintf("%s/libraries-%s.csv", ws.ReportsDirectory,
 		utils.Now().Format(wsReportTimeStampLayout))
 	if err := utils.FileWrite(fileName, []byte(output), 0666); err != nil {
 		return err
@@ -660,12 +872,12 @@ func newLibraryCSVReport(libraries map[string][]ws.Library, config *ScanOptions,
 	return nil
 }
 
-// persistScannedProjects writes all actually scanned WhiteSource project names as comma separated
-// string into the Common Pipeline Environment, from where it can be used by sub-sequent steps.
+// persistScannedProjects writes all actually scanned WhiteSource project names as list
+// into the Common Pipeline Environment, from where it can be used by sub-sequent steps.
 func persistScannedProjects(config *ScanOptions, scan *ws.Scan, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment) {
 	projectNames := []string{}
 	if config.ProjectName != "" {
-		projectNames = []string{config.ProjectName + " - " + config.ProductVersion}
+		projectNames = []string{config.ProjectName + " - " + config.Version}
 	} else {
 		for _, project := range scan.ScannedProjects() {
 			projectNames = append(projectNames, project.Name)

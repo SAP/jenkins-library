@@ -50,6 +50,8 @@ func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, 
 		return GetIntegrationArtifactGetMplStatusCommandMockResponse(testType)
 	case "IntegrationArtifactGetServiceEndpoint":
 		return GetIntegrationArtifactGetServiceEndpointCommandMockResponse(testType)
+	case "IntegrationArtifactDownload":
+		return IntegrationArtifactDownloadCommandMockResponse(testType)
 	default:
 		res := http.Response{
 			StatusCode: 404,
@@ -185,4 +187,49 @@ func GetIntegrationArtifactGetServiceEndpointPositiveCaseRespBody() (*http.Respo
 		}`))),
 	}
 	return &resp, nil
+}
+
+//IntegrationArtifactDownloadCommandMockResponse -Provide http respose body
+func IntegrationArtifactDownloadCommandMockResponse(testType string) (*http.Response, error) {
+
+	response, error := GetPositiveCaseResponseByTestType(testType)
+
+	if response == nil && error == nil {
+
+		res := http.Response{
+			StatusCode: 400,
+			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+					"code": "Bad Request",
+					"message": {
+					"@lang": "en",
+					"#text": "invalid request"
+					}
+				}`))),
+		}
+		return &res, errors.New("Unable to download integration artifact, Response Status code:400")
+	}
+	return response, error
+}
+
+//IntegrationArtifactDownloadCommandMockResponsePositiveCaseRespBody -Provide http respose body for positive case
+func IntegrationArtifactDownloadCommandMockResponsePositiveCaseRespBody() (*http.Response, error) {
+	header := make(http.Header)
+	headerValue := "attachment; filename=flow1.zip"
+	header.Add("Content-Disposition", headerValue)
+	resp := http.Response{
+		StatusCode: 200,
+		Header:     header,
+		Body:       ioutil.NopCloser(bytes.NewReader([]byte(`UEsDBBQACAgIADQ2clAAAAAAAAAAAAAAAAAUAAQATU`))),
+	}
+	return &resp, nil
+}
+
+//GetPositiveCaseResponseByTestType - get postive response by test case type
+func GetPositiveCaseResponseByTestType(testType string) (*http.Response, error) {
+	switch testType {
+	case "PositiveAndGetetIntegrationArtifactDownloadResBody":
+		return IntegrationArtifactDownloadCommandMockResponsePositiveCaseRespBody()
+	default:
+		return nil, nil
+	}
 }
