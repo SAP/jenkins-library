@@ -2,6 +2,13 @@
 
 ## ${docGenDescription}
 
+### Additional hints
+
+* Via parameter `useGoStep` it can be switched between
+the groovy and the go implementation of that step. E.g. in case there are
+issue with the go step it can be swtiched back to the corresponding groovy
+code via `useGoStep:false` in the step configuration.
+
 ## Prerequisites
 
 * Cloud Foundry organization, space and deployment user are available
