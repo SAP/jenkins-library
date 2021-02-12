@@ -43,6 +43,7 @@ type cloudFoundryDeployOptions struct {
 	SmokeTestStatusCode      int                    `json:"smokeTestStatusCode,omitempty"`
 	Space                    string                 `json:"space,omitempty"`
 	Username                 string                 `json:"username,omitempty"`
+	UseGoStep                bool                   `json:"useGoStep,omitempty"`
 }
 
 type cloudFoundryDeployInflux struct {
@@ -184,6 +185,7 @@ func addCloudFoundryDeployFlags(cmd *cobra.Command, stepConfig *cloudFoundryDepl
 	cmd.Flags().IntVar(&stepConfig.SmokeTestStatusCode, "smokeTestStatusCode", 200, "Expected status code returned by the check.")
 	cmd.Flags().StringVar(&stepConfig.Space, "space", os.Getenv("PIPER_space"), "Cloud Foundry target space")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User")
+	cmd.Flags().BoolVar(&stepConfig.UseGoStep, "useGoStep", false, "When set to false the the groovy fallback for cloudFoundryDeploy will be used. Otherwise the corresponding go coding will be used.")
 
 	cmd.MarkFlagRequired("apiEndpoint")
 	cmd.MarkFlagRequired("org")
@@ -469,6 +471,14 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+					},
+					{
+						Name:        "useGoStep",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 				},
 			},
