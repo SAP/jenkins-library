@@ -46,7 +46,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 		runKubernetesDeploy(opts, &e, &stdout)
 
 		assert.Equal(t, "helm", e.Calls[0].Exec, "Wrong init command")
-		assert.Equal(t, []string{"init", "--client-only"}, e.Calls[0].Params, "Wrong init parameters")
+		assert.Equal(t, []string{"init", "--stable-repo-url=https://charts.helm.sh/stable", "--client-only"}, e.Calls[0].Params, "Wrong init parameters")
 
 		assert.Equal(t, "kubectl", e.Calls[1].Exec, "Wrong secret creation command")
 		assert.Equal(t, []string{"--insecure-skip-tls-verify=true", "create", "secret", "docker-registry", "testSecret", "--docker-server=my.registry:55555", "--docker-username=registryUser", "--docker-password=********", "--dry-run=true", "--output=json"}, e.Calls[1].Params, "Wrong secret creation parameters")
@@ -105,7 +105,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 		runKubernetesDeploy(opts, &e, &stdout)
 
 		assert.Equal(t, "helm", e.Calls[0].Exec, "Wrong init command")
-		assert.Equal(t, []string{"init", "--client-only"}, e.Calls[0].Params, "Wrong init parameters")
+		assert.Equal(t, []string{"init", "--stable-repo-url=https://charts.helm.sh/stable", "--client-only"}, e.Calls[0].Params, "Wrong init parameters")
 
 		assert.Equal(t, "kubectl", e.Calls[1].Exec, "Wrong secret creation command")
 		assert.Equal(t, []string{"--insecure-skip-tls-verify=true", "create", "secret", "docker-registry", "testSecret", "--docker-server=my.registry:55555", "--docker-username=registryUser", "--docker-password=********", "--dry-run=true", "--output=json"}, e.Calls[1].Params, "Wrong secret creation parameters")

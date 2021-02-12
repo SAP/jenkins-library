@@ -73,7 +73,7 @@ func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, s
 	command.Stdout(stdout)
 
 	if config.DeployTool == "helm" {
-		initParams := []string{"init", "--client-only"}
+		initParams := []string{"init", "--stable-repo-url=https://charts.helm.sh/stable", "--client-only"}
 		if err := command.RunExecutable("helm", initParams...); err != nil {
 			log.Entry().WithError(err).Fatal("Helm init call failed")
 		}
