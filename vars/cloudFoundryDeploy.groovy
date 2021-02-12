@@ -1,7 +1,6 @@
 import com.sap.piper.BashUtils
 import com.sap.piper.CfManifestUtils
 import com.sap.piper.ConfigurationHelper
-import com.sap.piper.GenerateDocumentation
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.Utils
 import groovy.transform.Field
@@ -210,7 +209,6 @@ import static com.sap.piper.Prerequisites.checkScript
  * In this case define `appName: ''` since the app name for the individual applications have to be defined via the manifest.
  * You can find details in the [Cloud Foundry Documentation](https://docs.cloudfoundry.org/devguide/deploy-apps/manifest.html#multi-apps)
  */
-@GenerateDocumentation
 void call(Map parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
