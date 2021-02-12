@@ -43,6 +43,7 @@ type cloudFoundryDeployOptions struct {
 	SmokeTestStatusCode      int                    `json:"smokeTestStatusCode,omitempty"`
 	Space                    string                 `json:"space,omitempty"`
 	Username                 string                 `json:"username,omitempty"`
+	CfTrace                  bool                   `json:"cfTrace,omitempty"`
 }
 
 type cloudFoundryDeployInflux struct {
@@ -184,6 +185,7 @@ func addCloudFoundryDeployFlags(cmd *cobra.Command, stepConfig *cloudFoundryDepl
 	cmd.Flags().IntVar(&stepConfig.SmokeTestStatusCode, "smokeTestStatusCode", 200, "Expected status code returned by the check.")
 	cmd.Flags().StringVar(&stepConfig.Space, "space", os.Getenv("PIPER_space"), "Cloud Foundry target space")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User")
+	cmd.Flags().BoolVar(&stepConfig.CfTrace, "cfTrace", true, "Output the CloudFoundry trace logs.")
 
 	cmd.MarkFlagRequired("apiEndpoint")
 	cmd.MarkFlagRequired("org")
@@ -469,6 +471,14 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+					},
+					{
+						Name:        "cfTrace",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 				},
 			},
