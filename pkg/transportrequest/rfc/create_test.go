@@ -14,6 +14,7 @@ func TestCreateTransportRequest(t *testing.T) {
 		Connection: Connection{
 			Endpoint: "https://example.org/cts",
 			Instance: "001",
+			Client:   "DEV",
 			User:     "me",
 			Password: "******",
 		},
@@ -51,7 +52,7 @@ func TestCreateTransportRequest(t *testing.T) {
 					"ABAP_DEVELOPMENT_PASSWORD=******",
 					"TRANSPORT_DESCRIPTION=Lorem ipsum",
 					"ABAP_DEVELOPMENT_INSTANCE=001",
-					"ABAP_DEVELOPMENT_CLIENT=",
+					"ABAP_DEVELOPMENT_CLIENT=DEV",
 				}
 
 				if assert.Len(t, expected, 6) {

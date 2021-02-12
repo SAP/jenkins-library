@@ -7,7 +7,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/config/validation"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/pkg/errors"
 	"io"
 	"strings"
@@ -72,8 +71,6 @@ func (c *CreateAction) Perform(command Exec) (string, error) {
 	missingParameters, err := validation.FindEmptyStringsInConfigStruct(*c)
 
 	if err == nil {
-		// Connection.Client is not used in this case
-		missingParameters, _ := piperutils.RemoveAll(missingParameters, "Connection.Client")
 		notInitialized := len(missingParameters) != 0
 		if notInitialized {
 			err = fmt.Errorf("the following parameters are not available %s", missingParameters)
