@@ -4,7 +4,9 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/transportrequest"
 	"github.com/SAP/jenkins-library/pkg/transportrequest/cts"
+	"github.com/pkg/errors"
 )
 
 type transportRequestUploadUtils interface {
@@ -71,6 +73,25 @@ func runTransportRequestUploadCTS(
 
 	log.Entry().Debugf("Entering 'runTransportRequestUpload' with config: %v", config)
 
+	transportRequestID := config.TransportRequestID
+
+	if len(transportRequestID) == 0 {
+
+		from := "origin/master"                         //TODO: make configurable
+		to := "HEAD"                                    //TODO: make configurable
+		transportRequestIdLabel := "TransportRequestID" //TODO: make configurable
+
+		log.Entry().Infof("%s not provided by configuration. Traversing commit history, range: '%s..%s'", transportRequestIdLabel, from, to)
+		var err error
+		transportRequestID, err = transportrequest.FindIDInRange("TransportRequest", from, to)
+		if err != nil {
+			return errors.Wrapf(err, "Unable to retrieve '%s' from commit history (range: '%s..%s')", transportRequestIdLabel, from, to)
+		}
+		log.Entry().Infof("Transport request ID '%s' retrieved from commit history (range: '%s..%s')", transportRequestID, from, to)
+	} else {
+		log.Entry().Infof("Transport request ID '%s' explicitly provided by configuration", transportRequestID)
+	}
+
 	action.WithConnection(cts.Connection{
 		Endpoint: config.Endpoint,
 		Client:   config.Client,
@@ -87,7 +108,7 @@ func runTransportRequestUploadCTS(
 		InstallOpts:        config.NpmInstallOpts,
 	})
 
-	action.WithTransportRequestID(config.TransportRequestID)
+	action.WithTransportRequestID(transportRequestID)
 	action.WithConfigFile(config.DeployConfigFile)
 	action.WithDeployUser(config.OsDeployUser)
 

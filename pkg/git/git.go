@@ -1,6 +1,7 @@
 package git
 
 import (
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
@@ -25,6 +26,7 @@ type utilsRepository interface {
 // utilsGit interface abstraction of git to enable tests
 type utilsGit interface {
 	plainClone(path string, isBare bool, o *git.CloneOptions) (*git.Repository, error)
+	plainOpen(path string) (*git.Repository, error)
 }
 
 // CommitSingleFile Commits the file located in the relative file path with the commitMessage to the given worktree.
@@ -82,6 +84,21 @@ func plainClone(username, password, serverURL, directory string, abstractionGit 
 		return nil, errors.Wrap(err, "failed to clone git")
 	}
 	return repository, nil
+}
+
+// PlainOpen opens a git repository from the given path
+func PlainOpen(path string) (*git.Repository, error) {
+	abstractedGit := &abstractionGit{}
+	return plainOpen(path, abstractedGit)
+}
+
+func plainOpen(path string, abstractionGit utilsGit) (*git.Repository, error) {
+	log.Entry().Infof("Opening git repo at '%s'", path)
+	r, err := abstractionGit.plainOpen(path)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Unable to open git repository at '%s'", path)
+	}
+	return r, nil
 }
 
 // ChangeBranch checkout the provided branch.
@@ -160,4 +177,8 @@ type abstractionGit struct{}
 
 func (abstractionGit) plainClone(path string, isBare bool, o *git.CloneOptions) (*git.Repository, error) {
 	return git.PlainClone(path, isBare, o)
+}
+
+func (abstractionGit) plainOpen(path string) (*git.Repository, error) {
+	return git.PlainOpen(path)
 }
