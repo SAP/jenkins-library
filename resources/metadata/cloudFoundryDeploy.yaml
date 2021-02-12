@@ -368,6 +368,14 @@ spec:
               - $(vaultPath)/cloudfoundry-$(org)-$(space)
               - $(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(org)-$(space)
               - $(vaultBasePath)/GROUP-SECRETS/cloudfoundry-$(org)-$(space)
+      - name: useGoStep
+        type: bool
+        description: "When set to false the the groovy fallback for cloudFoundryDeploy will be used. Otherwise the corresponding go coding will be used."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
   containers:
     - name: cfDeploy
       image: ppiper/cf-cli:6
