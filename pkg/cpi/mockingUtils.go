@@ -52,6 +52,18 @@ func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, 
 		return GetIntegrationArtifactGetServiceEndpointCommandMockResponse(testType)
 	case "IntegrationArtifactDownload":
 		return IntegrationArtifactDownloadCommandMockResponse(testType)
+	case "GetIntegrationDesigntimeArtifact":
+		return GetIntegrationDesigntimeArtifactMockResponse(testType)
+	case "UploadIntegrationDesigntimeArtifact":
+		return GetIntegrationDesigntimeArtifactMockResponse(testType)
+	case "UploadIntegrationDesigntimeArtifactNegative":
+		return GetRespBodyHTTPStatusServiceErrorResponse()
+	case "UpdateIntegrationDesigntimeArtifactNegative":
+		return GetRespBodyHTTPStatusServiceErrorResponse()
+	case "UpdateIntegrationDesigntimeArtifact":
+		return UpdateIntegrationDesigntimeArtifactMockResponse(testType)
+	case "IntegrationDesigntimeArtifactUpdate":
+		return IntegrationDesigntimeArtifactUpdateMockResponse(testType)
 	default:
 		res := http.Response{
 			StatusCode: 404,
@@ -189,6 +201,46 @@ func GetIntegrationArtifactGetServiceEndpointPositiveCaseRespBody() (*http.Respo
 	return &resp, nil
 }
 
+//GetRespBodyHTTPStatusOK -Provide http respose body for Http StatusOK
+func GetRespBodyHTTPStatusOK() (*http.Response, error) {
+
+	resp := http.Response{
+		StatusCode: 200,
+		Body:       ioutil.NopCloser(bytes.NewReader([]byte(``))),
+	}
+	return &resp, nil
+}
+
+//GetRespBodyHTTPStatusCreated -Provide http respose body for Http StatusOK
+func GetRespBodyHTTPStatusCreated() (*http.Response, error) {
+
+	resp := http.Response{
+		StatusCode: 201,
+		Body:       ioutil.NopCloser(bytes.NewReader([]byte(``))),
+	}
+	return &resp, nil
+}
+
+//GetRespBodyHTTPStatusServiceNotFound -Provide http respose body for Http URL not Found
+func GetRespBodyHTTPStatusServiceNotFound() (*http.Response, error) {
+
+	resp := http.Response{
+		StatusCode: 404,
+		Body:       ioutil.NopCloser(bytes.NewReader([]byte(``))),
+	}
+	return &resp, errors.New("Integration Package not found")
+}
+
+//GetRespBodyHTTPStatusServiceErrorResponse -Provide http respose body for server error
+func GetRespBodyHTTPStatusServiceErrorResponse() (*http.Response, error) {
+
+	resp := http.Response{
+		StatusCode: 500,
+		Body:       ioutil.NopCloser(bytes.NewReader([]byte(``))),
+	}
+	return &resp, errors.New("Internal error")
+}
+
 //IntegrationArtifactDownloadCommandMockResponse -Provide http respose body
 func IntegrationArtifactDownloadCommandMockResponse(testType string) (*http.Response, error) {
 
@@ -211,6 +263,72 @@ func IntegrationArtifactDownloadCommandMockResponse(testType string) (*http.Resp
 	return response, error
 }
 
+//GetIntegrationDesigntimeArtifactMockResponse -Provide http respose body
+func GetIntegrationDesigntimeArtifactMockResponse(testType string) (*http.Response, error) {
+
+	response, error := GetPositiveCaseResponseByTestType(testType)
+
+	if response == nil && error == nil {
+
+		res := http.Response{
+			StatusCode: 400,
+			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+					"code": "Bad Request",
+					"message": {
+					"@lang": "en",
+					"#text": "invalid request"
+					}
+				}`))),
+		}
+		return &res, errors.New("Unable to get status of integration artifact, Response Status code:400")
+	}
+	return response, error
+}
+
+//IntegrationDesigntimeArtifactUpdateMockResponse -Provide http respose body
+func IntegrationDesigntimeArtifactUpdateMockResponse(testType string) (*http.Response, error) {
+
+	response, error := GetPositiveCaseResponseByTestType(testType)
+
+	if response == nil && error == nil {
+
+		res := http.Response{
+			StatusCode: 400,
+			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+					"code": "Bad Request",
+					"message": {
+					"@lang": "en",
+					"#text": "invalid request"
+					}
+				}`))),
+		}
+		return &res, errors.New("Unable to get status of integration artifact, Response Status code:400")
+	}
+	return response, error
+}
+
+//UpdateIntegrationDesigntimeArtifactMockResponse -Provide http respose body
+func UpdateIntegrationDesigntimeArtifactMockResponse(testType string) (*http.Response, error) {
+
+	response, error := GetRespBodyHTTPStatusCreated()
+
+	if response == nil && error == nil {
+
+		res := http.Response{
+			StatusCode: 400,
+			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+					"code": "Bad Request",
+					"message": {
+					"@lang": "en",
+					"#text": "invalid request"
+					}
+				}`))),
+		}
+		return &res, errors.New("Unable to get status of integration artifact, Response Status code:400")
+	}
+	return response, error
+}
+
 //IntegrationArtifactDownloadCommandMockResponsePositiveCaseRespBody -Provide http respose body for positive case
 func IntegrationArtifactDownloadCommandMockResponsePositiveCaseRespBody() (*http.Response, error) {
 	header := make(http.Header)
@@ -229,7 +347,57 @@ func GetPositiveCaseResponseByTestType(testType string) (*http.Response, error) 
 	switch testType {
 	case "PositiveAndGetetIntegrationArtifactDownloadResBody":
 		return IntegrationArtifactDownloadCommandMockResponsePositiveCaseRespBody()
+	case "PositiveAndCreateIntegrationDesigntimeArtifactResBody":
+		return GetRespBodyHTTPStatusOK()
+	case "NegativeAndCreateIntegrationDesigntimeArtifactResBody":
+		return GetRespBodyHTTPStatusOK()
+	case "PositiveAndUpdateIntegrationDesigntimeArtifactResBody":
+		return GetRespBodyHTTPStatusServiceNotFound()
+	case "NegativeAndUpdateIntegrationDesigntimeArtifactResBody":
+		return GetRespBodyHTTPStatusServiceNotFound()
 	default:
 		return nil, nil
 	}
+}
+
+//GetCPIFunctionNameByURLCheck - get postive response by test case type
+func GetCPIFunctionNameByURLCheck(url, method, testType string) string {
+	switch url {
+	case "https://demo/api/v1/IntegrationDesigntimeArtifacts(Id='flow4',Version='1.0.4')":
+		if method == "GET" && testType == "PositiveAndCreateIntegrationDesigntimeArtifactResBody" {
+			return "GetIntegrationDesigntimeArtifact"
+		}
+		if method == "GET" && testType == "PositiveAndUpdateIntegrationDesigntimeArtifactResBody" {
+			return "IntegrationDesigntimeArtifactUpdate"
+		}
+		if method == "GET" && testType == "NegativeAndGetIntegrationDesigntimeArtifactResBody" {
+			return "GetIntegrationDesigntimeArtifact"
+		}
+		if method == "GET" && testType == "NegativeAndCreateIntegrationDesigntimeArtifactResBody" {
+			return "GetIntegrationDesigntimeArtifact"
+		}
+		if method == "GET" && testType == "NegativeAndUpdateIntegrationDesigntimeArtifactResBody" {
+			return "GetIntegrationDesigntimeArtifact"
+		}
+
+	case "https://demo/api/v1/IntegrationDesigntimeArtifactSaveAsVersion?Id='flow4'&SaveAsVersion='1.0.4'":
+		if method == "POST" && testType == "PositiveAndCreateIntegrationDesigntimeArtifactResBody" {
+			return "UploadIntegrationDesigntimeArtifact"
+		}
+		if method == "POST" && testType == "NegativeAndCreateIntegrationDesigntimeArtifactResBody" {
+			return "UploadIntegrationDesigntimeArtifactNegative"
+		}
+
+	case "https://demo/api/v1/IntegrationDesigntimeArtifacts":
+		if method == "POST" && testType == "PositiveAndUpdateIntegrationDesigntimeArtifactResBody" {
+			return "UpdateIntegrationDesigntimeArtifact"
+		}
+		if method == "POST" && testType == "NegativeAndUpdateIntegrationDesigntimeArtifactResBody" {
+			return "UpdateIntegrationDesigntimeArtifactNegative"
+		}
+
+	default:
+		return ""
+	}
+	return ""
 }
