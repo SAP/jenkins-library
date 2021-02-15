@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/command"
+	gitUtils "github.com/SAP/jenkins-library/pkg/git"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/versioning"
@@ -203,7 +204,7 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 
 func openGit() (gitRepository, error) {
 	workdir, _ := os.Getwd()
-	return git.PlainOpen(workdir)
+	return gitUtils.PlainOpen(workdir)
 }
 
 func getGitCommitID(repository gitRepository) (plumbing.Hash, string, error) {
