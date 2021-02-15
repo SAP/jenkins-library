@@ -175,6 +175,9 @@ func newmanExecuteMetadata() config.StepData {
 					},
 				},
 			},
+			Containers: []config.Container{
+				{Name: "newman", Image: "node:lts-stretch", WorkingDir: "/home/node"},
+			},
 		},
 	}
 	return theMetaData
