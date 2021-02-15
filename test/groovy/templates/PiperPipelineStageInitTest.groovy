@@ -8,6 +8,7 @@ import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 import util.*
 
+import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.hasItems
 import static org.hamcrest.Matchers.hasKey
 import static org.hamcrest.Matchers.is
@@ -226,6 +227,51 @@ class PiperPipelineStageInitTest extends BasePiperTest {
         assertThat(stepParams.setupCommonPipelineEnvironment?.configFile, is('my-config.yml'))
         assertThat(stepParams.setupCommonPipelineEnvironment?.customDefaults, is(['my-custom-defaults.yml']))
         assertThat(stepParams.setupCommonPipelineEnvironment?.customDefaultsFromFiles, is(['my-custom-default-file.yml']))
+    }
+
+    @Test
+    void "Parameter skipCheckout skips the checkout call"() {
+        jsr.step.piperPipelineStageInit(
+            script: nullScript,
+            juStabUtils: utils,
+            buildTool: 'maven',
+            stashSettings: 'com.sap.piper/pipeline/stashSettings.yml',
+            skipCheckout: true,
+            scmInfo: ["dummyScmKey":"dummyScmKey"]
+        )
+
+        assertThat(stepsCalled, hasItems('setupCommonPipelineEnvironment', 'piperInitRunStageConfiguration', 'artifactPrepareVersion', 'pipelineStashFilesBeforeBuild'))
+        assertThat(stepsCalled, not(hasItem('checkout')))
+    }
+
+    @Test
+    void "Try to skip checkout with parameter skipCheckout not boolean throws error"() {
+        thrown.expectMessage('[piperPipelineStageInit] Parameter skipCheckout has to be of type boolean. Instead got \'java.lang.String\'')
+
+        jsr.step.piperPipelineStageInit(
+            script: nullScript,
+            juStabUtils: utils,
+            buildTool: 'maven',
+            stashSettings: 'com.sap.piper/pipeline/stashSettings.yml',
+            skipCheckout: "false"
+        )
+    }
+
+    @Test
+    void "Try to skip checkout without scmInfo parameter throws error"() {
+        thrown.expectMessage('[piperPipelineStageInit] Need am scmInfo map retrieved from a checkout. ' +
+            'If you want to skip the checkout the scm info needs to be provided by you with parameter scmInfo, ' +
+            'for example as follows:\n' +
+            '  def scmInfo = checkout scm\n' +
+            '  piperPipelineStageInit script:this, skipCheckout: true, scmInfo: scmInfo')
+
+        jsr.step.piperPipelineStageInit(
+            script: nullScript,
+            juStabUtils: utils,
+            buildTool: 'maven',
+            stashSettings: 'com.sap.piper/pipeline/stashSettings.yml',
+            skipCheckout: true
+        )
     }
 
 }
