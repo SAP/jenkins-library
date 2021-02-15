@@ -1,5 +1,6 @@
 package sonar
 
+// IssuesSearchOption is a copy from magicsong/sonargo plus the "internal" fields organization, branch and pullrequest.
 type IssuesSearchOption struct {
 	Branch       string `url:"branch,omitempty"`       // Description:"Branch key"
 	Organization string `url:"organization,omitempty"` // Description:"Organization key"

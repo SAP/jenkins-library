@@ -69,26 +69,32 @@ func (service *IssueService) getIssueCount(severity issueSeverity) (int, error) 
 	return result.Total, nil
 }
 
+// GetNumberOfBlockerIssues returns the number of issue with BLOCKER severity.
 func (service *IssueService) GetNumberOfBlockerIssues() (int, error) {
 	return service.getIssueCount(blocker)
 }
 
+// GetNumberOfCriticalIssues returns the number of issue with CRITICAL severity.
 func (service *IssueService) GetNumberOfCriticalIssues() (int, error) {
 	return service.getIssueCount(critical)
 }
 
+// GetNumberOfMajorIssues returns the number of issue with MAJOR severity.
 func (service *IssueService) GetNumberOfMajorIssues() (int, error) {
 	return service.getIssueCount(major)
 }
 
+// GetNumberOfMinorIssues returns the number of issue with MINOR severity.
 func (service *IssueService) GetNumberOfMinorIssues() (int, error) {
 	return service.getIssueCount(minor)
 }
 
+// GetNumberOfInfoIssues returns the number of issue with INFO severity.
 func (service *IssueService) GetNumberOfInfoIssues() (int, error) {
 	return service.getIssueCount(info)
 }
 
+// NewIssuesService returns a new instance of a service for the issues API endpoint.
 func NewIssuesService(host, token, project, organization, branch, pullRequest string, client Sender) *IssueService {
 	// Make sure the given URL end with a slash
 	if !strings.HasSuffix(host, "/") {

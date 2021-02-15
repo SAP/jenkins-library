@@ -13,9 +13,8 @@ type Requester struct {
 	Host     string
 	Username string
 	Password string
+	// TODO: implement certificate handling
 	// Certificates [][]byte
-	// CACert    []byte
-	// SslVerify bool
 }
 
 // Sender provides an interface to the piper http client for uid/pwd and token authenticated requests
