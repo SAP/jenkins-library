@@ -100,7 +100,7 @@ func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) er
 			runCommand += " --suppress-exit-code"
 		}
 
-		runCommand = runCommand + commandSecrets
+		runCommand = "newman" + runCommand + commandSecrets
 		runCommandTokens := strings.Split(runCommand, " ")
 		err = utils.RunExecutable(runCommandTokens[0], runCommandTokens[1:]...)
 		if err != nil {
