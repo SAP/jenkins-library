@@ -94,8 +94,6 @@ func addNewmanExecuteFlags(cmd *cobra.Command, stepConfig *newmanExecuteOptions)
 	cmd.MarkFlagRequired("newmanCollection")
 	cmd.MarkFlagRequired("newmanRunCommand")
 	cmd.MarkFlagRequired("newmanInstallCommand")
-	cmd.MarkFlagRequired("newmanEnvironment")
-	cmd.MarkFlagRequired("newmanGlobals")
 	cmd.MarkFlagRequired("failOnError")
 	cmd.MarkFlagRequired("cfAppsWithSecrets")
 }
@@ -148,7 +146,7 @@ func newmanExecuteMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -156,7 +154,7 @@ func newmanExecuteMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
 					{
