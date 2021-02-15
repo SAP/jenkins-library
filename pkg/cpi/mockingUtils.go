@@ -35,17 +35,7 @@ func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, 
 		if testType == "Negative_With_ResponseBody" {
 			return GetNegativeCaseHTTPResponseBodyAndErrorNil()
 		}
-		res := http.Response{
-			StatusCode: 404,
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-						"code": "Not Found",
-						"message": {
-						"@lang": "en",
-						"#text": "Parameter key 'Parameter1' not found."
-						}
-					}`))),
-		}
-		return &res, errors.New("Not found - either wrong version for the given Id or wrong parameter key")
+		return GetParameterKeyMissingResponseBody()
 	case "IntegrationArtifactGetMplStatus":
 		return GetIntegrationArtifactGetMplStatusCommandMockResponse(testType)
 	case "IntegrationArtifactGetServiceEndpoint":
@@ -80,6 +70,21 @@ func GetEmptyHTTPResponseBodyAndErrorNil() (*http.Response, error) {
 		Body:       ioutil.NopCloser(bytes.NewReader([]byte(``))),
 	}
 	return &res, nil
+}
+
+//GetParameterKeyMissingResponseBody -Parameter key missing http respose body
+func GetParameterKeyMissingResponseBody() (*http.Response, error) {
+	res := http.Response{
+		StatusCode: 404,
+		Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+					"code": "Not Found",
+					"message": {
+					"@lang": "en",
+					"#text": "Parameter key 'Parameter1' not found."
+					}
+				}`))),
+	}
+	return &res, errors.New("Not found - either wrong version for the given Id or wrong parameter key")
 }
 
 //GetNegativeCaseHTTPResponseBodyAndErrorNil -Negative case http respose body
@@ -364,40 +369,63 @@ func GetPositiveCaseResponseByTestType(testType string) (*http.Response, error) 
 func GetCPIFunctionNameByURLCheck(url, method, testType string) string {
 	switch url {
 	case "https://demo/api/v1/IntegrationDesigntimeArtifacts(Id='flow4',Version='1.0.4')":
-		if method == "GET" && testType == "PositiveAndCreateIntegrationDesigntimeArtifactResBody" {
-			return "GetIntegrationDesigntimeArtifact"
-		}
-		if method == "GET" && testType == "PositiveAndUpdateIntegrationDesigntimeArtifactResBody" {
-			return "IntegrationDesigntimeArtifactUpdate"
-		}
-		if method == "GET" && testType == "NegativeAndGetIntegrationDesigntimeArtifactResBody" {
-			return "GetIntegrationDesigntimeArtifact"
-		}
-		if method == "GET" && testType == "NegativeAndCreateIntegrationDesigntimeArtifactResBody" {
-			return "GetIntegrationDesigntimeArtifact"
-		}
-		if method == "GET" && testType == "NegativeAndUpdateIntegrationDesigntimeArtifactResBody" {
-			return "GetIntegrationDesigntimeArtifact"
-		}
+		return GetFunctionNameByTestTypeAndMethod(method, testType)
 
 	case "https://demo/api/v1/IntegrationDesigntimeArtifactSaveAsVersion?Id='flow4'&SaveAsVersion='1.0.4'":
-		if method == "POST" && testType == "PositiveAndCreateIntegrationDesigntimeArtifactResBody" {
-			return "UploadIntegrationDesigntimeArtifact"
-		}
-		if method == "POST" && testType == "NegativeAndCreateIntegrationDesigntimeArtifactResBody" {
-			return "UploadIntegrationDesigntimeArtifactNegative"
-		}
+		return GetFunctionNameByTestTypeAndMethod(method, testType)
 
 	case "https://demo/api/v1/IntegrationDesigntimeArtifacts":
-		if method == "POST" && testType == "PositiveAndUpdateIntegrationDesigntimeArtifactResBody" {
-			return "UpdateIntegrationDesigntimeArtifact"
-		}
-		if method == "POST" && testType == "NegativeAndUpdateIntegrationDesigntimeArtifactResBody" {
-			return "UpdateIntegrationDesigntimeArtifactNegative"
-		}
+		return GetFunctionNameByTestTypeAndMethod(method, testType)
 
 	default:
 		return ""
+	}
+}
+
+//GetFunctionNameByTestTypeAndMethod -get function name by test tyep
+func GetFunctionNameByTestTypeAndMethod(method, testType string) string {
+
+	switch testType {
+
+	case "PositiveAndCreateIntegrationDesigntimeArtifactResBody":
+		if method == "GET" {
+			return "GetIntegrationDesigntimeArtifact"
+		}
+		if method == "POST" {
+			return "UploadIntegrationDesigntimeArtifact"
+		}
+
+	case "PositiveAndUpdateIntegrationDesigntimeArtifactResBody":
+		if method == "GET" {
+			return "IntegrationDesigntimeArtifactUpdate"
+		}
+		if method == "POST" {
+			return "UpdateIntegrationDesigntimeArtifact"
+		}
+
+	case "NegativeAndGetIntegrationDesigntimeArtifactResBody":
+		if method == "GET" {
+			return "GetIntegrationDesigntimeArtifact"
+		}
+
+	case "NegativeAndCreateIntegrationDesigntimeArtifactResBody":
+		if method == "GET" {
+			return "GetIntegrationDesigntimeArtifact"
+		}
+		if method == "POST" {
+			return "UploadIntegrationDesigntimeArtifactNegative"
+		}
+
+	case "NegativeAndUpdateIntegrationDesigntimeArtifactResBody":
+		if method == "GET" {
+			return "GetIntegrationDesigntimeArtifact"
+		}
+		if method == "POST" {
+			return "UpdateIntegrationDesigntimeArtifactNegative"
+		}
+	default:
+		return ""
+
 	}
 	return ""
 }
