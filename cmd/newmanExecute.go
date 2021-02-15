@@ -105,7 +105,7 @@ func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) er
 			runCommand += " --suppress-exit-code"
 		}
 
-		runCommand = "/home/node/.npm-global/bin/newman " + runCommand + commandSecrets
+		runCommand = "/home/node/.npm-global/bin/bin/newman " + runCommand + commandSecrets
 		runCommandTokens := strings.Split(runCommand, " ")
 		err = utils.RunExecutable(runCommandTokens[0], runCommandTokens[1:]...)
 		if err != nil {
