@@ -66,11 +66,6 @@ func newmanExecute(config newmanExecuteOptions, _ *telemetry.CustomData) {
 }
 
 func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) error {
-	envs := []string{"NPM_CONFIG_PREFIX=~/.npm-global"}
-	path := "PATH=" + os.Getenv("PATH") + ":~/.npm-global/bin"
-	envs = append(envs, path)
-	utils.SetEnv(envs)
-
 	collectionList, err := utils.Glob(config.NewmanCollection)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
@@ -88,6 +83,11 @@ func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) er
 		return err
 	}
 
+	envs := []string{"NPM_CONFIG_PREFIX=~/.npm-global"}
+	path := "PATH=" + os.Getenv("PATH") + ":~/npm-global/.bin"
+	envs = append(envs, path)
+	fmt.Printf("utils.SetEnv(): %v", envs)
+	utils.SetEnv(envs)
 	err = installNewman(config.NewmanInstallCommand, utils)
 	if err != nil {
 		return err
