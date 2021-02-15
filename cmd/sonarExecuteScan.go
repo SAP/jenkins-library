@@ -171,6 +171,7 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 	}
 
 	sender := &piperhttp.Client{}
+	//TODO: implement certificate handling
 	sender.SetOptions(piperhttp.ClientOptions{TransportSkipVerification: true})
 
 	issues := SonarUtils.NewIssuesService(taskReport.ServerURL, config.Token, taskReport.ProjectKey, config.Organization, config.BranchName, config.ChangeID, sender)
