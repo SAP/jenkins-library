@@ -46,6 +46,7 @@ func NewClient(config *Config, token string) (Client, error) {
 	}
 
 	client.SetToken(token)
+	log.Entry().Debugf("Login to vault %s in namespace %s successfull", config.Address, config.Namespace)
 	return Client{client.Logical(), config}, nil
 }
 
@@ -83,7 +84,6 @@ func NewClientWithAppRole(config *Config, roleID, secretID string) (Client, erro
 		return Client{}, fmt.Errorf("Could not obtain token from approle with role_id %s", roleID)
 	}
 
-	log.Entry().Debugf("Login to vault %s in namespace %s successfull", config.Address, config.Namespace)
 	return NewClient(config, authInfo.ClientToken)
 }
 
