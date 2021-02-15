@@ -124,4 +124,4 @@ spec:
           - name: abap/addonDescriptor
   containers:
     - name: cf
-      image: ppiper/cf-cli
+      image: ppiper/cf-cli:7
