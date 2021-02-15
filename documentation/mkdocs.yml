@@ -106,7 +106,7 @@ nav:
         - integrationArtifactGetMplStatus: steps/integrationArtifactGetMplStatus.md
         - integrationArtifactGetServiceEndpoint: steps/integrationArtifactGetServiceEndpoint.md
         - integrationArtifactUpdateConfiguration: steps/integrationArtifactUpdateConfiguration.md
-        - integrationArtifactUpdateUpload: steps/integrationArtifactUpdateUpload.md
+        - integrationArtifactUpload: steps/integrationArtifactUpload.md
         - jenkinsMaterializeLog: steps/jenkinsMaterializeLog.md
         - kanikoExecute: steps/kanikoExecute.md
         - karmaExecuteTests: steps/karmaExecuteTests.md
