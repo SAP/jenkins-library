@@ -77,6 +77,8 @@ func runIntegrationArtifactUpload(config *integrationArtifactUploadOptions, tele
 	clientOptions.Token = fmt.Sprintf("Bearer %s", token)
 	httpClient.SetOptions(clientOptions)
 	httpMethod := "GET"
+
+	//Check availability of integration artefact in CPI design time
 	iFlowStatusResp, httpErr := httpClient.SendRequest(httpMethod, getIflowStatusURL, nil, header, nil)
 
 	if iFlowStatusResp != nil && iFlowStatusResp.Body != nil {
@@ -107,7 +109,7 @@ func runIntegrationArtifactUpload(config *integrationArtifactUploadOptions, tele
 	return errors.Errorf("Failed to check integration flow availability, Response Status code: %v", iFlowStatusResp.StatusCode)
 }
 
-//UploadIntegrationArtifact - upload new integration artifact
+//UploadIntegrationArtifact - Upload new integration artifact
 func UploadIntegrationArtifact(config *integrationArtifactUploadOptions, httpClient piperhttp.Sender) error {
 	httpMethod := "POST"
 	uploadIflowStatusURL := fmt.Sprintf("%s/api/v1/IntegrationDesigntimeArtifacts", config.Host)
@@ -146,10 +148,10 @@ func UploadIntegrationArtifact(config *integrationArtifactUploadOptions, httpCli
 	}
 
 	log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", responseBody, uploadIflowStatusResp.StatusCode)
-	return errors.Errorf("Unable to get integration flow MPL status, Response Status code: %v", uploadIflowStatusResp.StatusCode)
+	return errors.Errorf("Failed to create Integration Flow artefact, Response Status code: %v", uploadIflowStatusResp.StatusCode)
 }
 
-//UpdateIntegrationArtifact - update existing integration artifact
+//UpdateIntegrationArtifact - Update existing integration artifact
 func UpdateIntegrationArtifact(config *integrationArtifactUploadOptions, httpClient piperhttp.Sender) error {
 	httpMethod := "POST"
 	header := make(http.Header)
@@ -187,7 +189,7 @@ func UpdateIntegrationArtifact(config *integrationArtifactUploadOptions, httpCli
 	}
 
 	log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", responseBody, updateIflowStatusResp.StatusCode)
-	return errors.Errorf("Unable to get integration flow MPL status, Response Status code: %v", updateIflowStatusResp.StatusCode)
+	return errors.Errorf("Failed to update Integration Flow artefact, Response Status code: %v", updateIflowStatusResp.StatusCode)
 }
 
 //GetJSONPayloadAsByteArray -return http payload as byte array
