@@ -54,7 +54,7 @@ spec:
           - STEPS
         type: string
         mandatory: true
-        default: npm install newman
+        default: npm install newman --global --quiet
       - name: newmanEnvironment
         description: Specify an environment file path or URL. Environments provide a set of variables that one can use within collections.
         longDescription: see also [Newman docs](https://github.com/postmanlabs/newman#newman-run-collection-file-source-options)
