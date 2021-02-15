@@ -10,13 +10,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// DockerDescriptor holds the unique identifier combination for a Docker artifact
-type DockerDescriptor struct {
-	GroupID    string
-	ArtifactID string
-	Version    string
-}
-
 // Docker defines an artifact based on a Dockerfile
 type Docker struct {
 	artifact         Artifact
@@ -151,7 +144,7 @@ func (d *Docker) versionFromBaseImageTag() string {
 
 // GetCoordinates returns the coordinates
 func (d *Docker) GetCoordinates() (Coordinates, error) {
-	result := DockerDescriptor{}
+	result := Coordinates{}
 
 	result.GroupID = ""
 	result.ArtifactID, _ = d.GetArtifactID()
