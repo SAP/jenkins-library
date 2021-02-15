@@ -83,9 +83,9 @@ func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) er
 		return err
 	}
 
-	envs := []string{"NPM_CONFIG_PREFIX=~/node-modules/.bin"}
-	path := "PATH=" + os.Getenv("PATH") + ":~/node-modules/.bin"
-	envs = append(envs, path)
+	envs := []string{"NPM_CONFIG_PREFIX=~/.npm-global/bin"}
+	// path := "PATH=" + os.Getenv("PATH") + ":~/node-modules/.bin"
+	// envs = append(envs, path)
 	fmt.Printf("utils.SetEnv(): %v", envs)
 	utils.SetEnv(envs)
 	err = installNewman(config.NewmanInstallCommand, utils)
