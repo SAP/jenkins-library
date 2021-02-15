@@ -249,65 +249,75 @@ func GetRespBodyHTTPStatusServiceErrorResponse() (*http.Response, error) {
 //IntegrationArtifactDownloadCommandMockResponse -Provide http respose body
 func IntegrationArtifactDownloadCommandMockResponse(testType string) (*http.Response, error) {
 
-	response, error := GetPositiveCaseResponseByTestType(testType)
-
-	if response == nil && error == nil {
-
-		res := http.Response{
-			StatusCode: 400,
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-					"code": "Bad Request",
-					"message": {
-					"@lang": "en",
-					"#text": "invalid request"
-					}
-				}`))),
-		}
-		return &res, errors.New("Unable to download integration artifact, Response Status code:400")
-	}
-	return response, error
+	return GetMockResponseByTestTypeAndMockFunctionName("IntegrationArtifactDownloadCommandMockResponse", testType)
 }
 
 //GetIntegrationDesigntimeArtifactMockResponse -Provide http respose body
 func GetIntegrationDesigntimeArtifactMockResponse(testType string) (*http.Response, error) {
 
-	response, error := GetPositiveCaseResponseByTestType(testType)
-
-	if response == nil && error == nil {
-
-		res := http.Response{
-			StatusCode: 400,
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-					"code": "Bad Request",
-					"message": {
-					"@lang": "en",
-					"#text": "invalid request"
-					}
-				}`))),
-		}
-		return &res, errors.New("Unable to get status of integration artifact, Response Status code:400")
-	}
-	return response, error
+	return GetMockResponseByTestTypeAndMockFunctionName("GetIntegrationDesigntimeArtifactMockResponse", testType)
 }
 
 //IntegrationDesigntimeArtifactUpdateMockResponse -Provide http respose body
 func IntegrationDesigntimeArtifactUpdateMockResponse(testType string) (*http.Response, error) {
 
+	return GetMockResponseByTestTypeAndMockFunctionName("IntegrationDesigntimeArtifactUpdateMockResponse", testType)
+}
+
+//GetMockResponseByTestTypeAndMockFunctionName - Get mock response by testtype and mock function name
+func GetMockResponseByTestTypeAndMockFunctionName(mockFuntionName, testType string) (*http.Response, error) {
+
 	response, error := GetPositiveCaseResponseByTestType(testType)
 
-	if response == nil && error == nil {
+	switch mockFuntionName {
 
-		res := http.Response{
-			StatusCode: 400,
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-					"code": "Bad Request",
-					"message": {
-					"@lang": "en",
-					"#text": "invalid request"
-					}
-				}`))),
+	case "IntegrationDesigntimeArtifactUpdateMockResponse":
+		if response == nil && error == nil {
+
+			res := http.Response{
+				StatusCode: 400,
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+							"code": "Bad Request",
+							"message": {
+							"@lang": "en",
+							"#text": "invalid request"
+							}
+						}`))),
+			}
+			return &res, errors.New("Unable to get status of integration artifact, Response Status code:400")
 		}
-		return &res, errors.New("Unable to get status of integration artifact, Response Status code:400")
+	case "GetIntegrationDesigntimeArtifactMockResponse":
+		if response == nil && error == nil {
+
+			res := http.Response{
+				StatusCode: 400,
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+							"code": "Bad Request",
+							"message": {
+							"@lang": "en",
+							"#text": "invalid request"
+							}
+						}`))),
+			}
+			return &res, errors.New("Unable to get status of integration artifact, Response Status code:400")
+		}
+
+	case "IntegrationArtifactDownloadCommandMockResponse":
+		if response == nil && error == nil {
+
+			res := http.Response{
+				StatusCode: 400,
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+							"code": "Bad Request",
+							"message": {
+							"@lang": "en",
+							"#text": "invalid request"
+							}
+						}`))),
+			}
+			return &res, errors.New("Unable to download integration artifact, Response Status code:400")
+		}
+
 	}
 	return response, error
 }
