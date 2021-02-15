@@ -300,12 +300,12 @@ func TestGetContextParameterFilters(t *testing.T) {
 
 	t.Run("Vault", func(t *testing.T) {
 		filters := metadata4.GetContextParameterFilters()
-		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId"}, filters.All, "incorrect filter All")
-		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId"}, filters.General, "incorrect filter General")
-		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId"}, filters.Steps, "incorrect filter Steps")
-		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId"}, filters.Stages, "incorrect filter Stages")
-		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId"}, filters.Parameters, "incorrect filter Parameters")
-		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId"}, filters.Env, "incorrect filter Env")
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}, filters.All, "incorrect filter All")
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}, filters.General, "incorrect filter General")
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}, filters.Steps, "incorrect filter Steps")
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}, filters.Stages, "incorrect filter Stages")
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}, filters.Parameters, "incorrect filter Parameters")
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}, filters.Env, "incorrect filter Env")
 	})
 }
 
