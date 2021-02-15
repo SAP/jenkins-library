@@ -1,6 +1,7 @@
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.integration.CloudFoundry
 import groovy.transform.Field
+import com.sap.piper.GitUtils
 
 import static com.sap.piper.Prerequisites.checkScript
 
