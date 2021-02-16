@@ -17,7 +17,7 @@ spec:
       - name: endpoint
         type: string
         mandatory: true
-        description: "The service endpoint"
+        description: "Service endpoint"
         aliases:
           - name: changeManagement/endpoint
         scope:
@@ -28,7 +28,7 @@ spec:
       - name: username
         type: string
         mandatory: true
-        description: "The deploy user"
+        description: "Operating system user for triggering the deployment"
         secret: true
         scope:
           - PARAMETERS
@@ -38,7 +38,7 @@ spec:
       - name: password
         type: string
         mandatory: true
-        description: "The password for the deploy user"
+        description: "Password for the deploy user"
         secret: true
         scope:
           - PARAMETERS
