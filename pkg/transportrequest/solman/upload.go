@@ -36,7 +36,7 @@ type Action interface {
 }
 
 // WithConnection specifies all the connection details which
-// are required in order to connect so SOLMAN
+// are required in order to connect to SOLMAN
 func (a *UploadAction) WithConnection(c Connection) {
 	a.Connection = c
 }
