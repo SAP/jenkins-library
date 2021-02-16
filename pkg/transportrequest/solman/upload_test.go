@@ -12,23 +12,23 @@ func TestSolmanUpload(t *testing.T) {
 	f := &mock.FilesMock{}
 	f.AddFile("myDeployable.xxx", []byte(""))
 
-	defaultUploadAction := UploadAction{
-		Connection: Connection{
+	defaultUploadAction := UploadAction{}
+	defaultUploadAction.WithConnection(
+		Connection{
 			Endpoint: "https://example.org/solman",
 			User:     "me",
 			Password: "******",
-		},
-		ChangeDocumentID:   "123456",
-		TransportRequestID: "000K11111111",
-		ApplicationID:      "MY_APP",
-		File:               "myDeployable.xxx",
-		CMOpts:             []string{"-Dmyprop1=abc", "-Dmyprop2=def"},
-	}
+		})
+	defaultUploadAction.WithChangeDocumentID("123456")
+	defaultUploadAction.WithTransportRequestID("000K11111111")
+	defaultUploadAction.WithApplicationID("MY_APP")
+	defaultUploadAction.WithFile("myDeployable.xxx")
+	defaultUploadAction.WithCMOpts([]string{"-Dmyprop1=abc", "-Dmyprop2=def"})
 
 	t.Run("Deployable does not exist", func(t *testing.T) {
 
 		uploadActionFileMissing := defaultUploadAction
-		uploadActionFileMissing.File = "myMissingDeployable.xxx"
+		uploadActionFileMissing.WithFile("myMissingDeployable.xxx")
 		e := &mock.ExecMockRunner{}
 
 		err := uploadActionFileMissing.Perform(f, e)
@@ -65,8 +65,14 @@ func TestSolmanUpload(t *testing.T) {
 	t.Run("Missing parameters", func(t *testing.T) {
 		e := &mock.ExecMockRunner{}
 		uploadAction := defaultUploadAction
-		uploadAction.Connection.Endpoint = ""
-		uploadAction.TransportRequestID = ""
+		uploadAction.WithConnection(
+			Connection{
+				Endpoint: "",
+				User:     "me",
+				Password: "******",
+			},
+		)
+		uploadAction.WithTransportRequestID("")
 		err := uploadAction.Perform(f, e)
 		if assert.Error(t, err) {
 			// we should not rely on the order of the missing parameters
