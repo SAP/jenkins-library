@@ -13,6 +13,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/cpi"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/pkg/errors"
 )
@@ -49,26 +50,24 @@ func integrationArtifactUpload(config integrationArtifactUploadOptions, telemetr
 	// Utils can be used wherever the command.ExecRunner interface is expected.
 	// It can also be used for example as a mavenExecRunner.
 	httpClient := &piperhttp.Client{}
-
+	fileUtils := &piperutils.Files{}
 	// For HTTP calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	// and use a  &piperhttp.Client{} in a custom system
 	// Example: step checkmarxExecuteScan.go
 
 	// Error situations should be bubbled up until they reach the line below which will then stop execution
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
-	err := runIntegrationArtifactUpload(&config, telemetryData, httpClient)
+	err := runIntegrationArtifactUpload(&config, telemetryData, fileUtils, httpClient)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runIntegrationArtifactUpload(config *integrationArtifactUploadOptions, telemetryData *telemetry.CustomData, httpClient piperhttp.Sender) error {
+func runIntegrationArtifactUpload(config *integrationArtifactUploadOptions, telemetryData *telemetry.CustomData, fileUtils piperutils.FileUtils, httpClient piperhttp.Sender) error {
 	clientOptions := piperhttp.ClientOptions{}
-	httpClient.SetOptions(clientOptions)
 	header := make(http.Header)
 	header.Add("Accept", "application/json")
-	getIflowStatusURL := fmt.Sprintf("%s/api/v1/IntegrationDesigntimeArtifacts(Id='%s',Version='%s')", config.Host, config.IntegrationFlowID, config.IntegrationFlowVersion)
-	fmt.Printf(getIflowStatusURL)
+	iFlowStatusServiceURL := fmt.Sprintf("%s/api/v1/IntegrationDesigntimeArtifacts(Id='%s',Version='%s')", config.Host, config.IntegrationFlowID, config.IntegrationFlowVersion)
 	tokenParameters := cpi.TokenParameters{TokenURL: config.OAuthTokenProviderURL, Username: config.Username, Password: config.Password, Client: httpClient}
 	token, err := cpi.CommonUtils.GetBearerToken(tokenParameters)
 	if err != nil {
@@ -79,52 +78,44 @@ func runIntegrationArtifactUpload(config *integrationArtifactUploadOptions, tele
 	httpMethod := "GET"
 
 	//Check availability of integration artefact in CPI design time
-	iFlowStatusResp, httpErr := httpClient.SendRequest(httpMethod, getIflowStatusURL, nil, header, nil)
+	iFlowStatusResp, httpErr := httpClient.SendRequest(httpMethod, iFlowStatusServiceURL, nil, header, nil)
 
 	if iFlowStatusResp != nil && iFlowStatusResp.Body != nil {
 		defer iFlowStatusResp.Body.Close()
 	}
-
 	if iFlowStatusResp.StatusCode == 200 {
-		return UpdateIntegrationArtifact(config, httpClient)
+		return UpdateIntegrationArtifact(config, httpClient, fileUtils)
 	} else if httpErr != nil && iFlowStatusResp.StatusCode == 404 {
-		return UploadIntegrationArtifact(config, httpClient)
-	}
-
-	if httpErr != nil {
-		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error", httpMethod, getIflowStatusURL)
+		return UploadIntegrationArtifact(config, httpClient, fileUtils)
 	}
 
 	if iFlowStatusResp == nil {
 		return errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
 	}
 
-	responseBody, readErr := ioutil.ReadAll(iFlowStatusResp.Body)
-
-	if readErr != nil {
-		return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", iFlowStatusResp.StatusCode)
+	if httpErr != nil {
+		responseBody, readErr := ioutil.ReadAll(iFlowStatusResp.Body)
+		if readErr != nil {
+			return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", iFlowStatusResp.StatusCode)
+		}
+		log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", responseBody, iFlowStatusResp.StatusCode)
+		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error: %v", httpMethod, iFlowStatusServiceURL, responseBody)
 	}
-
-	log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", responseBody, iFlowStatusResp.StatusCode)
 	return errors.Errorf("Failed to check integration flow availability, Response Status code: %v", iFlowStatusResp.StatusCode)
 }
 
 //UploadIntegrationArtifact - Upload new integration artifact
-func UploadIntegrationArtifact(config *integrationArtifactUploadOptions, httpClient piperhttp.Sender) error {
+func UploadIntegrationArtifact(config *integrationArtifactUploadOptions, httpClient piperhttp.Sender, fileUtils piperutils.FileUtils) error {
 	httpMethod := "POST"
 	uploadIflowStatusURL := fmt.Sprintf("%s/api/v1/IntegrationDesigntimeArtifacts", config.Host)
 	header := make(http.Header)
 	header.Add("content-type", "application/json")
-	payload, jsonError := GetJSONPayloadAsByteArray(config, "create")
+	payload, jsonError := GetJSONPayloadAsByteArray(config, "create", fileUtils)
 	if jsonError != nil {
 		return errors.Wrapf(jsonError, "Failed to get json payload for file %v, failed with error", config.FilePath)
 	}
 
 	uploadIflowStatusResp, httpErr := httpClient.SendRequest(httpMethod, uploadIflowStatusURL, payload, header, nil)
-
-	if httpErr != nil {
-		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error", httpMethod, uploadIflowStatusURL)
-	}
 
 	if uploadIflowStatusResp != nil && uploadIflowStatusResp.Body != nil {
 		defer uploadIflowStatusResp.Body.Close()
@@ -140,32 +131,28 @@ func UploadIntegrationArtifact(config *integrationArtifactUploadOptions, httpCli
 			Info("Successfully created integration flow artefact in CPI designtime")
 		return nil
 	}
-
-	responseBody, readErr := ioutil.ReadAll(uploadIflowStatusResp.Body)
-
-	if readErr != nil {
-		return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", uploadIflowStatusResp.StatusCode)
+	if httpErr != nil {
+		responseBody, readErr := ioutil.ReadAll(uploadIflowStatusResp.Body)
+		if readErr != nil {
+			return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", uploadIflowStatusResp.StatusCode)
+		}
+		log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", responseBody, uploadIflowStatusResp.StatusCode)
+		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error: %v", httpMethod, uploadIflowStatusURL, responseBody)
 	}
-
-	log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", responseBody, uploadIflowStatusResp.StatusCode)
 	return errors.Errorf("Failed to create Integration Flow artefact, Response Status code: %v", uploadIflowStatusResp.StatusCode)
 }
 
 //UpdateIntegrationArtifact - Update existing integration artifact
-func UpdateIntegrationArtifact(config *integrationArtifactUploadOptions, httpClient piperhttp.Sender) error {
+func UpdateIntegrationArtifact(config *integrationArtifactUploadOptions, httpClient piperhttp.Sender, fileUtils piperutils.FileUtils) error {
 	httpMethod := "POST"
 	header := make(http.Header)
 	header.Add("content-type", "application/json")
 	updateIflowStatusURL := fmt.Sprintf("%s/api/v1/IntegrationDesigntimeArtifactSaveAsVersion?Id='%s'&SaveAsVersion='%s'", config.Host, config.IntegrationFlowID, config.IntegrationFlowVersion)
-	payload, jsonError := GetJSONPayloadAsByteArray(config, "update")
+	payload, jsonError := GetJSONPayloadAsByteArray(config, "update", fileUtils)
 	if jsonError != nil {
 		return errors.Wrapf(jsonError, "Failed to get json payload for file %v, failed with error", config.FilePath)
 	}
 	updateIflowStatusResp, httpErr := httpClient.SendRequest(httpMethod, updateIflowStatusURL, payload, header, nil)
-
-	if httpErr != nil {
-		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error", httpMethod, updateIflowStatusURL)
-	}
 
 	if updateIflowStatusResp != nil && updateIflowStatusResp.Body != nil {
 		defer updateIflowStatusResp.Body.Close()
@@ -181,20 +168,20 @@ func UpdateIntegrationArtifact(config *integrationArtifactUploadOptions, httpCli
 			Info("Successfully updated integration flow artefact in CPI designtime")
 		return nil
 	}
-
-	responseBody, readErr := ioutil.ReadAll(updateIflowStatusResp.Body)
-
-	if readErr != nil {
-		return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", updateIflowStatusResp.StatusCode)
+	if httpErr != nil {
+		responseBody, readErr := ioutil.ReadAll(updateIflowStatusResp.Body)
+		if readErr != nil {
+			return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", updateIflowStatusResp.StatusCode)
+		}
+		log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", responseBody, updateIflowStatusResp.StatusCode)
+		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error: %v", httpMethod, updateIflowStatusURL, responseBody)
 	}
-
-	log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", responseBody, updateIflowStatusResp.StatusCode)
 	return errors.Errorf("Failed to update Integration Flow artefact, Response Status code: %v", updateIflowStatusResp.StatusCode)
 }
 
 //GetJSONPayloadAsByteArray -return http payload as byte array
-func GetJSONPayloadAsByteArray(config *integrationArtifactUploadOptions, mode string) (*bytes.Buffer, error) {
-	fileContent, readError := ioutil.ReadFile(config.FilePath)
+func GetJSONPayloadAsByteArray(config *integrationArtifactUploadOptions, mode string, fileUtils piperutils.FileUtils) (*bytes.Buffer, error) {
+	fileContent, readError := fileUtils.FileRead(config.FilePath)
 	if readError != nil {
 		return nil, errors.Wrapf(readError, "Error reading file")
 	}
@@ -204,7 +191,7 @@ func GetJSONPayloadAsByteArray(config *integrationArtifactUploadOptions, mode st
 		jsonObj.Set(config.IntegrationFlowID, "Id")
 		jsonObj.Set(config.PackageID, "PackageId")
 		jsonObj.Set(b64.StdEncoding.EncodeToString(fileContent), "ArtifactContent")
-	} else if mode == "update" {
+	} else {
 		jsonObj.Set(b64.StdEncoding.EncodeToString(fileContent), "ArtifactContent")
 
 	}

@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"io/ioutil"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -27,16 +25,12 @@ func TestRunIntegrationArtifactUpload(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Successfull Integration Flow Create Test", func(t *testing.T) {
-
-		tempDir, tmpErr := ioutil.TempDir("", "")
-		defer os.RemoveAll(tempDir) // clean up
-		assert.NoError(t, tmpErr, "Error when creating temp dir")
-		files := &mock.FilesMock{}
-		path := filepath.Join(tempDir, "iflow4.zip")
-		files.AddFile(path, []byte("dummy content"))
-		createErr := ioutil.WriteFile(path, []byte("dummy content"), 0755)
-		assert.NoError(t, createErr)
-		assert.True(t, files.HasFile(path))
+		filesMock := mock.FilesMock{}
+		path := filepath.Join("tempDir", "iflow4.zip")
+		filesMock.AddFile(path, []byte("dummy content"))
+		exists, err := filesMock.FileExists(path)
+		assert.NoError(t, err)
+		assert.True(t, exists)
 
 		config := integrationArtifactUploadOptions{
 			Host:                   "https://demo",
@@ -52,7 +46,7 @@ func TestRunIntegrationArtifactUpload(t *testing.T) {
 
 		httpClient := httpMockCpis{CPIFunction: "", ResponseBody: ``, TestType: "PositiveAndCreateIntegrationDesigntimeArtifactResBody"}
 
-		err := runIntegrationArtifactUpload(&config, nil, &httpClient)
+		err = runIntegrationArtifactUpload(&config, nil, &filesMock, &httpClient)
 
 		if assert.NoError(t, err) {
 
@@ -68,16 +62,12 @@ func TestRunIntegrationArtifactUpload(t *testing.T) {
 
 	t.Run("Successfull Integration Flow Update Test", func(t *testing.T) {
 
-		tempDir, tmpErr := ioutil.TempDir("", "")
-		defer os.RemoveAll(tempDir) // clean up
-		assert.NoError(t, tmpErr, "Error when creating temp dir")
-		files := &mock.FilesMock{}
-		path := filepath.Join(tempDir, "iflow4.zip")
+		files := mock.FilesMock{}
+		path := filepath.Join("tempDir", "iflow4.zip")
 		files.AddFile(path, []byte("dummy content"))
-		createErr := ioutil.WriteFile(path, []byte("dummy content"), 0755)
-		assert.NoError(t, createErr)
-		assert.True(t, files.HasFile(path))
-
+		exists, err := files.FileExists(path)
+		assert.NoError(t, err)
+		assert.True(t, exists)
 		config := integrationArtifactUploadOptions{
 			Host:                   "https://demo",
 			OAuthTokenProviderURL:  "https://demo/oauth/token",
@@ -92,7 +82,7 @@ func TestRunIntegrationArtifactUpload(t *testing.T) {
 
 		httpClient := httpMockCpis{CPIFunction: "", ResponseBody: ``, TestType: "PositiveAndUpdateIntegrationDesigntimeArtifactResBody"}
 
-		err := runIntegrationArtifactUpload(&config, nil, &httpClient)
+		err = runIntegrationArtifactUpload(&config, nil, &files, &httpClient)
 
 		if assert.NoError(t, err) {
 
@@ -122,20 +112,17 @@ func TestRunIntegrationArtifactUpload(t *testing.T) {
 
 		httpClient := httpMockCpis{CPIFunction: "", ResponseBody: ``, TestType: "NegativeAndGetIntegrationDesigntimeArtifactResBody"}
 
-		err := runIntegrationArtifactUpload(&config, nil, &httpClient)
-		assert.EqualError(t, err, "HTTP GET request to https://demo/api/v1/IntegrationDesigntimeArtifacts(Id='flow4',Version='1.0.4') failed with error: Unable to get status of integration artifact, Response Status code:400")
+		err := runIntegrationArtifactUpload(&config, nil, nil, &httpClient)
+		assert.Error(t, err)
 	})
 
 	t.Run("Failed case of Integration Flow Update Test", func(t *testing.T) {
-		tempDir, tmpErr := ioutil.TempDir("", "")
-		defer os.RemoveAll(tempDir) // clean up
-		assert.NoError(t, tmpErr, "Error when creating temp dir")
-		files := &mock.FilesMock{}
-		path := filepath.Join(tempDir, "iflow4.zip")
+		files := mock.FilesMock{}
+		path := filepath.Join("tempDir", "iflow4.zip")
 		files.AddFile(path, []byte("dummy content"))
-		createErr := ioutil.WriteFile(path, []byte("dummy content"), 0755)
-		assert.NoError(t, createErr)
-		assert.True(t, files.HasFile(path))
+		exists, err := files.FileExists(path)
+		assert.NoError(t, err)
+		assert.True(t, exists)
 
 		config := integrationArtifactUploadOptions{
 			Host:                   "https://demo",
@@ -151,20 +138,17 @@ func TestRunIntegrationArtifactUpload(t *testing.T) {
 
 		httpClient := httpMockCpis{CPIFunction: "", ResponseBody: ``, TestType: "NegativeAndCreateIntegrationDesigntimeArtifactResBody"}
 
-		err := runIntegrationArtifactUpload(&config, nil, &httpClient)
-		assert.EqualError(t, err, "HTTP POST request to https://demo/api/v1/IntegrationDesigntimeArtifactSaveAsVersion?Id='flow4'&SaveAsVersion='1.0.4' failed with error: Internal error")
+		err = runIntegrationArtifactUpload(&config, nil, &files, &httpClient)
+		assert.EqualError(t, err, "HTTP POST request to https://demo/api/v1/IntegrationDesigntimeArtifactSaveAsVersion?Id='flow4'&SaveAsVersion='1.0.4' failed with error: []: Internal error")
 	})
 
 	t.Run("Failed case of Integration Flow Create Test", func(t *testing.T) {
-		tempDir, tmpErr := ioutil.TempDir("", "")
-		defer os.RemoveAll(tempDir) // clean up
-		assert.NoError(t, tmpErr, "Error when creating temp dir")
-		files := &mock.FilesMock{}
-		path := filepath.Join(tempDir, "iflow4.zip")
-		files.AddFile(path, []byte("dummy content"))
-		createErr := ioutil.WriteFile(path, []byte("dummy content"), 0755)
-		assert.NoError(t, createErr)
-		assert.True(t, files.HasFile(path))
+		filesMock := mock.FilesMock{}
+		path := filepath.Join("tempDir", "iflow4.zip")
+		filesMock.AddFile(path, []byte("dummy content"))
+		exists, err := filesMock.FileExists(path)
+		assert.NoError(t, err)
+		assert.True(t, exists)
 
 		config := integrationArtifactUploadOptions{
 			Host:                   "https://demo",
@@ -180,7 +164,7 @@ func TestRunIntegrationArtifactUpload(t *testing.T) {
 
 		httpClient := httpMockCpis{CPIFunction: "", ResponseBody: ``, TestType: "NegativeAndUpdateIntegrationDesigntimeArtifactResBody"}
 
-		err := runIntegrationArtifactUpload(&config, nil, &httpClient)
-		assert.EqualError(t, err, "HTTP POST request to https://demo/api/v1/IntegrationDesigntimeArtifacts failed with error: Internal error")
+		err = runIntegrationArtifactUpload(&config, nil, &filesMock, &httpClient)
+		assert.EqualError(t, err, "HTTP POST request to https://demo/api/v1/IntegrationDesigntimeArtifacts failed with error: []: Internal error")
 	})
 }
