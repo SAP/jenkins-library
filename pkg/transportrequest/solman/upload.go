@@ -81,7 +81,7 @@ func (a *UploadAction) Perform(fs FileSystem, command Exec) error {
 	if err == nil {
 		notInitialized := len(missingParameters) != 0
 		if notInitialized {
-			err = fmt.Errorf("the following parameters are not available %s", missingParameters)
+			err = fmt.Errorf("the following parameters are not available '%s'", missingParameters)
 		}
 	}
 
