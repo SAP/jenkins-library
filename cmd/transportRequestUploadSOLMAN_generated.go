@@ -21,7 +21,7 @@ type transportRequestUploadSOLMANOptions struct {
 	ChangeDocumentID   string   `json:"changeDocumentId,omitempty"`
 	TransportRequestID string   `json:"transportRequestId,omitempty"`
 	FilePath           string   `json:"filePath,omitempty"`
-	Cmclientops        []string `json:"cmclientops,omitempty"`
+	CmClientOpts       []string `json:"cmClientOpts,omitempty"`
 }
 
 // TransportRequestUploadSOLMANCommand Uploads content to a transport request
@@ -90,7 +90,7 @@ func addTransportRequestUploadSOLMANFlags(cmd *cobra.Command, stepConfig *transp
 	cmd.Flags().StringVar(&stepConfig.ChangeDocumentID, "changeDocumentId", os.Getenv("PIPER_changeDocumentId"), "The id of the change document to upload the file. This parameter is only taken into account when provided via signature to the step.")
 	cmd.Flags().StringVar(&stepConfig.TransportRequestID, "transportRequestId", os.Getenv("PIPER_transportRequestId"), "The id of the transport request to upload the file. This parameter is only taken into account when provided via signature to the step.")
 	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "The name/path of the file which should be uploaded")
-	cmd.Flags().StringSliceVar(&stepConfig.Cmclientops, "cmclientops", []string{}, "Additional options handed over to the cm client")
+	cmd.Flags().StringSliceVar(&stepConfig.CmClientOpts, "cmClientOpts", []string{}, "Additional options handed over to the cm client")
 
 	cmd.MarkFlagRequired("endpoint")
 	cmd.MarkFlagRequired("username")
@@ -99,7 +99,7 @@ func addTransportRequestUploadSOLMANFlags(cmd *cobra.Command, stepConfig *transp
 	cmd.MarkFlagRequired("changeDocumentId")
 	cmd.MarkFlagRequired("transportRequestId")
 	cmd.MarkFlagRequired("filePath")
-	cmd.MarkFlagRequired("cmclientops")
+	cmd.MarkFlagRequired("cmClientOpts")
 }
 
 // retrieve step metadata
@@ -180,7 +180,7 @@ func transportRequestUploadSOLMANMetadata() config.StepData {
 						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "cmclientops",
+						Name:        "cmClientOpts",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEP", "GENERAL"},
 						Type:        "[]string",
