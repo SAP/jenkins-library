@@ -35,7 +35,7 @@ func TransportRequestUploadSOLMANCommand() *cobra.Command {
 	var createTransportRequestUploadSOLMANCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Uploads content to a transport request",
-		Long:  `Uploads content to a transport request.`,
+		Long:  `Uploads content to a transport request which is associated with a change document in SAP Solution Manager`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -83,14 +83,14 @@ func TransportRequestUploadSOLMANCommand() *cobra.Command {
 }
 
 func addTransportRequestUploadSOLMANFlags(cmd *cobra.Command, stepConfig *transportRequestUploadSOLMANOptions) {
-	cmd.Flags().StringVar(&stepConfig.Endpoint, "endpoint", os.Getenv("PIPER_endpoint"), "The service endpoint")
-	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "The deploy user")
-	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "The password for the deploy user")
+	cmd.Flags().StringVar(&stepConfig.Endpoint, "endpoint", os.Getenv("PIPER_endpoint"), "Service endpoint")
+	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "Operating system user for triggering the deployment")
+	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for the deploy user")
 	cmd.Flags().StringVar(&stepConfig.ApplicationID, "applicationId", os.Getenv("PIPER_applicationId"), "The id of the application.")
 	cmd.Flags().StringVar(&stepConfig.ChangeDocumentID, "changeDocumentId", os.Getenv("PIPER_changeDocumentId"), "The id of the change document to upload the file. This parameter is only taken into account when provided via signature to the step.")
 	cmd.Flags().StringVar(&stepConfig.TransportRequestID, "transportRequestId", os.Getenv("PIPER_transportRequestId"), "The id of the transport request to upload the file. This parameter is only taken into account when provided via signature to the step.")
 	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "The name/path of the file which should be uploaded")
-	cmd.Flags().StringSliceVar(&stepConfig.Cmclientops, "cmclientops", []string{}, "additional options handed over to the cm client")
+	cmd.Flags().StringSliceVar(&stepConfig.Cmclientops, "cmclientops", []string{}, "Additional options handed over to the cm client")
 
 	cmd.MarkFlagRequired("endpoint")
 	cmd.MarkFlagRequired("username")
