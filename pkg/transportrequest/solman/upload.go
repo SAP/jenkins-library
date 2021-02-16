@@ -112,7 +112,7 @@ func (a *UploadAction) Perform(fs FileSystem, command Exec) error {
 		exitCode := command.GetExitCode()
 
 		if exitCode != 0 {
-			err = fmt.Errorf("Upload command returned with exit code '%d'", exitCode)
+			err = fmt.Errorf("upload command returned with exit code '%d'", exitCode)
 		}
 	}
 

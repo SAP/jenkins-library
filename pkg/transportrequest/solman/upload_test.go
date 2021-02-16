@@ -97,7 +97,7 @@ func TestSolmanUpload(t *testing.T) {
 
 		err := defaultUploadAction.Perform(f, e)
 
-		assert.EqualError(t, err, "cannot upload artifact 'myDeployable.xxx': Upload command returned with exit code '1'")
+		assert.EqualError(t, err, "cannot upload artifact 'myDeployable.xxx': upload command returned with exit code '1'")
 	})
 
 	t.Run("Deploy command cannot be executed", func(t *testing.T) {
