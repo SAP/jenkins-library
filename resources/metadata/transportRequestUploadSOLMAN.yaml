@@ -78,7 +78,7 @@ spec:
           - STAGES
           - STEPS
           - GENERAL
-      - name: cmclientops
+      - name: cmClientOpts
         aliases:
           - name: clientOpts
           - name: changeManagement/clientOpts
