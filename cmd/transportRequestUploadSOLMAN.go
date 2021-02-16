@@ -69,7 +69,7 @@ func runTransportRequestUploadSOLMAN(config *transportRequestUploadSOLMANOptions
 	action.WithTransportRequestID(config.TransportRequestID)
 	action.WithApplicationID(config.ApplicationID)
 	action.WithFile(config.FilePath)
-	action.WithCMOpts(config.Cmclientops)
+	action.WithCMOpts(config.CmClientOpts)
 	err := action.Perform(utils, utils)
 
 	if err == nil {

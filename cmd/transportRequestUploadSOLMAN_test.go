@@ -64,7 +64,7 @@ func TestRunTransportRequestUploadSOLMAN(t *testing.T) {
 			ChangeDocumentID:   "12345678",
 			TransportRequestID: "87654321",
 			FilePath:           "myApp.xxx",
-			Cmclientops:        []string{"-Dtest=abc123"},
+			CmClientOpts:        []string{"-Dtest=abc123"},
 		}
 
 		t.Run("straight forward", func(t *testing.T) {
