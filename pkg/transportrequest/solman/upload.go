@@ -112,14 +112,15 @@ func (a *UploadAction) Perform(fs FileSystem, command Exec) error {
 		exitCode := command.GetExitCode()
 
 		if exitCode != 0 {
+			message := fmt.Sprintf("upload command returned with exit code '%d'", exitCode)
 			if err != nil {
 				// Using the wrapping here is to some extend an abuse, since it is not really
 				// error chaining (the other error is not necessaryly a "predecessor" of this one).
 				// But it is a pragmatic approach for not loosing information for trouble shooting. There
 				// is no possibility to have something like suppressed errors.
-				err = errors.Wrapf(err, "upload command returned with exit code '%d'", exitCode)
+				err = errors.Wrap(err, message)
 			} else {
-				err = fmt.Errorf("upload command returned with exit code '%d'", exitCode)
+				err = errors.New(message)
 			}
 		}
 	}
