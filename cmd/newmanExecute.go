@@ -117,8 +117,8 @@ func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) er
 		// 	return errors.Wrap(err, "The prepraration of the newmanRunCommand failed, see the log for details.")
 		// }
 		// runCommandTokens := strings.Split(runCommand, " ")
-		err = utils.RunExecutable("/bin/sh", "-c", runCommand)
-		//err = utils.RunShell(runCommandTokens[0], runCommandTokens[1:]...)
+		//err = utils.RunExecutable("/bin/sh", "-c", runCommand)
+		err = utils.RunShell("/bin/sh", runCommand)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorService)
 			return errors.Wrap(err, "The execution of the newman tests failed, see the log for details.")
