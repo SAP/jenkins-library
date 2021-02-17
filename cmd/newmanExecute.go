@@ -109,7 +109,7 @@ func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) er
 		runCommand = "/home/node/.npm-global/bin/newman " + runCommand + commandSecrets
 		// runCommand = strings.Replace(runCommand, "'", "\"", -1)
 
-		runCommandTokens = prepareCommand(runCommand)
+		runCommandTokens := prepareCommand(runCommand)
 		// runCommandTokens := strings.Split(runCommand, " ")
 		err = utils.RunExecutable(runCommandTokens[0], runCommandTokens[1:]...)
 		if err != nil {

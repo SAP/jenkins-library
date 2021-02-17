@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -339,4 +340,24 @@ func (e *newmanExecuteMockUtils) SetEnv(env []string) {
 	}
 
 	e.executedExecutables[length-1].envs = append(e.executedExecutables[length-1].envs, env...)
+}
+
+func Test_prepareCommand(t *testing.T) {
+	type args struct {
+		runCommand string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantStr []string
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if gotStr := prepareCommand(tt.args.runCommand); !reflect.DeepEqual(gotStr, tt.wantStr) {
+				t.Errorf("prepareCommand() = %v, want %v", gotStr, tt.wantStr)
+			}
+		})
+	}
 }
