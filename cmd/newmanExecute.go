@@ -83,7 +83,7 @@ func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) er
 		return err
 	}
 
-	envs := []string{"NPM_CONFIG_PREFIX=~/.npm-global/bin"}
+	envs := []string{"NPM_CONFIG_PREFIX=~/.npm-global"}
 	// path := "PATH=" + os.Getenv("PATH") + ":~/node-modules/.bin"
 	// envs = append(envs, path)
 	fmt.Printf("utils.SetEnv(): %v", envs)
@@ -105,7 +105,9 @@ func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) er
 			runCommand += " --suppress-exit-code"
 		}
 
-		runCommand = "/home/node/.npm-global/bin/bin/newman " + runCommand + commandSecrets
+		//runCommand = runCommand + commandSecrets
+		runCommand = "/home/node/.npm-global/bin/newman " + runCommand + commandSecrets
+		//runCommand = strings.Replace(runCommand, "'", "", -1)
 		runCommandTokens := strings.Split(runCommand, " ")
 		err = utils.RunExecutable(runCommandTokens[0], runCommandTokens[1:]...)
 		if err != nil {
