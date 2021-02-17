@@ -109,7 +109,10 @@ func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) er
 		runCommand = "/home/node/.npm-global/bin/newman " + runCommand + commandSecrets
 		// runCommand = strings.Replace(runCommand, "'", "\"", -1)
 
-		runCommandTokens := prepareCommand(runCommand)
+		runCommandTokens, err := prepareCommand(runCommand)
+		if err != nil {
+			return errors.Wrap(err, "The prepraration of the newmanRunCommand failed, see the log for details.")
+		}
 		// runCommandTokens := strings.Split(runCommand, " ")
 		err = utils.RunExecutable(runCommandTokens[0], runCommandTokens[1:]...)
 		if err != nil {
@@ -200,17 +203,18 @@ func handleCfAppCredentials(config *newmanExecuteOptions) string {
 	return commandSecrets
 }
 
-func prepareCommand(runCommand string) (str []string) {
+func prepareCommand(runCommand string) ([]string, error) {
 	runCommandTokens := strings.Split(runCommand, "'")
+	newRunCommandTokens := []string{}
 	if len(runCommandTokens)%2 != 0 {
-		log.Entry().Fatal("could not prepare runCommand - may there is an error with quoted strings")
+		return nil, errors.New("there might be an error with quoted strings")
 	}
 	for i, e := range runCommandTokens {
 		if i%2 == 0 {
-			str = append(str, strings.Split(e, " ")...)
+			newRunCommandTokens = append(newRunCommandTokens, strings.Split(e, " ")...)
 		} else {
-			str = append(str, e)
+			newRunCommandTokens = append(newRunCommandTokens, e)
 		}
 	}
-	return str
+	return newRunCommandTokens, nil
 }

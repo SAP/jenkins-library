@@ -351,7 +351,36 @@ func Test_prepareCommand(t *testing.T) {
 		args    args
 		wantStr []string
 	}{
-		// TODO: Add test cases.
+		{
+			name:    "empty input",
+			args:    args{""},
+			wantStr: []string{},
+		},
+		{
+			name:    "single string",
+			args:    args{"testCommand"},
+			wantStr: []string{"testCommand"},
+		},
+		{
+			name:    "multiple strings",
+			args:    args{"testCommand testParam1 testParam2"},
+			wantStr: []string{"testCommand", "testParam1", "testParam2"},
+		},
+		{
+			name:    "multiple strings single quoted string",
+			args:    args{"testCommand 'testParam1' testParam2"},
+			wantStr: []string{"testCommand", "testParam1", "testParam2"},
+		},
+		{
+			name:    "multiple strings single quoted string",
+			args:    args{"testCommand 'testParam1 file.json' testParam2"},
+			wantStr: []string{"testCommand", "testParam1 file.json", "testParam2"},
+		},
+		{
+			name:    "multiple strings single quoted string",
+			args:    args{"testCommand 'testParam1' file.json testParam2"},
+			wantStr: []string{"testCommand", "testParam1 file.json", "testParam2"},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
