@@ -350,42 +350,62 @@ func Test_prepareCommand(t *testing.T) {
 		name    string
 		args    args
 		wantStr []string
+		wantErr error
 	}{
 		{
 			name:    "empty input",
-			args:    args{""},
+			args:    args{},
 			wantStr: []string{},
+			wantErr: nil,
+		},
+		{
+			name:    "empty string input",
+			args:    args{""},
+			wantStr: []string{""},
+			wantErr: nil,
 		},
 		{
 			name:    "single string",
 			args:    args{"testCommand"},
 			wantStr: []string{"testCommand"},
+			wantErr: nil,
 		},
 		{
 			name:    "multiple strings",
 			args:    args{"testCommand testParam1 testParam2"},
 			wantStr: []string{"testCommand", "testParam1", "testParam2"},
+			wantErr: nil,
 		},
 		{
 			name:    "multiple strings single quoted string",
 			args:    args{"testCommand 'testParam1' testParam2"},
 			wantStr: []string{"testCommand", "testParam1", "testParam2"},
+			wantErr: nil,
 		},
 		{
 			name:    "multiple strings single quoted string",
 			args:    args{"testCommand 'testParam1 file.json' testParam2"},
 			wantStr: []string{"testCommand", "testParam1 file.json", "testParam2"},
+			wantErr: nil,
 		},
 		{
 			name:    "multiple strings single quoted string",
-			args:    args{"testCommand 'testParam1' file.json testParam2"},
+			args:    args{"testCommand 'testParam1 file.json testParam2"},
 			wantStr: []string{"testCommand", "testParam1 file.json", "testParam2"},
+			wantErr: errors.New("there might be an error with quoted strings"),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if gotStr := prepareCommand(tt.args.runCommand); !reflect.DeepEqual(gotStr, tt.wantStr) {
+			gotStr, err := prepareCommand(tt.args.runCommand)
+			if !reflect.DeepEqual(gotStr, tt.wantStr) {
 				t.Errorf("prepareCommand() = %v, want %v", gotStr, tt.wantStr)
+			}
+			if err == nil && tt.wantErr != nil {
+				t.Errorf("prepareCommand() error = %v, want %v", err, tt.wantErr.Error())
+			}
+			if err.Error() != tt.wantErr.Error() {
+				t.Errorf("prepareCommand() error = %v, want %v", err, tt.wantErr)
 			}
 		})
 	}
