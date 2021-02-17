@@ -107,8 +107,10 @@ func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) er
 
 		//runCommand = runCommand + commandSecrets
 		runCommand = "/home/node/.npm-global/bin/newman " + runCommand + commandSecrets
-		runCommand = strings.Replace(runCommand, "'", "\"", -1)
-		runCommandTokens := strings.Split(runCommand, " ")
+		// runCommand = strings.Replace(runCommand, "'", "\"", -1)
+
+		runCommandTokens = prepareCommand(runCommand)
+		// runCommandTokens := strings.Split(runCommand, " ")
 		err = utils.RunExecutable(runCommandTokens[0], runCommandTokens[1:]...)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorService)
@@ -196,4 +198,19 @@ func handleCfAppCredentials(config *newmanExecuteOptions) string {
 		}
 	}
 	return commandSecrets
+}
+
+func prepareCommand(runCommand string) (str []string) {
+	runCommandTokens := strings.Split(runCommand, "'")
+	if len(runCommandTokens)%2 != 0 {
+		log.Entry().Fatal("could not prepare runCommand - may there is an error with quoted strings")
+	}
+	for i, e := range runCommandTokens {
+		if i%2 == 0 {
+			str = append(str, strings.Split(e, " ")...)
+		} else {
+			str = append(str, e)
+		}
+	}
+	return str
 }
