@@ -82,14 +82,6 @@ func TestSolmanUpload(t *testing.T) {
 		}
 	})
 
-	t.Run("DeployableMissing", func(t *testing.T) {
-		f := &mock.FilesMock{}
-		e := &mock.ExecMockRunner{}
-		err := defaultUploadAction.Perform(f, e)
-		if assert.EqualError(t, err, "cannot upload artifact 'myDeployable.xxx': file 'myDeployable.xxx' does not exist") {
-		}
-	})
-
 	t.Run("Deploy command returns with return code not equal zero", func(t *testing.T) {
 
 		e := &mock.ExecMockRunner{}
