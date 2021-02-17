@@ -191,9 +191,10 @@ func GetJSONPayloadAsByteArray(config *integrationArtifactUploadOptions, mode st
 		jsonObj.Set(config.IntegrationFlowID, "Id")
 		jsonObj.Set(config.PackageID, "PackageId")
 		jsonObj.Set(b64.StdEncoding.EncodeToString(fileContent), "ArtifactContent")
-	} else {
+	} else if mode == "update" {
 		jsonObj.Set(b64.StdEncoding.EncodeToString(fileContent), "ArtifactContent")
-
+	} else {
+		return nil, fmt.Errorf("Unkown node: '%s'", mode)
 	}
 
 	jsonBody, jsonErr := json.Marshal(jsonObj)
