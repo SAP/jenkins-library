@@ -128,6 +128,7 @@ func Execute() {
 	rootCmd.AddCommand(IntegrationArtifactGetMplStatusCommand())
 	rootCmd.AddCommand(IntegrationArtifactDownloadCommand())
 	rootCmd.AddCommand(AbapEnvironmentAssembleConfirmCommand())
+	rootCmd.AddCommand(TransportRequestCreateRFCCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {

@@ -66,6 +66,7 @@ func GetAllStepMetadata() map[string]config.StepData {
 		"protecodeExecuteScan":                    protecodeExecuteScanMetadata(),
 		"containerSaveImage":                      containerSaveImageMetadata(),
 		"sonarExecuteScan":                        sonarExecuteScanMetadata(),
+		"transportRequestCreateRFC":               transportRequestCreateRFCMetadata(),
 		"transportRequestUploadCTS":               transportRequestUploadCTSMetadata(),
 		"uiVeri5ExecuteTests":                     uiVeri5ExecuteTestsMetadata(),
 		"vaultRotateSecretId":                     vaultRotateSecretIdMetadata(),

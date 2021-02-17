@@ -1,0 +1,103 @@
+metadata:
+  name: transportRequestCreateRFC
+  aliases:
+    - name: transportRequestCreate
+  description: "Creates a transport request"
+  longDescription: |
+    Creates a transport request via RFC.
+spec:
+  inputs:
+    secrets:
+      - name: createTransportCredentialsId
+        description: Jenkins 'Username with password' credentials ID containing user and password to authenticate against the ABAP backend.
+        type: jenkins
+        aliases:
+          - name: changeManagement/credentialsId
+    params:
+      - name: endpoint
+        type: string
+        mandatory: true
+        description: "The service endpoint"
+        aliases:
+          - name: changeManagement/endpoint
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: instance
+        type: string
+        mandatory: true
+        description: "Instance"
+        aliases:
+          - name: changeManagement/instance
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: client
+        type: string
+        mandatory: true
+        description: "client"
+        aliases:
+          - name: changeManagement/client
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: username
+        type: string
+        mandatory: true
+        description: "The deploy user"
+        secret: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: password
+        type: string
+        mandatory: true
+        description: "The password for the deploy user"
+        secret: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: description
+        type: string
+        default: "Created with piper-go"
+        description: "The description of the transport request."
+        secret: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: transportType
+        type: string
+        mandatory: true
+        description: "Typically `W` (workbench) or `C` (customizing)."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: targetSystem
+        type: string
+        mandatory: true
+        description: "The system receiving the transport request. "
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEP
+          - GENERAL
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: custom/transportRequestID
