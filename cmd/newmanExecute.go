@@ -107,7 +107,7 @@ func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) er
 
 		commandSecrets := handleCfAppCredentials(config)
 
-		if !config.FailOnError {
+		if config.FailOnError {
 			runCommand += " --suppress-exit-code"
 		}
 
