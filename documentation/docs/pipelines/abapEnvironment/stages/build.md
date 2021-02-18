@@ -11,6 +11,7 @@ The following steps are executed in this stage:
 - [abapEnvironmentAssemblePackages](../../../steps/abapEnvironmentAssemblePackages.md)
 - [abapAddonAssemblyKitRegisterPackages](../../../steps/abapAddonAssemblyKitRegisterPackages.md)
 - [abapAddonAssemblyKitReleasePackages](../../../steps/abapAddonAssemblyKitReleasePackages.md)
+- [abapEnvironmentAssembleConfirm](../../../steps/abapEnvironmentAssembleConfirm.md)
 - [abapAddonAssemblyKitCreateTargetVector](../../../steps/abapAddonAssemblyKitCreateTargetVector.md)
 - [abapAddonAssemblyKitPublishTargetVector](../../../steps/abapAddonAssemblyKitPublishTargetVector.md)
 

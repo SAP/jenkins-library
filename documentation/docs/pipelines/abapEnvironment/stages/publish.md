@@ -7,7 +7,6 @@ This stage publishes an add-on for the ABAP Environment and confirms the deliver
 The following steps are executed in this stage:
 
 - [abapAddonAssemblyKitPublishTargetVector](../../../steps/abapAddonAssemblyKitPublishTargetVector.md)
-- [abapEnvironmentAssembleConfirm](../../../steps/abapEnvironmentAssembleConfirm.md)
 
 ## Stage Parameters
 
@@ -24,16 +23,10 @@ This stage will be active, if the stage configuration in the `config.yml` contai
 ```yaml
 general:
   abapAddonAssemblyKitCredentialsId: 'TechUserAAKaaS'
-  addonDescriptorFileName: 'addon.yml'
-  cfApiEndpoint: 'https://api.cf.sap.hana.ondemand.com'
-  cfOrg: 'myOrgBld'
-  cfSpace: 'mySpaceBld'
-  cfCredentialsId: 'cfAuthentification'  
+  addonDescriptorFileName: 'addon.yml' 
 stages:
   Publish:
     targetVectorScope: 'P'
-    cfServiceKeyName: 'JENKINS_SAP_COM_0582'
-    cfServiceKeyConfig: 'sap_com_0582.json'
 ```
 
 ### addon.yml
@@ -46,13 +39,4 @@ repositories:
   - name: /DMO/SWC
     branch: v1.0.0
     version: 1.0.0
-```
-
-### sap_com_0582.json
-
-```json
-{
-  "scenario_id": "SAP_COM_0582",
-  "type": "basic"
-}
 ```
