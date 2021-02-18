@@ -107,17 +107,7 @@ func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) er
 
 		//runCommand = runCommand + commandSecrets
 		runCommand = "/home/node/.npm-global/bin/newman " + runCommand + commandSecrets
-		// runCommand = strings.Replace(runCommand, "'", "\"", -1)
 
-		// re := regexp.MustCompile("('(\\S*)'|[a-zA-Z0-9]*)")
-		// re.FindString(runCommand)
-
-		// runCommandTokens, err := prepareCommand(runCommand)
-		// if err != nil {
-		// 	return errors.Wrap(err, "The prepraration of the newmanRunCommand failed, see the log for details.")
-		// }
-		// runCommandTokens := strings.Split(runCommand, " ")
-		//err = utils.RunExecutable("/bin/sh", "-c", runCommand)
 		err = utils.RunShell("/bin/sh", runCommand)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorService)
@@ -160,7 +150,7 @@ func resolveTemplate(config *newmanExecuteOptions, collection string) (string, e
 		Config                interface{}
 		CollectionDisplayName string
 		NewmanCollection      string
-		// TODO: New field as structs cannot be extended in Go
+		NewmanEnvironment     string
 	}
 
 	templ, err := template.New("template").Parse(config.NewmanRunCommand)
@@ -174,6 +164,7 @@ func resolveTemplate(config *newmanExecuteOptions, collection string) (string, e
 		Config:                config,
 		CollectionDisplayName: collectionDisplayName,
 		NewmanCollection:      collection,
+		NewmanEnvironment:     config.NewmanEnvironment,
 	})
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
