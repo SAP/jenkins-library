@@ -77,7 +77,7 @@ func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData)
 
 func runDetect(config detectExecuteScanOptions, utils detectUtils) error {
 	// detect execution details, see https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/88440888/Sample+Synopsys+Detect+Scan+Configuration+Scenarios+for+Black+Duck
-	err := utils.DownloadFile("https://detect.synopsys.com/detect.sh", "detect.sh", nil, nil)
+	err := getDetectScript(config, utils)
 	if err != nil {
 		return fmt.Errorf("failed to download 'detect.sh' script: %w", err)
 	}
@@ -118,15 +118,24 @@ func runDetect(config detectExecuteScanOptions, utils detectUtils) error {
 	return utils.RunShell("/bin/bash", script)
 }
 
+func getDetectScript(config detectExecuteScanOptions, utils detectUtils) error {
+	if config.ScanOnChanges {
+		return utils.DownloadFile("https://raw.githubusercontent.com/blackducksoftware/detect_rescan/master/detect_rescan.sh", "detect.sh", nil, nil)
+	}
+	return utils.DownloadFile("https://detect.synopsys.com/detect.sh", "detect.sh", nil, nil)
+}
+
 func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectUtils) ([]string, error) {
 
-	coordinates := struct {
-		Version string
-	}{
+	coordinates := versioning.Coordinates{
 		Version: config.Version,
 	}
 
 	_, detectVersionName := versioning.DetermineProjectCoordinates("", config.VersioningModel, coordinates)
+
+	if config.ScanOnChanges {
+		args = append(args, "--report")
+	}
 
 	args = append(args, config.ScanProperties...)
 
@@ -134,12 +143,12 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 	args = append(args, fmt.Sprintf("--blackduck.api.token=%v", config.Token))
 	// ProjectNames, VersionName, GroupName etc can contain spaces and need to be escaped using double quotes in CLI
 	// Hence the string need to be surrounded by \"
-	args = append(args, fmt.Sprintf("--detect.project.name=\\\"%v\\\"", config.ProjectName))
-	args = append(args, fmt.Sprintf("--detect.project.version.name=\\\"%v\\\"", detectVersionName))
+	args = append(args, fmt.Sprintf("\"--detect.project.name='%v'\"", config.ProjectName))
+	args = append(args, fmt.Sprintf("\"--detect.project.version.name='%v'\"", detectVersionName))
 
 	// Groups parameter is added only when there is atleast one non-empty groupname provided
 	if len(config.Groups) > 0 && len(config.Groups[0]) > 0 {
-		args = append(args, fmt.Sprintf("--detect.project.user.groups=\\\"%v\\\"", strings.Join(config.Groups, "\\\",\\\"")))
+		args = append(args, fmt.Sprintf("\"--detect.project.user.groups='%v'\"", strings.Join(config.Groups, ",")))
 	}
 
 	// Atleast 1, non-empty category to fail on must be provided
@@ -151,7 +160,7 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 	if len(codeLocation) == 0 && len(config.ProjectName) > 0 {
 		codeLocation = fmt.Sprintf("%v/%v", config.ProjectName, detectVersionName)
 	}
-	args = append(args, fmt.Sprintf("--detect.code.location.name=\\\"%v\\\"", codeLocation))
+	args = append(args, fmt.Sprintf("\"--detect.code.location.name='%v'\"", codeLocation))
 
 	if len(config.ScanPaths) > 0 && len(config.ScanPaths[0]) > 0 {
 		args = append(args, fmt.Sprintf("--detect.blackduck.signature.scanner.paths=%v", strings.Join(config.ScanPaths, ",")))

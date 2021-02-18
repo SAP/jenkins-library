@@ -1,6 +1,7 @@
 package git
 
 import (
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
@@ -25,6 +26,7 @@ type utilsRepository interface {
 // utilsGit interface abstraction of git to enable tests
 type utilsGit interface {
 	plainClone(path string, isBare bool, o *git.CloneOptions) (*git.Repository, error)
+	plainOpen(path string) (*git.Repository, error)
 }
 
 // CommitSingleFile Commits the file located in the relative file path with the commitMessage to the given worktree.
@@ -84,6 +86,21 @@ func plainClone(username, password, serverURL, directory string, abstractionGit 
 	return repository, nil
 }
 
+// PlainOpen opens a git repository from the given path
+func PlainOpen(path string) (*git.Repository, error) {
+	abstractedGit := &abstractionGit{}
+	return plainOpen(path, abstractedGit)
+}
+
+func plainOpen(path string, abstractionGit utilsGit) (*git.Repository, error) {
+	log.Entry().Infof("Opening git repo at '%s'", path)
+	r, err := abstractionGit.plainOpen(path)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Unable to open git repository at '%s'", path)
+	}
+	return r, nil
+}
+
 // ChangeBranch checkout the provided branch.
 // It will create a new branch if the branch does not exist yet.
 // It will return an error if no branch name if provided
@@ -112,8 +129,56 @@ func changeBranch(branchName string, worktree utilsWorkTree) error {
 	return nil
 }
 
+// LogRange Returns a CommitIterator providing all commits reachable from 'to', but
+// not reachable by 'from'.
+func LogRange(repo *git.Repository, from, to string) (object.CommitIter, error) {
+
+	cTo, err := getCommitObject(to, repo)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Cannot provide log range (to: '%s' not found)", to)
+	}
+	cFrom, err := getCommitObject(from, repo)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Cannot provide log range (from: '%s' not found)", from)
+	}
+	ignore := []plumbing.Hash{}
+	err = object.NewCommitPreorderIter(
+		cFrom,
+		map[plumbing.Hash]bool{},
+		[]plumbing.Hash{},
+	).ForEach(func(c *object.Commit) error {
+		ignore = append(ignore, c.ID())
+		return nil
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "Cannot provide log range")
+	}
+
+	return object.NewCommitPreorderIter(cTo, map[plumbing.Hash]bool{}, ignore), nil
+}
+
+func getCommitObject(ref string, repo *git.Repository) (*object.Commit, error) {
+	if len(ref) == 0 {
+		// with go-git v5.1.0 we panic otherwise inside ResolveRevision
+		return nil, errors.New("Cannot get a commit for an empty ref")
+	}
+	r, err := repo.ResolveRevision(plumbing.Revision(ref))
+	if err != nil {
+		return nil, errors.Wrapf(err, "Trouble resolving '%s'", ref)
+	}
+	c, err := repo.CommitObject(*r)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Trouble resolving '%s'", ref)
+	}
+	return c, nil
+}
+
 type abstractionGit struct{}
 
 func (abstractionGit) plainClone(path string, isBare bool, o *git.CloneOptions) (*git.Repository, error) {
 	return git.PlainClone(path, isBare, o)
+}
+
+func (abstractionGit) plainOpen(path string) (*git.Repository, error) {
+	return git.PlainOpen(path)
 }

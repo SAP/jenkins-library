@@ -126,7 +126,7 @@ func TestGetArtifact(t *testing.T) {
 
 		theType, ok := pip.(*Pip)
 		assert.True(t, ok)
-		assert.Equal(t, "version.txt", theType.path)
+		assert.Equal(t, "setup.py", theType.path)
 		assert.Equal(t, "pep440", pip.VersioningScheme())
 	})
 
@@ -134,7 +134,7 @@ func TestGetArtifact(t *testing.T) {
 		fileExists = func(string) (bool, error) { return false, nil }
 		_, err := GetArtifact("pip", "", &Options{}, nil)
 
-		assert.EqualError(t, err, "no build descriptor available, supported: [version.txt VERSION setup.py]")
+		assert.EqualError(t, err, "no build descriptor available, supported: [setup.py version.txt VERSION]")
 	})
 
 	t.Run("sbt", func(t *testing.T) {

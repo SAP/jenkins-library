@@ -233,7 +233,8 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 	}
 
 	if m.HasReference("vaultSecret") {
-		contextFilters = append(contextFilters, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId"}...)
+		contextFilters = append(contextFilters, []string{"vaultAppRoleTokenCredentialsId",
+			"vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}...)
 	}
 
 	if len(contextFilters) > 0 {
@@ -377,7 +378,11 @@ func (container *Container) commonConfiguration(keyPrefix string, config *map[st
 }
 
 func getParameterValue(path string, res ResourceReference, param StepParameters) interface{} {
-	if val := piperenv.GetResourceParameter(path, res.Name, res.Param); len(val) > 0 {
+	paramName := res.Param
+	if param.Type != "string" {
+		paramName += ".json"
+	}
+	if val := piperenv.GetResourceParameter(path, res.Name, paramName); len(val) > 0 {
 		if param.Type != "string" {
 			var unmarshalledValue interface{}
 			err := json.Unmarshal([]byte(val), &unmarshalledValue)

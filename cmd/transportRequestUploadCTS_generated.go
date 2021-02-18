@@ -112,7 +112,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
 			Name:        "transportRequestUploadCTS",
-			Aliases:     []config.Alias{},
+			Aliases:     []config.Alias{{Name: "transportRequestUploadFile", Deprecated: false}},
 			Description: "Uploads content to a transport request",
 		},
 		Spec: config.StepSpec{
@@ -188,7 +188,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "cts/deployConfigFile"}},
+						Aliases:     []config.Alias{{Name: "changeManagement/cts/deployConfigFile"}, {Name: "cts/deployConfigFile"}},
 					},
 					{
 						Name:        "transportRequestId",
