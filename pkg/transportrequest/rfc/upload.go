@@ -99,7 +99,7 @@ func (action *UploadAction) Perform(command Exec) error {
 
 	parametersWithMissingValues, err := validation.FindEmptyStringsInConfigStruct(*action)
 	if err != nil {
-		return fmt.Errorf("Cannot check that all required parameters are available for SOLMAN upload: %w", err)
+		return fmt.Errorf("invalid configuration parameters detected. SOLMAN upload parameter may be missing : %w", err)
 	}
 	if len(parametersWithMissingValues) != 0 {
 		return fmt.Errorf("Cannot perform artifact upload. The following parameters are not available %s", parametersWithMissingValues)
