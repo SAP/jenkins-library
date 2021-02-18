@@ -105,9 +105,7 @@ func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) er
 			runCommand += " --suppress-exit-code"
 		}
 
-		//runCommand = runCommand + commandSecrets
 		runCommand = "/home/node/.npm-global/bin/newman " + runCommand + commandSecrets
-
 		err = utils.RunShell("/bin/sh", runCommand)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorService)
@@ -150,7 +148,6 @@ func resolveTemplate(config *newmanExecuteOptions, collection string) (string, e
 		Config                interface{}
 		CollectionDisplayName string
 		NewmanCollection      string
-		NewmanEnvironment     string
 	}
 
 	templ, err := template.New("template").Parse(config.NewmanRunCommand)
@@ -164,7 +161,6 @@ func resolveTemplate(config *newmanExecuteOptions, collection string) (string, e
 		Config:                config,
 		CollectionDisplayName: collectionDisplayName,
 		NewmanCollection:      collection,
-		NewmanEnvironment:     config.NewmanEnvironment,
 	})
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
