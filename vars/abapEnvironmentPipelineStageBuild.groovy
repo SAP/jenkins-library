@@ -11,6 +11,7 @@ import static com.sap.piper.Prerequisites.checkScript
     'abapEnvironmentAssemblePackages',
     'abapAddonAssemblyKitRegisterPackages',
     'abapAddonAssemblyKitReleasePackages',
+    'abapEnvironmentAssembleConfirm',
     'abapAddonAssemblyKitCreateTargetVector',
     'abapAddonAssemblyKitPublishTargetVector'
     
@@ -30,6 +31,7 @@ void call(Map parameters = [:]) {
         abapEnvironmentAssemblePackages script: parameters.script
         abapAddonAssemblyKitRegisterPackages script: parameters.script
         abapAddonAssemblyKitReleasePackages script: parameters.script
+        abapEnvironmentAssembleConfirm script: parameters.script
         abapAddonAssemblyKitCreateTargetVector script: parameters.script
         abapAddonAssemblyKitPublishTargetVector(script: parameters.script, targetVectorScope: 'T')
     }
