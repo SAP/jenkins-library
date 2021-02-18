@@ -66,7 +66,7 @@ func TestSolmanCreateTransportRequest(t *testing.T) {
 		examinee := a
 		_, err := examinee.Perform(e)
 
-		assert.EqualError(t, err, "cannot create transport request: Create transport request command returned with exit code '42'")
+		assert.EqualError(t, err, "cannot create transport request: create transport request command returned with exit code '42'")
 	})
 
 	t.Run("input missing", func(t *testing.T) {
