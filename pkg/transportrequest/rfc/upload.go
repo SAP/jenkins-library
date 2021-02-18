@@ -101,8 +101,7 @@ func (action *UploadAction) Perform(command Exec) error {
 	if err != nil {
 		return fmt.Errorf("Cannot check that all required parameters are available for SOLMAN upload: %w", err)
 	}
-	notInitialized := len(parametersWithMissingValues) != 0
-	if notInitialized {
+	if len(parametersWithMissingValues) != 0 {
 		return fmt.Errorf("Cannot perform artifact upload. The following parameters are not available %s", parametersWithMissingValues)
 	}
 
