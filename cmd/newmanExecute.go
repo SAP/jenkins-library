@@ -92,10 +92,10 @@ func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) er
 
 	// append environment and globals if not resolved by templating
 	options := ""
-	if config.NewmanEnvironment != "" && strings.Contains(config.NewmanRunCommand, "{{.Config.NewmanEnvironment}}") {
+	if config.NewmanEnvironment != "" && !strings.Contains(config.NewmanRunCommand, "{{.Config.NewmanEnvironment}}") {
 		options += "  --environment '" + config.NewmanEnvironment + "'"
 	}
-	if config.NewmanGlobals != "" && strings.Contains(config.NewmanRunCommand, "{{.Config.NewmanGlobals}}") {
+	if config.NewmanGlobals != "" && !strings.Contains(config.NewmanRunCommand, "{{.Config.NewmanGlobals}}") {
 		options += "  --globals '" + config.NewmanGlobals + "'"
 	}
 
