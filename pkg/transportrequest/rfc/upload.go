@@ -124,10 +124,17 @@ func (action *UploadAction) Perform(command Exec) error {
 
 	err = command.RunExecutable("cts", fmt.Sprintf("uploadToABAP:%s", action.TransportRequestID))
 
-	if err == nil {
-		exitCode := command.GetExitCode()
-		if exitCode != 0 {
-			err = fmt.Errorf("received return code not equal zero: '%d'. Check log for details", exitCode)
+	exitCode := command.GetExitCode()
+	if exitCode != 0 {
+		message := fmt.Sprintf("upload command returned with exit code '%d'", exitCode)
+		if err != nil {
+			// Using the wrapping here is to some extend an abuse, since it is not really
+			// error chaining (the other error is not necessaryly a "predecessor" of this one).
+			// But it is a pragmatic approach for not loosing information for trouble shooting. There
+			// is no possibility to have something like suppressed errors.
+			err = errors.Wrap(err, message)
+		} else {
+			err = errors.New(message)
 		}
 	}
 

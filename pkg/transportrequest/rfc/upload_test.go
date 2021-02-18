@@ -100,7 +100,7 @@ func TestUploadRFC(t *testing.T) {
 
 			err := upload.Perform(&exec)
 
-			assert.EqualError(t, err, "cannot upload artifact: received return code not equal zero: '42'. Check log for details")
+			assert.EqualError(t, err, "cannot upload artifact: upload command returned with exit code '42'")
 		})
 	})
 }
