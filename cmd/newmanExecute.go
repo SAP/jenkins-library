@@ -84,13 +84,19 @@ func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) er
 	}
 
 	envs := []string{"NPM_CONFIG_PREFIX=~/.npm-global"}
-	// path := "PATH=" + os.Getenv("PATH") + ":~/node-modules/.bin"
-	// envs = append(envs, path)
-	fmt.Printf("utils.SetEnv(): %v", envs)
 	utils.SetEnv(envs)
 	err = installNewman(config.NewmanInstallCommand, utils)
 	if err != nil {
 		return err
+	}
+
+	// append environment and globals if not resolved by templating
+	options := ""
+	if config.NewmanEnvironment != "" && strings.Contains(config.NewmanRunCommand, "{{.Config.NewmanEnvironment}}") {
+		options += "  --environment '" + config.NewmanEnvironment + "'"
+	}
+	if config.NewmanGlobals != "" && strings.Contains(config.NewmanRunCommand, "{{.Config.NewmanGlobals}}") {
+		options += "  --globals '" + config.NewmanGlobals + "'"
 	}
 
 	for _, collection := range collectionList {
@@ -105,7 +111,7 @@ func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) er
 			runCommand += " --suppress-exit-code"
 		}
 
-		runCommand = "/home/node/.npm-global/bin/newman " + runCommand + commandSecrets
+		runCommand = "/home/node/.npm-global/bin/newman " + runCommand + options + commandSecrets
 		err = utils.RunShell("/bin/sh", runCommand)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorService)
