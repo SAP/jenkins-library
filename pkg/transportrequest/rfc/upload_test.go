@@ -20,7 +20,7 @@ func TestUploadRFC(t *testing.T) {
 		Application: Application{
 			Name:        "myApp",
 			Description: "The description",
-			AbapPackage: "XXX",
+			AbapPackage: "YYY",
 		},
 		Configuration: UploadConfig{
 			AcceptUnixStyleEndOfLine: true,
@@ -50,7 +50,7 @@ func TestUploadRFC(t *testing.T) {
 				"ABAP_DEVELOPMENT_CLIENT=001",
 				"ABAP_APPLICATION_NAME=myApp",
 				"ABAP_APPLICATION_DESC=The description",
-				"ABAP_PACKAGE=XXX",
+				"ABAP_PACKAGE=YYY",
 				"ZIP_FILE_URL=https://localhost:8081/myDeployable.zip",
 				"CODE_PAGE=UTF-8",
 				"ABAP_ACCEPT_UNIX_STYLE_EOL=X",
