@@ -143,7 +143,7 @@ func (action *UploadAction) Perform(command Exec) error {
 			action.ApplicationURL, action.Connection.Endpoint, action.Connection.Client, action.Connection.Instance,
 		)
 	} else {
-		log.Entry().Infof("Deploying artifact '%s' to '%s', client: '%s', instance: '%s' failed.",
+		log.Entry().Warnf("Deploying artifact '%s' to '%s', client: '%s', instance: '%s' failed.",
 			action.ApplicationURL, action.Connection.Endpoint, action.Connection.Client, action.Connection.Instance,
 		)
 	}
