@@ -17,7 +17,7 @@ spec:
       - name: endpoint
         type: string
         mandatory: true
-        description: "The service endpoint"
+        description: "Service endpoint"
         aliases:
           - name: changeManagement/endpoint
         scope:
@@ -48,7 +48,7 @@ spec:
       - name: username
         type: string
         mandatory: true
-        description: "The deploy user"
+        description: "Deploy user"
         secret: true
         scope:
           - PARAMETERS
@@ -58,14 +58,14 @@ spec:
       - name: password
         type: string
         mandatory: true
-        description: "The password for the deploy user"
+        description: "Password for the deploy user"
         secret: true
         scope:
           - PARAMETERS
       - name: applicationName
         type: string
         mandatory: true
-        description: "The name of the application."
+        description: "Name of the application."
         scope:
           - PARAMETERS
           - STAGES
@@ -74,7 +74,7 @@ spec:
       - name: applicationDescription
         type: string
         mandatory: false
-        description: "The description of the application."
+        description: "Description of the application."
         scope:
           - PARAMETERS
           - STAGES
@@ -83,7 +83,7 @@ spec:
       - name: abapPackage
         type: string
         mandatory: true
-        description: "The ABAP package name of your application"
+        description: "ABAP package name of your application"
         scope:
           - PARAMETERS
           - STAGES
@@ -92,7 +92,7 @@ spec:
       - name: applicationUrl
         type: string
         mandatory: true
-        description: "The URL where to find the UI5 package to upload to the transport request"
+        description: "URL where to find the UI5 package to upload to the transport request"
         scope:
           - PARAMETERS
           - STAGES
@@ -101,7 +101,7 @@ spec:
       - name: abapPackage
         type: string
         mandatory: true
-        description: "The ABAP package name of your application"
+        description: "ABAP package name of your application"
         scope:
           - PARAMETERS
           - STAGES
@@ -110,7 +110,7 @@ spec:
       - name: codePage
         type: string
         default: "UTF-8"
-        description: "The Code page"
+        description: "Code page"
         scope:
           - PARAMETERS
           - STAGES
@@ -139,6 +139,6 @@ spec:
       - name: transportRequestId
         type: string
         mandatory: true
-        description: "The transport request id"
+        description: "Transport request id"
         scope:
           - PARAMETERS
