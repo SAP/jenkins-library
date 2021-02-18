@@ -73,17 +73,17 @@ func (c *CreateAction) Perform(command Exec) (string, error) {
 
 	if err == nil {
 
-			command.SetEnv(
-				[]string{
-					"ABAP_DEVELOPMENT_SERVER" + "=" + c.Connection.Endpoint,
-					"ABAP_DEVELOPMENT_USER" + "=" + c.Connection.User,
-					"ABAP_DEVELOPMENT_PASSWORD" + "=" + c.Connection.Password,
-					"TRANSPORT_DESCRIPTION" + "=" + c.Description,
-					"ABAP_DEVELOPMENT_INSTANCE" + "=" + c.Connection.Instance,
-					"ABAP_DEVELOPMENT_CLIENT" + "=" + c.Connection.Client,
-					//VERBOSE: verbose, TODO: how to handle the verbose flag?
-				},
-			)
+		command.SetEnv(
+			[]string{
+				"ABAP_DEVELOPMENT_SERVER" + "=" + c.Connection.Endpoint,
+				"ABAP_DEVELOPMENT_USER" + "=" + c.Connection.User,
+				"ABAP_DEVELOPMENT_PASSWORD" + "=" + c.Connection.Password,
+				"TRANSPORT_DESCRIPTION" + "=" + c.Description,
+				"ABAP_DEVELOPMENT_INSTANCE" + "=" + c.Connection.Instance,
+				"ABAP_DEVELOPMENT_CLIENT" + "=" + c.Connection.Client,
+				//VERBOSE: verbose, TODO: how to handle the verbose flag?
+			},
+		)
 
 		oldStdout := command.GetStdout()
 		defer func() {
