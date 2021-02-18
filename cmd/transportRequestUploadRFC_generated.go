@@ -88,19 +88,19 @@ func TransportRequestUploadRFCCommand() *cobra.Command {
 }
 
 func addTransportRequestUploadRFCFlags(cmd *cobra.Command, stepConfig *transportRequestUploadRFCOptions) {
-	cmd.Flags().StringVar(&stepConfig.Endpoint, "endpoint", os.Getenv("PIPER_endpoint"), "The service endpoint")
+	cmd.Flags().StringVar(&stepConfig.Endpoint, "endpoint", os.Getenv("PIPER_endpoint"), "Service endpoint")
 	cmd.Flags().StringVar(&stepConfig.Client, "client", os.Getenv("PIPER_client"), "AS ABAP client number")
 	cmd.Flags().StringVar(&stepConfig.Instance, "instance", os.Getenv("PIPER_instance"), "AS ABAP instance number")
-	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "The deploy user")
-	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "The password for the deploy user")
-	cmd.Flags().StringVar(&stepConfig.ApplicationName, "applicationName", os.Getenv("PIPER_applicationName"), "The name of the application.")
-	cmd.Flags().StringVar(&stepConfig.ApplicationDescription, "applicationDescription", os.Getenv("PIPER_applicationDescription"), "The description of the application.")
-	cmd.Flags().StringVar(&stepConfig.AbapPackage, "abapPackage", os.Getenv("PIPER_abapPackage"), "The ABAP package name of your application")
-	cmd.Flags().StringVar(&stepConfig.ApplicationURL, "applicationUrl", os.Getenv("PIPER_applicationUrl"), "The URL where to find the UI5 package to upload to the transport request")
-	cmd.Flags().StringVar(&stepConfig.CodePage, "codePage", `UTF-8`, "The Code page")
+	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "Deploy user")
+	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for the deploy user")
+	cmd.Flags().StringVar(&stepConfig.ApplicationName, "applicationName", os.Getenv("PIPER_applicationName"), "Name of the application.")
+	cmd.Flags().StringVar(&stepConfig.ApplicationDescription, "applicationDescription", os.Getenv("PIPER_applicationDescription"), "Description of the application.")
+	cmd.Flags().StringVar(&stepConfig.AbapPackage, "abapPackage", os.Getenv("PIPER_abapPackage"), "ABAP package name of your application")
+	cmd.Flags().StringVar(&stepConfig.ApplicationURL, "applicationUrl", os.Getenv("PIPER_applicationUrl"), "URL where to find the UI5 package to upload to the transport request")
+	cmd.Flags().StringVar(&stepConfig.CodePage, "codePage", `UTF-8`, "Code page")
 	cmd.Flags().BoolVar(&stepConfig.AcceptUnixStyleLineEndings, "acceptUnixStyleLineEndings", true, "If unix style line endings should be accepted")
 	cmd.Flags().BoolVar(&stepConfig.FailUploadOnWarning, "failUploadOnWarning", true, "If the upload should fail in case the log contains warnings")
-	cmd.Flags().StringVar(&stepConfig.TransportRequestID, "transportRequestId", os.Getenv("PIPER_transportRequestId"), "The transport request id")
+	cmd.Flags().StringVar(&stepConfig.TransportRequestID, "transportRequestId", os.Getenv("PIPER_transportRequestId"), "Transport request id")
 
 	cmd.MarkFlagRequired("endpoint")
 	cmd.MarkFlagRequired("username")
