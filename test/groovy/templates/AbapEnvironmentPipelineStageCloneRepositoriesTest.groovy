@@ -88,8 +88,8 @@ class AbapEnvironmentPipelineStageCloneRepositoriesTest extends BasePiperTest {
 
         jsr.step.abapEnvironmentPipelineStageCloneRepositories(script: nullScript, strategy: 'AddonBuild')
 
-        assertThat(stepsCalled, hasItems('abapEnvironmentPullGitRepo', 'abapEnvironmentCheckoutBranch'))
-        assertThat(stepsCalled, not(hasItems('abapEnvironmentCloneGitRepo')))
+        assertThat(stepsCalled, not(hasItems('abapEnvironmentPullGitRepo', 'abapEnvironmentCheckoutBranch')))
+        assertThat(stepsCalled, hasItems('abapEnvironmentCloneGitRepo'))
     }
 
     @Test
