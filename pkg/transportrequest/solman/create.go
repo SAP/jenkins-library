@@ -58,8 +58,7 @@ func (a *CreateAction) Perform(command Exec) (string, error) {
 	missingParameters, err := validation.FindEmptyStringsInConfigStruct(*a)
 
 	if err == nil {
-		notInitialized := len(missingParameters) != 0
-		if notInitialized {
+		if len(missingParameters) != 0 {
 			err = fmt.Errorf("the following parameters are not available %s", missingParameters)
 		}
 	}
