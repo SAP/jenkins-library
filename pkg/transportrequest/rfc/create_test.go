@@ -21,7 +21,6 @@ func TestCreateTransportRequest(t *testing.T) {
 		TransportType:  "X",
 		TargetSystemID: "XYZ",
 		Description:    "Lorem ipsum",
-		CMOpts:         []string{"-Dx=y", "-Dabc=123"},
 	}
 
 	t.Run("straight forward", func(t *testing.T) {

@@ -24,7 +24,6 @@ type Create interface {
 	WithTransportType(string)
 	WithTargetSystemID(string)
 	WithDescription(string)
-	WithCMOpts([]string)
 	Perform(command Exec) (string, error)
 }
 
@@ -34,7 +33,6 @@ type CreateAction struct {
 	TransportType  string
 	TargetSystemID string
 	Description    string
-	CMOpts         []string
 }
 
 // WithConnection Set the connection details
@@ -57,12 +55,6 @@ func (c *CreateAction) WithDescription(d string) {
 	c.Description = d
 }
 
-// WithCMOpts sets additional options for calling the
-// cm client tool. E.g. -D options. Useful for troubleshooting
-func (c *CreateAction) WithCMOpts(opts []string) {
-	c.CMOpts = opts
-}
-
 // Perform Creates the transport request
 func (c *CreateAction) Perform(command Exec) (string, error) {
 
@@ -80,7 +72,7 @@ func (c *CreateAction) Perform(command Exec) (string, error) {
 	var transportRequestID string
 
 	if err == nil {
-		if len(c.CMOpts) > 0 {
+
 			command.SetEnv(
 				[]string{
 					"ABAP_DEVELOPMENT_SERVER" + "=" + c.Connection.Endpoint,
@@ -92,7 +84,6 @@ func (c *CreateAction) Perform(command Exec) (string, error) {
 					//VERBOSE: verbose, TODO: how to handle the verbose flag?
 				},
 			)
-		}
 
 		oldStdout := command.GetStdout()
 		defer func() {
