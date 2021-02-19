@@ -14,20 +14,7 @@ import (
 func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, error) {
 	switch functionName {
 	case "IntegrationArtifactDeploy":
-		if testType == "Positive" {
-			return GetEmptyHTTPResponseBodyAndErrorNil()
-		}
-		res := http.Response{
-			StatusCode: 500,
-			Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-						"code": "Internal Server Error",
-						"message": {
-						"@lang": "en",
-						"#text": "Cannot deploy artifact with Id 'flow1'!"
-						}
-					}`))),
-		}
-		return &res, errors.New("Internal Server Error")
+		return GetEmptyHTTPResponseBodyAndErrorNil()
 	case "IntegrationArtifactUpdateConfiguration":
 		if testType == "Positive" {
 			return GetEmptyHTTPResponseBodyAndErrorNil()
@@ -54,6 +41,10 @@ func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, 
 		return UpdateIntegrationDesigntimeArtifactMockResponse(testType)
 	case "IntegrationDesigntimeArtifactUpdate":
 		return IntegrationDesigntimeArtifactUpdateMockResponse(testType)
+	case "GetIntegrationArtifactDeployStatus":
+		return GetIntegrationArtifactDeployStatusMockResponse(testType)
+	case "GetIntegrationArtifactDeployErrorDetails":
+		return GetIntegrationArtifactDeployErrorDetailsMockResponse(testType)
 	default:
 		res := http.Response{
 			StatusCode: 404,
@@ -318,6 +309,38 @@ func GetMockResponseByTestTypeAndMockFunctionName(mockFuntionName, testType stri
 			return &res, errors.New("Unable to download integration artifact, Response Status code:400")
 		}
 
+	case "GetIntegrationArtifactDeployStatusMockResponse":
+		if response == nil && error == nil {
+
+			res := http.Response{
+				StatusCode: 400,
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+							"code": "Bad Request",
+							"message": {
+							"@lang": "en",
+							"#text": "Bad request"
+							}
+						}`))),
+			}
+			return &res, errors.New("Unable to get integration artifact deploy status, Response Status code:400")
+		}
+
+	case "GetIntegrationArtifactDeployErrorDetailsMockResponse":
+		if response == nil && error == nil {
+
+			res := http.Response{
+				StatusCode: 500,
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+							"code": "Internal Server Error",
+							"message": {
+							"@lang": "en",
+							"#text": "Internal Processing Error"
+							}
+						}`))),
+			}
+			return &res, errors.New("Unable to get integration artifact deploy error status, Response Status code:400")
+		}
+
 	}
 	return response, error
 }
@@ -370,6 +393,12 @@ func GetPositiveCaseResponseByTestType(testType string) (*http.Response, error) 
 		return GetRespBodyHTTPStatusServiceNotFound()
 	case "NegativeAndUpdateIntegrationDesigntimeArtifactResBody":
 		return GetRespBodyHTTPStatusServiceNotFound()
+	case "PostiveAndDeployIntegrationDesigntimeArtifactResBody":
+		return GetIntegrationArtifactDeployStatusMockResponseBody()
+	case "PostiveAndGetDeployedIntegrationDesigntimeArtifactErrorResBody":
+		return GetIntegrationArtifactDeployErrorStatusMockResponseBody()
+	case "NegativeAndDeployIntegrationDesigntimeArtifactResBody":
+		return GetIntegrationArtifactDeployStatusErrorMockResponseBody()
 	default:
 		return nil, nil
 	}
@@ -386,7 +415,12 @@ func GetCPIFunctionNameByURLCheck(url, method, testType string) string {
 
 	case "https://demo/api/v1/IntegrationDesigntimeArtifacts":
 		return GetFunctionNameByTestTypeAndMethod(method, testType)
-
+	case "https://demo/api/v1/DeployIntegrationDesigntimeArtifact?Id='flow1'&Version='1.0.1'":
+		return GetFunctionNameByTestTypeAndMethod(method, testType)
+	case "https://demo/api/v1/IntegrationRuntimeArtifacts('flow1')":
+		return "GetIntegrationArtifactDeployStatus"
+	case "https://demo/api/v1/IntegrationRuntimeArtifacts('flow1')/ErrorInformation/$value":
+		return "GetIntegrationArtifactDeployErrorDetails"
 	default:
 		return ""
 	}
@@ -433,9 +467,116 @@ func GetFunctionNameByTestTypeAndMethod(method, testType string) string {
 		if method == "POST" {
 			return "UpdateIntegrationDesigntimeArtifactNegative"
 		}
+
+	case "PostiveAndDeployIntegrationDesigntimeArtifactResBody":
+		if method == "POST" {
+			return "IntegrationArtifactDeploy"
+		}
+
+	case "NegativeAndDeployIntegrationDesigntimeArtifactResBody":
+		if method == "POST" {
+			return "IntegrationArtifactDeploy"
+		}
 	default:
 		return ""
 
 	}
 	return ""
+}
+
+//GetIntegrationArtifactDeployStatusMockResponse -Provide http respose body
+func GetIntegrationArtifactDeployStatusMockResponse(testType string) (*http.Response, error) {
+
+	return GetMockResponseByTestTypeAndMockFunctionName("GetIntegrationArtifactDeployStatusMockResponse", testType)
+}
+
+//GetIntegrationArtifactDeployErrorDetailsMockResponse -Provide http respose body
+func GetIntegrationArtifactDeployErrorDetailsMockResponse(testType string) (*http.Response, error) {
+
+	return GetMockResponseByTestTypeAndMockFunctionName("GetIntegrationArtifactDeployErrorDetailsMockResponse", "PostiveAndGetDeployedIntegrationDesigntimeArtifactErrorResBody")
+}
+
+//GetIntegrationArtifactDeployStatusMockResponseBody -Provide http respose body
+func GetIntegrationArtifactDeployStatusMockResponseBody() (*http.Response, error) {
+
+	resp := http.Response{
+		StatusCode: 200,
+		Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+			"d": {
+				"__metadata": {
+					"id": "https://roverpoc.it-accd002.cfapps.sap.hana.ondemand.com/api/v1/IntegrationRuntimeArtifacts('flow1')",
+					"uri": "https://roverpoc.it-accd002.cfapps.sap.hana.ondemand.com/api/v1/IntegrationRuntimeArtifacts('flow1')",
+					"type": "com.sap.hci.api.IntegrationRuntimeArtifact",
+					"content_type": "application/octet-stream",
+					"media_src": "https://roverpoc.it-accd002.cfapps.sap.hana.ondemand.com/api/v1/IntegrationRuntimeArtifacts('flow1')/$value",
+					"edit_media": "https://roverpoc.it-accd002.cfapps.sap.hana.ondemand.com/api/v1/IntegrationRuntimeArtifacts('flow1')/$value"
+				},
+				"Id": "flow1",
+				"Version": "1.0.24",
+				"Name": "flow1",
+				"Type": "INTEGRATION_FLOW",
+				"DeployedBy": "sb-8ff0b149-c3e6-417e-ad27-21fa5a3349dd!b15187|it!b11463",
+				"DeployedOn": "2021-02-18T11:57:02.885",
+				"Status": "STARTED",
+				"ErrorInformation": {
+					"__deferred": {
+						"uri": "https://roverpoc.it-accd002.cfapps.sap.hana.ondemand.com/api/v1/IntegrationRuntimeArtifacts('flow1')/ErrorInformation"
+					}
+				}
+			}
+		}`))),
+	}
+	return &resp, nil
+}
+
+//GetIntegrationArtifactDeployStatusErrorMockResponseBody -Provide http respose body
+func GetIntegrationArtifactDeployStatusErrorMockResponseBody() (*http.Response, error) {
+
+	resp := http.Response{
+		StatusCode: 200,
+		Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+			"d": {
+				"__metadata": {
+					"id": "https://roverpoc.it-accd002.cfapps.sap.hana.ondemand.com/api/v1/IntegrationRuntimeArtifacts('smtp')",
+					"uri": "https://roverpoc.it-accd002.cfapps.sap.hana.ondemand.com/api/v1/IntegrationRuntimeArtifacts('smtp')",
+					"type": "com.sap.hci.api.IntegrationRuntimeArtifact",
+					"content_type": "application/octet-stream",
+					"media_src": "https://roverpoc.it-accd002.cfapps.sap.hana.ondemand.com/api/v1/IntegrationRuntimeArtifacts('smtp')/$value",
+					"edit_media": "https://roverpoc.it-accd002.cfapps.sap.hana.ondemand.com/api/v1/IntegrationRuntimeArtifacts('smtp')/$value"
+				},
+				"Id": "smtp",
+				"Version": "2.0",
+				"Name": "smtp",
+				"Type": "INTEGRATION_FLOW",
+				"DeployedBy": "sb-8ff0b149-c3e6-417e-ad27-21fa5a3349dd!b15187|it!b11463",
+				"DeployedOn": "2021-02-18T10:52:57.501",
+				"Status": "ERROR",
+				"ErrorInformation": {
+					"__deferred": {
+						"uri": "https://roverpoc.it-accd002.cfapps.sap.hana.ondemand.com/api/v1/IntegrationRuntimeArtifacts('smtp')/ErrorInformation"
+					}
+				}
+			}
+		}`))),
+	}
+	return &resp, nil
+}
+
+//GetIntegrationArtifactDeployErrorStatusMockResponseBody -Provide http respose body
+func GetIntegrationArtifactDeployErrorStatusMockResponseBody() (*http.Response, error) {
+
+	resp := http.Response{
+		StatusCode: 200,
+		Body: ioutil.NopCloser(bytes.NewReader([]byte(`{	"message": {
+			"subsystemName": "CONTENT",
+			"subsytemPartName": "CONTENT_DEPLOY",
+			"messageId": "InstanceError",
+			"messageText": ""
+		},
+		"parameter": [
+			"{\"message\":\"ERROR\",\"childMessageInstances\":[{\"message\":\"EXCEPTION\",\"parameters\":[\"org.osgi.service.blueprint.container.ComponentDefinitionException: Error when instantiating bean MessageFlow_28_configurator of class null\"],\"childMessageInstances\":[{\"message\":\"CAUSE\",\"parameters\":[\"java.lang.IllegalStateException: No credentials for 'smtp' found\"]}]}]}"
+		]
+	}`))),
+	}
+	return &resp, nil
 }
