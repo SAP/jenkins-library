@@ -28,12 +28,11 @@ To do so, create a file called `<StageName>.groovy` (for example, `Acceptance.gr
 For this, you need to know the technical identifiers for stage names.
 
 * For the general purpose pipeline, you can find them in [the pipeline source file](https://github.com/SAP/jenkins-library/blob/master/vars/piperPipeline.groovy).
-* For the SAP Cloud SDK pipeline, you can find them in [this GitHub search query](https://github.com/SAP/cloud-s4-sdk-pipeline-lib/search?q=%22def+stageName+%3D%22).
 
 The centrally maintained pipeline checks if such a file exists and if it does, executes it.
 A parameter of type `Map` that contains the following keys is passed to the extension:
 
-* `script`: Defines the global script environment of the `Jenkinsfile` run. This makes sure that the correct configuration environment can be passed to project "Piper" steps and allows access to the `commonPipelineEnvironment`, for example.
+* `script`: Defines the global script environment of the `Jenkinsfile` run. This makes sure that the correct configuration environment can be passed to project "Piper" steps and allows access to the `commonPipelineEnvironment`, for example. When calling a piper step in an extension, the script object has to be passed using `script: params.script`.
 * `originalStage`: Allows you to execute the "original" stage at any place in your script. If omitting a call to `originalStage()`, only your code is executed.
 * `stageName`: Name of the current stage
 * `config`: Configuration of the stage and general config (including all defaults)
@@ -71,14 +70,13 @@ return this
     By default, there is a possibility for extensions to get executed. In case of disabling it, please ensure to set `PIPER_DISABLE_EXTENSIONS` to `true`.
     Setting this parameter to `true` excludes the execution of extension files in `.pipeline/extensions/<StageName>.groovy`.
 
-
 ### Practical example
 
-For a more practical example, you can use extensions in the SAP Cloud SDK pipeline to add custom linters to your pipeline.
+For a more practical example, you can use extensions in the general purpose pipeline to add custom linters to your pipeline.
 
 A linter is a tool that can check the source code for certain stylistic criteria. Many teams choose to use a linter to ensure a common programming style.
 
-For example, if you want to use [Checkstyle](https://checkstyle.sourceforge.io/) in your codebase, you might use an extension similar to this one in a file called `.pipeline/extensions/build.groovy` in your project:
+For example, if you want to use [Checkstyle](https://checkstyle.sourceforge.io/) in your codebase, you might use an extension similar to this one in a file called `.pipeline/extensions/Build.groovy` in your project:
 
 ```groovy
 def call(Map parameters) {
@@ -105,7 +103,7 @@ return this
 This code snippet has three components, let's see what is happening here:
 
 Firstly, we run the original stage.
-This builds the application and runs ESLint on JavaScript/TypeScript source files and static checks using PMD and SpotBugs tools as these are standard features of SAP Cloud SDK pipeline.
+This builds the application and optionally runs ESLint on JavaScript/TypeScript source files and static checks using PMD and SpotBugs tools as these are standard features of General Purpose Pipeline.
 
 Secondly, we run the checkstyle maven plugin using the `mavenExecute` Jenkins library step as provided by project "Piper".
 This serves as an example for how flexible you can re-use what project "Piper" already provides in your extension.
@@ -147,12 +145,10 @@ void call(parameters) {
 The actual pipeline code (the `call` method in the listing above) can be found here:
 
 * [General purpose pipeline](https://github.com/SAP/jenkins-library/blob/master/vars/piperPipeline.groovy)
-* [SAP Cloud SDK pipeline](https://github.com/SAP/cloud-s4-sdk-pipeline-lib/blob/master/vars/cloudSdkPipeline.groovy)
 
 !!! note "Use the correct shared library definition"
     Which shared library you need depends on the pipeline you're using.<br />
-    For the [general purpose pipeline](https://github.com/SAP/jenkins-library/blob/master/vars/piperPipeline.groovy), you need `'piper-lib-os'`.<br />
-    For the [SAP Cloud SDK pipeline](https://github.com/SAP/cloud-s4-sdk-pipeline-lib/blob/master/vars/cloudSdkPipeline.groovy), you need `'s4sdk-pipeline-library'`.
+    For the [general purpose pipeline](https://github.com/SAP/jenkins-library/blob/master/vars/piperPipeline.groovy), you need `'piper-lib-os'`.
 
 For the version identifier, please see the section _How to stay up-to-date_ in this document.
 
@@ -172,7 +168,7 @@ A minimal example of such a library could have the following directory structure
 ./README.md
 ```
 
-`myCustomPipeline.groovy` contains the modified pipeline code of the [general purpose pipeline](https://github.com/SAP/jenkins-library/blob/master/vars/piperPipeline.groovy) or [SAP Cloud SDK Pipeline](https://github.com/SAP/cloud-s4-sdk-pipeline-lib/blob/master/vars/cloudSdkPipeline.groovy).
+`myCustomPipeline.groovy` contains the modified pipeline code of the [general purpose pipeline](https://github.com/SAP/jenkins-library/blob/master/vars/piperPipeline.groovy).
 
 !!! note
     The name of your custom pipeline _must_ differ from the other pipelines provided by project "Piper" because Jenkins requires names across multiple libraries to be unique.
@@ -209,7 +205,7 @@ Please be aware that stages may have dependencies on each other.
     The downside is that in rare cases, breaking changes might happen.
     Another potential issue is that your builds are not _repeatable_, that means building the same version of your application twice _might_ have a different result.
     For those reasons, you might want to consider to fix versions to a released version like in this example: `@Library('my-shared-library@v1.0') _`<br />
-    Find the most recent release for the [jenkins-library](https://github.com/SAP/jenkins-library/releases) and for the [SAP Cloud SDK Pipeline](https://github.com/SAP/cloud-s4-sdk-pipeline/releases) on GitHub.
+    Find the most recent release for the [jenkins-library](https://github.com/SAP/jenkins-library/releases) on GitHub.
     To stay up to date with the latest releases, you can ["watch" releases for those repositories on GitHub](https://help.github.com/en/github/receiving-notifications-about-activity-on-github/watching-and-unwatching-releases-for-a-repository).
 
 !!! note "When to go with a modified ready-made pipeline"

@@ -6,11 +6,15 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
 )
+
+// ReportsDirectory defines the subfolder for the WhiteSource reports which are generated
+const ReportsDirectory = "whitesource"
 
 // Product defines a WhiteSource product with name and token
 type Product struct {
@@ -18,6 +22,23 @@ type Product struct {
 	Token          string `json:"token"`
 	CreationDate   string `json:"creationDate,omitempty"`
 	LastUpdateDate string `json:"lastUpdatedDate,omitempty"`
+}
+
+// Assignment describes a list of UserAssignments and GroupAssignments which can be attributed to a WhiteSource Product.
+type Assignment struct {
+	UserAssignments  []UserAssignment  `json:"userAssignments,omitempty"`
+	GroupAssignments []GroupAssignment `json:"groupAssignments,omitempty"`
+}
+
+// UserAssignment holds an email address for a WhiteSource user
+// which can be assigned to a WhiteSource Product in a specific role.
+type UserAssignment struct {
+	Email string `json:"email,omitempty"`
+}
+
+// GroupAssignment refers to the name of a particular group in WhiteSource.
+type GroupAssignment struct {
+	Name string `json:"name,omitempty"`
 }
 
 // Alert
@@ -30,24 +51,41 @@ type Alert struct {
 
 // Library
 type Library struct {
-	Name     string `json:"name,omitempty"`
-	Filename string `json:"filename,omitempty"`
-	Version  string `json:"version,omitempty"`
-	Project  string `json:"project,omitempty"`
+	Name       string `json:"name,omitempty"`
+	Filename   string `json:"filename,omitempty"`
+	ArtifactID string `json:"artifactId,omitempty"`
+	GroupID    string `json:"groupId,omitempty"`
+	Version    string `json:"version,omitempty"`
+	Project    string `json:"project,omitempty"`
 }
 
-// Vulnerability
+// Vulnerability defines a vulnerability as returned by WhiteSource
 type Vulnerability struct {
 	Name              string  `json:"name,omitempty"`
 	Type              string  `json:"type,omitempty"`
-	Level             string  `json:"level,omitempty"`
-	Description       string  `json:"description,omitempty"`
 	Severity          string  `json:"severity,omitempty"`
+	Score             float64 `json:"score,omitempty"`
 	CVSS3Severity     string  `json:"cvss3_severity,omitempty"`
 	CVSS3Score        float64 `json:"cvss3_score,omitempty"`
-	Score             float64 `json:"score,omitempty"`
-	FixResolutionText string  `json:"fixResolutionText,omitempty"`
 	PublishDate       string  `json:"publishDate,omitempty"`
+	URL               string  `json:"url,omitempty"`
+	Description       string  `json:"description,omitempty"`
+	TopFix            Fix     `json:"topFix,omitempty"`
+	AllFixes          []Fix   `json:"allFixes,omitempty"`
+	Level             string  `json:"level,omitempty"`
+	FixResolutionText string  `json:"fixResolutionText,omitempty"`
+}
+
+// Fix defines a Fix as returned by WhiteSource
+type Fix struct {
+	Vulnerability string `json:"vulnerability,omitempty"`
+	Type          string `json:"type,omitempty"`
+	Origin        string `json:"origin,omitempty"`
+	URL           string `json:"url,omitempty"`
+	FixResolution string `json:"fixResolution,omitempty"`
+	Date          string `json:"date,omitempty"`
+	Message       string `json:"message,omitempty"`
+	ExtraData     string `json:"extraData,omitempty"`
 }
 
 // Project defines a WhiteSource project with name and token
@@ -63,13 +101,19 @@ type Project struct {
 
 // Request defines a request object to be sent to the WhiteSource system
 type Request struct {
-	RequestType  string `json:"requestType,omitempty"`
-	UserKey      string `json:"userKey,omitempty"`
-	ProductToken string `json:"productToken,omitempty"`
-	ProductName  string `json:"productName,omitempty"`
-	ProjectToken string `json:"projectToken,omitempty"`
-	OrgToken     string `json:"orgToken,omitempty"`
-	Format       string `json:"format,omitempty"`
+	RequestType          string      `json:"requestType,omitempty"`
+	UserKey              string      `json:"userKey,omitempty"`
+	ProductToken         string      `json:"productToken,omitempty"`
+	ProductName          string      `json:"productName,omitempty"`
+	ProjectToken         string      `json:"projectToken,omitempty"`
+	OrgToken             string      `json:"orgToken,omitempty"`
+	Format               string      `json:"format,omitempty"`
+	AlertType            string      `json:"alertType,omitempty"`
+	ProductAdmins        *Assignment `json:"productAdmins,omitempty"`
+	ProductMembership    *Assignment `json:"productMembership,omitempty"`
+	AlertsEmailReceivers *Assignment `json:"alertsEmailReceivers,omitempty"`
+	ProductApprovers     *Assignment `json:"productApprovers,omitempty"`
+	ProductIntegrators   *Assignment `json:"productIntegrators,omitempty"`
 }
 
 // System defines a WhiteSource System including respective tokens (e.g. org token, user token)
@@ -80,13 +124,18 @@ type System struct {
 	userToken  string
 }
 
+// DateTimeLayout is the layout of the time format used by the WhiteSource API.
+const DateTimeLayout = "2006-01-02 15:04:05 -0700"
+
 // NewSystem constructs a new System instance
-func NewSystem(serverURL, orgToken, userToken string) *System {
+func NewSystem(serverURL, orgToken, userToken string, timeout time.Duration) *System {
+	httpClient := &piperhttp.Client{}
+	httpClient.SetOptions(piperhttp.ClientOptions{TransportTimeout: timeout})
 	return &System{
 		serverURL:  serverURL,
 		orgToken:   orgToken,
 		userToken:  userToken,
-		httpClient: &piperhttp.Client{},
+		httpClient: httpClient,
 	}
 }
 
@@ -104,7 +153,7 @@ func (s *System) GetProductsMetaInfo() ([]Product, error) {
 
 	err := s.sendRequestAndDecodeJSON(req, &wsResponse)
 	if err != nil {
-		return wsResponse.ProductVitals, errors.Wrap(err, "WhiteSource request failed")
+		return wsResponse.ProductVitals, err
 	}
 
 	return wsResponse.ProductVitals, nil
@@ -126,6 +175,45 @@ func (s *System) GetProductByName(productName string) (Product, error) {
 	return Product{}, fmt.Errorf("product '%v' not found in WhiteSource", productName)
 }
 
+// CreateProduct creates a new WhiteSource product and returns its product token.
+func (s *System) CreateProduct(productName string) (string, error) {
+	wsResponse := struct {
+		ProductToken string `json:"productToken"`
+	}{
+		ProductToken: "",
+	}
+
+	req := Request{
+		RequestType: "createProduct",
+		ProductName: productName,
+	}
+
+	err := s.sendRequestAndDecodeJSON(req, &wsResponse)
+	if err != nil {
+		return "", err
+	}
+
+	return wsResponse.ProductToken, nil
+}
+
+// SetProductAssignments assigns various types of membership to a WhiteSource Product.
+func (s *System) SetProductAssignments(productToken string, membership, admins, alertReceivers *Assignment) error {
+	req := Request{
+		RequestType:          "setProductAssignments",
+		ProductToken:         productToken,
+		ProductMembership:    membership,
+		ProductAdmins:        admins,
+		AlertsEmailReceivers: alertReceivers,
+	}
+
+	err := s.sendRequestAndDecodeJSON(req, nil)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // GetProjectsMetaInfo retrieves the registered projects for a specific WhiteSource product
 func (s *System) GetProjectsMetaInfo(productToken string) ([]Project, error) {
 	wsResponse := struct {
@@ -141,7 +229,7 @@ func (s *System) GetProjectsMetaInfo(productToken string) ([]Project, error) {
 
 	err := s.sendRequestAndDecodeJSON(req, &wsResponse)
 	if err != nil {
-		return nil, errors.Wrap(err, "WhiteSource request failed")
+		return nil, err
 	}
 
 	return wsResponse.ProjectVitals, nil
@@ -171,7 +259,7 @@ func (s *System) GetProjectByToken(projectToken string) (Project, error) {
 
 	err := s.sendRequestAndDecodeJSON(req, &wsResponse)
 	if err != nil {
-		return Project{}, errors.Wrap(err, "WhiteSource request failed")
+		return Project{}, err
 	}
 
 	if len(wsResponse.ProjectVitals) == 0 {
@@ -251,7 +339,7 @@ func (s *System) GetProductName(productToken string) (string, error) {
 
 	err := s.sendRequestAndDecodeJSON(req, &wsResponse)
 	if err != nil {
-		return "", errors.Wrap(err, "WhiteSource request failed")
+		return "", err
 	}
 
 	if len(wsResponse.ProductTags) == 0 {
@@ -307,7 +395,29 @@ func (s *System) GetProjectAlerts(projectToken string) ([]Alert, error) {
 
 	err := s.sendRequestAndDecodeJSON(req, &wsResponse)
 	if err != nil {
-		return nil, errors.Wrap(err, "WhiteSource request failed")
+		return nil, err
+	}
+
+	return wsResponse.Alerts, nil
+}
+
+// GetProjectAlertsByType returns all alerts of a certain type for a given project
+func (s *System) GetProjectAlertsByType(projectToken, alertType string) ([]Alert, error) {
+	wsResponse := struct {
+		Alerts []Alert `json:"alerts"`
+	}{
+		Alerts: []Alert{},
+	}
+
+	req := Request{
+		RequestType:  "getProjectAlertsByType",
+		ProjectToken: projectToken,
+		AlertType:    alertType,
+	}
+
+	err := s.sendRequestAndDecodeJSON(req, &wsResponse)
+	if err != nil {
+		return nil, err
 	}
 
 	return wsResponse.Alerts, nil
@@ -328,7 +438,7 @@ func (s *System) GetProjectLibraryLocations(projectToken string) ([]Library, err
 
 	err := s.sendRequestAndDecodeJSON(req, &wsResponse)
 	if err != nil {
-		return nil, errors.Wrap(err, "WhiteSource request failed")
+		return nil, err
 	}
 
 	return wsResponse.Libraries, nil
@@ -337,25 +447,27 @@ func (s *System) GetProjectLibraryLocations(projectToken string) ([]Library, err
 func (s *System) sendRequestAndDecodeJSON(req Request, result interface{}) error {
 	respBody, err := s.sendRequest(req)
 	if err != nil {
-		return errors.Wrap(err, "WhiteSource request failed")
+		return errors.Wrap(err, "sending whiteSource request failed")
 	}
 
 	log.Entry().Debugf("response: %v", string(respBody))
 
 	errorResponse := struct {
-		ErrorCode    string `json:"errorCode"`
+		ErrorCode    int    `json:"errorCode"`
 		ErrorMessage string `json:"errorMessage"`
 	}{}
 
 	err = json.Unmarshal(respBody, &errorResponse)
-	if err == nil && errorResponse.ErrorCode != "" {
-		return fmt.Errorf("invalid request, error code %s, message '%s'",
+	if err == nil && errorResponse.ErrorCode != 0 {
+		return fmt.Errorf("invalid request, error code %v, message '%s'",
 			errorResponse.ErrorCode, errorResponse.ErrorMessage)
 	}
 
-	err = json.Unmarshal(respBody, result)
-	if err != nil {
-		return errors.Wrap(err, "failed to parse WhiteSource response")
+	if result != nil {
+		err = json.Unmarshal(respBody, result)
+		if err != nil {
+			return errors.Wrap(err, "failed to parse WhiteSource response")
+		}
 	}
 	return nil
 }

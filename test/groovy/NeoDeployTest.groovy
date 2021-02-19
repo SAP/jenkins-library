@@ -1,15 +1,17 @@
 import com.sap.piper.StepAssertions
 import com.sap.piper.Utils
 
-import groovy.lang.Script
 import hudson.AbortException
+
+import util.JenkinsReadFileRule
+import util.JenkinsReadJsonRule
 
 import static org.hamcrest.Matchers.allOf
 import static org.hamcrest.Matchers.containsString
+import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.not
 import static org.junit.Assert.assertThat
 
-import org.hamcrest.Matchers
 import org.hamcrest.BaseMatcher
 import org.hamcrest.Description
 import org.jenkinsci.plugins.credentialsbinding.impl.CredentialNotFoundException
@@ -40,6 +42,7 @@ class NeoDeployTest extends BasePiperTest {
     private JenkinsLoggingRule loggingRule = new JenkinsLoggingRule(this)
     private JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
+    private JenkinsReadFileRule readFileRule = new JenkinsReadFileRule(this, 'test/resources')
     private JenkinsFileExistsRule fileExistsRule = new JenkinsFileExistsRule(this, ['warArchive.war', 'archive.mtar', 'war.properties'])
 
     @Rule
@@ -52,7 +55,11 @@ class NeoDeployTest extends BasePiperTest {
         .around(shellRule)
         .around(new JenkinsCredentialsRule(this)
         .withCredentials('myCredentialsId', 'anonymous', '********')
-        .withCredentials('CI_CREDENTIALS_ID', 'defaultUser', '********'))
+        .withCredentials('CI_CREDENTIALS_ID', 'defaultUser', '********')
+        .withCredentials('testOauthId', 'clientId', '********')
+        .withCredentials("OauthDataFileId","oauth.json"))
+        .around(new JenkinsReadJsonRule(this))
+        .around(readFileRule)
         .around(stepRule)
         .around(new JenkinsLockRule(this))
         .around(new JenkinsWithEnvRule(this))
@@ -286,6 +293,33 @@ class NeoDeployTest extends BasePiperTest {
     }
 
     @Test
+    void deployWithBearerTokenCredentials_success(){
+
+        nullScript.commonPipelineEnvironment.setMtarFilePath('archive.mtar')
+
+
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, "https:\\/\\/api\\.test\\.com\\/oauth2\\/apitoken\\/v1", "{\"access_token\":\"xxx\"}")
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, "https:\\/\\/slservice\\.test\\.host\\.com\\/slservice\\/v1\\/oauth\\/accounts\\/testUser123\\/mtars", "{\"id\":123}")
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, "https:\\/\\/slservice\\.test\\.host\\.com\\/slservice\\/v1\\/oauth\\/accounts\\/testUser123\\/mtars", "{\"state\":\"DONE\"}")
+
+
+        stepRule.step.neoDeploy(
+            script: nullScript,
+            source: archiveName,
+            deployMode: 'mta',
+              neo: [
+                  host: 'test.host.com',
+                  account: 'testUser123',
+                      credentialsId: 'OauthDataFileId',
+                      credentialType: 'SecretFile'
+                    ],
+        )
+
+        Assert.assertThat(shellRule.shell[0], containsString("#!/bin/bash curl --fail --silent --show-error --retry 12 -XPOST -u \"abc123:testclientsecret123\" \"https://api.test.com/oauth2/apitoken/v1?grant_type=client_credentials\""))
+        Assert.assertThat(shellRule.shell[1], containsString("#!/bin/bash curl --fail --silent --show-error --retry 12 -XPOST -H \"Authorization: Bearer xxx\" -F file=@\"archive.mtar\" \"https://slservice.test.host.com/slservice/v1/oauth/accounts/testUser123/mtars\""))
+    }
+
+    @Test
     void archivePathFromCPETest() {
 
         nullScript.commonPipelineEnvironment.setMtarFilePath('archive.mtar')
@@ -415,6 +449,43 @@ class NeoDeployTest extends BasePiperTest {
                 .hasSingleQuotedOption('password', '\\*\\*\\*\\*\\*\\*\\*\\*')
                 .hasSingleQuotedOption('source', '.*'))
 
+    }
+
+    @Test
+    void invalidateCache_Success_Test() {
+
+        nullScript.commonPipelineEnvironment.configuration = [steps: [neoDeploy: [neo: [host: 'test.deploy.host.com', account: 'trialuser123', invalidateCache: true, oauthCredentialId: 'testOauthId', siteId: "12346"]]]]
+        fileExistsRule.registerExistingFile('./target/artifact.war')
+
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, "https:\\/\\/oauthasservices-trialuser123\\.test\\.deploy\\.host\\.com\\/oauth2\\/api\\/v1\\/token", "{\"access_token\":\"xxx\"}")
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, "fiori\\/api\\/v1\\/csrf", "X-CSRF-Token=xxx")
+        shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, "fiori\\/v1\\/operations\\/invalidateCache", "{\"statusCode\":\"200\"}")
+
+        stepRule.step.neoDeploy(script: nullScript,
+            source: archiveName,
+            deployMode: 'mta')
+
+        Assert.assertThat(shellRule.shell, hasItem(containsString("curl -X POST -u \"clientId:********\" --fail \"https://oauthasservices-trialuser123.test.deploy.host.com/oauth2/api/v1/token?grant_type=client_credentials&scope=write,read")))
+        Assert.assertThat(shellRule.shell[3], containsString("#!/bin/bash curl -i -L -c 'cookies.jar' -H 'X-CSRF-Token: Fetch' -H \"Authorization: Bearer xxx\" --fail \"https://cloudnwcportal-trialuser123.test.deploy.host.com/fiori/api/v1/csrf\""))
+    }
+
+    @Test
+    void invalidateCache_notPerformed_warFiles() {
+
+        nullScript.commonPipelineEnvironment.configuration = [steps: [neoDeploy: [neo: [host: 'test.deploy.host.com', account: 'trialuser123', invalidateCache: true]]]]
+
+        stepRule.step.neoDeploy(script: nullScript,
+            neo: [
+                application: 'testApp',
+                runtime: 'neo-javaee6-wp',
+                runtimeVersion: '2.125',
+                size: 'lite',
+            ],
+            deployMode: 'warParams',
+            warAction: 'deploy',
+            source: warArchiveName)
+
+        assertThat(loggingRule.log, containsString("Invalidation of cache is ignored. It is performed only for html5 applications."))
     }
 
     @Test

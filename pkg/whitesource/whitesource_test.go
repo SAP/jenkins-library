@@ -2,6 +2,7 @@ package whitesource
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type whitesourceMockClient struct {
@@ -17,6 +19,7 @@ type whitesourceMockClient struct {
 	urlsCalled     string
 	requestBody    io.Reader
 	responseBody   string
+	requestError   error
 }
 
 func (c *whitesourceMockClient) SetOptions(opts piperhttp.ClientOptions) {
@@ -27,6 +30,9 @@ func (c *whitesourceMockClient) SendRequest(method, url string, body io.Reader, 
 	c.httpMethod = method
 	c.urlsCalled = url
 	c.requestBody = body
+	if c.requestError != nil {
+		return &http.Response{}, c.requestError
+	}
 	return &http.Response{StatusCode: c.httpStatusCode, Body: ioutil.NopCloser(bytes.NewReader([]byte(c.responseBody)))}, nil
 }
 
@@ -55,6 +61,42 @@ func TestGetProductsMetaInfo(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, []Product{{Name: "Test Product", Token: "test_product_token", CreationDate: "2020-01-01 00:00:00", LastUpdateDate: "2020-01-01 01:00:00"}}, products)
+}
+
+func TestCreateProduct(t *testing.T) {
+	t.Parallel()
+	t.Run("not allowed error", func(t *testing.T) {
+		// init
+		myTestClient := whitesourceMockClient{
+			responseBody: `{"errorCode":5001,"errorMessage":"User is not allowed to perform this action"}`,
+		}
+		expectedRequestBody := `{"requestType":"createProduct","userKey":"test_user_token","productName":"test_product_name","orgToken":"test_org_token"}`
+		sys := System{serverURL: "https://my.test.server", httpClient: &myTestClient, orgToken: "test_org_token", userToken: "test_user_token"}
+		// test
+		productToken, err := sys.CreateProduct("test_product_name")
+		// assert
+		assert.EqualError(t, err, "invalid request, error code 5001, message 'User is not allowed to perform this action'")
+		requestBody, err := ioutil.ReadAll(myTestClient.requestBody)
+		require.NoError(t, err)
+		assert.Equal(t, "", productToken)
+		assert.Equal(t, expectedRequestBody, string(requestBody))
+	})
+	t.Run("happy path", func(t *testing.T) {
+		// init
+		myTestClient := whitesourceMockClient{
+			responseBody: `{"productToken":"test_product_token"}`,
+		}
+		expectedRequestBody := `{"requestType":"createProduct","userKey":"test_user_token","productName":"test_product_name","orgToken":"test_org_token"}`
+		sys := System{serverURL: "https://my.test.server", httpClient: &myTestClient, orgToken: "test_org_token", userToken: "test_user_token"}
+		// test
+		productToken, err := sys.CreateProduct("test_product_name")
+		// assert
+		assert.NoError(t, err)
+		requestBody, err := ioutil.ReadAll(myTestClient.requestBody)
+		require.NoError(t, err)
+		assert.Equal(t, "test_product_token", productToken)
+		assert.Equal(t, expectedRequestBody, string(requestBody))
+	})
 }
 
 func TestGetMetaInfoForProduct(t *testing.T) {
@@ -265,5 +307,32 @@ func TestGetProjectsByIDs(t *testing.T) {
 
 		assert.NoError(t, err)
 		assert.Equal(t, []Project(nil), projects)
+	})
+}
+
+func TestGetProjectAlertsByType(t *testing.T) {
+	t.Parallel()
+
+	t.Run("success case", func(t *testing.T) {
+		responseBody := `{"alerts":[{"type":"SECURITY_VULNERABILITY", "vulnerability":{"name":"testVulnerability1"}}]}`
+		myTestClient := whitesourceMockClient{responseBody: responseBody}
+		sys := System{serverURL: "https://my.test.server", httpClient: &myTestClient, orgToken: "test_org_token", userToken: "test_user_token"}
+
+		alerts, err := sys.GetProjectAlertsByType("test_project_token", "SECURITY_VULNERABILITY")
+
+		assert.NoError(t, err)
+		requestBody, err := ioutil.ReadAll(myTestClient.requestBody)
+		assert.NoError(t, err)
+		assert.Contains(t, string(requestBody), `"requestType":"getProjectAlertsByType"`)
+		assert.Equal(t, []Alert{{Vulnerability: Vulnerability{Name: "testVulnerability1"}}}, alerts)
+	})
+
+	t.Run("error case", func(t *testing.T) {
+		myTestClient := whitesourceMockClient{requestError: fmt.Errorf("request failed")}
+		sys := System{serverURL: "https://my.test.server", httpClient: &myTestClient, orgToken: "test_org_token", userToken: "test_user_token"}
+
+		_, err := sys.GetProjectAlertsByType("test_project_token", "SECURITY_VULNERABILITY")
+		assert.EqualError(t, err, "sending whiteSource request failed: failed to send request to WhiteSource: request failed")
+
 	})
 }

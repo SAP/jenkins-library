@@ -1,164 +1,25 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/mock"
-	"github.com/SAP/jenkins-library/pkg/versioning"
-	ws "github.com/SAP/jenkins-library/pkg/whitesource"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"net/http"
-	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/reporting"
+	"github.com/SAP/jenkins-library/pkg/versioning"
+	ws "github.com/SAP/jenkins-library/pkg/whitesource"
+	"github.com/stretchr/testify/assert"
 )
 
-type whitesourceSystemMock struct {
-	productName         string
-	products            []ws.Product
-	projects            []ws.Project
-	alerts              []ws.Alert
-	libraries           []ws.Library
-	riskReport          []byte
-	vulnerabilityReport []byte
-}
-
-func (m *whitesourceSystemMock) GetProductByName(productName string) (ws.Product, error) {
-	for _, product := range m.products {
-		if product.Name == productName {
-			return product, nil
-		}
-	}
-	return ws.Product{}, fmt.Errorf("no product with name '%s' found in Whitesource", productName)
-}
-
-func (m *whitesourceSystemMock) GetProjectsMetaInfo(productToken string) ([]ws.Project, error) {
-	return m.projects, nil
-}
-
-func (m *whitesourceSystemMock) GetProjectToken(productToken, projectName string) (string, error) {
-	return "mock-project-token", nil
-}
-
-func (m *whitesourceSystemMock) GetProjectByToken(projectToken string) (ws.Project, error) {
-	for _, project := range m.projects {
-		if project.Token == projectToken {
-			return project, nil
-		}
-	}
-	return ws.Project{}, fmt.Errorf("no project with token '%s' found in Whitesource", projectToken)
-}
-
-func (m *whitesourceSystemMock) GetProjectRiskReport(projectToken string) ([]byte, error) {
-	return m.riskReport, nil
-}
-
-func (m *whitesourceSystemMock) GetProjectVulnerabilityReport(projectToken string, format string) ([]byte, error) {
-	_, err := m.GetProjectByToken(projectToken)
-	if err != nil {
-		return nil, err
-	}
-	if m.vulnerabilityReport == nil {
-		return nil, fmt.Errorf("no report available")
-	}
-	return m.vulnerabilityReport, nil
-}
-
-func (m *whitesourceSystemMock) GetProjectAlerts(projectToken string) ([]ws.Alert, error) {
-	return m.alerts, nil
-}
-
-func (m *whitesourceSystemMock) GetProjectLibraryLocations(projectToken string) ([]ws.Library, error) {
-	return m.libraries, nil
-}
-
-var mockLibrary = ws.Library{
-	Name:     "mock-library",
-	Filename: "mock-library-file",
-	Version:  "mock-library-version",
-	Project:  "mock-project - 1",
-}
-
-func newWhitesourceSystemMock(lastUpdateDate string) *whitesourceSystemMock {
-	return &whitesourceSystemMock{
-		productName: "mock-product",
-		products: []ws.Product{
-			{
-				Name:           "mock-product",
-				Token:          "mock-product-token",
-				CreationDate:   "last-thursday",
-				LastUpdateDate: lastUpdateDate,
-			},
-		},
-		projects: []ws.Project{
-			{
-				ID:             42,
-				Name:           "mock-project - 1",
-				PluginName:     "mock-plugin-name",
-				Token:          "mock-project-token",
-				UploadedBy:     "MrBean",
-				CreationDate:   "last-thursday",
-				LastUpdateDate: lastUpdateDate,
-			},
-		},
-		alerts: []ws.Alert{
-			{
-				Vulnerability: ws.Vulnerability{
-					Name:  "something severe",
-					Score: 5,
-				},
-				Library:      mockLibrary,
-				Project:      "mock-project - 1",
-				CreationDate: "last-thursday",
-			},
-		},
-		libraries:           []ws.Library{mockLibrary},
-		riskReport:          []byte("mock-risk-report"),
-		vulnerabilityReport: []byte("mock-vulnerability-report"),
-	}
-}
-
-type whitesourceCoordinatesMock struct {
-	GroupID    string
-	ArtifactID string
-	Version    string
-}
-
-type downloadedFile struct {
-	sourceURL string
-	filePath  string
-}
-
-type npmInstall struct {
-	currentDir  string
-	packageJSON []string
-}
-
 type whitesourceUtilsMock struct {
-	*mock.FilesMock
-	*mock.ExecMockRunner
-	coordinates             whitesourceCoordinatesMock
+	*ws.ScanUtilsMock
+	coordinates             versioning.Coordinates
 	usedBuildTool           string
 	usedBuildDescriptorFile string
 	usedOptions             versioning.Options
-	downloadedFiles         []downloadedFile
-	npmInstalledModules     []npmInstall
-}
-
-func (w *whitesourceUtilsMock) DownloadFile(url, filename string, _ http.Header, _ []*http.Cookie) error {
-	w.downloadedFiles = append(w.downloadedFiles, downloadedFile{sourceURL: url, filePath: filename})
-	return nil
-}
-
-func (w *whitesourceUtilsMock) FileOpen(name string, flag int, perm os.FileMode) (wsFile, error) {
-	return w.Open(name, flag, perm)
-}
-
-func (w *whitesourceUtilsMock) RemoveAll(path string) error {
-	// TODO: Implement in FS Mock
-	return nil
 }
 
 func (w *whitesourceUtilsMock) GetArtifactCoordinates(buildTool, buildDescriptorFile string,
@@ -167,19 +28,6 @@ func (w *whitesourceUtilsMock) GetArtifactCoordinates(buildTool, buildDescriptor
 	w.usedBuildDescriptorFile = buildDescriptorFile
 	w.usedOptions = *options
 	return w.coordinates, nil
-}
-
-func (w *whitesourceUtilsMock) FindPackageJSONFiles(_ *ScanOptions) ([]string, error) {
-	matches, _ := w.Glob("**/package.json")
-	return matches, nil
-}
-
-func (w *whitesourceUtilsMock) InstallAllNPMDependencies(_ *ScanOptions, packageJSONs []string) error {
-	w.npmInstalledModules = append(w.npmInstalledModules, npmInstall{
-		currentDir:  w.CurrentDir,
-		packageJSON: packageJSONs,
-	})
-	return nil
 }
 
 const wsTimeNow = "2010-05-10 00:15:42"
@@ -191,9 +39,11 @@ func (w *whitesourceUtilsMock) Now() time.Time {
 
 func newWhitesourceUtilsMock() *whitesourceUtilsMock {
 	return &whitesourceUtilsMock{
-		FilesMock:      &mock.FilesMock{},
-		ExecMockRunner: &mock.ExecMockRunner{},
-		coordinates: whitesourceCoordinatesMock{
+		ScanUtilsMock: &ws.ScanUtilsMock{
+			FilesMock:      &mock.FilesMock{},
+			ExecMockRunner: &mock.ExecMockRunner{},
+		},
+		coordinates: versioning.Coordinates{
 			GroupID:    "mock-group-id",
 			ArtifactID: "mock-artifact-id",
 			Version:    "1.0.42",
@@ -201,9 +51,158 @@ func newWhitesourceUtilsMock() *whitesourceUtilsMock {
 	}
 }
 
+func TestNewWhitesourceUtils(t *testing.T) {
+	t.Parallel()
+	config := ScanOptions{}
+	utils := newWhitesourceUtils(&config)
+
+	assert.NotNil(t, utils.Client)
+	assert.NotNil(t, utils.Command)
+	assert.NotNil(t, utils.Files)
+}
+
+func TestRunWhitesourceExecuteScan(t *testing.T) {
+	t.Parallel()
+	t.Run("fails for invalid configured project token", func(t *testing.T) {
+		// init
+		config := ScanOptions{
+			ScanType:            "unified-agent",
+			BuildDescriptorFile: "my-mta.yml",
+			VersioningModel:     "major",
+			ProductName:         "mock-product",
+			ProjectToken:        "no-such-project-token",
+			AgentDownloadURL:    "https://whitesource.com/agent.jar",
+			AgentFileName:       "ua.jar",
+		}
+		utilsMock := newWhitesourceUtilsMock()
+		utilsMock.AddFile("wss-generated-file.config", []byte("key=value"))
+		systemMock := ws.NewSystemMock("ignored")
+		scan := newWhitesourceScan(&config)
+		cpe := whitesourceExecuteScanCommonPipelineEnvironment{}
+		// test
+		err := runWhitesourceExecuteScan(&config, scan, utilsMock, systemMock, &cpe)
+		// assert
+		assert.EqualError(t, err, "no project with token 'no-such-project-token' found in Whitesource")
+		assert.Equal(t, "", config.ProjectName)
+		assert.Equal(t, "", scan.AggregateProjectName)
+	})
+	t.Run("retrieves aggregate project name by configured token", func(t *testing.T) {
+		// init
+		config := ScanOptions{
+			BuildDescriptorFile:       "my-mta.yml",
+			VersioningModel:           "major",
+			AgentDownloadURL:          "https://whitesource.com/agent.jar",
+			VulnerabilityReportFormat: "pdf",
+			Reporting:                 true,
+			AgentFileName:             "ua.jar",
+			ProductName:               "mock-product",
+			ProjectToken:              "mock-project-token",
+			ScanType:                  "unified-agent",
+		}
+		utilsMock := newWhitesourceUtilsMock()
+		utilsMock.AddFile("wss-generated-file.config", []byte("key=value"))
+		lastUpdatedDate := time.Now().Format(ws.DateTimeLayout)
+		systemMock := ws.NewSystemMock(lastUpdatedDate)
+		systemMock.Alerts = []ws.Alert{}
+		scan := newWhitesourceScan(&config)
+		cpe := whitesourceExecuteScanCommonPipelineEnvironment{}
+		// test
+		err := runWhitesourceExecuteScan(&config, scan, utilsMock, systemMock, &cpe)
+		// assert
+		assert.NoError(t, err)
+		// Retrieved project name is stored in scan.AggregateProjectName, but not in config.ProjectName
+		// in order to differentiate between aggregate-project scanning and multi-project scanning.
+		assert.Equal(t, "", config.ProjectName)
+		assert.Equal(t, "mock-project", scan.AggregateProjectName)
+		if assert.Len(t, utilsMock.DownloadedFiles, 1) {
+			assert.Equal(t, ws.DownloadedFile{
+				SourceURL: "https://whitesource.com/agent.jar",
+				FilePath:  "ua.jar",
+			}, utilsMock.DownloadedFiles[0])
+		}
+		if assert.Len(t, cpe.custom.whitesourceProjectNames, 1) {
+			assert.Equal(t, []string{"mock-project - 1"}, cpe.custom.whitesourceProjectNames)
+		}
+		assert.True(t, utilsMock.HasWrittenFile(filepath.Join(ws.ReportsDirectory, "mock-project - 1-vulnerability-report.pdf")))
+		assert.True(t, utilsMock.HasWrittenFile(filepath.Join(ws.ReportsDirectory, "mock-project - 1-vulnerability-report.pdf")))
+	})
+}
+
+func TestCheckAndReportScanResults(t *testing.T) {
+	t.Parallel()
+	t.Run("no reports requested", func(t *testing.T) {
+		// init
+		config := &ScanOptions{
+			ProductToken: "mock-product-token",
+			ProjectToken: "mock-project-token",
+			Version:      "1",
+		}
+		scan := newWhitesourceScan(config)
+		utils := newWhitesourceUtilsMock()
+		system := ws.NewSystemMock(time.Now().Format(ws.DateTimeLayout))
+		// test
+		_, err := checkAndReportScanResults(config, scan, utils, system)
+		// assert
+		assert.NoError(t, err)
+		vPath := filepath.Join(ws.ReportsDirectory, "mock-project-vulnerability-report.txt")
+		assert.False(t, utils.HasWrittenFile(vPath))
+		rPath := filepath.Join(ws.ReportsDirectory, "mock-project-risk-report.pdf")
+		assert.False(t, utils.HasWrittenFile(rPath))
+	})
+	t.Run("check vulnerabilities - invalid limit", func(t *testing.T) {
+		// init
+		config := &ScanOptions{
+			SecurityVulnerabilities: true,
+			CvssSeverityLimit:       "invalid",
+		}
+		scan := newWhitesourceScan(config)
+		utils := newWhitesourceUtilsMock()
+		system := ws.NewSystemMock(time.Now().Format(ws.DateTimeLayout))
+		// test
+		_, err := checkAndReportScanResults(config, scan, utils, system)
+		// assert
+		assert.EqualError(t, err, "failed to parse parameter cvssSeverityLimit (invalid) as floating point number: strconv.ParseFloat: parsing \"invalid\": invalid syntax")
+	})
+	t.Run("check vulnerabilities - limit not hit", func(t *testing.T) {
+		// init
+		config := &ScanOptions{
+			ProductToken:            "mock-product-token",
+			ProjectToken:            "mock-project-token",
+			Version:                 "1",
+			SecurityVulnerabilities: true,
+			CvssSeverityLimit:       "6.0",
+		}
+		scan := newWhitesourceScan(config)
+		utils := newWhitesourceUtilsMock()
+		system := ws.NewSystemMock(time.Now().Format(ws.DateTimeLayout))
+		// test
+		_, err := checkAndReportScanResults(config, scan, utils, system)
+		// assert
+		assert.NoError(t, err)
+	})
+	t.Run("check vulnerabilities - limit exceeded", func(t *testing.T) {
+		// init
+		config := &ScanOptions{
+			ProductToken:            "mock-product-token",
+			ProjectName:             "mock-project - 1",
+			ProjectToken:            "mock-project-token",
+			Version:                 "1",
+			SecurityVulnerabilities: true,
+			CvssSeverityLimit:       "4",
+		}
+		scan := newWhitesourceScan(config)
+		utils := newWhitesourceUtilsMock()
+		system := ws.NewSystemMock(time.Now().Format(ws.DateTimeLayout))
+		// test
+		_, err := checkAndReportScanResults(config, scan, utils, system)
+		// assert
+		assert.EqualError(t, err, "1 Open Source Software Security vulnerabilities with CVSS score greater or equal to 4.0 detected in project mock-project - 1")
+	})
+}
+
 func TestResolveProjectIdentifiers(t *testing.T) {
 	t.Parallel()
-	t.Run("happy path", func(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
 		// init
 		config := ScanOptions{
 			BuildTool:           "mta",
@@ -215,14 +214,72 @@ func TestResolveProjectIdentifiers(t *testing.T) {
 			GlobalSettingsFile:  "global-settings.xml",
 		}
 		utilsMock := newWhitesourceUtilsMock()
-		systemMock := newWhitesourceSystemMock("ignored")
+		systemMock := ws.NewSystemMock("ignored")
 		scan := newWhitesourceScan(&config)
 		// test
 		err := resolveProjectIdentifiers(&config, scan, utilsMock, systemMock)
 		// assert
 		if assert.NoError(t, err) {
-			assert.Equal(t, "mock-group-id-mock-artifact-id", scan.aggregateProjectName)
-			assert.Equal(t, "1", config.ProductVersion)
+			assert.Equal(t, "mock-group-id-mock-artifact-id", scan.AggregateProjectName)
+			assert.Equal(t, "1", config.Version)
+			assert.Equal(t, "mock-product-token", config.ProductToken)
+			assert.Equal(t, "mta", utilsMock.usedBuildTool)
+			assert.Equal(t, "my-mta.yml", utilsMock.usedBuildDescriptorFile)
+			assert.Equal(t, "project-settings.xml", utilsMock.usedOptions.ProjectSettingsFile)
+			assert.Equal(t, "global-settings.xml", utilsMock.usedOptions.GlobalSettingsFile)
+			assert.Equal(t, "m2/path", utilsMock.usedOptions.M2Path)
+		}
+	})
+	t.Run("success - with version from default", func(t *testing.T) {
+		// init
+		config := ScanOptions{
+			BuildTool:           "mta",
+			BuildDescriptorFile: "my-mta.yml",
+			Version:             "1.2.3-20200101",
+			VersioningModel:     "major",
+			ProductName:         "mock-product",
+			M2Path:              "m2/path",
+			ProjectSettingsFile: "project-settings.xml",
+			GlobalSettingsFile:  "global-settings.xml",
+		}
+		utilsMock := newWhitesourceUtilsMock()
+		systemMock := ws.NewSystemMock("ignored")
+		scan := newWhitesourceScan(&config)
+		// test
+		err := resolveProjectIdentifiers(&config, scan, utilsMock, systemMock)
+		// assert
+		if assert.NoError(t, err) {
+			assert.Equal(t, "mock-group-id-mock-artifact-id", scan.AggregateProjectName)
+			assert.Equal(t, "1", config.Version)
+			assert.Equal(t, "mock-product-token", config.ProductToken)
+			assert.Equal(t, "mta", utilsMock.usedBuildTool)
+			assert.Equal(t, "my-mta.yml", utilsMock.usedBuildDescriptorFile)
+			assert.Equal(t, "project-settings.xml", utilsMock.usedOptions.ProjectSettingsFile)
+			assert.Equal(t, "global-settings.xml", utilsMock.usedOptions.GlobalSettingsFile)
+			assert.Equal(t, "m2/path", utilsMock.usedOptions.M2Path)
+		}
+	})
+	t.Run("success - with custom scan version", func(t *testing.T) {
+		// init
+		config := ScanOptions{
+			BuildTool:           "mta",
+			BuildDescriptorFile: "my-mta.yml",
+			CustomScanVersion:   "2.3.4",
+			VersioningModel:     "major",
+			ProductName:         "mock-product",
+			M2Path:              "m2/path",
+			ProjectSettingsFile: "project-settings.xml",
+			GlobalSettingsFile:  "global-settings.xml",
+		}
+		utilsMock := newWhitesourceUtilsMock()
+		systemMock := ws.NewSystemMock("ignored")
+		scan := newWhitesourceScan(&config)
+		// test
+		err := resolveProjectIdentifiers(&config, scan, utilsMock, systemMock)
+		// assert
+		if assert.NoError(t, err) {
+			assert.Equal(t, "mock-group-id-mock-artifact-id", scan.AggregateProjectName)
+			assert.Equal(t, "2.3.4", config.Version)
 			assert.Equal(t, "mock-product-token", config.ProductToken)
 			assert.Equal(t, "mta", utilsMock.usedBuildTool)
 			assert.Equal(t, "my-mta.yml", utilsMock.usedBuildDescriptorFile)
@@ -238,17 +295,17 @@ func TestResolveProjectIdentifiers(t *testing.T) {
 			BuildDescriptorFile: "my-mta.yml",
 			VersioningModel:     "major",
 			ProductName:         "mock-product",
-			ProjectName:         "mock-project - 1",
+			ProjectName:         "mock-project",
 		}
 		utilsMock := newWhitesourceUtilsMock()
-		systemMock := newWhitesourceSystemMock("ignored")
+		systemMock := ws.NewSystemMock("ignored")
 		scan := newWhitesourceScan(&config)
 		// test
 		err := resolveProjectIdentifiers(&config, scan, utilsMock, systemMock)
 		// assert
 		if assert.NoError(t, err) {
-			assert.Equal(t, "mock-project - 1", scan.aggregateProjectName)
-			assert.Equal(t, "1", config.ProductVersion)
+			assert.Equal(t, "mock-project", scan.AggregateProjectName)
+			assert.Equal(t, "1", config.Version)
 			assert.Equal(t, "mock-product-token", config.ProductToken)
 			assert.Equal(t, "mta", utilsMock.usedBuildTool)
 			assert.Equal(t, "my-mta.yml", utilsMock.usedBuildDescriptorFile)
@@ -263,737 +320,388 @@ func TestResolveProjectIdentifiers(t *testing.T) {
 			ProductName:     "does-not-exist",
 		}
 		utilsMock := newWhitesourceUtilsMock()
-		systemMock := newWhitesourceSystemMock("ignored")
+		systemMock := ws.NewSystemMock("ignored")
 		scan := newWhitesourceScan(&config)
 		// test
 		err := resolveProjectIdentifiers(&config, scan, utilsMock, systemMock)
 		// assert
 		assert.EqualError(t, err, "no product with name 'does-not-exist' found in Whitesource")
 	})
-}
-
-func TestExecuteScanUA(t *testing.T) {
-	t.Parallel()
-	t.Run("happy path UA", func(t *testing.T) {
+	t.Run("product not found, created from pipeline", func(t *testing.T) {
 		// init
 		config := ScanOptions{
-			ScanType:         "unified-agent",
-			OrgToken:         "org-token",
-			UserToken:        "user-token",
-			ProductName:      "mock-product",
-			ProjectName:      "mock-project",
-			ProductVersion:   "product-version",
-			AgentDownloadURL: "https://download.ua.org/agent.jar",
-			AgentFileName:    "unified-agent.jar",
-			ConfigFilePath:   "ua.cfg",
-			M2Path:           ".pipeline/m2",
+			BuildTool:                            "mta",
+			CreateProductFromPipeline:            true,
+			EmailAddressesOfInitialProductAdmins: []string{"user1@domain.org", "user2@domain.org"},
+			VersioningModel:                      "major",
+			ProductName:                          "created-by-pipeline",
 		}
 		utilsMock := newWhitesourceUtilsMock()
-		utilsMock.AddFile("wss-generated-file.config", []byte("key=value"))
+		systemMock := ws.NewSystemMock("ignored")
 		scan := newWhitesourceScan(&config)
 		// test
-		err := executeScan(&config, scan, utilsMock)
-		// many assert
-		require.NoError(t, err)
-
-		content, err := utilsMock.FileRead("ua.cfg")
-		require.NoError(t, err)
-		contentAsString := string(content)
-		assert.Contains(t, contentAsString, "key=value\n")
-		assert.Contains(t, contentAsString, "gradle.aggregateModules=true\n")
-		assert.Contains(t, contentAsString, "maven.aggregateModules=true\n")
-		assert.Contains(t, contentAsString, "maven.m2RepositoryPath=.pipeline/m2\n")
-		assert.Contains(t, contentAsString, "excludes=")
-
-		require.Len(t, utilsMock.Calls, 4)
-		fmt.Printf("calls: %v\n", utilsMock.Calls)
-		expectedCall := mock.ExecCall{
-			Exec: "java",
-			Params: []string{
-				"-jar",
-				config.AgentFileName,
-				"-d", ".",
-				"-c", config.ConfigFilePath,
-				"-apiKey", config.OrgToken,
-				"-userKey", config.UserToken,
-				"-project", config.ProjectName,
-				"-product", config.ProductName,
-				"-productVersion", config.ProductVersion,
-			},
-		}
-		assert.Equal(t, expectedCall, utilsMock.Calls[3])
-	})
-	t.Run("UA is downloaded", func(t *testing.T) {
-		// init
-		config := ScanOptions{
-			ScanType:         "unified-agent",
-			AgentDownloadURL: "https://download.ua.org/agent.jar",
-			AgentFileName:    "unified-agent.jar",
-		}
-		utilsMock := newWhitesourceUtilsMock()
-		utilsMock.AddFile("wss-generated-file.config", []byte("dummy"))
-		scan := newWhitesourceScan(&config)
-		// test
-		err := executeScan(&config, scan, utilsMock)
-		// many assert
-		require.NoError(t, err)
-		require.Len(t, utilsMock.downloadedFiles, 1)
-		assert.Equal(t, "https://download.ua.org/agent.jar", utilsMock.downloadedFiles[0].sourceURL)
-		assert.Equal(t, "unified-agent.jar", utilsMock.downloadedFiles[0].filePath)
-	})
-	t.Run("UA is NOT downloaded", func(t *testing.T) {
-		// init
-		config := ScanOptions{
-			ScanType:         "unified-agent",
-			AgentDownloadURL: "https://download.ua.org/agent.jar",
-			AgentFileName:    "unified-agent.jar",
-		}
-		utilsMock := newWhitesourceUtilsMock()
-		utilsMock.AddFile("wss-generated-file.config", []byte("dummy"))
-		utilsMock.AddFile("unified-agent.jar", []byte("dummy"))
-		scan := newWhitesourceScan(&config)
-		// test
-		err := executeScan(&config, scan, utilsMock)
-		// many assert
-		require.NoError(t, err)
-		assert.Len(t, utilsMock.downloadedFiles, 0)
-	})
-}
-
-func TestExecuteScanNPM(t *testing.T) {
-	config := ScanOptions{
-		ScanType:       "npm",
-		OrgToken:       "org-token",
-		UserToken:      "user-token",
-		ProductName:    "mock-product",
-		ProjectName:    "mock-project",
-		ProductVersion: "product-version",
-	}
-
-	t.Parallel()
-
-	t.Run("happy path NPM", func(t *testing.T) {
-		// init
-		utilsMock := newWhitesourceUtilsMock()
-		utilsMock.AddFile("package.json", []byte(`{"name":"my-module-name"}`))
-		scan := newWhitesourceScan(&config)
-		// test
-		err := executeScan(&config, scan, utilsMock)
-		// assert
-		require.NoError(t, err)
-		expectedCalls := []mock.ExecCall{
-			{
-				Exec: "npm",
-				Params: []string{
-					"ls",
-				},
-			},
-			{
-				Exec: "npx",
-				Params: []string{
-					"whitesource",
-					"run",
-				},
-			},
-		}
-		assert.Equal(t, expectedCalls, utilsMock.Calls)
-		assert.True(t, utilsMock.HasWrittenFile(whiteSourceConfig))
-		assert.True(t, utilsMock.HasRemovedFile(whiteSourceConfig))
-	})
-	t.Run("no NPM modules", func(t *testing.T) {
-		// init
-		utilsMock := newWhitesourceUtilsMock()
-		scan := newWhitesourceScan(&config)
-		// test
-		err := executeScan(&config, scan, utilsMock)
-		// assert
-		assert.EqualError(t, err, "found no NPM modules to scan. Configured excludes: []")
-		assert.Len(t, utilsMock.Calls, 0)
-		assert.False(t, utilsMock.HasWrittenFile(whiteSourceConfig))
-	})
-	t.Run("package.json needs name", func(t *testing.T) {
-		// init
-		utilsMock := newWhitesourceUtilsMock()
-		utilsMock.AddFile("package.json", []byte(`{"key":"value"}`))
-		scan := newWhitesourceScan(&config)
-		// test
-		err := executeScan(&config, scan, utilsMock)
-		// assert
-		assert.EqualError(t, err, "failed to scan NPM module 'package.json': the file 'package.json/package.json' must configure a name")
-	})
-	t.Run("npm ls fails", func(t *testing.T) {
-		// init
-		utilsMock := newWhitesourceUtilsMock()
-		utilsMock.AddFile("package.json", []byte(`{"name":"my-module-name"}`))
-		utilsMock.AddFile(filepath.Join("app", "package.json"), []byte(`{"name":"my-app-module-name"}`))
-		utilsMock.AddFile("package-lock.json", []byte("dummy"))
-
-		utilsMock.ShouldFailOnCommand = make(map[string]error)
-		utilsMock.ShouldFailOnCommand["npm ls"] = fmt.Errorf("mock failure")
-		scan := newWhitesourceScan(&config)
-		// test
-		err := executeScan(&config, scan, utilsMock)
+		err := resolveProjectIdentifiers(&config, scan, utilsMock, systemMock)
 		// assert
 		assert.NoError(t, err)
-		expectedNpmInstalls := []npmInstall{
-			{currentDir: "app", packageJSON: []string{"package.json"}},
-			{currentDir: "", packageJSON: []string{"package.json"}},
-		}
-		assert.Equal(t, expectedNpmInstalls, utilsMock.npmInstalledModules)
-		assert.True(t, utilsMock.HasRemovedFile("package-lock.json"))
+		assert.Len(t, systemMock.Products, 2)
+		assert.Equal(t, "created-by-pipeline", systemMock.Products[1].Name)
+		assert.Equal(t, "mock-product-token-1", config.ProductToken)
 	})
 }
 
-func TestExecuteScanMaven(t *testing.T) {
+func TestCheckPolicyViolations(t *testing.T) {
 	t.Parallel()
-	t.Run("maven modules are aggregated", func(t *testing.T) {
-		// init
-		const pomXML = `<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <artifactId>my-artifact-id</artifactId>
-    <packaging>jar</packaging>
-</project>
-`
-		config := ScanOptions{
-			ScanType:       "maven",
-			OrgToken:       "org-token",
-			UserToken:      "user-token",
-			ProductName:    "mock-product",
-			ProjectName:    "mock-project",
-			ProductVersion: "product-version",
-		}
-		utilsMock := newWhitesourceUtilsMock()
-		utilsMock.AddFile("pom.xml", []byte(pomXML))
-		scan := newWhitesourceScan(&config)
-		// test
-		err := executeScan(&config, scan, utilsMock)
-		// assert
-		require.NoError(t, err)
-		expectedCalls := []mock.ExecCall{
-			{
-				Exec: "mvn",
-				Params: []string{
-					"--file",
-					"pom.xml",
-					"-Dorg.whitesource.orgToken=org-token",
-					"-Dorg.whitesource.product=mock-product",
-					"-Dorg.whitesource.checkPolicies=true",
-					"-Dorg.whitesource.failOnError=true",
-					"-Dorg.whitesource.aggregateProjectName=mock-project",
-					"-Dorg.whitesource.aggregateModules=true",
-					"-Dorg.whitesource.userKey=user-token",
-					"-Dorg.whitesource.productVersion=product-version",
-					"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
-					"--batch-mode",
-					"org.whitesource:whitesource-maven-plugin:19.5.1:update",
-				},
-			},
-		}
-		assert.Equal(t, expectedCalls, utilsMock.Calls)
-	})
-	t.Run("maven modules are separate projects", func(t *testing.T) {
-		// init
-		const rootPomXML = `<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <artifactId>my-artifact-id</artifactId>
-    <packaging>jar</packaging>
-	<modules>
-		<module>sub</module>
-	</modules>
-</project>
-`
-		const modulePomXML = `<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <artifactId>my-artifact-id-sub</artifactId>
-    <packaging>jar</packaging>
-</project>
-`
-		config := ScanOptions{
-			ScanType:       "maven",
-			OrgToken:       "org-token",
-			UserToken:      "user-token",
-			ProductName:    "mock-product",
-			ProductVersion: "product-version",
-		}
-		utilsMock := newWhitesourceUtilsMock()
-		utilsMock.AddFile("pom.xml", []byte(rootPomXML))
-		utilsMock.AddFile(filepath.Join("sub", "pom.xml"), []byte(modulePomXML))
-		scan := newWhitesourceScan(&config)
-		// test
-		err := executeScan(&config, scan, utilsMock)
-		// assert
-		require.NoError(t, err)
-		expectedCalls := []mock.ExecCall{
-			{
-				Exec: "mvn",
-				Params: []string{
-					"--file",
-					"pom.xml",
-					"-Dorg.whitesource.orgToken=org-token",
-					"-Dorg.whitesource.product=mock-product",
-					"-Dorg.whitesource.checkPolicies=true",
-					"-Dorg.whitesource.failOnError=true",
-					"-Dorg.whitesource.userKey=user-token",
-					"-Dorg.whitesource.productVersion=product-version",
-					"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
-					"--batch-mode",
-					"org.whitesource:whitesource-maven-plugin:19.5.1:update",
-				},
-			},
-		}
-		assert.Equal(t, expectedCalls, utilsMock.Calls)
-		require.Len(t, scan.scannedProjects, 2)
-		_, existsRoot := scan.scannedProjects["my-artifact-id - product-version"]
-		_, existsModule := scan.scannedProjects["my-artifact-id-sub - product-version"]
-		assert.True(t, existsRoot)
-		assert.True(t, existsModule)
-	})
-	t.Run("pom.xml does not exist", func(t *testing.T) {
-		// init
-		config := ScanOptions{
-			ScanType:       "maven",
-			OrgToken:       "org-token",
-			UserToken:      "user-token",
-			ProductName:    "mock-product",
-			ProductVersion: "product-version",
-		}
-		utilsMock := newWhitesourceUtilsMock()
-		scan := newWhitesourceScan(&config)
-		// test
-		err := executeScan(&config, scan, utilsMock)
-		// assert
-		assert.EqualError(t, err,
-			"for scanning with type 'maven', the file 'pom.xml' must exist in the project root")
-		assert.Len(t, utilsMock.Calls, 0)
-	})
-}
 
-func TestExecuteScanMTA(t *testing.T) {
-	const pomXML = `<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <artifactId>my-artifact-id</artifactId>
-    <packaging>jar</packaging>
-</project>
-`
-	config := ScanOptions{
-		BuildTool:      "mta",
-		OrgToken:       "org-token",
-		UserToken:      "user-token",
-		ProductName:    "mock-product",
-		ProjectName:    "mock-project",
-		ProductVersion: "product-version",
-	}
-	t.Parallel()
-	t.Run("happy path MTA", func(t *testing.T) {
-		// init
-		utilsMock := newWhitesourceUtilsMock()
-		utilsMock.AddFile("pom.xml", []byte(pomXML))
-		utilsMock.AddFile("package.json", []byte(`{"name":"my-module-name"}`))
+	t.Run("success - no violations", func(t *testing.T) {
+		config := ScanOptions{}
 		scan := newWhitesourceScan(&config)
-		// test
-		err := executeScan(&config, scan, utilsMock)
-		// assert
-		require.NoError(t, err)
-		expectedCalls := []mock.ExecCall{
-			{
-				Exec: "mvn",
-				Params: []string{
-					"--file",
-					"pom.xml",
-					"-Dorg.whitesource.orgToken=org-token",
-					"-Dorg.whitesource.product=mock-product",
-					"-Dorg.whitesource.checkPolicies=true",
-					"-Dorg.whitesource.failOnError=true",
-					"-Dorg.whitesource.aggregateProjectName=mock-project",
-					"-Dorg.whitesource.aggregateModules=true",
-					"-Dorg.whitesource.userKey=user-token",
-					"-Dorg.whitesource.productVersion=product-version",
-					"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
-					"--batch-mode",
-					"org.whitesource:whitesource-maven-plugin:19.5.1:update",
-				},
-			},
-			{
-				Exec: "npm",
-				Params: []string{
-					"ls",
-				},
-			},
-			{
-				Exec: "npx",
-				Params: []string{
-					"whitesource",
-					"run",
-				},
-			},
+		scan.AppendScannedProject("testProject1")
+		systemMock := ws.NewSystemMock("ignored")
+		systemMock.Alerts = []ws.Alert{}
+		utilsMock := newWhitesourceUtilsMock()
+		reportPaths := []piperutils.Path{
+			{Target: filepath.Join("whitesource", "report1.pdf")},
+			{Target: filepath.Join("whitesource", "report2.pdf")},
 		}
-		assert.Equal(t, expectedCalls, utilsMock.Calls)
-		assert.True(t, utilsMock.HasWrittenFile(whiteSourceConfig))
-		assert.True(t, utilsMock.HasRemovedFile(whiteSourceConfig))
-		assert.Equal(t, expectedCalls, utilsMock.Calls)
-	})
-	t.Run("MTA with only maven modules", func(t *testing.T) {
-		// init
-		utilsMock := newWhitesourceUtilsMock()
-		utilsMock.AddFile("pom.xml", []byte(pomXML))
-		scan := newWhitesourceScan(&config)
-		// test
-		err := executeScan(&config, scan, utilsMock)
-		// assert
-		require.NoError(t, err)
-		expectedCalls := []mock.ExecCall{
-			{
-				Exec: "mvn",
-				Params: []string{
-					"--file",
-					"pom.xml",
-					"-Dorg.whitesource.orgToken=org-token",
-					"-Dorg.whitesource.product=mock-product",
-					"-Dorg.whitesource.checkPolicies=true",
-					"-Dorg.whitesource.failOnError=true",
-					"-Dorg.whitesource.aggregateProjectName=mock-project",
-					"-Dorg.whitesource.aggregateModules=true",
-					"-Dorg.whitesource.userKey=user-token",
-					"-Dorg.whitesource.productVersion=product-version",
-					"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
-					"--batch-mode",
-					"org.whitesource:whitesource-maven-plugin:19.5.1:update",
-				},
-			},
-		}
-		assert.Equal(t, expectedCalls, utilsMock.Calls)
-		assert.False(t, utilsMock.HasWrittenFile(whiteSourceConfig))
-		assert.Equal(t, expectedCalls, utilsMock.Calls)
-	})
-	t.Run("MTA with only NPM modules", func(t *testing.T) {
-		// init
-		utilsMock := newWhitesourceUtilsMock()
-		utilsMock.AddFile("package.json", []byte(`{"name":"my-module-name"}`))
-		scan := newWhitesourceScan(&config)
-		// test
-		err := executeScan(&config, scan, utilsMock)
-		// assert
-		require.NoError(t, err)
-		expectedCalls := []mock.ExecCall{
-			{
-				Exec: "npm",
-				Params: []string{
-					"ls",
-				},
-			},
-			{
-				Exec: "npx",
-				Params: []string{
-					"whitesource",
-					"run",
-				},
-			},
-		}
-		assert.Equal(t, expectedCalls, utilsMock.Calls)
-		assert.True(t, utilsMock.HasWrittenFile(whiteSourceConfig))
-		assert.True(t, utilsMock.HasRemovedFile(whiteSourceConfig))
-		assert.Equal(t, expectedCalls, utilsMock.Calls)
-	})
-	t.Run("MTA with neither Maven nor NPM modules results in error", func(t *testing.T) {
-		// init
-		utilsMock := newWhitesourceUtilsMock()
-		scan := newWhitesourceScan(&config)
-		// test
-		err := executeScan(&config, scan, utilsMock)
-		// assert
-		assert.EqualError(t, err, "neither Maven nor NPM modules found, no scan performed")
-	})
-}
 
-func TestBlockUntilProjectIsUpdated(t *testing.T) {
-	t.Parallel()
-	t.Run("already new enough", func(t *testing.T) {
-		// init
-		nowString := "2010-05-30 00:15:00 +0100"
-		now, err := time.Parse(whitesourceDateTimeLayout, nowString)
-		if err != nil {
-			t.Fatalf(err.Error())
-		}
-		lastUpdatedDate := "2010-05-30 00:15:01 +0100"
-		systemMock := newWhitesourceSystemMock(lastUpdatedDate)
-		// test
-		err = blockUntilProjectIsUpdated(systemMock.projects[0].Token, systemMock, now, 2*time.Second, 1*time.Second, 2*time.Second)
-		// assert
+		path, err := checkPolicyViolations(&config, scan, systemMock, utilsMock, reportPaths)
 		assert.NoError(t, err)
+		assert.Equal(t, filepath.Join(ws.ReportsDirectory, "whitesource-ip.json"), path.Target)
+
+		fileContent, _ := utilsMock.FileRead(path.Target)
+		content := string(fileContent)
+		assert.Contains(t, content, `"policyViolations":0`)
+		assert.Contains(t, content, `"reports":["report1.pdf","report2.pdf"]`)
 	})
-	t.Run("timeout while polling", func(t *testing.T) {
-		// init
-		nowString := "2010-05-30 00:15:00 +0100"
-		now, err := time.Parse(whitesourceDateTimeLayout, nowString)
-		if err != nil {
-			t.Fatalf(err.Error())
-		}
-		lastUpdatedDate := "2010-05-30 00:07:00 +0100"
-		systemMock := newWhitesourceSystemMock(lastUpdatedDate)
-		// test
-		err = blockUntilProjectIsUpdated(systemMock.projects[0].Token, systemMock, now, 2*time.Second, 1*time.Second, 1*time.Second)
-		// assert
-		if assert.Error(t, err) {
-			assert.Contains(t, err.Error(), "timeout while waiting")
-		}
+
+	t.Run("success - no reports", func(t *testing.T) {
+		config := ScanOptions{}
+		scan := newWhitesourceScan(&config)
+		scan.AppendScannedProject("testProject1")
+		systemMock := ws.NewSystemMock("ignored")
+		systemMock.Alerts = []ws.Alert{}
+		utilsMock := newWhitesourceUtilsMock()
+		reportPaths := []piperutils.Path{}
+
+		path, err := checkPolicyViolations(&config, scan, systemMock, utilsMock, reportPaths)
+		assert.NoError(t, err)
+
+		fileContent, _ := utilsMock.FileRead(path.Target)
+		content := string(fileContent)
+		assert.Contains(t, content, `reports":[]`)
 	})
-	t.Run("timeout while polling, no update time", func(t *testing.T) {
-		// init
-		nowString := "2010-05-30 00:15:00 +0100"
-		now, err := time.Parse(whitesourceDateTimeLayout, nowString)
-		if err != nil {
-			t.Fatalf(err.Error())
+
+	t.Run("error - policy violations", func(t *testing.T) {
+		config := ScanOptions{}
+		scan := newWhitesourceScan(&config)
+		scan.AppendScannedProject("testProject1")
+		systemMock := ws.NewSystemMock("ignored")
+		systemMock.Alerts = []ws.Alert{
+			{Vulnerability: ws.Vulnerability{Name: "policyVul1"}},
+			{Vulnerability: ws.Vulnerability{Name: "policyVul2"}},
 		}
-		systemMock := newWhitesourceSystemMock("")
-		// test
-		err = blockUntilProjectIsUpdated(systemMock.projects[0].Token, systemMock, now, 2*time.Second, 1*time.Second, 1*time.Second)
-		// assert
-		if assert.Error(t, err) {
-			assert.Contains(t, err.Error(), "timeout while waiting")
+		utilsMock := newWhitesourceUtilsMock()
+		reportPaths := []piperutils.Path{
+			{Target: "report1.pdf"},
+			{Target: "report2.pdf"},
 		}
+
+		path, err := checkPolicyViolations(&config, scan, systemMock, utilsMock, reportPaths)
+		assert.Contains(t, fmt.Sprint(err), "2 policy violation(s) found")
+
+		fileContent, _ := utilsMock.FileRead(path.Target)
+		content := string(fileContent)
+		assert.Contains(t, content, `"policyViolations":2`)
+		assert.Contains(t, content, `"reports":["report1.pdf","report2.pdf"]`)
+	})
+
+	t.Run("error - get alerts", func(t *testing.T) {
+		config := ScanOptions{}
+		scan := newWhitesourceScan(&config)
+		scan.AppendScannedProject("testProject1")
+		systemMock := ws.NewSystemMock("ignored")
+		systemMock.AlertError = fmt.Errorf("failed to read alerts")
+		utilsMock := newWhitesourceUtilsMock()
+		reportPaths := []piperutils.Path{}
+
+		_, err := checkPolicyViolations(&config, scan, systemMock, utilsMock, reportPaths)
+		assert.Contains(t, fmt.Sprint(err), "failed to retrieve project policy alerts from WhiteSource")
+	})
+
+	t.Run("error - write file", func(t *testing.T) {
+		config := ScanOptions{}
+		scan := newWhitesourceScan(&config)
+		scan.AppendScannedProject("testProject1")
+		systemMock := ws.NewSystemMock("ignored")
+		systemMock.Alerts = []ws.Alert{}
+		utilsMock := newWhitesourceUtilsMock()
+		utilsMock.FileWriteError = fmt.Errorf("failed to write file")
+		reportPaths := []piperutils.Path{}
+
+		_, err := checkPolicyViolations(&config, scan, systemMock, utilsMock, reportPaths)
+		assert.Contains(t, fmt.Sprint(err), "failed to write policy violation report:")
 	})
 }
 
-func TestDownloadReports(t *testing.T) {
+func TestCheckSecurityViolations(t *testing.T) {
 	t.Parallel()
-	t.Run("happy path", func(t *testing.T) {
-		// init
-		config := &ScanOptions{
-			ProjectToken:              "mock-project-token",
-			ProjectName:               "mock-project",
-			ReportDirectoryName:       "report-dir",
-			VulnerabilityReportFormat: "txt",
-		}
-		utils := newWhitesourceUtilsMock()
-		system := newWhitesourceSystemMock("2010-05-30 00:15:00 +0100")
-		scan := newWhitesourceScan(config)
-		// test
-		paths, err := downloadReports(config, scan, utils, system)
-		// assert
-		if assert.NoError(t, err) && assert.Len(t, paths, 2) {
-			vPath := filepath.Join("report-dir", "mock-project-vulnerability-report.txt")
-			assert.True(t, utils.HasWrittenFile(vPath))
-			vContent, _ := utils.FileRead(vPath)
-			assert.Equal(t, []byte("mock-vulnerability-report"), vContent)
 
-			rPath := filepath.Join("report-dir", "mock-project-risk-report.pdf")
-			assert.True(t, utils.HasWrittenFile(rPath))
-			rContent, _ := utils.FileRead(rPath)
-			assert.Equal(t, []byte("mock-risk-report"), rContent)
+	t.Run("success - non-aggregated", func(t *testing.T) {
+		config := ScanOptions{
+			CvssSeverityLimit: "7",
 		}
-	})
-	t.Run("invalid project token", func(t *testing.T) {
-		// init
-		config := &ScanOptions{
-			ProjectToken: "<invalid>",
-			ProjectName:  "mock-project",
+		scan := newWhitesourceScan(&config)
+		scan.AppendScannedProject("testProject1")
+		systemMock := ws.NewSystemMock("ignored")
+		systemMock.Alerts = []ws.Alert{
+			{Vulnerability: ws.Vulnerability{Name: "vul1", CVSS3Score: 6.0}},
 		}
-		utils := newWhitesourceUtilsMock()
-		system := newWhitesourceSystemMock("2010-05-30 00:15:00 +0100")
-		scan := newWhitesourceScan(config)
-		// test
-		paths, err := downloadReports(config, scan, utils, system)
-		// assert
-		assert.EqualError(t, err, "no project with token '<invalid>' found in Whitesource")
-		assert.Nil(t, paths)
-	})
-	t.Run("multiple scanned projects", func(t *testing.T) {
-		// init
-		config := &ScanOptions{
-			ReportDirectoryName:       "report-dir",
-			VulnerabilityReportFormat: "txt",
-		}
-		utils := newWhitesourceUtilsMock()
-		system := newWhitesourceSystemMock("2010-05-30 00:15:00 +0100")
-		scan := newWhitesourceScan(config)
-		scan.init()
-		scan.scannedProjects["mock-project"] = ws.Project{
-			Name:  "mock-project",
-			Token: "mock-project-token",
-		}
-		// test
-		paths, err := downloadReports(config, scan, utils, system)
-		// assert
-		if assert.NoError(t, err) && assert.Len(t, paths, 2) {
-			vPath := filepath.Join("report-dir", "mock-project-vulnerability-report.txt")
-			assert.True(t, utils.HasWrittenFile(vPath))
-			vContent, _ := utils.FileRead(vPath)
-			assert.Equal(t, []byte("mock-vulnerability-report"), vContent)
+		utilsMock := newWhitesourceUtilsMock()
 
-			rPath := filepath.Join("report-dir", "mock-project-risk-report.pdf")
-			assert.True(t, utils.HasWrittenFile(rPath))
-			rContent, _ := utils.FileRead(rPath)
-			assert.Equal(t, []byte("mock-risk-report"), rContent)
+		reportPaths, err := checkSecurityViolations(&config, scan, systemMock, utilsMock)
+		assert.NoError(t, err)
+		fileContent, err := utilsMock.FileRead(reportPaths[0].Target)
+		assert.NoError(t, err)
+		assert.True(t, len(fileContent) > 0)
+	})
+
+	t.Run("success - aggregated", func(t *testing.T) {
+		config := ScanOptions{
+			CvssSeverityLimit: "7",
+			ProjectToken:      "theProjectToken",
 		}
+		scan := newWhitesourceScan(&config)
+		systemMock := ws.NewSystemMock("ignored")
+		systemMock.Alerts = []ws.Alert{
+			{Vulnerability: ws.Vulnerability{Name: "vul1", CVSS3Score: 6.0}},
+		}
+		utilsMock := newWhitesourceUtilsMock()
+
+		reportPaths, err := checkSecurityViolations(&config, scan, systemMock, utilsMock)
+		assert.NoError(t, err)
+		assert.Equal(t, 0, len(reportPaths))
+	})
+
+	t.Run("error - wrong limit", func(t *testing.T) {
+		config := ScanOptions{CvssSeverityLimit: "x"}
+		scan := newWhitesourceScan(&config)
+		systemMock := ws.NewSystemMock("ignored")
+		utilsMock := newWhitesourceUtilsMock()
+
+		_, err := checkSecurityViolations(&config, scan, systemMock, utilsMock)
+		assert.Contains(t, fmt.Sprint(err), "failed to parse parameter cvssSeverityLimit")
+
+	})
+
+	t.Run("error - non-aggregated", func(t *testing.T) {
+		config := ScanOptions{
+			CvssSeverityLimit: "5",
+		}
+		scan := newWhitesourceScan(&config)
+		scan.AppendScannedProject("testProject1")
+		systemMock := ws.NewSystemMock("ignored")
+		systemMock.Alerts = []ws.Alert{
+			{Vulnerability: ws.Vulnerability{Name: "vul1", CVSS3Score: 6.0}},
+		}
+		utilsMock := newWhitesourceUtilsMock()
+
+		reportPaths, err := checkSecurityViolations(&config, scan, systemMock, utilsMock)
+		assert.Contains(t, fmt.Sprint(err), "1 Open Source Software Security vulnerabilities")
+		fileContent, err := utilsMock.FileRead(reportPaths[0].Target)
+		assert.NoError(t, err)
+		assert.True(t, len(fileContent) > 0)
+	})
+
+	t.Run("error - aggregated", func(t *testing.T) {
+		config := ScanOptions{
+			CvssSeverityLimit: "5",
+			ProjectToken:      "theProjectToken",
+		}
+		scan := newWhitesourceScan(&config)
+		systemMock := ws.NewSystemMock("ignored")
+		systemMock.Alerts = []ws.Alert{
+			{Vulnerability: ws.Vulnerability{Name: "vul1", CVSS3Score: 6.0}},
+		}
+		utilsMock := newWhitesourceUtilsMock()
+
+		reportPaths, err := checkSecurityViolations(&config, scan, systemMock, utilsMock)
+		assert.Contains(t, fmt.Sprint(err), "1 Open Source Software Security vulnerabilities")
+		assert.Equal(t, 0, len(reportPaths))
 	})
 }
 
-func TestWriteWhitesourceConfigJSON(t *testing.T) {
-	config := &ScanOptions{
-		OrgToken:       "org-token",
-		UserToken:      "user-token",
-		ProductName:    "mock-product",
-		ProjectName:    "mock-project",
-		ProductToken:   "mock-product-token",
-		ProductVersion: "42",
+func TestCheckProjectSecurityViolations(t *testing.T) {
+	project := ws.Project{Name: "testProject - 1", Token: "testToken"}
+
+	t.Run("success - no alerts", func(t *testing.T) {
+		systemMock := ws.NewSystemMock("ignored")
+		systemMock.Alerts = []ws.Alert{}
+
+		severeVulnerabilities, alerts, err := checkProjectSecurityViolations(7.0, project, systemMock)
+		assert.NoError(t, err)
+		assert.Equal(t, 0, severeVulnerabilities)
+		assert.Equal(t, 0, len(alerts))
+	})
+
+	t.Run("error - some vulnerabilities", func(t *testing.T) {
+		systemMock := ws.NewSystemMock("ignored")
+		systemMock.Alerts = []ws.Alert{
+			{Vulnerability: ws.Vulnerability{CVSS3Score: 7}},
+			{Vulnerability: ws.Vulnerability{CVSS3Score: 6}},
+		}
+
+		severeVulnerabilities, alerts, err := checkProjectSecurityViolations(7.0, project, systemMock)
+		assert.Contains(t, fmt.Sprint(err), "1 Open Source Software Security vulnerabilities")
+		assert.Equal(t, 1, severeVulnerabilities)
+		assert.Equal(t, 2, len(alerts))
+	})
+
+	t.Run("error - WhiteSource failure", func(t *testing.T) {
+		systemMock := ws.NewSystemMock("ignored")
+		systemMock.AlertError = fmt.Errorf("failed to read alerts")
+		_, _, err := checkProjectSecurityViolations(7.0, project, systemMock)
+		assert.Contains(t, fmt.Sprint(err), "failed to retrieve project alerts from WhiteSource")
+	})
+
+}
+
+func TestCountSecurityVulnerabilities(t *testing.T) {
+	t.Parallel()
+
+	alerts := []ws.Alert{
+		{Vulnerability: ws.Vulnerability{CVSS3Score: 7.1}},
+		{Vulnerability: ws.Vulnerability{CVSS3Score: 7}},
+		{Vulnerability: ws.Vulnerability{CVSS3Score: 6}},
 	}
 
-	expected := make(map[string]interface{})
-	expected["apiKey"] = "org-token"
-	expected["userKey"] = "user-token"
-	expected["checkPolicies"] = true
-	expected["productName"] = "mock-product"
-	expected["projectName"] = "mock-project"
-	expected["productToken"] = "mock-product-token"
-	expected["productVer"] = "42"
-	expected["devDep"] = true
-	expected["ignoreNpmLsErrors"] = true
+	severe, nonSevere := countSecurityVulnerabilities(&alerts, 7.0)
+	assert.Equal(t, 2, severe)
+	assert.Equal(t, 1, nonSevere)
+}
 
+func TestIsSevereVulnerability(t *testing.T) {
+	tt := []struct {
+		alert    ws.Alert
+		limit    float64
+		expected bool
+	}{
+		{alert: ws.Alert{Vulnerability: ws.Vulnerability{CVSS3Score: 0}}, limit: 0, expected: true},
+		{alert: ws.Alert{Vulnerability: ws.Vulnerability{CVSS3Score: 6.9, Score: 6}}, limit: 7.0, expected: false},
+		{alert: ws.Alert{Vulnerability: ws.Vulnerability{CVSS3Score: 7.0, Score: 6}}, limit: 7.0, expected: true},
+		{alert: ws.Alert{Vulnerability: ws.Vulnerability{CVSS3Score: 7.1, Score: 6}}, limit: 7.0, expected: true},
+		{alert: ws.Alert{Vulnerability: ws.Vulnerability{CVSS3Score: 6, Score: 6.9}}, limit: 7.0, expected: false},
+		{alert: ws.Alert{Vulnerability: ws.Vulnerability{CVSS3Score: 6, Score: 7.0}}, limit: 7.0, expected: false},
+		{alert: ws.Alert{Vulnerability: ws.Vulnerability{CVSS3Score: 6, Score: 7.1}}, limit: 7.0, expected: false},
+		{alert: ws.Alert{Vulnerability: ws.Vulnerability{Score: 6.9}}, limit: 7.0, expected: false},
+		{alert: ws.Alert{Vulnerability: ws.Vulnerability{Score: 7.0}}, limit: 7.0, expected: true},
+		{alert: ws.Alert{Vulnerability: ws.Vulnerability{Score: 7.1}}, limit: 7.0, expected: true},
+	}
+
+	for i, test := range tt {
+		assert.Equalf(t, test.expected, isSevereVulnerability(test.alert, test.limit), "run %v failed", i)
+	}
+}
+
+func TestCreateCustomVulnerabilityReport(t *testing.T) {
 	t.Parallel()
 
-	t.Run("write config from scratch", func(t *testing.T) {
-		// init
-		utils := newWhitesourceUtilsMock()
-		// test
-		err := writeWhitesourceConfigJSON(config, utils, true, true)
-		// assert
-		if assert.NoError(t, err) && assert.True(t, utils.HasWrittenFile(whiteSourceConfig)) {
-			contents, _ := utils.FileRead(whiteSourceConfig)
-			actual := make(map[string]interface{})
-			_ = json.Unmarshal(contents, &actual)
-			assert.Equal(t, expected, actual)
+	t.Run("success case", func(t *testing.T) {
+		config := &ScanOptions{}
+		scan := newWhitesourceScan(config)
+		scan.AppendScannedProject("testProject")
+		alerts := []ws.Alert{
+			{Library: ws.Library{Filename: "vul1"}, Vulnerability: ws.Vulnerability{CVSS3Score: 7.0, Score: 6}},
+			{Library: ws.Library{Filename: "vul2"}, Vulnerability: ws.Vulnerability{CVSS3Score: 8.0, TopFix: ws.Fix{Message: "this is the top fix"}}},
+			{Library: ws.Library{Filename: "vul3"}, Vulnerability: ws.Vulnerability{Score: 6}},
 		}
-	})
+		utilsMock := newWhitesourceUtilsMock()
 
-	t.Run("extend and merge config", func(t *testing.T) {
-		// init
-		initial := make(map[string]interface{})
-		initial["checkPolicies"] = false
-		initial["productName"] = "mock-product"
-		initial["productVer"] = "41"
-		initial["unknown"] = "preserved"
-		encoded, _ := json.Marshal(initial)
+		scanReport := createCustomVulnerabilityReport(config, scan, alerts, 7.0, utilsMock)
 
-		utils := newWhitesourceUtilsMock()
-		utils.AddFile(whiteSourceConfig, encoded)
+		assert.Equal(t, "WhiteSource Security Vulnerability Report", scanReport.Title)
+		assert.Equal(t, 3, len(scanReport.DetailTable.Rows))
 
-		// test
-		err := writeWhitesourceConfigJSON(config, utils, true, true)
-		// assert
-		if assert.NoError(t, err) && assert.True(t, utils.HasWrittenFile(whiteSourceConfig)) {
-			contents, _ := utils.FileRead(whiteSourceConfig)
-			actual := make(map[string]interface{})
-			_ = json.Unmarshal(contents, &actual)
+		// assert that library info is filled and sorting has been executed
+		assert.Equal(t, "vul2", scanReport.DetailTable.Rows[0].Columns[5].Content)
+		assert.Equal(t, "vul1", scanReport.DetailTable.Rows[1].Columns[5].Content)
+		assert.Equal(t, "vul3", scanReport.DetailTable.Rows[2].Columns[5].Content)
 
-			mergedExpected := expected
-			mergedExpected["unknown"] = "preserved"
+		// assert that CVSS version identification has been done
+		assert.Equal(t, "v3", scanReport.DetailTable.Rows[0].Columns[3].Content)
+		assert.Equal(t, "v3", scanReport.DetailTable.Rows[1].Columns[3].Content)
+		assert.Equal(t, "v2", scanReport.DetailTable.Rows[2].Columns[3].Content)
 
-			assert.Equal(t, mergedExpected, actual)
-		}
-	})
+		// assert proper rating and styling of high prio issues
+		assert.Equal(t, "8", scanReport.DetailTable.Rows[0].Columns[2].Content)
+		assert.Equal(t, "7", scanReport.DetailTable.Rows[1].Columns[2].Content)
+		assert.Equal(t, "6", scanReport.DetailTable.Rows[2].Columns[2].Content)
+		assert.Equal(t, "red-cell", scanReport.DetailTable.Rows[0].Columns[2].Style.String())
+		assert.Equal(t, "red-cell", scanReport.DetailTable.Rows[1].Columns[2].Style.String())
+		assert.Equal(t, "yellow-cell", scanReport.DetailTable.Rows[2].Columns[2].Style.String())
 
-	t.Run("extend and merge config, omit productToken", func(t *testing.T) {
-		// init
-		initial := make(map[string]interface{})
-		initial["checkPolicies"] = false
-		initial["productName"] = "mock-product"
-		initial["productVer"] = "41"
-		initial["unknown"] = "preserved"
-		initial["projectToken"] = "mock-project-token"
-		encoded, _ := json.Marshal(initial)
+		assert.Contains(t, scanReport.DetailTable.Rows[0].Columns[10].Content, "this is the top fix")
 
-		utils := newWhitesourceUtilsMock()
-		utils.AddFile(whiteSourceConfig, encoded)
-
-		// test
-		err := writeWhitesourceConfigJSON(config, utils, true, true)
-		// assert
-		if assert.NoError(t, err) && assert.True(t, utils.HasWrittenFile(whiteSourceConfig)) {
-			contents, _ := utils.FileRead(whiteSourceConfig)
-			actual := make(map[string]interface{})
-			_ = json.Unmarshal(contents, &actual)
-
-			mergedExpected := expected
-			mergedExpected["unknown"] = "preserved"
-			mergedExpected["projectToken"] = "mock-project-token"
-			delete(mergedExpected, "productToken")
-
-			assert.Equal(t, mergedExpected, actual)
-		}
 	})
 }
 
-func TestPersisScannedProjects(t *testing.T) {
-	resource := filepath.Join(".pipeline", "commonPipelineEnvironment", "custom", "whitesourceProjectNames")
+func TestWriteCustomVulnerabilityReports(t *testing.T) {
 
+	t.Run("success", func(t *testing.T) {
+		scanReport := reporting.ScanReport{}
+		utilsMock := newWhitesourceUtilsMock()
+
+		reportPaths, err := writeCustomVulnerabilityReports(scanReport, utilsMock)
+
+		assert.NoError(t, err)
+		assert.Equal(t, 1, len(reportPaths))
+
+		exists, err := utilsMock.FileExists(reportPaths[0].Target)
+		assert.NoError(t, err)
+		assert.True(t, exists)
+
+		exists, err = utilsMock.FileExists(filepath.Join(reporting.MarkdownReportDirectory, "whitesourceExecuteScan_20100510001542.md"))
+		assert.NoError(t, err)
+		assert.True(t, exists)
+	})
+
+	t.Run("failed to write HTML report", func(t *testing.T) {
+		scanReport := reporting.ScanReport{}
+		utilsMock := newWhitesourceUtilsMock()
+		utilsMock.FileWriteErrors = map[string]error{
+			filepath.Join(ws.ReportsDirectory, "piper_whitesource_vulnerability_report.html"): fmt.Errorf("write error"),
+		}
+
+		_, err := writeCustomVulnerabilityReports(scanReport, utilsMock)
+		assert.Contains(t, fmt.Sprint(err), "failed to write html report")
+	})
+
+	t.Run("failed to write markdown report", func(t *testing.T) {
+		scanReport := reporting.ScanReport{}
+		utilsMock := newWhitesourceUtilsMock()
+		utilsMock.FileWriteErrors = map[string]error{
+			filepath.Join(reporting.MarkdownReportDirectory, "whitesourceExecuteScan_20100510001542.md"): fmt.Errorf("write error"),
+		}
+
+		_, err := writeCustomVulnerabilityReports(scanReport, utilsMock)
+		assert.Contains(t, fmt.Sprint(err), "failed to write markdown report")
+	})
+
+}
+
+func TestVulnerabilityScore(t *testing.T) {
 	t.Parallel()
-	t.Run("write 1 scanned projects", func(t *testing.T) {
-		// init
-		config := &ScanOptions{ProductVersion: "1"}
-		utils := newWhitesourceUtilsMock()
-		scan := newWhitesourceScan(config)
-		_ = scan.appendScannedProject("project")
-		// test
-		err := persistScannedProjects(config, scan, utils)
-		// assert
-		if assert.NoError(t, err) && assert.True(t, utils.HasWrittenFile(resource)) {
-			contents, _ := utils.FileRead(resource)
-			assert.Equal(t, "project - 1", string(contents))
-		}
-	})
-	t.Run("write 2 scanned projects", func(t *testing.T) {
-		// init
-		config := &ScanOptions{ProductVersion: "1"}
-		utils := newWhitesourceUtilsMock()
-		scan := newWhitesourceScan(config)
-		_ = scan.appendScannedProject("project-app")
-		_ = scan.appendScannedProject("project-db")
-		// test
-		err := persistScannedProjects(config, scan, utils)
-		// assert
-		if assert.NoError(t, err) && assert.True(t, utils.HasWrittenFile(resource)) {
-			contents, _ := utils.FileRead(resource)
-			assert.Equal(t, "project-app - 1,project-db - 1", string(contents))
-		}
-	})
-	t.Run("write no projects", func(t *testing.T) {
-		// init
-		config := &ScanOptions{ProductVersion: "1"}
-		utils := newWhitesourceUtilsMock()
-		scan := newWhitesourceScan(config)
-		// test
-		err := persistScannedProjects(config, scan, utils)
-		// assert
-		if assert.NoError(t, err) && assert.True(t, utils.HasWrittenFile(resource)) {
-			contents, _ := utils.FileRead(resource)
-			assert.Equal(t, "", string(contents))
-		}
-	})
-	t.Run("write aggregated project", func(t *testing.T) {
-		// init
-		config := &ScanOptions{ProjectName: "project", ProductVersion: "1"}
-		utils := newWhitesourceUtilsMock()
-		scan := newWhitesourceScan(config)
-		// test
-		err := persistScannedProjects(config, scan, utils)
-		// assert
-		if assert.NoError(t, err) && assert.True(t, utils.HasWrittenFile(resource)) {
-			contents, _ := utils.FileRead(resource)
-			assert.Equal(t, "project - 1", string(contents))
-		}
-	})
+
+	tt := []struct {
+		alert    ws.Alert
+		expected float64
+	}{
+		{alert: ws.Alert{Vulnerability: ws.Vulnerability{CVSS3Score: 7.0, Score: 6}}, expected: 7.0},
+		{alert: ws.Alert{Vulnerability: ws.Vulnerability{CVSS3Score: 7.0}}, expected: 7.0},
+		{alert: ws.Alert{Vulnerability: ws.Vulnerability{Score: 6}}, expected: 6},
+	}
+	for i, test := range tt {
+		assert.Equalf(t, test.expected, vulnerabilityScore(test.alert), "run %v failed", i)
+	}
 }
 
 func TestAggregateVersionWideLibraries(t *testing.T) {
@@ -1001,16 +709,15 @@ func TestAggregateVersionWideLibraries(t *testing.T) {
 	t.Run("happy path", func(t *testing.T) {
 		// init
 		config := &ScanOptions{
-			ProductToken:        "mock-product-token",
-			ProductVersion:      "1",
-			ReportDirectoryName: "mock-reports",
+			ProductToken: "mock-product-token",
+			Version:      "1",
 		}
 		utils := newWhitesourceUtilsMock()
-		system := newWhitesourceSystemMock("2010-05-30 00:15:00 +0100")
+		system := ws.NewSystemMock("2010-05-30 00:15:00 +0100")
 		// test
 		err := aggregateVersionWideLibraries(config, utils, system)
 		// assert
-		resource := filepath.Join("mock-reports", "libraries-20100510-001542.csv")
+		resource := filepath.Join(ws.ReportsDirectory, "libraries-20100510-001542.csv")
 		if assert.NoError(t, err) && assert.True(t, utils.HasWrittenFile(resource)) {
 			contents, _ := utils.FileRead(resource)
 			asString := string(contents)
@@ -1024,100 +731,71 @@ func TestAggregateVersionWideVulnerabilities(t *testing.T) {
 	t.Run("happy path", func(t *testing.T) {
 		// init
 		config := &ScanOptions{
-			ProductToken:        "mock-product-token",
-			ProductVersion:      "1",
-			ReportDirectoryName: "mock-reports",
+			ProductToken: "mock-product-token",
+			Version:      "1",
 		}
 		utils := newWhitesourceUtilsMock()
-		system := newWhitesourceSystemMock("2010-05-30 00:15:00 +0100")
+		system := ws.NewSystemMock("2010-05-30 00:15:00 +0100")
 		// test
 		err := aggregateVersionWideVulnerabilities(config, utils, system)
 		// assert
-		resource := filepath.Join("mock-reports", "project-names-aggregated.txt")
+		resource := filepath.Join(ws.ReportsDirectory, "project-names-aggregated.txt")
 		assert.NoError(t, err)
 		if assert.True(t, utils.HasWrittenFile(resource)) {
 			contents, _ := utils.FileRead(resource)
 			asString := string(contents)
 			assert.Equal(t, "mock-project - 1\n", asString)
 		}
-		reportSheet := filepath.Join("mock-reports", "vulnerabilities-20100510-001542.xlsx")
+		reportSheet := filepath.Join(ws.ReportsDirectory, "vulnerabilities-20100510-001542.xlsx")
 		sheetContents, err := utils.FileRead(reportSheet)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, sheetContents)
 	})
 }
 
-func TestCheckAndReportScanResults(t *testing.T) {
+func TestPersistScannedProjects(t *testing.T) {
 	t.Parallel()
-	t.Run("no reports requested", func(t *testing.T) {
+	t.Run("write 1 scanned projects", func(t *testing.T) {
 		// init
-		config := &ScanOptions{
-			ProductToken:        "mock-product-token",
-			ProjectToken:        "mock-project-token",
-			ProductVersion:      "1",
-			ReportDirectoryName: "mock-reports",
-		}
+		cpe := whitesourceExecuteScanCommonPipelineEnvironment{}
+		config := &ScanOptions{Version: "1"}
 		scan := newWhitesourceScan(config)
-		utils := newWhitesourceUtilsMock()
-		system := newWhitesourceSystemMock(time.Now().Format(whitesourceDateTimeLayout))
+		_ = scan.AppendScannedProject("project")
 		// test
-		err := checkAndReportScanResults(config, scan, utils, system)
+		persistScannedProjects(config, scan, &cpe)
 		// assert
-		assert.NoError(t, err)
-		vPath := filepath.Join("report-dir", "mock-project-vulnerability-report.txt")
-		assert.False(t, utils.HasWrittenFile(vPath))
-		rPath := filepath.Join("report-dir", "mock-project-risk-report.pdf")
-		assert.False(t, utils.HasWrittenFile(rPath))
+		assert.Equal(t, []string{"project - 1"}, cpe.custom.whitesourceProjectNames)
 	})
-	t.Run("check vulnerabilities - invalid limit", func(t *testing.T) {
+	t.Run("write 2 scanned projects", func(t *testing.T) {
 		// init
-		config := &ScanOptions{
-			SecurityVulnerabilities: true,
-			CvssSeverityLimit:       "invalid",
-		}
+		cpe := whitesourceExecuteScanCommonPipelineEnvironment{}
+		config := &ScanOptions{Version: "1"}
 		scan := newWhitesourceScan(config)
-		utils := newWhitesourceUtilsMock()
-		system := newWhitesourceSystemMock(time.Now().Format(whitesourceDateTimeLayout))
+		_ = scan.AppendScannedProject("project-app")
+		_ = scan.AppendScannedProject("project-db")
 		// test
-		err := checkAndReportScanResults(config, scan, utils, system)
+		persistScannedProjects(config, scan, &cpe)
 		// assert
-		assert.EqualError(t, err, "failed to parse parameter cvssSeverityLimit (invalid) as floating point number: strconv.ParseFloat: parsing \"invalid\": invalid syntax")
+		assert.Equal(t, []string{"project-app - 1", "project-db - 1"}, cpe.custom.whitesourceProjectNames)
 	})
-	t.Run("check vulnerabilities - limit not hit", func(t *testing.T) {
+	t.Run("write no projects", func(t *testing.T) {
 		// init
-		config := &ScanOptions{
-			ProductToken:            "mock-product-token",
-			ProjectToken:            "mock-project-token",
-			ProductVersion:          "1",
-			ReportDirectoryName:     "mock-reports",
-			SecurityVulnerabilities: true,
-			CvssSeverityLimit:       "6.0",
-		}
+		cpe := whitesourceExecuteScanCommonPipelineEnvironment{}
+		config := &ScanOptions{Version: "1"}
 		scan := newWhitesourceScan(config)
-		utils := newWhitesourceUtilsMock()
-		system := newWhitesourceSystemMock(time.Now().Format(whitesourceDateTimeLayout))
 		// test
-		err := checkAndReportScanResults(config, scan, utils, system)
+		persistScannedProjects(config, scan, &cpe)
 		// assert
-		assert.NoError(t, err)
+		assert.Equal(t, []string{}, cpe.custom.whitesourceProjectNames)
 	})
-	t.Run("check vulnerabilities - limit exceeded", func(t *testing.T) {
+	t.Run("write aggregated project", func(t *testing.T) {
 		// init
-		config := &ScanOptions{
-			ProductToken:            "mock-product-token",
-			ProjectName:             "mock-project - 1",
-			ProjectToken:            "mock-project-token",
-			ProductVersion:          "1",
-			ReportDirectoryName:     "mock-reports",
-			SecurityVulnerabilities: true,
-			CvssSeverityLimit:       "4",
-		}
+		cpe := whitesourceExecuteScanCommonPipelineEnvironment{}
+		config := &ScanOptions{ProjectName: "project", Version: "1"}
 		scan := newWhitesourceScan(config)
-		utils := newWhitesourceUtilsMock()
-		system := newWhitesourceSystemMock(time.Now().Format(whitesourceDateTimeLayout))
 		// test
-		err := checkAndReportScanResults(config, scan, utils, system)
+		persistScannedProjects(config, scan, &cpe)
 		// assert
-		assert.EqualError(t, err, "1 Open Source Software Security vulnerabilities with CVSS score greater or equal to 4.0 detected in project mock-project - 1")
+		assert.Equal(t, []string{"project - 1"}, cpe.custom.whitesourceProjectNames)
 	})
 }

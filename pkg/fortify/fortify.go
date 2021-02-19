@@ -60,7 +60,7 @@ type System interface {
 	GenerateQGateReport(projectID, projectVersionID, reportTemplateID int64, projectName, projectVersionName, reportFormat string) (*models.SavedReport, error)
 	GetReportDetails(id int64) (*models.SavedReport, error)
 	UploadResultFile(endpoint, file string, projectVersionID int64) error
-	DownloadReportFile(endpoint string, projectVersionID int64) ([]byte, error)
+	DownloadReportFile(endpoint string, reportID int64) ([]byte, error)
 	DownloadResultFile(endpoint string, projectVersionID int64) ([]byte, error)
 }
 
@@ -149,8 +149,7 @@ func (sys *SystemInstance) AuthenticateRequest(req runtime.ClientRequest, format
 // autoCreate and projectVersion parameters only used if autoCreate=true
 func (sys *SystemInstance) GetProjectByName(projectName string, autoCreate bool, projectVersionName string) (*models.Project, error) {
 	nameParam := fmt.Sprintf("name=%v", projectName)
-	fullText := true
-	params := &project_controller.ListProjectParams{Q: &nameParam, Fulltextsearch: &fullText}
+	params := &project_controller.ListProjectParams{Q: &nameParam}
 	params.WithTimeout(sys.timeout)
 	result, err := sys.client.ProjectController.ListProject(params, sys)
 	if err != nil {
@@ -164,6 +163,7 @@ func (sys *SystemInstance) GetProjectByName(projectName string, autoCreate bool,
 
 	// Project with specified name was NOT found, check if autoCreate flag is set, if not stop otherwise create it automatically
 	if !autoCreate {
+		log.SetErrorCategory(log.ErrorConfiguration)
 		return nil, fmt.Errorf("Project with name %v not found in backend and automatic creation not enabled", projectName)
 	}
 
@@ -180,8 +180,7 @@ func (sys *SystemInstance) GetProjectByName(projectName string, autoCreate bool,
 // projectName parameter is only used if autoCreate=true
 func (sys *SystemInstance) GetProjectVersionDetailsByProjectIDAndVersionName(id int64, versionName string, autoCreate bool, projectName string) (*models.ProjectVersion, error) {
 	nameParam := fmt.Sprintf("name=%v", versionName)
-	fullText := true
-	params := &project_version_of_project_controller.ListProjectVersionOfProjectParams{ParentID: id, Q: &nameParam, Fulltextsearch: &fullText}
+	params := &project_version_of_project_controller.ListProjectVersionOfProjectParams{ParentID: id, Q: &nameParam}
 	params.WithTimeout(sys.timeout)
 	result, err := sys.client.ProjectVersionOfProjectController.ListProjectVersionOfProject(params, sys)
 	if err != nil {
@@ -194,6 +193,7 @@ func (sys *SystemInstance) GetProjectVersionDetailsByProjectIDAndVersionName(id 
 	}
 	// projectVersion not found for specified project id and name, check if autoCreate is enabled
 	if !autoCreate {
+		log.SetErrorCategory(log.ErrorConfiguration)
 		return nil, errors.New(fmt.Sprintf("Project version with name %v not found in project with ID %v and automatic creation not enabled", versionName, id))
 	}
 
@@ -341,7 +341,6 @@ func (sys *SystemInstance) ProjectVersionCopyFromPartial(sourceID, targetID int6
 		PreviousProjectVersionID:    &sourceID,
 		CopyAnalysisProcessingRules: &enable,
 		CopyBugTrackerConfiguration: &enable,
-		CopyCurrentStateFpr:         &enable,
 		CopyCustomTags:              &enable,
 	}
 	params := &project_version_controller.CopyProjectVersionParams{Resource: &settings}
@@ -355,11 +354,9 @@ func (sys *SystemInstance) ProjectVersionCopyFromPartial(sourceID, targetID int6
 
 // ProjectVersionCopyCurrentState copies the project version state of sourceID into the new project version addressed by targetID
 func (sys *SystemInstance) ProjectVersionCopyCurrentState(sourceID, targetID int64) error {
-	enable := true
 	settings := models.ProjectVersionCopyCurrentStateRequest{
 		ProjectVersionID:         &targetID,
 		PreviousProjectVersionID: &sourceID,
-		CopyCurrentStateFpr:      &enable,
 	}
 	params := &project_version_controller.CopyCurrentStateForProjectVersionParams{Resource: &settings}
 	params.WithTimeout(sys.timeout)
@@ -677,7 +674,7 @@ func (sys *SystemInstance) uploadResultFileContent(endpoint, file string, fileCo
 }
 
 // DownloadFile downloads a file from Fortify backend
-func (sys *SystemInstance) downloadFile(endpoint, method, acceptType, tokenType string, projectVersionID int64) ([]byte, error) {
+func (sys *SystemInstance) downloadFile(endpoint, method, acceptType, tokenType string, fileID int64) ([]byte, error) {
 	token, err := sys.getFileToken(tokenType)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error fetching file token")
@@ -690,7 +687,7 @@ func (sys *SystemInstance) downloadFile(endpoint, method, acceptType, tokenType 
 	header.Add("Accept", acceptType)
 	header.Add("Content-Type", "application/form-data")
 	body := url.Values{
-		"id":  {fmt.Sprintf("%v", projectVersionID)},
+		"id":  {fmt.Sprintf("%v", fileID)},
 		"mat": {token.Token},
 	}
 	var response *http.Response
@@ -711,8 +708,8 @@ func (sys *SystemInstance) downloadFile(endpoint, method, acceptType, tokenType 
 }
 
 // DownloadReportFile downloads a report file from Fortify backend
-func (sys *SystemInstance) DownloadReportFile(endpoint string, projectVersionID int64) ([]byte, error) {
-	data, err := sys.downloadFile(endpoint, http.MethodGet, "application/octet-stream", "REPORT_FILE", projectVersionID)
+func (sys *SystemInstance) DownloadReportFile(endpoint string, reportID int64) ([]byte, error) {
+	data, err := sys.downloadFile(endpoint, http.MethodGet, "application/octet-stream", "REPORT_FILE", reportID)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error downloading report file")
 	}

@@ -185,6 +185,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		stepConfig.mixIn(def.General, filters.General)
 		stepConfig.mixIn(def.Steps[stepName], filters.Steps)
 		stepConfig.mixIn(def.Stages[stageName], filters.Steps)
+		stepConfig.mixinVaultConfig(def.General, def.Steps[stepName], def.Stages[stageName])
 
 		// process hook configuration - this is only supported via defaults
 		if stepConfig.HookConfig == nil {
@@ -227,14 +228,23 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		stepConfig.mixIn(flagValues, filters.Parameters)
 	}
 
-	stepConfig.mixIn(c.General, vaultFilter)
-	// fetch secrets from vault
-	vaultClient, err := getVaultClientFromConfig(stepConfig, c.vaultCredentials)
-	if err != nil {
-		return StepConfig{}, err
+	if verbose, ok := stepConfig.Config["verbose"].(bool); ok && verbose {
+		log.SetVerbose(verbose)
+	} else if !ok && stepConfig.Config["verbose"] != nil {
+		log.Entry().Warnf("invalid value for parameter verbose: '%v'", stepConfig.Config["verbose"])
 	}
-	if vaultClient != nil {
-		addVaultCredentials(&stepConfig, vaultClient, parameters)
+
+	stepConfig.mixinVaultConfig(c.General, c.Steps[stepName], c.Stages[stageName])
+	// check whether vault should be skipped
+	if skip, ok := stepConfig.Config["skipVault"].(bool); !ok || !skip {
+		// fetch secrets from vault
+		vaultClient, err := getVaultClientFromConfig(stepConfig, c.vaultCredentials)
+		if err != nil {
+			return StepConfig{}, err
+		}
+		if vaultClient != nil {
+			resolveAllVaultReferences(&stepConfig, vaultClient, parameters)
+		}
 	}
 
 	// finally do the condition evaluation post processing
@@ -243,9 +253,9 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 			cp := p.Conditions[0].Params[0]
 			dependentValue := stepConfig.Config[cp.Name]
 			if cmp.Equal(dependentValue, cp.Value) && stepConfig.Config[p.Name] == nil {
-				subMapValue := stepConfig.Config[dependentValue.(string)].(map[string]interface{})[p.Name]
-				if subMapValue != nil {
-					stepConfig.Config[p.Name] = subMapValue
+				subMap, ok := stepConfig.Config[dependentValue.(string)].(map[string]interface{})
+				if ok && subMap[p.Name] != nil {
+					stepConfig.Config[p.Name] = subMap[p.Name]
 				} else {
 					stepConfig.Config[p.Name] = p.Default
 				}
@@ -255,11 +265,14 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	return stepConfig, nil
 }
 
-// SetVaultCredentials sets the appRoleID and the appRoleSecretID to load additional configuration from vault
-func (c *Config) SetVaultCredentials(appRoleID, appRoleSecretID string) {
+// SetVaultCredentials sets the appRoleID and the appRoleSecretID or the vaultTokento load additional
+//configuration from vault
+// Either appRoleID and appRoleSecretID or vaultToken must be specified.
+func (c *Config) SetVaultCredentials(appRoleID, appRoleSecretID string, vaultToken string) {
 	c.vaultCredentials = VaultCredentials{
 		AppRoleID:       appRoleID,
 		AppRoleSecretID: appRoleSecretID,
+		VaultToken:      vaultToken,
 	}
 }
 

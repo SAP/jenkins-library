@@ -61,6 +61,7 @@ func GctsExecuteABAPUnitTestsCommand() *cobra.Command {
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
@@ -96,8 +97,9 @@ func addGctsExecuteABAPUnitTestsFlags(cmd *cobra.Command, stepConfig *gctsExecut
 func gctsExecuteABAPUnitTestsMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "gctsExecuteABAPUnitTests",
-			Aliases: []config.Alias{},
+			Name:        "gctsExecuteABAPUnitTests",
+			Aliases:     []config.Alias{},
+			Description: "Runs ABAP unit tests for all packages of the specified repository",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{

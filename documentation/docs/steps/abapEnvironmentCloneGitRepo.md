@@ -24,7 +24,6 @@ abapEnvironmentCheckoutBranch script: this
 If you want to provide the host and credentials of the Communication Arrangement directly, the configuration could look as follows:
 
 ```yaml
-
 steps:
   abapEnvironmentCloneGitRepo:
     repositoryName: '/DMO/GIT_REPOSITORY'
@@ -32,6 +31,7 @@ steps:
     abapCredentialsId: 'abapCredentialsId'
     host: '1234-abcd-5678-efgh-ijk.abap.eu10.hana.ondemand.com'
 ```
+
 Please note that the branchName parameter specifies the target branch you want to clone. Also keep in mind that the repositoryName parameter must define a single repository.
 
 Another option is to read the host and credentials from the cloud foundry service key of the respective instance. Furthermore, if you want to clone multiple repositories, they can be specified in a configuration file.
@@ -58,7 +58,11 @@ repositories:
     branch: 'master'
   - name: '/DMO/SOFTWARE_COMPONENT'
     branch: 'feature'
+    commitID: 'cd87a3cac2bc946b7629580e58598c3db56a26f8'
 ```
+
+Using such a configuration file is the recommended approach. Please note that you need to use the YAML data structure as in the example above when using the `repositories.yml` config file.
+If you want to pull a specific commit, the `commitID` can be specified optionally for a repository.
 
 ## Example: Configuration in the Jenkinsfile
 

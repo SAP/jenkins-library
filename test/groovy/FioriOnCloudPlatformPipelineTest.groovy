@@ -17,6 +17,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
 import com.sap.piper.JenkinsUtils
@@ -52,7 +53,8 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
             Gruntfile.js and configure default tasks (e.g. lint, clean, build)
         *   mta.yaml
     */
-
+    private ExpectedException thrown = new ExpectedException().none()
+  
     JenkinsStepRule stepRule = new JenkinsStepRule(this)
     JenkinsReadYamlRule readYamlRule = new JenkinsReadYamlRule(this)
     JenkinsShellCallRule shellRule = new JenkinsShellCallRule(this)
@@ -63,6 +65,7 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
     public RuleChain ruleChain = Rules
         .getCommonRules(this)
         .around(readYamlRule)
+        .around(thrown)
         .around(stepRule)
         .around(shellRule)
         .around(jlr)
@@ -70,6 +73,14 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
         .around(new JenkinsWithEnvRule(this))
         .around(new JenkinsCredentialsRule(this)
         .withCredentials('CI_CREDENTIALS_ID', 'foo', 'terceSpot'))
+
+    private writeInfluxMap = [:]
+
+    class JenkinsUtilsMock extends JenkinsUtils {
+        def isJobStartedByUser() {
+            return true
+        }
+    }
 
     @Before
     void setup() {
@@ -98,20 +109,31 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
         })
 
         Utils.metaClass.echo = { def m -> }
+
+        helper.registerAllowedMethod('influxWriteData', [Map.class], { m ->
+            writeInfluxMap = m
+        })
+
+        UUID.metaClass.static.randomUUID = { -> 1 }
     }
 
     @After
     public void tearDown() {
         Utils.metaClass = null
+        UUID.metaClass = null
     }
 
     @Test
-    void straightForwardTest() {
+    void straightForwardTestNeo() {
 
         nullScript
             .commonPipelineEnvironment
                 .configuration =  [steps:
-                                    [neoDeploy:
+                                    [mtaBuild:
+                                         [
+                                           platform: 'NEO'
+                                         ],
+                                     neoDeploy:
                                          [neo:
                                               [ host: 'hana.example.com',
                                                 account: 'myTestAccount',
@@ -120,9 +142,7 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
                                     ]
                                 ]
 
-        stepRule.step.fioriOnCloudPlatformPipeline(script: nullScript,
-            platform: 'NEO',
-        )
+        stepRule.step.fioriOnCloudPlatformPipeline(script: nullScript)
 
         //
         // the deployable is exchanged between the involved steps via this property:
@@ -141,5 +161,76 @@ class FioriOnCloudPlatformPipelineTest extends BasePiperTest {
                 .hasSingleQuotedOption('user', 'foo')
                 .hasSingleQuotedOption('source', 'test.mtar')
                 .hasArgument('synchronous'))
+    }
+    
+    @Test
+    void straightForwardTestCF() {
+
+        nullScript
+            .commonPipelineEnvironment
+                .configuration =  [steps:
+                                     [mtaBuild:
+                                         [
+                                           platform: 'CF'
+                                         ],
+                                     cloudFoundryDeploy:
+                                         [ deployTool: 'mtaDeployPlugin',
+                                           cloudFoundry:
+                                              [ apiEndpoint: 'https://api.cf.hana.example.com',
+                                                org: 'testOrg',
+                                                space: 'testSpace',
+                                                credentialsId: 'CI_CREDENTIALS_ID'
+                                              ]
+                                         ]
+                                    ]
+                                ]
+
+        stepRule.step.fioriOnCloudPlatformPipeline(
+          script: nullScript,
+          jenkinsUtilsStub: new JenkinsUtilsMock()
+          )
+        
+        assertThat(shellRule.shell, hasItem(containsString('cf login -u "foo" -p \'terceSpot\' -a https://api.cf.hana.example.com -o "testOrg" -s "testSpace"')))
+    }
+
+    @Test
+    void errorNoTargetDefined() {
+
+        nullScript
+            .commonPipelineEnvironment
+                .configuration =  [steps:
+                                    [neoDeploy:
+                                         [neo:
+                                              [ host: 'hana.example.com',
+                                                account: 'myTestAccount',
+                                              ]
+                                         ]
+                                    ]
+                                ]
+
+        thrown.expect(Exception)
+        thrown.expectMessage('Deployment failed: no valid deployment target defined')
+
+        stepRule.step.fioriOnCloudPlatformPipeline(script: nullScript)
+
+    }
+    
+    @Test
+    void errorUnknownTargetDefined() {
+
+        nullScript
+            .commonPipelineEnvironment
+                .configuration =  [steps:
+                                     [mtaBuild:
+                                         [
+                                           platform: 'UNKNOWN'
+                                         ]
+                                    ]
+                                ]
+
+        thrown.expect(Exception)
+        thrown.expectMessage('Deployment failed: no valid deployment target defined')
+
+        stepRule.step.fioriOnCloudPlatformPipeline(script: nullScript)
     }
 }

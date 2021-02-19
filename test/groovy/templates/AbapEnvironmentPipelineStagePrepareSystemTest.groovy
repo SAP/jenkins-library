@@ -32,8 +32,11 @@ class AbapEnvironmentPipelineStagePrepareSystemTest extends BasePiperTest {
             assertThat(m.stageName, is('Prepare System'))
             return body()
         })
-        helper.registerAllowedMethod('input', [Map], {m -> return null})
-        helper.registerAllowedMethod('cloudFoundryCreateService', [Map.class], {m -> stepsCalled.add('cloudFoundryCreateService')})
+        helper.registerAllowedMethod('input', [Map], {m ->
+            stepsCalled.add('input')
+            return null
+        })
+        helper.registerAllowedMethod('abapEnvironmentCreateSystem', [Map.class], {m -> stepsCalled.add('abapEnvironmentCreateSystem')})
         helper.registerAllowedMethod('cloudFoundryCreateServiceKey', [Map.class], {m -> stepsCalled.add('cloudFoundryCreateServiceKey')})
     }
 
@@ -45,6 +48,7 @@ class AbapEnvironmentPipelineStagePrepareSystemTest extends BasePiperTest {
         ]
         jsr.step.abapEnvironmentPipelineStagePrepareSystem(script: nullScript)
 
-        assertThat(stepsCalled, hasItems('cloudFoundryCreateService', 'cloudFoundryCreateServiceKey'))
+        assertThat(stepsCalled, hasItem('abapEnvironmentCreateSystem'))
+        assertThat(stepsCalled, hasItem('cloudFoundryCreateServiceKey'))
     }
 }

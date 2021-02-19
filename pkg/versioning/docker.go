@@ -14,7 +14,7 @@ import (
 type Docker struct {
 	artifact         Artifact
 	content          []byte
-	execRunner       mavenExecRunner
+	utils            Utils
 	options          *Options
 	path             string
 	versionSource    string
@@ -75,7 +75,7 @@ func (d *Docker) GetVersion() (string, error) {
 		if d.options == nil {
 			d.options = &Options{}
 		}
-		d.artifact, err = GetArtifact(d.versionSource, d.path, d.options, d.execRunner)
+		d.artifact, err = GetArtifact(d.versionSource, d.path, d.options, d.utils)
 		if err != nil {
 			return "", err
 		}
@@ -144,5 +144,25 @@ func (d *Docker) versionFromBaseImageTag() string {
 
 // GetCoordinates returns the coordinates
 func (d *Docker) GetCoordinates() (Coordinates, error) {
-	return nil, nil
+	result := Coordinates{}
+
+	result.GroupID = ""
+	result.ArtifactID, _ = d.GetArtifactID()
+
+	result.Version = ""
+	// cannot properly resolve version unless all options are provided. Can we ensure proper parameterization?
+	// result.Version, err = d.GetVersion()
+	// if err != nil {
+	//	return nil, err
+	// }
+
+	return result, nil
+}
+
+// GetArtifactID returns the current ID of the artifact
+func (d *Docker) GetArtifactID() (string, error) {
+	d.init()
+
+	artifactID := strings.ReplaceAll(strings.ReplaceAll(strings.ReplaceAll(d.options.DockerImage, "/", "_"), ":", "_"), ".", "_")
+	return artifactID, nil
 }

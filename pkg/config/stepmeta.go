@@ -233,7 +233,8 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 	}
 
 	if m.HasReference("vaultSecret") {
-		contextFilters = append(contextFilters, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId"}...)
+		contextFilters = append(contextFilters, []string{"vaultAppRoleTokenCredentialsId",
+			"vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}...)
 	}
 
 	if len(contextFilters) > 0 {
@@ -278,18 +279,13 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 			if len(container.Command) > 0 {
 				p["containerCommand"] = container.Command[0]
 			}
-			p["containerName"] = container.Name
-			p["containerShell"] = container.Shell
-			p["dockerEnvVars"] = EnvVarsAsMap(container.EnvVars)
-			p["dockerImage"] = container.Image
-			p["dockerName"] = container.Name
-			p["dockerPullImage"] = container.ImagePullPolicy != "Never"
-			p["dockerWorkspace"] = container.WorkingDir
-			p["dockerOptions"] = OptionsAsStringSlice(container.Options)
-			//p["dockerVolumeBind"] = volumeMountsAsStringSlice(container.VolumeMounts)
+
+			putStringIfNotEmpty(p, "containerName", container.Name)
+			putStringIfNotEmpty(p, "containerShell", container.Shell)
+			container.commonConfiguration("docker", &p)
 
 			// Ready command not relevant for main runtime container so far
-			//p[] = container.ReadyCommand
+			//putStringIfNotEmpty(p, ..., container.ReadyCommand)
 		}
 
 	}
@@ -298,18 +294,12 @@ func (m *StepData) GetContextDefaults(stepName string) (io.ReadCloser, error) {
 		if len(m.Spec.Sidecars[0].Command) > 0 {
 			root["sidecarCommand"] = m.Spec.Sidecars[0].Command[0]
 		}
-		root["sidecarEnvVars"] = EnvVarsAsMap(m.Spec.Sidecars[0].EnvVars)
-		root["sidecarImage"] = m.Spec.Sidecars[0].Image
-		root["sidecarName"] = m.Spec.Sidecars[0].Name
-		root["sidecarPullImage"] = m.Spec.Sidecars[0].ImagePullPolicy != "Never"
-		root["sidecarReadyCommand"] = m.Spec.Sidecars[0].ReadyCommand
-		root["sidecarWorkspace"] = m.Spec.Sidecars[0].WorkingDir
-		root["sidecarOptions"] = OptionsAsStringSlice(m.Spec.Sidecars[0].Options)
-		//root["sidecarVolumeBind"] = volumeMountsAsStringSlice(m.Spec.Sidecars[0].VolumeMounts)
-	}
+		m.Spec.Sidecars[0].commonConfiguration("sidecar", &root)
+		putStringIfNotEmpty(root, "sidecarReadyCommand", m.Spec.Sidecars[0].ReadyCommand)
 
-	// not filled for now since this is not relevant in Kubernetes case
-	//root["containerPortMappings"] = m.Spec.Sidecars[0].
+		// not filled for now since this is not relevant in Kubernetes case
+		//putStringIfNotEmpty(root, "containerPortMappings", m.Spec.Sidecars[0].)
+	}
 
 	if len(m.Spec.Inputs.Resources) > 0 {
 		keys := []string{}
@@ -374,8 +364,25 @@ func (m *StepData) GetResourceParameters(path, name string) map[string]interface
 	return resourceParams
 }
 
+func (container *Container) commonConfiguration(keyPrefix string, config *map[string]interface{}) {
+	putMapIfNotEmpty(*config, keyPrefix+"EnvVars", EnvVarsAsMap(container.EnvVars))
+	putStringIfNotEmpty(*config, keyPrefix+"Image", container.Image)
+	putStringIfNotEmpty(*config, keyPrefix+"Name", container.Name)
+	if container.ImagePullPolicy != "" {
+		(*config)[keyPrefix+"PullImage"] = container.ImagePullPolicy != "Never"
+	}
+	putStringIfNotEmpty(*config, keyPrefix+"Workspace", container.WorkingDir)
+	putSliceIfNotEmpty(*config, keyPrefix+"Options", OptionsAsStringSlice(container.Options))
+	//putSliceIfNotEmpty(*config, keyPrefix+"VolumeBind", volumeMountsAsStringSlice(container.VolumeMounts))
+
+}
+
 func getParameterValue(path string, res ResourceReference, param StepParameters) interface{} {
-	if val := piperenv.GetResourceParameter(path, res.Name, res.Param); len(val) > 0 {
+	paramName := res.Param
+	if param.Type != "string" {
+		paramName += ".json"
+	}
+	if val := piperenv.GetResourceParameter(path, res.Name, paramName); len(val) > 0 {
 		if param.Type != "string" {
 			var unmarshalledValue interface{}
 			err := json.Unmarshal([]byte(val), &unmarshalledValue)
@@ -425,6 +432,24 @@ func OptionsAsStringSlice(options []Option) []string {
 		e = append(e, fmt.Sprintf("%v %v", v.Name, v.Value))
 	}
 	return e
+}
+
+func putStringIfNotEmpty(config map[string]interface{}, key, value string) {
+	if value != "" {
+		config[key] = value
+	}
+}
+
+func putMapIfNotEmpty(config map[string]interface{}, key string, value map[string]string) {
+	if len(value) > 0 {
+		config[key] = value
+	}
+}
+
+func putSliceIfNotEmpty(config map[string]interface{}, key string, value []string) {
+	if len(value) > 0 {
+		config[key] = value
+	}
 }
 
 //ToDo: Enable this when the Volumes part is also implemented

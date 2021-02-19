@@ -65,6 +65,7 @@ It can for example be used to verify if certain status checks are mandatory. Thi
 			telemetryData := telemetry.CustomData{}
 			telemetryData.ErrorCode = "1"
 			handler := func() {
+				config.RemoveVaultSecretFiles()
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
@@ -103,8 +104,9 @@ func addGithubCheckBranchProtectionFlags(cmd *cobra.Command, stepConfig *githubC
 func githubCheckBranchProtectionMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "githubCheckBranchProtection",
-			Aliases: []config.Alias{},
+			Name:        "githubCheckBranchProtection",
+			Aliases:     []config.Alias{},
+			Description: "Check branch protection of a GitHub branch",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -182,11 +184,17 @@ func githubCheckBranchProtectionMetadata() config.StepData {
 								Name: "githubTokenCredentialsId",
 								Type: "secret",
 							},
+
+							{
+								Name:  "",
+								Paths: []string{"$(vaultPath)/github", "$(vaultBasePath)/$(vaultPipelineName)/github", "$(vaultBasePath)/GROUP-SECRETS/github"},
+								Type:  "vaultSecret",
+							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "githubToken"}},
+						Aliases:   []config.Alias{{Name: "githubToken"}, {Name: "access_token"}},
 					},
 				},
 			},

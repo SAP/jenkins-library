@@ -10,14 +10,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// GoModDescriptor holds the unique identifier combination for Go modules
-type GoModDescriptor struct {
-	GroupID    string
-	ArtifactID string
-	Version    string
-	Packaging  string
-}
-
 // GoMod utility to interact with Go Modules specific versioning
 type GoMod struct {
 	path                   string
@@ -86,28 +78,28 @@ func (m *GoMod) VersioningScheme() string {
 
 // GetCoordinates returns the go.mod build descriptor coordinates
 func (m *GoMod) GetCoordinates() (Coordinates, error) {
+	result := Coordinates{}
 	err := m.init()
 	if err != nil {
-		return nil, err
+		return result, err
 	}
 
 	parsed, err := modfile.Parse(m.path, []byte(m.buildDescriptorContent), nil)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to parse go.mod file")
+		return result, errors.Wrap(err, "failed to parse go.mod file")
 	}
 
-	descriptor := &GoModDescriptor{}
 	if parsed.Module == nil {
-		return "", errors.Wrap(err, "failed to parse go.mod file")
+		return result, errors.Wrap(err, "failed to parse go.mod file")
 	}
 	if parsed.Module.Mod.Path != "" {
 		artifactSplit := strings.Split(parsed.Module.Mod.Path, "/")
 		artifactID := artifactSplit[len(artifactSplit)-1]
-		descriptor.ArtifactID = artifactID
+		result.ArtifactID = artifactID
 	}
-	descriptor.Version = parsed.Module.Mod.Version
-	if descriptor.Version == "" {
-		descriptor.Version = "unspecified"
+	result.Version = parsed.Module.Mod.Version
+	if result.Version == "" {
+		result.Version = "unspecified"
 	}
-	return descriptor, nil
+	return result, nil
 }
