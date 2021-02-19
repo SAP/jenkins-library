@@ -262,7 +262,7 @@ class commonPipelineEnvironment implements Serializable {
                 return text.toBoolean()
             }
             if (text ==~ /[\d]+/) {
-                return fileContent.toInteger()
+                return text.toInteger()
             }
             if (text.contains('.')) {
                 return text.toFloat()
