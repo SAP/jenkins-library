@@ -57,7 +57,7 @@ spec:
         description: "Id of the change document for that the transport request is created. This parameter is only taken into account when provided via signature to the step."
         scope:
           - PARAMETERS
-      - name: cmclientops
+      - name: cmClientOpts
         aliases:
           - name: clientOpts
           - name: changeManagement/clientOpts
