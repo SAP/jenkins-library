@@ -530,17 +530,12 @@ func GetIntegrationArtifactDeployStatusMockResponseBody() (*http.Response, error
 				"__metadata": {
 					"id": "https://roverpoc.it-accd002.cfapps.sap.hana.ondemand.com/api/v1/IntegrationRuntimeArtifacts('flow1')",
 					"uri": "https://roverpoc.it-accd002.cfapps.sap.hana.ondemand.com/api/v1/IntegrationRuntimeArtifacts('flow1')",
-					"type": "com.sap.hci.api.IntegrationRuntimeArtifact",
-					"content_type": "application/octet-stream",
 					"media_src": "https://roverpoc.it-accd002.cfapps.sap.hana.ondemand.com/api/v1/IntegrationRuntimeArtifacts('flow1')/$value",
 					"edit_media": "https://roverpoc.it-accd002.cfapps.sap.hana.ondemand.com/api/v1/IntegrationRuntimeArtifacts('flow1')/$value"
 				},
 				"Id": "flow1",
 				"Version": "1.0.24",
 				"Name": "flow1",
-				"Type": "INTEGRATION_FLOW",
-				"DeployedBy": "sb-8ff0b149-c3e6-417e-ad27-21fa5a3349dd!b15187|it!b11463",
-				"DeployedOn": "2021-02-18T11:57:02.885",
 				"Status": "STARTED",
 				"ErrorInformation": {
 					"__deferred": {
@@ -563,17 +558,12 @@ func GetIntegrationArtifactDeployStatusErrorMockResponseBody() (*http.Response, 
 				"__metadata": {
 					"id": "https://roverpoc.it-accd002.cfapps.sap.hana.ondemand.com/api/v1/IntegrationRuntimeArtifacts('smtp')",
 					"uri": "https://roverpoc.it-accd002.cfapps.sap.hana.ondemand.com/api/v1/IntegrationRuntimeArtifacts('smtp')",
-					"type": "com.sap.hci.api.IntegrationRuntimeArtifact",
-					"content_type": "application/octet-stream",
 					"media_src": "https://roverpoc.it-accd002.cfapps.sap.hana.ondemand.com/api/v1/IntegrationRuntimeArtifacts('smtp')/$value",
 					"edit_media": "https://roverpoc.it-accd002.cfapps.sap.hana.ondemand.com/api/v1/IntegrationRuntimeArtifacts('smtp')/$value"
 				},
 				"Id": "smtp",
 				"Version": "2.0",
 				"Name": "smtp",
-				"Type": "INTEGRATION_FLOW",
-				"DeployedBy": "sb-8ff0b149-c3e6-417e-ad27-21fa5a3349dd!b15187|it!b11463",
-				"DeployedOn": "2021-02-18T10:52:57.501",
 				"Status": "ERROR",
 				"ErrorInformation": {
 					"__deferred": {
