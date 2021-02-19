@@ -162,7 +162,7 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		// write reports & links JSON
 		reports := []StepResults.Path{
 			{
-				Target: filepath.Join(sonar.workingDir, ".scannerwork", "report-task.txt"), 
+				Target: filepath.Join(sonar.workingDir, ".scannerwork", "report-task.txt"),
 				Mandatory: false,
 			},
 		}
