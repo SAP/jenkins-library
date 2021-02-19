@@ -21,8 +21,9 @@ const (
 
 // TaskService ...
 type TaskService struct {
-	TaskID    string
-	apiClient *Requester
+	TaskID       string
+	PollInterval time.Duration
+	apiClient    *Requester
 }
 
 // GetTask ...
@@ -33,7 +34,7 @@ func (service *TaskService) GetTask(options *sonargo.CeTaskOption) (*sonargo.CeT
 	}
 	// use custom HTTP client to send request
 	response, err := service.apiClient.send(request)
-	if err != nil {
+	if response == nil && err != nil {
 		return nil, nil, err
 	}
 	// reuse response verrification from sonargo
@@ -60,7 +61,6 @@ func (service *TaskService) HasFinished() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	log.Entry().Infof("Status: %s", result.Task.Status)
 	if result.Task.Status == taskStatusPending || result.Task.Status == taskStatusProcessing {
 		return false, nil
 	}
@@ -70,8 +70,9 @@ func (service *TaskService) HasFinished() (bool, error) {
 	return true, nil
 }
 
+// WaitForTask ..
 func (service *TaskService) WaitForTask() (bool, error) {
-	log.Entry().Info("waiting for task to complete..")
+	log.Entry().Info("waiting for SonarQube task to complete..")
 	finished, err := service.HasFinished()
 	if err != nil {
 		return false, err
@@ -81,7 +82,7 @@ func (service *TaskService) WaitForTask() (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		time.Sleep(2 * time.Second) //options.timeBetweenPolls)
+		time.Sleep(service.PollInterval)
 	}
 	log.Entry().Info("finished.")
 	return true, nil
@@ -90,7 +91,8 @@ func (service *TaskService) WaitForTask() (bool, error) {
 // NewTaskService returns a new instance of a service for the task API endpoint.
 func NewTaskService(host, token, task string, client Sender) *TaskService {
 	return &TaskService{
-		TaskID:    task,
-		apiClient: NewClient(host, token, client),
+		TaskID:       task,
+		PollInterval: 15 * time.Second,
+		apiClient:    NewClient(host, token, client),
 	}
 }
