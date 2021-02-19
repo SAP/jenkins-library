@@ -114,7 +114,7 @@ func (c *CreateAction) Perform(command Exec) (string, error) {
 			} else {
 				transportRequestID = strings.TrimSpace(cmClientStdout.String())
 				if len(transportRequestID) == 0 {
-					err = fmt.Errorf("No transport request id received.")
+					err = fmt.Errorf("no transport request id received")
 				}
 			}
 		}
@@ -126,5 +126,6 @@ func (c *CreateAction) Perform(command Exec) (string, error) {
 		log.Entry().Warnf("Cannot create transport request at '%s': %s", c.Connection.Endpoint, err.Error())
 	}
 
-	return transportRequestID, errors.Wrapf(err, "cannot create transport request at '%s'", c.Connection.Endpoint)
+	return transportRequestID, errors.Wrapf(err, "cannot create transport request at '%s', transport type: '%s', target system: '%s'",
+		c.Connection.Endpoint, c.TransportType, c.TargetSystemID)
 }
