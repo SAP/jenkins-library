@@ -244,7 +244,15 @@ class commonPipelineEnvironment implements Serializable {
             def param = fileName.split('/')[fileName.split('\\/').size()-1]
             if (param.endsWith(".json")){
                 param = param.replace(".json","")
-                containerProperties[param] = script.readJSON(text: fileContent)
+                try {
+                    containerProperties[param] = script.readJSON(text: fileContent)
+                } catch (net.sf.json.JSONException ex) {
+                    // JSON reader cannot handle simple objects like bool, numbers, ...
+                    // as such readJSON cannot read what writeJSON created in such cases
+                    // for now only handle boolean
+                    containerProperties[param] = fileContent.toBoolean()
+                }
+
             }else{
                 containerProperties[param] = fileContent
             }
