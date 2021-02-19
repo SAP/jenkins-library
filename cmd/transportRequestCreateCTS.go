@@ -5,6 +5,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/transportrequest/cts"
+	"github.com/pkg/errors"
 )
 
 type transportRequestCreateCTSUtils interface {
@@ -60,7 +61,7 @@ func runTransportRequestCreateCTS(
 	commonPipelineEnvironment *transportRequestCreateCTSCommonPipelineEnvironment,
 	create cts.Create,
 ) error {
-	log.Entry().WithField("LogField", "Log field content").Info("This is just a demo for a simple step.")
+	log.Entry().Infof("Creating transport request at '%s'", config.Endpoint)
 
 	create.WithConnection(
 		cts.Connection{
@@ -82,7 +83,9 @@ func runTransportRequestCreateCTS(
 	if err == nil {
 		log.Entry().Infof("Transport request '%s' has been created.", transportRequestID)
 		commonPipelineEnvironment.custom.transportRequestID = transportRequestID
+	} else {
+		log.Entry().Warnf("Creating transport request at '%s' failed", config.Endpoint)
 	}
 
-	return err
+	return errors.Wrapf(err, "cannot create transport at '%s'", config.Endpoint)
 }
