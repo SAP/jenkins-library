@@ -61,7 +61,7 @@ func TestCreateTransportRequest(t *testing.T) {
 		cmd.StdoutReturn = map[string]string{"cmclient:*": ""}
 		_, err := examinee.Perform(cmd)
 
-		assert.EqualError(t, err, "Cannot create transport request at 'https://example.org/cts': No transport request id received.")
+		assert.EqualError(t, err, "cannot create transport request at 'https://example.org/cts': No transport request id received.")
 	})
 
 	t.Run("create transport request fails with rc not equal zero", func(t *testing.T) {
@@ -70,7 +70,7 @@ func TestCreateTransportRequest(t *testing.T) {
 		cmd.ExitCode = 1
 		_, err := examinee.Perform(cmd)
 
-		assert.EqualError(t, err, "Cannot create transport request at 'https://example.org/cts': Create transport request command returned with exit code '1'")
+		assert.EqualError(t, err, "cannot create transport request at 'https://example.org/cts': Create transport request command returned with exit code '1'")
 	})
 
 	t.Run("create transport request fails with error", func(t *testing.T) {
@@ -79,7 +79,7 @@ func TestCreateTransportRequest(t *testing.T) {
 		cmd.ShouldFailOnCommand = map[string]error{"cmclient:*": errors.New("We have a problem")}
 		_, err := examinee.Perform(cmd)
 
-		assert.EqualError(t, err, "Cannot create transport request at 'https://example.org/cts': We have a problem")
+		assert.EqualError(t, err, "cannot create transport request at 'https://example.org/cts': We have a problem")
 	})
 
 	t.Run("check missing parameters", func(t *testing.T) {
@@ -90,7 +90,7 @@ func TestCreateTransportRequest(t *testing.T) {
 
 		_, err := examinee.Perform(cmd)
 
-		if assert.EqualError(t, err, "Cannot create transport request at '': the following parameters are not available [Connection.Endpoint TransportType]") {
+		if assert.EqualError(t, err, "cannot create transport request at '': the following parameters are not available [Connection.Endpoint TransportType]") {
 			t.Run("no calls", func(t *testing.T) {
 				assert.Empty(t, cmd.Calls)
 			})

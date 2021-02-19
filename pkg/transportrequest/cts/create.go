@@ -126,5 +126,5 @@ func (c *CreateAction) Perform(command Exec) (string, error) {
 		log.Entry().Warnf("Cannot create transport request at '%s': %s", c.Connection.Endpoint, err.Error())
 	}
 
-	return transportRequestID, errors.Wrapf(err, "Cannot create transport request at '%s'", c.Connection.Endpoint)
+	return transportRequestID, errors.Wrapf(err, "cannot create transport request at '%s'", c.Connection.Endpoint)
 }
