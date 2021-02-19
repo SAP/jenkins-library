@@ -229,6 +229,9 @@ class commonPipelineEnvironment implements Serializable {
             echo "reading file '${f.getPath()}' for param '${param}' with content '${fileContent}'"
             if (param.endsWith(".json")){
                 param = param.replace(".json","")
+                if (!fileContent.startsWith('{')) {
+                    fileContent = '{' + fileContent + '}'
+                }
                 valueMap[param] = script.readJSON(text: fileContent)
             }else{
                 valueMap[param] = fileContent
