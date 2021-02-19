@@ -108,4 +108,21 @@ class CommonPipelineEnvironmentTest extends BasePiperTest {
         assertThat(nullScript.commonPipelineEnvironment.abapAddonDescriptor, is("[\"value1\",\"value2\"]"))
     }
 
+    @Test
+    void writeAndReadFromDisk() {
+        nullScript.commonPipelineEnvironment.setValue('string', 'testString')
+        nullScript.commonPipelineEnvironment.setValue('boolean', true)
+        nullScript.commonPipelineEnvironment.setValue('integer', 1)
+        nullScript.commonPipelineEnvironment.setValue('list', ['item1', 'item2'])
+        nullScript.commonPipelineEnvironment.setValue('map', [key1: 'val1', key2: 'val2'])
+
+        nullScript.commonPipelineEnvironment.writeToDisk(nullScript)
+        nullScript.commonPipelineEnvironment.readFromDisk(nullScript)
+
+        assertThat(nullScript.commonPipelineEnvironment.getValue('string'), is('testString'))
+        assertThat(nullScript.commonPipelineEnvironment.getValue('boolean'), is(true))
+        assertThat(nullScript.commonPipelineEnvironment.getValue('integer'), is(1))
+        assertThat(nullScript.commonPipelineEnvironment.getValue('list'), is(['item1', 'item2']))
+        assertThat(nullScript.commonPipelineEnvironment.getValue('map'), is([key1: 'val1', key2: 'val2']))
+    }
 }
