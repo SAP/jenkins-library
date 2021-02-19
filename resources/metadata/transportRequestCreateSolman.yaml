@@ -63,7 +63,7 @@ spec:
           - name: changeManagement/clientOpts
         type: "[]string"
         mandatory: true
-        description: "additional options handed over to the cm client"
+        description: "Additional options handed over to the cm client"
         scope:
           - PARAMETERS
           - STAGES
