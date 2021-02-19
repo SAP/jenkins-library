@@ -80,6 +80,24 @@ func TestPlainClone(t *testing.T) {
 	})
 }
 
+func TestPlainOpenMock(t *testing.T) {
+	t.Parallel()
+	t.Run("successful clone", func(t *testing.T) {
+		t.Parallel()
+		abstractedGit := &UtilsGitMock{}
+		_, err := plainOpen("directory", abstractedGit)
+		assert.NoError(t, err)
+		assert.Equal(t, "directory", abstractedGit.path)
+	})
+
+	t.Run("error on cloning", func(t *testing.T) {
+		t.Parallel()
+		abstractedGit := UtilsGitMockError{}
+		_, err := plainOpen("directory", abstractedGit)
+		assert.EqualError(t, err, "Unable to open git repository at 'directory': error during git plain open")
+	})
+}
+
 func TestChangeBranch(t *testing.T) {
 	t.Parallel()
 	t.Run("checkout existing branch", func(t *testing.T) {
@@ -420,8 +438,17 @@ func (u *UtilsGitMock) plainClone(path string, isBare bool, o *git.CloneOptions)
 	return nil, nil
 }
 
+func (u *UtilsGitMock) plainOpen(path string) (*git.Repository, error) {
+	u.path = path
+	return nil, nil
+}
+
 type UtilsGitMockError struct{}
 
 func (UtilsGitMockError) plainClone(string, bool, *git.CloneOptions) (*git.Repository, error) {
 	return nil, errors.New("error during clone")
+}
+
+func (UtilsGitMockError) plainOpen(path string) (*git.Repository, error) {
+	return nil, errors.New("error during git plain open")
 }

@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/mock"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -14,6 +13,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/SAP/jenkins-library/pkg/mock"
 
 	"github.com/SAP/jenkins-library/pkg/fortify"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -51,17 +52,11 @@ func newFortifyTestUtilsBundle() fortifyTestUtilsBundle {
 }
 
 type artifactMock struct {
-	Coordinates coordinatesMock
+	Coordinates versioning.Coordinates
 }
 
-type coordinatesMock struct {
-	GroupID    string
-	ArtifactID string
-	Version    string
-}
-
-func newCoordinatesMock() coordinatesMock {
-	return coordinatesMock{
+func newCoordinatesMock() versioning.Coordinates {
+	return versioning.Coordinates{
 		GroupID:    "a",
 		ArtifactID: "b",
 		Version:    "1.0.0",

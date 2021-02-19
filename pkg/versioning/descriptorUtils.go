@@ -23,6 +23,7 @@ const (
 func DetermineProjectCoordinatesWithCustomVersion(nameTemplate, versionScheme, customVersion string, gav Coordinates) (string, string) {
 	name, version := DetermineProjectCoordinates(nameTemplate, versionScheme, gav)
 	if len(customVersion) > 0 {
+		log.Entry().Infof("Using custom version: %v", customVersion)
 		return name, customVersion
 	}
 	return name, version
