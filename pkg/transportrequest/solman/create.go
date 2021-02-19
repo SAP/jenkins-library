@@ -109,10 +109,19 @@ func (a *CreateAction) Perform(command Exec) (string, error) {
 	}
 
 	if err == nil {
-		log.Entry().Infof("Created transport request '%s' at '%s'.", transportRequestID, a.Connection.Endpoint)
+		log.Entry().Infof("Created transport request '%s' at '%s'. ChangeDocumentId: '%s', DevelopmentSystemId: '%s'",
+			transportRequestID,
+			a.Connection.Endpoint,
+			a.ChangeDocumentID,
+			a.DevelopmentSystemID,
+		)
 	} else {
-		log.Entry().WithError(err).Warnf("Creating transport request '%s' at '%s' failed",
-			transportRequestID, a.Connection.Endpoint)
+		log.Entry().WithError(err).Warnf("Creating transport request '%s' at '%s' failed. ChangeDocumentId: '%s', DevelopmentSystemId: '%s'",
+			transportRequestID,
+			a.Connection.Endpoint,
+			a.ChangeDocumentID,
+			a.DevelopmentSystemID,
+		)
 	}
 
 	return transportRequestID, errors.Wrap(err, "cannot create transport request")
