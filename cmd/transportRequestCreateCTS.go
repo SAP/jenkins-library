@@ -5,7 +5,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/transportrequest/cts"
-	"github.com/pkg/errors"
 )
 
 type transportRequestCreateCTSUtils interface {
@@ -87,5 +86,5 @@ func runTransportRequestCreateCTS(
 		log.Entry().Warnf("Creating transport request at '%s' failed", config.Endpoint)
 	}
 
-	return errors.Wrapf(err, "cannot create transport at '%s'", config.Endpoint)
+	return err
 }
