@@ -226,6 +226,7 @@ class commonPipelineEnvironment implements Serializable {
             def fileContent = script.readFile(f.getPath())
             def fileName = f.getName()
             def param = fileName.split('/')[fileName.split('\\/').size()-1]
+            echo "reading file '${f.getPath()}' for param '${param}' with content '${fileContent}'"
             if (param.endsWith(".json")){
                 param = param.replace(".json","")
                 valueMap[param] = script.readJSON(text: fileContent)
@@ -239,6 +240,7 @@ class commonPipelineEnvironment implements Serializable {
             def fileContent = script.readFile(f.getPath())
             def fileName = f.getName()
             def param = fileName.split('/')[fileName.split('\\/').size()-1]
+            echo "reading file '${f.getPath()}' for param '${param}' with content '${fileContent}'"
             if (param.endsWith(".json")){
                 param = param.replace(".json","")
                 containerProperties[param] = script.readJSON(text: fileContent)
