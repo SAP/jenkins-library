@@ -17,7 +17,7 @@ spec:
       - name: endpoint
         type: string
         mandatory: true
-        description: "The service endpoint"
+        description: "Service endpoint"
         aliases:
           - name: changeManagement/endpoint
         scope:
@@ -28,7 +28,7 @@ spec:
       - name: username
         type: string
         mandatory: true
-        description: "The deploy user"
+        description: "Deploy user"
         secret: true
         scope:
           - PARAMETERS
@@ -38,14 +38,14 @@ spec:
       - name: password
         type: string
         mandatory: true
-        description: "The password for the deploy user"
+        description: "Password for the deploy user"
         secret: true
         scope:
           - PARAMETERS
       - name: developmentSystemId
         type: string
         mandatory: true
-        description: "The id of the associated development system."
+        description: "Id of the associated development system."
         scope:
           - PARAMETERS
           - STAGES
@@ -54,7 +54,7 @@ spec:
       - name: changeDocumentId
         type: string
         mandatory: true
-        description: "The id of the change document for that the transport request is created. This parameter is only taken into account when provided via signature to the step."
+        description: "Id of the change document for that the transport request is created. This parameter is only taken into account when provided via signature to the step."
         scope:
           - PARAMETERS
       - name: cmclientops
