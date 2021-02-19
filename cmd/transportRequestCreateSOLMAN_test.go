@@ -54,7 +54,7 @@ func TestRunTransportRequestCreateSOLMAN(t *testing.T) {
 		Username:            "me",
 		Password:            "secret",
 		ChangeDocumentID:    "123",
-		DevelopmentSystemID: "XXX",
+		DevelopmentSystemID: "ABC",
 		CmClientOpts:        []string{"-Dabc=123", "-Dxyz=456"},
 	}
 
@@ -81,7 +81,7 @@ func TestRunTransportRequestCreateSOLMAN(t *testing.T) {
 						Password: "secret",
 					},
 					ChangeDocumentID:    "123",
-					DevelopmentSystemID: "XXX",
+					DevelopmentSystemID: "ABC",
 					CMOpts: []string{
 						"-Dabc=123",
 						"-Dxyz=456",
