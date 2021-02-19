@@ -113,11 +113,11 @@ func TransportRequestCreateSOLMANCommand() *cobra.Command {
 }
 
 func addTransportRequestCreateSOLMANFlags(cmd *cobra.Command, stepConfig *transportRequestCreateSOLMANOptions) {
-	cmd.Flags().StringVar(&stepConfig.Endpoint, "endpoint", os.Getenv("PIPER_endpoint"), "The service endpoint")
-	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "The deploy user")
-	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "The password for the deploy user")
-	cmd.Flags().StringVar(&stepConfig.DevelopmentSystemID, "developmentSystemId", os.Getenv("PIPER_developmentSystemId"), "The id of the associated development system.")
-	cmd.Flags().StringVar(&stepConfig.ChangeDocumentID, "changeDocumentId", os.Getenv("PIPER_changeDocumentId"), "The id of the change document for that the transport request is created. This parameter is only taken into account when provided via signature to the step.")
+	cmd.Flags().StringVar(&stepConfig.Endpoint, "endpoint", os.Getenv("PIPER_endpoint"), "Service endpoint")
+	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "Deploy user")
+	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for the deploy user")
+	cmd.Flags().StringVar(&stepConfig.DevelopmentSystemID, "developmentSystemId", os.Getenv("PIPER_developmentSystemId"), "Id of the associated development system.")
+	cmd.Flags().StringVar(&stepConfig.ChangeDocumentID, "changeDocumentId", os.Getenv("PIPER_changeDocumentId"), "Id of the change document for that the transport request is created. This parameter is only taken into account when provided via signature to the step.")
 	cmd.Flags().StringSliceVar(&stepConfig.Cmclientops, "cmclientops", []string{}, "additional options handed over to the cm client")
 
 	cmd.MarkFlagRequired("endpoint")
