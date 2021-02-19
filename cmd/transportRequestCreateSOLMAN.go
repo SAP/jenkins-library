@@ -77,10 +77,9 @@ func runTransportRequestCreateSOLMAN(
 
 	transportRequestID, err := create.Perform(utils)
 
-	if err != nil {
-		return err
+	if err == nil {
+		cpe.custom.transportRequestID = transportRequestID
 	}
-	cpe.custom.transportRequestID = transportRequestID
 
 	return err
 }
