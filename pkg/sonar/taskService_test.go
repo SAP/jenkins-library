@@ -1,19 +1,22 @@
 package sonar
 
 import (
+	"errors"
 	"net/http"
 	"testing"
+	"time"
 
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/jarcoal/httpmock"
 	sonargo "github.com/magicsong/sonargo/sonar"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 )
 
 func TestGetTask(t *testing.T) {
 	testURL := "https://example.org"
-	t.Run("success case", func(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
 		httpmock.Activate()
 		defer httpmock.DeactivateAndReset()
 
@@ -31,28 +34,49 @@ func TestGetTask(t *testing.T) {
 		assert.NotEmpty(t, response)
 		assert.Equal(t, 1, httpmock.GetTotalCallCount(), "unexpected number of requests")
 	})
-	// t.Run("error case", func(t *testing.T) {
-	// 	httpmock.Activate()
-	// 	defer httpmock.DeactivateAndReset()
+	t.Run("request error", func(t *testing.T) {
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
 
-	// 	sender := &piperhttp.Client{}
-	// 	sender.SetOptions(piperhttp.ClientOptions{UseDefaultTransport: true})
-	// 	// add response handler
-	// 	httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+endpointIssuesSearch+"", httpmock.NewStringResponder(400, responseCeTaskError))
-	// 	// create service instance
-	// 	serviceUnderTest := NewIssuesService(testURL, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, sender)
-	// 	// test
-	// 	count, err := serviceUnderTest.GetNumberOfCriticalIssues()
-	// 	// assert
-	// 	assert.Error(t, err)
-	// 	assert.Equal(t, -1, count)
-	// 	assert.Equal(t, 1, httpmock.GetTotalCallCount(), "unexpected number of requests")
-	// })
+		sender := &piperhttp.Client{}
+		sender.SetOptions(piperhttp.ClientOptions{UseDefaultTransport: true})
+		// add response handler
+		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+endpointCeTask+"", httpmock.NewErrorResponder(errors.New("internal server error")))
+		// create service instance
+		serviceUnderTest := NewTaskService(testURL, mock.Anything, mock.Anything, sender)
+		// test
+		result, response, err := serviceUnderTest.GetTask(&sonargo.CeTaskOption{Id: mock.Anything})
+		// assert
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "internal server error")
+		assert.Empty(t, result)
+		assert.Empty(t, response)
+		assert.Equal(t, 1, httpmock.GetTotalCallCount(), "unexpected number of requests")
+	})
+	t.Run("server error", func(t *testing.T) {
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
+
+		sender := &piperhttp.Client{}
+		sender.SetOptions(piperhttp.ClientOptions{UseDefaultTransport: true})
+		// add response handler
+		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+endpointCeTask+"", httpmock.NewStringResponder(400, responseCeTaskError))
+		// create service instance
+		serviceUnderTest := NewTaskService(testURL, mock.Anything, mock.Anything, sender)
+		// test
+		result, response, err := serviceUnderTest.GetTask(&sonargo.CeTaskOption{Id: mock.Anything})
+		// assert
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "No activity found for task ")
+		assert.Empty(t, result)
+		assert.NotEmpty(t, response)
+		assert.Equal(t, 1, httpmock.GetTotalCallCount(), "unexpected number of requests")
+	})
 }
 
 func TestWaitForTask(t *testing.T) {
 	testURL := "https://example.org"
-	t.Run("success case", func(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
 		httpmock.Activate()
 		defer httpmock.DeactivateAndReset()
 
@@ -64,16 +88,17 @@ func TestWaitForTask(t *testing.T) {
 			[]*http.Response{
 				httpmock.NewStringResponse(200, responseCeTaskPending),
 				httpmock.NewStringResponse(200, responseCeTaskProcessing),
-				httpmock.NewStringResponse(200, responseCeTaskSuccess),
+				httpmock.NewStringResponse(200, responseCeTaskFailure),
 			},
 		))
 		// create service instance
 		serviceUnderTest := NewTaskService(testURL, mock.Anything, mock.Anything, sender)
+		serviceUnderTest.PollInterval = time.Millisecond
 		// test
 		result, err := serviceUnderTest.WaitForTask()
 		// assert
 		assert.NoError(t, err)
-		assert.NotEmpty(t, result)
+		assert.True(t, result)
 		assert.Equal(t, 3, httpmock.GetTotalCallCount(), "unexpected number of requests")
 	})
 }
