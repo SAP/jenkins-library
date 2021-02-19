@@ -211,10 +211,10 @@ steps:
       - 'deployDescriptor'
       - 'pipelineConfigAndTests'
     cf_native:
-      dockerImage: 'ppiper/cf-cli:v5'
+      dockerImage: 'ppiper/cf-cli:6'
       dockerWorkspace: '/home/piper'
     mtaDeployPlugin:
-      dockerImage: 'ppiper/cf-cli:v5'
+      dockerImage: 'ppiper/cf-cli:6'
       dockerWorkspace: '/home/piper'
     mta:
       deployTool: 'mtaDeployPlugin'
@@ -557,3 +557,10 @@ steps:
     mode: 'DEPLOY'
     action: 'NONE'
     xsSessionFile: '.xsconfig'
+  piperPipelineStageInit:
+    stepMappings:
+      checkmarx: 'checkmarxExecuteScan'
+      fortify: 'fortifyExecuteScan'
+      karma: 'karmaExecuteTests'
+      whitesource: 'whitesourceExecuteScan'
+    labelPrefix: pr_

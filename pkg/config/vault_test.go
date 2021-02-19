@@ -30,6 +30,21 @@ func TestVaultConfigLoad(t *testing.T) {
 	t.Run("Secrets are not overwritten", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
 		stepConfig := StepConfig{Config: map[string]interface{}{
+			"vaultBasePath":         "team1",
+			secretName:              "preset value",
+			"vaultDisableOverwrite": true,
+		}}
+		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", "$(vaultBasePath)/pipelineA")}
+		vaultData := map[string]string{secretName: "value1"}
+		vaultMock.On("GetKvSecret", "team1/pipelineA").Return(vaultData, nil)
+		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams)
+
+		assert.Equal(t, "preset value", stepConfig.Config[secretName])
+	})
+
+	t.Run("Secrets can be overwritten", func(t *testing.T) {
+		vaultMock := &mocks.VaultMock{}
+		stepConfig := StepConfig{Config: map[string]interface{}{
 			"vaultBasePath": "team1",
 			secretName:      "preset value",
 		}}
@@ -38,7 +53,7 @@ func TestVaultConfigLoad(t *testing.T) {
 		vaultMock.On("GetKvSecret", "team1/pipelineA").Return(vaultData, nil)
 		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams)
 
-		assert.Equal(t, "preset value", stepConfig.Config[secretName])
+		assert.Equal(t, "value1", stepConfig.Config[secretName])
 	})
 
 	t.Run("Error is passed through", func(t *testing.T) {

@@ -2,11 +2,72 @@ package transportrequest
 
 import (
 	"fmt"
+	gitUtils "github.com/SAP/jenkins-library/pkg/git"
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/pkg/errors"
+	"os"
 	"regexp"
 	"sort"
 )
+
+var logRange = gitUtils.LogRange
+var findLabelsInCommits = FindLabelsInCommits
+
+type iTransportRequestGitUtils interface {
+	PlainOpen(directory string) (*git.Repository, error)
+}
+type transportRequestGitUtils struct {
+}
+
+func (g *transportRequestGitUtils) PlainOpen(directory string) (*git.Repository, error) {
+	r, err := gitUtils.PlainOpen(directory)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Unable to open git repository at '%s'", directory)
+	}
+	return r, nil
+}
+
+// FindIDInRange finds a ID according to the label in a commit range <from>..<to>.
+// We assume the git repo is present in the current working directory.
+func FindIDInRange(label, from, to string) (string, error) {
+
+	return findIDInRange(label, from, to, &transportRequestGitUtils{})
+}
+
+func findIDInRange(label, from, to string, trGitUtils iTransportRequestGitUtils) (string, error) {
+
+	workdir, err := os.Getwd()
+	if err != nil {
+		return "", errors.Wrapf(err, "Cannot open git repo in current working directory '%s'", workdir)
+	}
+	log.Entry().Infof("Opening git repo at '%s'", workdir)
+
+	r, err := trGitUtils.PlainOpen(workdir)
+	if err != nil {
+		return "", errors.Wrapf(err, "Unable to open git repository at '%s'", workdir)
+	}
+
+	cIter, err := logRange(r, from, to)
+	if err != nil {
+		return "", errors.Wrapf(err, "Cannot retrieve '%s'. Unable to resolve commits in range '%s..%s'", label, from, to)
+	}
+
+	ids, err := findLabelsInCommits(cIter, label)
+	if err != nil {
+		return "", errors.Wrapf(err, "Cannot retrieve '%s'. Unable to traverse commits in range '%s..%s'", label, from, to)
+	}
+
+	if len(ids) > 1 {
+		return "", fmt.Errorf("More than one values found for label '%s' in range '%s..%s': '%s'", label, from, to, ids)
+	}
+	if len(ids) == 0 {
+		return "", fmt.Errorf("No values found for '%s' in range '%s..%s'", label, from, to)
+	}
+	return ids[0], nil
+}
 
 // FindLabelsInCommits a label is considered to be something like
 // key: label, e.g. TransportRequest: 123456
