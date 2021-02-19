@@ -3,7 +3,9 @@ package sonar
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
+	"github.com/SAP/jenkins-library/pkg/log"
 	sonargo "github.com/magicsong/sonargo/sonar"
 )
 
@@ -46,4 +48,22 @@ func (requester *Requester) decode(response *http.Response, result interface{}) 
 	//FIXME: sonargo.IssuesSearchObject does not imlement organizatios and thus decoding fails
 	// decoder.DisallowUnknownFields()
 	return decoder.Decode(result)
+}
+
+// NewClient ...
+func NewClient(host, token string, client Sender) *Requester {
+	// Make sure the given URL end with a slash
+	if !strings.HasSuffix(host, "/") {
+		host += "/"
+	}
+	// Make sure the given URL end with a api/
+	if !strings.HasSuffix(host, "api/") {
+		host += "api/"
+	}
+	log.Entry().Debugf("using api client for '%s'", host)
+	return &Requester{
+		Client:   client,
+		Host:     host,
+		Username: token,
+	}
 }
