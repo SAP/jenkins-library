@@ -21,7 +21,7 @@ type transportRequestCreateSOLMANOptions struct {
 	Password            string   `json:"password,omitempty"`
 	DevelopmentSystemID string   `json:"developmentSystemId,omitempty"`
 	ChangeDocumentID    string   `json:"changeDocumentId,omitempty"`
-	Cmclientops         []string `json:"cmclientops,omitempty"`
+	CmClientOpts        []string `json:"cmClientOpts,omitempty"`
 }
 
 type transportRequestCreateSOLMANCommonPipelineEnvironment struct {
@@ -118,14 +118,14 @@ func addTransportRequestCreateSOLMANFlags(cmd *cobra.Command, stepConfig *transp
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for the deploy user")
 	cmd.Flags().StringVar(&stepConfig.DevelopmentSystemID, "developmentSystemId", os.Getenv("PIPER_developmentSystemId"), "Id of the associated development system.")
 	cmd.Flags().StringVar(&stepConfig.ChangeDocumentID, "changeDocumentId", os.Getenv("PIPER_changeDocumentId"), "Id of the change document for that the transport request is created. This parameter is only taken into account when provided via signature to the step.")
-	cmd.Flags().StringSliceVar(&stepConfig.Cmclientops, "cmclientops", []string{}, "Additional options handed over to the cm client")
+	cmd.Flags().StringSliceVar(&stepConfig.CmClientOpts, "cmClientOpts", []string{}, "Additional options handed over to the cm client")
 
 	cmd.MarkFlagRequired("endpoint")
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("developmentSystemId")
 	cmd.MarkFlagRequired("changeDocumentId")
-	cmd.MarkFlagRequired("cmclientops")
+	cmd.MarkFlagRequired("cmClientOpts")
 }
 
 // retrieve step metadata
@@ -180,7 +180,7 @@ func transportRequestCreateSOLMANMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "cmclientops",
+						Name:        "cmClientOpts",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEP", "GENERAL"},
 						Type:        "[]string",
