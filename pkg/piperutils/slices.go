@@ -93,3 +93,19 @@ func SplitAndTrim(in []string, separator string) (out []string) {
 	}
 	return
 }
+
+// UniqueStrings removes duplicates from values
+func UniqueStrings(values []string) []string {
+
+	u := map[string]bool{}
+	for _, e := range values {
+		u[e] = true
+	}
+	keys := make([]string, len(u))
+	i := 0
+	for k := range u {
+		keys[i] = k
+		i++
+	}
+	return keys
+}

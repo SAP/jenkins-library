@@ -113,5 +113,12 @@ func (c *httpMockCpis) SendRequest(method string, url string, r io.Reader, heade
 		}
 		return &res, nil
 	}
+	if c.CPIFunction == "" {
+		c.CPIFunction = cpi.GetCPIFunctionNameByURLCheck(url, method, c.TestType)
+		resp, error := cpi.GetCPIFunctionMockResponse(c.CPIFunction, c.TestType)
+		c.CPIFunction = ""
+		return resp, error
+	}
+
 	return cpi.GetCPIFunctionMockResponse(c.CPIFunction, c.TestType)
 }

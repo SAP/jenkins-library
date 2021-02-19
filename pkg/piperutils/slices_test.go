@@ -133,3 +133,11 @@ func TestSplitTrimAndDeDup(t *testing.T) {
 		assert.Equal(t, []string{"a", "a", "b", "c", "d", "e", "f", "f"}, s)
 	})
 }
+
+func TestUniqueStrings(t *testing.T) {
+
+	unique := UniqueStrings([]string{"abc", "xyz", "123", "abc"})
+	if assert.Len(t, unique, 3) {
+		assert.Subset(t, []string{"123", "abc", "xyz"}, unique)
+	}
+}
