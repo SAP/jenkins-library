@@ -118,7 +118,7 @@ func addTransportRequestCreateSOLMANFlags(cmd *cobra.Command, stepConfig *transp
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for the deploy user")
 	cmd.Flags().StringVar(&stepConfig.DevelopmentSystemID, "developmentSystemId", os.Getenv("PIPER_developmentSystemId"), "Id of the associated development system.")
 	cmd.Flags().StringVar(&stepConfig.ChangeDocumentID, "changeDocumentId", os.Getenv("PIPER_changeDocumentId"), "Id of the change document for that the transport request is created. This parameter is only taken into account when provided via signature to the step.")
-	cmd.Flags().StringSliceVar(&stepConfig.Cmclientops, "cmclientops", []string{}, "additional options handed over to the cm client")
+	cmd.Flags().StringSliceVar(&stepConfig.Cmclientops, "cmclientops", []string{}, "Additional options handed over to the cm client")
 
 	cmd.MarkFlagRequired("endpoint")
 	cmd.MarkFlagRequired("username")
