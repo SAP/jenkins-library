@@ -264,49 +264,15 @@ func GetMockResponseByTestTypeAndMockFunctionName(mockFuntionName, testType stri
 
 	case "IntegrationDesigntimeArtifactUpdateMockResponse":
 		if response == nil && error == nil {
-
-			res := http.Response{
-				StatusCode: 400,
-				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-							"code": "Bad Request",
-							"message": {
-							"@lang": "en",
-							"#text": "invalid request"
-							}
-						}`))),
-			}
-			return &res, errors.New("Unable to get status of integration artifact, Response Status code:400")
+			return NegtiveResForIntegrationDesigntimeArtifactUpdateMockResponse()
 		}
 	case "GetIntegrationDesigntimeArtifactMockResponse":
 		if response == nil && error == nil {
-
-			res := http.Response{
-				StatusCode: 400,
-				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-							"code": "Bad Request",
-							"message": {
-							"@lang": "en",
-							"#text": "invalid request"
-							}
-						}`))),
-			}
-			return &res, errors.New("Unable to get status of integration artifact, Response Status code:400")
+			return NegtiveResForGetIntegrationDesigntimeArtifactMockResponse()
 		}
-
 	case "IntegrationArtifactDownloadCommandMockResponse":
 		if response == nil && error == nil {
-
-			res := http.Response{
-				StatusCode: 400,
-				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-							"code": "Bad Request",
-							"message": {
-							"@lang": "en",
-							"#text": "invalid request"
-							}
-						}`))),
-			}
-			return &res, errors.New("Unable to download integration artifact, Response Status code:400")
+			return NegtiveResForIntegrationArtifactDownloadCommandMockResponse()
 		}
 
 	case "GetIntegrationArtifactDeployStatusMockResponse":
@@ -343,6 +309,53 @@ func GetMockResponseByTestTypeAndMockFunctionName(mockFuntionName, testType stri
 
 	}
 	return response, error
+}
+
+//NegtiveResForIntegrationDesigntimeArtifactUpdateMockResponse -Nagative Case http response body
+func NegtiveResForIntegrationDesigntimeArtifactUpdateMockResponse() (*http.Response, error) {
+	res := http.Response{
+		StatusCode: 400,
+		Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+					"code": "Bad Request",
+					"message": {
+					"@lang": "en",
+					"#text": "invalid request"
+					}
+				}`))),
+	}
+	return &res, errors.New("Unable to get status of integration artifact, Response Status code:400")
+}
+
+//NegtiveResForGetIntegrationDesigntimeArtifactMockResponse -Nagative Case http response body
+func NegtiveResForGetIntegrationDesigntimeArtifactMockResponse() (*http.Response, error) {
+
+	res := http.Response{
+		StatusCode: 400,
+		Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+					"code": "Bad Request",
+					"message": {
+					"@lang": "en",
+					"#text": "invalid request"
+					}
+				}`))),
+	}
+	return &res, errors.New("Unable to get status of integration artifact, Response Status code:400")
+}
+
+//NegtiveResForIntegrationArtifactDownloadCommandMockResponse -Nagative Case http response body
+func NegtiveResForIntegrationArtifactDownloadCommandMockResponse() (*http.Response, error) {
+
+	res := http.Response{
+		StatusCode: 400,
+		Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+					"code": "Bad Request",
+					"message": {
+					"@lang": "en",
+					"#text": "invalid request"
+					}
+				}`))),
+	}
+	return &res, errors.New("Unable to download integration artifact, Response Status code:400")
 }
 
 //UpdateIntegrationDesigntimeArtifactMockResponse -Provide http respose body
@@ -432,21 +445,10 @@ func GetFunctionNameByTestTypeAndMethod(method, testType string) string {
 	switch testType {
 
 	case "PositiveAndCreateIntegrationDesigntimeArtifactResBody":
-		if method == "GET" {
-			return "GetIntegrationDesigntimeArtifact"
-		}
-		if method == "POST" {
-			return "UploadIntegrationDesigntimeArtifact"
-		}
+		return GetFunctionNamePositiveAndCreateIntegrationDesigntimeArtifactResBody(method)
 
 	case "PositiveAndUpdateIntegrationDesigntimeArtifactResBody":
-		if method == "GET" {
-			return "IntegrationDesigntimeArtifactUpdate"
-		}
-		if method == "POST" {
-			return "UpdateIntegrationDesigntimeArtifact"
-		}
-
+		return GetFunctionNamePositiveAndUpdateIntegrationDesigntimeArtifactResBody(method)
 	case "NegativeAndGetIntegrationDesigntimeArtifactResBody":
 		if method == "GET" {
 			return "GetIntegrationDesigntimeArtifact"
@@ -480,6 +482,28 @@ func GetFunctionNameByTestTypeAndMethod(method, testType string) string {
 	default:
 		return ""
 
+	}
+	return ""
+}
+
+//GetFunctionNamePositiveAndUpdateIntegrationDesigntimeArtifactResBody -Get Function Name
+func GetFunctionNamePositiveAndUpdateIntegrationDesigntimeArtifactResBody(method string) string {
+	if method == "GET" {
+		return "IntegrationDesigntimeArtifactUpdate"
+	}
+	if method == "POST" {
+		return "UpdateIntegrationDesigntimeArtifact"
+	}
+	return ""
+}
+
+//GetFunctionNamePositiveAndCreateIntegrationDesigntimeArtifactResBody -Get Function Name
+func GetFunctionNamePositiveAndCreateIntegrationDesigntimeArtifactResBody(method string) string {
+	if method == "GET" {
+		return "GetIntegrationDesigntimeArtifact"
+	}
+	if method == "POST" {
+		return "UploadIntegrationDesigntimeArtifact"
 	}
 	return ""
 }
