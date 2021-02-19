@@ -3,6 +3,7 @@ package cmd
 import (
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/transportrequest/solman"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -21,6 +22,7 @@ func newTransportRequestCreateSOLMANTestsUtils() transportRequestCreateSOLMANMoc
 type createMock struct {
 	received           solman.CreateAction
 	transportRequestID string
+	shouldFail         error
 }
 
 func (a *createMock) WithConnection(c solman.Connection) {
@@ -40,24 +42,26 @@ func (a *createMock) WithCMOpts(opts []string) {
 }
 
 func (a *createMock) Perform(command solman.Exec) (string, error) {
-	return a.transportRequestID, nil
+	return a.transportRequestID, a.shouldFail
 }
 
 func TestRunTransportRequestCreateSOLMAN(t *testing.T) {
 	t.Parallel()
 
+	defaultConfig := transportRequestCreateSOLMANOptions{
+
+		Endpoint:            "https://example.org/solman",
+		Username:            "me",
+		Password:            "secret",
+		ChangeDocumentID:    "123",
+		DevelopmentSystemID: "XXX",
+		CmClientOpts:        []string{"-Dabc=123", "-Dxyz=456"},
+	}
+
 	t.Run("straight forward", func(t *testing.T) {
 		t.Parallel()
 		// init
-		config := transportRequestCreateSOLMANOptions{
-
-			Endpoint:            "https://example.org/solman",
-			Username:            "me",
-			Password:            "secret",
-			ChangeDocumentID:    "123",
-			DevelopmentSystemID: "XXX",
-			CmClientOpts:        []string{"-Dabc=123", "-Dxyz=456"},
-		}
+		config := defaultConfig
 
 		utils := newTransportRequestCreateSOLMANTestsUtils()
 		create := createMock{transportRequestID: "XYZK12345678"}
@@ -87,6 +91,27 @@ func TestRunTransportRequestCreateSOLMAN(t *testing.T) {
 
 			t.Run("assert transport request id on CPE", func(t *testing.T) {
 				assert.Equal(t, "XYZK12345678", cpe.custom.transportRequestID)
+			})
+		}
+	})
+
+	t.Run("error case", func(t *testing.T) {
+		t.Parallel()
+		// init
+		config := defaultConfig
+
+		utils := newTransportRequestCreateSOLMANTestsUtils()
+		create := createMock{transportRequestID: "XYZK12345678", shouldFail: errors.New("something went wrong")}
+		cpe := &transportRequestCreateSOLMANCommonPipelineEnvironment{}
+
+		// test
+		err := runTransportRequestCreateSOLMAN(&config, &create, nil, utils, cpe)
+
+		// assert
+		if assert.EqualError(t, err, "something went wrong") {
+
+			t.Run("assert transport request id on CPE unset", func(t *testing.T) {
+				assert.Empty(t, cpe.custom.transportRequestID)
 			})
 		}
 	})
