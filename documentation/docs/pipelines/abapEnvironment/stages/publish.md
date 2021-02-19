@@ -1,6 +1,6 @@
 # Publish
 
-This stage publishes an add-on for the ABAP Environment and confirms the delivery (please refer to the [scenario description](../../../scenarios/abapEnvironmentAddons.md)).
+This stage publishes an add-on for the ABAP Environment (please refer to the [scenario description](../../../scenarios/abapEnvironmentAddons.md)).
 
 ## Steps
 
@@ -39,3 +39,4 @@ repositories:
   - name: /DMO/SWC
     branch: v1.0.0
     version: 1.0.0
+```

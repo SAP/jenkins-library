@@ -34,4 +34,5 @@ void call(Map parameters = [:]) {
         abapAddonAssemblyKitCreateTargetVector script: parameters.script
         abapAddonAssemblyKitPublishTargetVector(script: parameters.script, targetVectorScope: 'T')
     }
+    
 }
