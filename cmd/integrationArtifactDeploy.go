@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 
+	"github.com/Jeffail/gabs/v2"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/cpi"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -92,7 +94,9 @@ func runIntegrationArtifactDeploy(config *integrationArtifactDeployOptions, tele
 		log.Entry().
 			WithField("IntegrationFlowID", config.IntegrationFlowID).
 			Info("successfully deployed into CPI runtime")
-		return nil
+		runs := 14
+		error := PolliFlowDeploymentStatus(runs, config, httpClient)
+		return error
 	}
 	responseBody, readErr := ioutil.ReadAll(deployResp.Body)
 
@@ -102,4 +106,124 @@ func runIntegrationArtifactDeploy(config *integrationArtifactDeployOptions, tele
 
 	log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code : %v", responseBody, deployResp.StatusCode)
 	return errors.Errorf("Integration Flow deployment failed, Response Status code: %v", deployResp.StatusCode)
+}
+
+//PolliFlowDeploymentStatus - Poll the integration flow deployment status,retrun status or error details
+func PolliFlowDeploymentStatus(iter int, config *integrationArtifactDeployOptions, httpClient piperhttp.Sender) error {
+
+	if iter <= 0 {
+		return nil
+	}
+	deployStatus, err := GetIntegrationArtifactDeployStatus(config, httpClient)
+	if err != nil {
+		return err
+	}
+
+	//if artifact starting, then retry based on provided retry count
+	//with specific delay between each retry
+	if deployStatus == "STARTING" {
+		// Calling Sleep method
+		sleepTime := int(iter * 3)
+		time.Sleep(time.Duration(sleepTime) * time.Second)
+		newItrCount := iter - 1
+		return PolliFlowDeploymentStatus(newItrCount, config, httpClient)
+	}
+
+	//if artifact started, then just return
+	if deployStatus == "STARTED" {
+		return nil
+	}
+
+	//if error return immediately with error details
+	if deployStatus == "ERROR" {
+		resp, err := GetIntegrationArtifactDeployError(config, httpClient)
+		if err != nil {
+			return err
+		}
+		return errors.New(resp)
+	}
+	return nil
+}
+
+//GetIntegrationArtifactDeployStatus - Get integration artifact Deploy Status
+func GetIntegrationArtifactDeployStatus(config *integrationArtifactDeployOptions, httpClient piperhttp.Sender) (string, error) {
+	httpMethod := "GET"
+	header := make(http.Header)
+	header.Add("content-type", "application/json")
+	header.Add("Accept", "application/json")
+	deployStatusURL := fmt.Sprintf("%s/api/v1/IntegrationRuntimeArtifacts('%s')", config.Host, config.IntegrationFlowID)
+	deployStatusResp, httpErr := httpClient.SendRequest(httpMethod, deployStatusURL, nil, header, nil)
+
+	if deployStatusResp != nil && deployStatusResp.Body != nil {
+		defer deployStatusResp.Body.Close()
+	}
+
+	if deployStatusResp == nil {
+		return "", errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
+	}
+
+	if deployStatusResp.StatusCode == http.StatusOK {
+		log.Entry().
+			WithField("IntegrationFlowID", config.IntegrationFlowID).
+			Info("Successfully started integration flow artefact in CPI runtime")
+
+		bodyText, readErr := ioutil.ReadAll(deployStatusResp.Body)
+		if readErr != nil {
+			return "", errors.Wrapf(readErr, "HTTP response body could not be read, Response status code : %v", deployStatusResp.StatusCode)
+		}
+		jsonResponse, parsingErr := gabs.ParseJSON([]byte(bodyText))
+		if parsingErr != nil {
+			return "", errors.Wrapf(parsingErr, "HTTP response body could not be parsed as JSON: %v", string(bodyText))
+		}
+		deployStatus := jsonResponse.Path("d.Status").Data().(string)
+		return deployStatus, nil
+	}
+	if httpErr != nil {
+		responseBody, readErr := ioutil.ReadAll(deployStatusResp.Body)
+		if readErr != nil {
+			return "", errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", deployStatusResp.StatusCode)
+		}
+		log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", responseBody, deployStatusResp.StatusCode)
+		return "", errors.Wrapf(httpErr, "HTTP %v request to %v failed with error: %v", httpMethod, deployStatusURL, responseBody)
+	}
+	return "", errors.Errorf("Failed to get Integration Flow artefact runtime status, Response Status code: %v", deployStatusResp.StatusCode)
+}
+
+//GetIntegrationArtifactDeployError - Get integration artifact deploy error details
+func GetIntegrationArtifactDeployError(config *integrationArtifactDeployOptions, httpClient piperhttp.Sender) (string, error) {
+	httpMethod := "GET"
+	header := make(http.Header)
+	header.Add("content-type", "application/json")
+	errorStatusURL := fmt.Sprintf("%s/api/v1/IntegrationRuntimeArtifacts('%s')/ErrorInformation/$value", config.Host, config.IntegrationFlowID)
+	errorStatusResp, httpErr := httpClient.SendRequest(httpMethod, errorStatusURL, nil, header, nil)
+
+	if errorStatusResp != nil && errorStatusResp.Body != nil {
+		defer errorStatusResp.Body.Close()
+	}
+
+	if errorStatusResp == nil {
+		return "", errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
+	}
+
+	if errorStatusResp.StatusCode == http.StatusOK {
+		log.Entry().
+			WithField("IntegrationFlowID", config.IntegrationFlowID).
+			Info("Successfully retrieved Integration Flow artefact deploy error details")
+		responseBody, readErr := ioutil.ReadAll(errorStatusResp.Body)
+		if readErr != nil {
+			return "", errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", errorStatusResp.StatusCode)
+		}
+		log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", responseBody, errorStatusResp.StatusCode)
+		errorDetails := string(responseBody)
+		return errorDetails, nil
+	}
+	if httpErr != nil {
+		responseBody, readErr := ioutil.ReadAll(errorStatusResp.Body)
+		if readErr != nil {
+			return "", errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", errorStatusResp.StatusCode)
+		}
+		log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", responseBody, errorStatusResp.StatusCode)
+		return "", errors.Wrapf(httpErr, "HTTP %v request to %v failed with error: %v", httpMethod, errorStatusURL, responseBody)
+	}
+	return "", errors.Errorf("Failed to get Integration Flow artefact deploy error details, Response Status code: %v", errorStatusResp.StatusCode)
 }

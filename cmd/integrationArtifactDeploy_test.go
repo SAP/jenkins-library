@@ -25,8 +25,6 @@ func newIntegrationArtifactDeployTestsUtils() integrationArtifactDeployMockUtils
 }
 
 func TestRunIntegrationArtifactDeploy(t *testing.T) {
-	t.Parallel()
-
 	t.Run("Successfull Integration Flow Deploy Test", func(t *testing.T) {
 
 		config := integrationArtifactDeployOptions{
@@ -39,23 +37,24 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 			Platform:               "cf",
 		}
 
-		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactDeploy", ResponseBody: ``, TestType: "Positive"}
+		httpClient := httpMockCpis{CPIFunction: "", ResponseBody: ``, TestType: "PostiveAndDeployIntegrationDesigntimeArtifactResBody"}
 
 		err := runIntegrationArtifactDeploy(&config, nil, &httpClient)
 
 		if assert.NoError(t, err) {
 
 			t.Run("check url", func(t *testing.T) {
-				assert.Equal(t, "https://demo/api/v1/DeployIntegrationDesigntimeArtifact?Id='flow1'&Version='1.0.1'", httpClient.URL)
+				assert.Equal(t, "https://demo/api/v1/IntegrationRuntimeArtifacts('flow1')", httpClient.URL)
 			})
 
 			t.Run("check method", func(t *testing.T) {
-				assert.Equal(t, "POST", httpClient.Method)
+				assert.Equal(t, "GET", httpClient.Method)
 			})
 		}
 	})
 
-	t.Run("Failed case of Integration Flow Deploy Test", func(t *testing.T) {
+	t.Run("Failed Integration Flow Deploy Test", func(t *testing.T) {
+
 		config := integrationArtifactDeployOptions{
 			Host:                   "https://demo",
 			OAuthTokenProviderURL:  "https://demo/oauth/token",
@@ -66,11 +65,11 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 			Platform:               "cf",
 		}
 
-		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactDeploy", ResponseBody: ``, TestType: "Negative"}
+		httpClient := httpMockCpis{CPIFunction: "", ResponseBody: ``, TestType: "NegativeAndDeployIntegrationDesigntimeArtifactResBody"}
 
 		err := runIntegrationArtifactDeploy(&config, nil, &httpClient)
 
-		assert.EqualError(t, err, "HTTP POST request to https://demo/api/v1/DeployIntegrationDesigntimeArtifact?Id='flow1'&Version='1.0.1' failed with error: Internal Server Error")
+		assert.EqualError(t, err, "{\t\"message\": {\n\t\t\t\"subsystemName\": \"CONTENT\",\n\t\t\t\"subsytemPartName\": \"CONTENT_DEPLOY\",\n\t\t\t\"messageId\": \"InstanceError\",\n\t\t\t\"messageText\": \"\"\n\t\t},\n\t\t\"parameter\": [\n\t\t\t\"{\\\"message\\\":\\\"ERROR\\\",\\\"childMessageInstances\\\":[{\\\"message\\\":\\\"EXCEPTION\\\",\\\"parameters\\\":[\\\"org.osgi.service.blueprint.container.ComponentDefinitionException: Error when instantiating bean MessageFlow_28_configurator of class null\\\"],\\\"childMessageInstances\\\":[{\\\"message\\\":\\\"CAUSE\\\",\\\"parameters\\\":[\\\"java.lang.IllegalStateException: No credentials for 'smtp' found\\\"]}]}]}\"\n\t\t]\n\t}")
 	})
 
 }
