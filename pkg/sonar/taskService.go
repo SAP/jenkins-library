@@ -61,7 +61,7 @@ func (service *TaskService) HasFinished() (bool, error) {
 		return false, err
 	}
 	log.Entry().Infof("Status: %s", result.Task.Status)
-	if result.Task.Status == taskStatusPending || result.Task.Status != taskStatusProcessing {
+	if result.Task.Status == taskStatusPending || result.Task.Status == taskStatusProcessing {
 		return false, nil
 	}
 	for _, warning := range result.Task.Warnings {
