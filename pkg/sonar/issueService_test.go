@@ -13,7 +13,7 @@ import (
 
 func TestIssueService(t *testing.T) {
 	testURL := "https://example.org"
-	t.Run("success case", func(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
 		httpmock.Activate()
 		defer httpmock.DeactivateAndReset()
 
@@ -30,7 +30,7 @@ func TestIssueService(t *testing.T) {
 		assert.NotEmpty(t, count)
 		assert.Equal(t, 1, httpmock.GetTotalCallCount(), "unexpected number of requests")
 	})
-	t.Run("error case", func(t *testing.T) {
+	t.Run("error", func(t *testing.T) {
 		httpmock.Activate()
 		defer httpmock.DeactivateAndReset()
 
