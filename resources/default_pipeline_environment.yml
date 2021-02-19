@@ -557,3 +557,10 @@ steps:
     mode: 'DEPLOY'
     action: 'NONE'
     xsSessionFile: '.xsconfig'
+  piperPipelineStageInit:
+    stepMappings:
+      checkmarx: 'checkmarxExecuteScan'
+      fortify: 'fortifyExecuteScan'
+      karma: 'karmaExecuteTests'
+      whitesource: 'whitesourceExecuteScan'
+    labelPrefix: pr_
