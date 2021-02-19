@@ -73,6 +73,7 @@ func runTransportRequestCreateSOLMAN(
 	create.WithConnection(connection)
 	create.WithDevelopmentSystemID(config.DevelopmentSystemID)
 	create.WithChangeDocumentID(config.ChangeDocumentID)
+	create.WithCMOpts(config.CmClientOpts)
 
 	transportRequestID, err := create.Perform(utils)
 

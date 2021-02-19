@@ -31,6 +31,7 @@ func TestRunTransportRequestCreateSOLMAN(t *testing.T) {
 			Password:            "secret",
 			ChangeDocumentID:    "123",
 			DevelopmentSystemID: "XXX",
+			CmClientOpts: []string{"-Dabc=123", "-Dxyz=456"},
 		}
 
 		utils := newTransportRequestCreateSOLMANTestsUtils()
