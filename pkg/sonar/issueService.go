@@ -2,12 +2,9 @@ package sonar
 
 import (
 	"net/http"
-	"strings"
 
 	sonargo "github.com/magicsong/sonargo/sonar"
 	"github.com/pkg/errors"
-
-	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 const endpointIssuesSearch = "issues/search"
@@ -96,27 +93,11 @@ func (service *IssueService) GetNumberOfInfoIssues() (int, error) {
 
 // NewIssuesService returns a new instance of a service for the issues API endpoint.
 func NewIssuesService(host, token, project, organization, branch, pullRequest string, client Sender) *IssueService {
-	// Make sure the given URL end with a slash
-	if !strings.HasSuffix(host, "/") {
-		host += "/"
-	}
-	// Make sure the given URL end with a api/
-	if !strings.HasSuffix(host, "api/") {
-		host += "api/"
-	}
-
-	log.Entry().Debugf("using api client for '%s'", host)
-
 	return &IssueService{
 		Organization: organization,
 		Project:      project,
 		Branch:       branch,
 		PullRequest:  pullRequest,
-		apiClient: &Requester{
-			Client:   client,
-			Host:     host,
-			Username: token,
-			// Password: "",
-		},
+		apiClient:    NewAPIClient(host, token, client),
 	}
 }

@@ -51,8 +51,8 @@ func (requester *Requester) decode(response *http.Response, result interface{}) 
 	return decoder.Decode(result)
 }
 
-// NewClient ...
-func NewClient(host, token string, client Sender) *Requester {
+// NewAPIClient ...
+func NewAPIClient(host, token string, client Sender) *Requester {
 	// Make sure the given URL end with a slash
 	if !strings.HasSuffix(host, "/") {
 		host += "/"

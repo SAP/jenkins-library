@@ -93,6 +93,6 @@ func NewTaskService(host, token, task string, client Sender) *TaskService {
 	return &TaskService{
 		TaskID:       task,
 		PollInterval: 15 * time.Second,
-		apiClient:    NewClient(host, token, client),
+		apiClient:    NewAPIClient(host, token, client),
 	}
 }
