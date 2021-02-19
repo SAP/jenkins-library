@@ -23,7 +23,7 @@ This stage will be active, if the stage configuration in the `config.yml` contai
 ```yaml
 general:
   abapAddonAssemblyKitCredentialsId: 'TechUserAAKaaS'
-  addonDescriptorFileName: 'addon.yml' 
+  addonDescriptorFileName: 'addon.yml'
 stages:
   Publish:
     targetVectorScope: 'P'
@@ -39,4 +39,3 @@ repositories:
   - name: /DMO/SWC
     branch: v1.0.0
     version: 1.0.0
-```

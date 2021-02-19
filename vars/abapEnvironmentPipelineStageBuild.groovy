@@ -14,7 +14,6 @@ import static com.sap.piper.Prerequisites.checkScript
     'abapAddonAssemblyKitReleasePackages',
     'abapAddonAssemblyKitCreateTargetVector',
     'abapAddonAssemblyKitPublishTargetVector'
-    
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
@@ -35,5 +34,4 @@ void call(Map parameters = [:]) {
         abapAddonAssemblyKitCreateTargetVector script: parameters.script
         abapAddonAssemblyKitPublishTargetVector(script: parameters.script, targetVectorScope: 'T')
     }
-
 }
