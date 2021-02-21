@@ -2,10 +2,6 @@
 
 ## Introduction
 
-!!! caution "Initial Scope"
-    The initial scope supports an add-on product consisting of **one** software component. Furthermore, this software component can not be used in multiple add-on products.
-    You cannot build add-ons based on gCTS branching functionality.
-
 !!! caution "Upcoming 2102 release of SAP BTP ABAP Environment"
 
     With the upcoming 2102 release of SAP BTP ABAP Environment some changes to the backend behavior of the MANAGE_GIT_REPOSITORY service are introduced. Specifically:
