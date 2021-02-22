@@ -71,21 +71,21 @@ func (service *TaskService) HasFinished() (bool, error) {
 }
 
 // WaitForTask ..
-func (service *TaskService) WaitForTask() (bool, error) {
+func (service *TaskService) WaitForTask() error {
 	log.Entry().Info("waiting for SonarQube task to complete..")
 	finished, err := service.HasFinished()
 	if err != nil {
-		return false, err
+		return err
 	}
 	for !finished {
+		time.Sleep(service.PollInterval)
 		finished, err = service.HasFinished()
 		if err != nil {
-			return false, err
+			return err
 		}
-		time.Sleep(service.PollInterval)
 	}
 	log.Entry().Info("finished.")
-	return true, nil
+	return nil
 }
 
 // NewTaskService returns a new instance of a service for the task API endpoint.

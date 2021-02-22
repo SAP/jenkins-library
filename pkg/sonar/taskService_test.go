@@ -88,17 +88,41 @@ func TestWaitForTask(t *testing.T) {
 			[]*http.Response{
 				httpmock.NewStringResponse(200, responseCeTaskPending),
 				httpmock.NewStringResponse(200, responseCeTaskProcessing),
-				httpmock.NewStringResponse(200, responseCeTaskFailure),
+				httpmock.NewStringResponse(200, responseCeTaskSuccess),
 			},
 		))
 		// create service instance
 		serviceUnderTest := NewTaskService(testURL, mock.Anything, mock.Anything, sender)
 		serviceUnderTest.PollInterval = time.Millisecond
 		// test
-		result, err := serviceUnderTest.WaitForTask()
+		err := serviceUnderTest.WaitForTask()
 		// assert
 		assert.NoError(t, err)
-		assert.True(t, result)
+		assert.Equal(t, 3, httpmock.GetTotalCallCount(), "unexpected number of requests")
+	})
+	t.Run("failure", func(t *testing.T) {
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
+
+		sender := &piperhttp.Client{}
+		sender.SetOptions(piperhttp.ClientOptions{UseDefaultTransport: true})
+		// add response handler
+
+		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+endpointCeTask+"", httpmock.ResponderFromMultipleResponses(
+			[]*http.Response{
+				httpmock.NewStringResponse(200, responseCeTaskPending),
+				httpmock.NewStringResponse(200, responseCeTaskProcessing),
+				httpmock.NewStringResponse(404, responseCeTaskFailure),
+			},
+		))
+		// create service instance
+		serviceUnderTest := NewTaskService(testURL, mock.Anything, mock.Anything, sender)
+		serviceUnderTest.PollInterval = time.Millisecond
+		// test
+		err := serviceUnderTest.WaitForTask()
+		// assert
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "status: FAILED")
 		assert.Equal(t, 3, httpmock.GetTotalCallCount(), "unexpected number of requests")
 	})
 }

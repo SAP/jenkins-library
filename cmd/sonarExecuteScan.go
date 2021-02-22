@@ -174,29 +174,32 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 	//TODO: implement certificate handling
 	sender.SetOptions(piperhttp.ClientOptions{TransportSkipVerification: true})
 	taskService := SonarUtils.NewTaskService(taskReport.ServerURL, config.Token, taskReport.TaskID, sender)
-
-	taskService.WaitForTask()
-
+	// wait for analysis task to complete
+	err = taskService.WaitForTask()
+	if err != nil {
+		return err
+	}
+	// fetch number of issues by severity
 	issueService := SonarUtils.NewIssuesService(taskReport.ServerURL, config.Token, taskReport.ProjectKey, config.Organization, config.BranchName, config.ChangeID, sender)
 	influx.sonarqube_data.fields.blocker_issues, err = issueService.GetNumberOfBlockerIssues()
 	if err != nil {
-		log.Entry().Warn(err)
+		return err
 	}
 	influx.sonarqube_data.fields.critical_issues, err = issueService.GetNumberOfCriticalIssues()
 	if err != nil {
-		log.Entry().Warn(err)
+		return err
 	}
 	influx.sonarqube_data.fields.major_issues, err = issueService.GetNumberOfMajorIssues()
 	if err != nil {
-		log.Entry().Warn(err)
+		return err
 	}
 	influx.sonarqube_data.fields.minor_issues, err = issueService.GetNumberOfMinorIssues()
 	if err != nil {
-		log.Entry().Warn(err)
+		return err
 	}
 	influx.sonarqube_data.fields.info_issues, err = issueService.GetNumberOfInfoIssues()
 	if err != nil {
-		log.Entry().Warn(err)
+		return err
 	}
 	log.Entry().Debugf("Influx values: %v", influx.sonarqube_data.fields)
 	return nil
