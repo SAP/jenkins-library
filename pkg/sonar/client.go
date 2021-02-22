@@ -26,6 +26,9 @@ type Sender interface {
 
 func (requester *Requester) create(method, path string, options interface{}) (request *http.Request, err error) {
 	sonarGoClient, err := sonargo.NewClient(requester.Host, requester.Username, requester.Password)
+	if err != nil {
+		return
+	}
 	// reuse request creation from sonargo
 	request, err = sonarGoClient.NewRequest(method, path, options)
 	if err != nil {
