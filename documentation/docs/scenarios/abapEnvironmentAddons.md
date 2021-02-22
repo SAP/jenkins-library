@@ -153,17 +153,17 @@ The build process is controlled by an add-on descriptor file called `addon.yml`.
 
 ```YAML
 ---
-addonProduct: /NAMESPC/PRODUCT1
+addonProduct: /NAMESPC/PRODUCTX
 addonVersion: 1.2.0
 repositories:
-  - name: /NAMESPC/COMPONENT1
-    branch: release-v.1.2.0
+  - name: /NAMESPC/COMPONENTA
+    branch: v1.2.0
     version: 1.2.0
-    commitID: 'cd87a3cac2bc946b7629580e58598c3db56a26f8'
-  - name: /NAMESPC/COMPONENT2
-    branch: release-v.2.0.0
+    commitID: 7d4516e9
+  - name: /NAMESPC/COMPONENTB
+    branch: v2.0.0
     version: 2.0.0
-    commitID: '1f34b135da79dad7d498a31c15296270ff81dbd2'
+    commitID: 9f102ffb
 ```
 
 Explanation of the keys:
