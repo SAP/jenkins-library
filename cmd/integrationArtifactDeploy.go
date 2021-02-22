@@ -112,7 +112,7 @@ func runIntegrationArtifactDeploy(config *integrationArtifactDeployOptions, tele
 func PolliFlowDeploymentStatus(iter int, config *integrationArtifactDeployOptions, httpClient piperhttp.Sender) error {
 
 	if iter <= 0 {
-		return nil
+		return errors.New("Failed to start integration artifact afer retrying several times")
 	}
 	deployStatus, err := GetIntegrationArtifactDeployStatus(config, httpClient)
 	if err != nil {
@@ -213,7 +213,7 @@ func GetIntegrationArtifactDeployError(config *integrationArtifactDeployOptions,
 		if readErr != nil {
 			return "", errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", errorStatusResp.StatusCode)
 		}
-		log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", responseBody, errorStatusResp.StatusCode)
+		log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", string(responseBody), errorStatusResp.StatusCode)
 		errorDetails := string(responseBody)
 		return errorDetails, nil
 	}
