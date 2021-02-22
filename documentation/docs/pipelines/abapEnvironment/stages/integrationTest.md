@@ -49,6 +49,7 @@ stages:
 ```
 
 ### addon.yml
+
 ```YAML
 ---
 addonProduct: /NAMESPC/PRODUCTX
