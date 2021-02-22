@@ -175,20 +175,7 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 	sender.SetOptions(piperhttp.ClientOptions{TransportSkipVerification: true})
 	tasks := SonarUtils.NewTaskService(taskReport.ServerURL, config.Token, taskReport.TaskID, sender)
 
-	log.Entry().Info("waiting for task to complete..")
-	finished, err := tasks.HasFinished()
-	if err != nil {
-		log.Entry().Warn(err)
-	}
-	for !finished {
-		finished, err = tasks.HasFinished()
-		if err != nil {
-			log.Entry().Warn(err)
-			break
-		}
-		time.Sleep(15 * time.Second) //options.timeBetweenPolls)
-	}
-	log.Entry().Info("finished.")
+	tasks.WaitForTask()
 
 	issues := SonarUtils.NewIssuesService(taskReport.ServerURL, config.Token, taskReport.ProjectKey, config.Organization, config.BranchName, config.ChangeID, sender)
 	influx.sonarqube_data.fields.blocker_issues, err = issues.GetNumberOfBlockerIssues()
