@@ -138,8 +138,8 @@ func logVersions(utils newmanExecuteUtils) error {
 
 func installNewman(newmanInstallCommand string, utils newmanExecuteUtils) error {
 	installCommandTokens := strings.Split(newmanInstallCommand, " ")
-	//utils.SetEnv([]string{"NPM_CONFIG_PREFIX=/home/node/.npm-global"})
-	err := utils.RunExecutable(installCommandTokens[0], installCommandTokens[1:]...)
+	// err := utils.RunExecutable(installCommandTokens[0], installCommandTokens[1:]...)
+	err := utils.RunShell(installCommandTokens[0], installCommandTokens[1:]...)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.Wrap(err, "error installing newman")
