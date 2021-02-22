@@ -9,7 +9,7 @@ import (
 )
 
 func TestCreate(t *testing.T) {
-	testURL := "https://example.org/api"
+	testURL := "https://example.org/api/"
 	t.Run("", func(t *testing.T) {
 		// init
 		requester := Requester{
@@ -27,4 +27,23 @@ func TestCreate(t *testing.T) {
 		assert.Equal(t, "/api/"+endpointIssuesSearch, request.URL.Path)
 		assert.Contains(t, request.Header.Get("Authorization"), "Basic ")
 	})
+}
+
+func TestNewAPIClient(t *testing.T) {
+	tests := []struct {
+		name string
+		host string
+		want string
+	}{
+		{name: mock.Anything, want: "https://example.org/api/", host: "https://example.org"},
+		{name: mock.Anything, want: "https://example.org/api/", host: "https://example.org/"},
+		{name: mock.Anything, want: "https://example.org/api/", host: "https://example.org/api"},
+		{name: mock.Anything, want: "https://example.org/api/", host: "https://example.org/api/"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := NewAPIClient(tt.host, mock.Anything, nil)
+			assert.Equal(t, tt.want, got.Host)
+		})
+	}
 }
