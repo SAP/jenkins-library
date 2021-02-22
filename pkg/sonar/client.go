@@ -46,8 +46,8 @@ func (requester *Requester) send(request *http.Request) (*http.Response, error) 
 }
 
 func (requester *Requester) decode(response *http.Response, result interface{}) error {
-	defer response.Body.Close()
 	decoder := json.NewDecoder(response.Body)
+	defer response.Body.Close()
 	// sonargo.IssuesSearchObject does not imlement "internal" field organization and thus decoding fails
 	// anyway the field is currently not needed so we simply allow (and drop) unknown fields to avoid extending the type
 	// decoder.DisallowUnknownFields()
