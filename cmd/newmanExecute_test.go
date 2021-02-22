@@ -23,7 +23,6 @@ type newmanExecuteMockUtils struct {
 	errorOnNewmanInstall   bool
 	errorOnRunShell        bool
 	errorOnNewmanExecution bool
-	errorOnRunExecutable   bool
 	errorOnLoggingNode     bool
 	errorOnLoggingNpm      bool
 	executedExecutables    []executedExecutables
@@ -125,7 +124,7 @@ func TestRunNewmanExecute(t *testing.T) {
 		err := runNewmanExecute(&allFineConfig, &utils)
 
 		// assert
-		assert.EqualError(t, err, "error logging npm version: error on RunExecutable")
+		assert.EqualError(t, err, "error logging npm version: error on RunShell")
 	})
 
 	t.Run("error on template resolution", func(t *testing.T) {
@@ -271,7 +270,7 @@ func TestLogVersions(t *testing.T) {
 		utils.errorOnLoggingNode = true
 
 		err := logVersions(&utils)
-		assert.EqualError(t, err, "error logging node version: error on RunExecutable")
+		assert.EqualError(t, err, "error logging node version: error on RunShell")
 	})
 
 	t.Run("error in npm execution", func(t *testing.T) {
@@ -279,7 +278,7 @@ func TestLogVersions(t *testing.T) {
 		utils.errorOnLoggingNpm = true
 
 		err := logVersions(&utils)
-		assert.EqualError(t, err, "error logging npm version: error on RunExecutable")
+		assert.EqualError(t, err, "error logging npm version: error on RunShell")
 		assert.Contains(t, utils.executedExecutables, executedExecutables{executable: "node", params: []string{"--version"}})
 	})
 }
@@ -292,25 +291,17 @@ func (e *newmanExecuteMockUtils) Glob(string) (matches []string, err error) {
 	return e.filesToFind, nil
 }
 
-func (e *newmanExecuteMockUtils) RunShell(shell, script string) error {
+func (e *newmanExecuteMockUtils) RunShell(shell string, script string) error {
+	params := strings.Split(script, " ")
+	executable := params[0]
 	if e.errorOnRunShell {
 		return errors.New("error on RunShell")
 	}
-
-	e.executedShell = shell
-	e.executedScript = script
-	return nil
-}
-
-func (e *newmanExecuteMockUtils) RunExecutable(executable string, params ...string) error {
-	if e.errorOnRunExecutable {
-		return errors.New("error on RunExecutable")
+	if e.errorOnLoggingNode && executable == "node" && params[1] == "--version" {
+		return errors.New("error on RunShell")
 	}
-	if e.errorOnLoggingNode && executable == "node" && params[0] == "--version" {
-		return errors.New("error on RunExecutable")
-	}
-	if e.errorOnLoggingNpm && executable == "npm" && params[0] == "--version" {
-		return errors.New("error on RunExecutable")
+	if e.errorOnLoggingNpm && executable == "npm" && params[1] == "--version" {
+		return errors.New("error on RunShell")
 	}
 	if e.errorOnNewmanExecution && strings.Contains(executable, "newman") {
 		return errors.New("error on newman execution")
@@ -328,6 +319,9 @@ func (e *newmanExecuteMockUtils) RunExecutable(executable string, params ...stri
 	e.executedExecutables[length-1].executable = executable
 	e.executedExecutables[length-1].params = params
 	e.commandIndex++
+
+	e.executedShell = shell
+	e.executedScript = script
 	return nil
 }
 

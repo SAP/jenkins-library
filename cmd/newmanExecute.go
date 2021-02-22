@@ -23,7 +23,6 @@ type newmanExecuteUtils interface {
 	Glob(pattern string) (matches []string, err error)
 
 	RunShell(shell, script string) error
-	RunExecutable(executable string, params ...string) error
 	SetEnv(env []string)
 }
 
@@ -123,12 +122,12 @@ func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) er
 }
 
 func logVersions(utils newmanExecuteUtils) error {
-	err := utils.RunExecutable("node", "--version")
+	err := utils.RunShell("/bin/sh", "node --version")
 	if err != nil {
 		log.SetErrorCategory(log.ErrorInfrastructure)
 		return errors.Wrap(err, "error logging node version")
 	}
-	err = utils.RunExecutable("npm", "--version")
+	err = utils.RunShell("/bin/sh", "npm --version")
 	if err != nil {
 		log.SetErrorCategory(log.ErrorInfrastructure)
 		return errors.Wrap(err, "error logging npm version")
