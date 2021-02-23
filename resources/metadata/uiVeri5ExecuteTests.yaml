@@ -12,6 +12,9 @@ metadata:
 #        In a Kubernetes environment, the containers both need to be referenced with `localhost`.
 spec:
   inputs:
+    resources:
+      - name: tests
+        type: stash
     params:
       - name: installCommand
         type: string
