@@ -1,108 +1,73 @@
 package cmd
 
 import (
-	"fmt"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/npm"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-// npmMockUtilsBundle for mocking
-type npmMockUtilsBundle struct {
+// NpmMockUtilsBundle for mocking
+type NpmMockUtilsBundle struct {
 	*mock.FilesMock
 	execRunner *mock.ExecMockRunner
 }
 
 // GetExecRunner return the execRunner mock
-func (u *npmMockUtilsBundle) GetExecRunner() npm.ExecRunner {
+func (u *NpmMockUtilsBundle) GetExecRunner() npm.ExecRunner {
 	return u.execRunner
 }
 
-// newNpmMockUtilsBundle creates an instance of npmMockUtilsBundle
-func newNpmMockUtilsBundle() npmMockUtilsBundle {
-	utils := npmMockUtilsBundle{FilesMock: &mock.FilesMock{}, execRunner: &mock.ExecMockRunner{}}
+// newNpmMockUtilsBundle creates an instance of NpmMockUtilsBundle
+func newNpmMockUtilsBundle() NpmMockUtilsBundle {
+	utils := NpmMockUtilsBundle{FilesMock: &mock.FilesMock{}, execRunner: &mock.ExecMockRunner{}}
 	return utils
 }
 
-// npmConfig holds the config parameters needed for checking if the function is called with correct parameters
-type npmConfig struct {
-	install            bool
-	runScripts         []string
-	runOptions         []string
-	virtualFrameBuffer bool
-}
-
-// npmExecutorMock mocking struct
-type npmExecutorMock struct {
-	utils  npmMockUtilsBundle
-	config npmConfig
-}
-
-// FindPackageJSONFiles mock implementation
-func (n *npmExecutorMock) FindPackageJSONFiles() []string {
-	packages, _ := n.utils.Glob("**/package.json")
-	return packages
-}
-
-// FindPackageJSONFilesWithScript mock implementation
-func (n *npmExecutorMock) FindPackageJSONFilesWithScript(packageJSONFiles []string, script string) ([]string, error) {
-	return packageJSONFiles, nil
-}
-
-// RunScriptsInAllPackages mock implementation
-func (n *npmExecutorMock) RunScriptsInAllPackages(runScripts []string, runOptions []string, virtualFrameBuffer bool) error {
-	if len(runScripts) != len(n.config.runScripts) {
-		return fmt.Errorf("RunScriptsInAllPackages was called with a different list of runScripts than config.runScripts")
-	}
-	for i, script := range runScripts {
-		if script != n.config.runScripts[i] {
-			return fmt.Errorf("RunScriptsInAllPackages was called with a different list of runScripts than config.runScripts")
-		}
-	}
-
-	if len(runOptions) != 0 {
-		return fmt.Errorf("RunScriptsInAllPackages was unexpectedly called with a list of runOptions")
-	}
-
-	if virtualFrameBuffer != n.config.virtualFrameBuffer {
-		return fmt.Errorf("RunScriptsInAllPackages was called with a different value of virtualFrameBuffer than config.virtualFrameBuffer")
-	}
-
-	return nil
-}
-
-// InstallAllDependencies mock implementation
-func (n *npmExecutorMock) InstallAllDependencies(packageJSONFiles []string) error {
-	allPackages := n.FindPackageJSONFiles()
-	if len(packageJSONFiles) != len(allPackages) {
-		return fmt.Errorf("packageJSONFiles != n.FindPackageJSONFiles()")
-	}
-	for i, packageJSON := range packageJSONFiles {
-		if packageJSON != allPackages[i] {
-			return fmt.Errorf("InstallAllDependencies was called with a different list of package.json files than result of n.FindPackageJSONFiles()")
-		}
-	}
-
-	if !n.config.install {
-		return fmt.Errorf("InstallAllDependencies was called but config.install was false")
-	}
-	return nil
-}
-
-// SetNpmRegistries mock implementation
-func (n *npmExecutorMock) SetNpmRegistries() error {
-	return nil
-}
-
 func TestNpmExecuteScripts(t *testing.T) {
-	t.Run("Call with install", func(t *testing.T) {
-		config := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build", "ci-test"}}
-		utils := newNpmMockUtilsBundle()
+	t.Run("Call with packagesList", func(t *testing.T) {
+		config := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build", "ci-test"}, BuildDescriptorList: []string{"src/package.json"}}
+		utils := npm.NewNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
 		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
 
-		npmExecutor := npmExecutorMock{utils: utils, config: npmConfig{install: config.Install, runScripts: config.RunScripts}}
+		npmExecutor := npm.NpmExecutorMock{Utils: utils, Config: npm.NpmConfig{Install: config.Install, RunScripts: config.RunScripts, PackagesList: config.BuildDescriptorList}}
+		err := runNpmExecuteScripts(&npmExecutor, &config)
+
+		assert.NoError(t, err)
+	})
+
+	t.Run("Call with excludeList", func(t *testing.T) {
+		config := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build", "ci-test"}, BuildDescriptorExcludeList: []string{"**/path/**"}}
+		utils := npm.NewNpmMockUtilsBundle()
+		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
+		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
+
+		npmExecutor := npm.NpmExecutorMock{Utils: utils, Config: npm.NpmConfig{Install: config.Install, RunScripts: config.RunScripts, ExcludeList: config.BuildDescriptorExcludeList}}
+		err := runNpmExecuteScripts(&npmExecutor, &config)
+
+		assert.NoError(t, err)
+	})
+
+	t.Run("Call with scriptOptions", func(t *testing.T) {
+		config := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build", "ci-test"}, ScriptOptions: []string{"--run"}}
+		utils := npm.NewNpmMockUtilsBundle()
+		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
+		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
+
+		npmExecutor := npm.NpmExecutorMock{Utils: utils, Config: npm.NpmConfig{Install: config.Install, RunScripts: config.RunScripts, ScriptOptions: config.ScriptOptions}}
+		err := runNpmExecuteScripts(&npmExecutor, &config)
+
+		assert.NoError(t, err)
+	})
+
+	t.Run("Call with install", func(t *testing.T) {
+		config := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build", "ci-test"}}
+		utils := npm.NewNpmMockUtilsBundle()
+		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
+		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
+
+		npmExecutor := npm.NpmExecutorMock{Utils: utils, Config: npm.NpmConfig{Install: config.Install, RunScripts: config.RunScripts}}
 		err := runNpmExecuteScripts(&npmExecutor, &config)
 
 		assert.NoError(t, err)
@@ -110,11 +75,11 @@ func TestNpmExecuteScripts(t *testing.T) {
 
 	t.Run("Call without install", func(t *testing.T) {
 		config := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build", "ci-test"}}
-		utils := newNpmMockUtilsBundle()
+		utils := npm.NewNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
 		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
 
-		npmExecutor := npmExecutorMock{utils: utils, config: npmConfig{install: config.Install, runScripts: config.RunScripts}}
+		npmExecutor := npm.NpmExecutorMock{Utils: utils, Config: npm.NpmConfig{Install: config.Install, RunScripts: config.RunScripts}}
 		err := runNpmExecuteScripts(&npmExecutor, &config)
 
 		assert.NoError(t, err)
@@ -122,11 +87,11 @@ func TestNpmExecuteScripts(t *testing.T) {
 
 	t.Run("Call with virtualFrameBuffer", func(t *testing.T) {
 		config := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build", "ci-test"}, VirtualFrameBuffer: true}
-		utils := newNpmMockUtilsBundle()
+		utils := npm.NewNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
 		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
 
-		npmExecutor := npmExecutorMock{utils: utils, config: npmConfig{install: config.Install, runScripts: config.RunScripts, virtualFrameBuffer: config.VirtualFrameBuffer}}
+		npmExecutor := npm.NpmExecutorMock{Utils: utils, Config: npm.NpmConfig{Install: config.Install, RunScripts: config.RunScripts, VirtualFrameBuffer: config.VirtualFrameBuffer}}
 		err := runNpmExecuteScripts(&npmExecutor, &config)
 
 		assert.NoError(t, err)
@@ -135,7 +100,7 @@ func TestNpmExecuteScripts(t *testing.T) {
 	t.Run("Test integration with npm pkg", func(t *testing.T) {
 		config := npmExecuteScriptsOptions{Install: true, RunScripts: []string{"ci-build"}}
 
-		options := npm.ExecutorOptions{SapNpmRegistry: config.SapNpmRegistry, DefaultNpmRegistry: config.DefaultNpmRegistry}
+		options := npm.ExecutorOptions{DefaultNpmRegistry: config.DefaultNpmRegistry}
 
 		utils := newNpmMockUtilsBundle()
 		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-build\": \"\" } }"))
@@ -146,11 +111,10 @@ func TestNpmExecuteScripts(t *testing.T) {
 		err := runNpmExecuteScripts(&npmExecutor, &config)
 
 		if assert.NoError(t, err) {
-			if assert.Equal(t, 6, len(utils.execRunner.Calls)) {
+			if assert.Equal(t, 4, len(utils.execRunner.Calls)) {
 				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"config", "get", "registry"}}, utils.execRunner.Calls[0])
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"config", "get", "@sap:registry"}}, utils.execRunner.Calls[1])
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"ci"}}, utils.execRunner.Calls[2])
-				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "ci-build"}}, utils.execRunner.Calls[5])
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"ci"}}, utils.execRunner.Calls[1])
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "ci-build"}}, utils.execRunner.Calls[3])
 			}
 		}
 	})

@@ -1,11 +1,13 @@
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateStageDocumentation
+import com.sap.piper.StageNameProvider
 import com.sap.piper.Utils
 import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
+@Field String TECHNICAL_STAGE_NAME = 'additionalUnitTests'
 
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field STAGE_STEP_KEYS = [
@@ -13,6 +15,8 @@ import static com.sap.piper.Prerequisites.checkScript
     'batsExecuteTests',
     /** Executes karma tests which are for example suitable for OPA5 testing as well as QUnit testing of SAP UI5 apps.*/
     'karmaExecuteTests',
+    /** Executes npm scripts to run frontend unit tests */
+    'npmExecuteScripts',
     /** Publishes test results to Jenkins. It will automatically be active in cases tests are executed. */
     'testsPublishResults'
 ]
@@ -28,8 +32,7 @@ void call(Map parameters = [:]) {
 
     def script = checkScript(this, parameters) ?: this
     def utils = parameters.juStabUtils ?: new Utils()
-
-    def stageName = parameters.stageName?:env.STAGE_NAME
+    def stageName = StageNameProvider.instance.getStageName(script, parameters, this)
 
     Map config = ConfigurationHelper.newInstance(this)
         .loadStepDefaults()
@@ -38,6 +41,7 @@ void call(Map parameters = [:]) {
         .mixin(parameters, PARAMETER_KEYS)
         .addIfEmpty('batsExecuteTests', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.batsExecuteTests)
         .addIfEmpty('karmaExecuteTests', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.karmaExecuteTests)
+        .addIfEmpty('npmExecuteScripts', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.npmExecuteScripts)
         .use()
 
     piperStageWrapper (script: script, stageName: stageName) {
@@ -55,6 +59,13 @@ void call(Map parameters = [:]) {
         if (config.karmaExecuteTests) {
             durationMeasure(script: script, measurementName: 'karma_duration') {
                 karmaExecuteTests script: script
+                testsPublishResults script: script
+            }
+        }
+
+        if (config.npmExecuteScripts) {
+            durationMeasure(script: script, measurementName: 'npmExecuteScripts_duration') {
+                npmExecuteScripts script: script
                 testsPublishResults script: script
             }
         }

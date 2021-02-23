@@ -7,10 +7,11 @@ import (
 )
 
 func TestMavenExecuteCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := MavenExecuteCommand()
 
-	// only high level testing performed - details are tested in step generation procudure
+	// only high level testing performed - details are tested in step generation procedure
 	assert.Equal(t, "mavenExecute", testCmd.Use, "command name incorrect")
 
 }

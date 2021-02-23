@@ -2,12 +2,14 @@ import static org.hamcrest.Matchers.allOf
 import static org.hamcrest.Matchers.containsString
 
 import org.hamcrest.Matchers
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
+import com.sap.piper.Utils
 import com.sap.piper.cm.BackendType
 import com.sap.piper.cm.ChangeManagement
 import com.sap.piper.cm.ChangeManagementException
@@ -50,6 +52,12 @@ public class TransportRequestReleaseTest extends BasePiperTest {
                                          ]
                                      ]
                                  ]
+        Utils.metaClass.echo = { def m -> }
+    }
+
+    @After
+    public void tearDown() {
+        Utils.metaClass = null
     }
 
     @Test
@@ -65,7 +73,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
         }
 
         thrown.expect(IllegalArgumentException)
-        thrown.expectMessage("Change document id not provided (parameter: 'changeDocumentId' or via commit history).")
+        thrown.expectMessage("Change document id not provided (parameter: 'changeDocumentId' provided to the step call or via commit history).")
 
         stepRule.step.transportRequestRelease(script: nullScript, transportRequestId: '001', cmUtils: cm)
     }
@@ -83,7 +91,7 @@ public class TransportRequestReleaseTest extends BasePiperTest {
         }
 
         thrown.expect(IllegalArgumentException)
-        thrown.expectMessage("Transport request id not provided (parameter: 'transportRequestId' or via commit history).")
+        thrown.expectMessage("Transport request id not provided (parameter: 'transportRequestId' provided to the step call or via commit history).")
 
         stepRule.step.transportRequestRelease(script: nullScript, changeDocumentId: '001', cmUtils: cm)
     }

@@ -4,9 +4,13 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
+	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/reporting"
+	ws "github.com/SAP/jenkins-library/pkg/whitesource"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -33,11 +37,13 @@ func ConfigCommand() *cobra.Command {
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
+			initStageName(false)
 		},
 		Run: func(cmd *cobra.Command, _ []string) {
 			err := generateConfig()
 			if err != nil {
-				log.Entry().WithField("category", "config").WithError(err).Fatal("failed to retrieve configuration")
+				log.SetErrorCategory(log.ErrorConfiguration)
+				log.Entry().WithError(err).Fatal("failed to retrieve configuration")
 			}
 		},
 	}
@@ -61,6 +67,12 @@ func generateConfig() error {
 	if err != nil {
 		return errors.Wrap(err, "metadata: read failed")
 	}
+
+	// prepare output resource directories:
+	// this is needed in order to have proper directory permissions in case
+	// resources written inside a container image with a different user
+	// Remark: This is so far only relevant for Jenkins environments where getConfig is executed
+	prepareOutputEnvironment(metadata.Spec.Outputs.Resources, GeneralConfig.EnvRootPath)
 
 	resourceParams := metadata.GetResourceParameters(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 
@@ -143,32 +155,44 @@ func applyContextConditions(metadata config.StepData, stepConfig *config.StepCon
 	//consider conditions for context configuration
 
 	//containers
-	applyContainerConditions(metadata.Spec.Containers, stepConfig)
+	config.ApplyContainerConditions(metadata.Spec.Containers, stepConfig)
 
 	//sidecars
-	applyContainerConditions(metadata.Spec.Sidecars, stepConfig)
+	config.ApplyContainerConditions(metadata.Spec.Sidecars, stepConfig)
 
 	//ToDo: remove all unnecessary sub maps?
 	// e.g. extract delete() from applyContainerConditions - loop over all stepConfig.Config[param.Value] and remove ...
 }
 
-func applyContainerConditions(containers []config.Container, stepConfig *config.StepConfig) {
-	for _, container := range containers {
-		if len(container.Conditions) > 0 {
-			for _, param := range container.Conditions[0].Params {
-				if container.Conditions[0].ConditionRef == "strings-equal" && stepConfig.Config[param.Name] == param.Value {
-					var containerConf map[string]interface{}
-					if stepConfig.Config[param.Value] != nil {
-						containerConf = stepConfig.Config[param.Value].(map[string]interface{})
-						for key, value := range containerConf {
-							if stepConfig.Config[key] == nil {
-								stepConfig.Config[key] = value
-							}
-						}
-						delete(stepConfig.Config, param.Value)
-					}
+func prepareOutputEnvironment(outputResources []config.StepResources, envRootPath string) {
+	for _, oResource := range outputResources {
+		for _, oParam := range oResource.Parameters {
+			paramPath := path.Join(envRootPath, oResource.Name, fmt.Sprint(oParam["name"]))
+			if oParam["fields"] != nil {
+				paramFields, ok := oParam["fields"].([]map[string]string)
+				if ok && len(paramFields) > 0 {
+					paramPath = path.Join(paramPath, paramFields[0]["name"])
 				}
 			}
+			if _, err := os.Stat(filepath.Dir(paramPath)); os.IsNotExist(err) {
+				log.Entry().Debugf("Creating directory: %v", filepath.Dir(paramPath))
+				os.MkdirAll(filepath.Dir(paramPath), 0777)
+			}
+		}
+	}
+
+	// prepare additional output directories known to possibly create permission issues when created from within a container
+	// ToDo: evaluate if we can rather call this only in the correct step context (we know the step when calling getConfig!)
+	// Could this be part of the container definition in the step.yaml?
+	stepOutputDirectories := []string{
+		reporting.MarkdownReportDirectory, // standard directory to collect md reports for pipelineCreateScanSummary
+		ws.ReportsDirectory,               // standard directory for reports created by whitesourceExecuteScan
+	}
+
+	for _, dir := range stepOutputDirectories {
+		if _, err := os.Stat(dir); os.IsNotExist(err) {
+			log.Entry().Debugf("Creating directory: %v", dir)
+			os.MkdirAll(dir, 0777)
 		}
 	}
 }

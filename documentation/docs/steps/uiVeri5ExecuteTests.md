@@ -1,5 +1,8 @@
 # ${docGenStepName}
 
+!!! warning "Deprecation notice"
+    Details of changes after the step migrated to a golang based step can be found [below](#exceptions).
+
 ## ${docGenDescription}
 
 ## Prerequisites
@@ -12,8 +15,21 @@
 
 ## Exceptions
 
+The parameter `testOptions` is deprecated and is replaced by array type parameter `runOptions`. Groovy templating for this parameter is deprecated and no longer supported.
+
+Using the `runOptions` parameter the 'seleniumAddress' for uiveri5 can be set.
+The former groovy implementation included a default for seleniumAddress in the runCommand. Since this is not possible with the golang-based implementation, the seleniumAddress has to be added to the runOptions. For jenkins on kubernetes the host is 'localhost', in other environments, e.g. native jenkins installations, the host can be set to 'selenium'.
+
+```yaml
+runOptions: ["--seleniumAddress=http://localhost:4444/wd/hub", ..... ]
+```
+
+The parameter `failOnError` is no longer supported on the step due to strategic reasons of pipeline resilience. To achieve the former behaviour with `failOnError: false` configured, the step can be wrapped using try/catch in your custom pipeline script.
+
+The `installCommand` does not support queueing shell commands using `&&` and `|` operator any longer.
+
 If you see an error like `fatal: Not a git repository (or any parent up to mount point /home/jenkins)` it is likely that your test description cannot be found.<br />
-Please make sure to point parameter `testOptions` to your `conf.js` file like `testOptions: './path/to/my/tests/conf.js'`
+Please make sure to point parameter `runOptions` to your `conf.js` file like `runOptions: [...., './path/to/my/tests/conf.js']`
 
 ## Examples
 
@@ -65,11 +81,11 @@ withCredentials([usernamePassword(
     passwordVariable: 'password',
     usernameVariable: 'username'
 )]) {
-    uiVeri5ExecuteTests script: this, testOptions: "./uiveri5/conf.js --params.user=\${username} --params.pass=\${password}"
+    uiVeri5ExecuteTests script: this, runOptions: ["./uiveri5/conf.js", "--params.user=\${username}", "--params.pass=\${password}"]
 }
 ```
 
-In a Pipeline Template, a [Stage Exit](#) can be used to fetch the credentials and store them in the environment. As the environment is passed down to uiVeri5ExecuteTests, the variables will be present there. This is an example for the stage exit `.pipeline/extensions/Acceptance.groovy` where the `credentialsId` is read from the `config.yml`:
+In a Pipeline Template, a [Stage Exit](../extensibility/#1-extend-individual-stages) can be used to fetch the credentials and store them in the environment. As the environment is passed down to uiVeri5ExecuteTests, the variables will be present there. This is an example for the stage exit `.pipeline/extensions/Acceptance.groovy` where the `credentialsId` is read from the `config.yml`:
 
 ```groovy
 void call(Map params) {

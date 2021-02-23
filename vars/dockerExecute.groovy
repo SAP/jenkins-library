@@ -13,7 +13,16 @@ import groovy.transform.Field
 @Field def STEP_NAME = getClass().getName()
 @Field def PLUGIN_ID_DOCKER_WORKFLOW = 'docker-workflow'
 
-@Field Set GENERAL_CONFIG_KEYS = []
+@Field Set GENERAL_CONFIG_KEYS = [
+    /**
+     * Set this to 'false' to bypass a docker image pull. Useful during development process. Allows testing of images which are available in the local registry only.
+     */
+    'dockerPullImage',
+    /**
+     * Set this to 'false' to bypass a docker image pull. Useful during development process. Allows testing of images which are available in the local registry only.
+     */
+    'sidecarPullImage'
+]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
     /**
      * Kubernetes only:
@@ -30,6 +39,10 @@ import groovy.transform.Field
      */
     'containerShell',
     /**
+     * Kubernetes only: Allows to specify additional pod properties. For more details see step `dockerExecuteOnKubernetes`
+     */
+    'additionalPodProperties',
+    /**
      * Environment variables to set in the container, e.g. [http_proxy: 'proxy:8080'].
      */
     'dockerEnvVars',
@@ -40,6 +53,22 @@ import groovy.transform.Field
      * Overwrite to use custom Docker image.
      */
     'dockerImage',
+    /**
+      * The registry used for pulling the docker image, if left empty the default registry as defined by the `docker-commons-plugin` will be used.
+      */
+    'dockerRegistryUrl',
+    /**
+      * The credentials for the docker registry. If left empty, images are pulled anonymously.
+      */
+    'dockerRegistryCredentialsId',
+    /**
+      * Same as `dockerRegistryUrl`, but for the sidecar. If left empty, `dockerRegistryUrl` is used instead.
+      */
+    'sidecarRegistryUrl',
+    /**
+      * Same as `dockerRegistryCredentialsId`, but for the sidecar. If left empty `dockerRegistryCredentialsId` is used instead.
+      */
+    'sidecarRegistryCredentialsId',
     /**
      * Kubernetes only:
      * Name of the container launching `dockerImage`.
@@ -57,10 +86,6 @@ import groovy.transform.Field
      * Volumes that should be mounted into the container.
      */
     'dockerVolumeBind',
-    /**
-     * Set this to 'false' to bypass a docker image pull. Usefull during development process. Allows testing of images which are available in the local registry only.
-     */
-    'dockerPullImage',
     /**
      * Kubernetes only:
      * Specifies a dedicated user home directory for the container which will be passed as value for environment variable `HOME`.
@@ -87,10 +112,6 @@ import groovy.transform.Field
      */
     'sidecarVolumeBind',
     /**
-     * Set this to 'false' to bypass a docker image pull. Usefull during development process. Allows testing of images which are available in the local registry only.
-     */
-    'sidecarPullImage',
-    /**
      * as `dockerWorkspace` for the sidecar container
      */
     'sidecarWorkspace',
@@ -112,6 +133,11 @@ import groovy.transform.Field
     'stashNoDefaultExcludes',
 ])
 
+@Field Map CONFIG_KEY_COMPATIBILITY = [
+    dockerRegistryCredentialsId: 'dockerRegistryCredentials',
+    sidecarRegistryCredentialsId: 'dockerSidecarRegistryCredentials',
+]
+
 /**
  * Executes a closure inside a docker container with the specified docker image.
  * The workspace is mounted into the docker image.
@@ -122,15 +148,20 @@ void call(Map parameters = [:], body) {
     handlePipelineStepErrors(stepName: STEP_NAME, stepParameters: parameters, failOnError: true) {
 
         final script = checkScript(this, parameters) ?: this
-
-        def utils = parameters?.juStabUtils ?: new Utils()
+        def utils = parameters.juStabUtils ?: new Utils()
+        String stageName = parameters.stageName ?: env.STAGE_NAME
 
         Map config = ConfigurationHelper.newInstance(this)
-            .loadStepDefaults()
-            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
-            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
-            .mixinStageConfig(script.commonPipelineEnvironment, parameters.stageName ?: env.STAGE_NAME, STEP_CONFIG_KEYS)
-            .mixin(parameters, PARAMETER_KEYS)
+            .loadStepDefaults([:], stageName)
+            .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .mixin(parameters, PARAMETER_KEYS, CONFIG_KEY_COMPATIBILITY)
+            .use()
+
+        config = ConfigurationHelper.newInstance(this, config)
+            .addIfEmpty('sidecarRegistryUrl', config.dockerRegistryUrl)
+            .addIfEmpty('sidecarRegistryCredentialsId', config.dockerRegistryCredentialsId)
             .use()
 
         SidecarUtils sidecarUtils = new SidecarUtils(script)
@@ -160,44 +191,33 @@ void call(Map parameters = [:], body) {
                 if (!config.dockerName) {
                     config.dockerName = UUID.randomUUID().toString()
                 }
-                if (!config.sidecarImage) {
-                    dockerExecuteOnKubernetes(
-                        script: script,
-                        containerName: config.dockerName,
-                        containerCommand: config.containerCommand,
-                        containerShell: config.containerShell,
-                        dockerImage: config.dockerImage,
-                        dockerPullImage: config.dockerPullImage,
-                        dockerEnvVars: config.dockerEnvVars,
-                        dockerWorkspace: config.dockerWorkspace,
-                        stashContent: config.stashContent,
-                        stashNoDefaultExcludes: config.stashNoDefaultExcludes,
-                    ){
-                        echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Pod"
-                        body()
-                    }
-                } else {
-                    dockerExecuteOnKubernetes(
-                        script: script,
-                        containerName: config.dockerName,
-                        containerCommand: config.containerCommand,
-                        containerShell: config.containerShell,
-                        dockerImage: config.dockerImage,
-                        dockerPullImage: config.dockerPullImage,
-                        dockerEnvVars: config.dockerEnvVars,
-                        dockerWorkspace: config.dockerWorkspace,
-                        stashContent: config.stashContent,
-                        stashNoDefaultExcludes: config.stashNoDefaultExcludes,
+                def dockerExecuteOnKubernetesParams = [
+                    script: script,
+                    additionalPodProperties: config.additionalPodProperties,
+                    containerName: config.dockerName,
+                    containerCommand: config.containerCommand,
+                    containerShell: config.containerShell,
+                    dockerImage: config.dockerImage,
+                    dockerPullImage: config.dockerPullImage,
+                    dockerEnvVars: config.dockerEnvVars,
+                    dockerWorkspace: config.dockerWorkspace,
+                    stashContent: config.stashContent,
+                    stashNoDefaultExcludes: config.stashNoDefaultExcludes,
+                ]
+
+                if (config.sidecarImage) {
+                    dockerExecuteOnKubernetesParams += [
                         containerPortMappings: config.containerPortMappings,
                         sidecarName: parameters.sidecarName,
                         sidecarImage: parameters.sidecarImage,
                         sidecarPullImage: parameters.sidecarPullImage,
                         sidecarReadyCommand: parameters.sidecarReadyCommand,
-                        sidecarEnvVars: parameters.sidecarEnvVars
-                    ) {
-                        echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Pod"
-                        body()
-                    }
+                        sidecarEnvVars: parameters.sidecarEnvVars,
+                    ]
+                }
+                dockerExecuteOnKubernetes(dockerExecuteOnKubernetesParams) {
+                    echo "[INFO][${STEP_NAME}] Executing inside a Kubernetes Pod"
+                    body()
                 }
             }
         } else {
@@ -215,38 +235,38 @@ void call(Map parameters = [:], body) {
             if (executeInsideDocker && config.dockerImage) {
                 utils.unstashAll(config.stashContent)
                 def image = docker.image(config.dockerImage)
-                if (config.dockerPullImage) image.pull()
-                else echo "[INFO][$STEP_NAME] Skipped pull of image '${config.dockerImage}'."
-                if (!config.sidecarImage) {
-                    image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
-                        body()
-                    }
-                } else {
-                    def networkName = "sidecar-${UUID.randomUUID()}"
-                    sh "docker network create ${networkName}"
-                    try {
-                        def sidecarImage = docker.image(config.sidecarImage)
-                        if (config.sidecarPullImage) sidecarImage.pull()
-                        else echo "[INFO][$STEP_NAME] Skipped pull of image '${config.sidecarImage}'."
-                        config.sidecarOptions = config.sidecarOptions ?: []
-                        if (config.sidecarName)
-                            config.sidecarOptions.add("--network-alias ${config.sidecarName}")
-                        config.sidecarOptions.add("--network ${networkName}")
-                        sidecarImage.withRun(getDockerOptions(config.sidecarEnvVars, config.sidecarVolumeBind, config.sidecarOptions)) { container ->
-                            config.dockerOptions = config.dockerOptions ?: []
-                            if (config.dockerName)
-                                config.dockerOptions.add("--network-alias ${config.dockerName}")
-                            config.dockerOptions.add("--network ${networkName}")
-                            if (config.sidecarReadyCommand) {
-                                sidecarUtils.waitForSidecarReadyOnDocker(container.id, config.sidecarReadyCommand)
-                            }
-                            image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
-                                echo "[INFO][${STEP_NAME}] Running with sidecar container."
-                                body()
-                            }
+                pullWrapper(config.dockerPullImage, image, config.dockerRegistryUrl, config.dockerRegistryCredentialsId) {
+                    if (!config.sidecarImage) {
+                        image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
+                            body()
                         }
-                    } finally {
-                        sh "docker network remove ${networkName}"
+                    } else {
+                        def networkName = "sidecar-${UUID.randomUUID()}"
+                        sh "docker network create ${networkName}"
+                        try {
+                            def sidecarImage = docker.image(config.sidecarImage)
+                            pullWrapper(config.sidecarPullImage, sidecarImage, config.sidecarRegistryUrl, config.sidecarRegistryCredentialsId) {
+                                config.sidecarOptions = config.sidecarOptions ?: []
+                                if (config.sidecarName)
+                                    config.sidecarOptions.add("--network-alias ${config.sidecarName}")
+                                config.sidecarOptions.add("--network ${networkName}")
+                                sidecarImage.withRun(getDockerOptions(config.sidecarEnvVars, config.sidecarVolumeBind, config.sidecarOptions)) { container ->
+                                    config.dockerOptions = config.dockerOptions ?: []
+                                    if (config.dockerName)
+                                        config.dockerOptions.add("--network-alias ${config.dockerName}")
+                                    config.dockerOptions.add("--network ${networkName}")
+                                    if (config.sidecarReadyCommand) {
+                                        sidecarUtils.waitForSidecarReadyOnDocker(container.id, config.sidecarReadyCommand)
+                                    }
+                                    image.inside(getDockerOptions(config.dockerEnvVars, config.dockerVolumeBind, config.dockerOptions)) {
+                                        echo "[INFO][${STEP_NAME}] Running with sidecar container."
+                                        body()
+                                    }
+                                }
+                            }
+                        } finally {
+                            sh "docker network remove ${networkName}"
+                        }
                     }
                 }
             } else {
@@ -254,6 +274,30 @@ void call(Map parameters = [:], body) {
                 body()
             }
         }
+    }
+}
+
+void pullWrapper(boolean pullImage, def dockerImage, String dockerRegistryUrl, String dockerCredentialsId, Closure body) {
+    if (!pullImage) {
+        echo "[INFO][$STEP_NAME] Skipped pull of image '$dockerImage'."
+        body()
+        return
+    }
+
+    if (dockerCredentialsId) {
+        // docker registry can be provided empty and will default to 'https://index.docker.io/v1/' in this case.
+        docker.withRegistry(dockerRegistryUrl ?: '', dockerCredentialsId) {
+            dockerImage.pull()
+            body()
+        }
+    } else if (dockerRegistryUrl) {
+        docker.withRegistry(dockerRegistryUrl) {
+            dockerImage.pull()
+            body()
+        }
+    } else {
+        dockerImage.pull()
+        body()
     }
 }
 
@@ -313,6 +357,14 @@ boolean isContainerDefined(config) {
     Map containerMap = ContainerMap.instance.getMap()
 
     if (!containerMap.containsKey(env.POD_NAME)) {
+        return false
+    }
+
+    if (env.SIDECAR_IMAGE != config.sidecarImage) {
+        // If a sidecar image has been configured for the current stage,
+        // then piperStageWrapper will have set the env.SIDECAR_IMAGE variable.
+        // If the current step overrides the stage's sidecar image,
+        // then a new Pod needs to be spawned.
         return false
     }
 

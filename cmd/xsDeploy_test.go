@@ -38,10 +38,22 @@ func (f *FileUtilsMock) MkdirAll(path string, perm os.FileMode) error {
 	return nil
 }
 
+func (f *FileUtilsMock) Chmod(path string, mode os.FileMode) error {
+	return fmt.Errorf("not implemented. func is only present in order to fullfil the interface contract. Needs to be ajusted in case it gets used.")
+}
+
+func (f *FileUtilsMock) Abs(path string) (string, error) {
+	return "", fmt.Errorf("not implemented. func is only present in order to fullfil the interface contract. Needs to be ajusted in case it gets used.")
+}
+
+func (f *FileUtilsMock) Glob(pattern string) (matches []string, err error) {
+	return nil, fmt.Errorf("not implemented. func is only present in order to fullfil the interface contract. Needs to be ajusted in case it gets used.")
+}
+
 func TestDeploy(t *testing.T) {
 	myXsDeployOptions := xsDeployOptions{
 		APIURL:                "https://example.org:12345",
-		User:                  "me",
+		Username:              "me",
 		Password:              "secretPassword",
 		Org:                   "myOrg",
 		Space:                 "mySpace",
@@ -111,7 +123,7 @@ func TestDeploy(t *testing.T) {
 			// We copy the xs session file to the workspace in order to be able to use the file later.
 			// This happens directly after login
 			// We copy the xs session file from the workspace to the home folder in order to be able to
-			// use that file. This is important in case we rely on a login which happend e
+			// use that file. This is important in case we rely on a login which happened e
 			assert.Contains(t, fileUtilsMock.copiedFiles[0], "/.xs_session->.xs_session")
 			assert.Contains(t, fileUtilsMock.copiedFiles[1], ".xs_session->")
 			assert.Contains(t, fileUtilsMock.copiedFiles[1], "/.xs_session")
@@ -290,7 +302,7 @@ func TestRetrieveOperationID(t *testing.T) {
 	Uploading 1 files:
         myFolder/dummy.mtar
 	File upload finished
-	
+
 	Detected MTA schema version: "3.1.0"
 	Detected deploy target as "myOrg mySpace"
 	Detected deployed MTA with ID "my_mta" and version "0.0.1"

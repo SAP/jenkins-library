@@ -3,6 +3,8 @@ package fortify
 import (
 	"fmt"
 	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
@@ -13,8 +15,6 @@ import (
 	"github.com/piper-validation/fortify-client-go/models"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	"net/http"
-	"net/http/httptest"
 
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 )
@@ -39,7 +39,13 @@ func spinUpServer(f func(http.ResponseWriter, *http.Request)) (*SystemInstance, 
 
 func TestCreateTransportConfig(t *testing.T) {
 	t.Run("Valid URL", func(t *testing.T) {
-		config := createTransportConfig("http://some.fortify.host.com/ssc", "api/v2")
+		config := createTransportConfig("http://some.fortify.host.com/ssc", "/api/v2")
+		assert.Equal(t, []string{"http"}, config.Schemes)
+		assert.Equal(t, "some.fortify.host.com", config.Host)
+		assert.Equal(t, "ssc/api/v2", config.BasePath)
+	})
+	t.Run("Slashes are trimmed", func(t *testing.T) {
+		config := createTransportConfig("http://some.fortify.host.com/ssc//", "//api/v2/")
 		assert.Equal(t, []string{"http"}, config.Schemes)
 		assert.Equal(t, "some.fortify.host.com", config.Host)
 		assert.Equal(t, "ssc/api/v2", config.BasePath)
@@ -59,12 +65,19 @@ func TestCreateTransportConfig(t *testing.T) {
 }
 
 func TestNewSystemInstance(t *testing.T) {
-	sys := NewSystemInstance("https://some.fortify.host.com/ssc", "api/v1", "akjhskjhks", 10*time.Second)
-	assert.IsType(t, ff.Fortify{}, *sys.client, "Expected to get a Fortify client instance")
-	assert.IsType(t, piperHttp.Client{}, *sys.httpClient, "Expected to get a HTTP client instance")
-	assert.IsType(t, logrus.Entry{}, *sys.logger, "Expected to get a logrus entry instance")
-	assert.Equal(t, 10*time.Second, sys.timeout, "Expected different timeout value")
-	assert.Equal(t, "akjhskjhks", sys.token, "Expected different token value")
+	t.Run("fields are initialized", func(t *testing.T) {
+		sys := NewSystemInstance("https://some.fortify.host.com/ssc", "api/v1", "akjhskjhks", 10*time.Second)
+		assert.IsType(t, ff.Fortify{}, *sys.client, "Expected to get a Fortify client instance")
+		assert.IsType(t, piperHttp.Client{}, *sys.httpClient, "Expected to get a HTTP client instance")
+		assert.IsType(t, logrus.Entry{}, *sys.logger, "Expected to get a logrus entry instance")
+		assert.Equal(t, 10*time.Second, sys.timeout, "Expected different timeout value")
+		assert.Equal(t, "akjhskjhks", sys.token, "Expected different token value")
+		assert.Equal(t, "https://some.fortify.host.com/ssc", sys.serverURL)
+	})
+	t.Run("SSC URL is trimmed", func(t *testing.T) {
+		sys := NewSystemInstance("https://some.fortify.host.com/ssc/", "api/v1", "akjhskjhks", 10*time.Second)
+		assert.Equal(t, "https://some.fortify.host.com/ssc", sys.serverURL)
+	})
 }
 
 func TestGetProjectByName(t *testing.T) {
@@ -72,7 +85,7 @@ func TestGetProjectByName(t *testing.T) {
 	autocreateCalled := false
 	commitCalled := false
 	sys, server := spinUpServer(func(rw http.ResponseWriter, req *http.Request) {
-		if req.URL.Path == "/projects" && req.URL.RawQuery == "fulltextsearch=true&q=name%3Dpython-test" {
+		if req.URL.Path == "/projects" && req.URL.RawQuery == "q=name%3Dpython-test" {
 			header := rw.Header()
 			header.Add("Content-type", "application/json")
 			rw.Write([]byte(
@@ -82,14 +95,14 @@ func TestGetProjectByName(t *testing.T) {
 				"first": {"href": "https://fortify/ssc/api/v1/projects?q=name%A3python-test&start=0"}}}`))
 			return
 		}
-		if req.URL.Path == "/projects" && req.URL.RawQuery == "fulltextsearch=true&q=name%3Dpython-empty" {
+		if req.URL.Path == "/projects" && req.URL.RawQuery == "q=name%3Dpython-empty" {
 			header := rw.Header()
 			header.Add("Content-type", "application/json")
 			rw.Write([]byte(
 				`{"data": [],"count": 0,"responseCode": 404,"links": {}}`))
 			return
 		}
-		if req.URL.Path == "/projects" && req.URL.RawQuery == "fulltextsearch=true&q=name%3Dpython-error" {
+		if req.URL.Path == "/projects" && req.URL.RawQuery == "q=name%3Dpython-error" {
 			rw.WriteHeader(400)
 			return
 		}
@@ -421,7 +434,7 @@ func TestProjectVersionCopyFromPartial(t *testing.T) {
 	defer server.Close()
 
 	t.Run("test success", func(t *testing.T) {
-		expected := `{"copyAnalysisProcessingRules":true,"copyBugTrackerConfiguration":true,"copyCurrentStateFpr":true,"copyCustomTags":true,"previousProjectVersionId":10172,"projectVersionId":10173}
+		expected := `{"copyAnalysisProcessingRules":true,"copyBugTrackerConfiguration":true,"copyCustomTags":true,"previousProjectVersionId":10172,"projectVersionId":10173}
 `
 		err := sys.ProjectVersionCopyFromPartial(10172, 10173)
 		assert.NoError(t, err, "ProjectVersionCopyFromPartial call not successful")
@@ -460,7 +473,7 @@ func TestProjectVersionCopyCurrentState(t *testing.T) {
 	defer server.Close()
 
 	t.Run("test success", func(t *testing.T) {
-		expected := `{"copyCurrentStateFpr":true,"previousProjectVersionId":10172,"projectVersionId":10173}
+		expected := `{"previousProjectVersionId":10172,"projectVersionId":10173}
 `
 		err := sys.ProjectVersionCopyCurrentState(10172, 10173)
 		assert.NoError(t, err, "ProjectVersionCopyCurrentState call not successful")

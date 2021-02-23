@@ -7,6 +7,9 @@ metadata:
     Execute npm run scripts in all package json files, if they implement the scripts.
 spec:
   inputs:
+    resources:
+      - name: source
+        type: stash
     params:
       - name: install
         type: bool
@@ -15,9 +18,9 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: false
+        default: true
       - name: runScripts
-        type: '[]string'
+        type: "[]string"
         description: List of additional run scripts to execute from package.json.
         scope:
           - PARAMETERS
@@ -33,17 +36,6 @@ spec:
           - STEPS
         aliases:
           - name: npm/defaultNpmRegistry
-      - name: sapNpmRegistry
-        type: string
-        description: The default npm registry URL to be used as the remote mirror for the SAP npm packages.
-        scope:
-          - PARAMETERS
-          - GENERAL
-          - STAGES
-          - STEPS
-        default: https://npm.sap.com
-        aliases:
-          - name: npm/sapNpmRegistry
       - name: virtualFrameBuffer
         type: bool
         description: (Linux only) Start a virtual frame buffer in the background. This allows you to run a web browser without the need for an X server. Note that xvfb needs to be installed in the execution environment.
@@ -51,7 +43,28 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: scriptOptions
+        type: "[]string"
+        description: Options are passed to all runScripts calls separated by a '--'. './piper npmExecuteScripts --runScripts ci-e2e --scriptOptions '--tag1' will correspond to 'npm run ci-e2e -- --tag1'
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: buildDescriptorExcludeList
+        type: "[]string"
+        description: List of build descriptors and therefore modules to exclude from execution of the npm scripts. The elements can either be a path to the build descriptor or a pattern.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: ["deployment/**"]
+      - name: buildDescriptorList
+        type: "[]string"
+        description: List of build descriptors and therefore modules for execution of the npm scripts. The elements have to be paths to the build descriptors. **If set, buildDescriptorExcludeList will be ignored.**
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   containers:
     - name: node
       image: node:12-buster-slim
-      imagePullPolicy: Never

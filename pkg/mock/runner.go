@@ -50,6 +50,10 @@ func (m *ExecMockRunner) SetDir(d string) {
 }
 
 func (m *ExecMockRunner) SetEnv(e []string) {
+	m.Env = e
+}
+
+func (m *ExecMockRunner) AppendEnv(e []string) {
 	m.Env = append(m.Env, e...)
 }
 
@@ -86,8 +90,16 @@ func (m *ExecMockRunner) Stdout(out io.Writer) {
 	m.stdout = out
 }
 
+func (m *ExecMockRunner) GetStdout() io.Writer {
+	return m.stdout
+}
+
 func (m *ExecMockRunner) Stderr(err io.Writer) {
 	m.stderr = err
+}
+
+func (m *ExecMockRunner) GetStderr() io.Writer {
+	return m.stderr
 }
 
 func (m *ShellMockRunner) SetDir(d string) {
@@ -98,7 +110,7 @@ func (m *ShellMockRunner) SetEnv(e []string) {
 	m.Env = append(m.Env, e...)
 }
 
-func (m *ShellMockRunner) AddToEnv(e []string) {
+func (m *ShellMockRunner) AppendEnv(e []string) {
 	m.Env = append(m.Env, e...)
 }
 
@@ -183,6 +195,14 @@ func handleCall(call string, stdoutReturn map[string]string, shouldFailOnCommand
 
 func (m *ShellMockRunner) Stdout(out io.Writer) {
 	m.stdout = out
+}
+
+func (m *ShellMockRunner) GetStdout() io.Writer {
+	return m.stdout
+}
+
+func (m *ShellMockRunner) GetStderr() io.Writer {
+	return m.stderr
 }
 
 func (m *ShellMockRunner) Stderr(err io.Writer) {

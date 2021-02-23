@@ -24,13 +24,36 @@ abapEnvironmentPullGitRepo script: this
 If you want to provide the host and credentials of the Communication Arrangement directly, the configuration could look as follows:
 
 ```yaml
-
 steps:
   abapEnvironmentPullGitRepo:
     repositoryNames: ['/DMO/GIT_REPOSITORY']
     abapCredentialsId: 'abapCredentialsId'
     host: '1234-abcd-5678-efgh-ijk.abap.eu10.hana.ondemand.com'
 ```
+
+However, we recommend to use a dedicated file, e.g. `repositories.yml` to specify the repositories to be pulled:
+
+```yaml
+steps:
+  abapEnvironmentPullGitRepo:
+    repositories: 'repositories.yml'
+    abapCredentialsId: 'abapCredentialsId'
+    host: '1234-abcd-5678-efgh-ijk.abap.eu10.hana.ondemand.com'
+```
+
+The associated config file, e.g. `repositories.yml` could look as follows:
+
+```yaml
+repositories:
+- name: '/DMO/GIT_REPOSITORY'
+  branch: 'master'
+- name: '/DMO/GIT_REPO'
+  branch: 'master'
+  commitID: 'cd87a3cac2bc946b7629580e58598c3db56a26f8'
+```
+
+It is optional to provide a branch. However, if you also want to use this file for the abapEnvironmentCheckoutBranch step it is recommended to follow the above structure.
+If you want to pull a specific commit, the `commitID` can be specified optionally for a repository.
 
 If you want to read the host and credentials from the cloud foundry service key of the respective instance, the configuration could look as follows:
 

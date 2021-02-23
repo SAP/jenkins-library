@@ -1,17 +1,14 @@
 package cmd
 
 import (
-	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
-	"net/http"
 	"net/http/cookiejar"
 	"reflect"
-	"sort"
-	"strconv"
-	"strings"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -19,20 +16,40 @@ import (
 	"github.com/pkg/errors"
 )
 
-func abapEnvironmentPullGitRepo(config abapEnvironmentPullGitRepoOptions, telemetryData *telemetry.CustomData) error {
+func abapEnvironmentPullGitRepo(options abapEnvironmentPullGitRepoOptions, telemetryData *telemetry.CustomData) {
 
-	// Determine the host, user and password, either via the input parameters or via a cloud foundry service key
+	// for command execution use Command
 	c := command.Command{}
-	connectionDetails, errorGetInfo := getAbapCommunicationArrangementInfo(config, &c)
-	if errorGetInfo != nil {
-		log.Entry().WithError(errorGetInfo).Fatal("Parameters for the ABAP Connection not available")
+	// reroute command output to logging framework
+	c.Stdout(log.Writer())
+	c.Stderr(log.Writer())
+
+	var autils = abaputils.AbapUtils{
+		Exec: &c,
 	}
 
-	// Configuring the HTTP Client and CookieJar
 	client := piperhttp.Client{}
-	cookieJar, errorCookieJar := cookiejar.New(nil)
-	if errorCookieJar != nil {
-		log.Entry().WithError(errorCookieJar).Fatal("Could not create a Cookie Jar")
+
+	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
+	err := runAbapEnvironmentPullGitRepo(&options, telemetryData, &autils, &client)
+	if err != nil {
+		log.Entry().WithError(err).Fatal("step execution failed")
+	}
+}
+
+func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender) (err error) {
+
+	subOptions := convertPullConfig(options)
+
+	// Determine the host, user and password, either via the input parameters or via a cloud foundry service key
+	connectionDetails, err := com.GetAbapCommunicationArrangementInfo(subOptions, "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull")
+	if err != nil {
+		return errors.Wrap(err, "Parameters for the ABAP Connection not available")
+	}
+
+	cookieJar, err := cookiejar.New(nil)
+	if err != nil {
+		return errors.Wrap(err, "Could not create a Cookie Jar")
 	}
 	clientOptions := piperhttp.ClientOptions{
 		MaxRequestDuration: 180 * time.Second,
@@ -41,69 +58,101 @@ func abapEnvironmentPullGitRepo(config abapEnvironmentPullGitRepoOptions, teleme
 		Password:           connectionDetails.Password,
 	}
 	client.SetOptions(clientOptions)
-	pollIntervall := 10 * time.Second
+	pollIntervall := com.GetPollIntervall()
 
-	log.Entry().Infof("Start pulling %v repositories", len(config.RepositoryNames))
-	for _, repositoryName := range config.RepositoryNames {
+	repositories := []abaputils.Repository{}
+	err = checkPullRepositoryConfiguration(*options)
 
-		log.Entry().Info("-------------------------")
-		log.Entry().Info("Start pulling " + repositoryName)
-		log.Entry().Info("-------------------------")
-
-		// Triggering the Pull of the repository into the ABAP Environment system
-		uriConnectionDetails, errorTriggerPull := triggerPull(repositoryName, connectionDetails, &client)
-		if errorTriggerPull != nil {
-			log.Entry().WithError(errorTriggerPull).Fatal("Pull of " + repositoryName + " failed on the ABAP System")
-		}
-
-		// Polling the status of the repository import on the ABAP Environment system
-		status, errorPollEntity := pollEntity(repositoryName, uriConnectionDetails, &client, pollIntervall)
-		if errorPollEntity != nil {
-			log.Entry().WithError(errorPollEntity).Fatal("Pull of " + repositoryName + " failed on the ABAP System")
-		}
-		if status == "E" {
-			log.Entry().Fatal("Pull of " + repositoryName + " failed on the ABAP System")
-		}
-
-		log.Entry().Info(repositoryName + " was pulled successfully")
+	if err == nil {
+		repositories, err = abaputils.GetRepositories(&abaputils.RepositoriesConfig{RepositoryNames: options.RepositoryNames, Repositories: options.Repositories})
+		handleIgnoreCommit(repositories, options.IgnoreCommit)
 	}
-	log.Entry().Info("-------------------------")
-	log.Entry().Info("All repositories were pulled successfully")
-	return nil
+
+	if err == nil {
+		err = pullRepositories(repositories, connectionDetails, client, pollIntervall)
+	}
+
+	if err != nil {
+		return fmt.Errorf("Something failed during the pull of the repositories: %w", err)
+	}
+
+	return err
 }
 
-func triggerPull(repositoryName string, pullConnectionDetails connectionDetailsHTTP, client piperhttp.Sender) (connectionDetailsHTTP, error) {
+func pullRepositories(repositories []abaputils.Repository, pullConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (err error) {
+	log.Entry().Infof("Start pulling %v repositories", len(repositories))
+	for _, repo := range repositories {
+		err = handlePull(repo, pullConnectionDetails, client, pollIntervall)
+		if err != nil {
+			break
+		}
+	}
+	if err == nil {
+		finishPullLogs()
+	}
+	return err
+}
+
+func handlePull(repo abaputils.Repository, pullConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (err error) {
+
+	startPullLogs(repo)
+
+	_, commitString := abaputils.GetCommitStrings(repo.CommitID)
+
+	uriConnectionDetails, err := triggerPull(repo, pullConnectionDetails, client)
+	if err != nil {
+		return errors.Wrapf(err, "Pull of '%s'%s failed on the ABAP System", repo.Name, commitString)
+	}
+
+	// Polling the status of the repository import on the ABAP Environment system
+	status, errorPollEntity := abaputils.PollEntity(repo.Name, uriConnectionDetails, client, pollIntervall)
+	if errorPollEntity != nil {
+		return errors.Wrapf(errorPollEntity, "Pull of '%s'%s failed on the ABAP System", repo.Name, commitString)
+	}
+	if status == "E" {
+		return errors.New("Pull of '" + repo.Name + "'" + commitString + " failed on the ABAP System")
+	}
+	log.Entry().Info(repo.Name + " was pulled successfully")
+	return err
+}
+
+func triggerPull(repo abaputils.Repository, pullConnectionDetails abaputils.ConnectionDetailsHTTP, client piperhttp.Sender) (abaputils.ConnectionDetailsHTTP, error) {
 
 	uriConnectionDetails := pullConnectionDetails
 	uriConnectionDetails.URL = ""
 	pullConnectionDetails.XCsrfToken = "fetch"
 
 	// Loging into the ABAP System - getting the x-csrf-token and cookies
-	resp, err := getHTTPResponse("HEAD", pullConnectionDetails, nil, client)
+	resp, err := abaputils.GetHTTPResponse("HEAD", pullConnectionDetails, nil, client)
 	if err != nil {
-		err = handleHTTPError(resp, err, "Authentication on the ABAP system failed", pullConnectionDetails)
+		err = abaputils.HandleHTTPError(resp, err, "Authentication on the ABAP system failed", pullConnectionDetails)
 		return uriConnectionDetails, err
 	}
 	defer resp.Body.Close()
-	log.Entry().WithField("StatusCode", resp.Status).WithField("ABAP Endpoint", pullConnectionDetails.URL).Info("Authentication on the ABAP system successfull")
+
+	// workaround until golang version 1.16 is used
+	time.Sleep(100 * time.Millisecond)
+
+	log.Entry().WithField("StatusCode", resp.Status).WithField("ABAP Endpoint", pullConnectionDetails.URL).Debug("Authentication on the ABAP system successful")
 	uriConnectionDetails.XCsrfToken = resp.Header.Get("X-Csrf-Token")
 	pullConnectionDetails.XCsrfToken = uriConnectionDetails.XCsrfToken
 
 	// Trigger the Pull of a Repository
-	if repositoryName == "" {
+	if repo.Name == "" {
 		return uriConnectionDetails, errors.New("An empty string was passed for the parameter 'repositoryName'")
 	}
-	jsonBody := []byte(`{"sc_name":"` + repositoryName + `"}`)
-	resp, err = getHTTPResponse("POST", pullConnectionDetails, jsonBody, client)
+	commitQuery, commitString := abaputils.GetCommitStrings(repo.CommitID)
+	jsonBody := []byte(`{"sc_name":"` + repo.Name + `"` + commitQuery + `}`)
+	resp, err = abaputils.GetHTTPResponse("POST", pullConnectionDetails, jsonBody, client)
 	if err != nil {
-		err = handleHTTPError(resp, err, "Could not pull the Repository / Software Component "+repositoryName, uriConnectionDetails)
+		err = abaputils.HandleHTTPError(resp, err, "Could not pull the Repository / Software Component '"+repo.Name+"'"+commitString, uriConnectionDetails)
 		return uriConnectionDetails, err
 	}
 	defer resp.Body.Close()
-	log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repositoryName).Info("Triggered Pull of Repository / Software Component")
+	log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repo.Name).WithField("commitID", repo.CommitID).Debug("Triggered Pull of Repository / Software Component")
 
 	// Parse Response
-	var body abapEntity
+	var body abaputils.PullEntity
 	var abapResp map[string]*json.RawMessage
 	bodyText, errRead := ioutil.ReadAll(resp.Body)
 	if errRead != nil {
@@ -111,8 +160,8 @@ func triggerPull(repositoryName string, pullConnectionDetails connectionDetailsH
 	}
 	json.Unmarshal(bodyText, &abapResp)
 	json.Unmarshal(*abapResp["d"], &body)
-	if reflect.DeepEqual(abapEntity{}, body) {
-		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repositoryName).Error("Could not pull the Repository / Software Component")
+	if reflect.DeepEqual(abaputils.PullEntity{}, body) {
+		log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repo.Name).WithField("commitID", repo.CommitID).Error("Could not pull the Repository / Software Component")
 		err := errors.New("Request to ABAP System not successful")
 		return uriConnectionDetails, err
 	}
@@ -122,247 +171,46 @@ func triggerPull(repositoryName string, pullConnectionDetails connectionDetailsH
 	return uriConnectionDetails, nil
 }
 
-func pollEntity(repositoryName string, connectionDetails connectionDetailsHTTP, client piperhttp.Sender, pollIntervall time.Duration) (string, error) {
-
-	log.Entry().Info("Start polling the status...")
-	var status string = "R"
-
-	for {
-		var resp, err = getHTTPResponse("GET", connectionDetails, nil, client)
-		if err != nil {
-			err = handleHTTPError(resp, err, "Could not pull the Repository / Software Component "+repositoryName, connectionDetails)
-			return "", err
-		}
-		defer resp.Body.Close()
-
-		// Parse response
-		var body abapEntity
-		bodyText, _ := ioutil.ReadAll(resp.Body)
-		var abapResp map[string]*json.RawMessage
-		json.Unmarshal(bodyText, &abapResp)
-		json.Unmarshal(*abapResp["d"], &body)
-		if reflect.DeepEqual(abapEntity{}, body) {
-			log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repositoryName).Error("Could not pull the Repository / Software Component")
-			var err = errors.New("Request to ABAP System not successful")
-			return "", err
-		}
-		status = body.Status
-		log.Entry().WithField("StatusCode", resp.Status).Info("Pull Status: " + body.StatusDescr)
-		if body.Status != "R" {
-			printLogs(body)
-			break
-		}
-		time.Sleep(pollIntervall)
+func checkPullRepositoryConfiguration(options abapEnvironmentPullGitRepoOptions) error {
+	if len(options.RepositoryNames) > 0 && options.Repositories != "" {
+		log.Entry().Info("It seems like you have specified repositories directly via the configuration parameter 'repositoryNames' as well as in the dedicated repositories configuration file. Please note that in this case both configurations will be handled and pulled.")
 	}
-
-	return status, nil
+	if len(options.RepositoryNames) == 0 && options.Repositories == "" {
+		return fmt.Errorf("Checking configuration failed: %w", errors.New("You have not specified any repository configuration to be pulled into the ABAP Environment System. Please make sure that you specified the repositories that should be pulled either in a dedicated file or via the parameter 'repositoryNames'. For more information please read the User documentation"))
+	}
+	return nil
 }
 
-func getAbapCommunicationArrangementInfo(config abapEnvironmentPullGitRepoOptions, c command.ExecRunner) (connectionDetailsHTTP, error) {
-
-	var connectionDetails connectionDetailsHTTP
-	var error error
-
-	if config.Host != "" {
-		// Host, User and Password are directly provided
-		connectionDetails.URL = "https://" + config.Host + "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull"
-		connectionDetails.User = config.Username
-		connectionDetails.Password = config.Password
-	} else {
-		if config.CfAPIEndpoint == "" || config.CfOrg == "" || config.CfSpace == "" || config.CfServiceInstance == "" || config.CfServiceKeyName == "" {
-			var err = errors.New("Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
-			return connectionDetails, err
-		}
-		// Url, User and Password should be read from a cf service key
-		var abapServiceKey, error = readCfServiceKey(config, c)
-		if error != nil {
-			return connectionDetails, errors.Wrap(error, "Read service key failed")
-		}
-		connectionDetails.URL = abapServiceKey.URL + "/sap/opu/odata/sap/MANAGE_GIT_REPOSITORY/Pull"
-		connectionDetails.User = abapServiceKey.Abap.Username
-		connectionDetails.Password = abapServiceKey.Abap.Password
-	}
-	return connectionDetails, error
-}
-
-func readCfServiceKey(config abapEnvironmentPullGitRepoOptions, c command.ExecRunner) (serviceKey, error) {
-
-	var abapServiceKey serviceKey
-
-	c.Stderr(log.Writer())
-
-	// Logging into the Cloud Foundry via CF CLI
-	log.Entry().WithField("cfApiEndpoint", config.CfAPIEndpoint).WithField("cfSpace", config.CfSpace).WithField("cfOrg", config.CfOrg).WithField("User", config.Username).Info("Cloud Foundry parameters: ")
-	cfLoginSlice := []string{"login", "-a", config.CfAPIEndpoint, "-u", config.Username, "-p", config.Password, "-o", config.CfOrg, "-s", config.CfSpace}
-	errorRunExecutable := c.RunExecutable("cf", cfLoginSlice...)
-	if errorRunExecutable != nil {
-		log.Entry().Error("Login at cloud foundry failed.")
-		return abapServiceKey, errorRunExecutable
-	}
-
-	// Reading the Service Key via CF CLI
-	var serviceKeyBytes bytes.Buffer
-	c.Stdout(&serviceKeyBytes)
-	cfReadServiceKeySlice := []string{"service-key", config.CfServiceInstance, config.CfServiceKeyName}
-	errorRunExecutable = c.RunExecutable("cf", cfReadServiceKeySlice...)
-	var serviceKeyJSON string
-	if len(serviceKeyBytes.String()) > 0 {
-		var lines []string = strings.Split(serviceKeyBytes.String(), "\n")
-		serviceKeyJSON = strings.Join(lines[2:], "")
-	}
-	if errorRunExecutable != nil {
-		return abapServiceKey, errorRunExecutable
-	}
-	log.Entry().WithField("cfServiceInstance", config.CfServiceInstance).WithField("cfServiceKeyName", config.CfServiceKeyName).Info("Read service key for service instance")
-	json.Unmarshal([]byte(serviceKeyJSON), &abapServiceKey)
-	if abapServiceKey == (serviceKey{}) {
-		return abapServiceKey, errors.New("Parsing the service key failed")
-	}
-	return abapServiceKey, errorRunExecutable
-}
-
-func getHTTPResponse(requestType string, connectionDetails connectionDetailsHTTP, body []byte, client piperhttp.Sender) (*http.Response, error) {
-
-	header := make(map[string][]string)
-	header["Content-Type"] = []string{"application/json"}
-	header["Accept"] = []string{"application/json"}
-	header["x-csrf-token"] = []string{connectionDetails.XCsrfToken}
-
-	req, err := client.SendRequest(requestType, connectionDetails.URL, bytes.NewBuffer(body), header, nil)
-	return req, err
-}
-
-func handleHTTPError(resp *http.Response, err error, message string, connectionDetails connectionDetailsHTTP) error {
-	if resp == nil {
-		// Response is nil in case of a timeout
-		log.Entry().WithError(err).WithField("ABAP Endpoint", connectionDetails.URL).Error("Request failed")
-	} else {
-		log.Entry().WithField("StatusCode", resp.Status).Error(message)
-
-		// Include the error message of the ABAP Environment system, if available
-		var abapErrorResponse abapError
-		bodyText, readError := ioutil.ReadAll(resp.Body)
-		if readError != nil {
-			return readError
-		}
-		var abapResp map[string]*json.RawMessage
-		json.Unmarshal(bodyText, &abapResp)
-		json.Unmarshal(*abapResp["error"], &abapErrorResponse)
-		if (abapError{}) != abapErrorResponse {
-			log.Entry().WithField("ErrorCode", abapErrorResponse.Code).Error(abapErrorResponse.Message.Value)
-			abapError := errors.New(abapErrorResponse.Code + " - " + abapErrorResponse.Message.Value)
-			err = errors.Wrap(abapError, err.Error())
-		}
-		resp.Body.Close()
-	}
-	return err
-}
-
-func printLogs(entity abapEntity) {
-
-	// Sort logs
-	sort.SliceStable(entity.ToExecutionLog.Results, func(i, j int) bool {
-		return entity.ToExecutionLog.Results[i].Index < entity.ToExecutionLog.Results[j].Index
-	})
-
-	sort.SliceStable(entity.ToTransportLog.Results, func(i, j int) bool {
-		return entity.ToTransportLog.Results[i].Index < entity.ToTransportLog.Results[j].Index
-	})
-
+func startPullLogs(repo abaputils.Repository) {
+	_, commitString := abaputils.GetCommitStrings(repo.CommitID)
 	log.Entry().Info("-------------------------")
-	log.Entry().Info("Transport Log")
+	log.Entry().Info("Start pulling '" + repo.Name + "'" + commitString)
 	log.Entry().Info("-------------------------")
-	for _, logEntry := range entity.ToTransportLog.Results {
+}
 
-		log.Entry().WithField("Timestamp", convertTime(logEntry.Timestamp)).Info(logEntry.Description)
+func finishPullLogs() {
+	log.Entry().Info("-------------------------")
+	log.Entry().Info("All repositories were pulled successfully")
+}
+
+func convertPullConfig(config *abapEnvironmentPullGitRepoOptions) abaputils.AbapEnvironmentOptions {
+	subOptions := abaputils.AbapEnvironmentOptions{}
+
+	subOptions.CfAPIEndpoint = config.CfAPIEndpoint
+	subOptions.CfServiceInstance = config.CfServiceInstance
+	subOptions.CfServiceKeyName = config.CfServiceKeyName
+	subOptions.CfOrg = config.CfOrg
+	subOptions.CfSpace = config.CfSpace
+	subOptions.Host = config.Host
+	subOptions.Password = config.Password
+	subOptions.Username = config.Username
+	return subOptions
+}
+
+func handleIgnoreCommit(repositories []abaputils.Repository, ignoreCommit bool) {
+	for i := range repositories {
+		if ignoreCommit {
+			repositories[i].CommitID = ""
+		}
 	}
-
-	log.Entry().Info("-------------------------")
-	log.Entry().Info("Execution Log")
-	log.Entry().Info("-------------------------")
-	for _, logEntry := range entity.ToExecutionLog.Results {
-		log.Entry().WithField("Timestamp", convertTime(logEntry.Timestamp)).Info(logEntry.Description)
-	}
-	log.Entry().Info("-------------------------")
-
-}
-
-func convertTime(logTimeStamp string) time.Time {
-	// The ABAP Environment system returns the date in the following format: /Date(1585576807000+0000)/
-	seconds := strings.TrimPrefix(strings.TrimSuffix(logTimeStamp, "000+0000)/"), "/Date(")
-	n, error := strconv.ParseInt(seconds, 10, 64)
-	if error != nil {
-		return time.Unix(0, 0).UTC()
-	}
-	t := time.Unix(n, 0).UTC()
-	return t
-}
-
-type abapEntity struct {
-	Metadata       abapMetadata `json:"__metadata"`
-	UUID           string       `json:"uuid"`
-	ScName         string       `json:"sc_name"`
-	Namespace      string       `json:"namepsace"`
-	Status         string       `json:"status"`
-	StatusDescr    string       `json:"status_descr"`
-	ToExecutionLog abapLogs     `json:"to_Execution_log"`
-	ToTransportLog abapLogs     `json:"to_Transport_log"`
-}
-
-type abapMetadata struct {
-	URI string `json:"uri"`
-}
-
-type abapLogs struct {
-	Results []logResults `json:"results"`
-}
-
-type logResults struct {
-	Index       string `json:"index_no"`
-	Type        string `json:"type"`
-	Description string `json:"descr"`
-	Timestamp   string `json:"timestamp"`
-}
-
-type serviceKey struct {
-	Abap     abapConenction `json:"abap"`
-	Binding  abapBinding    `json:"binding"`
-	Systemid string         `json:"systemid"`
-	URL      string         `json:"url"`
-}
-
-type deferred struct {
-	URI string `json:"uri"`
-}
-
-type abapConenction struct {
-	CommunicationArrangementID string `json:"communication_arrangement_id"`
-	CommunicationScenarioID    string `json:"communication_scenario_id"`
-	CommunicationSystemID      string `json:"communication_system_id"`
-	Password                   string `json:"password"`
-	Username                   string `json:"username"`
-}
-
-type abapBinding struct {
-	Env     string `json:"env"`
-	ID      string `json:"id"`
-	Type    string `json:"type"`
-	Version string `json:"version"`
-}
-
-type connectionDetailsHTTP struct {
-	User       string `json:"user"`
-	Password   string `json:"password"`
-	URL        string `json:"url"`
-	XCsrfToken string `json:"xcsrftoken"`
-}
-
-type abapError struct {
-	Code    string           `json:"code"`
-	Message abapErrorMessage `json:"message"`
-}
-
-type abapErrorMessage struct {
-	Lang  string `json:"lang"`
-	Value string `json:"value"`
 }

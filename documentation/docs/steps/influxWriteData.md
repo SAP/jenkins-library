@@ -95,7 +95,7 @@ As a first step you need to add your InfluxDB as Data source to your Grafana:
 !!! note "Jenkins as a Service"
     For Jenkins as a Service the data source configuration is already available.
 
-    Therefore no need to go through the data source configuration step unless you want to add addtional data sources.
+    Therefore no need to go through the data source configuration step unless you want to add additional data sources.
 
 ## Data collected in InfluxDB
 

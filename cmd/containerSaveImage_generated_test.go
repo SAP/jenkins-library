@@ -7,10 +7,11 @@ import (
 )
 
 func TestContainerSaveImageCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := ContainerSaveImageCommand()
 
-	// only high level testing performed - details are tested in step generation procudure
+	// only high level testing performed - details are tested in step generation procedure
 	assert.Equal(t, "containerSaveImage", testCmd.Use, "command name incorrect")
 
 }

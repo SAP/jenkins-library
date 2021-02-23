@@ -1,10 +1,12 @@
 import static org.junit.Assert.assertFalse
 import static org.junit.Assert.assertTrue
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
+import com.sap.piper.Utils
 
 import util.*
 
@@ -117,7 +119,7 @@ class MulticloudDeployTest extends BasePiperTest {
                     deployType: 'blue-green',
                     keepOldInstance: true,
                     cf_native: [
-                        dockerImage: 'ppiper/cf-cli',
+                        dockerImage: 'ppiper/cf-cli:6',
                         dockerWorkspace: '/home/piper'
                     ]
                 ]
@@ -126,7 +128,14 @@ class MulticloudDeployTest extends BasePiperTest {
 
         helper.registerAllowedMethod('echo', [CharSequence.class], {})
 
+        Utils.metaClass.echo = { def m -> }
     }
+
+    @After
+    public void tearDown() {
+        Utils.metaClass = null
+    }
+
 
     @Test
     void errorNoTargetsDefined() {
@@ -206,7 +215,6 @@ class MulticloudDeployTest extends BasePiperTest {
         assert cloudFoundryDeployRule.hasParameter('script', nullScript)
         assert cloudFoundryDeployRule.hasParameter('deployType', 'standard')
         assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry)
-        assert cloudFoundryDeployRule.hasParameter('mtaPath', nullScript.commonPipelineEnvironment.mtarFilePath)
     }
 
     @Test
@@ -223,7 +231,6 @@ class MulticloudDeployTest extends BasePiperTest {
         assert cloudFoundryDeployRule.hasParameter('script', nullScript)
         assert cloudFoundryDeployRule.hasParameter('deployType', 'blue-green')
         assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry1)
-        assert cloudFoundryDeployRule.hasParameter('mtaPath', nullScript.commonPipelineEnvironment.mtarFilePath)
     }
 
     @Test
@@ -244,7 +251,6 @@ class MulticloudDeployTest extends BasePiperTest {
         assert cloudFoundryDeployRule.hasParameter('script', nullScript)
         assert cloudFoundryDeployRule.hasParameter('deployType', 'blue-green')
         assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry1)
-        assert cloudFoundryDeployRule.hasParameter('mtaPath', nullScript.commonPipelineEnvironment.mtarFilePath)
         assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry2)
     }
 
@@ -267,7 +273,6 @@ class MulticloudDeployTest extends BasePiperTest {
         assert cloudFoundryDeployRule.hasParameter('script', nullScript)
         assert cloudFoundryDeployRule.hasParameter('deployType', 'blue-green')
         assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry1)
-        assert cloudFoundryDeployRule.hasParameter('mtaPath', nullScript.commonPipelineEnvironment.mtarFilePath)
         assert cloudFoundryDeployRule.hasParameter('cloudFoundry', cloudFoundry2)
     }
 
@@ -367,5 +372,17 @@ class MulticloudDeployTest extends BasePiperTest {
         assertTrue(executedOnNode)
         assertFalse(executedOnKubernetes)
 
+    }
+
+    @Test
+    void multicloudPreDeploymentHookTest() {
+        def closureRun = null
+
+        stepRule.step.multicloudDeploy([
+            script                      : nullScript,
+            preDeploymentHook           : {closureRun = true},
+        ])
+
+        assertTrue(closureRun)
     }
 }

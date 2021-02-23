@@ -30,7 +30,8 @@ def stashList(script, List stashes) {
         def exclude = stash.excludes
 
         if (stash?.merge == true) {
-            String lockName = "${script.commonPipelineEnvironment.configuration.stashFiles}/${stash.name}"
+            String lockingResourceGroup = script.commonPipelineEnvironment.projectName?:env.JOB_NAME
+            String lockName = "${lockingResourceGroup}/${stash.name}"
             lock(lockName) {
                 unstash stash.name
                 echo "Stash content: ${name} (include: ${include}, exclude: ${exclude})"
@@ -92,7 +93,7 @@ def unstash(name, msg = "Unstash failed:") {
 def unstashAll(stashContent) {
     def unstashedContent = []
     if (stashContent) {
-        for (i = 0; i < stashContent.size(); i++) {
+        for (int i = 0; i < stashContent.size(); i++) {
             if (stashContent[i]) {
                 unstashedContent += unstash(stashContent[i])
             }
@@ -113,12 +114,13 @@ void pushToSWA(Map parameters, Map config) {
     try {
         parameters.actionName = parameters.get('actionName') ?: 'Piper Library OS'
         parameters.eventType = parameters.get('eventType') ?: 'library-os'
-        parameters.jobUrlSha1 = generateSha1(env.JOB_URL)
-        parameters.buildUrlSha1 = generateSha1(env.BUILD_URL)
+        parameters.jobUrlSha1 = generateSha1(env.JOB_URL ?: '')
+        parameters.buildUrlSha1 = generateSha1(env.BUILD_URL ?: '')
 
         Telemetry.notify(this, config, parameters)
     } catch (ignore) {
         // some error occured in telemetry reporting. This should not break anything though.
+        echo "[${parameters.step}] Telemetry Report failed: ${ignore.getMessage()}"
     }
 }
 

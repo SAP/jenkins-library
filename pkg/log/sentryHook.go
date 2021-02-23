@@ -34,6 +34,7 @@ type SentryHook struct {
 
 // NewSentryHook initializes sentry sdk with dsn and creates new hook
 func NewSentryHook(sentryDsn, correlationID string) SentryHook {
+	Entry().Debugf("Initializing Sentry with DSN %v", sentryDsn)
 	if err := sentry.Init(sentry.ClientOptions{
 		Dsn:              sentryDsn,
 		AttachStacktrace: true,

@@ -7,10 +7,11 @@ import (
 )
 
 func TestNpmExecuteScriptsCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := NpmExecuteScriptsCommand()
 
-	// only high level testing performed - details are tested in step generation procudure
+	// only high level testing performed - details are tested in step generation procedure
 	assert.Equal(t, "npmExecuteScripts", testCmd.Use, "command name incorrect")
 
 }

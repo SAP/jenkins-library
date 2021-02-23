@@ -1,16 +1,20 @@
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.GenerateStageDocumentation
+import com.sap.piper.StageNameProvider
 import com.sap.piper.Utils
 import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
 
 @Field String STEP_NAME = getClass().getName()
+@Field String TECHNICAL_STAGE_NAME = 'security'
 
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field STAGE_STEP_KEYS = [
     /** Executes a Checkmarx scan */
     'checkmarxExecuteScan',
+    /** Executes Synopsys Detect scans */
+    'detectExecuteScan',
     /** Executes a Fortify scan */
     'fortifyExecuteScan',
     /** Executes a WhiteSource scan */
@@ -27,8 +31,7 @@ import static com.sap.piper.Prerequisites.checkScript
 void call(Map parameters = [:]) {
     def script = checkScript(this, parameters) ?: this
     def utils = parameters.juStabUtils ?: new Utils()
-
-    def stageName = parameters.stageName?:env.STAGE_NAME
+    def stageName = StageNameProvider.instance.getStageName(script, parameters, this)
 
     def securityScanMap = [:]
 
@@ -38,9 +41,11 @@ void call(Map parameters = [:]) {
         .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
         .mixin(parameters, PARAMETER_KEYS)
         .addIfEmpty('checkmarxExecuteScan', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.checkmarxExecuteScan)
+        .addIfEmpty('detectExecuteScan', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.detectExecuteScan)
         .addIfEmpty('fortifyExecuteScan', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.fortifyExecuteScan)
         .addIfEmpty('whitesourceExecuteScan', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.whitesourceExecuteScan)
         .use()
+
     piperStageWrapper (script: script, stageName: stageName) {
         if (config.checkmarxExecuteScan) {
             securityScanMap['Checkmarx'] = {
@@ -48,6 +53,20 @@ void call(Map parameters = [:]) {
                     try{
                         durationMeasure(script: script, measurementName: 'checkmarx_duration') {
                             checkmarxExecuteScan script: script
+                        }
+                    }finally{
+                        deleteDir()
+                    }
+                }
+            }
+        }
+
+        if (config.detectExecuteScan) {
+            securityScanMap['Detect'] = {
+                node(config.nodeLabel) {
+                    try{
+                        durationMeasure(script: script, measurementName: 'detect_duration') {
+                            detectExecuteScan script: script
                         }
                     }finally{
                         deleteDir()

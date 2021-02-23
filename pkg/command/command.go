@@ -25,33 +25,41 @@ type Command struct {
 }
 
 type runner interface {
-	SetDir(d string)
-	SetEnv(e []string)
+	SetDir(dir string)
+	SetEnv(env []string)
+	AppendEnv(env []string)
 	Stdout(out io.Writer)
 	Stderr(err io.Writer)
+	GetStdout() io.Writer
+	GetStderr() io.Writer
 }
 
 // ExecRunner mock for intercepting calls to executables
 type ExecRunner interface {
 	runner
-	RunExecutable(e string, p ...string) error
+	RunExecutable(executable string, params ...string) error
 	RunExecutableInBackground(executable string, params ...string) (Execution, error)
 }
 
 // ShellRunner mock for intercepting shell calls
 type ShellRunner interface {
 	runner
-	RunShell(s string, c string) error
+	RunShell(shell string, command string) error
 }
 
 // SetDir sets the working directory for the execution
-func (c *Command) SetDir(d string) {
-	c.dir = d
+func (c *Command) SetDir(dir string) {
+	c.dir = dir
 }
 
 // SetEnv sets explicit environment variables to be used for execution
-func (c *Command) SetEnv(e []string) {
-	c.env = e
+func (c *Command) SetEnv(env []string) {
+	c.env = env
+}
+
+// AppendEnv appends environment variables to be used for execution
+func (c *Command) AppendEnv(env []string) {
+	c.env = append(c.env, env...)
 }
 
 // Stdout ..
@@ -62,6 +70,16 @@ func (c *Command) Stdout(stdout io.Writer) {
 // Stderr ..
 func (c *Command) Stderr(stderr io.Writer) {
 	c.stderr = stderr
+}
+
+// GetStdout Returns the writer for stdout
+func (c *Command) GetStdout() io.Writer {
+	return c.stdout
+}
+
+//GetStderr Retursn the writer for stderr
+func (c *Command) GetStderr() io.Writer {
+	return c.stderr
 }
 
 // ExecCommand defines how to execute os commands

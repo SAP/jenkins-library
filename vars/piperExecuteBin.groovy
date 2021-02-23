@@ -13,13 +13,12 @@ import static com.sap.piper.Prerequisites.checkScript
 
 void call(Map parameters = [:], String stepName, String metadataFile, List credentialInfo, boolean failOnMissingReports = false, boolean failOnMissingLinks = false, boolean failOnError = false) {
 
-    handlePipelineStepErrorsParameters = [stepName: stepName, stepParameters: parameters]
+    Map handlePipelineStepErrorsParameters = [stepName: stepName, stepParameters: parameters]
     if (failOnError) {
         handlePipelineStepErrorsParameters.failOnError = true
     }
 
     handlePipelineStepErrors(handlePipelineStepErrorsParameters) {
-
         Script script = checkScript(this, parameters) ?: this
         def jenkinsUtils = parameters.jenkinsUtilsStub ?: new JenkinsUtils()
         def utils = parameters.juStabUtils ?: new Utils()
@@ -29,6 +28,7 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
         prepareExecution(script, utils, parameters)
         prepareMetadataResource(script, metadataFile)
         Map stepParameters = prepareStepParameters(parameters)
+        echo "Step params $stepParameters"
 
         withEnv([
             "PIPER_parametersJSON=${groovy.json.JsonOutput.toJson(stepParameters)}",
@@ -48,7 +48,7 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
             }
 
             // prepare stashes
-            // first eliminate empty stahes
+            // first eliminate empty stashes
             config.stashContent = utils.unstashAll(config.stashContent)
             // then make sure that commonPipelineEnvironment, config, ... is also available when step stashing is active
             if (config.stashContent?.size() > 0) {
@@ -62,26 +62,31 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
                 config.stashNoDefaultExcludes = parameters.stashNoDefaultExcludes
             }
 
-            dockerWrapper(script, config) {
+            dockerWrapper(script, stepName, config) {
                 handleErrorDetails(stepName) {
                     script.commonPipelineEnvironment.writeToDisk(script)
-                    credentialWrapper(config, credentialInfo) {
-                        sh "${piperGoPath} ${stepName}${defaultConfigArgs}${customConfigArg}"
+                    try {
+                        credentialWrapper(config, credentialInfo) {
+                            sh "${piperGoPath} ${stepName}${defaultConfigArgs}${customConfigArg}"
+                        }
+                    } finally {
+                        jenkinsUtils.handleStepResults(stepName, failOnMissingReports, failOnMissingLinks)
+                        script.commonPipelineEnvironment.readFromDisk(script)
                     }
-                    jenkinsUtils.handleStepResults(stepName, failOnMissingReports, failOnMissingLinks)
-                    script.commonPipelineEnvironment.readFromDisk(script)
                 }
             }
         }
     }
 }
 
+// reused in sonarExecuteScan
 static void prepareExecution(Script script, Utils utils, Map parameters = [:]) {
     def piperGoUtils = parameters.piperGoUtils ?: new PiperGoUtils(script, utils)
     piperGoUtils.unstashPiperBin()
     utils.unstash('pipelineConfigAndTests')
 }
 
+// reused in sonarExecuteScan
 static Map prepareStepParameters(Map parameters) {
     Map stepParameters = [:].plus(parameters)
 
@@ -96,10 +101,12 @@ static Map prepareStepParameters(Map parameters) {
     return MapUtils.pruneNulls(stepParameters)
 }
 
+// reused in sonarExecuteScan
 static void prepareMetadataResource(Script script, String metadataFile) {
     script.writeFile(file: ".pipeline/tmp/${metadataFile}", text: script.libraryResource(metadataFile))
 }
 
+// reused in sonarExecuteScan
 static Map getStepContextConfig(Script script, String piperGoPath, String metadataFile, String defaultConfigArgs, String customConfigArg) {
     return script.readJSON(text: script.sh(returnStdout: true, script: "${piperGoPath} getConfig --contextConfig --stepMetadata '.pipeline/tmp/${metadataFile}'${defaultConfigArgs}${customConfigArg}"))
 }
@@ -114,6 +121,7 @@ static String getCustomDefaultConfigs() {
     return customDefaults.join(',')
 }
 
+// reused in sonarExecuteScan
 static String getCustomDefaultConfigsArg() {
     String customDefaults = getCustomDefaultConfigs()
     if (customDefaults) {
@@ -122,6 +130,7 @@ static String getCustomDefaultConfigsArg() {
     return ''
 }
 
+// reused in sonarExecuteScan
 static String getCustomConfigArg(def script) {
     if (script?.commonPipelineEnvironment?.configurationFile
         && script.commonPipelineEnvironment.configurationFile != '.pipeline/config.yml'
@@ -131,8 +140,10 @@ static String getCustomConfigArg(def script) {
     return ''
 }
 
-void dockerWrapper(script, config, body) {
+// reused in sonarExecuteScan
+void dockerWrapper(script, stepName, config, body) {
     if (config.dockerImage) {
+        echo "[INFO] executing pipeline step '${stepName}' with docker image '${config.dockerImage}'"
         Map dockerExecuteParameters = [:].plus(config)
         dockerExecuteParameters.script = script
         dockerExecute(dockerExecuteParameters) {
@@ -143,27 +154,44 @@ void dockerWrapper(script, config, body) {
     }
 }
 
+// reused in sonarExecuteScan
 void credentialWrapper(config, List credentialInfo, body) {
+    credentialInfo = handleVaultCredentials(config, credentialInfo)
+
     if (credentialInfo.size() > 0) {
         def creds = []
         def sshCreds = []
         credentialInfo.each { cred ->
-            switch(cred.type) {
-                case "file":
-                    if (config[cred.id]) creds.add(file(credentialsId: config[cred.id], variable: cred.env[0]))
-                    break
-                case "token":
-                    if (config[cred.id]) creds.add(string(credentialsId: config[cred.id], variable: cred.env[0]))
-                    break
-                case "usernamePassword":
-                    if (config[cred.id]) creds.add(usernamePassword(credentialsId: config[cred.id], usernameVariable: cred.env[0], passwordVariable: cred.env[1]))
-                    break
-                case "ssh":
-                    if (config[cred.id]) sshCreds.add(config[cred.id])
-                    break
-                default:
-                    error ("invalid credential type: ${cred.type}")
+            def credentialsId
+            if (cred.resolveCredentialsId == false) {
+                credentialsId = cred.id
+            } else {
+                credentialsId = config[cred.id]
             }
+            if (credentialsId) {
+                switch (cred.type) {
+                    case "file":
+                        creds.add(file(credentialsId: credentialsId, variable: cred.env[0]))
+                        break
+                    case "token":
+                        creds.add(string(credentialsId: credentialsId, variable: cred.env[0]))
+                        break
+                    case "usernamePassword":
+                        creds.add(usernamePassword(credentialsId: credentialsId, usernameVariable: cred.env[0], passwordVariable: cred.env[1]))
+                        break
+                    case "ssh":
+                        sshCreds.add(credentialsId)
+                        break
+                    default:
+                        error("invalid credential type: ${cred.type}")
+                }
+            }
+        }
+
+        // remove credentialIds that were probably defaulted and which are not present in jenkins
+        if (containsVaultConfig(config)) {
+            creds = removeMissingCredentials(creds, config)
+            sshCreds = removeMissingCredentials(sshCreds, config)
         }
 
         if (sshCreds.size() > 0) {
@@ -182,6 +210,42 @@ void credentialWrapper(config, List credentialInfo, body) {
     }
 }
 
+List removeMissingCredentials(List creds, Map config) {
+    return creds.findAll { credentialExists(it, config) }
+}
+
+boolean credentialExists(cred, Map config) {
+    try {
+        withCredentials([cred]) {
+            return true
+        }
+    } catch (e) {
+        return false
+    }
+}
+
+boolean containsVaultConfig(Map config) {
+    def approleIsUsed = config.containsKey('vaultAppRoleTokenCredentialsId') && config.containsKey('vaultAppRoleSecretTokenCredentialsId')
+    def tokenIsUsed = config.containsKey('vaultTokenCredentialsId')
+
+    return approleIsUsed || tokenIsUsed
+}
+
+// Injects vaultCredentials if steps supports resolving parameters from vault
+List handleVaultCredentials(config, List credentialInfo) {
+    if (config.containsKey('vaultAppRoleTokenCredentialsId') && config.containsKey('vaultAppRoleSecretTokenCredentialsId')) {
+        credentialInfo += [[type: 'token', id: 'vaultAppRoleTokenCredentialsId', env: ['PIPER_vaultAppRoleID']],
+                            [type: 'token', id: 'vaultAppRoleSecretTokenCredentialsId', env: ['PIPER_vaultAppRoleSecretID']]]
+    }
+
+    if (config.containsKey('vaultTokenCredentialsId')) {
+        credentialInfo += [[type: 'token', id: 'vaultTokenCredentialsId', env: ['PIPER_vaultToken']]]
+    }
+
+    return credentialInfo
+}
+
+// reused in sonarExecuteScan
 void handleErrorDetails(String stepName, Closure body) {
     try {
         body()
@@ -194,7 +258,7 @@ void handleErrorDetails(String stepName, Closure body) {
                 errorCategory = " (category: ${errorDetails.category})"
                 DebugReport.instance.failedBuild.category = errorDetails.category
             }
-            error "[${stepName}] Step execution failed${errorCategory}. Error: ${errorDetails.error?:errorDetails.message}"
+            error "[${stepName}] Step execution failed${errorCategory}. Error: ${errorDetails.error ?: errorDetails.message}"
         }
         error "[${stepName}] Step execution failed. Error: ${ex}, please see log file for more details."
     }

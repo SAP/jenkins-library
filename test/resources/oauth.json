@@ -1,0 +1,5 @@
+{
+    "oauthClientId" : "abc123",
+    "oauthClientSecret" : "testclientsecret123",
+    "oauthServiceUrl" : "https://api.test.com/oauth2"
+}

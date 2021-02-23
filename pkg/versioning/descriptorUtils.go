@@ -13,16 +13,27 @@ const (
 	// SchemeMajorMinorVersion is the versioning scheme based on the major version only
 	SchemeMajorMinorVersion = `{{(split "." (split "-" .Version)._0)._0}}.{{(split "." (split "-" .Version)._0)._1}}`
 	// SchemeSemanticVersion is the versioning scheme based on the major.minor.micro version
-	SchemeSemanticVersion = `{{(split "-" .Version)._0}}`
+	SchemeSemanticVersion = `{{(split "." (split "-" .Version)._0)._0}}.{{(split "." (split "-" .Version)._0)._1}}.{{(split "." (split "-" .Version)._0)._2}}`
 	// SchemeFullVersion is the versioning scheme based on the full version
 	SchemeFullVersion = "{{.Version}}"
 )
 
-// DetermineProjectCoordinates resolve the coordinates of the project for use in 3rd party scan tools
+// DetermineProjectCoordinatesWithCustomVersion resolves the coordinates of the project for use in 3rd party scan tools
+// It considers a custom version if provided instead of using the GAV version adapted according to the versionScheme
+func DetermineProjectCoordinatesWithCustomVersion(nameTemplate, versionScheme, customVersion string, gav Coordinates) (string, string) {
+	name, version := DetermineProjectCoordinates(nameTemplate, versionScheme, gav)
+	if len(customVersion) > 0 {
+		log.Entry().Infof("Using custom version: %v", customVersion)
+		return name, customVersion
+	}
+	return name, version
+}
+
+// DetermineProjectCoordinates resolves the coordinates of the project for use in 3rd party scan tools
 func DetermineProjectCoordinates(nameTemplate, versionScheme string, gav Coordinates) (string, string) {
 	projectName, err := piperutils.ExecuteTemplateFunctions(nameTemplate, sprig.HermeticTxtFuncMap(), gav)
 	if err != nil {
-		log.Entry().Warnf("Unable to resolve fortify project name: %v", err)
+		log.Entry().Warnf("Unable to resolve project name: %v", err)
 	}
 
 	var versionTemplate string
@@ -41,7 +52,7 @@ func DetermineProjectCoordinates(nameTemplate, versionScheme string, gav Coordin
 
 	projectVersion, err := piperutils.ExecuteTemplateFunctions(versionTemplate, sprig.HermeticTxtFuncMap(), gav)
 	if err != nil {
-		log.Entry().Warnf("Unable to resolve fortify project version: %v", err)
+		log.Entry().Warnf("Unable to resolve project version: %v", err)
 	}
 	return projectName, projectVersion
 }
