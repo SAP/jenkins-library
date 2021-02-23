@@ -65,6 +65,9 @@ func newmanExecute(config newmanExecuteOptions, _ *telemetry.CustomData) {
 }
 
 func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) error {
+	envs := []string{"NPM_CONFIG_PREFIX=~/.npm-global"}
+	utils.SetEnv(envs)
+
 	collectionList, err := utils.Glob(config.NewmanCollection)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
@@ -82,8 +85,6 @@ func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) er
 		return err
 	}
 
-	envs := []string{"NPM_CONFIG_PREFIX=~/.npm-global"}
-	utils.SetEnv(envs)
 	err = installNewman(config.NewmanInstallCommand, utils)
 	if err != nil {
 		return err
@@ -106,7 +107,7 @@ func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) er
 
 		commandSecrets := handleCfAppCredentials(config)
 
-		if config.FailOnError {
+		if !config.FailOnError {
 			runCommand += " --suppress-exit-code"
 		}
 
@@ -175,7 +176,11 @@ func resolveTemplate(config *newmanExecuteOptions, collection string) (string, e
 
 func defineCollectionDisplayName(collection string) string {
 	replacedSeparators := strings.Replace(collection, string(filepath.Separator), "_", -1)
-	return strings.Split(replacedSeparators, ".")[0]
+	displayName := strings.Split(replacedSeparators, ".")
+	if displayName[0] == "" && len(displayName) >= 2 {
+		return displayName[1]
+	}
+	return displayName[0]
 }
 
 func handleCfAppCredentials(config *newmanExecuteOptions) string {
