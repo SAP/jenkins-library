@@ -23,7 +23,7 @@ func TestGetTask(t *testing.T) {
 		sender := &piperhttp.Client{}
 		sender.SetOptions(piperhttp.ClientOptions{UseDefaultTransport: true})
 		// add response handler
-		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+endpointCeTask+"", httpmock.NewStringResponder(200, responseCeTaskSuccess))
+		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+endpointCeTask+"", httpmock.NewStringResponder(http.StatusOK, responseCeTaskSuccess))
 		// create service instance
 		serviceUnderTest := NewTaskService(testURL, mock.Anything, mock.Anything, sender)
 		// test
@@ -60,7 +60,7 @@ func TestGetTask(t *testing.T) {
 		sender := &piperhttp.Client{}
 		sender.SetOptions(piperhttp.ClientOptions{UseDefaultTransport: true})
 		// add response handler
-		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+endpointCeTask+"", httpmock.NewStringResponder(400, responseCeTaskError))
+		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+endpointCeTask+"", httpmock.NewStringResponder(http.StatusNotFound, responseCeTaskError))
 		// create service instance
 		serviceUnderTest := NewTaskService(testURL, mock.Anything, mock.Anything, sender)
 		// test
@@ -86,9 +86,9 @@ func TestWaitForTask(t *testing.T) {
 
 		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+endpointCeTask+"", httpmock.ResponderFromMultipleResponses(
 			[]*http.Response{
-				httpmock.NewStringResponse(200, responseCeTaskPending),
-				httpmock.NewStringResponse(200, responseCeTaskProcessing),
-				httpmock.NewStringResponse(200, responseCeTaskSuccess),
+				httpmock.NewStringResponse(http.StatusOK, responseCeTaskPending),
+				httpmock.NewStringResponse(http.StatusOK, responseCeTaskProcessing),
+				httpmock.NewStringResponse(http.StatusOK, responseCeTaskSuccess),
 			},
 		))
 		// create service instance
@@ -110,9 +110,9 @@ func TestWaitForTask(t *testing.T) {
 
 		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+endpointCeTask+"", httpmock.ResponderFromMultipleResponses(
 			[]*http.Response{
-				httpmock.NewStringResponse(200, responseCeTaskPending),
-				httpmock.NewStringResponse(200, responseCeTaskProcessing),
-				httpmock.NewStringResponse(404, responseCeTaskFailure),
+				httpmock.NewStringResponse(http.StatusOK, responseCeTaskPending),
+				httpmock.NewStringResponse(http.StatusOK, responseCeTaskProcessing),
+				httpmock.NewStringResponse(http.StatusNotFound, responseCeTaskFailure),
 			},
 		))
 		// create service instance

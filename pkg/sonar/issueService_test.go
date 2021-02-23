@@ -20,14 +20,14 @@ func TestIssueService(t *testing.T) {
 		sender := &piperhttp.Client{}
 		sender.SetOptions(piperhttp.ClientOptions{UseDefaultTransport: true})
 		// add response handler
-		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+endpointIssuesSearch+"", httpmock.NewStringResponder(200, responseIssueSearchCritical))
+		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+endpointIssuesSearch+"", httpmock.NewStringResponder(http.StatusOK, responseIssueSearchCritical))
 		// create service instance
 		serviceUnderTest := NewIssuesService(testURL, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, sender)
 		// test
-		count, err := serviceUnderTest.GetNumberOfCriticalIssues()
+		count, err := serviceUnderTest.GetNumberOfBlockerIssues()
 		// assert
 		assert.NoError(t, err)
-		assert.NotEmpty(t, count)
+		assert.Equal(t, 111, count)
 		assert.Equal(t, 1, httpmock.GetTotalCallCount(), "unexpected number of requests")
 	})
 	t.Run("error", func(t *testing.T) {
@@ -37,7 +37,7 @@ func TestIssueService(t *testing.T) {
 		sender := &piperhttp.Client{}
 		sender.SetOptions(piperhttp.ClientOptions{UseDefaultTransport: true})
 		// add response handler
-		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+endpointIssuesSearch+"", httpmock.NewStringResponder(400, responseIssueSearchError))
+		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+endpointIssuesSearch+"", httpmock.NewStringResponder(http.StatusNotFound, responseIssueSearchError))
 		// create service instance
 		serviceUnderTest := NewIssuesService(testURL, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, sender)
 		// test
