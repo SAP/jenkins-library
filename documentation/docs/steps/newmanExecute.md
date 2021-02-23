@@ -35,7 +35,7 @@ newmanRunCommand: "run '${config.newmanCollection}' --environment '${config.newm
 newmanRunCommand: "run \{\{.NewmanCollection\}\} --environment \{\{.Config.NewmanEnvironment\}\} --globals \{\{.Config.NewmanGlobals\}\} --reporters junit,html --reporter-junit-export target/newman/TEST-\{\{.CollectionDisplayName\}\}.xml --reporter-html-export target/newman/TEST-\{\{.CollectionDisplayName\}\}.html"
 ```
 
-Including `--environment {{.Config.NewmanEnvironment}}` and `--globals {{.Config.NewmanGlobals}}` in the runCommand is rendundant since both parameters are also added to runCommand using `newmanEnvironment` and `newmanGlobals` from config.
+Including `--environment \{\{.Config.NewmanEnvironment\}\}` and `--globals \{\{.Config.NewmanGlobals\}\}` in the runCommand is rendundant since both parameters are also added to runCommand using `newmanEnvironment` and `newmanGlobals` from config.
 
 ## Example
 
