@@ -160,7 +160,6 @@ func resolveTemplate(config *newmanExecuteOptions, collection string) (string, e
 		return "", errors.Wrap(err, "could not parse newman command template")
 	}
 	buf := new(bytes.Buffer)
-	// TODO: Config and CollectionDisplayName must be capitalized <-> was small letter in groovy --> Templates must be adapted
 	err = templ.Execute(buf, TemplateConfig{
 		Config:                config,
 		CollectionDisplayName: collectionDisplayName,
