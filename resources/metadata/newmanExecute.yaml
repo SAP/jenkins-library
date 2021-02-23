@@ -13,23 +13,10 @@ metadata:
 
 spec:
   inputs:
-#    secrets:
-#      - name: gitHttpsCredentialsId
-#        description: Jenkins 'Username with password' credentials ID containing username/password for http access to your git repository.
-#        type: jenkins
-#    resources:
-#      - name: deployDescriptor
-#        type: stash
+    resources:
+      - name: tests
+        type: stash
     params:
-      - name: verbose
-        description: Print more detailed information into the log.
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        type: bool
-        default: false
-        mandatory: true
       - name: newmanCollection
         description: The test collection that should be executed. This could also be a file pattern.
         scope:
@@ -37,7 +24,7 @@ spec:
           - STAGES
           - STEPS
         type: string
-        mandatory: true
+        default: '**/*.postman_collection.json'
       - name: newmanRunCommand
         description: The newman command that will be executed inside the docker container.
         scope:
@@ -45,7 +32,7 @@ spec:
           - STAGES
           - STEPS
         type: string
-        mandatory: true
+        default: run {{.NewmanCollection}} --reporters junit,html --reporter-junit-export target/newman/TEST-{{.CollectionDisplayName}}.xml --reporter-html-export target/newman/TEST-{{.CollectionDisplayName}}.html
       - name: newmanInstallCommand
         description: The shell command that will be executed inside the docker container to install Newman.
         scope:
@@ -53,8 +40,7 @@ spec:
           - STAGES
           - STEPS
         type: string
-        mandatory: true
-        default: npm install newman --global --quiet
+        default: npm install newman newman-reporter-html --global --quiet
       - name: newmanEnvironment
         description: Specify an environment file path or URL. Environments provide a set of variables that one can use within collections.
         longDescription: see also [Newman docs](https://github.com/postmanlabs/newman#newman-run-collection-file-source-options)
@@ -78,7 +64,7 @@ spec:
           - STAGES
           - STEPS
         type: bool
-        mandatory: true
+        default: true
       - name: cfAppsWithSecrets
         description: Define name array of cloud foundry apps deployed for which secrets (clientid and clientsecret) will be appended
         longDescription: |
@@ -89,7 +75,6 @@ spec:
           - STAGES
           - STEPS
         type: "[]string"
-        mandatory: true
   containers:
     - name: newman
       image: node:lts-stretch
