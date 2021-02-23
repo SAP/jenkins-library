@@ -46,9 +46,7 @@ void call(Map parameters = [:]) {
                 abapEnvironmentPullGitRepo script: parameters.script
                 break
             case 'AddonBuild':
-                abapEnvironmentPullGitRepo(script: parameters.script, ignoreCommit: true)
-                abapEnvironmentCheckoutBranch script: parameters.script
-                abapEnvironmentPullGitRepo script: parameters.script
+                abapEnvironmentCloneGitRepo script: parameters.script
                 break
             default:
                 abapEnvironmentPullGitRepo script: parameters.script

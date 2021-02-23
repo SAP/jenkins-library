@@ -129,6 +129,7 @@ func Execute() {
 	rootCmd.AddCommand(TransportRequestUploadCTSCommand())
 	rootCmd.AddCommand(NewmanExecuteCommand())
 	rootCmd.AddCommand(IntegrationArtifactDeployCommand())
+	rootCmd.AddCommand(TransportRequestUploadSOLMANCommand())
 	rootCmd.AddCommand(IntegrationArtifactUpdateConfigurationCommand())
 	rootCmd.AddCommand(IntegrationArtifactGetMplStatusCommand())
 	rootCmd.AddCommand(IntegrationArtifactDownloadCommand())
