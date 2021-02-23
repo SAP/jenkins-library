@@ -35,6 +35,11 @@ newmanRunCommand: "run '${config.newmanCollection}' --environment '${config.newm
 newmanRunCommand: "run \{\{.NewmanCollection\}\} --environment \{\{.Config.NewmanEnvironment\}\} --globals \{\{.Config.NewmanGlobals\}\} --reporters junit,html --reporter-junit-export target/newman/TEST-\{\{.CollectionDisplayName\}\}.xml --reporter-html-export target/newman/TEST-\{\{.CollectionDisplayName\}\}.html"
 ```
 
+If the following error occurs during the pipeline run, the `newmanRunCommand` is probably still configured with the deprecated groovy template syntax:
+> info  newmanExecute - error: collection could not be loaded
+> info  newmanExecute -   unable to read data from file "${config.newmanCollection}"
+> info  newmanExecute -   ENOENT: no such file or directory, open '${config.newmanCollection}'
+
 Including `--environment \{\{.Config.NewmanEnvironment\}\}` and `--globals \{\{.Config.NewmanGlobals\}\}` in the runCommand is rendundant since both parameters are also added to runCommand using `newmanEnvironment` and `newmanGlobals` from config.
 
 ## Example
