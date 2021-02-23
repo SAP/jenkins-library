@@ -77,9 +77,13 @@ func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, i
 	// reroute command output to logging framework
 	runner.Stdout(log.Writer())
 	runner.Stderr(log.Writer())
-
-	client := piperhttp.Client{}
-	client.SetOptions(piperhttp.ClientOptions{TransportTimeout: 20 * time.Second})
+	// client for downloading the sonar-scanner
+	downloadClient := &piperhttp.Client{}
+	downloadClient.SetOptions(piperhttp.ClientOptions{TransportTimeout: 20 * time.Second})
+	// client for talking to the SonarQube API
+	apiClient := &piperhttp.Client{}
+	//TODO: implement certificate handling
+	apiClient.SetOptions(piperhttp.ClientOptions{TransportSkipVerification: true})
 
 	sonar = sonarSettings{
 		workingDir:  "./",
@@ -89,7 +93,7 @@ func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, i
 	}
 
 	influx.step_data.fields.sonar = false
-	if err := runSonar(config, &client, &runner, influx); err != nil {
+	if err := runSonar(config, downloadClient, &runner, apiClient, influx); err != nil {
 		if log.GetErrorCategory() == log.ErrorUndefined && runner.GetExitCode() == 2 {
 			// see https://github.com/SonarSource/sonar-scanner-cli/blob/adb67d645c3bcb9b46f29dea06ba082ebec9ba7a/src/main/java/org/sonarsource/scanner/cli/Exit.java#L25
 			log.SetErrorCategory(log.ErrorConfiguration)
@@ -99,7 +103,7 @@ func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, i
 	influx.step_data.fields.sonar = true
 }
 
-func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runner command.ExecRunner, influx *sonarExecuteScanInflux) error {
+func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runner command.ExecRunner, apiClient SonarUtils.Sender, influx *sonarExecuteScanInflux) error {
 	if len(config.ServerURL) > 0 {
 		sonar.addEnvironment("SONAR_HOST_URL=" + config.ServerURL)
 	}
@@ -170,17 +174,14 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		StepResults.PersistReportsAndLinks("sonarExecuteScan", sonar.workingDir, nil, links)
 	}
 
-	sender := &piperhttp.Client{}
-	//TODO: implement certificate handling
-	sender.SetOptions(piperhttp.ClientOptions{TransportSkipVerification: true})
-	taskService := SonarUtils.NewTaskService(taskReport.ServerURL, config.Token, taskReport.TaskID, sender)
+	taskService := SonarUtils.NewTaskService(taskReport.ServerURL, config.Token, taskReport.TaskID, apiClient)
 	// wait for analysis task to complete
 	err = taskService.WaitForTask()
 	if err != nil {
 		return err
 	}
 	// fetch number of issues by severity
-	issueService := SonarUtils.NewIssuesService(taskReport.ServerURL, config.Token, taskReport.ProjectKey, config.Organization, config.BranchName, config.ChangeID, sender)
+	issueService := SonarUtils.NewIssuesService(taskReport.ServerURL, config.Token, taskReport.ProjectKey, config.Organization, config.BranchName, config.ChangeID, apiClient)
 	influx.sonarqube_data.fields.blocker_issues, err = issueService.GetNumberOfBlockerIssues()
 	if err != nil {
 		return err

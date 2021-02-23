@@ -17,14 +17,14 @@ func TestCreate(t *testing.T) {
 			Username: mock.Anything,
 		}
 		// test
-		request, err := requester.create(http.MethodGet, endpointIssuesSearch, &IssuesSearchOption{P: "42"})
+		request, err := requester.create(http.MethodGet, mock.Anything, &IssuesSearchOption{P: "42"})
 		// assert
 		assert.NoError(t, err)
 		assert.Empty(t, request.URL.Opaque)
 		assert.Equal(t, http.MethodGet, request.Method)
 		assert.Equal(t, "https", request.URL.Scheme)
 		assert.Equal(t, "example.org", request.URL.Host)
-		assert.Equal(t, "/api/"+endpointIssuesSearch, request.URL.Path)
+		assert.Equal(t, "/api/"+mock.Anything, request.URL.Path)
 		assert.Contains(t, request.Header.Get("Authorization"), "Basic ")
 	})
 }
