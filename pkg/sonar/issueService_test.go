@@ -47,6 +47,27 @@ func TestIssueService(t *testing.T) {
 		assert.Equal(t, -1, count)
 		assert.Equal(t, 1, httpmock.GetTotalCallCount(), "unexpected number of requests")
 	})
+	t.Run("", func(t *testing.T) {
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
+
+		sender := &piperhttp.Client{}
+		sender.SetOptions(piperhttp.ClientOptions{UseDefaultTransport: true})
+		// add response handler
+		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+endpointIssuesSearch+"", httpmock.NewStringResponder(http.StatusOK, responseIssueSearchCritical))
+		// create service instance
+		serviceUnderTest := NewIssuesService(testURL, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, sender)
+		// test
+		countMajor, err := serviceUnderTest.GetNumberOfMajorIssues()
+		countMinor, err := serviceUnderTest.GetNumberOfMinorIssues()
+		countInfo, err := serviceUnderTest.GetNumberOfInfoIssues()
+		// assert
+		assert.NoError(t, err)
+		assert.Equal(t, 111, countMajor)
+		assert.Equal(t, 111, countMinor)
+		assert.Equal(t, 111, countInfo)
+		assert.Equal(t, 3, httpmock.GetTotalCallCount(), "unexpected number of requests")
+	})
 }
 
 const responseIssueSearchError = `{
