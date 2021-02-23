@@ -9,7 +9,8 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
-const endpointCeTask = "ce/task"
+// EndpointCeTask API endpoint for https://sonarcloud.io/web_api/api/ce/task
+const EndpointCeTask = "ce/task"
 
 const (
 	taskStatusSuccess    = "SUCCESS"
@@ -28,7 +29,7 @@ type TaskService struct {
 
 // GetTask ...
 func (service *TaskService) GetTask(options *sonargo.CeTaskOption) (*sonargo.CeTaskObject, *http.Response, error) {
-	request, err := service.apiClient.create("GET", endpointCeTask, options)
+	request, err := service.apiClient.create("GET", EndpointCeTask, options)
 	if err != nil {
 		return nil, nil, err
 	}

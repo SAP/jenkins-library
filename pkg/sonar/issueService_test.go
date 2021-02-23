@@ -20,7 +20,7 @@ func TestIssueService(t *testing.T) {
 		sender := &piperhttp.Client{}
 		sender.SetOptions(piperhttp.ClientOptions{UseDefaultTransport: true})
 		// add response handler
-		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+endpointIssuesSearch+"", httpmock.NewStringResponder(http.StatusOK, responseIssueSearchCritical))
+		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+EndpointIssuesSearch+"", httpmock.NewStringResponder(http.StatusOK, responseIssueSearchCritical))
 		// create service instance
 		serviceUnderTest := NewIssuesService(testURL, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, sender)
 		// test
@@ -37,7 +37,7 @@ func TestIssueService(t *testing.T) {
 		sender := &piperhttp.Client{}
 		sender.SetOptions(piperhttp.ClientOptions{UseDefaultTransport: true})
 		// add response handler
-		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+endpointIssuesSearch+"", httpmock.NewStringResponder(http.StatusNotFound, responseIssueSearchError))
+		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+EndpointIssuesSearch+"", httpmock.NewStringResponder(http.StatusNotFound, responseIssueSearchError))
 		// create service instance
 		serviceUnderTest := NewIssuesService(testURL, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, sender)
 		// test
@@ -54,7 +54,7 @@ func TestIssueService(t *testing.T) {
 		sender := &piperhttp.Client{}
 		sender.SetOptions(piperhttp.ClientOptions{UseDefaultTransport: true})
 		// add response handler
-		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+endpointIssuesSearch+"", httpmock.NewStringResponder(http.StatusOK, responseIssueSearchCritical))
+		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+EndpointIssuesSearch+"", httpmock.NewStringResponder(http.StatusOK, responseIssueSearchCritical))
 		// create service instance
 		serviceUnderTest := NewIssuesService(testURL, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, sender)
 		// test

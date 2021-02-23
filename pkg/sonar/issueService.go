@@ -7,7 +7,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-const endpointIssuesSearch = "issues/search"
+// EndpointIssuesSearch API endpoint for https://sonarcloud.io/web_api/api/issues/search
+const EndpointIssuesSearch = "issues/search"
 
 // IssueService ...
 type IssueService struct {
@@ -20,7 +21,7 @@ type IssueService struct {
 
 // SearchIssues ...
 func (service *IssueService) SearchIssues(options *IssuesSearchOption) (*sonargo.IssuesSearchObject, *http.Response, error) {
-	request, err := service.apiClient.create("GET", endpointIssuesSearch, options)
+	request, err := service.apiClient.create("GET", EndpointIssuesSearch, options)
 	if err != nil {
 		return nil, nil, err
 	}

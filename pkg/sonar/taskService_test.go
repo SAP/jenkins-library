@@ -23,7 +23,7 @@ func TestGetTask(t *testing.T) {
 		sender := &piperhttp.Client{}
 		sender.SetOptions(piperhttp.ClientOptions{UseDefaultTransport: true})
 		// add response handler
-		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+endpointCeTask+"", httpmock.NewStringResponder(http.StatusOK, responseCeTaskSuccess))
+		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+EndpointCeTask+"", httpmock.NewStringResponder(http.StatusOK, responseCeTaskSuccess))
 		// create service instance
 		serviceUnderTest := NewTaskService(testURL, mock.Anything, mock.Anything, sender)
 		// test
@@ -41,7 +41,7 @@ func TestGetTask(t *testing.T) {
 		sender := &piperhttp.Client{}
 		sender.SetOptions(piperhttp.ClientOptions{UseDefaultTransport: true})
 		// add response handler
-		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+endpointCeTask+"", httpmock.NewErrorResponder(errors.New("internal server error")))
+		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+EndpointCeTask+"", httpmock.NewErrorResponder(errors.New("internal server error")))
 		// create service instance
 		serviceUnderTest := NewTaskService(testURL, mock.Anything, mock.Anything, sender)
 		// test
@@ -60,7 +60,7 @@ func TestGetTask(t *testing.T) {
 		sender := &piperhttp.Client{}
 		sender.SetOptions(piperhttp.ClientOptions{UseDefaultTransport: true})
 		// add response handler
-		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+endpointCeTask+"", httpmock.NewStringResponder(http.StatusNotFound, responseCeTaskError))
+		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+EndpointCeTask+"", httpmock.NewStringResponder(http.StatusNotFound, responseCeTaskError))
 		// create service instance
 		serviceUnderTest := NewTaskService(testURL, mock.Anything, mock.Anything, sender)
 		// test
@@ -84,7 +84,7 @@ func TestWaitForTask(t *testing.T) {
 		sender.SetOptions(piperhttp.ClientOptions{UseDefaultTransport: true})
 		// add response handler
 
-		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+endpointCeTask+"", httpmock.ResponderFromMultipleResponses(
+		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+EndpointCeTask+"", httpmock.ResponderFromMultipleResponses(
 			[]*http.Response{
 				httpmock.NewStringResponse(http.StatusOK, responseCeTaskPending),
 				httpmock.NewStringResponse(http.StatusOK, responseCeTaskProcessing),
@@ -108,7 +108,7 @@ func TestWaitForTask(t *testing.T) {
 		sender.SetOptions(piperhttp.ClientOptions{UseDefaultTransport: true})
 		// add response handler
 
-		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+endpointCeTask+"", httpmock.ResponderFromMultipleResponses(
+		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+EndpointCeTask+"", httpmock.ResponderFromMultipleResponses(
 			[]*http.Response{
 				httpmock.NewStringResponse(http.StatusOK, responseCeTaskPending),
 				httpmock.NewStringResponse(http.StatusOK, responseCeTaskProcessing),
