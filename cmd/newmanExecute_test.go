@@ -230,19 +230,6 @@ func TestResolveTemplate(t *testing.T) {
 		assert.Equal(t, "this is my fancy command theDisplayName", cmd)
 	})
 
-	t.Run("replace config Verbose", func(t *testing.T) {
-		t.Parallel()
-
-		config := newmanExecuteOptions{
-			NewmanRunCommand: "this is my fancy command {{.Config.Verbose}}",
-			Verbose:          false,
-		}
-
-		cmd, err := resolveTemplate(&config, "theDisplayName")
-		assert.NoError(t, err)
-		assert.Equal(t, "this is my fancy command false", cmd)
-	})
-
 	t.Run("error when parameter cannot be resolved", func(t *testing.T) {
 		t.Parallel()
 
