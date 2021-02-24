@@ -17,6 +17,7 @@ import (
 
 type fortifyExecuteScanOptions struct {
 	AuthToken                       string   `json:"authToken,omitempty"`
+	CustomScanVersion               string   `json:"customScanVersion,omitempty"`
 	GithubToken                     string   `json:"githubToken,omitempty"`
 	AutoCreate                      bool     `json:"autoCreate,omitempty"`
 	ModulePath                      string   `json:"modulePath,omitempty"`
@@ -190,6 +191,7 @@ and Java plus Maven or alternatively Python installed into it for being able to 
 
 func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteScanOptions) {
 	cmd.Flags().StringVar(&stepConfig.AuthToken, "authToken", os.Getenv("PIPER_authToken"), "The FortifyToken to use for authentication")
+	cmd.Flags().StringVar(&stepConfig.CustomScanVersion, "customScanVersion", os.Getenv("PIPER_customScanVersion"), "Custom version of the Fortify project used as source.")
 	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
 	cmd.Flags().BoolVar(&stepConfig.AutoCreate, "autoCreate", false, "Whether Fortify project and project version shall be implicitly auto created in case they cannot be found in the backend")
 	cmd.Flags().StringVar(&stepConfig.ModulePath, "modulePath", `./`, "Allows providing the path for the module to scan")
@@ -273,6 +275,14 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+					},
+					{
+						Name:        "customScanVersion",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "fortifyProjectVersion"}},
 					},
 					{
 						Name: "githubToken",

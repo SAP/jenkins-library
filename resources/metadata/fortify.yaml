@@ -46,6 +46,20 @@ spec:
               - $(vaultPath)/fortify
               - $(vaultBasePath)/$(vaultPipelineName)/fortify
               - $(vaultBasePath)/GROUP-SECRETS/fortify
+      - name: customScanVersion
+        type: string
+        description: Custom version of the Fortify project used as source.
+        longDescription: |-
+          Defines a custom version for the Fortify scan which deviates from the typical versioning pattern using [`versioningModel`](#versioningModel)
+          It allows to set non-numeric versions as well and supersedes the value of [`versioningModel`](#versioningModel) which is calculated automatically.
+          The parameter is also used by other scan steps (e.g. BlackDuck Detect) and thus allows a common custom version across scan tools.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        aliases:
+          - name: fortifyProjectVersion
       - name: githubToken
         description: "GitHub personal access token as per
           https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line"
