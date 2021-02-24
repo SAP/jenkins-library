@@ -54,8 +54,6 @@ jobs:
     if: (github.event.comment.body == '/it' || github.event.comment.body == '/it-go') && (github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER')
 
     steps:
-      - name: update status
-        run: echo "this is no test"
       - name: get pull request url
         id: pullrequest
         run: echo "::set-output name=pullrequest::$(curl ${{ github.event.comment.issue_url }} | jq '.pull_request.url' | sed 's/\"//g')"
