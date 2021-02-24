@@ -224,7 +224,7 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 }
 
 func classifyErrorOnLookup(err error) {
-	if(strings.Contains(err.Error(), "connect: connection refused") || strings.Contains(err.Error(), "net/http: TLS handshake timeout")) {
+	if strings.Contains(err.Error(), "connect: connection refused") || strings.Contains(err.Error(), "net/http: TLS handshake timeout") {
 		log.SetErrorCategory(log.ErrorService)
 	}
 }
