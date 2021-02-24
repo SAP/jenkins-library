@@ -13,6 +13,8 @@ metadata:
 spec:
   inputs:
     resources:
+      - name: buildDescriptor
+        type: stash
       - name: tests
         type: stash
     params:
