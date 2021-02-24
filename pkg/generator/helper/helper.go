@@ -179,9 +179,8 @@ func {{ .StepName }}Metadata() config.StepData {
 						{{- if $resource.Name -}} Name: "{{$resource.Name}}",{{- end }}
 						{{- if $resource.Description -}} Description: "{{$resource.Description}}",{{- end }}
 						{{- if $resource.Type -}} Type: "{{$resource.Type}}",{{- end }}
-						{{- if $resource.Parameters -}} Parameters: []map[string]interface{ {{- range $k, $v := $resource.Parameters }} { "{{ $k }}": {{ $v }} }, } {{ end -}} ,{{- end }}
 						{{- if $resource.Conditions -}} Conditions: []config.Condition{ {{- range $i, $cond := $resource.Conditions }} {ConditionRef: "{{$cond.ConditionRef}}", Params: []config.Param{ {{- range $j, $p := $cond.Params}} { Name: "{{$p.Name}}", Value: "{{$p.Value}}" }, {{end -}} } }, {{ end -}} },{{ end }}
-					}, {{ end }}
+					},{{- end }}
 				},
 				{{ end -}}
 				Parameters: []config.StepParameters{
