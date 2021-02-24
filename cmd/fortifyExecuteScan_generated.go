@@ -254,6 +254,13 @@ func fortifyExecuteScanMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Resources: []config.StepResources{
+					{Name: "commonPipelineEnvironment"},
+					{Name: "buildDescriptor", Type: "stash"},
+					{Name: "deployDescriptor", Type: "stash"},
+					{Name: "tests", Type: "stash"},
+					{Name: "opensourceConfiguration", Type: "stash"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name: "authToken",
