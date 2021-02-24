@@ -23,7 +23,7 @@ func TestSonarIssueSearch(t *testing.T) {
 	t.Parallel()
 	// init
 	token := os.Getenv("PIPER_INTEGRATION_SONAR_TOKEN")
-	require.NotEmpty(t, token)
+	require.NotEmpty(t, token, "SonarQube API Token is missing")
 	host := os.Getenv("PIPER_INTEGRATION_SONAR_HOST")
 	if len(host) == 0 {
 		host = "https://sonarcloud.io"
