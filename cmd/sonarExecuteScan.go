@@ -168,6 +168,12 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 	if err != nil {
 		return err
 	}
+
+	// as PRs are handled locally for legacy SonarQube systems, no measurements will be fetched.
+	if len(config.ChangeID) > 0 && config.LegacyPRHandling {
+		return nil
+	}
+
 	// load task results
 	taskReport, err := SonarUtils.ReadTaskReport(sonar.workingDir)
 	if err != nil {
