@@ -107,6 +107,15 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 	if len(config.ServerURL) > 0 {
 		sonar.addEnvironment("SONAR_HOST_URL=" + config.ServerURL)
 	}
+	if len(config.Token) == 0 {
+		log.Entry().Warn("sonar token not set")
+		// use token provided by sonar-scanner-jenkins plugin
+		// https://github.com/SonarSource/sonar-scanner-jenkins/blob/441ef2f485884758b60767bed2ef8a1a0a7fc863/src/main/java/hudson/plugins/sonar/SonarBuildWrapper.java#L132
+		if len(os.Getenv("SONAR_AUTH_TOKEN")) > 0 {
+			log.Entry().Info("using token from env var SONAR_AUTH_TOKEN")
+			config.Token = os.Getenv("SONAR_AUTH_TOKEN")
+		}
+	}
 	if len(config.Token) > 0 {
 		sonar.addEnvironment("SONAR_TOKEN=" + config.Token)
 	}
