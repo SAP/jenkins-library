@@ -55,8 +55,8 @@ func (service *TaskService) GetTask(options *sonargo.CeTaskOption) (*sonargo.CeT
 // HasFinished ...
 func (service *TaskService) HasFinished() (bool, error) {
 	options := &sonargo.CeTaskOption{
-		Id:               service.TaskID,
-		AdditionalFields: "warnings",
+		Id: service.TaskID,
+		// AdditionalFields: "warnings",
 	}
 	result, _, err := service.GetTask(options)
 	if err != nil {
@@ -65,9 +65,9 @@ func (service *TaskService) HasFinished() (bool, error) {
 	if result.Task.Status == taskStatusPending || result.Task.Status == taskStatusProcessing {
 		return false, nil
 	}
-	for _, warning := range result.Task.Warnings {
-		log.Entry().Warnf("Warnings during analysis: %s", warning)
-	}
+	// for _, warning := range result.Task.Warnings {
+	// 	log.Entry().Warnf("Warnings during analysis: %s", warning)
+	// }
 	return true, nil
 }
 
