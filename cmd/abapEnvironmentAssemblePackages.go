@@ -192,6 +192,10 @@ func (br *buildWithRepository) start() error {
 				ValueID: "PACKAGE_NAME_" + br.repo.PackageType,
 				Value:   br.repo.PackageName,
 			},
+			{
+				ValueID: "ACTUAL_DELIVERY_COMMIT",
+				Value:   br.repo.CommitID,
+			},
 		},
 	}
 	if br.repo.PredecessorCommitID != "" {
