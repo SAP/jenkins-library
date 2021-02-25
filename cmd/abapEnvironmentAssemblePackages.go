@@ -63,16 +63,11 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 		return errors.Wrap(err, "Reading AddonDescriptor failed [Make sure abapAddonAssemblyKit...CheckCVs|CheckPV|ReserveNextPackages steps have been run before]")
 	}
 
-	delayBetweenPostsInSeconds := time.Duration(3 * time.Second)
-	builds, buildsAlreadyReleased, err := starting(addonDescriptor.Repositories, *conn, delayBetweenPostsInSeconds)
-	if err != nil {
-		return errors.Wrap(err, "Starting Builds failed")
-	}
 	maxRuntimeInMinutes := time.Duration(config.MaxRuntimeInMinutes) * time.Minute
 	pollIntervalsInMilliseconds := time.Duration(config.PollIntervalsInMilliseconds) * time.Millisecond
-	err = polling(builds, maxRuntimeInMinutes, pollIntervalsInMilliseconds)
+	builds, buildsAlreadyReleased, err := executeBuilds(addonDescriptor.Repositories, *conn, maxRuntimeInMinutes, pollIntervalsInMilliseconds)
 	if err != nil {
-		return errors.Wrap(err, "Polling failed")
+		return errors.Wrap(err, "Starting Builds failed")
 	}
 
 	err = checkIfFailedAndPrintLogs(builds)
@@ -122,61 +117,91 @@ func starting(repos []abaputils.Repository, conn abapbuild.Connector, delayBetwe
 	return builds, buildsAlreadyReleased, nil
 }
 
-func polling(builds []buildWithRepository, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) error {
+func executeBuilds(repos []abaputils.Repository, conn abapbuild.Connector, maxRuntimeInMinutes time.Duration, pollIntervalsInMilliseconds time.Duration) ([]buildWithRepository, []buildWithRepository, error) {
+	var builds []buildWithRepository
+	var buildsAlreadyReleased []buildWithRepository
+	for _, repo := range repos {
+		assemblyBuild := abapbuild.Build{
+			Connector: conn,
+		}
+		buildRepo := buildWithRepository{
+			build: assemblyBuild,
+			repo:  repo,
+		}
+		if repo.Status == "P" {
+			err := buildRepo.start()
+			if err != nil {
+				buildRepo.build.RunState = abapbuild.Failed
+				log.Entry().Error(err)
+				log.Entry().Info("Continueing with other builds (if any)")
+			} else {
+				err = buildRepo.waitToBeFinished(maxRuntimeInMinutes, pollIntervalsInMilliseconds)
+				if err != nil {
+					buildRepo.build.RunState = abapbuild.Failed
+					log.Entry().Error(err)
+					log.Entry().Error("Continueing with other builds (if any) but keep in Mind that even if this build finishes beyond timeout the result is not trustworthy due to possible side effects!")
+				}
+			}
+			builds = append(builds, buildRepo)
+
+		} else {
+			log.Entry().Infof("Packages %s is in status '%s'. No need to run the assembly", repo.PackageName, repo.Status)
+			buildsAlreadyReleased = append(buildsAlreadyReleased, buildRepo)
+		}
+	}
+	return builds, buildsAlreadyReleased, nil
+}
+
+func (br *buildWithRepository) waitToBeFinished(maxRuntimeInMinutes time.Duration, pollIntervalsInMilliseconds time.Duration) error {
 	timeout := time.After(maxRuntimeInMinutes)
-	ticker := time.Tick(pollIntervalsInSeconds)
+	ticker := time.Tick(pollIntervalsInMilliseconds)
 	for {
 		select {
 		case <-timeout:
 			return errors.Errorf("Timed out: (max Runtime %v reached)", maxRuntimeInMinutes)
 		case <-ticker:
-			var allFinished bool = true
-			for i := range builds {
-				builds[i].build.Get()
-				if !builds[i].build.IsFinished() {
-					log.Entry().Infof("Assembly of %s is not yet finished, check again in %s", builds[i].repo.PackageName, pollIntervalsInSeconds)
-					allFinished = false
-				}
-			}
-			if allFinished {
+			br.build.Get()
+			if br.build.IsFinished() {
+				log.Entry().Infof("Assembly of %s is not yet finished, check again in %s", br.repo.PackageName, pollIntervalsInMilliseconds)
+			} else {
 				return nil
 			}
 		}
 	}
 }
 
-func (b *buildWithRepository) start() error {
-	if b.repo.Name == "" || b.repo.Version == "" || b.repo.SpLevel == "" || b.repo.Namespace == "" || b.repo.PackageType == "" || b.repo.PackageName == "" {
+func (br *buildWithRepository) start() error {
+	if br.repo.Name == "" || br.repo.Version == "" || br.repo.SpLevel == "" || br.repo.Namespace == "" || br.repo.PackageType == "" || br.repo.PackageName == "" {
 		return errors.New("Parameters missing. Please provide software component name, version, sp-level, namespace, packagetype and packagename")
 	}
 	valuesInput := abapbuild.Values{
 		Values: []abapbuild.Value{
 			{
 				ValueID: "SWC",
-				Value:   b.repo.Name,
+				Value:   br.repo.Name,
 			},
 			{
 				ValueID: "CVERS",
-				Value:   b.repo.Name + "." + b.repo.Version + "." + b.repo.SpLevel,
+				Value:   br.repo.Name + "." + br.repo.Version + "." + br.repo.SpLevel,
 			},
 			{
 				ValueID: "NAMESPACE",
-				Value:   b.repo.Namespace,
+				Value:   br.repo.Namespace,
 			},
 			{
-				ValueID: "PACKAGE_NAME_" + b.repo.PackageType,
-				Value:   b.repo.PackageName,
+				ValueID: "PACKAGE_NAME_" + br.repo.PackageType,
+				Value:   br.repo.PackageName,
 			},
 		},
 	}
-	if b.repo.PredecessorCommitID != "" {
+	if br.repo.PredecessorCommitID != "" {
 		valuesInput.Values = append(valuesInput.Values,
 			abapbuild.Value{ValueID: "PREVIOUS_DELIVERY_COMMIT",
-				Value: b.repo.PredecessorCommitID})
+				Value: br.repo.PredecessorCommitID})
 	}
-	phase := "BUILD_" + b.repo.PackageType
-	log.Entry().Infof("Starting assembly of package %s", b.repo.PackageName)
-	return b.build.Start(phase, valuesInput)
+	phase := "BUILD_" + br.repo.PackageType
+	log.Entry().Infof("Starting assembly of package %s", br.repo.PackageName)
+	return br.build.Start(phase, valuesInput)
 }
 
 func checkIfFailedAndPrintLogs(builds []buildWithRepository) error {
