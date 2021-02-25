@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/abap/build"
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -31,7 +32,7 @@ func abapEnvironmentAssembleConfirm(config abapEnvironmentAssembleConfirmOptions
 	}
 }
 
-func runAbapEnvironmentAssembleConfirm(config *abapEnvironmentAssembleConfirmOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender, cpe *abapEnvironmentAssembleConfirmCommonPipelineEnvironment) error {
+func runAbapEnvironmentAssembleConfirm(config *abapEnvironmentAssembleConfirmOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client build.HTTPSendLoader, cpe *abapEnvironmentAssembleConfirmCommonPipelineEnvironment) error {
 	conn := new(abapbuild.Connector)
 	var connConfig abapbuild.ConnectorConfiguration
 	connConfig.CfAPIEndpoint = config.CfAPIEndpoint
