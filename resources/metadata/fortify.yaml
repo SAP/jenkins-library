@@ -51,7 +51,7 @@ spec:
         description: Custom version of the Fortify project used as source.
         longDescription: |-
           Defines a custom version for the Fortify scan which deviates from the typical versioning pattern using [`versioningModel`](#versioningModel)
-          It allows to set non-numeric versions as well and supersedes the value of [`versioningModel`](#versioningModel) which is calculated automatically.
+          It allows to set non-numeric versions as well and supersedes the value resulting on using the version of the artifact combined with the [`versioningModel`](#versioningModel).
           The parameter is also used by other scan steps (e.g. BlackDuck Detect) and thus allows a common custom version across scan tools.
         scope:
           - GENERAL
