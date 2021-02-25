@@ -179,7 +179,6 @@ var buildPost = mockData{
 		},
 		"values" : {
 			"results" : [
-			
 			]
 		}
 	}
@@ -242,7 +241,7 @@ var buildGet2 = mockData{
 			"__deferred" : {
 				"uri" : "https://7aa9d1a3-a876-464e-b59a-f26104452461.abap.stagingaws.hanavlab.ondemand.com/sap/opu/odata/BUILD/CORE_SRV/builds('AKO22FYOFYPOXHOBVKXUTX3A3Q')/tasks"
 			}
-		  },
+		},
 		"values" : {
 			"__deferred" : {
 				"uri" : "https://7aa9d1a3-a876-464e-b59a-f26104452461.abap.stagingaws.hanavlab.ondemand.com/sap/opu/odata/BUILD/CORE_SRV/builds('AKO22FYOFYPOXHOBVKXUTX3A3Q')/values"
