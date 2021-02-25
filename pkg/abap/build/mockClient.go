@@ -159,31 +159,31 @@ var buildPost = mockData{
 	url:    `/sap/opu/odata/BUILD/CORE_SRV/builds`,
 	body: `{
 	"d" : {
-	  "__metadata" : {
-		"id" : "https://7aa9d1a3-a876-464e-b59a-f26104452461.abap.stagingaws.hanavlab.ondemand.com/sap/opu/odata/BUILD/CORE_SRV/builds('AKO22FYOFYPOXHOBVKXUTX3A3Q')",
-		"uri" : "https://7aa9d1a3-a876-464e-b59a-f26104452461.abap.stagingaws.hanavlab.ondemand.com/sap/opu/odata/BUILD/CORE_SRV/builds('AKO22FYOFYPOXHOBVKXUTX3A3Q')",
-		"type" : "BUILD.CORE_SRV.xBUILDxVIEW_BUILDSType"
-	  },
-	  "build_id" : "AKO22FYOFYPOXHOBVKXUTX3A3Q",
-	  "run_state" : "ACCEPTED",
-	  "result_state" : "",
-	  "phase" : "BUILD_AOI",
-	  "entitytype" : "",
-	  "startedby" : "CC0000000001",
-	  "started_at" : null,
-	  "finished_at" : null,
-	  "tasks" : {
-		"__deferred" : {
-		  "uri" : "https://7aa9d1a3-a876-464e-b59a-f26104452461.abap.stagingaws.hanavlab.ondemand.com/sap/opu/odata/BUILD/CORE_SRV/builds('AKO22FYOFYPOXHOBVKXUTX3A3Q')/tasks"
+		"__metadata" : {
+			"id" : "https://7aa9d1a3-a876-464e-b59a-f26104452461.abap.stagingaws.hanavlab.ondemand.com/sap/opu/odata/BUILD/CORE_SRV/builds('AKO22FYOFYPOXHOBVKXUTX3A3Q')",
+			"uri" : "https://7aa9d1a3-a876-464e-b59a-f26104452461.abap.stagingaws.hanavlab.ondemand.com/sap/opu/odata/BUILD/CORE_SRV/builds('AKO22FYOFYPOXHOBVKXUTX3A3Q')",
+			"type" : "BUILD.CORE_SRV.xBUILDxVIEW_BUILDSType"
+		},
+		"build_id" : "AKO22FYOFYPOXHOBVKXUTX3A3Q",
+		"run_state" : "ACCEPTED",
+		"result_state" : "",
+		"phase" : "BUILD_AOI",
+		"entitytype" : "",
+		"startedby" : "CC0000000001",
+		"started_at" : null,
+		"finished_at" : null,
+		"tasks" : {
+			"__deferred" : {
+				"uri" : "https://7aa9d1a3-a876-464e-b59a-f26104452461.abap.stagingaws.hanavlab.ondemand.com/sap/opu/odata/BUILD/CORE_SRV/builds('AKO22FYOFYPOXHOBVKXUTX3A3Q')/tasks"
+			}
+		},
+		"values" : {
+			"results" : [
+			
+			]
 		}
-	  },
-	  "values" : {
-		"results" : [
-  
-		]
-	  }
 	}
-  }`,
+}`,
 	statusCode: 201,
 }
 
