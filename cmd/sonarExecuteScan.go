@@ -177,18 +177,22 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 	// load task results
 	taskReport, err := SonarUtils.ReadTaskReport(sonar.workingDir)
 	if err != nil {
-		log.Entry().WithError(err).Warning("Unable to read Sonar task report file.")
-	} else {
-		// write links JSON
-		links := []StepResults.Path{
-			{
-				Target: taskReport.DashboardURL,
-				Name:   "Sonar Web UI",
-			},
-		}
-		StepResults.PersistReportsAndLinks("sonarExecuteScan", sonar.workingDir, nil, links)
+		log.Entry().WithError(err).Warning("no scan report found")
+		return nil
 	}
+	// write links JSON
+	links := []StepResults.Path{
+		{
+			Target: taskReport.DashboardURL,
+			Name:   "Sonar Web UI",
+		},
+	}
+	StepResults.PersistReportsAndLinks("sonarExecuteScan", sonar.workingDir, nil, links)
 
+	if len(config.Token) == 0 {
+		log.Entry().Warn("no measurements are fetched due to missing credentials")
+		return nil
+	}
 	taskService := SonarUtils.NewTaskService(taskReport.ServerURL, config.Token, taskReport.TaskID, apiClient)
 	// wait for analysis task to complete
 	err = taskService.WaitForTask()
