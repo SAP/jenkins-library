@@ -24,7 +24,6 @@ func TestExecuteUAScan(t *testing.T) {
 		err := scan.ExecuteUAScan(&config, utilsMock)
 		assert.NoError(t, err)
 		assert.Equal(t, "maven", config.BuildTool)
-		assert.Contains(t, utilsMock.Calls[1].Params, config.ProductName)
 		assert.Contains(t, utilsMock.Calls[1].Params, ".")
 	})
 
@@ -42,7 +41,6 @@ func TestExecuteUAScan(t *testing.T) {
 		err := scan.ExecuteUAScan(&config, utilsMock)
 		assert.NoError(t, err)
 		assert.Equal(t, "mta", config.BuildTool)
-		assert.Contains(t, utilsMock.Calls[1].Params, config.ProductName)
 		assert.Contains(t, utilsMock.Calls[1].Params, ".")
 	})
 

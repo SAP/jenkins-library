@@ -81,7 +81,7 @@ func (s *Scan) ExecuteUAScanInPath(config *ScanOptions, utils Utils, scanPath st
 		return err
 	}
 
-	configPath, err := config.RewriteUAConfigurationFile(utils)
+	configPath, err := config.RewriteUAConfigurationFile(utils, s.AggregateProjectName)
 	if err != nil {
 		return err
 	}
