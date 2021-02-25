@@ -136,7 +136,6 @@ func (conn *Connector) InitBuildFramework(config ConnectorConfiguration, com aba
 	conn.Header["Accept"] = []string{"application/json"}
 	conn.Header["Content-Type"] = []string{"application/json"}
 
-	//conn.DownloadClient = &piperhttp.Client{}
 	conn.DownloadClient = inputclient
 	conn.DownloadClient.SetOptions(piperhttp.ClientOptions{TransportTimeout: 20 * time.Second})
 	// Mapping for options
