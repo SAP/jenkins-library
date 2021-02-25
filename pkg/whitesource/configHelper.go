@@ -26,7 +26,7 @@ type ConfigOptions []ConfigOption
 
 // RewriteUAConfigurationFile updates the user's Unified Agent configuration with configuration which should be enforced or just eases the overall configuration
 // It then returns the path to the file containing the updated configuration
-func (s *ScanOptions) RewriteUAConfigurationFile(utils Utils) (string, error) {
+func (s *ScanOptions) RewriteUAConfigurationFile(utils Utils, projectName string) (string, error) {
 
 	uaContent, err := utils.FileRead(s.ConfigFilePath)
 	uaConfig, propErr := properties.Load(uaContent, properties.UTF8)
@@ -38,7 +38,7 @@ func (s *ScanOptions) RewriteUAConfigurationFile(utils Utils) (string, error) {
 	}
 
 	cOptions := ConfigOptions{}
-	cOptions.addGeneralDefaults(s, utils)
+	cOptions.addGeneralDefaults(s, utils, projectName)
 	cOptions.addBuildToolDefaults(s, utils)
 
 	newConfigMap := cOptions.updateConfig(&uaConfigMap)
@@ -80,7 +80,7 @@ func (c *ConfigOptions) updateConfig(originalConfig *map[string]string) map[stri
 	return newConfig
 }
 
-func (c *ConfigOptions) addGeneralDefaults(config *ScanOptions, utils Utils) {
+func (c *ConfigOptions) addGeneralDefaults(config *ScanOptions, utils Utils, projectName string) {
 	cOptions := ConfigOptions{}
 	if strings.HasPrefix(config.ProductName, "DIST - ") {
 		cOptions = append(cOptions, []ConfigOption{
@@ -109,11 +109,16 @@ func (c *ConfigOptions) addGeneralDefaults(config *ScanOptions, utils Utils) {
 		cOptions = append(cOptions, ConfigOption{Name: "includes", Value: strings.Join(config.Includes, " "), Force: true})
 	}
 
+	// might need some refactoring later
+	if len(projectName) == 0 {
+		projectName = config.ProjectName
+	}
+
 	cOptions = append(cOptions, []ConfigOption{
 		{Name: "apiKey", Value: config.OrgToken, Force: true},
 		{Name: "productName", Value: config.ProductName, Force: true},
 		{Name: "productVersion", Value: config.ProductVersion, Force: true},
-		{Name: "projectName", Value: config.ProjectName, Force: true},
+		{Name: "projectName", Value: projectName, Force: true},
 		{Name: "projectVersion", Value: config.ProductVersion, Force: true},
 		{Name: "productToken", Value: config.ProductToken, OmitIfPresent: "projectToken", Force: true},
 		{Name: "userKey", Value: config.UserToken, Force: true},
