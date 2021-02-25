@@ -83,7 +83,7 @@ func startingConfirm(repos []abaputils.Repository, conn abapbuild.Connector, del
 			build: assemblyBuild,
 			repo:  repo,
 		}
-		if repo.Status == "P" {
+		if repo.Status != "R" {
 			err := buildRepo.startConfirm()
 			if err != nil {
 				return builds, err
