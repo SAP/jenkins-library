@@ -33,6 +33,22 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 		defines = append(defines, "-Dflatten.mode=resolveCiFriendliesOnly", "-DupdatePomFile=true")
 	}
 
+	if config.CreateBOM {
+		goals = append(goals, "org.cyclonedx:cyclonedx-maven-plugin:makeAggregateBom")
+		createBOMConfig := []string{
+			"-DschemaVersion=1.2",
+			"-DincludeBomSerialNumber=true",
+			"-DincludeCompileScope=true",
+			"-DincludeProvidedScope=true",
+			"-DincludeRuntimeScope=true",
+			"-DincludeSystemScope=true",
+			"-DincludeTestScope=false",
+			"-DincludeLicenseText=false",
+			"-DoutputFormat=xml",
+		}
+		defines = append(defines, createBOMConfig...)
+	}
+
 	if config.Verify {
 		goals = append(goals, "verify")
 	} else {
