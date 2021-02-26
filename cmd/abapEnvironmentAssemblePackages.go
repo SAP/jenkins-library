@@ -85,6 +85,7 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 		//changed result storage with 2105, thus ignore errors for now
 		//return errors.Wrap(err, "Download of DELIVERY_LOGS.ZIP failed")
 		log.Entry().Warning("Download of DELIVERY_LOGS.ZIP failed")
+		log.Entry().Error(err)
 	}
 
 	// also write the already released packages back to cpe
@@ -275,6 +276,7 @@ func downloadResultToFile(builds []buildWithRepository, resultName string) ([]ab
 		}
 		reposBackToCPE = append(reposBackToCPE, builds[i].repo)
 
+		log.Entry().Infof("Publishing: ", resultName)
 		var reports []piperutils.Path
 		reports = append(reports, piperutils.Path{Target: downloadPath, Name: resultName, Mandatory: true})
 		piperutils.PersistReportsAndLinks("abapEnvironmentAssemblePackages", "", reports, nil)
