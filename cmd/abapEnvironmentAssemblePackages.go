@@ -74,10 +74,18 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 	if err != nil {
 		return errors.Wrap(err, "Check if failed and Printing Logs failed")
 	}
-	reposBackToCPE, err := downloadSARXML(builds)
+	reposBackToCPE, err := downloadResultToFile(builds, "SAR_XML")
 	if err != nil {
-		return errors.Wrap(err, "Download SAR XML failed")
+		return errors.Wrap(err, "Download of SAR_XML failed")
 	}
+
+	_, err = downloadResultToFile(builds, "DELIVERY_LOGS.ZIP")
+	if err != nil {
+		//changed result storage with 2105, thus ignore errors for now
+		//return errors.Wrap(err, "Download of DELIVERY_LOGS.ZIP failed")
+		log.Entry().Warning("Download of DELIVERY_LOGS.ZIP failed")
+	}
+
 	// also write the already released packages back to cpe
 	for _, b := range buildsAlreadyReleased {
 		reposBackToCPE = append(reposBackToCPE, b.repo)
@@ -240,6 +248,30 @@ func downloadSARXML(builds []buildWithRepository) ([]abaputils.Repository, error
 			return reposBackToCPE, err
 		}
 		builds[i].repo.SarXMLFilePath = downloadPath
+		reposBackToCPE = append(reposBackToCPE, builds[i].repo)
+	}
+	return reposBackToCPE, nil
+}
+
+func downloadResultToFile(builds []buildWithRepository, resultName string) ([]abaputils.Repository, error) {
+	var reposBackToCPE []abaputils.Repository
+	//resultName := "SAR_XML"
+	envPath := filepath.Join(GeneralConfig.EnvRootPath, "commonPipelineEnvironment", "abap")
+	for i, b := range builds {
+		buildResult, err := b.build.GetResult(resultName)
+		if err != nil {
+			return reposBackToCPE, err
+		}
+		fileName := buildResult.AdditionalInfo
+		downloadPath := filepath.Join(envPath, path.Base(fileName))
+		log.Entry().Infof("Downloading %s file %s to %s", resultName, path.Base(fileName), downloadPath)
+		err = buildResult.Download(downloadPath)
+		if err != nil {
+			return reposBackToCPE, err
+		}
+		if resultName == "SAR_XML" {
+			builds[i].repo.SarXMLFilePath = downloadPath
+		}
 		reposBackToCPE = append(reposBackToCPE, builds[i].repo)
 	}
 	return reposBackToCPE, nil
