@@ -11,6 +11,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/pkg/errors"
 )
@@ -273,6 +274,10 @@ func downloadResultToFile(builds []buildWithRepository, resultName string) ([]ab
 			builds[i].repo.SarXMLFilePath = downloadPath
 		}
 		reposBackToCPE = append(reposBackToCPE, builds[i].repo)
+
+		var reports []piperutils.Path
+		reports = append(reports, piperutils.Path{Target: downloadPath, Name: resultName, Mandatory: true})
+		piperutils.PersistReportsAndLinks("abapEnvironmentAssemblePackages", "", reports, nil)
 	}
 	return reposBackToCPE, nil
 }
