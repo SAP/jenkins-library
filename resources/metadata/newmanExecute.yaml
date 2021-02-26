@@ -35,7 +35,7 @@ spec:
           - run
           - "{{.NewmanCollection}}"
           - --reporters
-          - junit,html
+          - cli,junit,html
           - --reporter-junit-export
           - target/newman/TEST-{{.CollectionDisplayName}}.xml
           - --reporter-html-export
