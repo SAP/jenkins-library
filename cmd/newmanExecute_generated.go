@@ -16,6 +16,7 @@ import (
 type newmanExecuteOptions struct {
 	NewmanCollection     string   `json:"newmanCollection,omitempty"`
 	NewmanRunCommand     string   `json:"newmanRunCommand,omitempty"`
+	RunOptions           []string `json:"runOptions,omitempty"`
 	NewmanInstallCommand string   `json:"newmanInstallCommand,omitempty"`
 	NewmanEnvironment    string   `json:"newmanEnvironment,omitempty"`
 	NewmanGlobals        string   `json:"newmanGlobals,omitempty"`
@@ -23,7 +24,7 @@ type newmanExecuteOptions struct {
 	CfAppsWithSecrets    []string `json:"cfAppsWithSecrets,omitempty"`
 }
 
-// NewmanExecuteCommand This script executes [Postman](https://www.getpostman.com) tests from a collection via the [Newman](https://www.getpostman.com/docs/v6/postman/collection_runs/command_line_integration_with_newman) command line tool.
+// NewmanExecuteCommand Installs newman and executes specified newman collections.
 func NewmanExecuteCommand() *cobra.Command {
 	const STEP_NAME = "newmanExecute"
 
@@ -33,8 +34,8 @@ func NewmanExecuteCommand() *cobra.Command {
 
 	var createNewmanExecuteCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "This script executes [Postman](https://www.getpostman.com) tests from a collection via the [Newman](https://www.getpostman.com/docs/v6/postman/collection_runs/command_line_integration_with_newman) command line tool.",
-		Long:  ``,
+		Short: "Installs newman and executes specified newman collections.",
+		Long:  `This script executes [Postman](https://www.getpostman.com) tests from a collection via the [Newman](https://www.getpostman.com/docs/v6/postman/collection_runs/command_line_integration_with_newman) command line tool.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -81,7 +82,8 @@ func NewmanExecuteCommand() *cobra.Command {
 
 func addNewmanExecuteFlags(cmd *cobra.Command, stepConfig *newmanExecuteOptions) {
 	cmd.Flags().StringVar(&stepConfig.NewmanCollection, "newmanCollection", `**/*.postman_collection.json`, "The test collection that should be executed. This could also be a file pattern.")
-	cmd.Flags().StringVar(&stepConfig.NewmanRunCommand, "newmanRunCommand", `run {{.NewmanCollection}} --reporters junit,html --reporter-junit-export target/newman/TEST-{{.CollectionDisplayName}}.xml --reporter-html-export target/newman/TEST-{{.CollectionDisplayName}}.html`, "The newman command that will be executed inside the docker container.")
+	cmd.Flags().StringVar(&stepConfig.NewmanRunCommand, "newmanRunCommand", `run {{.NewmanCollection}} --reporters junit,html --reporter-junit-export target/newman/TEST-{{.CollectionDisplayName}}.xml --reporter-html-export target/newman/TEST-{{.CollectionDisplayName}}.html`, "+++ Deprecated +++ Please use list parameter `runOptions` instead.")
+	cmd.Flags().StringSliceVar(&stepConfig.RunOptions, "runOptions", []string{`run`, `{{.NewmanCollection}}`, `--reporters`, `junit,html`, `--reporter-junit-export`, `target/newman/TEST-{{.CollectionDisplayName}}.xml`, `--reporter-html-export`, `target/newman/TEST-{{.CollectionDisplayName}}.html`}, "The newman command that will be executed inside the docker container.")
 	cmd.Flags().StringVar(&stepConfig.NewmanInstallCommand, "newmanInstallCommand", `npm install newman newman-reporter-html --global --quiet`, "The shell command that will be executed inside the docker container to install Newman.")
 	cmd.Flags().StringVar(&stepConfig.NewmanEnvironment, "newmanEnvironment", os.Getenv("PIPER_newmanEnvironment"), "Specify an environment file path or URL. Environments provide a set of variables that one can use within collections.")
 	cmd.Flags().StringVar(&stepConfig.NewmanGlobals, "newmanGlobals", os.Getenv("PIPER_newmanGlobals"), "Specify the file path or URL for global variables. Global variables are similar to environment variables but have a lower precedence and can be overridden by environment variables having the same name.")
@@ -96,7 +98,7 @@ func newmanExecuteMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "newmanExecute",
 			Aliases:     []config.Alias{},
-			Description: "This script executes [Postman](https://www.getpostman.com) tests from a collection via the [Newman](https://www.getpostman.com/docs/v6/postman/collection_runs/command_line_integration_with_newman) command line tool.",
+			Description: "Installs newman and executes specified newman collections.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -114,6 +116,14 @@ func newmanExecuteMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "runOptions",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},

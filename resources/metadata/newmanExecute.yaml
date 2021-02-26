@@ -1,16 +1,8 @@
 metadata:
   name: newmanExecute
-  description: This script executes [Postman](https://www.getpostman.com) tests from a collection via the [Newman](https://www.getpostman.com/docs/v6/postman/collection_runs/command_line_integration_with_newman) command line tool.
-#  longDescription: |
-#    This step allows you to update the deployment manifest for Kubernetes in a git repository.
-#
-#    It can for example be used for GitOps scenarios where the update of the manifests triggers an update of the corresponding deployment in Kubernetes.
-#
-#    As of today, it supports the update of deployment yaml files via kubectl patch and update a whole helm template.
-#    For kubectl the container inside the yaml must be described within the following hierarchy: `{"spec":{"template":{"spec":{"containers":[{...}]}}}}`
-#    For helm the whole template is generated into a file and uploaded into the repository.
-
-
+  description: Installs newman and executes specified newman collections.
+  longDescription: |
+    This script executes [Postman](https://www.getpostman.com) tests from a collection via the [Newman](https://www.getpostman.com/docs/v6/postman/collection_runs/command_line_integration_with_newman) command line tool.
 spec:
   inputs:
     resources:
@@ -26,13 +18,28 @@ spec:
         type: string
         default: '**/*.postman_collection.json'
       - name: newmanRunCommand
-        description: The newman command that will be executed inside the docker container.
+        description: +++ Deprecated +++ Please use list parameter `runOptions` instead.
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
         type: string
-        default: run {{.NewmanCollection}} --reporters junit,html --reporter-junit-export target/newman/TEST-{{.CollectionDisplayName}}.xml --reporter-html-export target/newman/TEST-{{.CollectionDisplayName}}.html
+      - name: runOptions
+        description: The newman command that will be executed inside the docker container.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: "[]string"
+        default:
+          - run
+          - "{{.NewmanCollection}}"
+          - --reporters
+          - junit,html
+          - --reporter-junit-export
+          - target/newman/TEST-{{.CollectionDisplayName}}.xml
+          - --reporter-html-export
+          - target/newman/TEST-{{.CollectionDisplayName}}.html
       - name: newmanInstallCommand
         description: The shell command that will be executed inside the docker container to install Newman.
         scope:

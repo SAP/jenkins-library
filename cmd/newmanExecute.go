@@ -22,8 +22,10 @@ type newmanExecuteUtils interface {
 	// Unit tests shall be executable in parallel (not depend on global state), and don't (re-)test dependencies.
 	Glob(pattern string) (matches []string, err error)
 
+	RunExecutable(executable string, params ...string) error
 	RunShell(shell, script string) error
 	SetEnv(env []string)
+	AppendEnv(env []string)
 }
 
 type newmanExecuteUtilsBundle struct {
@@ -65,7 +67,11 @@ func newmanExecute(config newmanExecuteOptions, _ *telemetry.CustomData) {
 }
 
 func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) error {
-	utils.SetEnv([]string{"NPM_CONFIG_PREFIX=~/.npm-global"})
+	if config.NewmanRunCommand != "" {
+		log.Entry().Warn("found configuration for deprecated parameter newmanRunCommand, please use runOptions instead")
+		log.Entry().Warn("setting runOptions to value of deprecated parameter newmanRunCommand")
+		config.RunOptions = strings.Split(config.NewmanRunCommand, " ")
+	}
 
 	collectionList, err := utils.Glob(config.NewmanCollection)
 	if err != nil {
@@ -90,28 +96,32 @@ func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) er
 	}
 
 	// append environment and globals if not resolved by templating
-	options := ""
-	if config.NewmanEnvironment != "" && !strings.Contains(config.NewmanRunCommand, "{{.Config.NewmanEnvironment}}") {
-		options += "  --environment '" + config.NewmanEnvironment + "'"
+	options := []string{}
+	if config.NewmanEnvironment != "" && !contains(config.RunOptions, "{{.Config.NewmanEnvironment}}") {
+		options = append(options, "--environment '"+config.NewmanEnvironment+"'")
 	}
-	if config.NewmanGlobals != "" && !strings.Contains(config.NewmanRunCommand, "{{.Config.NewmanGlobals}}") {
-		options += "  --globals '" + config.NewmanGlobals + "'"
+	if config.NewmanGlobals != "" && !contains(config.RunOptions, "{{.Config.NewmanGlobals}}") {
+		options = append(options, "--globals '"+config.NewmanGlobals+"'")
 	}
 
 	for _, collection := range collectionList {
-		runCommand, err := resolveTemplate(config, collection)
+		runOptions := []string{}
+		runOptions, err := resolveTemplate(config, collection)
 		if err != nil {
 			return err
 		}
 
 		commandSecrets := handleCfAppCredentials(config)
 
+		runOptions = append(runOptions, options...)
+		runOptions = append(runOptions, commandSecrets...)
+
 		if !config.FailOnError {
-			runCommand += " --suppress-exit-code"
+			runOptions = append(runOptions, "--suppress-exit-code")
 		}
 
-		runCommand = "/home/node/.npm-global/bin/newman " + runCommand + options + commandSecrets
-		err = utils.RunShell("/bin/sh", runCommand)
+		newmanPath := filepath.Join(os.Getenv("HOME"), "/.npm-global/bin/newman")
+		err = utils.RunExecutable(newmanPath, runOptions...)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorService)
 			return errors.Wrap(err, "The execution of the newman tests failed, see the log for details.")
@@ -121,12 +131,12 @@ func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) er
 }
 
 func logVersions(utils newmanExecuteUtils) error {
-	err := utils.RunShell("/bin/sh", "node --version")
+	err := utils.RunExecutable("node", "--version")
 	if err != nil {
 		log.SetErrorCategory(log.ErrorInfrastructure)
 		return errors.Wrap(err, "error logging node version")
 	}
-	err = utils.RunShell("/bin/sh", "npm --version")
+	err = utils.RunExecutable("npm", "--version")
 	if err != nil {
 		log.SetErrorCategory(log.ErrorInfrastructure)
 		return errors.Wrap(err, "error logging npm version")
@@ -135,7 +145,9 @@ func logVersions(utils newmanExecuteUtils) error {
 }
 
 func installNewman(newmanInstallCommand string, utils newmanExecuteUtils) error {
-	err := utils.RunShell("/bin/sh", newmanInstallCommand)
+	installCommandTokens := strings.Split(newmanInstallCommand, " ")
+	installCommandTokens = append(installCommandTokens, "--prefix=~/.npm-global")
+	err := utils.RunExecutable(installCommandTokens[0], installCommandTokens[1:]...)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.Wrap(err, "error installing newman")
@@ -143,7 +155,8 @@ func installNewman(newmanInstallCommand string, utils newmanExecuteUtils) error 
 	return nil
 }
 
-func resolveTemplate(config *newmanExecuteOptions, collection string) (string, error) {
+func resolveTemplate(config *newmanExecuteOptions, collection string) ([]string, error) {
+	cmd := []string{}
 	collectionDisplayName := defineCollectionDisplayName(collection)
 
 	type TemplateConfig struct {
@@ -152,22 +165,25 @@ func resolveTemplate(config *newmanExecuteOptions, collection string) (string, e
 		NewmanCollection      string
 	}
 
-	templ, err := template.New("template").Parse(config.NewmanRunCommand)
-	if err != nil {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		return "", errors.Wrap(err, "could not parse newman command template")
+	for _, runOption := range config.RunOptions {
+		templ, err := template.New("template").Parse(runOption)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return nil, errors.Wrap(err, "could not parse newman command template")
+		}
+		buf := new(bytes.Buffer)
+		err = templ.Execute(buf, TemplateConfig{
+			Config:                config,
+			CollectionDisplayName: collectionDisplayName,
+			NewmanCollection:      collection,
+		})
+		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return nil, errors.Wrap(err, "error on executing template")
+		}
+		cmd = append(cmd, buf.String())
 	}
-	buf := new(bytes.Buffer)
-	err = templ.Execute(buf, TemplateConfig{
-		Config:                config,
-		CollectionDisplayName: collectionDisplayName,
-		NewmanCollection:      collection,
-	})
-	if err != nil {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		return "", errors.Wrap(err, "error on executing template")
-	}
-	cmd := buf.String()
+
 	return cmd, nil
 }
 
@@ -180,8 +196,8 @@ func defineCollectionDisplayName(collection string) string {
 	return displayName[0]
 }
 
-func handleCfAppCredentials(config *newmanExecuteOptions) string {
-	commandSecrets := ""
+func handleCfAppCredentials(config *newmanExecuteOptions) []string {
+	commandSecrets := []string{}
 	if len(config.CfAppsWithSecrets) > 0 {
 		for _, appName := range config.CfAppsWithSecrets {
 			var clientID, clientSecret string
@@ -189,7 +205,8 @@ func handleCfAppCredentials(config *newmanExecuteOptions) string {
 			clientSecret = os.Getenv("PIPER_NEWMANEXECUTE_" + appName + "_clientsecret")
 			if clientID != "" && clientSecret != "" {
 				log.RegisterSecret(clientSecret)
-				commandSecrets += " --env-var " + appName + "_clientid=" + clientID + " --env-var " + appName + "_clientsecret=" + clientSecret
+				secretVar := fmt.Sprintf("--env-var %v_clientid=%v --env-var %v_clientsecret=%v", appName, clientID, appName, clientSecret)
+				commandSecrets = append(commandSecrets, secretVar)
 				log.Entry().Infof("secrets found for app %v and forwarded to newman as --env-var parameter", appName)
 			} else {
 				log.Entry().Errorf("cannot fetch secrets from environment variables for app %v", appName)
@@ -197,4 +214,13 @@ func handleCfAppCredentials(config *newmanExecuteOptions) string {
 		}
 	}
 	return commandSecrets
+}
+
+func contains(slice []string, substr string) bool {
+	for _, e := range slice {
+		if strings.Contains(e, substr) {
+			return true
+		}
+	}
+	return false
 }
