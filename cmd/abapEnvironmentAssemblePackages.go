@@ -171,7 +171,7 @@ func (br *buildWithRepository) waitToBeFinished(maxRuntimeInMinutes time.Duratio
 			return errors.Errorf("Timed out: (max Runtime %v reached)", maxRuntimeInMinutes)
 		case <-ticker:
 			br.build.Get()
-			if br.build.IsFinished() {
+			if !br.build.IsFinished() {
 				log.Entry().Infof("Assembly of %s is not yet finished, check again in %s", br.repo.PackageName, pollIntervalsInMilliseconds)
 			} else {
 				return nil
@@ -276,7 +276,7 @@ func downloadResultToFile(builds []buildWithRepository, resultName string) ([]ab
 		}
 		reposBackToCPE = append(reposBackToCPE, builds[i].repo)
 
-		log.Entry().Infof("Publishing: ", resultName)
+		log.Entry().Infof("Publishing: %s", resultName)
 		var reports []piperutils.Path
 		reports = append(reports, piperutils.Path{Target: downloadPath, Name: resultName, Mandatory: true})
 		piperutils.PersistReportsAndLinks("abapEnvironmentAssemblePackages", "", reports, nil)
