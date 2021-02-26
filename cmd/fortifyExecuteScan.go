@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"io/ioutil"
 	"math"
 	"os"
@@ -13,6 +12,8 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 
 	"github.com/bmatcuk/doublestar"
 
@@ -58,7 +59,7 @@ func (bundle *fortifyUtilsBundle) GetArtifact(buildTool, buildDescriptorFile str
 	return versioning.GetArtifact(buildTool, buildDescriptorFile, options, bundle)
 }
 
-func newFortifyUtilsBundleBundle() fortifyUtils {
+func newFortifyUtilsBundle() fortifyUtils {
 	utils := fortifyUtilsBundle{
 		Command: &command.Command{},
 		Files:   &piperutils.Files{},
@@ -75,7 +76,7 @@ const classpathFileName = "fortify-execute-scan-cp.txt"
 func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemetry.CustomData, influx *fortifyExecuteScanInflux) {
 	auditStatus := map[string]string{}
 	sys := fortify.NewSystemInstance(config.ServerURL, config.APIEndpoint, config.AuthToken, time.Minute*15)
-	utils := newFortifyUtilsBundleBundle()
+	utils := newFortifyUtilsBundle()
 
 	reports, err := runFortifyScan(config, sys, utils, telemetryData, influx, auditStatus)
 	piperutils.PersistReportsAndLinks("fortifyExecuteScan", config.ModulePath, reports, nil)
@@ -125,14 +126,22 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return reports, fmt.Errorf("unable to get project coordinates from descriptor %v: %w", config.BuildDescriptorFile, err)
 	}
-	log.Entry().Debugf("determined project coordinates %v", coordinates)
-	fortifyProjectName, fortifyProjectVersion := versioning.DetermineProjectCoordinates(config.ProjectName, config.VersioningModel, coordinates)
+	log.Entry().Debugf("loaded project coordinates %v from descriptor", coordinates)
+
+	if len(config.Version) > 0 {
+		log.Entry().Infof("Resolving product version from default provided '%s' with versioning '%s'", config.Version, config.VersioningModel)
+		coordinates.Version = config.Version
+	}
+
+	fortifyProjectName, fortifyProjectVersion := versioning.DetermineProjectCoordinatesWithCustomVersion(config.ProjectName, config.VersioningModel, config.CustomScanVersion, coordinates)
 	project, err := sys.GetProjectByName(fortifyProjectName, config.AutoCreate, fortifyProjectVersion)
 	if err != nil {
+		classifyErrorOnLookup(err)
 		return reports, fmt.Errorf("Failed to load project %v: %w", fortifyProjectName, err)
 	}
 	projectVersion, err := sys.GetProjectVersionDetailsByProjectIDAndVersionName(project.ID, fortifyProjectVersion, config.AutoCreate, fortifyProjectName)
 	if err != nil {
+		classifyErrorOnLookup(err)
 		return reports, fmt.Errorf("Failed to load project version %v: %w", fortifyProjectVersion, err)
 	}
 
@@ -140,6 +149,7 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 		fortifyProjectVersion = config.PullRequestName
 		projectVersion, err := sys.LookupOrCreateProjectVersionDetailsForPullRequest(project.ID, projectVersion, fortifyProjectVersion)
 		if err != nil {
+			classifyErrorOnLookup(err)
 			return reports, fmt.Errorf("Failed to lookup / create project version for pull request %v: %w", fortifyProjectVersion, err)
 		}
 		log.Entry().Debugf("Looked up / created project version with ID %v for PR %v", projectVersion.ID, fortifyProjectVersion)
@@ -217,6 +227,12 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 	}
 
 	return reports, verifyFFProjectCompliance(config, sys, project, projectVersion, filterSet, influx, auditStatus)
+}
+
+func classifyErrorOnLookup(err error) {
+	if strings.Contains(err.Error(), "connect: connection refused") || strings.Contains(err.Error(), "net/http: TLS handshake timeout") {
+		log.SetErrorCategory(log.ErrorService)
+	}
 }
 
 func verifyFFProjectCompliance(config fortifyExecuteScanOptions, sys fortify.System, project *models.Project, projectVersion *models.ProjectVersion, filterSet *models.FilterSet, influx *fortifyExecuteScanInflux, auditStatus map[string]string) error {
@@ -452,6 +468,7 @@ func checkArtifactStatus(config fortifyExecuteScanOptions, projectVersionID int6
 	if "PROCESSING" == artifact.Status || "SCHED_PROCESSING" == artifact.Status {
 		pollingTime := time.Duration(retries) * pollingDelay
 		if pollingTime >= timeout {
+			log.SetErrorCategory(log.ErrorService)
 			return fmt.Errorf("terminating after %v since artifact for Project Version %v is still in status %v", timeout, projectVersionID, artifact.Status)
 		}
 		log.Entry().Infof("Most recent artifact uploaded on %v of Project Version %v is still in status %v...", artifact.UploadDate, projectVersionID, artifact.Status)
@@ -460,9 +477,11 @@ func checkArtifactStatus(config fortifyExecuteScanOptions, projectVersionID int6
 	}
 	if "REQUIRE_AUTH" == artifact.Status {
 		// verify no manual issue approval needed
-		return fmt.Errorf("There are artifacts that require manual approval for Project Version %v\n%v/html/ssc/index.jsp#!/version/%v/artifacts?filterSet=%v", projectVersionID, config.ServerURL, projectVersionID, filterSet.GUID)
+		log.SetErrorCategory(log.ErrorCompliance)
+		return fmt.Errorf("There are artifacts that require manual approval for Project Version %v, please visit Fortify SSC and approve them for processing\n%v/html/ssc/index.jsp#!/version/%v/artifacts?filterSet=%v", projectVersionID, config.ServerURL, projectVersionID, filterSet.GUID)
 	}
 	if "ERROR_PROCESSING" == artifact.Status {
+		log.SetErrorCategory(log.ErrorService)
 		return fmt.Errorf("There are artifacts that failed processing for Project Version %v\n%v/html/ssc/index.jsp#!/version/%v/artifacts?filterSet=%v", projectVersionID, config.ServerURL, projectVersionID, filterSet.GUID)
 	}
 	return nil
