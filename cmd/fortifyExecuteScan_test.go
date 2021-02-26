@@ -616,7 +616,7 @@ func TestVerifyScanResultsFinishedUploading(t *testing.T) {
 	t.Run("error required auth", func(t *testing.T) {
 		ffMock := fortifyMock{}
 		err := verifyScanResultsFinishedUploadingDefaults(config, &ffMock, 4713)
-		assert.EqualError(t, err, "There are artifacts that require manual approval for Project Version 4713\n/html/ssc/index.jsp#!/version/4713/artifacts?filterSet=")
+		assert.EqualError(t, err, "There are artifacts that require manual approval for Project Version 4713, please visit Fortify SSC and approve them for processing\n/html/ssc/index.jsp#!/version/4713/artifacts?filterSet=")
 	})
 
 	t.Run("error polling timeout", func(t *testing.T) {
