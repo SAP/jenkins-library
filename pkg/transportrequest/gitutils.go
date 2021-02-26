@@ -11,6 +11,7 @@ import (
 	"os"
 	"regexp"
 	"sort"
+	"strings"
 )
 
 var logRange = gitUtils.LogRange
@@ -75,7 +76,7 @@ func findIDInRange(label, from, to string, trGitUtils iTransportRequestGitUtils)
 // a separate line in the commit message body.
 // In case several labels are found they are returned in ascending order.
 func FindLabelsInCommits(commits object.CommitIter, label string) ([]string, error) {
-	labelRegex, err := regexp.Compile(fmt.Sprintf(`(?m)^\s*%s\s*:\s*(\S*)\s*$`, label))
+	labelRegex, err := regexp.Compile(finishLabel(label))
 	if err != nil {
 		return []string{}, fmt.Errorf("Cannot extract label: %w", err)
 	}
@@ -96,4 +97,13 @@ func FindLabelsInCommits(commits object.CommitIter, label string) ([]string, err
 	labels := piperutils.UniqueStrings(ids)
 	sort.Strings(labels)
 	return labels, nil
+}
+
+func finishLabel(label string) string {
+	// contains prefix, like the old default
+	if strings.ContainsAny(label, ":=") {
+		return fmt.Sprintf(`(?m)^\s*%s\s*(\S*)\s*$`, label)
+	}
+	// contains key only, like the new default
+	return fmt.Sprintf(`(?m)^\s*%s\s*:\s*(\S*)\s*$`, label)
 }
