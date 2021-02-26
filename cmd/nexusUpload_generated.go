@@ -16,6 +16,7 @@ import (
 type nexusUploadOptions struct {
 	Version            string `json:"version,omitempty"`
 	Url                string `json:"url,omitempty"`
+	Format             string `json:"format,omitempty"`
 	MavenRepository    string `json:"mavenRepository,omitempty"`
 	NpmRepository      string `json:"npmRepository,omitempty"`
 	GroupID            string `json:"groupId,omitempty"`
@@ -104,6 +105,7 @@ If an image for mavenExecute is configured, and npm packages are to be published
 func addNexusUploadFlags(cmd *cobra.Command, stepConfig *nexusUploadOptions) {
 	cmd.Flags().StringVar(&stepConfig.Version, "version", `nexus3`, "The Nexus Repository Manager version. Currently supported are 'nexus2' and 'nexus3'.")
 	cmd.Flags().StringVar(&stepConfig.Url, "url", os.Getenv("PIPER_url"), "URL of the nexus. The scheme part of the URL will not be considered, because only http is supported.")
+	cmd.Flags().StringVar(&stepConfig.Format, "format", os.Getenv("PIPER_format"), "The format/registry type. Currently supported are 'maven' and 'npm'")
 	cmd.Flags().StringVar(&stepConfig.MavenRepository, "mavenRepository", os.Getenv("PIPER_mavenRepository"), "Name of the nexus repository for Maven and MTA deployments. If this is not provided, Maven and MTA deployment is implicitly disabled.")
 	cmd.Flags().StringVar(&stepConfig.NpmRepository, "npmRepository", os.Getenv("PIPER_npmRepository"), "Name of the nexus repository for npm deployments. If this is not provided, npm deployment is implicitly disabled.")
 	cmd.Flags().StringVar(&stepConfig.GroupID, "groupId", os.Getenv("PIPER_groupId"), "Group ID of the artifacts. Only used in MTA projects, ignored for Maven.")
@@ -137,11 +139,29 @@ func nexusUploadMetadata() config.StepData {
 					},
 					{
 						Name:        "url",
-						ResourceRef: []config.ResourceReference{},
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/repositoryUrl",
+							},
+						},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "nexus/url"}},
+					},
+					{
+						Name:        "format",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/repositoryFormat",
+							},
+						},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
 						Name:        "mavenRepository",
@@ -199,6 +219,10 @@ func nexusUploadMetadata() config.StepData {
 								Param: "username",
 								Type:  "secret",
 							},
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/repositoryUsername",
+							},
 						},
 						Scope:     []string{"PARAMETERS"},
 						Type:      "string",
@@ -212,6 +236,10 @@ func nexusUploadMetadata() config.StepData {
 								Name:  "nexusCredentialsId",
 								Param: "password",
 								Type:  "secret",
+							},
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/repositoryPassword",
 							},
 						},
 						Scope:     []string{"PARAMETERS"},
