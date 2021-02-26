@@ -1,0 +1,79 @@
+metadata:
+  name: integrationArtifactDownload
+  description: Download integration flow runtime artefact
+  longDescription: |
+    With this step you can download a integration flow runtime artifact, which returns a zip file with the integration flow contents in to current workspace using the OData API. Learn more about the SAP Cloud Integration remote API for downloading an integration flow artifact [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/460dee19f9c141e88ba0454ce892247a.html).
+
+spec:
+  inputs:
+    secrets:
+      - name: cpiCredentialsId
+        description: Jenkins credentials ID containing username and password for authentication to the SAP Cloud Platform Integration API's
+        type: jenkins
+    params:
+      - name: username
+        type: string
+        description: User to authenticate to the SAP Cloud Platform Integration Service
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+        secret: true
+        resourceRef:
+          - name: cpiCredentialsId
+            type: secret
+            param: username
+      - name: password
+        type: string
+        description: Password to authenticate to the SAP Cloud Platform Integration Service
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+        secret: true
+        resourceRef:
+          - name: cpiCredentialsId
+            type: secret
+            param: password
+      - name: integrationFlowId
+        type: string
+        description: Specifies the ID of the Integration Flow artifact
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+      - name: integrationFlowVersion
+        type: string
+        description: Specifies the version of the Integration Flow artifact
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+      - name: host
+        type: string
+        description: Specifies the protocol and host address, including the port. Please provide in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+      - name: oAuthTokenProviderUrl
+        type: string
+        description: Specifies the oAuth Provider protocol and host address, including the port. Please provide in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+      - name: downloadPath
+        type: string
+        description: Specifies integration artifact download location.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
