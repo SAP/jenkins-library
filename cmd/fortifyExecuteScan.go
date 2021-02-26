@@ -127,7 +127,7 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 		return reports, fmt.Errorf("unable to get project coordinates from descriptor %v: %w", config.BuildDescriptorFile, err)
 	}
 	log.Entry().Debugf("loaded project coordinates %v from descriptor", coordinates)
-	
+
 	if len(config.Version) > 0 {
 		log.Entry().Infof("Resolving product version from default provided '%s' with versioning '%s'", config.Version, config.VersioningModel)
 		coordinates.Version = config.Version
