@@ -66,7 +66,7 @@ func TestStartingInvalidInput(t *testing.T) {
 			Status: "P",
 		}
 		repos = append(repos, repo)
-		builds, _, err := executeBuilds(repos, *conn, time.Duration(0*time.Second), time.Duration(1*time.Millisecond))
+		builds, err := executeBuilds(repos, *conn, time.Duration(0*time.Second), time.Duration(1*time.Millisecond))
 		assert.NoError(t, err)
 		assert.Equal(t, 1, len(builds))
 		assert.Equal(t, abapbuild.Failed, builds[0].build.RunState)

@@ -66,7 +66,7 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 
 	maxRuntimeInMinutes := time.Duration(config.MaxRuntimeInMinutes) * time.Minute
 	pollIntervalsInMilliseconds := time.Duration(config.PollIntervalsInMilliseconds) * time.Millisecond
-	builds, buildsAlreadyReleased, err := executeBuilds(addonDescriptor.Repositories, *conn, maxRuntimeInMinutes, pollIntervalsInMilliseconds)
+	builds, err := executeBuilds(addonDescriptor.Repositories, *conn, maxRuntimeInMinutes, pollIntervalsInMilliseconds)
 	if err != nil {
 		return errors.Wrap(err, "Starting Builds failed")
 	}
@@ -75,12 +75,14 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 	if err != nil {
 		return errors.Wrap(err, "Check if failed and Printing Logs failed")
 	}
-	reposBackToCPE, err := downloadResultToFile(builds, "SAR_XML")
+
+	var filesToPublish []piperutils.Path
+	filesToPublish, err = downloadResultToFile(builds, "SAR_XML", filesToPublish)
 	if err != nil {
 		return errors.Wrap(err, "Download of SAR_XML failed")
 	}
 
-	_, err = downloadResultToFile(builds, "DELIVERY_LOGS.ZIP")
+	filesToPublish, err = downloadResultToFile(builds, "DELIVERY_LOGS.ZIP", filesToPublish)
 	if err != nil {
 		//changed result storage with 2105, thus ignore errors for now
 		//return errors.Wrap(err, "Download of DELIVERY_LOGS.ZIP failed")
@@ -88,8 +90,10 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 		log.Entry().Error(err)
 	}
 
-	// also write the already released packages back to cpe
-	for _, b := range buildsAlreadyReleased {
+	piperutils.PersistReportsAndLinks("abapEnvironmentAssemblePackages", "", filesToPublish, nil)
+
+	var reposBackToCPE []abaputils.Repository
+	for _, b := range builds {
 		reposBackToCPE = append(reposBackToCPE, b.repo)
 	}
 	addonDescriptor.Repositories = reposBackToCPE
@@ -99,17 +103,18 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 	return nil
 }
 
-func executeBuilds(repos []abaputils.Repository, conn abapbuild.Connector, maxRuntimeInMinutes time.Duration, pollIntervalsInMilliseconds time.Duration) ([]buildWithRepository, []buildWithRepository, error) {
+func executeBuilds(repos []abaputils.Repository, conn abapbuild.Connector, maxRuntimeInMinutes time.Duration, pollIntervalsInMilliseconds time.Duration) ([]buildWithRepository, error) {
 	var builds []buildWithRepository
-	var buildsAlreadyReleased []buildWithRepository
+
 	for _, repo := range repos {
-		assemblyBuild := abapbuild.Build{
-			Connector: conn,
-		}
+
 		buildRepo := buildWithRepository{
-			build: assemblyBuild,
-			repo:  repo,
+			build: abapbuild.Build{
+				Connector: conn,
+			},
+			repo: repo,
 		}
+
 		if repo.Status == "P" {
 			err := buildRepo.start()
 			if err != nil {
@@ -124,14 +129,13 @@ func executeBuilds(repos []abaputils.Repository, conn abapbuild.Connector, maxRu
 					log.Entry().Error("Continueing with other builds (if any) but keep in Mind that even if this build finishes beyond timeout the result is not trustworthy due to possible side effects!")
 				}
 			}
-			builds = append(builds, buildRepo)
-
 		} else {
 			log.Entry().Infof("Packages %s is in status '%s'. No need to run the assembly", repo.PackageName, repo.Status)
-			buildsAlreadyReleased = append(buildsAlreadyReleased, buildRepo)
 		}
+
+		builds = append(builds, buildRepo)
 	}
-	return builds, buildsAlreadyReleased, nil
+	return builds, nil
 }
 
 func (br *buildWithRepository) waitToBeFinished(maxRuntimeInMinutes time.Duration, pollIntervalsInMilliseconds time.Duration) error {
@@ -206,13 +210,16 @@ func checkIfFailedAndPrintLogs(builds []buildWithRepository) error {
 	return nil
 }
 
-func downloadResultToFile(builds []buildWithRepository, resultName string) ([]abaputils.Repository, error) {
-	var reposBackToCPE []abaputils.Repository
+func downloadResultToFile(builds []buildWithRepository, resultName string, filesToPublish []piperutils.Path) ([]piperutils.Path, error) {
 	envPath := filepath.Join(GeneralConfig.EnvRootPath, "commonPipelineEnvironment", "abap")
+
 	for i, b := range builds {
+		if b.repo.Status != "P" {
+			continue
+		}
 		buildResult, err := b.build.GetResult(resultName)
 		if err != nil {
-			return reposBackToCPE, err
+			return filesToPublish, err
 		}
 		var fileName string
 		if len(buildResult.AdditionalInfo) <= 255 {
@@ -224,17 +231,15 @@ func downloadResultToFile(builds []buildWithRepository, resultName string) ([]ab
 		log.Entry().Infof("Downloading %s file %s to %s", resultName, path.Base(fileName), downloadPath)
 		err = buildResult.Download(downloadPath)
 		if err != nil {
-			return reposBackToCPE, err
+			return filesToPublish, err
 		}
 		if resultName == "SAR_XML" {
 			builds[i].repo.SarXMLFilePath = downloadPath
 		}
-		reposBackToCPE = append(reposBackToCPE, builds[i].repo)
 
 		log.Entry().Infof("Publishing: %s", resultName)
-		var reports []piperutils.Path
-		reports = append(reports, piperutils.Path{Target: downloadPath, Name: resultName, Mandatory: true})
-		piperutils.PersistReportsAndLinks("abapEnvironmentAssemblePackages", "", reports, nil)
+
+		filesToPublish = append(filesToPublish, piperutils.Path{Target: downloadPath, Name: resultName, Mandatory: true})
 	}
-	return reposBackToCPE, nil
+	return filesToPublish, nil
 }
