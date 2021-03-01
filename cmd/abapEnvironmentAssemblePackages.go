@@ -208,7 +208,6 @@ func checkIfFailedAndPrintLogs(builds []buildWithRepository) error {
 
 func downloadResultToFile(builds []buildWithRepository, resultName string) ([]abaputils.Repository, error) {
 	var reposBackToCPE []abaputils.Repository
-	//resultName := "SAR_XML"
 	envPath := filepath.Join(GeneralConfig.EnvRootPath, "commonPipelineEnvironment", "abap")
 	for i, b := range builds {
 		buildResult, err := b.build.GetResult(resultName)
