@@ -202,16 +202,17 @@ func (br *buildWithRepository) start() error {
 				ValueID: "PACKAGE_NAME_" + br.repo.PackageType,
 				Value:   br.repo.PackageName,
 			},
-			{
-				ValueID: "ACTUAL_DELIVERY_COMMIT",
-				Value:   br.repo.CommitID,
-			},
 		},
 	}
 	if br.repo.PredecessorCommitID != "" {
 		valuesInput.Values = append(valuesInput.Values,
 			abapbuild.Value{ValueID: "PREVIOUS_DELIVERY_COMMIT",
 				Value: br.repo.PredecessorCommitID})
+	}
+	if br.repo.CommitID != "" {
+		valuesInput.Values = append(valuesInput.Values,
+			abapbuild.Value{ValueID: "ACTUAL_DELIVERY_COMMIT",
+				Value: br.repo.CommitID})
 	}
 	phase := "BUILD_" + br.repo.PackageType
 	log.Entry().Infof("Starting assembly of package %s", br.repo.PackageName)
