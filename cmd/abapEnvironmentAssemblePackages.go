@@ -90,6 +90,7 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 		log.Entry().Error(err)
 	}
 
+	log.Entry().Infof("Publsihing %v files", len(filesToPublish))
 	piperutils.PersistReportsAndLinks("abapEnvironmentAssemblePackages", "", filesToPublish, nil)
 
 	var reposBackToCPE []abaputils.Repository
@@ -237,8 +238,7 @@ func downloadResultToFile(builds []buildWithRepository, resultName string, files
 			builds[i].repo.SarXMLFilePath = downloadPath
 		}
 
-		log.Entry().Infof("Publishing: %s", resultName)
-
+		log.Entry().Infof("Add %s to be published", resultName)
 		filesToPublish = append(filesToPublish, piperutils.Path{Target: downloadPath, Name: resultName, Mandatory: true})
 	}
 	return filesToPublish, nil
