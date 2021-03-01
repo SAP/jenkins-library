@@ -239,7 +239,7 @@ func ExcludeFiles(files, excludes []string) ([]string, error) {
 	for _, file := range files {
 		includeFile := true
 		for _, exclude := range excludes {
-			matched, err := doublestar.PathMatch(exclude, file)
+			matched, err := doublestar.PathMatch(exclude, filepath.FromSlash(file))
 			if err != nil {
 				return nil, fmt.Errorf("failed to match file %s to pattern %s: %w", file, exclude, err)
 			}
