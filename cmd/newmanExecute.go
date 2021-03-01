@@ -21,11 +21,8 @@ type newmanExecuteUtils interface {
 	// i.e. include everything you need to be able to mock in tests.
 	// Unit tests shall be executable in parallel (not depend on global state), and don't (re-)test dependencies.
 	Glob(pattern string) (matches []string, err error)
-
 	RunExecutable(executable string, params ...string) error
-	RunShell(shell, script string) error
-	SetEnv(env []string)
-	AppendEnv(env []string)
+	Getenv(key string) string
 }
 
 type newmanExecuteUtilsBundle struct {
@@ -122,7 +119,8 @@ func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) er
 			runOptions = append(runOptions, "--suppress-exit-code")
 		}
 
-		newmanPath := filepath.Join(os.Getenv("HOME"), "/.npm-global/bin/newman")
+		// newmanPath := filepath.Join(os.Getenv("HOME"), "/.npm-global/bin/newman")
+		newmanPath := filepath.Join(utils.Getenv("HOME"), "/.npm-global/bin/newman")
 		err = utils.RunExecutable(newmanPath, runOptions...)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorService)
@@ -208,7 +206,7 @@ func handleCfAppCredentials(config *newmanExecuteOptions) []string {
 			if clientID != "" && clientSecret != "" {
 				log.RegisterSecret(clientSecret)
 				secretVar := fmt.Sprintf("--env-var %v_clientid=%v --env-var %v_clientsecret=%v", appName, clientID, appName, clientSecret)
-				commandSecrets = append(commandSecrets, secretVar)
+				commandSecrets = append(commandSecrets, strings.Split(secretVar, " ")...)
 				log.Entry().Infof("secrets found for app %v and forwarded to newman as --env-var parameter", appName)
 			} else {
 				log.Entry().Errorf("cannot fetch secrets from environment variables for app %v", appName)
@@ -225,4 +223,8 @@ func contains(slice []string, substr string) bool {
 		}
 	}
 	return false
+}
+
+func (utils newmanExecuteUtilsBundle) Getenv(key string) string {
+	return os.Getenv(key)
 }
