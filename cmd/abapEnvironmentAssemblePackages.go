@@ -196,21 +196,6 @@ func (br *buildWithRepository) start() error {
 	return br.build.Start(phase, valuesInput)
 }
 
-func checkIfFailedAndPrintLogs(builds []buildWithRepository) error {
-	var buildFailed bool = false
-	for i := range builds {
-		if builds[i].build.RunState == abapbuild.Failed {
-			log.Entry().Errorf("Assembly of %s failed", builds[i].repo.PackageName)
-			buildFailed = true
-		}
-		builds[i].build.PrintLogs()
-	}
-	if buildFailed {
-		return errors.New("At least the assembly of one package failed")
-	}
-	return nil
-}
-
 func downloadResultToFile(builds []buildWithRepository, resultName string, filesToPublish []piperutils.Path) ([]piperutils.Path, error) {
 	envPath := filepath.Join(GeneralConfig.EnvRootPath, "commonPipelineEnvironment", "abap")
 
@@ -242,4 +227,41 @@ func downloadResultToFile(builds []buildWithRepository, resultName string, files
 		filesToPublish = append(filesToPublish, piperutils.Path{Target: downloadPath, Name: resultName, Mandatory: true})
 	}
 	return filesToPublish, nil
+}
+
+func checkIfFailedAndPrintLogs(builds []buildWithRepository) error {
+	var buildFailed bool = false
+	for i := range builds {
+		if builds[i].build.RunState == abapbuild.Failed {
+			log.Entry().Errorf("Assembly of %s failed", builds[i].repo.PackageName)
+			buildFailed = true
+		}
+		builds[i].build.PrintLogs()
+	}
+	if buildFailed {
+		return errors.New("At least the assembly of one package failed")
+	}
+	return nil
+}
+
+func downloadSARXML(builds []buildWithRepository) ([]abaputils.Repository, error) {
+	var reposBackToCPE []abaputils.Repository
+	resultName := "SAR_XML"
+	envPath := filepath.Join(GeneralConfig.EnvRootPath, "commonPipelineEnvironment", "abap")
+	for i, b := range builds {
+		resultSARXML, err := b.build.GetResult(resultName)
+		if err != nil {
+			return reposBackToCPE, err
+		}
+		sarPackage := resultSARXML.AdditionalInfo
+		downloadPath := filepath.Join(envPath, path.Base(sarPackage))
+		log.Entry().Infof("Downloading SAR file %s to %s", path.Base(sarPackage), downloadPath)
+		err = resultSARXML.Download(downloadPath)
+		if err != nil {
+			return reposBackToCPE, err
+		}
+		builds[i].repo.SarXMLFilePath = downloadPath
+		reposBackToCPE = append(reposBackToCPE, builds[i].repo)
+	}
+	return reposBackToCPE, nil
 }

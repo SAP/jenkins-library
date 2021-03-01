@@ -1452,7 +1452,6 @@ var buildGetTask11Result = mockData{
 }`,
 	statusCode: 200,
 }
-
 var buildGetTask12Result = mockData{
 	method: `GET`,
 	url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=12)/results`,
