@@ -26,7 +26,9 @@ func TestReadTaskReport(t *testing.T) {
 		result, err := ReadTaskReport("./testData/missing")
 		// assert
 		assert.Empty(t, result.ProjectKey)
-		assert.Regexp(t, "open testData.missing..scannerwork.report-task.txt: (no such file or directory|The system cannot find the path specified.)", err)
+		assert.True(t,
+			(filepath.FromSlash("open testData/missing/.scannerwork/report-task.txt: The system cannot find the path specified.") == err.Error()) ||
+				(filepath.FromSlash("open testData/missing/.scannerwork/report-task.txt: no such file or directory") == err.Error()))
 	})
 
 	t.Run("invalid file", func(t *testing.T) {
