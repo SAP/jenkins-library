@@ -94,8 +94,8 @@ func runIntegrationArtifactDeploy(config *integrationArtifactDeployOptions, tele
 		log.Entry().
 			WithField("IntegrationFlowID", config.IntegrationFlowID).
 			Info("successfully deployed into CPI runtime")
-		runs := 14
-		error := PolliFlowDeploymentStatus(runs, config, httpClient)
+		const runs = 14
+		error := PollIFlowDeploymentStatus(runs, config, httpClient)
 		return error
 	}
 	responseBody, readErr := ioutil.ReadAll(deployResp.Body)
@@ -103,16 +103,15 @@ func runIntegrationArtifactDeploy(config *integrationArtifactDeployOptions, tele
 	if readErr != nil {
 		return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code : %v", deployResp.StatusCode)
 	}
-
-	log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code : %v", responseBody, deployResp.StatusCode)
-	return errors.Errorf("Integration Flow deployment failed, Response Status code: %v", deployResp.StatusCode)
+	LogHTTPErrorMessage(responseBody, deployResp.StatusCode)
+	return errors.Errorf("integration flow deployment failed, Response Status code: %v", deployResp.StatusCode)
 }
 
-//PolliFlowDeploymentStatus - Poll the integration flow deployment status,retrun status or error details
-func PolliFlowDeploymentStatus(iter int, config *integrationArtifactDeployOptions, httpClient piperhttp.Sender) error {
+//PollIFlowDeploymentStatus - Poll the integration flow deployment status,retrun status or error details
+func PollIFlowDeploymentStatus(retryCount int, config *integrationArtifactDeployOptions, httpClient piperhttp.Sender) error {
 
-	if iter <= 0 {
-		return errors.New("Failed to start integration artifact afer retrying several times")
+	if retryCount <= 0 {
+		return errors.New("failed to start integration artifact after retrying several times")
 	}
 	deployStatus, err := GetIntegrationArtifactDeployStatus(config, httpClient)
 	if err != nil {
@@ -123,10 +122,10 @@ func PolliFlowDeploymentStatus(iter int, config *integrationArtifactDeployOption
 	//with specific delay between each retry
 	if deployStatus == "STARTING" {
 		// Calling Sleep method
-		sleepTime := int(iter * 3)
+		sleepTime := int(retryCount * 3)
 		time.Sleep(time.Duration(sleepTime) * time.Second)
-		newItrCount := iter - 1
-		return PolliFlowDeploymentStatus(newItrCount, config, httpClient)
+		retryCount--
+		return PollIFlowDeploymentStatus(retryCount, config, httpClient)
 	}
 
 	//if artifact started, then just return
@@ -143,6 +142,11 @@ func PolliFlowDeploymentStatus(iter int, config *integrationArtifactDeployOption
 		return errors.New(resp)
 	}
 	return nil
+}
+
+//LogHTTPErrorMessage -Log HTTP failure message
+func LogHTTPErrorMessage(responseBody []byte, statusCode int) {
+	log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code : %v", string(responseBody), statusCode)
 }
 
 //GetIntegrationArtifactDeployStatus - Get integration artifact Deploy Status
@@ -169,7 +173,7 @@ func GetIntegrationArtifactDeployStatus(config *integrationArtifactDeployOptions
 
 		bodyText, readErr := ioutil.ReadAll(deployStatusResp.Body)
 		if readErr != nil {
-			return "", errors.Wrapf(readErr, "HTTP response body could not be read, Response status code : %v", deployStatusResp.StatusCode)
+			return "", errors.Wrapf(readErr, "HTTP response body could not be read, response status code: %v", deployStatusResp.StatusCode)
 		}
 		jsonResponse, parsingErr := gabs.ParseJSON([]byte(bodyText))
 		if parsingErr != nil {
@@ -183,10 +187,10 @@ func GetIntegrationArtifactDeployStatus(config *integrationArtifactDeployOptions
 		if readErr != nil {
 			return "", errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", deployStatusResp.StatusCode)
 		}
-		log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", responseBody, deployStatusResp.StatusCode)
+		LogHTTPErrorMessage(responseBody, deployStatusResp.StatusCode)
 		return "", errors.Wrapf(httpErr, "HTTP %v request to %v failed with error: %v", httpMethod, deployStatusURL, responseBody)
 	}
-	return "", errors.Errorf("Failed to get Integration Flow artefact runtime status, Response Status code: %v", deployStatusResp.StatusCode)
+	return "", errors.Errorf("failed to get Integration Flow artefact runtime status, Response Status code: %v", deployStatusResp.StatusCode)
 }
 
 //GetIntegrationArtifactDeployError - Get integration artifact deploy error details
@@ -213,7 +217,7 @@ func GetIntegrationArtifactDeployError(config *integrationArtifactDeployOptions,
 		if readErr != nil {
 			return "", errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", errorStatusResp.StatusCode)
 		}
-		log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", string(responseBody), errorStatusResp.StatusCode)
+		LogHTTPErrorMessage(responseBody, errorStatusResp.StatusCode)
 		errorDetails := string(responseBody)
 		return errorDetails, nil
 	}
@@ -222,8 +226,8 @@ func GetIntegrationArtifactDeployError(config *integrationArtifactDeployOptions,
 		if readErr != nil {
 			return "", errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", errorStatusResp.StatusCode)
 		}
-		log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", responseBody, errorStatusResp.StatusCode)
+		LogHTTPErrorMessage(responseBody, errorStatusResp.StatusCode)
 		return "", errors.Wrapf(httpErr, "HTTP %v request to %v failed with error: %v", httpMethod, errorStatusURL, responseBody)
 	}
-	return "", errors.Errorf("Failed to get Integration Flow artefact deploy error details, Response Status code: %v", errorStatusResp.StatusCode)
+	return "", errors.Errorf("failed to get Integration Flow artefact deploy error details, Response Status code: %v", errorStatusResp.StatusCode)
 }

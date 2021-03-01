@@ -15,6 +15,8 @@ func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, 
 	switch functionName {
 	case "IntegrationArtifactDeploy":
 		return GetEmptyHTTPResponseBodyAndErrorNil()
+	case "FailIntegrationDesigntimeArtifactDeployment":
+		return GetNegativeCaseHTTPResponseBodyAndErrorNil()
 	case "IntegrationArtifactUpdateConfiguration":
 		if testType == "Positive" {
 			return GetEmptyHTTPResponseBodyAndErrorNil()
@@ -581,16 +583,7 @@ func GetIntegrationArtifactDeployErrorStatusMockResponseBody() (*http.Response, 
 
 	resp := http.Response{
 		StatusCode: 200,
-		Body: ioutil.NopCloser(bytes.NewReader([]byte(`{	"message": {
-			"subsystemName": "CONTENT",
-			"subsytemPartName": "CONTENT_DEPLOY",
-			"messageId": "InstanceError",
-			"messageText": ""
-		},
-		"parameter": [
-			"{\"message\":\"ERROR\",\"childMessageInstances\":[{\"message\":\"EXCEPTION\",\"parameters\":[\"org.osgi.service.blueprint.container.ComponentDefinitionException: Error when instantiating bean MessageFlow_28_configurator of class null\"],\"childMessageInstances\":[{\"message\":\"CAUSE\",\"parameters\":[\"java.lang.IllegalStateException: No credentials for 'smtp' found\"]}]}]}"
-		]
-	}`))),
+		Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"message": "java.lang.IllegalStateException: No credentials for 'smtp' found"}`))),
 	}
 	return &resp, nil
 }
