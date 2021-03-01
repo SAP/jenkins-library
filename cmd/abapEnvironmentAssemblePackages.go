@@ -85,9 +85,7 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 	filesToPublish, err = downloadResultToFile(builds, "DELIVERY_LOGS.ZIP", filesToPublish)
 	if err != nil {
 		//changed result storage with 2105, thus ignore errors for now
-		//return errors.Wrap(err, "Download of DELIVERY_LOGS.ZIP failed")
-		log.Entry().Warning("Download of DELIVERY_LOGS.ZIP failed")
-		log.Entry().Error(err)
+		log.Entry().Error(errors.Wrap(err, "Download of DELIVERY_LOGS.ZIP failed"))
 	}
 
 	log.Entry().Infof("Publsihing %v files", len(filesToPublish))
