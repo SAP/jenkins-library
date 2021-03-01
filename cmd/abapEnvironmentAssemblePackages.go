@@ -99,34 +99,6 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 	return nil
 }
 
-func starting(repos []abaputils.Repository, conn abapbuild.Connector, delayBetweenPostsInSeconds time.Duration) ([]buildWithRepository, []buildWithRepository, error) {
-	var builds []buildWithRepository
-	var buildsAlreadyReleased []buildWithRepository
-	for _, repo := range repos {
-		assemblyBuild := abapbuild.Build{
-			Connector: conn,
-		}
-		buildRepo := buildWithRepository{
-			build: assemblyBuild,
-			repo:  repo,
-		}
-		if repo.Status == "P" {
-			err := buildRepo.start()
-			if err != nil {
-				return builds, buildsAlreadyReleased, err
-			}
-			builds = append(builds, buildRepo)
-		} else {
-			log.Entry().Infof("Packages %s is in status '%s'. No need to run the assembly", repo.PackageName, repo.Status)
-			buildsAlreadyReleased = append(buildsAlreadyReleased, buildRepo)
-		}
-
-		//as batch events in the ABAP Backend need a little time
-		time.Sleep(delayBetweenPostsInSeconds)
-	}
-	return builds, buildsAlreadyReleased, nil
-}
-
 func executeBuilds(repos []abaputils.Repository, conn abapbuild.Connector, maxRuntimeInMinutes time.Duration, pollIntervalsInMilliseconds time.Duration) ([]buildWithRepository, []buildWithRepository, error) {
 	var builds []buildWithRepository
 	var buildsAlreadyReleased []buildWithRepository
@@ -234,28 +206,6 @@ func checkIfFailedAndPrintLogs(builds []buildWithRepository) error {
 	return nil
 }
 
-func downloadSARXML(builds []buildWithRepository) ([]abaputils.Repository, error) {
-	var reposBackToCPE []abaputils.Repository
-	resultName := "SAR_XML"
-	envPath := filepath.Join(GeneralConfig.EnvRootPath, "commonPipelineEnvironment", "abap")
-	for i, b := range builds {
-		resultSARXML, err := b.build.GetResult(resultName)
-		if err != nil {
-			return reposBackToCPE, err
-		}
-		sarPackage := resultSARXML.AdditionalInfo
-		downloadPath := filepath.Join(envPath, path.Base(sarPackage))
-		log.Entry().Infof("Downloading SAR file %s to %s", path.Base(sarPackage), downloadPath)
-		err = resultSARXML.Download(downloadPath)
-		if err != nil {
-			return reposBackToCPE, err
-		}
-		builds[i].repo.SarXMLFilePath = downloadPath
-		reposBackToCPE = append(reposBackToCPE, builds[i].repo)
-	}
-	return reposBackToCPE, nil
-}
-
 func downloadResultToFile(builds []buildWithRepository, resultName string) ([]abaputils.Repository, error) {
 	var reposBackToCPE []abaputils.Repository
 	//resultName := "SAR_XML"
@@ -265,7 +215,12 @@ func downloadResultToFile(builds []buildWithRepository, resultName string) ([]ab
 		if err != nil {
 			return reposBackToCPE, err
 		}
-		fileName := buildResult.AdditionalInfo
+		var fileName string
+		if len(buildResult.AdditionalInfo) <= 255 {
+			fileName = buildResult.AdditionalInfo
+		} else {
+			fileName = buildResult.Name
+		}
 		downloadPath := filepath.Join(envPath, path.Base(fileName))
 		log.Entry().Infof("Downloading %s file %s to %s", resultName, path.Base(fileName), downloadPath)
 		err = buildResult.Download(downloadPath)
