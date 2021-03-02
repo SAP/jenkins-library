@@ -33,6 +33,8 @@ type NpmConfig struct {
 	VirtualFrameBuffer bool
 	ExcludeList        []string
 	PackagesList       []string
+	NpmCalls           [][]string // each invocation adds another []string, the args of that invocation
+	Config             map[string]string
 }
 
 // NpmExecutorMock mocking struct
@@ -112,5 +114,20 @@ func (n *NpmExecutorMock) InstallAllDependencies(packageJSONFiles []string) erro
 
 // SetNpmRegistries mock implementation
 func (n *NpmExecutorMock) SetNpmRegistries() error {
+	return nil
+}
+
+// RunNpm mock implementation
+func (n *NpmExecutorMock) RunNpm(args []string) error {
+	n.Config.NpmCalls = append(n.Config.NpmCalls, args)
+	return nil
+}
+
+// SetConfig mock implementation
+func (n *NpmExecutorMock) SetConfig(key, value string) error {
+	if n.Config.Config == nil {
+		n.Config.Config = map[string]string{}
+	}
+	n.Config.Config[key] = value
 	return nil
 }
