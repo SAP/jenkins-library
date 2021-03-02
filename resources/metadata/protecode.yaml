@@ -137,7 +137,7 @@ spec:
       - name: fetchUrl
         type: string
         description: The URL to fetch the file or image to scan with Protecode.
-        longDescription: The URL to fetch the file or image to scan with Protecode. The URL must be accessible via public HTTP GET request. To fetch a docker image the URL needs a 'docker-registry-' prefixed.
+        longDescription: The URL to fetch the file or image to scan with Protecode. The URL must be accessible via public HTTP GET request. To fetch a docker image the URL needs a 'docker-registry-' prefix.
         scope:
           - PARAMETERS
           - STAGES
