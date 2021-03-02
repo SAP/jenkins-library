@@ -16,10 +16,6 @@ import (
 )
 
 type newmanExecuteUtils interface {
-	// Add more methods here, or embed additional interfaces, or remove/replace as required.
-	// The newmanExecuteUtils interface should be descriptive of your runtime dependencies,
-	// i.e. include everything you need to be able to mock in tests.
-	// Unit tests shall be executable in parallel (not depend on global state), and don't (re-)test dependencies.
 	Glob(pattern string) (matches []string, err error)
 	RunExecutable(executable string, params ...string) error
 	Getenv(key string) string
@@ -28,11 +24,6 @@ type newmanExecuteUtils interface {
 type newmanExecuteUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
-
-	// Embed more structs as necessary to implement methods or interfaces you add to newmanExecuteUtils.
-	// Structs embedded in this way must each have a unique set of methods attached.
-	// If there is no struct which implements the method you need, attach the method to
-	// newmanExecuteUtilsBundle and forward to the implementation of the dependency.
 }
 
 func newNewmanExecuteUtils() newmanExecuteUtils {
@@ -47,16 +38,8 @@ func newNewmanExecuteUtils() newmanExecuteUtils {
 }
 
 func newmanExecute(config newmanExecuteOptions, _ *telemetry.CustomData) {
-	// Utils can be used wherever the command.ExecRunner interface is expected.
-	// It can also be used for example as a mavenExecRunner.
 	utils := newNewmanExecuteUtils()
 
-	// For HTTP calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	// and use a  &piperhttp.Client{} in a custom system
-	// Example: step checkmarxExecuteScan.go
-
-	// Error situations should be bubbled up until they reach the line below which will then stop execution
-	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
 	err := runNewmanExecute(&config, utils)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
@@ -119,7 +102,6 @@ func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) er
 			runOptions = append(runOptions, "--suppress-exit-code")
 		}
 
-		// newmanPath := filepath.Join(os.Getenv("HOME"), "/.npm-global/bin/newman")
 		newmanPath := filepath.Join(utils.Getenv("HOME"), "/.npm-global/bin/newman")
 		err = utils.RunExecutable(newmanPath, runOptions...)
 		if err != nil {
