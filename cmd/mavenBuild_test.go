@@ -1,8 +1,9 @@
 package cmd
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMavenBuild(t *testing.T) {
@@ -54,6 +55,26 @@ func TestMavenBuild(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Contains(t, mockedUtils.Calls[0].Params, "verify")
 		assert.NotContains(t, mockedUtils.Calls[0].Params, "install")
+	})
+
+	t.Run("mavenBuild should createBOM", func(t *testing.T) {
+		mockedUtils := newMavenMockUtils()
+
+		config := mavenBuildOptions{CreateBOM: true}
+
+		err := runMavenBuild(&config, nil, &mockedUtils)
+
+		assert.Nil(t, err)
+		assert.Contains(t, mockedUtils.Calls[0].Params, "org.cyclonedx:cyclonedx-maven-plugin:makeAggregateBom")
+		assert.Contains(t, mockedUtils.Calls[0].Params, "-DschemaVersion=1.2")
+		assert.Contains(t, mockedUtils.Calls[0].Params, "-DincludeBomSerialNumber=true")
+		assert.Contains(t, mockedUtils.Calls[0].Params, "-DincludeCompileScope=true")
+		assert.Contains(t, mockedUtils.Calls[0].Params, "-DincludeProvidedScope=true")
+		assert.Contains(t, mockedUtils.Calls[0].Params, "-DincludeRuntimeScope=true")
+		assert.Contains(t, mockedUtils.Calls[0].Params, "-DincludeSystemScope=true")
+		assert.Contains(t, mockedUtils.Calls[0].Params, "-DincludeTestScope=false")
+		assert.Contains(t, mockedUtils.Calls[0].Params, "-DincludeLicenseText=false")
+		assert.Contains(t, mockedUtils.Calls[0].Params, "-DoutputFormat=xml")
 	})
 
 }
