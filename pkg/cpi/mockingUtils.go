@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"io/ioutil"
 	"net/http"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -262,23 +263,23 @@ func GetMockResponseByTestTypeAndMockFunctionName(mockFuntionName, testType stri
 
 	response, error := GetPositiveCaseResponseByTestType(testType)
 
-	switch mockFuntionName {
+	if response == nil && error == nil {
 
-	case "IntegrationDesigntimeArtifactUpdateMockResponse":
-		if response == nil && error == nil {
-			return NegtiveResForIntegrationDesigntimeArtifactUpdateMockResponse()
-		}
-	case "GetIntegrationDesigntimeArtifactMockResponse":
-		if response == nil && error == nil {
-			return NegtiveResForGetIntegrationDesigntimeArtifactMockResponse()
-		}
-	case "IntegrationArtifactDownloadCommandMockResponse":
-		if response == nil && error == nil {
-			return NegtiveResForIntegrationArtifactDownloadCommandMockResponse()
-		}
+		switch mockFuntionName {
 
-	case "GetIntegrationArtifactDeployStatusMockResponse":
-		if response == nil && error == nil {
+		case "IntegrationDesigntimeArtifactUpdateMockResponse":
+
+			return NegtiveResForIntegrationArtifactGenericCommandMockResponse("Unable to get status of integration artifact, Response Status code:400")
+
+		case "GetIntegrationDesigntimeArtifactMockResponse":
+
+			return NegtiveResForIntegrationArtifactGenericCommandMockResponse("Unable to get status of integration artifact, Response Status code:400")
+
+		case "IntegrationArtifactDownloadCommandMockResponse":
+
+			return NegtiveResForIntegrationArtifactGenericCommandMockResponse("Unable to download integration artifact, Response Status code:400")
+
+		case "GetIntegrationArtifactDeployStatusMockResponse":
 
 			res := http.Response{
 				StatusCode: 400,
@@ -291,11 +292,8 @@ func GetMockResponseByTestTypeAndMockFunctionName(mockFuntionName, testType stri
 						}`))),
 			}
 			return &res, errors.New("Unable to get integration artifact deploy status, Response Status code:400")
-		}
 
-	case "GetIntegrationArtifactDeployErrorDetailsMockResponse":
-		if response == nil && error == nil {
-
+		case "GetIntegrationArtifactDeployErrorDetailsMockResponse":
 			res := http.Response{
 				StatusCode: 500,
 				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
@@ -308,28 +306,12 @@ func GetMockResponseByTestTypeAndMockFunctionName(mockFuntionName, testType stri
 			}
 			return &res, errors.New("Unable to get integration artifact deploy error status, Response Status code:400")
 		}
-
 	}
 	return response, error
 }
 
-//NegtiveResForIntegrationDesigntimeArtifactUpdateMockResponse -Nagative Case http response body
-func NegtiveResForIntegrationDesigntimeArtifactUpdateMockResponse() (*http.Response, error) {
-	res := http.Response{
-		StatusCode: 400,
-		Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-					"code": "Bad Request",
-					"message": {
-					"@lang": "en",
-					"#text": "invalid request"
-					}
-				}`))),
-	}
-	return &res, errors.New("Unable to get status of integration artifact, Response Status code:400")
-}
-
-//NegtiveResForGetIntegrationDesigntimeArtifactMockResponse -Nagative Case http response body
-func NegtiveResForGetIntegrationDesigntimeArtifactMockResponse() (*http.Response, error) {
+//NegtiveResForIntegrationArtifactGenericCommandMockResponse -Nagative Case http response body
+func NegtiveResForIntegrationArtifactGenericCommandMockResponse(message string) (*http.Response, error) {
 
 	res := http.Response{
 		StatusCode: 400,
@@ -341,23 +323,7 @@ func NegtiveResForGetIntegrationDesigntimeArtifactMockResponse() (*http.Response
 					}
 				}`))),
 	}
-	return &res, errors.New("Unable to get status of integration artifact, Response Status code:400")
-}
-
-//NegtiveResForIntegrationArtifactDownloadCommandMockResponse -Nagative Case http response body
-func NegtiveResForIntegrationArtifactDownloadCommandMockResponse() (*http.Response, error) {
-
-	res := http.Response{
-		StatusCode: 400,
-		Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-					"code": "Bad Request",
-					"message": {
-					"@lang": "en",
-					"#text": "invalid request"
-					}
-				}`))),
-	}
-	return &res, errors.New("Unable to download integration artifact, Response Status code:400")
+	return &res, errors.New(message)
 }
 
 //UpdateIntegrationDesigntimeArtifactMockResponse -Provide http respose body
@@ -527,25 +493,7 @@ func GetIntegrationArtifactDeployStatusMockResponseBody() (*http.Response, error
 
 	resp := http.Response{
 		StatusCode: 200,
-		Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-			"d": {
-				"__metadata": {
-					"id": "https://roverpoc.it-accd002.cfapps.sap.hana.ondemand.com/api/v1/IntegrationRuntimeArtifacts('flow1')",
-					"uri": "https://roverpoc.it-accd002.cfapps.sap.hana.ondemand.com/api/v1/IntegrationRuntimeArtifacts('flow1')",
-					"media_src": "https://roverpoc.it-accd002.cfapps.sap.hana.ondemand.com/api/v1/IntegrationRuntimeArtifacts('flow1')/$value",
-					"edit_media": "https://roverpoc.it-accd002.cfapps.sap.hana.ondemand.com/api/v1/IntegrationRuntimeArtifacts('flow1')/$value"
-				},
-				"Id": "flow1",
-				"Version": "1.0.24",
-				"Name": "flow1",
-				"Status": "STARTED",
-				"ErrorInformation": {
-					"__deferred": {
-						"uri": "https://roverpoc.it-accd002.cfapps.sap.hana.ondemand.com/api/v1/IntegrationRuntimeArtifacts('flow1')/ErrorInformation"
-					}
-				}
-			}
-		}`))),
+		Body:       ioutil.NopCloser(bytes.NewReader([]byte(GetIntegrationArtifactDeployStatusPayload("STARTED")))),
 	}
 	return &resp, nil
 }
@@ -555,27 +503,34 @@ func GetIntegrationArtifactDeployStatusErrorMockResponseBody() (*http.Response, 
 
 	resp := http.Response{
 		StatusCode: 200,
-		Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
-			"d": {
-				"__metadata": {
-					"id": "https://roverpoc.it-accd002.cfapps.sap.hana.ondemand.com/api/v1/IntegrationRuntimeArtifacts('smtp')",
-					"uri": "https://roverpoc.it-accd002.cfapps.sap.hana.ondemand.com/api/v1/IntegrationRuntimeArtifacts('smtp')",
-					"media_src": "https://roverpoc.it-accd002.cfapps.sap.hana.ondemand.com/api/v1/IntegrationRuntimeArtifacts('smtp')/$value",
-					"edit_media": "https://roverpoc.it-accd002.cfapps.sap.hana.ondemand.com/api/v1/IntegrationRuntimeArtifacts('smtp')/$value"
-				},
-				"Id": "smtp",
-				"Version": "2.0",
-				"Name": "smtp",
-				"Status": "ERROR",
-				"ErrorInformation": {
-					"__deferred": {
-						"uri": "https://roverpoc.it-accd002.cfapps.sap.hana.ondemand.com/api/v1/IntegrationRuntimeArtifacts('smtp')/ErrorInformation"
-					}
-				}
-			}
-		}`))),
+		Body:       ioutil.NopCloser(bytes.NewReader([]byte(GetIntegrationArtifactDeployStatusPayload("ERROR")))),
 	}
 	return &resp, nil
+}
+
+//GetIntegrationArtifactDeployStatusPayload -Get Payload
+func GetIntegrationArtifactDeployStatusPayload(status string) string {
+
+	jsonByte := []byte(`{
+		"d": {
+			"__metadata": {
+				"id": "https://roverpoc.it-accd002.cfapps.sap.hana.ondemand.com/api/v1/IntegrationRuntimeArtifacts('smtp')",
+				"uri": "https://roverpoc.it-accd002.cfapps.sap.hana.ondemand.com/api/v1/IntegrationRuntimeArtifacts('smtp')",
+				"media_src": "https://roverpoc.it-accd002.cfapps.sap.hana.ondemand.com/api/v1/IntegrationRuntimeArtifacts('smtp')/$value",
+				"edit_media": "https://roverpoc.it-accd002.cfapps.sap.hana.ondemand.com/api/v1/IntegrationRuntimeArtifacts('smtp')/$value"
+			},
+			"Id": "smtp",
+			"Version": "2.0",
+			"Name": "smtp",
+			"Status": "StatusValue",
+			"ErrorInformation": {
+				"__deferred": {
+					"uri": "https://roverpoc.it-accd002.cfapps.sap.hana.ondemand.com/api/v1/IntegrationRuntimeArtifacts('smtp')/ErrorInformation"
+				}
+			}
+		}
+	}`)
+	return strings.Replace(string(jsonByte), "StatusValue", status, 1)
 }
 
 //GetIntegrationArtifactDeployErrorStatusMockResponseBody -Provide http respose body
