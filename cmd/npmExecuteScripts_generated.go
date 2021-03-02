@@ -100,6 +100,9 @@ func npmExecuteScriptsMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Resources: []config.StepResources{
+					{Name: "source", Type: "stash"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "install",
