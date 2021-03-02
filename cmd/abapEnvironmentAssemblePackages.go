@@ -174,6 +174,11 @@ func (b *buildWithRepository) start() error {
 			abapbuild.Value{ValueID: "PREVIOUS_DELIVERY_COMMIT",
 				Value: b.repo.PredecessorCommitID})
 	}
+	if len(b.repo.Languages) > 0 {
+		valuesInput.Values = append(valuesInput.Values,
+			abapbuild.Value{ValueID: "SSDC_EXPORT_LANGUAGE_VECTOR",
+				Value: b.repo.GetAakAasLanguageVector()})
+	}
 	phase := "BUILD_" + b.repo.PackageType
 	log.Entry().Infof("Starting assembly of package %s", b.repo.PackageName)
 	return b.build.Start(phase, valuesInput)
