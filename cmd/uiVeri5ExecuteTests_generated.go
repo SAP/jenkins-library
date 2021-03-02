@@ -99,6 +99,10 @@ func uiVeri5ExecuteTestsMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Resources: []config.StepResources{
+					{Name: "buildDescriptor", Type: "stash"},
+					{Name: "tests", Type: "stash"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "installCommand",

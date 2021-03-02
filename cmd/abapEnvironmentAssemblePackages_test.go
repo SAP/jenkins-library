@@ -140,3 +140,99 @@ func TestDownloadSARXML(t *testing.T) {
 		assert.Equal(t, downloadPath, repos[0].SarXMLFilePath)
 	})
 }
+
+func TestStep(t *testing.T) {
+	t.Run("abapEnvironmentAssemblePackages: nothing to do", func(t *testing.T) {
+
+		config := &abapEnvironmentAssemblePackagesOptions{
+			AddonDescriptor:             cpeAbapAddonDescriptorPackageLocked,
+			MaxRuntimeInMinutes:         1,
+			PollIntervalsInMilliseconds: 1,
+		}
+
+		autils := &abaputils.AUtilsMock{}
+		client := abapbuild.GetBuildMockClient()
+		cpe := &abapEnvironmentAssemblePackagesCommonPipelineEnvironment{}
+
+		err := runAbapEnvironmentAssemblePackages(config, nil, autils, &client, cpe)
+		assert.NoError(t, err)
+	})
+	t.Run("abapEnvironmentAssemblePackages: build", func(t *testing.T) {
+
+		config := &abapEnvironmentAssemblePackagesOptions{
+			AddonDescriptor:             cpeAbapAddonDescriptorPackageReserved,
+			MaxRuntimeInMinutes:         1,
+			PollIntervalsInMilliseconds: 1,
+		}
+
+		autils := &abaputils.AUtilsMock{
+			ReturnedConnectionDetailsHTTP: abaputils.ConnectionDetailsHTTP{
+				URL: `/sap/opu/odata/BUILD/CORE_SRV`,
+			},
+		}
+
+		client := abapbuild.GetBuildMockClient()
+
+		cpe := &abapEnvironmentAssemblePackagesCommonPipelineEnvironment{}
+
+		err := runAbapEnvironmentAssemblePackages(config, nil, autils, &client, cpe)
+		assert.NoError(t, err)
+		assert.Contains(t, cpe.abap.addonDescriptor, `SAPK-001AAINITAPC1.SAR`)
+	})
+}
+
+var cpeAbapAddonDescriptorPackageLocked = `{
+	"addonProduct":"/ITAPC1/I_CURRENCZPRODUCT",
+	"addonVersion":"1.0.0",
+	"addonVersionAAK":"0001",
+	"addonUniqueID":"myAddonId",
+	"customerID":"$ID",
+	"AddonSpsLevel":"0000",
+	"AddonPatchLevel":"0000",
+	"TargetVectorID":"",
+	"repositories":[
+		{	"name":"/ITAPC1/I_CURRENCZ",
+			"tag":"whatever",
+			"branch":"",
+			"commitID":"",
+			"version":"1.0.0",
+			"versionAAK":"0001",
+			"PackageName":"SAPK-002AAINITAPC1",
+			"PackageType":"AOI",
+			"SpLevel":"0000",
+			"PatchLevel":"0000",
+			"PredecessorCommitID":"",
+			"Status":"L",
+			"Namespace":"/ITAPC1/",
+			"SarXMLFilePath":".pipeline\\commonPipelineEnvironment\\abap\\SAPK-002AAINITAPC1.SAR"
+		}
+	]
+}`
+
+var cpeAbapAddonDescriptorPackageReserved = `{
+	"addonProduct":"/ITAPC1/I_CURRENCZPRODUCT",
+	"addonVersion":"1.0.0",
+	"addonVersionAAK":"0001",
+	"addonUniqueID":"myAddonId",
+	"customerID":"$ID",
+	"AddonSpsLevel":"0000",
+	"AddonPatchLevel":"0000",
+	"TargetVectorID":"",
+	"repositories":[
+		{	"name":"/ITAPC1/I_CURRENCZ",
+			"tag":"whatever",
+			"branch":"",
+			"commitID":"",
+			"version":"1.0.0",
+			"versionAAK":"0001",
+			"PackageName":"SAPK-002AAINITAPC1",
+			"PackageType":"AOI",
+			"SpLevel":"0000",
+			"PatchLevel":"0000",
+			"PredecessorCommitID":"",
+			"Status":"P",
+			"Namespace":"/ITAPC1/",
+			"SarXMLFilePath":""
+		}
+	]
+}`
