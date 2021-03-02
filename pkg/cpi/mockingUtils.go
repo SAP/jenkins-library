@@ -438,12 +438,7 @@ func GetFunctionNameByTestTypeAndMethod(method, testType string) string {
 			return "UpdateIntegrationDesigntimeArtifactNegative"
 		}
 
-	case "PostiveAndDeployIntegrationDesigntimeArtifactResBody":
-		if method == "POST" {
-			return "IntegrationArtifactDeploy"
-		}
-
-	case "NegativeAndDeployIntegrationDesigntimeArtifactResBody":
+	case "PostiveAndDeployIntegrationDesigntimeArtifactResBody", "NegativeAndDeployIntegrationDesigntimeArtifactResBody":
 		if method == "POST" {
 			return "IntegrationArtifactDeploy"
 		}
