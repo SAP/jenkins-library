@@ -271,6 +271,9 @@ func checkmarxExecuteScanMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Resources: []config.StepResources{
+					{Name: "checkmarx", Type: "stash"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "avoidDuplicateProjectScans",
