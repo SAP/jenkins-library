@@ -44,7 +44,7 @@ If the following error occurs during the pipeline run, the `newmanRunCommand` is
 
 - **newmanEnvironment and newmanGlobals**:
 
-Referencing `newmanEnvironment` and `newmanGlobals` in the runOptions is rendundant now. Both parameters are added to runCommand using `newmanEnvironment` and `newmanGlobals` from config  when configured and not referenced by go templating using `"--environment", "\{\{.Config.NewmanEnvironment\}\}"` and `"--globals", "\{\{.Config.NewmanGlobals\}\}"` as shown above.
+Referencing `newmanEnvironment` and `newmanGlobals` in the runOptions is redundant now. Both parameters are added to runCommand using `newmanEnvironment` and `newmanGlobals` from config  when configured and not referenced by go templating using `"--environment", "\{\{.Config.NewmanEnvironment\}\}"` and `"--globals", "\{\{.Config.NewmanGlobals\}\}"` as shown above.
 
 ## Example
 
