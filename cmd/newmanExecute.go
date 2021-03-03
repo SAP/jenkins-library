@@ -75,16 +75,8 @@ func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) er
 		return err
 	}
 
-	// append environment and globals if not resolved by templating
-	options := []string{}
-	if config.NewmanEnvironment != "" && !contains(config.RunOptions, "{{.Config.NewmanEnvironment}}") {
-		options = append(options, "--environment")
-		options = append(options, config.NewmanEnvironment)
-	}
-	if config.NewmanGlobals != "" && !contains(config.RunOptions, "{{.Config.NewmanGlobals}}") {
-		options = append(options, "--globals")
-		options = append(options, config.NewmanGlobals)
-	}
+	// resolve environment and globals if not covered by templating
+	options := resolveOptions(config)
 
 	for _, collection := range collectionList {
 		runOptions := []string{}
@@ -135,6 +127,19 @@ func installNewman(newmanInstallCommand string, utils newmanExecuteUtils) error 
 		return errors.Wrap(err, "error installing newman")
 	}
 	return nil
+}
+
+func resolveOptions(config *newmanExecuteOptions) []string {
+	options := []string{}
+	if config.NewmanEnvironment != "" && !contains(config.RunOptions, "{{.Config.NewmanEnvironment}}") {
+		options = append(options, "--environment")
+		options = append(options, config.NewmanEnvironment)
+	}
+	if config.NewmanGlobals != "" && !contains(config.RunOptions, "{{.Config.NewmanGlobals}}") {
+		options = append(options, "--globals")
+		options = append(options, config.NewmanGlobals)
+	}
+	return options
 }
 
 func resolveTemplate(config *newmanExecuteOptions, collection string) ([]string, error) {
