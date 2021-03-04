@@ -374,9 +374,9 @@ func GetPositiveCaseResponseByTestType(testType string) (*http.Response, error) 
 		return GetRespBodyHTTPStatusServiceNotFound()
 	case "NegativeAndUpdateIntegrationDesigntimeArtifactResBody":
 		return GetRespBodyHTTPStatusServiceNotFound()
-	case "PostiveAndDeployIntegrationDesigntimeArtifactResBody":
+	case "PositiveAndDeployIntegrationDesigntimeArtifactResBody":
 		return GetIntegrationArtifactDeployStatusMockResponseBody()
-	case "PostiveAndGetDeployedIntegrationDesigntimeArtifactErrorResBody":
+	case "PositiveAndGetDeployedIntegrationDesigntimeArtifactErrorResBody":
 		return GetIntegrationArtifactDeployErrorStatusMockResponseBody()
 	case "NegativeAndDeployIntegrationDesigntimeArtifactResBody":
 		return GetIntegrationArtifactDeployStatusErrorMockResponseBody()
@@ -438,7 +438,7 @@ func GetFunctionNameByTestTypeAndMethod(method, testType string) string {
 			return "UpdateIntegrationDesigntimeArtifactNegative"
 		}
 
-	case "PostiveAndDeployIntegrationDesigntimeArtifactResBody", "NegativeAndDeployIntegrationDesigntimeArtifactResBody":
+	case "PositiveAndDeployIntegrationDesigntimeArtifactResBody", "NegativeAndDeployIntegrationDesigntimeArtifactResBody":
 		if method == "POST" {
 			return "IntegrationArtifactDeploy"
 		}
@@ -480,7 +480,7 @@ func GetIntegrationArtifactDeployStatusMockResponse(testType string) (*http.Resp
 //GetIntegrationArtifactDeployErrorDetailsMockResponse -Provide http respose body
 func GetIntegrationArtifactDeployErrorDetailsMockResponse(testType string) (*http.Response, error) {
 
-	return GetMockResponseByTestTypeAndMockFunctionName("GetIntegrationArtifactDeployErrorDetailsMockResponse", "PostiveAndGetDeployedIntegrationDesigntimeArtifactErrorResBody")
+	return GetMockResponseByTestTypeAndMockFunctionName("GetIntegrationArtifactDeployErrorDetailsMockResponse", "PositiveAndGetDeployedIntegrationDesigntimeArtifactErrorResBody")
 }
 
 //GetIntegrationArtifactDeployStatusMockResponseBody -Provide http respose body

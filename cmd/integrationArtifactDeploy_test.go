@@ -39,7 +39,7 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 			Platform:               "cf",
 		}
 
-		httpClient := httpMockCpis{CPIFunction: "", ResponseBody: ``, TestType: "PostiveAndDeployIntegrationDesigntimeArtifactResBody"}
+		httpClient := httpMockCpis{CPIFunction: "", ResponseBody: ``, TestType: "PositiveAndDeployIntegrationDesigntimeArtifactResBody"}
 
 		err := runIntegrationArtifactDeploy(&config, nil, &httpClient)
 
