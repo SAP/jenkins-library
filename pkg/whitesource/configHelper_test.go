@@ -18,7 +18,7 @@ func TestRewriteUAConfigurationFile(t *testing.T) {
 		utilsMock := NewScanUtilsMock()
 		utilsMock.AddFile(config.ConfigFilePath, []byte("test = dummy"))
 
-		path, err := config.RewriteUAConfigurationFile(utilsMock)
+		path, err := config.RewriteUAConfigurationFile(utilsMock, "")
 		assert.NoError(t, err)
 		newUAConfig, err := utilsMock.FileRead(path)
 		assert.NoError(t, err)
@@ -33,7 +33,7 @@ func TestRewriteUAConfigurationFile(t *testing.T) {
 		}
 		utilsMock := NewScanUtilsMock()
 
-		path, err := config.RewriteUAConfigurationFile(utilsMock)
+		path, err := config.RewriteUAConfigurationFile(utilsMock, "")
 		assert.NoError(t, err)
 
 		newUAConfig, err := utilsMock.FileRead(path)
@@ -49,7 +49,7 @@ func TestRewriteUAConfigurationFile(t *testing.T) {
 		utilsMock := NewScanUtilsMock()
 		utilsMock.FileWriteError = fmt.Errorf("failed to write file")
 
-		_, err := config.RewriteUAConfigurationFile(utilsMock)
+		_, err := config.RewriteUAConfigurationFile(utilsMock, "")
 		assert.Contains(t, fmt.Sprint(err), "failed to write file")
 	})
 }
@@ -103,7 +103,7 @@ func TestAddGeneralDefaults(t *testing.T) {
 			ProjectName:    "testProject",
 			UserToken:      "testuserKey",
 		}
-		testConfig.addGeneralDefaults(&whitesourceConfig, utilsMock)
+		testConfig.addGeneralDefaults(&whitesourceConfig, utilsMock, "")
 		assert.Equal(t, "checkPolicies", testConfig[0].Name)
 		assert.Equal(t, true, testConfig[0].Value)
 		assert.Equal(t, "forceCheckAllDependencies", testConfig[1].Name)
@@ -128,11 +128,12 @@ func TestAddGeneralDefaults(t *testing.T) {
 			ProjectName:    "testProject",
 			UserToken:      "testuserKey",
 		}
-		testConfig.addGeneralDefaults(&whitesourceConfig, utilsMock)
+		testConfig.addGeneralDefaults(&whitesourceConfig, utilsMock, "anotherProject")
 		assert.Equal(t, "checkPolicies", testConfig[0].Name)
 		assert.Equal(t, false, testConfig[0].Value)
 		assert.Equal(t, "forceCheckAllDependencies", testConfig[1].Name)
 		assert.Equal(t, false, testConfig[1].Value)
+		assert.Equal(t, "anotherProject", testConfig[5].Value)
 	})
 
 	t.Run("verbose", func(t *testing.T) {
@@ -140,7 +141,7 @@ func TestAddGeneralDefaults(t *testing.T) {
 		whitesourceConfig := ScanOptions{
 			Verbose: true,
 		}
-		testConfig.addGeneralDefaults(&whitesourceConfig, utilsMock)
+		testConfig.addGeneralDefaults(&whitesourceConfig, utilsMock, "")
 		assert.Equal(t, "log.level", testConfig[2].Name)
 		assert.Equal(t, "debug", testConfig[2].Value)
 		assert.Equal(t, "log.files.level", testConfig[3].Name)
@@ -153,7 +154,7 @@ func TestAddGeneralDefaults(t *testing.T) {
 			Excludes: []string{"**/excludes1", "**/excludes2"},
 			Includes: []string{"**/includes1", "**/includes2"},
 		}
-		testConfig.addGeneralDefaults(&whitesourceConfig, utilsMock)
+		testConfig.addGeneralDefaults(&whitesourceConfig, utilsMock, "")
 		assert.Equal(t, "excludes", testConfig[2].Name)
 		assert.Equal(t, "**/excludes1 **/excludes2", testConfig[2].Value)
 		assert.Equal(t, true, testConfig[2].Force)
