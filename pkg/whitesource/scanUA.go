@@ -27,9 +27,9 @@ func (s *Scan) ExecuteUAScan(config *ScanOptions, utils Utils) error {
 			return errors.Wrap(err, "failed to run scan for maven modules of mta")
 		}
 	} else {
-		// ToDo: only warning message?
-		//log.Entry().Warning("MTA project does not contain a pom.xml in the root. Scan results might be incomplete")
-		return fmt.Errorf("mta project does not contain an aggregator pom.xml in the root - this is mandatory")
+		if pomFiles, _ := utils.Glob("**/pom.xml"); len(pomFiles) > 0 {
+			return fmt.Errorf("mta project with java modules does not contain an aggregator pom.xml in the root - this is mandatory")
+		}
 	}
 
 	packageJSONFiles, err := utils.FindPackageJSONFiles(config)
