@@ -29,5 +29,16 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 		}
 	}
 
+	if config.CreateBOM {
+		packageJSONFiles, err := npmExecutor.FindPackageJSONFilesWithExcludes(config.BuildDescriptorExcludeList)
+		if err != nil {
+			return err
+		}
+
+		if err := npmExecutor.CreateBOM(packageJSONFiles); err != nil {
+			return err
+		}
+	}
+
 	return npmExecutor.RunScriptsInAllPackages(config.RunScripts, nil, config.ScriptOptions, config.VirtualFrameBuffer, config.BuildDescriptorExcludeList, config.BuildDescriptorList)
 }
