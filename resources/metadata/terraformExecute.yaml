@@ -1,0 +1,36 @@
+metadata:
+  name: terraformExecute
+  description: Executes Terraform
+  longDescription: |
+    This step executes the terraform binary with the given command, and is able to fetch additional variables from vault.
+spec:
+  inputs:
+    params:
+      - name: command
+        type: string
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: plan
+      - name: terraformSecrets
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        resourceRef:
+          - type: vaultSecretFile
+            paths:
+              - $(vaultPath)/terraformExecute
+              - $(vaultBasePath)/$(vaultPipelineName)/terraformExecute
+              - $(vaultBasePath)/GROUP-SECRETS/terraformExecute
+      - name: additionalArgs
+        type: "[]string"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+  containers:
+    - name: terraform
+      image: hashicorp/terraform:0.14.7
