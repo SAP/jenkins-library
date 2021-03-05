@@ -232,7 +232,7 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 		//ToDo: add condition param.Value and param.Name to filter as for Containers
 	}
 
-	if m.HasReference("vaultSecret") {
+	if m.HasReference("vaultSecret") || m.HasReference("vaultSecretFile") {
 		contextFilters = append(contextFilters, []string{"vaultAppRoleTokenCredentialsId",
 			"vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}...)
 	}
