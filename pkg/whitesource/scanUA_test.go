@@ -68,10 +68,24 @@ func TestExecuteUAScan(t *testing.T) {
 			ProductName: "test-product",
 		}
 		utilsMock := NewScanUtilsMock()
+		utilsMock.AddFile(filepath.Join("sub", "pom.xml"), []byte("dummy"))
 		scan := newTestScan(&config)
 
 		err := scan.ExecuteUAScan(&config, utilsMock)
-		assert.EqualError(t, err, "mta project does not contain an aggregator pom.xml in the root - this is mandatory")
+		assert.EqualError(t, err, "mta project with java modules does not contain an aggregator pom.xml in the root - this is mandatory")
+	})
+
+	t.Run("error - no pom.xml & only npm", func(t *testing.T) {
+		config := ScanOptions{
+			BuildTool:   "mta",
+			ProjectName: "test-project",
+			ProductName: "test-product",
+		}
+		utilsMock := NewScanUtilsMock()
+		scan := newTestScan(&config)
+
+		err := scan.ExecuteUAScan(&config, utilsMock)
+		assert.NoError(t, err)
 	})
 
 	t.Run("error - npm no name", func(t *testing.T) {
