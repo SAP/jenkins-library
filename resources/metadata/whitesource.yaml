@@ -315,17 +315,19 @@ spec:
           - STEPS
       - name: scanType
         type: string
-        description: "Type of development stack used to implement the solution.
-          For scan types other than `mta`, `maven`, and `npm`,
-          the WhiteSource Unified Agent is downloaded and used to perform the scan.
-          If the parameter is not provided, it is derived from the parameter `buildTool`,
-          which is usually configured in the general section of the pipeline config file."
+        description: "**DEPRECATED**: Please set to `ua` in order to prevent usage of deprecated WhiteSource plugins and use Unified Agent instead."
+        longDescription: |-
+          WhiteSource deprecated all build-tool specific plugins in 2019.
+          The successor of the individual plugins is the so-called "Unified Agent".
+
+          For now the value `ua` acts as a toogle to not break existing scenarios.
+          We plan to remove this parameter in early Q2/2021.
         scope:
           - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
-        possibleValues: ["golang", "gradle", "maven", "mta", "npm", "pip", "yarn"]
+        possibleValues: ["ua", "golang", "gradle", "maven", "mta", "npm", "pip", "yarn"]
       - name: securityVulnerabilities
         type: bool
         description: "Whether security compliance is considered and reported as part of the assessment."
