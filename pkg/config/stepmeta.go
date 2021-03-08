@@ -232,10 +232,7 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 		//ToDo: add condition param.Value and param.Name to filter as for Containers
 	}
 
-	if m.HasReference("vaultSecret") {
-		contextFilters = append(contextFilters, []string{"vaultAppRoleTokenCredentialsId",
-			"vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}...)
-	}
+	contextFilters = addVaultContextParametersFilter(m, contextFilters)
 
 	if len(contextFilters) > 0 {
 		filters.All = append(filters.All, contextFilters...)
@@ -247,6 +244,14 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 
 	}
 	return filters
+}
+
+func addVaultContextParametersFilter(m *StepData, contextFilters []string) []string {
+	if m.HasReference("vaultSecret") || m.HasReference("vaultSecretFile") {
+		contextFilters = append(contextFilters, []string{"vaultAppRoleTokenCredentialsId",
+			"vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}...)
+	}
+	return contextFilters
 }
 
 // GetContextDefaults retrieves context defaults like container image, name, env vars, resources, ...
