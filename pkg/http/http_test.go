@@ -89,7 +89,7 @@ func TestDefaultTransport(t *testing.T) {
 		_, err := client.SendRequest("GET", testURL, nil, nil, nil)
 		// assert
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "connect: connection refused")
+		assert.Contains(t, err.Error(), "connectex: No connection could be made because the target machine actively refused it.")
 		assert.Equal(t, 0, httpmock.GetTotalCallCount(), "unexpected number of requests")
 	})
 }
@@ -403,7 +403,7 @@ func TestMaxRetries(t *testing.T) {
 		errorText    string
 		timeout      bool
 	}{
-		{client: Client{maxRetries: 1, transportTimeout: 1 * time.Microsecond}, responseCode: 666, timeout: true, countedCalls: 2, method: http.MethodPost, errorText: "timeout awaiting response headers"},
+		{client: Client{maxRetries: 1, transportSkipVerification: true, transportTimeout: 1 * time.Microsecond}, responseCode: 666, timeout: true, countedCalls: 2, method: http.MethodPost, errorText: "timeout awaiting response headers"},
 		{client: Client{maxRetries: 0}, countedCalls: 1, method: http.MethodGet, responseCode: 500, errorText: "Internal Server Error"},
 		{client: Client{maxRetries: 2}, countedCalls: 3, method: http.MethodGet, responseCode: 500, errorText: "Internal Server Error"},
 		{client: Client{maxRetries: 3}, countedCalls: 4, method: http.MethodPost, responseCode: 503, errorText: "Service Unavailable"},
