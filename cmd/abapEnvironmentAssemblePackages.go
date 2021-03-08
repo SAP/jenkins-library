@@ -55,7 +55,7 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 
 	err := conn.InitBuildFramework(connConfig, com, client)
 	if err != nil {
-		return errors.Wrap(err, "Connector initialization failed")
+		return errors.Wrap(err, "Connector initialization for communication with the ABAP system failed")
 	}
 
 	var addonDescriptor abaputils.AddonDescriptor
@@ -68,24 +68,24 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 	pollIntervalsInMilliseconds := time.Duration(config.PollIntervalsInMilliseconds) * time.Millisecond
 	builds, err := executeBuilds(addonDescriptor.Repositories, *conn, maxRuntimeInMinutes, pollIntervalsInMilliseconds)
 	if err != nil {
-		return errors.Wrap(err, "Starting Builds failed")
+		return errors.Wrap(err, "Starting Builds for Repositories with reserved AAKaaS packages failed")
 	}
 
 	err = checkIfFailedAndPrintLogs(builds)
 	if err != nil {
-		return errors.Wrap(err, "Check if failed and Printing Logs failed")
+		return errors.Wrap(err, "Checking for failed Builds and Printing Build Logs failed")
 	}
 
 	var filesToPublish []piperutils.Path
 	filesToPublish, err = downloadResultToFile(builds, "SAR_XML", filesToPublish)
 	if err != nil {
-		return errors.Wrap(err, "Download of SAR_XML failed")
+		return errors.Wrap(err, "Download of Build Artifact SAR_XML failed")
 	}
 
 	filesToPublish, err = downloadResultToFile(builds, "DELIVERY_LOGS.ZIP", filesToPublish)
 	if err != nil {
 		//changed result storage with 2105, thus ignore errors for now
-		log.Entry().Error(errors.Wrap(err, "Download of DELIVERY_LOGS.ZIP failed"))
+		log.Entry().Error(errors.Wrap(err, "Download of Build Artifact DELIVERY_LOGS.ZIP failed"))
 	}
 
 	log.Entry().Infof("Publsihing %v files", len(filesToPublish))
