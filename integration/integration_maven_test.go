@@ -10,7 +10,7 @@ import (
 func TestMavenBuildCloudSdkSpringProject(t *testing.T) {
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "maven:3-openjdk-8-slim",
-		User:    "root",
+		User:    "1000",
 		TestDir: []string{"testdata", "TestMavenIntegration", "cloud-sdk-spring-archetype"},
 		Mounts:  map[string]string{},
 		Setup:   []string{},
@@ -39,7 +39,7 @@ func TestMavenBuildCloudSdkSpringProject(t *testing.T) {
 func TestMavenBuildCloudSdkTomeeProject(t *testing.T) {
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "maven:3-openjdk-8-slim",
-		User:    "root",
+		User:    "1000",
 		TestDir: []string{"testdata", "TestMavenIntegration", "cloud-sdk-tomee-archetype"},
 		Mounts:  map[string]string{},
 		Setup:   []string{},
