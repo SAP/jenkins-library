@@ -510,12 +510,12 @@ func TestTriggerFortifyScan(t *testing.T) {
 
 		utils := newFortifyTestUtilsBundle()
 		config := fortifyExecuteScanOptions{
-			BuildTool:           "maven",
-			AutodetectClasspath: true,
-			BuildDescriptorFile: "./pom.xml",
-			AdditionalScanParameters:      []string{"-Dtest=property"},
-			Memory:              "-Xmx4G -Xms2G",
-			Src:                 []string{"**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "src/main/resources/**/*", "src/main/java/**/*"}}
+			BuildTool:                "maven",
+			AutodetectClasspath:      true,
+			BuildDescriptorFile:      "./pom.xml",
+			AdditionalScanParameters: []string{"-Dtest=property"},
+			Memory:                   "-Xmx4G -Xms2G",
+			Src:                      []string{"**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "src/main/resources/**/*", "src/main/java/**/*"}}
 		triggerFortifyScan(config, &utils, "test", "testLabel", "my.group-myartifact")
 
 		assert.Equal(t, 3, utils.numExecutions)
