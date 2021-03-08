@@ -1,9 +1,15 @@
 package whitesource
 
 import (
+	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
+	"os"
 	"path/filepath"
+	"regexp"
+	"sync"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
@@ -11,6 +17,7 @@ import (
 
 const jvmTarGz = "jvm.tar.gz"
 const jvmDir = "./jvm"
+const projectRegEx = `Project name: ([^,]*), URL: (.*)`
 
 // ExecuteUAScan executes a scan with the Whitesource Unified Agent.
 func (s *Scan) ExecuteUAScan(config *ScanOptions, utils Utils) error {
@@ -89,6 +96,31 @@ func (s *Scan) ExecuteUAScanInPath(config *ScanOptions, utils Utils, scanPath st
 	if len(scanPath) == 0 {
 		scanPath = "."
 	}
+
+	// log parsing in order to identify the projects WhiteSource really scanned
+	// we may refactor this in case there is a safer way to identify the projects e.g. via REST API
+
+	//ToDO: we only need stdOut or stdErr, let's see where UA writes to ...
+	prOut, stdOut := io.Pipe()
+	trOut := io.TeeReader(prOut, os.Stderr)
+	utils.Stdout(stdOut)
+
+	prErr, stdErr := io.Pipe()
+	trErr := io.TeeReader(prErr, os.Stderr)
+	utils.Stdout(stdErr)
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		scanLog(trOut, s)
+	}()
+
+	go func() {
+		defer wg.Done()
+		scanLog(trErr, s)
+	}()
 
 	err = utils.RunExecutable(javaPath, "-jar", config.AgentFileName, "-d", scanPath, "-c", configPath, "-wss.url", config.AgentURL)
 
@@ -214,4 +246,49 @@ func getProjectNameFromPackageJSON(packageJSONPath string, utils Utils) (string,
 	}
 
 	return projectName, nil
+}
+
+func scanLog(in io.Reader, scan *Scan) {
+	scanner := bufio.NewScanner(in)
+	scanner.Split(scanShortLines)
+	for scanner.Scan() {
+		line := scanner.Text()
+		parseForProjects(line, scan)
+	}
+	if err := scanner.Err(); err != nil {
+		log.Entry().WithError(err).Info("failed to scan log file")
+	}
+}
+
+func parseForProjects(logLine string, scan *Scan) {
+	compile := regexp.MustCompile(projectRegEx)
+	values := compile.FindStringSubmatch(logLine)
+
+	if len(values) > 0 && scan.scannedProjects != nil && len(scan.scannedProjects[values[1]].Name) == 0 {
+		scan.scannedProjects[values[1]] = Project{Name: values[1]}
+	}
+
+}
+
+func scanShortLines(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	lenData := len(data)
+	if atEOF && lenData == 0 {
+		return 0, nil, nil
+	}
+	if lenData > 32767 && !bytes.Contains(data[0:lenData], []byte("\n")) {
+		// we will neglect long output
+		// no use cases known where this would be relevant
+		return lenData, nil, nil
+	}
+	if i := bytes.IndexByte(data, '\n'); i >= 0 && i < 32767 {
+		// We have a full newline-terminated line with a size limit
+		// Size limit is required since otherwise scanner would stall
+		return i + 1, data[0:i], nil
+	}
+	// If we're at EOF, we have a final, non-terminated line. Return it.
+	if atEOF {
+		return len(data), data, nil
+	}
+	// Request more data.
+	return 0, nil, nil
 }
