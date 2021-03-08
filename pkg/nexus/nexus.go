@@ -44,7 +44,7 @@ type Uploader interface {
 
 // SetRepoURL constructs the base URL to the Nexus repository. mavenRepository or npmRepository may be empty.
 func (nexusUpload *Upload) SetRepoURL(nexusURL, nexusVersion, mavenRepository, npmRepository string) error {
-	protocol, err := GetNexusURLProtocol(nexusURL)
+	protocol, err := _GetNexusURLProtocol(nexusURL)
 	if protocol == "" {
 		nexusUpload.protocol="http"
 	}
@@ -94,7 +94,8 @@ func getBaseURL(nexusURL, nexusVersion, repository string) (string, error) {
 	return baseURL, nil
 }
 
-func GetNexusURLProtocol(nexusURL string) (string, error) {
+// _GetNexusURLProtocol returns the protocol specified in the nexusUrl which was set thru setNexusUrl (internal method)
+func _GetNexusURLProtocol(nexusURL string) (string, error) {
 	if nexusURL == "" {
 		return "", errors.New("nexusURL must not be empty")
 	}
