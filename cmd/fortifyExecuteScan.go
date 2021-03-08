@@ -799,6 +799,11 @@ func scanProject(config *fortifyExecuteScanOptions, command fortifyUtils, buildI
 	if config.QuickScan {
 		scanOptions = append(scanOptions, "-quick")
 	}
+	if len(config.AdditionalScanParameters) > 0 {
+		for _, scanParameter := range config.AdditionalScanParameters {
+			scanOptions = append(scanOptions, fmt.Sprintf("%v", scanParameter))
+		}
+	}
 	if len(buildLabel) > 0 {
 		scanOptions = append(scanOptions, "-build-label", buildLabel)
 	}

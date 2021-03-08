@@ -513,6 +513,7 @@ func TestTriggerFortifyScan(t *testing.T) {
 			BuildTool:           "maven",
 			AutodetectClasspath: true,
 			BuildDescriptorFile: "./pom.xml",
+			AdditionalScanParameters:      []string{"-Dtest=property"},
 			Memory:              "-Xmx4G -Xms2G",
 			Src:                 []string{"**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "src/main/resources/**/*", "src/main/java/**/*"}}
 		triggerFortifyScan(config, &utils, "test", "testLabel", "my.group-myartifact")
@@ -526,7 +527,7 @@ func TestTriggerFortifyScan(t *testing.T) {
 		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-Xmx4G", "-Xms2G", "-cp", "some.jar;someother.jar", "**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "src/main/resources/**/*", "src/main/java/**/*"}, utils.executions[1].parameters)
 
 		assert.Equal(t, "sourceanalyzer", utils.executions[2].executable)
-		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-scan", "-Xmx4G", "-Xms2G", "-build-label", "testLabel", "-build-project", "my.group-myartifact", "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr"}, utils.executions[2].parameters)
+		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-scan", "-Xmx4G", "-Xms2G", "-Dtest=property", "-build-label", "testLabel", "-build-project", "my.group-myartifact", "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr"}, utils.executions[2].parameters)
 	})
 
 	t.Run("pip", func(t *testing.T) {
