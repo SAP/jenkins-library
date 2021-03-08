@@ -142,30 +142,30 @@ func nexusUploadMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "nexus/version"}},
 					},
 					{
-						Name:        "url",
+						Name: "url",
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "commonPipelineEnvironment",
 								Param: "custom/repositoryUrl",
 							},
 						},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "nexus/url"}},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{{Name: "nexus/url"}},
 					},
 					{
-						Name:        "format",
+						Name: "format",
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "commonPipelineEnvironment",
 								Param: "custom/repositoryFormat",
 							},
 						},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "mavenRepository",

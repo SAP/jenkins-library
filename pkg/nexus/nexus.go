@@ -18,7 +18,7 @@ type ArtifactDescription struct {
 // Upload combines information about an artifact and its sub-artifacts which are supposed to be uploaded together.
 // Call SetRepoURL(), SetArtifactsVersion(), SetArtifactID(), and add at least one artifact via AddArtifact().
 type Upload struct {
-	protocol	 string
+	protocol     string
 	mavenRepoURL string
 	npmRepoURL   string
 	groupID      string
@@ -46,7 +46,7 @@ type Uploader interface {
 func (nexusUpload *Upload) SetRepoURL(nexusURL, nexusVersion, mavenRepository, npmRepository string) error {
 	protocol, err := _GetNexusURLProtocol(nexusURL)
 	if protocol == "" {
-		nexusUpload.protocol="http"
+		nexusUpload.protocol = "http"
 	}
 	nexusUpload.protocol = protocol
 	mavenRepoURL, err := getBaseURL(nexusURL, nexusVersion, mavenRepository)

@@ -107,7 +107,7 @@ func runNexusUpload(utils nexusUploadUtils, uploader nexus.Uploader, options *ne
 		} else {
 			if options.Format == "maven" {
 				performMavenUpload = true
-			} else if options.Format == "npm"{
+			} else if options.Format == "npm" {
 				performNpmUpload = true
 			}
 		}
@@ -144,7 +144,7 @@ func runNexusUpload(utils nexusUploadUtils, uploader nexus.Uploader, options *ne
 }
 
 func uploadNpmArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions) error {
-	environment := []string{"npm_config_registry="+uploader.GetNexusURLProtocol()+"://" + uploader.GetNpmRepoURL(), "npm_config_email=project-piper@no-reply.com"}
+	environment := []string{"npm_config_registry=" + uploader.GetNexusURLProtocol() + "://" + uploader.GetNpmRepoURL(), "npm_config_email=project-piper@no-reply.com"}
 	if options.Username != "" && options.Password != "" {
 		auth := b64.StdEncoding.EncodeToString([]byte(options.Username + ":" + options.Password))
 		environment = append(environment, "npm_config__auth="+auth)
