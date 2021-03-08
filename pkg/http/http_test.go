@@ -422,7 +422,7 @@ func TestMaxRetries(t *testing.T) {
 			if testCase.timeout {
 				time.Sleep(2 * time.Microsecond)
 			}
-				
+
 			w.WriteHeader(testCase.responseCode)
 		}))
 		defer svr.Close()
