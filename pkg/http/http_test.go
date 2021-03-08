@@ -89,7 +89,8 @@ func TestDefaultTransport(t *testing.T) {
 		_, err := client.SendRequest("GET", testURL, nil, nil, nil)
 		// assert
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "connectex: No connection could be made because the target machine actively refused it.")
+		assert.Contains(t, err.Error(), "connection")
+		assert.Contains(t, err.Error(), "refused")
 		assert.Equal(t, 0, httpmock.GetTotalCallCount(), "unexpected number of requests")
 	})
 }
