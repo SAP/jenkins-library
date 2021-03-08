@@ -38,7 +38,7 @@ func abapEnvironmentAssemblePackages(config abapEnvironmentAssemblePackagesOptio
 	}
 }
 
-func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender, cpe *abapEnvironmentAssemblePackagesCommonPipelineEnvironment) error {
+func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client abapbuild.HTTPSendLoader, cpe *abapEnvironmentAssemblePackagesCommonPipelineEnvironment) error {
 	conn := new(abapbuild.Connector)
 	var connConfig abapbuild.ConnectorConfiguration
 	connConfig.CfAPIEndpoint = config.CfAPIEndpoint
@@ -54,31 +54,34 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 
 	err := conn.InitBuildFramework(connConfig, com, client)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Connector initialization failed")
 	}
+
 	var addonDescriptor abaputils.AddonDescriptor
 	err = json.Unmarshal([]byte(config.AddonDescriptor), &addonDescriptor)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Reading AddonDescriptor failed [Make sure abapAddonAssemblyKit...CheckCVs|CheckPV|ReserveNextPackages steps have been run before]")
 	}
+
 	delayBetweenPostsInSeconds := time.Duration(3 * time.Second)
 	builds, buildsAlreadyReleased, err := starting(addonDescriptor.Repositories, *conn, delayBetweenPostsInSeconds)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Starting Builds failed")
 	}
 	maxRuntimeInMinutes := time.Duration(config.MaxRuntimeInMinutes) * time.Minute
-	pollIntervalsInSeconds := time.Duration(60 * time.Second)
-	err = polling(builds, maxRuntimeInMinutes, pollIntervalsInSeconds)
+	pollIntervalsInMilliseconds := time.Duration(config.PollIntervalsInMilliseconds) * time.Millisecond
+	err = polling(builds, maxRuntimeInMinutes, pollIntervalsInMilliseconds)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Polling failed")
 	}
+
 	err = checkIfFailedAndPrintLogs(builds)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Check if failed and Printing Logs failed")
 	}
 	reposBackToCPE, err := downloadSARXML(builds)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Download SAR XML failed")
 	}
 	// also write the already released packages back to cpe
 	for _, b := range buildsAlreadyReleased {
@@ -88,43 +91,6 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 	backToCPE, _ := json.Marshal(addonDescriptor)
 	cpe.abap.addonDescriptor = string(backToCPE)
 
-	return nil
-}
-
-func downloadSARXML(builds []buildWithRepository) ([]abaputils.Repository, error) {
-	var reposBackToCPE []abaputils.Repository
-	resultName := "SAR_XML"
-	envPath := filepath.Join(GeneralConfig.EnvRootPath, "commonPipelineEnvironment", "abap")
-	for i, b := range builds {
-		resultSARXML, err := b.build.GetResult(resultName)
-		if err != nil {
-			return reposBackToCPE, err
-		}
-		sarPackage := resultSARXML.AdditionalInfo
-		downloadPath := filepath.Join(envPath, path.Base(sarPackage))
-		log.Entry().Infof("Downloading SAR file %s to %s", path.Base(sarPackage), downloadPath)
-		err = resultSARXML.Download(downloadPath)
-		if err != nil {
-			return reposBackToCPE, err
-		}
-		builds[i].repo.SarXMLFilePath = downloadPath
-		reposBackToCPE = append(reposBackToCPE, builds[i].repo)
-	}
-	return reposBackToCPE, nil
-}
-
-func checkIfFailedAndPrintLogs(builds []buildWithRepository) error {
-	var buildFailed bool = false
-	for i := range builds {
-		if builds[i].build.RunState == abapbuild.Failed {
-			log.Entry().Errorf("Assembly of %s failed", builds[i].repo.PackageName)
-			buildFailed = true
-		}
-		builds[i].build.PrintLogs()
-	}
-	if buildFailed {
-		return errors.New("At least the assembly of one package failed")
-	}
 	return nil
 }
 
@@ -162,7 +128,7 @@ func polling(builds []buildWithRepository, maxRuntimeInMinutes time.Duration, po
 	for {
 		select {
 		case <-timeout:
-			return errors.New("Timed out")
+			return errors.Errorf("Timed out: (max Runtime %v reached)", maxRuntimeInMinutes)
 		case <-ticker:
 			var allFinished bool = true
 			for i := range builds {
@@ -211,4 +177,41 @@ func (b *buildWithRepository) start() error {
 	phase := "BUILD_" + b.repo.PackageType
 	log.Entry().Infof("Starting assembly of package %s", b.repo.PackageName)
 	return b.build.Start(phase, valuesInput)
+}
+
+func checkIfFailedAndPrintLogs(builds []buildWithRepository) error {
+	var buildFailed bool = false
+	for i := range builds {
+		if builds[i].build.RunState == abapbuild.Failed {
+			log.Entry().Errorf("Assembly of %s failed", builds[i].repo.PackageName)
+			buildFailed = true
+		}
+		builds[i].build.PrintLogs()
+	}
+	if buildFailed {
+		return errors.New("At least the assembly of one package failed")
+	}
+	return nil
+}
+
+func downloadSARXML(builds []buildWithRepository) ([]abaputils.Repository, error) {
+	var reposBackToCPE []abaputils.Repository
+	resultName := "SAR_XML"
+	envPath := filepath.Join(GeneralConfig.EnvRootPath, "commonPipelineEnvironment", "abap")
+	for i, b := range builds {
+		resultSARXML, err := b.build.GetResult(resultName)
+		if err != nil {
+			return reposBackToCPE, err
+		}
+		sarPackage := resultSARXML.AdditionalInfo
+		downloadPath := filepath.Join(envPath, path.Base(sarPackage))
+		log.Entry().Infof("Downloading SAR file %s to %s", path.Base(sarPackage), downloadPath)
+		err = resultSARXML.Download(downloadPath)
+		if err != nil {
+			return reposBackToCPE, err
+		}
+		builds[i].repo.SarXMLFilePath = downloadPath
+		reposBackToCPE = append(reposBackToCPE, builds[i].repo)
+	}
+	return reposBackToCPE, nil
 }

@@ -31,7 +31,7 @@ func abapEnvironmentAssembleConfirm(config abapEnvironmentAssembleConfirmOptions
 	}
 }
 
-func runAbapEnvironmentAssembleConfirm(config *abapEnvironmentAssembleConfirmOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender, cpe *abapEnvironmentAssembleConfirmCommonPipelineEnvironment) error {
+func runAbapEnvironmentAssembleConfirm(config *abapEnvironmentAssembleConfirmOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client abapbuild.HTTPSendLoader, cpe *abapEnvironmentAssembleConfirmCommonPipelineEnvironment) error {
 	conn := new(abapbuild.Connector)
 	var connConfig abapbuild.ConnectorConfiguration
 	connConfig.CfAPIEndpoint = config.CfAPIEndpoint
