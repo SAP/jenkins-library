@@ -420,7 +420,7 @@ func TestMaxRetries(t *testing.T) {
 		count := 0
 		svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			count++
-			if testCase.timeout {
+			if testCase.timeout && count == 0 {
 				time.Sleep(3 * time.Microsecond)
 			}
 			w.WriteHeader(testCase.responseCode)
