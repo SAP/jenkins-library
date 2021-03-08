@@ -9,6 +9,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/yaml"
 	"github.com/stretchr/testify/assert"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 )
@@ -1125,7 +1126,7 @@ func TestSmokeTestScriptHandling(t *testing.T) {
 
 			assert.Equal(t, []string{
 				"--smoke-test",
-				"/home/me/mySmokeTestScript.sh",
+				filepath.FromSlash("/home/me/mySmokeTestScript.sh"),
 			}, parts)
 		}
 	})
@@ -1161,7 +1162,7 @@ func TestSmokeTestScriptHandling(t *testing.T) {
 
 			assert.Equal(t, []string{
 				"--smoke-test",
-				"/home/me/blueGreenCheckScript.sh",
+				filepath.FromSlash("/home/me/blueGreenCheckScript.sh"),
 			}, parts)
 		}
 	})
