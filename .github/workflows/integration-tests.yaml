@@ -11,7 +11,7 @@ jobs:
 
   consumer-tests:
     name: Consumer Tests
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
 
     steps:
       - name: checkout
@@ -42,7 +42,7 @@ jobs:
   go-integration-tests:
     name: Go Integration Tests
 
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
 
     steps:
       - name: checkout
