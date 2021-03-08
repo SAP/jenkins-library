@@ -125,7 +125,7 @@ func executeBuilds(repos []abaputils.Repository, conn abapbuild.Connector, maxRu
 				if err != nil {
 					buildRepo.build.RunState = abapbuild.Failed
 					log.Entry().Error(err)
-					log.Entry().Error("Continueing with other builds (if any) but keep in Mind that even if this build finishes beyond timeout the result is not trustworthy due to possible side effects!")
+					log.Entry().Error("Continuing with other builds (if any) but keep in Mind that even if this build finishes beyond timeout the result is not trustworthy due to possible side effects!")
 				}
 			}
 		} else {
