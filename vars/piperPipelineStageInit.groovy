@@ -14,7 +14,7 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field Set GENERAL_CONFIG_KEYS = [
     /**
      * Defines the build tool used.
-     * @possibleValues `docker`, `kaniko`, `maven`, `mta, ``npm`
+     * @possibleValues `maven`, `mta, ``npm`
      */
     'buildTool',
     /**
