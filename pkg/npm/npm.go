@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/command"
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"io"
 	"path/filepath"
 	"strings"
+
+	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 // Execute struct holds utils to enable mocking and common parameters
@@ -26,6 +27,7 @@ type Executor interface {
 	RunScriptsInAllPackages(runScripts []string, runOptions []string, scriptOptions []string, virtualFrameBuffer bool, excludeList []string, packagesList []string) error
 	InstallAllDependencies(packageJSONFiles []string) error
 	SetNpmRegistries() error
+	CreateBOM(packageJSONFiles []string) error
 }
 
 // ExecutorOptions holds common parameters for functions of Executor
@@ -344,4 +346,51 @@ func (exec *Execute) checkIfLockFilesExist() (bool, bool, error) {
 		return false, false, err
 	}
 	return packageLockExists, yarnLockExists, nil
+}
+
+// CreateBOM generates BOM file using CycloneDX from all package.json files
+func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
+	execRunner := exec.Utils.GetExecRunner()
+	// Install CycloneDX Node.js module locally without saving in package.json
+	err := execRunner.RunExecutable("npm", "install", "@cyclonedx/bom", "--no-save")
+	if err != nil {
+		return err
+	}
+	if len(packageJSONFiles) > 0 {
+		path := filepath.Dir(packageJSONFiles[0])
+		createBOMConfig := []string{
+			"--schema", "1.2", // Target schema version
+			"--include-license-text", "false",
+			"--include-dev", "false", // Include devDependencies
+			"--output", "bom.xml",
+		}
+
+		params := []string{
+			"cyclonedx-bom",
+			path,
+		}
+		params = append(params, createBOMConfig...)
+		// Generate BOM from first package.json
+		err := execRunner.RunExecutable("npx", params...)
+		if err != nil {
+			return err
+		}
+
+		// Merge BOM(s) into the current BOM
+		for _, packageJSONFile := range packageJSONFiles[1:] {
+			path := filepath.Dir(packageJSONFile)
+			params = []string{
+				"cyclonedx-bom",
+				path,
+				"--append",
+				"bom.xml",
+			}
+			params = append(params, createBOMConfig...)
+			err := execRunner.RunExecutable("npx", params...)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

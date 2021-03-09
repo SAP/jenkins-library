@@ -268,6 +268,16 @@ func TestGetContextParameterFilters(t *testing.T) {
 		},
 	}
 
+	metadata5 := StepData{
+		Spec: StepSpec{
+			Inputs: StepInputs{
+				Parameters: []StepParameters{
+					{ResourceRef: []ResourceReference{{Type: "vaultSecretFile"}}},
+				},
+			},
+		},
+	}
+
 	t.Run("Secrets and stashes", func(t *testing.T) {
 		filters := metadata1.GetContextParameterFilters()
 		assert.Equal(t, []string{"testSecret1", "testSecret2", "stashContent"}, filters.All, "incorrect filter All")
@@ -300,6 +310,16 @@ func TestGetContextParameterFilters(t *testing.T) {
 
 	t.Run("Vault", func(t *testing.T) {
 		filters := metadata4.GetContextParameterFilters()
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}, filters.All, "incorrect filter All")
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}, filters.General, "incorrect filter General")
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}, filters.Steps, "incorrect filter Steps")
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}, filters.Stages, "incorrect filter Stages")
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}, filters.Parameters, "incorrect filter Parameters")
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}, filters.Env, "incorrect filter Env")
+	})
+
+	t.Run("Vault", func(t *testing.T) {
+		filters := metadata5.GetContextParameterFilters()
 		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}, filters.All, "incorrect filter All")
 		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}, filters.General, "incorrect filter General")
 		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}, filters.Steps, "incorrect filter Steps")
