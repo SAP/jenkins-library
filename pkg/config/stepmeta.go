@@ -361,7 +361,9 @@ func (m *StepData) GetResourceParameters(path, name string) map[string]interface
 	for _, param := range m.Spec.Inputs.Parameters {
 		for _, res := range param.ResourceRef {
 			if res.Name == name {
-				resourceParams[param.Name] = getParameterValue(path, res, param)
+				if val := getParameterValue(path, res, param); val != nil {
+					resourceParams[param.Name] = val
+				}
 			}
 		}
 	}
