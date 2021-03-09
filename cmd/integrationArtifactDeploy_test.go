@@ -144,28 +144,6 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	t.Run("Successfull GetIntegrationArtifactDeployStatus Test", func(t *testing.T) {
-		clientOptions := piperhttp.ClientOptions{}
-		clientOptions.Token = fmt.Sprintf("Bearer %s", "Demo")
-		config := integrationArtifactDeployOptions{
-			Host:                   "https://demo",
-			OAuthTokenProviderURL:  "https://demo/oauth/token",
-			Username:               "demouser",
-			Password:               "******",
-			IntegrationFlowID:      "flow1",
-			IntegrationFlowVersion: "1.0.1",
-			Platform:               "cf",
-		}
-
-		httpClient := httpMockCpis{CPIFunction: "GetIntegrationArtifactDeployStatus", Options: clientOptions, ResponseBody: ``, TestType: "PositiveAndDeployIntegrationDesigntimeArtifactResBody"}
-
-		resp, err := GetIntegrationArtifactDeployStatus(&config, &httpClient)
-
-		assert.Equal(t, "STARTED", resp)
-
-		assert.NoError(t, err)
-	})
-
 	t.Run("Successfull GetIntegrationArtifactDeployError Test", func(t *testing.T) {
 		clientOptions := piperhttp.ClientOptions{}
 		clientOptions.Token = fmt.Sprintf("Bearer %s", "Demo")
