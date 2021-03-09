@@ -34,7 +34,7 @@ newmanRunCommand: "run '${config.newmanCollection}' --environment '${config.newm
 
 ```yaml
 # new run options using golang templating
-runOptions: ["run \{\{.NewmanCollection\}\}", "--environment", "\{\{.Config.NewmanEnvironment\}\}", "--globals", "\{\{.Config.NewmanGlobals\}\}", "--reporters", "junit,html", "--reporter-junit-export", "target/newman/TEST-\{\{.CollectionDisplayName\}\}.xml", "--reporter-html-export", "target/newman/TEST-\{\{.CollectionDisplayName\}\}.html"]
+{{`runOptions: ["run", "{{.NewmanCollection}}", "--environment", "{{.Config.NewmanEnvironment}}", "--globals", "{{.Config.NewmanGlobals}}", "--reporters", "junit,html", "--reporter-junit-export", "target/newman/TEST-{{.CollectionDisplayName}}.xml", "--reporter-html-export", "target/newman/TEST-{{.CollectionDisplayName}}.html"]`}}
 ```
 
 If the following error occurs during the pipeline run, the `newmanRunCommand` is probably still configured with the deprecated groovy template syntax:
@@ -44,7 +44,7 @@ If the following error occurs during the pipeline run, the `newmanRunCommand` is
 
 - **newmanEnvironment and newmanGlobals**:
 
-Referencing `newmanEnvironment` and `newmanGlobals` in the runOptions is redundant now. Both parameters are added to runCommand using `newmanEnvironment` and `newmanGlobals` from config  when configured and not referenced by go templating using `"--environment", "\{\{.Config.NewmanEnvironment\}\}"` and `"--globals", "\{\{.Config.NewmanGlobals\}\}"` as shown above.
+Referencing `newmanEnvironment` and `newmanGlobals` in the runOptions is redundant now. Both parameters are added to runCommand using `newmanEnvironment` and `newmanGlobals` from config  when configured and not referenced by go templating using `"--environment", "{{`{{.Config.NewmanEnvironment}}`}}"` and `"--globals", "{{`{{.Config.NewmanGlobals}}`}}"` as shown above.
 
 ## Example
 
