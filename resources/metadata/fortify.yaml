@@ -29,6 +29,13 @@ spec:
       - name: opensourceConfiguration
         type: stash
     params:
+      - name: additionalScanParameters
+        description: List of additional scan parameters to be used for Fortify sourceanalyzer command execution.
+        type: "[]string"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: authToken
         type: string
         description: "The FortifyToken to use for authentication"
