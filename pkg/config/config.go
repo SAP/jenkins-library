@@ -383,7 +383,7 @@ func filterMap(data map[string]interface{}, filter []string) map[string]interfac
 	}
 
 	for key, value := range data {
-		if len(filter) == 0 || sliceContains(filter, key) {
+		if value != nil && (len(filter) == 0 || sliceContains(filter, key)) {
 			result[key] = value
 		}
 	}
