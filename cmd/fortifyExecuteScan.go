@@ -801,7 +801,7 @@ func scanProject(config *fortifyExecuteScanOptions, command fortifyUtils, buildI
 	}
 	if len(config.AdditionalScanParameters) > 0 {
 		for _, scanParameter := range config.AdditionalScanParameters {
-			scanOptions = append(scanOptions, fmt.Sprintf("%v", scanParameter))
+			scanOptions = append(scanOptions, scanParameter)
 		}
 	}
 	if len(buildLabel) > 0 {
