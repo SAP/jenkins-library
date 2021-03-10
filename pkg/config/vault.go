@@ -19,6 +19,8 @@ var (
 		"vaultBasePath",
 		"vaultPipelineName",
 		"vaultPath",
+		"skipVault",
+		"vaultDisableOverwrite",
 	}
 
 	// VaultSecretFileDirectory holds the directory for the current step run to temporarily store secret files fetched from vault
@@ -29,17 +31,26 @@ var (
 type VaultCredentials struct {
 	AppRoleID       string
 	AppRoleSecretID string
+	VaultToken      string
 }
 
 // vaultClient interface for mocking
 type vaultClient interface {
 	GetKvSecret(string) (map[string]string, error)
+	MustRevokeToken()
+}
+
+func (s *StepConfig) mixinVaultConfig(configs ...map[string]interface{}) {
+	for _, config := range configs {
+		s.mixIn(config, vaultFilter)
+	}
 }
 
 func getVaultClientFromConfig(config StepConfig, creds VaultCredentials) (vaultClient, error) {
 	address, addressOk := config.Config["vaultServerUrl"].(string)
 	// if vault isn't used it's not an error
-	if !addressOk || creds.AppRoleID == "" || creds.AppRoleSecretID == "" {
+
+	if !addressOk || creds.VaultToken == "" && (creds.AppRoleID == "" || creds.AppRoleSecretID == "") {
 		log.Entry().Debug("Skipping fetching secrets from vault since it is not configured")
 		return nil, nil
 	}
@@ -50,21 +61,26 @@ func getVaultClientFromConfig(config StepConfig, creds VaultCredentials) (vaultC
 		log.Entry().Debugf("Using vault namespace %s", namespace)
 	}
 
-	client, err := vault.NewClientWithAppRole(&vault.Config{Config: &api.Config{Address: address}, Namespace: namespace}, creds.AppRoleID, creds.AppRoleSecretID)
+	var client vaultClient
+	var err error
+	clientConfig := &vault.Config{Config: &api.Config{Address: address}, Namespace: namespace}
+	if creds.VaultToken != "" {
+		log.Entry().Debugf("Using Vault Token Authentication")
+		client, err = vault.NewClient(clientConfig, creds.VaultToken)
+	} else {
+		log.Entry().Debugf("Using Vaults AppRole Authentication")
+		client, err = vault.NewClientWithAppRole(clientConfig, creds.AppRoleID, creds.AppRoleSecretID)
+	}
 	if err != nil {
 		return nil, err
 	}
 
 	log.Entry().Infof("Fetching secrets from vault at %s", address)
-	return &client, nil
+	return client, nil
 }
 
 func resolveAllVaultReferences(config *StepConfig, client vaultClient, params []StepParameters) {
 	for _, param := range params {
-		// we don't overwrite secrets that have already been set in any way
-		if _, ok := config.Config[param.Name].(string); ok {
-			continue
-		}
 		if ref := param.GetReference("vaultSecret"); ref != nil {
 			resolveVaultReference(ref, config, client, param)
 		}
@@ -75,6 +91,12 @@ func resolveAllVaultReferences(config *StepConfig, client vaultClient, params []
 }
 
 func resolveVaultReference(ref *ResourceReference, config *StepConfig, client vaultClient, param StepParameters) {
+	vaultDisableOverwrite, _ := config.Config["vaultDisableOverwrite"].(bool)
+	if _, ok := config.Config[param.Name].(string); vaultDisableOverwrite && ok {
+		log.Entry().Debugf("Not fetching '%s' from vault since it has already been set", param.Name)
+		return
+	}
+
 	var secretValue *string
 	for _, vaultPath := range ref.Paths {
 		// it should be possible to configure the root path were the secret is stored

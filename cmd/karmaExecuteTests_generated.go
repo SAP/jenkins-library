@@ -99,11 +99,16 @@ func addKarmaExecuteTestsFlags(cmd *cobra.Command, stepConfig *karmaExecuteTests
 func karmaExecuteTestsMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "karmaExecuteTests",
-			Aliases: []config.Alias{},
+			Name:        "karmaExecuteTests",
+			Aliases:     []config.Alias{},
+			Description: "Executes the Karma test runner",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Resources: []config.StepResources{
+					{Name: "buildDescriptor", Type: "stash"},
+					{Name: "tests", Type: "stash"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "installCommand",
@@ -130,6 +135,12 @@ func karmaExecuteTestsMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 				},
+			},
+			Containers: []config.Container{
+				{Name: "karma", Image: "node:lts-stretch", EnvVars: []config.EnvVar{{Name: "no_proxy", Value: "localhost,selenium,$no_proxy"}, {Name: "NO_PROXY", Value: "localhost,selenium,$NO_PROXY"}}, WorkingDir: "/home/node"},
+			},
+			Sidecars: []config.Container{
+				{Name: "selenium", Image: "selenium/standalone-chrome", EnvVars: []config.EnvVar{{Name: "NO_PROXY", Value: "localhost,karma,$NO_PROXY"}, {Name: "no_proxy", Value: "localhost,selenium,$no_proxy"}}},
 			},
 		},
 	}

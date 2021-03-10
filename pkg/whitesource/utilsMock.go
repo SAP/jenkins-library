@@ -3,15 +3,17 @@
 package whitesource
 
 import (
-	"github.com/SAP/jenkins-library/pkg/mock"
 	"net/http"
 	"os"
+
+	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 func newTestScan(config *ScanOptions) *Scan {
 	return &Scan{
 		AggregateProjectName: config.ProjectName,
-		ProductVersion:       "product-version",
+		ProductVersion:       config.ProductVersion,
 	}
 }
 
@@ -33,18 +35,25 @@ type ScanUtilsMock struct {
 	*mock.ExecMockRunner
 	NpmInstalledModules []NpmInstall
 	DownloadedFiles     []DownloadedFile
+	DownloadError       map[string]error
+	RemoveAllDirs       []string
+	RemoveAllError      map[string]error
 }
 
 // RemoveAll mimics os.RemoveAll().
-func (m *ScanUtilsMock) RemoveAll(_ string) error {
+func (m *ScanUtilsMock) RemoveAll(dir string) error {
 	// Can be removed once implemented in mock.FilesMock.
+	m.RemoveAllDirs = append(m.RemoveAllDirs, dir)
+	if m.RemoveAllError[dir] != nil {
+		return m.RemoveAllError[dir]
+	}
 	return nil
 }
 
 // FindPackageJSONFiles mimics npm.FindPackageJSONFiles() based on the FilesMock setup.
-func (m *ScanUtilsMock) FindPackageJSONFiles(_ *ScanOptions) ([]string, error) {
-	matches, _ := m.Glob("**/package.json")
-	return matches, nil
+func (m *ScanUtilsMock) FindPackageJSONFiles(options *ScanOptions) ([]string, error) {
+	unfilteredMatches, _ := m.Glob("**/package.json")
+	return piperutils.ExcludeFiles(unfilteredMatches, options.BuildDescriptorExcludeList)
 }
 
 // InstallAllNPMDependencies mimics npm.InstallAllNPMDependencies() and records the "npm install".
@@ -58,6 +67,9 @@ func (m *ScanUtilsMock) InstallAllNPMDependencies(_ *ScanOptions, packageJSONs [
 
 // DownloadFile mimics http.Downloader and records the downloaded file.
 func (m *ScanUtilsMock) DownloadFile(url, filename string, _ http.Header, _ []*http.Cookie) error {
+	if m.DownloadError[url] != nil {
+		return m.DownloadError[url]
+	}
 	m.DownloadedFiles = append(m.DownloadedFiles, DownloadedFile{SourceURL: url, FilePath: filename})
 	return nil
 }

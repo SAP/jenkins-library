@@ -99,11 +99,15 @@ func addCloudFoundryCreateSpaceFlags(cmd *cobra.Command, stepConfig *cloudFoundr
 func cloudFoundryCreateSpaceMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "cloudFoundryCreateSpace",
-			Aliases: []config.Alias{},
+			Name:        "cloudFoundryCreateSpace",
+			Aliases:     []config.Alias{},
+			Description: "Creates a user defined space in Cloud Foundry",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Resources: []config.StepResources{
+					{Name: "deployDescriptor", Type: "stash"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "cfApiEndpoint",
@@ -158,6 +162,9 @@ func cloudFoundryCreateSpaceMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "cloudFoundry/space"}},
 					},
 				},
+			},
+			Containers: []config.Container{
+				{Name: "cf", Image: "ppiper/cf-cli:6"},
 			},
 		},
 	}

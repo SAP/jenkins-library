@@ -8,6 +8,7 @@ import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 import util.*
 
+import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.hasItems
 import static org.hamcrest.Matchers.hasKey
 import static org.hamcrest.Matchers.is
@@ -102,7 +103,7 @@ class PiperPipelineStageInitTest extends BasePiperTest {
     @Test
     void testInitBuildToolDoesNotMatchProject() {
 
-        thrown.expectMessage('[piperPipelineStageInit] buildTool configuration \'npm\' does not fit to your project, please set buildTool as genereal setting in your .pipeline/config.yml correctly, see also https://sap.github.io/jenkins-library/configuration/')
+        thrown.expectMessage('[piperPipelineStageInit] buildTool configuration \'npm\' does not fit to your project, please set buildTool as general setting in your .pipeline/config.yml correctly, see also https://sap.github.io/jenkins-library/configuration/')
         jsr.step.piperPipelineStageInit(
             script: nullScript,
             juStabUtils: utils,
@@ -229,24 +230,48 @@ class PiperPipelineStageInitTest extends BasePiperTest {
     }
 
     @Test
-    void testInitWithCloudSdkStashInit() {
-        jsr.step.piperPipelineStageInit(script: nullScript, juStabUtils: utils, initCloudSdkStashSettings: true, buildTool: 'maven')
+    void "Parameter skipCheckout skips the checkout call"() {
+        jsr.step.piperPipelineStageInit(
+            script: nullScript,
+            juStabUtils: utils,
+            buildTool: 'maven',
+            stashSettings: 'com.sap.piper/pipeline/stashSettings.yml',
+            skipCheckout: true,
+            scmInfo: ["dummyScmKey":"dummyScmKey"]
+        )
 
-        assertThat(nullScript.commonPipelineEnvironment.configuration.stageStashes, hasKey('init'))
+        assertThat(stepsCalled, hasItems('setupCommonPipelineEnvironment', 'piperInitRunStageConfiguration', 'artifactPrepareVersion', 'pipelineStashFilesBeforeBuild'))
+        assertThat(stepsCalled, not(hasItem('checkout')))
     }
 
     @Test
-    void testLegacyConfigSettings() {
-        boolean checkForLegacyConfigurationCalled = false
-        helper.registerAllowedMethod('checkForLegacyConfiguration', [Map.class], {
-            checkForLegacyConfigurationCalled = true
-        })
-        nullScript.commonPipelineEnvironment.configuration = [
-            general: [legacyConfigSettings: 'com.sap.piper/pipeline/cloudSdkLegacyConfigSettings.yml']
-        ]
+    void "Try to skip checkout with parameter skipCheckout not boolean throws error"() {
+        thrown.expectMessage('[piperPipelineStageInit] Parameter skipCheckout has to be of type boolean. Instead got \'java.lang.String\'')
 
-        jsr.step.piperPipelineStageInit(script: nullScript, juStabUtils: utils, buildTool: 'maven')
-
-        assertTrue(checkForLegacyConfigurationCalled)
+        jsr.step.piperPipelineStageInit(
+            script: nullScript,
+            juStabUtils: utils,
+            buildTool: 'maven',
+            stashSettings: 'com.sap.piper/pipeline/stashSettings.yml',
+            skipCheckout: "false"
+        )
     }
+
+    @Test
+    void "Try to skip checkout without scmInfo parameter throws error"() {
+        thrown.expectMessage('[piperPipelineStageInit] Need am scmInfo map retrieved from a checkout. ' +
+            'If you want to skip the checkout the scm info needs to be provided by you with parameter scmInfo, ' +
+            'for example as follows:\n' +
+            '  def scmInfo = checkout scm\n' +
+            '  piperPipelineStageInit script:this, skipCheckout: true, scmInfo: scmInfo')
+
+        jsr.step.piperPipelineStageInit(
+            script: nullScript,
+            juStabUtils: utils,
+            buildTool: 'maven',
+            stashSettings: 'com.sap.piper/pipeline/stashSettings.yml',
+            skipCheckout: true
+        )
+    }
+
 }

@@ -255,20 +255,27 @@ func resourceReferenceDetails(resourceRef []config.ResourceReference) string {
 				resourceDetails += fmt.Sprintf("&nbsp;&nbsp;- `%v`%v<br />", alias.Name, ifThenElse(alias.Deprecated, " (**Deprecated**)", ""))
 			}
 			resourceDetails += fmt.Sprintf("&nbsp;&nbsp;id: [`%v`](#%v)<br />", resource.Name, strings.ToLower(resource.Name))
-			resourceDetails += fmt.Sprintf("&nbsp;&nbsp;reference to: `%v`<br /><br />", resource.Param)
+			if resource.Param != "" {
+				resourceDetails += fmt.Sprintf("&nbsp;&nbsp;reference to: `%v`<br />", resource.Param)
+			}
 			continue
 		}
 
-		if resource.Type == "vaultSecret" {
-			resourceDetails += "Vault paths: <br />"
-			resourceDetails += "<ul>"
-			for _, path := range resource.Paths[0:1] {
-				resourceDetails += fmt.Sprintf("<li>`%s`</li>", path)
-			}
-			resourceDetails += "</ul>"
-		}
+		resourceDetails = addVaultResourceDetails(resource, resourceDetails)
 	}
 
+	return resourceDetails
+}
+
+func addVaultResourceDetails(resource config.ResourceReference, resourceDetails string) string {
+	if resource.Type == "vaultSecret" {
+		resourceDetails += "<br/>Vault paths: <br />"
+		resourceDetails += "<ul>"
+		for _, path := range resource.Paths[0:1] {
+			resourceDetails += fmt.Sprintf("<li>`%s`</li>", path)
+		}
+		resourceDetails += "</ul>"
+	}
 	return resourceDetails
 }
 

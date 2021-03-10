@@ -97,8 +97,9 @@ func addAbapAddonAssemblyKitPublishTargetVectorFlags(cmd *cobra.Command, stepCon
 func abapAddonAssemblyKitPublishTargetVectorMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "abapAddonAssemblyKitPublishTargetVector",
-			Aliases: []config.Alias{},
+			Name:        "abapAddonAssemblyKitPublishTargetVector",
+			Aliases:     []config.Alias{},
+			Description: "This step triggers the publication of the Target Vector according to the specified scope.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{

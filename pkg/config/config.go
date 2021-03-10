@@ -185,6 +185,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		stepConfig.mixIn(def.General, filters.General)
 		stepConfig.mixIn(def.Steps[stepName], filters.Steps)
 		stepConfig.mixIn(def.Stages[stageName], filters.Steps)
+		stepConfig.mixinVaultConfig(def.General, def.Steps[stepName], def.Stages[stageName])
 
 		// process hook configuration - this is only supported via defaults
 		if stepConfig.HookConfig == nil {
@@ -229,18 +230,22 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 
 	if verbose, ok := stepConfig.Config["verbose"].(bool); ok && verbose {
 		log.SetVerbose(verbose)
-	} else if !ok {
+	} else if !ok && stepConfig.Config["verbose"] != nil {
 		log.Entry().Warnf("invalid value for parameter verbose: '%v'", stepConfig.Config["verbose"])
 	}
 
-	stepConfig.mixIn(c.General, vaultFilter)
-	// fetch secrets from vault
-	vaultClient, err := getVaultClientFromConfig(stepConfig, c.vaultCredentials)
-	if err != nil {
-		return StepConfig{}, err
-	}
-	if vaultClient != nil {
-		resolveAllVaultReferences(&stepConfig, vaultClient, parameters)
+	stepConfig.mixinVaultConfig(c.General, c.Steps[stepName], c.Stages[stageName])
+	// check whether vault should be skipped
+	if skip, ok := stepConfig.Config["skipVault"].(bool); !ok || !skip {
+		// fetch secrets from vault
+		vaultClient, err := getVaultClientFromConfig(stepConfig, c.vaultCredentials)
+		if err != nil {
+			return StepConfig{}, err
+		}
+		if vaultClient != nil {
+			defer vaultClient.MustRevokeToken()
+			resolveAllVaultReferences(&stepConfig, vaultClient, parameters)
+		}
 	}
 
 	// finally do the condition evaluation post processing
@@ -261,11 +266,14 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	return stepConfig, nil
 }
 
-// SetVaultCredentials sets the appRoleID and the appRoleSecretID to load additional configuration from vault
-func (c *Config) SetVaultCredentials(appRoleID, appRoleSecretID string) {
+// SetVaultCredentials sets the appRoleID and the appRoleSecretID or the vaultTokento load additional
+//configuration from vault
+// Either appRoleID and appRoleSecretID or vaultToken must be specified.
+func (c *Config) SetVaultCredentials(appRoleID, appRoleSecretID string, vaultToken string) {
 	c.vaultCredentials = VaultCredentials{
 		AppRoleID:       appRoleID,
 		AppRoleSecretID: appRoleSecretID,
+		VaultToken:      vaultToken,
 	}
 }
 
@@ -376,7 +384,7 @@ func filterMap(data map[string]interface{}, filter []string) map[string]interfac
 	}
 
 	for key, value := range data {
-		if len(filter) == 0 || sliceContains(filter, key) {
+		if value != nil && (len(filter) == 0 || sliceContains(filter, key)) {
 			result[key] = value
 		}
 	}

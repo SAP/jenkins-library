@@ -167,3 +167,15 @@ func TestVersionFromBaseImageTag(t *testing.T) {
 		assert.Equal(t, test.expected, test.docker.versionFromBaseImageTag())
 	}
 }
+
+func TestGetCoordinates(t *testing.T) {
+	docker := Docker{
+		readFile:      func(filename string) ([]byte, error) { return []byte("FROM test:1.2.3"), nil },
+		versionSource: "FROM",
+		options:       &Options{DockerImage: "my/test/image:tag"},
+	}
+
+	coordinates, err := docker.GetCoordinates()
+	assert.NoError(t, err)
+	assert.Equal(t, Coordinates{GroupID: "", ArtifactID: "my_test_image_tag", Version: ""}, coordinates)
+}

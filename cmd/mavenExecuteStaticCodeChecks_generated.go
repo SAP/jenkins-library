@@ -113,8 +113,9 @@ func addMavenExecuteStaticCodeChecksFlags(cmd *cobra.Command, stepConfig *mavenE
 func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "mavenExecuteStaticCodeChecks",
-			Aliases: []config.Alias{{Name: "mavenExecute", Deprecated: false}},
+			Name:        "mavenExecuteStaticCodeChecks",
+			Aliases:     []config.Alias{{Name: "mavenExecute", Deprecated: false}},
+			Description: "Execute static code checks for Maven based projects. The plugins SpotBugs and PMD are used.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -224,6 +225,9 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 				},
+			},
+			Containers: []config.Container{
+				{Name: "mvn", Image: "maven:3.6-jdk-8"},
 			},
 		},
 	}

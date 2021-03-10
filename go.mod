@@ -20,6 +20,7 @@ require (
 	github.com/frankban/quicktest v1.10.0 // indirect
 	github.com/getsentry/sentry-go v0.7.0
 	github.com/ghodss/yaml v1.0.0
+	github.com/go-git/go-billy/v5 v5.0.0
 	github.com/go-git/go-git/v5 v5.1.0
 	github.com/go-openapi/runtime v0.19.22
 	github.com/go-openapi/spec v0.19.9 // indirect
@@ -37,14 +38,17 @@ require (
 	github.com/hashicorp/vault/api v1.0.4
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/imdario/mergo v0.3.11 // indirect
+	github.com/jarcoal/httpmock v1.0.8
 	github.com/magiconair/properties v1.8.4
+	github.com/magicsong/color-glog v0.0.1 // indirect
+	github.com/magicsong/sonargo v0.0.1
 	github.com/mailru/easyjson v0.7.6 // indirect
 	github.com/mitchellh/mapstructure v1.3.3 // indirect
 	github.com/mitchellh/reflectwalk v1.0.1 // indirect
 	github.com/motemen/go-nuts v0.0.0-20200601065735-3df31f16cb2f
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/pierrec/lz4 v2.5.2+incompatible // indirect
-	github.com/piper-validation/fortify-client-go v0.0.0-20200206215926-532b5b150d22
+	github.com/piper-validation/fortify-client-go v0.0.0-20210114140201-1261216783c6
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.7.0
 	github.com/smartystreets/assertions v1.0.0 // indirect

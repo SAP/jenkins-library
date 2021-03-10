@@ -169,9 +169,14 @@ func testStepMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:    "testStep",
 			Aliases: []config.Alias{{Name: "testStepAlias", Deprecated: true},},
+			Description: "Test description",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Resources: []config.StepResources{
+					{Name: "stashName",Type: "stash",
+					},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:      "param0",
@@ -196,6 +201,27 @@ func testStepMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+					},
+				},
+			},
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{
+						Name: "commonPipelineEnvironment",
+						Type: "piperEnvironment",
+						Parameters: []map[string]interface{}{
+							{"Name": "artifactVersion"},
+							{"Name": "git/commitId"},
+							{"Name": "git/branch"},
+							{"Name": "custom/customList"},
+						},
+					},
+					{
+						Name: "influxTest",
+						Type: "influx",
+						Parameters: []map[string]interface{}{
+							{"Name": "m1"},{"fields": []map[string]string{ {"name": "f1"}, } },{"tags": []map[string]string{ {"name": "t1"}, } },
+						},
 					},
 				},
 			},

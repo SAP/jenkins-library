@@ -2,7 +2,9 @@ package http
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -13,10 +15,85 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/jarcoal/httpmock"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+
+	"github.com/SAP/jenkins-library/pkg/log"
 )
+
+func TestSend(t *testing.T) {
+	testURL := "https://example.org"
+
+	request, err := http.NewRequest(http.MethodGet, testURL, nil)
+	require.NoError(t, err)
+
+	t.Run("success", func(t *testing.T) {
+		// given
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
+		httpmock.RegisterResponder(http.MethodGet, testURL, httpmock.NewStringResponder(200, `OK`))
+		client := Client{}
+		client.SetOptions(ClientOptions{UseDefaultTransport: true})
+		// when
+		response, err := client.Send(request)
+		// then
+		assert.NoError(t, err)
+		assert.NotNil(t, response)
+	})
+	t.Run("failure", func(t *testing.T) {
+		// given
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
+		httpmock.RegisterResponder(http.MethodGet, testURL, httpmock.NewErrorResponder(errors.New("failure")))
+		client := Client{}
+		client.SetOptions(ClientOptions{UseDefaultTransport: true})
+		// when
+		response, err := client.Send(request)
+		// then
+		assert.Error(t, err)
+		assert.Nil(t, response)
+	})
+}
+
+func TestDefaultTransport(t *testing.T) {
+	const testURL string = "https://localhost/api"
+
+	t.Run("with default transport", func(t *testing.T) {
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
+		httpmock.RegisterResponder(http.MethodGet, testURL, httpmock.NewStringResponder(200, `OK`))
+
+		client := Client{}
+		client.SetOptions(ClientOptions{UseDefaultTransport: true})
+		// test
+		response, err := client.SendRequest("GET", testURL, nil, nil, nil)
+		// assert
+		assert.NoError(t, err)
+		// assert.NotEmpty(t, count)
+		assert.Equal(t, 1, httpmock.GetTotalCallCount(), "unexpected number of requests")
+		content, err := ioutil.ReadAll(response.Body)
+		defer response.Body.Close()
+		require.NoError(t, err, "unexpected error while reading response body")
+		assert.Equal(t, "OK", string(content), "unexpected response content")
+	})
+	t.Run("with custom transport", func(t *testing.T) {
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
+		httpmock.RegisterResponder(http.MethodGet, testURL, httpmock.NewStringResponder(200, `OK`))
+
+		client := Client{}
+		// test
+		_, err := client.SendRequest("GET", testURL, nil, nil, nil)
+		// assert
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "connection")
+		assert.Contains(t, err.Error(), "refused")
+		assert.Equal(t, 0, httpmock.GetTotalCallCount(), "unexpected number of requests")
+	})
+}
 
 func TestSendRequest(t *testing.T) {
 	var passedHeaders = map[string][]string{}
@@ -39,6 +116,10 @@ func TestSendRequest(t *testing.T) {
 	// Close the server when test finishes
 	defer server.Close()
 
+	oldLogLevel := logrus.GetLevel()
+	defer logrus.SetLevel(oldLogLevel)
+	logrus.SetLevel(logrus.DebugLevel)
+
 	tt := []struct {
 		client   Client
 		method   string
@@ -55,6 +136,11 @@ func TestSendRequest(t *testing.T) {
 
 	for key, test := range tt {
 		t.Run(fmt.Sprintf("Row %v", key+1), func(t *testing.T) {
+			oldLogOutput := test.client.logger.Logger.Out
+			defer func() { test.client.logger.Logger.Out = oldLogOutput }()
+			logBuffer := new(bytes.Buffer)
+			test.client.logger.Logger.Out = logBuffer
+
 			response, err := test.client.SendRequest("GET", server.URL, test.body, test.header, test.cookies)
 			assert.NoError(t, err, "Error occurred but none expected")
 			content, err := ioutil.ReadAll(response.Body)
@@ -70,12 +156,18 @@ func TestSendRequest(t *testing.T) {
 				assert.Equal(t, test.cookies, passedCookies, "Passed cookies not correct")
 			}
 
-			if len(test.client.username) > 0 {
+			if len(test.client.username) > 0 || len(test.client.password) > 0 {
+				if len(test.client.username) == 0 || len(test.client.password) == 0 {
+					//"User and password must both be provided"
+					t.Fail()
+				}
 				assert.Equal(t, test.client.username, passedUsername)
-			}
-
-			if len(test.client.password) > 0 {
 				assert.Equal(t, test.client.password, passedPassword)
+
+				log := fmt.Sprintf("%s", logBuffer)
+				credentialsEncoded := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", test.client.username, test.client.password)))
+				assert.NotContains(t, log, fmt.Sprintf("Authorization:[Basic %s]", credentialsEncoded))
+				assert.Contains(t, log, "Authorization:[<set>]")
 			}
 		})
 	}
@@ -307,10 +399,20 @@ func TestMaxRetries(t *testing.T) {
 	testCases := []struct {
 		client       Client
 		countedCalls int
+		method       string
+		responseCode int
+		errorText    string
+		timeout      bool
 	}{
-		{client: Client{maxRetries: 0}, countedCalls: 1},
-		{client: Client{maxRetries: 2}, countedCalls: 3},
-		{client: Client{maxRetries: 3}, countedCalls: 4},
+		{client: Client{maxRetries: 1, useDefaultTransport: true, transportSkipVerification: true, transportTimeout: 1 * time.Microsecond}, responseCode: 666, timeout: true, countedCalls: 2, method: http.MethodPost, errorText: "timeout awaiting response headers"},
+		{client: Client{maxRetries: 0}, countedCalls: 1, method: http.MethodGet, responseCode: 500, errorText: "Internal Server Error"},
+		{client: Client{maxRetries: 2}, countedCalls: 3, method: http.MethodGet, responseCode: 500, errorText: "Internal Server Error"},
+		{client: Client{maxRetries: 3}, countedCalls: 4, method: http.MethodPost, responseCode: 503, errorText: "Service Unavailable"},
+		{client: Client{maxRetries: 1}, countedCalls: 2, method: http.MethodPut, responseCode: 506, errorText: "Variant Also Negotiates"},
+		{client: Client{maxRetries: 1}, countedCalls: 2, method: http.MethodHead, responseCode: 502, errorText: "Bad Gateway"},
+		{client: Client{maxRetries: 3}, countedCalls: 1, method: http.MethodHead, responseCode: 404, errorText: "Not Found"},
+		{client: Client{maxRetries: 3}, countedCalls: 1, method: http.MethodHead, responseCode: 401, errorText: "Authentication Error"},
+		{client: Client{maxRetries: 3}, countedCalls: 1, method: http.MethodHead, responseCode: 403, errorText: "Authorization Error"},
 	}
 
 	for _, testCase := range testCases {
@@ -318,14 +420,17 @@ func TestMaxRetries(t *testing.T) {
 		count := 0
 		svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			count++
-			w.WriteHeader(500)
+			if testCase.timeout && count == 0 {
+				time.Sleep(3 * time.Microsecond)
+			}
+			w.WriteHeader(testCase.responseCode)
 		}))
 		defer svr.Close()
 		// test
-		_, err := testCase.client.SendRequest(http.MethodGet, svr.URL, &bytes.Buffer{}, nil, nil)
+		_, err := testCase.client.SendRequest(testCase.method, svr.URL, &bytes.Buffer{}, nil, nil)
 		// assert
-		assert.Error(t, err)
-		assert.Equal(t, testCase.countedCalls, count)
+		assert.Error(t, err, fmt.Sprintf("%v: %v", testCase.errorText, "Expected error but did not detect one"))
+		assert.Equal(t, testCase.countedCalls, count, fmt.Sprintf("%v: %v", testCase.errorText, "Number of invocations mismatch"))
 	}
 }
 

@@ -121,11 +121,15 @@ func addCloudFoundryCreateServiceFlags(cmd *cobra.Command, stepConfig *cloudFoun
 func cloudFoundryCreateServiceMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "cloudFoundryCreateService",
-			Aliases: []config.Alias{},
+			Name:        "cloudFoundryCreateService",
+			Aliases:     []config.Alias{},
+			Description: "Creates one or multiple Services in Cloud Foundry",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Resources: []config.StepResources{
+					{Name: "deployDescriptor", Type: "stash"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "cfApiEndpoint",
@@ -146,7 +150,7 @@ func cloudFoundryCreateServiceMetadata() config.StepData {
 
 							{
 								Name:  "",
-								Paths: []string{"$(vaultPath)/cloudfoundry-$(cfOrg)-$(cfSpace)", "$(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(cfOrg)-$(cfSpace)", "$(vaultBasePath)/GROUP-SECRETS/cloudfoundry-$(cfOrg)-$(cfSpace)"},
+								Paths: []string{"$(vaultPath)/cloudfoundry-$(org)-$(space)", "$(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(org)-$(space)", "$(vaultBasePath)/GROUP-SECRETS/cloudfoundry-$(org)-$(space)"},
 								Type:  "vaultSecret",
 							},
 						},
@@ -166,7 +170,7 @@ func cloudFoundryCreateServiceMetadata() config.StepData {
 
 							{
 								Name:  "",
-								Paths: []string{"$(vaultPath)/cloudfoundry-$(cfOrg)-$(cfSpace)", "$(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(cfOrg)-$(cfSpace)", "$(vaultBasePath)/GROUP-SECRETS/cloudfoundry-$(cfOrg)-$(cfSpace)"},
+								Paths: []string{"$(vaultPath)/cloudfoundry-$(org)-$(space)", "$(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(org)-$(space)", "$(vaultBasePath)/GROUP-SECRETS/cloudfoundry-$(org)-$(space)"},
 								Type:  "vaultSecret",
 							},
 						},
@@ -264,6 +268,9 @@ func cloudFoundryCreateServiceMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "cloudFoundry/manifestVariablesFiles"}, {Name: "cfManifestVariablesFiles"}},
 					},
 				},
+			},
+			Containers: []config.Container{
+				{Name: "cf", Image: "ppiper/cf-cli:7"},
 			},
 		},
 	}
