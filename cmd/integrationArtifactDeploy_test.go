@@ -118,7 +118,7 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 
 		httpClient := httpMockCpis{CPIFunction: "GetIntegrationArtifactDeployStatus", Options: clientOptions, ResponseBody: ``, TestType: "PositiveAndDeployIntegrationDesigntimeArtifactResBody"}
 
-		resp, err := GetIntegrationArtifactDeployStatus(&config, &httpClient)
+		resp, err := getIntegrationArtifactDeployStatus(&config, &httpClient)
 
 		assert.Equal(t, "STARTED", resp)
 
@@ -140,7 +140,7 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 
 		httpClient := httpMockCpis{CPIFunction: "GetIntegrationArtifactDeployErrorDetails", Options: clientOptions, ResponseBody: ``, TestType: "PositiveAndGetDeployedIntegrationDesigntimeArtifactErrorResBody"}
 
-		resp, err := GetIntegrationArtifactDeployError(&config, &httpClient)
+		resp, err := getIntegrationArtifactDeployError(&config, &httpClient)
 
 		assert.Equal(t, "{\"message\": \"java.lang.IllegalStateException: No credentials for 'smtp' found\"}", resp)
 

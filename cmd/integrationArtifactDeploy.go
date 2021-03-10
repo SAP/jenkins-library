@@ -94,8 +94,8 @@ func runIntegrationArtifactDeploy(config *integrationArtifactDeployOptions, tele
 		log.Entry().
 			WithField("IntegrationFlowID", config.IntegrationFlowID).
 			Info("successfully deployed into CPI runtime")
-		error := PollIFlowDeploymentStatus(retryCount, config, httpClient)
-		return error
+		deploymentError := pollIFlowDeploymentStatus(retryCount, config, httpClient)
+		return deploymentError
 	}
 	responseBody, readErr := ioutil.ReadAll(deployResp.Body)
 
@@ -106,13 +106,13 @@ func runIntegrationArtifactDeploy(config *integrationArtifactDeployOptions, tele
 	return errors.Errorf("integration flow deployment failed, response Status code: %v", deployResp.StatusCode)
 }
 
-//PollIFlowDeploymentStatus - Poll the integration flow deployment status,retrun status or error details
-func PollIFlowDeploymentStatus(retryCount int, config *integrationArtifactDeployOptions, httpClient piperhttp.Sender) error {
+//pollIFlowDeploymentStatus - Poll the integration flow deployment status, return status or error details
+func pollIFlowDeploymentStatus(retryCount int, config *integrationArtifactDeployOptions, httpClient piperhttp.Sender) error {
 
 	if retryCount <= 0 {
 		return errors.New("failed to start integration artifact after retrying several times")
 	}
-	deployStatus, err := GetIntegrationArtifactDeployStatus(config, httpClient)
+	deployStatus, err := getIntegrationArtifactDeployStatus(config, httpClient)
 	if err != nil {
 		return err
 	}
@@ -124,7 +124,7 @@ func PollIFlowDeploymentStatus(retryCount int, config *integrationArtifactDeploy
 		sleepTime := int(retryCount * 3)
 		time.Sleep(time.Duration(sleepTime) * time.Second)
 		retryCount--
-		return PollIFlowDeploymentStatus(retryCount, config, httpClient)
+		return pollIFlowDeploymentStatus(retryCount, config, httpClient)
 	}
 
 	//if artifact started, then just return
@@ -134,7 +134,7 @@ func PollIFlowDeploymentStatus(retryCount int, config *integrationArtifactDeploy
 
 	//if error return immediately with error details
 	if deployStatus == "ERROR" {
-		resp, err := GetIntegrationArtifactDeployError(config, httpClient)
+		resp, err := getIntegrationArtifactDeployError(config, httpClient)
 		if err != nil {
 			return err
 		}
@@ -143,8 +143,8 @@ func PollIFlowDeploymentStatus(retryCount int, config *integrationArtifactDeploy
 	return nil
 }
 
-//GetHTTPErrorMessage -Return HTTP failure message
-func GetHTTPErrorMessage(httpErr error, response *http.Response, httpMethod, statusURL string) (string, error) {
+//GetHTTPErrorMessage - Return HTTP failure message
+func getHTTPErrorMessage(httpErr error, response *http.Response, httpMethod, statusURL string) (string, error) {
 	responseBody, readErr := ioutil.ReadAll(response.Body)
 	if readErr != nil {
 		return "", errors.Wrapf(readErr, "HTTP response body could not be read, response status code: %v", response.StatusCode)
@@ -153,8 +153,8 @@ func GetHTTPErrorMessage(httpErr error, response *http.Response, httpMethod, sta
 	return "", errors.Wrapf(httpErr, "HTTP %v request to %v failed with error: %v", httpMethod, statusURL, responseBody)
 }
 
-//GetIntegrationArtifactDeployStatus - Get integration artifact Deploy Status
-func GetIntegrationArtifactDeployStatus(config *integrationArtifactDeployOptions, httpClient piperhttp.Sender) (string, error) {
+//getIntegrationArtifactDeployStatus - Get integration artifact Deploy Status
+func getIntegrationArtifactDeployStatus(config *integrationArtifactDeployOptions, httpClient piperhttp.Sender) (string, error) {
 	httpMethod := "GET"
 	header := make(http.Header)
 	header.Add("content-type", "application/json")
@@ -187,13 +187,13 @@ func GetIntegrationArtifactDeployStatus(config *integrationArtifactDeployOptions
 		return deployStatus, nil
 	}
 	if httpErr != nil {
-		return GetHTTPErrorMessage(httpErr, deployStatusResp, httpMethod, deployStatusURL)
+		return getHTTPErrorMessage(httpErr, deployStatusResp, httpMethod, deployStatusURL)
 	}
 	return "", errors.Errorf("failed to get Integration Flow artefact runtime status, response Status code: %v", deployStatusResp.StatusCode)
 }
 
-//GetIntegrationArtifactDeployError - Get integration artifact deploy error details
-func GetIntegrationArtifactDeployError(config *integrationArtifactDeployOptions, httpClient piperhttp.Sender) (string, error) {
+//getIntegrationArtifactDeployError - Get integration artifact deploy error details
+func getIntegrationArtifactDeployError(config *integrationArtifactDeployOptions, httpClient piperhttp.Sender) (string, error) {
 	httpMethod := "GET"
 	header := make(http.Header)
 	header.Add("content-type", "application/json")
@@ -221,8 +221,7 @@ func GetIntegrationArtifactDeployError(config *integrationArtifactDeployOptions,
 		return errorDetails, nil
 	}
 	if httpErr != nil {
-
-		return GetHTTPErrorMessage(httpErr, errorStatusResp, httpMethod, errorStatusURL)
+		return getHTTPErrorMessage(httpErr, errorStatusResp, httpMethod, errorStatusURL)
 	}
 	return "", errors.Errorf("failed to get Integration Flow artefact deploy error details, response Status code: %v", errorStatusResp.StatusCode)
 }
