@@ -248,7 +248,7 @@ spec:
             fields:
               - name: high_issues
                 type: int
-              - name: high_not_false_positive
+              - name: high_not_false_postive
                 type: int
               - name: high_not_exploitable
                 type: int
@@ -262,7 +262,7 @@ spec:
                 type: int
               - name: medium_issues
                 type: int
-              - name: medium_not_false_positive
+              - name: medium_not_false_postive
                 type: int
               - name: medium_not_exploitable
                 type: int
@@ -276,7 +276,7 @@ spec:
                 type: int
               - name: low_issues
                 type: int
-              - name: low_not_false_positive
+              - name: low_not_false_postive
                 type: int
               - name: low_not_exploitable
                 type: int
@@ -290,7 +290,7 @@ spec:
                 type: int
               - name: information_issues
                 type: int
-              - name: information_not_false_positive
+              - name: information_not_false_postive
                 type: int
               - name: information_not_exploitable
                 type: int
