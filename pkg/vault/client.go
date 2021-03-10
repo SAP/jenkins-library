@@ -217,6 +217,21 @@ func (v *Client) GetAppRoleSecretIDTtl(secretID, roleName string) (time.Duration
 	return ttl, nil
 }
 
+// RevokeToken revokes the token which is currently used.
+// The client can't be used anymore after this function was called.
+func (v Client) RevokeToken() error {
+	_, err := v.lClient.Write("auth/token/revoke-self", map[string]interface{}{})
+	return err
+}
+
+// MustRevokeToken same as RevokeToken but the programm is terminated with an error if this fails.
+// Should be used in defer statements only.
+func (v Client) MustRevokeToken() {
+	if err := v.RevokeToken(); err != nil {
+		log.Entry().WithError(err).Fatal("Could not revoke token")
+	}
+}
+
 // GetAppRoleName returns the AppRole role name which was used to authenticate.
 // Returns "" when AppRole authentication wasn't used
 func (v *Client) GetAppRoleName() (string, error) {

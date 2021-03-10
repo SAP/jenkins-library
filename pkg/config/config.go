@@ -243,6 +243,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 			return StepConfig{}, err
 		}
 		if vaultClient != nil {
+			defer vaultClient.MustRevokeToken()
 			resolveAllVaultReferences(&stepConfig, vaultClient, parameters)
 		}
 	}
@@ -383,7 +384,7 @@ func filterMap(data map[string]interface{}, filter []string) map[string]interfac
 	}
 
 	for key, value := range data {
-		if len(filter) == 0 || sliceContains(filter, key) {
+		if value != nil && (len(filter) == 0 || sliceContains(filter, key)) {
 			result[key] = value
 		}
 	}

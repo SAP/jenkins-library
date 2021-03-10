@@ -221,9 +221,15 @@ spec:
         params:
           - name: protecode_data
             fields:
-              - name: historical_vulnerabilities
-              - name: triaged_vulnerabilities
               - name: excluded_vulnerabilities
-              - name: minor_vulnerabilities
+                type: int
+              - name: historical_vulnerabilities
+                type: int
               - name: major_vulnerabilities
+                type: int
+              - name: minor_vulnerabilities
+                type: int
+              - name: triaged_vulnerabilities
+                type: int
               - name: vulnerabilities
+                type: int
