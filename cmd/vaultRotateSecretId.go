@@ -37,12 +37,17 @@ func (v vaultRotateSecretIDUtilsBundle) UpdateSecretInStore(config *vaultRotateS
 
 func vaultRotateSecretId(config vaultRotateSecretIdOptions, telemetryData *telemetry.CustomData) {
 
-	client, err := vault.NewClientWithAppRole(&vault.Config{
+	vaultConfig := &vault.Config{
 		Config: &api.Config{
 			Address: config.VaultServerURL,
 		},
 		Namespace: config.VaultNamespace,
-	}, GeneralConfig.VaultRoleID, GeneralConfig.VaultRoleSecretID)
+	}
+	client, err := vault.NewClientWithAppRole(vaultConfig, GeneralConfig.VaultRoleID, GeneralConfig.VaultRoleSecretID)
+	if err != nil {
+		log.Entry().WithError(err).Fatal("could not create vault client")
+	}
+	defer client.MustRevokeToken()
 
 	utils := vaultRotateSecretIDUtilsBundle{
 		Client:     &client,
