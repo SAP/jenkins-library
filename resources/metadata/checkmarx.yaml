@@ -302,6 +302,10 @@ spec:
                 type: int
               - name: information_to_verify
                 type: int
+              - name: lines_of_code_scanned
+                type: int
+              - name: files_scanned
+                type: int
               - name: initiator_name
               - name: owner
               - name: scan_id
@@ -311,8 +315,6 @@ spec:
               - name: team_full_path_on_report_date
               - name: scan_start
               - name: scan_time
-              - name: lines_of_code_scanned
-              - name: files_scanned
               - name: checkmarx_version
               - name: scan_type
               - name: preset
