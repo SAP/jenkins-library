@@ -471,6 +471,19 @@ spec:
         params:
           - name: custom/whitesourceProjectNames
             type: "[]string"
+      - name: influx
+        type: influx
+        params:
+          - name: whitesource_data
+            fields:
+              - name: vulnerabilities
+                type: int
+              - name: major_vulnerabilities
+                type: int
+              - name: minor_vulnerabilities
+                type: int
+              - name: policy_violations
+                type: int
   containers:
     - image: buildpack-deps:stretch-curl
       workingDir: /tmp
