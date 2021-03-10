@@ -15,7 +15,7 @@ metadata:
     To upload MTA projects, you need a mta.yaml in the project root and set the mavenRepository option.
     To upload npm projects, you need a package.json in the project root and set the npmRepository option.
 
-    If the format option is set, the url can contain the full path including the repository Id and, then the npmRepository or the mavenRepository are not necessary.
+    If the 'format' option is set, the 'URL' can contain the full path including the repository ID. Providing the 'npmRepository' or the 'mavenRepository' parameter(s) is not necessary.
 
     npm:
     Publishing npm projects makes use of npm's "publish" command.
@@ -62,7 +62,7 @@ spec:
             param: custom/repositoryFormat
       - name: url
         type: string
-        description: URL of the nexus. The scheme part of the URL will not be considered, because only http is supported.
+        description: URL of the nexus. The scheme part of the URL will not be considered, because only http is supported. If the 'format' option is set, the 'URL' can contain the full path including the repository ID and providing the 'npmRepository' or the 'mavenRepository' parameter(s) is not necessary.
         scope:
           - PARAMETERS
           - STAGES
