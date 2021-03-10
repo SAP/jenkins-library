@@ -5,6 +5,7 @@ import com.sap.piper.JenkinsUtils
 import com.sap.piper.MapUtils
 import com.sap.piper.PiperGoUtils
 import com.sap.piper.Utils
+import com.sap.piper.analytics.InfluxData
 import groovy.transform.Field
 
 import static com.sap.piper.Prerequisites.checkScript
@@ -65,13 +66,17 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
             dockerWrapper(script, stepName, config) {
                 handleErrorDetails(stepName) {
                     script.commonPipelineEnvironment.writeToDisk(script)
-                    try {
-                        credentialWrapper(config, credentialInfo) {
-                            sh "${piperGoPath} ${stepName}${defaultConfigArgs}${customConfigArg}"
+                    try{
+                        try {
+                            credentialWrapper(config, credentialInfo) {
+                                sh "${piperGoPath} ${stepName}${defaultConfigArgs}${customConfigArg}"
+                            }
+                        } finally {
+                            jenkinsUtils.handleStepResults(stepName, failOnMissingReports, failOnMissingLinks)
+                            script.commonPipelineEnvironment.readFromDisk(script)
                         }
-                    } finally {
-                        jenkinsUtils.handleStepResults(stepName, failOnMissingReports, failOnMissingLinks)
-                        script.commonPipelineEnvironment.readFromDisk(script)
+                    }finally{
+                        InfluxData.readFromDisk(script)
                     }
                 }
             }
