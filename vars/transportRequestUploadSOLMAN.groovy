@@ -15,4 +15,3 @@ void call(Map parameters = [:]) {
     ]
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
 }
-
