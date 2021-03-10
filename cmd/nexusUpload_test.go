@@ -386,7 +386,7 @@ func TestRunNexusUpload(t *testing.T) {
 		}
 
 		err := runNexusUpload(utils, &uploader, &options)
-		assert.EqualError(t, err, "none of the parameters 'mavenRepository' and 'npmRepository' are configured")
+		assert.EqualError(t, err, "none of the parameters 'mavenRepository' and 'npmRepository' are configured, or 'format' should be set if the 'url' already contains the repository ID")
 	})
 	t.Run("Test uploading simple npm project", func(t *testing.T) {
 		t.Parallel()
