@@ -103,7 +103,7 @@ func runNexusUpload(utils nexusUploadUtils, uploader nexus.Uploader, options *ne
 
 	if !performMavenUpload && !performNpmUpload {
 		if options.Format == "" {
-			return fmt.Errorf("none of the parameters 'mavenRepository' and 'npmRepository' are configured, or 'format' should be set if the 'url' already contain the repository ID")
+			return fmt.Errorf("none of the parameters 'mavenRepository' and 'npmRepository' are configured, or 'format' should be set if the 'url' already contains the repository ID")
 		}
 		if options.Format == "maven" {
 			performMavenUpload = true
