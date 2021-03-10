@@ -620,7 +620,7 @@ func TestGetResourceParameters(t *testing.T) {
 					{Name: "param1", ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: "envparam1"}}, Type: "noString"},
 					{Name: "param4", ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: "jsonKeyValueString"}}, Type: "string"},
 				}}}},
-			expected: map[string]interface{}{"param1": interface{}(nil), "param4": "{\"key\":\"valueString\"}"},
+			expected: map[string]interface{}{"param4": "{\"key\":\"valueString\"}"},
 		},
 	}
 
