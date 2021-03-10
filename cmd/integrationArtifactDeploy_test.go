@@ -103,25 +103,6 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 		assert.EqualError(t, err, "{\"message\": \"java.lang.IllegalStateException: No credentials for 'smtp' found\"}")
 	})
 
-	t.Run("Successfull DeployIntegrationArtifact Test", func(t *testing.T) {
-
-		config := integrationArtifactDeployOptions{
-			Host:                   "https://demo",
-			OAuthTokenProviderURL:  "https://demo/oauth/token",
-			Username:               "demouser",
-			Password:               "******",
-			IntegrationFlowID:      "flow1",
-			IntegrationFlowVersion: "1.0.1",
-			Platform:               "cf",
-		}
-
-		httpClient := httpMockCpis{CPIFunction: "", ResponseBody: ``, TestType: "PositiveAndDeployIntegrationDesigntimeArtifactResBody"}
-
-		err := DeployIntegrationArtifact(&config, &httpClient)
-
-		assert.NoError(t, err)
-	})
-
 	t.Run("Successfull GetIntegrationArtifactDeployStatus Test", func(t *testing.T) {
 		clientOptions := piperhttp.ClientOptions{}
 		clientOptions.Token = fmt.Sprintf("Bearer %s", "Demo")

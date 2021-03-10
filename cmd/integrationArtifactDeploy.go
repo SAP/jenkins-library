@@ -65,12 +65,6 @@ func integrationArtifactDeploy(config integrationArtifactDeployOptions, telemetr
 }
 
 func runIntegrationArtifactDeploy(config *integrationArtifactDeployOptions, telemetryData *telemetry.CustomData, httpClient piperhttp.Sender) error {
-
-	return DeployIntegrationArtifact(config, httpClient)
-}
-
-//DeployIntegrationArtifact -Deploy integration Artifact in to CPI runtime
-func DeployIntegrationArtifact(config *integrationArtifactDeployOptions, httpClient piperhttp.Sender) error {
 	clientOptions := piperhttp.ClientOptions{}
 	header := make(http.Header)
 	header.Add("Accept", "application/json")
