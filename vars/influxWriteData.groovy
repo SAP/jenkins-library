@@ -177,5 +177,5 @@ private void writeToInflux(config, JenkinsUtils jenkinsUtils, script){
     writeFile file: 'influx_data.json', text: jsonUtils.groovyObjectToPrettyJsonString(config.customDataMap)
     writeFile file: 'jenkins_data_tags.json', text: jsonUtils.groovyObjectToPrettyJsonString(config.customDataTags)
     writeFile file: 'influx_data_tags.json', text: jsonUtils.groovyObjectToPrettyJsonString(config.customDataMapTags)
-    archiveArtifacts artifacts: '*data.json', allowEmptyArchive: true
+    archiveArtifacts artifacts: '*data*.json', allowEmptyArchive: true
 }
