@@ -189,6 +189,12 @@ func (br *buildWithRepository) start() error {
 			abapbuild.Value{ValueID: "ACTUAL_DELIVERY_COMMIT",
 				Value: br.repo.CommitID})
 	}
+	if len(br.repo.Languages) > 0 {
+		valuesInput.Values = append(valuesInput.Values,
+			abapbuild.Value{ValueID: "SSDC_EXPORT_LANGUAGE_VECTOR",
+				Value: br.repo.GetAakAasLanguageVector()})
+	}
+
 	phase := "BUILD_" + br.repo.PackageType
 	log.Entry().Infof("Starting assembly of package %s", br.repo.PackageName)
 	return br.build.Start(phase, valuesInput)
