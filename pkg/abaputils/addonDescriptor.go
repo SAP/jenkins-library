@@ -96,6 +96,9 @@ func readFile(FileName string) ([]byte, error) {
 // initFromYmlFile : Reads from file
 func (me *AddonDescriptor) initFromYmlFile(FileName string, readFile readFileFunc) error {
 	fileContent, err := readFile(FileName)
+	if err != nil {
+		return err
+	}
 
 	var jsonBytes []byte
 	jsonBytes, err = yaml.YAMLToJSON(fileContent)
