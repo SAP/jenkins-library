@@ -15,9 +15,9 @@ type transportRequestUploadSOLMANMockUtils struct {
 	*mock.FilesMock
 }
 
-func newTransportRequestUploadSOLMANTestsUtils() transportRequestUploadSOLMANMockUtils {
+func newTransportRequestUploadSOLMANTestsUtils(exitcode int) transportRequestUploadSOLMANMockUtils {
 	utils := transportRequestUploadSOLMANMockUtils{
-		ExecMockRunner: &mock.ExecMockRunner{},
+		ExecMockRunner: &mock.ExecMockRunner{ExitCode: exitcode},
 		FilesMock:      &mock.FilesMock{},
 	}
 	return utils
@@ -87,16 +87,16 @@ func TestTrSolmanRunTransportRequestUpload(t *testing.T) {
 	t.Run("solmand upload", func(t *testing.T) {
 		t.Parallel()
 
-		configMock := newConfigMock()
-
 		t.Run("straight forward", func(t *testing.T) {
-			utils := newTransportRequestUploadSOLMANTestsUtils()
-			action := ActionMock{}
+			utilsMock := newTransportRequestUploadSOLMANTestsUtils(0)
+			configMock := newConfigMock()
+			actionMock := ActionMock{}
+			cpe := &transportRequestUploadSOLMANCommonPipelineEnvironment{}
 
-			err := runTransportRequestUploadSOLMAN(configMock.config, &action, nil, utils, nil)
+			err := runTransportRequestUploadSOLMAN(configMock.config, &actionMock, nil, utilsMock, cpe)
 
 			if assert.NoError(t, err) {
-				assert.Equal(t, action.received, solman.UploadAction{
+				assert.Equal(t, actionMock.received, solman.UploadAction{
 					Connection: solman.Connection{
 						Endpoint: "https://example.org/solman",
 						User:     "me",
@@ -108,15 +108,17 @@ func TestTrSolmanRunTransportRequestUpload(t *testing.T) {
 					File:               "myApp.abc",
 					CMOpts:             []string{"-Dtest=abc123"},
 				})
-				assert.True(t, action.performCalled)
+				assert.True(t, actionMock.performCalled)
 			}
 		})
 
 		t.Run("Error during deployment", func(t *testing.T) {
-			utils := newTransportRequestUploadSOLMANTestsUtils()
-			action := ActionMock{failWith: fmt.Errorf("upload failed")}
+			utilsMock := newTransportRequestUploadSOLMANTestsUtils(0)
+			configMock := newConfigMock()
+			actionMock := ActionMock{failWith: fmt.Errorf("upload failed")}
+			cpe := &transportRequestUploadSOLMANCommonPipelineEnvironment{}
 
-			err := runTransportRequestUploadSOLMAN(configMock.config, &action, nil, utils, nil)
+			err := runTransportRequestUploadSOLMAN(configMock.config, &actionMock, nil, utilsMock, cpe)
 
 			assert.Error(t, err, "upload failed")
 		})

@@ -10,11 +10,8 @@ import (
 )
 
 type transportRequestUploadSOLMANUtils interface {
-	command.ExecRunner
-
+	solman.Exec
 	FileExists(filename string) (bool, error)
-
-	GetExitCode() int
 
 	// Add more methods here, or embed additional interfaces, or remove/replace as required.
 	// The transportRequestUploadSOLMANUtils interface should be descriptive of your runtime dependencies,
