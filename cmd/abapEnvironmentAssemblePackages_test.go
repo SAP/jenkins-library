@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -37,9 +36,7 @@ func TestCheckIfFailedAndPrintLogsWithError(t *testing.T) {
 		err := checkIfFailedAndPrintLogs(buildsWithRepo)
 		assert.Error(t, err)
 	})
-}
 
-func TestCheckIfFailedAndPrintLogs(t *testing.T) {
 	t.Run("checkIfFailedAndPrintLogs", func(t *testing.T) {
 		var repo abaputils.Repository
 		b := testSetup(&abapbuild.ClMock{}, "ABIFNLDCSQPOVMXK4DNPBDRW2M")
@@ -55,40 +52,8 @@ func TestCheckIfFailedAndPrintLogs(t *testing.T) {
 	})
 }
 
-func TestStarting(t *testing.T) {
-	t.Run("Run starting", func(t *testing.T) {
-		client := &abapbuild.ClMock{
-			Token: "MyToken",
-		}
-		conn := new(abapbuild.Connector)
-		conn.Client = client
-		conn.Header = make(map[string][]string)
-		var repos []abaputils.Repository
-		repo := abaputils.Repository{
-			Name:        "RepoA",
-			Version:     "0001",
-			PackageName: "Package",
-			PackageType: "AOI",
-			SpLevel:     "0000",
-			PatchLevel:  "0000",
-			Status:      "P",
-			Namespace:   "/DEMO/",
-		}
-		repos = append(repos, repo)
-		repo.Status = "R"
-		repos = append(repos, repo)
-
-		builds, buildsAlreadyReleased, err := starting(repos, *conn, time.Duration(0*time.Second))
-		assert.NoError(t, err)
-		assert.Equal(t, 1, len(builds))
-		assert.Equal(t, 1, len(buildsAlreadyReleased))
-		assert.Equal(t, abapbuild.Accepted, builds[0].build.RunState)
-		assert.Equal(t, abapbuild.RunState(""), buildsAlreadyReleased[0].build.RunState)
-	})
-}
-
 func TestStartingInvalidInput(t *testing.T) {
-	t.Run("Run starting", func(t *testing.T) {
+	t.Run("Run starting with Invalid Input", func(t *testing.T) {
 		client := &abapbuild.ClMock{
 			Token: "MyToken",
 		}
@@ -101,47 +66,22 @@ func TestStartingInvalidInput(t *testing.T) {
 			Status: "P",
 		}
 		repos = append(repos, repo)
-		_, _, err := starting(repos, *conn, time.Duration(0*time.Second))
-		assert.Error(t, err)
-	})
-}
-
-func TestPolling(t *testing.T) {
-	t.Run("Run polling", func(t *testing.T) {
-		var repo abaputils.Repository
-		b := testSetup(&abapbuild.ClMock{}, "ABIFNLDCSQPOVMXK4DNPBDRW2M")
-		var buildsWithRepo []buildWithRepository
-		bWR := buildWithRepository{
-			build: b,
-			repo:  repo,
-		}
-		buildsWithRepo = append(buildsWithRepo, bWR)
-		timeout := time.Duration(600 * time.Second)
-		pollInterval := time.Duration(1 * time.Second)
-		err := polling(buildsWithRepo, timeout, pollInterval)
+		builds, err := executeBuilds(repos, *conn, time.Duration(0*time.Second), time.Duration(1*time.Millisecond))
 		assert.NoError(t, err)
-		assert.Equal(t, abapbuild.Finished, buildsWithRepo[0].build.RunState)
-	})
-}
-
-func TestDownloadSARXML(t *testing.T) {
-	t.Run("Run downloadSARXML", func(t *testing.T) {
-		var repo abaputils.Repository
-		b := testSetup(&abapbuild.ClMock{}, "ABIFNLDCSQPOVMXK4DNPBDRW2M")
-		var buildsWithRepo []buildWithRepository
-		bWR := buildWithRepository{
-			build: b,
-			repo:  repo,
-		}
-		buildsWithRepo = append(buildsWithRepo, bWR)
-		repos, err := downloadSARXML(buildsWithRepo)
-		assert.NoError(t, err)
-		downloadPath := filepath.Join(GeneralConfig.EnvRootPath, "commonPipelineEnvironment", "abap", "SAPK-001AAINITAPC1.SAR")
-		assert.Equal(t, downloadPath, repos[0].SarXMLFilePath)
+		assert.Equal(t, 1, len(builds))
+		assert.Equal(t, abapbuild.Failed, builds[0].build.RunState)
 	})
 }
 
 func TestStep(t *testing.T) {
+	autils := &abaputils.AUtilsMock{
+		ReturnedConnectionDetailsHTTP: abaputils.ConnectionDetailsHTTP{
+			URL: `/sap/opu/odata/BUILD/CORE_SRV`,
+		},
+	}
+	client := abapbuild.GetBuildMockClient()
+	cpe := &abapEnvironmentAssemblePackagesCommonPipelineEnvironment{}
+
 	t.Run("abapEnvironmentAssemblePackages: nothing to do", func(t *testing.T) {
 
 		config := &abapEnvironmentAssemblePackagesOptions{
@@ -149,10 +89,6 @@ func TestStep(t *testing.T) {
 			MaxRuntimeInMinutes:         1,
 			PollIntervalsInMilliseconds: 1,
 		}
-
-		autils := &abaputils.AUtilsMock{}
-		client := abapbuild.GetBuildMockClient()
-		cpe := &abapEnvironmentAssemblePackagesCommonPipelineEnvironment{}
 
 		err := runAbapEnvironmentAssemblePackages(config, nil, autils, &client, cpe)
 		assert.NoError(t, err)
@@ -164,16 +100,6 @@ func TestStep(t *testing.T) {
 			MaxRuntimeInMinutes:         1,
 			PollIntervalsInMilliseconds: 1,
 		}
-
-		autils := &abaputils.AUtilsMock{
-			ReturnedConnectionDetailsHTTP: abaputils.ConnectionDetailsHTTP{
-				URL: `/sap/opu/odata/BUILD/CORE_SRV`,
-			},
-		}
-
-		client := abapbuild.GetBuildMockClient()
-
-		cpe := &abapEnvironmentAssemblePackagesCommonPipelineEnvironment{}
 
 		err := runAbapEnvironmentAssemblePackages(config, nil, autils, &client, cpe)
 		assert.NoError(t, err)
