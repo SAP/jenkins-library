@@ -122,6 +122,10 @@ Later, during the pipeline configuration, you will specify the Service Plan, whi
 
 The add-on product needs to be registered with SAP in order to be installable in the desired global account. More details will follow soon.
 
+#### Piper Library Version to SAP BTP ABAP Environment Dependency
+
+SAP BTP ABAP Environment Releases might require certain versions of the Piper Library. More Information can be found in [SAP Note 3032800](https://launchpad.support.sap.com/#/notes/3032800).
+
 ### Configuration
 
 In the following subsections, the pipeline configuration for this scenario is explained. To get a general overview on the ABAP Environment Pipeline configuration, have a look [here](https://sap.github.io/jenkins-library/pipelines/abapEnvironment/configuration/). In addition to the following sections explaining the configuration, there will be an example repository including all required files.
