@@ -10,6 +10,11 @@ import (
 	"github.com/hashicorp/vault/api"
 )
 
+const (
+	vaultTestCredentialPath = "vaultTestCredentialPath"
+	vaultTestCredentialKeys = "vaultTestCredentialKeys"
+)
+
 var (
 	vaultFilter = []string{
 		"vaultAppRoleID",
@@ -21,6 +26,8 @@ var (
 		"vaultPath",
 		"skipVault",
 		"vaultDisableOverwrite",
+		vaultTestCredentialPath,
+		vaultTestCredentialKeys,
 	}
 
 	// VaultSecretFileDirectory holds the directory for the current step run to temporarily store secret files fetched from vault
@@ -123,6 +130,55 @@ func resolveVaultReference(ref *ResourceReference, config *StepConfig, client va
 	}
 	if secretValue == nil {
 		log.Entry().Warnf("Could not resolve param '%s' from vault", param.Name)
+	}
+}
+
+// lookup in path and GROUP_SECRETS/path
+// resolve keys and expose
+func resolveVaultTestCredentials(config *StepConfig, client vaultClient) {
+	credPath, pathOk := config.Config[vaultTestCredentialPath].(string)
+	keys, keysOk := config.Config[vaultTestCredentialKeys].([]interface{})
+	if !(pathOk && keysOk) || credPath == "" || len(keys) == 0 {
+		log.Entry().Debugf("Not fetching test credentials from vault since they are not (properly) configured")
+		return
+	}
+
+	lookupPath := []string{"$(vaultPath)/" + credPath}
+	lookupPath = append(lookupPath, "$(vaultBasePath)/$(vaultPipelineName)/"+credPath)
+	lookupPath = append(lookupPath, "$(vaultBasePath)/GROUP-SECRETS/"+credPath)
+	for _, path := range lookupPath {
+		vaultPath, ok := interpolation.ResolveString(path, config.Config)
+		if !ok {
+			continue
+		}
+		secret, err := client.GetKvSecret(vaultPath)
+		if err != nil {
+			log.Entry().WithError(err).Debugf("Couldn't fetch secret at '%s'", vaultPath)
+			continue
+		}
+		if secret == nil {
+			continue
+		}
+		secretsResolved := false
+		for secretKey, secretValue := range secret {
+			for _, keyRaw := range keys {
+				key, ok := keyRaw.(string)
+				if !ok {
+					log.Entry().Warnf("Fetched secret '%v' might be of wrong type", keyRaw)
+					continue
+				}
+				if secretKey == key {
+					log.RegisterSecret(secretValue)
+					envKey := "PIPER_TESTCREDENTIAL_" + secretKey
+					log.Entry().Debugf("Exposing test credential '%v' as '%v'", key, envKey)
+					os.Setenv(envKey, secretValue)
+					secretsResolved = true
+				}
+			}
+		}
+		if secretsResolved {
+			break
+		}
 	}
 }
 
