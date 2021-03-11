@@ -37,6 +37,7 @@ type VaultCredentials struct {
 // vaultClient interface for mocking
 type vaultClient interface {
 	GetKvSecret(string) (map[string]string, error)
+	MustRevokeToken()
 }
 
 func (s *StepConfig) mixinVaultConfig(configs ...map[string]interface{}) {
