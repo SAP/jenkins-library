@@ -110,9 +110,18 @@ spec:
             param: abap/addonDescriptor
       - name: maxRuntimeInMinutes
         type: int
-        description: maximal runtime of the step
+        description: maximal runtime of the step in minutes
         mandatory: true
         default: 360
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: pollIntervalsInMilliseconds
+        type: int
+        description: wait time in milliseconds till next status request in the backend system
+        mandatory: true
+        default: 60000
         scope:
           - PARAMETERS
           - STAGES
@@ -125,4 +134,4 @@ spec:
           - name: abap/addonDescriptor
   containers:
     - name: cf
-      image: ppiper/cf-cli
+      image: ppiper/cf-cli:7

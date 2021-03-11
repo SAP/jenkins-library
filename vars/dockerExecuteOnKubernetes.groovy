@@ -87,7 +87,7 @@ import hudson.AbortException
     'containerEnvVars',
     /**
      * A map of docker image to the name of the container. The pod will be created with all the images from this map and they are labelled based on the value field of each map entry.
-     * Example: `['maven:3.5-jdk-8-alpine': 'mavenExecute', 'selenium/standalone-chrome': 'selenium', 'famiko/jmeter-base': 'checkJMeter', 'ppiper/cf-cli': 'cloudfoundry']`
+     * Example: `['maven:3.5-jdk-8-alpine': 'mavenExecute', 'selenium/standalone-chrome': 'selenium', 'famiko/jmeter-base': 'checkJMeter', 'ppiper/cf-cli:6': 'cloudfoundry']`
      */
     'containerMap',
     /**

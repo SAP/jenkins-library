@@ -18,14 +18,6 @@ type gradleExecRunner interface {
 	RunExecutable(e string, p ...string) error
 }
 
-// GradleDescriptor holds the unique identifier combination for Gradle built Java artifacts
-type GradleDescriptor struct {
-	GroupID    string
-	ArtifactID string
-	Version    string
-	Packaging  string
-}
-
 // Gradle defines a maven artifact used for versioning
 type Gradle struct {
 	execRunner     gradleExecRunner
@@ -81,7 +73,7 @@ func (g *Gradle) VersioningScheme() string {
 
 // GetCoordinates reads the coordinates from the maven pom.xml descriptor file
 func (g *Gradle) GetCoordinates() (Coordinates, error) {
-	result := &GradleDescriptor{}
+	result := Coordinates{}
 	var err error
 	// result.GroupID, err = g.GetGroupID()
 	// if err != nil {
@@ -89,11 +81,11 @@ func (g *Gradle) GetCoordinates() (Coordinates, error) {
 	// }
 	result.ArtifactID, err = g.GetArtifactID()
 	if err != nil {
-		return nil, err
+		return result, err
 	}
 	result.Version, err = g.GetVersion()
 	if err != nil {
-		return nil, err
+		return result, err
 	}
 	// result.Packaging, err = g.GetPackaging()
 	// if err != nil {
