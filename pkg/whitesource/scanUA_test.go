@@ -3,6 +3,7 @@ package whitesource
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -68,10 +69,24 @@ func TestExecuteUAScan(t *testing.T) {
 			ProductName: "test-product",
 		}
 		utilsMock := NewScanUtilsMock()
+		utilsMock.AddFile(filepath.Join("sub", "pom.xml"), []byte("dummy"))
 		scan := newTestScan(&config)
 
 		err := scan.ExecuteUAScan(&config, utilsMock)
-		assert.EqualError(t, err, "mta project does not contain an aggregator pom.xml in the root - this is mandatory")
+		assert.EqualError(t, err, "mta project with java modules does not contain an aggregator pom.xml in the root - this is mandatory")
+	})
+
+	t.Run("error - no pom.xml & only npm", func(t *testing.T) {
+		config := ScanOptions{
+			BuildTool:   "mta",
+			ProjectName: "test-project",
+			ProductName: "test-product",
+		}
+		utilsMock := NewScanUtilsMock()
+		scan := newTestScan(&config)
+
+		err := scan.ExecuteUAScan(&config, utilsMock)
+		assert.NoError(t, err)
 	})
 
 	t.Run("error - npm no name", func(t *testing.T) {
@@ -380,5 +395,59 @@ func TestRemoveJre(t *testing.T) {
 
 		err := removeJre("./jvm/bin/java", utilsMock)
 		assert.Contains(t, fmt.Sprint(err), "failed to remove downloaded")
+	})
+}
+
+func TestScanLog(t *testing.T) {
+	t.Parallel()
+
+	t.Run("default case", func(t *testing.T) {
+
+		scan := &Scan{scannedProjects: map[string]Project{}}
+
+		log := `[ - Inventory update results for Piper
+		[ - No new projects found.
+		[ - Updated projects:
+		[ - # TestProject - 1
+		[ - # TestProject-srv - 1
+		[ - Project name: TestProject - 1, URL: https://saas.whitesourcesoftware.com/Wss/WSS.html#!project;id=1
+		[ - Project name: TestProject-srv - 1, URL: https://saas.whitesourcesoftware.com/Wss/WSS.html#!project;id=2
+		[ - Support Token: token
+		[ - Process finished with exit code SUCCESS (Inventory update results for Piper
+		`
+		scanLog(strings.NewReader(log), scan)
+
+		assert.Equal(t, 2, len(scan.scannedProjects))
+		assert.Contains(t, scan.scannedProjects, "TestProject - 1")
+		assert.Contains(t, scan.scannedProjects, "TestProject-srv - 1")
+	})
+
+	t.Run("accept already existing project", func(t *testing.T) {
+
+		scan := &Scan{scannedProjects: map[string]Project{"TestProject - 1": {Name: "TestProject - 1", Token: "testToken"}}}
+
+		log := `
+		[ - Project name: TestProject - 1, URL: https://saas.whitesourcesoftware.com/Wss/WSS.html#!project;id=1
+		[ - Project name: TestProject-srv - 1, URL: https://saas.whitesourcesoftware.com/Wss/WSS.html#!project;id=2
+		`
+		scanLog(strings.NewReader(log), scan)
+
+		assert.Equal(t, 2, len(scan.scannedProjects))
+		assert.Equal(t, "testToken", scan.scannedProjects["TestProject - 1"].Token)
+	})
+
+	t.Run("ignore duplicates in log", func(t *testing.T) {
+
+		scan := &Scan{scannedProjects: map[string]Project{}}
+
+		log := `
+		[ - Project name: TestProject - 1, URL: https://saas.whitesourcesoftware.com/Wss/WSS.html#!project;id=1
+		[ - Project name: TestProject-srv - 1, URL: https://saas.whitesourcesoftware.com/Wss/WSS.html#!project;id=2
+		[ - Project name: TestProject - 1, URL: https://saas.whitesourcesoftware.com/Wss/WSS.html#!project;id=1
+		[ - Project name: TestProject-srv - 1, URL: https://saas.whitesourcesoftware.com/Wss/WSS.html#!project;id=2
+		`
+		scanLog(strings.NewReader(log), scan)
+
+		assert.Equal(t, 2, len(scan.scannedProjects))
 	})
 }
