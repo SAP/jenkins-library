@@ -147,7 +147,7 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 
 	if len(config.PullRequestName) > 0 {
 		fortifyProjectVersion = config.PullRequestName
-		projectVersion, err := sys.LookupOrCreateProjectVersionDetailsForPullRequest(project.ID, projectVersion, fortifyProjectVersion)
+		projectVersion, err = sys.LookupOrCreateProjectVersionDetailsForPullRequest(project.ID, projectVersion, fortifyProjectVersion)
 		if err != nil {
 			classifyErrorOnLookup(err)
 			return reports, fmt.Errorf("Failed to lookup / create project version for pull request %v: %w", fortifyProjectVersion, err)
@@ -798,6 +798,11 @@ func scanProject(config *fortifyExecuteScanOptions, command fortifyUtils, buildI
 	scanOptions = append(scanOptions, tokenize(config.Memory)...)
 	if config.QuickScan {
 		scanOptions = append(scanOptions, "-quick")
+	}
+	if len(config.AdditionalScanParameters) > 0 {
+		for _, scanParameter := range config.AdditionalScanParameters {
+			scanOptions = append(scanOptions, scanParameter)
+		}
 	}
 	if len(buildLabel) > 0 {
 		scanOptions = append(scanOptions, "-build-label", buildLabel)
