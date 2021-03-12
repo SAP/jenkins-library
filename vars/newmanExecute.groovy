@@ -45,10 +45,10 @@ void call(Map parameters = [:]) {
         .use()
 
     if (parameters.testRepository || config.testRepository ) {
-        parameters.stashContent = GitUtils.handleTestRepository(this, [gitBranch: config.gitBranch, gitSshKeyCredentialsId: config.gitSshKeyCredentialsId, testRepository: config.testRepository])
+        parameters.stashContent = [GitUtils.handleTestRepository(this, [gitBranch: config.gitBranch, gitSshKeyCredentialsId: config.gitSshKeyCredentialsId, testRepository: config.testRepository])]
     }
 
-    List<Map> cfCredentials = []
+    List<String> cfCredentials = []
     if (config.cfAppsWithSecrets) {
         CloudFoundry cfUtils = new CloudFoundry(script);
         config.cfAppsWithSecrets.each { appName ->
@@ -58,26 +58,12 @@ void call(Map parameters = [:]) {
                                                             config.cloudFoundry.credentialsId,
                                                             appName,
                                                             config.verbose ? true : false )
-            cfCredentials.add([var: "PIPER_NEWMANEXECUTE_${appName}_clientid", password: "${xsuaaCredentials.clientid}"])
-            cfCredentials.add([var: "PIPER_NEWMANEXECUTE_${appName}_clientsecret", password: "${xsuaaCredentials.clientsecret}"])
+            cfCredentials.add("PIPER_NEWMANEXECUTE_${appName}_clientid=${xsuaaCredentials.clientid}")
+            cfCredentials.add("PIPER_NEWMANEXECUTE_${appName}_clientsecret=${xsuaaCredentials.clientsecret}")
             echo "Exposing client id and secret for ${appName}: as ${appName}_clientid and ${appName}_clientsecret to newmanExecute"
         }
     }
-    withSecretEnv(cfCredentials) {
+    withEnv(cfCredentials) {
         piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, [])
-    }
-}
-
-/**
- * Runs code with secret environment variables and hides the values using Mask Passwords Plugin
- *
- * @param credentials - a list of maps with a 'var' and 'password' keys
- * @param body - the code to run in
- */
-def withSecretEnv(List<Map> credentials, Closure body) {
-    wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: credentials]) {
-        withEnv(credentials.collect { "${it.var}=${it.password}" }) {
-            body()
-        }
     }
 }
