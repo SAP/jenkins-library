@@ -132,6 +132,7 @@ func Execute() {
 	rootCmd.AddCommand(TransportRequestUploadSOLMANCommand())
 	rootCmd.AddCommand(IntegrationArtifactUpdateConfigurationCommand())
 	rootCmd.AddCommand(IntegrationArtifactGetMplStatusCommand())
+	rootCmd.AddCommand(IntegrationArtifactGetServiceEndpointCommand())
 	rootCmd.AddCommand(IntegrationArtifactDownloadCommand())
 	rootCmd.AddCommand(AbapEnvironmentAssembleConfirmCommand())
 	rootCmd.AddCommand(IntegrationArtifactUploadCommand())
