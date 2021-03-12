@@ -31,9 +31,9 @@ spec:
           - STAGES
           - STEPS
         mandatory: true
-      - name: modulePath
+      - name: modules
         type: string
-        description: Define the path of the module to execute tests on.
+        description: Define the paths of the modules to execute tests on.
         default: "."
         scope:
           - PARAMETERS
