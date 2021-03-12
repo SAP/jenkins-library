@@ -6,10 +6,16 @@ import (
 	"path/filepath"
 )
 
+const reportFileName = "sonarscan.json"
+
 //ReportData is representing the data of the step report JSON
 type ReportData struct {
 	ServerURL      string `json:"serverUrl"`
 	ProjectKey     string `json:"projectKey"`
+	TaskID         string `json:"taskId"`
+	ChangeID       string `json:"changeID,omitempty"`
+	BranchName     string `json:"branchName,omitempty"`
+	Organization   string `json:"organization,omitempty"`
 	NumberOfIssues Issues `json:"numberOfIssues"`
 }
 
@@ -23,7 +29,7 @@ type Issues struct {
 }
 
 // WriteReport ...
-func WriteReport(data ReportData, reportPath string, reportFileName string, writeToFile func(f string, d []byte, p os.FileMode) error) error {
+func WriteReport(data ReportData, reportPath string, writeToFile func(f string, d []byte, p os.FileMode) error) error {
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return err
