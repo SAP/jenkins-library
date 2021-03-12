@@ -217,3 +217,39 @@ func addAlias(param *StepParameters, aliasName string) {
 	alias := Alias{Name: aliasName}
 	param.Aliases = append(param.Aliases, alias)
 }
+
+func Test_resolveVaultTestCredentials(t *testing.T) {
+	vaultMock := &mocks.VaultMock{}
+
+	stepConfig := StepConfig{Config: map[string]interface{}{
+		"vaultPath":               "team1",
+		"vaultTestCredentialPath": "appCredentials",
+		"vaultTestCredentialKeys": []string{"appUser", "appUserPw"},
+	}}
+
+	vaultData := map[string]string{"appUser": "test-user", "appUserPw": "password1234"}
+	vaultMock.On("GetKvSecret", "team1/appCredentials").Return(vaultData, nil)
+
+	resolveVaultTestCredentials(&stepConfig, vaultMock)
+
+	// assert.NotNil(t, stepConfig.Config["appUser"])
+	// assert.NotNil(t, stepConfig.Config["appUserPw"])
+	// assert.Equal(t, stepConfig.Config["appUser"], "test-user")
+	// assert.Equal(t, stepConfig.Config["appUserPw"],  )
+
+	// type args struct {
+	// 	config *StepConfig
+	// 	client vaultClient
+	// }
+	// tests := []struct {
+	// 	name string
+	// 	args args
+	// }{
+	// 	// TODO: Add test cases.
+	// }
+	// for _, tt := range tests {
+	// 	t.Run(tt.name, func(t *testing.T) {
+	// 		resolveVaultTestCredentials(tt.args.config, tt.args.client)
+	// 	})
+	// }
+}
