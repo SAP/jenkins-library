@@ -4,6 +4,7 @@ package npm
 
 import (
 	"fmt"
+
 	"github.com/SAP/jenkins-library/pkg/mock"
 )
 
@@ -112,5 +113,10 @@ func (n *NpmExecutorMock) InstallAllDependencies(packageJSONFiles []string) erro
 
 // SetNpmRegistries mock implementation
 func (n *NpmExecutorMock) SetNpmRegistries() error {
+	return nil
+}
+
+// CreateBOM mock implementation
+func (n *NpmExecutorMock) CreateBOM(packageJSONFiles []string) error {
 	return nil
 }

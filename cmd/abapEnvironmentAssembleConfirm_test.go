@@ -6,22 +6,26 @@ import (
 
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/stretchr/testify/assert"
 )
 
-func testSetupConfirm(client piperhttp.Sender, buildID string) abapbuild.Build {
-	conn := new(abapbuild.Connector)
-	conn.Client = client
-	conn.DownloadClient = &abapbuild.DownloadClientMock{}
-	conn.Header = make(map[string][]string)
-	b := abapbuild.Build{
-		Connector: *conn,
-		BuildID:   buildID,
-	}
-	return b
+func TestPolling(t *testing.T) {
+	t.Run("Run polling", func(t *testing.T) {
+		var repo abaputils.Repository
+		b := testSetup(&abapbuild.ClMock{}, "ABIFNLDCSQPOVMXK4DNPBDRW2M")
+		var buildsWithRepo []buildWithRepository
+		bWR := buildWithRepository{
+			build: b,
+			repo:  repo,
+		}
+		buildsWithRepo = append(buildsWithRepo, bWR)
+		timeout := time.Duration(600 * time.Second)
+		pollInterval := time.Duration(1 * time.Second)
+		err := polling(buildsWithRepo, timeout, pollInterval)
+		assert.NoError(t, err)
+		assert.Equal(t, abapbuild.Finished, buildsWithRepo[0].build.RunState)
+	})
 }
-
 func TestStartingConfirm(t *testing.T) {
 	t.Run("Run starting", func(t *testing.T) {
 		client := &abapbuild.ClMock{

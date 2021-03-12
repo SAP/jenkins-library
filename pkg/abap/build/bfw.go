@@ -327,6 +327,10 @@ func (t *task) getResults() error {
 		for i := range t.Results {
 			t.Results[i].connector = t.connector
 		}
+		if len(t.Results) == 0 {
+			//prevent 2nd GET request - no new results will occure...
+			t.Results = append(t.Results, Result{Name: "Dummy"})
+		}
 	}
 	return nil
 }

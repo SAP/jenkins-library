@@ -42,6 +42,9 @@ spec:
             tags:
               - name: t1
   inputs:
+    resources:
+      - name: stashName
+        type: stash
     params:
       - name: param0
         type: string

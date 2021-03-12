@@ -31,7 +31,7 @@ func abapEnvironmentAssembleConfirm(config abapEnvironmentAssembleConfirmOptions
 	}
 }
 
-func runAbapEnvironmentAssembleConfirm(config *abapEnvironmentAssembleConfirmOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender, cpe *abapEnvironmentAssembleConfirmCommonPipelineEnvironment) error {
+func runAbapEnvironmentAssembleConfirm(config *abapEnvironmentAssembleConfirmOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client abapbuild.HTTPSendLoader, cpe *abapEnvironmentAssembleConfirmCommonPipelineEnvironment) error {
 	conn := new(abapbuild.Connector)
 	var connConfig abapbuild.ConnectorConfiguration
 	connConfig.CfAPIEndpoint = config.CfAPIEndpoint
@@ -83,7 +83,7 @@ func startingConfirm(repos []abaputils.Repository, conn abapbuild.Connector, del
 			build: assemblyBuild,
 			repo:  repo,
 		}
-		if repo.Status == "P" {
+		if repo.Status != "R" {
 			err := buildRepo.startConfirm()
 			if err != nil {
 				return builds, err
@@ -98,6 +98,29 @@ func startingConfirm(repos []abaputils.Repository, conn abapbuild.Connector, del
 		time.Sleep(delayBetweenPostsInSeconds)
 	}
 	return builds, nil
+}
+
+func polling(builds []buildWithRepository, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) error {
+	timeout := time.After(maxRuntimeInMinutes)
+	ticker := time.Tick(pollIntervalsInSeconds)
+	for {
+		select {
+		case <-timeout:
+			return errors.New("Timed out")
+		case <-ticker:
+			var allFinished bool = true
+			for i := range builds {
+				builds[i].build.Get()
+				if !builds[i].build.IsFinished() {
+					log.Entry().Infof("Assembly of %s is not yet finished, check again in %s", builds[i].repo.PackageName, pollIntervalsInSeconds)
+					allFinished = false
+				}
+			}
+			if allFinished {
+				return nil
+			}
+		}
+	}
 }
 
 func (b *buildWithRepository) startConfirm() error {
