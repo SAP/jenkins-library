@@ -222,6 +222,17 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		return err
 	}
 	log.Entry().Debugf("Influx values: %v", influx.sonarqube_data.fields)
+	SonarUtils.WriteReport(SonarUtils.ReportData{
+		ServerURL:  taskReport.ServerURL,
+		ProjectKey: taskReport.ProjectKey,
+		NumberOfIssues: SonarUtils.Issues{
+			Blocker:  influx.sonarqube_data.fields.blocker_issues,
+			Critical: influx.sonarqube_data.fields.critical_issues,
+			Major:    influx.sonarqube_data.fields.major_issues,
+			Minor:    influx.sonarqube_data.fields.minor_issues,
+			Info:     influx.sonarqube_data.fields.info_issues,
+		},
+	}, sonar.workingDir, "sonarScanReport.json", ioutil.WriteFile)
 	return nil
 }
 
