@@ -88,6 +88,45 @@ func (p *whitesourceExecuteScanCommonPipelineEnvironment) persist(path, resource
 	}
 }
 
+type whitesourceExecuteScanInflux struct {
+	whitesource_data struct {
+		fields struct {
+			vulnerabilities       int
+			major_vulnerabilities int
+			minor_vulnerabilities int
+			policy_violations     int
+		}
+		tags struct {
+		}
+	}
+}
+
+func (i *whitesourceExecuteScanInflux) persist(path, resourceName string) {
+	measurementContent := []struct {
+		measurement string
+		valType     string
+		name        string
+		value       interface{}
+	}{
+		{valType: config.InfluxField, measurement: "whitesource_data", name: "vulnerabilities", value: i.whitesource_data.fields.vulnerabilities},
+		{valType: config.InfluxField, measurement: "whitesource_data", name: "major_vulnerabilities", value: i.whitesource_data.fields.major_vulnerabilities},
+		{valType: config.InfluxField, measurement: "whitesource_data", name: "minor_vulnerabilities", value: i.whitesource_data.fields.minor_vulnerabilities},
+		{valType: config.InfluxField, measurement: "whitesource_data", name: "policy_violations", value: i.whitesource_data.fields.policy_violations},
+	}
+
+	errCount := 0
+	for _, metric := range measurementContent {
+		err := piperenv.SetResourceParameter(path, resourceName, filepath.Join(metric.measurement, fmt.Sprintf("%vs", metric.valType), metric.name), metric.value)
+		if err != nil {
+			log.Entry().WithError(err).Error("Error persisting influx environment.")
+			errCount++
+		}
+	}
+	if errCount > 0 {
+		log.Entry().Fatal("failed to persist Influx environment")
+	}
+}
+
 // WhitesourceExecuteScanCommand Execute a WhiteSource scan
 func WhitesourceExecuteScanCommand() *cobra.Command {
 	const STEP_NAME = "whitesourceExecuteScan"
@@ -96,6 +135,7 @@ func WhitesourceExecuteScanCommand() *cobra.Command {
 	var stepConfig whitesourceExecuteScanOptions
 	var startTime time.Time
 	var commonPipelineEnvironment whitesourceExecuteScanCommonPipelineEnvironment
+	var influx whitesourceExecuteScanInflux
 
 	var createWhitesourceExecuteScanCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -140,6 +180,7 @@ The step uses the so-called WhiteSource Unified Agent. For details please refer 
 			handler := func() {
 				config.RemoveVaultSecretFiles()
 				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
+				influx.persist(GeneralConfig.EnvRootPath, "influx")
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
@@ -147,7 +188,7 @@ The step uses the so-called WhiteSource Unified Agent. For details please refer 
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			whitesourceExecuteScan(stepConfig, &telemetryData, &commonPipelineEnvironment)
+			whitesourceExecuteScan(stepConfig, &telemetryData, &commonPipelineEnvironment, &influx)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
@@ -187,7 +228,7 @@ func addWhitesourceExecuteScanFlags(cmd *cobra.Command, stepConfig *whitesourceE
 	cmd.Flags().StringVar(&stepConfig.ScanImage, "scanImage", os.Getenv("PIPER_scanImage"), "For `buildTool: docker`: Defines the docker image which should be scanned.")
 	cmd.Flags().BoolVar(&stepConfig.ScanImageIncludeLayers, "scanImageIncludeLayers", true, "For `buildTool: docker`: Defines if layers should be included.")
 	cmd.Flags().StringVar(&stepConfig.ScanImageRegistryURL, "scanImageRegistryUrl", os.Getenv("PIPER_scanImageRegistryUrl"), "For `buildTool: docker`: Defines the registry where the scanImage is located.")
-	cmd.Flags().StringVar(&stepConfig.ScanType, "scanType", os.Getenv("PIPER_scanType"), "Type of development stack used to implement the solution. For scan types other than `mta`, `maven`, and `npm`, the WhiteSource Unified Agent is downloaded and used to perform the scan. If the parameter is not provided, it is derived from the parameter `buildTool`, which is usually configured in the general section of the pipeline config file.")
+	cmd.Flags().StringVar(&stepConfig.ScanType, "scanType", os.Getenv("PIPER_scanType"), "**DEPRECATED**: Please set to `ua` in order to prevent usage of deprecated WhiteSource plugins and use Unified Agent instead.")
 	cmd.Flags().BoolVar(&stepConfig.SecurityVulnerabilities, "securityVulnerabilities", true, "Whether security compliance is considered and reported as part of the assessment.")
 	cmd.Flags().StringVar(&stepConfig.ServiceURL, "serviceUrl", `https://saas.whitesourcesoftware.com/api`, "URL to the WhiteSource API endpoint.")
 	cmd.Flags().IntVar(&stepConfig.Timeout, "timeout", 900, "Timeout in seconds until an HTTP call is forcefully terminated.")
@@ -602,6 +643,13 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
 							{"Name": "custom/whitesourceProjectNames"},
+						},
+					},
+					{
+						Name: "influx",
+						Type: "influx",
+						Parameters: []map[string]interface{}{
+							{"Name": "whitesource_data"}, {"fields": []map[string]string{{"name": "vulnerabilities"}, {"name": "major_vulnerabilities"}, {"name": "minor_vulnerabilities"}, {"name": "policy_violations"}}},
 						},
 					},
 				},

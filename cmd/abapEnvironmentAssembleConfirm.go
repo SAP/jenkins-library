@@ -100,6 +100,29 @@ func startingConfirm(repos []abaputils.Repository, conn abapbuild.Connector, del
 	return builds, nil
 }
 
+func polling(builds []buildWithRepository, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) error {
+	timeout := time.After(maxRuntimeInMinutes)
+	ticker := time.Tick(pollIntervalsInSeconds)
+	for {
+		select {
+		case <-timeout:
+			return errors.New("Timed out")
+		case <-ticker:
+			var allFinished bool = true
+			for i := range builds {
+				builds[i].build.Get()
+				if !builds[i].build.IsFinished() {
+					log.Entry().Infof("Assembly of %s is not yet finished, check again in %s", builds[i].repo.PackageName, pollIntervalsInSeconds)
+					allFinished = false
+				}
+			}
+			if allFinished {
+				return nil
+			}
+		}
+	}
+}
+
 func (b *buildWithRepository) startConfirm() error {
 	if b.repo.Name == "" || b.repo.Namespace == "" || b.repo.PackageName == "" {
 		return errors.New("Parameters missing. Please provide software component name, namespace and packagename")

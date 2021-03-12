@@ -112,17 +112,17 @@ func newWhitesourceScan(config *ScanOptions) *ws.Scan {
 	}
 }
 
-func whitesourceExecuteScan(config ScanOptions, _ *telemetry.CustomData, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment) {
+func whitesourceExecuteScan(config ScanOptions, _ *telemetry.CustomData, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment, influx *whitesourceExecuteScanInflux) {
 	utils := newWhitesourceUtils(&config)
 	scan := newWhitesourceScan(&config)
 	sys := ws.NewSystem(config.ServiceURL, config.OrgToken, config.UserToken, time.Duration(config.Timeout)*time.Second)
-	err := runWhitesourceExecuteScan(&config, scan, utils, sys, commonPipelineEnvironment)
+	err := runWhitesourceExecuteScan(&config, scan, utils, sys, commonPipelineEnvironment, influx)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runWhitesourceExecuteScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment) error {
+func runWhitesourceExecuteScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment, influx *whitesourceExecuteScanInflux) error {
 	if err := resolveAggregateProjectName(config, scan, sys); err != nil {
 		return err
 	}
@@ -143,14 +143,14 @@ func runWhitesourceExecuteScan(config *ScanOptions, scan *ws.Scan, utils whiteso
 			return fmt.Errorf("failed to aggregate version wide vulnerabilities: %w", err)
 		}
 	} else {
-		if err := runWhitesourceScan(config, scan, utils, sys, commonPipelineEnvironment); err != nil {
+		if err := runWhitesourceScan(config, scan, utils, sys, commonPipelineEnvironment, influx); err != nil {
 			return fmt.Errorf("failed to execute WhiteSource scan: %w", err)
 		}
 	}
 	return nil
 }
 
-func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment) error {
+func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment, influx *whitesourceExecuteScanInflux) error {
 	// Download Docker image for container scan
 	// ToDo: move it to improve testability
 	if config.BuildTool == "docker" {
@@ -188,7 +188,7 @@ func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUti
 	}
 	log.Entry().Info("-----------------------------------------------------")
 
-	paths, err := checkAndReportScanResults(config, scan, utils, sys)
+	paths, err := checkAndReportScanResults(config, scan, utils, sys, influx)
 	piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", paths, nil)
 	persistScannedProjects(config, scan, commonPipelineEnvironment)
 	if err != nil {
@@ -197,7 +197,7 @@ func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUti
 	return nil
 }
 
-func checkAndReportScanResults(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource) ([]piperutils.Path, error) {
+func checkAndReportScanResults(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource, influx *whitesourceExecuteScanInflux) ([]piperutils.Path, error) {
 	reportPaths := []piperutils.Path{}
 	if !config.Reporting && !config.SecurityVulnerabilities {
 		return reportPaths, nil
@@ -220,14 +220,14 @@ func checkAndReportScanResults(config *ScanOptions, scan *ws.Scan, utils whiteso
 
 	checkErrors := []string{}
 
-	rPath, err := checkPolicyViolations(config, scan, sys, utils, reportPaths)
+	rPath, err := checkPolicyViolations(config, scan, sys, utils, reportPaths, influx)
 	if err != nil {
 		checkErrors = append(checkErrors, fmt.Sprint(err))
 	}
 	reportPaths = append(reportPaths, rPath)
 
 	if config.SecurityVulnerabilities {
-		rPaths, err := checkSecurityViolations(config, scan, sys, utils)
+		rPaths, err := checkSecurityViolations(config, scan, sys, utils, influx)
 		reportPaths = append(reportPaths, rPaths...)
 		if err != nil {
 			checkErrors = append(checkErrors, fmt.Sprint(err))
@@ -452,7 +452,7 @@ func executeScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils) err
 	return nil
 }
 
-func checkPolicyViolations(config *ScanOptions, scan *ws.Scan, sys whitesource, utils whitesourceUtils, reportPaths []piperutils.Path) (piperutils.Path, error) {
+func checkPolicyViolations(config *ScanOptions, scan *ws.Scan, sys whitesource, utils whitesourceUtils, reportPaths []piperutils.Path, influx *whitesourceExecuteScanInflux) (piperutils.Path, error) {
 
 	policyViolationCount := 0
 	for _, project := range scan.ScannedProjects() {
@@ -490,13 +490,14 @@ func checkPolicyViolations(config *ScanOptions, scan *ws.Scan, sys whitesource, 
 
 	if policyViolationCount > 0 {
 		log.SetErrorCategory(log.ErrorCompliance)
+		influx.whitesource_data.fields.policy_violations = policyViolationCount
 		return policyReport, fmt.Errorf("%v policy violation(s) found", policyViolationCount)
 	}
 
 	return policyReport, nil
 }
 
-func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource, utils whitesourceUtils) ([]piperutils.Path, error) {
+func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource, utils whitesourceUtils, influx *whitesourceExecuteScanInflux) ([]piperutils.Path, error) {
 	var reportPaths []piperutils.Path
 	// Check for security vulnerabilities and fail the build if cvssSeverityLimit threshold is crossed
 	// convert config.CvssSeverityLimit to float64
@@ -511,7 +512,7 @@ func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource
 		project := ws.Project{Name: config.ProjectName, Token: config.ProjectToken}
 		// ToDo: see if HTML report generation is really required here
 		// we anyway need to do some refactoring here since config.ProjectToken != "" essentially indicates an aggregated project
-		if _, _, err := checkProjectSecurityViolations(cvssSeverityLimit, project, sys); err != nil {
+		if _, _, err := checkProjectSecurityViolations(cvssSeverityLimit, project, sys, influx); err != nil {
 			return reportPaths, err
 		}
 	} else {
@@ -520,7 +521,7 @@ func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource
 		allAlerts := []ws.Alert{}
 		for _, project := range scan.ScannedProjects() {
 			// collect errors and aggregate vulnerabilities from all projects
-			if vulCount, alerts, err := checkProjectSecurityViolations(cvssSeverityLimit, project, sys); err != nil {
+			if vulCount, alerts, err := checkProjectSecurityViolations(cvssSeverityLimit, project, sys, influx); err != nil {
 				allAlerts = append(allAlerts, alerts...)
 				vulnerabilitiesCount += vulCount
 				errorsOccured = append(errorsOccured, fmt.Sprint(err))
@@ -544,7 +545,7 @@ func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource
 }
 
 // checkSecurityViolations checks security violations and returns an error if the configured severity limit is crossed.
-func checkProjectSecurityViolations(cvssSeverityLimit float64, project ws.Project, sys whitesource) (int, []ws.Alert, error) {
+func checkProjectSecurityViolations(cvssSeverityLimit float64, project ws.Project, sys whitesource, influx *whitesourceExecuteScanInflux) (int, []ws.Alert, error) {
 	// get project alerts (vulnerabilities)
 	alerts, err := sys.GetProjectAlertsByType(project.Token, "SECURITY_VULNERABILITY")
 	if err != nil {
@@ -552,6 +553,9 @@ func checkProjectSecurityViolations(cvssSeverityLimit float64, project ws.Projec
 	}
 
 	severeVulnerabilities, nonSevereVulnerabilities := countSecurityVulnerabilities(&alerts, cvssSeverityLimit)
+	influx.whitesource_data.fields.minor_vulnerabilities = nonSevereVulnerabilities
+	influx.whitesource_data.fields.major_vulnerabilities = severeVulnerabilities
+	influx.whitesource_data.fields.vulnerabilities = nonSevereVulnerabilities + severeVulnerabilities
 	if nonSevereVulnerabilities > 0 {
 		log.Entry().Warnf("WARNING: %v Open Source Software Security vulnerabilities with "+
 			"CVSS score below threshold %.1f detected in project %s.", nonSevereVulnerabilities,
@@ -560,7 +564,6 @@ func checkProjectSecurityViolations(cvssSeverityLimit float64, project ws.Projec
 		log.Entry().Infof("No Open Source Software Security vulnerabilities detected in project %s",
 			project.Name)
 	}
-
 	// https://github.com/SAP/jenkins-library/blob/master/vars/whitesourceExecuteScan.groovy#L558
 	if severeVulnerabilities > 0 {
 		return severeVulnerabilities, alerts, fmt.Errorf("%v Open Source Software Security vulnerabilities with CVSS score greater "+
