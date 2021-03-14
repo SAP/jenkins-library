@@ -10,10 +10,10 @@ The goal of project "Piper" is to substantially ease setting up continuous deliv
 To get you started quickly, project "Piper" offers you the following artifacts:
 
 * A set of ready-made Continuous Delivery pipelines for direct use in your project
-  * [ABAP Environment Pipeline](pipelines/abapEnvironment/introduction/)
-  * [General Purpose Pipeline](stages/introduction/)
+  * [ABAP Environment Pipeline](pipelines/abapEnvironment/introduction.md/)
+  * [General Purpose Pipeline](stages/introduction.md/)
 * [A shared library][piper-library] that contains reusable step implementations, which enable you to customize our preconfigured pipelines, or to even build your own customized ones
-* A standalone [command line utility](cli) for Linux and a [GitHub Action](https://github.com/SAP/project-piper-action)
+* A standalone [command line utility](cli/index.md) for Linux and a [GitHub Action](https://github.com/SAP/project-piper-action)
   * Note: This version is still in early development. Feel free to use it and [provide feedback](https://github.com/SAP/jenkins-library/issues), but don't expect all the features of the Jenkins library
 * A set of [Docker images][devops-docker-images] to setup a CI/CD environment in minutes using sophisticated life-cycle management
 
@@ -23,7 +23,7 @@ In many cases, they should satisfy your requirements, and if this is the case, y
 ### The best-practice way: Ready-made pipelines
 
 **Are you building a standalone SAP Cloud Platform application, an application with the SAP Cloud SDK, or using the SAP Cloud Application Programming Model?<br>**
-Then continue reading about our [general purpose pipeline](stages/introduction/), which supports various technologies and programming languages.
+Then continue reading about our [general purpose pipeline](stages/introduction.md), which supports various technologies and programming languages.
 
 Previously, project "Piper" included also the SAP Cloud SDK Pipeline designed specifically for SAP Cloud SDK and SAP Cloud Application Model (CAP) projects.
 SAP Cloud SDK pipeline and its features are merged into the General Purpose Pipeline as of November 2020.
@@ -61,8 +61,8 @@ methods/types needs to be announced, discussed and agreed.
 [devops-docker-images]: https://github.com/SAP/devops-docker-images
 [devops-docker-images-issues]:       https://github.com/SAP/devops-docker-images/issues
 [devops-docker-images-cxs-guide]:     https://github.com/SAP/devops-docker-images/blob/master/docs/operations/cx-server-operations-guide.md
-[piper-library-scenario]: scenarios/ui5-sap-cp/Readme/
-[piper-doc-extensibility]: extensibility
+[piper-library-scenario]: scenarios/ui5-sap-cp/Readme.md
+[piper-doc-extensibility]: extensibility.md
 [piper-library-pages-plugins]: requiredPlugins
 [piper-library-issues]: https://github.com/SAP/jenkins-library/issues
 [piper-library-license]: ./LICENSE
