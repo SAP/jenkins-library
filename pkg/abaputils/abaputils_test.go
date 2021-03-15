@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -245,115 +244,6 @@ func TestTimeConverter(t *testing.T) {
 		expectedDate := "1970-01-01 00:00:00 +0000 UTC"
 		result := ConvertTime(inputDate)
 		assert.Equal(t, expectedDate, result.String(), "Dates do not match after conversion")
-	})
-}
-
-func TestReadAddonDescriptor(t *testing.T) {
-	t.Run("Test: success case", func(t *testing.T) {
-
-		dir, err := ioutil.TempDir("", "test read addon descriptor")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
-		oldCWD, _ := os.Getwd()
-		_ = os.Chdir(dir)
-		// clean up tmp dir
-		defer func() {
-			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
-		}()
-
-		body := `---
-addonProduct: /DMO/myAddonProduct
-addonVersion: 3.1.4
-addonUniqueId: myAddonId
-customerID: 1234
-repositories:
-- name: /DMO/REPO_A
-  tag: v-1.0.1-build-0001
-  branch: branchA
-  version: 1.0.1
-- name: /DMO/REPO_B
-  tag: rel-2.1.1-build-0001
-  branch: branchB
-  version: 2.1.1
-`
-		file, _ := os.Create("filename.yaml")
-		file.Write([]byte(body))
-
-		addonDescriptor, err := ReadAddonDescriptor("filename.yaml")
-		assert.NoError(t, err)
-		assert.Equal(t, `/DMO/myAddonProduct`, addonDescriptor.AddonProduct)
-		assert.Equal(t, `3.1.4`, addonDescriptor.AddonVersionYAML)
-		assert.Equal(t, `myAddonId`, addonDescriptor.AddonUniqueID)
-		assert.Equal(t, float64(1234), addonDescriptor.CustomerID)
-		assert.Equal(t, ``, addonDescriptor.AddonSpsLevel)
-		assert.Equal(t, `/DMO/REPO_A`, addonDescriptor.Repositories[0].Name)
-		assert.Equal(t, `/DMO/REPO_B`, addonDescriptor.Repositories[1].Name)
-		assert.Equal(t, `v-1.0.1-build-0001`, addonDescriptor.Repositories[0].Tag)
-		assert.Equal(t, `rel-2.1.1-build-0001`, addonDescriptor.Repositories[1].Tag)
-		assert.Equal(t, `branchA`, addonDescriptor.Repositories[0].Branch)
-		assert.Equal(t, `branchB`, addonDescriptor.Repositories[1].Branch)
-		assert.Equal(t, `1.0.1`, addonDescriptor.Repositories[0].VersionYAML)
-		assert.Equal(t, `2.1.1`, addonDescriptor.Repositories[1].VersionYAML)
-		assert.Equal(t, ``, addonDescriptor.Repositories[0].SpLevel)
-		assert.Equal(t, ``, addonDescriptor.Repositories[1].SpLevel)
-
-		err = CheckAddonDescriptorForRepositories(addonDescriptor)
-		assert.NoError(t, err)
-	})
-	t.Run("Test: file does not exist", func(t *testing.T) {
-		expectedErrorMessage := "AddonDescriptor doesn't contain any repositories"
-
-		addonDescriptor, err := ReadAddonDescriptor("filename.yaml")
-		assert.EqualError(t, err, fmt.Sprintf("Could not find %v", "filename.yaml"))
-		assert.Equal(t, AddonDescriptor{}, addonDescriptor)
-
-		err = CheckAddonDescriptorForRepositories(addonDescriptor)
-		assert.EqualError(t, err, expectedErrorMessage)
-	})
-	t.Run("Test: empty config - failure case", func(t *testing.T) {
-		expectedErrorMessage := "AddonDescriptor doesn't contain any repositories"
-
-		addonDescriptor, err := ReadAddonDescriptor("")
-
-		assert.EqualError(t, err, fmt.Sprintf("Could not find %v", ""))
-		assert.Equal(t, AddonDescriptor{}, addonDescriptor)
-
-		err = CheckAddonDescriptorForRepositories(addonDescriptor)
-		assert.EqualError(t, err, expectedErrorMessage)
-	})
-	t.Run("Read empty addon descriptor from wrong config - failure case", func(t *testing.T) {
-		expectedErrorMessage := "AddonDescriptor doesn't contain any repositories"
-		expectedRepositoryList := AddonDescriptor{Repositories: []Repository{{}, {}}}
-
-		dir, err := ioutil.TempDir("", "test abap utils")
-		if err != nil {
-			t.Fatal("Failed to create temporary directory")
-		}
-		oldCWD, _ := os.Getwd()
-		_ = os.Chdir(dir)
-		// clean up tmp dir
-
-		defer func() {
-			_ = os.Chdir(oldCWD)
-			_ = os.RemoveAll(dir)
-		}()
-
-		manifestFileString := `
-repositories:
-- repo: 'testRepo'
-- repo: 'testRepo2'`
-
-		err = ioutil.WriteFile("repositories.yml", []byte(manifestFileString), 0644)
-
-		addonDescriptor, err := ReadAddonDescriptor("repositories.yml")
-
-		assert.Equal(t, expectedRepositoryList, addonDescriptor)
-		assert.NoError(t, err)
-
-		err = CheckAddonDescriptorForRepositories(addonDescriptor)
-		assert.EqualError(t, err, expectedErrorMessage)
 	})
 }
 
