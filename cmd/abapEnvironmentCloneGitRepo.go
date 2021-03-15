@@ -32,11 +32,6 @@ func abapEnvironmentCloneGitRepo(config abapEnvironmentCloneGitRepoOptions, tele
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
 	err := runAbapEnvironmentCloneGitRepo(&config, telemetryData, &autils, &client)
 	if err != nil {
-		log.Entry().Info("-------------------------------------")
-		log.Entry().Info("-------------------------------------")
-		log.Entry().Info("If the exception CX_SY_REF_IS_INITIAL occurs, please consider switching to a different strategy / step until the issue is resolved by SAP (planned for SAP BTP ABAP Environment release 2102 HFC04). Please have a look at https://www.project-piper.io/pipelines/abapEnvironment/introduction/ for more details.")
-		log.Entry().Info("-------------------------------------")
-		log.Entry().Info("-------------------------------------")
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
