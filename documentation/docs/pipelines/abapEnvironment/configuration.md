@@ -135,7 +135,7 @@ Some stages may only be executed if a certain condition is met. For example: the
 
 ### Prepare system
 
-The example values for the `Prepare System` stage are a suggestion. Please change them accordingly and don't forget to enter your own email address. Please be aware that creating a SAP Cloud ABAP Environment instance may incur costs.
+The example values for the `Prepare System` stage are a suggestion. Please change them accordingly and don't forget to enter your own email address. Please be aware that creating a SAP BTP, ABAP environment instance may incur costs.
 
 Please have a look at the [step documentation](https://sap.github.io/jenkins-library/steps/abapEnvironmentCreateSystem/) for more details.
 
