@@ -697,13 +697,13 @@ func writeCustomVulnerabilityReports(scanReport reporting.ScanReport, utils whit
 	// JSON reports are used by step pipelineCreateSummary in order to e.g. prepare an issue creation in GitHub
 	// ignore JSON errors since structure is in our hands
 	jsonReport, _ := scanReport.ToJSON()
-	if exists, _ := utils.DirExists(reporting.MarkdownReportDirectory); !exists {
-		err := utils.MkdirAll(reporting.MarkdownReportDirectory, 0777)
+	if exists, _ := utils.DirExists(reporting.StepReportDirectory); !exists {
+		err := utils.MkdirAll(reporting.StepReportDirectory, 0777)
 		if err != nil {
 			return reportPaths, errors.Wrap(err, "failed to create reporting directory")
 		}
 	}
-	if err := utils.FileWrite(filepath.Join(reporting.MarkdownReportDirectory, fmt.Sprintf("whitesourceExecuteScan_%v.json", utils.Now().Format("20060102150405"))), jsonReport, 0666); err != nil {
+	if err := utils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("whitesourceExecuteScan_%v.json", utils.Now().Format("20060102150405"))), jsonReport, 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return reportPaths, errors.Wrapf(err, "failed to write markdown report")
 	}

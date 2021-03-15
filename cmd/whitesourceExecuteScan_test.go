@@ -679,7 +679,7 @@ func TestWriteCustomVulnerabilityReports(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, exists)
 
-		exists, err = utilsMock.FileExists(filepath.Join(reporting.MarkdownReportDirectory, "whitesourceExecuteScan_20100510001542.json"))
+		exists, err = utilsMock.FileExists(filepath.Join(reporting.StepReportDirectory, "whitesourceExecuteScan_20100510001542.json"))
 		assert.NoError(t, err)
 		assert.True(t, exists)
 	})
@@ -699,7 +699,7 @@ func TestWriteCustomVulnerabilityReports(t *testing.T) {
 		scanReport := reporting.ScanReport{}
 		utilsMock := newWhitesourceUtilsMock()
 		utilsMock.FileWriteErrors = map[string]error{
-			filepath.Join(reporting.MarkdownReportDirectory, "whitesourceExecuteScan_20100510001542.json"): fmt.Errorf("write error"),
+			filepath.Join(reporting.StepReportDirectory, "whitesourceExecuteScan_20100510001542.json"): fmt.Errorf("write error"),
 		}
 
 		_, err := writeCustomVulnerabilityReports(scanReport, utilsMock)
