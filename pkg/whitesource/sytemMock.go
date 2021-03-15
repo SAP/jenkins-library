@@ -14,6 +14,8 @@ type SystemMock struct {
 	Products            []Product
 	Projects            []Project
 	Alerts              []Alert
+	AlertType           string
+	AlertError          error
 	Libraries           []Library
 	RiskReport          []byte
 	VulnerabilityReport []byte
@@ -107,14 +109,22 @@ func (m *SystemMock) GetProjectAlerts(projectToken string) ([]Alert, error) {
 	return m.Alerts, nil
 }
 
+// GetProjectAlertsByType returns the alerts stored in the SystemMock and records the type.
+func (m *SystemMock) GetProjectAlertsByType(projectToken, alertType string) ([]Alert, error) {
+	if m.AlertError != nil {
+		return m.Alerts, m.AlertError
+	}
+	m.AlertType = alertType
+	return m.Alerts, nil
+}
+
 // GetProjectLibraryLocations returns the libraries stored in the SystemMock.
 func (m *SystemMock) GetProjectLibraryLocations(projectToken string) ([]Library, error) {
 	return m.Libraries, nil
 }
 
-// NewSystemMock returns a pointer to a new instance of SystemMock.
-func NewSystemMock(lastUpdateDate string) *SystemMock {
-	const projectName = "mock-project - 1"
+// NewSystemMockWithProjectName returns a pointer to a new instance of SystemMock using a project with a defined name.
+func NewSystemMockWithProjectName(lastUpdateDate, projectName string) *SystemMock {
 	mockLibrary := Library{
 		Name:     "mock-library",
 		Filename: "mock-library-file",
@@ -157,4 +167,10 @@ func NewSystemMock(lastUpdateDate string) *SystemMock {
 		RiskReport:          []byte("mock-risk-report"),
 		VulnerabilityReport: []byte("mock-vulnerability-report"),
 	}
+}
+
+// NewSystemMock returns a pointer to a new instance of SystemMock.
+func NewSystemMock(lastUpdateDate string) *SystemMock {
+	const projectName = "mock-project - 1"
+	return NewSystemMockWithProjectName(lastUpdateDate, projectName)
 }

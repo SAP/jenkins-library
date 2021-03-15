@@ -37,11 +37,9 @@ func pipelineCreateScanSummary(config pipelineCreateScanSummaryOptions, telemetr
 	}
 }
 
-const reportDir = ".pipeline/stepReports"
-
 func runPipelineCreateScanSummary(config *pipelineCreateScanSummaryOptions, telemetryData *telemetry.CustomData, utils pipelineCreateScanSummaryUtils) error {
 
-	pattern := reportDir + "/*.json"
+	pattern := reporting.MarkdownReportDirectory + "/*.json"
 	reports, _ := utils.Glob(pattern)
 
 	scanReports := []reporting.ScanReport{}
@@ -61,7 +59,8 @@ func runPipelineCreateScanSummary(config *pipelineCreateScanSummaryOptions, tele
 	output := []byte{}
 	for _, scanReport := range scanReports {
 		if (config.FailedOnly && !scanReport.SuccessfulScan) || !config.FailedOnly {
-			output = append(output, scanReport.ToMarkdown()...)
+			mdReport, _ := scanReport.ToMarkdown()
+			output = append(output, mdReport...)
 		}
 	}
 

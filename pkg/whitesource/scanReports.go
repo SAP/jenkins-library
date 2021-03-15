@@ -2,10 +2,12 @@ package whitesource
 
 import (
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"os"
 	"path/filepath"
+	"strings"
+
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 // ReportOptions defines options for downloading reports after scanning.
@@ -48,7 +50,7 @@ func downloadVulnerabilityReport(options ReportOptions, project Project, utils s
 		return nil, err
 	}
 
-	rptFileName := fmt.Sprintf("%s-vulnerability-report.%s", project.Name, options.VulnerabilityReportFormat)
+	rptFileName := fmt.Sprintf("%s-vulnerability-report.%s", strings.ReplaceAll(project.Name, "/", "_"), options.VulnerabilityReportFormat)
 	rptFileName = filepath.Join(options.ReportDirectory, rptFileName)
 	if err := utils.FileWrite(rptFileName, reportBytes, 0644); err != nil {
 		return nil, err
@@ -65,7 +67,7 @@ func downloadRiskReport(options ReportOptions, project Project, utils scanUtils,
 		return nil, err
 	}
 
-	rptFileName := fmt.Sprintf("%s-risk-report.pdf", project.Name)
+	rptFileName := fmt.Sprintf("%s-risk-report.pdf", strings.ReplaceAll(project.Name, "/", "_"))
 	rptFileName = filepath.Join(options.ReportDirectory, rptFileName)
 	if err := utils.FileWrite(rptFileName, reportBytes, 0644); err != nil {
 		return nil, err
