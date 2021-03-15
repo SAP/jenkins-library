@@ -2,6 +2,7 @@ package reporting
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"text/template"
 	"time"
@@ -86,6 +87,11 @@ func (s *ScanReport) AddSubHeader(header, details string) {
 
 // MarkdownReportDirectory specifies the default directory for markdown reports which can later be collected by step pipelineCreateSummary
 const MarkdownReportDirectory = ".pipeline/stepReports"
+
+// ToJSON returns the report in JSON format
+func (s *ScanReport) ToJSON() ([]byte, error) {
+	return json.Marshal(s)
+}
 
 const reportHTMLTemplate = `<!DOCTYPE html>
 <html>
