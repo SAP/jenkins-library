@@ -1,7 +1,7 @@
 # Configuration
 
-In general, the ABAP Environment pipeline supports different scenarios. The idea is that only configured stages are executed and the user is able to choose the appropriate stages.
-In this section, you can learn how to create a configuration in a (GitHub) repository to run an ABAP Environment Pipeline used for testing. This specific example will create a pipeline, which executes ATC checks after creating a new ABAP Environment system. In the end, the system will be deprovisioned.
+In general, the SAP ABAP environment pipeline supports different scenarios. The idea is that only configured stages are executed and the user is able to choose the appropriate stages.
+In this section, you can learn how to create a configuration in a (GitHub) repository to run an ABAP environment pipeline used for testing. This specific example will create a pipeline, which executes ATC checks after creating a new ABAP environment system. In the end, the system will be deprovisioned.
 
 You can have a look at different pipeline configurations in our [SAP-samples repository](https://github.com/SAP-samples/abap-platform-ci-cd-samples) or learn more about the configuration in the respective stage or step documentation.
 
@@ -18,16 +18,16 @@ You can have a look at different pipeline configurations in our [SAP-samples rep
 | [Publish](stages/publish.md)                  | [abapAddonAssemblyKitPublishTargetVector](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitPublishTargetVector/)|
 | [Post](stages/post.md)                     | [cloudFoundryDeleteService](https://sap.github.io/jenkins-library/steps/cloudFoundryDeleteService/)|
 
-!!! caution "Upcoming 2102 release of SAP BTP ABAP Environment"
+!!! caution "Upcoming 2102 release of SAP BTP, ABAP Environment"
 
-    With the upcoming 2102 release of SAP BTP ABAP Environment some changes to the backend behavior of the MANAGE_GIT_REPOSITORY service are introduced. Specifically:
+    With the upcoming 2102 release of SAP BTP, ABAP Environment some changes to the backend behavior of the MANAGE_GIT_REPOSITORY service are introduced. Specifically:
 
       - To pull a software component to a system, the software component needs to be cloned first.
       - It is planned to add the possibility to clone a software component repeatedly with the hotfix collection HFC03 of release 2102
 
     **Implications for the “abapEnvironmentPipeline”:**
 
-    If you are using the “Prepare System” stage to create a new ABAP Environment system, it is no longer possible to use the “Clone Repositories” stage with the “Pull” strategy or with the default strategy (no strategy specified). Please use the strategy “Clone” instead. For more information, have a look at the [stage documentation](./stages/cloneRepositories.md).
+    If you are using the “Prepare System” stage to create a new ABAP environment system, it is no longer possible to use the “Clone Repositories” stage with the “Pull” strategy or with the default strategy (no strategy specified). Please use the strategy “Clone” instead. For more information, have a look at the [stage documentation](./stages/cloneRepositories.md).
     The strategy “AddonBuild” will execute the abapEnvironmentCloneGitRepo instead of the previous logic. No configuration changes should be necessary.
 
     Please be aware that a repeated execution of a pipeline using the strategy “Clone” or “AddonBuild” will not be possible until hotfix collection HFC03 (planned).
@@ -150,7 +150,7 @@ If the `Clone Repositories` stage is configured, you can specify the `strategy` 
 
 Note that you can use the `repositories.yml` file with the `repositories` parameter consistently for all strategies.
 
-The values for `cfApiEndpoint`,`cfOrg` and `cfSpace` can be found in the respective overview pages in the SAP BTP Cockpit. The Cloud Foundry credentials, saved in the Jenkins credentials store with the ID `cfCredentialsId`, must refer to a user with the required authorizations ("Space Developer") for the Cloud Foundry Organization and Space.
+The values for `cfApiEndpoint`,`cfOrg` and `cfSpace` can be found in the respective overview pages in the SAP BTP cockpit. The Cloud Foundry credentials, saved in the Jenkins credentials store with the ID `cfCredentialsId`, must refer to a user with the required authorizations ("Space Developer") for the Cloud Foundry organization and space.
 
 ## 7. Create a Jenkins Pipeline
 
