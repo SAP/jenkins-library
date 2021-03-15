@@ -25,11 +25,9 @@ import (
 
 // AddonDescriptor contains fields about the addonProduct
 type AddonDescriptor struct {
-	AddonProduct     string      `json:"addonProduct"`
-	AddonVersionYAML string      `json:"addonVersion"`
-	AddonVersion     string      `json:"addonVersionAAK"`
-	AddonUniqueID    string      `json:"addonUniqueID"`
-	CustomerID       interface{} `json:"customerID"`
+	AddonProduct     string `json:"addonProduct"`
+	AddonVersionYAML string `json:"addonVersion"`
+	AddonVersion     string `json:"addonVersionAAK"`
 	AddonSpsLevel    string
 	AddonPatchLevel  string
 	TargetVectorID   string
