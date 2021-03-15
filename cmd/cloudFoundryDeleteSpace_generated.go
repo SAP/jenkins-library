@@ -105,6 +105,9 @@ func cloudFoundryDeleteSpaceMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Resources: []config.StepResources{
+					{Name: "deployDescriptor", Type: "stash"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "cfApiEndpoint",
@@ -161,7 +164,7 @@ func cloudFoundryDeleteSpaceMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "cf", Image: "ppiper/cf-cli"},
+				{Name: "cf", Image: "ppiper/cf-cli:6"},
 			},
 		},
 	}

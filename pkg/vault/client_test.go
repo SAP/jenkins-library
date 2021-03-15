@@ -3,6 +3,7 @@ package vault
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/pkg/errors"
 	"path"
 	"strings"
 	"testing"
@@ -304,6 +305,30 @@ func TestGetAppRoleName(t *testing.T) {
 
 		appRoleName, err := client.GetAppRoleName()
 		assert.Empty(t, appRoleName)
+		assert.NoError(t, err)
+	})
+}
+
+func TestTokenRevocation(t *testing.T) {
+	t.Parallel()
+	t.Run("Test that revocation error is returned", func(t *testing.T) {
+		vaultMock := &mocks.VaultMock{}
+		client := Client{vaultMock, &Config{}}
+		vaultMock.On("Write",
+			"auth/token/revoke-self",
+			mock.IsType(map[string]interface{}{})).Return(nil, errors.New("Test"))
+
+		err := client.RevokeToken()
+		assert.Errorf(t, err, "Test")
+	})
+
+	t.Run("Test that revocation endpoint is called", func(t *testing.T) {
+		vaultMock := &mocks.VaultMock{}
+		client := Client{vaultMock, &Config{}}
+		vaultMock.On("Write",
+			"auth/token/revoke-self",
+			mock.IsType(map[string]interface{}{})).Return(nil, nil)
+		err := client.RevokeToken()
 		assert.NoError(t, err)
 	})
 }

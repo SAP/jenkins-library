@@ -116,6 +116,18 @@ spec:
           - STAGES
           - STEPS
         default: true
+      - name: customScanVersion
+        type: string
+        description: Custom version of the WhiteSource project used as source.
+        longDescription: |-
+          Defines a custom version for the WhiteSource scan which deviates from the typical versioning pattern using [`version`](#version) and [`versioningModel`](#versioningModel)
+          It allows to set non-numeric versions as well and supersedes the value of [`version`](#version) which is calculated automatically.
+          The parameter is also used by other scan steps (e.g. BlackDuck Detect) and thus allows a common custom version across scan tools.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: cvssSeverityLimit
         type: string
         description: "Limit of tolerable CVSS v3 score upon assessment and in consequence fails the build,
@@ -228,8 +240,9 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: productVersion
+      - name: version
         aliases:
+          - name: productVersion
           - name: whitesourceProductVersion
           - name: whitesource/productVersion
             deprecated: true
@@ -243,6 +256,9 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: artifactVersion
       - name: projectName
         aliases:
           - name: whitesourceProjectName
@@ -267,14 +283,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: reportDirectoryName
-        type: string
-        description: "Name of the directory to save vulnerability/risk reports to"
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        default: "whitesource-reports"
       - name: reporting
         type: bool
         description: "Whether assessment is being done at all, defaults to `true`"
@@ -307,17 +315,19 @@ spec:
           - STEPS
       - name: scanType
         type: string
-        description: "Type of development stack used to implement the solution.
-          For scan types other than `mta`, `maven`, and `npm`,
-          the WhiteSource Unified Agent is downloaded and used to perform the scan.
-          If the parameter is not provided, it is derived from the parameter `buildTool`,
-          which is usually configured in the general section of the pipeline config file."
+        description: "**DEPRECATED**: Please set to `ua` in order to prevent usage of deprecated WhiteSource plugins and use Unified Agent instead."
+        longDescription: |-
+          WhiteSource deprecated all build-tool specific plugins in 2019.
+          The successor of the individual plugins is the so-called "Unified Agent".
+
+          For now the value `ua` acts as a toogle to not break existing scenarios.
+          We plan to remove this parameter in early Q2/2021.
         scope:
           - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
-        possibleValues: ["golang", "gradle", "maven", "mta", "npm", "pip", "yarn"]
+        possibleValues: ["ua", "golang", "gradle", "maven", "mta", "npm", "pip", "yarn"]
       - name: securityVulnerabilities
         type: bool
         description: "Whether security compliance is considered and reported as part of the assessment."
@@ -349,7 +359,7 @@ spec:
         default: 900
       - name: userToken
         type: string
-        description: "WhiteSource token identifying the user executing the scan."
+        description: User token to access WhiteSource. In Jenkins use case this is automatically filled through the credentials.
         scope:
           - GENERAL
           - PARAMETERS
@@ -360,6 +370,11 @@ spec:
         resourceRef:
           - name: userTokenCredentialsId
             type: secret
+          - type: vaultSecret
+            paths:
+              - $(vaultPath)/whitesource
+              - $(vaultBasePath)/$(vaultPipelineName)/whitesource
+              - $(vaultBasePath)/GROUP-SECRETS/whitesource
       - name: versioningModel
         type: string
         description: "The default project versioning model used in case `projectVersion` parameter is
@@ -456,6 +471,19 @@ spec:
         params:
           - name: custom/whitesourceProjectNames
             type: "[]string"
+      - name: influx
+        type: influx
+        params:
+          - name: whitesource_data
+            fields:
+              - name: vulnerabilities
+                type: int
+              - name: major_vulnerabilities
+                type: int
+              - name: minor_vulnerabilities
+                type: int
+              - name: policy_violations
+                type: int
   containers:
     - image: buildpack-deps:stretch-curl
       workingDir: /tmp
@@ -486,7 +514,7 @@ spec:
         - conditionRef: strings-equal
           params:
             - name: buildTool
-              value: go
+              value: golang
     - image: hseeberger/scala-sbt:8u181_2.12.8_1.2.8
       workingDir: /tmp
       env: []

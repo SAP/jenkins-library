@@ -101,7 +101,7 @@ func TestGetResults(t *testing.T) {
 		b := testSetup(&ClMock{}, "ABIFNLDCSQPOVMXK4DNPBDRW2M")
 		err := b.getResults()
 		assert.NoError(t, err)
-		assert.Equal(t, 0, len(b.Tasks[0].Results))
+		assert.Equal(t, 1, len(b.Tasks[0].Results))
 		assert.Equal(t, 2, len(b.Tasks[1].Results))
 		assert.Equal(t, "image/jpeg", b.Tasks[1].Results[0].Mimetype)
 		assert.Equal(t, "application/octet-stream", b.Tasks[1].Results[1].Mimetype)

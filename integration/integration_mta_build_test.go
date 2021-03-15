@@ -11,7 +11,7 @@ func TestMavenProject(t *testing.T) {
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "devxci/mbtci:latest",
-		User:    "mta",
+		User:    "root",
 		TestDir: []string{"testdata", "TestMtaIntegration", "maven"},
 	})
 
@@ -30,7 +30,7 @@ func TestMavenSpringProject(t *testing.T) {
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "devxci/mbtci:latest",
-		User:    "mta",
+		User:    "root",
 		TestDir: []string{"testdata", "TestMtaIntegration", "maven-spring"},
 	})
 
@@ -50,7 +50,7 @@ func TestNPMProject(t *testing.T) {
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "devxci/mbtci:latest",
-		User:    "mta",
+		User:    "root",
 		TestDir: []string{"testdata", "TestMtaIntegration", "npm"},
 	})
 
@@ -66,7 +66,7 @@ func TestNPMProjectInstallsDevDependencies(t *testing.T) {
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
 		Image:   "devxci/mbtci:latest",
-		User:    "mta",
+		User:    "root",
 		TestDir: []string{"testdata", "TestMtaIntegration", "npm-install-dev-dependencies"},
 	})
 
