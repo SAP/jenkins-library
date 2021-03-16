@@ -133,8 +133,7 @@ func resolveVaultReference(ref *ResourceReference, config *StepConfig, client va
 	}
 }
 
-// lookup in path and GROUP_SECRETS/path
-// resolve keys and expose
+// resolve test credential keys and expose as environment variables
 func resolveVaultTestCredentials(config *StepConfig, client vaultClient) {
 	credPath, pathOk := config.Config[vaultTestCredentialPath].(string)
 	keys, keysOk := config.Config[vaultTestCredentialKeys].([]interface{})
