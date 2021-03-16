@@ -73,10 +73,8 @@ spec:
         type: bool
         default: true
       - name: cfAppsWithSecrets
-        description: Define name array of cloud foundry apps deployed for which secrets (clientid and clientsecret) will be appended
-        longDescription: |
-          to the newman command that overrides the environment json entries
-          (--env-var <appName_clientid>=${clientid} & --env-var <appName_clientsecret>=${clientsecret})
+        description: List of CloudFoundry apps with secrets
+        longDescription: Define name array of cloud foundry apps deployed for which secrets (clientid and clientsecret) will be appended to the newman command that overrides the environment json entries (--env-var <appName_clientid>=${clientid} & --env-var <appName_clientsecret>=${clientsecret})
         scope:
           - PARAMETERS
           - STAGES

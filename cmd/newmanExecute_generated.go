@@ -88,7 +88,7 @@ func addNewmanExecuteFlags(cmd *cobra.Command, stepConfig *newmanExecuteOptions)
 	cmd.Flags().StringVar(&stepConfig.NewmanEnvironment, "newmanEnvironment", os.Getenv("PIPER_newmanEnvironment"), "Specify an environment file path or URL. Environments provide a set of variables that one can use within collections.")
 	cmd.Flags().StringVar(&stepConfig.NewmanGlobals, "newmanGlobals", os.Getenv("PIPER_newmanGlobals"), "Specify the file path or URL for global variables. Global variables are similar to environment variables but have a lower precedence and can be overridden by environment variables having the same name.")
 	cmd.Flags().BoolVar(&stepConfig.FailOnError, "failOnError", true, "Defines the behavior, in case tests fail.")
-	cmd.Flags().StringSliceVar(&stepConfig.CfAppsWithSecrets, "cfAppsWithSecrets", []string{}, "Define name array of cloud foundry apps deployed for which secrets (clientid and clientsecret) will be appended")
+	cmd.Flags().StringSliceVar(&stepConfig.CfAppsWithSecrets, "cfAppsWithSecrets", []string{}, "List of CloudFoundry apps with secrets")
 
 }
 
