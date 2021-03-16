@@ -78,11 +78,13 @@ func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemet
 	sys := fortify.NewSystemInstance(config.ServerURL, config.APIEndpoint, config.AuthToken, time.Minute*15)
 	utils := newFortifyUtilsBundle()
 
+	influx.step_data.fields.fortify = false
 	reports, err := runFortifyScan(config, sys, utils, telemetryData, influx, auditStatus)
 	piperutils.PersistReportsAndLinks("fortifyExecuteScan", config.ModulePath, reports, nil)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Fortify scan and check failed")
 	}
+	influx.step_data.fields.fortify = true
 	// make sure that no specific error category is set in success case
 	log.SetErrorCategory(log.ErrorUndefined)
 }

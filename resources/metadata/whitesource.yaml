@@ -474,6 +474,10 @@ spec:
       - name: influx
         type: influx
         params:
+          - name: step_data
+            fields:
+              - name: whitesource
+                type: bool
           - name: whitesource_data
             fields:
               - name: vulnerabilities
