@@ -37,13 +37,15 @@ func newNewmanExecuteUtils() newmanExecuteUtils {
 	return &utils
 }
 
-func newmanExecute(config newmanExecuteOptions, _ *telemetry.CustomData) {
+func newmanExecute(config newmanExecuteOptions, _ *telemetry.CustomData, influx *newmanExecuteInflux) {
 	utils := newNewmanExecuteUtils()
 
+	influx.step_data.fields.newman = false
 	err := runNewmanExecute(&config, utils)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
+	influx.step_data.fields.newman = true
 }
 
 func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) error {
