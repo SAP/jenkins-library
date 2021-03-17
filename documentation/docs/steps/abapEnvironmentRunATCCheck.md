@@ -4,10 +4,10 @@
 
 ## Prerequisites
 
-* A SAP Cloud Platform ABAP Environment system is available. On this system, a [Communication User](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/0377adea0401467f939827242c1f4014.html), a [Communication System](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/1bfe32ae08074b7186e375ab425fb114.html) and a [Communication Arrangement](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/a0771f6765f54e1c8193ad8582a32edb.html) is setup for the Communication Scenario “SAP Cloud Platform ABAP Environment - Software Component Test Integration (SAP_COM_0510)“. This can be done manually through the respective applications on the SAP Cloud Platform ABAP Environment System or through creating a service key for the system on cloud foundry with the parameters {“scenario_id”: “SAP_COM_0510", “type”: “basic”}. In a pipeline, you can do this with the step [cloudFoundryCreateServiceKey](https://sap.github.io/jenkins-library/steps/cloudFoundryCreateServiceKey/).
-* You can either provide the ABAP endpoint configuration to directly trigger an ATC run on the ABAP system or optionally provide the Cloud Foundry parameters with your credentials to read a Service Key of a SAP Cloud Platform ABAP Environment system in Cloud Foundry that contains all the details of the ABAP endpoint to trigger an ATC run.
-* Regardless if you chose an ABAP endpoint directly or reading a Cloud Foundry Service Key you have to provide the configuration of the packages and software components you want to be checked in an ATC run in a .yml or .yaml file. This file must be stored in the same folder as the Jenkinsfile defining the pipeline.
-* The Software Components and/or Packages you want to be checked must be present in the configured system in order to run the check. Please make sure that you have created or pulled the respective Software Components and/or Packages in the SAP Cloud Platform ABAP Environment system.
+* A SAP BTP, ABAP environment system is available. On this system, a [Communication User](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/0377adea0401467f939827242c1f4014.html), a [Communication System](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/1bfe32ae08074b7186e375ab425fb114.html) and a [Communication Arrangement](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/a0771f6765f54e1c8193ad8582a32edb.html) is setup for the Communication Scenario “SAP BTP, ABAP Environment - Software Component Test Integration (SAP_COM_0510)“. This can be done manually through the respective applications on the SAP BTP, ABAP environment system or through creating a service key for the system on Cloud Foundry with the parameters {“scenario_id”: “SAP_COM_0510", “type”: “basic”}. In a pipeline, you can do this with the step [cloudFoundryCreateServiceKey](https://sap.github.io/jenkins-library/steps/cloudFoundryCreateServiceKey/).
+* You can either provide the ABAP endpoint configuration to directly trigger an ATC run on the ABAP system or optionally provide the Cloud Foundry parameters with your credentials to read a Service Key of a SAP BTP, ABAP environment system in Cloud Foundry that contains all the details of the ABAP endpoint to trigger an ATC run.
+* Regardless if you chose an ABAP endpoint directly or reading a Cloud Foundry Service Key, you have to provide the configuration of the packages and software components you want to be checked in an ATC run in a .yml or .yaml file. This file must be stored in the same folder as the Jenkinsfile defining the pipeline.
+* The software components and/or packages you want to be checked must be present in the configured system in order to run the check. Please make sure that you have created or pulled the respective software components and/or Packages in the SAP BTP, ABAP environment system.
 
 Examples will be listed below.
 
@@ -42,7 +42,7 @@ steps:
 The following example triggers an ATC run via reading the Service Key of an ABAP instance in Cloud Foundry.
 
 You can store the credentials in Jenkins and use the cfCredentialsId parameter to authenticate to Cloud Foundry.
-The username and password to authenticate to ABAP system will then be read from the Cloud Foundry Service Key that is bound to the ABAP instance.
+The username and password to authenticate to ABAP system will then be read from the Cloud Foundry service key that is bound to the ABAP instance.
 
 This can be done accordingly:
 
@@ -88,7 +88,7 @@ This file must be stored in the same Git folder where the `Jenkinsfile` is store
 You can specify a list of packages and/or software components to be checked. This must be in the same format as below example for a `atcconfig.yml` file.
 For each package that has to be checked you can configure if you want the subpackages to be included in checks or not.
 Please note that if you chose to provide both packages and software components to be checked with the `atcconfig.yml` file, the set of packages and the set of software components will be combinend by the API using a logical AND operation.
-Therefore, we advise to specify either the Software Components or Packages.
+Therefore, we advise to specify either the software components or packages.
 
 See below example for an `atcconfig.yml` file with both packages and software components to be checked:
 
