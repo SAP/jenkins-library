@@ -358,16 +358,6 @@ steps:
     neoTargets: []
     enableZeroDowntimeDeployment: false
     parallelExecution: false
-  newmanExecute:
-    dockerImage: 'node:lts-stretch'
-    failOnError: true
-    newmanCollection: '**/*.postman_collection.json'
-    newmanEnvironment: ''
-    newmanGlobals: ''
-    newmanInstallCommand: 'npm install newman newman-reporter-html --global --quiet'
-    newmanRunCommand: "run '${config.newmanCollection}' --environment '${config.newmanEnvironment}' --globals '${config.newmanGlobals}' --reporters junit,html --reporter-junit-export 'target/newman/TEST-${collectionDisplayName}.xml' --reporter-html-export 'target/newman/TEST-${collectionDisplayName}.html'"
-    stashContent:
-      - 'tests'
   npmExecute:
     dockerImage: 'node:lts-stretch'
   npmExecuteScripts:

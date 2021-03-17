@@ -1,0 +1,86 @@
+metadata:
+  name: newmanExecute
+  description: Installs newman and executes specified newman collections.
+  longDescription: |
+    This script executes [Postman](https://www.getpostman.com) tests from a collection via the [Newman](https://www.getpostman.com/docs/v6/postman/collection_runs/command_line_integration_with_newman) command line tool.
+spec:
+  inputs:
+    resources:
+      - name: tests
+        type: stash
+    params:
+      - name: newmanCollection
+        description: The test collection that should be executed. This could also be a file pattern.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        default: '**/*.postman_collection.json'
+      - name: newmanRunCommand
+        description: +++ Deprecated +++ Please use list parameter `runOptions` instead.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+      - name: runOptions
+        description: The newman command that will be executed inside the docker container.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: "[]string"
+        default:
+          - run
+          - "{{.NewmanCollection}}"
+          - --reporters
+          - cli,junit,html
+          - --reporter-junit-export
+          - target/newman/TEST-{{.CollectionDisplayName}}.xml
+          - --reporter-html-export
+          - target/newman/TEST-{{.CollectionDisplayName}}.html
+      - name: newmanInstallCommand
+        description: The shell command that will be executed inside the docker container to install Newman.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        default: npm install newman newman-reporter-html --global --quiet
+      - name: newmanEnvironment
+        description: Specify an environment file path or URL. Environments provide a set of variables that one can use within collections.
+        longDescription: see also [Newman docs](https://github.com/postmanlabs/newman#newman-run-collection-file-source-options)
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+      - name: newmanGlobals
+        description: Specify the file path or URL for global variables. Global variables are similar to environment variables but have a lower precedence and can be overridden by environment variables having the same name.
+        longDescription: see also [Newman docs](https://github.com/postmanlabs/newman#newman-run-collection-file-source-options)
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+      - name: failOnError
+        description: Defines the behavior, in case tests fail.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: bool
+        default: true
+      - name: cfAppsWithSecrets
+        description: List of CloudFoundry apps with secrets
+        longDescription: Define name array of cloud foundry apps deployed for which secrets (clientid and clientsecret) will be appended to the newman command that overrides the environment json entries (--env-var <appName_clientid>=${clientid} & --env-var <appName_clientsecret>=${clientsecret})
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: "[]string"
+  containers:
+    - name: newman
+      image: node:lts-stretch
+      workingDir: /home/node
