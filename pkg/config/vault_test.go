@@ -220,6 +220,7 @@ func addAlias(param *StepParameters, aliasName string) {
 
 func Test_resolveVaultTestCredentials(t *testing.T) {
 	vaultMock := &mocks.VaultMock{}
+	envPrefix := "PIPER_TESTCREDENTIAL_"
 
 	stepConfig := StepConfig{Config: map[string]interface{}{
 		"vaultPath":               "team1",
@@ -231,6 +232,11 @@ func Test_resolveVaultTestCredentials(t *testing.T) {
 	vaultMock.On("GetKvSecret", "team1/appCredentials").Return(vaultData, nil)
 
 	resolveVaultTestCredentials(&stepConfig, vaultMock)
+	for k, v := range vaultData {
+		env := envPrefix + k
+		assert.NotEmpty(t, os.Getenv(env))
+		assert.Equal(t, os.Getenv(env), v)
+	}
 
 	// assert.NotNil(t, stepConfig.Config["appUser"])
 	// assert.NotNil(t, stepConfig.Config["appUserPw"])

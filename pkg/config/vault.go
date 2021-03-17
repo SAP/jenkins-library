@@ -3,6 +3,7 @@ package config
 import (
 	"io/ioutil"
 	"os"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/config/interpolation"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -168,9 +169,9 @@ func resolveVaultTestCredentials(config *StepConfig, client vaultClient) {
 				}
 				if secretKey == key {
 					log.RegisterSecret(secretValue)
-					envKey := "PIPER_TESTCREDENTIAL_" + secretKey
-					log.Entry().Debugf("Exposing test credential '%v' as '%v'", key, envKey)
-					os.Setenv(envKey, secretValue)
+					envVariable := "PIPER_TESTCREDENTIAL_" + convertEnvironment(secretKey)
+					log.Entry().Debugf("Exposing test credential '%v' as '%v'", key, envVariable)
+					os.Setenv(envVariable, secretValue)
 					secretsResolved = true
 				}
 			}
@@ -179,6 +180,13 @@ func resolveVaultTestCredentials(config *StepConfig, client vaultClient) {
 			break
 		}
 	}
+}
+
+// converts to an environment variable style string
+func convertEnvironment(s string) string {
+	r := strings.ToUpper(s)
+	r = strings.ReplaceAll(r, "-", "_")
+	return r
 }
 
 // RemoveVaultSecretFiles removes all secret files that have been created during execution
