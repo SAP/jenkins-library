@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -9,8 +10,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/pkg/errors"
 )
-
-const containerStructureTestsExecutable = "container-structure-test"
 
 type containerExecuteStructureTestsUtils interface {
 	Stdout(out io.Writer)
@@ -52,21 +51,32 @@ func findConfigFiles(pattern string, utils containerExecuteStructureTestsUtils) 
 }
 
 func runContainerExecuteStructureTests(config *containerExecuteStructureTestsOptions, utils containerExecuteStructureTestsUtils) error {
+	utils.Stdout(log.Writer())
+	utils.Stderr(log.Writer())
+	containerStructureTestsExecutable := "container-structure-test"
 	var parameters []string
-
 	parameters = append(parameters, "test")
 	configFiles, err := findConfigFiles(config.TestConfiguration, utils)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to find config files, error: %v", err)
+	}
+	if len(configFiles) == 0 {
+		return errors.New("config files mustn't be missing")
 	}
 	for _, config := range configFiles {
 		parameters = append(parameters, "--config", config)
 	}
 	if config.TestDriver != "" {
+		if config.TestDriver != "docker" && config.TestDriver != "tar" {
+			return fmt.Errorf("test driver %s is incorrect. Possible drivers: docker, tar", config.TestDriver)
+		}
 		parameters = append(parameters, "--driver", config.TestDriver)
 	}
 	if config.PullImage {
 		parameters = append(parameters, "--pull")
+	}
+	if config.TestImage == "" {
+		return errors.New("testImage must not be empty")
 	}
 	parameters = append(parameters, "--image", config.TestImage)
 	parameters = append(parameters, "--test-report", config.TestReportFilePath)
@@ -74,7 +84,7 @@ func runContainerExecuteStructureTests(config *containerExecuteStructureTestsOpt
 	err = utils.RunExecutable(containerStructureTestsExecutable, parameters...)
 	if err != nil {
 		commandLine := append([]string{containerStructureTestsExecutable}, parameters...)
-		return errors.Wrapf(err, "failed to run executable, command: '%s', error: %w", commandLine, err)
+		return errors.Wrapf(err, "failed to run executable, command: '%s', error: %v", commandLine, err)
 	}
 
 	return nil
