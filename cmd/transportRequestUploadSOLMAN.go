@@ -66,7 +66,7 @@ type iTransportRequestUtils interface {
 type transportRequestUtils struct {
 }
 
-func (g *transportRequestUtils) FindIDInRange(label, from, to string) (string, error) {
+func (*transportRequestUtils) FindIDInRange(label, from, to string) (string, error) {
 	return transportrequest.FindIDInRange(label, from, to)
 }
 
