@@ -37,7 +37,7 @@ An add-on product version is defined by a name and a version string. The name of
 
 !!! note "Development on SAP BTP, ABAP environment"
     As you may know, the development in the SAP BTP, ABAP environment is done within [software component](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/58480f43e0b64de782196922bc5f1ca0.html). A software component is self-contained, and a reduced set of [objects and features of the ABAP programming language](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/c99ba0d28a1a4747b8f47eda06c6b4f1.html) can be used.
-    The software component and development objects must be created in a namespace, so that clashes between software of different vendors and SAP are avoided. Therefore, a namespace must be reserved before the development can start. [SAP note 105132](https://launchpad.support.sap.com/#/notes/105132) describes the namespace reservation process. The namespace must be reserved for the same customer number under which the “SAP CP ABAP ENVIRONMENT” tenants are licensed.
+    The software component and development objects must be created in a namespace, so that clashes between software of different vendors and SAP are avoided. Therefore, a namespace must be reserved before the development can start. [SAP note 105132](https://launchpad.support.sap.com/#/notes/105132) describes the namespace reservation process. The namespace must be reserved for the same customer number under which the “SAP BTP, ABAP ENVIRONMENT” tenants are licensed.
 
 ### Software Component Version
 
@@ -122,9 +122,9 @@ Later, during the pipeline configuration, you will specify the Service Plan, whi
 
 The add-on product needs to be registered with SAP in order to be installable in the desired global account. More details will follow soon.
 
-#### Piper Library Version to SAP BTP ABAP Environment Dependency
+#### Project "Piper" Library Version to SAP BTP, ABAP Environment Dependency
 
-SAP BTP ABAP environment releases might require certain versions of the Piper Library. More Information can be found in [SAP Note 3032800](https://launchpad.support.sap.com/#/notes/3032800).
+SAP BTP ABAP environment releases might require certain versions of the project "Piper" Library. More Information can be found in [SAP Note 3032800](https://launchpad.support.sap.com/#/notes/3032800).
 
 ### Configuration
 
