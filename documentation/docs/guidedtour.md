@@ -191,7 +191,7 @@ If your pipeline fails, compare its files to the final [Jenkinsfile][guidedtour-
 
 Your application has been deployed into your space in the Cloud Foundry space on SAP BTP. Login to SAP BTP and navigate into you space.   **Result:** Your space contains the application `piper.node.hello.world`, the state of the application is `Started`.
    <p align="center">
-   ![Deployed Application](images/SCPDeployApp-1.png "SAP Cloud Platform")
+   ![Deployed Application](images/SCPDeployApp-1.png "SAP Business Technology Platform")
    </p>
 
 Open the application name to get into the `Application Overview`. Open the **Application Route** and add `/users` to the URL. **Result:** The application returns a list of user data.
