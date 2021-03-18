@@ -41,9 +41,11 @@ func protecodeExecuteScan(config protecodeExecuteScanOptions, telemetryData *tel
 	c.Stderr(log.Writer())
 
 	dClient := createDockerClient(&config)
+	influx.step_data.fields.protecode = false
 	if err := runProtecodeScan(&config, influx, dClient); err != nil {
 		log.Entry().WithError(err).Fatal("Failed to execute protecode scan.")
 	}
+	influx.step_data.fields.protecode = true
 }
 
 func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExecuteScanInflux, dClient piperDocker.Download) error {

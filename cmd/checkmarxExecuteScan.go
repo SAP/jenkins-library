@@ -33,9 +33,11 @@ func checkmarxExecuteScan(config checkmarxExecuteScanOptions, telemetryData *tel
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Failed to create Checkmarx client talking to URL %v", config.ServerURL)
 	}
+	influx.step_data.fields.checkmarx = false
 	if err := runScan(config, sys, "./", influx); err != nil {
 		log.Entry().WithError(err).Fatal("Failed to execute Checkmarx scan.")
 	}
+	influx.step_data.fields.checkmarx = true
 }
 
 func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace string, influx *checkmarxExecuteScanInflux) error {
