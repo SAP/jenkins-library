@@ -34,9 +34,9 @@ The process flow contains the following steps:
 
 1. The CI server builds a multitarget application archive.
 1. The multitarget application is uploaded into the import queue of the target node, which is specified in the CI pipeline (in this example, PRE-PROD).
-1. Optionally, for transports in Cloud Foundry environment, multitarget application extension descriptors can be uploaded to the nodes in the transport landscape to provide node-specific import configurations. The MTA extension descriptor file must either be part of the repository, or be the result of the build process.
-1. The release manager manually triggers the import, or schedules it, which results in the physical deployment of the multitarget application archive into the corresponding subaccount (in this example, PRE-PROD). If an MTA extension descriptor was uploaded for this node, it will be used for the import.
-1. As soon as the import is executed, a transport is triggered along the defined transport route so that the MTA archive reaches the import queue of the next node (in this example, PROD).
+1. Optionally, for transports in Cloud Foundry environment, multitarget application extension descriptors can be uploaded to the nodes in the transport landscape to provide node-specific import configurations. The multitarget application extension descriptor file must either be part of the repository, or be the result of the build process.
+1. The release manager manually triggers the import, or schedules it, which results in the physical deployment of the multitarget application archive into the corresponding subaccount (in this example, PRE-PROD). If an multitarget application extension descriptor was uploaded for this node, it will be used for the import.
+1. As soon as the import is executed, a transport is triggered along the defined transport route so that the multitarget application archive reaches the import queue of the next node (in this example, PROD).
 1. There, the physical import into the corresponding subaccount can be either triggered manually by the release manager or automatically by using the scheduling mechanisms of Cloud Transport Management.
 
 ## Example
@@ -85,8 +85,8 @@ stages:
 | `nodeName`|Defines the name of the node to which the *.mtar file is uploaded.|
 | `mtaPath`|Defines the path to the *.mtar file for the upload to Cloud Transport Management.|
 | `customDescription`|Optional: Description of a transport request. Overwrites the default (Default: Corresponding Git Commit-ID).|
-|`nodeExtDescriptorMapping`|Optional: Defines the mapping between a transport node and the MTA extension descriptor file that is used for the transport node. You specify the node name and the relative path to the multitarget application extension descriptor file using the syntax which is shown in the configuration example.|
-|`mtaVersion`|Optional: Defines the version of the MTA for which the multitarget application extension descriptor is used. You can use an asterisk (*) to accept any multitarget application version, or use a specific version compliant with SemVer 2.0, e.g. 1.0.0 (see semver.org). If the parameter is not configured, an asterisk is used.|
+|`nodeExtDescriptorMapping`|Optional: Defines the mapping between a transport node and the multitarget application extension descriptor file that is used for the transport node. You specify the node name and the relative path to the multitarget application extension descriptor file using the syntax which is shown in the configuration example.|
+|`mtaVersion`|Optional: Defines the version of the multitarget application for which the multitarget application extension descriptor is used. You can use an asterisk (*) to accept any multitarget application version, or use a specific version compliant with SemVer 2.0, e.g. 1.0.0 (see semver.org). If the parameter is not configured, an asterisk is used.|
 
 ### Parameters
 
