@@ -43,7 +43,7 @@ If your project is not based on the _SAP Business Application Studio_ WebIDE tem
 
 * You have an account on SAP Business Technology Platform in the Cloud Foundry environment. See [Accounts](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/8ed4a705efa0431b910056c0acdbf377.html).
 * You have downloaded and installed the Cloud Foundry command line interface (CLI). See [Download and Install the Cloud Foundry Command Line Interface](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/afc3f643ec6942a283daad6cdf1b4936.html).
-* You have installed the multi-target application plug-in for the Cloud Foundry command line interface. See [Install the Multitarget Application Plug-in in the Cloud Foundry Environment](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/27f3af39c2584d4ea8c15ba8c282fd75.html).
+* You have installed the multitarget application (MTA) plug-in for the Cloud Foundry command line interface. See [Install the Multitarget Application Plug-in in the Cloud Foundry Environment](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/27f3af39c2584d4ea8c15ba8c282fd75.html).
 * You have installed the Java Runtime Environment 8.
 * You have installed Jenkins 2.60.3 or higher.
 * You have set up Project “Piper”. See [README](https://github.com/SAP/jenkins-library/blob/master/README.md).
