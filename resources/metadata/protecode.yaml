@@ -220,6 +220,10 @@ spec:
       - name: influx
         type: influx
         params:
+          - name: step_data
+            fields:
+              - name: protecode
+                type: bool
           - name: protecode_data
             fields:
               - name: excluded_vulnerabilities

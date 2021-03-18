@@ -590,6 +590,10 @@ spec:
       - name: influx
         type: influx
         params:
+          - name: step_data
+            fields:
+              - name: fortify
+                type: bool
           - name: fortify_data
             fields:
               - name: projectName
