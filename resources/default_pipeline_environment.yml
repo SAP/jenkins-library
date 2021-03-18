@@ -226,15 +226,6 @@ steps:
       deployTool: 'cf_native'
     kaniko:
       deployTool: 'cf_native'
-  containerExecuteStructureTests:
-    containerCommand: '/busybox/tail -f /dev/null'
-    containerShell: '/busybox/sh'
-    dockerImage: 'ppiper/container-structure-test'
-    dockerOptions: "-u 0 --entrypoint=''"
-    failOnError: true
-    stashContent:
-      - 'tests'
-    testReportFilePath: 'cst-report.json'
   debugReportArchive:
     shareConfidentialInformation: false
   dockerExecute:

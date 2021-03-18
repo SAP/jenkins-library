@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"io"
+	"os"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -71,6 +72,10 @@ func runContainerExecuteStructureTests(config *containerExecuteStructureTestsOpt
 			return fmt.Errorf("test driver %s is incorrect. Possible drivers: docker, tar", config.TestDriver)
 		}
 		parameters = append(parameters, "--driver", config.TestDriver)
+	} else if os.Getenv("ON_K8S") == "true" {
+		parameters = append(parameters, "--driver", "tar")
+	} else {
+		parameters = append(parameters, "--driver", "docker")
 	}
 	if config.PullImage {
 		parameters = append(parameters, "--pull")
@@ -80,7 +85,9 @@ func runContainerExecuteStructureTests(config *containerExecuteStructureTestsOpt
 	}
 	parameters = append(parameters, "--image", config.TestImage)
 	parameters = append(parameters, "--test-report", config.TestReportFilePath)
-
+	if GeneralConfig.Verbose {
+		parameters = append(parameters, "--verbosity", "debug")
+	}
 	err = utils.RunExecutable(containerStructureTestsExecutable, parameters...)
 	if err != nil {
 		commandLine := append([]string{containerStructureTestsExecutable}, parameters...)

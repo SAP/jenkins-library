@@ -24,6 +24,7 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+        mandatory: true
       - name: testDriver
         type: string
         description: Container structure test driver to be used for testing, please see https://github.com/GoogleContainerTools/container-structure-test for details.
@@ -38,6 +39,7 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+        mandatory: true
       - name: testReportFilePath
         type: string
         description: Path and name of the test report which will be generated

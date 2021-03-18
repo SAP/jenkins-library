@@ -88,6 +88,8 @@ func addContainerExecuteStructureTestsFlags(cmd *cobra.Command, stepConfig *cont
 	cmd.Flags().StringVar(&stepConfig.TestImage, "testImage", os.Getenv("PIPER_testImage"), "Image to be tested")
 	cmd.Flags().StringVar(&stepConfig.TestReportFilePath, "testReportFilePath", `cst-report.json`, "Path and name of the test report which will be generated")
 
+	cmd.MarkFlagRequired("testConfiguration")
+	cmd.MarkFlagRequired("testImage")
 }
 
 // retrieve step metadata
@@ -114,7 +116,7 @@ func containerExecuteStructureTestsMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
-						Mandatory:   false,
+						Mandatory:   true,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -130,7 +132,7 @@ func containerExecuteStructureTestsMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
-						Mandatory:   false,
+						Mandatory:   true,
 						Aliases:     []config.Alias{},
 					},
 					{

@@ -101,6 +101,38 @@ func TestRunContainerExecuteStructureTests(t *testing.T) {
 		}
 	})
 
+	t.Run("success case - verbose", func(t *testing.T) {
+		GeneralConfig.Verbose = true
+		config := &containerExecuteStructureTestsOptions{
+			TestConfiguration:  "**.yaml",
+			TestDriver:         "docker",
+			TestImage:          "reg/image:tag",
+			TestReportFilePath: "report.json",
+		}
+
+		mockUtils := newContainerStructureTestsMockUtils()
+
+		// test
+		err := runContainerExecuteStructureTests(config, &mockUtils)
+		// assert
+		expectedParams := []string{
+			"test",
+			"--config", "config1.yaml",
+			"--config", "config2.yaml",
+			"--driver", "docker",
+			"--image", "reg/image:tag",
+			"--test-report", "report.json",
+			"--verbosity", "debug",
+		}
+
+		assert.NoError(t, err)
+		if assert.Equal(t, 1, len(mockUtils.Calls)) {
+			assert.Equal(t, "container-structure-test", mockUtils.Calls[0].Exec)
+			assert.Equal(t, expectedParams, mockUtils.Calls[0].Params)
+		}
+		GeneralConfig.Verbose = false
+	})
+
 	t.Run("error case - execution failed", func(t *testing.T) {
 		config := &containerExecuteStructureTestsOptions{
 			PullImage:          true,
