@@ -115,9 +115,9 @@ For additional information about multibranch pipelines, please refer to the [Jen
    }
    ```
 
-   The `mtaBuild` step calls a build tool to build a multitarget application. The tool consumes an multitarget application descriptor that contains the metadata of all entities which comprise an application or are used by one during deployment or runtime, and the dependencies between them. For more information about multitarget applications, see [sap.com][sap].
+   The `mtaBuild` step calls a build tool to build a multitarget application (MTA). The tool consumes an MTA descriptor that contains the metadata of all entities which comprise an application or are used by one during deployment or runtime, and the dependencies between them. For more information about MTAs, see [sap.com][sap].
 
-1. Create the multitarget application descriptor file with the name `mta.yaml` in the root level of the repository. Insert the following code:
+1. Create the MTA descriptor file with the name `mta.yaml` in the root level of the repository. Insert the following code:
 
    ```
    _schema-version: 2.1.0
@@ -131,7 +131,7 @@ For additional information about multibranch pipelines, please refer to the [Jen
        path: .
    ```
 
-1. Configure the step to build an multitarget application for the Cloud Foundry environment. Create the configuration file `.pipeline/config.yml` relative to the root level of the repository and insert the following content:
+1. Configure the step to build an MTA for the Cloud Foundry environment. Create the configuration file `.pipeline/config.yml` relative to the root level of the repository and insert the following content:
 
    ```
    general:
@@ -156,7 +156,7 @@ For additional information about multibranch pipelines, please refer to the [Jen
    }
    ```
 
-   The `cloudFoundryDeploy`  step calls the Cloud Foundry command line client to deploy the built multitarget application into SAP BTP.
+   The `cloudFoundryDeploy`  step calls the Cloud Foundry command line client to deploy the built MTA into SAP BTP.
 
 1. To configure the step to deploy into the Cloud Foundry environment, in your repository, open the `.pipeline/config.yml` and add the following content:
 
