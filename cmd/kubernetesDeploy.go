@@ -48,6 +48,13 @@ func runKubernetesDeploy(config kubernetesDeployOptions, command command.ExecRun
 }
 
 func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, stdout io.Writer) {
+	var err error
+	if (len(config.ChartPath)) <= 0 {
+		log.Entry().WithError(err).Fatal("Chart path has not been set. Please configure the 'chartPath'.")
+	}
+	if (len(config.DeploymentName)) <= 0 {
+		log.Entry().WithError(err).Fatal("Deployment name has not been set. Please configure the 'deploymentName'.")
+	}
 	_, containerRegistry, err := splitRegistryURL(config.ContainerRegistryURL)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Container registry url '%v' incorrect", config.ContainerRegistryURL)
