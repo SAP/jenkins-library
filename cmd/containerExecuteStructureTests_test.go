@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
@@ -133,6 +134,38 @@ func TestRunContainerExecuteStructureTests(t *testing.T) {
 		GeneralConfig.Verbose = false
 	})
 
+	t.Run("success case - run on k8s", func(t *testing.T) {
+		if err := os.Setenv("ON_K8S", "true"); err != nil {
+			t.Error(err)
+		}
+		config := &containerExecuteStructureTestsOptions{
+			TestConfiguration:  "**.yaml",
+			TestImage:          "reg/image:tag",
+			TestReportFilePath: "report.json",
+		}
+
+		mockUtils := newContainerStructureTestsMockUtils()
+
+		// test
+		err := runContainerExecuteStructureTests(config, &mockUtils)
+		// assert
+		expectedParams := []string{
+			"test",
+			"--config", "config1.yaml",
+			"--config", "config2.yaml",
+			"--driver", "tar",
+			"--image", "reg/image:tag",
+			"--test-report", "report.json",
+		}
+
+		assert.NoError(t, err)
+		if assert.Equal(t, 1, len(mockUtils.Calls)) {
+			assert.Equal(t, "container-structure-test", mockUtils.Calls[0].Exec)
+			assert.Equal(t, expectedParams, mockUtils.Calls[0].Params)
+		}
+		os.Unsetenv("ON_K8S")
+	})
+
 	t.Run("error case - execution failed", func(t *testing.T) {
 		config := &containerExecuteStructureTestsOptions{
 			PullImage:          true,
@@ -150,21 +183,6 @@ func TestRunContainerExecuteStructureTests(t *testing.T) {
 		err := runContainerExecuteStructureTests(config, &mockUtils)
 		// assert
 		assert.EqualError(t, err, "failed to run executable, command: '[container-structure-test test --config config1.yaml --config config2.yaml --driver docker --pull --image reg/image:tag --test-report report.json]', error: container-structure-test run failed: container-structure-test run failed")
-	})
-
-	t.Run("error case - testImage is empty", func(t *testing.T) {
-		config := &containerExecuteStructureTestsOptions{
-			PullImage:          true,
-			TestConfiguration:  "**.yaml",
-			TestDriver:         "docker",
-			TestReportFilePath: "report.json",
-		}
-		mockUtils := newContainerStructureTestsMockUtils()
-
-		// test
-		err := runContainerExecuteStructureTests(config, &mockUtils)
-		// assert
-		assert.EqualError(t, err, "testImage must not be empty")
 	})
 
 	t.Run("error case - configuration is missing", func(t *testing.T) {

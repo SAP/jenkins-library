@@ -52,8 +52,6 @@ func findConfigFiles(pattern string, utils containerExecuteStructureTestsUtils) 
 }
 
 func runContainerExecuteStructureTests(config *containerExecuteStructureTestsOptions, utils containerExecuteStructureTestsUtils) error {
-	utils.Stdout(log.Writer())
-	utils.Stderr(log.Writer())
 	containerStructureTestsExecutable := "container-structure-test"
 	var parameters []string
 	parameters = append(parameters, "test")
@@ -62,6 +60,7 @@ func runContainerExecuteStructureTests(config *containerExecuteStructureTestsOpt
 		return errors.Wrapf(err, "failed to find config files, error: %v", err)
 	}
 	if len(configFiles) == 0 {
+		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.New("config files mustn't be missing")
 	}
 	for _, config := range configFiles {
@@ -69,19 +68,15 @@ func runContainerExecuteStructureTests(config *containerExecuteStructureTestsOpt
 	}
 	if config.TestDriver != "" {
 		if config.TestDriver != "docker" && config.TestDriver != "tar" {
+			log.SetErrorCategory(log.ErrorConfiguration)
 			return fmt.Errorf("test driver %s is incorrect. Possible drivers: docker, tar", config.TestDriver)
 		}
 		parameters = append(parameters, "--driver", config.TestDriver)
 	} else if os.Getenv("ON_K8S") == "true" {
 		parameters = append(parameters, "--driver", "tar")
-	} else {
-		parameters = append(parameters, "--driver", "docker")
 	}
 	if config.PullImage {
 		parameters = append(parameters, "--pull")
-	}
-	if config.TestImage == "" {
-		return errors.New("testImage must not be empty")
 	}
 	parameters = append(parameters, "--image", config.TestImage)
 	parameters = append(parameters, "--test-report", config.TestReportFilePath)
