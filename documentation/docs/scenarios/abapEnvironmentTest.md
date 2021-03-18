@@ -41,7 +41,7 @@ There are several parts that are required to run the pipeline.
 
 ### Jenkins Server
 
-The pipeline for testing software components has been created specifically for [Jenkins](https://www.jenkins.io). Therefore, a Jenkins server is required. The [piper project](https://sap.github.io/jenkins-library/guidedtour/) provides a Jenkins image, which already includes the necessary configurations. Of course, it is also possible to [configure an existing server](https://sap.github.io/jenkins-library/infrastructure/customjenkins/).
+The pipeline for testing software components has been created specifically for [Jenkins](https://www.jenkins.io). Therefore, a Jenkins server is required. The [project "Piper"](https://sap.github.io/jenkins-library/guidedtour/) provides a Jenkins image, which already includes the necessary configurations. Of course, it is also possible to [configure an existing server](https://sap.github.io/jenkins-library/infrastructure/customjenkins/).
 
 ### Git Repository
 
