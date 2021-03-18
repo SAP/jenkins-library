@@ -21,7 +21,7 @@ On the project level, provide and adjust the following template:
 
 This scenario combines various different steps to create a complete pipeline.
 
-In this scenario, we want to show how to build an application based on SAPUI5 or SAP Fiori by using the multitarget application concept, and how to deploy the build result into an SAP BTP account in the Cloud Foundry environment. This document comprises the [mtaBuild](../../../steps/mtaBuild/) and the [cloudFoundryDeploy](../../../steps/cloudFoundryDeploy/) steps.
+In this scenario, we want to show how to build an application based on SAPUI5 or SAP Fiori by using the multitarget application (MTA) concept, and how to deploy the build result into an SAP BTP account in the Cloud Foundry environment. This document comprises the [mtaBuild](../../../steps/mtaBuild/) and the [cloudFoundryDeploy](../../../steps/cloudFoundryDeploy/) steps.
 
 ![This pipeline in Jenkins Blue Ocean](images/pipeline.jpg)
 
