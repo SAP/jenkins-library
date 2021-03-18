@@ -37,7 +37,7 @@ You can have a look at different pipeline configurations in our [SAP-samples rep
 
 * Configure your Jenkins Server according to the [documentation](https://sap.github.io/jenkins-library/guidedtour/).
 * Create a git repository on a host reachable by the Jenkins server (e.g. GitHub.com). The pipeline will be configured in this repository. Create a GitHub User with read access.
-* The entitlements for the ABAP Environment system are available in the SAP BTP global account and assigned to the subaccount.
+* The entitlements for the ABAP environment system are available in the SAP BTP global account and assigned to the subaccount.
 * A Cloud Foundry Organization & Space with the allocated entitlements are available.
 * A Cloud Foundry User & Password with the required authorization ("Space Developer") in the Organization and Space are available. User and Password were saved in the Jenkins Credentials Store.
 
@@ -51,13 +51,13 @@ Create a file named `Jenkinsfile` in your repository with the following content:
 abapEnvironmentPipeline script: this
 ```
 
-The annotation `@Library('piper-lib-os')` is a reference to the Jenkins Configuration, where you configured the Piper Library as a "Global Pipeline Library". If you want to **avoid breaking changes** we advise you to use a specific release of the Piper Library instead of the default master branch. This can be achieved by either adapting the configuration (see [documentation](https://sap.github.io/jenkins-library/infrastructure/customjenkins/#shared-library)) or by specifying the release within the annotaion:
+The annotation `@Library('piper-lib-os')` is a reference to the Jenkins Configuration, where you configured the project "Piper" library as a "Global Pipeline Library". If you want to **avoid breaking changes** we advise you to use a specific release of the Piper Library instead of the default master branch. This can be achieved by either adapting the configuration (see [documentation](https://sap.github.io/jenkins-library/infrastructure/customjenkins/#shared-library)) or by specifying the release within the annotaion:
 
 ```
 @Library('piper-lib-os@v1.53.0') _
 ```
 
-An Overview of the releases of the Piper Library can be found [here](https://github.com/SAP/jenkins-library/releases).
+An Overview of the releases of the project "Piper" library can be found [here](https://github.com/SAP/jenkins-library/releases).
 
 ## 3. Configuration for the Communication
 
@@ -74,7 +74,7 @@ Please have a look at the [step documentation](https://sap.github.io/jenkins-lib
 
 ## 4. Configuration for Cloning the repositories
 
-If you have specified the `Clone Repositories` Stage you can make use of a dedicated configuration file containing the repositories to be pulled and the branches to be switched on. The `repositories` flag makes use of such a configuration file and helps executing a Pull, Clone and Checkout of the Branches of the Repositores. Create the file `repositories.yml` with the following structure containing your repositories including the branches for this Stage.
+If you have specified the `Clone Repositories` Stage you can make use of a dedicated configuration file containing the repositories to be pulled and the branches to be switched on. The `repositories` flag makes use of such a configuration file and helps executing a Pull, Clone and Checkout of the Branches of the Repositores. Create the file `repositories.yml` with the following structure containing your repositories including the branches for this stage.
 
 ```yml
 repositories:
@@ -88,7 +88,7 @@ You can later use the `repositories.yml` file for the `repositories` parameter i
 
 ## 5. Configuration for ATC
 
-Create a file `atcConfig.yml` to store the configuration for the ATC run. In this file, you can specify which Packages or Software Components shall be checked. Please have a look at the step documentation for more details. Here is an example of the configuration:
+Create a file `atcConfig.yml` to store the configuration for the ATC run. In this file, you can specify which packages or software components shall be checked. Please have a look at the step documentation for more details. Here is an example of the configuration:
 
 ```yml
 atcobjects:
@@ -100,7 +100,7 @@ Please have a look at the [step documentation](https://sap.github.io/jenkins-lib
 
 ## 6. Technical Pipeline Configuration
 
-Create a file `.pipeline/config.yml` where you store the configuration for the pipeline, e.g. apiEndpoints and credentialIds. The steps make use of the Credentials Store of the Jenkins Server. Here is an example of the configuration file:
+Create a file `.pipeline/config.yml` where you store the configuration for the pipeline, e.g. apiEndpoints and credentialIds. The steps make use of the credentials store of the Jenkins server. Here is an example of the configuration file:
 
 ```yml
 general:
@@ -141,7 +141,7 @@ Please have a look at the [step documentation](https://sap.github.io/jenkins-lib
 
 ### Clone Repositories
 
-If the `Clone Repositories` stage is configured, you can specify the `strategy` that should be performed on the Software Components and the Branches that you have configured in the `respositories.yml` file in step [4. Configuration for Cloning the repositories](#4-configuration-for-cloning-the-repositories). Per default the strategy will be set to `Pull` if not specified. The following strategies are supported and can be used on the Software Components and Branches:
+If the `Clone Repositories` stage is configured, you can specify the `strategy` that should be performed on the software components and the branches that you have configured in the `respositories.yml` file in step [4. Configuration for Cloning the repositories](#4-configuration-for-cloning-the-repositories). Per default the strategy will be set to `Pull` if not specified. The following strategies are supported and can be used on the software components and branches:
 
 * `Pull`: If you have specified Pull as the strategy the [abapEnvironmentPullGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentPullGitRepo/) step will be used
 * `Clone`: If you have specified the Clone strategy the [abapEnvironmentCloneGitRepo](https://sap.github.io/jenkins-library/steps/abapEnvironmentCloneGitRepo/) step will be used
