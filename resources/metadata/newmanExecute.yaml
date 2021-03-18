@@ -80,6 +80,15 @@ spec:
           - STAGES
           - STEPS
         type: "[]string"
+  outputs:
+    resources:
+      - name: influx
+        type: influx
+        params:
+          - name: step_data
+            fields:
+              - name: newman
+                type: bool
   containers:
     - name: newman
       image: node:lts-stretch
