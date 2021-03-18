@@ -2,21 +2,6 @@
 
 This stage creates pulls/clones the specified software components (repositories) to the ABAP Environment system.
 
-!!! caution "Upcoming 2102 release of SAP BTP ABAP Environment"
-
-    With the upcoming 2102 release of SAP BTP ABAP Environment some changes to the backend behavior of the MANAGE_GIT_REPOSITORY service are introduced. Specifically:
-
-      - To pull a software component to a system, the software component needs to be cloned first.
-      - It is planned to add the possibility to clone a software component repeatedly with the hotfix collection HFC03 of release 2102
-
-    **Implications for the “abapEnvironmentPipeline”:**
-
-    If you are using the “Prepare System” stage to create a new ABAP Environment system, it is no longer possible to use the “Clone Repositories” stage with the “Pull” strategy or with the default strategy (no strategy specified). Please use the strategy “Clone” instead. For more information, read the stage documentation below.
-    The strategy “AddonBuild” will execute the abapEnvironmentCloneGitRepo instead of the previous logic. No configuration changes should be necessary.
-
-    Please be aware that a repeated execution of a pipeline using the strategy “Clone” or “AddonBuild” will not be possible until hotfix collection HFC03 (planned).
-    The recommended workaround is to replace the strategy “AddonBuild” with “CheckoutPull”, whenever the system from a previous pipeline run is reused.
-
 ## Steps
 
 The following steps can be executed in this stage:

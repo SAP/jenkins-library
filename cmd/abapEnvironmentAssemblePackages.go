@@ -11,6 +11,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/pkg/errors"
 )
@@ -54,7 +55,7 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 
 	err := conn.InitBuildFramework(connConfig, com, client)
 	if err != nil {
-		return errors.Wrap(err, "Connector initialization failed")
+		return errors.Wrap(err, "Connector initialization for communication with the ABAP system failed")
 	}
 
 	var addonDescriptor abaputils.AddonDescriptor
@@ -63,28 +64,35 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 		return errors.Wrap(err, "Reading AddonDescriptor failed [Make sure abapAddonAssemblyKit...CheckCVs|CheckPV|ReserveNextPackages steps have been run before]")
 	}
 
-	delayBetweenPostsInSeconds := time.Duration(3 * time.Second)
-	builds, buildsAlreadyReleased, err := starting(addonDescriptor.Repositories, *conn, delayBetweenPostsInSeconds)
-	if err != nil {
-		return errors.Wrap(err, "Starting Builds failed")
-	}
 	maxRuntimeInMinutes := time.Duration(config.MaxRuntimeInMinutes) * time.Minute
 	pollIntervalsInMilliseconds := time.Duration(config.PollIntervalsInMilliseconds) * time.Millisecond
-	err = polling(builds, maxRuntimeInMinutes, pollIntervalsInMilliseconds)
+	builds, err := executeBuilds(addonDescriptor.Repositories, *conn, maxRuntimeInMinutes, pollIntervalsInMilliseconds)
 	if err != nil {
-		return errors.Wrap(err, "Polling failed")
+		return errors.Wrap(err, "Starting Builds for Repositories with reserved AAKaaS packages failed")
 	}
 
 	err = checkIfFailedAndPrintLogs(builds)
 	if err != nil {
-		return errors.Wrap(err, "Check if failed and Printing Logs failed")
+		return errors.Wrap(err, "Checking for failed Builds and Printing Build Logs failed")
 	}
-	reposBackToCPE, err := downloadSARXML(builds)
+
+	var filesToPublish []piperutils.Path
+	filesToPublish, err = downloadResultToFile(builds, "SAR_XML", filesToPublish)
 	if err != nil {
-		return errors.Wrap(err, "Download SAR XML failed")
+		return errors.Wrap(err, "Download of Build Artifact SAR_XML failed")
 	}
-	// also write the already released packages back to cpe
-	for _, b := range buildsAlreadyReleased {
+
+	filesToPublish, err = downloadResultToFile(builds, "DELIVERY_LOGS.ZIP", filesToPublish)
+	if err != nil {
+		//changed result storage with 2105, thus ignore errors for now
+		log.Entry().Error(errors.Wrap(err, "Download of Build Artifact DELIVERY_LOGS.ZIP failed"))
+	}
+
+	log.Entry().Infof("Publsihing %v files", len(filesToPublish))
+	piperutils.PersistReportsAndLinks("abapEnvironmentAssemblePackages", "", filesToPublish, nil)
+
+	var reposBackToCPE []abaputils.Repository
+	for _, b := range builds {
 		reposBackToCPE = append(reposBackToCPE, b.repo)
 	}
 	addonDescriptor.Repositories = reposBackToCPE
@@ -94,89 +102,135 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 	return nil
 }
 
-func starting(repos []abaputils.Repository, conn abapbuild.Connector, delayBetweenPostsInSeconds time.Duration) ([]buildWithRepository, []buildWithRepository, error) {
+func executeBuilds(repos []abaputils.Repository, conn abapbuild.Connector, maxRuntimeInMinutes time.Duration, pollIntervalsInMilliseconds time.Duration) ([]buildWithRepository, error) {
 	var builds []buildWithRepository
-	var buildsAlreadyReleased []buildWithRepository
+
 	for _, repo := range repos {
-		assemblyBuild := abapbuild.Build{
-			Connector: conn,
-		}
+
 		buildRepo := buildWithRepository{
-			build: assemblyBuild,
-			repo:  repo,
+			build: abapbuild.Build{
+				Connector: conn,
+			},
+			repo: repo,
 		}
+
 		if repo.Status == "P" {
 			err := buildRepo.start()
 			if err != nil {
-				return builds, buildsAlreadyReleased, err
+				buildRepo.build.RunState = abapbuild.Failed
+				log.Entry().Error(err)
+				log.Entry().Info("Continueing with other builds (if any)")
+			} else {
+				err = buildRepo.waitToBeFinished(maxRuntimeInMinutes, pollIntervalsInMilliseconds)
+				if err != nil {
+					buildRepo.build.RunState = abapbuild.Failed
+					log.Entry().Error(err)
+					log.Entry().Error("Continuing with other builds (if any) but keep in Mind that even if this build finishes beyond timeout the result is not trustworthy due to possible side effects!")
+				}
 			}
-			builds = append(builds, buildRepo)
 		} else {
 			log.Entry().Infof("Packages %s is in status '%s'. No need to run the assembly", repo.PackageName, repo.Status)
-			buildsAlreadyReleased = append(buildsAlreadyReleased, buildRepo)
 		}
 
-		//as batch events in the ABAP Backend need a little time
-		time.Sleep(delayBetweenPostsInSeconds)
+		builds = append(builds, buildRepo)
 	}
-	return builds, buildsAlreadyReleased, nil
+	return builds, nil
 }
 
-func polling(builds []buildWithRepository, maxRuntimeInMinutes time.Duration, pollIntervalsInSeconds time.Duration) error {
+func (br *buildWithRepository) waitToBeFinished(maxRuntimeInMinutes time.Duration, pollIntervalsInMilliseconds time.Duration) error {
 	timeout := time.After(maxRuntimeInMinutes)
-	ticker := time.Tick(pollIntervalsInSeconds)
+	ticker := time.Tick(pollIntervalsInMilliseconds)
 	for {
 		select {
 		case <-timeout:
 			return errors.Errorf("Timed out: (max Runtime %v reached)", maxRuntimeInMinutes)
 		case <-ticker:
-			var allFinished bool = true
-			for i := range builds {
-				builds[i].build.Get()
-				if !builds[i].build.IsFinished() {
-					log.Entry().Infof("Assembly of %s is not yet finished, check again in %s", builds[i].repo.PackageName, pollIntervalsInSeconds)
-					allFinished = false
-				}
-			}
-			if allFinished {
+			br.build.Get()
+			if !br.build.IsFinished() {
+				log.Entry().Infof("Assembly of %s is not yet finished, check again in %s", br.repo.PackageName, pollIntervalsInMilliseconds)
+			} else {
 				return nil
 			}
 		}
 	}
 }
 
-func (b *buildWithRepository) start() error {
-	if b.repo.Name == "" || b.repo.Version == "" || b.repo.SpLevel == "" || b.repo.Namespace == "" || b.repo.PackageType == "" || b.repo.PackageName == "" {
+func (br *buildWithRepository) start() error {
+	if br.repo.Name == "" || br.repo.Version == "" || br.repo.SpLevel == "" || br.repo.Namespace == "" || br.repo.PackageType == "" || br.repo.PackageName == "" {
 		return errors.New("Parameters missing. Please provide software component name, version, sp-level, namespace, packagetype and packagename")
 	}
 	valuesInput := abapbuild.Values{
 		Values: []abapbuild.Value{
 			{
 				ValueID: "SWC",
-				Value:   b.repo.Name,
+				Value:   br.repo.Name,
 			},
 			{
 				ValueID: "CVERS",
-				Value:   b.repo.Name + "." + b.repo.Version + "." + b.repo.SpLevel,
+				Value:   br.repo.Name + "." + br.repo.Version + "." + br.repo.SpLevel,
 			},
 			{
 				ValueID: "NAMESPACE",
-				Value:   b.repo.Namespace,
+				Value:   br.repo.Namespace,
 			},
 			{
-				ValueID: "PACKAGE_NAME_" + b.repo.PackageType,
-				Value:   b.repo.PackageName,
+				ValueID: "PACKAGE_NAME_" + br.repo.PackageType,
+				Value:   br.repo.PackageName,
 			},
 		},
 	}
-	if b.repo.PredecessorCommitID != "" {
+	if br.repo.PredecessorCommitID != "" {
 		valuesInput.Values = append(valuesInput.Values,
 			abapbuild.Value{ValueID: "PREVIOUS_DELIVERY_COMMIT",
-				Value: b.repo.PredecessorCommitID})
+				Value: br.repo.PredecessorCommitID})
 	}
-	phase := "BUILD_" + b.repo.PackageType
-	log.Entry().Infof("Starting assembly of package %s", b.repo.PackageName)
-	return b.build.Start(phase, valuesInput)
+	if br.repo.CommitID != "" {
+		valuesInput.Values = append(valuesInput.Values,
+			abapbuild.Value{ValueID: "ACTUAL_DELIVERY_COMMIT",
+				Value: br.repo.CommitID})
+	}
+	if len(br.repo.Languages) > 0 {
+		valuesInput.Values = append(valuesInput.Values,
+			abapbuild.Value{ValueID: "SSDC_EXPORT_LANGUAGE_VECTOR",
+				Value: br.repo.GetAakAasLanguageVector()})
+	}
+
+	phase := "BUILD_" + br.repo.PackageType
+	log.Entry().Infof("Starting assembly of package %s", br.repo.PackageName)
+	return br.build.Start(phase, valuesInput)
+}
+
+func downloadResultToFile(builds []buildWithRepository, resultName string, filesToPublish []piperutils.Path) ([]piperutils.Path, error) {
+	envPath := filepath.Join(GeneralConfig.EnvRootPath, "commonPipelineEnvironment", "abap")
+
+	for i, b := range builds {
+		if b.repo.Status != "P" {
+			continue
+		}
+		buildResult, err := b.build.GetResult(resultName)
+		if err != nil {
+			return filesToPublish, err
+		}
+		var fileName string
+		if len(buildResult.AdditionalInfo) <= 255 {
+			fileName = buildResult.AdditionalInfo
+		} else {
+			fileName = buildResult.Name
+		}
+		downloadPath := filepath.Join(envPath, path.Base(fileName))
+		log.Entry().Infof("Downloading %s file %s to %s", resultName, path.Base(fileName), downloadPath)
+		err = buildResult.Download(downloadPath)
+		if err != nil {
+			return filesToPublish, err
+		}
+		if resultName == "SAR_XML" {
+			builds[i].repo.SarXMLFilePath = downloadPath
+		}
+
+		log.Entry().Infof("Add %s to be published", resultName)
+		filesToPublish = append(filesToPublish, piperutils.Path{Target: downloadPath, Name: resultName, Mandatory: true})
+	}
+	return filesToPublish, nil
 }
 
 func checkIfFailedAndPrintLogs(builds []buildWithRepository) error {
