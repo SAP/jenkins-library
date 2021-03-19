@@ -12,6 +12,11 @@ metadata:
 #        In a Kubernetes environment, the containers both need to be referenced with `localhost`.
 spec:
   inputs:
+    resources:
+      - name: buildDescriptor
+        type: stash
+      - name: tests
+        type: stash
     params:
       - name: installCommand
         type: string
@@ -36,7 +41,7 @@ spec:
       - name: runOptions
         type: "[]string"
         description: "Options to append to the runCommand, last parameter has to be path to conf.js (default if missing: ./conf.js)."
-        default: ["--seleniumAddress='http://localhost:4444/wd/hub'"]
+        default: ["--seleniumAddress=http://localhost:4444/wd/hub"]
         scope:
           - PARAMETERS
           - STAGES

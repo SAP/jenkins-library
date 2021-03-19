@@ -1,6 +1,6 @@
 # Integration Tests
 
-This stage creates an ABAP Environment (Steampunk) system and installs the add-on product, that was built in the `Build` stage.
+This stage creates an SAP BTP, ABAP environment (Steampunk) system and installs the add-on product, that was built in the `Build` stage.
 
 ## Steps
 
@@ -50,12 +50,17 @@ stages:
 
 ### addon.yml
 
-```yaml
+```YAML
 ---
-addonProduct: /DMO/PRODUCT1
-addonVersion: 1.0.0
+addonProduct: /NAMESPC/PRODUCTX
+addonVersion: 1.2.0
 repositories:
-  - name: /DMO/SWC
-    branch: v1.0.0
-    version: 1.0.0
+  - name: /NAMESPC/COMPONENTA
+    branch: v1.2.0
+    version: 1.2.0
+    commitID: 7d4516e9
+  - name: /NAMESPC/COMPONENTB
+    branch: v2.0.0
+    version: 2.0.0
+    commitID: 9f102ffb
 ```

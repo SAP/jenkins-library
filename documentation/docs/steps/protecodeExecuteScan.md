@@ -5,7 +5,7 @@
 ## Prerequisites
 
 1. Create a Username / Password credential with the Protecode user in your Jenkins credential store
-1. Lookup your Group ID using REST API via `curl -u <username> "https://<protecode host>/api/groups/"`.
+1. Look up your Group ID using REST API via `curl -u <username> "https://<protecode host>/api/groups/"`.
 
 If the image is on a protected registry you can provide a Docker `config.json` file containing the credential information for the registry.
 You can create it like explained in the Docker Success Center in the article about [how to generate a new auth in the config.json file](https://success.docker.com/article/generate-new-auth-in-config-json-file).

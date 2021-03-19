@@ -1,6 +1,6 @@
 # Publish
 
-This stage publishes an add-on for the ABAP Environment (please refer to the [scenario description](../../../scenarios/abapEnvironmentAddons.md)).
+This stage publishes an add-on for the SAP BTP, ABAP environment (please refer to the [scenario description](../../../scenarios/abapEnvironmentAddons.md)).
 
 ## Steps
 
@@ -31,12 +31,17 @@ stages:
 
 ### addon.yml
 
-```yaml
+```YAML
 ---
-addonProduct: /DMO/PRODUCT1
-addonVersion: 1.0.0
+addonProduct: /NAMESPC/PRODUCTX
+addonVersion: 1.2.0
 repositories:
-  - name: /DMO/SWC
-    branch: v1.0.0
-    version: 1.0.0
+  - name: /NAMESPC/COMPONENTA
+    branch: v1.2.0
+    version: 1.2.0
+    commitID: 7d4516e9
+  - name: /NAMESPC/COMPONENTB
+    branch: v2.0.0
+    version: 2.0.0
+    commitID: 9f102ffb
 ```

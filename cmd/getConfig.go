@@ -9,6 +9,8 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/reporting"
+	ws "github.com/SAP/jenkins-library/pkg/whitesource"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -176,6 +178,21 @@ func prepareOutputEnvironment(outputResources []config.StepResources, envRootPat
 				log.Entry().Debugf("Creating directory: %v", filepath.Dir(paramPath))
 				os.MkdirAll(filepath.Dir(paramPath), 0777)
 			}
+		}
+	}
+
+	// prepare additional output directories known to possibly create permission issues when created from within a container
+	// ToDo: evaluate if we can rather call this only in the correct step context (we know the step when calling getConfig!)
+	// Could this be part of the container definition in the step.yaml?
+	stepOutputDirectories := []string{
+		reporting.StepReportDirectory, // standard directory to collect md reports for pipelineCreateScanSummary
+		ws.ReportsDirectory,           // standard directory for reports created by whitesourceExecuteScan
+	}
+
+	for _, dir := range stepOutputDirectories {
+		if _, err := os.Stat(dir); os.IsNotExist(err) {
+			log.Entry().Debugf("Creating directory: %v", dir)
+			os.MkdirAll(dir, 0777)
 		}
 	}
 }

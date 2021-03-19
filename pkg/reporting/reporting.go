@@ -2,6 +2,7 @@ package reporting
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"text/template"
 	"time"
@@ -11,32 +12,42 @@ import (
 
 // ScanReport defines the elements of a scan report used by various scan steps
 type ScanReport struct {
-	Title       string
-	Subheaders  []string
-	Overview    []string
-	FurtherInfo string
-	ReportTime  time.Time
-	DetailTable ScanDetailTable
+	StepName       string          `json:"stepName"`
+	Title          string          `json:"title"`
+	Subheaders     []Subheader     `json:"subheaders"`
+	Overview       []OverviewRow   `json:"overview"`
+	FurtherInfo    string          `json:"furtherInfo"`
+	ReportTime     time.Time       `json:"reportTime"`
+	DetailTable    ScanDetailTable `json:"detailTable"`
+	SuccessfulScan bool            `json:"successfulScan"`
 }
 
 // ScanDetailTable defines a table containing scan result details
 type ScanDetailTable struct {
-	Headers       []string
-	Rows          []ScanRow
-	WithCounter   bool
-	CounterHeader string
-	NoRowsMessage string
+	Headers       []string  `json:"headers"`
+	Rows          []ScanRow `json:"rows"`
+	WithCounter   bool      `json:"withCounter"`
+	CounterHeader string    `json:"counterHeader"`
+	NoRowsMessage string    `json:"noRowsMessage"`
 }
 
 // ScanRow defines one row of a scan result table
 type ScanRow struct {
-	Columns []ScanCell
+	Columns []ScanCell `json:"columns"`
+}
+
+// AddColumn adds a column to a dedicated ScanRow
+func (s *ScanRow) AddColumn(content interface{}, style ColumnStyle) {
+	if s.Columns == nil {
+		s.Columns = []ScanCell{}
+	}
+	s.Columns = append(s.Columns, ScanCell{Content: fmt.Sprint(content), Style: style})
 }
 
 // ScanCell defines one column of a scan result table
 type ScanCell struct {
-	Content string
-	Style   ColumnStyle
+	Content string      `json:"content"`
+	Style   ColumnStyle `json:"style"`
 }
 
 // ColumnStyle defines style for a specific column
@@ -53,6 +64,33 @@ const (
 
 func (c ColumnStyle) String() string {
 	return [...]string{"", "green-cell", "yellow-cell", "red-cell", "grey-cell", "black-cell"}[c]
+}
+
+// OverviewRow defines a row in the report's overview section
+// it can consist of a description and some details where the details can have a style attached
+type OverviewRow struct {
+	Description string      `json:"description"`
+	Details     string      `json:"details,omitempty"`
+	Style       ColumnStyle `json:"style,omitempty"`
+}
+
+// Subheader defines a dedicated sub header in a report
+type Subheader struct {
+	Description string `json:"text"`
+	Details     string `json:"details,omitempty"`
+}
+
+// AddSubHeader adds a sub header to the report containing of a text/title plus optional details
+func (s *ScanReport) AddSubHeader(header, details string) {
+	s.Subheaders = append(s.Subheaders, Subheader{Description: header, Details: details})
+}
+
+//StepReportDirectory specifies the default directory for markdown reports which can later be collected by step pipelineCreateSummary
+const StepReportDirectory = ".pipeline/stepReports"
+
+// ToJSON returns the report in JSON format
+func (s *ScanReport) ToJSON() ([]byte, error) {
+	return json.Marshal(s)
 }
 
 const reportHTMLTemplate = `<!DOCTYPE html>
@@ -123,14 +161,14 @@ const reportHTMLTemplate = `<!DOCTYPE html>
 	<h2>
 		<span>
 		{{range $s := .Subheaders}}
-		{{- $s}}<br />
+		{{- $s.Description}}: {{$s.Details}}<br />
 		{{end -}}
 		</span>
 	</h2>
 	<div>
 		<h3>
 		{{range $o := .Overview}}
-		{{- $o}}<br />
+		{{- drawOverviewRow $o}}<br />
 		{{end -}}
 		</h3>
 		<span>{{.FurtherInfo}}</span>
@@ -167,8 +205,9 @@ func (s *ScanReport) ToHTML() ([]byte, error) {
 		"reportTime": func(currentTime time.Time) string {
 			return currentTime.Format("Jan 02, 2006 - 15:04:05 MST")
 		},
-		"columnCount": tableColumnCount,
-		"drawCell":    drawCell,
+		"columnCount":     tableColumnCount,
+		"drawCell":        drawCell,
+		"drawOverviewRow": drawOverviewRow,
 	}
 	report := []byte{}
 	tmpl, err := template.New("report").Funcs(funcMap).Parse(reportHTMLTemplate)
@@ -183,25 +222,42 @@ func (s *ScanReport) ToHTML() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+const reportMdTemplate = `<details><summary>{{.Title}}</summary>
+<p>
+
+{{range $s := .Subheaders}}
+**{{- $s.Description}}**: {{$s.Details}}
+{{end}}
+
+{{range $o := .Overview}}
+{{- drawOverviewRow $o}}
+{{end}}
+
+{{.FurtherInfo}}
+
+Snapshot taken: _{{reportTime .ReportTime}}_
+</p>
+</details>`
+
 // ToMarkdown creates a markdown version of the report content
-func (s *ScanReport) ToMarkdown() string {
-	//ToDo: create collapsible markdown?
-	/*
-		## collapsible markdown?
-
-		<details><summary>CLICK ME</summary>
-		<p>
-
-		#### yes, even hidden code blocks!
-
-		```python
-		print("hello world!")
-		```
-
-		</p>
-		</details>
-	*/
-	return ""
+func (s *ScanReport) ToMarkdown() ([]byte, error) {
+	funcMap := template.FuncMap{
+		"reportTime": func(currentTime time.Time) string {
+			return currentTime.Format("Jan 02, 2006 - 15:04:05 MST")
+		},
+		"drawOverviewRow": drawOverviewRowMarkdown,
+	}
+	report := []byte{}
+	tmpl, err := template.New("report").Funcs(funcMap).Parse(reportMdTemplate)
+	if err != nil {
+		return report, errors.Wrap(err, "failed to create Markdown report template")
+	}
+	buf := new(bytes.Buffer)
+	err = tmpl.Execute(buf, s)
+	if err != nil {
+		return report, errors.Wrap(err, "failed to execute Markdown report template")
+	}
+	return buf.Bytes(), nil
 }
 
 func tableColumnCount(scanDetails ScanDetailTable) int {
@@ -217,4 +273,22 @@ func drawCell(cell ScanCell) string {
 		return fmt.Sprintf(`<td class="%v">%v</td>`, cell.Style, cell.Content)
 	}
 	return fmt.Sprintf(`<td>%v</td>`, cell.Content)
+}
+
+func drawOverviewRow(row OverviewRow) string {
+	// so far accept only accept max. two columns for overview table: description and content
+	if len(row.Details) == 0 {
+		return row.Description
+	}
+	// ToDo: allow styling of details
+	return fmt.Sprintf("%v: %v", row.Description, row.Details)
+}
+
+func drawOverviewRowMarkdown(row OverviewRow) string {
+	// so far accept only accept max. two columns for overview table: description and content
+	if len(row.Details) == 0 {
+		return row.Description
+	}
+	// ToDo: allow styling of details
+	return fmt.Sprintf("**%v**: %v", row.Description, row.Details)
 }

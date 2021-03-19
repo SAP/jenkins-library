@@ -2,10 +2,11 @@ package whitesource
 
 import (
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"strings"
 	"time"
+
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 // Scan stores information about scanned WhiteSource projects (modules).
