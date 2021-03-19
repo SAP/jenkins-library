@@ -670,20 +670,20 @@ func writeCustomVulnerabilityReports(scanReport reporting.ScanReport, utils whit
 	}
 	reportPaths = append(reportPaths, piperutils.Path{Name: "WhiteSource Vulnerability Report", Target: htmlReportPath})
 
-	// markdown reports are used by step pipelineCreateSummary in order to e.g. prepare an issue creation in GitHub
-	// ignore templating errors since template is in our hands and issues will be detected with the automated tests
-	mdReport, _ := scanReport.ToMarkdown()
-	if exists, _ := utils.DirExists(reporting.MarkdownReportDirectory); !exists {
-		err := utils.MkdirAll(reporting.MarkdownReportDirectory, 0777)
+	// JSON reports are used by step pipelineCreateSummary in order to e.g. prepare an issue creation in GitHub
+	// ignore JSON errors since structure is in our hands
+	jsonReport, _ := scanReport.ToJSON()
+	if exists, _ := utils.DirExists(reporting.StepReportDirectory); !exists {
+		err := utils.MkdirAll(reporting.StepReportDirectory, 0777)
 		if err != nil {
 			return reportPaths, errors.Wrap(err, "failed to create reporting directory")
 		}
 	}
-	if err := utils.FileWrite(filepath.Join(reporting.MarkdownReportDirectory, fmt.Sprintf("whitesourceExecuteScan_%v.md", utils.Now().Format("20060102150405"))), mdReport, 0666); err != nil {
+	if err := utils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("whitesourceExecuteScan_%v.json", utils.Now().Format("20060102150405"))), jsonReport, 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return reportPaths, errors.Wrapf(err, "failed to write markdown report")
 	}
-	// we do not add the markdown report to the overall list of reports for now,
+	// we do not add the json report to the overall list of reports for now,
 	// since it is just an intermediary report used as input for later
 	// and there does not seem to be real benefit in archiving it.
 
