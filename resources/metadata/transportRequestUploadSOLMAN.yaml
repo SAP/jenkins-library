@@ -52,8 +52,10 @@ spec:
           - STEPS
           - GENERAL
       - name: changeDocumentId
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/changeDocumentId
         type: string
-        mandatory: true
         description: "Id of the change document to upload the file. This parameter is only taken into account when provided via signature to the step."
         scope:
           - PARAMETERS
@@ -62,7 +64,6 @@ spec:
           - name: commonPipelineEnvironment
             param: custom/transportRequestId
         type: string
-        mandatory: true
         description: "Id of the transport request to upload the file. This parameter is only taken into account when provided via signature to the step."
         scope:
           - PARAMETERS
@@ -90,3 +91,54 @@ spec:
           - STAGES
           - STEP
           - GENERAL
+      - name: gitFrom
+        aliases:
+          - name: changeManagement/git/from
+        type: "string"
+        description: "GIT starting point for retrieving the change document and transport request id"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEP
+          - GENERAL
+        default: "origin/master"
+      - name: gitTo
+        aliases:
+          - name: changeManagement/git/to
+        type: "string"
+        description: "GIT ending point for retrieving the change document and transport request id"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEP
+          - GENERAL
+        default: "HEAD"
+      - name: changeDocumentLabel
+        aliases:
+          - name: changeManagement/changeDocumentLabel
+        type: "string"
+        description: "Pattern used for identifying lines holding the change document id"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEP
+          - GENERAL
+        default: "ChangeDocument"
+      - name: transportRequestLabel
+        aliases:
+          - name: changeManagement/transportRequestLabel
+        type: "string"
+        description: "Pattern used for identifying lines holding the transport request id"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEP
+          - GENERAL
+        default: "TransportRequest"
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: custom/changeDocumentId
+          - name: custom/transportRequestId
