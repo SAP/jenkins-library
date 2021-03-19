@@ -35,7 +35,7 @@ func NewMockClient() MockClient {
 func (mc *MockClient) AddResponse(method, url string, response http.Response) {
 	responseList, ok := mc.Data[method+url]
 	if !ok {
-		responseList = make([]http.Response, 1)
+		responseList = make([]http.Response, 0)
 	}
 	responseList = append(responseList, response)
 
@@ -73,7 +73,7 @@ func (mc *MockClient) getResponse(method, url string) (http.Response, bool) {
 	if !ok {
 		return http.Response{}, false
 	}
-	response := responseList[1]
+	response := responseList[0]
 	if len(responseList) > 1 {
 		mc.Data[method+url] = responseList[1:]
 	} else {
@@ -1453,6 +1453,32 @@ var buildGetTask11Result = mockData{
 	statusCode: 200,
 }
 var buildGetTask12Result = mockData{
+	method: `GET`,
+	url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=12)/results`,
+	body: `{
+	"d" : {
+		"results" : [
+			{
+				"__metadata" : {
+					"id" : "https://7aa9d1a3-a876-464e-b59a-f26104452461.abap.stagingaws.hanavlab.ondemand.com/sap/opu/odata/BUILD/CORE_SRV/results(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=12,name='DELIVERY_LOGS.ZIP')",
+					"uri" : "https://7aa9d1a3-a876-464e-b59a-f26104452461.abap.stagingaws.hanavlab.ondemand.com/sap/opu/odata/BUILD/CORE_SRV/results(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=12,name='DELIVERY_LOGS.ZIP')",
+					"type" : "BUILD.CORE_SRV.xBUILDxVIEW_RESULTSType",
+					"content_type" : "application/x-zip-compressed",
+					"media_src" : "https://7aa9d1a3-a876-464e-b59a-f26104452461.abap.stagingaws.hanavlab.ondemand.com/sap/opu/odata/BUILD/CORE_SRV/results(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=12,name='DELIVERY_LOGS.ZIP')/$value"
+				},
+				"build_id" : "AKO22FYOFYPOXHOBVKXUTX3A3Q",
+				"task_id" : 12,
+				"name" : "DELIVERY_LOGS.ZIP",
+				"additional_info" : "SAPK-001AAINITAPC1.zip",
+				"mimetype" : "application/x-zip-compressed"
+			}
+		]
+	}
+}`,
+	statusCode: 200,
+}
+
+var buildGetTask12ResultOrig = mockData{
 	method: `GET`,
 	url:    `/sap/opu/odata/BUILD/CORE_SRV/tasks(build_id='AKO22FYOFYPOXHOBVKXUTX3A3Q',task_id=12)/results`,
 	body: `{

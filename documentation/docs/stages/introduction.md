@@ -109,7 +109,7 @@ In this stage additional unit-like tests are executed which should not run durin
 Currently, this stage holds the execution of a Karma runner which allows for
 
 * qUnit tests
-* OPA5 (One Page Acceptance tests) for SAP UI5
+* OPA5 (One Page Acceptance tests) for SAPUI5
 
 You find details about this stage on the page [**Additional Unit Tests**](additionalunittests.md).
 

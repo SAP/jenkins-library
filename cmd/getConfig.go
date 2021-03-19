@@ -185,8 +185,8 @@ func prepareOutputEnvironment(outputResources []config.StepResources, envRootPat
 	// ToDo: evaluate if we can rather call this only in the correct step context (we know the step when calling getConfig!)
 	// Could this be part of the container definition in the step.yaml?
 	stepOutputDirectories := []string{
-		reporting.MarkdownReportDirectory, // standard directory to collect md reports for pipelineCreateScanSummary
-		ws.ReportsDirectory,               // standard directory for reports created by whitesourceExecuteScan
+		reporting.StepReportDirectory, // standard directory to collect md reports for pipelineCreateScanSummary
+		ws.ReportsDirectory,           // standard directory for reports created by whitesourceExecuteScan
 	}
 
 	for _, dir := range stepOutputDirectories {

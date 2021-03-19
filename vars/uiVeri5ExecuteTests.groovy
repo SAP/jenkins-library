@@ -33,7 +33,7 @@ void call(Map parameters = [:]) {
             .use()
 
     if (parameters.testRepository || config.testRepository ) {
-        parameters.stashContent = GitUtils.handleTestRepository(this, [gitBranch: config.gitBranch, gitSshKeyCredentialsId: config.gitSshKeyCredentialsId, testRepository: config.testRepository])
+        parameters.stashContent = [GitUtils.handleTestRepository(this, [gitBranch: config.gitBranch, gitSshKeyCredentialsId: config.gitSshKeyCredentialsId, testRepository: config.testRepository])]
     }
 
     List credentials = [

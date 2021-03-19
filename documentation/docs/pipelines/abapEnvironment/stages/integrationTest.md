@@ -1,6 +1,6 @@
 # Integration Tests
 
-This stage creates an ABAP Environment (Steampunk) system and installs the add-on product, that was built in the `Build` stage.
+This stage creates an SAP BTP, ABAP environment (Steampunk) system and installs the add-on product, that was built in the `Build` stage.
 
 ## Steps
 
