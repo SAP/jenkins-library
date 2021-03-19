@@ -142,7 +142,7 @@ func (c *ConfigOptions) addBuildToolDefaults(config *ScanOptions, utils Utils) e
 			{Name: "docker.scanImages", Value: true, Force: true},
 			{Name: "docker.scanTarFiles", Value: true, Force: true},
 			{Name: "docker.includes", Value: ".*.tar", Force: true},
-			{Name: "ignoreSourceFiles", Value: true, Force: true},
+			{Name: "ignoreSourceFiles", Value: false},
 			{Name: "python.resolveGlobalPackages", Value: true, Force: false},
 			{Name: "resolveAllDependencies", Value: true, Force: false},
 			{Name: "updateType", Value: "OVERRIDE", Force: true},
