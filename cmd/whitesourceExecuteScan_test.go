@@ -66,7 +66,6 @@ func TestRunWhitesourceExecuteScan(t *testing.T) {
 	t.Run("fails for invalid configured project token", func(t *testing.T) {
 		// init
 		config := ScanOptions{
-			ScanType:            "unified-agent",
 			BuildDescriptorFile: "my-mta.yml",
 			VersioningModel:     "major",
 			ProductName:         "mock-product",
@@ -98,7 +97,6 @@ func TestRunWhitesourceExecuteScan(t *testing.T) {
 			AgentFileName:             "ua.jar",
 			ProductName:               "mock-product",
 			ProjectToken:              "mock-project-token",
-			ScanType:                  "unified-agent",
 		}
 		utilsMock := newWhitesourceUtilsMock()
 		utilsMock.AddFile("wss-generated-file.config", []byte("key=value"))
