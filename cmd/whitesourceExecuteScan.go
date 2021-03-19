@@ -388,7 +388,7 @@ func validateProductVersion(version string) string {
 func wsScanOptions(config *ScanOptions) *ws.ScanOptions {
 	return &ws.ScanOptions{
 		BuildTool:                  config.BuildTool,
-		ScanType:                   config.ScanType,
+		ScanType:                   "", // no longer provided via config
 		OrgToken:                   config.OrgToken,
 		UserToken:                  config.UserToken,
 		ProductName:                config.ProductName,
@@ -415,41 +415,15 @@ func wsScanOptions(config *ScanOptions) *ws.ScanOptions {
 	}
 }
 
-// executeScan executes different types of scans depending on the scanType parameter.
-// The default is to download the Unified Agent and use it to perform the scan.
+// Unified Agent is the only supported option by WhiteSource going forward:
+// The Unified Agent will be used to perform the scan.
 func executeScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils) error {
-	if config.ScanType == "" {
-		config.ScanType = config.BuildTool
-	}
 
 	options := wsScanOptions(config)
 
-	switch config.ScanType {
-	case "mta":
-		// Execute scan for maven and all npm modules
-		if err := scan.ExecuteMTAScan(options, utils); err != nil {
-			return err
-		}
-	case "maven":
-		// Execute scan with maven plugin goal
-		if err := scan.ExecuteMavenScan(options, utils); err != nil {
-			return err
-		}
-	case "npm":
-		// Execute scan with in each npm module using npm.Executor
-		if err := scan.ExecuteNpmScan(options, utils); err != nil {
-			return err
-		}
-	case "yarn":
-		// Execute scan with whitesource yarn plugin
-		if err := scan.ExecuteYarnScan(options, utils); err != nil {
-			return err
-		}
-	default:
-		// Execute scan with Unified Agent jar file
-		if err := scan.ExecuteUAScan(options, utils); err != nil {
-			return err
-		}
+	// Execute scan with Unified Agent jar file
+	if err := scan.ExecuteUAScan(options, utils); err != nil {
+		return err
 	}
 	return nil
 }
