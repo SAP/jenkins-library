@@ -18,7 +18,6 @@ You can have a look at different pipeline configurations in our [SAP-samples rep
 | [Publish](stages/publish.md)                  | [abapAddonAssemblyKitPublishTargetVector](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitPublishTargetVector/)|
 | [Post](stages/post.md)                     | [cloudFoundryDeleteService](https://sap.github.io/jenkins-library/steps/cloudFoundryDeleteService/)|
 
-
 ## 1. Prerequisites
 
 * Configure your Jenkins Server according to the [documentation](https://sap.github.io/jenkins-library/guidedtour/).
