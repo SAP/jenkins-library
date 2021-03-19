@@ -65,14 +65,10 @@ void call(Map parameters = [:]) {
 
         utils.pushToSWA([step: STEP_NAME], config)
 
-        def buildStatus = script.currentBuild.result
+        def buildStatus = script.currentBuild.currentResult
         // resolve templates
         config.color = GStringTemplateEngine.newInstance().createTemplate(config.color).make([buildStatus: buildStatus]).toString()
-        if (!config?.message){
-            if (!buildStatus) {
-                echo "[${STEP_NAME}] currentBuild.result is not set. Skipping Slack notification"
-                return
-            }
+        if (!config?.message) {
             config.message = GStringTemplateEngine.newInstance().createTemplate(config.defaultMessage).make([buildStatus: buildStatus, env: env]).toString()
         }
         Map options = [:]
