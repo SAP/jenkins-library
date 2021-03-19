@@ -72,6 +72,13 @@ type fortifyExecuteScanOptions struct {
 }
 
 type fortifyExecuteScanInflux struct {
+	step_data struct {
+		fields struct {
+			fortify bool
+		}
+		tags struct {
+		}
+	}
 	fortify_data struct {
 		fields struct {
 			projectName       string
@@ -100,6 +107,7 @@ func (i *fortifyExecuteScanInflux) persist(path, resourceName string) {
 		name        string
 		value       interface{}
 	}{
+		{valType: config.InfluxField, measurement: "step_data", name: "fortify", value: i.step_data.fields.fortify},
 		{valType: config.InfluxField, measurement: "fortify_data", name: "projectName", value: i.fortify_data.fields.projectName},
 		{valType: config.InfluxField, measurement: "fortify_data", name: "projectVersion", value: i.fortify_data.fields.projectVersion},
 		{valType: config.InfluxField, measurement: "fortify_data", name: "violations", value: i.fortify_data.fields.violations},
@@ -758,6 +766,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Name: "influx",
 						Type: "influx",
 						Parameters: []map[string]interface{}{
+							{"Name": "step_data"}, {"fields": []map[string]string{{"name": "fortify"}}},
 							{"Name": "fortify_data"}, {"fields": []map[string]string{{"name": "projectName"}, {"name": "projectVersion"}, {"name": "violations"}, {"name": "corporateTotal"}, {"name": "corporateAudited"}, {"name": "auditAllTotal"}, {"name": "auditAllAudited"}, {"name": "spotChecksTotal"}, {"name": "spotChecksAudited"}, {"name": "spotChecksGap"}, {"name": "suspicious"}, {"name": "exploitable"}, {"name": "suppressed"}}},
 						},
 					},
