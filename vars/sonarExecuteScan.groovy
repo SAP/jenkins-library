@@ -68,6 +68,7 @@ void call(Map parameters = [:]) {
                                 influxWrapper(script){
                                     piperExecuteBin.credentialWrapper(config, credentialInfo){
                                         sh "${piperGoPath} ${STEP_NAME}${customDefaultConfig}${customConfigArg}"
+                                        archiveArtifacts artifacts: "sonarscan.json", allowEmptyArchive: true
                                     }
                                     jenkinsUtils.handleStepResults(STEP_NAME, false, false)
                                     script.commonPipelineEnvironment.readFromDisk(script)

@@ -61,6 +61,7 @@ func GetAllStepMetadata() map[string]config.StepData {
 		"mavenExecuteIntegration":                 mavenExecuteIntegrationMetadata(),
 		"mavenExecuteStaticCodeChecks":            mavenExecuteStaticCodeChecksMetadata(),
 		"mtaBuild":                                mtaBuildMetadata(),
+		"newmanExecute":                           newmanExecuteMetadata(),
 		"nexusUpload":                             nexusUploadMetadata(),
 		"npmExecuteLint":                          npmExecuteLintMetadata(),
 		"npmExecuteScripts":                       npmExecuteScriptsMetadata(),

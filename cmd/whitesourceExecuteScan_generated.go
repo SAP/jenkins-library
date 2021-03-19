@@ -89,6 +89,13 @@ func (p *whitesourceExecuteScanCommonPipelineEnvironment) persist(path, resource
 }
 
 type whitesourceExecuteScanInflux struct {
+	step_data struct {
+		fields struct {
+			whitesource bool
+		}
+		tags struct {
+		}
+	}
 	whitesource_data struct {
 		fields struct {
 			vulnerabilities       int
@@ -108,6 +115,7 @@ func (i *whitesourceExecuteScanInflux) persist(path, resourceName string) {
 		name        string
 		value       interface{}
 	}{
+		{valType: config.InfluxField, measurement: "step_data", name: "whitesource", value: i.step_data.fields.whitesource},
 		{valType: config.InfluxField, measurement: "whitesource_data", name: "vulnerabilities", value: i.whitesource_data.fields.vulnerabilities},
 		{valType: config.InfluxField, measurement: "whitesource_data", name: "major_vulnerabilities", value: i.whitesource_data.fields.major_vulnerabilities},
 		{valType: config.InfluxField, measurement: "whitesource_data", name: "minor_vulnerabilities", value: i.whitesource_data.fields.minor_vulnerabilities},
@@ -649,6 +657,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Name: "influx",
 						Type: "influx",
 						Parameters: []map[string]interface{}{
+							{"Name": "step_data"}, {"fields": []map[string]string{{"name": "whitesource"}}},
 							{"Name": "whitesource_data"}, {"fields": []map[string]string{{"name": "vulnerabilities"}, {"name": "major_vulnerabilities"}, {"name": "minor_vulnerabilities"}, {"name": "policy_violations"}}},
 						},
 					},
