@@ -59,6 +59,17 @@ func transportRequestUploadSOLMAN(config transportRequestUploadSOLMANOptions,
 	}
 }
 
+// mocking framework. Allows to redirect the containing methods
+type iTransportRequestUtils interface {
+	FindIDInRange(label, from, to string) (string, error)
+}
+type transportRequestUtils struct {
+}
+
+func (*transportRequestUtils) FindIDInRange(label, from, to string) (string, error) {
+	return transportrequest.FindIDInRange(label, from, to)
+}
+
 func runTransportRequestUploadSOLMAN(config *transportRequestUploadSOLMANOptions,
 	action solman.Action,
 	telemetryData *telemetry.CustomData,
@@ -101,18 +112,8 @@ func runTransportRequestUploadSOLMAN(config *transportRequestUploadSOLMANOptions
 	return err
 }
 
-type itransportRequestUtils interface {
-	FindIDInRange(label, from, to string) (string, error)
-}
-type transportRequestUtils struct {
-}
-
-func (g *transportRequestUtils) FindIDInRange(label, from, to string) (string, error) {
-	return transportrequest.FindIDInRange(label, from, to)
-}
-
 func getTransportRequestID(config *transportRequestUploadSOLMANOptions,
-	trUtils itransportRequestUtils) (string, error) {
+	trUtils iTransportRequestUtils) (string, error) {
 
 	if len(config.TransportRequestID) > 0 {
 		return config.TransportRequestID, nil
@@ -122,7 +123,7 @@ func getTransportRequestID(config *transportRequestUploadSOLMANOptions,
 }
 
 func getChangeDocumentID(config *transportRequestUploadSOLMANOptions,
-	trUtils itransportRequestUtils) (string, error) {
+	trUtils iTransportRequestUtils) (string, error) {
 
 	if len(config.ChangeDocumentID) > 0 {
 		return config.ChangeDocumentID, nil
