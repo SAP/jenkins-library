@@ -4,7 +4,7 @@ Extend your CI/CD pipeline with SAP Cloud Transport Management service to add an
 
 ## Context
 
-This procedure explains how to upload a [multitarget application](https://www.sap.com/documents/2016/06/e2f618e4-757c-0010-82c7-eda71af511fa.html) from a CI/CD pipeline to Cloud Transport Management and then import it into its target environment.
+This procedure explains how to upload a [multitarget application (MTA)](https://www.sap.com/documents/2016/06/e2f618e4-757c-0010-82c7-eda71af511fa.html) from a CI/CD pipeline to Cloud Transport Management and then import it into its target environment.
 
 Cloud Transport Management allows you to manage the transport of development artifacts and application-specific content between different SAP BTP accounts. It adds transparency to the audit trail of changes so that you get information about who performed which changes in your production accounts and when they did it. At the same time, Cloud Transport Management enables a separation of concerns: For example, a developer of an application or of SAP Cloud content artifacts can trigger the propagation of changes, while the resulting transport is handled by a central operations team. For more information, see [SAP Cloud Transport Management](https://help.sap.com/viewer/product/TRANSPORT_MANAGEMENT_SERVICE/Cloud/en-US).
 
@@ -15,7 +15,7 @@ The following graphic provides an overview about the interplay between continuou
 ## Prerequisites
 
 * You have an existing CI pipeline, which you want to extend with Cloud Transport Management.
-* You have an MTA project, and the folder structure of its sources corresponds to the standard MTA structure. For more information about MTAs, see:
+* You have an multitarget application (MTA) project, and the folder structure of its sources corresponds to the standard MTA structure. For more information about MTAs, see:
   * [Multitarget Applications in the Cloud Foundry Environment](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/d04fc0e2ad894545aebfd7126384307c.html)
   * [Multitarget Applications for the Neo Environment](https://help.sap.com/viewer/ea72206b834e4ace9cd834feed6c0e09/Cloud/en-US/e1bb7eb746d34237b8b47035adff5022.html)
 * You have access to Cloud Transport Management. See [Provide Access to SAP Cloud Transport Management](https://help.sap.com/viewer/7f7160ec0d8546c6b3eab72fb5ad6fd8/Cloud/en-US/13894bed9e2d4b25aa34d03d002707f9.html).
@@ -24,7 +24,7 @@ The following graphic provides an overview about the interplay between continuou
 
 ## Procedure
 
-You can use this scenario to extend any CI process that meets the prerequisites, for example, the one described in [Build and Deploy SAPUI5 or SAP Fiori Applications on SAP Cloud Platform with Jenkins](https://sap.github.io/jenkins-library/scenarios/ui5-sap-cp/Readme/).
+You can use this scenario to extend any CI process that meets the prerequisites, for example, the one described in [Build and Deploy SAPUI5 or SAP Fiori Applications on SAP BTP with Jenkins](https://sap.github.io/jenkins-library/scenarios/ui5-sap-cp/Readme/).
 
 The following graphic shows an example of the detailed procedure when combining continuous integration and Cloud Transport Management:
 
@@ -32,7 +32,7 @@ The following graphic shows an example of the detailed procedure when combining 
 
 The process flow contains the following steps:
 
-1. The CI server builds a multitarget application (MTA) archive.
+1. The CI server builds a MTA archive.
 1. The MTA is uploaded into the import queue of the target node, which is specified in the CI pipeline (in this example, PRE-PROD).
 1. Optionally, for transports in Cloud Foundry environment, MTA extension descriptors can be uploaded to the nodes in the transport landscape to provide node-specific import configurations. The MTA extension descriptor file must either be part of the repository, or be the result of the build process.
 1. The release manager manually triggers the import, or schedules it, which results in the physical deployment of the MTA archive into the corresponding subaccount (in this example, PRE-PROD). If an MTA extension descriptor was uploaded for this node, it will be used for the import.
