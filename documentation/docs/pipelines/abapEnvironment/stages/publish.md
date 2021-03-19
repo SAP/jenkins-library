@@ -1,6 +1,6 @@
 # Publish
 
-This stage publishes an add-on for the ABAP Environment (please refer to the [scenario description](../../../scenarios/abapEnvironmentAddons.md)).
+This stage publishes an add-on for the SAP BTP, ABAP environment (please refer to the [scenario description](../../../scenarios/abapEnvironmentAddons.md)).
 
 ## Steps
 

@@ -1,6 +1,6 @@
 # Post
 
-This stage deletes the ABAP Environment system created in the `Prepare System` stage.
+This stage deletes the SAP BTP, ABAP environment system created in the `Prepare System` stage.
 
 ## Steps
 

@@ -19,7 +19,7 @@ On the project level, provide and adjust the following template:
 
 | File Name | Description | Position |
 |-----|-----|-----|
-| [`mta.yaml`](https://github.com/SAP/jenkins-library/blob/master/documentation/docs/scenarios/rfc-upload/files/mta.yaml) | This file controls the behavior of the MTA toolset. | Place the `mta.yaml` file in your application root folder and adjust the values in brackets with your data. |
+| [`mta.yaml`](https://github.com/SAP/jenkins-library/blob/master/documentation/docs/scenarios/rfc-upload/files/mta.yaml) | This file controls the behavior of the multitarget application (MTA) toolset. | Place the `mta.yaml` file in your application root folder and adjust the values in brackets with your data. |
 
 Depending on the modules in your MTA, additional configuration files are required, e.g. `pom.xml`  or `package.json`.
 
@@ -27,7 +27,7 @@ Depending on the modules in your MTA, additional configuration files are require
 
 This scenario combines various different steps to create a complete pipeline.
 
-In this scenario, we want to show how to build an application based on SAPUI5 or SAP Fiori by using the multitarget application (MTA) concept and how to attach the build result to a transport request inside an ABAP system. This document comprises the [mtaBuild](../../../steps/mtaBuild/) and the [transportRequestUploadFile](../../../steps/transportRequestUploadFile/) steps.
+In this scenario, we want to show how to build an application based on SAPUI5 or SAP Fiori by using the MTA concept and how to attach the build result to a transport request inside an ABAP system. This document comprises the [mtaBuild](../../../steps/mtaBuild/) and the [transportRequestUploadFile](../../../steps/transportRequestUploadFile/) steps.
 
 In case of an RFC based upload the binary is not streamed to the ABAP endpoint. Instead an URL pointing to the binary needs to be provided. Hence the binary must be published first so that it can be accessed via HTTP. This can happen by uploading the binary to a blob store or by archiving the artifact on Jenkins. The corresponding URL needs to be provided when the artifact is attached to the transport request.
 

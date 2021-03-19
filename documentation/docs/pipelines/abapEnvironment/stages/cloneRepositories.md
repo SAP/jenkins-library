@@ -1,6 +1,6 @@
 # Clone Repositories
 
-This stage creates pulls/clones the specified software components (repositories) to the ABAP Environment system.
+This stage creates pulls/clones the specified software components (repositories) to the SAP BTP, ABAP environment system.
 
 ## Steps
 
