@@ -3,6 +3,7 @@ package config
 import (
 	"io/ioutil"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/config/interpolation"
@@ -12,8 +13,9 @@ import (
 )
 
 const (
-	vaultTestCredentialPath = "vaultTestCredentialPath"
-	vaultTestCredentialKeys = "vaultTestCredentialKeys"
+	vaultTestCredentialPath      = "vaultTestCredentialPath"
+	vaultTestCredentialKeys      = "vaultTestCredentialKeys"
+	vaultTestCredentialEnvPrefix = "PIPER_TESTCREDENTIAL_"
 )
 
 var (
@@ -169,7 +171,7 @@ func resolveVaultTestCredentials(config *StepConfig, client vaultClient) {
 				}
 				if secretKey == key {
 					log.RegisterSecret(secretValue)
-					envVariable := "PIPER_TESTCREDENTIAL_" + convertEnvironment(secretKey)
+					envVariable := vaultTestCredentialEnvPrefix + convertEnvVar(secretKey)
 					log.Entry().Debugf("Exposing test credential '%v' as '%v'", key, envVariable)
 					os.Setenv(envVariable, secretValue)
 					secretsResolved = true
@@ -177,16 +179,23 @@ func resolveVaultTestCredentials(config *StepConfig, client vaultClient) {
 			}
 		}
 		if secretsResolved {
+			// prevent overwriting resolved secrets
+			// only allows vault test credentials on one / the same vault path
 			break
 		}
 	}
 }
 
-// converts to an environment variable style string
-func convertEnvironment(s string) string {
+// converts to a valid environment variable string
+func convertEnvVar(s string) string {
 	r := strings.ToUpper(s)
 	r = strings.ReplaceAll(r, "-", "_")
-	return r
+	reg, err := regexp.Compile("[^a-zA-Z0-9_]*")
+	if err != nil {
+		log.Entry().Debugf("could not compile regex of convertEnvVar: %v", err)
+	}
+	replacedString := reg.ReplaceAllString(r, "")
+	return replacedString
 }
 
 // RemoveVaultSecretFiles removes all secret files that have been created during execution

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/config/mocks"
@@ -219,43 +220,71 @@ func addAlias(param *StepParameters, aliasName string) {
 }
 
 func Test_resolveVaultTestCredentials(t *testing.T) {
+	// init
 	vaultMock := &mocks.VaultMock{}
 	envPrefix := "PIPER_TESTCREDENTIAL_"
+
+	resetValue1 := os.Getenv("PIPER_TESTCREDENTIAL_APPUSER")
+	defer os.Setenv("PIPER_TESTCREDENTIAL_APPUSER", resetValue1)
+	resetValue2 := os.Getenv("PIPER_TESTCREDENTIAL_APPUSERPW")
+	defer os.Setenv("PIPER_TESTCREDENTIAL_APPUSERPW", resetValue2)
 
 	stepConfig := StepConfig{Config: map[string]interface{}{
 		"vaultPath":               "team1",
 		"vaultTestCredentialPath": "appCredentials",
-		"vaultTestCredentialKeys": []string{"appUser", "appUserPw"},
+		"vaultTestCredentialKeys": []interface{}{"appUser", "appUserPw"},
 	}}
 
+	// mock
 	vaultData := map[string]string{"appUser": "test-user", "appUserPw": "password1234"}
 	vaultMock.On("GetKvSecret", "team1/appCredentials").Return(vaultData, nil)
 
+	// test
 	resolveVaultTestCredentials(&stepConfig, vaultMock)
+
+	// assert
 	for k, v := range vaultData {
-		env := envPrefix + k
+		env := envPrefix + strings.ToUpper(k)
 		assert.NotEmpty(t, os.Getenv(env))
 		assert.Equal(t, os.Getenv(env), v)
 	}
+}
 
-	// assert.NotNil(t, stepConfig.Config["appUser"])
-	// assert.NotNil(t, stepConfig.Config["appUserPw"])
-	// assert.Equal(t, stepConfig.Config["appUser"], "test-user")
-	// assert.Equal(t, stepConfig.Config["appUserPw"],  )
-
-	// type args struct {
-	// 	config *StepConfig
-	// 	client vaultClient
-	// }
-	// tests := []struct {
-	// 	name string
-	// 	args args
-	// }{
-	// 	// TODO: Add test cases.
-	// }
-	// for _, tt := range tests {
-	// 	t.Run(tt.name, func(t *testing.T) {
-	// 		resolveVaultTestCredentials(tt.args.config, tt.args.client)
-	// 	})
-	// }
+func Test_convertEnvVar(t *testing.T) {
+	type args struct {
+		s string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "empty string",
+			args: args{""},
+			want: "",
+		},
+		{
+			name: "alphanumerical string",
+			args: args{"myApp1"},
+			want: "MYAPP1",
+		},
+		{
+			name: "string with hyphen",
+			args: args{"my_App-1"},
+			want: "MY_APP_1",
+		},
+		{
+			name: "string with special characters",
+			args: args{"my_App?-(1]"},
+			want: "MY_APP_1",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := convertEnvVar(tt.args.s); got != tt.want {
+				t.Errorf("convertEnvironment() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
