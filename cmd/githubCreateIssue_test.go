@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/SAP/jenkins-library/pkg/mock"
+
 	"github.com/google/go-github/v32/github"
 	"github.com/stretchr/testify/assert"
 )
@@ -40,6 +42,7 @@ func TestRunGithubCreateIssue(t *testing.T) {
 
 	t.Run("Success", func(t *testing.T) {
 		// init
+		filesMock := mock.FilesMock{}
 		ghCreateIssueService := ghCreateIssueMock{
 			issueID: 1,
 		}
@@ -51,7 +54,7 @@ func TestRunGithubCreateIssue(t *testing.T) {
 		}
 
 		// test
-		err := runGithubCreateIssue(ctx, &config, nil, &ghCreateIssueService)
+		err := runGithubCreateIssue(ctx, &config, nil, &ghCreateIssueService, filesMock.FileRead)
 
 		// assert
 		assert.NoError(t, err)
@@ -61,17 +64,73 @@ func TestRunGithubCreateIssue(t *testing.T) {
 		assert.Equal(t, config.Title, ghCreateIssueService.issue.GetTitle())
 	})
 
+	t.Run("Success - body from file", func(t *testing.T) {
+		// init
+		filesMock := mock.FilesMock{}
+		filesMock.AddFile("test.md", []byte("Test markdown"))
+		ghCreateIssueService := ghCreateIssueMock{
+			issueID: 1,
+		}
+		config := githubCreateIssueOptions{
+			Owner:        "TEST",
+			Repository:   "test",
+			BodyFilePath: "test.md",
+			Title:        "This is my title",
+		}
+
+		// test
+		err := runGithubCreateIssue(ctx, &config, nil, &ghCreateIssueService, filesMock.FileRead)
+
+		// assert
+		assert.NoError(t, err)
+		assert.Equal(t, config.Owner, ghCreateIssueService.owner)
+		assert.Equal(t, config.Repository, ghCreateIssueService.repo)
+		assert.Equal(t, "Test markdown", ghCreateIssueService.issue.GetBody())
+		assert.Equal(t, config.Title, ghCreateIssueService.issue.GetTitle())
+	})
+
 	t.Run("Error", func(t *testing.T) {
 		// init
+		filesMock := mock.FilesMock{}
 		ghCreateIssueService := ghCreateIssueMock{
 			issueError: fmt.Errorf("error creating issue"),
 		}
+		config := githubCreateIssueOptions{
+			Body: "test content",
+		}
+
+		// test
+		err := runGithubCreateIssue(ctx, &config, nil, &ghCreateIssueService, filesMock.FileRead)
+
+		// assert
+		assert.EqualError(t, err, "error occurred when creating issue: error creating issue")
+	})
+
+	t.Run("Error - missing issue body", func(t *testing.T) {
+		// init
+		filesMock := mock.FilesMock{}
+		ghCreateIssueService := ghCreateIssueMock{}
 		config := githubCreateIssueOptions{}
 
 		// test
-		err := runGithubCreateIssue(ctx, &config, nil, &ghCreateIssueService)
+		err := runGithubCreateIssue(ctx, &config, nil, &ghCreateIssueService, filesMock.FileRead)
 
 		// assert
-		assert.EqualError(t, err, "Error occurred when creating issue: error creating issue")
+		assert.EqualError(t, err, "either parameter `body` or parameter `bodyFilePath` is required")
+	})
+
+	t.Run("Error - missing body file", func(t *testing.T) {
+		// init
+		filesMock := mock.FilesMock{}
+		ghCreateIssueService := ghCreateIssueMock{}
+		config := githubCreateIssueOptions{
+			BodyFilePath: "test.md",
+		}
+
+		// test
+		err := runGithubCreateIssue(ctx, &config, nil, &ghCreateIssueService, filesMock.FileRead)
+
+		// assert
+		assert.Contains(t, fmt.Sprint(err), "failed to read file 'test.md'")
 	})
 }

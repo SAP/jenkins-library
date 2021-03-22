@@ -31,7 +31,13 @@ spec:
           - STAGES
           - STEPS
         type: string
-        mandatory: true
+      - name: bodyFilePath
+        description: Defines the path to a file containing the markdown content for the issue. This can be used instead of [`body`](#body)
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
       - name: owner
         aliases:
           - name: githubOrg

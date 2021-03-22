@@ -2,8 +2,8 @@
 
 ![ABAP Environment Pipeline](../../images/abapPipelineOverview.png)
 
-The goal of the ABAP Environment Pipeline is to enable Continuous Integration for the SAP BTP ABAP Environment, also known as Steampunk.
-The pipeline contains several stages and supports different scenarios. The general idea is that the user can choose a subset of these stages, which fits her/his use case, for example running nightly ATC checks or building an ABAP Add-on for Steampunk.
+The goal of the ABAP environment pipeline is to enable Continuous Integration for the SAP BTP, ABAP environment, also known as Steampunk.
+The pipeline contains several stages and supports different scenarios. The general idea is that the user can choose a subset of these stages, which fits her/his use case, for example running nightly ATC checks or building an ABAP add-on for Steampunk.
 
 ## Scenarios
 
@@ -15,7 +15,7 @@ This scenario is intended to be used improve the software quality through contin
 
 ### Building ABAP Add-ons for Steampunk
 
-This scenario is intended for SAP Partners, who want to offer a Software as a Service (SaaS) solution on Steampunk. This is currently the only use case for building ABAP Add-ons and, more specifically, the stages "Initial Checks", "Build", "Integration Tests", "Confirm" and "Publish". Please refer to the [scenario documentation](../../scenarios/abapEnvironmentAddons.md) for more information.
+This scenario is intended for SAP partners, who want to offer a Software as a Service (SaaS) solution on Steampunk. This is currently the only use case for building ABAP Add-ons and, more specifically, the stages "Initial Checks", "Build", "Integration Tests", "Confirm" and "Publish". Please refer to the [scenario documentation](../../scenarios/abapEnvironmentAddons.md) for more information.
 
 ## Pipeline Stages
 
