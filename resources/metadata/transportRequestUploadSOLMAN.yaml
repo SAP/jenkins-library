@@ -35,6 +35,10 @@ spec:
           - STAGES
           - STEPS
           - GENERAL
+        resourceRef:
+          - name: uploadCredentialsId
+            type: secret
+            param: username
       - name: password
         type: string
         mandatory: true
@@ -42,6 +46,10 @@ spec:
         secret: true
         scope:
           - PARAMETERS
+        resourceRef:
+          - name: uploadCredentialsId
+            type: secret
+            param: password
       - name: applicationId
         type: string
         mandatory: true
@@ -142,3 +150,6 @@ spec:
         params:
           - name: custom/changeDocumentId
           - name: custom/transportRequestId
+  containers:
+    - name: cmclient
+      image: ppiper/cm-client
