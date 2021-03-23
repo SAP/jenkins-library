@@ -162,20 +162,32 @@ func transportRequestUploadSOLMANMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "changeManagement/endpoint"}},
 					},
 					{
-						Name:        "username",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Name: "username",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "uploadCredentialsId",
+								Param: "username",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
-						Name:        "password",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+						Name: "password",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "uploadCredentialsId",
+								Param: "password",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "applicationId",
@@ -265,6 +277,9 @@ func transportRequestUploadSOLMANMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "changeManagement/transportRequestLabel"}},
 					},
 				},
+			},
+			Containers: []config.Container{
+				{Name: "cmclient", Image: "ppiper/cm-client"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
