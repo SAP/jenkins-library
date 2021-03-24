@@ -210,8 +210,6 @@ func (c *ConfigOptions) addBuildToolDefaults(config *ScanOptions, utils Utils) e
 			{Name: "npm.resolveDependencies", Value: true, Force: true},
 			{Name: "npm.ignoreSourceFiles", Value: true, Force: true},
 			{Name: "npm.yarnProject", Value: true, Force: true},
-			{Name: "includes", Value: "**/*.json"},
-			{Name: "excludes", Value: "**/*sources.jar **/*javadoc.jar"},
 		},
 	}
 
