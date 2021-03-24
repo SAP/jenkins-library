@@ -160,7 +160,14 @@ func (c *ConfigOptions) addBuildToolDefaults(config *ScanOptions, utils Utils) e
 			{Name: "go.dependencyManager", Value: "modules"},
 		},
 		"gradle": {
-			{Name: "gradle.localRepositoryPath", Value: ".gradle", Force: false},
+			{Name: "gradle.resolveDependencies", Value: true, Force: true},
+			{Name: "gradle.ignoreSourceFiles", Value: true, Force: true},
+			{Name: "gradle.aggregateModules", Value: false, Force: true},
+			{Name: "gradle.runAssembleCommand", Value: true},
+			{Name: "gradle.runPreStep", Value: true},
+			{Name: "gradle.downloadMissingDependencies", Value: true},
+			{Name: "gradle.localRepositoryPath", Value: ".gradle"},
+			{Name: "excludes", Value: "**/*sources.jar **/*javadoc.jar"},
 		},
 		"maven": {
 			{Name: "updateEmptyProject", Value: true, Force: true},
@@ -197,6 +204,16 @@ func (c *ConfigOptions) addBuildToolDefaults(config *ScanOptions, utils Utils) e
 			{Name: "python.IgnorePipenvInstallErrors", Value: false},
 			{Name: "includes", Value: "**/*.py **/*.txt"},
 			{Name: "excludes", Value: "**/*sources.jar **/*javadoc.jar"},
+		},
+		"ruby": {
+			{Name: "ruby.ignoreSourceFiles", Value: true, Force: true},
+			{Name: "ruby.installMissingGems", Value: true},
+			{Name: "includes", Value: "**/*.gem **/*.rb"},
+		},
+		"rust": {
+			{Name: "cargo.resolveDependencies", Value: true, Force: true},
+			{Name: "cargo.ignoreSourceFiles", Value: true, Force: true},
+			{Name: "cargo.runPreStep", Value: true, Force: true},
 		},
 		"sbt": {
 			{Name: "sbt.resolveDependencies", Value: true, Force: true},
