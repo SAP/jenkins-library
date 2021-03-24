@@ -206,6 +206,7 @@ class commonPipelineEnvironment implements Serializable {
     }
 
     void writeValueToFile(script, String filename, value){
+        def origin = value
         try{
             if (value){
                 if (!(value in CharSequence)) filename += '.json'
@@ -216,6 +217,7 @@ class commonPipelineEnvironment implements Serializable {
         }catch(StackOverflowError error) {
             script.echo("failed to write file " + filename)
             script.echo("failed to write file, value: " + value)
+            script.echo("failed to write file, origin: " + value)
             throw error
         }
     }
