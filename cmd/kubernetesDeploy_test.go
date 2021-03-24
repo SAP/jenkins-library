@@ -293,6 +293,28 @@ func TestRunKubernetesDeploy(t *testing.T) {
 		}, e.Calls[0].Params, "Wrong upgrade parameters")
 	})
 
+	t.Run("test helm v3 - fails without chart path", func(t *testing.T) {
+		opts := kubernetesDeployOptions{
+			ContainerRegistryURL:    "https://my.registry:55555",
+			ContainerRegistrySecret: "testSecret",
+			DeploymentName:          "deploymentName",
+			DeployTool:              "helm3",
+			ForceUpdates:            true,
+			HelmDeployWaitSeconds:   400,
+			IngressHosts:            []string{},
+			Image:                   "path/to/Image:latest",
+			AdditionalParameters:    []string{"--testParam", "testValue"},
+			KubeContext:             "testCluster",
+			Namespace:               "deploymentNamespace",
+		}
+		e := mock.ExecMockRunner{}
+
+		var stdout bytes.Buffer
+
+		err := runKubernetesDeploy(opts, &e, &stdout)
+		assert.EqualError(t, err, "Chart path has not been set. Please configure the 'chartPath'.")
+	})
+
 	t.Run("test helm v3 - no force", func(t *testing.T) {
 		opts := kubernetesDeployOptions{
 			ContainerRegistryURL:    "https://my.registry:55555",

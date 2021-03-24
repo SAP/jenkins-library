@@ -39,21 +39,21 @@ func kubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetry.C
 	runKubernetesDeploy(config, &c, log.Writer())
 }
 
-func runKubernetesDeploy(config kubernetesDeployOptions, command command.ExecRunner, stdout io.Writer) {
+func runKubernetesDeploy(config kubernetesDeployOptions, command command.ExecRunner, stdout io.Writer) error {
 	if config.DeployTool == "helm" || config.DeployTool == "helm3" {
-		runHelmDeploy(config, command, stdout)
-	} else {
-		runKubectlDeploy(config, command)
+		return runHelmDeploy(config, command, stdout)
+	} else if config.DeployTool == "kubectl" {
+		return runKubectlDeploy(config, command)
 	}
+	return nil
 }
 
-func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, stdout io.Writer) {
-	var err error
-	if (len(config.ChartPath)) <= 0 {
-		log.Entry().WithError(err).Fatal("Chart path has not been set. Please configure the 'chartPath'.")
+func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, stdout io.Writer) error {
+	if len(config.ChartPath) <= 0 {
+		return fmt.Errorf("chart path has not been set, please configure chartPath parameter")
 	}
-	if (len(config.DeploymentName)) <= 0 {
-		log.Entry().WithError(err).Fatal("Deployment name has not been set. Please configure the 'deploymentName'.")
+	if len(config.DeploymentName) <= 0 {
+		return fmt.Errorf("deployment name has not been set, please configure deploymentName parameter")
 	}
 	_, containerRegistry, err := splitRegistryURL(config.ContainerRegistryURL)
 	if err != nil {
@@ -191,10 +191,10 @@ func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, s
 	if err := command.RunExecutable("helm", upgradeParams...); err != nil {
 		log.Entry().WithError(err).Fatal("Helm upgrade call failed")
 	}
-
+	return nil
 }
 
-func runKubectlDeploy(config kubernetesDeployOptions, command command.ExecRunner) {
+func runKubectlDeploy(config kubernetesDeployOptions, command command.ExecRunner) error {
 	_, containerRegistry, err := splitRegistryURL(config.ContainerRegistryURL)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Container registry url '%v' incorrect", config.ContainerRegistryURL)
@@ -268,6 +268,7 @@ func runKubectlDeploy(config kubernetesDeployOptions, command command.ExecRunner
 		log.Entry().Debugf("Running kubectl with following parameters: %v", kubeApplyParams)
 		log.Entry().WithError(err).Fatal("Deployment with kubectl failed.")
 	}
+	return nil
 }
 
 func splitRegistryURL(registryURL string) (protocol, registry string, err error) {
