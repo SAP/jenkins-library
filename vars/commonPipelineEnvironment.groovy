@@ -217,7 +217,7 @@ class commonPipelineEnvironment implements Serializable {
         }catch(StackOverflowError error) {
             script.echo("failed to write file " + filename)
             script.echo("failed to write file, value: " + value)
-            script.echo("failed to write file, origin: " + value)
+            script.echo("failed to write file, origin: " + origin)
             throw error
         }
     }
