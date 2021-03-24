@@ -45,7 +45,7 @@ func runKubernetesDeploy(config kubernetesDeployOptions, command command.ExecRun
 	} else if config.DeployTool == "kubectl" {
 		return runKubectlDeploy(config, command)
 	}
-	return nil
+	return fmt.Errorf("Failed to execute deployments")
 }
 
 func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, stdout io.Writer) error {
