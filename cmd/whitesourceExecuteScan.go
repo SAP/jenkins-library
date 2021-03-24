@@ -112,17 +112,19 @@ func newWhitesourceScan(config *ScanOptions) *ws.Scan {
 	}
 }
 
-func whitesourceExecuteScan(config ScanOptions, _ *telemetry.CustomData, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment) {
+func whitesourceExecuteScan(config ScanOptions, _ *telemetry.CustomData, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment, influx *whitesourceExecuteScanInflux) {
 	utils := newWhitesourceUtils(&config)
 	scan := newWhitesourceScan(&config)
 	sys := ws.NewSystem(config.ServiceURL, config.OrgToken, config.UserToken, time.Duration(config.Timeout)*time.Second)
-	err := runWhitesourceExecuteScan(&config, scan, utils, sys, commonPipelineEnvironment)
+	influx.step_data.fields.whitesource = false
+	err := runWhitesourceExecuteScan(&config, scan, utils, sys, commonPipelineEnvironment, influx)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
+	influx.step_data.fields.whitesource = true
 }
 
-func runWhitesourceExecuteScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment) error {
+func runWhitesourceExecuteScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment, influx *whitesourceExecuteScanInflux) error {
 	if err := resolveAggregateProjectName(config, scan, sys); err != nil {
 		return err
 	}
@@ -143,14 +145,14 @@ func runWhitesourceExecuteScan(config *ScanOptions, scan *ws.Scan, utils whiteso
 			return fmt.Errorf("failed to aggregate version wide vulnerabilities: %w", err)
 		}
 	} else {
-		if err := runWhitesourceScan(config, scan, utils, sys, commonPipelineEnvironment); err != nil {
+		if err := runWhitesourceScan(config, scan, utils, sys, commonPipelineEnvironment, influx); err != nil {
 			return fmt.Errorf("failed to execute WhiteSource scan: %w", err)
 		}
 	}
 	return nil
 }
 
-func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment) error {
+func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment, influx *whitesourceExecuteScanInflux) error {
 	// Download Docker image for container scan
 	// ToDo: move it to improve testability
 	if config.BuildTool == "docker" {
@@ -188,7 +190,7 @@ func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUti
 	}
 	log.Entry().Info("-----------------------------------------------------")
 
-	paths, err := checkAndReportScanResults(config, scan, utils, sys)
+	paths, err := checkAndReportScanResults(config, scan, utils, sys, influx)
 	piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", paths, nil)
 	persistScannedProjects(config, scan, commonPipelineEnvironment)
 	if err != nil {
@@ -197,7 +199,7 @@ func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUti
 	return nil
 }
 
-func checkAndReportScanResults(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource) ([]piperutils.Path, error) {
+func checkAndReportScanResults(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource, influx *whitesourceExecuteScanInflux) ([]piperutils.Path, error) {
 	reportPaths := []piperutils.Path{}
 	if !config.Reporting && !config.SecurityVulnerabilities {
 		return reportPaths, nil
@@ -220,14 +222,14 @@ func checkAndReportScanResults(config *ScanOptions, scan *ws.Scan, utils whiteso
 
 	checkErrors := []string{}
 
-	rPath, err := checkPolicyViolations(config, scan, sys, utils, reportPaths)
+	rPath, err := checkPolicyViolations(config, scan, sys, utils, reportPaths, influx)
 	if err != nil {
 		checkErrors = append(checkErrors, fmt.Sprint(err))
 	}
 	reportPaths = append(reportPaths, rPath)
 
 	if config.SecurityVulnerabilities {
-		rPaths, err := checkSecurityViolations(config, scan, sys, utils)
+		rPaths, err := checkSecurityViolations(config, scan, sys, utils, influx)
 		reportPaths = append(reportPaths, rPaths...)
 		if err != nil {
 			checkErrors = append(checkErrors, fmt.Sprint(err))
@@ -386,7 +388,7 @@ func validateProductVersion(version string) string {
 func wsScanOptions(config *ScanOptions) *ws.ScanOptions {
 	return &ws.ScanOptions{
 		BuildTool:                  config.BuildTool,
-		ScanType:                   config.ScanType,
+		ScanType:                   "", // no longer provided via config
 		OrgToken:                   config.OrgToken,
 		UserToken:                  config.UserToken,
 		ProductName:                config.ProductName,
@@ -413,46 +415,20 @@ func wsScanOptions(config *ScanOptions) *ws.ScanOptions {
 	}
 }
 
-// executeScan executes different types of scans depending on the scanType parameter.
-// The default is to download the Unified Agent and use it to perform the scan.
+// Unified Agent is the only supported option by WhiteSource going forward:
+// The Unified Agent will be used to perform the scan.
 func executeScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils) error {
-	if config.ScanType == "" {
-		config.ScanType = config.BuildTool
-	}
 
 	options := wsScanOptions(config)
 
-	switch config.ScanType {
-	case "mta":
-		// Execute scan for maven and all npm modules
-		if err := scan.ExecuteMTAScan(options, utils); err != nil {
-			return err
-		}
-	case "maven":
-		// Execute scan with maven plugin goal
-		if err := scan.ExecuteMavenScan(options, utils); err != nil {
-			return err
-		}
-	case "npm":
-		// Execute scan with in each npm module using npm.Executor
-		if err := scan.ExecuteNpmScan(options, utils); err != nil {
-			return err
-		}
-	case "yarn":
-		// Execute scan with whitesource yarn plugin
-		if err := scan.ExecuteYarnScan(options, utils); err != nil {
-			return err
-		}
-	default:
-		// Execute scan with Unified Agent jar file
-		if err := scan.ExecuteUAScan(options, utils); err != nil {
-			return err
-		}
+	// Execute scan with Unified Agent jar file
+	if err := scan.ExecuteUAScan(options, utils); err != nil {
+		return err
 	}
 	return nil
 }
 
-func checkPolicyViolations(config *ScanOptions, scan *ws.Scan, sys whitesource, utils whitesourceUtils, reportPaths []piperutils.Path) (piperutils.Path, error) {
+func checkPolicyViolations(config *ScanOptions, scan *ws.Scan, sys whitesource, utils whitesourceUtils, reportPaths []piperutils.Path, influx *whitesourceExecuteScanInflux) (piperutils.Path, error) {
 
 	policyViolationCount := 0
 	for _, project := range scan.ScannedProjects() {
@@ -490,13 +466,14 @@ func checkPolicyViolations(config *ScanOptions, scan *ws.Scan, sys whitesource, 
 
 	if policyViolationCount > 0 {
 		log.SetErrorCategory(log.ErrorCompliance)
+		influx.whitesource_data.fields.policy_violations = policyViolationCount
 		return policyReport, fmt.Errorf("%v policy violation(s) found", policyViolationCount)
 	}
 
 	return policyReport, nil
 }
 
-func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource, utils whitesourceUtils) ([]piperutils.Path, error) {
+func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource, utils whitesourceUtils, influx *whitesourceExecuteScanInflux) ([]piperutils.Path, error) {
 	var reportPaths []piperutils.Path
 	// Check for security vulnerabilities and fail the build if cvssSeverityLimit threshold is crossed
 	// convert config.CvssSeverityLimit to float64
@@ -511,7 +488,7 @@ func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource
 		project := ws.Project{Name: config.ProjectName, Token: config.ProjectToken}
 		// ToDo: see if HTML report generation is really required here
 		// we anyway need to do some refactoring here since config.ProjectToken != "" essentially indicates an aggregated project
-		if _, _, err := checkProjectSecurityViolations(cvssSeverityLimit, project, sys); err != nil {
+		if _, _, err := checkProjectSecurityViolations(cvssSeverityLimit, project, sys, influx); err != nil {
 			return reportPaths, err
 		}
 	} else {
@@ -520,7 +497,7 @@ func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource
 		allAlerts := []ws.Alert{}
 		for _, project := range scan.ScannedProjects() {
 			// collect errors and aggregate vulnerabilities from all projects
-			if vulCount, alerts, err := checkProjectSecurityViolations(cvssSeverityLimit, project, sys); err != nil {
+			if vulCount, alerts, err := checkProjectSecurityViolations(cvssSeverityLimit, project, sys, influx); err != nil {
 				allAlerts = append(allAlerts, alerts...)
 				vulnerabilitiesCount += vulCount
 				errorsOccured = append(errorsOccured, fmt.Sprint(err))
@@ -544,7 +521,7 @@ func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource
 }
 
 // checkSecurityViolations checks security violations and returns an error if the configured severity limit is crossed.
-func checkProjectSecurityViolations(cvssSeverityLimit float64, project ws.Project, sys whitesource) (int, []ws.Alert, error) {
+func checkProjectSecurityViolations(cvssSeverityLimit float64, project ws.Project, sys whitesource, influx *whitesourceExecuteScanInflux) (int, []ws.Alert, error) {
 	// get project alerts (vulnerabilities)
 	alerts, err := sys.GetProjectAlertsByType(project.Token, "SECURITY_VULNERABILITY")
 	if err != nil {
@@ -552,6 +529,9 @@ func checkProjectSecurityViolations(cvssSeverityLimit float64, project ws.Projec
 	}
 
 	severeVulnerabilities, nonSevereVulnerabilities := countSecurityVulnerabilities(&alerts, cvssSeverityLimit)
+	influx.whitesource_data.fields.minor_vulnerabilities = nonSevereVulnerabilities
+	influx.whitesource_data.fields.major_vulnerabilities = severeVulnerabilities
+	influx.whitesource_data.fields.vulnerabilities = nonSevereVulnerabilities + severeVulnerabilities
 	if nonSevereVulnerabilities > 0 {
 		log.Entry().Warnf("WARNING: %v Open Source Software Security vulnerabilities with "+
 			"CVSS score below threshold %.1f detected in project %s.", nonSevereVulnerabilities,
@@ -560,7 +540,6 @@ func checkProjectSecurityViolations(cvssSeverityLimit float64, project ws.Projec
 		log.Entry().Infof("No Open Source Software Security vulnerabilities detected in project %s",
 			project.Name)
 	}
-
 	// https://github.com/SAP/jenkins-library/blob/master/vars/whitesourceExecuteScan.groovy#L558
 	if severeVulnerabilities > 0 {
 		return severeVulnerabilities, alerts, fmt.Errorf("%v Open Source Software Security vulnerabilities with CVSS score greater "+
@@ -691,20 +670,20 @@ func writeCustomVulnerabilityReports(scanReport reporting.ScanReport, utils whit
 	}
 	reportPaths = append(reportPaths, piperutils.Path{Name: "WhiteSource Vulnerability Report", Target: htmlReportPath})
 
-	// markdown reports are used by step pipelineCreateSummary in order to e.g. prepare an issue creation in GitHub
-	// ignore templating errors since template is in our hands and issues will be detected with the automated tests
-	mdReport, _ := scanReport.ToMarkdown()
-	if exists, _ := utils.DirExists(reporting.MarkdownReportDirectory); !exists {
-		err := utils.MkdirAll(reporting.MarkdownReportDirectory, 0777)
+	// JSON reports are used by step pipelineCreateSummary in order to e.g. prepare an issue creation in GitHub
+	// ignore JSON errors since structure is in our hands
+	jsonReport, _ := scanReport.ToJSON()
+	if exists, _ := utils.DirExists(reporting.StepReportDirectory); !exists {
+		err := utils.MkdirAll(reporting.StepReportDirectory, 0777)
 		if err != nil {
 			return reportPaths, errors.Wrap(err, "failed to create reporting directory")
 		}
 	}
-	if err := utils.FileWrite(filepath.Join(reporting.MarkdownReportDirectory, fmt.Sprintf("whitesourceExecuteScan_%v.md", utils.Now().Format("20060102150405"))), mdReport, 0666); err != nil {
+	if err := utils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("whitesourceExecuteScan_%v.json", utils.Now().Format("20060102150405"))), jsonReport, 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return reportPaths, errors.Wrapf(err, "failed to write markdown report")
 	}
-	// we do not add the markdown report to the overall list of reports for now,
+	// we do not add the json report to the overall list of reports for now,
 	// since it is just an intermediary report used as input for later
 	// and there does not seem to be real benefit in archiving it.
 
