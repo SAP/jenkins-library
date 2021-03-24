@@ -491,6 +491,14 @@ spec:
           params:
             - name: buildTool
               value: golang
+    - image: gradle
+      workingDir: /home/gradle/
+      env: []
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: buildTool
+              value: gradle
     - image: hseeberger/scala-sbt:8u181_2.12.8_1.2.8
       workingDir: /tmp
       env: []
