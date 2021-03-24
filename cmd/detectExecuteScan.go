@@ -136,6 +136,13 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 	if config.ScanOnChanges {
 		args = append(args, "--report")
 		config.Unmap = false
+		config.ScanProperties, _ = piperutils.RemoveAll(config.ScanProperties, "--detect.project.codelocation.unmap=true")
+
+	}
+
+	if config.Unmap {
+		args = append(args, fmt.Sprintf("--detect.project.codelocation.unmap=true"))
+		config.ScanProperties, _ = piperutils.RemoveAll(config.ScanProperties, "--detect.project.codelocation.unmap=false")
 	}
 
 	args = append(args, config.ScanProperties...)
@@ -169,10 +176,6 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		args = append(args, fmt.Sprintf("--detect.source.path=%v", config.DependencyPath))
 	} else {
 		args = append(args, fmt.Sprintf("--detect.source.path='.'"))
-	}
-
-	if config.Unmap {
-		args = append(args, fmt.Sprintf("--detect.project.codelocation.unmap=true"))
 	}
 
 	if len(config.IncludedPackageManagers) > 0 {
