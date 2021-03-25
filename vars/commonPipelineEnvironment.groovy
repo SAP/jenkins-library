@@ -249,8 +249,12 @@ class commonPipelineEnvironment implements Serializable {
             }else{
                 valueMap[param] = fileContent
             }
-            if (fileName == ".pipeline/commonPipelineEnvironment/custom/whitesourceProjectNames.json") {
-                print "content of .pipeline/commonPipelineEnvironment/custom/whitesourceProjectNames.json: " + valueMap[param]
+            try {
+                if (fileName.contains("whitesourceProjectNames")) {
+                    print "content of .pipeline/commonPipelineEnvironment/custom/whitesourceProjectNames.json: " + valueMap[param]
+                }
+            }catch(Exception e) {
+                print "Exception catched"
             }
         })
 
