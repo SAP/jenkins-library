@@ -209,13 +209,19 @@ class commonPipelineEnvironment implements Serializable {
         def origin = value
         try{
             if (value == null) {
+                print "1st if passed"
                 return
             }
             if (value){
+                print "2nd if passed"
                 if (!(value in CharSequence)) filename += '.json'
+                print "3 - value: " + value
                 if (script.fileExists(filename)) return
+                print "4 - value: " + value
                 if (!(value in CharSequence)) value = groovy.json.JsonOutput.toJson(value)
+                print "5 - value: " + value
                 script.writeFile file: filename, text: value
+                print "6 - value: " + value
             }
         }catch(StackOverflowError error) {
             script.echo("failed to write file " + filename)
