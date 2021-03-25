@@ -208,7 +208,7 @@ class commonPipelineEnvironment implements Serializable {
     void writeValueToFile(script, String filename, value){
         def origin = value
         try{
-            if value == null {
+            if (value == null) {
                 return
             }
             if (value){
