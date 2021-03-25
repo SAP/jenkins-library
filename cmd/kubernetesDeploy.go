@@ -36,7 +36,12 @@ func kubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetry.C
 	}
 	// reroute stderr output to logging framework, stdout will be used for command interactions
 	c.Stderr(log.Writer())
-	runKubernetesDeploy(config, &c, log.Writer())
+
+	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
+	err := runKubernetesDeploy(config, &c, log.Writer())
+	if err != nil {
+		log.Entry().WithError(err).Fatal("step execution failed")
+	}
 }
 
 func runKubernetesDeploy(config kubernetesDeployOptions, command command.ExecRunner, stdout io.Writer) error {
