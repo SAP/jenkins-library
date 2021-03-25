@@ -19,7 +19,7 @@ The parameter `confirmDeletion` influences, if a manual confirmation is required
 
 ## Stage Activation
 
-This stage will be active, if the stage configuration in the `config.yml` contains entries for this stage.
+This stage will be active, if the stage configuration in the `config.yml` contains entries for the `Prepare System` stage.
 
 ## Configuration Example
 
