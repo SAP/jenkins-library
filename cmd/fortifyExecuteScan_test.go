@@ -582,8 +582,8 @@ func TestTriggerFortifyScan(t *testing.T) {
 
 		utils := newFortifyTestUtilsBundle()
 		config := fortifyExecuteScanOptions{
-			BuildTool:                "docker",
-			AutodetectClasspath:      true,
+			BuildTool:           "docker",
+			AutodetectClasspath: true,
 		}
 		err = triggerFortifyScan(config, &utils, "test", "testLabel", "my.group-myartifact")
 
