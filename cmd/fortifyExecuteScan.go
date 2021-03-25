@@ -682,8 +682,7 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, utils fortifyUtils, bu
 		if err != nil {
 			log.Entry().WithError(err).Warnf("failed to apply src ('%s') or exclude ('%s') parameter", config.Src, config.Exclude)
 		}
-	}
-	if config.BuildTool == "pip" {
+	} else if config.BuildTool == "pip" {
 		if config.AutodetectClasspath {
 			separator := getSeparator()
 			script := fmt.Sprintf("import sys;p=sys.path;p.remove('');print('%v'.join(p))", separator)
@@ -707,6 +706,8 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, utils fortifyUtils, bu
 			log.Entry().WithError(err).Warnf("failed to apply pythonAdditionalPath ('%s') or src ('%s') parameter", config.PythonAdditionalPath, config.Src)
 		}
 
+	} else {
+		return fmt.Errorf("buildTool '%s' is not supported by this step", config.BuildTool)
 	}
 
 	translateProject(&config, utils, buildID, classpath)
