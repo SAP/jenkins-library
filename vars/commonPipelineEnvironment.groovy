@@ -208,6 +208,9 @@ class commonPipelineEnvironment implements Serializable {
     void writeValueToFile(script, String filename, value){
         def origin = value
         try{
+            if value == null {
+                return
+            }
             if (value){
                 if (!(value in CharSequence)) filename += '.json'
                 if (script.fileExists(filename)) return
