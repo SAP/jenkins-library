@@ -1,6 +1,6 @@
 # Build
 
-This stage is responsible for building an ABAP Add-on for the SAP BTP ABAP Environment. The build process of the add-on is done on a Steampunk system (using [SAP_COM_0582](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/26b8df5435c649aa8ea7b3688ad5bb0a.html)) with the help of the ABAP Add-on Assembly Kit as a Service (AAKaaS). After executing this stage successfully, the add-on is ready to be tested. For more details, please refer to the [scenario description](../../../scenarios/abapEnvironmentAddons.md)).
+This stage is responsible for building an ABAP add-on for the SAP BTP, ABAP environment. The build process of the add-on is done on a Steampunk system (using [SAP_COM_0582](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/26b8df5435c649aa8ea7b3688ad5bb0a.html)) with the help of the SAP Add-On Assembly Kit as a Service (AAKaaS). After executing this stage successfully, the add-on is ready to be tested. For more details, please refer to the [scenario description](../../../scenarios/abapEnvironmentAddons.md)).
 
 ## Steps
 
