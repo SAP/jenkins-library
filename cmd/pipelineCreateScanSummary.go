@@ -39,7 +39,7 @@ func pipelineCreateScanSummary(config pipelineCreateScanSummaryOptions, telemetr
 
 func runPipelineCreateScanSummary(config *pipelineCreateScanSummaryOptions, telemetryData *telemetry.CustomData, utils pipelineCreateScanSummaryUtils) error {
 
-	pattern := reporting.MarkdownReportDirectory + "/*.json"
+	pattern := reporting.StepReportDirectory + "/*.json"
 	reports, _ := utils.Glob(pattern)
 
 	scanReports := []reporting.ScanReport{}

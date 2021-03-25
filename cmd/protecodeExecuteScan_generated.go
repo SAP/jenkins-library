@@ -37,6 +37,13 @@ type protecodeExecuteScanOptions struct {
 }
 
 type protecodeExecuteScanInflux struct {
+	step_data struct {
+		fields struct {
+			protecode bool
+		}
+		tags struct {
+		}
+	}
 	protecode_data struct {
 		fields struct {
 			excluded_vulnerabilities   int
@@ -58,6 +65,7 @@ func (i *protecodeExecuteScanInflux) persist(path, resourceName string) {
 		name        string
 		value       interface{}
 	}{
+		{valType: config.InfluxField, measurement: "step_data", name: "protecode", value: i.step_data.fields.protecode},
 		{valType: config.InfluxField, measurement: "protecode_data", name: "excluded_vulnerabilities", value: i.protecode_data.fields.excluded_vulnerabilities},
 		{valType: config.InfluxField, measurement: "protecode_data", name: "historical_vulnerabilities", value: i.protecode_data.fields.historical_vulnerabilities},
 		{valType: config.InfluxField, measurement: "protecode_data", name: "major_vulnerabilities", value: i.protecode_data.fields.major_vulnerabilities},
@@ -155,7 +163,7 @@ func addProtecodeExecuteScanFlags(cmd *cobra.Command, stepConfig *protecodeExecu
 	cmd.Flags().StringVar(&stepConfig.TimeoutMinutes, "timeoutMinutes", `60`, "The timeout to wait for the scan to finish")
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "The URL to the Protecode backend")
 	cmd.Flags().StringVar(&stepConfig.ReportFileName, "reportFileName", `protecode_report.pdf`, "The file name of the report to be created")
-	cmd.Flags().StringVar(&stepConfig.FetchURL, "fetchUrl", os.Getenv("PIPER_fetchUrl"), "The URL to fetch the file to scan with Protecode which must be accessible via public HTTP GET request")
+	cmd.Flags().StringVar(&stepConfig.FetchURL, "fetchUrl", os.Getenv("PIPER_fetchUrl"), "The URL to fetch the file or image to scan with Protecode.")
 	cmd.Flags().StringVar(&stepConfig.Group, "group", os.Getenv("PIPER_group"), "The Protecode group ID of your team")
 	cmd.Flags().BoolVar(&stepConfig.ReuseExisting, "reuseExisting", false, "Whether to reuse an existing product instead of creating a new one")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User which is used for the protecode scan")
@@ -382,6 +390,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Name: "influx",
 						Type: "influx",
 						Parameters: []map[string]interface{}{
+							{"Name": "step_data"}, {"fields": []map[string]string{{"name": "protecode"}}},
 							{"Name": "protecode_data"}, {"fields": []map[string]string{{"name": "excluded_vulnerabilities"}, {"name": "historical_vulnerabilities"}, {"name": "major_vulnerabilities"}, {"name": "minor_vulnerabilities"}, {"name": "triaged_vulnerabilities"}, {"name": "vulnerabilities"}}},
 						},
 					},

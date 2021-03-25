@@ -4,7 +4,7 @@
 
 ## Prerequisites
 
-* You have a user for the SAP Cloud Platform Cloud Foundry Environment
+* You have a user for the SAP BTP Cloud Foundry environment
 * Credentials have been configured in Jenkins with a dedicated Id
 
 ## ${docGenParameters}

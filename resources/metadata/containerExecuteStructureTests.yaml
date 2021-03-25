@@ -1,0 +1,60 @@
+metadata:
+  name: containerExecuteStructureTests
+  description: In this step [Container Structure Tests](https://github.com/GoogleContainerTools/container-structure-test) are executed.
+  longDescription: |
+    This testing framework allows you to execute different test types against a Docker container, for example:
+    - Command tests (only if a Docker Deamon is available)
+    - File existence tests
+    - File content tests
+    - Metadata test
+spec:
+  inputs:
+    params:
+      - name: pullImage
+        type: bool
+        description: Force a pull of the tested image before running tests. Only relevant for testDriver 'docker'.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: testConfiguration
+        type: string
+        description: Container structure test configuration in yml or json format. You can pass a pattern in order to execute multiple tests.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        mandatory: true
+      - name: testDriver
+        type: string
+        description: Container structure test driver to be used for testing, please see https://github.com/GoogleContainerTools/container-structure-test for details.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: testImage
+        type: string
+        description: Image to be tested
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        mandatory: true
+      - name: testReportFilePath
+        type: string
+        description: Path and name of the test report which will be generated
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        default: cst-report.json
+  containers:
+    - image: ppiper/container-structure-test
+      command:
+        - /busybox/tail -f /dev/null
+      shell: /busybox/sh
+      options:
+        - name: -u
+          value: "0"
+        - name: --entrypoint
+          value: "''"

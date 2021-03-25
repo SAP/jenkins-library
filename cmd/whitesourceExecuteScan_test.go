@@ -66,7 +66,6 @@ func TestRunWhitesourceExecuteScan(t *testing.T) {
 	t.Run("fails for invalid configured project token", func(t *testing.T) {
 		// init
 		config := ScanOptions{
-			ScanType:            "unified-agent",
 			BuildDescriptorFile: "my-mta.yml",
 			VersioningModel:     "major",
 			ProductName:         "mock-product",
@@ -98,7 +97,6 @@ func TestRunWhitesourceExecuteScan(t *testing.T) {
 			AgentFileName:             "ua.jar",
 			ProductName:               "mock-product",
 			ProjectToken:              "mock-project-token",
-			ScanType:                  "unified-agent",
 		}
 		utilsMock := newWhitesourceUtilsMock()
 		utilsMock.AddFile("wss-generated-file.config", []byte("key=value"))
@@ -679,7 +677,7 @@ func TestWriteCustomVulnerabilityReports(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, exists)
 
-		exists, err = utilsMock.FileExists(filepath.Join(reporting.MarkdownReportDirectory, "whitesourceExecuteScan_20100510001542.md"))
+		exists, err = utilsMock.FileExists(filepath.Join(reporting.StepReportDirectory, "whitesourceExecuteScan_20100510001542.json"))
 		assert.NoError(t, err)
 		assert.True(t, exists)
 	})
@@ -695,11 +693,11 @@ func TestWriteCustomVulnerabilityReports(t *testing.T) {
 		assert.Contains(t, fmt.Sprint(err), "failed to write html report")
 	})
 
-	t.Run("failed to write markdown report", func(t *testing.T) {
+	t.Run("failed to write json report", func(t *testing.T) {
 		scanReport := reporting.ScanReport{}
 		utilsMock := newWhitesourceUtilsMock()
 		utilsMock.FileWriteErrors = map[string]error{
-			filepath.Join(reporting.MarkdownReportDirectory, "whitesourceExecuteScan_20100510001542.md"): fmt.Errorf("write error"),
+			filepath.Join(reporting.StepReportDirectory, "whitesourceExecuteScan_20100510001542.json"): fmt.Errorf("write error"),
 		}
 
 		_, err := writeCustomVulnerabilityReports(scanReport, utilsMock)
