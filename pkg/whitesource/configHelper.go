@@ -223,6 +223,11 @@ func (c *ConfigOptions) addBuildToolDefaults(config *ScanOptions, utils Utils) e
 			{Name: "includes", Value: "**/*.jar"},
 			{Name: "excludes", Value: "**/*sources.jar **/*javadoc.jar"},
 		},
+		"yarn": {
+			{Name: "npm.resolveDependencies", Value: true, Force: true},
+			{Name: "npm.ignoreSourceFiles", Value: true, Force: true},
+			{Name: "npm.yarnProject", Value: true, Force: true},
+		},
 	}
 
 	if config.BuildTool == "maven" {

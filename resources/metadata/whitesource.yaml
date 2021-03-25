@@ -547,3 +547,11 @@ spec:
           params:
             - name: buildTool
               value: rust
+    - image: node:lts-stretch
+      workingDir: /home/node
+      env: []
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: buildTool
+              value: yarn
