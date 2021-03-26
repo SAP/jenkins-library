@@ -136,6 +136,7 @@ func Execute() {
 	rootCmd.AddCommand(IntegrationArtifactDownloadCommand())
 	rootCmd.AddCommand(AbapEnvironmentAssembleConfirmCommand())
 	rootCmd.AddCommand(IntegrationArtifactUploadCommand())
+	rootCmd.AddCommand(ContainerExecuteStructureTestsCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
@@ -282,6 +283,12 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 			}
 		}
 		stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, filters, metadata.Spec.Inputs.Parameters, metadata.Spec.Inputs.Secrets, resourceParams, GeneralConfig.StageName, stepName, metadata.Metadata.Aliases)
+		if verbose, ok := stepConfig.Config["verbose"].(bool); ok && verbose {
+			log.SetVerbose(verbose)
+			GeneralConfig.Verbose = verbose
+		} else if !ok && stepConfig.Config["verbose"] != nil {
+			log.Entry().Warnf("invalid value for parameter verbose: '%v'", stepConfig.Config["verbose"])
+		}
 		if err != nil {
 			return errors.Wrap(err, "retrieving step configuration failed")
 		}

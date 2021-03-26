@@ -203,15 +203,6 @@ spec:
         resourceRef:
           - name: orgAdminUserTokenCredentialsId
             type: secret
-      - name: parallelLimit
-        type: string
-        description: '[NOT IMPLEMENTED] Limit of parallel jobs being run at once in case of `scanType:
-          ''mta''` based scenarios, defaults to `15`.'
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        default: 15
       - name: productName
         aliases:
           - name: whitesourceProductName
@@ -313,21 +304,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: scanType
-        type: string
-        description: "**DEPRECATED**: Please set to `ua` in order to prevent usage of deprecated WhiteSource plugins and use Unified Agent instead."
-        longDescription: |-
-          WhiteSource deprecated all build-tool specific plugins in 2019.
-          The successor of the individual plugins is the so-called "Unified Agent".
-
-          For now the value `ua` acts as a toogle to not break existing scenarios.
-          We plan to remove this parameter in early Q2/2021.
-        scope:
-          - GENERAL
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        possibleValues: ["ua", "golang", "gradle", "maven", "mta", "npm", "pip", "yarn"]
       - name: securityVulnerabilities
         type: bool
         description: "Whether security compliance is considered and reported as part of the assessment."
@@ -507,10 +483,6 @@ spec:
           params:
             - name: buildTool
               value: mta
-        - conditionRef: strings-equal
-          params:
-            - name: scanType
-              value: mta
     - image: golang:1
       workingDir: /go
       env: []
@@ -535,10 +507,6 @@ spec:
           params:
             - name: buildTool
               value: maven
-        - conditionRef: strings-equal
-          params:
-            - name: scanType
-              value: maven
     - image: node:lts-stretch
       workingDir: /home/node
       env: []
@@ -546,10 +514,6 @@ spec:
         - conditionRef: strings-equal
           params:
             - name: buildTool
-              value: npm
-        - conditionRef: strings-equal
-          params:
-            - name: scanType
               value: npm
     - image: python:3.6-stretch
       workingDir: /tmp
@@ -559,3 +523,11 @@ spec:
           params:
             - name: buildTool
               value: pip
+    - image: node:lts-stretch
+      workingDir: /home/node
+      env: []
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: buildTool
+              value: yarn
