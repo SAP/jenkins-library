@@ -16,6 +16,7 @@ import (
 )
 
 type fortifyExecuteScanOptions struct {
+	AdditionalScanParameters        []string `json:"additionalScanParameters,omitempty"`
 	AuthToken                       string   `json:"authToken,omitempty"`
 	CustomScanVersion               string   `json:"customScanVersion,omitempty"`
 	GithubToken                     string   `json:"githubToken,omitempty"`
@@ -71,6 +72,13 @@ type fortifyExecuteScanOptions struct {
 }
 
 type fortifyExecuteScanInflux struct {
+	step_data struct {
+		fields struct {
+			fortify bool
+		}
+		tags struct {
+		}
+	}
 	fortify_data struct {
 		fields struct {
 			projectName       string
@@ -99,6 +107,7 @@ func (i *fortifyExecuteScanInflux) persist(path, resourceName string) {
 		name        string
 		value       interface{}
 	}{
+		{valType: config.InfluxField, measurement: "step_data", name: "fortify", value: i.step_data.fields.fortify},
 		{valType: config.InfluxField, measurement: "fortify_data", name: "projectName", value: i.fortify_data.fields.projectName},
 		{valType: config.InfluxField, measurement: "fortify_data", name: "projectVersion", value: i.fortify_data.fields.projectVersion},
 		{valType: config.InfluxField, measurement: "fortify_data", name: "violations", value: i.fortify_data.fields.violations},
@@ -191,6 +200,7 @@ and Java plus Maven or alternatively Python installed into it for being able to 
 }
 
 func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteScanOptions) {
+	cmd.Flags().StringSliceVar(&stepConfig.AdditionalScanParameters, "additionalScanParameters", []string{}, "List of additional scan parameters to be used for Fortify sourceanalyzer command execution.")
 	cmd.Flags().StringVar(&stepConfig.AuthToken, "authToken", os.Getenv("PIPER_authToken"), "The FortifyToken to use for authentication")
 	cmd.Flags().StringVar(&stepConfig.CustomScanVersion, "customScanVersion", os.Getenv("PIPER_customScanVersion"), "Custom version of the Fortify project used as source.")
 	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
@@ -266,6 +276,14 @@ func fortifyExecuteScanMetadata() config.StepData {
 					{Name: "opensourceConfiguration", Type: "stash"},
 				},
 				Parameters: []config.StepParameters{
+					{
+						Name:        "additionalScanParameters",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
 					{
 						Name: "authToken",
 						ResourceRef: []config.ResourceReference{
@@ -748,6 +766,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Name: "influx",
 						Type: "influx",
 						Parameters: []map[string]interface{}{
+							{"Name": "step_data"}, {"fields": []map[string]string{{"name": "fortify"}}},
 							{"Name": "fortify_data"}, {"fields": []map[string]string{{"name": "projectName"}, {"name": "projectVersion"}, {"name": "violations"}, {"name": "corporateTotal"}, {"name": "corporateAudited"}, {"name": "auditAllTotal"}, {"name": "auditAllAudited"}, {"name": "spotChecksTotal"}, {"name": "spotChecksAudited"}, {"name": "spotChecksGap"}, {"name": "suspicious"}, {"name": "exploitable"}, {"name": "suppressed"}}},
 						},
 					},

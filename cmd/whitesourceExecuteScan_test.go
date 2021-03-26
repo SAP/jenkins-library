@@ -66,7 +66,6 @@ func TestRunWhitesourceExecuteScan(t *testing.T) {
 	t.Run("fails for invalid configured project token", func(t *testing.T) {
 		// init
 		config := ScanOptions{
-			ScanType:            "unified-agent",
 			BuildDescriptorFile: "my-mta.yml",
 			VersioningModel:     "major",
 			ProductName:         "mock-product",
@@ -79,8 +78,9 @@ func TestRunWhitesourceExecuteScan(t *testing.T) {
 		systemMock := ws.NewSystemMock("ignored")
 		scan := newWhitesourceScan(&config)
 		cpe := whitesourceExecuteScanCommonPipelineEnvironment{}
+		influx := whitesourceExecuteScanInflux{}
 		// test
-		err := runWhitesourceExecuteScan(&config, scan, utilsMock, systemMock, &cpe)
+		err := runWhitesourceExecuteScan(&config, scan, utilsMock, systemMock, &cpe, &influx)
 		// assert
 		assert.EqualError(t, err, "no project with token 'no-such-project-token' found in Whitesource")
 		assert.Equal(t, "", config.ProjectName)
@@ -97,7 +97,6 @@ func TestRunWhitesourceExecuteScan(t *testing.T) {
 			AgentFileName:             "ua.jar",
 			ProductName:               "mock-product",
 			ProjectToken:              "mock-project-token",
-			ScanType:                  "unified-agent",
 		}
 		utilsMock := newWhitesourceUtilsMock()
 		utilsMock.AddFile("wss-generated-file.config", []byte("key=value"))
@@ -106,8 +105,9 @@ func TestRunWhitesourceExecuteScan(t *testing.T) {
 		systemMock.Alerts = []ws.Alert{}
 		scan := newWhitesourceScan(&config)
 		cpe := whitesourceExecuteScanCommonPipelineEnvironment{}
+		influx := whitesourceExecuteScanInflux{}
 		// test
-		err := runWhitesourceExecuteScan(&config, scan, utilsMock, systemMock, &cpe)
+		err := runWhitesourceExecuteScan(&config, scan, utilsMock, systemMock, &cpe, &influx)
 		// assert
 		assert.NoError(t, err)
 		// Retrieved project name is stored in scan.AggregateProjectName, but not in config.ProjectName
@@ -140,8 +140,9 @@ func TestCheckAndReportScanResults(t *testing.T) {
 		scan := newWhitesourceScan(config)
 		utils := newWhitesourceUtilsMock()
 		system := ws.NewSystemMock(time.Now().Format(ws.DateTimeLayout))
+		influx := whitesourceExecuteScanInflux{}
 		// test
-		_, err := checkAndReportScanResults(config, scan, utils, system)
+		_, err := checkAndReportScanResults(config, scan, utils, system, &influx)
 		// assert
 		assert.NoError(t, err)
 		vPath := filepath.Join(ws.ReportsDirectory, "mock-project-vulnerability-report.txt")
@@ -158,8 +159,9 @@ func TestCheckAndReportScanResults(t *testing.T) {
 		scan := newWhitesourceScan(config)
 		utils := newWhitesourceUtilsMock()
 		system := ws.NewSystemMock(time.Now().Format(ws.DateTimeLayout))
+		influx := whitesourceExecuteScanInflux{}
 		// test
-		_, err := checkAndReportScanResults(config, scan, utils, system)
+		_, err := checkAndReportScanResults(config, scan, utils, system, &influx)
 		// assert
 		assert.EqualError(t, err, "failed to parse parameter cvssSeverityLimit (invalid) as floating point number: strconv.ParseFloat: parsing \"invalid\": invalid syntax")
 	})
@@ -175,8 +177,9 @@ func TestCheckAndReportScanResults(t *testing.T) {
 		scan := newWhitesourceScan(config)
 		utils := newWhitesourceUtilsMock()
 		system := ws.NewSystemMock(time.Now().Format(ws.DateTimeLayout))
+		influx := whitesourceExecuteScanInflux{}
 		// test
-		_, err := checkAndReportScanResults(config, scan, utils, system)
+		_, err := checkAndReportScanResults(config, scan, utils, system, &influx)
 		// assert
 		assert.NoError(t, err)
 	})
@@ -193,8 +196,9 @@ func TestCheckAndReportScanResults(t *testing.T) {
 		scan := newWhitesourceScan(config)
 		utils := newWhitesourceUtilsMock()
 		system := ws.NewSystemMock(time.Now().Format(ws.DateTimeLayout))
+		influx := whitesourceExecuteScanInflux{}
 		// test
-		_, err := checkAndReportScanResults(config, scan, utils, system)
+		_, err := checkAndReportScanResults(config, scan, utils, system, &influx)
 		// assert
 		assert.EqualError(t, err, "1 Open Source Software Security vulnerabilities with CVSS score greater or equal to 4.0 detected in project mock-project - 1")
 	})
@@ -363,8 +367,9 @@ func TestCheckPolicyViolations(t *testing.T) {
 			{Target: filepath.Join("whitesource", "report1.pdf")},
 			{Target: filepath.Join("whitesource", "report2.pdf")},
 		}
+		influx := whitesourceExecuteScanInflux{}
 
-		path, err := checkPolicyViolations(&config, scan, systemMock, utilsMock, reportPaths)
+		path, err := checkPolicyViolations(&config, scan, systemMock, utilsMock, reportPaths, &influx)
 		assert.NoError(t, err)
 		assert.Equal(t, filepath.Join(ws.ReportsDirectory, "whitesource-ip.json"), path.Target)
 
@@ -382,8 +387,9 @@ func TestCheckPolicyViolations(t *testing.T) {
 		systemMock.Alerts = []ws.Alert{}
 		utilsMock := newWhitesourceUtilsMock()
 		reportPaths := []piperutils.Path{}
+		influx := whitesourceExecuteScanInflux{}
 
-		path, err := checkPolicyViolations(&config, scan, systemMock, utilsMock, reportPaths)
+		path, err := checkPolicyViolations(&config, scan, systemMock, utilsMock, reportPaths, &influx)
 		assert.NoError(t, err)
 
 		fileContent, _ := utilsMock.FileRead(path.Target)
@@ -405,8 +411,9 @@ func TestCheckPolicyViolations(t *testing.T) {
 			{Target: "report1.pdf"},
 			{Target: "report2.pdf"},
 		}
+		influx := whitesourceExecuteScanInflux{}
 
-		path, err := checkPolicyViolations(&config, scan, systemMock, utilsMock, reportPaths)
+		path, err := checkPolicyViolations(&config, scan, systemMock, utilsMock, reportPaths, &influx)
 		assert.Contains(t, fmt.Sprint(err), "2 policy violation(s) found")
 
 		fileContent, _ := utilsMock.FileRead(path.Target)
@@ -423,8 +430,9 @@ func TestCheckPolicyViolations(t *testing.T) {
 		systemMock.AlertError = fmt.Errorf("failed to read alerts")
 		utilsMock := newWhitesourceUtilsMock()
 		reportPaths := []piperutils.Path{}
+		influx := whitesourceExecuteScanInflux{}
 
-		_, err := checkPolicyViolations(&config, scan, systemMock, utilsMock, reportPaths)
+		_, err := checkPolicyViolations(&config, scan, systemMock, utilsMock, reportPaths, &influx)
 		assert.Contains(t, fmt.Sprint(err), "failed to retrieve project policy alerts from WhiteSource")
 	})
 
@@ -437,8 +445,9 @@ func TestCheckPolicyViolations(t *testing.T) {
 		utilsMock := newWhitesourceUtilsMock()
 		utilsMock.FileWriteError = fmt.Errorf("failed to write file")
 		reportPaths := []piperutils.Path{}
+		influx := whitesourceExecuteScanInflux{}
 
-		_, err := checkPolicyViolations(&config, scan, systemMock, utilsMock, reportPaths)
+		_, err := checkPolicyViolations(&config, scan, systemMock, utilsMock, reportPaths, &influx)
 		assert.Contains(t, fmt.Sprint(err), "failed to write policy violation report:")
 	})
 }
@@ -457,8 +466,9 @@ func TestCheckSecurityViolations(t *testing.T) {
 			{Vulnerability: ws.Vulnerability{Name: "vul1", CVSS3Score: 6.0}},
 		}
 		utilsMock := newWhitesourceUtilsMock()
+		influx := whitesourceExecuteScanInflux{}
 
-		reportPaths, err := checkSecurityViolations(&config, scan, systemMock, utilsMock)
+		reportPaths, err := checkSecurityViolations(&config, scan, systemMock, utilsMock, &influx)
 		assert.NoError(t, err)
 		fileContent, err := utilsMock.FileRead(reportPaths[0].Target)
 		assert.NoError(t, err)
@@ -476,8 +486,9 @@ func TestCheckSecurityViolations(t *testing.T) {
 			{Vulnerability: ws.Vulnerability{Name: "vul1", CVSS3Score: 6.0}},
 		}
 		utilsMock := newWhitesourceUtilsMock()
+		influx := whitesourceExecuteScanInflux{}
 
-		reportPaths, err := checkSecurityViolations(&config, scan, systemMock, utilsMock)
+		reportPaths, err := checkSecurityViolations(&config, scan, systemMock, utilsMock, &influx)
 		assert.NoError(t, err)
 		assert.Equal(t, 0, len(reportPaths))
 	})
@@ -487,8 +498,9 @@ func TestCheckSecurityViolations(t *testing.T) {
 		scan := newWhitesourceScan(&config)
 		systemMock := ws.NewSystemMock("ignored")
 		utilsMock := newWhitesourceUtilsMock()
+		influx := whitesourceExecuteScanInflux{}
 
-		_, err := checkSecurityViolations(&config, scan, systemMock, utilsMock)
+		_, err := checkSecurityViolations(&config, scan, systemMock, utilsMock, &influx)
 		assert.Contains(t, fmt.Sprint(err), "failed to parse parameter cvssSeverityLimit")
 
 	})
@@ -504,8 +516,9 @@ func TestCheckSecurityViolations(t *testing.T) {
 			{Vulnerability: ws.Vulnerability{Name: "vul1", CVSS3Score: 6.0}},
 		}
 		utilsMock := newWhitesourceUtilsMock()
+		influx := whitesourceExecuteScanInflux{}
 
-		reportPaths, err := checkSecurityViolations(&config, scan, systemMock, utilsMock)
+		reportPaths, err := checkSecurityViolations(&config, scan, systemMock, utilsMock, &influx)
 		assert.Contains(t, fmt.Sprint(err), "1 Open Source Software Security vulnerabilities")
 		fileContent, err := utilsMock.FileRead(reportPaths[0].Target)
 		assert.NoError(t, err)
@@ -523,8 +536,9 @@ func TestCheckSecurityViolations(t *testing.T) {
 			{Vulnerability: ws.Vulnerability{Name: "vul1", CVSS3Score: 6.0}},
 		}
 		utilsMock := newWhitesourceUtilsMock()
+		influx := whitesourceExecuteScanInflux{}
 
-		reportPaths, err := checkSecurityViolations(&config, scan, systemMock, utilsMock)
+		reportPaths, err := checkSecurityViolations(&config, scan, systemMock, utilsMock, &influx)
 		assert.Contains(t, fmt.Sprint(err), "1 Open Source Software Security vulnerabilities")
 		assert.Equal(t, 0, len(reportPaths))
 	})
@@ -536,8 +550,9 @@ func TestCheckProjectSecurityViolations(t *testing.T) {
 	t.Run("success - no alerts", func(t *testing.T) {
 		systemMock := ws.NewSystemMock("ignored")
 		systemMock.Alerts = []ws.Alert{}
+		influx := whitesourceExecuteScanInflux{}
 
-		severeVulnerabilities, alerts, err := checkProjectSecurityViolations(7.0, project, systemMock)
+		severeVulnerabilities, alerts, err := checkProjectSecurityViolations(7.0, project, systemMock, &influx)
 		assert.NoError(t, err)
 		assert.Equal(t, 0, severeVulnerabilities)
 		assert.Equal(t, 0, len(alerts))
@@ -549,8 +564,9 @@ func TestCheckProjectSecurityViolations(t *testing.T) {
 			{Vulnerability: ws.Vulnerability{CVSS3Score: 7}},
 			{Vulnerability: ws.Vulnerability{CVSS3Score: 6}},
 		}
+		influx := whitesourceExecuteScanInflux{}
 
-		severeVulnerabilities, alerts, err := checkProjectSecurityViolations(7.0, project, systemMock)
+		severeVulnerabilities, alerts, err := checkProjectSecurityViolations(7.0, project, systemMock, &influx)
 		assert.Contains(t, fmt.Sprint(err), "1 Open Source Software Security vulnerabilities")
 		assert.Equal(t, 1, severeVulnerabilities)
 		assert.Equal(t, 2, len(alerts))
@@ -559,7 +575,9 @@ func TestCheckProjectSecurityViolations(t *testing.T) {
 	t.Run("error - WhiteSource failure", func(t *testing.T) {
 		systemMock := ws.NewSystemMock("ignored")
 		systemMock.AlertError = fmt.Errorf("failed to read alerts")
-		_, _, err := checkProjectSecurityViolations(7.0, project, systemMock)
+		influx := whitesourceExecuteScanInflux{}
+
+		_, _, err := checkProjectSecurityViolations(7.0, project, systemMock, &influx)
 		assert.Contains(t, fmt.Sprint(err), "failed to retrieve project alerts from WhiteSource")
 	})
 
@@ -659,7 +677,7 @@ func TestWriteCustomVulnerabilityReports(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, exists)
 
-		exists, err = utilsMock.FileExists(filepath.Join(reporting.MarkdownReportDirectory, "whitesourceExecuteScan_20100510001542.md"))
+		exists, err = utilsMock.FileExists(filepath.Join(reporting.StepReportDirectory, "whitesourceExecuteScan_20100510001542.json"))
 		assert.NoError(t, err)
 		assert.True(t, exists)
 	})
@@ -675,11 +693,11 @@ func TestWriteCustomVulnerabilityReports(t *testing.T) {
 		assert.Contains(t, fmt.Sprint(err), "failed to write html report")
 	})
 
-	t.Run("failed to write markdown report", func(t *testing.T) {
+	t.Run("failed to write json report", func(t *testing.T) {
 		scanReport := reporting.ScanReport{}
 		utilsMock := newWhitesourceUtilsMock()
 		utilsMock.FileWriteErrors = map[string]error{
-			filepath.Join(reporting.MarkdownReportDirectory, "whitesourceExecuteScan_20100510001542.md"): fmt.Errorf("write error"),
+			filepath.Join(reporting.StepReportDirectory, "whitesourceExecuteScan_20100510001542.json"): fmt.Errorf("write error"),
 		}
 
 		_, err := writeCustomVulnerabilityReports(scanReport, utilsMock)

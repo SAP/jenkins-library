@@ -146,8 +146,8 @@ type DetailedResult struct {
 	ScanStart                string   `xml:"ScanStart,attr"`
 	Preset                   string   `xml:"Preset,attr"`
 	ScanTime                 string   `xml:"ScanTime,attr"`
-	LinesOfCodeScanned       string   `xml:"LinesOfCodeScanned,attr"`
-	FilesScanned             string   `xml:"FilesScanned,attr"`
+	LinesOfCodeScanned       int      `xml:"LinesOfCodeScanned,attr"`
+	FilesScanned             int      `xml:"FilesScanned,attr"`
 	ReportCreationTime       string   `xml:"ReportCreationTime,attr"`
 	Team                     string   `xml:"Team,attr"`
 	CheckmarxVersion         string   `xml:"CheckmarxVersion,attr"`

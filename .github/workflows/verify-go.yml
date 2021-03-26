@@ -52,7 +52,7 @@ jobs:
     - name: format
       run: go fmt ./...
     - name: verify
-      run: git diff --name-only --exit-code
+      run: git diff --exit-code
   generate:
     runs-on: ubuntu-latest
     steps:

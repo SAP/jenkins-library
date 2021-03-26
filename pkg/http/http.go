@@ -240,6 +240,13 @@ func (c *Client) initialize() *http.Client {
 		if !c.useDefaultTransport {
 			retryClient.HTTPClient.Transport = transport
 		}
+		retryClient.CheckRetry = func(ctx context.Context, resp *http.Response, err error) (bool, error) {
+			if err != nil && strings.Contains(err.Error(), "timeout") {
+				// Assuming timeouts could be retried
+				return true, nil
+			}
+			return retryablehttp.DefaultRetryPolicy(ctx, resp, err)
+		}
 		httpClient = retryClient.StandardClient()
 	} else {
 		httpClient = &http.Client{}

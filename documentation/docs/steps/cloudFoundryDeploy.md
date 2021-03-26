@@ -21,7 +21,7 @@ Deployment can be done
 
 !!! note
     Cloud Foundry supports the deployment of multiple applications using a single manifest file.
-    This option is supported with Piper.
+    This option is supported with project "Piper".
     In this case define `appName: ''` since the app name for the individual applications have to be defined via the manifest.
     You can find details in the [Cloud Foundry Documentation](https://docs.cloudfoundry.org/devguide/deploy-apps/manifest.html#multi-apps)
 
