@@ -129,7 +129,7 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, utils
 			versionField:    "version",
 			artifactIDField: "ID",
 		}
-	case "npm":
+	case "npm", "yarn":
 		if len(buildDescriptorFilePath) == 0 {
 			buildDescriptorFilePath = "package.json"
 		}
