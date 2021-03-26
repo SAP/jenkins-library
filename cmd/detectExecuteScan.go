@@ -120,7 +120,7 @@ func runDetect(config detectExecuteScanOptions, utils detectUtils) error {
 
 func getDetectScript(config detectExecuteScanOptions, utils detectUtils) error {
 	if config.ScanOnChanges {
-		return utils.DownloadFile("https://raw.githubusercontent.com/blackducksoftware/detect_rescan/dev/detect_rescan.sh", "detect.sh", nil, nil)
+		return utils.DownloadFile("https://raw.githubusercontent.com/blackducksoftware/detect_rescan/master/detect_rescan.sh", "detect.sh", nil, nil)
 	}
 	return utils.DownloadFile("https://detect.synopsys.com/detect.sh", "detect.sh", nil, nil)
 }
@@ -140,13 +140,14 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 	if config.ScanOnChanges {
 		args = append(args, "--report")
 		config.Unmap = false
-		config.ScanProperties, _ = piperutils.RemoveAll(config.ScanProperties, "--detect.project.codelocation.unmap=true")
-		log.Entry().Info("Updated ScanProperties list : ", strings.Join(config.ScanProperties, ","))
 	}
 
 	if config.Unmap {
 		args = append(args, fmt.Sprintf("--detect.project.codelocation.unmap=true"))
 		config.ScanProperties, _ = piperutils.RemoveAll(config.ScanProperties, "--detect.project.codelocation.unmap=false")
+	} else {
+		//When unmap is set to false, any occurances of unmap=true from scanProperties must be removed
+		config.ScanProperties, _ = piperutils.RemoveAll(config.ScanProperties, "--detect.project.codelocation.unmap=true")
 	}
 
 	args = append(args, config.ScanProperties...)
