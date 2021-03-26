@@ -12,7 +12,6 @@ type terraformExecuteUtils interface {
 	command.ExecRunner
 
 	FileExists(filename string) (bool, error)
-
 }
 
 type terraformExecuteUtilsBundle struct {
