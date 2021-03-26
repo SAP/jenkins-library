@@ -140,6 +140,12 @@ A configuration file `.pipeline/config.yml` is used to provide all required valu
 
 The build process is controlled by an add-on descriptor file called `addon.yml`. This file must be created manually and must be stored in the GIT repository of the pipeline. It must contain information about the to-be-delivered [add-on product version](#add-on-product-version) and the contained [software component versions](#software-component-version). Below, you see an example:
 
+!!! caution "Use Long Commit ID for the commitID fields"
+    Please use the long commit ID in the commit ID field currently if you are using the short commit ID the build process will fail.
+    
+!!! caution "Local Jenkins"
+    If you are using a local Jenkins you may have to [adapt the Jenkins URL](https://stackoverflow.com/a/39543223) in the configuration if the CheckStyl Plugin shows this error: "Can't create fingerprints for some files".
+
 ```YAML
 ---
 addonProduct: /NAMESPC/PRODUCTX

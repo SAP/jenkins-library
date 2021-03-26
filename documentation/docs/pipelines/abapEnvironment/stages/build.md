@@ -45,6 +45,9 @@ stages:
 
 ### addon.yml
 
+!!! caution "Use Long Commit ID for the commitID fields"
+    Please use the long commit ID in the commit ID field currently if you are using the short commit ID the build process will fail.
+
 ```YAML
 ---
 addonProduct: /NAMESPC/PRODUCTX
