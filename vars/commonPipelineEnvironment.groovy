@@ -237,13 +237,6 @@ class commonPipelineEnvironment implements Serializable {
             }else{
                 valueMap[param] = fileContent
             }
-            try {
-                if (fileName.contains("whitesourceProjectNames")) {
-                    print "content of .pipeline/commonPipelineEnvironment/custom/whitesourceProjectNames.json: " + valueMap[param]
-                }
-            }catch(Exception e) {
-                print "Exception catched"
-            }
         })
 
         def containerValues = script.findFiles(glob: '.pipeline/commonPipelineEnvironment/container/*')
