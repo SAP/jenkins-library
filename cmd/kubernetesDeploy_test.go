@@ -293,6 +293,50 @@ func TestRunKubernetesDeploy(t *testing.T) {
 		}, e.Calls[0].Params, "Wrong upgrade parameters")
 	})
 
+	t.Run("test helm v3 - fails without chart path", func(t *testing.T) {
+		opts := kubernetesDeployOptions{
+			ContainerRegistryURL:    "https://my.registry:55555",
+			ContainerRegistrySecret: "testSecret",
+			DeploymentName:          "deploymentName",
+			DeployTool:              "helm3",
+			ForceUpdates:            true,
+			HelmDeployWaitSeconds:   400,
+			IngressHosts:            []string{},
+			Image:                   "path/to/Image:latest",
+			AdditionalParameters:    []string{"--testParam", "testValue"},
+			KubeContext:             "testCluster",
+			Namespace:               "deploymentNamespace",
+		}
+		e := mock.ExecMockRunner{}
+
+		var stdout bytes.Buffer
+
+		err := runKubernetesDeploy(opts, &e, &stdout)
+		assert.EqualError(t, err, "chart path has not been set, please configure chartPath parameter")
+	})
+
+	t.Run("test helm v3 - fails without deployment name", func(t *testing.T) {
+		opts := kubernetesDeployOptions{
+			ContainerRegistryURL:    "https://my.registry:55555",
+			ContainerRegistrySecret: "testSecret",
+			ChartPath:               "path/to/chart",
+			DeployTool:              "helm3",
+			ForceUpdates:            true,
+			HelmDeployWaitSeconds:   400,
+			IngressHosts:            []string{},
+			Image:                   "path/to/Image:latest",
+			AdditionalParameters:    []string{"--testParam", "testValue"},
+			KubeContext:             "testCluster",
+			Namespace:               "deploymentNamespace",
+		}
+		e := mock.ExecMockRunner{}
+
+		var stdout bytes.Buffer
+
+		err := runKubernetesDeploy(opts, &e, &stdout)
+		assert.EqualError(t, err, "deployment name has not been set, please configure deploymentName parameter")
+	})
+
 	t.Run("test helm v3 - no force", func(t *testing.T) {
 		opts := kubernetesDeployOptions{
 			ContainerRegistryURL:    "https://my.registry:55555",
