@@ -227,7 +227,7 @@ class commonPipelineEnvironment implements Serializable {
             script.echo("failed to write file " + filename)
             script.echo("failed to write file, value: " + value)
             script.echo("failed to write file, origin: " + origin)
-            throw error
+            //throw error
         }
     }
 
