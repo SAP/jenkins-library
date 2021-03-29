@@ -3,7 +3,6 @@ import com.sap.piper.ConfigurationMerger
 import com.sap.piper.DefaultValueCache
 import com.sap.piper.analytics.InfluxData
 import groovy.json.JsonOutput
-import com.sap.piper.internal.Notify
 
 class commonPipelineEnvironment implements Serializable {
 
@@ -215,7 +214,7 @@ class commonPipelineEnvironment implements Serializable {
                 script.writeFile file: filename, text: value
             }
         }catch(StackOverflowError error) {
-            Notify.warning(script, "failed to write file: " + filename)
+            script.echo("failed to write file: " + filename)
         }
     }
 
