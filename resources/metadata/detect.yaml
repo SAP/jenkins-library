@@ -100,7 +100,7 @@ spec:
         aliases:
           - name: detect/unmap
         type: bool
-        default: false
+        default: true
         scope:
           - PARAMETERS
           - STAGES
@@ -112,9 +112,8 @@ spec:
         type: "[]string"
         default:
           - --blackduck.signature.scanner.memory=4096
-          - --blackduck.timeout=6000
+          - --detect.timeout=6000
           - --blackduck.trust.cert=true
-          - --detect.report.timeout=4800
           - --logging.level.com.synopsys.integration=DEBUG
           - --detect.maven.excluded.scopes=test
         scope:
