@@ -1,0 +1,147 @@
+metadata:
+  name: gctsDeploy
+  description: Pulls a commit from the remote Git repository to a local repository
+  longDescription: |
+    Pulls a commit from the corresponding remote Git repository to a specified local repository on an ABAP system. If no <commit> parameter is specified, this step will pull the latest commit available on the remote repository.
+
+spec:
+  inputs:
+    secrets:
+      - name: abapCredentialsId
+        description: Jenkins credentials ID containing username and password for authentication to the ABAP system on which you want to deploy a commit
+        type: jenkins
+    params:
+      - name: username
+        type: string
+        description: User to authenticate to the ABAP system
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+        secret: true
+        resourceRef:
+          - name: abapCredentialsId
+            type: secret
+            param: username
+      - name: password
+        type: string
+        description: Password to authenticate to the ABAP system
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+        secret: true
+        resourceRef:
+          - name: abapCredentialsId
+            type: secret
+            param: password
+      - name: repository
+        type: string
+        description: Specifies the name (ID) of the local repsitory on the ABAP system
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+      - name: host
+        type: string
+        description: Specifies the protocol and host address, including the port. Please provide in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+      - name: client
+        type: string
+        description: Specifies the client of the ABAP system to be addressed
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+      - name: commit
+        type: string
+        description: Specifies the commit to be deployed
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: remoteRepositoryURL
+        type: string
+        description: URL of the corresponding remote repository
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: role
+        type: string
+        description: Role of the local repository. Choose between 'TARGET' and 'SOURCE'. Local repositories with a TARGET role will NOT be able to be the source of code changes
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        possibleValues:
+          - SOURCE
+          - TARGET
+      - name: vSID
+        type: string
+        description: Virtual SID of the local repository. The vSID corresponds to the transport route that delivers content to the remote Git repository
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: type
+        type: string
+        description: Type of the used source code management tool
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: GIT
+        possibleValues:
+          - GIT
+      - name: branch
+        type: string
+        description: Name of the branch to which the deploy has to be done to.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: scope
+        type: string
+        description: The scope of the gcts deploy api call
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: rollback
+        type: bool
+        description: The rollback flag for a failure during gcts deploy
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: configuration
+        type: "map[string]interface{}"
+        description: "Defines the configuration values for the repository. This map needs to be created as `configKeyName`:`configKeyValue`"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: false
+        aliases:
+          - name: gctsRepositoryConfigurations
+      - name: githubPersonalAccessToken
+        type: string
+        description: GitHub personal access token with at least read permissions for the remote repository
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: githubPersonalAccessTokenId
+            type: secret

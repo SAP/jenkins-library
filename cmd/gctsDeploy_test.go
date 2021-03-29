@@ -35,7 +35,7 @@ func TestGctsDeploySuccess(t *testing.T) {
 			]
 		}`}
 
-		err := deployCommit(&config, nil, &httpClient)
+		err := pullByCommit(&config, nil, nil, &httpClient)
 
 		if assert.NoError(t, err) {
 
@@ -102,7 +102,7 @@ func TestGctsDeployFailure(t *testing.T) {
 			}
 		}`}
 
-		err := deployCommit(&config, nil, &httpClient)
+		err := pullByCommit(&config, nil, nil, &httpClient)
 
 		assert.EqualError(t, err, "a http error occurred")
 

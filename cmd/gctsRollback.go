@@ -117,7 +117,7 @@ func rollback(config *gctsRollbackOptions, telemetryData *telemetry.CustomData, 
 		}
 	}
 
-	deployErr := deployCommit(&deployOptions, telemetryData, httpClient)
+	deployErr := pullByCommit(&deployOptions, telemetryData, command, httpClient)
 
 	if deployErr != nil {
 		return errors.Wrap(deployErr, "rollback commit failed")
