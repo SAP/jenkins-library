@@ -140,6 +140,10 @@ A configuration file `.pipeline/config.yml` is used to provide all required valu
 
 The build process is controlled by an add-on descriptor file called `addon.yml`. This file must be created manually and must be stored in the GIT repository of the pipeline. It must contain information about the to-be-delivered [add-on product version](#add-on-product-version) and the contained [software component versions](#software-component-version). Below, you see an example:
 
+!!! caution "Use Long Commit ID for the commitID fields"
+    Please use the long commit ID in the commit ID field currently if you are using the short commit ID the build process will fail.
+    Go into the Manage Software Components app, navigate to the branch, select the commit in the list of commits, field "Long Commit ID" becomes available.
+
 ```YAML
 ---
 addonProduct: /NAMESPC/PRODUCTX
