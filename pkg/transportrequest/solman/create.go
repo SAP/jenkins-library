@@ -89,39 +89,22 @@ func (a *CreateAction) Perform(command Exec) (string, error) {
 			"-dID", a.DevelopmentSystemID,
 		)
 
-		exitCode := command.GetExitCode()
-		if exitCode != 0 {
-			message := fmt.Sprintf("create transport request command returned with exit code '%d'", exitCode)
-			if err != nil {
-				// Using the wrapping here is to some extend an abuse, since it is not really
-				// error chaining (the other error is not necessaryly a "predecessor" of this one).
-				// But it is a pragmatic approach for not loosing information for trouble shooting. There
-				// is no possibility to have something like suppressed errors.
-				err = errors.Wrap(err, message)
-			} else {
-				err = errors.New(message)
-			}
-		}
-
 		if err == nil {
-			transportRequestID = strings.TrimSpace(cmClientStdout.String())
+			exitCode := command.GetExitCode()
+
+			if exitCode != 0 {
+				err = fmt.Errorf("Create transport request command returned with exit code '%d'", exitCode)
+			} else {
+				transportRequestID = strings.TrimSpace(cmClientStdout.String())
+			}
 		}
 	}
 
 	if err == nil {
-		log.Entry().Infof("Created transport request '%s' at '%s'. ChangeDocumentId: '%s', DevelopmentSystemId: '%s'",
-			transportRequestID,
-			a.Connection.Endpoint,
-			a.ChangeDocumentID,
-			a.DevelopmentSystemID,
-		)
+		log.Entry().Infof("Created transport request '%s' at '%s'.", transportRequestID, a.Connection.Endpoint)
 	} else {
-		log.Entry().WithError(err).Warnf("Creating transport request '%s' at '%s' failed. ChangeDocumentId: '%s', DevelopmentSystemId: '%s'",
-			transportRequestID,
-			a.Connection.Endpoint,
-			a.ChangeDocumentID,
-			a.DevelopmentSystemID,
-		)
+		log.Entry().WithError(err).Warnf("Creating transport request at '%s' failed",
+			a.Connection.Endpoint)
 	}
 
 	return transportRequestID, errors.Wrap(err, "cannot create transport request")
