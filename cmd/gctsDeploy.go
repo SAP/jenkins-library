@@ -74,6 +74,11 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 			log.Entry().WithError(createErr).Error("step execution failed at Create Repository")
 			return createErr
 		}
+		// Should be removed in the final step
+		if config.CreateOnly {
+			log.Entry().Info("Ending gCTS deploy after creation because of create only flag")
+			return nil
+		}
 
 		cloneRepoOptions := gctsCloneRepositoryOptions{
 			Username:   config.Username,

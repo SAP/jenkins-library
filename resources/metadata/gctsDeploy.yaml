@@ -145,3 +145,10 @@ spec:
         resourceRef:
           - name: githubPersonalAccessTokenId
             type: secret
+      - name: createOnly
+        type: bool
+        description: To create a reposiory only. All the other further steps are ignored (Should be removed from the final step)
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
