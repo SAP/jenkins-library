@@ -9,8 +9,7 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String STEP_NAME = getClass().getName()
 @Field String TECHNICAL_STAGE_NAME = 'postPipelineHook'
 @Field Set GENERAL_CONFIG_KEYS = ["vaultServerUrl", "vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId"]
-@Field STAGE_STEP_KEYS = ["vaultRotateSecretId"]
-@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
+@Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(["vaultRotateSecretId"])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 /**
@@ -33,7 +32,7 @@ void call(Map parameters = [:]) {
     stageName = stageName.replace('Declarative: ', '')
 
     Map config = ConfigurationHelper.newInstance(this)
-        .loadStepDefaults()
+        .loadStepDefaults([:], stageName)
         .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
         .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
         .mixin(parameters, PARAMETER_KEYS)
