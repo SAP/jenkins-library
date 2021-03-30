@@ -223,17 +223,14 @@ func Test_resolveVaultTestCredentials(t *testing.T) {
 	// init
 	vaultMock := &mocks.VaultMock{}
 	envPrefix := "PIPER_TESTCREDENTIAL_"
-
-	resetValue1 := os.Getenv("PIPER_TESTCREDENTIAL_APPUSER")
-	defer os.Setenv("PIPER_TESTCREDENTIAL_APPUSER", resetValue1)
-	resetValue2 := os.Getenv("PIPER_TESTCREDENTIAL_APPUSERPW")
-	defer os.Setenv("PIPER_TESTCREDENTIAL_APPUSERPW", resetValue2)
-
 	stepConfig := StepConfig{Config: map[string]interface{}{
 		"vaultPath":               "team1",
 		"vaultTestCredentialPath": "appCredentials",
 		"vaultTestCredentialKeys": []interface{}{"appUser", "appUserPw"},
 	}}
+
+	defer os.Unsetenv("PIPER_TESTCREDENTIAL_APPUSER")
+	defer os.Unsetenv("PIPER_TESTCREDENTIAL_APPUSERPW")
 
 	// mock
 	vaultData := map[string]string{"appUser": "test-user", "appUserPw": "password1234"}

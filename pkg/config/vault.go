@@ -145,9 +145,10 @@ func resolveVaultTestCredentials(config *StepConfig, client vaultClient) {
 		return
 	}
 
-	lookupPath := []string{"$(vaultPath)/" + credPath}
-	lookupPath = append(lookupPath, "$(vaultBasePath)/$(vaultPipelineName)/"+credPath)
-	lookupPath = append(lookupPath, "$(vaultBasePath)/GROUP-SECRETS/"+credPath)
+	lookupPath := make([]string, 3)
+	lookupPath[0] = "$(vaultPath)/" + credPath
+	lookupPath[1] = "$(vaultBasePath)/$(vaultPipelineName)/" + credPath
+	lookupPath[2] = "$(vaultBasePath)/GROUP-SECRETS/" + credPath
 	for _, path := range lookupPath {
 		vaultPath, ok := interpolation.ResolveString(path, config.Config)
 		if !ok {
