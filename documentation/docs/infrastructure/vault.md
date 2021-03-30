@@ -118,7 +118,7 @@ steps:
     vaultTestCredentialKeys: ['myAppId', 'myAppSecret']
 ```
 
-The `vaultTestCredentialPath` parameter is the endpoint of your credential path in vault. Depending on your _general_ config, the lookup for the credential IDs will be done in the following order respectively locations:
+The `vaultTestCredentialPath` parameter is the endpoint of your credential path in vault. Depending on your _general_ config, the lookup for the credential IDs will be done in the following order respectively locations. The first path with found test credentials will be used.
 
 1. `<vaultPath>/<vaultTestCredentialPath>`
 2. `<vaultBasePath>/<vaultPipelineName>/<vaultTestCredentialPath>`
