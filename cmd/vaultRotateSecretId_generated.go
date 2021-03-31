@@ -116,6 +116,7 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     `jenkins`,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -130,6 +131,7 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
+						Default:   os.Getenv("PIPER_jenkinsUrl"),
 						Aliases:   []config.Alias{{Name: "url"}},
 					},
 					{
@@ -138,6 +140,7 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     `_`,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -152,6 +155,7 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
+						Default:   os.Getenv("PIPER_jenkinsUsername"),
 						Aliases:   []config.Alias{{Name: "userId"}},
 					},
 					{
@@ -166,6 +170,7 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
+						Default:   os.Getenv("PIPER_jenkinsToken"),
 						Aliases:   []config.Alias{{Name: "token"}},
 					},
 					{
@@ -174,6 +179,7 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     os.Getenv("PIPER_vaultAppRoleSecretTokenCredentialsId"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -182,6 +188,7 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     os.Getenv("PIPER_vaultServerUrl"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -190,6 +197,7 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_vaultNamespace"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -198,6 +206,7 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "int",
 						Mandatory:   false,
+						Default:     15,
 						Aliases:     []config.Alias{},
 					},
 				},

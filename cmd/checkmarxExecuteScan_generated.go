@@ -279,6 +279,9 @@ func checkmarxExecuteScanMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "checkmarxCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing username and password to communicate with the Checkmarx backend.", Type: "jenkins"},
+				},
 				Resources: []config.StepResources{
 					{Name: "checkmarx", Type: "stash"},
 				},
@@ -289,6 +292,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
+						Default:     true,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -297,6 +301,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     `!**/node_modules/**, !**/.xmake/**, !**/*_test.go, !**/vendor/**/*.go, **/*.html, **/*.xml, **/*.go, **/*.py, **/*.js, **/*.scala, **/*.ts`,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -305,6 +310,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     `5`,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -313,6 +319,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
+						Default:     true,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -321,6 +328,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
+						Default:     true,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -329,6 +337,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
+						Default:     true,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -337,6 +346,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "int",
 						Mandatory:   false,
+						Default:     3,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -357,6 +367,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
+						Default:   os.Getenv("PIPER_password"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -365,6 +376,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_preset"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -373,6 +385,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     os.Getenv("PIPER_projectName"),
 						Aliases:     []config.Alias{{Name: "checkmarxProject"}, {Name: "checkMarxProjectName"}},
 					},
 					{
@@ -381,6 +394,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_pullRequestName"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -389,6 +403,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     os.Getenv("PIPER_serverUrl"),
 						Aliases:     []config.Alias{{Name: "checkmarxServerUrl"}},
 					},
 					{
@@ -397,6 +412,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     `1`,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -405,6 +421,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_teamId"),
 						Aliases:     []config.Alias{{Name: "checkmarxGroupId"}, {Name: "groupId"}},
 					},
 					{
@@ -413,6 +430,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_teamName"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -433,6 +451,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
+						Default:   os.Getenv("PIPER_username"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -441,6 +460,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
+						Default:     false,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -449,6 +469,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
+						Default:     true,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -457,6 +478,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "int",
 						Mandatory:   false,
+						Default:     100,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -465,6 +487,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "int",
 						Mandatory:   false,
+						Default:     10,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -473,6 +496,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "int",
 						Mandatory:   false,
+						Default:     100,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -481,6 +505,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     `FAILURE`,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -489,6 +514,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     `percentage`,
 						Aliases:     []config.Alias{},
 					},
 				},

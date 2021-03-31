@@ -187,6 +187,10 @@ func protecodeExecuteScanMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "protecodeCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing username and password to authenticate to the Protecode system.", Type: "jenkins"},
+					{Name: "dockerConfigJsonCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)). You can create it like explained in the Docker Success Center in the article about [how to generate a new auth in the config.json file](https://success.docker.com/article/generate-new-auth-in-config-json-file).", Type: "jenkins", Aliases: []config.Alias{{Name: "dockerCredentialsId", Deprecated: true}}},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "excludeCVEs",
@@ -194,6 +198,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     ``,
 						Aliases:     []config.Alias{{Name: "protecodeExcludeCVEs"}},
 					},
 					{
@@ -202,6 +207,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
+						Default:     true,
 						Aliases:     []config.Alias{{Name: "protecodeFailOnSevereVulnerabilities"}},
 					},
 					{
@@ -215,6 +221,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
+						Default:   os.Getenv("PIPER_scanImage"),
 						Aliases:   []config.Alias{{Name: "dockerImage"}},
 					},
 					{
@@ -228,6 +235,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
+						Default:   os.Getenv("PIPER_dockerRegistryUrl"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -247,6 +255,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
+						Default:   os.Getenv("PIPER_dockerConfigJSON"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -255,6 +264,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     `binary`,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -263,6 +273,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_filePath"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -271,6 +282,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
+						Default:     false,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -279,6 +291,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     `60`,
 						Aliases:     []config.Alias{{Name: "protecodeTimeoutMinutes"}},
 					},
 					{
@@ -287,6 +300,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     os.Getenv("PIPER_serverUrl"),
 						Aliases:     []config.Alias{{Name: "protecodeServerUrl"}},
 					},
 					{
@@ -295,6 +309,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     `protecode_report.pdf`,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -303,6 +318,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_fetchUrl"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -311,6 +327,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     os.Getenv("PIPER_group"),
 						Aliases:     []config.Alias{{Name: "protecodeGroup"}},
 					},
 					{
@@ -319,6 +336,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
+						Default:     false,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -339,6 +357,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
+						Default:   os.Getenv("PIPER_username"),
 						Aliases:   []config.Alias{{Name: "user"}},
 					},
 					{
@@ -359,6 +378,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
+						Default:   os.Getenv("PIPER_password"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -372,6 +392,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
+						Default:   os.Getenv("PIPER_artifactVersion"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -380,6 +401,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_pullRequestName"),
 						Aliases:     []config.Alias{},
 					},
 				},

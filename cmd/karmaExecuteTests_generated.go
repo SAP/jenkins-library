@@ -116,6 +116,7 @@ func karmaExecuteTestsMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     `npm install --quiet`,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -124,6 +125,7 @@ func karmaExecuteTestsMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     `.`,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -132,6 +134,7 @@ func karmaExecuteTestsMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     `npm run karma`,
 						Aliases:     []config.Alias{},
 					},
 				},

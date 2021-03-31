@@ -103,6 +103,9 @@ func gctsCloneRepositoryMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "abapCredentialsId", Description: "Jenkins credentials ID containing username and password for authentication to the ABAP system on which you want to clone the repository", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name: "username",
@@ -116,6 +119,7 @@ func gctsCloneRepositoryMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
+						Default:   os.Getenv("PIPER_username"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -130,6 +134,7 @@ func gctsCloneRepositoryMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
+						Default:   os.Getenv("PIPER_password"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -138,6 +143,7 @@ func gctsCloneRepositoryMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     os.Getenv("PIPER_repository"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -146,6 +152,7 @@ func gctsCloneRepositoryMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     os.Getenv("PIPER_host"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -154,6 +161,7 @@ func gctsCloneRepositoryMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     os.Getenv("PIPER_client"),
 						Aliases:     []config.Alias{},
 					},
 				},

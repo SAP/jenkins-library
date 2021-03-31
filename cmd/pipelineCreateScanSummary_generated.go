@@ -99,6 +99,7 @@ func pipelineCreateScanSummaryMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
+						Default:     false,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -107,6 +108,7 @@ func pipelineCreateScanSummaryMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     `scanSummary.md`,
 						Aliases:     []config.Alias{},
 					},
 				},

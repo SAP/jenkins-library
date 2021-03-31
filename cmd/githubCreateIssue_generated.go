@@ -108,6 +108,9 @@ func githubCreateIssueMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "githubTokenCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "apiUrl",
@@ -115,6 +118,7 @@ func githubCreateIssueMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     `https://api.github.com`,
 						Aliases:     []config.Alias{{Name: "githubApiUrl"}},
 					},
 					{
@@ -123,6 +127,7 @@ func githubCreateIssueMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_body"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -131,6 +136,7 @@ func githubCreateIssueMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_bodyFilePath"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -144,6 +150,7 @@ func githubCreateIssueMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
+						Default:   os.Getenv("PIPER_owner"),
 						Aliases:   []config.Alias{{Name: "githubOrg"}},
 					},
 					{
@@ -157,6 +164,7 @@ func githubCreateIssueMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
+						Default:   os.Getenv("PIPER_repository"),
 						Aliases:   []config.Alias{{Name: "githubRepo"}},
 					},
 					{
@@ -165,6 +173,7 @@ func githubCreateIssueMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     os.Getenv("PIPER_title"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -184,6 +193,7 @@ func githubCreateIssueMetadata() config.StepData {
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
+						Default:   os.Getenv("PIPER_token"),
 						Aliases:   []config.Alias{{Name: "githubToken"}, {Name: "access_token"}},
 					},
 				},

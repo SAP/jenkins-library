@@ -128,6 +128,9 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "gitHttpsCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing username/password for http access to your git repository.", Type: "jenkins"},
+				},
 				Resources: []config.StepResources{
 					{Name: "deployDescriptor", Type: "stash"},
 				},
@@ -138,6 +141,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     `master`,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -146,6 +150,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_commitMessage"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -154,6 +159,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     `https://github.com`,
 						Aliases:     []config.Alias{{Name: "githubServerUrl"}},
 					},
 					{
@@ -168,6 +174,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
+						Default:   os.Getenv("PIPER_username"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -182,6 +189,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
+						Default:   os.Getenv("PIPER_password"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -190,6 +198,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     os.Getenv("PIPER_filePath"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -198,6 +207,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_containerName"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -211,6 +221,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
+						Default:   os.Getenv("PIPER_containerRegistryUrl"),
 						Aliases:   []config.Alias{{Name: "dockerRegistryUrl"}},
 					},
 					{
@@ -224,6 +235,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
+						Default:   os.Getenv("PIPER_containerImageNameTag"),
 						Aliases:   []config.Alias{{Name: "image"}, {Name: "containerImage"}},
 					},
 					{
@@ -232,6 +244,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_chartPath"),
 						Aliases:     []config.Alias{{Name: "helmChartPath"}},
 					},
 					{
@@ -240,6 +253,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
+						Default:     []string{},
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -248,6 +262,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_deploymentName"),
 						Aliases:     []config.Alias{{Name: "helmDeploymentName"}},
 					},
 					{
@@ -256,6 +271,7 @@ func gitopsUpdateDeploymentMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     `kubectl`,
 						Aliases:     []config.Alias{},
 					},
 				},

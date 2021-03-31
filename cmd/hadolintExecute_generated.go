@@ -101,6 +101,9 @@ func hadolintExecuteMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "configurationCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing username/password for access to your remote configuration file.", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "configurationUrl",
@@ -108,6 +111,7 @@ func hadolintExecuteMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_configurationUrl"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -122,6 +126,7 @@ func hadolintExecuteMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
+						Default:   os.Getenv("PIPER_configurationUsername"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -136,6 +141,7 @@ func hadolintExecuteMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
+						Default:   os.Getenv("PIPER_configurationPassword"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -144,6 +150,7 @@ func hadolintExecuteMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     `./Dockerfile`,
 						Aliases:     []config.Alias{{Name: "dockerfile"}},
 					},
 					{
@@ -152,6 +159,7 @@ func hadolintExecuteMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     `.hadolint.yaml`,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -160,6 +168,7 @@ func hadolintExecuteMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     `hadolint.xml`,
 						Aliases:     []config.Alias{},
 					},
 				},

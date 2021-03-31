@@ -112,6 +112,7 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
+						Default:     true,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -120,6 +121,7 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
+						Default:     []string{},
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -128,6 +130,7 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_defaultNpmRegistry"),
 						Aliases:     []config.Alias{{Name: "npm/defaultNpmRegistry"}},
 					},
 					{
@@ -136,6 +139,7 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
+						Default:     false,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -144,6 +148,7 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
+						Default:     []string{},
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -152,6 +157,7 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
+						Default:     []string{`deployment/**`},
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -160,6 +166,7 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
+						Default:     []string{},
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -168,6 +175,7 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "bool",
 						Mandatory:   false,
+						Default:     false,
 						Aliases:     []config.Alias{},
 					},
 				},

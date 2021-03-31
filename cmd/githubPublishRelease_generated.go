@@ -133,6 +133,9 @@ func githubPublishReleaseMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "githubTokenCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "addClosedIssues",
@@ -140,6 +143,7 @@ func githubPublishReleaseMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
+						Default:     false,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -148,6 +152,7 @@ func githubPublishReleaseMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
+						Default:     false,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -156,6 +161,7 @@ func githubPublishReleaseMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     `https://api.github.com`,
 						Aliases:     []config.Alias{{Name: "githubApiUrl"}},
 					},
 					{
@@ -164,6 +170,7 @@ func githubPublishReleaseMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_assetPath"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -172,6 +179,7 @@ func githubPublishReleaseMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     `master`,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -180,6 +188,7 @@ func githubPublishReleaseMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
+						Default:     []string{},
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -188,6 +197,7 @@ func githubPublishReleaseMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
+						Default:     []string{},
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -201,6 +211,7 @@ func githubPublishReleaseMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
+						Default:   os.Getenv("PIPER_owner"),
 						Aliases:   []config.Alias{{Name: "githubOrg"}},
 					},
 					{
@@ -209,6 +220,7 @@ func githubPublishReleaseMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
+						Default:     false,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -217,6 +229,7 @@ func githubPublishReleaseMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_releaseBodyHeader"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -230,6 +243,7 @@ func githubPublishReleaseMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
+						Default:   os.Getenv("PIPER_repository"),
 						Aliases:   []config.Alias{{Name: "githubRepo"}},
 					},
 					{
@@ -238,6 +252,7 @@ func githubPublishReleaseMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     `https://github.com`,
 						Aliases:     []config.Alias{{Name: "githubServerUrl"}},
 					},
 					{
@@ -257,6 +272,7 @@ func githubPublishReleaseMetadata() config.StepData {
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
+						Default:   os.Getenv("PIPER_token"),
 						Aliases:   []config.Alias{{Name: "githubToken"}, {Name: "access_token"}},
 					},
 					{
@@ -265,6 +281,7 @@ func githubPublishReleaseMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     `https://uploads.github.com`,
 						Aliases:     []config.Alias{{Name: "githubUploadUrl"}},
 					},
 					{
@@ -278,6 +295,7 @@ func githubPublishReleaseMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
+						Default:   os.Getenv("PIPER_version"),
 						Aliases:   []config.Alias{},
 					},
 				},
