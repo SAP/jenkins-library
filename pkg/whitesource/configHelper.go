@@ -86,10 +86,6 @@ func (c *ConfigOptions) updateConfig(originalConfig *map[string]string) map[stri
 				newConfig[cOpt.Name] = fmt.Sprint(cOpt.Value)
 			}
 		}
-
-		//if len(dependentValue) == 0 && (cOpt.Force || len(newConfig[cOpt.Name]) == 0) {
-		//	newConfig[cOpt.Name] = fmt.Sprint(cOpt.Value)
-		//}
 	}
 	return newConfig
 }
