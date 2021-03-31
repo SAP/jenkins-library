@@ -284,6 +284,7 @@ spec:
           If the flag is set to false, then the scan request is submitted to server regardless of any changes.
           For more details please refer to the [documentation](https://github.com/blackducksoftware/detect_rescan/blob/master/README.md)"
         type: bool
+        default: true
         scope:
           - PARAMETERS
           - STAGES
