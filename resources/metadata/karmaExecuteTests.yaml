@@ -32,7 +32,7 @@ spec:
           - STEPS
         mandatory: true
       - name: modules
-        type: string
+        type: "[]string"
         description: Define the paths of the modules to execute tests on.
         default: "."
         scope:
