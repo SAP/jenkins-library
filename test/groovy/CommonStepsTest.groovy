@@ -172,6 +172,9 @@ public class CommonStepsTest extends BasePiperTest{
         'karmaExecuteTests', //implementing new golang pattern without fields
         'gitopsUpdateDeployment', //implementing new golang pattern without fields
         'vaultRotateSecretId', //implementing new golang pattern without fields
+        'deployIntegrationArtifact', //implementing new golang pattern without fields
+        'newmanExecute', //implementing new golang pattern without fields
+        'terraformExecute', //implementing new golang pattern without fields
         'whitesourceExecuteScan', //implementing new golang pattern without fields
         'uiVeri5ExecuteTests', //implementing new golang pattern without fields
         'integrationArtifactDeploy', //implementing new golang pattern without fields
@@ -180,6 +183,8 @@ public class CommonStepsTest extends BasePiperTest{
         'integrationArtifactGetServiceEndpoint', //implementing new golang pattern without fields
         'integrationArtifactDownload', //implementing new golang pattern without fields
         'integrationArtifactUpload', //implementing new golang pattern without fields
+        'containerExecuteStructureTests', //implementing new golang pattern without fields
+        'transportRequestUploadSOLMAN', //implementing new golang pattern without fields
     ]
 
     @Test

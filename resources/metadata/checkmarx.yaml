@@ -244,6 +244,10 @@ spec:
       - name: influx
         type: influx
         params:
+          - name: step_data
+            fields:
+              - name: checkmarx
+                type: bool
           - name: checkmarx_data
             fields:
               - name: high_issues

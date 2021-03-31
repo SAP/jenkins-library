@@ -133,8 +133,23 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 
 	_, detectVersionName := versioning.DetermineProjectCoordinates("", config.VersioningModel, coordinates)
 
+	//Split on spaces, the scanPropeties, so that each property is available as a single string
+	//instead of all properties being part of a single string
+	config.ScanProperties = piperutils.SplitAndTrim(config.ScanProperties, " ")
+
 	if config.ScanOnChanges {
 		args = append(args, "--report")
+		config.Unmap = false
+	}
+
+	if config.Unmap {
+		if !piperutils.ContainsString(config.ScanProperties, "--detect.project.codelocation.unmap=true") {
+			args = append(args, fmt.Sprintf("--detect.project.codelocation.unmap=true"))
+		}
+		config.ScanProperties, _ = piperutils.RemoveAll(config.ScanProperties, "--detect.project.codelocation.unmap=false")
+	} else {
+		//When unmap is set to false, any occurances of unmap=true from scanProperties must be removed
+		config.ScanProperties, _ = piperutils.RemoveAll(config.ScanProperties, "--detect.project.codelocation.unmap=true")
 	}
 
 	args = append(args, config.ScanProperties...)
@@ -156,11 +171,9 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		args = append(args, fmt.Sprintf("--detect.policy.check.fail.on.severities=%v", strings.Join(config.FailOn, ",")))
 	}
 
-	codeLocation := config.CodeLocation
-	if len(codeLocation) == 0 && len(config.ProjectName) > 0 {
-		codeLocation = fmt.Sprintf("%v/%v", config.ProjectName, detectVersionName)
+	if len(config.CodeLocation) > 0 {
+		args = append(args, fmt.Sprintf("\"--detect.code.location.name='%v'\"", config.CodeLocation))
 	}
-	args = append(args, fmt.Sprintf("\"--detect.code.location.name='%v'\"", codeLocation))
 
 	if len(config.ScanPaths) > 0 && len(config.ScanPaths[0]) > 0 {
 		args = append(args, fmt.Sprintf("--detect.blackduck.signature.scanner.paths=%v", strings.Join(config.ScanPaths, ",")))
@@ -170,10 +183,6 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		args = append(args, fmt.Sprintf("--detect.source.path=%v", config.DependencyPath))
 	} else {
 		args = append(args, fmt.Sprintf("--detect.source.path='.'"))
-	}
-
-	if config.Unmap {
-		args = append(args, fmt.Sprintf("--detect.project.codelocation.unmap=true"))
 	}
 
 	if len(config.IncludedPackageManagers) > 0 {
