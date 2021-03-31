@@ -137,6 +137,7 @@ func Execute() {
 	rootCmd.AddCommand(AbapEnvironmentAssembleConfirmCommand())
 	rootCmd.AddCommand(IntegrationArtifactUploadCommand())
 	rootCmd.AddCommand(ContainerExecuteStructureTestsCommand())
+	rootCmd.AddCommand(BatsExecuteTestsCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
