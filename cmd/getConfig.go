@@ -210,7 +210,7 @@ func resolveMetadata() (config.StepData, error) {
 			var ok bool
 			metadata, ok = metadataMap[configOptions.stepName]
 			if !ok {
-				return metadata, errors.Errorf("metadata could not be retrieved by stepName %v", configOptions.stepName)
+				return metadata, errors.Errorf("could not retrieve by stepName %v", configOptions.stepName)
 			}
 		} else {
 			return metadata, errors.Errorf("either one of stepMetadata or stepName parameter has to be passed")
