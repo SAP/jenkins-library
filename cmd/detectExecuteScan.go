@@ -143,7 +143,9 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 	}
 
 	if config.Unmap {
-		args = append(args, fmt.Sprintf("--detect.project.codelocation.unmap=true"))
+		if !piperutils.ContainsString(config.ScanProperties, "--detect.project.codelocation.unmap=true") {
+			args = append(args, fmt.Sprintf("--detect.project.codelocation.unmap=true"))
+		}
 		config.ScanProperties, _ = piperutils.RemoveAll(config.ScanProperties, "--detect.project.codelocation.unmap=false")
 	} else {
 		//When unmap is set to false, any occurances of unmap=true from scanProperties must be removed
