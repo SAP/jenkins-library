@@ -34,7 +34,7 @@ spec:
       - name: modules
         type: "[]string"
         description: Define the paths of the modules to execute tests on.
-        default: "."
+        default: ["."]
         scope:
           - PARAMETERS
           - STAGES
