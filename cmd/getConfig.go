@@ -213,7 +213,7 @@ func resolveMetadata() (config.StepData, error) {
 				return metadata, errors.Errorf("metadata could not be retrieved by stepName %v", configOptions.stepName)
 			}
 		} else {
-			return metadata, errors.Errorf("either one of stepData or stepName parameter has to be passed")
+			return metadata, errors.Errorf("either one of stepMetadata or stepName parameter has to be passed")
 		}
 	}
 	return metadata, nil
