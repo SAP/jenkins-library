@@ -289,6 +289,16 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: customEnvironmentVariables
+        description: 
+          "A list of environment variables which can be set to prepare the environment to run a BlackDuck scan. Specifically used to set the BlackDuck environment variables which control the scanning script"
+        type: "[]string"
+        default:
+          - "DETECT_LATEST_RELEASE_VERSION=6.8.0"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   containers:
     - name: openjdk
       image: openjdk:11
