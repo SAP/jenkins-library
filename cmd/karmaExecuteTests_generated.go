@@ -14,9 +14,9 @@ import (
 )
 
 type karmaExecuteTestsOptions struct {
-	InstallCommand string `json:"installCommand,omitempty"`
-	Modules        string `json:"modules,omitempty"`
-	RunCommand     string `json:"runCommand,omitempty"`
+	InstallCommand string   `json:"installCommand,omitempty"`
+	Modules        []string `json:"modules,omitempty"`
+	RunCommand     string   `json:"runCommand,omitempty"`
 }
 
 // KarmaExecuteTestsCommand Executes the Karma test runner
@@ -87,7 +87,7 @@ In the Docker network, the containers can be referenced by the values provided i
 
 func addKarmaExecuteTestsFlags(cmd *cobra.Command, stepConfig *karmaExecuteTestsOptions) {
 	cmd.Flags().StringVar(&stepConfig.InstallCommand, "installCommand", `npm install --quiet`, "The command that is executed to install the test tool.")
-	cmd.Flags().StringVar(&stepConfig.Modules, "modules", `.`, "Define the paths of the modules to execute tests on.")
+	cmd.Flags().StringSliceVar(&stepConfig.Modules, "modules", []string{`.`}, "Define the paths of the modules to execute tests on.")
 	cmd.Flags().StringVar(&stepConfig.RunCommand, "runCommand", `npm run karma`, "The command that is executed to start the tests.")
 
 	cmd.MarkFlagRequired("installCommand")
@@ -122,7 +122,7 @@ func karmaExecuteTestsMetadata() config.StepData {
 						Name:        "modules",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
+						Type:        "[]string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
 					},

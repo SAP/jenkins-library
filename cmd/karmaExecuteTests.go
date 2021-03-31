@@ -20,7 +20,7 @@ func karmaExecuteTests(config karmaExecuteTestsOptions, telemetryData *telemetry
 func runKarma(config karmaExecuteTestsOptions, command command.ExecRunner) {
 	installCommandTokens := tokenize(config.InstallCommand)
 	runCommandTokens := tokenize(config.RunCommand)
-	modulePaths := tokenize(config.Modules)
+	modulePaths := config.Modules
 
 	for _, module := range modulePaths {
 		command.SetDir(module)
