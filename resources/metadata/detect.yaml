@@ -289,6 +289,14 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: customEnvironmentVariables
+        description:
+          "A list of environment variables which can be set to prepare the environment to run a BlackDuck scan."
+        type: "[]string"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   containers:
     - name: openjdk
       image: openjdk:11

@@ -111,6 +111,7 @@ func runDetect(config detectExecuteScanOptions, utils detectUtils) error {
 	script := strings.Join(args, " ")
 
 	envs := []string{"BLACKDUCK_SKIP_PHONE_HOME=true"}
+	envs = append(envs, config.CustomEnvironmentVariables...)
 
 	utils.SetDir(".")
 	utils.SetEnv(envs)
