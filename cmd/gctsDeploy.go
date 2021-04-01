@@ -62,6 +62,7 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 		VSID:                config.VSID,
 		Type:                config.Type,
 	}
+	log.Entry().Infof("gCTS Deploy : Checking if repository %v already exists", config.Repository)
 	repoMetadataInitState, getRepositoryErr := getRepository(config, httpClient)
 	currentBranch := repoMetadataInitState.Result.Branch
 	if getRepositoryErr != nil {
@@ -74,11 +75,6 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 			log.Entry().WithError(createErr).Error("step execution failed at Create Repository")
 			return createErr
 		}
-		// Should be removed in the final step
-		if config.CreateOnly {
-			log.Entry().Info("Ending gCTS deploy after creation because of create only flag")
-			return nil
-		}
 
 		cloneRepoOptions := gctsCloneRepositoryOptions{
 			Username:   config.Username,
@@ -89,9 +85,10 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 		}
 
 		if config.Branch != "" || config.Commit != "" {
+			log.Entry().Infof("Setting VCS_NO_IMPORT to true")
 			noImportConfig := setConfigKeyBody{
 				Key:   "VCS_NO_IMPORT",
-				Value: "false",
+				Value: "true",
 			}
 			setConfigKeyErr := setConfigKey(config, httpClient, &noImportConfig)
 			if setConfigKeyErr != nil {
@@ -112,11 +109,18 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 				log.Entry().WithError(cloneErr).Error("step execution failed at Clone Repository")
 				return cloneErr
 			}
-			log.Entry().Info("gCTS Deploy : Step has completed for the repository %v : ", config.Repository)
+			log.Entry().Infof("gCTS Deploy : Step has completed for the repository %v : ", config.Repository)
 			// End of the step.
 			return nil
 		}
-
+		log.Entry().Infof("gCTS Deploy : Reading repo information after cloning repository %v : ", config.Repository)
+		repoMetadataInitState, getRepositoryErr = getRepository(config, httpClient)
+		if getRepositoryErr != nil {
+			// Dump Error Log
+			log.Entry().WithError(getRepositoryErr).Error("step execution failed at get repository after clone")
+			return getRepositoryErr
+		}
+		currentBranch = repoMetadataInitState.Result.Branch
 	}
 
 	if config.Branch != "" {
@@ -137,15 +141,6 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 	}
 
 	if config.Commit != "" {
-		currentConfig := setConfigKeyBody{
-			Key:   "CURRENT_COMMIT",
-			Value: config.Commit,
-		}
-		setCurrentConfigErr := setConfigKey(config, httpClient, &currentConfig)
-		if setCurrentConfigErr != nil {
-			log.Entry().WithError(setCurrentConfigErr).Error("step execution failed at Set Config key for CURRENT_COMMIT")
-			return setCurrentConfigErr
-		}
 		log.Entry().Infof("gCTS Deploy: Pull by Commit step execution to commit %v", config.Commit)
 		pullByCommitErr := pullByCommit(config, telemetryData, command, httpClient)
 		if pullByCommitErr != nil {
@@ -159,7 +154,7 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 			return pullByCommitErr
 		}
 	} else if config.Commit == "" && config.Scope == "" {
-		log.Entry().Infof("gCTS Deploy: Pull by Commit step execution to commit %v", config.Commit)
+		log.Entry().Infof("gCTS Deploy: Pull by Commit step execution")
 		pullByCommitErr := pullByCommit(config, telemetryData, command, httpClient)
 		if pullByCommitErr != nil {
 			log.Entry().WithError(pullByCommitErr).Error("step execution failed at Pull By Commit. Trying to rollback to last commit")
@@ -175,6 +170,16 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 			return pullByCommitErr
 		}
 	} else if config.Commit == "" && config.Scope != "" {
+		log.Entry().Infof("Setting VCS_NO_IMPORT to false")
+		noImportConfig := setConfigKeyBody{
+			Key:   "VCS_NO_IMPORT",
+			Value: "false",
+		}
+		setConfigKeyErr := setConfigKey(config, httpClient, &noImportConfig)
+		if setConfigKeyErr != nil {
+			log.Entry().WithError(setConfigKeyErr).Error("step execution failed at Set Config key for VCS_NO_IMPORT")
+			return setConfigKeyErr
+		}
 		// Get deploy scope and gctsDeploy
 		log.Entry().Infof("gCTS Deploy: Deploying Commit to ABAP System for Repository %v with scope %v", config.Repository, config.Scope)
 		deployErr := deployCommitToAbapSystem(config, httpClient)
@@ -186,6 +191,16 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 	}
 
 	if repoState == repoStateNew {
+		log.Entry().Infof("Setting VCS_NO_IMPORT back to false")
+		noImportConfig := setConfigKeyBody{
+			Key:   "VCS_NO_IMPORT",
+			Value: "false",
+		}
+		setConfigKeyErr := setConfigKey(config, httpClient, &noImportConfig)
+		if setConfigKeyErr != nil {
+			log.Entry().WithError(setConfigKeyErr).Error("step execution failed at Set Config key for VCS_NO_IMPORT")
+			return setConfigKeyErr
+		}
 		log.Entry().Infof("gCTS Deploy: Deploying Commit to ABAP System for Repository %v with scope %v", config.Repository, config.Scope)
 		deployErr := deployCommitToAbapSystem(config, httpClient)
 		if deployErr != nil {
@@ -264,6 +279,7 @@ func getRepository(config *gctsDeployOptions, httpClient piperhttp.Sender) (*get
 		}
 	}()
 	if httpErr != nil {
+		log.Entry().Infof("Error while repository Check : %v", httpErr)
 		return &response, httpErr
 	} else if resp == nil {
 		return &response, errors.New("did not retrieve a HTTP response")
@@ -277,7 +293,7 @@ func getRepository(config *gctsDeployOptions, httpClient piperhttp.Sender) (*get
 }
 
 func setConfigKey(deployConfig *gctsDeployOptions, httpClient piperhttp.Sender, configToSet *setConfigKeyBody) error {
-	log.Entry().Info("gCTS Deploy : Start of set configuration key %v and value %v", configToSet.Key, configToSet.Value)
+	log.Entry().Infof("gCTS Deploy : Start of set configuration key %v and value %v", configToSet.Key, configToSet.Value)
 	requestURL := deployConfig.Host +
 		"/sap/bc/cts_abapvcs/repository/" + deployConfig.Repository +
 		"/config?sap-client=" + deployConfig.Client

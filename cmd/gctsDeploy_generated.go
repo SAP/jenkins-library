@@ -29,7 +29,6 @@ type gctsDeployOptions struct {
 	Rollback                  bool                   `json:"rollback,omitempty"`
 	Configuration             map[string]interface{} `json:"configuration,omitempty"`
 	GithubPersonalAccessToken string                 `json:"githubPersonalAccessToken,omitempty"`
-	CreateOnly                bool                   `json:"createOnly,omitempty"`
 }
 
 // GctsDeployCommand Pulls a commit from the remote Git repository to a local repository
@@ -107,7 +106,6 @@ func addGctsDeployFlags(cmd *cobra.Command, stepConfig *gctsDeployOptions) {
 	cmd.Flags().BoolVar(&stepConfig.Rollback, "rollback", false, "The rollback flag for a failure during gcts deploy")
 
 	cmd.Flags().StringVar(&stepConfig.GithubPersonalAccessToken, "githubPersonalAccessToken", os.Getenv("PIPER_githubPersonalAccessToken"), "GitHub personal access token with at least read permissions for the remote repository")
-	cmd.Flags().BoolVar(&stepConfig.CreateOnly, "createOnly", false, "To create a reposiory only. All the other further steps are ignored (Should be removed from the final step)")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
@@ -263,14 +261,6 @@ func gctsDeployMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
-					},
-					{
-						Name:        "createOnly",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
 					},
 				},
 			},
