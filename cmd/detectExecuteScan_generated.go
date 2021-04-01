@@ -14,28 +14,29 @@ import (
 )
 
 type detectExecuteScanOptions struct {
-	Token                   string   `json:"token,omitempty"`
-	CodeLocation            string   `json:"codeLocation,omitempty"`
-	ProjectName             string   `json:"projectName,omitempty"`
-	Scanners                []string `json:"scanners,omitempty"`
-	ScanPaths               []string `json:"scanPaths,omitempty"`
-	DependencyPath          string   `json:"dependencyPath,omitempty"`
-	Unmap                   bool     `json:"unmap,omitempty"`
-	ScanProperties          []string `json:"scanProperties,omitempty"`
-	ServerURL               string   `json:"serverUrl,omitempty"`
-	Groups                  []string `json:"groups,omitempty"`
-	FailOn                  []string `json:"failOn,omitempty"`
-	Version                 string   `json:"version,omitempty"`
-	VersioningModel         string   `json:"versioningModel,omitempty"`
-	ProjectSettingsFile     string   `json:"projectSettingsFile,omitempty"`
-	GlobalSettingsFile      string   `json:"globalSettingsFile,omitempty"`
-	M2Path                  string   `json:"m2Path,omitempty"`
-	InstallArtifacts        bool     `json:"installArtifacts,omitempty"`
-	IncludedPackageManagers []string `json:"includedPackageManagers,omitempty"`
-	ExcludedPackageManagers []string `json:"excludedPackageManagers,omitempty"`
-	MavenExcludedScopes     []string `json:"mavenExcludedScopes,omitempty"`
-	DetectTools             []string `json:"detectTools,omitempty"`
-	ScanOnChanges           bool     `json:"scanOnChanges,omitempty"`
+	Token                      string   `json:"token,omitempty"`
+	CodeLocation               string   `json:"codeLocation,omitempty"`
+	ProjectName                string   `json:"projectName,omitempty"`
+	Scanners                   []string `json:"scanners,omitempty"`
+	ScanPaths                  []string `json:"scanPaths,omitempty"`
+	DependencyPath             string   `json:"dependencyPath,omitempty"`
+	Unmap                      bool     `json:"unmap,omitempty"`
+	ScanProperties             []string `json:"scanProperties,omitempty"`
+	ServerURL                  string   `json:"serverUrl,omitempty"`
+	Groups                     []string `json:"groups,omitempty"`
+	FailOn                     []string `json:"failOn,omitempty"`
+	Version                    string   `json:"version,omitempty"`
+	VersioningModel            string   `json:"versioningModel,omitempty"`
+	ProjectSettingsFile        string   `json:"projectSettingsFile,omitempty"`
+	GlobalSettingsFile         string   `json:"globalSettingsFile,omitempty"`
+	M2Path                     string   `json:"m2Path,omitempty"`
+	InstallArtifacts           bool     `json:"installArtifacts,omitempty"`
+	IncludedPackageManagers    []string `json:"includedPackageManagers,omitempty"`
+	ExcludedPackageManagers    []string `json:"excludedPackageManagers,omitempty"`
+	MavenExcludedScopes        []string `json:"mavenExcludedScopes,omitempty"`
+	DetectTools                []string `json:"detectTools,omitempty"`
+	ScanOnChanges              bool     `json:"scanOnChanges,omitempty"`
+	CustomEnvironmentVariables []string `json:"customEnvironmentVariables,omitempty"`
 }
 
 // DetectExecuteScanCommand Executes Synopsys Detect scan
@@ -120,6 +121,7 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().StringSliceVar(&stepConfig.MavenExcludedScopes, "mavenExcludedScopes", []string{}, "The maven scopes that need to be excluded from the scan. For example, setting the value 'test' will exclude all components which are defined with a test scope in maven")
 	cmd.Flags().StringSliceVar(&stepConfig.DetectTools, "detectTools", []string{}, "The type of BlackDuck scanners to include while running the BlackDuck scan. By default All scanners are included. For the complete list of possible values, Please refer [Synopsys detect documentation](https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/631407160/Configuring+Detect+General+Properties#Detect-tools-included)")
 	cmd.Flags().BoolVar(&stepConfig.ScanOnChanges, "scanOnChanges", true, "This flag determines if the scan is submitted to the server. If set to true, then the scan request is submitted to the server only when changes are detected in the Open Source Bill of Materials If the flag is set to false, then the scan request is submitted to server regardless of any changes. For more details please refer to the [documentation](https://github.com/blackducksoftware/detect_rescan/blob/master/README.md)")
+	cmd.Flags().StringSliceVar(&stepConfig.CustomEnvironmentVariables, "customEnvironmentVariables", []string{}, "A list of environment variables which can be set to prepare the environment to run a BlackDuck scan.")
 
 	cmd.MarkFlagRequired("token")
 	cmd.MarkFlagRequired("projectName")
@@ -330,6 +332,14 @@ func detectExecuteScanMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "customEnvironmentVariables",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
