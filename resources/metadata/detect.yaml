@@ -291,7 +291,7 @@ spec:
           - STEPS
       - name: customEnvironmentVariables
         description:
-          "A list of environment variables which can be set to prepare the environment to run a BlackDuck scan. Specifically used to set the BlackDuck environment variables which control the scanning script"
+          "A list of environment variables which can be set to prepare the environment to run a BlackDuck scan."
         type: "[]string"
         default:
           - "DETECT_LATEST_RELEASE_VERSION=6.8.0"
