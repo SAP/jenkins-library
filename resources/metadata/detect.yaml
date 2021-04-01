@@ -100,7 +100,7 @@ spec:
         aliases:
           - name: detect/unmap
         type: bool
-        default: false
+        default: true
         scope:
           - PARAMETERS
           - STAGES
@@ -112,9 +112,8 @@ spec:
         type: "[]string"
         default:
           - --blackduck.signature.scanner.memory=4096
-          - --blackduck.timeout=6000
+          - --detect.timeout=6000
           - --blackduck.trust.cert=true
-          - --detect.report.timeout=4800
           - --logging.level.com.synopsys.integration=DEBUG
           - --detect.maven.excluded.scopes=test
         scope:
@@ -285,6 +284,15 @@ spec:
           If the flag is set to false, then the scan request is submitted to server regardless of any changes.
           For more details please refer to the [documentation](https://github.com/blackducksoftware/detect_rescan/blob/master/README.md)"
         type: bool
+        default: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: customEnvironmentVariables
+        description:
+          "A list of environment variables which can be set to prepare the environment to run a BlackDuck scan."
+        type: "[]string"
         scope:
           - PARAMETERS
           - STAGES

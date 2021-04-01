@@ -523,3 +523,11 @@ spec:
           params:
             - name: buildTool
               value: pip
+    - image: node:lts-stretch
+      workingDir: /home/node
+      env: []
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: buildTool
+              value: yarn

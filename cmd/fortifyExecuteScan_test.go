@@ -566,6 +566,30 @@ func TestTriggerFortifyScan(t *testing.T) {
 		assert.Equal(t, "sourceanalyzer", utils.executions[4].executable)
 		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-scan", "-Xmx4G", "-Xms2G", "-build-label", "testLabel", "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr"}, utils.executions[4].parameters)
 	})
+
+	t.Run("invalid buildTool", func(t *testing.T) {
+		dir, err := ioutil.TempDir("", "test trigger fortify scan")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+		defer func() {
+			_ = os.Chdir(oldCWD)
+			_ = os.RemoveAll(dir)
+		}()
+
+		utils := newFortifyTestUtilsBundle()
+		config := fortifyExecuteScanOptions{
+			BuildTool:           "docker",
+			AutodetectClasspath: true,
+		}
+		err = triggerFortifyScan(config, &utils, "test", "testLabel", "my.group-myartifact")
+
+		assert.Error(t, err)
+		assert.Equal(t, "buildTool 'docker' is not supported by this step", err.Error())
+	})
 }
 
 func TestGenerateAndDownloadQGateReport(t *testing.T) {
