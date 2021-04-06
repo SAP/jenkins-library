@@ -55,6 +55,7 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
             if (config.stashContent?.size() > 0) {
                 config.stashContent.add('pipelineConfigAndTests')
                 config.stashContent.add('piper-bin')
+                config.stashContent.add('pipelineStepReports')
             }
 
             if (parameters.stashNoDefaultExcludes) {
@@ -80,6 +81,7 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
                         }
                     } finally {
                         InfluxData.readFromDisk(script)
+                        stash name: 'pipelineStepReports', includes: '.pipeline/stepReports/**/*.*', allowEmpty: true
                     }
                 }
             }
