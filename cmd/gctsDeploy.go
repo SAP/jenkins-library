@@ -41,6 +41,7 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 	const repoStateExists = "RepoExists"
 	const repoStateNew = "RepoNew"
 	repoState := repoStateExists
+	branchRollbackRequired := false
 	if cookieErr != nil {
 		return errors.Wrap(cookieErr, "creating a cookie jar failed")
 	}
@@ -66,6 +67,10 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 	repoMetadataInitState, getRepositoryErr := getRepository(config, httpClient)
 	currentBranch := repoMetadataInitState.Result.Branch
 	if getRepositoryErr != nil {
+		if config.Scope != "" {
+			log.Entry().Error("Error during deploy : deploy scope cannot be provided while deploying a new repo")
+			return errors.New("Error in config file")
+		}
 		repoState = repoStateNew
 		log.Entry().Infof("gCTS Deploy : Creating Repository Step for repository : %v", config.Repository)
 		configurations, _ := splitConfigurationToMap(config.Configuration)
@@ -121,10 +126,22 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 			return getRepositoryErr
 		}
 		currentBranch = repoMetadataInitState.Result.Branch
+	} else {
+		log.Entry().Infof("Repository %v already exists in the system, Checking for deploy scope", config.Repository)
+		if config.Scope != "" {
+			log.Entry().Infof("Deploy scope exists for the repository in the configuration file")
+			log.Entry().Infof("gCTS Deploy: Deploying Commit to ABAP System for Repository %v with scope %v", config.Repository, config.Scope)
+			deployErr := deployCommitToAbapSystem(config, httpClient)
+			if deployErr != nil {
+				log.Entry().WithError(deployErr).Error("step execution failed at Deploying Commit to ABAP system.")
+				return deployErr
+			}
+			return nil
+		}
+		log.Entry().Infof("Deploy scope not set in the configuration file for repository : %v", config.Repository)
 	}
-
+	targetBranch := config.Branch
 	if config.Branch != "" {
-		targetBranch := config.Branch
 		_, switchBranchErr := switchBranch(config, httpClient, currentBranch, targetBranch)
 		if switchBranchErr != nil {
 			log.Entry().WithError(switchBranchErr).Error("step execution failed at Switch Branch")
@@ -138,6 +155,7 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 			return switchBranchErr
 		}
 		currentBranch = config.Branch
+		branchRollbackRequired = true
 	}
 
 	if config.Commit != "" {
@@ -147,32 +165,57 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 			log.Entry().WithError(pullByCommitErr).Error("step execution failed at Pull By Commit. Trying to rollback to last commit")
 			if config.Rollback {
 				//Rollback to last commit.
-				if repoState == repoStateNew {
+				rollbackOptions := gctsRollbackOptions{
+					Username:   config.Username,
+					Password:   config.Password,
+					Repository: config.Repository,
+					Host:       config.Host,
+					Client:     config.Client,
+				}
+				rollbackErr := rollback(&rollbackOptions, telemetryData, command, httpClient)
+				if rollbackErr != nil {
+					log.Entry().WithError(rollbackErr).Error("step execution failed while rolling back commit")
+					return rollbackErr
+				}
+				if repoState == repoStateNew && branchRollbackRequired {
 					// Rollback branch
+					// Rollback branch. Resetting branches
+					targetBranch = repoMetadataInitState.Result.Branch
+					currentBranch = config.Branch
+					log.Entry().Error("Rolling Back from %v to %v", currentBranch, targetBranch)
+					switchBranch(config, httpClient, currentBranch, targetBranch)
 				}
 			}
 			return pullByCommitErr
 		}
-	} else if config.Commit == "" && config.Scope != "" && repoState == repoStateNew {
-		log.Entry().Infof("Setting VCS_NO_IMPORT to false")
-		noImportConfig := setConfigKeyBody{
-			Key:   "VCS_NO_IMPORT",
-			Value: "false",
-		}
-		setConfigKeyErr := setConfigKey(config, httpClient, &noImportConfig)
-		if setConfigKeyErr != nil {
-			log.Entry().WithError(setConfigKeyErr).Error("step execution failed at Set Config key for VCS_NO_IMPORT")
-			return setConfigKeyErr
-		}
-		// Get deploy scope and gctsDeploy
-		log.Entry().Infof("gCTS Deploy: Deploying Commit to ABAP System for Repository %v with scope %v", config.Repository, config.Scope)
-		deployErr := deployCommitToAbapSystem(config, httpClient)
-		if deployErr != nil {
-			log.Entry().WithError(deployErr).Error("step execution failed at Deploying Commit to ABAP system.")
-			return deployErr
-		}
-		return nil
 	} else {
+		if repoState == repoStateNew && (config.Commit != "" || config.Branch != "") {
+			log.Entry().Infof("Setting deploy scope as current commit")
+			config.Scope = "CRNTCOMMIT"
+		}
+
+		if config.Scope != "" {
+			log.Entry().Infof("Setting VCS_NO_IMPORT to false")
+			noImportConfig := setConfigKeyBody{
+				Key:   "VCS_NO_IMPORT",
+				Value: "false",
+			}
+			setConfigKeyErr := setConfigKey(config, httpClient, &noImportConfig)
+			if setConfigKeyErr != nil {
+				log.Entry().WithError(setConfigKeyErr).Error("step execution failed at Set Config key for VCS_NO_IMPORT")
+				return setConfigKeyErr
+			}
+			// Get deploy scope and gctsDeploy
+			log.Entry().Infof("gCTS Deploy: Deploying Commit to ABAP System for Repository %v with scope %v", config.Repository, config.Scope)
+			deployErr := deployCommitToAbapSystem(config, httpClient)
+			if deployErr != nil {
+				log.Entry().WithError(deployErr).Error("step execution failed at Deploying Commit to ABAP system.")
+				return deployErr
+			}
+			// Execution Ends here for the step
+			return nil
+		}
+
 		log.Entry().Infof("gCTS Deploy: Pull by Commit step execution")
 		pullByCommitErr := pullByCommit(config, telemetryData, command, httpClient)
 		if pullByCommitErr != nil {
@@ -201,6 +244,8 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 			log.Entry().WithError(setConfigKeyErr).Error("step execution failed at Set Config key for VCS_NO_IMPORT")
 			return setConfigKeyErr
 		}
+		log.Entry().Infof("Setting deploy scope as current commit")
+		config.Scope = "CRNTCOMMIT"
 		log.Entry().Infof("gCTS Deploy: Deploying Commit to ABAP System for Repository %v with scope %v", config.Repository, config.Scope)
 		deployErr := deployCommitToAbapSystem(config, httpClient)
 		if deployErr != nil {
