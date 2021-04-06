@@ -165,23 +165,28 @@ func resolveVaultTestCredentials(config *StepConfig, client vaultClient) {
 			continue
 		}
 		secretsResolved := false
-		for secretKey, secretValue := range secret {
-			for _, key := range keys {
-				if secretKey == key {
-					log.RegisterSecret(secretValue)
-					envVariable := vaultTestCredentialEnvPrefix + convertEnvVar(secretKey)
-					log.Entry().Debugf("Exposing test credential '%v' as '%v'", key, envVariable)
-					os.Setenv(envVariable, secretValue)
-					secretsResolved = true
-				}
-			}
-		}
+		secretsResolved = populateTestCredentialsAsEnvs(secret, keys)
 		if secretsResolved {
 			// prevent overwriting resolved secrets
 			// only allows vault test credentials on one / the same vault path
 			break
 		}
 	}
+}
+
+func populateTestCredentialsAsEnvs(secret map[string]string, keys []string) (matched bool) {
+	for secretKey, secretValue := range secret {
+		for _, key := range keys {
+			if secretKey == key {
+				log.RegisterSecret(secretValue)
+				envVariable := vaultTestCredentialEnvPrefix + convertEnvVar(secretKey)
+				log.Entry().Debugf("Exposing test credential '%v' as '%v'", key, envVariable)
+				os.Setenv(envVariable, secretValue)
+				matched = true
+			}
+		}
+	}
+	return
 }
 
 func getTestCredentialKeys(config *StepConfig) []string {
