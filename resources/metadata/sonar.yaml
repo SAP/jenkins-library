@@ -199,6 +199,8 @@ spec:
         scope:
           - PARAMETERS
         secret: true
+        aliases:
+          - name: access_token
         resourceRef:
           - name: githubTokenCredentialsId
             type: secret
@@ -257,6 +259,18 @@ spec:
             fields:
               - name: sonar
                 type: bool
+          - name: sonarqube_data
+            fields:
+              - name: blocker_issues
+                type: int
+              - name: critical_issues
+                type: int
+              - name: major_issues
+                type: int
+              - name: minor_issues
+                type: int
+              - name: info_issues
+                type: int
   containers:
     - name: sonar
       image: sonarsource/sonar-scanner-cli:4.5

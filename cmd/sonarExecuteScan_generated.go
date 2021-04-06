@@ -51,6 +51,17 @@ type sonarExecuteScanInflux struct {
 		tags struct {
 		}
 	}
+	sonarqube_data struct {
+		fields struct {
+			blocker_issues  int
+			critical_issues int
+			major_issues    int
+			minor_issues    int
+			info_issues     int
+		}
+		tags struct {
+		}
+	}
 }
 
 func (i *sonarExecuteScanInflux) persist(path, resourceName string) {
@@ -61,6 +72,11 @@ func (i *sonarExecuteScanInflux) persist(path, resourceName string) {
 		value       interface{}
 	}{
 		{valType: config.InfluxField, measurement: "step_data", name: "sonar", value: i.step_data.fields.sonar},
+		{valType: config.InfluxField, measurement: "sonarqube_data", name: "blocker_issues", value: i.sonarqube_data.fields.blocker_issues},
+		{valType: config.InfluxField, measurement: "sonarqube_data", name: "critical_issues", value: i.sonarqube_data.fields.critical_issues},
+		{valType: config.InfluxField, measurement: "sonarqube_data", name: "major_issues", value: i.sonarqube_data.fields.major_issues},
+		{valType: config.InfluxField, measurement: "sonarqube_data", name: "minor_issues", value: i.sonarqube_data.fields.minor_issues},
+		{valType: config.InfluxField, measurement: "sonarqube_data", name: "info_issues", value: i.sonarqube_data.fields.info_issues},
 	}
 
 	errCount := 0
@@ -379,7 +395,7 @@ func sonarExecuteScanMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Aliases:   []config.Alias{{Name: "access_token"}},
 					},
 					{
 						Name:        "disableInlineComments",
@@ -425,6 +441,7 @@ func sonarExecuteScanMetadata() config.StepData {
 						Type: "influx",
 						Parameters: []map[string]interface{}{
 							{"Name": "step_data"}, {"fields": []map[string]string{{"name": "sonar"}}},
+							{"Name": "sonarqube_data"}, {"fields": []map[string]string{{"name": "blocker_issues"}, {"name": "critical_issues"}, {"name": "major_issues"}, {"name": "minor_issues"}, {"name": "info_issues"}}},
 						},
 					},
 				},

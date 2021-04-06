@@ -220,6 +220,11 @@ func kanikoExecuteMetadata() config.StepData {
 						Name: "dockerConfigJSON",
 						ResourceRef: []config.ResourceReference{
 							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/dockerConfigJSON",
+							},
+
+							{
 								Name: "dockerConfigJsonCredentialsId",
 								Type: "secret",
 							},

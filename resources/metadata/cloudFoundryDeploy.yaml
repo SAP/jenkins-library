@@ -259,6 +259,17 @@ spec:
         mandatory: false
         aliases:
           - name: cloudFoundry/mtaExtensionDescriptor
+      - name: mtaExtensionCredentials
+        type: "map[string]interface{}"
+        description: "Defines a map of credentials that need to be replaced in the `mtaExtensionDescriptor`. This map needs to be created as `value-to-be-replaced`:`id-of-a-credential-in-jenkins`"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: false
+        aliases:
+          - name: cloudFoundry/mtaExtensionCredentials
       - name: mtaPath
         type: string
         description: "Defines the path to *.mtar for deployment with the mtaDeployPlugin"
@@ -359,7 +370,7 @@ spec:
               - $(vaultBasePath)/GROUP-SECRETS/cloudfoundry-$(org)-$(space)
   containers:
     - name: cfDeploy
-      image: ppiper/cf-cli
+      image: ppiper/cf-cli:6
   outputs:
     resources:
       - name: influx

@@ -198,7 +198,7 @@ func parseATCResult(body []byte, atcResultFileName string) (err error) {
 		piperutils.PersistReportsAndLinks("abapEnvironmentRunATCCheck", "", reports, nil)
 		for _, s := range parsedXML.Files {
 			for _, t := range s.ATCErrors {
-				log.Entry().Error("Error in file " + s.Key + ": " + t.Key)
+				log.Entry().Infof("%s in file '%s': %s in line %s found by %s", t.Severity, s.Key, t.Message, t.Line, t.Source)
 			}
 		}
 	}
@@ -373,6 +373,9 @@ type File struct {
 
 //ATCError with message
 type ATCError struct {
-	Key   string `xml:"message,attr"`
-	Value string `xml:",chardata"`
+	Text     string `xml:",chardata"`
+	Message  string `xml:"message,attr"`
+	Source   string `xml:"source,attr"`
+	Line     string `xml:"line,attr"`
+	Severity string `xml:"severity,attr"`
 }

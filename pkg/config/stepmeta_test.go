@@ -268,6 +268,16 @@ func TestGetContextParameterFilters(t *testing.T) {
 		},
 	}
 
+	metadata5 := StepData{
+		Spec: StepSpec{
+			Inputs: StepInputs{
+				Parameters: []StepParameters{
+					{ResourceRef: []ResourceReference{{Type: "vaultSecretFile"}}},
+				},
+			},
+		},
+	}
+
 	t.Run("Secrets and stashes", func(t *testing.T) {
 		filters := metadata1.GetContextParameterFilters()
 		assert.Equal(t, []string{"testSecret1", "testSecret2", "stashContent"}, filters.All, "incorrect filter All")
@@ -300,12 +310,22 @@ func TestGetContextParameterFilters(t *testing.T) {
 
 	t.Run("Vault", func(t *testing.T) {
 		filters := metadata4.GetContextParameterFilters()
-		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId"}, filters.All, "incorrect filter All")
-		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId"}, filters.General, "incorrect filter General")
-		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId"}, filters.Steps, "incorrect filter Steps")
-		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId"}, filters.Stages, "incorrect filter Stages")
-		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId"}, filters.Parameters, "incorrect filter Parameters")
-		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId"}, filters.Env, "incorrect filter Env")
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}, filters.All, "incorrect filter All")
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}, filters.General, "incorrect filter General")
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}, filters.Steps, "incorrect filter Steps")
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}, filters.Stages, "incorrect filter Stages")
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}, filters.Parameters, "incorrect filter Parameters")
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}, filters.Env, "incorrect filter Env")
+	})
+
+	t.Run("Vault", func(t *testing.T) {
+		filters := metadata5.GetContextParameterFilters()
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}, filters.All, "incorrect filter All")
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}, filters.General, "incorrect filter General")
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}, filters.Steps, "incorrect filter Steps")
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}, filters.Stages, "incorrect filter Stages")
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}, filters.Parameters, "incorrect filter Parameters")
+		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}, filters.Env, "incorrect filter Env")
 	})
 }
 
@@ -598,9 +618,9 @@ func TestGetResourceParameters(t *testing.T) {
 			in: StepData{
 				Spec: StepSpec{Inputs: StepInputs{Parameters: []StepParameters{
 					{Name: "param1", ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: "envparam1"}}, Type: "noString"},
-					{Name: "param4", ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: "jsonKeyValue"}}, Type: "string"},
+					{Name: "param4", ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: "jsonKeyValueString"}}, Type: "string"},
 				}}}},
-			expected: map[string]interface{}{"param1": interface{}(nil), "param4": "{\"key\":\"value\"}"},
+			expected: map[string]interface{}{"param4": "{\"key\":\"valueString\"}"},
 		},
 	}
 
@@ -619,8 +639,9 @@ func TestGetResourceParameters(t *testing.T) {
 
 	ioutil.WriteFile(filepath.Join(cpeDir, "envparam1"), []byte("val1"), 0700)
 	ioutil.WriteFile(filepath.Join(cpeDir, "envparam2"), []byte("val2"), 0700)
-	ioutil.WriteFile(filepath.Join(cpeDir, "jsonList"), []byte("[\"value1\",\"value2\"]"), 0700)
-	ioutil.WriteFile(filepath.Join(cpeDir, "jsonKeyValue"), []byte("{\"key\":\"value\"}"), 0700)
+	ioutil.WriteFile(filepath.Join(cpeDir, "jsonList.json"), []byte("[\"value1\",\"value2\"]"), 0700)
+	ioutil.WriteFile(filepath.Join(cpeDir, "jsonKeyValue.json"), []byte("{\"key\":\"value\"}"), 0700)
+	ioutil.WriteFile(filepath.Join(cpeDir, "jsonKeyValueString"), []byte("{\"key\":\"valueString\"}"), 0700)
 
 	for run, test := range tt {
 		t.Run(fmt.Sprintf("Run %v", run), func(t *testing.T) {

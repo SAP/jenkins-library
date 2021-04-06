@@ -87,7 +87,7 @@ func generateManifestYAML(config *abapEnvironmentCreateSystemOptions) ([]byte, e
 	params := abapSystemParameters{
 		AdminEmail:           config.AbapSystemAdminEmail,
 		Description:          config.AbapSystemDescription,
-		IsDevelopmentAllowed: config.AbapSystemIsDevelopmentAllowed,
+		IsDevelopmentAllowed: &config.AbapSystemIsDevelopmentAllowed,
 		SapSystemName:        config.AbapSystemID,
 		SizeOfPersistence:    config.AbapSystemSizeOfPersistence,
 		SizeOfRuntime:        config.AbapSystemSizeOfRuntime,
@@ -136,7 +136,7 @@ func generateManifestYAML(config *abapEnvironmentCreateSystemOptions) ([]byte, e
 type abapSystemParameters struct {
 	AdminEmail           string `json:"admin_email,omitempty"`
 	Description          string `json:"description,omitempty"`
-	IsDevelopmentAllowed bool   `json:"is_development_allowed,omitempty"`
+	IsDevelopmentAllowed *bool  `json:"is_development_allowed,omitempty"`
 	SapSystemName        string `json:"sapsystemname,omitempty"`
 	SizeOfPersistence    int    `json:"size_of_persistence,omitempty"`
 	SizeOfRuntime        int    `json:"size_of_runtime,omitempty"`

@@ -236,13 +236,13 @@ func TestParseATCResult(t *testing.T) {
 		bodyString := `<?xml version="1.0" encoding="UTF-8"?>
 		<checkstyle>
 			<file name="testFile">
-				<error message="testMessage">
+				<error message="testMessage1" source="sourceTester" line="1" severity="error">
 				</error>
-				<error message="testMessage2">
+				<error message="testMessage2" source="sourceTester" line="2" severity="info">
 				</error>
 			</file>
 			<file name="testFile2">
-				<error message="testMessage3">
+			<error message="testMessage" source="sourceTester" line="1" severity="error">
 				</error>
 			</file>
 		</checkstyle>`

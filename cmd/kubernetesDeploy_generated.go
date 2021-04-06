@@ -119,13 +119,13 @@ func addKubernetesDeployFlags(cmd *cobra.Command, stepConfig *kubernetesDeployOp
 	cmd.Flags().StringSliceVar(&stepConfig.AdditionalParameters, "additionalParameters", []string{}, "Defines additional parameters for \"helm install\" or \"kubectl apply\" command.")
 	cmd.Flags().StringVar(&stepConfig.APIServer, "apiServer", os.Getenv("PIPER_apiServer"), "Defines the Url of the API Server of the Kubernetes cluster.")
 	cmd.Flags().StringVar(&stepConfig.AppTemplate, "appTemplate", os.Getenv("PIPER_appTemplate"), "Defines the filename for the kubernetes app template (e.g. k8s_apptemplate.yaml)")
-	cmd.Flags().StringVar(&stepConfig.ChartPath, "chartPath", os.Getenv("PIPER_chartPath"), "Defines the chart path for deployments using helm.")
+	cmd.Flags().StringVar(&stepConfig.ChartPath, "chartPath", os.Getenv("PIPER_chartPath"), "Defines the chart path for deployments using helm. It is a mandatory parameter when `deployTool:helm` or `deployTool:helm3`.")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryPassword, "containerRegistryPassword", os.Getenv("PIPER_containerRegistryPassword"), "Password for container registry access - typically provided by the CI/CD environment.")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryURL, "containerRegistryUrl", os.Getenv("PIPER_containerRegistryUrl"), "http(s) url of the Container registry where the image to deploy is located.")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryUser, "containerRegistryUser", os.Getenv("PIPER_containerRegistryUser"), "Username for container registry access - typically provided by the CI/CD environment.")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistrySecret, "containerRegistrySecret", `regsecret`, "Name of the container registry secret used for pulling containers from the registry.")
 	cmd.Flags().BoolVar(&stepConfig.CreateDockerRegistrySecret, "createDockerRegistrySecret", false, "Only for `deployTool:kubectl`: Toggle to turn on `containerRegistrySecret` creation.")
-	cmd.Flags().StringVar(&stepConfig.DeploymentName, "deploymentName", os.Getenv("PIPER_deploymentName"), "Defines the name of the deployment.")
+	cmd.Flags().StringVar(&stepConfig.DeploymentName, "deploymentName", os.Getenv("PIPER_deploymentName"), "Defines the name of the deployment. It is a mandatory parameter when `deployTool:helm` or `deployTool:helm3`.")
 	cmd.Flags().StringVar(&stepConfig.DeployTool, "deployTool", `kubectl`, "Defines the tool which should be used for deployment.")
 	cmd.Flags().BoolVar(&stepConfig.ForceUpdates, "forceUpdates", true, "Helm only: force resource updates with helm parameter `--force`")
 	cmd.Flags().IntVar(&stepConfig.HelmDeployWaitSeconds, "helmDeployWaitSeconds", 300, "Number of seconds before helm deploy returns.")
@@ -139,9 +139,7 @@ func addKubernetesDeployFlags(cmd *cobra.Command, stepConfig *kubernetesDeployOp
 	cmd.Flags().StringVar(&stepConfig.Namespace, "namespace", `default`, "Defines the target Kubernetes namespace for the deployment.")
 	cmd.Flags().StringVar(&stepConfig.TillerNamespace, "tillerNamespace", os.Getenv("PIPER_tillerNamespace"), "Defines optional tiller namespace for deployments using helm.")
 
-	cmd.MarkFlagRequired("chartPath")
 	cmd.MarkFlagRequired("containerRegistryUrl")
-	cmd.MarkFlagRequired("deploymentName")
 	cmd.MarkFlagRequired("deployTool")
 	cmd.MarkFlagRequired("image")
 }
@@ -156,6 +154,9 @@ func kubernetesDeployMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Resources: []config.StepResources{
+					{Name: "deployDescriptor", Type: "stash"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "additionalParameters",
@@ -186,7 +187,7 @@ func kubernetesDeployMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "helmChartPath"}},
 					},
 					{
@@ -251,7 +252,7 @@ func kubernetesDeployMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "helmDeploymentName"}},
 					},
 					{

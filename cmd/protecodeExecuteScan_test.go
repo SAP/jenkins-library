@@ -340,11 +340,11 @@ func TestExecuteProtecodeScan(t *testing.T) {
 		// test
 		executeProtecodeScan(influxData, pc, &config, "dummy", writeReportToFileMock)
 		// assert
-		assert.Equal(t, "1125", influxData.protecode_data.fields.historical_vulnerabilities)
-		assert.Equal(t, "0", influxData.protecode_data.fields.triaged_vulnerabilities)
-		assert.Equal(t, "1", influxData.protecode_data.fields.excluded_vulnerabilities)
-		assert.Equal(t, "142", influxData.protecode_data.fields.major_vulnerabilities)
-		assert.Equal(t, "226", influxData.protecode_data.fields.vulnerabilities)
+		assert.Equal(t, 1125, influxData.protecode_data.fields.historical_vulnerabilities)
+		assert.Equal(t, 0, influxData.protecode_data.fields.triaged_vulnerabilities)
+		assert.Equal(t, 1, influxData.protecode_data.fields.excluded_vulnerabilities)
+		assert.Equal(t, 142, influxData.protecode_data.fields.major_vulnerabilities)
+		assert.Equal(t, 226, influxData.protecode_data.fields.vulnerabilities)
 	}
 }
 
@@ -399,13 +399,22 @@ func TestGetTarName(t *testing.T) {
 			"3.20.20-20200131085038+eeb7c1033339bfd404d21ec5e7dc05c80e9e985e",
 			"abc_3.tar",
 		},
-		"without version ": {
+		"without version": {
 			"abc",
 			"",
 			"abc.tar",
 		},
+		"ScanImage without sha as artifactVersion": {
+			"abc@sha256:12345",
+			"",
+			"abc.tar",
+		},
+		"ScanImage with sha as artifactVersion": {
+			"ppiper/cf-cli@sha256:c25dbacb9ab6e912afe0fe926d8f9d949c60adfe55d16778bde5941e6c37be11",
+			"c25dbacb9ab6e912afe0fe926d8f9d949c60adfe55d16778bde5941e6c37be11",
+			"ppiper_cf-cli_c25dbacb9ab6e912afe0fe926d8f9d949c60adfe55d16778bde5941e6c37be11.tar",
+		},
 	}
-
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
 			assert.Equal(t, c.expect, getTarName(&protecodeExecuteScanOptions{ScanImage: c.image, ArtifactVersion: c.version}))

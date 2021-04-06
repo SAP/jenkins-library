@@ -41,9 +41,11 @@ func protecodeExecuteScan(config protecodeExecuteScanOptions, telemetryData *tel
 	c.Stderr(log.Writer())
 
 	dClient := createDockerClient(&config)
+	influx.step_data.fields.protecode = false
 	if err := runProtecodeScan(&config, influx, dClient); err != nil {
 		log.Entry().WithError(err).Fatal("Failed to execute protecode scan.")
 	}
+	influx.step_data.fields.protecode = true
 }
 
 func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExecuteScanInflux, dClient piperDocker.Download) error {
@@ -214,12 +216,12 @@ func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.P
 }
 
 func setInfluxData(influx *protecodeExecuteScanInflux, result map[string]int) {
-	influx.protecode_data.fields.historical_vulnerabilities = fmt.Sprintf("%v", result["historical_vulnerabilities"])
-	influx.protecode_data.fields.triaged_vulnerabilities = fmt.Sprintf("%v", result["triaged_vulnerabilities"])
-	influx.protecode_data.fields.excluded_vulnerabilities = fmt.Sprintf("%v", result["excluded_vulnerabilities"])
-	influx.protecode_data.fields.minor_vulnerabilities = fmt.Sprintf("%v", result["minor_vulnerabilities"])
-	influx.protecode_data.fields.major_vulnerabilities = fmt.Sprintf("%v", result["major_vulnerabilities"])
-	influx.protecode_data.fields.vulnerabilities = fmt.Sprintf("%v", result["vulnerabilities"])
+	influx.protecode_data.fields.historical_vulnerabilities = result["historical_vulnerabilities"]
+	influx.protecode_data.fields.triaged_vulnerabilities = result["triaged_vulnerabilities"]
+	influx.protecode_data.fields.excluded_vulnerabilities = result["excluded_vulnerabilities"]
+	influx.protecode_data.fields.minor_vulnerabilities = result["minor_vulnerabilities"]
+	influx.protecode_data.fields.major_vulnerabilities = result["major_vulnerabilities"]
+	influx.protecode_data.fields.vulnerabilities = result["vulnerabilities"]
 }
 
 func createClient(config *protecodeExecuteScanOptions) protecode.Protecode {
@@ -330,11 +332,15 @@ func correctDockerConfigEnvVar(config *protecodeExecuteScanOptions) {
 func getTarName(config *protecodeExecuteScanOptions) string {
 	// remove original version
 	fileName := strings.TrimSuffix(config.ScanImage, ":"+config.ArtifactVersion)
+	// remove sha digest if exists
+	sha256 := "@sha256"
+	if index := strings.Index(fileName, sha256); index > -1 {
+		fileName = fileName[:index]
+	}
 	// append trimmed version
 	if version := handleArtifactVersion(config.ArtifactVersion); len(version) > 0 {
 		fileName = fileName + "_" + version
 	}
-	// replace unwanted chars
 	fileName = strings.ReplaceAll(fileName, "/", "_")
 	return fileName + ".tar"
 }

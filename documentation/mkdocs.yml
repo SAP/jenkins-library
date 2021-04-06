@@ -57,6 +57,7 @@ nav:
         - abapAddonAssemblyKitReleasePackages: steps/abapAddonAssemblyKitReleasePackages.md
         - abapAddonAssemblyKitReserveNextPackages: steps/abapAddonAssemblyKitReserveNextPackages.md
         - abapEnvironmentAssemblePackages: steps/abapEnvironmentAssemblePackages.md
+        - abapEnvironmentAssembleConfirm: steps/abapEnvironmentAssembleConfirm.md
         - abapEnvironmentCheckoutBranch: steps/abapEnvironmentCheckoutBranch.md
         - abapEnvironmentCloneGitRepo: steps/abapEnvironmentCloneGitRepo.md
         - abapEnvironmentCreateSystem: steps/abapEnvironmentCreateSystem.md
@@ -100,6 +101,12 @@ nav:
         - handlePipelineStepErrors: steps/handlePipelineStepErrors.md
         - healthExecuteCheck: steps/healthExecuteCheck.md
         - influxWriteData: steps/influxWriteData.md
+        - integrationArtifactDeploy: steps/integrationArtifactDeploy.md
+        - integrationArtifactDownload: steps/integrationArtifactDownload.md
+        - integrationArtifactGetMplStatus: steps/integrationArtifactGetMplStatus.md
+        - integrationArtifactGetServiceEndpoint: steps/integrationArtifactGetServiceEndpoint.md
+        - integrationArtifactUpdateConfiguration: steps/integrationArtifactUpdateConfiguration.md
+        - integrationArtifactUpload: steps/integrationArtifactUpload.md
         - jenkinsMaterializeLog: steps/jenkinsMaterializeLog.md
         - kanikoExecute: steps/kanikoExecute.md
         - karmaExecuteTests: steps/karmaExecuteTests.md

@@ -1,3 +1,4 @@
+import com.sap.piper.DefaultValueCache
 import static org.hamcrest.Matchers.allOf
 import static org.hamcrest.Matchers.contains
 import static org.hamcrest.Matchers.containsInAnyOrder
@@ -294,7 +295,8 @@ class XsDeployTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.configuration = [steps:
             [xsDeploy:
                 [
-                    dockerImage: 'xs1'
+                    dockerImage: 'xs1',
+                    dockerPullImage: true
                 ]
             ]
         ]
@@ -306,6 +308,7 @@ class XsDeployTest extends BasePiperTest {
 
         // 'xs' provided on the context config is superseded by the value set in the project
         assertThat(dockerRule.dockerParams.dockerImage, equalTo('xs1'))
+        assertThat(dockerRule.dockerParams.dockerPullImage, equalTo(true))
     }
 
     @Test
@@ -316,7 +319,8 @@ class XsDeployTest extends BasePiperTest {
             [xsDeploy:
                 [
                     docker: [
-                        dockerImage: 'xs1'
+                        dockerImage: 'xs1',
+                        dockerPullImage: true
                     ]
                 ]
             ]
@@ -329,6 +333,7 @@ class XsDeployTest extends BasePiperTest {
 
         // 'xs' provided on the context config is superseded by the value set in the project
         assertThat(dockerRule.dockerParams.dockerImage, equalTo('xs1'))
+        assertThat(dockerRule.dockerParams.dockerPullImage, equalTo(true))
     }
 
     @Test
@@ -378,7 +383,7 @@ class XsDeployTest extends BasePiperTest {
 
         shellRule.setReturnValue(JenkinsShellCallRule.Type.REGEX, '.*xsDeploy .*', '{"operationId": "1234"}')
 
-        nullScript.commonPipelineEnvironment = ['reset': {}, 'getCustomDefaults': {['a.yml', 'b.yml']}]
+        DefaultValueCache.createInstance([:], ['a.yml', 'b.yml'])
 
         goUtils = new PiperGoUtils(null) {
             void unstashPiperBin() {

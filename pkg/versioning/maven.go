@@ -20,14 +20,6 @@ type mavenRunner interface {
 	Evaluate(*maven.EvaluateOptions, string, maven.Utils) (string, error)
 }
 
-// MavenDescriptor holds the unique identifier combination for Maven built Java artifacts
-type MavenDescriptor struct {
-	GroupID    string
-	ArtifactID string
-	Version    string
-	Packaging  string
-}
-
 // Maven defines a maven artifact used for versioning
 type Maven struct {
 	options maven.EvaluateOptions
@@ -52,23 +44,23 @@ func (m *Maven) VersioningScheme() string {
 
 // GetCoordinates reads the coordinates from the maven pom.xml descriptor file
 func (m *Maven) GetCoordinates() (Coordinates, error) {
-	result := &MavenDescriptor{}
+	result := Coordinates{}
 	var err error
 	result.GroupID, err = m.GetGroupID()
 	if err != nil {
-		return nil, err
+		return result, err
 	}
 	result.ArtifactID, err = m.GetArtifactID()
 	if err != nil {
-		return nil, err
+		return result, err
 	}
 	result.Version, err = m.GetVersion()
 	if err != nil {
-		return nil, err
+		return result, err
 	}
 	result.Packaging, err = m.GetPackaging()
 	if err != nil {
-		return nil, err
+		return result, err
 	}
 	return result, nil
 }

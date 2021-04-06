@@ -3,6 +3,8 @@ package fortify
 import (
 	"fmt"
 	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
@@ -13,8 +15,6 @@ import (
 	"github.com/piper-validation/fortify-client-go/models"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	"net/http"
-	"net/http/httptest"
 
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 )
@@ -85,7 +85,7 @@ func TestGetProjectByName(t *testing.T) {
 	autocreateCalled := false
 	commitCalled := false
 	sys, server := spinUpServer(func(rw http.ResponseWriter, req *http.Request) {
-		if req.URL.Path == "/projects" && req.URL.RawQuery == "fulltextsearch=true&q=name%3Dpython-test" {
+		if req.URL.Path == "/projects" && req.URL.RawQuery == "q=name%3Dpython-test" {
 			header := rw.Header()
 			header.Add("Content-type", "application/json")
 			rw.Write([]byte(
@@ -95,14 +95,14 @@ func TestGetProjectByName(t *testing.T) {
 				"first": {"href": "https://fortify/ssc/api/v1/projects?q=name%A3python-test&start=0"}}}`))
 			return
 		}
-		if req.URL.Path == "/projects" && req.URL.RawQuery == "fulltextsearch=true&q=name%3Dpython-empty" {
+		if req.URL.Path == "/projects" && req.URL.RawQuery == "q=name%3Dpython-empty" {
 			header := rw.Header()
 			header.Add("Content-type", "application/json")
 			rw.Write([]byte(
 				`{"data": [],"count": 0,"responseCode": 404,"links": {}}`))
 			return
 		}
-		if req.URL.Path == "/projects" && req.URL.RawQuery == "fulltextsearch=true&q=name%3Dpython-error" {
+		if req.URL.Path == "/projects" && req.URL.RawQuery == "q=name%3Dpython-error" {
 			rw.WriteHeader(400)
 			return
 		}
@@ -434,7 +434,7 @@ func TestProjectVersionCopyFromPartial(t *testing.T) {
 	defer server.Close()
 
 	t.Run("test success", func(t *testing.T) {
-		expected := `{"copyAnalysisProcessingRules":true,"copyBugTrackerConfiguration":true,"copyCurrentStateFpr":true,"copyCustomTags":true,"previousProjectVersionId":10172,"projectVersionId":10173}
+		expected := `{"copyAnalysisProcessingRules":true,"copyBugTrackerConfiguration":true,"copyCustomTags":true,"previousProjectVersionId":10172,"projectVersionId":10173}
 `
 		err := sys.ProjectVersionCopyFromPartial(10172, 10173)
 		assert.NoError(t, err, "ProjectVersionCopyFromPartial call not successful")
@@ -473,7 +473,7 @@ func TestProjectVersionCopyCurrentState(t *testing.T) {
 	defer server.Close()
 
 	t.Run("test success", func(t *testing.T) {
-		expected := `{"copyCurrentStateFpr":true,"previousProjectVersionId":10172,"projectVersionId":10173}
+		expected := `{"previousProjectVersionId":10172,"projectVersionId":10173}
 `
 		err := sys.ProjectVersionCopyCurrentState(10172, 10173)
 		assert.NoError(t, err, "ProjectVersionCopyCurrentState call not successful")
@@ -1283,5 +1283,18 @@ func TestMergeProjectVersionStateOfPRIntoMaster(t *testing.T) {
 		assert.Equal(t, true, downloadCalled, "Expected different value")
 		assert.Equal(t, true, uploadCalled, "Expected different value")
 		assert.Equal(t, true, inactivateCalled, "Expected different value")
+	})
+}
+
+func TestBase64EndodePlainToken(t *testing.T) {
+	t.Run("Encoded token untouched", func(t *testing.T) {
+		token := "OTUzODcwNDYtNWFjOC00NTcwLTg3NWQtYTVlYzhiZDhkM2Qy"
+		encodedToken := base64EndodePlainToken(token)
+		assert.Equal(t, token, encodedToken)
+	})
+	t.Run("Unencoded token gets encoded", func(t *testing.T) {
+		token := "95387046-5ac8-4570-875d-a5ec8bd8d3d2"
+		encodedToken := base64EndodePlainToken(token)
+		assert.Equal(t, "OTUzODcwNDYtNWFjOC00NTcwLTg3NWQtYTVlYzhiZDhkM2Qy", encodedToken)
 	})
 }
