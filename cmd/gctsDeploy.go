@@ -263,6 +263,21 @@ func deployCommitToAbapSystem(config *gctsDeployOptions, httpClient piperhttp.Se
 		log.Entry().Error("Failed During Deploy to Abap system")
 		return httpErr
 	}
+	bodyText, readErr := ioutil.ReadAll(resp.Body)
+
+	if readErr != nil {
+		return errors.Wrapf(readErr, "HTTP response body could not be read")
+	}
+
+	response, parsingErr := gabs.ParseJSON([]byte(bodyText))
+
+	if parsingErr != nil {
+		return errors.Wrapf(parsingErr, "HTTP response body could not be parsed as JSON: %v", string(bodyText))
+	}
+
+	if response != nil {
+		log.Entry().Infof("Response for deploy command : ", response.Data().(string))
+	}
 	return nil
 }
 
