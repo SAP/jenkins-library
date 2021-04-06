@@ -153,23 +153,7 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 			}
 			return pullByCommitErr
 		}
-	} else if config.Commit == "" && config.Scope == "" {
-		log.Entry().Infof("gCTS Deploy: Pull by Commit step execution")
-		pullByCommitErr := pullByCommit(config, telemetryData, command, httpClient)
-		if pullByCommitErr != nil {
-			log.Entry().WithError(pullByCommitErr).Error("step execution failed at Pull By Commit. Trying to rollback to last commit")
-			if config.Rollback {
-				//Rollback to last commit.
-				if repoState == repoStateNew {
-					// Rollback branch
-					targetBranch := repoMetadataInitState.Result.Branch
-					log.Entry().Error("Rolling Back from %v to %v", currentBranch, targetBranch)
-					switchBranch(config, httpClient, currentBranch, targetBranch)
-				}
-			}
-			return pullByCommitErr
-		}
-	} else if config.Commit == "" && config.Scope != "" {
+	} else if config.Commit == "" && config.Scope != "" && repoState == repoStateNew {
 		log.Entry().Infof("Setting VCS_NO_IMPORT to false")
 		noImportConfig := setConfigKeyBody{
 			Key:   "VCS_NO_IMPORT",
@@ -188,6 +172,22 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 			return deployErr
 		}
 		return nil
+	} else {
+		log.Entry().Infof("gCTS Deploy: Pull by Commit step execution")
+		pullByCommitErr := pullByCommit(config, telemetryData, command, httpClient)
+		if pullByCommitErr != nil {
+			log.Entry().WithError(pullByCommitErr).Error("step execution failed at Pull By Commit. Trying to rollback to last commit")
+			if config.Rollback {
+				//Rollback to last commit.
+				if repoState == repoStateNew {
+					// Rollback branch
+					targetBranch := repoMetadataInitState.Result.Branch
+					log.Entry().Error("Rolling Back from %v to %v", currentBranch, targetBranch)
+					switchBranch(config, httpClient, currentBranch, targetBranch)
+				}
+			}
+			return pullByCommitErr
+		}
 	}
 
 	if repoState == repoStateNew {
