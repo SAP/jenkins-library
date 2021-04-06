@@ -269,7 +269,7 @@ func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx
 	}
 
 	xmlReportName := createReportName(workspace, "CxSASTResults_%v.xml")
-	results, err := getDetailedResults(sys, xmlReportName, scanID)
+	results, err := getDetailedResults(sys, xmlReportName, scanID, utils)
 	if err != nil {
 		return errors.Wrap(err, "failed to get detailed results")
 	}
@@ -565,14 +565,17 @@ func getNumCoherentIncrementalScans(scans []checkmarx.ScanStatus) int {
 	return count
 }
 
-func getDetailedResults(sys checkmarx.System, reportFileName string, scanID int) (map[string]interface{}, error) {
+func getDetailedResults(sys checkmarx.System, reportFileName string, scanID int, utils checkmarxExecuteScanUtils) (map[string]interface{}, error) {
 	resultMap := map[string]interface{}{}
 	data, err := generateAndDownloadReport(sys, scanID, "XML")
 	if err != nil {
 		return resultMap, errors.Wrap(err, "failed to download xml report")
 	}
 	if len(data) > 0 {
-		_ = ioutil.WriteFile(reportFileName, data, 0700)
+		err = utils.WriteFile(reportFileName, data, 0700)
+		if err != nil {
+			return resultMap, errors.Wrap(err, "failed to write file")
+		}
 		var xmlResult checkmarx.DetailedResult
 		err := xml.Unmarshal(data, &xmlResult)
 		if err != nil {
