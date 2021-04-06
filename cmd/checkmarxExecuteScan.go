@@ -31,6 +31,7 @@ type checkmarxExecuteScanUtils interface {
 	Open(name string) (*os.File, error)
 	Atoi(s string) (int, error)
 	Itoa(i int) string
+	WriteFile(filename string, data []byte, perm os.FileMode) error
 }
 
 type checkmarxExecuteScanUtilsBundle struct{}
@@ -38,6 +39,10 @@ type checkmarxExecuteScanUtilsBundle struct{}
 func newCheckmarxExecuteScanUtils() checkmarxExecuteScanUtils {
 	utils := checkmarxExecuteScanUtilsBundle{}
 	return &utils
+}
+
+func (checkmarxExecuteScanUtilsBundle) WriteFile(filename string, data []byte, perm os.FileMode) error {
+	return ioutil.WriteFile(filename, data, perm)
 }
 
 func (b checkmarxExecuteScanUtilsBundle) Itoa(i int) string {
@@ -196,7 +201,7 @@ func uploadAndScan(config checkmarxExecuteScanOptions, sys checkmarx.System, pro
 		log.Entry().Warnf("Cannot load scans for project %v, verification only mode aborted", project.Name)
 	}
 	if len(previousScans) > 0 && config.VerifyOnly {
-		err := verifyCxProjectCompliance(config, sys, previousScans[0].ID, workspace, influx)
+		err := verifyCxProjectCompliance(config, sys, previousScans[0].ID, workspace, influx, utils)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorCompliance)
 			return errors.Wrapf(err, "project %v not compliant", project.Name)
@@ -228,12 +233,12 @@ func uploadAndScan(config checkmarxExecuteScanOptions, sys checkmarx.System, pro
 			incremental = false
 		}
 
-		return triggerScan(config, sys, project, workspace, incremental, influx)
+		return triggerScan(config, sys, project, workspace, incremental, influx, utils)
 	}
 	return nil
 }
 
-func triggerScan(config checkmarxExecuteScanOptions, sys checkmarx.System, project checkmarx.Project, workspace string, incremental bool, influx *checkmarxExecuteScanInflux) error {
+func triggerScan(config checkmarxExecuteScanOptions, sys checkmarx.System, project checkmarx.Project, workspace string, incremental bool, influx *checkmarxExecuteScanInflux, utils checkmarxExecuteScanUtils) error {
 	scan, err := sys.ScanProject(project.ID, incremental, true, !config.AvoidDuplicateProjectScans)
 	if err != nil {
 		return errors.Wrapf(err, "cannot scan project %v", project.Name)
@@ -246,14 +251,14 @@ func triggerScan(config checkmarxExecuteScanOptions, sys checkmarx.System, proje
 	}
 
 	log.Entry().Debugln("Scan finished")
-	return verifyCxProjectCompliance(config, sys, scan.ID, workspace, influx)
+	return verifyCxProjectCompliance(config, sys, scan.ID, workspace, influx, utils)
 }
 
-func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx.System, scanID int, workspace string, influx *checkmarxExecuteScanInflux) error {
+func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx.System, scanID int, workspace string, influx *checkmarxExecuteScanInflux, utils checkmarxExecuteScanUtils) error {
 	var reports []piperutils.Path
 	if config.GeneratePdfReport {
 		pdfReportName := createReportName(workspace, "CxSASTReport_%v.pdf")
-		err := downloadAndSaveReport(sys, pdfReportName, scanID)
+		err := downloadAndSaveReport(sys, pdfReportName, scanID, utils)
 		if err != nil {
 			log.Entry().Warning("Report download failed - continue processing ...")
 		} else {
@@ -381,14 +386,13 @@ func reportToInflux(results map[string]interface{}, influx *checkmarxExecuteScan
 	influx.checkmarx_data.fields.report_creation_time = results["ReportCreationTime"].(string)
 }
 
-func downloadAndSaveReport(sys checkmarx.System, reportFileName string, scanID int) error {
+func downloadAndSaveReport(sys checkmarx.System, reportFileName string, scanID int, utils checkmarxExecuteScanUtils) error {
 	report, err := generateAndDownloadReport(sys, scanID, "PDF")
 	if err != nil {
 		return errors.Wrap(err, "failed to download the report")
 	}
 	log.Entry().Debugf("Saving report to file %v...", reportFileName)
-	_ = ioutil.WriteFile(reportFileName, report, 0700)
-	return nil
+	return utils.WriteFile(reportFileName, report, 0700)
 }
 
 func enforceThresholds(config checkmarxExecuteScanOptions, results map[string]interface{}) bool {

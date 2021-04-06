@@ -235,17 +235,25 @@ type checkmarxExecuteScanUtilsMock struct {
 	errorOnFileInfoHeader bool
 	errorOnStat           bool
 	errorOnOpen           bool
+	errorOnWriteFile      bool
 }
 
 func newCheckmarxExecuteScanUtilsMock() checkmarxExecuteScanUtilsMock {
 	return checkmarxExecuteScanUtilsMock{}
 }
 
-func (c checkmarxExecuteScanUtilsMock) Atoi(s string) (int, error) {
+func (c checkmarxExecuteScanUtilsMock) WriteFile(filename string, data []byte, perm os.FileMode) error {
+	if c.errorOnWriteFile {
+		return fmt.Errorf("error on WriteFile")
+	}
+	return ioutil.WriteFile(filename, data, perm)
+}
+
+func (checkmarxExecuteScanUtilsMock) Atoi(s string) (int, error) {
 	return strconv.Atoi(s)
 }
 
-func (c checkmarxExecuteScanUtilsMock) Itoa(i int) string {
+func (checkmarxExecuteScanUtilsMock) Itoa(i int) string {
 	return strconv.Itoa(i)
 }
 
@@ -533,6 +541,26 @@ func TestVerifyOnly(t *testing.T) {
 	err = runScan(options, sys, workspace, &influx, newCheckmarxExecuteScanUtilsMock())
 	assert.NoError(t, err, "error occured but none expected")
 	assert.Equal(t, false, sys.scanProjectCalled, "ScanProject was invoked but shouldn't")
+}
+
+func TestVerifyOnly_errorOnWriteFileDoesNotBlock(t *testing.T) {
+	t.Parallel()
+
+	sys := &systemMockForExistingProject{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`)}
+	options := checkmarxExecuteScanOptions{VerifyOnly: true, ProjectName: "TestExisting", VulnerabilityThresholdUnit: "absolute", FullScanCycle: "2", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamName: "OpenSource/Cracks/15", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+	workspace, err := ioutil.TempDir("", "workspace1")
+	if err != nil {
+		t.Fatal("Failed to create temporary workspace directory")
+	}
+	// clean up tmp dir
+	defer os.RemoveAll(workspace)
+
+	influx := checkmarxExecuteScanInflux{}
+
+	mock := newCheckmarxExecuteScanUtilsMock()
+	mock.errorOnWriteFile = true
+	err = runScan(options, sys, workspace, &influx, mock)
+	assert.NoError(t, err, "error occured but none expected")
 }
 
 func TestRunScanWOtherCycle(t *testing.T) {
