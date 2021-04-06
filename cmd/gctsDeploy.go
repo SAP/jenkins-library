@@ -276,7 +276,7 @@ func deployCommitToAbapSystem(config *gctsDeployOptions, httpClient piperhttp.Se
 	}
 
 	if response != nil {
-		log.Entry().Infof("Response for deploy command : ", response.Data().(string))
+		log.Entry().Infof("Response for deploy command : ", response.Path("result").Data().(string))
 	}
 	return nil
 }
