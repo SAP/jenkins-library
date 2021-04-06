@@ -139,8 +139,8 @@ func resolveVaultReference(ref *ResourceReference, config *StepConfig, client va
 // resolve test credential keys and expose as environment variables
 func resolveVaultTestCredentials(config *StepConfig, client vaultClient) {
 	credPath, pathOk := config.Config[vaultTestCredentialPath].(string)
-	keys, keysOk := config.Config[vaultTestCredentialKeys].([]interface{})
-	if !(pathOk && keysOk) || credPath == "" || len(keys) == 0 {
+	keys := getTestCredentialKeys(config)
+	if !(pathOk && keys != nil) || credPath == "" || len(keys) == 0 {
 		log.Entry().Debugf("Not fetching test credentials from vault since they are not (properly) configured")
 		return
 	}
@@ -149,11 +149,13 @@ func resolveVaultTestCredentials(config *StepConfig, client vaultClient) {
 	lookupPath[0] = "$(vaultPath)/" + credPath
 	lookupPath[1] = "$(vaultBasePath)/$(vaultPipelineName)/" + credPath
 	lookupPath[2] = "$(vaultBasePath)/GROUP-SECRETS/" + credPath
+
 	for _, path := range lookupPath {
 		vaultPath, ok := interpolation.ResolveString(path, config.Config)
 		if !ok {
 			continue
 		}
+
 		secret, err := client.GetKvSecret(vaultPath)
 		if err != nil {
 			log.Entry().WithError(err).Debugf("Couldn't fetch secret at '%s'", vaultPath)
@@ -164,12 +166,7 @@ func resolveVaultTestCredentials(config *StepConfig, client vaultClient) {
 		}
 		secretsResolved := false
 		for secretKey, secretValue := range secret {
-			for _, keyRaw := range keys {
-				key, ok := keyRaw.(string)
-				if !ok {
-					log.Entry().Warnf("Fetched secret '%v' might be of wrong type", keyRaw)
-					continue
-				}
+			for _, key := range keys {
 				if secretKey == key {
 					log.RegisterSecret(secretValue)
 					envVariable := vaultTestCredentialEnvPrefix + convertEnvVar(secretKey)
@@ -185,6 +182,24 @@ func resolveVaultTestCredentials(config *StepConfig, client vaultClient) {
 			break
 		}
 	}
+}
+
+func getTestCredentialKeys(config *StepConfig) []string {
+	keysRaw, ok := config.Config[vaultTestCredentialKeys].([]interface{})
+	if !ok {
+		log.Entry().Debugf("Not fetching test credentials from vault since they are not (properly) configured")
+		return nil
+	}
+	keys := make([]string, 0, len(keysRaw))
+	for _, keyRaw := range keysRaw {
+		key, ok := keyRaw.(string)
+		if !ok {
+			log.Entry().Warnf("%s is needs to be an array of strings", vaultTestCredentialKeys)
+			return nil
+		}
+		keys = append(keys, key)
+	}
+	return keys
 }
 
 // converts to a valid environment variable string
