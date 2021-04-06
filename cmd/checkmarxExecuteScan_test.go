@@ -241,6 +241,14 @@ func newCheckmarxExecuteScanUtilsMock() checkmarxExecuteScanUtilsMock {
 	return checkmarxExecuteScanUtilsMock{}
 }
 
+func (c checkmarxExecuteScanUtilsMock) Atoi(s string) (int, error) {
+	return strconv.Atoi(s)
+}
+
+func (c checkmarxExecuteScanUtilsMock) Itoa(i int) string {
+	return strconv.Itoa(i)
+}
+
 func (c checkmarxExecuteScanUtilsMock) FileInfoHeader(fi os.FileInfo) (*zip.FileHeader, error) {
 	if c.errorOnFileInfoHeader {
 		return nil, fmt.Errorf("error on FileInfoHeader")
@@ -461,12 +469,30 @@ func TestRunScan(t *testing.T) {
 
 	influx := checkmarxExecuteScanInflux{}
 
-	err = runScan(options, sys, workspace, &influx)
+	err = runScan(options, sys, workspace, &influx, newCheckmarxExecuteScanUtilsMock())
 	assert.NoError(t, err, "error occured but none expected")
 	assert.Equal(t, false, sys.isIncremental, "isIncremental has wrong value")
 	assert.Equal(t, true, sys.isPublic, "isPublic has wrong value")
 	assert.Equal(t, true, sys.forceScan, "forceScan has wrong value")
 	assert.Equal(t, true, sys.scanProjectCalled, "ScanProject was not invoked")
+}
+
+func TestRunScan_invalidPreset(t *testing.T) {
+	t.Parallel()
+
+	sys := &systemMockForExistingProject{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`)}
+	options := checkmarxExecuteScanOptions{ProjectName: "TestExisting", VulnerabilityThresholdUnit: "absolute", FullScanCycle: "2", Incremental: true, FullScansScheduled: true, Preset: "INVALID", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+	workspace, err := ioutil.TempDir("", "workspace1")
+	if err != nil {
+		t.Fatal("Failed to create temporary workspace directory")
+	}
+	// clean up tmp dir
+	defer os.RemoveAll(workspace)
+
+	influx := checkmarxExecuteScanInflux{}
+
+	err = runScan(options, sys, workspace, &influx, newCheckmarxExecuteScanUtilsMock())
+	assert.EqualError(t, err, "failed to convert string INVALID to int: strconv.Atoi: parsing \"INVALID\": invalid syntax")
 }
 
 func TestSetPresetForProjectWithIDProvided(t *testing.T) {
@@ -504,7 +530,7 @@ func TestVerifyOnly(t *testing.T) {
 
 	influx := checkmarxExecuteScanInflux{}
 
-	err = runScan(options, sys, workspace, &influx)
+	err = runScan(options, sys, workspace, &influx, newCheckmarxExecuteScanUtilsMock())
 	assert.NoError(t, err, "error occured but none expected")
 	assert.Equal(t, false, sys.scanProjectCalled, "ScanProject was invoked but shouldn't")
 }
@@ -513,7 +539,7 @@ func TestRunScanWOtherCycle(t *testing.T) {
 	t.Parallel()
 
 	sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`), createProject: true}
-	options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "SAP_JS_Default", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+	options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "123", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
 	workspace, err := ioutil.TempDir("", "workspace2")
 	if err != nil {
 		t.Fatal("Failed to create temporary workspace directory")
@@ -523,18 +549,38 @@ func TestRunScanWOtherCycle(t *testing.T) {
 
 	influx := checkmarxExecuteScanInflux{}
 
-	err = runScan(options, sys, workspace, &influx)
+	err = runScan(options, sys, workspace, &influx, newCheckmarxExecuteScanUtilsMock())
 	assert.NoError(t, err, "error occured but none expected")
 	assert.Equal(t, true, sys.isIncremental, "isIncremental has wrong value")
 	assert.Equal(t, true, sys.isPublic, "isPublic has wrong value")
 	assert.Equal(t, true, sys.forceScan, "forceScan has wrong value")
 }
 
+func TestRunScanErrorInZip(t *testing.T) {
+	t.Parallel()
+
+	sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`), createProject: true}
+	options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "123", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+	workspace, err := ioutil.TempDir("", "workspace2")
+	if err != nil {
+		t.Fatal("Failed to create temporary workspace directory")
+	}
+	// clean up tmp dir
+	defer os.RemoveAll(workspace)
+
+	influx := checkmarxExecuteScanInflux{}
+
+	mock := newCheckmarxExecuteScanUtilsMock()
+	mock.errorOnFileInfoHeader = true
+	err = runScan(options, sys, workspace, &influx, mock)
+	assert.EqualError(t, err, "failed to run scan and upload result: failed to zip workspace files: failed to compact folder: error on FileInfoHeader")
+}
+
 func TestRunScanForPullRequest(t *testing.T) {
 	t.Parallel()
 
 	sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`)}
-	options := checkmarxExecuteScanOptions{PullRequestName: "PR-19", ProjectName: "Test", VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "SAP_JS_Default", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true, AvoidDuplicateProjectScans: false}
+	options := checkmarxExecuteScanOptions{PullRequestName: "PR-19", ProjectName: "Test", VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "123", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true, AvoidDuplicateProjectScans: false}
 	workspace, err := ioutil.TempDir("", "workspace3")
 	if err != nil {
 		t.Fatal("Failed to create temporary workspace directory")
@@ -544,7 +590,7 @@ func TestRunScanForPullRequest(t *testing.T) {
 
 	influx := checkmarxExecuteScanInflux{}
 
-	err = runScan(options, sys, workspace, &influx)
+	err = runScan(options, sys, workspace, &influx, newCheckmarxExecuteScanUtilsMock())
 	assert.Equal(t, true, sys.isIncremental, "isIncremental has wrong value")
 	assert.Equal(t, true, sys.isPublic, "isPublic has wrong value")
 	assert.Equal(t, true, sys.forceScan, "forceScan has wrong value")
@@ -564,11 +610,29 @@ func TestRunScanForPullRequestProjectNew(t *testing.T) {
 
 	influx := checkmarxExecuteScanInflux{}
 
-	err = runScan(options, sys, workspace, &influx)
+	err = runScan(options, sys, workspace, &influx, newCheckmarxExecuteScanUtilsMock())
 	assert.NoError(t, err, "Unexpected error caught")
 	assert.Equal(t, true, sys.isIncremental, "isIncremental has wrong value")
 	assert.Equal(t, true, sys.isPublic, "isPublic has wrong value")
 	assert.Equal(t, false, sys.forceScan, "forceScan has wrong value")
+}
+
+func TestRunScanForPullRequestProjectNew_invalidPreset(t *testing.T) {
+	t.Parallel()
+
+	sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`), createProject: true}
+	options := checkmarxExecuteScanOptions{PullRequestName: "PR-17", ProjectName: "Test", AvoidDuplicateProjectScans: true, VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "INVALID", TeamName: "OpenSource/Cracks/15", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+	workspace, err := ioutil.TempDir("", "workspace4")
+	if err != nil {
+		t.Fatal("Failed to create temporary workspace directory")
+	}
+	// clean up tmp dir
+	defer os.RemoveAll(workspace)
+
+	influx := checkmarxExecuteScanInflux{}
+
+	err = runScan(options, sys, workspace, &influx, newCheckmarxExecuteScanUtilsMock())
+	assert.EqualError(t, err, "failed to convert string INVALID to int: strconv.Atoi: parsing \"INVALID\": invalid syntax")
 }
 
 func TestRunScanHighViolationPercentage(t *testing.T) {
@@ -604,7 +668,7 @@ func TestRunScanHighViolationPercentage(t *testing.T) {
 
 	influx := checkmarxExecuteScanInflux{}
 
-	err = runScan(options, sys, workspace, &influx)
+	err = runScan(options, sys, workspace, &influx, newCheckmarxExecuteScanUtilsMock())
 	assert.Contains(t, fmt.Sprint(err), "the project is not compliant", "Expected different error")
 }
 
@@ -641,7 +705,7 @@ func TestRunScanHighViolationAbsolute(t *testing.T) {
 
 	influx := checkmarxExecuteScanInflux{}
 
-	err = runScan(options, sys, workspace, &influx)
+	err = runScan(options, sys, workspace, &influx, newCheckmarxExecuteScanUtilsMock())
 	assert.Contains(t, fmt.Sprint(err), "the project is not compliant", "Expected different error")
 }
 

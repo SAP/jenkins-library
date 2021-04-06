@@ -29,6 +29,8 @@ type checkmarxExecuteScanUtils interface {
 	FileInfoHeader(fi os.FileInfo) (*zip.FileHeader, error)
 	Stat(name string) (os.FileInfo, error)
 	Open(name string) (*os.File, error)
+	Atoi(s string) (int, error)
+	Itoa(i int) string
 }
 
 type checkmarxExecuteScanUtilsBundle struct{}
@@ -36,6 +38,14 @@ type checkmarxExecuteScanUtilsBundle struct{}
 func newCheckmarxExecuteScanUtils() checkmarxExecuteScanUtils {
 	utils := checkmarxExecuteScanUtilsBundle{}
 	return &utils
+}
+
+func (b checkmarxExecuteScanUtilsBundle) Itoa(i int) string {
+	return strconv.Itoa(i)
+}
+
+func (checkmarxExecuteScanUtilsBundle) Atoi(s string) (int, error) {
+	return strconv.Atoi(s)
 }
 
 func (checkmarxExecuteScanUtilsBundle) FileInfoHeader(fi os.FileInfo) (*zip.FileHeader, error) {
@@ -59,13 +69,13 @@ func checkmarxExecuteScan(config checkmarxExecuteScanOptions, _ *telemetry.Custo
 		log.Entry().WithError(err).Fatalf("Failed to create Checkmarx client talking to URL %v", config.ServerURL)
 	}
 	influx.step_data.fields.checkmarx = false
-	if err := runScan(config, sys, "./", influx); err != nil {
+	if err := runScan(config, sys, "./", influx, newCheckmarxExecuteScanUtils()); err != nil {
 		log.Entry().WithError(err).Fatal("Failed to execute Checkmarx scan.")
 	}
 	influx.step_data.fields.checkmarx = true
 }
 
-func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace string, influx *checkmarxExecuteScanInflux) error {
+func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace string, influx *checkmarxExecuteScanInflux, utils checkmarxExecuteScanUtils) error {
 	teamID := config.TeamID
 	if len(teamID) == 0 {
 		team, err := loadTeam(sys, config.TeamName)
@@ -80,7 +90,7 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace
 			if err != nil {
 				return errors.Wrap(err, "failed to unmarshall team.ID")
 			}
-			teamID = strconv.Itoa(teamIDInt)
+			teamID = utils.Itoa(teamIDInt)
 		}
 	}
 	project, projectName, err := loadExistingProject(sys, config.ProjectName, config.PullRequestName, teamID)
@@ -90,22 +100,28 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace
 	if project.Name == projectName {
 		log.Entry().Infof("Project %v exists...", projectName)
 		if len(config.Preset) > 0 {
-			presetID, _ := strconv.Atoi(config.Preset)
-			err := setPresetForProject(sys, project.ID, presetID, projectName, config.Preset, config.SourceEncoding)
+			presetID, err := utils.Atoi(config.Preset)
+			if err != nil {
+				return errors.Wrapf(err, "failed to convert string %v to int", config.Preset)
+			}
+			err = setPresetForProject(sys, project.ID, presetID, projectName, config.Preset, config.SourceEncoding)
 			if err != nil {
 				return errors.Wrapf(err, "failed to set preset %v for project %v", config.Preset, projectName)
 			}
 		}
 	} else {
 		log.Entry().Infof("Project %v does not exist, starting to create it...", projectName)
-		presetID, _ := strconv.Atoi(config.Preset)
+		presetID, err := utils.Atoi(config.Preset)
+		if err != nil {
+			return errors.Wrapf(err, "failed to convert string %v to int", config.Preset)
+		}
 		project, err = createAndConfigureNewProject(sys, projectName, teamID, presetID, config.Preset, config.SourceEncoding)
 		if err != nil {
 			return errors.Wrapf(err, "failed to create and configure new project %v", projectName)
 		}
 	}
 
-	err = uploadAndScan(config, sys, project, workspace, influx)
+	err = uploadAndScan(config, sys, project, workspace, influx, utils)
 	if err != nil {
 		return errors.Wrap(err, "failed to run scan and upload result")
 	}
@@ -158,7 +174,7 @@ func loadExistingProject(sys checkmarx.System, initialProjectName, pullRequestNa
 	return project, projectName, nil
 }
 
-func zipWorkspaceFiles(workspace, filterPattern string) (*os.File, error) {
+func zipWorkspaceFiles(workspace, filterPattern string, utils checkmarxExecuteScanUtils) (*os.File, error) {
 	zipFileName := filepath.Join(workspace, "workspace.zip")
 	patterns := strings.Split(strings.ReplaceAll(strings.ReplaceAll(filterPattern, ", ", ","), " ,", ","), ",")
 	sort.Strings(patterns)
@@ -167,11 +183,14 @@ func zipWorkspaceFiles(workspace, filterPattern string) (*os.File, error) {
 		return zipFile, errors.Wrap(err, "failed to create archive of project sources")
 	}
 	defer zipFile.Close()
-	_ = zipFolder(workspace, zipFile, patterns, newCheckmarxExecuteScanUtils())
+	err = zipFolder(workspace, zipFile, patterns, utils)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to compact folder")
+	}
 	return zipFile, nil
 }
 
-func uploadAndScan(config checkmarxExecuteScanOptions, sys checkmarx.System, project checkmarx.Project, workspace string, influx *checkmarxExecuteScanInflux) error {
+func uploadAndScan(config checkmarxExecuteScanOptions, sys checkmarx.System, project checkmarx.Project, workspace string, influx *checkmarxExecuteScanInflux, utils checkmarxExecuteScanUtils) error {
 	previousScans, err := sys.GetScans(project.ID)
 	if err != nil && config.VerifyOnly {
 		log.Entry().Warnf("Cannot load scans for project %v, verification only mode aborted", project.Name)
@@ -183,7 +202,7 @@ func uploadAndScan(config checkmarxExecuteScanOptions, sys checkmarx.System, pro
 			return errors.Wrapf(err, "project %v not compliant", project.Name)
 		}
 	} else {
-		zipFile, err := zipWorkspaceFiles(workspace, config.FilterPattern)
+		zipFile, err := zipWorkspaceFiles(workspace, config.FilterPattern, utils)
 		if err != nil {
 			return errors.Wrap(err, "failed to zip workspace files")
 		}
@@ -199,7 +218,7 @@ func uploadAndScan(config checkmarxExecuteScanOptions, sys checkmarx.System, pro
 		}
 
 		incremental := config.Incremental
-		fullScanCycle, err := strconv.Atoi(config.FullScanCycle)
+		fullScanCycle, err := utils.Atoi(config.FullScanCycle)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return errors.Wrapf(err, "invalid configuration value for fullScanCycle %v, must be a positive int", config.FullScanCycle)
