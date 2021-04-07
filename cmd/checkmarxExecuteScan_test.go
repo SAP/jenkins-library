@@ -305,7 +305,7 @@ func TestFilterFileGlob(t *testing.T) {
 	}
 
 	for k, v := range tt {
-		result, err := filterFileGlob([]string{"!**/node_modules/**", "!**/.xmake/**", "!**/*_test.go", "!**/vendor/**/*.go", "**/*.go", "**/*.html", "*.test"}, v.input, v.fInfo, newCheckmarxExecuteScanUtilsMock())
+		result, err := isFileNotMatchingPattern([]string{"!**/node_modules/**", "!**/.xmake/**", "!**/*_test.go", "!**/vendor/**/*.go", "**/*.go", "**/*.html", "*.test"}, v.input, v.fInfo, newCheckmarxExecuteScanUtilsMock())
 		assert.Equal(t, v.expected, result, fmt.Sprintf("wrong result for run %v", k))
 		assert.NoError(t, err, "no error expected in run %v", k)
 	}
@@ -317,7 +317,7 @@ func TestFilterFileGlob_errorOnPathMatch(t *testing.T) {
 	utilsMock := newCheckmarxExecuteScanUtilsMock()
 	utilsMock.errorOnPathMatch = true
 
-	result, err := filterFileGlob([]string{"!**/node_modules/**", "!**/.xmake/**", "!**/*_test.go", "!**/vendor/**/*.go", "**/*.go", "**/*.html", "*.test"}, filepath.Join("a", "b", "c"), fileInfo{}, utilsMock)
+	result, err := isFileNotMatchingPattern([]string{"!**/node_modules/**", "!**/.xmake/**", "!**/*_test.go", "!**/vendor/**/*.go", "**/*.go", "**/*.html", "*.test"}, filepath.Join("a", "b", "c"), fileInfo{}, utilsMock)
 	assert.Equal(t, false, result, fmt.Sprintf("wrong result"))
 	assert.EqualError(t, err, "Pattern **/node_modules/** could not get executed: error on PathMatch")
 }

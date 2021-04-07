@@ -668,13 +668,9 @@ func zipFolder(source string, zipFile io.Writer, patterns []string, utils checkm
 			return err
 		}
 
-		filtered, err := filterFileGlob(patterns, path, info, utils)
-		if err != nil {
+		noMatch, err := isFileNotMatchingPattern(patterns, path, info, utils)
+		if err != nil || noMatch {
 			return err
-		}
-
-		if filtered {
-			return nil
 		}
 
 		header, err := utils.FileInfoHeader(info)
@@ -693,12 +689,8 @@ func zipFolder(source string, zipFile io.Writer, patterns []string, utils checkm
 		}
 
 		writer, err := archive.CreateHeader(header)
-		if err != nil {
+		if err != nil || info.IsDir() {
 			return err
-		}
-
-		if info.IsDir() {
-			return nil
 		}
 
 		file, err := utils.Open(path)
@@ -714,12 +706,12 @@ func zipFolder(source string, zipFile io.Writer, patterns []string, utils checkm
 	return err
 }
 
-// filterFileGlob checks if file path matches one of the patterns.
-// If it matches a negative pattern ('!') then false is returned.
+// isFileNotMatchingPattern checks if file path does not match one of the patterns.
+// If it matches a negative pattern (starting with '!') then true is returned.
 //
 // If it is a directory, false is returned.
 // If no patterns are provided, false is returned.
-func filterFileGlob(patterns []string, path string, info os.FileInfo, utils checkmarxExecuteScanUtils) (bool, error) {
+func isFileNotMatchingPattern(patterns []string, path string, info os.FileInfo, utils checkmarxExecuteScanUtils) (bool, error) {
 	if len(patterns) == 0 || info.IsDir() {
 		return false, nil
 	}
