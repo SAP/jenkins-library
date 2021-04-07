@@ -93,7 +93,7 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 			log.Entry().Infof("Setting VCS_NO_IMPORT to true")
 			noImportConfig := setConfigKeyBody{
 				Key:   "VCS_NO_IMPORT",
-				Value: "true",
+				Value: "X",
 			}
 			setConfigKeyErr := setConfigKey(config, httpClient, &noImportConfig)
 			if setConfigKeyErr != nil {
@@ -198,7 +198,7 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 			log.Entry().Infof("Setting VCS_NO_IMPORT to false")
 			noImportConfig := setConfigKeyBody{
 				Key:   "VCS_NO_IMPORT",
-				Value: "false",
+				Value: " ",
 			}
 			setConfigKeyErr := setConfigKey(config, httpClient, &noImportConfig)
 			if setConfigKeyErr != nil {
