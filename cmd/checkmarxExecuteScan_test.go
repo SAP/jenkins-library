@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/bmatcuk/doublestar"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -236,10 +237,18 @@ type checkmarxExecuteScanUtilsMock struct {
 	errorOnStat           bool
 	errorOnOpen           bool
 	errorOnWriteFile      bool
+	errorOnPathMatch      bool
 }
 
 func newCheckmarxExecuteScanUtilsMock() checkmarxExecuteScanUtilsMock {
 	return checkmarxExecuteScanUtilsMock{}
+}
+
+func (c checkmarxExecuteScanUtilsMock) PathMatch(pattern, name string) (bool, error) {
+	if c.errorOnPathMatch {
+		return false, fmt.Errorf("error on PathMatch")
+	}
+	return doublestar.PathMatch(pattern, name)
 }
 
 func (c checkmarxExecuteScanUtilsMock) WriteFile(filename string, data []byte, perm os.FileMode) error {
@@ -296,8 +305,21 @@ func TestFilterFileGlob(t *testing.T) {
 	}
 
 	for k, v := range tt {
-		assert.Equal(t, v.expected, filterFileGlob([]string{"!**/node_modules/**", "!**/.xmake/**", "!**/*_test.go", "!**/vendor/**/*.go", "**/*.go", "**/*.html", "*.test"}, v.input, v.fInfo), fmt.Sprintf("wrong long name for run %v", k))
+		result, err := filterFileGlob([]string{"!**/node_modules/**", "!**/.xmake/**", "!**/*_test.go", "!**/vendor/**/*.go", "**/*.go", "**/*.html", "*.test"}, v.input, v.fInfo, newCheckmarxExecuteScanUtilsMock())
+		assert.Equal(t, v.expected, result, fmt.Sprintf("wrong result for run %v", k))
+		assert.NoError(t, err, "no error expected in run %v", k)
 	}
+}
+
+func TestFilterFileGlob_errorOnPathMatch(t *testing.T) {
+	t.Parallel()
+
+	utilsMock := newCheckmarxExecuteScanUtilsMock()
+	utilsMock.errorOnPathMatch = true
+
+	result, err := filterFileGlob([]string{"!**/node_modules/**", "!**/.xmake/**", "!**/*_test.go", "!**/vendor/**/*.go", "**/*.go", "**/*.html", "*.test"}, filepath.Join("a", "b", "c"), fileInfo{}, utilsMock)
+	assert.Equal(t, false, result, fmt.Sprintf("wrong result"))
+	assert.EqualError(t, err, "Pattern **/node_modules/** could not get executed: error on PathMatch")
 }
 
 func TestZipFolder(t *testing.T) {

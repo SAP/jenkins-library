@@ -32,6 +32,7 @@ type checkmarxExecuteScanUtils interface {
 	Atoi(s string) (int, error)
 	Itoa(i int) string
 	WriteFile(filename string, data []byte, perm os.FileMode) error
+	PathMatch(pattern, name string) (bool, error)
 }
 
 type checkmarxExecuteScanUtilsBundle struct{}
@@ -41,11 +42,15 @@ func newCheckmarxExecuteScanUtils() checkmarxExecuteScanUtils {
 	return &utils
 }
 
+func (checkmarxExecuteScanUtilsBundle) PathMatch(pattern, name string) (bool, error) {
+	return doublestar.PathMatch(pattern, name)
+}
+
 func (checkmarxExecuteScanUtilsBundle) WriteFile(filename string, data []byte, perm os.FileMode) error {
 	return ioutil.WriteFile(filename, data, perm)
 }
 
-func (b checkmarxExecuteScanUtilsBundle) Itoa(i int) string {
+func (checkmarxExecuteScanUtilsBundle) Itoa(i int) string {
 	return strconv.Itoa(i)
 }
 
@@ -663,7 +668,12 @@ func zipFolder(source string, zipFile io.Writer, patterns []string, utils checkm
 			return err
 		}
 
-		if filterFileGlob(patterns, path, info) {
+		filtered, err := filterFileGlob(patterns, path, info, utils)
+		if err != nil {
+			return err
+		}
+
+		if filtered {
 			return nil
 		}
 
@@ -709,9 +719,9 @@ func zipFolder(source string, zipFile io.Writer, patterns []string, utils checkm
 //
 // If it is a directory, false is returned.
 // If no patterns are provided, false is returned.
-func filterFileGlob(patterns []string, path string, info os.FileInfo) bool {
+func filterFileGlob(patterns []string, path string, info os.FileInfo, utils checkmarxExecuteScanUtils) (bool, error) {
 	if len(patterns) == 0 || info.IsDir() {
-		return false
+		return false, nil
 	}
 
 	for _, pattern := range patterns {
@@ -720,11 +730,14 @@ func filterFileGlob(patterns []string, path string, info os.FileInfo) bool {
 			pattern = strings.TrimLeft(pattern, "!")
 			negative = true
 		}
-		match, _ := doublestar.PathMatch(pattern, path)
+		match, err := utils.PathMatch(pattern, path)
+		if err != nil {
+			return false, errors.Wrapf(err, "Pattern %v could not get executed", pattern)
+		}
 
 		if match {
-			return negative
+			return negative, nil
 		}
 	}
-	return true
+	return true, nil
 }
