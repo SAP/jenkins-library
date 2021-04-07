@@ -62,14 +62,14 @@ func TestRunDetect(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, ".", utilsMock.Dir, "Wrong execution directory used")
 		assert.Equal(t, "/bin/bash", utilsMock.Shell[0], "Bash shell expected")
-		expectedScript := "./detect.sh --blackduck.url= --blackduck.api.token= \"--detect.project.name=''\" \"--detect.project.version.name=''\" --detect.source.path='.'"
+		expectedScript := "./detect.sh --blackduck.url= --blackduck.api.token= \"--detect.project.name=''\" \"--detect.project.version.name=''\" \"--detect.code.location.name=''\" --detect.source.path='.'"
 		assert.Equal(t, expectedScript, utilsMock.Calls[0])
 	})
 
 	t.Run("failure case", func(t *testing.T) {
 		t.Parallel()
 		utilsMock := newDetectTestUtilsBundle()
-		utilsMock.ShouldFailOnCommand = map[string]error{"./detect.sh --blackduck.url= --blackduck.api.token= \"--detect.project.name=''\" \"--detect.project.version.name=''\" --detect.source.path='.'": fmt.Errorf("Test Error")}
+		utilsMock.ShouldFailOnCommand = map[string]error{"./detect.sh --blackduck.url= --blackduck.api.token= \"--detect.project.name=''\" \"--detect.project.version.name=''\" \"--detect.code.location.name=''\" --detect.source.path='.'": fmt.Errorf("Test Error")}
 		utilsMock.AddFile("detect.sh", []byte(""))
 		err := runDetect(detectExecuteScanOptions{}, utilsMock)
 		assert.EqualError(t, err, "Test Error")
@@ -125,6 +125,7 @@ func TestAddDetectArgs(t *testing.T) {
 				"--blackduck.api.token=apiToken",
 				"\"--detect.project.name='testName'\"",
 				"\"--detect.project.version.name='1.0'\"",
+				"\"--detect.code.location.name='testName/1.0'\"",
 				"--detect.blackduck.signature.scanner.paths=path1,path2",
 				"--detect.source.path='.'",
 			},
