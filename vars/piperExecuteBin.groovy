@@ -67,6 +67,7 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
             dockerWrapper(script, stepName, config) {
                 handleErrorDetails(stepName) {
                     script.commonPipelineEnvironment.writeToDisk(script)
+                    utils.unstash('pipelineStepReports')
                     try {
                         try {
                             try {
