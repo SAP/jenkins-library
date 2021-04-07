@@ -706,7 +706,11 @@ func zipFolder(source string, zipFile io.Writer, patterns []string, utils checkm
 			return err
 		}
 
-		adaptHeader(path, info, baseDir, header, source)
+		if baseDir != "" {
+			header.Name = filepath.Join(baseDir, strings.TrimPrefix(path, source))
+		}
+
+		adaptHeader(info, header)
 
 		writer, err := archive.CreateHeader(header)
 		if err != nil || info.IsDir() {
@@ -727,11 +731,7 @@ func zipFolder(source string, zipFile io.Writer, patterns []string, utils checkm
 	return err
 }
 
-func adaptHeader(path string, info os.FileInfo, baseDir string, header *zip.FileHeader, source string) {
-	if baseDir != "" {
-		header.Name = filepath.Join(baseDir, strings.TrimPrefix(path, source))
-	}
-
+func adaptHeader(info os.FileInfo, header *zip.FileHeader) {
 	if info.IsDir() {
 		header.Name += "/"
 	} else {
