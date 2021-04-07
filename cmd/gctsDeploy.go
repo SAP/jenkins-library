@@ -560,7 +560,7 @@ func getConfigurationMetadata(config *gctsDeployOptions, httpClient piperhttp.Se
 	var response configurationMetadataBody
 	log.Entry().Infof("Starting to retrieve configuration metadata from the system")
 	requestURL := config.Host +
-		"/sap/bc/cts_abapvcs/config/" + "?sap-client=" + config.Client
+		"/sap/bc/cts_abapvcs/config"
 
 	resp, httpErr := httpClient.SendRequest("GET", requestURL, nil, nil, nil)
 	defer func() {
