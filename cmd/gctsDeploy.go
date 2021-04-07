@@ -195,15 +195,12 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 		}
 
 		if config.Scope != "" {
-			log.Entry().Infof("Setting VCS_NO_IMPORT to false")
-			noImportConfig := setConfigKeyBody{
-				Key:   "VCS_NO_IMPORT",
-				Value: " ",
-			}
-			setConfigKeyErr := setConfigKey(config, httpClient, &noImportConfig)
-			if setConfigKeyErr != nil {
-				log.Entry().WithError(setConfigKeyErr).Error("step execution failed at Set Config key for VCS_NO_IMPORT")
-				return setConfigKeyErr
+			log.Entry().Infof("Removing VCS_NO_IMPORT configuration")
+			configToDelete := "VCS_NO_IMPORT"
+			deleteConfigKeyErr := deleteConfigKey(config, httpClient, configToDelete)
+			if deleteConfigKeyErr != nil {
+				log.Entry().WithError(deleteConfigKeyErr).Error("step execution failed at Set Config key for VCS_NO_IMPORT")
+				return deleteConfigKeyErr
 			}
 			// Get deploy scope and gctsDeploy
 			log.Entry().Infof("gCTS Deploy: Deploying Commit to ABAP System for Repository %v with scope %v", config.Repository, config.Scope)
@@ -234,15 +231,12 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 	}
 
 	if repoState == repoStateNew {
-		log.Entry().Infof("Setting VCS_NO_IMPORT back to false")
-		noImportConfig := setConfigKeyBody{
-			Key:   "VCS_NO_IMPORT",
-			Value: "false",
-		}
-		setConfigKeyErr := setConfigKey(config, httpClient, &noImportConfig)
-		if setConfigKeyErr != nil {
-			log.Entry().WithError(setConfigKeyErr).Error("step execution failed at Set Config key for VCS_NO_IMPORT")
-			return setConfigKeyErr
+		log.Entry().Infof("Removing VCS_NO_IMPORT configuration")
+		configToDelete := "VCS_NO_IMPORT"
+		deleteConfigKeyErr := deleteConfigKey(config, httpClient, configToDelete)
+		if deleteConfigKeyErr != nil {
+			log.Entry().WithError(deleteConfigKeyErr).Error("step execution failed at Set Config key for VCS_NO_IMPORT")
+			return deleteConfigKeyErr
 		}
 		log.Entry().Infof("Setting deploy scope as current commit")
 		config.Scope = "CRNTCOMMIT"
@@ -350,6 +344,28 @@ func getRepository(config *gctsDeployOptions, httpClient piperhttp.Sender) (*get
 		return &response, parsingErr
 	}
 	return &response, nil
+}
+
+func deleteConfigKey(deployConfig *gctsDeployOptions, httpClient piperhttp.Sender, configToDelete string) error {
+	log.Entry().Infof("gCTS Deploy : Delete configuration key %v", configToDelete)
+	requestURL := deployConfig.Host +
+		"/sap/bc/cts_abapvcs/repository/" + deployConfig.Repository +
+		"/config/" + configToDelete + "?sap-client=" + deployConfig.Client
+	header := make(http.Header)
+	header.Set("Content-Type", "application/json")
+	header.Add("Accept", "application/json")
+	resp, httpErr := httpClient.SendRequest("DELETE", requestURL, nil, header, nil)
+	defer func() {
+		if resp != nil && resp.Body != nil {
+			resp.Body.Close()
+		}
+	}()
+	if httpErr != nil {
+		log.Entry().Error("Failure during deletion of configuration value")
+		return httpErr
+	}
+	log.Entry().Infof("gCTS Deploy : Delete configuration key %v successful", configToDelete)
+	return nil
 }
 
 func setConfigKey(deployConfig *gctsDeployOptions, httpClient piperhttp.Sender, configToSet *setConfigKeyBody) error {
