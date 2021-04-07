@@ -706,7 +706,7 @@ func zipFolder(source string, zipFile io.Writer, patterns []string, utils checkm
 		return err
 	})
 	log.Entry().Infof("Zipped %d files", fileCount)
-	if fileCount == 0 {
+	if err == nil && fileCount == 0 {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		err = fmt.Errorf("filterPattern matched no files or workspace directory '%s' was empty", source)
 	}
