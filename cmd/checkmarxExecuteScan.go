@@ -91,7 +91,7 @@ func checkmarxExecuteScan(config checkmarxExecuteScanOptions, _ *telemetry.Custo
 func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, influx *checkmarxExecuteScanInflux, utils checkmarxExecuteScanUtils) error {
 	teamID := config.TeamID
 	if len(teamID) == 0 {
-		readTeamID, err := loadTeamIdByTeamName(config, sys, teamID, utils)
+		readTeamID, err := loadTeamIDByTeamName(config, sys, teamID, utils)
 		if err != nil {
 			return err
 		}
@@ -120,7 +120,7 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, influx *c
 	return nil
 }
 
-func loadTeamIdByTeamName(config checkmarxExecuteScanOptions, sys checkmarx.System, teamID string, utils checkmarxExecuteScanUtils) (string, error) {
+func loadTeamIDByTeamName(config checkmarxExecuteScanOptions, sys checkmarx.System, teamID string, utils checkmarxExecuteScanUtils) (string, error) {
 	team, err := loadTeam(sys, config.TeamName)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to load team")
