@@ -35,8 +35,11 @@ type checkmarxExecuteScanUtils interface {
 	PathMatch(pattern, name string) (bool, error)
 }
 
-type checkmarxExecuteScanUtilsBundle struct {
-	workspace string
+type checkmarxExecuteScanUtilsBundle struct{}
+
+func newCheckmarxExecuteScanUtils() checkmarxExecuteScanUtils {
+	utils := checkmarxExecuteScanUtilsBundle{}
+	return &utils
 }
 
 func (checkmarxExecuteScanUtilsBundle) PathMatch(pattern, name string) (bool, error) {
@@ -76,14 +79,13 @@ func checkmarxExecuteScan(config checkmarxExecuteScanOptions, _ *telemetry.Custo
 		log.Entry().WithError(err).Fatalf("Failed to create Checkmarx client talking to URL %v", config.ServerURL)
 	}
 	influx.step_data.fields.checkmarx = false
-	utils := checkmarxExecuteScanUtilsBundle{workspace: "./"}
-	if err := runScan(config, sys, influx, utils); err != nil {
+	if err := runScan(config, sys, "./", influx, newCheckmarxExecuteScanUtils()); err != nil {
 		log.Entry().WithError(err).Fatal("Failed to execute Checkmarx scan.")
 	}
 	influx.step_data.fields.checkmarx = true
 }
 
-func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, influx *checkmarxExecuteScanInflux, utils checkmarxExecuteScanUtilsBundle) error {
+func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, workspace string, influx *checkmarxExecuteScanInflux, utils checkmarxExecuteScanUtils) error {
 	teamID := config.TeamID
 	if len(teamID) == 0 {
 		team, err := loadTeam(sys, config.TeamName)
@@ -129,7 +131,7 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, influx *c
 		}
 	}
 
-	err = uploadAndScan(config, sys, project, utils.workspace, influx, utils)
+	err = uploadAndScan(config, sys, project, workspace, influx, utils)
 	if err != nil {
 		return errors.Wrap(err, "failed to run scan and upload result")
 	}
