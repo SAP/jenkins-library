@@ -29,8 +29,6 @@ type checkmarxExecuteScanUtils interface {
 	FileInfoHeader(fi os.FileInfo) (*zip.FileHeader, error)
 	Stat(name string) (os.FileInfo, error)
 	Open(name string) (*os.File, error)
-	Atoi(s string) (int, error)
-	Itoa(i int) string
 	WriteFile(filename string, data []byte, perm os.FileMode) error
 	PathMatch(pattern, name string) (bool, error)
 	GetWorkspace() string
@@ -50,14 +48,6 @@ func (b checkmarxExecuteScanUtilsBundle) GetWorkspace() string {
 
 func (checkmarxExecuteScanUtilsBundle) WriteFile(filename string, data []byte, perm os.FileMode) error {
 	return ioutil.WriteFile(filename, data, perm)
-}
-
-func (checkmarxExecuteScanUtilsBundle) Itoa(i int) string {
-	return strconv.Itoa(i)
-}
-
-func (checkmarxExecuteScanUtilsBundle) Atoi(s string) (int, error) {
-	return strconv.Atoi(s)
 }
 
 func (checkmarxExecuteScanUtilsBundle) FileInfoHeader(fi os.FileInfo) (*zip.FileHeader, error) {
@@ -91,7 +81,7 @@ func checkmarxExecuteScan(config checkmarxExecuteScanOptions, _ *telemetry.Custo
 func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, influx *checkmarxExecuteScanInflux, utils checkmarxExecuteScanUtils) error {
 	teamID := config.TeamID
 	if len(teamID) == 0 {
-		readTeamID, err := loadTeamIDByTeamName(config, sys, teamID, utils)
+		readTeamID, err := loadTeamIDByTeamName(config, sys, teamID)
 		if err != nil {
 			return err
 		}
@@ -102,12 +92,12 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, influx *c
 		return errors.Wrap(err, "error when trying to load project")
 	}
 	if project.Name == projectName {
-		err = presetExistingProject(config, sys, projectName, utils, project)
+		err = presetExistingProject(config, sys, projectName, project)
 		if err != nil {
 			return err
 		}
 	} else {
-		project, err = createNewProject(config, sys, projectName, utils, project, teamID)
+		project, err = createNewProject(config, sys, projectName, project, teamID)
 		if err != nil {
 			return err
 		}
@@ -120,7 +110,7 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, influx *c
 	return nil
 }
 
-func loadTeamIDByTeamName(config checkmarxExecuteScanOptions, sys checkmarx.System, teamID string, utils checkmarxExecuteScanUtils) (string, error) {
+func loadTeamIDByTeamName(config checkmarxExecuteScanOptions, sys checkmarx.System, teamID string) (string, error) {
 	team, err := loadTeam(sys, config.TeamName)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to load team")
@@ -133,14 +123,14 @@ func loadTeamIDByTeamName(config checkmarxExecuteScanOptions, sys checkmarx.Syst
 		if err != nil {
 			return "", errors.Wrap(err, "failed to unmarshall team.ID")
 		}
-		teamID = utils.Itoa(teamIDInt)
+		teamID = strconv.Itoa(teamIDInt)
 	}
 	return teamID, nil
 }
 
-func createNewProject(config checkmarxExecuteScanOptions, sys checkmarx.System, projectName string, utils checkmarxExecuteScanUtils, project checkmarx.Project, teamID string) (checkmarx.Project, error) {
+func createNewProject(config checkmarxExecuteScanOptions, sys checkmarx.System, projectName string, project checkmarx.Project, teamID string) (checkmarx.Project, error) {
 	log.Entry().Infof("Project %v does not exist, starting to create it...", projectName)
-	presetID, err := utils.Atoi(config.Preset)
+	presetID, err := strconv.Atoi(config.Preset)
 	if err != nil {
 		return checkmarx.Project{}, errors.Wrapf(err, "failed to convert string %v to int", config.Preset)
 	}
@@ -151,10 +141,10 @@ func createNewProject(config checkmarxExecuteScanOptions, sys checkmarx.System, 
 	return project, nil
 }
 
-func presetExistingProject(config checkmarxExecuteScanOptions, sys checkmarx.System, projectName string, utils checkmarxExecuteScanUtils, project checkmarx.Project) error {
+func presetExistingProject(config checkmarxExecuteScanOptions, sys checkmarx.System, projectName string, project checkmarx.Project) error {
 	log.Entry().Infof("Project %v exists...", projectName)
 	if len(config.Preset) > 0 {
-		presetID, err := utils.Atoi(config.Preset)
+		presetID, err := strconv.Atoi(config.Preset)
 		if err != nil {
 			return errors.Wrapf(err, "failed to convert string %v to int", config.Preset)
 		}
@@ -256,7 +246,7 @@ func uploadAndScan(config checkmarxExecuteScanOptions, sys checkmarx.System, pro
 		}
 
 		incremental := config.Incremental
-		fullScanCycle, err := utils.Atoi(config.FullScanCycle)
+		fullScanCycle, err := strconv.Atoi(config.FullScanCycle)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return errors.Wrapf(err, "invalid configuration value for fullScanCycle %v, must be a positive int", config.FullScanCycle)

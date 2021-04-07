@@ -263,14 +263,6 @@ func (c checkmarxExecuteScanUtilsMock) WriteFile(filename string, data []byte, p
 	return ioutil.WriteFile(filename, data, perm)
 }
 
-func (checkmarxExecuteScanUtilsMock) Atoi(s string) (int, error) {
-	return strconv.Atoi(s)
-}
-
-func (checkmarxExecuteScanUtilsMock) Itoa(i int) string {
-	return strconv.Itoa(i)
-}
-
 func (c checkmarxExecuteScanUtilsMock) FileInfoHeader(fi os.FileInfo) (*zip.FileHeader, error) {
 	if c.errorOnFileInfoHeader {
 		return nil, fmt.Errorf("error on FileInfoHeader")
