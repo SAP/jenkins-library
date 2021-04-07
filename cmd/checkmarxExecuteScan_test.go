@@ -238,10 +238,15 @@ type checkmarxExecuteScanUtilsMock struct {
 	errorOnOpen           bool
 	errorOnWriteFile      bool
 	errorOnPathMatch      bool
+	workspace             string
 }
 
 func newCheckmarxExecuteScanUtilsMock() checkmarxExecuteScanUtilsMock {
 	return checkmarxExecuteScanUtilsMock{}
+}
+
+func (c checkmarxExecuteScanUtilsMock) GetWorkspace() string {
+	return c.workspace
 }
 
 func (c checkmarxExecuteScanUtilsMock) PathMatch(pattern, name string) (bool, error) {
@@ -533,7 +538,10 @@ func TestRunScan(t *testing.T) {
 
 	influx := checkmarxExecuteScanInflux{}
 
-	err = runScan(options, sys, workspace, &influx, newCheckmarxExecuteScanUtilsMock())
+	utilsMock := newCheckmarxExecuteScanUtilsMock()
+	utilsMock.workspace = workspace
+
+	err = runScan(options, sys, &influx, utilsMock)
 	assert.NoError(t, err, "error occurred but none expected")
 	assert.Equal(t, false, sys.isIncremental, "isIncremental has wrong value")
 	assert.Equal(t, true, sys.isPublic, "isPublic has wrong value")
@@ -555,7 +563,10 @@ func TestRunScan_invalidPreset(t *testing.T) {
 
 	influx := checkmarxExecuteScanInflux{}
 
-	err = runScan(options, sys, workspace, &influx, newCheckmarxExecuteScanUtilsMock())
+	utilsMock := newCheckmarxExecuteScanUtilsMock()
+	utilsMock.workspace = workspace
+
+	err = runScan(options, sys, &influx, utilsMock)
 	assert.EqualError(t, err, "failed to convert string INVALID to int: strconv.Atoi: parsing \"INVALID\": invalid syntax")
 }
 
@@ -594,7 +605,10 @@ func TestVerifyOnly(t *testing.T) {
 
 	influx := checkmarxExecuteScanInflux{}
 
-	err = runScan(options, sys, workspace, &influx, newCheckmarxExecuteScanUtilsMock())
+	utilsMock := newCheckmarxExecuteScanUtilsMock()
+	utilsMock.workspace = workspace
+
+	err = runScan(options, sys, &influx, utilsMock)
 	assert.NoError(t, err, "error occurred but none expected")
 	assert.Equal(t, false, sys.scanProjectCalled, "ScanProject was invoked but shouldn't")
 }
@@ -613,9 +627,11 @@ func TestVerifyOnly_errorOnWriteFileDoesNotBlock(t *testing.T) {
 
 	influx := checkmarxExecuteScanInflux{}
 
-	mock := newCheckmarxExecuteScanUtilsMock()
-	mock.errorOnWriteFile = true
-	err = runScan(options, sys, workspace, &influx, mock)
+	utilsMock := newCheckmarxExecuteScanUtilsMock()
+	utilsMock.workspace = workspace
+	utilsMock.errorOnWriteFile = true
+
+	err = runScan(options, sys, &influx, utilsMock)
 	assert.EqualError(t, err, "failed to run scan and upload result: project TestExisting not compliant: failed to get detailed results: failed to write file: error on WriteFile")
 }
 
@@ -633,7 +649,10 @@ func TestRunScanWOtherCycle(t *testing.T) {
 
 	influx := checkmarxExecuteScanInflux{}
 
-	err = runScan(options, sys, workspace, &influx, newCheckmarxExecuteScanUtilsMock())
+	utilsMock := newCheckmarxExecuteScanUtilsMock()
+	utilsMock.workspace = workspace
+
+	err = runScan(options, sys, &influx, utilsMock)
 	assert.NoError(t, err, "error occurred but none expected")
 	assert.Equal(t, true, sys.isIncremental, "isIncremental has wrong value")
 	assert.Equal(t, true, sys.isPublic, "isPublic has wrong value")
@@ -654,9 +673,11 @@ func TestRunScanErrorInZip(t *testing.T) {
 
 	influx := checkmarxExecuteScanInflux{}
 
-	mock := newCheckmarxExecuteScanUtilsMock()
-	mock.errorOnFileInfoHeader = true
-	err = runScan(options, sys, workspace, &influx, mock)
+	utilsMock := newCheckmarxExecuteScanUtilsMock()
+	utilsMock.workspace = workspace
+	utilsMock.errorOnFileInfoHeader = true
+
+	err = runScan(options, sys, &influx, utilsMock)
 	assert.EqualError(t, err, "failed to run scan and upload result: failed to zip workspace files: failed to compact folder: error on FileInfoHeader")
 }
 
@@ -674,7 +695,10 @@ func TestRunScanForPullRequest(t *testing.T) {
 
 	influx := checkmarxExecuteScanInflux{}
 
-	err = runScan(options, sys, workspace, &influx, newCheckmarxExecuteScanUtilsMock())
+	utilsMock := newCheckmarxExecuteScanUtilsMock()
+	utilsMock.workspace = workspace
+
+	err = runScan(options, sys, &influx, utilsMock)
 	assert.Equal(t, true, sys.isIncremental, "isIncremental has wrong value")
 	assert.Equal(t, true, sys.isPublic, "isPublic has wrong value")
 	assert.Equal(t, true, sys.forceScan, "forceScan has wrong value")
@@ -694,7 +718,10 @@ func TestRunScanForPullRequestProjectNew(t *testing.T) {
 
 	influx := checkmarxExecuteScanInflux{}
 
-	err = runScan(options, sys, workspace, &influx, newCheckmarxExecuteScanUtilsMock())
+	utilsMock := newCheckmarxExecuteScanUtilsMock()
+	utilsMock.workspace = workspace
+
+	err = runScan(options, sys, &influx, utilsMock)
 	assert.NoError(t, err, "Unexpected error caught")
 	assert.Equal(t, true, sys.isIncremental, "isIncremental has wrong value")
 	assert.Equal(t, true, sys.isPublic, "isPublic has wrong value")
@@ -715,7 +742,10 @@ func TestRunScanForPullRequestProjectNew_invalidPreset(t *testing.T) {
 
 	influx := checkmarxExecuteScanInflux{}
 
-	err = runScan(options, sys, workspace, &influx, newCheckmarxExecuteScanUtilsMock())
+	utilsMock := newCheckmarxExecuteScanUtilsMock()
+	utilsMock.workspace = workspace
+
+	err = runScan(options, sys, &influx, utilsMock)
 	assert.EqualError(t, err, "failed to convert string INVALID to int: strconv.Atoi: parsing \"INVALID\": invalid syntax")
 }
 
@@ -752,7 +782,10 @@ func TestRunScanHighViolationPercentage(t *testing.T) {
 
 	influx := checkmarxExecuteScanInflux{}
 
-	err = runScan(options, sys, workspace, &influx, newCheckmarxExecuteScanUtilsMock())
+	utilsMock := newCheckmarxExecuteScanUtilsMock()
+	utilsMock.workspace = workspace
+
+	err = runScan(options, sys, &influx, utilsMock)
 	assert.Contains(t, fmt.Sprint(err), "the project is not compliant", "Expected different error")
 }
 
@@ -789,7 +822,10 @@ func TestRunScanHighViolationAbsolute(t *testing.T) {
 
 	influx := checkmarxExecuteScanInflux{}
 
-	err = runScan(options, sys, workspace, &influx, newCheckmarxExecuteScanUtilsMock())
+	utilsMock := newCheckmarxExecuteScanUtilsMock()
+	utilsMock.workspace = workspace
+
+	err = runScan(options, sys, &influx, utilsMock)
 	assert.Contains(t, fmt.Sprint(err), "the project is not compliant", "Expected different error")
 }
 

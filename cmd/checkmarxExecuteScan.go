@@ -33,6 +33,7 @@ type checkmarxExecuteScanUtils interface {
 	Itoa(i int) string
 	WriteFile(filename string, data []byte, perm os.FileMode) error
 	PathMatch(pattern, name string) (bool, error)
+	GetWorkspace() string
 }
 
 type checkmarxExecuteScanUtilsBundle struct {
@@ -41,6 +42,10 @@ type checkmarxExecuteScanUtilsBundle struct {
 
 func (checkmarxExecuteScanUtilsBundle) PathMatch(pattern, name string) (bool, error) {
 	return doublestar.PathMatch(pattern, name)
+}
+
+func (b checkmarxExecuteScanUtilsBundle) GetWorkspace() string {
+	return b.GetWorkspace()
 }
 
 func (checkmarxExecuteScanUtilsBundle) WriteFile(filename string, data []byte, perm os.FileMode) error {
@@ -83,7 +88,7 @@ func checkmarxExecuteScan(config checkmarxExecuteScanOptions, _ *telemetry.Custo
 	influx.step_data.fields.checkmarx = true
 }
 
-func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, influx *checkmarxExecuteScanInflux, utils checkmarxExecuteScanUtilsBundle) error {
+func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, influx *checkmarxExecuteScanInflux, utils checkmarxExecuteScanUtils) error {
 	teamID := config.TeamID
 	if len(teamID) == 0 {
 		team, err := loadTeam(sys, config.TeamName)
@@ -129,7 +134,7 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, influx *c
 		}
 	}
 
-	err = uploadAndScan(config, sys, project, utils.workspace, influx, utils)
+	err = uploadAndScan(config, sys, project, influx, utils)
 	if err != nil {
 		return errors.Wrap(err, "failed to run scan and upload result")
 	}
@@ -182,8 +187,8 @@ func loadExistingProject(sys checkmarx.System, initialProjectName, pullRequestNa
 	return project, projectName, nil
 }
 
-func zipWorkspaceFiles(workspace, filterPattern string, utils checkmarxExecuteScanUtils) (*os.File, error) {
-	zipFileName := filepath.Join(workspace, "workspace.zip")
+func zipWorkspaceFiles(filterPattern string, utils checkmarxExecuteScanUtils) (*os.File, error) {
+	zipFileName := filepath.Join(utils.GetWorkspace(), "workspace.zip")
 	patterns := strings.Split(strings.ReplaceAll(strings.ReplaceAll(filterPattern, ", ", ","), " ,", ","), ",")
 	sort.Strings(patterns)
 	zipFile, err := os.Create(zipFileName)
@@ -191,26 +196,26 @@ func zipWorkspaceFiles(workspace, filterPattern string, utils checkmarxExecuteSc
 		return zipFile, errors.Wrap(err, "failed to create archive of project sources")
 	}
 	defer zipFile.Close()
-	err = zipFolder(workspace, zipFile, patterns, utils)
+	err = zipFolder(utils.GetWorkspace(), zipFile, patterns, utils)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to compact folder")
 	}
 	return zipFile, nil
 }
 
-func uploadAndScan(config checkmarxExecuteScanOptions, sys checkmarx.System, project checkmarx.Project, workspace string, influx *checkmarxExecuteScanInflux, utils checkmarxExecuteScanUtils) error {
+func uploadAndScan(config checkmarxExecuteScanOptions, sys checkmarx.System, project checkmarx.Project, influx *checkmarxExecuteScanInflux, utils checkmarxExecuteScanUtils) error {
 	previousScans, err := sys.GetScans(project.ID)
 	if err != nil && config.VerifyOnly {
 		log.Entry().Warnf("Cannot load scans for project %v, verification only mode aborted", project.Name)
 	}
 	if len(previousScans) > 0 && config.VerifyOnly {
-		err := verifyCxProjectCompliance(config, sys, previousScans[0].ID, workspace, influx, utils)
+		err := verifyCxProjectCompliance(config, sys, previousScans[0].ID, influx, utils)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorCompliance)
 			return errors.Wrapf(err, "project %v not compliant", project.Name)
 		}
 	} else {
-		zipFile, err := zipWorkspaceFiles(workspace, config.FilterPattern, utils)
+		zipFile, err := zipWorkspaceFiles(config.FilterPattern, utils)
 		if err != nil {
 			return errors.Wrap(err, "failed to zip workspace files")
 		}
@@ -236,12 +241,12 @@ func uploadAndScan(config checkmarxExecuteScanOptions, sys checkmarx.System, pro
 			incremental = false
 		}
 
-		return triggerScan(config, sys, project, workspace, incremental, influx, utils)
+		return triggerScan(config, sys, project, incremental, influx, utils)
 	}
 	return nil
 }
 
-func triggerScan(config checkmarxExecuteScanOptions, sys checkmarx.System, project checkmarx.Project, workspace string, incremental bool, influx *checkmarxExecuteScanInflux, utils checkmarxExecuteScanUtils) error {
+func triggerScan(config checkmarxExecuteScanOptions, sys checkmarx.System, project checkmarx.Project, incremental bool, influx *checkmarxExecuteScanInflux, utils checkmarxExecuteScanUtils) error {
 	scan, err := sys.ScanProject(project.ID, incremental, true, !config.AvoidDuplicateProjectScans)
 	if err != nil {
 		return errors.Wrapf(err, "cannot scan project %v", project.Name)
@@ -254,13 +259,13 @@ func triggerScan(config checkmarxExecuteScanOptions, sys checkmarx.System, proje
 	}
 
 	log.Entry().Debugln("Scan finished")
-	return verifyCxProjectCompliance(config, sys, scan.ID, workspace, influx, utils)
+	return verifyCxProjectCompliance(config, sys, scan.ID, influx, utils)
 }
 
-func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx.System, scanID int, workspace string, influx *checkmarxExecuteScanInflux, utils checkmarxExecuteScanUtils) error {
+func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx.System, scanID int, influx *checkmarxExecuteScanInflux, utils checkmarxExecuteScanUtils) error {
 	var reports []piperutils.Path
 	if config.GeneratePdfReport {
-		pdfReportName := createReportName(workspace, "CxSASTReport_%v.pdf")
+		pdfReportName := createReportName(utils.GetWorkspace(), "CxSASTReport_%v.pdf")
 		err := downloadAndSaveReport(sys, pdfReportName, scanID, utils)
 		if err != nil {
 			log.Entry().Warning("Report download failed - continue processing ...")
@@ -271,14 +276,14 @@ func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx
 		log.Entry().Debug("Report generation is disabled via configuration")
 	}
 
-	xmlReportName := createReportName(workspace, "CxSASTResults_%v.xml")
+	xmlReportName := createReportName(utils.GetWorkspace(), "CxSASTResults_%v.xml")
 	results, err := getDetailedResults(sys, xmlReportName, scanID, utils)
 	if err != nil {
 		return errors.Wrap(err, "failed to get detailed results")
 	}
 	reports = append(reports, piperutils.Path{Target: xmlReportName})
 	links := []piperutils.Path{{Target: results["DeepLink"].(string), Name: "Checkmarx Web UI"}}
-	piperutils.PersistReportsAndLinks("checkmarxExecuteScan", workspace, reports, links)
+	piperutils.PersistReportsAndLinks("checkmarxExecuteScan", utils.GetWorkspace(), reports, links)
 
 	reportToInflux(results, influx)
 
