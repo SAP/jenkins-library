@@ -97,7 +97,7 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, influx *c
 			return err
 		}
 	} else {
-		project, err = createNewProject(config, sys, projectName, project, teamID)
+		project, err = createNewProject(config, sys, projectName, teamID)
 		if err != nil {
 			return err
 		}
@@ -128,13 +128,13 @@ func loadTeamIDByTeamName(config checkmarxExecuteScanOptions, sys checkmarx.Syst
 	return teamID, nil
 }
 
-func createNewProject(config checkmarxExecuteScanOptions, sys checkmarx.System, projectName string, project checkmarx.Project, teamID string) (checkmarx.Project, error) {
+func createNewProject(config checkmarxExecuteScanOptions, sys checkmarx.System, projectName string, teamID string) (checkmarx.Project, error) {
 	log.Entry().Infof("Project %v does not exist, starting to create it...", projectName)
 	presetID, err := strconv.Atoi(config.Preset)
 	if err != nil {
 		return checkmarx.Project{}, errors.Wrapf(err, "failed to convert string %v to int", config.Preset)
 	}
-	project, err = createAndConfigureNewProject(sys, projectName, teamID, presetID, config.Preset, config.SourceEncoding)
+	project, err := createAndConfigureNewProject(sys, projectName, teamID, presetID, config.Preset, config.SourceEncoding)
 	if err != nil {
 		return checkmarx.Project{}, errors.Wrapf(err, "failed to create and configure new project %v", projectName)
 	}
