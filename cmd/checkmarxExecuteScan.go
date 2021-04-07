@@ -91,52 +91,77 @@ func checkmarxExecuteScan(config checkmarxExecuteScanOptions, _ *telemetry.Custo
 func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, influx *checkmarxExecuteScanInflux, utils checkmarxExecuteScanUtils) error {
 	teamID := config.TeamID
 	if len(teamID) == 0 {
-		team, err := loadTeam(sys, config.TeamName)
+		readTeamID, err := loadTeamIdByTeamName(config, sys, teamID, utils)
 		if err != nil {
-			return errors.Wrap(err, "failed to load team")
+			return err
 		}
-		teamIDBytes, _ := team.ID.MarshalJSON()
-		err = json.Unmarshal(teamIDBytes, &teamID)
-		if err != nil {
-			var teamIDInt int
-			err = json.Unmarshal(teamIDBytes, &teamIDInt)
-			if err != nil {
-				return errors.Wrap(err, "failed to unmarshall team.ID")
-			}
-			teamID = utils.Itoa(teamIDInt)
-		}
+		teamID = readTeamID
 	}
 	project, projectName, err := loadExistingProject(sys, config.ProjectName, config.PullRequestName, teamID)
 	if err != nil {
 		return errors.Wrap(err, "error when trying to load project")
 	}
 	if project.Name == projectName {
-		log.Entry().Infof("Project %v exists...", projectName)
-		if len(config.Preset) > 0 {
-			presetID, err := utils.Atoi(config.Preset)
-			if err != nil {
-				return errors.Wrapf(err, "failed to convert string %v to int", config.Preset)
-			}
-			err = setPresetForProject(sys, project.ID, presetID, projectName, config.Preset, config.SourceEncoding)
-			if err != nil {
-				return errors.Wrapf(err, "failed to set preset %v for project %v", config.Preset, projectName)
-			}
+		err = presetExistingProject(config, sys, projectName, utils, project)
+		if err != nil {
+			return err
 		}
 	} else {
-		log.Entry().Infof("Project %v does not exist, starting to create it...", projectName)
-		presetID, err := utils.Atoi(config.Preset)
+		project, err = createNewProject(config, sys, projectName, utils, project, teamID)
 		if err != nil {
-			return errors.Wrapf(err, "failed to convert string %v to int", config.Preset)
-		}
-		project, err = createAndConfigureNewProject(sys, projectName, teamID, presetID, config.Preset, config.SourceEncoding)
-		if err != nil {
-			return errors.Wrapf(err, "failed to create and configure new project %v", projectName)
+			return err
 		}
 	}
 
 	err = uploadAndScan(config, sys, project, influx, utils)
 	if err != nil {
 		return errors.Wrap(err, "failed to run scan and upload result")
+	}
+	return nil
+}
+
+func loadTeamIdByTeamName(config checkmarxExecuteScanOptions, sys checkmarx.System, teamID string, utils checkmarxExecuteScanUtils) (string, error) {
+	team, err := loadTeam(sys, config.TeamName)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to load team")
+	}
+	teamIDBytes, _ := team.ID.MarshalJSON()
+	err = json.Unmarshal(teamIDBytes, &teamID)
+	if err != nil {
+		var teamIDInt int
+		err = json.Unmarshal(teamIDBytes, &teamIDInt)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to unmarshall team.ID")
+		}
+		teamID = utils.Itoa(teamIDInt)
+	}
+	return teamID, nil
+}
+
+func createNewProject(config checkmarxExecuteScanOptions, sys checkmarx.System, projectName string, utils checkmarxExecuteScanUtils, project checkmarx.Project, teamID string) (checkmarx.Project, error) {
+	log.Entry().Infof("Project %v does not exist, starting to create it...", projectName)
+	presetID, err := utils.Atoi(config.Preset)
+	if err != nil {
+		return checkmarx.Project{}, errors.Wrapf(err, "failed to convert string %v to int", config.Preset)
+	}
+	project, err = createAndConfigureNewProject(sys, projectName, teamID, presetID, config.Preset, config.SourceEncoding)
+	if err != nil {
+		return checkmarx.Project{}, errors.Wrapf(err, "failed to create and configure new project %v", projectName)
+	}
+	return project, nil
+}
+
+func presetExistingProject(config checkmarxExecuteScanOptions, sys checkmarx.System, projectName string, utils checkmarxExecuteScanUtils, project checkmarx.Project) error {
+	log.Entry().Infof("Project %v exists...", projectName)
+	if len(config.Preset) > 0 {
+		presetID, err := utils.Atoi(config.Preset)
+		if err != nil {
+			return errors.Wrapf(err, "failed to convert string %v to int", config.Preset)
+		}
+		err = setPresetForProject(sys, project.ID, presetID, projectName, config.Preset, config.SourceEncoding)
+		if err != nil {
+			return errors.Wrapf(err, "failed to set preset %v for project %v", config.Preset, projectName)
+		}
 	}
 	return nil
 }
@@ -681,15 +706,7 @@ func zipFolder(source string, zipFile io.Writer, patterns []string, utils checkm
 			return err
 		}
 
-		if baseDir != "" {
-			header.Name = filepath.Join(baseDir, strings.TrimPrefix(path, source))
-		}
-
-		if info.IsDir() {
-			header.Name += "/"
-		} else {
-			header.Method = zip.Deflate
-		}
+		adaptHeader(path, info, baseDir, header, source)
 
 		writer, err := archive.CreateHeader(header)
 		if err != nil || info.IsDir() {
@@ -706,6 +723,23 @@ func zipFolder(source string, zipFile io.Writer, patterns []string, utils checkm
 		return err
 	})
 	log.Entry().Infof("Zipped %d files", fileCount)
+	err = handleZeroFilesZipped(source, err, fileCount)
+	return err
+}
+
+func adaptHeader(path string, info os.FileInfo, baseDir string, header *zip.FileHeader, source string) {
+	if baseDir != "" {
+		header.Name = filepath.Join(baseDir, strings.TrimPrefix(path, source))
+	}
+
+	if info.IsDir() {
+		header.Name += "/"
+	} else {
+		header.Method = zip.Deflate
+	}
+}
+
+func handleZeroFilesZipped(source string, err error, fileCount int) error {
 	if err == nil && fileCount == 0 {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		err = fmt.Errorf("filterPattern matched no files or workspace directory '%s' was empty", source)
