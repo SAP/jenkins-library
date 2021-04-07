@@ -222,22 +222,45 @@ func (s *ScanReport) ToHTML() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-const reportMdTemplate = `<details><summary>{{.Title}}</summary>
-<p>
+const reportMdTemplate = `## {{.Title}}
 
-{{range $s := .Subheaders}}
-**{{- $s.Description}}**: {{$s.Details}}
-{{end}}
+<table>
+{{range $s := .Subheaders -}}
+  <tr><td><b>{{- $s.Description}}:</b></td><td>{{$s.Details}}</td></tr>
+{{- end}}
 
-{{range $o := .Overview}}
-{{- drawOverviewRow $o}}
-{{end}}
+{{range $o := .Overview -}}
+{{drawOverviewRow $o}}
+{{- end}}
+</table>
 
 {{.FurtherInfo}}
 
+<details><summary><i>{{.Title}} details:</i></summary>
+<p>
 Snapshot taken: _{{reportTime .ReportTime}}_
+
+<table>
+<tr>
+	{{if .DetailTable.WithCounter}}<th>{{.DetailTable.CounterHeader}}</th>{{end}}
+	{{- range $h := .DetailTable.Headers}}
+	<th>{{$h}}</th>
+	{{- end}}
+</tr>
+{{range $i, $r := .DetailTable.Rows}}
+<tr>
+	{{if $.DetailTable.WithCounter}}<td>{{inc $i}}</td>{{end}}
+	{{- range $c := $r.Columns}}
+	{{drawCell $c}}
+	{{- end}}
+</tr>
+{{else}}
+<tr><td colspan="{{columnCount .DetailTable}}">{{.DetailTable.NoRowsMessage}}</td></tr>
+{{- end}}
+</table>
 </p>
-</details>`
+</details>
+`
 
 // ToMarkdown creates a markdown version of the report content
 func (s *ScanReport) ToMarkdown() ([]byte, error) {
@@ -290,5 +313,5 @@ func drawOverviewRowMarkdown(row OverviewRow) string {
 		return row.Description
 	}
 	// ToDo: allow styling of details
-	return fmt.Sprintf("**%v**: %v", row.Description, row.Details)
+	return fmt.Sprintf("<tr><td>%v:</td><td>%v</td></tr>", row.Description, row.Details)
 }
