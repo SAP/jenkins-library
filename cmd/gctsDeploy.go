@@ -52,6 +52,13 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 	}
 	httpClient.SetOptions(clientOptions)
 
+	configurationMetadata, getConfigMetadataErr := getConfigurationMetadata(config, httpClient)
+
+	if getConfigMetadataErr != nil {
+		log.Entry().WithError(getConfigMetadataErr).Error("step execution failed at configuration metadata retrieval. Please Check if system is up!.")
+		return getConfigMetadataErr
+	}
+
 	createRepoOptions := gctsCreateRepositoryOptions{
 		Username:            config.Username,
 		Password:            config.Password,
@@ -73,7 +80,7 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 		}
 		repoState = repoStateNew
 		log.Entry().Infof("gCTS Deploy : Creating Repository Step for repository : %v", config.Repository)
-		configurations, _ := splitConfigurationToMap(config.Configuration)
+		configurations, _ := splitConfigurationToMap(config.Configuration, *configurationMetadata)
 		createErr := createRepositoryForDeploy(&createRepoOptions, telemetryData, command, httpClient, configurations)
 		if createErr != nil {
 			//Dump error log (Log it)
@@ -549,10 +556,48 @@ func createRepositoryForDeploy(config *gctsCreateRepositoryOptions, telemetryDat
 	return nil
 }
 
-func splitConfigurationToMap(inputConfigMap map[string]interface{}) ([]repositoryConfiguration, error) {
+func getConfigurationMetadata(config *gctsDeployOptions, httpClient piperhttp.Sender) (*configurationMetadataBody, error) {
+	var response configurationMetadataBody
+	log.Entry().Infof("Starting to retrieve configuration metadata from the system")
+	requestURL := config.Host +
+		"/sap/bc/cts_abapvcs/config/" + "?sap-client=" + config.Client
+
+	resp, httpErr := httpClient.SendRequest("GET", requestURL, nil, nil, nil)
+	defer func() {
+		if resp != nil && resp.Body != nil {
+			resp.Body.Close()
+		}
+	}()
+	if httpErr != nil {
+		log.Entry().Infof("Error while repository Check : %v", httpErr)
+		return &response, httpErr
+	} else if resp == nil {
+		return &response, errors.New("did not retrieve a HTTP response")
+	}
+
+	parsingErr := piperhttp.ParseHTTPResponseBodyJSON(resp, &response)
+	if parsingErr != nil {
+		return &response, parsingErr
+	}
+	log.Entry().Infof("System Available for further step processing. The configuration metadata was successfully retrieved.")
+	return &response, nil
+}
+
+func splitConfigurationToMap(inputConfigMap map[string]interface{}, configMetadataInSystem configurationMetadataBody) ([]repositoryConfiguration, error) {
+	log.Entry().Infof("Parsing the configurations from the yml file")
 	var configurations []repositoryConfiguration
 	for key, value := range inputConfigMap {
+		foundConfigMetadata, _ := findConfigurationMetadata(key, configMetadataInSystem)
 		configValue := fmt.Sprint(value)
+		if (configMetadata{}) != foundConfigMetadata {
+			if foundConfigMetadata.Datatype == "BOOLEAN" && foundConfigMetadata.Example == "X" {
+				if configValue == "false" || configValue == "" {
+					configValue = ""
+				} else if configValue == "true" || configValue == "X" {
+					configValue = "X"
+				}
+			}
+		}
 		configuration := repositoryConfiguration{
 			Key:   key,
 			Value: configValue,
@@ -560,7 +605,18 @@ func splitConfigurationToMap(inputConfigMap map[string]interface{}) ([]repositor
 		configurations = append(configurations, configuration)
 
 	}
+	log.Entry().Infof("The Configurations for the repoistory creation are : %v", configurations)
 	return configurations, nil
+}
+
+func findConfigurationMetadata(configToFind string, configurationsAvailable configurationMetadataBody) (configMetadata, error) {
+	var configStruct configMetadata
+	for _, config := range configurationsAvailable.Config {
+		if config.Ckey == configToFind {
+			return config, nil
+		}
+	}
+	return configStruct, nil
 }
 
 type repositoryConfiguration struct {
@@ -628,5 +684,21 @@ type deployCommitToAbapSystemBody struct {
 				Length  string `json:"length"`
 			}
 		}
-	}
+	} `json:"objects"`
+}
+
+type configMetadata struct {
+	Ckey         string `json:"ckey"`
+	Ctype        string `json:"ctype"`
+	Cvisible     string `json:"cvisible"`
+	Datatype     string `json:"datatype"`
+	DefaultValue string `json:"defaultValue"`
+	Description  string `json:"description"`
+	Category     string `json:"category"`
+	UiElement    string `json:"uiElement"`
+	Example      string `json:"example"`
+}
+
+type configurationMetadataBody struct {
+	Config []configMetadata `json:"config"`
 }
