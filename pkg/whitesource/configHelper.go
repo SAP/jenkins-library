@@ -19,6 +19,7 @@ type ConfigOption struct {
 	Value         interface{}
 	OmitIfPresent string
 	Force         bool
+	Append        bool
 }
 
 // ConfigOptions contains a list of config options (ConfigOption)
@@ -73,8 +74,17 @@ func (c *ConfigOptions) updateConfig(originalConfig *map[string]string) map[stri
 		if len(cOpt.OmitIfPresent) > 0 {
 			dependentValue = newConfig[cOpt.OmitIfPresent]
 		}
-		if len(dependentValue) == 0 && (cOpt.Force || len(newConfig[cOpt.Name]) == 0) {
-			newConfig[cOpt.Name] = fmt.Sprint(cOpt.Value)
+
+		if len(dependentValue) == 0 {
+			if cOpt.Append {
+				if len(newConfig[cOpt.Name]) > 0 {
+					newConfig[cOpt.Name] = fmt.Sprintf("%v %v", newConfig[cOpt.Name], cOpt.Value)
+				} else {
+					newConfig[cOpt.Name] = fmt.Sprint(cOpt.Value)
+				}
+			} else if cOpt.Force || len(newConfig[cOpt.Name]) == 0 {
+				newConfig[cOpt.Name] = fmt.Sprint(cOpt.Value)
+			}
 		}
 	}
 	return newConfig
@@ -222,7 +232,7 @@ func (c *ConfigOptions) addBuildToolDefaults(config *ScanOptions, utils Utils) e
 		mvnAdditionalArguments = append(mvnAdditionalArguments, mvnProjectExcludes(config.BuildDescriptorExcludeList, utils)...)
 
 		if len(mvnAdditionalArguments) > 0 {
-			*c = append(*c, ConfigOption{Name: "maven.additionalArguments", Value: strings.Join(mvnAdditionalArguments, " "), Force: true})
+			*c = append(*c, ConfigOption{Name: "maven.additionalArguments", Value: strings.Join(mvnAdditionalArguments, " "), Append: true})
 		}
 
 	}
