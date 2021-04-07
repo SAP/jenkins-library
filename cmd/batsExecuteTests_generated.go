@@ -80,7 +80,7 @@ func addBatsExecuteTestsFlags(cmd *cobra.Command, stepConfig *batsExecuteTestsOp
 	cmd.Flags().StringVar(&stepConfig.OutputFormat, "outputFormat", `junit`, "Defines the format of the test result output. junit would be the standard for automated build environments but you could use also the option tap.")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", `https://github.com/bats-core/bats-core.git`, "Defines the version of bats-core to be used. By default we use the version from the master branch.")
 	cmd.Flags().StringVar(&stepConfig.TestPackage, "testPackage", `piper-bats`, "For the transformation of the test result to xUnit format the node module tap-xunit is used. This parameter defines the name of the test package used in the xUnit result file.")
-	cmd.Flags().StringVar(&stepConfig.TestPath, "testPath", `src/test`, "Defines either the directory which contains the test files (*.bats) or a single file. You can find further details in the Bats-core documentation.")
+	cmd.Flags().StringVar(&stepConfig.TestPath, "testPath", os.Getenv("PIPER_testPath"), "Defines either the directory which contains the test files (*.bats) or a single file. You can find further details in the Bats-core documentation.")
 
 }
 
@@ -128,6 +128,9 @@ func batsExecuteTestsMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 				},
+			},
+			Containers: []config.Container{
+				{Name: "bats", Image: "node:lts-stretch", WorkingDir: "/home/node"},
 			},
 		},
 	}

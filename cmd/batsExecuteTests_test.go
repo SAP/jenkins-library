@@ -1,9 +1,12 @@
 package cmd
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/go-git/go-git/v5"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -13,6 +16,9 @@ type batsExecuteTestsMockUtils struct {
 }
 
 func (b batsExecuteTestsMockUtils) CloneRepo(URL string) error {
+	if URL != "https://github.com/bats-core/bats-core.git" {
+		return git.ErrRepositoryNotExists
+	}
 	return nil
 }
 
@@ -66,5 +72,38 @@ func TestRunBatsExecuteTests(t *testing.T) {
 		mockUtils := newBatsExecuteTestsTestsUtils()
 		err := runBatsExecuteTests(config, nil, &mockUtils)
 		assert.EqualError(t, err, "output format 'fail' is incorrect. Possible drivers: tap, junit")
+	})
+
+	t.Run("failed to clone repo case", func(t *testing.T) {
+		config := &batsExecuteTestsOptions{
+			OutputFormat: "junit",
+			Repository:   "fail",
+			TestPackage:  "piper-bats",
+			TestPath:     "src/test",
+		}
+
+		mockUtils := newBatsExecuteTestsTestsUtils()
+		err := runBatsExecuteTests(config, nil, &mockUtils)
+
+		expectedError := fmt.Errorf("couldn't pull %s repository: %w", config.Repository, git.ErrRepositoryNotExists)
+		assert.EqualError(t, err, expectedError.Error())
+	})
+
+	t.Run("failed to run bats case", func(t *testing.T) {
+		config := &batsExecuteTestsOptions{
+			OutputFormat: "tap",
+			Repository:   "https://github.com/bats-core/bats-core.git",
+			TestPackage:  "piper-bats",
+			TestPath:     "src/test",
+		}
+
+		mockUtils := batsExecuteTestsMockUtils{
+			ExecMockRunner: &mock.ExecMockRunner{ShouldFailOnCommand: map[string]error{"bats-core/bin/bats": errors.New("error case")}},
+			FilesMock:      &mock.FilesMock{},
+		}
+		runBatsExecuteTests(config, nil, &mockUtils)
+
+		assert.False(t, mockUtils.HasFile("TEST-"+config.TestPackage+".tap"))
+		assert.False(t, mockUtils.HasFile("TEST-"+config.TestPackage+".xml"))
 	})
 }

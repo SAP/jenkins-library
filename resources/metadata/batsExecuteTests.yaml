@@ -38,4 +38,7 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
-        default: "src/test"
+  containers:
+    - name: bats
+      image: node:lts-stretch
+      workingDir: /home/node
