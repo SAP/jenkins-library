@@ -172,9 +172,11 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		args = append(args, fmt.Sprintf("--detect.policy.check.fail.on.severities=%v", strings.Join(config.FailOn, ",")))
 	}
 
-	if len(config.CodeLocation) > 0 {
-		args = append(args, fmt.Sprintf("\"--detect.code.location.name='%v'\"", config.CodeLocation))
+	codelocation := config.CodeLocation
+	if len(codelocation) == 0 && len(config.ProjectName) > 0 {
+		codelocation = fmt.Sprintf("%v/%v", config.ProjectName, detectVersionName)
 	}
+	args = append(args, fmt.Sprintf("\"--detect.code.location.name='%v'\"", codelocation))
 
 	if len(config.ScanPaths) > 0 && len(config.ScanPaths[0]) > 0 {
 		args = append(args, fmt.Sprintf("--detect.blackduck.signature.scanner.paths=%v", strings.Join(config.ScanPaths, ",")))
