@@ -262,7 +262,7 @@ Snapshot taken: <i>{{reportTime .ReportTime}}</i>
 </table>
 </p>
 </details>
-{{ end -}}
+{{ end }}
 
 `
 
