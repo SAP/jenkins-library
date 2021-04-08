@@ -272,11 +272,10 @@ func switchBranch(config *gctsDeployOptions, httpClient piperhttp.Sender, curren
 		}
 	}()
 	if httpErr != nil {
-		errorDump, errorDumpParseErr := parseErrorDumpFromResponseBody(resp)
+		_, errorDumpParseErr := parseErrorDumpFromResponseBody(resp)
 		if errorDumpParseErr != nil {
 			return nil, errorDumpParseErr
 		}
-		log.Entry().Errorf("Switch Branch Error Log: ", errorDump)
 		return &response, httpErr
 	} else if resp == nil {
 		return &response, errors.New("did not retrieve a HTTP response")
@@ -630,6 +629,15 @@ func parseErrorDumpFromResponseBody(responseBody *http.Response) (*errorLogBody,
 	parsingErr := piperhttp.ParseHTTPResponseBodyJSON(responseBody, &errorDump)
 	if parsingErr != nil {
 		return &errorDump, parsingErr
+	}
+	for _, errorLogData := range errorDump.ErrorLog {
+		log.Entry().Errorf("Time: %v, User: %v, Section: %v, Action: %v, Severity: %v, Message: %v",
+			errorLogData.Time, errorLogData.User, errorLogData.Section,
+			errorLogData.Action, errorLogData.Severity, errorLogData.Message)
+		for _, protocolErrorData := range errorLogData.Protocol {
+			log.Entry().Errorf("Type: %v", protocolErrorData.Type)
+			log.Entry().Error(protocolErrorData.Protocol)
+		}
 	}
 	return &errorDump, nil
 }
