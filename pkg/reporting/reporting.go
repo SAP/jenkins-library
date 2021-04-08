@@ -265,6 +265,11 @@ Snapshot taken: _{{reportTime .ReportTime}}_
 // ToMarkdown creates a markdown version of the report content
 func (s *ScanReport) ToMarkdown() ([]byte, error) {
 	funcMap := template.FuncMap{
+		"columnCount": tableColumnCount,
+		"drawCell":    drawCell,
+		"inc": func(i int) int {
+			return i + 1
+		},
 		"reportTime": func(currentTime time.Time) string {
 			return currentTime.Format("Jan 02, 2006 - 15:04:05 MST")
 		},
