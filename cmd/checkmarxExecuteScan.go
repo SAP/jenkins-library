@@ -43,7 +43,7 @@ func (checkmarxExecuteScanUtilsBundle) PathMatch(pattern, name string) (bool, er
 }
 
 func (b checkmarxExecuteScanUtilsBundle) GetWorkspace() string {
-	return b.GetWorkspace()
+	return b.workspace
 }
 
 func (checkmarxExecuteScanUtilsBundle) WriteFile(filename string, data []byte, perm os.FileMode) error {
