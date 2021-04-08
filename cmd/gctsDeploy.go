@@ -272,6 +272,11 @@ func switchBranch(config *gctsDeployOptions, httpClient piperhttp.Sender, curren
 		}
 	}()
 	if httpErr != nil {
+		errorDump, errorDumpParseErr := parseErrorDumpFromResponseBody(resp)
+		if errorDumpParseErr != nil {
+			return nil, errorDumpParseErr
+		}
+		log.Entry().Errorf("Switch Branch Error Log: ", errorDump)
 		return &response, httpErr
 	} else if resp == nil {
 		return &response, errors.New("did not retrieve a HTTP response")
@@ -620,6 +625,15 @@ func findConfigurationMetadata(configToFind string, configurationsAvailable conf
 	return configStruct, nil
 }
 
+func parseErrorDumpFromResponseBody(responseBody *http.Response) (*errorLogBody, error) {
+	var errorDump errorLogBody
+	parsingErr := piperhttp.ParseHTTPResponseBodyJSON(responseBody, &errorDump)
+	if parsingErr != nil {
+		return &errorDump, parsingErr
+	}
+	return &errorDump, nil
+}
+
 type repositoryConfiguration struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
@@ -702,4 +716,23 @@ type configMetadata struct {
 
 type configurationMetadataBody struct {
 	Config []configMetadata `json:"config"`
+}
+
+type errorProtocolbody struct {
+	Type     string   `json:"type"`
+	Protocol []string `json:"protocol"`
+}
+
+type errorLog struct {
+	Time     int                 `json:"time"`
+	User     string              `json:"user"`
+	Section  string              `json:"section"`
+	Action   string              `json:"action"`
+	Severity string              `json:"severity"`
+	Message  string              `json:"message"`
+	Protocol []errorProtocolbody `json:"protocol"`
+}
+
+type errorLogBody struct {
+	ErrorLog []errorLog `json:"errorLog"`
 }
