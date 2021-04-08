@@ -102,7 +102,7 @@ func TestToMarkdown(t *testing.T) {
 	assert.Contains(t, result, `<tr><td>overview 1:</td><td>1</td></tr>`)
 	assert.Contains(t, result, `<tr><td>overview 2:</td><td>2</td></tr>`)
 	assert.Contains(t, result, `this is further information`)
-	assert.Contains(t, result, "Snapshot taken: _Jan 01, 2021 - 00:00:00 UTC_")
+	assert.Contains(t, result, "Snapshot taken: <i>Jan 01, 2021 - 00:00:00 UTC</i>")
 }
 
 func TestTableColumnCount(t *testing.T) {

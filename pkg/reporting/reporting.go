@@ -238,7 +238,7 @@ const reportMdTemplate = `## {{.Title}}
 
 <details><summary><i>{{.Title}} details:</i></summary>
 <p>
-Snapshot taken: _{{reportTime .ReportTime}}_
+Snapshot taken: <i>{{reportTime .ReportTime}}</i>
 
 <table>
 <tr>
@@ -260,6 +260,7 @@ Snapshot taken: _{{reportTime .ReportTime}}_
 </table>
 </p>
 </details>
+
 `
 
 // ToMarkdown creates a markdown version of the report content
