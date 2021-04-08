@@ -954,3 +954,13 @@ func TestLoadPreset(t *testing.T) {
 		assert.Equal(t, 0, preset.ID, "Expected result but got none")
 	})
 }
+
+func TestPreventInfiniteLoop(t *testing.T) {
+	t.Parallel()
+
+	utils := checkmarxExecuteScanUtilsBundle{
+		workspace: "abc",
+	}
+
+	assert.Equal(t, "abc", utils.GetWorkspace(), "Wrong workspace has been loaded")
+}
