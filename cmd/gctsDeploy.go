@@ -149,10 +149,9 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 	}
 	targetBranch := config.Branch
 	if config.Branch != "" {
-		response, switchBranchErr := switchBranch(config, httpClient, currentBranch, targetBranch)
+		_, switchBranchErr := switchBranch(config, httpClient, currentBranch, targetBranch)
 		if switchBranchErr != nil {
 			log.Entry().WithError(switchBranchErr).Error("step execution failed at Switch Branch")
-			log.Entry().Errorf("Error Dump: ", response)
 			if repoState == repoStateNew && config.Rollback {
 				// Rollback branch. Resetting branches
 				targetBranch = repoMetadataInitState.Result.Branch
@@ -311,6 +310,10 @@ func deployCommitToAbapSystem(config *gctsDeployOptions, httpClient piperhttp.Se
 		}
 	}()
 	if httpErr != nil {
+		_, errorDumpParseErr := parseErrorDumpFromResponseBody(resp)
+		if errorDumpParseErr != nil {
+			return errorDumpParseErr
+		}
 		log.Entry().Error("Failed During Deploy to Abap system")
 		return httpErr
 	}
@@ -345,6 +348,10 @@ func getRepository(config *gctsDeployOptions, httpClient piperhttp.Sender) (*get
 		}
 	}()
 	if httpErr != nil {
+		_, errorDumpParseErr := parseErrorDumpFromResponseBody(resp)
+		if errorDumpParseErr != nil {
+			return nil, errorDumpParseErr
+		}
 		log.Entry().Infof("Error while repository Check : %v", httpErr)
 		return &response, httpErr
 	} else if resp == nil {
@@ -373,6 +380,10 @@ func deleteConfigKey(deployConfig *gctsDeployOptions, httpClient piperhttp.Sende
 		}
 	}()
 	if httpErr != nil {
+		_, errorDumpParseErr := parseErrorDumpFromResponseBody(resp)
+		if errorDumpParseErr != nil {
+			return errorDumpParseErr
+		}
 		log.Entry().Error("Failure during deletion of configuration value")
 		return httpErr
 	}
@@ -401,6 +412,10 @@ func setConfigKey(deployConfig *gctsDeployOptions, httpClient piperhttp.Sender, 
 		}
 	}()
 	if httpErr != nil {
+		_, errorDumpParseErr := parseErrorDumpFromResponseBody(resp)
+		if errorDumpParseErr != nil {
+			return errorDumpParseErr
+		}
 		log.Entry().Error("Failure during setting configuration value")
 		return httpErr
 	}
@@ -443,6 +458,10 @@ func pullByCommit(config *gctsDeployOptions, telemetryData *telemetry.CustomData
 	}()
 
 	if httpErr != nil {
+		_, errorDumpParseErr := parseErrorDumpFromResponseBody(resp)
+		if errorDumpParseErr != nil {
+			return errorDumpParseErr
+		}
 		return httpErr
 	} else if resp == nil {
 		return errors.New("did not retrieve a HTTP response")
@@ -543,6 +562,10 @@ func createRepositoryForDeploy(config *gctsCreateRepositoryOptions, telemetryDat
 	}
 
 	if httpErr != nil {
+		_, errorDumpParseErr := parseErrorDumpFromResponseBody(resp)
+		if errorDumpParseErr != nil {
+			return errorDumpParseErr
+		}
 		if resp.StatusCode == 500 {
 			if exception, ok := response.Path("exception").Data().(string); ok && exception == "Repository already exists" {
 				log.Entry().
@@ -574,6 +597,10 @@ func getConfigurationMetadata(config *gctsDeployOptions, httpClient piperhttp.Se
 		}
 	}()
 	if httpErr != nil {
+		_, errorDumpParseErr := parseErrorDumpFromResponseBody(resp)
+		if errorDumpParseErr != nil {
+			return nil, errorDumpParseErr
+		}
 		log.Entry().Infof("Error while repository Check : %v", httpErr)
 		return &response, httpErr
 	} else if resp == nil {
