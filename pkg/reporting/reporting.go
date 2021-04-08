@@ -236,9 +236,11 @@ const reportMdTemplate = `## {{.Title}}
 
 {{.FurtherInfo}}
 
+Snapshot taken: <i>{{reportTime .ReportTime}}</i>
+
+{{if shouldDrawTable .DetailTable -}}
 <details><summary><i>{{.Title}} details:</i></summary>
 <p>
-Snapshot taken: <i>{{reportTime .ReportTime}}</i>
 
 <table>
 <tr>
@@ -260,14 +262,16 @@ Snapshot taken: <i>{{reportTime .ReportTime}}</i>
 </table>
 </p>
 </details>
+{{ end -}}
 
 `
 
 // ToMarkdown creates a markdown version of the report content
 func (s *ScanReport) ToMarkdown() ([]byte, error) {
 	funcMap := template.FuncMap{
-		"columnCount": tableColumnCount,
-		"drawCell":    drawCell,
+		"columnCount":     tableColumnCount,
+		"drawCell":        drawCell,
+		"shouldDrawTable": shouldDrawTable,
 		"inc": func(i int) int {
 			return i + 1
 		},
@@ -302,6 +306,13 @@ func drawCell(cell ScanCell) string {
 		return fmt.Sprintf(`<td class="%v">%v</td>`, cell.Style, cell.Content)
 	}
 	return fmt.Sprintf(`<td>%v</td>`, cell.Content)
+}
+
+func shouldDrawTable(table ScanDetailTable) bool {
+	if len(table.Headers) > 0 {
+		return true
+	}
+	return false
 }
 
 func drawOverviewRow(row OverviewRow) string {
