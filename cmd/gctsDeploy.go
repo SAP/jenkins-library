@@ -149,9 +149,10 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 	}
 	targetBranch := config.Branch
 	if config.Branch != "" {
-		_, switchBranchErr := switchBranch(config, httpClient, currentBranch, targetBranch)
+		response, switchBranchErr := switchBranch(config, httpClient, currentBranch, targetBranch)
 		if switchBranchErr != nil {
 			log.Entry().WithError(switchBranchErr).Error("step execution failed at Switch Branch")
+			log.Entry().Errorf("Error Dump: ", response)
 			if repoState == repoStateNew && config.Rollback {
 				// Rollback branch. Resetting branches
 				targetBranch = repoMetadataInitState.Result.Branch
