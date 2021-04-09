@@ -79,7 +79,7 @@ func TestDefaultsAndFilters(t *testing.T) {
 		defaults, filters, err := defaultsAndFilters(&metadata, "stepName")
 
 		assert.Equal(t, 1, len(defaults), "getting defaults failed")
-		assert.Equal(t, 0, len(filters.All), "wrong number of filter values")
+		assert.Equal(t, 3, len(filters.All), "wrong number of filter values")
 		assert.NoError(t, err, "error occurred but none expected")
 	})
 
