@@ -7,7 +7,7 @@
 * **Solution Manager Account** - user account with according roles for upload
 * **Change Document** - the change document the tranport request is coupled to
 * **Transport Request** - the target container of the upload
-* **Change Management Client** - installation of the CM Client with needed certificates  
+* **Change Management Client** - installation of the CM Client with needed certificates
 
 ## Change Management Client
 
@@ -53,16 +53,16 @@ transportRequestUploadSOLMAN(
 The Jenkins pipeline `input` step allows to specify the IDs at runtime of the pipeline.
 
 ```groovy
-def ids = input( message: "Upload?", 
+def ids = input( message: "Upload?",
     parameters: [
-        string(name: 'CHANGE_DOCUMENT_ID', description: 'Change Document ID'), 
-        string(name: 'TRANSPORT_REQUEST_ID', description: 'Transport Request ID')
+        string(name: 'CHANGE_DOCUMENT_ID',description: 'Change Document ID'),
+        string(name: 'TRANSPORT_REQUEST_ID',description: 'Transport Request ID')
     ]
 )
 
 transportRequestUploadSOLMAN(
-    script:this, 
-    changeDocumentId: ids['CHANGE_DOCUMENT_ID'], 
+    script:this,
+    changeDocumentId: ids['CHANGE_DOCUMENT_ID'],
     transportRequestId: ids['TRANSPORT_REQUEST_ID'],
     ...
 )
@@ -79,8 +79,8 @@ any blanks and the identifier are expected.
 ```
 Release - define IDs for upload to Solution Manager
 
-   ChangeDocument: 1000001234
-   TransportRequest: ABCD10005E
+    ChangeDocument: 1000001234
+    TransportRequest: ABCD10005E
 ```
 
 The IDs dont need to be defined in the same message.
