@@ -32,7 +32,7 @@ only the truststore of the environment needs to be extended.
 
 The target of the upload is a Transport Request, which is determined by the identifiers (ID)
 of the Request and the associated Change Document.
-${docGenStepName} allows to set these IDs by parameter or to use Git commit messages.
+`transportRequestUploadSOLMAN` allows to set these IDs by parameter or to use Git commit messages.
 As an additional option, IDs can be passed in via the Common Pipeline Environment. For example through a
 step that generates the IDs or obtains them differently.
 
@@ -73,7 +73,7 @@ transportRequestUploadSOLMAN(
 If the identifiers are neither defined as step parameters nor by the Common Pipeline Environment,
 the Git commit messages (`git log`) of the project are searched for lines that follow a defined pattern.
 The pattern is specified by the label _changeDocumentLabel_ (default=`ChangeDocument`) resp.
-_transportRequestLabel_ (default=`TransportRequest`). Behind the label a colon
+_transportRequestLabel_ (default=`TransportRequest`). Behind the label a colon,
 any blanks and the identifier are expected.
 
 ```
@@ -106,7 +106,7 @@ general:
 
 ## Common Pipeline Environment
 
-Werden `changeDocumentId` und `transportRequestId` erst zur Laufzeit über _Git commit messages_ ermittelt, so werden diese in das `commonPipelineEnvironment` eingetragen und sind entsprechend arufbar.
+If `changeDocumentId` and `transportRequestId` are determined during runtime via the Git commit messages, they are entered into the `commonPipelineEnvironment` and can be retrieved accordingly.
 
 ```
   this.commonPipelineEnvironment.getValue('changeDocumentID')

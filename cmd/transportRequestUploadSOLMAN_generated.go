@@ -72,9 +72,9 @@ func TransportRequestUploadSOLMANCommand() *cobra.Command {
 	var createTransportRequestUploadSOLMANCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Uploads a specified file into a given transport via Solution Manager",
-		Long: `Uploads the file specified by <filePath> into the given transport request <transportRequestId> via Solution Manager.
-The mandatory <changeDocumentId> points to the associate change document item.
-The <applicationId> specifies how the file needs to be handled on server side.`,
+		Long: `Uploads the file specified by 'filePath' into the given transport request 'transportRequestId' via Solution Manager.
+The mandatory 'changeDocumentId' points to the associate change document item.
+The 'applicationId' specifies how the file needs to be handled on server side.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)

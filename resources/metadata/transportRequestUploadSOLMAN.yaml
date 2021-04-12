@@ -4,9 +4,9 @@ metadata:
     - name: transportRequestUploadFile
   description: "Uploads a specified file into a given transport via Solution Manager"
   longDescription: |
-    Uploads the file specified by <filePath> into the given transport request <transportRequestId> via Solution Manager.
-    The mandatory <changeDocumentId> points to the associate change document item.
-    The <applicationId> specifies how the file needs to be handled on server side.
+    Uploads the file specified by 'filePath' into the given transport request 'transportRequestId' via Solution Manager.
+    The mandatory 'changeDocumentId' points to the associate change document item.
+    The 'applicationId' specifies how the file needs to be handled on server side.
 spec:
   inputs:
     secrets:
