@@ -11,7 +11,7 @@
 
 ## Change Management Client
 
-Access to the Solution Manager is handled via the so-called CM Client.
+Access to the Solution Manager is handled via the CM Client.
 The CM Client is a software running under Linux, which can initiate basic change management tasks
 in the Solution Manager as well as in the CTS. The client is used by default
 as  a [Docker image](https://hub.docker.com/r/ppiper/cm-client),
@@ -83,7 +83,7 @@ Release - define IDs for upload to Solution Manager
     TransportRequest: ABCD10005E
 ```
 
-The IDs dont need to be defined in the same message.
+The IDs dont need to be defined in the same commit message.
 
 The Git commit messages to be considered are determined by the parameters _gitFrom_ (default=`origin/master`)
 and _gitTo_ (default=`HEAD`). The naming follows the Git revision range representation `git log <gitFrom>..<gitTo>`.
