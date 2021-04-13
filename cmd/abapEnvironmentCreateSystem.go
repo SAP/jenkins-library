@@ -39,7 +39,7 @@ func runAbapEnvironmentCreateSystem(config *abapEnvironmentCreateSystemOptions, 
 			Password:        config.Password,
 			ServiceManifest: config.ServiceManifest,
 		}
-		runCloudFoundryCreateService(&createServiceConfig, telemetryData, cf)
+		return runCloudFoundryCreateService(&createServiceConfig, telemetryData, cf)
 	} else {
 		// if no manifest file is provided, it is created with the provided config values
 		manifestYAML, err := generateManifestYAML(config)
@@ -64,10 +64,8 @@ func runAbapEnvironmentCreateSystem(config *abapEnvironmentCreateSystemOptions, 
 			Password:        config.Password,
 			ServiceManifest: path,
 		}
-		runCloudFoundryCreateService(&createServiceConfig, telemetryData, cf)
+		return runCloudFoundryCreateService(&createServiceConfig, telemetryData, cf)
 	}
-
-	return nil
 }
 
 func generateManifestYAML(config *abapEnvironmentCreateSystemOptions) ([]byte, error) {
