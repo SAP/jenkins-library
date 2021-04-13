@@ -40,32 +40,31 @@ func runAbapEnvironmentCreateSystem(config *abapEnvironmentCreateSystemOptions, 
 			ServiceManifest: config.ServiceManifest,
 		}
 		return runCloudFoundryCreateService(&createServiceConfig, telemetryData, cf)
-	} else {
-		// if no manifest file is provided, it is created with the provided config values
-		manifestYAML, err := generateManifestYAML(config)
-
-		// writing the yaml into a temporary file
-		path, _ := os.Getwd()
-		path = path + "/generated_service_manifest-" + u.getUUID() + ".yml"
-		log.Entry().Debugf("Path: %s", path)
-		err = ioutil.WriteFile(path, manifestYAML, 0644)
-		if err != nil {
-			return fmt.Errorf("%s: %w", "Could not generate manifest file for the cloud foundry cli", err)
-		}
-
-		defer os.Remove(path)
-
-		// Calling cloudFoundryCreateService with the respective parameters
-		createServiceConfig := cloudFoundryCreateServiceOptions{
-			CfAPIEndpoint:   config.CfAPIEndpoint,
-			CfOrg:           config.CfOrg,
-			CfSpace:         config.CfSpace,
-			Username:        config.Username,
-			Password:        config.Password,
-			ServiceManifest: path,
-		}
-		return runCloudFoundryCreateService(&createServiceConfig, telemetryData, cf)
 	}
+	// if no manifest file is provided, it is created with the provided config values
+	manifestYAML, err := generateManifestYAML(config)
+
+	// writing the yaml into a temporary file
+	path, _ := os.Getwd()
+	path = path + "/generated_service_manifest-" + u.getUUID() + ".yml"
+	log.Entry().Debugf("Path: %s", path)
+	err = ioutil.WriteFile(path, manifestYAML, 0644)
+	if err != nil {
+		return fmt.Errorf("%s: %w", "Could not generate manifest file for the cloud foundry cli", err)
+	}
+
+	defer os.Remove(path)
+
+	// Calling cloudFoundryCreateService with the respective parameters
+	createServiceConfig := cloudFoundryCreateServiceOptions{
+		CfAPIEndpoint:   config.CfAPIEndpoint,
+		CfOrg:           config.CfOrg,
+		CfSpace:         config.CfSpace,
+		Username:        config.Username,
+		Password:        config.Password,
+		ServiceManifest: path,
+	}
+	return runCloudFoundryCreateService(&createServiceConfig, telemetryData, cf)
 }
 
 func generateManifestYAML(config *abapEnvironmentCreateSystemOptions) ([]byte, error) {
