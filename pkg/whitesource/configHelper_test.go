@@ -63,6 +63,8 @@ func TestUpdateConfig(t *testing.T) {
 		"not_forced":           "not_forced_original",
 		"dont_omit_forced":     "dont_omit_forced_original",
 		"dont_omit_not_forced": "dont_omit_not_forced_original",
+		"append":               "original_value appended by",
+		"append_empty":         "",
 	}
 	testConfig := ConfigOptions{
 		{Name: "non_existing_forced", Value: "non_existing_forced_val", Force: true},
@@ -73,6 +75,8 @@ func TestUpdateConfig(t *testing.T) {
 		{Name: "dont_omit", Value: "dont_omit_val", OmitIfPresent: "dependent_notExisting"},
 		{Name: "dont_omit_forced", Value: "dont_omit_forced_val", OmitIfPresent: "dependent_notExisting", Force: true},
 		{Name: "dont_omit_not_forced", Value: "dont_omit_not_forced_val", OmitIfPresent: "dependent_notExisting", Force: false},
+		{Name: "append", Value: "appended_val", Append: true},
+		{Name: "append_empty", Value: "appended_val", Append: true},
 	}
 
 	updatedConfig := testConfig.updateConfig(&originalConfig)
@@ -86,6 +90,8 @@ func TestUpdateConfig(t *testing.T) {
 	assert.Equal(t, "dont_omit_val", updatedConfig["dont_omit"])
 	assert.Equal(t, "dont_omit_forced_val", updatedConfig["dont_omit_forced"])
 	assert.Equal(t, "dont_omit_not_forced_original", updatedConfig["dont_omit_not_forced"])
+	assert.Equal(t, "original_value appended by appended_val", updatedConfig["append"])
+	assert.Equal(t, "appended_val", updatedConfig["append_empty"])
 }
 
 func TestAddGeneralDefaults(t *testing.T) {
@@ -211,7 +217,7 @@ func TestAddBuildToolDefaults(t *testing.T) {
 		}
 		utilsMock.AddFile("unit-tests/pom.xml", []byte("dummy"))
 		testConfig.addBuildToolDefaults(&whitesourceConfig, utilsMock)
-		assert.Contains(t, testConfig, ConfigOption{Name: "maven.additionalArguments", Value: "--global-settings global-settings.xml --settings project-settings.xml --projects !unit-tests", Force: true})
+		assert.Contains(t, testConfig, ConfigOption{Name: "maven.additionalArguments", Value: "--global-settings global-settings.xml --settings project-settings.xml --projects !unit-tests", Append: true})
 	})
 
 	t.Run("Docker - default", func(t *testing.T) {
