@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 	"io"
 	"os"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
@@ -436,11 +437,12 @@ func handleSmokeTestScript(smokeTestScript string) ([]string, error) {
 			return []string{}, fmt.Errorf("failed to make smoke-test script executable: %w", err)
 		}
 		pwd, err := fileUtils.Getwd()
+
 		if err != nil {
 			return []string{}, fmt.Errorf("failed to get current working directory for execution of smoke-test script: %w", err)
 		}
 
-		return []string{"--smoke-test", fmt.Sprintf("%s/%s", pwd, smokeTestScript)}, nil
+		return []string{"--smoke-test", fmt.Sprintf("%s", filepath.Join(pwd, smokeTestScript))}, nil
 	}
 	return []string{}, nil
 }
@@ -838,14 +840,18 @@ func cfDeploy(
 	// TODO set HOME to config.DockerWorkspace
 	command.SetEnv(additionalEnvironment)
 
-	err = _cfLogin(command, cloudfoundry.LoginOptions{
-		CfAPIEndpoint: config.APIEndpoint,
-		CfOrg:         config.Org,
-		CfSpace:       config.Space,
-		Username:      config.Username,
-		Password:      config.Password,
-		CfLoginOpts:   strings.Fields(config.LoginParameters),
-	})
+	err = command.RunExecutable("cf", "version")
+
+	if err == nil {
+		err = _cfLogin(command, cloudfoundry.LoginOptions{
+			CfAPIEndpoint: config.APIEndpoint,
+			CfOrg:         config.Org,
+			CfSpace:       config.Space,
+			Username:      config.Username,
+			Password:      config.Password,
+			CfLoginOpts:   strings.Fields(config.LoginParameters),
+		})
+	}
 
 	if err == nil {
 		loginPerformed = true

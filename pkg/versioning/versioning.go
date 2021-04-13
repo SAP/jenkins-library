@@ -9,8 +9,13 @@ import (
 	"github.com/SAP/jenkins-library/pkg/maven"
 )
 
-// Coordinates to address the artifact
-type Coordinates interface{}
+// Coordinates to address the artifact coordinates like groupId, artifactId, version and packaging
+type Coordinates struct {
+	GroupID    string
+	ArtifactID string
+	Version    string
+	Packaging  string
+}
 
 // Artifact defines the versioning operations for various build tools
 type Artifact interface {
@@ -20,9 +25,10 @@ type Artifact interface {
 	GetCoordinates() (Coordinates, error)
 }
 
-// Options define build tool specific settings in order to properly retrieve e.g. the version of an artifact
+// Options define build tool specific settings in order to properly retrieve e.g. the version / coordinates of an artifact
 type Options struct {
 	ProjectSettingsFile string
+	DockerImage         string
 	GlobalSettingsFile  string
 	M2Path              string
 	VersionSource       string
@@ -123,7 +129,7 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, utils
 			versionField:    "version",
 			artifactIDField: "ID",
 		}
-	case "npm":
+	case "npm", "yarn":
 		if len(buildDescriptorFilePath) == 0 {
 			buildDescriptorFilePath = "package.json"
 		}
@@ -134,7 +140,7 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, utils
 	case "pip":
 		if len(buildDescriptorFilePath) == 0 {
 			var err error
-			buildDescriptorFilePath, err = searchDescriptor([]string{"version.txt", "VERSION", "setup.py"}, fileExists)
+			buildDescriptorFilePath, err = searchDescriptor([]string{"setup.py", "version.txt", "VERSION"}, fileExists)
 			if err != nil {
 				return artifact, err
 			}

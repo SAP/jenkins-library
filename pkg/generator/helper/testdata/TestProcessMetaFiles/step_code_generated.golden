@@ -173,6 +173,10 @@ func testStepMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Resources: []config.StepResources{
+					{Name: "stashName",Type: "stash",
+					},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:      "param0",

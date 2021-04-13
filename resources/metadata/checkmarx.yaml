@@ -244,36 +244,72 @@ spec:
       - name: influx
         type: influx
         params:
+          - name: step_data
+            fields:
+              - name: checkmarx
+                type: bool
           - name: checkmarx_data
             fields:
               - name: high_issues
-              - name: high_not_false_positive
+                type: int
+              - name: high_not_false_postive
+                type: int
               - name: high_not_exploitable
+                type: int
               - name: high_confirmed
+                type: int
               - name: high_urgent
+                type: int
               - name: high_proposed_not_exploitable
+                type: int
               - name: high_to_verify
+                type: int
               - name: medium_issues
-              - name: medium_not_false_positive
+                type: int
+              - name: medium_not_false_postive
+                type: int
               - name: medium_not_exploitable
+                type: int
               - name: medium_confirmed
+                type: int
               - name: medium_urgent
+                type: int
               - name: medium_proposed_not_exploitable
+                type: int
               - name: medium_to_verify
+                type: int
               - name: low_issues
-              - name: low_not_false_positive
+                type: int
+              - name: low_not_false_postive
+                type: int
               - name: low_not_exploitable
+                type: int
               - name: low_confirmed
+                type: int
               - name: low_urgent
+                type: int
               - name: low_proposed_not_exploitable
+                type: int
               - name: low_to_verify
+                type: int
               - name: information_issues
-              - name: information_not_false_positive
+                type: int
+              - name: information_not_false_postive
+                type: int
               - name: information_not_exploitable
+                type: int
               - name: information_confirmed
+                type: int
               - name: information_urgent
+                type: int
               - name: information_proposed_not_exploitable
+                type: int
               - name: information_to_verify
+                type: int
+              - name: lines_of_code_scanned
+                type: int
+              - name: files_scanned
+                type: int
               - name: initiator_name
               - name: owner
               - name: scan_id
@@ -283,8 +319,6 @@ spec:
               - name: team_full_path_on_report_date
               - name: scan_start
               - name: scan_time
-              - name: lines_of_code_scanned
-              - name: files_scanned
               - name: checkmarx_version
               - name: scan_type
               - name: preset

@@ -34,6 +34,7 @@ type stepInfo struct {
 	Containers       []config.Container
 	Sidecars         []config.Container
 	Outputs          config.StepOutputs
+	Resources        []config.StepResources
 }
 
 //StepGoTemplate ...
@@ -171,6 +172,17 @@ func {{ .StepName }}Metadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				{{ if .Resources -}}
+				Resources: []config.StepResources{
+					{{- range $resource := .Resources }}
+					{
+						{{- if $resource.Name -}} Name: "{{$resource.Name}}",{{- end }}
+						{{- if $resource.Description -}} Description: "{{$resource.Description}}",{{- end }}
+						{{- if $resource.Type -}} Type: "{{$resource.Type}}",{{- end }}
+						{{- if $resource.Conditions -}} Conditions: []config.Condition{ {{- range $i, $cond := $resource.Conditions }} {ConditionRef: "{{$cond.ConditionRef}}", Params: []config.Param{ {{- range $j, $p := $cond.Params}} { Name: "{{$p.Name}}", Value: "{{$p.Value}}" }, {{end -}} } }, {{ end -}} },{{ end }}
+					},{{- end }}
+				},
+				{{ end -}}
 				Parameters: []config.StepParameters{
 					{{- range $key, $value := .StepParameters }}
 					{
@@ -223,6 +235,7 @@ func {{ .StepName }}Metadata() config.StepData {
 							{{ if $p.tags}}{"tags": []map[string]string{ {{- range $j, $t := $p.tags}} {"name": "{{$t.name}}"}, {{end -}} } },{{ end -}}
 						{{ end }}
 						{{ if $res.Parameters -}} }, {{- end }}
+						{{- if $res.Conditions -}} Conditions: []config.Condition{ {{- range $i, $cond := $res.Conditions }} {ConditionRef: "{{$cond.ConditionRef}}", Params: []config.Param{ {{- range $j, $p := $cond.Params}} { Name: "{{$p.Name}}", Value: "{{$p.Value}}" }, {{end -}} } }, {{ end -}} },{{ end }}
 					}, {{- end }}
 				},
 			}, {{- end }}
@@ -542,6 +555,7 @@ func getStepInfo(stepData *config.StepData, osImport bool, exportPrefix string) 
 			Containers:       stepData.Spec.Containers,
 			Sidecars:         stepData.Spec.Sidecars,
 			Outputs:          stepData.Spec.Outputs,
+			Resources:        stepData.Spec.Inputs.Resources,
 		},
 		err
 }

@@ -114,6 +114,7 @@ public class CommonStepsTest extends BasePiperTest{
         'abapAddonAssemblyKitReleasePackages', //implementing new golang pattern without fields
         'abapAddonAssemblyKitReserveNextPackages', //implementing new golang pattern without fields
         'abapEnvironmentAssemblePackages', //implementing new golang pattern without fields
+        'abapEnvironmentAssembleConfirm', //implementing new golang pattern without fields
         'abapEnvironmentCheckoutBranch', //implementing new golang pattern without fields
         'abapEnvironmentCloneGitRepo', //implementing new golang pattern without fields
         'abapEnvironmentPullGitRepo', //implementing new golang pattern without fields
@@ -171,8 +172,18 @@ public class CommonStepsTest extends BasePiperTest{
         'gitopsUpdateDeployment', //implementing new golang pattern without fields
         'vaultRotateSecretId', //implementing new golang pattern without fields
         'deployIntegrationArtifact', //implementing new golang pattern without fields
+        'newmanExecute', //implementing new golang pattern without fields
+        'terraformExecute', //implementing new golang pattern without fields
+        'whitesourceExecuteScan', //implementing new golang pattern without fields
         'uiVeri5ExecuteTests', //implementing new golang pattern without fields
-        'integrationArtifactDeploy' //implementing new golang pattern without fields
+        'integrationArtifactDeploy', //implementing new golang pattern without fields
+        'integrationArtifactUpdateConfiguration', //implementing new golang pattern without fields
+        'integrationArtifactGetMplStatus', //implementing new golang pattern without fields
+        'integrationArtifactGetServiceEndpoint', //implementing new golang pattern without fields
+        'integrationArtifactDownload', //implementing new golang pattern without fields
+        'integrationArtifactUpload', //implementing new golang pattern without fields
+        'containerExecuteStructureTests', //implementing new golang pattern without fields
+        'transportRequestUploadSOLMAN', //implementing new golang pattern without fields
     ]
 
     @Test

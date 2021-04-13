@@ -218,6 +218,40 @@ steps:
 		})
 	})
 
+	t.Run("Success case - environment nil", func(t *testing.T) {
+
+		testConfig := ""
+		filters := StepFilters{
+			General: []string{"p0"},
+		}
+
+		defaults1 := `general:
+  p0: p0_general_default
+`
+		var c Config
+		defaults := []io.ReadCloser{ioutil.NopCloser(strings.NewReader(defaults1))}
+
+		myConfig := ioutil.NopCloser(strings.NewReader(testConfig))
+
+		stepMeta := StepData{Spec: StepSpec{Inputs: StepInputs{Parameters: []StepParameters{
+			{Name: "p0", ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: "p0"}}},
+		}}}}
+
+		dir, err := ioutil.TempDir("", "")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+
+		// clean up tmp dir
+		defer os.RemoveAll(dir)
+
+		stepConfig, err := c.GetStepConfig(map[string]interface{}{}, "", myConfig, defaults, false, filters, []StepParameters{}, []StepSecrets{}, stepMeta.GetResourceParameters(dir, "commonPipelineEnvironment"), "stage1", "step1", []Alias{})
+
+		assert.Equal(t, nil, err, "error occurred but none expected")
+
+		assert.Equal(t, "p0_general_default", stepConfig.Config["p0"])
+	})
+
 	t.Run("Consider custom defaults from config", func(t *testing.T) {
 		var c Config
 		testConfDefaults := "customDefaults:\n- testDefaults.yaml"

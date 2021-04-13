@@ -1285,3 +1285,16 @@ func TestMergeProjectVersionStateOfPRIntoMaster(t *testing.T) {
 		assert.Equal(t, true, inactivateCalled, "Expected different value")
 	})
 }
+
+func TestBase64EndodePlainToken(t *testing.T) {
+	t.Run("Encoded token untouched", func(t *testing.T) {
+		token := "OTUzODcwNDYtNWFjOC00NTcwLTg3NWQtYTVlYzhiZDhkM2Qy"
+		encodedToken := base64EndodePlainToken(token)
+		assert.Equal(t, token, encodedToken)
+	})
+	t.Run("Unencoded token gets encoded", func(t *testing.T) {
+		token := "95387046-5ac8-4570-875d-a5ec8bd8d3d2"
+		encodedToken := base64EndodePlainToken(token)
+		assert.Equal(t, "OTUzODcwNDYtNWFjOC00NTcwLTg3NWQtYTVlYzhiZDhkM2Qy", encodedToken)
+	})
+}

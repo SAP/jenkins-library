@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"context"
+	"fmt"
+	"io/ioutil"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -20,22 +22,37 @@ func githubCreateIssue(config githubCreateIssueOptions, telemetryData *telemetry
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to get GitHub client")
 	}
-	err = runGithubCreateIssue(ctx, &config, telemetryData, client.Issues)
+	err = runGithubCreateIssue(ctx, &config, telemetryData, client.Issues, ioutil.ReadFile)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to comment on issue")
 	}
 }
 
-func runGithubCreateIssue(ctx context.Context, config *githubCreateIssueOptions, _ *telemetry.CustomData, ghCreateIssueService githubCreateIssueService) error {
+func runGithubCreateIssue(ctx context.Context, config *githubCreateIssueOptions, _ *telemetry.CustomData, ghCreateIssueService githubCreateIssueService, readFile func(string) ([]byte, error)) error {
+
+	if len(config.Body)+len(config.BodyFilePath) == 0 {
+		return fmt.Errorf("either parameter `body` or parameter `bodyFilePath` is required")
+	}
+
 	issue := github.IssueRequest{
-		Body:  &config.Body,
 		Title: &config.Title,
+	}
+
+	if len(config.Body) > 0 {
+		issue.Body = &config.Body
+	} else {
+		issueContent, err := readFile(config.BodyFilePath)
+		if err != nil {
+			return errors.Wrapf(err, "failed to read file '%v'", config.BodyFilePath)
+		}
+		body := string(issueContent)
+		issue.Body = &body
 	}
 
 	newIssue, resp, err := ghCreateIssueService.Create(ctx, config.Owner, config.Repository, &issue)
 	if err != nil {
 		log.Entry().Errorf("GitHub response code %v", resp.Status)
-		return errors.Wrap(err, "Error occurred when creating issue")
+		return errors.Wrap(err, "error occurred when creating issue")
 	}
 	log.Entry().Debugf("New issue created: %v", newIssue)
 

@@ -136,7 +136,8 @@ spec:
         default: protecode_report.pdf
       - name: fetchUrl
         type: string
-        description: The URL to fetch the file to scan with Protecode which must be accessible via public HTTP GET request
+        description: The URL to fetch the file or image to scan with Protecode.
+        longDescription: The URL to fetch the file or image to scan with Protecode. The URL must be accessible via public HTTP GET request. To fetch a docker image the URL needs a 'docker-registry-' prefix.
         scope:
           - PARAMETERS
           - STAGES
@@ -219,11 +220,21 @@ spec:
       - name: influx
         type: influx
         params:
+          - name: step_data
+            fields:
+              - name: protecode
+                type: bool
           - name: protecode_data
             fields:
-              - name: historical_vulnerabilities
-              - name: triaged_vulnerabilities
               - name: excluded_vulnerabilities
-              - name: minor_vulnerabilities
+                type: int
+              - name: historical_vulnerabilities
+                type: int
               - name: major_vulnerabilities
+                type: int
+              - name: minor_vulnerabilities
+                type: int
+              - name: triaged_vulnerabilities
+                type: int
               - name: vulnerabilities
+                type: int

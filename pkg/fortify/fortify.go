@@ -2,6 +2,7 @@ package fortify
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -84,11 +85,12 @@ func NewSystemInstance(serverURL, apiEndpoint, authToken string, timeout time.Du
 	dateTimeFormat := models.Iso8601MilliDateTime{}
 	format.Add("datetime", &dateTimeFormat, models.IsDateTime)
 	clientInstance := ff.NewHTTPClientWithConfig(format, createTransportConfig(serverURL, apiEndpoint))
+	encodedAuthToken := base64EndodePlainToken(authToken)
 	httpClientInstance := &piperHttp.Client{}
-	httpClientOptions := piperHttp.ClientOptions{Token: "FortifyToken " + authToken, TransportTimeout: timeout}
+	httpClientOptions := piperHttp.ClientOptions{Token: "FortifyToken " + encodedAuthToken, TransportTimeout: timeout}
 	httpClientInstance.SetOptions(httpClientOptions)
 
-	return NewSystemInstanceForClient(clientInstance, httpClientInstance, serverURL, authToken, timeout)
+	return NewSystemInstanceForClient(clientInstance, httpClientInstance, serverURL, encodedAuthToken, timeout)
 }
 
 func createTransportConfig(serverURL, apiEndpoint string) *ff.TransportConfig {
@@ -125,6 +127,14 @@ func splitHostAndEndpoint(urlWithoutScheme string) (host, endpoint string) {
 		endpoint = ""
 	}
 	return
+}
+
+func base64EndodePlainToken(authToken string) (encodedAuthToken string) {
+	isEncoded := strings.Index(authToken, "-") < 0
+	if isEncoded {
+		return authToken
+	}
+	return base64.StdEncoding.EncodeToString([]byte(authToken))
 }
 
 // NewSystemInstanceForClient - creates a new SystemInstance

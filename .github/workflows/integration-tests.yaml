@@ -64,6 +64,7 @@ jobs:
       - name: test
         env:
           PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
+          PIPER_INTEGRATION_SONAR_TOKEN: ${{secrets.PIPER_INTEGRATION_SONAR_TOKEN}}
         run: go test -tags=integration -timeout 20m ./integration/...
       - name: update status
         if: success()

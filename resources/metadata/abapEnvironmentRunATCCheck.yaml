@@ -130,4 +130,4 @@ spec:
         default: "ATCResults.xml"
   containers:
     - name: cf
-      image: ppiper/cf-cli
+      image: ppiper/cf-cli:7

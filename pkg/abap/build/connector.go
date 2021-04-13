@@ -36,6 +36,12 @@ type ConnectorConfiguration struct {
 	MaxRuntimeInMinutes int
 }
 
+// HTTPSendLoader : combine both interfaces [sender, downloader]
+type HTTPSendLoader interface {
+	piperhttp.Sender
+	piperhttp.Downloader
+}
+
 // ******** technical communication calls ********
 
 // GetToken : Get the X-CRSF Token from ABAP Backend for later post
@@ -124,13 +130,13 @@ func (conn *Connector) InitAAKaaS(aAKaaSEndpoint string, username string, passwo
 }
 
 // InitBuildFramework : initialize Connector for communication with ABAP SCP instance
-func (conn *Connector) InitBuildFramework(config ConnectorConfiguration, com abaputils.Communication, inputclient piperhttp.Sender) error {
+func (conn *Connector) InitBuildFramework(config ConnectorConfiguration, com abaputils.Communication, inputclient HTTPSendLoader) error {
 	conn.Client = inputclient
 	conn.Header = make(map[string][]string)
 	conn.Header["Accept"] = []string{"application/json"}
 	conn.Header["Content-Type"] = []string{"application/json"}
 
-	conn.DownloadClient = &piperhttp.Client{}
+	conn.DownloadClient = inputclient
 	conn.DownloadClient.SetOptions(piperhttp.ClientOptions{TransportTimeout: 20 * time.Second})
 	// Mapping for options
 	subOptions := abaputils.AbapEnvironmentOptions{}

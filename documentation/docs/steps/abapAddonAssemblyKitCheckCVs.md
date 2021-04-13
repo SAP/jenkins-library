@@ -7,18 +7,19 @@
 * The credentials to access the AAKaaS (e.g. S-User) must be stored in the Jenkins Credential Store
 * The step needs an addon.yml containing information about the Product Version and corresponding Software Component Versions/Repositories. The addon.yml should look like this:
 
-```yaml
-addonProduct: /DMO/myAddonProduct
-addonVersion: 3.1.4
-addonUniqueID: myAddonId
-customerID: $ID
+```YAML
+---
+addonProduct: /NAMESPC/PRODUCTX
+addonVersion: 1.2.0
 repositories:
-    - name: /DMO/REPO_A
-      tag: v-1.0.1-build-0001
-      version: 1.0.1
-    - name: /DMO/REPO_B
-      tag: rel-2.1.1-build-0001
-      version: 2.1.1
+  - name: /NAMESPC/COMPONENTA
+    branch: v1.2.0
+    version: 1.2.0
+    commitID: 7d4516e9
+  - name: /NAMESPC/COMPONENTB
+    branch: v2.0.0
+    version: 2.0.0
+    commitID: 9f102ffb
 ```
 
 ## ${docGenParameters}

@@ -1,0 +1,155 @@
+metadata:
+  name: transportRequestUploadSOLMAN
+  aliases:
+    - name: transportRequestUploadFile
+  description: "Uploads content to a transport request"
+  longDescription: |
+    Uploads content to a transport request which is associated with a change document in SAP Solution Manager
+spec:
+  inputs:
+    secrets:
+      - name: uploadCredentialsId
+        description: Jenkins 'Username with password' credentials ID containing user and password to authenticate against the ABAP backend.
+        type: jenkins
+        aliases:
+          - name: changeManagement/credentialsId
+    params:
+      - name: endpoint
+        type: string
+        mandatory: true
+        description: "Service endpoint"
+        aliases:
+          - name: changeManagement/endpoint
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: username
+        type: string
+        mandatory: true
+        description: "Operating system user for triggering the deployment"
+        secret: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        resourceRef:
+          - name: uploadCredentialsId
+            type: secret
+            param: username
+      - name: password
+        type: string
+        mandatory: true
+        description: "Password for the deploy user"
+        secret: true
+        scope:
+          - PARAMETERS
+        resourceRef:
+          - name: uploadCredentialsId
+            type: secret
+            param: password
+      - name: applicationId
+        type: string
+        mandatory: true
+        description: "Id of the application."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: changeDocumentId
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/changeDocumentId
+        type: string
+        description: "Id of the change document to upload the file. This parameter is only taken into account when provided via signature to the step."
+        scope:
+          - PARAMETERS
+      - name: transportRequestId
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/transportRequestId
+        type: string
+        description: "Id of the transport request to upload the file. This parameter is only taken into account when provided via signature to the step."
+        scope:
+          - PARAMETERS
+      - name: filePath
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: mtarFilePath
+        type: string
+        mandatory: true
+        description: "Name/Path of the file which should be uploaded"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: cmClientOpts
+        aliases:
+          - name: clientOpts
+          - name: changeManagement/clientOpts
+        type: "[]string"
+        mandatory: true
+        description: "Additional options handed over to the cm client"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEP
+          - GENERAL
+      - name: gitFrom
+        aliases:
+          - name: changeManagement/git/from
+        type: "string"
+        description: "GIT starting point for retrieving the change document and transport request id"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEP
+          - GENERAL
+        default: "origin/master"
+      - name: gitTo
+        aliases:
+          - name: changeManagement/git/to
+        type: "string"
+        description: "GIT ending point for retrieving the change document and transport request id"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEP
+          - GENERAL
+        default: "HEAD"
+      - name: changeDocumentLabel
+        aliases:
+          - name: changeManagement/changeDocumentLabel
+        type: "string"
+        description: "Pattern used for identifying lines holding the change document id"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEP
+          - GENERAL
+        default: "ChangeDocument"
+      - name: transportRequestLabel
+        aliases:
+          - name: changeManagement/transportRequestLabel
+        type: "string"
+        description: "Pattern used for identifying lines holding the transport request id"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEP
+          - GENERAL
+        default: "TransportRequest"
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: custom/changeDocumentId
+          - name: custom/transportRequestId
+  containers:
+    - name: cmclient
+      image: ppiper/cm-client
