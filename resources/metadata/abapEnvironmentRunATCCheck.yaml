@@ -128,6 +128,14 @@ spec:
           - STEPS
         mandatory: false
         default: "ATCResults.xml"
+      - name: sendEmail
+        type: bool
+        description: Specifies whether the ATC results should be send via E-Mail additionally
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
   containers:
     - name: cf
       image: ppiper/cf-cli:7
