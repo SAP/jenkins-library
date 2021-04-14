@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"strings"
 
 	"github.com/Jeffail/gabs/v2"
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -156,7 +157,7 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 				// Rollback branch. Resetting branches
 				targetBranch = repoMetadataInitState.Result.Branch
 				currentBranch = config.Branch
-				log.Entry().WithError(switchBranchErr).Error("Rolling Back from %v to %v", currentBranch, targetBranch)
+				log.Entry().WithError(switchBranchErr).Errorf("Rolling Back from %v to %v", currentBranch, targetBranch)
 				switchBranch(config, httpClient, currentBranch, targetBranch)
 			}
 			return switchBranchErr
@@ -189,7 +190,7 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 					// Rollback branch. Resetting branches
 					targetBranch = repoMetadataInitState.Result.Branch
 					currentBranch = config.Branch
-					log.Entry().Error("Rolling Back from %v to %v", currentBranch, targetBranch)
+					log.Entry().Errorf("Rolling Back from %v to %v", currentBranch, targetBranch)
 					switchBranch(config, httpClient, currentBranch, targetBranch)
 				}
 			}
@@ -229,7 +230,7 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 				if repoState == repoStateNew {
 					// Rollback branch
 					targetBranch := repoMetadataInitState.Result.Branch
-					log.Entry().Error("Rolling Back from %v to %v", currentBranch, targetBranch)
+					log.Entry().Errorf("Rolling Back from %v to %v", currentBranch, targetBranch)
 					switchBranch(config, httpClient, currentBranch, targetBranch)
 				}
 			}
@@ -330,7 +331,7 @@ func deployCommitToAbapSystem(config *gctsDeployOptions, httpClient piperhttp.Se
 	}
 
 	if response != nil {
-		log.Entry().Infof("Response for deploy command : ", response.Path("result").Data().(map[string]interface{}))
+		log.Entry().Infof("Response for deploy command : %v", response.Path("result").Data().(map[string]interface{}))
 	}
 	return nil
 }
@@ -663,7 +664,14 @@ func parseErrorDumpFromResponseBody(responseBody *http.Response) (*errorLogBody,
 			errorLogData.Action, errorLogData.Severity, errorLogData.Message)
 		for _, protocolErrorData := range errorLogData.Protocol {
 			log.Entry().Errorf("Type: %v", protocolErrorData.Type)
-			log.Entry().Error(protocolErrorData.Protocol)
+			for _, protocols := range protocolErrorData.Protocol {
+				if strings.Contains(protocols, "4 ETW000 ") {
+					protocols = strings.ReplaceAll(protocols, "4 ETW000 ", "")
+				} else if strings.Contains(protocols, "4EETW000 ") {
+					protocols = strings.ReplaceAll(protocols, "4EETW000 ", "ERROR: ")
+				}
+				log.Entry().Error(protocols)
+			}
 		}
 	}
 	return &errorDump, nil
@@ -769,5 +777,6 @@ type errorLog struct {
 }
 
 type errorLogBody struct {
-	ErrorLog []errorLog `json:"errorLog"`
+	ErrorLog  []errorLog `json:"errorLog"`
+	Exception string     `json:"exception"`
 }
