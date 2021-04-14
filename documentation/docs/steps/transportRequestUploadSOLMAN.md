@@ -9,7 +9,6 @@
 * You have a transport request, which is the target container of the upload.
 * You have installed the Change Management Client with the needed certificates.
 
-
 ## Change Management Client
 
 The Change Management Client (CM Client) handles the access to SAP Solution Manager.
