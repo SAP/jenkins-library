@@ -226,7 +226,7 @@ const reportMdTemplate = `## {{.Title}}
 
 <table>
 {{range $s := .Subheaders -}}
-  <tr><td><b>{{- $s.Description}}:</b></td><td>{{$s.Details}}</td></tr>
+	<tr><td><b>{{- $s.Description}}:</b></td><td>{{$s.Details}}</td></tr>
 {{- end}}
 
 {{range $o := .Overview -}}
