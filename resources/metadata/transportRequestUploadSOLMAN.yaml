@@ -66,7 +66,7 @@ spec:
           - name: commonPipelineEnvironment
             param: custom/changeDocumentId
         type: string
-        description: "Id of the change document the file is uploaded to"
+        description: "ID of the change document to which the file is uploaded"
         scope:
           - PARAMETERS
       - name: transportRequestId
@@ -74,7 +74,7 @@ spec:
           - name: commonPipelineEnvironment
             param: custom/transportRequestId
         type: string
-        description: "Id of the transport request the file is uploaded to"
+        description: "ID of the transport request to which the file is uploaded"
         scope:
           - PARAMETERS
       - name: filePath
@@ -105,7 +105,7 @@ spec:
         aliases:
           - name: changeManagement/git/from
         type: "string"
-        description: "GIT starting point for retrieving the change document and transport request id."
+        description: "GIT starting point for retrieving the change document and transport request ID"
         scope:
           - PARAMETERS
           - STAGES
@@ -116,7 +116,7 @@ spec:
         aliases:
           - name: changeManagement/git/to
         type: "string"
-        description: "GIT ending point for retrieving the change document and transport request id. "
+        description: "GIT ending point for retrieving the change document and transport request ID"
         scope:
           - PARAMETERS
           - STAGES
@@ -127,7 +127,7 @@ spec:
         aliases:
           - name: changeManagement/changeDocumentLabel
         type: "string"
-        description: "Pattern used for identifying lines holding the change document id. The GIT commit log messages are scanned for this label."
+        description: "Pattern used for identifying lines holding the change document ID. The GIT commit log messages are scanned for this label"
         scope:
           - PARAMETERS
           - STAGES
@@ -138,7 +138,7 @@ spec:
         aliases:
           - name: changeManagement/transportRequestLabel
         type: "string"
-        description: "Pattern used for identifying lines holding the transport request id. The GIT commit log messages are scanned for this label."
+        description: "Pattern used for identifying lines holding the transport request ID. The GIT commit log messages are scanned for this label"
         scope:
           - PARAMETERS
           - STAGES
