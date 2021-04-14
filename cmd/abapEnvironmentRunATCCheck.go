@@ -64,6 +64,7 @@ func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telem
 		resp, err = triggerATCrun(options, details, &client)
 	}
 	if err == nil {
+		log.Entry().Infof("Starting handling Results with Email set to %t", options.SendEmail)
 		err = handleATCresults(resp, details, &client, options.AtcResultsFileName, options.SendEmail)
 	}
 	if err != nil {
