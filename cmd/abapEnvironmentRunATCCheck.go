@@ -202,7 +202,9 @@ func parseATCResult(body []byte, atcResultFileName string, sendEmail bool) (err 
 				log.Entry().Infof("%s in file '%s': %s in line %s found by %s", t.Severity, s.Key, t.Message, t.Line, t.Source)
 			}
 		}
+		log.Entry().Info(sendEmail)
 		if sendEmail == true {
+			log.Entry().Info(sendEmail)
 			//Output of HTML file
 			var htmlString = `<html><body><h1>ATC Results</h1><table><tr><th>Severity</th><th>File</th><th>Key</th><th>Message</th><th>Line</th><th>Responsible</th></tr>`
 
