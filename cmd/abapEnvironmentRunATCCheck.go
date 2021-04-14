@@ -193,7 +193,7 @@ func parseATCResult(body []byte, atcResultFileName string, sendEmail bool) (err 
 
 	err = ioutil.WriteFile(atcResultFileName, body, 0644)
 	if err == nil {
-		log.Entry().Infof("Writing " + atcResultFileName + " file was successful")
+		log.Entry().Infof("Writing %s file was successful", atcResultFileName)
 		var reports []piperutils.Path
 		reports = append(reports, piperutils.Path{Target: atcResultFileName, Name: "ATC Results", Mandatory: true})
 		piperutils.PersistReportsAndLinks("abapEnvironmentRunATCCheck", "", reports, nil)
@@ -202,9 +202,9 @@ func parseATCResult(body []byte, atcResultFileName string, sendEmail bool) (err 
 				log.Entry().Infof("%s in file '%s': %s in line %s found by %s", t.Severity, s.Key, t.Message, t.Line, t.Source)
 			}
 		}
-		log.Entry().Debug(sendEmail)
+		log.Entry().Infof("Send Email: %t", sendEmail)
 		if sendEmail == true {
-			log.Entry().Info(sendEmail)
+			log.Entry().Infof("Send Email: %t", sendEmail)
 			//Output of HTML file
 			var htmlString = `<html><body><h1>ATC Results</h1><table><tr><th>Severity</th><th>File</th><th>Key</th><th>Message</th><th>Line</th><th>Responsible</th></tr>`
 
