@@ -199,7 +199,7 @@ func parseATCResult(body []byte, atcResultFileName string, sendEmail bool) (err 
 		piperutils.PersistReportsAndLinks("abapEnvironmentRunATCCheck", "", reports, nil)
 		for _, s := range parsedXML.Files {
 			for _, t := range s.ATCErrors {
-				log.Entry().Infof("%s in file '%s': %s in line %s found by %s", t.Severity, s.Key, t.Message, t.Line, t.Source)
+				log.Entry().Infof("%s in file '%s': %s in line %s found by %s %t", t.Severity, s.Key, t.Message, t.Line, t.Source, sendEmail)
 			}
 		}
 		log.Entry().Infof("Send Email: %t", sendEmail)
