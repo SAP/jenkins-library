@@ -5,6 +5,9 @@ metadata:
     Bats is a TAP-compliant testing framework for Bash. It provides a simple way to verify that the UNIX programs you write behave as expected. A Bats test file is a Bash script with special syntax for defining test cases. Under the hood, each test case is just a function with a description.
 spec:
   inputs:
+    resources:
+      - name: tests
+        type: stash
     params:
       - name: outputFormat
         type: string
@@ -38,7 +41,22 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+        default: "src/test"
+  outputs:
+    resources:
+      - name: influx
+        type: influx
+        params:
+          - name: step_data
+            fields:
+              - name: bats
+                type: bool
   containers:
     - name: bats
       image: node:lts-stretch
       workingDir: /home/node
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: outputFormat
+              value: junit

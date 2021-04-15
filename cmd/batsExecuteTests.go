@@ -40,12 +40,15 @@ func newBatsExecuteTestsUtils() batsExecuteTestsUtils {
 	return &utils
 }
 
-func batsExecuteTests(config batsExecuteTestsOptions, telemetryData *telemetry.CustomData) {
+func batsExecuteTests(config batsExecuteTestsOptions, telemetryData *telemetry.CustomData, influx *batsExecuteTestsInflux) {
 	utils := newBatsExecuteTestsUtils()
+
+	influx.step_data.fields.bats = false
 	err := runBatsExecuteTests(&config, telemetryData, utils)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
+	influx.step_data.fields.bats = true
 }
 
 func runBatsExecuteTests(config *batsExecuteTestsOptions, telemetryData *telemetry.CustomData, utils batsExecuteTestsUtils) error {
