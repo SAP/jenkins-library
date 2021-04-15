@@ -475,7 +475,7 @@ spec:
               value: dub
             - name: buildTool
               value: docker
-    - image: devxci/mbtci:1.1.1
+    - image: devxci/mbtci:latest
       workingDir: /home/mta
       env: [ ]
       conditions:
