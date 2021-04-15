@@ -159,6 +159,7 @@ public class CommonStepsTest extends BasePiperTest{
         'mtaBuild', //implementing new golang pattern without fields
         'nexusUpload', //implementing new golang pattern without fields
         'piperPipelineStageArtifactDeployment', //stage without step flags
+        'pipelineCreateScanSummary', //stage without step flags
         'sonarExecuteScan', //implementing new golang pattern without fields
         'gctsCreateRepository', //implementing new golang pattern without fields
         'gctsRollback', //implementing new golang pattern without fields
