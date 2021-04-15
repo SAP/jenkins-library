@@ -280,52 +280,58 @@ func TestGetContextParameterFilters(t *testing.T) {
 
 	t.Run("Secrets and stashes", func(t *testing.T) {
 		filters := metadata1.GetContextParameterFilters()
-		assert.Equal(t, []string{"testSecret1", "testSecret2", "stashContent"}, filters.All, "incorrect filter All")
-		assert.Equal(t, []string{"testSecret1", "testSecret2", "stashContent"}, filters.General, "incorrect filter General")
-		assert.Equal(t, []string{"testSecret1", "testSecret2", "stashContent"}, filters.Steps, "incorrect filter Steps")
-		assert.Equal(t, []string{"testSecret1", "testSecret2", "stashContent"}, filters.Stages, "incorrect filter Stages")
-		assert.Equal(t, []string{"testSecret1", "testSecret2", "stashContent"}, filters.Parameters, "incorrect filter Parameters")
-		assert.Equal(t, []string{"testSecret1", "testSecret2", "stashContent"}, filters.Env, "incorrect filter Env")
+		params := defaultParams("testSecret1", "testSecret2", "stashContent")
+		assert.Equal(t, params, filters.General, "incorrect filter General")
+		assert.Equal(t, params, filters.All, "incorrect filter All")
+		assert.Equal(t, params, filters.Steps, "incorrect filter Steps")
+		assert.Equal(t, params, filters.Stages, "incorrect filter Stages")
+		assert.Equal(t, params, filters.Parameters, "incorrect filter Parameters")
+		assert.Equal(t, params, filters.Env, "incorrect filter Env")
 	})
 
 	t.Run("Containers", func(t *testing.T) {
 		filters := metadata2.GetContextParameterFilters()
-		assert.Equal(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerName", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip", "scanType"}, filters.All, "incorrect filter All")
-		assert.Equal(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerName", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip", "scanType"}, filters.General, "incorrect filter General")
-		assert.Equal(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerName", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip", "scanType"}, filters.Steps, "incorrect filter Steps")
-		assert.Equal(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerName", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip", "scanType"}, filters.Stages, "incorrect filter Stages")
-		assert.Equal(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerName", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip", "scanType"}, filters.Parameters, "incorrect filter Parameters")
-		assert.Equal(t, []string{"containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerName", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip", "scanType"}, filters.Env, "incorrect filter Env")
+		params := defaultParams("containerCommand", "containerShell", "dockerEnvVars", "dockerImage", "dockerName", "dockerOptions", "dockerPullImage", "dockerVolumeBind", "dockerWorkspace", "pip", "scanType")
+
+		assert.Equal(t, params, filters.All, "incorrect filter All")
+		assert.Equal(t, params, filters.General, "incorrect filter General")
+		assert.Equal(t, params, filters.Steps, "incorrect filter Steps")
+		assert.Equal(t, params, filters.Stages, "incorrect filter Stages")
+		assert.Equal(t, params, filters.Parameters, "incorrect filter Parameters")
+		assert.Equal(t, params, filters.Env, "incorrect filter Env")
 	})
 
 	t.Run("Sidecars", func(t *testing.T) {
 		filters := metadata3.GetContextParameterFilters()
-		assert.Equal(t, []string{"containerName", "containerPortMappings", "dockerName", "sidecarEnvVars", "sidecarImage", "sidecarName", "sidecarOptions", "sidecarPullImage", "sidecarReadyCommand", "sidecarVolumeBind", "sidecarWorkspace"}, filters.All, "incorrect filter All")
-		assert.Equal(t, []string{"containerName", "containerPortMappings", "dockerName", "sidecarEnvVars", "sidecarImage", "sidecarName", "sidecarOptions", "sidecarPullImage", "sidecarReadyCommand", "sidecarVolumeBind", "sidecarWorkspace"}, filters.General, "incorrect filter General")
-		assert.Equal(t, []string{"containerName", "containerPortMappings", "dockerName", "sidecarEnvVars", "sidecarImage", "sidecarName", "sidecarOptions", "sidecarPullImage", "sidecarReadyCommand", "sidecarVolumeBind", "sidecarWorkspace"}, filters.Steps, "incorrect filter Steps")
-		assert.Equal(t, []string{"containerName", "containerPortMappings", "dockerName", "sidecarEnvVars", "sidecarImage", "sidecarName", "sidecarOptions", "sidecarPullImage", "sidecarReadyCommand", "sidecarVolumeBind", "sidecarWorkspace"}, filters.Stages, "incorrect filter Stages")
-		assert.Equal(t, []string{"containerName", "containerPortMappings", "dockerName", "sidecarEnvVars", "sidecarImage", "sidecarName", "sidecarOptions", "sidecarPullImage", "sidecarReadyCommand", "sidecarVolumeBind", "sidecarWorkspace"}, filters.Parameters, "incorrect filter Parameters")
-		assert.Equal(t, []string{"containerName", "containerPortMappings", "dockerName", "sidecarEnvVars", "sidecarImage", "sidecarName", "sidecarOptions", "sidecarPullImage", "sidecarReadyCommand", "sidecarVolumeBind", "sidecarWorkspace"}, filters.Env, "incorrect filter Env")
+		params := defaultParams("containerName", "containerPortMappings", "dockerName", "sidecarEnvVars", "sidecarImage", "sidecarName", "sidecarOptions", "sidecarPullImage", "sidecarReadyCommand", "sidecarVolumeBind", "sidecarWorkspace")
+		assert.Equal(t, params, filters.All, "incorrect filter All")
+		assert.Equal(t, params, filters.General, "incorrect filter General")
+		assert.Equal(t, params, filters.Steps, "incorrect filter Steps")
+		assert.Equal(t, params, filters.Stages, "incorrect filter Stages")
+		assert.Equal(t, params, filters.Parameters, "incorrect filter Parameters")
+		assert.Equal(t, params, filters.Env, "incorrect filter Env")
 	})
 
 	t.Run("Vault", func(t *testing.T) {
 		filters := metadata4.GetContextParameterFilters()
-		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}, filters.All, "incorrect filter All")
-		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}, filters.General, "incorrect filter General")
-		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}, filters.Steps, "incorrect filter Steps")
-		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}, filters.Stages, "incorrect filter Stages")
-		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}, filters.Parameters, "incorrect filter Parameters")
-		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}, filters.Env, "incorrect filter Env")
+		params := defaultParams()
+		assert.Equal(t, params, filters.All, "incorrect filter All")
+		assert.Equal(t, params, filters.General, "incorrect filter General")
+		assert.Equal(t, params, filters.Steps, "incorrect filter Steps")
+		assert.Equal(t, params, filters.Stages, "incorrect filter Stages")
+		assert.Equal(t, params, filters.Parameters, "incorrect filter Parameters")
+		assert.Equal(t, params, filters.Env, "incorrect filter Env")
 	})
 
 	t.Run("Vault", func(t *testing.T) {
 		filters := metadata5.GetContextParameterFilters()
-		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}, filters.All, "incorrect filter All")
-		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}, filters.General, "incorrect filter General")
-		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}, filters.Steps, "incorrect filter Steps")
-		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}, filters.Stages, "incorrect filter Stages")
-		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}, filters.Parameters, "incorrect filter Parameters")
-		assert.Equal(t, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}, filters.Env, "incorrect filter Env")
+		params := defaultParams()
+		assert.Equal(t, params, filters.All, "incorrect filter All")
+		assert.Equal(t, params, filters.General, "incorrect filter General")
+		assert.Equal(t, params, filters.Steps, "incorrect filter Steps")
+		assert.Equal(t, params, filters.Stages, "incorrect filter Stages")
+		assert.Equal(t, params, filters.Parameters, "incorrect filter Parameters")
+		assert.Equal(t, params, filters.Env, "incorrect filter Env")
 	})
 }
 
@@ -692,4 +698,18 @@ func TestAvoidEmptyFields(t *testing.T) {
 		putMapIfNotEmpty(m, "key", value)
 		assert.Equal(t, value, m["key"])
 	})
+}
+
+func defaultParams(params ...string) []string {
+	vaultParams := []string{
+		"vaultAppRoleTokenCredentialsId",
+		"vaultAppRoleSecretTokenCredentialsId",
+		"vaultTokenCredentialsId",
+	}
+
+	stepParams := make([]string, 0, len(params)+len(vaultParams))
+	stepParams = append(stepParams, params...)
+	stepParams = append(stepParams, vaultParams...)
+
+	return stepParams
 }
