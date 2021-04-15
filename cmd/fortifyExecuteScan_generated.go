@@ -151,7 +151,9 @@ func FortifyExecuteScanCommand() *cobra.Command {
 		Long: `This step executes a Fortify scan on the specified project to perform static code analysis and check the source code for security flaws.
 
 The Fortify step triggers a scan locally on your Jenkins within a docker container so finally you have to supply a docker image with a Fortify SCA
-and Java plus Maven or alternatively Python installed into it for being able to perform any scans.`,
+and Java plus Maven or alternatively Python installed into it for being able to perform any scans.
+
+Note: MTA scan requires an aggregator POM in root`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
