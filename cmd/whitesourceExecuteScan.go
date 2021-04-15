@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"crypto/sha1"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -464,6 +465,35 @@ func checkPolicyViolations(config *ScanOptions, scan *ws.Scan, sys whitesource, 
 
 	policyReport := piperutils.Path{Name: "WhiteSource Policy Violation Report", Target: jsonViolationReportPath}
 
+	// create a json report to be used later, e.g. issue creation in GitHub
+	ipReport := reporting.ScanReport{
+		Title: "WhiteSource IP Report",
+		Subheaders: []reporting.Subheader{
+			{Description: "WhiteSource product name", Details: config.ProductName},
+			{Description: "Filtered project names", Details: strings.Join(scan.ScannedProjectNames(), ", ")},
+		},
+		Overview: []reporting.OverviewRow{
+			{Description: "Total number of licensing vulnerabilities", Details: fmt.Sprint(policyViolationCount)},
+		},
+		ReportTime: utils.Now(),
+	}
+
+	// JSON reports are used by step pipelineCreateSummary in order to e.g. prepare an issue creation in GitHub
+	// ignore JSON errors since structure is in our hands
+	jsonReport, _ := ipReport.ToJSON()
+	if exists, _ := utils.DirExists(reporting.StepReportDirectory); !exists {
+		err := utils.MkdirAll(reporting.StepReportDirectory, 0777)
+		if err != nil {
+			return policyReport, errors.Wrap(err, "failed to create reporting directory")
+		}
+	}
+	if err := utils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("whitesourceExecuteScan_ip_%v.json", reportSha(config, scan))), jsonReport, 0666); err != nil {
+		return policyReport, errors.Wrapf(err, "failed to write json report")
+	}
+	// we do not add the json report to the overall list of reports for now,
+	// since it is just an intermediary report used as input for later
+	// and there does not seem to be real benefit in archiving it.
+
 	if policyViolationCount > 0 {
 		log.SetErrorCategory(log.ErrorCompliance)
 		influx.whitesource_data.fields.policy_violations = policyViolationCount
@@ -505,7 +535,7 @@ func checkSecurityViolations(config *ScanOptions, scan *ws.Scan, sys whitesource
 		}
 
 		scanReport := createCustomVulnerabilityReport(config, scan, allAlerts, cvssSeverityLimit, utils)
-		reportPaths, err = writeCustomVulnerabilityReports(scanReport, utils)
+		reportPaths, err = writeCustomVulnerabilityReports(config, scan, scanReport, utils)
 		if err != nil {
 			errorsOccured = append(errorsOccured, fmt.Sprint(err))
 		}
@@ -578,12 +608,7 @@ func createCustomVulnerabilityReport(config *ScanOptions, scan *ws.Scan, alerts 
 		return vulnerabilityScore(alerts[i]) > vulnerabilityScore(alerts[j])
 	})
 
-	projectNames := []string{}
-	for _, project := range scan.ScannedProjects() {
-		projectNames = append(projectNames, project.Name)
-	}
-	// Sorting helps the list become stable across pipeline runs (and in the unit tests)
-	sort.Strings(projectNames)
+	projectNames := scan.ScannedProjectNames()
 
 	scanReport := reporting.ScanReport{
 		Title: "WhiteSource Security Vulnerability Report",
@@ -658,7 +683,7 @@ func createCustomVulnerabilityReport(config *ScanOptions, scan *ws.Scan, alerts 
 	return scanReport
 }
 
-func writeCustomVulnerabilityReports(scanReport reporting.ScanReport, utils whitesourceUtils) ([]piperutils.Path, error) {
+func writeCustomVulnerabilityReports(config *ScanOptions, scan *ws.Scan, scanReport reporting.ScanReport, utils whitesourceUtils) ([]piperutils.Path, error) {
 	reportPaths := []piperutils.Path{}
 
 	// ignore templating errors since template is in our hands and issues will be detected with the automated tests
@@ -679,9 +704,8 @@ func writeCustomVulnerabilityReports(scanReport reporting.ScanReport, utils whit
 			return reportPaths, errors.Wrap(err, "failed to create reporting directory")
 		}
 	}
-	if err := utils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("whitesourceExecuteScan_%v.json", utils.Now().Format("20060102150405"))), jsonReport, 0666); err != nil {
-		log.SetErrorCategory(log.ErrorConfiguration)
-		return reportPaths, errors.Wrapf(err, "failed to write markdown report")
+	if err := utils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("whitesourceExecuteScan_oss_%v.json", reportSha(config, scan))), jsonReport, 0666); err != nil {
+		return reportPaths, errors.Wrapf(err, "failed to write json report")
 	}
 	// we do not add the json report to the overall list of reports for now,
 	// since it is just an intermediary report used as input for later
@@ -695,6 +719,11 @@ func vulnerabilityScore(alert ws.Alert) float64 {
 		return alert.Vulnerability.CVSS3Score
 	}
 	return alert.Vulnerability.Score
+}
+
+func reportSha(config *ScanOptions, scan *ws.Scan) string {
+	reportShaData := []byte(config.ProductName + "," + strings.Join(scan.ScannedProjectNames(), ","))
+	return fmt.Sprintf("%x", sha1.Sum(reportShaData))
 }
 
 func aggregateVersionWideLibraries(config *ScanOptions, utils whitesourceUtils, sys whitesource) error {
@@ -858,12 +887,7 @@ func persistScannedProjects(config *ScanOptions, scan *ws.Scan, commonPipelineEn
 	if config.ProjectName != "" {
 		projectNames = []string{config.ProjectName + " - " + config.Version}
 	} else {
-		for _, project := range scan.ScannedProjects() {
-			projectNames = append(projectNames, project.Name)
-		}
-		// Sorting helps the list become stable across pipeline runs (and in the unit tests),
-		// as the order in which we travers map keys is not deterministic.
-		sort.Strings(projectNames)
+		projectNames = scan.ScannedProjectNames()
 	}
 	commonPipelineEnvironment.custom.whitesourceProjectNames = projectNames
 }
