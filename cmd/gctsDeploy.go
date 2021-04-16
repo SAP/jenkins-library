@@ -52,7 +52,7 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 		Password:  config.Password,
 	}
 	httpClient.SetOptions(clientOptions)
-
+	log.Entry().Infof("Start of gCTS Deploy Step with Configuration Values: %v", config)
 	configurationMetadata, getConfigMetadataErr := getConfigurationMetadata(config, httpClient)
 
 	if getConfigMetadataErr != nil {
