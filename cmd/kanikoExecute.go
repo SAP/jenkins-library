@@ -57,9 +57,13 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 		return errors.Wrap(err, "failed to initialize Kaniko container")
 	}
 
-	err := certificateUpdate(config.CustomTLSCertificateLinks, httpClient, fileUtils)
-	if err != nil {
-		return errors.Wrap(err, "failed to update certificates")
+	if len(config.CustomTLSCertificateLinks) > 0 {
+		err := certificateUpdate(config.CustomTLSCertificateLinks, httpClient, fileUtils)
+		if err != nil {
+			return errors.Wrap(err, "failed to update certificates")
+		}
+	} else {
+		log.Entry().Info("skipping updation of certificates")
 	}
 
 	if !piperutils.ContainsString(config.BuildOptions, "--destination") {
@@ -89,6 +93,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 
 	dockerConfig := []byte(`{"auths":{}}`)
 	if len(config.DockerConfigJSON) > 0 {
+		var err error
 		dockerConfig, err = fileUtils.FileRead(config.DockerConfigJSON)
 		if err != nil {
 			return errors.Wrapf(err, "failed to read file '%v'", config.DockerConfigJSON)
