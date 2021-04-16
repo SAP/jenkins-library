@@ -130,8 +130,7 @@ spec:
           - STEPS
       - name: cvssSeverityLimit
         type: string
-        description: "Limit of tolerable CVSS v3 score upon assessment and in consequence fails the build,
-          defaults to  `-1`."
+        description: "Limit of tolerable CVSS v3 score upon assessment and in consequence fails the build."
         scope:
           - PARAMETERS
           - STAGES
