@@ -452,3 +452,253 @@ func TestGctsSetConfigByKeyFailure(t *testing.T) {
 	})
 
 }
+
+func TestGctsDeleteConfigByKeySuccess(t *testing.T) {
+	config := gctsDeployOptions{
+		Host:       "http://testHost.com:50000",
+		Client:     "000",
+		Repository: "testRepo",
+		Branch:     "dummyBranch",
+		Username:   "testUser",
+		Password:   "testPassword",
+	}
+	t.Run("Delete Config By key Success", func(t *testing.T) {
+		var httpClient httpMockGcts
+		if config.Repository == "testRepo" {
+			httpClient = httpMockGcts{StatusCode: 200, ResponseBody: `{
+			    }`}
+		}
+
+		err := deleteConfigKey(&config, &httpClient, "dummy_config")
+
+		assert.NoError(t, err)
+	})
+
+}
+
+func TestGctsDeleteConfigByKeyFailure(t *testing.T) {
+	config := gctsDeployOptions{
+		Host:       "http://testHost.com:50000",
+		Client:     "000",
+		Repository: "testRepoNotExists",
+		Branch:     "dummyBranchNotExists",
+		Username:   "testUser",
+		Password:   "testPassword",
+	}
+	t.Run("Delete Config By key Failure", func(t *testing.T) {
+		var httpClient httpMockGcts
+		if config.Repository == "testRepoNotExists" {
+			httpClient = httpMockGcts{StatusCode: 500, ResponseBody: `{
+				"exception": "No relation between system and repository"
+			    }`}
+		}
+
+		err := deleteConfigKey(&config, &httpClient, "dummy_config")
+
+		assert.EqualError(t, err, "a http error occurred")
+	})
+
+}
+
+func TestGctsConfigMetadataSuccess(t *testing.T) {
+	config := gctsDeployOptions{
+		Host:       "http://testHost.com:50000",
+		Client:     "000",
+		Repository: "testRepo",
+		Branch:     "dummyBranch",
+		Username:   "testUser",
+		Password:   "testPassword",
+	}
+	t.Run("Test Config Metadata Success", func(t *testing.T) {
+		var httpClient httpMockGcts
+		if config.Repository == "testRepo" {
+			httpClient = httpMockGcts{StatusCode: 200, ResponseBody: `{
+				"config": [
+				    {
+					"ckey": "dummy_key_system",
+					"ctype": "SYSTEM",
+					"cvisible": "X",
+					"datatype": "STRING",
+					"defaultValue": "dummy_default_system",
+					"description": "Dummy Key System",
+					"category": "SYSTEM",
+					"example": "dummy"
+				    },
+				    {
+					"ckey": "dummy_key_repo",
+					"ctype": "REPOSITORY",
+					"cvisible": "X",
+					"datatype": "STRING",
+					"defaultValue": "dummy_default",
+					"description": "Dummy Key repository",
+					"category": "INTERNAL",
+					"example": "dummy"
+				    }
+				]
+			    }`}
+		}
+
+		configMetadata, err := getConfigurationMetadata(&config, &httpClient)
+
+		if assert.NoError(t, err) {
+			t.Run("Check if system config matches", func(t *testing.T) {
+				for _, config := range configMetadata.Config {
+					if config.Ctype == "SYSTEM" {
+						assert.Equal(t, "dummy_key_system", config.Ckey)
+					} else if config.Ctype == "REPOSITORY" {
+						assert.Equal(t, "dummy_key_repo", config.Ckey)
+					}
+				}
+
+			})
+		}
+
+	})
+
+}
+
+func TestGctsConfigMetadataFailure(t *testing.T) {
+	config := gctsDeployOptions{
+		Host:       "http://testHostNotregistered.com:50000",
+		Client:     "000",
+		Repository: "testRepo",
+		Branch:     "dummyBranch",
+		Username:   "testUser",
+		Password:   "testPassword",
+	}
+	t.Run("Test Config Metadata Failure", func(t *testing.T) {
+		var httpClient httpMockGcts
+		if config.Host == "http://testHostNotregistered.com:50000" {
+			httpClient = httpMockGcts{StatusCode: 500, ResponseBody: `{
+			    }`}
+		}
+
+		_, err := getConfigurationMetadata(&config, &httpClient)
+
+		assert.EqualError(t, err, "a http error occurred")
+
+	})
+
+}
+
+func TestDeployToAbapSystemSuccess(t *testing.T) {
+	config := gctsDeployOptions{
+		Host:       "http://testHost.com:50000",
+		Client:     "000",
+		Repository: "testRepo",
+		Username:   "testUser",
+		Password:   "testPassword",
+		Scope:      "dummyScope",
+	}
+
+	t.Run("Deploy to ABAP system sucess", func(t *testing.T) {
+		var httpClient httpMockGcts
+		if config.Repository == "testRepo" {
+			httpClient = httpMockGcts{StatusCode: 200, ResponseBody: `{
+				"result": {
+				    "rid": "testrepo",
+				    "name": "testRepo",
+				    "role": "dummyRole",
+				    "type": "dummyType",
+				    "vsid": "dummyVsid",
+				    "status": "CREATED",
+				    "branch": "dummyBranch",
+				    "url": "http://testRepoUrl.com",
+				    "createdBy": "testUser",
+				    "createdDate": "2021-04-14",
+				    "config": [
+					{
+					    "key": "CLIENT_VCS_CONNTYPE",
+					    "value": "ssl",
+					    "category": "CONNECTION",
+					    "scope": "local"
+					},
+					{
+					    "key": "CLIENT_VCS_URI",
+					    "value": "http://testRepoUrl.com",
+					    "category": "CONNECTION",
+					    "scope": "local"
+					}
+				    ],
+				    "connection": "ssl"
+				}
+			    }`}
+		}
+
+		err := deployCommitToAbapSystem(&config, &httpClient)
+		assert.NoError(t, err)
+	})
+}
+
+func TestGctsDeployToAbapSystemFailure(t *testing.T) {
+	config := gctsDeployOptions{
+		Host:       "http://testHost.com:50000",
+		Client:     "000",
+		Repository: "testRepoNotExists",
+		Username:   "testUser",
+		Password:   "testPassword",
+		Scope:      "dummyScope",
+	}
+	t.Run("Deploy to ABAP system Failure", func(t *testing.T) {
+		var httpClient httpMockGcts
+		if config.Host == "testRepoNotExists" {
+			httpClient = httpMockGcts{StatusCode: 500, ResponseBody: `{
+				"exception": "No relation between system and repository"
+			    }`}
+		}
+
+		err := deployCommitToAbapSystem(&config, &httpClient)
+
+		assert.EqualError(t, err, "a http error occurred")
+
+	})
+
+}
+
+func TestGctsSplitConfigurationToMap(t *testing.T) {
+	config := []configMetadata{
+		{
+			Ckey:     "dummyKey1",
+			Ctype:    "REPOSITORY",
+			Datatype: "BOOLEAN",
+			Example:  "X",
+		},
+		{
+			Ckey:     "dummyKey2",
+			Ctype:    "REPOSITORY",
+			Datatype: "BOOLEAN",
+			Example:  "true",
+		},
+		{
+			Ckey:     "dummyKey3",
+			Ctype:    "REPOSITORY",
+			Datatype: "STRING",
+			Example:  "dummyValue",
+		},
+	}
+	configMetadata := configurationMetadataBody{
+		Config: config,
+	}
+
+	configMap := map[string]interface{}{
+		"dummyKey1": "true",
+		"dummyKey2": "true",
+		"dummyKey3": "dummyValue2",
+	}
+
+	t.Run("Config Mapping test", func(t *testing.T) {
+		repoConfig, err := splitConfigurationToMap(configMap, configMetadata)
+
+		if assert.NoError(t, err) {
+			for _, config := range repoConfig {
+				if config.Key == "dummyKey1" {
+					assert.Equal(t, "X", config.Value)
+				} else if config.Key == "dummyKey2" {
+					assert.Equal(t, "true", config.Value)
+				} else if config.Key == "dummyKey3" {
+					assert.Equal(t, "dummyValue2", config.Value)
+				}
+			}
+		}
+	})
+}
