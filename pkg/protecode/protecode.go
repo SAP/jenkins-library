@@ -317,7 +317,6 @@ func (pc *Protecode) DeclareFetchURL(cleanupMode, group, fetchURL string) *Resul
 		"Delete-Binary": {fmt.Sprintf("%v", deleteBinary)},
 		"Url":           {fetchURL},
 		"Version":       {"1"},
-		"Replace":       {"483477"},
 		"Content-Type":  {"application/json"},
 	}
 
