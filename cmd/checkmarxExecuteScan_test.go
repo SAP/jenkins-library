@@ -547,17 +547,20 @@ func TestRunScan(t *testing.T) {
 	assert.Equal(t, true, sys.scanProjectCalled, "ScanProject was not invoked")
 }
 
-func TestRunScan_invalidPreset(t *testing.T) {
+func TestRunScan_nonNumeralPreset(t *testing.T) {
 	t.Parallel()
 
 	sys := &systemMockForExistingProject{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`)}
-	options := checkmarxExecuteScanOptions{ProjectName: "TestExisting", VulnerabilityThresholdUnit: "absolute", FullScanCycle: "2", Incremental: true, FullScansScheduled: true, Preset: "INVALID", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+	options := checkmarxExecuteScanOptions{ProjectName: "TestExisting", VulnerabilityThresholdUnit: "absolute", FullScanCycle: "2", Incremental: true, FullScansScheduled: true, Preset: "SAP_JS_Default", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
 	workspace, err := ioutil.TempDir("", "workspace1")
 	if err != nil {
 		t.Fatal("Failed to create temporary workspace directory")
 	}
 	// clean up tmp dir
 	defer os.RemoveAll(workspace)
+	err = ioutil.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0700)
+	assert.NoError(t, err)
+	options.FilterPattern = "**/abcd.go"
 
 	influx := checkmarxExecuteScanInflux{}
 
@@ -565,7 +568,7 @@ func TestRunScan_invalidPreset(t *testing.T) {
 	utilsMock.workspace = workspace
 
 	err = runScan(options, sys, &influx, utilsMock)
-	assert.EqualError(t, err, "failed to convert string INVALID to int: strconv.Atoi: parsing \"INVALID\": invalid syntax")
+	assert.NoError(t, err, "error occurred but none expected")
 }
 
 func TestSetPresetForProjectWithIDProvided(t *testing.T) {
@@ -735,17 +738,20 @@ func TestRunScanForPullRequestProjectNew(t *testing.T) {
 	assert.Equal(t, false, sys.forceScan, "forceScan has wrong value")
 }
 
-func TestRunScanForPullRequestProjectNew_invalidPreset(t *testing.T) {
+func TestRunScanForPullRequestProjectNew_nonNumeralPreset(t *testing.T) {
 	t.Parallel()
 
 	sys := &systemMock{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`), createProject: true}
-	options := checkmarxExecuteScanOptions{PullRequestName: "PR-17", ProjectName: "Test", AvoidDuplicateProjectScans: true, VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "INVALID", TeamName: "OpenSource/Cracks/15", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+	options := checkmarxExecuteScanOptions{PullRequestName: "PR-17", ProjectName: "Test", AvoidDuplicateProjectScans: true, VulnerabilityThresholdUnit: "percentage", FullScanCycle: "3", Incremental: true, FullScansScheduled: true, Preset: "SAP_JS_Default", TeamName: "OpenSource/Cracks/15", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
 	workspace, err := ioutil.TempDir("", "workspace4")
 	if err != nil {
 		t.Fatal("Failed to create temporary workspace directory")
 	}
 	// clean up tmp dir
 	defer os.RemoveAll(workspace)
+	err = ioutil.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0700)
+	assert.NoError(t, err)
+	options.FilterPattern = "**/abcd.go"
 
 	influx := checkmarxExecuteScanInflux{}
 
@@ -753,7 +759,7 @@ func TestRunScanForPullRequestProjectNew_invalidPreset(t *testing.T) {
 	utilsMock.workspace = workspace
 
 	err = runScan(options, sys, &influx, utilsMock)
-	assert.EqualError(t, err, "failed to convert string INVALID to int: strconv.Atoi: parsing \"INVALID\": invalid syntax")
+	assert.NoError(t, err, "error occurred but none expected")
 }
 
 func TestRunScanHighViolationPercentage(t *testing.T) {
