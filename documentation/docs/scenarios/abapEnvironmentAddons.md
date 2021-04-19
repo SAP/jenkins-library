@@ -1,5 +1,11 @@
 # Build and Publish Add-on Products on SAP BTP, ABAP Environment
 
+!!! caution Current limitations
+    * Add-on Descriptor File: Please use the long commit ID in the commit ID field in the add-on descriptor file currently, if you are using the short commit ID the build             process will fail.
+      To retrieve the long commit id, go into the Manage Software Components app, navigate to the branch, select the commit in the list of commits, field "Long Commit ID"             becomes available.
+    * TABU entries are currently not reflected in the object list during add-on build. With ABAP Environment release 2105 HFC 03 it is planned that this is supported.
+      Besides that, deletion of TABU is currently not supported via gCTS – this will be supported at a later point in time.
+
 ## Introduction
 
 This scenario describes how an add-on for the SAP BTP, ABAP environment is built. It is intended for SAP partners who want to provide a Software as a Service (SaaS) solution on the SAP BTP using the ABAP Environment. Therefore, a partner development contract (see [SAP PartnerEdge Test, Demo & Development Price List](https://partneredge.sap.com/en/library/assets/partnership/sales/order_license/pl_pl_part_price_list.html)) is required. This page aims to provide an overview of the build process of the add-on.
@@ -139,10 +145,6 @@ A configuration file `.pipeline/config.yml` is used to provide all required valu
 #### Add-on descriptor file
 
 The build process is controlled by an add-on descriptor file called `addon.yml`. This file must be created manually and must be stored in the GIT repository of the pipeline. It must contain information about the to-be-delivered [add-on product version](#add-on-product-version) and the contained [software component versions](#software-component-version). Below, you see an example:
-
-!!! caution "Use Long Commit ID for the commitID fields"
-    Please use the long commit ID in the commit ID field currently if you are using the short commit ID the build process will fail.
-    Go into the Manage Software Components app, navigate to the branch, select the commit in the list of commits, field "Long Commit ID" becomes available.
 
 ```YAML
 ---
