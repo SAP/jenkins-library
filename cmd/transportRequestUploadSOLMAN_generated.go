@@ -138,6 +138,8 @@ func addTransportRequestUploadSOLMANFlags(cmd *cobra.Command, stepConfig *transp
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("applicationId")
+	cmd.MarkFlagRequired("changeDocumentId")
+	cmd.MarkFlagRequired("transportRequestId")
 	cmd.MarkFlagRequired("filePath")
 	cmd.MarkFlagRequired("cmClientOpts")
 }
@@ -207,7 +209,7 @@ func transportRequestUploadSOLMANMetadata() config.StepData {
 						},
 						Scope:     []string{"PARAMETERS"},
 						Type:      "string",
-						Mandatory: false,
+						Mandatory: true,
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -220,7 +222,7 @@ func transportRequestUploadSOLMANMetadata() config.StepData {
 						},
 						Scope:     []string{"PARAMETERS"},
 						Type:      "string",
-						Mandatory: false,
+						Mandatory: true,
 						Aliases:   []config.Alias{},
 					},
 					{

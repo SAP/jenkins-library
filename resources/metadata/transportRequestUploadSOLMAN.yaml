@@ -64,7 +64,8 @@ spec:
           - name: commonPipelineEnvironment
             param: custom/changeDocumentId
         type: string
-        description: "Id of the change document to upload the file. This parameter is only taken into account when provided via signature to the step."
+        mandatory: true
+        description: "ID of the change document to which the file is uploaded"
         scope:
           - PARAMETERS
       - name: transportRequestId
@@ -72,7 +73,8 @@ spec:
           - name: commonPipelineEnvironment
             param: custom/transportRequestId
         type: string
-        description: "Id of the transport request to upload the file. This parameter is only taken into account when provided via signature to the step."
+        mandatory: true
+        description: "ID of the transport request to which the file is uploaded"
         scope:
           - PARAMETERS
       - name: filePath
