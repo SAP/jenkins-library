@@ -128,7 +128,7 @@ spec:
           - STEPS
         mandatory: false
         default: "ATCResults.xml"
-      - name: generateEmail
+      - name: generateHTML
         type: bool
         description: Specifies whether the ATC results should also be generated as an HTML document
         scope:

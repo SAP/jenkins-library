@@ -24,7 +24,7 @@ type abapEnvironmentRunATCCheckOptions struct {
 	Password           string `json:"password,omitempty"`
 	Host               string `json:"host,omitempty"`
 	AtcResultsFileName string `json:"atcResultsFileName,omitempty"`
-	GenerateEmail      bool   `json:"generateEmail,omitempty"`
+	GenerateHTML       bool   `json:"generateHTML,omitempty"`
 }
 
 // AbapEnvironmentRunATCCheckCommand Runs an ATC Check
@@ -103,7 +103,7 @@ func addAbapEnvironmentRunATCCheckFlags(cmd *cobra.Command, stepConfig *abapEnvi
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510")
 	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP Cloud Platform ABAP Environment system")
 	cmd.Flags().StringVar(&stepConfig.AtcResultsFileName, "atcResultsFileName", `ATCResults.xml`, "Specifies output file name for the results from the ATC run")
-	cmd.Flags().BoolVar(&stepConfig.GenerateEmail, "generateEmail", false, "Specifies whether the ATC results should also be generated as an HTML document")
+	cmd.Flags().BoolVar(&stepConfig.GenerateHTML, "generateHTML", false, "Specifies whether the ATC results should also be generated as an HTML document")
 
 	cmd.MarkFlagRequired("atcConfig")
 	cmd.MarkFlagRequired("username")
@@ -214,7 +214,7 @@ func abapEnvironmentRunATCCheckMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "generateEmail",
+						Name:        "generateHTML",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",

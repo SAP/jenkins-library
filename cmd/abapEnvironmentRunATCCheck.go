@@ -64,7 +64,7 @@ func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telem
 		resp, err = triggerATCrun(options, details, &client)
 	}
 	if err == nil {
-		err = handleATCresults(resp, details, &client, options.AtcResultsFileName, options.GenerateEmail)
+		err = handleATCresults(resp, details, &client, options.AtcResultsFileName, options.GenerateHTML)
 	}
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
@@ -73,7 +73,7 @@ func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telem
 	log.Entry().Info("ATC run completed successfully. If there are any results from the respective run they will be listed in the logs above as well as being saved in the output .xml file")
 }
 
-func handleATCresults(resp *http.Response, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, atcResultFileName string, generateEmail bool) error {
+func handleATCresults(resp *http.Response, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, atcResultFileName string, generateHTML bool) error {
 	var err error
 	var abapEndpoint string
 	abapEndpoint = details.URL
@@ -91,7 +91,7 @@ func handleATCresults(resp *http.Response, details abaputils.ConnectionDetailsHT
 	}
 	if err == nil {
 		defer resp.Body.Close()
-		err = parseATCResult(body, atcResultFileName, generateEmail)
+		err = parseATCResult(body, atcResultFileName, generateHTML)
 	}
 	if err != nil {
 		return fmt.Errorf("Handling ATC result failed: %w", err)
@@ -174,7 +174,7 @@ func buildATCCheckBody(ATCConfig ATCconfig) (checkVariantString string, packageS
 	return checkVariantString, packageString, softwareComponentString, nil
 }
 
-func parseATCResult(body []byte, atcResultFileName string, generateEmail bool) (err error) {
+func parseATCResult(body []byte, atcResultFileName string, generateHTML bool) (err error) {
 	if len(body) == 0 {
 		return fmt.Errorf("Parsing ATC result failed: %w", errors.New("Body is empty, can't parse empty body"))
 	}
@@ -201,7 +201,7 @@ func parseATCResult(body []byte, atcResultFileName string, generateEmail bool) (
 				log.Entry().Infof("%s in file '%s': %s in line %s found by %s", t.Severity, s.Key, t.Message, t.Line, t.Source)
 			}
 		}
-		if generateEmail == true {
+		if generateHTML == true {
 			var htmlString = `<!DOCTYPE html><html lang="en" xmlns="http://www.w3.org/1999/xhtml"><head><title>ATC Results</title><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><style>table,th,td {border: 1px solid black;border-collapse:collapse;}th,td{padding: 5px;text-align:left;font-size:medium;}</style></head><body><h1 style="text-align:center;font-size:large">ATC Results</h1><table style="width:100%"><tr><th>Severity</th><th>File</th><th>Message</th><th>Line</th><th>Checked by</th></tr>`
 			for _, s := range parsedXML.Files {
 				for _, t := range s.ATCErrors {
