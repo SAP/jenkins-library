@@ -21,3 +21,15 @@ jobs:
           yamllint_config_filepath: '.yamllint.yml'
         env:
           GITHUB_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  yamllint2:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Install yamllint
+        run: pip install yamllint
+
+      - name: Lint YAML files
+        run: yamllint -c .yamllint.yaml .pipeline/config.yml resources/metadata/*.y*ml
