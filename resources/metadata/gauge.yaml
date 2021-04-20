@@ -1,0 +1,91 @@
+metadata:
+  name: gaugeExecuteTests
+  description: Installs gauge and executes specified gauge tests.
+  longDescription: |
+    In this step Gauge ([getgauge.io](https://getgauge.io)) acceptance tests are executed. Using Gauge it will be possible to have a three-tier test layout:
+
+    Acceptance Criteria
+    Test implemenation layer
+    Application driver layer
+
+    This layout is propagated by Jez Humble and Dave Farley in their book "Continuous Delivery" as a way to create maintainable acceptance test suites (see "Continuous Delivery", p. 190ff).
+
+    Using Gauge it is possible to write test specifications in [Markdown syntax](http://daringfireball.net/projects/markdown/syntax) and therefore allow e.g. product owners to write the relevant acceptance test specifications. At the same time it allows the developer to implement the steps described in the specification in her development environment.
+
+    You can use the [sample projects](https://github.com/getgauge/gauge-mvn-archetypes) of Gauge.
+
+spec:
+  inputs:
+    secrets:
+      - name: seleniumHubCredentialsId
+        type: jenkins
+        description: "Defines the id of the user/password credentials to be used to connect to a Selenium Hub. The credentials are provided in the environment variables `PIPER_SELENIUM_HUB_USER` and `PIPER_SELENIUM_HUB_PASSWORD`."
+    resources:
+      - name: buildDescriptor
+        type: stash
+      - name: tests
+        type: stash
+    params:
+      - name: installCommand
+        type: string
+        description: "Defines the command for installing Gauge. Gauge should be installed to $HOME/bin/gauge. Example: curl -SsL https://downloads.gauge.org/stable | sh -s -- --location=$HOME/bin/gauge"
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: languageRunner
+        type: string
+        description: "Defines the Gauge language runner to be used."
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: runCommand
+        type: string
+        description: "Defines the command which is used for executing Gauge. Example: gauge run"
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        mandatory: true
+      - name: testOptions
+        type: string
+        description: "Allows to set specific options for the Gauge execution. Details can be found for example [in the Gauge Maven plugin documentation](https://github.com/getgauge-contrib/gauge-maven-plugin#executing-specs)"
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+  outputs:
+    resources:
+      - name: influx
+        type: influx
+        params:
+          - name: step_data
+            fields:
+              - name: gauge
+                type: bool
+  containers:
+    - name: gauge
+      image: node:lts-stretch
+      env:
+        - name: no_proxy
+          value: localhost,selenium,$no_proxy
+        - name: NO_PROXY
+          value: localhost,selenium,$NO_PROXY
+      workingDir: /home/node
+      volumeMounts:
+        - mountPath: /dev/shm
+          name: dev-shm
+  sidecars:
+    - image: selenium/standalone-chrome
+      name: selenium
+      securityContext:
+        privileged: true
+      volumeMounts:
+        - mountPath: /dev/shm
+          name: dev-shm
+      env:
+        - name: "NO_PROXY"
+          value: "localhost,selenium,$NO_PROXY"
+        - name: "no_proxy"
+          value: "localhost,selenium,$no_proxy"
