@@ -136,6 +136,13 @@ spec:
           - STAGES
           - STEPS
         default: "-1"
+      - name: dir
+        type: string
+        description: "Directory where start to scan."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: emailAddressesOfInitialProductAdmins
         type: "[]string"
         description: "The list of email addresses to assign as product admins for newly created WhiteSource products."
