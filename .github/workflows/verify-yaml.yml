@@ -24,10 +24,13 @@ jobs:
   yamllint2:
     runs-on: ubuntu-latest
     steps:
+      - name: 'Checkout'
+        uses: actions/checkout@master
+
       - uses: actions/setup-python@v2
         with:
           python-version: 3.8
-
+        
       - name: Install yamllint
         run: pip install yamllint
 
