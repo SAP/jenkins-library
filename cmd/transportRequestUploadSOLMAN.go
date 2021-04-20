@@ -70,32 +70,22 @@ func runTransportRequestUploadSOLMAN(config *transportRequestUploadSOLMANOptions
 		Password: config.Password,
 	})
 
-	var cdID, trID string
-
-	if len(config.TransportRequestID) > 0 {
-		trID = config.TransportRequestID
-		action.WithTransportRequestID(trID)
-	}
-
-	if len(config.ChangeDocumentID) > 0 {
-		cdID = config.ChangeDocumentID
-		action.WithChangeDocumentID(cdID)
-	}
-
+	action.WithTransportRequestID(config.TransportRequestID)
+	action.WithChangeDocumentID(config.ChangeDocumentID)
 	action.WithApplicationID(config.ApplicationID)
 	action.WithFile(config.FilePath)
 	action.WithCMOpts(config.CmClientOpts)
 
-	commonPipelineEnvironment.custom.changeDocumentID = cdID
-	commonPipelineEnvironment.custom.transportRequestID = trID
+	commonPipelineEnvironment.custom.transportRequestID = config.TransportRequestID
+	commonPipelineEnvironment.custom.changeDocumentID = config.ChangeDocumentID
 
 	err := action.Perform(utils, utils)
 
 	if err == nil {
 		log.Entry().Infof("Upload of artifact '%s' to SAP Solution Manager succeeded (ChangeDocumentId: '%s', TransportRequestId: '%s').",
 			config.FilePath,
-			cdID,
-			trID,
+			config.ChangeDocumentID,
+			config.TransportRequestID,
 		)
 	}
 	return err

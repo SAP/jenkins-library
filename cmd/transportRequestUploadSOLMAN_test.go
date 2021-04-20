@@ -69,7 +69,7 @@ func (m *ConfigMock) without(field string) *ConfigMock {
 func TestTrSolmanRunTransportRequestUpload(t *testing.T) {
 	t.Parallel()
 
-	t.Run("solmand upload", func(t *testing.T) {
+	t.Run("good", func(t *testing.T) {
 		t.Parallel()
 
 		t.Run("straight forward", func(t *testing.T) {
@@ -96,6 +96,10 @@ func TestTrSolmanRunTransportRequestUpload(t *testing.T) {
 				assert.True(t, actionMock.performCalled)
 			}
 		})
+	})
+
+	t.Run("bad", func(t *testing.T) {
+		t.Parallel()
 
 		t.Run("Error during deployment", func(t *testing.T) {
 			utilsMock := newTransportRequestUploadSOLMANTestsUtils(0)
@@ -107,7 +111,6 @@ func TestTrSolmanRunTransportRequestUpload(t *testing.T) {
 
 			assert.Error(t, err, "upload failed")
 		})
-
 	})
 }
 
