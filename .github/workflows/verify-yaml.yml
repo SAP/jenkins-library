@@ -32,4 +32,4 @@ jobs:
         run: pip install yamllint
 
       - name: Lint YAML files
-        run: yamllint -c .yamllint.yaml .pipeline/config.yml resources/metadata/*.y*ml
+        run: yamllint -c .yamllint.yml .pipeline/config.yml resources/metadata/*.y*ml
