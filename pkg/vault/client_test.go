@@ -3,11 +3,12 @@ package vault
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
 	"path"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/stretchr/testify/mock"
 
@@ -108,6 +109,82 @@ func TestGetKV1Secret(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Empty(t, secret["key1"])
 
+	})
+}
+
+func TestWriteKV2Secret(t *testing.T) {
+	t.Parallel()
+	const secretAPIPath = "secret/data/test"
+
+	t.Run("Test write new KV2 secret", func(t *testing.T) {
+		vaultMock := &mocks.VaultMock{}
+		client := Client{vaultMock, &Config{}}
+		setupMockKvV2(vaultMock)
+		vaultMock.On("Read", secretAPIPath).Return(nil, nil)
+		secret := map[string]interface{}{"data": map[string]interface{}{"key": "value"}}
+		vaultMock.On("Write", secretAPIPath, secret).Return(nil, nil)
+		err := client.WriteKvSecret("secret/test", map[string]string{"key": "value"})
+		assert.NoError(t, err)
+	})
+
+	t.Run("Test rewrite KV2 secret with new keys", func(t *testing.T) {
+		vaultMock := &mocks.VaultMock{}
+		client := Client{vaultMock, &Config{}}
+		setupMockKvV2(vaultMock)
+		vaultMock.On("Read", secretAPIPath).Return(kv2Secret(SecretData{"key1": "value1"}), nil)
+		secret := map[string]interface{}{"data": map[string]interface{}{"key": "value", "key1": "value1"}}
+		vaultMock.On("Write", secretAPIPath, secret).Return(nil, nil)
+		err := client.WriteKvSecret("secret/test", map[string]string{"key": "value"})
+		assert.NoError(t, err)
+	})
+
+	t.Run("Test rewrite KV2 secret with new keys", func(t *testing.T) {
+		vaultMock := &mocks.VaultMock{}
+		client := Client{vaultMock, &Config{}}
+		setupMockKvV2(vaultMock)
+		vaultMock.On("Read", secretAPIPath).Return(kv2Secret(SecretData{"key1": "value1"}), nil)
+		secret := map[string]interface{}{"data": map[string]interface{}{"key1": "value2"}}
+		vaultMock.On("Write", secretAPIPath, secret).Return(nil, nil)
+		err := client.WriteKvSecret("secret/test", map[string]string{"key1": "value2"})
+		assert.NoError(t, err)
+	})
+}
+
+func TestWriteKV1Secret(t *testing.T) {
+	t.Parallel()
+	const secretAPIPath = "secret/test"
+
+	t.Run("Test write new KV1 secret", func(t *testing.T) {
+		vaultMock := &mocks.VaultMock{}
+		client := Client{vaultMock, &Config{}}
+		setupMockKvV1(vaultMock)
+		vaultMock.On("Read", secretAPIPath).Return(nil, nil)
+		secret := map[string]interface{}{"key": "value"}
+		vaultMock.On("Write", secretAPIPath, secret).Return(nil, nil)
+		err := client.WriteKvSecret("secret/test", map[string]string{"key": "value"})
+		assert.NoError(t, err)
+	})
+
+	t.Run("Test rewrite KV1 secret with new keys", func(t *testing.T) {
+		vaultMock := &mocks.VaultMock{}
+		client := Client{vaultMock, &Config{}}
+		setupMockKvV1(vaultMock)
+		vaultMock.On("Read", secretAPIPath).Return(kv1Secret(SecretData{"key1": "value1"}), nil)
+		secret := map[string]interface{}{"key": "value", "key1": "value1"}
+		vaultMock.On("Write", secretAPIPath, secret).Return(nil, nil)
+		err := client.WriteKvSecret("secret/test", map[string]string{"key": "value"})
+		assert.NoError(t, err)
+	})
+
+	t.Run("Test rewrite KV1 secret with new keys", func(t *testing.T) {
+		vaultMock := &mocks.VaultMock{}
+		client := Client{vaultMock, &Config{}}
+		setupMockKvV1(vaultMock)
+		vaultMock.On("Read", secretAPIPath).Return(kv1Secret(SecretData{"key1": "value1"}), nil)
+		secret := map[string]interface{}{"key1": "value2"}
+		vaultMock.On("Write", secretAPIPath, secret).Return(nil, nil)
+		err := client.WriteKvSecret("secret/test", map[string]string{"key1": "value2"})
+		assert.NoError(t, err)
 	})
 }
 
