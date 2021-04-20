@@ -617,7 +617,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 			},
 			Containers: []config.Container{
 				{Image: "buildpack-deps:stretch-curl", WorkingDir: "/tmp", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "dub"}, {Name: "buildTool", Value: "docker"}}}}},
-				{Image: "devxci/mbtci:1.0.14", WorkingDir: "/home/mta", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "mta"}}}}},
+				{Image: "devxci/mbtci:1.0.16.1", WorkingDir: "/home/mta", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "mta"}}}}},
 				{Image: "golang:1", WorkingDir: "/go", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "golang"}}}}},
 				{Image: "hseeberger/scala-sbt:8u181_2.12.8_1.2.8", WorkingDir: "/tmp", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "sbt"}}}}},
 				{Image: "maven:3.5-jdk-8", WorkingDir: "/tmp", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "maven"}}}}},
