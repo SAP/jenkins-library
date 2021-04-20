@@ -1,12 +1,12 @@
 name: YAML
 
 on:
-   push:
-     branches:
-     - master
-   pull_request:
-     branches:
-     - master
+  push:
+    branches:
+    - master
+  pull_request:
+    branches:
+    - master
 
 jobs:
   yamllint:
@@ -18,5 +18,6 @@ jobs:
         uses: karancode/yamllint-github-action@master
         with:
           yamllint_file_or_dir: '.pipeline/config.yml resources/metadata/*.y*ml'
+          yamllint_config_filepath: '.yamllint.yml'
         env:
           GITHUB_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
