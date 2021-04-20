@@ -76,8 +76,7 @@ spec:
         aliases:
           - name: helmChartPath
         type: string
-        description: Defines the chart path for deployments using helm.
-        mandatory: true
+        description: Defines the chart path for deployments using helm. It is a mandatory parameter when `deployTool:helm` or `deployTool:helm3`.
         scope:
           - PARAMETERS
           - STAGES
@@ -151,8 +150,7 @@ spec:
         aliases:
           - name: helmDeploymentName
         type: string
-        description: Defines the name of the deployment.
-        mandatory: true
+        description: Defines the name of the deployment. It is a mandatory parameter when `deployTool:helm` or `deployTool:helm3`.
         scope:
           - PARAMETERS
           - STAGES

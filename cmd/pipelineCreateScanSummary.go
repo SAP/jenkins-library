@@ -44,6 +44,7 @@ func runPipelineCreateScanSummary(config *pipelineCreateScanSummaryOptions, tele
 
 	scanReports := []reporting.ScanReport{}
 	for _, report := range reports {
+		log.Entry().Debugf("reading file %v", report)
 		reportContent, err := utils.FileRead(report)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
