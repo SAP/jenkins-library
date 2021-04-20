@@ -202,24 +202,7 @@ func parseATCResult(body []byte, atcResultFileName string, generateHTML bool) (e
 			}
 		}
 		if generateHTML == true {
-			var htmlString = `<!DOCTYPE html><html lang="en" xmlns="http://www.w3.org/1999/xhtml"><head><title>ATC Results</title><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><style>table,th,td {border: 1px solid black;border-collapse:collapse;}th,td{padding: 5px;text-align:left;font-size:medium;}</style></head><body><h1 style="text-align:center;font-size:large">ATC Results</h1><table style="width:100%"><tr><th>Severity</th><th>File</th><th>Message</th><th>Line</th><th>Checked by</th></tr>`
-			for _, s := range parsedXML.Files {
-				for _, t := range s.ATCErrors {
-					var trBackgroundColor string
-					switch t.Severity {
-					case "warning":
-						trBackgroundColor = "#ffcc00"
-					case "error":
-						trBackgroundColor = "orangered"
-					case "info":
-						trBackgroundColor = "#63c0df"
-					default:
-						trBackgroundColor = "#99cc33"
-					}
-					htmlString += `<tr style="background-color: ` + trBackgroundColor + `">` + `<td>` + t.Severity + `</td>` + `<td>` + s.Key + `</td>` + `<td>` + t.Message + `</td>` + `<td style="text-align:center">` + t.Line + `</td>` + `<td>` + t.Source + `</td>` + `</tr>`
-				}
-			}
-			htmlString += `</table></body></html>`
+			htmlString := generateHTMLDocument(parsedXML)
 			htmlStringByte := []byte(htmlString)
 			atcResultHTMLFileName := strings.Trim(atcResultFileName, ".xml") + ".html"
 			err = ioutil.WriteFile(atcResultHTMLFileName, htmlStringByte, 0644)
@@ -347,6 +330,50 @@ func convertATCOptions(options *abapEnvironmentRunATCCheckOptions) abaputils.Aba
 	subOptions.Username = options.Username
 
 	return subOptions
+}
+
+func generateHTMLDocument(parsedXML *Result) (htmlDocumentString string) {
+	htmlDocumentString = `<!DOCTYPE html><html lang="en" xmlns="http://www.w3.org/1999/xhtml"><head><title>ATC Results</title><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><style>table,th,td {border: 1px solid black;border-collapse:collapse;}th,td{padding: 5px;text-align:left;font-size:medium;}</style></head><body><h1 style="text-align:left;font-size:large">ATC Results</h1><table style="width:100%"><tr><th>Severity</th><th>File</th><th>Message</th><th>Line</th><th>Checked by</th></tr>`
+
+	for _, s := range parsedXML.Files {
+		for _, t := range s.ATCErrors {
+			var trBackgroundColor string
+			if t.Severity == "error" {
+				trBackgroundColor = "rgba(227,85,0)"
+				htmlDocumentString += `<tr style="background-color: ` + trBackgroundColor + `">` + `<td>` + t.Severity + `</td>` + `<td>` + s.Key + `</td>` + `<td>` + t.Message + `</td>` + `<td style="text-align:center">` + t.Line + `</td>` + `<td>` + t.Source + `</td>` + `</tr>`
+			}
+		}
+	}
+	for _, s := range parsedXML.Files {
+		for _, t := range s.ATCErrors {
+			var trBackgroundColor string
+			if t.Severity == "warning" {
+				trBackgroundColor = "rgba(255,175,0, 0.75)"
+				htmlDocumentString += `<tr style="background-color: ` + trBackgroundColor + `">` + `<td>` + t.Severity + `</td>` + `<td>` + s.Key + `</td>` + `<td>` + t.Message + `</td>` + `<td style="text-align:center">` + t.Line + `</td>` + `<td>` + t.Source + `</td>` + `</tr>`
+			}
+		}
+	}
+	for _, s := range parsedXML.Files {
+		for _, t := range s.ATCErrors {
+			var trBackgroundColor string
+			if t.Severity == "info" {
+				trBackgroundColor = "rgba(255,175,0, 0.2)"
+				htmlDocumentString += `<tr style="background-color: ` + trBackgroundColor + `">` + `<td>` + t.Severity + `</td>` + `<td>` + s.Key + `</td>` + `<td>` + t.Message + `</td>` + `<td style="text-align:center">` + t.Line + `</td>` + `<td>` + t.Source + `</td>` + `</tr>`
+			}
+		}
+	}
+	for _, s := range parsedXML.Files {
+		for _, t := range s.ATCErrors {
+			var trBackgroundColor string
+			if t.Severity != "info" && t.Severity != "warning" && t.Severity != "error" {
+				trBackgroundColor = "rgba(255,175,0, 0)"
+				htmlDocumentString += `<tr style="background-color: ` + trBackgroundColor + `">` + `<td>` + t.Severity + `</td>` + `<td>` + s.Key + `</td>` + `<td>` + t.Message + `</td>` + `<td style="text-align:center">` + t.Line + `</td>` + `<td>` + t.Source + `</td>` + `</tr>`
+			}
+		}
+	}
+	htmlDocumentString += `</table></body></html>`
+
+	return htmlDocumentString
 }
 
 //ATCconfig object for parsing yaml config of software components and packages

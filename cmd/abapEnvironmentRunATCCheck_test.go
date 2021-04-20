@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/xml"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -432,5 +433,33 @@ func TestBuildATCCheckBody(t *testing.T) {
 		assert.Equal(t, expectedpackagestring, packageString)
 		assert.Equal(t, expectedsoftwarecomponentstring, softwarecomponentString)
 		assert.Equal(t, nil, err)
+	})
+}
+
+func TestGenerateHTMLDocument(t *testing.T) {
+	//Failure case is not needed --> all failing cases would be depended on parsedXML *Result which is covered in TestParseATCResult
+	t.Run("success case: html response", func(t *testing.T) {
+		expectedResult := `<html><head><title>ATC Results</title</head></html>`
+
+		bodyString := `<?xml version="1.0" encoding="UTF-8"?>
+		<checkstyle>
+			<file name="testFile">
+				<error message="testMessage1" source="sourceTester" line="1" severity="info">
+				</error>
+				<error message="testMessage2" source="sourceTester" line="2" severity="warning">
+				</error>
+			</file>
+			<file name="testFile2">
+			<error message="testMessage" source="sourceTester" line="1" severity="error">
+				</error>
+			</file>
+		</checkstyle>`
+
+		parsedXML := new(Result)
+		err := xml.Unmarshal([]byte(bodyString), &parsedXML)
+		if assert.NoError(t, err) {
+			htmlDocumentResult := generateHTMLDocument(parsedXML)
+			assert.Equal(t, expectedResult, htmlDocumentResult)
+		}
 	})
 }
