@@ -9,30 +9,19 @@ on:
     - master
 
 jobs:
-  yamllint:
+  lint:
     runs-on: ubuntu-latest
     steps:
-      - name: 'Checkout'
-        uses: actions/checkout@master
-      - name: 'Yamllint'
-        uses: karancode/yamllint-github-action@master
-        with:
-          yamllint_file_or_dir: '.pipeline/config.yml resources/metadata/*.y*ml'
-          yamllint_config_filepath: '.yamllint.yml'
-        env:
-          GITHUB_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  yamllint2:
-    runs-on: ubuntu-latest
-    steps:
-      - name: 'Checkout'
+      - name: Checkout
         uses: actions/checkout@master
 
-      - uses: actions/setup-python@v2
+      - name: Setup python
+        uses: actions/setup-python@v2
         with:
           python-version: 3.8
-        
+
       - name: Install yamllint
         run: pip install yamllint
 
       - name: Lint YAML files
-        run: yamllint -c .yamllint.yml .pipeline/config.yml resources/metadata/*.y*ml
+        run: yamllint -c .yamllint.yml resources/metadata/*.y*ml .pipeline/config.yml .codeclimate.yml .markdownlint.yml .yamllint.yml
