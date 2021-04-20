@@ -136,6 +136,8 @@ func Execute() {
 	rootCmd.AddCommand(IntegrationArtifactDownloadCommand())
 	rootCmd.AddCommand(AbapEnvironmentAssembleConfirmCommand())
 	rootCmd.AddCommand(IntegrationArtifactUploadCommand())
+	rootCmd.AddCommand(TransportRequestDocIDFromGitCommand())
+	rootCmd.AddCommand(TransportRequestReqIDFromGitCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {

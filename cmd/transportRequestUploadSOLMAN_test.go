@@ -6,7 +6,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/transportrequest/solman"
 	"github.com/stretchr/testify/assert"
 	"reflect"
-	"strings"
 	"testing"
 )
 
@@ -67,22 +66,6 @@ func (m *ConfigMock) without(field string) *ConfigMock {
 	return m.with(field, "")
 }
 
-type transportRequestUtilsMock struct {
-	trID string
-	cdID string
-}
-
-func (m *transportRequestUtilsMock) FindIDInRange(label, from, to string) (string, error) {
-	if strings.HasPrefix(label, "TransportRequest") {
-		return m.trID, nil
-	}
-	if strings.HasPrefix(label, "ChangeDocument") {
-		return m.cdID, nil
-	}
-
-	return "invalid", fmt.Errorf("invalid label passed: %s", label)
-}
-
 func TestTrSolmanRunTransportRequestUpload(t *testing.T) {
 	t.Parallel()
 
@@ -125,60 +108,6 @@ func TestTrSolmanRunTransportRequestUpload(t *testing.T) {
 			assert.Error(t, err, "upload failed")
 		})
 
-	})
-}
-
-func TestTrSolmanGetTransportRequestID(t *testing.T) {
-	t.Parallel()
-
-	t.Run("get transport request id", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("TransportRequestID from config", func(t *testing.T) {
-			configMock := newConfigMock()
-
-			id, err := getTransportRequestID(configMock.config, &transportRequestUtilsMock{trID: "43218765", cdID: "56781234"})
-
-			if assert.NoError(t, err) {
-				assert.Equal(t, id, "87654321")
-			}
-		})
-		t.Run("TransportRequestID from git commit", func(t *testing.T) {
-			configMock := newConfigMock().without("TransportRequestID")
-
-			id, err := getTransportRequestID(configMock.config, &transportRequestUtilsMock{trID: "43218765", cdID: "56781234"})
-
-			if assert.NoError(t, err) {
-				assert.Equal(t, id, "43218765")
-			}
-		})
-	})
-}
-
-func TestTrSolmanGetChangeDocumentID(t *testing.T) {
-	t.Parallel()
-
-	t.Run("get change document id", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("ChangeDocumentID from config", func(t *testing.T) {
-			configMock := newConfigMock()
-
-			id, err := getChangeDocumentID(configMock.config, &transportRequestUtilsMock{trID: "43218765", cdID: "56781234"})
-
-			if assert.NoError(t, err) {
-				assert.Equal(t, id, "12345678")
-			}
-		})
-		t.Run("ChangeDocumentID from git commit", func(t *testing.T) {
-			configMock := newConfigMock().without("ChangeDocumentID")
-
-			id, err := getChangeDocumentID(configMock.config, &transportRequestUtilsMock{trID: "43218765", cdID: "56781234"})
-
-			if assert.NoError(t, err) {
-				assert.Equal(t, id, "56781234")
-			}
-		})
 	})
 }
 

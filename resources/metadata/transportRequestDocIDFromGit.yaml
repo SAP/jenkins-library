@@ -1,0 +1,52 @@
+metadata:
+  name: transportRequestDocIDFromGit
+  aliases:
+    - name: transportRequestUploadFile
+  description: "Retrieve change document ID from Git Commit Messages"
+  longDescription: |
+    Retrieve change document ID from Git Commit Messages.
+spec:
+  inputs:
+    params:
+      - name: gitFrom
+        aliases:
+          - name: changeManagement/git/from
+        type: "string"
+        description: "GIT starting point for retrieving the change document and transport request ID"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEP
+          - GENERAL
+        default: "origin/master"
+      - name: gitTo
+        aliases:
+          - name: changeManagement/git/to
+        type: "string"
+        description: "GIT ending point for retrieving the change document and transport request ID"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEP
+          - GENERAL
+        default: "HEAD"
+      - name: changeDocumentLabel
+        aliases:
+          - name: changeManagement/changeDocumentLabel
+        type: "string"
+        description: "Pattern used for identifying lines holding the change document ID. The GIT commit log messages are scanned for this label"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEP
+          - GENERAL
+        default: "ChangeDocument"
+    resources:
+      - name: git
+        type: stash
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: custom/changeDocumentId
