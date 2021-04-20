@@ -1,0 +1,22 @@
+name: YAML
+
+on:
+   push:
+     branches:
+     - master
+   pull_request:
+     branches:
+     - master
+
+jobs:
+  yamllint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@master
+      - name: 'Yamllint'
+        uses: karancode/yamllint-github-action@master
+        with:
+          yamllint_file_or_dir: '.pipeline/config.yml resources/metadata/*.y*ml'
+        env:
+          GITHUB_ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
