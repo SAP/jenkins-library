@@ -89,6 +89,14 @@ type Protecode struct {
 	logger    *logrus.Entry
 }
 
+// Just calls SetOptions which makes sure logger is set.
+// Added to make test code more resilient
+func makeProtecode( opts Options ) Protecode {
+	ret := Protecode{}
+	ret.SetOptions( opts )
+	return ret
+}
+
 //Options struct which can be used to configure the Protecode struct
 type Options struct {
 	ServerURL string
@@ -163,7 +171,7 @@ func (pc *Protecode) mapResponse(r io.ReadCloser, response interface{}) {
 		if err != nil {
 			pc.logger.WithError(err).Fatalf("Error during decode response: %v", newStr)
 		}
-	}
+    }
 }
 
 func (pc *Protecode) sendAPIRequest(method string, url string, headers map[string][]string) (*io.ReadCloser, error) {
@@ -326,6 +334,16 @@ func (pc *Protecode) DeclareFetchURL(cleanupMode, group, fetchURL string) *Resul
 	return result
 }
 
+// 2021-04-20 d :
+// Found, via web search, an announcement that the set of status codes is expanding from 
+// B, R, F 
+// to 
+// B, R, F, S, D, P.
+// Only R and F indicate work has completed.
+func protecodeStillWorking( sts string ) bool {
+	return sts != statusReady && sts != statusFailed
+}
+
 //PollForResult polls the protecode scan for the result scan
 func (pc *Protecode) PollForResult(productID int, timeOutInMinutes string) ResultData {
 
@@ -351,7 +369,7 @@ func (pc *Protecode) PollForResult(productID int, timeOutInMinutes string) Resul
 			i = 0
 			return response
 		}
-		if len(response.Result.Components) > 0 && response.Result.Status != statusBusy {
+		if ! protecodeStillWorking( response.Result.Status ) {
 			ticker.Stop()
 			i = 0
 			break
@@ -363,10 +381,20 @@ func (pc *Protecode) PollForResult(productID int, timeOutInMinutes string) Resul
 		}
 	}
 
-	if len(response.Result.Components) == 0 || response.Result.Status == statusBusy {
+	if protecodeStillWorking( response.Result.Status ) {
 		response, err = pc.pullResult(productID)
-		if err != nil || len(response.Result.Components) == 0 || response.Result.Status == statusBusy {
-			pc.logger.Fatal("No result after polling")
+
+		if len(response.Result.Components) < 1 {
+			// 2020-04-20 d :
+			// We are required to scan all images including 3rd party ones.
+			// We have found that Crossplane makes use docker images that contain no 
+			// executable code.
+			// So we can no longer treat an empty Components list as an error.
+			pc.logger.Warn( "Protecode scan did not identify any components." )
+		}
+
+		if err != nil || response.Result.Status == statusBusy {
+			pc.logger.Fatalf("No result after polling err: %v protecode status: %v", err, response.Result.Status )
 		}
 	}
 
