@@ -1,3 +1,4 @@
+import com.cloudbees.groovy.cps.NonCPS
 import com.sap.piper.SidecarUtils
 
 import static com.sap.piper.Prerequisites.checkScript
@@ -251,7 +252,7 @@ def getOptions(config) {
     def options = [
         name : 'dynamic-agent-' + config.uniqueId,
         label: config.uniqueId,
-        yaml : generatePodSpec(config)
+        yaml : new JsonUtils().groovyObjectToPrettyJsonString(generatePodSpec(config))
     ]
     if (namespace) {
         options.namespace = namespace
@@ -319,7 +320,8 @@ void executeOnPod(Map config, utils, Closure body, Script script) {
     }
 }
 
-private String generatePodSpec(Map config) {
+@NonCPS
+private Map generatePodSpec(Map config) {
     def containers = getContainerList(config)
     def podSpec = [
         apiVersion: "v1",
@@ -333,7 +335,7 @@ private String generatePodSpec(Map config) {
     podSpec.spec.containers = getContainerList(config)
     podSpec.spec.securityContext = getSecurityContext(config)
 
-    return new JsonUtils().groovyObjectToPrettyJsonString(podSpec)
+    return podSpec
 }
 
 
@@ -376,6 +378,7 @@ chown -R ${runAsUser}:${fsGroup} ."""
     return null
 }
 
+@NonCPS
 private Map getAdditionalPodProperties(Map config) {
     Map podProperties = config.additionalPodProperties ?: config.jenkinsKubernetes.additionalPodProperties ?: [:]
     if(podProperties) {
@@ -386,6 +389,7 @@ private Map getAdditionalPodProperties(Map config) {
     return podProperties
 }
 
+@NonCPS
 private Map getSecurityContext(Map config) {
     return config.securityContext ?: config.jenkinsKubernetes.securityContext ?: [:]
 }
@@ -403,6 +407,7 @@ private void unstashWorkspace(config, prefix) {
     }
 }
 
+@NonCPS
 private List getContainerList(config) {
 
     //If no custom jnlp agent provided as default jnlp agent (jenkins/jnlp-slave) as defined in the plugin, see https://github.com/jenkinsci/kubernetes-plugin#pipeline-support
@@ -491,6 +496,7 @@ private List getContainerList(config) {
     return result
 }
 
+@NonCPS
 private Map getResources(String containerName, Map config) {
     Map resources = config.resources
     if(resources == null) {
@@ -513,6 +519,7 @@ private Map getResources(String containerName, Map config) {
  * @param config Map with configurations
  */
 
+@NonCPS
 private List getContainerEnvs(config, imageName, defaultEnvVars, defaultConfig) {
     def containerEnv = []
     def dockerEnvVars = config.containerEnvVars?.get(imageName) ?: defaultEnvVars ?: [:]
