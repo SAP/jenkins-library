@@ -9,7 +9,7 @@ func transportRequestDocIDFromGit(config transportRequestDocIDFromGitOptions,
 	telemetryData *telemetry.CustomData,
 	commonPipelineEnvironment *transportRequestDocIDFromGitCommonPipelineEnvironment) {
 
-	err := runTransportRequestDocIDFromGit(&config, telemetryData, &transportRequestUtils{}, commonPipelineEnvironment)
+	err := runTransportRequestDocIDFromGit(&config, telemetryData, &gitIDInRange{}, commonPipelineEnvironment)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
@@ -17,7 +17,7 @@ func transportRequestDocIDFromGit(config transportRequestDocIDFromGitOptions,
 
 func runTransportRequestDocIDFromGit(config *transportRequestDocIDFromGitOptions,
 	telemetryData *telemetry.CustomData,
-	trUtils iTransportRequestUtils,
+	trUtils gitIDInRangeFinder,
 	commonPipelineEnvironment *transportRequestDocIDFromGitCommonPipelineEnvironment) error {
 
 	cdID, err := getChangeDocumentID(config, trUtils)
@@ -33,7 +33,7 @@ func runTransportRequestDocIDFromGit(config *transportRequestDocIDFromGitOptions
 }
 
 func getChangeDocumentID(config *transportRequestDocIDFromGitOptions,
-	trUtils iTransportRequestUtils) (string, error) {
+	trUtils gitIDInRangeFinder) (string, error) {
 
 	return trUtils.FindIDInRange(config.ChangeDocumentLabel, config.GitFrom, config.GitTo)
 }

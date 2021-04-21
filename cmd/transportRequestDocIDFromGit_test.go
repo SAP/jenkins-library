@@ -3,7 +3,6 @@ package cmd
 import (
 	"errors"
 	"github.com/stretchr/testify/assert"
-	"reflect"
 	"testing"
 )
 
@@ -43,7 +42,7 @@ func TestTrGitGetChangeDocumentID(t *testing.T) {
 
 			err := runTransportRequestDocIDFromGit(configMock.config, nil, &transportRequestUtilsMock{err: errors.New("fail")}, cpe)
 
-			assert.Error(t, err, "fail")
+			assert.EqualError(t, err, "fail")
 		})
 
 	})
@@ -51,17 +50,6 @@ func TestTrGitGetChangeDocumentID(t *testing.T) {
 
 type cdIDConfigMock struct {
 	config *transportRequestDocIDFromGitOptions
-}
-
-func (m *cdIDConfigMock) with(field string, value string) *cdIDConfigMock {
-	r := reflect.ValueOf(m.config)
-	f := reflect.Indirect(r).FieldByName(field)
-	f.SetString(value)
-	return m
-}
-
-func (m *cdIDConfigMock) without(field string) *cdIDConfigMock {
-	return m.with(field, "")
 }
 
 func newCdIDConfigMock() *cdIDConfigMock {

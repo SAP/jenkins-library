@@ -5,7 +5,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/transportrequest/solman"
 	"github.com/stretchr/testify/assert"
-	"reflect"
 	"testing"
 )
 
@@ -53,17 +52,6 @@ func (a *ActionMock) Perform(fs solman.FileSystem, command solman.Exec) error {
 
 type ConfigMock struct {
 	config *transportRequestUploadSOLMANOptions
-}
-
-func (m *ConfigMock) with(field string, value string) *ConfigMock {
-	r := reflect.ValueOf(m.config)
-	f := reflect.Indirect(r).FieldByName(field)
-	f.SetString(value)
-	return m
-}
-
-func (m *ConfigMock) without(field string) *ConfigMock {
-	return m.with(field, "")
 }
 
 func TestTrSolmanRunTransportRequestUpload(t *testing.T) {

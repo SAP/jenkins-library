@@ -7,13 +7,14 @@ import (
 )
 
 // mocking framework. Allows to redirect the containing methods
-type iTransportRequestUtils interface {
+type gitIDInRangeFinder interface {
 	FindIDInRange(label, from, to string) (string, error)
 }
-type transportRequestUtils struct {
+
+type gitIDInRange struct {
 }
 
-func (*transportRequestUtils) FindIDInRange(label, from, to string) (string, error) {
+func (*gitIDInRange) FindIDInRange(label, from, to string) (string, error) {
 	return transportrequest.FindIDInRange(label, from, to)
 }
 
@@ -21,7 +22,7 @@ func transportRequestReqIDFromGit(config transportRequestReqIDFromGitOptions,
 	telemetryData *telemetry.CustomData,
 	commonPipelineEnvironment *transportRequestReqIDFromGitCommonPipelineEnvironment) {
 
-	err := runTransportRequestReqIDFromGit(&config, telemetryData, &transportRequestUtils{}, commonPipelineEnvironment)
+	err := runTransportRequestReqIDFromGit(&config, telemetryData, &gitIDInRange{}, commonPipelineEnvironment)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
@@ -29,7 +30,7 @@ func transportRequestReqIDFromGit(config transportRequestReqIDFromGitOptions,
 
 func runTransportRequestReqIDFromGit(config *transportRequestReqIDFromGitOptions,
 	telemetryData *telemetry.CustomData,
-	trUtils iTransportRequestUtils,
+	trUtils gitIDInRangeFinder,
 	commonPipelineEnvironment *transportRequestReqIDFromGitCommonPipelineEnvironment) error {
 
 	trID, err := getTransportRequestID(config, trUtils)
@@ -45,7 +46,7 @@ func runTransportRequestReqIDFromGit(config *transportRequestReqIDFromGitOptions
 }
 
 func getTransportRequestID(config *transportRequestReqIDFromGitOptions,
-	trUtils iTransportRequestUtils) (string, error) {
+	trUtils gitIDInRangeFinder) (string, error) {
 
 	return trUtils.FindIDInRange(config.TransportRequestLabel, config.GitFrom, config.GitTo)
 }

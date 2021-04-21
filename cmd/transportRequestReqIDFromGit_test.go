@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/stretchr/testify/assert"
-	"reflect"
 	"strings"
 	"testing"
 )
@@ -64,7 +63,7 @@ func TestTrGitGetTransportRequestID(t *testing.T) {
 
 			err := runTransportRequestReqIDFromGit(configMock.config, nil, &transportRequestUtilsMock{err: errors.New("fail")}, cpe)
 
-			assert.Error(t, err, "fail")
+			assert.EqualError(t, err, "fail")
 		})
 
 	})
@@ -72,17 +71,6 @@ func TestTrGitGetTransportRequestID(t *testing.T) {
 
 type trIDConfigMock struct {
 	config *transportRequestReqIDFromGitOptions
-}
-
-func (m *trIDConfigMock) with(field string, value string) *trIDConfigMock {
-	r := reflect.ValueOf(m.config)
-	f := reflect.Indirect(r).FieldByName(field)
-	f.SetString(value)
-	return m
-}
-
-func (m *trIDConfigMock) without(field string) *trIDConfigMock {
-	return m.with(field, "")
 }
 
 func newTrIDConfigMock() *trIDConfigMock {
