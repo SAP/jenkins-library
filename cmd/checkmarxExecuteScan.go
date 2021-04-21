@@ -130,10 +130,7 @@ func loadTeamIDByTeamName(config checkmarxExecuteScanOptions, sys checkmarx.Syst
 
 func createNewProject(config checkmarxExecuteScanOptions, sys checkmarx.System, projectName string, teamID string) (checkmarx.Project, error) {
 	log.Entry().Infof("Project %v does not exist, starting to create it...", projectName)
-	presetID, err := strconv.Atoi(config.Preset)
-	if err != nil {
-		return checkmarx.Project{}, errors.Wrapf(err, "failed to convert string %v to int", config.Preset)
-	}
+	presetID, _ := strconv.Atoi(config.Preset)
 	project, err := createAndConfigureNewProject(sys, projectName, teamID, presetID, config.Preset, config.SourceEncoding)
 	if err != nil {
 		return checkmarx.Project{}, errors.Wrapf(err, "failed to create and configure new project %v", projectName)
@@ -144,11 +141,8 @@ func createNewProject(config checkmarxExecuteScanOptions, sys checkmarx.System, 
 func presetExistingProject(config checkmarxExecuteScanOptions, sys checkmarx.System, projectName string, project checkmarx.Project) error {
 	log.Entry().Infof("Project %v exists...", projectName)
 	if len(config.Preset) > 0 {
-		presetID, err := strconv.Atoi(config.Preset)
-		if err != nil {
-			return errors.Wrapf(err, "failed to convert string %v to int", config.Preset)
-		}
-		err = setPresetForProject(sys, project.ID, presetID, projectName, config.Preset, config.SourceEncoding)
+		presetID, _ := strconv.Atoi(config.Preset)
+		err := setPresetForProject(sys, project.ID, presetID, projectName, config.Preset, config.SourceEncoding)
 		if err != nil {
 			return errors.Wrapf(err, "failed to set preset %v for project %v", config.Preset, projectName)
 		}
