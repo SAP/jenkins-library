@@ -1,7 +1,5 @@
 metadata:
   name: transportRequestDocIDFromGit
-  aliases:
-    - name: transportRequestUploadFile
   description: "Retrieve change document ID from Git Commit Messages"
   longDescription: |
     Retrieve change document ID from Git Commit Messages.

@@ -1,7 +1,5 @@
 metadata:
   name: transportRequestReqIDFromGit
-  aliases:
-    - name: transportRequestUploadFile
   description: "Retrieve the transport request ID from Git Commit Messages"
   longDescription: |
     Retrieve the transport request ID from Git Commit Messages.
