@@ -34,13 +34,13 @@ void call(Map parameters = [:]) {
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
         try {
             abapEnvironmentCreateSystem(script: parameters.script, includeAddon: true)
+            if (config.confirmDeletion) {
+                input message: "Add-on product was installed successfully? Once you proceed, the test system will be deleted."
+                cloudFoundryDeleteService script: parameters.script
+            }
         } catch (Exception e) {
             script.currentBuild.result = 'UNSTABLE'
         }
-        if (config.confirmDeletion) {
-            input message: "Add-on product was installed successfully? Once you proceed, the test system will be deleted."
-        }
-        cloudFoundryDeleteService script: parameters.script
     }
 
 }
