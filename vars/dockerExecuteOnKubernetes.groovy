@@ -191,6 +191,9 @@ import hudson.AbortException
      * to the step call takes precedence.
      */
     'resources',
+    'volumeName',
+    'sidecarMountPath',
+    'containerMountPath',
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.minus([
     'stashIncludes',
@@ -329,6 +332,10 @@ private String generatePodSpec(Map config) {
         spec      : [:]
     ]
     podSpec.spec += getAdditionalPodProperties(config)
+    podSpec.spec.volumes = [[
+                                name    : config.volumeName,
+                                emptyDir: {}
+                            ]]
     podSpec.spec.containers = getContainerList(config)
     podSpec.spec.securityContext = getSecurityContext(config)
 
@@ -429,6 +436,7 @@ private List getContainerList(config) {
         def containerSpec = [
             name           : containerName.toLowerCase(),
             image          : imageName,
+            volumeMounts   : [[name: config.volumeName, mountPath: config.containerMountPath]],
             imagePullPolicy: pullImage ? "Always" : "IfNotPresent",
             env            : getContainerEnvs(config, imageName, config.dockerEnvVars, config.dockerWorkspace)
         ]
@@ -476,6 +484,7 @@ private List getContainerList(config) {
         def containerSpec = [
             name           : sideCarContainerName,
             image          : config.sidecarImage,
+            volumeMounts   : [[name: config.volumeName, mountPath: config.sidecarMountPath]],
             imagePullPolicy: config.sidecarPullImage ? "Always" : "IfNotPresent",
             env            : getContainerEnvs(config, config.sidecarImage, config.sidecarEnvVars, config.sidecarWorkspace),
             command        : []
