@@ -258,7 +258,7 @@ func nexusUploadMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "mvn-npm", Image: "devxci/mbtci:1.0.16.1"},
+				{Name: "mvn-npm", Image: "devxci/mbtci:1.1.1"},
 			},
 		},
 	}
