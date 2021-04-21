@@ -158,6 +158,13 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: replace
+        type: int
+        description: Specify product_id which application binary will be replaced and rescanned and product id remains unchanged. By using this parameter, Protecode avoids creating multiple same products. Note this will affect results and feeds.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: username
         aliases:
           - name: user

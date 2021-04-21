@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	webReportPath  = "%s/products/%v/"
+	webReportPath  = "%s/product/%v/"
 	scanResultFile = "protecodescan_vulns.json"
 	stepResultFile = "protecodeExecuteScan.json"
 )
@@ -63,6 +63,10 @@ func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExec
 			(*config).FilePath = filePath
 			log.Entry().Debugf("Filepath for upload image: %v", config.FilePath)
 		}
+	} else {
+		// Get filename from a fetch URL
+		fileName = filepath.Base(config.FetchURL)
+		log.Entry().Debugf("[DEBUG] ===> Filepath from fetch URL: %v", fileName)
 	}
 
 	log.Entry().Debug("Execute protecode scan")
@@ -140,15 +144,23 @@ func getDockerImage(dClient piperDocker.Download, config *protecodeExecuteScanOp
 }
 
 func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.Protecode, config *protecodeExecuteScanOptions, fileName string, writeReportToFile func(resp io.ReadCloser, reportFileName string) error) error {
-	//load existing product by filename
-	log.Entry().Debugf("Load existing product Group:%v Reuse:%v", config.Group, config.ReuseExisting)
-	productID := client.LoadExistingProduct(config.Group, config.ReuseExisting)
+
+	log.Entry().Debugf("[DEBUG] ===> Load existing product Group:%v Reuse:%v and Filenam:%v", config.Group, config.ReuseExisting, fileName)
+
+	// Get existing product id by filename
+	productID := client.LoadExistingProduct(config.Group, fileName)
+
+	log.Entry().Debugf("[DEBUG] ===> Returned productID: %v", productID)
 
 	// check if no existing is found or reuse existing is false
 	productID = uploadScanOrDeclareFetch(*config, productID, client, fileName)
+
+	log.Entry().Debugf("[DEBUG] ===> After 'uploadScanOrDeclareFetch' returned productID: %v", productID)
+
 	if productID <= 0 {
 		return fmt.Errorf("the product id is not valid '%d'", productID)
 	}
+
 	//pollForResult
 	log.Entry().Debugf("Poll for scan result %v", productID)
 	result := client.PollForResult(productID, config.TimeoutMinutes)
@@ -261,29 +273,58 @@ func createDockerClient(config *protecodeExecuteScanOptions) piperDocker.Downloa
 
 func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productID int, client protecode.Protecode, fileName string) int {
 	//check if the LoadExistingProduct) before returns an valid product id, than scip this
-	if !hasExisting(productID, config.ReuseExisting) {
-		if len(config.FetchURL) > 0 {
-			log.Entry().Debugf("Declare fetch url %v", config.FetchURL)
-			resultData := client.DeclareFetchURL(config.CleanupMode, config.Group, config.FetchURL)
-			productID = resultData.Result.ProductID
-		} else {
-			log.Entry().Debugf("Upload file path: %v", config.FilePath)
-			if len(config.FilePath) <= 0 {
-				log.Entry().Fatalf("There is no file path configured for upload : %v", config.FilePath)
-			}
-			pathToFile := filepath.Join(config.FilePath, fileName)
-			if !(fileExists(pathToFile)) {
-				log.Entry().Fatalf("There is no file for upload: %v", pathToFile)
-			}
+	//if !hasExisting(productID, config.ReuseExisting) {
 
-			combinedFileName := fileName
-			if len(config.PullRequestName) > 0 {
-				combinedFileName = fmt.Sprintf("%v_%v", config.PullRequestName, fileName)
-			}
+	log.Entry().Debugf("[DEBUG] ===> In uploadScanOrDeclareFetch: %v", productID)
 
-			resultData := client.UploadScanFile(config.CleanupMode, config.Group, pathToFile, combinedFileName)
-			productID = resultData.Result.ProductID
+	// check if product doesn't exist then create a new one.
+	if productID <= 0 {
+		log.Entry().Debugf("[DEBUG] ===> New product creation started: %v", productID)
+		productID = uploadFile(config, productID, client, fileName, false)
+
+		log.Entry().Debugf("[DEBUG] ===> After uploading [productID < 0] file returned productID: %v", productID)
+		return productID
+
+		// In case product already exists and "reuseExisting" is false then we replace binary without creating a new product.
+	} else if (productID > 0) && !config.ReuseExisting {
+		log.Entry().Debugf("[DEBUG] ===> Replace binary entry point started %v", productID)
+		productID = uploadFile(config, productID, client, fileName, true)
+
+		log.Entry().Debugf("[DEBUG] ===> After uploading file [(productID > 0) && !config.ReuseExisting] returned productID: %v", productID)
+		return productID
+
+		// If product already exists and "reuseExisting" option is enabled then return the latest similar scan result.
+	} else {
+		log.Entry().Debugf("[DEBUG] ===> reuseExisting option is enabled and returned productID: %v", productID)
+		return productID
+	}
+
+}
+
+func uploadFile(config protecodeExecuteScanOptions, productID int, client protecode.Protecode, fileName string, replaceBinary bool) int {
+
+	if len(config.FetchURL) > 0 {
+		log.Entry().Debugf("Declare fetch url %v", config.FetchURL)
+		resultData := client.DeclareFetchURL(config.CleanupMode, config.Group, config.FetchURL, productID, replaceBinary)
+		productID = resultData.Result.ProductID
+	} else {
+		log.Entry().Debugf("Upload file path: %v", config.FilePath)
+		if len(config.FilePath) <= 0 {
+			log.Entry().Fatalf("There is no file path configured for upload : %v", config.FilePath)
 		}
+		pathToFile := filepath.Join(config.FilePath, fileName)
+		if !(fileExists(pathToFile)) {
+			log.Entry().Fatalf("There is no file for upload: %v", pathToFile)
+		}
+
+		combinedFileName := fileName
+		if len(config.PullRequestName) > 0 {
+			combinedFileName = fmt.Sprintf("%v_%v", config.PullRequestName, fileName)
+		}
+
+		resultData := client.UploadScanFile(config.CleanupMode, config.Group, pathToFile, combinedFileName, productID, replaceBinary)
+		productID = resultData.Result.ProductID
+		log.Entry().Debugf("[DEBUG] ===> uploadFile return FINAL product id: %v", productID)
 	}
 	return productID
 }
