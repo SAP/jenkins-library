@@ -143,6 +143,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        default: "."
       - name: emailAddressesOfInitialProductAdmins
         type: "[]string"
         description: "The list of email addresses to assign as product admins for newly created WhiteSource products."
