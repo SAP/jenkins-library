@@ -64,7 +64,7 @@ func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telem
 		resp, err = triggerATCrun(options, details, &client)
 	}
 	if err == nil {
-		err = handleATCresults(resp, details, &client, options.AtcResultsFileName, options.GenerateHTML)
+		err = handleATCresults(resp, details, &client, options.AtcResultsFileName)
 	}
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
@@ -73,7 +73,7 @@ func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telem
 	log.Entry().Info("ATC run completed successfully. If there are any results from the respective run they will be listed in the logs above as well as being saved in the output .xml file")
 }
 
-func handleATCresults(resp *http.Response, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, atcResultFileName string, generateHTML bool) error {
+func handleATCresults(resp *http.Response, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, atcResultFileName string) error {
 	var err error
 	var abapEndpoint string
 	abapEndpoint = details.URL
@@ -91,7 +91,7 @@ func handleATCresults(resp *http.Response, details abaputils.ConnectionDetailsHT
 	}
 	if err == nil {
 		defer resp.Body.Close()
-		err = parseATCResult(body, atcResultFileName, generateHTML)
+		err = parseATCResult(body, atcResultFileName)
 	}
 	if err != nil {
 		return fmt.Errorf("Handling ATC result failed: %w", err)
@@ -174,7 +174,7 @@ func buildATCCheckBody(ATCConfig ATCconfig) (checkVariantString string, packageS
 	return checkVariantString, packageString, softwareComponentString, nil
 }
 
-func parseATCResult(body []byte, atcResultFileName string, generateHTML bool) (err error) {
+func parseATCResult(body []byte, atcResultFileName string) (err error) {
 	if len(body) == 0 {
 		return fmt.Errorf("Parsing ATC result failed: %w", errors.New("Body is empty, can't parse empty body"))
 	}
@@ -193,28 +193,17 @@ func parseATCResult(body []byte, atcResultFileName string, generateHTML bool) (e
 
 	err = ioutil.WriteFile(atcResultFileName, body, 0644)
 	if err == nil {
-		log.Entry().Infof("Writing %s file was successful", atcResultFileName)
 		var reports []piperutils.Path
 		reports = append(reports, piperutils.Path{Target: atcResultFileName, Name: "ATC Results", Mandatory: true})
+		piperutils.PersistReportsAndLinks("abapEnvironmentRunATCCheck", "", reports, nil)
 		for _, s := range parsedXML.Files {
 			for _, t := range s.ATCErrors {
 				log.Entry().Infof("%s in file '%s': %s in line %s found by %s", t.Severity, s.Key, t.Message, t.Line, t.Source)
 			}
 		}
-		if generateHTML == true {
-			htmlString := generateHTMLDocument(parsedXML)
-			htmlStringByte := []byte(htmlString)
-			atcResultHTMLFileName := strings.Trim(atcResultFileName, ".xml") + ".html"
-			err = ioutil.WriteFile(atcResultHTMLFileName, htmlStringByte, 0644)
-			if err == nil {
-				log.Entry().Info("Writing " + atcResultHTMLFileName + " file was successful")
-				reports = append(reports, piperutils.Path{Target: atcResultFileName, Name: "ATC Results HTML file", Mandatory: true})
-			}
-		}
-		piperutils.PersistReportsAndLinks("abapEnvironmentRunATCCheck", "", reports, nil)
 	}
 	if err != nil {
-		return fmt.Errorf("Writing results failed: %w", err)
+		return fmt.Errorf("Writing results to XML file failed: %w", err)
 	}
 	return nil
 }
@@ -330,35 +319,6 @@ func convertATCOptions(options *abapEnvironmentRunATCCheckOptions) abaputils.Aba
 	subOptions.Username = options.Username
 
 	return subOptions
-}
-
-func generateHTMLDocument(parsedXML *Result) (htmlDocumentString string) {
-	htmlDocumentString = `<!DOCTYPE html><html lang="en" xmlns="http://www.w3.org/1999/xhtml"><head><title>ATC Results</title><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><style>table,th,td {border: 1px solid black;border-collapse:collapse;}th,td{padding: 5px;text-align:left;font-size:medium;}</style></head><body><h1 style="text-align:left;font-size:large">ATC Results</h1><table style="width:100%"><tr><th>Severity</th><th>File</th><th>Message</th><th>Line</th><th>Checked by</th></tr>`
-	var htmlDocumentStringError, htmlDocumentStringWarning, htmlDocumentStringInfo, htmlDocumentStringDefault string
-	for _, s := range parsedXML.Files {
-		for _, t := range s.ATCErrors {
-			var trBackgroundColor string
-			if t.Severity == "error" {
-				trBackgroundColor = "rgba(227,85,0)"
-				htmlDocumentStringError += `<tr style="background-color: ` + trBackgroundColor + `">` + `<td>` + t.Severity + `</td>` + `<td>` + s.Key + `</td>` + `<td>` + t.Message + `</td>` + `<td style="text-align:center">` + t.Line + `</td>` + `<td>` + t.Source + `</td>` + `</tr>`
-			}
-			if t.Severity == "warning" {
-				trBackgroundColor = "rgba(255,175,0, 0.75)"
-				htmlDocumentStringWarning += `<tr style="background-color: ` + trBackgroundColor + `">` + `<td>` + t.Severity + `</td>` + `<td>` + s.Key + `</td>` + `<td>` + t.Message + `</td>` + `<td style="text-align:center">` + t.Line + `</td>` + `<td>` + t.Source + `</td>` + `</tr>`
-			}
-			if t.Severity == "info" {
-				trBackgroundColor = "rgba(255,175,0, 0.2)"
-				htmlDocumentStringInfo += `<tr style="background-color: ` + trBackgroundColor + `">` + `<td>` + t.Severity + `</td>` + `<td>` + s.Key + `</td>` + `<td>` + t.Message + `</td>` + `<td style="text-align:center">` + t.Line + `</td>` + `<td>` + t.Source + `</td>` + `</tr>`
-			}
-			if t.Severity != "info" && t.Severity != "warning" && t.Severity != "error" {
-				trBackgroundColor = "rgba(255,175,0, 0)"
-				htmlDocumentStringDefault += `<tr style="background-color: ` + trBackgroundColor + `">` + `<td>` + t.Severity + `</td>` + `<td>` + s.Key + `</td>` + `<td>` + t.Message + `</td>` + `<td style="text-align:center">` + t.Line + `</td>` + `<td>` + t.Source + `</td>` + `</tr>`
-			}
-		}
-	}
-	htmlDocumentString += htmlDocumentStringError + htmlDocumentStringWarning + htmlDocumentStringInfo + htmlDocumentStringDefault + `</table></body></html>`
-
-	return htmlDocumentString
 }
 
 //ATCconfig object for parsing yaml config of software components and packages
