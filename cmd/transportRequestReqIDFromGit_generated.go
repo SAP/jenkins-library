@@ -119,7 +119,7 @@ func transportRequestReqIDFromGitMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
 			Name:        "transportRequestReqIDFromGit",
-			Aliases:     []config.Alias{{Name: "transportRequestUploadFile", Deprecated: false}},
+			Aliases:     []config.Alias{},
 			Description: "Retrieve the transport request ID from Git Commit Messages",
 		},
 		Spec: config.StepSpec{
