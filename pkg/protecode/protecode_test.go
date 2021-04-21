@@ -206,8 +206,7 @@ func TestPollForResultSuccess(t *testing.T) {
 				}}
 		}
 
-		response = ResultData{Result: Result{ProductID: productID, ReportURL: requestURI, Status: "D", Components: cmpnts,
-		}}
+		response = ResultData{Result: Result{ProductID: productID, ReportURL: requestURI, Status: "D", Components: cmpnts}}
 
 		var b bytes.Buffer
 		json.NewEncoder(&b).Encode(&response)
@@ -229,8 +228,7 @@ func TestPollForResultSuccess(t *testing.T) {
 				{Triage: []Triage{{ID: 1}}}},
 			}},
 		}}},
-		{333, ResultData{Result: Result{ProductID: 333, ReportURL: "/api/product/333/", Status: "D",
-		}}},
+		{333, ResultData{Result: Result{ProductID: 333, ReportURL: "/api/product/333/", Status: "D"}}},
 	}
 	// Close the server when test finishes
 	defer server.Close()

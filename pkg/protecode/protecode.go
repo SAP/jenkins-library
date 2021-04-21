@@ -91,9 +91,9 @@ type Protecode struct {
 
 // Just calls SetOptions which makes sure logger is set.
 // Added to make test code more resilient
-func makeProtecode( opts Options ) Protecode {
+func makeProtecode(opts Options) Protecode {
 	ret := Protecode{}
-	ret.SetOptions( opts )
+	ret.SetOptions(opts)
 	return ret
 }
 
@@ -171,7 +171,7 @@ func (pc *Protecode) mapResponse(r io.ReadCloser, response interface{}) {
 		if err != nil {
 			pc.logger.WithError(err).Fatalf("Error during decode response: %v", newStr)
 		}
-    }
+	}
 }
 
 func (pc *Protecode) sendAPIRequest(method string, url string, headers map[string][]string) (*io.ReadCloser, error) {
@@ -335,12 +335,12 @@ func (pc *Protecode) DeclareFetchURL(cleanupMode, group, fetchURL string) *Resul
 }
 
 // 2021-04-20 d :
-// Found, via web search, an announcement that the set of status codes is expanding from 
-// B, R, F 
-// to 
+// Found, via web search, an announcement that the set of status codes is expanding from
+// B, R, F
+// to
 // B, R, F, S, D, P.
 // Only R and F indicate work has completed.
-func protecodeStillWorking( sts string ) bool {
+func protecodeStillWorking(sts string) bool {
 	return sts != statusReady && sts != statusFailed
 }
 
@@ -369,7 +369,7 @@ func (pc *Protecode) PollForResult(productID int, timeOutInMinutes string) Resul
 			i = 0
 			return response
 		}
-		if ! protecodeStillWorking( response.Result.Status ) {
+		if !protecodeStillWorking(response.Result.Status) {
 			ticker.Stop()
 			i = 0
 			break
@@ -381,20 +381,20 @@ func (pc *Protecode) PollForResult(productID int, timeOutInMinutes string) Resul
 		}
 	}
 
-	if protecodeStillWorking( response.Result.Status ) {
+	if protecodeStillWorking(response.Result.Status) {
 		response, err = pc.pullResult(productID)
 
 		if len(response.Result.Components) < 1 {
 			// 2020-04-20 d :
 			// We are required to scan all images including 3rd party ones.
-			// We have found that Crossplane makes use docker images that contain no 
+			// We have found that Crossplane makes use docker images that contain no
 			// executable code.
 			// So we can no longer treat an empty Components list as an error.
-			pc.logger.Warn( "Protecode scan did not identify any components." )
+			pc.logger.Warn("Protecode scan did not identify any components.")
 		}
 
 		if err != nil || response.Result.Status == statusBusy {
-			pc.logger.Fatalf("No result after polling err: %v protecode status: %v", err, response.Result.Status )
+			pc.logger.Fatalf("No result after polling err: %v protecode status: %v", err, response.Result.Status)
 		}
 	}
 
