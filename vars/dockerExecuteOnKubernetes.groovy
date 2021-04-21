@@ -320,7 +320,6 @@ void executeOnPod(Map config, utils, Closure body, Script script) {
 }
 
 private String generatePodSpec(Map config) {
-    def containers = getContainerList(config)
     def podSpec = [
         apiVersion: "v1",
         kind      : "Pod",
