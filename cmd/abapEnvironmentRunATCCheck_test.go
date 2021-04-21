@@ -439,7 +439,7 @@ func TestBuildATCCheckBody(t *testing.T) {
 func TestGenerateHTMLDocument(t *testing.T) {
 	//Failure case is not needed --> all failing cases would be depended on parsedXML *Result which is covered in TestParseATCResult
 	t.Run("success case: html response", func(t *testing.T) {
-		expectedResult := `<html><head><title>ATC Results</title</head></html>`
+		expectedResult := "<!DOCTYPE html><html lang=\"en\" xmlns=\"http://www.w3.org/1999/xhtml\"><head><title>ATC Results</title><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" /><style>table,th,td {border: 1px solid black;border-collapse:collapse;}th,td{padding: 5px;text-align:left;font-size:medium;}</style></head><body><h1 style=\"text-align:left;font-size:large\">ATC Results</h1><table style=\"width:100%\"><tr><th>Severity</th><th>File</th><th>Message</th><th>Line</th><th>Checked by</th></tr><tr style=\"background-color: rgba(227,85,0)\"><td>error</td><td>testFile2</td><td>testMessage</td><td style=\"text-align:center\">1</td><td>sourceTester</td></tr><tr style=\"background-color: rgba(255,175,0, 0.75)\"><td>warning</td><td>testFile</td><td>testMessage2</td><td style=\"text-align:center\">2</td><td>sourceTester</td></tr><tr style=\"background-color: rgba(255,175,0, 0.2)\"><td>info</td><td>testFile</td><td>testMessage1</td><td style=\"text-align:center\">1</td><td>sourceTester</td></tr></table></body></html>"
 
 		bodyString := `<?xml version="1.0" encoding="UTF-8"?>
 		<checkstyle>
