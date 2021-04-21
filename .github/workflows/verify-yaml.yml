@@ -12,11 +12,9 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@master
+      - uses: actions/checkout@master
 
-      - name: Setup python
-        uses: actions/setup-python@v2
+      - uses: actions/setup-python@v2
         with:
           python-version: 3.8
 
@@ -24,4 +22,5 @@ jobs:
         run: pip install yamllint
 
       - name: Lint YAML files
-        run: yamllint -c .yamllint.yml resources/metadata/*.y*ml .pipeline/config.yml .codeclimate.yml .markdownlint.yml .yamllint.yml
+        run: yamllint -c .yamllint.yml resources/metadata/*.y*ml .pipeline/config.yml .codeclimate.yml .markdownlint.yml .yamllint.yml .github/workflows/*
+.y*ml
