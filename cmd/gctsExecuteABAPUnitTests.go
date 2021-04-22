@@ -72,8 +72,6 @@ func runUnitTestsForAllRepoPackages(config *gctsExecuteABAPUnitTestsOptions, htt
 	log.Entry().
 		WithField("repository", config.Repository).
 		Info("all unit tests were successful")
-		Info("commit")
-		fmt.Printf("%v", config.CommitId)
 	return nil
 }
 
