@@ -1,8 +1,9 @@
 metadata:
   name: gctsDeploy
-  description: Pulls a commit from the remote Git repository to a local repository
+  description: Deploys a Git Repository to a local Repository and then to an ABAP System
   longDescription: |
-    Pulls a commit from the corresponding remote Git repository to a specified local repository on an ABAP system. If no <commit> parameter is specified, this step will pull the latest commit available on the remote repository.
+    The steps deploys a git repository to an ABAP System. If a repository does not exists in the system, it creates and clones it to the local
+    repository and then deploys it into the ABAP system.
 
 spec:
   inputs:
@@ -71,6 +72,7 @@ spec:
       - name: remoteRepositoryURL
         type: string
         description: URL of the corresponding remote repository
+        mandatory: true
         scope:
           - PARAMETERS
           - STAGES
@@ -118,7 +120,7 @@ spec:
           - STEPS
       - name: rollback
         type: bool
-        description: The rollback flag for a failure during gcts deploy
+        description: The rollback flag for a failure during the deploy step. A true value would mean gCTS would roll back to the last clean state
         scope:
           - PARAMETERS
           - STAGES
@@ -134,14 +136,3 @@ spec:
         mandatory: false
         aliases:
           - name: gctsRepositoryConfigurations
-      - name: githubPersonalAccessToken
-        type: string
-        description: GitHub personal access token with at least read permissions for the remote repository
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        secret: true
-        resourceRef:
-          - name: githubPersonalAccessTokenId
-            type: secret

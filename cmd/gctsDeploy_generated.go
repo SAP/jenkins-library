@@ -31,7 +31,7 @@ type gctsDeployOptions struct {
 	GithubPersonalAccessToken string                 `json:"githubPersonalAccessToken,omitempty"`
 }
 
-// GctsDeployCommand Pulls a commit from the remote Git repository to a local repository
+// GctsDeployCommand Deploys a Git Repository to a local Repository and then to an ABAP System
 func GctsDeployCommand() *cobra.Command {
 	const STEP_NAME = "gctsDeploy"
 
@@ -41,8 +41,9 @@ func GctsDeployCommand() *cobra.Command {
 
 	var createGctsDeployCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Pulls a commit from the remote Git repository to a local repository",
-		Long:  `Pulls a commit from the corresponding remote Git repository to a specified local repository on an ABAP system. If no <commit> parameter is specified, this step will pull the latest commit available on the remote repository.`,
+		Short: "Deploys a Git Repository to a local Repository and then to an ABAP System",
+		Long: `The steps deploys a git repository to an ABAP System. If a repository does not exists in the system, it creates and clones it to the local
+repository and then deploys it into the ABAP system.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -120,7 +121,7 @@ func gctsDeployMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "gctsDeploy",
 			Aliases:     []config.Alias{},
-			Description: "Pulls a commit from the remote Git repository to a local repository",
+			Description: "Deploys a Git Repository to a local Repository and then to an ABAP System",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
