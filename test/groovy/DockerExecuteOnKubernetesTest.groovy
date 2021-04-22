@@ -802,7 +802,6 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         stepRule.step.dockerExecuteOnKubernetes(
             script: nullScript,
             juStabUtils: utils,
-            volumeName : 'myvolume',
             containerName: 'mycontainer',
             dockerImage: 'maven:3.5-jdk-8-alpine',
             containerMountPath: '/opt',
@@ -810,10 +809,10 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
 
         def containerSpec = podSpec.spec.containers.find{it.image == "maven:3.5-jdk-8-alpine"}
         assertTrue(bodyExecuted)
-        assertEquals("myvolume", podSpec.spec.volumes[0].name)
+        assertEquals("volume", podSpec.spec.volumes[0].name)
         assertEquals(
             [[
-                "name"     : "myvolume",
+                "name"     : "volume",
                 "mountPath": "/opt"
             ]], containerSpec.volumeMounts)
     }

@@ -191,7 +191,6 @@ import hudson.AbortException
      * to the step call takes precedence.
      */
     'resources',
-    'volumeName',
     'containerMountPath',
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.minus([
@@ -334,10 +333,10 @@ private String generatePodSpec(Map config) {
     podSpec.spec.containers = getContainerList(config)
     podSpec.spec.securityContext = getSecurityContext(config)
 
-    if (config.volumeName) {
+    if (config.containerMountPath) {
         def uniquePlaceholder = UUID.randomUUID().toString()
         podSpec.spec.volumes = [[
-                                    name    : config.volumeName,
+                                    name    : "volume",
                                     emptyDir: uniquePlaceholder
                                 ]]
 
@@ -448,7 +447,7 @@ private List getContainerList(config) {
             env            : getContainerEnvs(config, imageName, config.dockerEnvVars, config.dockerWorkspace)
         ]
         if (config.containerMountPath) {
-            containerSpec.volumeMounts = [[name: config.volumeName, mountPath: config.containerMountPath]]
+            containerSpec.volumeMounts = [[name: "volume", mountPath: config.containerMountPath]]
         }
 
         def configuredCommand = config.containerCommands?.get(imageName)
