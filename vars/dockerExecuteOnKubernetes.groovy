@@ -191,6 +191,11 @@ import hudson.AbortException
      * to the step call takes precedence.
      */
     'resources',
+    /**
+     * The path to which a volume should e mounted to. This will create an emptyDir volume
+     * with name 'volume'. This volume will be available at the same mount path in each container
+     * of the provided containerMap.
+     */
     'containerMountPath',
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.minus([
