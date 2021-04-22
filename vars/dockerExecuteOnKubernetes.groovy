@@ -192,7 +192,6 @@ import hudson.AbortException
      */
     'resources',
     'volumeName',
-    'sidecarMountPath',
     'containerMountPath',
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.minus([
@@ -499,9 +498,6 @@ private List getContainerList(config) {
             env            : getContainerEnvs(config, config.sidecarImage, config.sidecarEnvVars, config.sidecarWorkspace),
             command        : []
         ]
-        if (config.sidecarMountPath) {
-            containerSpec.volumeMounts = [[name: config.volumeName, mountPath: config.sidecarMountPath]]
-        }
 
         def resources = getResources(sideCarContainerName, config)
         if(resources) {

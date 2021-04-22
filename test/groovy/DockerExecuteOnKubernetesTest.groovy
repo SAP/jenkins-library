@@ -806,13 +806,9 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             containerName: 'mycontainer',
             dockerImage: 'maven:3.5-jdk-8-alpine',
             containerMountPath: '/opt',
-            sidecarImage: 'maven:latest',
-            sidecarName: 'mysidecar',
-            sidecarMountPath: '/tmp',
         ) { bodyExecuted = true }
 
         def containerSpec = podSpec.spec.containers.find{it.image == "maven:3.5-jdk-8-alpine"}
-        def sidecarContainerSpec = podSpec.spec.containers.find{it.image == "maven:latest"}
         assertTrue(bodyExecuted)
         assertEquals("myvolume", podSpec.spec.volumes[0].name)
         assertEquals(
@@ -820,11 +816,6 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
                 "name"     : "myvolume",
                 "mountPath": "/opt"
             ]], containerSpec.volumeMounts)
-        assertEquals(
-            [[
-                "name"     : "myvolume",
-                "mountPath": "/tmp"
-            ]], sidecarContainerSpec.volumeMounts)
     }
 
     private container(options, body) {
