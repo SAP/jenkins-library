@@ -19,7 +19,7 @@ func gctsExecuteABAPUnitTests(config gctsExecuteABAPUnitTestsOptions, telemetryD
 	// and use a  &piperhttp.Client{} in a custom system
 	// Example: step checkmarxExecuteScan.go
 	httpClient := &piperhttp.Client{}
-
+	fmt.Printf("%v", config.CommitID)
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
 	err := runUnitTestsForAllRepoPackages(&config, httpClient)
 	if err != nil {
@@ -72,7 +72,7 @@ func runUnitTestsForAllRepoPackages(config *gctsExecuteABAPUnitTestsOptions, htt
 	log.Entry().
 		WithField("repository", config.Repository).
 		Info("all unit tests were successful")
-	fmt.Printf("%v", config.CommitID)
+	
 
 	return nil
 }
