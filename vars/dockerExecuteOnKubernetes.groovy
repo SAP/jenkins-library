@@ -332,16 +332,23 @@ private String generatePodSpec(Map config) {
         spec      : [:]
     ]
     podSpec.spec += getAdditionalPodProperties(config)
-    if (config.volumeName) {
-        podSpec.spec.volumes = [[
-                                    name    : config.volumeName,
-                                    emptyDir: {}
-                                ]]
-    }
     podSpec.spec.containers = getContainerList(config)
     podSpec.spec.securityContext = getSecurityContext(config)
 
-    return new JsonUtils().groovyObjectToPrettyJsonString(podSpec)
+    if (config.volumeName) {
+        def uniquePlaceholder = UUID.randomUUID().toString()
+        podSpec.spec.volumes = [[
+                                    name    : config.volumeName,
+                                    emptyDir: uniquePlaceholder
+                                ]]
+
+        def specYaml = new JsonUtils().groovyObjectToPrettyJsonString(podSpec)
+        specYaml = specYaml.replaceFirst("\"${uniquePlaceholder}\"", "{}")
+
+        return specYaml
+    } else {
+        return new JsonUtils().groovyObjectToPrettyJsonString(podSpec)
+    }
 }
 
 
