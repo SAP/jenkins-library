@@ -332,10 +332,12 @@ private String generatePodSpec(Map config) {
         spec      : [:]
     ]
     podSpec.spec += getAdditionalPodProperties(config)
-    podSpec.spec.volumes = [[
-                                name    : config.volumeName,
-                                emptyDir: {}
-                            ]]
+    if (config.volumeName) {
+        podSpec.spec.volumes = [[
+                                    name    : config.volumeName,
+                                    emptyDir: {}
+                                ]]
+    }
     podSpec.spec.containers = getContainerList(config)
     podSpec.spec.securityContext = getSecurityContext(config)
 
@@ -436,10 +438,12 @@ private List getContainerList(config) {
         def containerSpec = [
             name           : containerName.toLowerCase(),
             image          : imageName,
-            volumeMounts   : [[name: config.volumeName, mountPath: config.containerMountPath]],
             imagePullPolicy: pullImage ? "Always" : "IfNotPresent",
             env            : getContainerEnvs(config, imageName, config.dockerEnvVars, config.dockerWorkspace)
         ]
+        if (config.containerMountPath) {
+            containerSpec.volumeMounts = [[name: config.volumeName, mountPath: config.containerMountPath]]
+        }
 
         def configuredCommand = config.containerCommands?.get(imageName)
         def shell = config.containerShell ?: '/bin/sh'
@@ -484,11 +488,13 @@ private List getContainerList(config) {
         def containerSpec = [
             name           : sideCarContainerName,
             image          : config.sidecarImage,
-            volumeMounts   : [[name: config.volumeName, mountPath: config.sidecarMountPath]],
             imagePullPolicy: config.sidecarPullImage ? "Always" : "IfNotPresent",
             env            : getContainerEnvs(config, config.sidecarImage, config.sidecarEnvVars, config.sidecarWorkspace),
             command        : []
         ]
+        if (config.sidecarMountPath) {
+            containerSpec.volumeMounts = [[name: config.volumeName, mountPath: config.sidecarMountPath]]
+        }
 
         def resources = getResources(sideCarContainerName, config)
         if(resources) {
