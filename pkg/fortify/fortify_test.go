@@ -95,6 +95,16 @@ func TestGetProjectByName(t *testing.T) {
 				"first": {"href": "https://fortify/ssc/api/v1/projects?q=name%3Apython-test&start=0"}}}`))
 			return
 		}
+		if req.URL.Path == "/projects" && req.URL.RawQuery == "q=name%3A%22python+with+space+test%22" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.Write([]byte(
+				`{"data": [{"_href": "https://fortify/ssc/api/v1/projects/4711","createdBy": "someUser","name": "python with space test",
+				"description": "","id": 4711,"creationDate": "2018-12-03T06:29:38.197+0000","issueTemplateId": "dasdasdasdsadasdasdasdasdas"}],
+				"count": 1,"responseCode": 200,"links": {"last": {"href": "https://fortify/ssc/api/v1/projects?q=name%3A%22python+with+space+test%22&start=0"},
+				"first": {"href": "https://fortify/ssc/api/v1/projects?q=name%3A%22python+with+space+test%22&start=0"}}}`))
+			return
+		}
 		if req.URL.Path == "/projects" && req.URL.RawQuery == "q=name%3A%22python-empty%22" {
 			header := rw.Header()
 			header.Add("Content-type", "application/json")
@@ -147,6 +157,12 @@ func TestGetProjectByName(t *testing.T) {
 		result, err := sys.GetProjectByName("python-test", false, "")
 		assert.NoError(t, err, "GetProjectByName call not successful")
 		assert.Equal(t, "python-test", strings.ToLower(*result.Name), "Expected to get python-test")
+	})
+
+	t.Run("test space", func(t *testing.T) {
+		result, err := sys.GetProjectByName("python with space test", false, "")
+		assert.NoError(t, err, "GetProjectByName call not successful")
+		assert.Equal(t, "python with space test", strings.ToLower(*result.Name), "Expected to get python with space test")
 	})
 
 	t.Run("test empty", func(t *testing.T) {
