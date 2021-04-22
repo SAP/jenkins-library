@@ -128,6 +128,14 @@ spec:
           - STEPS
         mandatory: false
         default: "ATCResults.xml"
+      - name: generateHTML
+        type: bool
+        description: Specifies whether the ATC results should also be generated as an HTML document
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
   containers:
     - name: cf
       image: ppiper/cf-cli:7
