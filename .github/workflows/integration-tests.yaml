@@ -59,7 +59,7 @@ jobs:
       - name: build
         env:
           CGO_ENABLED: 0
-      # with `-tags release` we ensure that shared test utilities won't end up in the binary
+        # with `-tags release` we ensure that shared test utilities won't end up in the binary
         run: go build -o piper -tags release
       - name: test
         env:
