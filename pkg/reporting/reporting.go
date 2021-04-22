@@ -2,6 +2,7 @@ package reporting
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"text/template"
 	"time"
@@ -84,8 +85,13 @@ func (s *ScanReport) AddSubHeader(header, details string) {
 	s.Subheaders = append(s.Subheaders, Subheader{Description: header, Details: details})
 }
 
-// MarkdownReportDirectory specifies the default directory for markdown reports which can later be collected by step pipelineCreateSummary
-const MarkdownReportDirectory = ".pipeline/stepReports"
+//StepReportDirectory specifies the default directory for markdown reports which can later be collected by step pipelineCreateSummary
+const StepReportDirectory = ".pipeline/stepReports"
+
+// ToJSON returns the report in JSON format
+func (s *ScanReport) ToJSON() ([]byte, error) {
+	return json.Marshal(s)
+}
 
 const reportHTMLTemplate = `<!DOCTYPE html>
 <html>
@@ -216,26 +222,59 @@ func (s *ScanReport) ToHTML() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-const reportMdTemplate = `<details><summary>{{.Title}}</summary>
-<p>
+const reportMdTemplate = `## {{.Title}}
 
-{{range $s := .Subheaders}}
-**{{- $s.Description}}**: {{$s.Details}}
-{{end}}
+<table>
+{{range $s := .Subheaders -}}
+	<tr><td><b>{{- $s.Description}}:</b></td><td>{{$s.Details}}</td></tr>
+{{- end}}
 
-{{range $o := .Overview}}
-{{- drawOverviewRow $o}}
-{{end}}
+{{range $o := .Overview -}}
+{{drawOverviewRow $o}}
+{{- end}}
+</table>
 
 {{.FurtherInfo}}
 
-Snapshot taken: _{{reportTime .ReportTime}}_
+Snapshot taken: <i>{{reportTime .ReportTime}}</i>
+
+{{if shouldDrawTable .DetailTable -}}
+<details><summary><i>{{.Title}} details:</i></summary>
+<p>
+
+<table>
+<tr>
+	{{if .DetailTable.WithCounter}}<th>{{.DetailTable.CounterHeader}}</th>{{end}}
+	{{- range $h := .DetailTable.Headers}}
+	<th>{{$h}}</th>
+	{{- end}}
+</tr>
+{{range $i, $r := .DetailTable.Rows}}
+<tr>
+	{{if $.DetailTable.WithCounter}}<td>{{inc $i}}</td>{{end}}
+	{{- range $c := $r.Columns}}
+	{{drawCell $c}}
+	{{- end}}
+</tr>
+{{else}}
+<tr><td colspan="{{columnCount .DetailTable}}">{{.DetailTable.NoRowsMessage}}</td></tr>
+{{- end}}
+</table>
 </p>
-</details>`
+</details>
+{{ end }}
+
+`
 
 // ToMarkdown creates a markdown version of the report content
 func (s *ScanReport) ToMarkdown() ([]byte, error) {
 	funcMap := template.FuncMap{
+		"columnCount":     tableColumnCount,
+		"drawCell":        drawCell,
+		"shouldDrawTable": shouldDrawTable,
+		"inc": func(i int) int {
+			return i + 1
+		},
 		"reportTime": func(currentTime time.Time) string {
 			return currentTime.Format("Jan 02, 2006 - 15:04:05 MST")
 		},
@@ -269,6 +308,13 @@ func drawCell(cell ScanCell) string {
 	return fmt.Sprintf(`<td>%v</td>`, cell.Content)
 }
 
+func shouldDrawTable(table ScanDetailTable) bool {
+	if len(table.Headers) > 0 {
+		return true
+	}
+	return false
+}
+
 func drawOverviewRow(row OverviewRow) string {
 	// so far accept only accept max. two columns for overview table: description and content
 	if len(row.Details) == 0 {
@@ -284,5 +330,5 @@ func drawOverviewRowMarkdown(row OverviewRow) string {
 		return row.Description
 	}
 	// ToDo: allow styling of details
-	return fmt.Sprintf("**%v**: %v", row.Description, row.Details)
+	return fmt.Sprintf("<tr><td>%v:</td><td>%v</td></tr>", row.Description, row.Details)
 }

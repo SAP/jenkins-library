@@ -15,6 +15,10 @@ metadata:
         In a Kubernetes environment, the containers both need to be referenced with `localhost`.
 spec:
   inputs:
+    secrets:
+      - name: seleniumHubCredentialsId
+        type: jenkins
+        description: "Defines the id of the user/password credentials to be used to connect to a Selenium Hub. The credentials are provided in the environment variables `PIPER_SELENIUM_HUB_USER` and `PIPER_SELENIUM_HUB_PASSWORD`."
     resources:
       - name: buildDescriptor
         type: stash
@@ -31,10 +35,10 @@ spec:
           - STAGES
           - STEPS
         mandatory: true
-      - name: modulePath
-        type: string
-        description: Define the path of the module to execute tests on.
-        default: "."
+      - name: modules
+        type: "[]string"
+        description: Define the paths of the modules to execute tests on.
+        default: ["."]
         scope:
           - PARAMETERS
           - STAGES
@@ -50,7 +54,6 @@ spec:
           - STAGES
           - STEPS
         mandatory: true
-  #outputs:
   containers:
     - name: karma
       image: node:lts-stretch
@@ -59,6 +62,12 @@ spec:
           value: localhost,selenium,$no_proxy
         - name: NO_PROXY
           value: localhost,selenium,$NO_PROXY
+        - name: "PIPER_SELENIUM_HOSTNAME"
+          value: "karma"
+        - name: "PIPER_SELENIUM_WEBDRIVER_HOSTNAME"
+          value: "selenium"
+        - name: "PIPER_SELENIUM_WEBDRIVER_PORT"
+          value: "4444"
       workingDir: /home/node
       volumeMounts:
         - mountPath: /dev/shm

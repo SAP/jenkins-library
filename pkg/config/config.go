@@ -179,6 +179,9 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	// initialize with defaults from step.yaml
 	stepConfig.mixInStepDefaults(parameters)
 
+	// merge parameters provided by Piper environment
+	stepConfig.mixIn(envParameters, filters.All)
+
 	// read defaults & merge general -> steps (-> general -> steps ...)
 	for _, def := range c.defaults.Defaults {
 		def.ApplyAliasConfig(parameters, secrets, filters, stageName, stepName, stepAliases)
@@ -192,9 +195,6 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 			stepConfig.HookConfig = def.Hooks
 		}
 	}
-
-	// merge parameters provided by Piper environment
-	stepConfig.mixIn(envParameters, filters.All)
 
 	// read config & merge - general -> steps -> stages
 	stepConfig.mixIn(c.General, filters.General)
@@ -245,6 +245,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		if vaultClient != nil {
 			defer vaultClient.MustRevokeToken()
 			resolveAllVaultReferences(&stepConfig, vaultClient, parameters)
+			resolveVaultTestCredentials(&stepConfig, vaultClient)
 		}
 	}
 

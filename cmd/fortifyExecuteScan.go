@@ -78,11 +78,13 @@ func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemet
 	sys := fortify.NewSystemInstance(config.ServerURL, config.APIEndpoint, config.AuthToken, time.Minute*15)
 	utils := newFortifyUtilsBundle()
 
+	influx.step_data.fields.fortify = false
 	reports, err := runFortifyScan(config, sys, utils, telemetryData, influx, auditStatus)
 	piperutils.PersistReportsAndLinks("fortifyExecuteScan", config.ModulePath, reports, nil)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Fortify scan and check failed")
 	}
+	influx.step_data.fields.fortify = true
 	// make sure that no specific error category is set in success case
 	log.SetErrorCategory(log.ErrorUndefined)
 }
@@ -680,8 +682,7 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, utils fortifyUtils, bu
 		if err != nil {
 			log.Entry().WithError(err).Warnf("failed to apply src ('%s') or exclude ('%s') parameter", config.Src, config.Exclude)
 		}
-	}
-	if config.BuildTool == "pip" {
+	} else if config.BuildTool == "pip" {
 		if config.AutodetectClasspath {
 			separator := getSeparator()
 			script := fmt.Sprintf("import sys;p=sys.path;p.remove('');print('%v'.join(p))", separator)
@@ -705,6 +706,8 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, utils fortifyUtils, bu
 			log.Entry().WithError(err).Warnf("failed to apply pythonAdditionalPath ('%s') or src ('%s') parameter", config.PythonAdditionalPath, config.Src)
 		}
 
+	} else {
+		return fmt.Errorf("buildTool '%s' is not supported by this step", config.BuildTool)
 	}
 
 	translateProject(&config, utils, buildID, classpath)

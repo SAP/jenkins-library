@@ -406,6 +406,6 @@ class PiperExecuteBinTest extends BasePiperTest {
             []
         )
 
-        assertThat(dockerExecuteRule.dockerParams.stashContent, is(["buildDescriptor", "pipelineConfigAndTests", "piper-bin"]))
+        assertThat(dockerExecuteRule.dockerParams.stashContent, is(["buildDescriptor", "pipelineConfigAndTests", "piper-bin", "pipelineStepReports"]))
     }
 }

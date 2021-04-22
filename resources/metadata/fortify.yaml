@@ -82,9 +82,9 @@ spec:
             type: secret
           - type: vaultSecret
             paths:
-            - $(vaultPath)/github
-            - $(vaultBasePath)/$(vaultPipelineName)/github
-            - $(vaultBasePath)/GROUP-SECRETS/github
+              - $(vaultPath)/github
+              - $(vaultBasePath)/$(vaultPipelineName)/github
+              - $(vaultBasePath)/GROUP-SECRETS/github
       - name: autoCreate
         type: bool
         description:
@@ -590,6 +590,10 @@ spec:
       - name: influx
         type: influx
         params:
+          - name: step_data
+            fields:
+              - name: fortify
+                type: bool
           - name: fortify_data
             fields:
               - name: projectName

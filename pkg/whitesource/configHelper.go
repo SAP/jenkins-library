@@ -19,6 +19,7 @@ type ConfigOption struct {
 	Value         interface{}
 	OmitIfPresent string
 	Force         bool
+	Append        bool
 }
 
 // ConfigOptions contains a list of config options (ConfigOption)
@@ -73,8 +74,17 @@ func (c *ConfigOptions) updateConfig(originalConfig *map[string]string) map[stri
 		if len(cOpt.OmitIfPresent) > 0 {
 			dependentValue = newConfig[cOpt.OmitIfPresent]
 		}
-		if len(dependentValue) == 0 && (cOpt.Force || len(newConfig[cOpt.Name]) == 0) {
-			newConfig[cOpt.Name] = fmt.Sprint(cOpt.Value)
+
+		if len(dependentValue) == 0 {
+			if cOpt.Append {
+				if len(newConfig[cOpt.Name]) > 0 {
+					newConfig[cOpt.Name] = fmt.Sprintf("%v %v", newConfig[cOpt.Name], cOpt.Value)
+				} else {
+					newConfig[cOpt.Name] = fmt.Sprint(cOpt.Value)
+				}
+			} else if cOpt.Force || len(newConfig[cOpt.Name]) == 0 {
+				newConfig[cOpt.Name] = fmt.Sprint(cOpt.Value)
+			}
 		}
 	}
 	return newConfig
@@ -142,7 +152,7 @@ func (c *ConfigOptions) addBuildToolDefaults(config *ScanOptions, utils Utils) e
 			{Name: "docker.scanImages", Value: true, Force: true},
 			{Name: "docker.scanTarFiles", Value: true, Force: true},
 			{Name: "docker.includes", Value: ".*.tar", Force: true},
-			{Name: "ignoreSourceFiles", Value: true, Force: true},
+			{Name: "ignoreSourceFiles", Value: false},
 			{Name: "python.resolveGlobalPackages", Value: true, Force: false},
 			{Name: "resolveAllDependencies", Value: true, Force: false},
 			{Name: "updateType", Value: "OVERRIDE", Force: true},
@@ -166,7 +176,7 @@ func (c *ConfigOptions) addBuildToolDefaults(config *ScanOptions, utils Utils) e
 			{Name: "updateEmptyProject", Value: true, Force: true},
 			{Name: "maven.resolveDependencies", Value: true, Force: true},
 			{Name: "maven.ignoreSourceFiles", Value: true, Force: true},
-			{Name: "maven.aggregateModules", Value: false, Force: true},
+			{Name: "maven.aggregateModules", Value: false},
 			{Name: "maven.ignoredScopes", Value: "test provided"},
 			{Name: "maven.ignorePomModules", Value: false},
 			{Name: "maven.runPreStep", Value: true},
@@ -206,6 +216,11 @@ func (c *ConfigOptions) addBuildToolDefaults(config *ScanOptions, utils Utils) e
 			{Name: "includes", Value: "**/*.jar"},
 			{Name: "excludes", Value: "**/*sources.jar **/*javadoc.jar"},
 		},
+		"yarn": {
+			{Name: "npm.resolveDependencies", Value: true, Force: true},
+			{Name: "npm.ignoreSourceFiles", Value: true, Force: true},
+			{Name: "npm.yarnProject", Value: true, Force: true},
+		},
 	}
 
 	if config.BuildTool == "maven" {
@@ -217,7 +232,7 @@ func (c *ConfigOptions) addBuildToolDefaults(config *ScanOptions, utils Utils) e
 		mvnAdditionalArguments = append(mvnAdditionalArguments, mvnProjectExcludes(config.BuildDescriptorExcludeList, utils)...)
 
 		if len(mvnAdditionalArguments) > 0 {
-			*c = append(*c, ConfigOption{Name: "maven.additionalArguments", Value: strings.Join(mvnAdditionalArguments, " "), Force: true})
+			*c = append(*c, ConfigOption{Name: "maven.additionalArguments", Value: strings.Join(mvnAdditionalArguments, " "), Append: true})
 		}
 
 	}

@@ -5,10 +5,12 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
@@ -24,6 +26,39 @@ type newmanExecuteOptions struct {
 	CfAppsWithSecrets    []string `json:"cfAppsWithSecrets,omitempty"`
 }
 
+type newmanExecuteInflux struct {
+	step_data struct {
+		fields struct {
+			newman bool
+		}
+		tags struct {
+		}
+	}
+}
+
+func (i *newmanExecuteInflux) persist(path, resourceName string) {
+	measurementContent := []struct {
+		measurement string
+		valType     string
+		name        string
+		value       interface{}
+	}{
+		{valType: config.InfluxField, measurement: "step_data", name: "newman", value: i.step_data.fields.newman},
+	}
+
+	errCount := 0
+	for _, metric := range measurementContent {
+		err := piperenv.SetResourceParameter(path, resourceName, filepath.Join(metric.measurement, fmt.Sprintf("%vs", metric.valType), metric.name), metric.value)
+		if err != nil {
+			log.Entry().WithError(err).Error("Error persisting influx environment.")
+			errCount++
+		}
+	}
+	if errCount > 0 {
+		log.Entry().Fatal("failed to persist Influx environment")
+	}
+}
+
 // NewmanExecuteCommand Installs newman and executes specified newman collections.
 func NewmanExecuteCommand() *cobra.Command {
 	const STEP_NAME = "newmanExecute"
@@ -31,6 +66,7 @@ func NewmanExecuteCommand() *cobra.Command {
 	metadata := newmanExecuteMetadata()
 	var stepConfig newmanExecuteOptions
 	var startTime time.Time
+	var influx newmanExecuteInflux
 
 	var createNewmanExecuteCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -63,6 +99,7 @@ func NewmanExecuteCommand() *cobra.Command {
 			telemetryData.ErrorCode = "1"
 			handler := func() {
 				config.RemoveVaultSecretFiles()
+				influx.persist(GeneralConfig.EnvRootPath, "influx")
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
@@ -70,7 +107,7 @@ func NewmanExecuteCommand() *cobra.Command {
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
-			newmanExecute(stepConfig, &telemetryData)
+			newmanExecute(stepConfig, &telemetryData, &influx)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
@@ -174,6 +211,17 @@ func newmanExecuteMetadata() config.StepData {
 			},
 			Containers: []config.Container{
 				{Name: "newman", Image: "node:lts-stretch", WorkingDir: "/home/node"},
+			},
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{
+						Name: "influx",
+						Type: "influx",
+						Parameters: []map[string]interface{}{
+							{"Name": "step_data"}, {"fields": []map[string]string{{"name": "newman"}}},
+						},
+					},
+				},
 			},
 		},
 	}

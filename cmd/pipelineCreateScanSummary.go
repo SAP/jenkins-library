@@ -39,11 +39,12 @@ func pipelineCreateScanSummary(config pipelineCreateScanSummaryOptions, telemetr
 
 func runPipelineCreateScanSummary(config *pipelineCreateScanSummaryOptions, telemetryData *telemetry.CustomData, utils pipelineCreateScanSummaryUtils) error {
 
-	pattern := reporting.MarkdownReportDirectory + "/*.json"
+	pattern := reporting.StepReportDirectory + "/*.json"
 	reports, _ := utils.Glob(pattern)
 
 	scanReports := []reporting.ScanReport{}
 	for _, report := range reports {
+		log.Entry().Debugf("reading file %v", report)
 		reportContent, err := utils.FileRead(report)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)

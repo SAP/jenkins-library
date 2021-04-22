@@ -28,8 +28,18 @@ type newmanExecuteUtilsBundle struct {
 
 func newNewmanExecuteUtils() newmanExecuteUtils {
 	utils := newmanExecuteUtilsBundle{
-		Command: &command.Command{},
-		Files:   &piperutils.Files{},
+		Command: &command.Command{
+			ErrorCategoryMapping: map[string][]string{
+				log.ErrorConfiguration.String(): {
+					"ENOENT: no such file or directory",
+				},
+				log.ErrorTest.String(): {
+					"AssertionError",
+					"TypeError",
+				},
+			},
+		},
+		Files: &piperutils.Files{},
 	}
 	// Reroute command output to logging framework
 	utils.Stdout(log.Writer())
@@ -37,13 +47,15 @@ func newNewmanExecuteUtils() newmanExecuteUtils {
 	return &utils
 }
 
-func newmanExecute(config newmanExecuteOptions, _ *telemetry.CustomData) {
+func newmanExecute(config newmanExecuteOptions, _ *telemetry.CustomData, influx *newmanExecuteInflux) {
 	utils := newNewmanExecuteUtils()
 
+	influx.step_data.fields.newman = false
 	err := runNewmanExecute(&config, utils)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
+	influx.step_data.fields.newman = true
 }
 
 func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) error {
@@ -97,7 +109,6 @@ func runNewmanExecute(config *newmanExecuteOptions, utils newmanExecuteUtils) er
 		newmanPath := filepath.Join(utils.Getenv("HOME"), "/.npm-global/bin/newman")
 		err = utils.RunExecutable(newmanPath, runOptions...)
 		if err != nil {
-			log.SetErrorCategory(log.ErrorService)
 			return errors.Wrap(err, "The execution of the newman tests failed, see the log for details.")
 		}
 	}
