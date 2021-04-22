@@ -61,16 +61,4 @@ spec:
           - STAGES
           - STEPS
         mandatory: true
-      - name: commitId
-        aliases:
-          - name: gitCommitId
-        description: commit
-        resourceRef:
-          - name: commonPipelineEnvironment
-            param: git/commitId
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        type: string
-        mandatory: true
+    
