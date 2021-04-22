@@ -339,19 +339,13 @@ private String generatePodSpec(Map config) {
     podSpec.spec.securityContext = getSecurityContext(config)
 
     if (config.containerMountPath) {
-        def uniquePlaceholder = UUID.randomUUID().toString()
         podSpec.spec.volumes = [[
                                     name    : "volume",
-                                    emptyDir: uniquePlaceholder
+                                    emptyDir: [:]
                                 ]]
-
-        def specYaml = new JsonUtils().groovyObjectToPrettyJsonString(podSpec)
-        specYaml = specYaml.replaceFirst("\"${uniquePlaceholder}\"", "{}")
-
-        return specYaml
-    } else {
-        return new JsonUtils().groovyObjectToPrettyJsonString(podSpec)
     }
+
+    return new JsonUtils().groovyObjectToPrettyJsonString(podSpec)
 }
 
 

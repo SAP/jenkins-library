@@ -809,7 +809,11 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
 
         def containerSpec = podSpec.spec.containers.find{it.image == "maven:3.5-jdk-8-alpine"}
         assertTrue(bodyExecuted)
-        assertEquals("volume", podSpec.spec.volumes[0].name)
+        assertEquals(
+            [[
+                 "name"    : "volume",
+                 "emptyDir": [:]
+             ]], podSpec.spec.volumes)
         assertEquals(
             [[
                 "name"     : "volume",
