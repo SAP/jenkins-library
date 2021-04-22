@@ -73,7 +73,10 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: projectVersion
+      - name: version
+        aliases:
+          - name: projectVersion
+            deprecated: true
         type: string
         description: "The project version that is reported to SonarQube."
         scope:
@@ -83,6 +86,21 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: artifactVersion
+      - name: versioningModel
+        type: string
+        description:
+          "The default versioning model used for the version when reporting the results for the project."
+        scope:
+          - PARAMETERS
+          - GENERAL
+          - STAGES
+          - STEPS
+        default: "major"
+        possibleValues:
+          - major
+          - major-minor
+          - semantic
+          - full
       - name: projectKey
         type: string
         description: "The project key identifies the project in SonarQube."

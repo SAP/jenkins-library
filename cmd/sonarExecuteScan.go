@@ -122,9 +122,9 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 	if len(config.Organization) > 0 {
 		sonar.addOption("sonar.organization=" + config.Organization)
 	}
-	if len(config.ProjectVersion) > 0 {
+	if len(config.Version) > 0 {
 		// handleArtifactVersion is reused from cmd/protecodeExecuteScan.go
-		sonar.addOption("sonar.projectVersion=" + handleArtifactVersion(config.ProjectVersion))
+		sonar.addOption("sonar.projectVersion=" + handleArtifactVersion(config.Version))
 	}
 	if len(config.ProjectKey) > 0 {
 		sonar.addOption("sonar.projectKey=" + config.ProjectKey)
