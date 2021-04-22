@@ -3,9 +3,9 @@ package cmd
 import (
 	"bytes"
 	"encoding/xml"
+	"fmt"
 	"net/http"
 	"net/http/cookiejar"
-	"fmt"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -72,6 +72,8 @@ func runUnitTestsForAllRepoPackages(config *gctsExecuteABAPUnitTestsOptions, htt
 	log.Entry().
 		WithField("repository", config.Repository).
 		Info("all unit tests were successful")
+	fmt.Printf("%v", config.CommitID)
+
 	return nil
 }
 
