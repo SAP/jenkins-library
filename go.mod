@@ -14,6 +14,7 @@ require (
 	github.com/bndr/gojenkins v1.0.1
 	github.com/elliotchance/orderedmap v1.3.0
 	github.com/evanphx/json-patch v4.9.0+incompatible
+	github.com/frankban/quicktest v1.10.0 // indirect
 	github.com/getsentry/sentry-go v0.7.0
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-git/go-billy/v5 v5.0.0
@@ -22,11 +23,15 @@ require (
 	github.com/go-openapi/spec v0.19.9 // indirect
 	github.com/go-openapi/strfmt v0.19.5
 	github.com/go-openapi/validate v0.19.11 // indirect
+	github.com/golang/snappy v0.0.2 // indirect
 	github.com/google/go-cmp v0.5.4
 	github.com/google/go-containerregistry v0.1.3
 	github.com/google/go-github/v32 v32.1.0
 	github.com/google/uuid v1.1.2
+	github.com/hashicorp/errwrap v1.1.0 // indirect
+	github.com/hashicorp/go-multierror v1.1.0 // indirect
 	github.com/hashicorp/go-retryablehttp v0.6.7
+	github.com/hashicorp/go-rootcerts v1.0.2 // indirect
 	github.com/hashicorp/vault v1.7.1
 	github.com/hashicorp/vault/api v1.0.5-0.20210210214158-405eced08457
 	github.com/huandu/xstrings v1.3.2 // indirect
@@ -36,7 +41,11 @@ require (
 	github.com/magicsong/color-glog v0.0.1 // indirect
 	github.com/magicsong/sonargo v0.0.1
 	github.com/mailru/easyjson v0.7.6 // indirect
+	github.com/mitchellh/mapstructure v1.3.3 // indirect
+	github.com/mitchellh/reflectwalk v1.0.1 // indirect
 	github.com/motemen/go-nuts v0.0.0-20200601065735-3df31f16cb2f
+	github.com/opencontainers/go-digest v1.0.0 // indirect
+	github.com/pierrec/lz4 v2.5.2+incompatible // indirect
 	github.com/piper-validation/fortify-client-go v0.0.0-20210114140201-1261216783c6
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.7.0
@@ -48,8 +57,10 @@ require (
 	golang.org/x/mod v0.3.0
 	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43
 	golang.org/x/sync v0.0.0-20200930132711-30421366ff76 // indirect
+	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e // indirect
 	google.golang.org/genproto v0.0.0-20201002142447-3860012362da // indirect
 	google.golang.org/grpc v1.32.0 // indirect
 	gopkg.in/ini.v1 v1.61.0
+	gopkg.in/square/go-jose.v2 v2.5.1 // indirect
 	gopkg.in/yaml.v2 v2.3.0
 )
