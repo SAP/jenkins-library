@@ -124,7 +124,12 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		sonar.addOption("sonar.organization=" + config.Organization)
 	}
 	if len(config.Version) > 0 {
-		version := versioning.ApplyVersioningModel(config.VersioningModel, versioning.Coordinates{Version: config.Version})
+		version := config.CustomScanVersion
+		if len(version) > 0 {
+			log.Entry().Infof("using custom version: %v", version)
+		} else {
+			version = versioning.ApplyVersioningModel(config.VersioningModel, versioning.Coordinates{Version: config.Version})
+		}
 		sonar.addOption("sonar.projectVersion=" + version)
 	}
 	if len(config.ProjectKey) > 0 {
