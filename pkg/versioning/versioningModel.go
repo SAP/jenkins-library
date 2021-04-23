@@ -24,7 +24,7 @@ const (
 	VersioningModelMajor      string = "major"
 )
 
-func ApplyVersioningModel(model string, version Coordinates) (string, error) {
+func ApplyVersioningModel(model string, projectCoordinates Coordinates) string {
 	var versioningScheme string
 
 	switch model {
@@ -40,5 +40,9 @@ func ApplyVersioningModel(model string, version Coordinates) (string, error) {
 		log.Entry().Warnf("versioning model not supported: %s", model)
 	}
 
-	return piperutils.ExecuteTemplateFunctions(versioningScheme, sprig.HermeticTxtFuncMap(), version)
+	version, err := piperutils.ExecuteTemplateFunctions(versioningScheme, sprig.HermeticTxtFuncMap(), projectCoordinates)
+	if err != nil {
+		log.Entry().Warnf("unable to resolve project version: %v", err)
+	}
+	return version
 }
