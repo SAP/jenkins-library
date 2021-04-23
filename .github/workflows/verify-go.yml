@@ -3,93 +3,93 @@ name: Go
 on:
   push:
     branches:
-    - master
+      - master
   pull_request:
     branches:
-    - master
+      - master
 
 jobs:
   unit:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/setup-go@v1
-      with:
-        go-version: '1.15.x'
-    - name: Cache Golang Packages
-      uses: actions/cache@v1
-      with:
-        path: ~/go/pkg/mod
-        key: ${{ runner.os }}-golang-${{ hashFiles('go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-golang-
-    - name: checkout
-      uses: actions/checkout@v2
-    - name: unit-test
-      uses: paambaati/codeclimate-action@v2.6.0
-      env:
-        CC_TEST_REPORTER_ID: ${{ secrets.CODE_CLIMATE_REPORTER_ID }}
-      with:
-        coverageCommand: go test ./... -coverprofile cover.out
-        coverageLocations: cover.out:gocov
-        # truncate package name from file paths in report
-        prefix: github.com/SAP/jenkins-library/
+      - uses: actions/setup-go@v1
+        with:
+          go-version: '1.15.x'
+      - name: Cache Golang Packages
+        uses: actions/cache@v1
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-golang-${{ hashFiles('go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-golang-
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: unit-test
+        uses: paambaati/codeclimate-action@v2.6.0
+        env:
+          CC_TEST_REPORTER_ID: ${{ secrets.CODE_CLIMATE_REPORTER_ID }}
+        with:
+          coverageCommand: go test ./... -coverprofile cover.out
+          coverageLocations: cover.out:gocov
+          # truncate package name from file paths in report
+          prefix: github.com/SAP/jenkins-library/
   format:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/setup-go@v1
-      with:
-        go-version: '1.15.x'
-    - name: Cache Golang Packages
-      uses: actions/cache@v1
-      with:
-        path: ~/go/pkg/mod
-        key: ${{ runner.os }}-golang-format${{ hashFiles('go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-golang-format
-          ${{ runner.os }}-golang-
-    - name: checkout
-      uses: actions/checkout@v2
-    - name: format
-      run: go fmt ./...
-    - name: verify
-      run: git diff --exit-code
+      - uses: actions/setup-go@v1
+        with:
+          go-version: '1.15.x'
+      - name: Cache Golang Packages
+        uses: actions/cache@v1
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-golang-format${{ hashFiles('go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-golang-format
+            ${{ runner.os }}-golang-
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: format
+        run: go fmt ./...
+      - name: verify
+        run: git diff --exit-code
   generate:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/setup-go@v1
-      with:
-        go-version: '1.15.x'
-    - name: Cache Golang Packages
-      uses: actions/cache@v1
-      with:
-        path: ~/go/pkg/mod
-        key: ${{ runner.os }}-golang-generate${{ hashFiles('go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-golang-generate
-          ${{ runner.os }}-golang-
-    - name: checkout
-      uses: actions/checkout@v2
-    - name: generate
-      run: go run pkg/generator/step-metadata.go
-    - name: verify
-      run: git diff --exit-code
+      - uses: actions/setup-go@v1
+        with:
+          go-version: '1.15.x'
+      - name: Cache Golang Packages
+        uses: actions/cache@v1
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-golang-generate${{ hashFiles('go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-golang-generate
+            ${{ runner.os }}-golang-
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: generate
+        run: go run pkg/generator/step-metadata.go
+      - name: verify
+        run: git diff --exit-code
   dependencies:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/setup-go@v1
-      with:
-        go-version: '1.15.x'
-    - name: Cache Golang Packages
-      uses: actions/cache@v1
-      with:
-        path: ~/go/pkg/mod
-        key: ${{ runner.os }}-golang-dependencies${{ hashFiles('go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-golang-dependencies
-          ${{ runner.os }}-golang-
-    - name: checkout
-      uses: actions/checkout@v2
-    - name: cleanup dependencies
-      run: go mod tidy
-    - name: verify
-      run: git diff --name-only --exit-code
+      - uses: actions/setup-go@v1
+        with:
+          go-version: '1.15.x'
+      - name: Cache Golang Packages
+        uses: actions/cache@v1
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-golang-dependencies${{ hashFiles('go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-golang-dependencies
+            ${{ runner.os }}-golang-
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: cleanup dependencies
+        run: go mod tidy
+      - name: verify
+        run: git diff --name-only --exit-code
