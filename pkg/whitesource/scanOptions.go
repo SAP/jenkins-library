@@ -42,7 +42,7 @@ type ScanOptions struct {
 	AgentURL   string
 	ServiceURL string
 
-	Dir string
+	WorkDir string
 
 	Verbose bool
 }

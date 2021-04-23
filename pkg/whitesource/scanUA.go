@@ -22,7 +22,7 @@ const projectRegEx = `Project name: ([^,]*), URL: (.*)`
 // ExecuteUAScan executes a scan with the Whitesource Unified Agent.
 func (s *Scan) ExecuteUAScan(config *ScanOptions, utils Utils) error {
 	if config.BuildTool != "mta" {
-		return s.ExecuteUAScanInPath(config, utils, config.Dir)
+		return s.ExecuteUAScanInPath(config, utils, config.WorkDir)
 	}
 
 	log.Entry().Infof("Executing WhiteSource UA scan for MTA project")
@@ -30,7 +30,7 @@ func (s *Scan) ExecuteUAScan(config *ScanOptions, utils Utils) error {
 	if pomExists {
 		mavenConfig := *config
 		mavenConfig.BuildTool = "maven"
-		if err := s.ExecuteUAScanInPath(&mavenConfig, utils, config.Dir); err != nil {
+		if err := s.ExecuteUAScanInPath(&mavenConfig, utils, config.WorkDir); err != nil {
 			return errors.Wrap(err, "failed to run scan for maven modules of mta")
 		}
 	} else {

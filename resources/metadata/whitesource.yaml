@@ -136,9 +136,9 @@ spec:
           - STAGES
           - STEPS
         default: "-1"
-      - name: dir
+      - name: workDir
         type: string
-        description: "Directory where start to scan."
+        description: "Directory where to start WhiteSource scan."
         scope:
           - PARAMETERS
           - STAGES
