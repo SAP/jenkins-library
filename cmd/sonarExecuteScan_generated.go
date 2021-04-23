@@ -22,8 +22,9 @@ type sonarExecuteScanOptions struct {
 	Organization              string   `json:"organization,omitempty"`
 	CustomTLSCertificateLinks []string `json:"customTlsCertificateLinks,omitempty"`
 	SonarScannerDownloadURL   string   `json:"sonarScannerDownloadUrl,omitempty"`
-	Version                   string   `json:"version,omitempty"`
 	VersioningModel           string   `json:"versioningModel,omitempty"`
+	Version                   string   `json:"version,omitempty"`
+	CustomScanVersion         string   `json:"customScanVersion,omitempty"`
 	ProjectKey                string   `json:"projectKey,omitempty"`
 	CoverageExclusions        []string `json:"coverageExclusions,omitempty"`
 	InferJavaBinaries         bool     `json:"inferJavaBinaries,omitempty"`
@@ -160,8 +161,9 @@ func addSonarExecuteScanFlags(cmd *cobra.Command, stepConfig *sonarExecuteScanOp
 	cmd.Flags().StringVar(&stepConfig.Organization, "organization", os.Getenv("PIPER_organization"), "SonarCloud.io only: Organization that the project will be assigned to in SonarCloud.io.")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List of download links to custom TLS certificates. This is required to ensure trusted connections to instances with custom certificates.")
 	cmd.Flags().StringVar(&stepConfig.SonarScannerDownloadURL, "sonarScannerDownloadUrl", `https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.5.0.2216-linux.zip`, "URL to the sonar-scanner-cli archive.")
+	cmd.Flags().StringVar(&stepConfig.VersioningModel, "versioningModel", `major`, "The versioning model used for the version when reporting the results for the project.")
 	cmd.Flags().StringVar(&stepConfig.Version, "version", os.Getenv("PIPER_version"), "The project version that is reported to SonarQube.")
-	cmd.Flags().StringVar(&stepConfig.VersioningModel, "versioningModel", `major`, "The default versioning model used for the version when reporting the results for the project.")
+	cmd.Flags().StringVar(&stepConfig.CustomScanVersion, "customScanVersion", os.Getenv("PIPER_customScanVersion"), "A custom version used along with the uploaded scan results.")
 	cmd.Flags().StringVar(&stepConfig.ProjectKey, "projectKey", os.Getenv("PIPER_projectKey"), "The project key identifies the project in SonarQube.")
 	cmd.Flags().StringSliceVar(&stepConfig.CoverageExclusions, "coverageExclusions", []string{}, "A list of patterns that should be excluded from the coverage scan.")
 	cmd.Flags().BoolVar(&stepConfig.InferJavaBinaries, "inferJavaBinaries", false, "Find the location of generated Java class files in all modules and pass the option `sonar.java.binaries to the sonar tool.")
@@ -254,6 +256,14 @@ func sonarExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
+						Name:        "versioningModel",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STAGES", "STEPS", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
 						Name: "version",
 						ResourceRef: []config.ResourceReference{
 							{
@@ -267,9 +277,9 @@ func sonarExecuteScanMetadata() config.StepData {
 						Aliases:   []config.Alias{{Name: "projectVersion"}},
 					},
 					{
-						Name:        "versioningModel",
+						Name:        "customScanVersion",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
+						Scope:       []string{"GENERAL", "STAGES", "STEPS", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
