@@ -1,13 +1,13 @@
 metadata:
-    name: abapAddonAssemblyKitReserveNextPackages
-    description: This step determines the ABAP delivery packages (name and type), which are needed to deliver Software Component Versions.
-    longDescription: |
-      This step takes the list of Software Component Versions from the addonDescriptor in the commonPipelineEnvironment and determines the ABAP delivery packages.
-      If a package does not exist yet in the package registry, it is created there. The response contains detail information for this package and a package status, which determines the next actions:
-      "P": Package was created in the registry; production can be started / continued
-      "R": Package exists and is already released; production is not needed and must be skipped
-      The steps waits until the status "P" or "R" is achieved.
-      The name, type and namespace of each package is written back to the addonDescriptor in the commonPipelineEnvironment.
+  name: abapAddonAssemblyKitReserveNextPackages
+  description: This step determines the ABAP delivery packages (name and type), which are needed to deliver Software Component Versions.
+  longDescription: |
+    This step takes the list of Software Component Versions from the addonDescriptor in the commonPipelineEnvironment and determines the ABAP delivery packages.
+    If a package does not exist yet in the package registry, it is created there. The response contains detail information for this package and a package status, which determines the next actions:
+    "P": Package was created in the registry; production can be started / continued
+    "R": Package exists and is already released; production is not needed and must be skipped
+    The steps waits until the status "P" or "R" is achieved.
+    The name, type and namespace of each package is written back to the addonDescriptor in the commonPipelineEnvironment.
 spec:
   inputs:
     secrets:
