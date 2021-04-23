@@ -240,7 +240,7 @@ func mtaBuildMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Image: "devxci/mbtci:1.0.16.1", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "mtaBuildTool", Value: "cloudMbt"}}}}},
+				{Image: "devxci/mbtci:1.1.1", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "mtaBuildTool", Value: "cloudMbt"}}}}},
 				{Image: "ppiper/mta-archive-builder:v1", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "mtaBuildTool", Value: "classic"}}}}},
 			},
 			Outputs: config.StepOutputs{

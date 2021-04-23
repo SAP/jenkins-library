@@ -2,14 +2,16 @@ metadata:
   name: transportRequestUploadSOLMAN
   aliases:
     - name: transportRequestUploadFile
-  description: "Uploads content to a transport request"
+  description: "Uploads a specified file into a given transport via Solution Manager"
   longDescription: |
-    Uploads content to a transport request which is associated with a change document in SAP Solution Manager
+    Uploads the specified file into the given transport request via Solution Manager.
+    The mandatory change document ID points to the associate change document item.
+    The application ID specifies how the file needs to be handled on server side.
 spec:
   inputs:
     secrets:
       - name: uploadCredentialsId
-        description: Jenkins 'Username with password' credentials ID containing user and password to authenticate against the ABAP backend.
+        description: Jenkins 'Username with password' credentials ID containing user and password to authenticate against the ABAP backend
         type: jenkins
         aliases:
           - name: changeManagement/credentialsId
@@ -28,7 +30,7 @@ spec:
       - name: username
         type: string
         mandatory: true
-        description: "Operating system user for triggering the deployment"
+        description: "Service user for uploading to the Solution Manager"
         secret: true
         scope:
           - PARAMETERS
@@ -42,7 +44,7 @@ spec:
       - name: password
         type: string
         mandatory: true
-        description: "Password for the deploy user"
+        description: "Service user password for uploading to the Solution Manager"
         secret: true
         scope:
           - PARAMETERS
@@ -53,7 +55,7 @@ spec:
       - name: applicationId
         type: string
         mandatory: true
-        description: "Id of the application."
+        description: "Id of the application. Specifies how the file needs to be handled on server side"
         scope:
           - PARAMETERS
           - STAGES
@@ -64,7 +66,7 @@ spec:
           - name: commonPipelineEnvironment
             param: custom/changeDocumentId
         type: string
-        description: "Id of the change document to upload the file. This parameter is only taken into account when provided via signature to the step."
+        description: "ID of the change document to which the file is uploaded"
         scope:
           - PARAMETERS
       - name: transportRequestId
@@ -72,7 +74,7 @@ spec:
           - name: commonPipelineEnvironment
             param: custom/transportRequestId
         type: string
-        description: "Id of the transport request to upload the file. This parameter is only taken into account when provided via signature to the step."
+        description: "ID of the transport request to which the file is uploaded"
         scope:
           - PARAMETERS
       - name: filePath
@@ -103,7 +105,7 @@ spec:
         aliases:
           - name: changeManagement/git/from
         type: "string"
-        description: "GIT starting point for retrieving the change document and transport request id"
+        description: "GIT starting point for retrieving the change document and transport request ID"
         scope:
           - PARAMETERS
           - STAGES
@@ -114,7 +116,7 @@ spec:
         aliases:
           - name: changeManagement/git/to
         type: "string"
-        description: "GIT ending point for retrieving the change document and transport request id"
+        description: "GIT ending point for retrieving the change document and transport request ID"
         scope:
           - PARAMETERS
           - STAGES
@@ -125,7 +127,7 @@ spec:
         aliases:
           - name: changeManagement/changeDocumentLabel
         type: "string"
-        description: "Pattern used for identifying lines holding the change document id"
+        description: "Pattern used for identifying lines holding the change document ID. The GIT commit log messages are scanned for this label"
         scope:
           - PARAMETERS
           - STAGES
@@ -136,7 +138,7 @@ spec:
         aliases:
           - name: changeManagement/transportRequestLabel
         type: "string"
-        description: "Pattern used for identifying lines holding the transport request id"
+        description: "Pattern used for identifying lines holding the transport request ID. The GIT commit log messages are scanned for this label"
         scope:
           - PARAMETERS
           - STAGES
