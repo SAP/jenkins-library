@@ -53,7 +53,7 @@ void call(Map params) {
   //execute original stage as defined in the template
   params.originalStage()
  
-  emailext (
+  emailext(
     attachmentsPattern: 'ATCResults.html', //This will attach the ATC Results to the E-Mail
     to: 'user@example.com, admin@example.com',
     subject: "ATC Results Mail from latest Run in System H01",
