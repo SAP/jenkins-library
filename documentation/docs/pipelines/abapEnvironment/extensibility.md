@@ -53,8 +53,8 @@ void call(Map params) {
 
   //execute original stage as defined in the template
   params.originalStage()
- 
-  emailext(
+
+  emailext (
     attachmentsPattern: 'ATCResults.html', //This will attach the ATC Results to the E-Mail
     to: 'user@example.com, admin@example.com',
     subject: "ATC Results Mail from latest Run in System H01",
@@ -68,4 +68,4 @@ return this
 
 Note that in above example the ATC Results, stored in the `ATCResults.html` file that is pinned to the Jenkins Job, will be sent as an attachmend using the `attachmentsPattern` parameter as well as being parsed and attached to the E-Mail body using the `body` parameter. Both methods are possible. If you chose to include the ATC Results in the E-Mail body make sure to read the file content properly, e.g. using the `readFile()` method.
 The `subject` parameter defines the subject of the E-Mail that will be sent. The `to` parameter specifies a list of recipients separated by a comma. You can also set a Distribution Lists as a recipient.
-For all parameters it is also possible to use Jenkins environment variables, e.g. `${env.BUILD_ID}` or `${env.JENKINS_URL}`.
+For all parameters it is also possible to use Jenkins environment variables like `${env.BUILD_ID}` or `${env.JENKINS_URL}`.
