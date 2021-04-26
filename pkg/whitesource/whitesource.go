@@ -321,6 +321,15 @@ func (s *System) GetProjectTokens(productToken string, projectNames []string) ([
 			}
 		}
 	}
+
+	if len(projectNames) > 0 && len(projectTokens) == 0 {
+		return projectTokens, fmt.Errorf("no project token(s) found for provided projects")
+	}
+
+	if len(projectNames) > 0 && len(projectNames) != len(projectTokens) {
+		return projectTokens, fmt.Errorf("not all project token(s) found for provided projects")
+	}
+
 	return projectTokens, nil
 }
 
