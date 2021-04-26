@@ -36,10 +36,11 @@ While `tools: [checkStyle(pattern: '**/**/ATCResults.xml')]` will display the AT
 
 ## 2. Extend the ATC stage to send ATC Results via E-Mail
 
-In general when executing the `ATC` stage, the respective ATC results will normally be pinned to the Jenkins Job in a checkStyle XML format. Additionally, you can set the `generateHTML` flag to `true` for the `abapEnvironmentRunATCCheck` step. It includes the generation of an HTML document containing the ATC results for the `abapEnvironmentRunATCCheck` step that will also be pinned to the respective Jenkins Job.
-The ATC Results can be attached to an E-Mail or being sent as the E-Mail body with the [Email Extension Plugin](https://www.jenkins.io/doc/pipeline/steps/email-ext/) ([GitHub Project](https://github.com/jenkinsci/email-ext-plugin)). Make sure that you have configured the Plugin correctly before using it.
-In the following example we only provide a sample configuration using the Jenkins [Email Extension Plugin](https://www.jenkins.io/doc/pipeline/steps/email-ext/). The E-Mail can be fully customized to your needs. Please refer to the Email Extension Plugin Documentation to see the full list of parameter that are supported.
+In general when executing the `ATC` stage, the respective ATC results will normally be pinned to the Jenkins Job in a checkStyle XML format.
+Additionally, you can set the `generateHTML` flag to `true` for the `abapEnvironmentRunATCCheck` step. This includes the generation of an HTML document containing the ATC results for the `abapEnvironmentRunATCCheck` step that will also be pinned to the respective Jenkins Job.
+The ATC Results can be attached to an E-Mail or being sent as the E-Mail body with the [Email Extension Plugin](https://www.jenkins.io/doc/pipeline/steps/email-ext/) ([GitHub Project](https://github.com/jenkinsci/email-ext-plugin)) using the `emailext()` method. Make sure that you have configured the Email Extension Plugin correctly before using it.
 
+In the following example we only provide a sample configuration using the Jenkins [Email Extension Plugin](https://www.jenkins.io/doc/pipeline/steps/email-ext/). The E-Mail can be fully customized to your needs. Please refer to the Email Extension Plugin Documentation to see the full list of parameter that are supported.
 If you haven't created it already, create/extend the file `.pipeline/extensions/ATC.groovy` with the following content:
 
 ```groovy
@@ -66,5 +67,5 @@ return this
 ```
 
 Note that in above example the ATC Results, stored in the `ATCResults.html` file that is pinned to the Jenkins Job, will be sent as an attachmend using the `attachmentsPattern` parameter as well as being parsed and attached to the E-Mail body using the `body` parameter. Both methods are possible. If you chose to include the ATC Results in the E-Mail body make sure to read the file content properly, e.g. using the `readFile()` method.
-The `subject` parameter defines the subject of the E-Mail that will be sent. The `to` parameter specifies a list of recipients separated by a comma. You can also use Distribution Lists.
+The `subject` parameter defines the subject of the E-Mail that will be sent. The `to` parameter specifies a list of recipients separated by a comma. You can also set a Distribution Lists as a recipient.
 For all parameters it is also possible to use Jenkins environment variables, e.g. `${env.BUILD_ID}` or `${env.JENKINS_URL}`.
