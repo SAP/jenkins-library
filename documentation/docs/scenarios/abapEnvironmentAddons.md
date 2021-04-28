@@ -2,9 +2,9 @@
 
 !!! caution Current limitations
     * Add-on Descriptor File: Please use the long commit ID in the commit ID field in the add-on descriptor file currently, if you are using the short commit ID the build             process will fail.
-      To retrieve the long commit id, go into the Manage Software Components app, navigate to the branch, select the commit in the list of commits, field "Long Commit ID"             becomes available.
+      To retrieve the long commit id, go into the Manage Software Components app, navigate to the branch, select the commit in the list of commits, field "Long Commit ID"             becomes available. This issue is planned to be resolveed ABAP Environment release 2105 HFC 02
     * TABU entries are currently not reflected in the object list during add-on build. With ABAP Environment release 2105 HFC 03 it is planned that this is supported.
-      Besides that, deletion of TABU is currently not supported via gCTS – this will be supported at a later point in time.
+      Besides that, deletion of TABU is currently not supported via gCTS.
 
 ## Introduction
 
