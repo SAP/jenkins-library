@@ -1,0 +1,34 @@
+name: Go
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  re-generate:
+    runs-on: ubuntu-latest
+    if: github.event.comment.body == '/generate' && (github.event.comment.author_association == 'COLLABORATOR' || github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER')
+
+    steps:
+      - uses: actions/setup-go@v1
+        with:
+          go-version: '1.15.x'
+      - name: Cache Golang Packages
+        uses: actions/cache@v1
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-golang-generate${{ hashFiles('go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-golang-generate
+            ${{ runner.os }}-golang-
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: generate
+        run: go run pkg/generator/step-metadata.go
+      - name: git commit
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add cmd/*_generated.go
+          git commit -m "update generated sources"
+          git push
