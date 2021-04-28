@@ -3,10 +3,10 @@ name: "Documentation"
 on:
   push:
     branches:
-    - master
+      - master
   pull_request:
     branches:
-    - master
+      - master
     paths:
       - '**/*.md'
 
@@ -15,8 +15,8 @@ jobs:
     runs-on: ubuntu-latest
     name: 'Format'
     steps:
-    - uses: actions/checkout@v2
-    - name: Markdown Linting
-      uses: nosborn/github-action-markdown-cli@v1.1.1
-      with:
-        files: .
+      - uses: actions/checkout@v2
+      - name: Markdown Linting
+        uses: nosborn/github-action-markdown-cli@v1.1.1
+        with:
+          files: .

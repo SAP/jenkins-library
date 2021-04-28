@@ -176,7 +176,7 @@ func (c *ConfigOptions) addBuildToolDefaults(config *ScanOptions, utils Utils) e
 			{Name: "updateEmptyProject", Value: true, Force: true},
 			{Name: "maven.resolveDependencies", Value: true, Force: true},
 			{Name: "maven.ignoreSourceFiles", Value: true, Force: true},
-			{Name: "maven.aggregateModules", Value: false, Force: true},
+			{Name: "maven.aggregateModules", Value: false},
 			{Name: "maven.ignoredScopes", Value: "test provided"},
 			{Name: "maven.ignorePomModules", Value: false},
 			{Name: "maven.runPreStep", Value: true},

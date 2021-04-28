@@ -79,7 +79,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: ["unit-tests/pom.xml","integration-tests/pom.xml"]
+        default: ["unit-tests/pom.xml", "integration-tests/pom.xml"]
       - name: buildDescriptorFile
         type: string
         description: "Explicit path to the build descriptor file."
@@ -474,9 +474,9 @@ spec:
               value: dub
             - name: buildTool
               value: docker
-    - image: devxci/mbtci:1.0.14
+    - image: devxci/mbtci:1.1.1
       workingDir: /home/mta
-      env: [ ]
+      env: []
       conditions:
         - conditionRef: strings-equal
           params:
