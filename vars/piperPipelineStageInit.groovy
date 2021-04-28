@@ -207,12 +207,12 @@ void call(Map parameters = [:]) {
                 prepareVersionParams.buildTool = buildTool
             }
             if (env.ON_K8S && !config.runArtifactVersioningOnPod) {
-                    // We force dockerImage: "" for the K8S case to avoid the execution of artifactPrepareVersion in a K8S Pod.
-                    // Since artifactPrepareVersion may need the ".git" folder in order to push a tag, it would need to be part of the stashing.
-                    // There are however problems with tar-ing this folder, which results in a failure to copy the stash back -- without a failure of the pipeline.
-                    // This then also has the effect that any changes made to the build descriptors by the step (updated version) are not visible in the relevant stashes.
-                    // In addition, a mvn executable is available on the Jenkins instance which can be used directly instead of executing the command in a container.
-                    prepareVersionParams.dockerImage = ""
+                // We force dockerImage: "" for the K8S case to avoid the execution of artifactPrepareVersion in a K8S Pod.
+                // Since artifactPrepareVersion may need the ".git" folder in order to push a tag, it would need to be part of the stashing.
+                // There are however problems with tar-ing this folder, which results in a failure to copy the stash back -- without a failure of the pipeline.
+                // This then also has the effect that any changes made to the build descriptors by the step (updated version) are not visible in the relevant stashes.
+                // In addition, a mvn executable is available on the Jenkins instance which can be used directly instead of executing the command in a container.
+                prepareVersionParams.dockerImage = ""
             }
             artifactPrepareVersion prepareVersionParams
         }
