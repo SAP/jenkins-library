@@ -192,9 +192,10 @@ import hudson.AbortException
      */
     'resources',
     /**
-     * The path to which a volume should be mounted to. This will create an emptyDir volume
-     * with name 'volume'. This volume will be available at the same mount path in each container
-     * of the provided containerMap.
+     * The path to which a volume should be mounted to. This volume will be available at the same
+     * mount path in each container of the provided containerMap. The volume is of type emptyDir
+     * and has the name 'volume'. With the additionalPodProperties parameter one can for example
+     * use this volume in an initContainer.
      */
     'containerMountPath',
 ])
