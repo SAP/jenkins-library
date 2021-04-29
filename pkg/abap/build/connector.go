@@ -119,6 +119,7 @@ func (conn *Connector) InitAAKaaS(aAKaaSEndpoint string, username string, passwo
 	conn.Header = make(map[string][]string)
 	conn.Header["Accept"] = []string{"application/json"}
 	conn.Header["Content-Type"] = []string{"application/json"}
+	conn.Header["User-Agent"] = []string{"Piper-abapAddonAssemblyKit/1.0"}
 
 	cookieJar, _ := cookiejar.New(nil)
 	conn.Client.SetOptions(piperhttp.ClientOptions{
