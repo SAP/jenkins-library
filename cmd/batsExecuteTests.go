@@ -65,6 +65,8 @@ func runBatsExecuteTests(config *batsExecuteTestsOptions, telemetryData *telemet
 
 	tapOutput := bytes.Buffer{}
 	utils.Stdout(io.MultiWriter(&tapOutput, log.Writer()))
+
+	utils.SetEnv(config.EnvVars)
 	err = utils.RunExecutable("bats-core/bin/bats", "--recursive", "--tap", config.TestPath)
 	if err != nil {
 		return fmt.Errorf("failed to run bats test: %w", err)
@@ -79,7 +81,7 @@ func runBatsExecuteTests(config *batsExecuteTestsOptions, telemetryData *telemet
 		output := bytes.Buffer{}
 		utils.Stdout(io.MultiWriter(&output, log.Writer()))
 
-		utils.SetEnv([]string{"NPM_CONFIG_PREFIX=~/.npm-global"})
+		utils.SetEnv(append(config.EnvVars, "NPM_CONFIG_PREFIX=~/.npm-global"))
 		err = utils.RunExecutable("npm", "install", "tap-xunit", "-g")
 		if err != nil {
 			return fmt.Errorf("failed to install tap-xunit: %w", err)
@@ -91,7 +93,7 @@ func runBatsExecuteTests(config *batsExecuteTestsOptions, telemetryData *telemet
 		output = bytes.Buffer{}
 		utils.Stdout(&output)
 		utils.Stdin(&tapOutput)
-		utils.SetEnv([]string{path})
+		utils.SetEnv(append(config.EnvVars, path))
 		err = utils.RunExecutable("tap-xunit", "--package="+config.TestPackage)
 		if err != nil {
 			return fmt.Errorf("failed to run tap-xunit: %w", err)

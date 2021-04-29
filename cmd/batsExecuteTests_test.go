@@ -31,7 +31,9 @@ func newBatsExecuteTestsTestsUtils() batsExecuteTestsMockUtils {
 }
 
 func TestRunBatsExecuteTests(t *testing.T) {
+	t.Parallel()
 	t.Run("success case", func(t *testing.T) {
+		t.Parallel()
 		config := &batsExecuteTestsOptions{
 			OutputFormat: "junit",
 			Repository:   "https://github.com/bats-core/bats-core.git",
@@ -47,6 +49,7 @@ func TestRunBatsExecuteTests(t *testing.T) {
 	})
 
 	t.Run("output tap case", func(t *testing.T) {
+		t.Parallel()
 		config := &batsExecuteTestsOptions{
 			OutputFormat: "tap",
 			Repository:   "https://github.com/bats-core/bats-core.git",
@@ -62,6 +65,7 @@ func TestRunBatsExecuteTests(t *testing.T) {
 	})
 
 	t.Run("output format failed case", func(t *testing.T) {
+		t.Parallel()
 		config := &batsExecuteTestsOptions{
 			OutputFormat: "fail",
 			Repository:   "https://github.com/bats-core/bats-core.git",
@@ -75,6 +79,7 @@ func TestRunBatsExecuteTests(t *testing.T) {
 	})
 
 	t.Run("failed to clone repo case", func(t *testing.T) {
+		t.Parallel()
 		config := &batsExecuteTestsOptions{
 			OutputFormat: "junit",
 			Repository:   "fail",
@@ -90,6 +95,7 @@ func TestRunBatsExecuteTests(t *testing.T) {
 	})
 
 	t.Run("failed to run bats case", func(t *testing.T) {
+		t.Parallel()
 		config := &batsExecuteTestsOptions{
 			OutputFormat: "tap",
 			Repository:   "https://github.com/bats-core/bats-core.git",

@@ -16,10 +16,11 @@ import (
 )
 
 type batsExecuteTestsOptions struct {
-	OutputFormat string `json:"outputFormat,omitempty"`
-	Repository   string `json:"repository,omitempty"`
-	TestPackage  string `json:"testPackage,omitempty"`
-	TestPath     string `json:"testPath,omitempty"`
+	OutputFormat string   `json:"outputFormat,omitempty"`
+	Repository   string   `json:"repository,omitempty"`
+	TestPackage  string   `json:"testPackage,omitempty"`
+	TestPath     string   `json:"testPath,omitempty"`
+	EnvVars      []string `json:"envVars,omitempty"`
 }
 
 type batsExecuteTestsInflux struct {
@@ -118,6 +119,7 @@ func addBatsExecuteTestsFlags(cmd *cobra.Command, stepConfig *batsExecuteTestsOp
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", `https://github.com/bats-core/bats-core.git`, "Defines the version of bats-core to be used. By default we use the version from the master branch.")
 	cmd.Flags().StringVar(&stepConfig.TestPackage, "testPackage", `piper-bats`, "For the transformation of the test result to xUnit format the node module tap-xunit is used. This parameter defines the name of the test package used in the xUnit result file.")
 	cmd.Flags().StringVar(&stepConfig.TestPath, "testPath", `src/test`, "Defines either the directory which contains the test files (*.bats) or a single file. You can find further details in the Bats-core documentation.")
+	cmd.Flags().StringSliceVar(&stepConfig.EnvVars, "envVars", []string{}, "Injects environment variables to step execution. Format of value must be ['<KEY1>=<VALUE1>','<KEY2>=<VALUE2>']. Example: ['CONTAINER_NAME=piper-jenskins','IMAGE_NAME=my-image']")
 
 }
 
@@ -164,6 +166,14 @@ func batsExecuteTestsMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "envVars",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
