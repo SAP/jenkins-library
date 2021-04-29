@@ -148,36 +148,10 @@ If you want to configure a build trigger, this can be done in the section of the
 H H(3-4) * * *
 ```
 
-## Extension
-
-You can extend each stage of this pipeline following the [documentation](../../extensibility.md).
-
-For example, this can be used to display ATC results utilizing the checkstyle format with the [Warnings Next Generation Plugin](https://www.jenkins.io/doc/pipeline/steps/warnings-ng/#warnings-next-generation-plugin) ([GitHub Project](https://github.com/jenkinsci/warnings-ng-plugin)).
-To achieve this, create a file `.pipeline/extensions/ATC.groovy` with the following content:
-
-```groovy
-void call(Map params) {
-  //access stage name
-  echo "Start - Extension for stage: ${params.stageName}"
-
-  //access config
-  echo "Current stage config: ${params.config}"
-
-  //execute original stage as defined in the template
-  params.originalStage()
-
-  recordIssues tools: [checkStyle(pattern: '**/ATCResults.xml')], qualityGates: [[threshold: 1, type: 'TOTAL', unstable: true]]
-
-  echo "End - Extension for stage: ${params.stageName}"
-}
-return this
-```
-
-While `tools: [checkStyle(pattern: '**/**/ATCResults.xml')]` will display the ATC findings using the checkstyle format, `qualityGates: [[threshold: 1, type: 'TOTAL', unstable: true]]` will set the build result to UNSTABLE in case the ATC results contain at least one warning or error.
-
-!!! caution "Local Jenkins"
-    If you are using a local Jenkins you may have to [adapt the Jenkins URL](https://stackoverflow.com/a/39543223) in the configuration if the CheckStyle Plugin shows this error: "Can't create fingerprints for some files".
-
 ### Stage Names
 
 The stage name for the extension is usually the displayed name, e.g. `ATC.groovy` or `Prepare System.groovy`. One exception is the generated `Post` stage. While the displayed name is "Declarative: Post Actions", you can extend this stage using `Post.groovy`.
+
+## Extension
+
+You can extend each stage of this pipeline following the [general extensibility documentation](../../extensibility.md) and the specific [ABAP Environment pipeline extensibility documentation](extensibility.md).
