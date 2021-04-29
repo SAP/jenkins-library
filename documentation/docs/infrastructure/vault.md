@@ -60,7 +60,7 @@ general:
 To authenticate you need to provide `PIPER_vaultAppRoleID` and `PIPER_vaultAppRoleSecretID` if you use app role authentication or `PIPER_vaultToken` if you use token authentication.
 
 !!! note "Jenkins"
-    When running a step via the Jenkins library you can use Jenkins credentials for pass this values. Use `vaultAppRoleTokenCredentialsId` and `vaultAppRoleSecretTokenCredentialsId` or `vaultTokenCredentialsId` in your `config.yml`.    
+    When running a step via the Jenkins library you can use Jenkins credentials for pass this values. Use `vaultAppRoleTokenCredentialsId` and `vaultAppRoleSecretTokenCredentialsId` or `vaultTokenCredentialsId` in your `config.yml`.
 
 ## Configuring the Secret Lookup
 
