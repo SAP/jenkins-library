@@ -25,6 +25,7 @@ class SystemEnv implements Serializable {
         return env.get(key)
     }
 
+    @NonCPS
     Map getEnv() {
         return env
     }
