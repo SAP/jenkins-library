@@ -179,6 +179,26 @@ class ContainerPushToRegistryTest extends BasePiperTest {
         )
 
         assertThat(dockerMockArgs.paramRegistryAnonymous, is('http://testSourceRegistry'))
+        assertThat(dockerMockArgs.paramCredentials, null)
+        assertThat(dockerMockArgs.name, is('testSourceName:testSourceTag'))
+        assertThat(shellCallRule.shell, hasItem('docker tag testSourceRegistry/testSourceName:testSourceTag testImage:tag'))
+        assertThat(dockerMockPull, is(true))
+    }
+
+    @Test
+    void testWithAuthenticatedSourceAndTarget() {
+        stepRule.step.containerPushToRegistry(
+            script: nullScript,
+            dockerCredentialsId: 'testCredentialsId',
+            dockerImage: 'testImage:tag',
+            dockerRegistryUrl: 'https://testRegistry',
+            sourceCredentialsId: 'testCredentialsId',
+            sourceImage: 'testSourceName:testSourceTag',
+            sourceRegistryUrl: 'http://testSourceRegistry'
+        )
+
+        assertThat(dockerMockArgs.paramRegistryAnonymous, is('http://testSourceRegistry'))
+        assertThat(dockerMockArgs.paramCredentials, is('testCredentialsId'))
         assertThat(dockerMockArgs.name, is('testSourceName:testSourceTag'))
         assertThat(shellCallRule.shell, hasItem('docker tag testSourceRegistry/testSourceName:testSourceTag testImage:tag'))
         assertThat(dockerMockPull, is(true))
