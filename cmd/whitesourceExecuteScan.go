@@ -412,7 +412,7 @@ func wsScanOptions(config *ScanOptions) *ws.ScanOptions {
 		JreDownloadURL:             config.JreDownloadURL,
 		AgentURL:                   config.AgentURL,
 		ServiceURL:                 config.ServiceURL,
-		WorkDir:                    config.WorkDir,
+		ScanPath:                   config.ScanPath,
 		Verbose:                    GeneralConfig.Verbose,
 	}
 }
