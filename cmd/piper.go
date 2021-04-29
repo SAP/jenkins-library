@@ -147,6 +147,7 @@ func Execute() {
 	rootCmd.AddCommand(IntegrationArtifactUploadCommand())
 	rootCmd.AddCommand(TerraformExecuteCommand())
 	rootCmd.AddCommand(ContainerExecuteStructureTestsCommand())
+	rootCmd.AddCommand(BatsExecuteTestsCommand())
 	rootCmd.AddCommand(PipelineCreateScanSummaryCommand())
 
 	addRootFlags(rootCmd)

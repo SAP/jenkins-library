@@ -191,6 +191,13 @@ import hudson.AbortException
      * to the step call takes precedence.
      */
     'resources',
+    /**
+     * The path to which a volume should be mounted to. This volume will be available at the same
+     * mount path in each container of the provided containerMap. The volume is of type emptyDir
+     * and has the name 'volume'. With the additionalPodProperties parameter one can for example
+     * use this volume in an initContainer.
+     */
+    'containerMountPath',
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.minus([
     'stashIncludes',
@@ -320,7 +327,6 @@ void executeOnPod(Map config, utils, Closure body, Script script) {
 }
 
 private String generatePodSpec(Map config) {
-    def containers = getContainerList(config)
     def podSpec = [
         apiVersion: "v1",
         kind      : "Pod",
@@ -332,6 +338,13 @@ private String generatePodSpec(Map config) {
     podSpec.spec += getAdditionalPodProperties(config)
     podSpec.spec.containers = getContainerList(config)
     podSpec.spec.securityContext = getSecurityContext(config)
+
+    if (config.containerMountPath) {
+        podSpec.spec.volumes = [[
+                                    name    : "volume",
+                                    emptyDir: [:]
+                                ]]
+    }
 
     return new JsonUtils().groovyObjectToPrettyJsonString(podSpec)
 }
@@ -433,6 +446,9 @@ private List getContainerList(config) {
             imagePullPolicy: pullImage ? "Always" : "IfNotPresent",
             env            : getContainerEnvs(config, imageName, config.dockerEnvVars, config.dockerWorkspace)
         ]
+        if (config.containerMountPath) {
+            containerSpec.volumeMounts = [[name: "volume", mountPath: config.containerMountPath]]
+        }
 
         def configuredCommand = config.containerCommands?.get(imageName)
         def shell = config.containerShell ?: '/bin/sh'
