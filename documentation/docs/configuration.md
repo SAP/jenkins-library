@@ -67,7 +67,7 @@ steps:
 Splunk gives the ability to analyze any kind of logging information and to visualize the retrieved information in dashboards.
 To do so, we support sending telemetry information as well as logging information in case of a failed step to a Splunk HEC endpoint.
 
-The following data will be send to the endpoint if activated:
+The following data will be sent to the endpoint if activated:
 
 * Hashed pipeline URL
 * Hashed Build URL
@@ -102,14 +102,16 @@ hooks:
     index: 'SPLUNK INDEX'
     sendLogs: true
 ```
-Please note that the keyword ``Splunk`` inside the token needs to be there, as Splunk requires it for its authentication.
-``sendLogs`` is a boolean, if set to true, the Splunk hook will send the collected logs in case of a failure of the step.
+
+Please note that the keyword `Splunk` inside the token needs to be there, as Splunk requires it for its authentication.
+`sendLogs` is a boolean, if set to true, the Splunk hook will send the collected logs in case of a failure of the step.
 If no failure occurred, no logs will be sent.
 
-### How does the send data look alike?
-In case of a failure, we send the collected messages in the field ``messages`` and the telemetry information in ``telemetry``.
-By default, piper sends the log messages in batches. The default length for the messages is ```1000```. As an example:
-If you encounter an error in a step that created ```5k``` log messages, piper will send five messages containing the messages and the telemetry information.
+### How does the sent data look alike?
+
+In case of a failure, we send the collected messages in the field `messages` and the telemetry information in `telemetry`.
+By default, piper sends the log messages in batches. The default length for the messages is `1000`. As an example:
+If you encounter an error in a step that created `5k` log messages, piper will send five messages containing the messages and the telemetry information.
 
 ```json
 {"messages":[
@@ -128,7 +130,6 @@ If you encounter an error in a step that created ```5k``` log messages, piper wi
     "Branch":"master"}
 }
 ```
-
 
 ## Access to the configuration from custom scripts
 

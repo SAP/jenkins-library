@@ -86,10 +86,6 @@ const baseURL = "https://webanalytics.cfapps.eu10.hana.ondemand.com"
 // SWA endpoint
 const endpoint = "/tracker/log"
 
-//type TelemetryHook interface {
-//	Send(data Data) error
-//}
-
 func GetData(customData *CustomData) Data {
 	return Data{
 		BaseData:     baseData,
