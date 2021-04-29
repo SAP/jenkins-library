@@ -121,7 +121,7 @@ spec:
         mandatory: false
       - name: atcResultsFileName
         type: string
-        description: Specifies output file name for the results from the ATC run
+        description: Specifies output file name for the results from the ATC run. This file name will also be used for generating the HTML file
         scope:
           - PARAMETERS
           - STAGES
