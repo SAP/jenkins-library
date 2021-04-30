@@ -401,7 +401,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             sidecarName: 'mysidecar') {
                 bodyExecuted = true
             }
-            
+
         assertEquals(requests: [memory: '10Gi',cpu: '5.00'],limits: [memory: '20Gi',cpu: '10'], resources.mysidecar)
         assertEquals(requests: [memory: '3Gi',cpu: '0.33'],limits: [memory: '6Gi',cpu: '3'], resources.jnlp)
         assertEquals(requests: [memory: '2Gi',cpu: '0.75'],limits: [memory: '4Gi',cpu: '2'], resources.mavenexecute)
@@ -797,6 +797,29 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             hasEntry('excludes', 'container/exclude.test'))))
     }
 
+    @Test
+    void testDockerExecuteWithVolumeProperties() {
+        stepRule.step.dockerExecuteOnKubernetes(
+            script: nullScript,
+            juStabUtils: utils,
+            containerName: 'mycontainer',
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+            containerMountPath: '/opt',
+        ) { bodyExecuted = true }
+
+        def containerSpec = podSpec.spec.containers.find{it.image == "maven:3.5-jdk-8-alpine"}
+        assertTrue(bodyExecuted)
+        assertEquals(
+            [[
+                 "name"    : "volume",
+                 "emptyDir": [:]
+             ]], podSpec.spec.volumes)
+        assertEquals(
+            [[
+                "name"     : "volume",
+                "mountPath": "/opt"
+            ]], containerSpec.volumeMounts)
+    }
 
     private container(options, body) {
         containerName = options.name
