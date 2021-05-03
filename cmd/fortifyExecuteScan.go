@@ -985,9 +985,9 @@ func createCustomReport(influx *fortifyExecuteScanInflux, issueGroups []*models.
 
 	for _, group := range issueGroups {
 		row := reporting.ScanRow{}
-		row.AddColumn(group.CleanName, 0)
-		row.AddColumn(group.TotalCount, 0)
-		row.AddColumn(group.AuditedCount, 0)
+		row.AddColumn(&group.Name, 0)
+		row.AddColumn(&group.TotalCount, 0)
+		row.AddColumn(&group.AuditedCount, 0)
 
 		detailTable.Rows = append(detailTable.Rows, row)
 	}
