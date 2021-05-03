@@ -50,7 +50,7 @@ func Initialize(correlationID, dsn, token, index string, sendLogs bool) error {
 	SplunkClient = &Splunk{
 		splunkClient:          client,
 		splunkDsn:             dsn,
-		splunkToken:           token,
+		splunkToken:           "Splunk " + token,
 		splunkIndex:           index,
 		correlationID:         correlationID,
 		postMessagesBatchSize: 1000,

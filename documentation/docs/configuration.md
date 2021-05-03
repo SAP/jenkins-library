@@ -5,8 +5,8 @@ Configure your project through a yml-file, which is located at `.pipeline/config
 Your configuration inherits from the default configuration located at [https://github.com/SAP/jenkins-library/blob/master/resources/default_pipeline_environment.yml](https://github.com/SAP/jenkins-library/blob/master/resources/default_pipeline_environment.yml).
 
 !!! caution "Adding custom parameters"
-Please note that adding custom parameters to the configuration is at your own risk.
-We may introduce new parameters at any time which may clash with your custom parameters.
+    Please note that adding custom parameters to the configuration is at your own risk.
+    We may introduce new parameters at any time which may clash with your custom parameters.
 
 Configuration of the project "Piper" steps, as well as project "Piper" templates, can be done in a hierarchical manner.
 
@@ -22,7 +22,7 @@ Configuration of the project "Piper" steps, as well as project "Piper" templates
 ## Collecting telemetry data
 
 To improve this Jenkins library, we are collecting telemetry data.
-Data is send using [`com.sap.piper.pushToSWA`](https://github.com/SAP/jenkins-library/blob/master/src/com/sap/piper/Utils.groovy)
+Data is sent using [`com.sap.piper.pushToSWA`](https://github.com/SAP/jenkins-library/blob/master/src/com/sap/piper/Utils.groovy)
 
 Following data (non-personal) is collected for example:
 
@@ -33,7 +33,7 @@ Following data (non-personal) is collected for example:
 **We store the telemetry data for no longer than 6 months on premises of SAP SE.**
 
 !!! note "Disable collection of telemetry data"
-If you do not want to send telemetry data you can easily deactivate this.
+    If you do not want to send telemetry data you can easily deactivate this.
 
     This is done with either of the following two ways:
 
@@ -65,7 +65,7 @@ steps:
 ## Collecting telemetry and logging data for Splunk
 
 Splunk gives the ability to analyze any kind of logging information and to visualize the retrieved information in dashboards.
-To do so, we support sending telemetry information as well as logging information in case of a failed step to a Splunk HEC endpoint.
+To do so, we support sending telemetry information as well as logging information in case of a failed step to a Splunk Http Event Collector (HEC) endpoint.
 
 The following data will be sent to the endpoint if activated:
 
@@ -98,22 +98,18 @@ steps:
 hooks:
   splunk:
     dsn: 'YOUR SPLUNK HEC ENDPOINT'
-    token: 'Splunk YOURTOKEN'
+    token: 'YOURTOKEN'
     index: 'SPLUNK INDEX'
     sendLogs: true
 ```
-
-Please note that the keyword `Splunk` inside the token needs to be there, as Splunk requires it for its authentication.
+Please do not add the `Splunk` keyword with the token, as it will be added automatically during initialization.
 `sendLogs` is a boolean, if set to true, the Splunk hook will send the collected logs in case of a failure of the step.
 If no failure occurred, no logs will be sent.
 
 ### How does the sent data look alike
 
-In case of a failure, we send the collected messages in the field `messages` and the telemetry information
-in `telemetry`. By default, piper sends the log messages in batches. The default length for the messages is `1000`. As
-an example:
-If you encounter an error in a step that created `5k` log messages, piper will send five messages containing the
-messages and the telemetry information.
+In case of a failure, we send the collected messages in the field `messages` and the telemetry information in `telemetry`. By default, piper sends the log messages in batches. The default length for the messages is `1000`. As an example:
+If you encounter an error in a step that created `5k` log messages, piper will send five messages containing the messages and the telemetry information.
 
 ```json
 {
