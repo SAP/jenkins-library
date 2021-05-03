@@ -15,7 +15,6 @@ import (
 	"time"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	ws "github.com/SAP/jenkins-library/pkg/whitesource"
 
 	"github.com/bmatcuk/doublestar"
 
@@ -1003,7 +1002,7 @@ func writeCustomReports(scanReport reporting.ScanReport, projectName, projectVer
 
 	// ignore templating errors since template is in our hands and issues will be detected with the automated tests
 	htmlReport, _ := scanReport.ToHTML()
-	htmlReportPath := filepath.Join(ws.ReportsDirectory, "piper_fortify_report.html")
+	htmlReportPath := filepath.Join(fortify.ReportsDirectory, "piper_fortify_report.html")
 	if err := utils.FileWrite(htmlReportPath, htmlReport, 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return reportPaths, errors.Wrapf(err, "failed to write html report")

@@ -432,8 +432,9 @@ func TestAnalyseSuspiciousExploitable(t *testing.T) {
 			},
 		},
 	}
-	issues := analyseSuspiciousExploitable(config, &ff, &projectVersion, &models.FilterSet{}, &selectorSet, &influx, auditStatus)
+	issues, groups := analyseSuspiciousExploitable(config, &ff, &projectVersion, &models.FilterSet{}, &selectorSet, &influx, auditStatus)
 	assert.Equal(t, 9, issues)
+	assert.Equal(t, 2, len(groups))
 
 	assert.Equal(t, 4, influx.fortify_data.fields.suspicious)
 	assert.Equal(t, 5, influx.fortify_data.fields.exploitable)
@@ -481,9 +482,10 @@ func TestAnalyseUnauditedIssues(t *testing.T) {
 			},
 		},
 	}
-	issues, err := analyseUnauditedIssues(config, &ff, &projectVersion, &models.FilterSet{}, &selectorSet, &influx, auditStatus)
+	issues, groups, err := analyseUnauditedIssues(config, &ff, &projectVersion, &models.FilterSet{}, &selectorSet, &influx, auditStatus)
 	assert.NoError(t, err)
 	assert.Equal(t, 13, issues)
+	assert.Equal(t, 3, len(groups))
 
 	assert.Equal(t, 15, influx.fortify_data.fields.auditAllTotal)
 	assert.Equal(t, 12, influx.fortify_data.fields.auditAllAudited)
