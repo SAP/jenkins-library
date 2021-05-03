@@ -37,7 +37,7 @@ var SplunkClient *Splunk
 
 func Initialize(correlationID, dsn, token, index string, sendLogs bool) error {
 	log.Entry().Debugf("Initializing Splunk with DSN %v", dsn)
-
+	log.RegisterSecret(token)
 	client := piperhttp.Client{}
 
 	client.SetOptions(piperhttp.ClientOptions{

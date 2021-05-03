@@ -286,7 +286,7 @@ func TestSend(t *testing.T) {
 			client := piperhttp.Client{}
 			client.SetOptions(piperhttp.ClientOptions{
 				MaxRequestDuration:        5 * time.Second,
-				Token:                     "SPLUNK TOKEN",
+				Token:                     "TOKEN",
 				TransportSkipVerification: true,
 				UseDefaultTransport:       true,
 			})
@@ -294,7 +294,6 @@ func TestSend(t *testing.T) {
 			SplunkClient = &Splunk{
 				splunkClient:          client,
 				splunkDsn:             fakeUrl,
-				splunkToken:           "SPLUNK TOKEN",
 				splunkIndex:           "index",
 				correlationID:         "DEBUG",
 				postMessagesBatchSize: tt.args.maxBatchSize,
@@ -351,7 +350,7 @@ func Test_prepareTelemetry(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			Initialize("Correlation-Test", "splunkUrl", "SPLUNK TOKEN", "index", false)
+			Initialize("Correlation-Test", "splunkUrl", "TOKEN", "index", false)
 			if got := prepareTelemetry(tt.args.customTelemetryData); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("prepareTelemetry() = %v, want %v", got, tt.want)
 			}
@@ -441,14 +440,13 @@ func Test_tryPostMessages(t *testing.T) {
 			client := piperhttp.Client{}
 			client.SetOptions(piperhttp.ClientOptions{
 				MaxRequestDuration:        5 * time.Second,
-				Token:                     "SPLUNK TOKEN",
+				Token:                     "TOKEN",
 				TransportSkipVerification: true,
 				UseDefaultTransport:       true,
 			})
 			SplunkClient = &Splunk{
 				splunkClient:          client,
 				splunkDsn:             fakeUrl,
-				splunkToken:           "SPLUNK TOKEN",
 				splunkIndex:           "index",
 				correlationID:         "DEBUG",
 				postMessagesBatchSize: 1000,
