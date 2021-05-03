@@ -24,7 +24,6 @@ type Splunk struct {
 	splunkClient  piperhttp.Client
 	correlationID string
 	splunkDsn     string
-	splunkToken   string
 	splunkIndex   string
 
 	// boolean which forces to send all logs on error or none at all
@@ -43,14 +42,13 @@ func Initialize(correlationID, dsn, token, index string, sendLogs bool) error {
 
 	client.SetOptions(piperhttp.ClientOptions{
 		MaxRequestDuration:        5 * time.Second,
-		Token:                     token,
+		Token:                     "Splunk " + token,
 		TransportSkipVerification: true,
 	})
 
 	SplunkClient = &Splunk{
 		splunkClient:          client,
 		splunkDsn:             dsn,
-		splunkToken:           "Splunk " + token,
 		splunkIndex:           index,
 		correlationID:         correlationID,
 		postMessagesBatchSize: 1000,
