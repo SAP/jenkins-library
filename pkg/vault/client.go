@@ -172,10 +172,7 @@ func (v Client) WriteKvSecret(path string, newSecret map[string]string) error {
 	}
 
 	_, err = v.lClient.Write(path, secret)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 // GenerateNewAppRoleSecret creates a new secret-id
