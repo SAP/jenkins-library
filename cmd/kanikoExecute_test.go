@@ -212,6 +212,36 @@ func TestRunKanikoExecute(t *testing.T) {
 		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", cwd, "--skip-tls-verify-pull", "--no-push"}, runner.Calls[1].Params)
 	})
 
+	t.Run("success case - generated docker config.json", func(t *testing.T) {
+		config := &kanikoExecuteOptions{
+			ContainerImage:            "myImage:tag",
+			DockerfilePath:            "Dockerfile",
+			ContainerRegistryUser:     "Me",
+			ContainerRegistryPassword: "Don't read this",
+			ContainerRegistryURL:      "https://index.myregistry.com/v1",
+		}
+
+		runner := &mock.ExecMockRunner{}
+
+		certClient := &kanikoMockClient{
+			responseBody: "testCert",
+		}
+		fileUtils := &kanikoFileMock{
+			fileWriteContent: map[string]string{},
+		}
+
+		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, certClient, fileUtils)
+
+		assert.NoError(t, err)
+
+		assert.Equal(t, `{"auths":{"https://index.myregistry.com/v1":{"auth":"TWU6RG9uJ3QgcmVhZCB0aGlz"}}}`, fileUtils.fileWriteContent["/kaniko/.docker/config.json"])
+
+		assert.Equal(t, "/kaniko/executor", runner.Calls[1].Exec)
+		cwd, _ := os.Getwd()
+		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", cwd, "--destination", "myImage:tag"}, runner.Calls[1].Params)
+
+	})
+
 	t.Run("success case - backward compatibility", func(t *testing.T) {
 		config := &kanikoExecuteOptions{
 			ContainerBuildOptions:       "--skip-tls-verify-pull",

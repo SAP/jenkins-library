@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -98,6 +99,10 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 		if err != nil {
 			return errors.Wrapf(err, "failed to read file '%v'", config.DockerConfigJSON)
 		}
+	} else if len(config.ContainerRegistryUser) > 0 &&
+		len(config.ContainerRegistryPassword) > 0 &&
+		len(config.ContainerRegistryURL) > 0 {
+		dockerConfig = generateDockerConfigJSON(config.ContainerRegistryUser, config.ContainerRegistryPassword, config.ContainerRegistryURL)
 	}
 
 	if err := fileUtils.FileWrite("/kaniko/.docker/config.json", dockerConfig, 0644); err != nil {
@@ -143,4 +148,11 @@ func certificateUpdate(certLinks []string, httpClient piperhttp.Sender, fileUtil
 		return errors.Wrapf(err, "failed to update file '%v'", caCertsFile)
 	}
 	return nil
+}
+
+func generateDockerConfigJSON(username, password, registryUrl string) []byte {
+	usernamePassword := fmt.Sprintf("%s:%s", username, password)
+	encodedUsernamePassword := base64.StdEncoding.EncodeToString([]byte(usernamePassword))
+	configJson := fmt.Sprintf(`{"auths":{"%s":{"auth":"%s"}}}`, registryUrl, encodedUsernamePassword)
+	return []byte(configJson)
 }
