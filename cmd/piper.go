@@ -325,6 +325,9 @@ func retrieveHookConfig(source map[string]interface{}, target *HookConfiguration
 	if source != nil {
 		log.Entry().Info("Retrieving hook configuration")
 		b, err := json.Marshal(source)
+		if err != nil {
+			log.Entry().Warningf("Failed to marshal source hook configuration: %v", err)
+		}
 		err = json.Unmarshal(b, target)
 		if err != nil {
 			log.Entry().Warningf("Failed to retrieve hook configuration: %v", err)
