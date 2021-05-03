@@ -25,7 +25,7 @@ func TestInitialize(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{"Testing initalize splunk",
+		{"Testing initialize splunk",
 			args{
 				correlationID: "correlationID",
 				dsn:           "https://splunkURL.sap/services/collector",
@@ -264,7 +264,7 @@ func TestSend(t *testing.T) {
 			defer httpmock.DeactivateAndReset()
 
 			fakeUrl := "https://splunk.example.com/services/collector"
-			// Our database of recieved payloads
+			// Our database of received payloads
 			var payloads []Details
 			httpmock.RegisterResponder("POST", fakeUrl,
 				func(req *http.Request) (*http.Response, error) {
@@ -272,6 +272,7 @@ func TestSend(t *testing.T) {
 					if err := json.NewDecoder(req.Body).Decode(&splunkMessage); err != nil {
 						return httpmock.NewStringResponse(400, ""), nil
 					}
+
 					defer req.Body.Close()
 					payloads = append(payloads, splunkMessage)
 
@@ -350,7 +351,10 @@ func Test_prepareTelemetry(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			Initialize("Correlation-Test", "splunkUrl", "TOKEN", "index", false)
+			err := Initialize("Correlation-Test", "splunkUrl", "TOKEN", "index", false)
+			if err != nil{
+				t.Errorf("Error Initalizing Splunk. %v", err)
+			}
 			if got := prepareTelemetry(tt.args.customTelemetryData); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("prepareTelemetry() = %v, want %v", got, tt.want)
 			}

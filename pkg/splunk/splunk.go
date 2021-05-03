@@ -3,7 +3,6 @@ package splunk
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -15,7 +14,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// SplunkHook provides a logrus hook which enables error logging to splunk platform.
+// Splunk SplunkHook provides a logrus hook which enables error logging to splunk platform.
 // This is helpful in order to provide better monitoring and alerting on errors
 // as well as the given error details can help to find the root cause of bugs.
 type Splunk struct {
@@ -64,11 +63,9 @@ func Send(customTelemetryData *telemetry.CustomData, logCollector *log.Collector
 	// TODO: Logic for errorCategory (undefined, service, infrastructure)
 	if telemetryData.ErrorCode == "0" {
 		// Successful run, we only send the telemetry data, no logging information
-		//fmt.Println("Successful step, sending only telemetry data!")
 		err := tryPostMessages(telemetryData, []log.Message{})
 		if err != nil {
 			log.Entry().WithError(err).WithField("module", "logger/splunk").Warn("Error while sending logs")
-			//logrus.Error(fmt.Errorf("Failed to send telemetry data '%s'", string(json.Marshal(telemetryData))))
 		}
 		return nil
 	} else if telemetryData.ErrorCode == "1" && !SplunkClient.sendLogs {
@@ -80,7 +77,6 @@ func Send(customTelemetryData *telemetry.CustomData, logCollector *log.Collector
 		return nil
 	} else {
 		// ErrorCode indicates an error in the step, so we want to send all the logs with telemetry
-		//fmt.Println("Logged Messages:", messagesLen, ", Max batch size:", SplunkClient.postMessagesBatchSize, ", Sending in ", int(math.Ceil(float64(messagesLen)/float64(SplunkClient.postMessagesBatchSize))), "batches.")
 		for i := 0; i < messagesLen; i += SplunkClient.postMessagesBatchSize {
 			upperBound := i + SplunkClient.postMessagesBatchSize
 			if upperBound > messagesLen {
@@ -95,7 +91,7 @@ func Send(customTelemetryData *telemetry.CustomData, logCollector *log.Collector
 	return nil
 }
 
-// Data definition for monitoring
+// MonitoringData definition for monitoring
 type MonitoringData struct {
 	PipelineUrlHash string `json:"PipelineUrlHash,omitempty"`
 	BuildUrlHash    string `json:"BuildUrlHash,omitempty"`
@@ -122,14 +118,13 @@ func prepareTelemetry(customTelemetryData telemetry.CustomData) MonitoringData {
 	}
 	commitHash := string(content)
 
-	content_branch, err := ioutil.ReadFile(".pipeline/commonPipelineEnvironment/git/branch")
+	contentBranch, err := ioutil.ReadFile(".pipeline/commonPipelineEnvironment/git/branch")
 	if err != nil {
 		logrus.Warning("Could not read branch file.", err)
-		content_branch = []byte("N/A")
+		contentBranch = []byte("N/A")
 	}
-	branch := string(content_branch)
+	branch := string(contentBranch)
 
-	// TODO: Return different telemetry information also for DORA Metrics.
 	return MonitoringData{
 		PipelineUrlHash: tData.PipelineURLHash,
 		BuildUrlHash:    tData.BuildURLHash,
@@ -181,7 +176,10 @@ func tryPostMessages(telemetryData MonitoringData, messages []log.Message) error
 		return err
 	}
 	defer func() {
-		resp.Body.Close()
+		err := resp.Body.Close()
+		if err != nil {
+			log.Entry().Errorf("Closing response body failed: %v", err)
+		}
 	}()
 	if resp.StatusCode != http.StatusOK {
 		rdr := io.LimitReader(resp.Body, 1000)
@@ -189,7 +187,8 @@ func tryPostMessages(telemetryData MonitoringData, messages []log.Message) error
 		if err != nil {
 			return err
 		}
-		return fmt.Errorf("%s: Splunk logging failed - %s", resp.Status, string(body))
+		log.Entry().Errorf("%v: Splunk logging failed - %v", resp.Status, string(body))
+		return nil
 	}
 	return nil
 }
