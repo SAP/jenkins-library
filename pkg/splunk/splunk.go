@@ -90,21 +90,6 @@ func Send(customTelemetryData *telemetry.CustomData, logCollector *log.Collector
 	return nil
 }
 
-// MonitoringData definition for monitoring
-type MonitoringData struct {
-	PipelineUrlHash string `json:"PipelineUrlHash,omitempty"`
-	BuildUrlHash    string `json:"BuildUrlHash,omitempty"`
-	StageName       string `json:"StageName"`
-	StepName        string `json:"StepName,omitempty"`
-	ExitCode        string `json:"ExitCode,omitempty"`
-	Duration        string `json:"Duration,omitempty"`
-	ErrorCode       string `json:"ErrorCode,omitempty"`
-	ErrorCategory   string `json:"ErrorCategory,omitempty"`
-	CorrelationID   string `json:"CorrelationID"`
-	CommitHash      string `json:"CommitHash,omitempty"`
-	Branch          string `json:"Branch,omitempty"`
-}
-
 func readPipelineEnvironment() (string, string) {
 
 	// TODO: Dependent on a groovy step, which creates the folder.
@@ -124,6 +109,21 @@ func readPipelineEnvironment() (string, string) {
 	branch := string(contentBranch)
 
 	return commitHash, branch
+}
+
+// MonitoringData definition for monitoring
+type MonitoringData struct {
+	PipelineUrlHash string `json:"PipelineUrlHash,omitempty"`
+	BuildUrlHash    string `json:"BuildUrlHash,omitempty"`
+	StageName       string `json:"StageName,omitempty"`
+	StepName        string `json:"StepName,omitempty"`
+	ExitCode        string `json:"ExitCode,omitempty"`
+	Duration        string `json:"Duration,omitempty"`
+	ErrorCode       string `json:"ErrorCode,omitempty"`
+	ErrorCategory   string `json:"ErrorCategory,omitempty"`
+	CorrelationID   string `json:"CorrelationID,omitempty"`
+	CommitHash      string `json:"CommitHash,omitempty"`
+	Branch          string `json:"Branch,omitempty"`
 }
 
 func prepareTelemetry(customTelemetryData telemetry.CustomData) MonitoringData {
