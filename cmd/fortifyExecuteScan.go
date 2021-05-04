@@ -985,9 +985,9 @@ func createCustomReport(influx *fortifyExecuteScanInflux, issueGroups []*models.
 
 	for _, group := range issueGroups {
 		row := reporting.ScanRow{}
-		row.AddColumn(&group.Name, 0)
-		row.AddColumn(&group.TotalCount, 0)
-		row.AddColumn(&group.AuditedCount, 0)
+		row.AddColumn(fmt.Sprint(*group.CleanName), 0)
+		row.AddColumn(fmt.Sprint(*group.TotalCount), 0)
+		row.AddColumn(fmt.Sprint(*group.AuditedCount), 0)
 
 		detailTable.Rows = append(detailTable.Rows, row)
 	}
@@ -1003,6 +1003,10 @@ func writeCustomReports(scanReport reporting.ScanReport, projectName, projectVer
 	// ignore templating errors since template is in our hands and issues will be detected with the automated tests
 	htmlReport, _ := scanReport.ToHTML()
 	htmlReportPath := filepath.Join(fortify.ReportsDirectory, "piper_fortify_report.html")
+	// Ensure reporting directory exists
+	if err := utils.MkdirAll(fortify.ReportsDirectory, 0777); err != nil {
+		return reportPaths, errors.Wrapf(err, "failed to create report directory")
+	}
 	if err := utils.FileWrite(htmlReportPath, htmlReport, 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return reportPaths, errors.Wrapf(err, "failed to write html report")
