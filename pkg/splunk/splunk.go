@@ -90,16 +90,16 @@ func Send(customTelemetryData *telemetry.CustomData, logCollector *log.Collector
 	return nil
 }
 
-func readPipelineEnvironment() (string, string) {
+func readPipelineEnvironment() (string, string, string, string) {
 
 	// TODO: Dependent on a groovy step, which creates the folder.
 	// TODO: go git step here to read infos from git folder later add this to telemetry package?
-	content, err := ioutil.ReadFile(".pipeline/commonPipelineEnvironment/git/commitId")
+	contentCommitId, err := ioutil.ReadFile(".pipeline/commonPipelineEnvironment/git/commitId")
 	if err != nil {
 		log.Entry().Warnf("Could not read commitId file. %v", err)
-		content = []byte("N/A")
+		contentCommitId = []byte("N/A")
 	}
-	commitHash := string(content)
+	commitHash := string(contentCommitId)
 
 	contentBranch, err := ioutil.ReadFile(".pipeline/commonPipelineEnvironment/git/branch")
 	if err != nil {
@@ -108,7 +108,21 @@ func readPipelineEnvironment() (string, string) {
 	}
 	branch := string(contentBranch)
 
-	return commitHash, branch
+	contentRepository, err := ioutil.ReadFile(".pipeline/commonPipelineEnvironment/github/repository")
+	if err != nil {
+		log.Entry().Warnf("Could not read branch file. %v", err)
+		contentRepository = []byte("N/A")
+	}
+	gitRepository := string(contentRepository)
+
+	contentGitHubOwner, err := ioutil.ReadFile(".pipeline/commonPipelineEnvironment/github/owner")
+	if err != nil {
+		log.Entry().Warnf("Could not read branch file. %v", err)
+		contentGitHubOwner = []byte("N/A")
+	}
+	gitOwner := string(contentGitHubOwner)
+
+	return commitHash, branch, gitOwner, gitRepository
 }
 
 // MonitoringData definition for monitoring
@@ -124,12 +138,14 @@ type MonitoringData struct {
 	CorrelationID   string `json:"CorrelationID,omitempty"`
 	CommitHash      string `json:"CommitHash,omitempty"`
 	Branch          string `json:"Branch,omitempty"`
+	GitOwner        string `json:"GitOwner,omitempty"`
+	GitRepository   string `json:"GitRepository,omitempty"`
 }
 
 func prepareTelemetry(customTelemetryData telemetry.CustomData) MonitoringData {
 	tData := telemetry.GetData(&customTelemetryData)
 
-	commitHash, branch := readPipelineEnvironment()
+	commitHash, branch, gitOwner, gitRepository := readPipelineEnvironment()
 
 	return MonitoringData{
 		PipelineUrlHash: tData.PipelineURLHash,
@@ -143,6 +159,8 @@ func prepareTelemetry(customTelemetryData telemetry.CustomData) MonitoringData {
 		CorrelationID:   SplunkClient.correlationID,
 		CommitHash:      commitHash,
 		Branch:          branch,
+		GitOwner:        gitOwner,
+		GitRepository:   gitRepository,
 	}
 }
 

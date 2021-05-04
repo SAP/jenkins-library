@@ -80,6 +80,8 @@ The following data will be sent to the endpoint if activated:
 * CorrelationID (not hashed)
 * CommitHash
 * Branch
+* GitOwner
+* GitRepository
 
 The information will be sent to the specified Splunk endpoint in the config file. By default, the Splunk mechanism is
 deactivated and gets only activated if you add the following to your config:
@@ -135,7 +137,9 @@ If you encounter an error in a step that created `5k` log messages, piper will s
     "ErrorCategory": "undefined",
     "CorrelationID": "https://example-jaasinstance.corp/job/myApp/job/microservice1/job/master/10/",
     "CommitHash": "961ed5cd98fb1e37415a91b46a5b9bdcef81b002",
-    "Branch": "master"
+    "Branch": "master",
+    "GitOwner": "piper",
+    "GitRepository": "piper-splunk"
   }
 }
 ```

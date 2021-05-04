@@ -347,6 +347,8 @@ func Test_prepareTelemetry(t *testing.T) {
 				CorrelationID:   "Correlation-Test",
 				CommitHash:      "N/A",
 				Branch:          "N/A",
+				GitOwner:        "N/A",
+				GitRepository:   "N/A",
 			},
 		},
 	}
@@ -389,6 +391,8 @@ func Test_tryPostMessages(t *testing.T) {
 					CorrelationID:   "123",
 					CommitHash:      "a6bc",
 					Branch:          "prod",
+					GitOwner:        "N/A",
+					GitRepository:   "N/A",
 				},
 				messages: []log.Message{},
 			},
@@ -409,6 +413,8 @@ func Test_tryPostMessages(t *testing.T) {
 					CorrelationID:   "123",
 					CommitHash:      "a6bc",
 					Branch:          "prod",
+					GitOwner:        "N/A",
+					GitRepository:   "N/A",
 				},
 				messages: []log.Message{},
 			},
@@ -466,54 +472,91 @@ func Test_tryPostMessages(t *testing.T) {
 
 func Test_readPipelineEnvironment(t *testing.T) {
 	tests := []struct {
-		name        string
-		commitHash  string
-		branch      string
-		createFiles bool
+		name          string
+		commitHash    string
+		branch        string
+		gitOwner      string
+		gitRepository string
+		createFiles   bool
 	}{
 		{
-			name:        "Test read pipelineEnvironment files not available",
-			commitHash:  "N/A",
-			branch:      "N/A",
-			createFiles: false,
+			name:          "Test read pipelineEnvironment files not available",
+			commitHash:    "N/A",
+			branch:        "N/A",
+			gitOwner:      "N/A",
+			gitRepository: "N/A",
+			createFiles:   false,
 		},
 		{
-			name:        "Test read pipelineEnvironment files available",
-			commitHash:  "abcdef123",
-			branch:      "master",
-			createFiles: true,
+			name:          "Test read pipelineEnvironment files available",
+			commitHash:    "abcdef123",
+			branch:        "master",
+			gitOwner:      "piper",
+			gitRepository: "piper-splunk",
+			createFiles:   true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
 			if tt.createFiles {
-				path := ".pipeline/commonPipelineEnvironment/git/"
+
+				// creating temporarily folders
+				path := ".pipeline/commonPipelineEnvironment/"
 				err := os.MkdirAll(path, os.ModePerm)
 				if err != nil {
 					t.Errorf("Could not create .pipeline/ folders: %v", err)
 				}
+
+				err = os.Mkdir(path+"git/", os.ModePerm)
+				if err != nil {
+					t.Errorf("Could not create git folder: %v", err)
+				}
+				err = os.Mkdir(path+"github/", os.ModePerm)
+				if err != nil {
+					t.Errorf("Could not create github folder: %v", err)
+				}
+
+				// creating temporarily files with dummy content
 				branch := []byte("master")
-				err = ioutil.WriteFile(path+"branch", branch, 0644)
+				err = ioutil.WriteFile(path+"git/branch", branch, 0644)
 				if err != nil {
 					t.Errorf("Could not create branch file: %v", err)
 				}
 				commitId := []byte("abcdef123")
-				err = ioutil.WriteFile(path+"commitId", commitId, 0644)
+				err = ioutil.WriteFile(path+"git/commitId", commitId, 0644)
 				if err != nil {
 					t.Errorf("Could not create commitId file: %v", err)
+				}
+				gitOwner := []byte("piper")
+				err = ioutil.WriteFile(path+"github/owner", gitOwner, 0644)
+				if err != nil {
+					t.Errorf("Could not create gitOwner file: %v", err)
+				}
+				gitRepository := []byte("piper-splunk")
+				err = ioutil.WriteFile(path+"github/repository", gitRepository, 0644)
+				if err != nil {
+					t.Errorf("Could not create gitOwner file: %v", err)
 				}
 
 			}
 
-			commitHash, branch := readPipelineEnvironment()
+			commitHash, branch, gitOwner, gitRepository := readPipelineEnvironment()
 			if commitHash != tt.commitHash {
 				t.Errorf("readPipelineEnvironment() got = %v, want %v", commitHash, tt.commitHash)
 			}
 			if branch != tt.branch {
-				t.Errorf("readPipelineEnvironment() got1 = %v, want %v", branch, tt.branch)
+				t.Errorf("readPipelineEnvironment() got = %v, want %v", branch, tt.branch)
 			}
+			if gitOwner != tt.gitOwner {
+				t.Errorf("readPipelineEnvironment() got = %v, want %v", gitOwner, tt.gitOwner)
+			}
+			if gitRepository != tt.gitRepository {
+				t.Errorf("readPipelineEnvironment() got = %v, want %v", gitRepository, tt.gitRepository)
+			}
+
 			if tt.createFiles {
+				// deletes temp files
 				err := os.RemoveAll(".pipeline")
 				if err != nil {
 					t.Errorf("Could not delete .pipeline folder: %v", err)
