@@ -54,7 +54,6 @@ spec:
           - STAGES
           - STEPS
         mandatory: true
-  #outputs:
   containers:
     - name: karma
       image: node:lts-stretch
@@ -63,6 +62,12 @@ spec:
           value: localhost,selenium,$no_proxy
         - name: NO_PROXY
           value: localhost,selenium,$NO_PROXY
+        - name: "PIPER_SELENIUM_HOSTNAME"
+          value: "karma"
+        - name: "PIPER_SELENIUM_WEBDRIVER_HOSTNAME"
+          value: "selenium"
+        - name: "PIPER_SELENIUM_WEBDRIVER_PORT"
+          value: "4444"
       workingDir: /home/node
       volumeMounts:
         - mountPath: /dev/shm

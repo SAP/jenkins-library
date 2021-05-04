@@ -64,7 +64,7 @@ func IntegrationArtifactGetServiceEndpointCommand() *cobra.Command {
 	var createIntegrationArtifactGetServiceEndpointCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Get an deployed CPI intgeration flow service endpoint",
-		Long:  `With this step you can obtain information about the service endpoints exposed by SAP Cloud Platform Integration on a tenant using OData API.Learn more about the SAP Cloud Integration remote API for getting service endpoint of deployed integration artifact [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/26797fbe259349b387a74a5a8f9785c1.html).`,
+		Long:  `With this step you can obtain information about the service endpoints exposed by SAP Cloud Platform Integration on a tenant using OData API.Learn more about the SAP Cloud Integration remote API for getting service endpoint of deployed integration artifact [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/d1679a80543f46509a7329243b595bdb.html).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
