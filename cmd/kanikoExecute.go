@@ -150,9 +150,9 @@ func certificateUpdate(certLinks []string, httpClient piperhttp.Sender, fileUtil
 	return nil
 }
 
-func generateDockerConfigJSON(username, password, registryUrl string) []byte {
+func generateDockerConfigJSON(username, password, registryURL string) []byte {
 	usernamePassword := fmt.Sprintf("%s:%s", username, password)
 	encodedUsernamePassword := base64.StdEncoding.EncodeToString([]byte(usernamePassword))
-	configJson := fmt.Sprintf(`{"auths":{"%s":{"auth":"%s"}}}`, registryUrl, encodedUsernamePassword)
-	return []byte(configJson)
+	configJSON := fmt.Sprintf(`{"auths":{"%s":{"auth":"%s"}}}`, registryURL, encodedUsernamePassword)
+	return []byte(configJSON)
 }
