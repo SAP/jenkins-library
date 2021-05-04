@@ -23,7 +23,8 @@ type ProductData struct {
 
 // Product holds the id of the protecode product
 type Product struct {
-	ProductID int `json:"product_id,omitempty"`
+	ProductID int    `json:"product_id,omitempty"`
+	FileName  string `json:"name,omitempty"`
 }
 
 //ResultData holds the information about the protecode result
@@ -166,14 +167,15 @@ func (pc *Protecode) mapResponse(r io.ReadCloser, response interface{}) {
 	}
 }
 
-func (pc *Protecode) sendAPIRequest(method string, url string, headers map[string][]string) (*io.ReadCloser, error) {
+func (pc *Protecode) sendAPIRequest(method string, url string, headers map[string][]string) (*io.ReadCloser, error, int) {
 
 	r, err := pc.client.SendRequest(method, url, nil, headers, nil)
 	if err != nil {
-		return nil, err
+		return nil, err, r.StatusCode
 	}
 
-	return &r.Body, nil
+	//return &r.Body, nil
+	return &r.Body, nil, r.StatusCode
 }
 
 // ParseResultForInflux parses the result from the scan into the internal format
@@ -281,7 +283,7 @@ func (pc *Protecode) LoadReport(reportFileName string, productID int) *io.ReadCl
 		"Outputfile":    {reportFileName},
 	}
 
-	readCloser, err := pc.sendAPIRequest(http.MethodGet, protecodeURL, headers)
+	readCloser, err, _ := pc.sendAPIRequest(http.MethodGet, protecodeURL, headers)
 	if err != nil {
 		pc.logger.WithError(err).Fatalf("It is not possible to load report %v", protecodeURL)
 	}
@@ -290,9 +292,20 @@ func (pc *Protecode) LoadReport(reportFileName string, productID int) *io.ReadCl
 }
 
 // UploadScanFile upload the scan file to the protecode server
-func (pc *Protecode) UploadScanFile(cleanupMode, group, filePath, fileName string) *ResultData {
+func (pc *Protecode) UploadScanFile(cleanupMode, group, filePath, fileName string, productID int, replaceBinary bool) *ResultData {
+	log.Entry().Debugf("[DEBUG] ===> UploadScanFile started.....")
+
 	deleteBinary := (cleanupMode == "binary" || cleanupMode == "complete")
-	headers := map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}}
+
+	var headers = make(map[string][]string)
+
+	if replaceBinary {
+		headers = map[string][]string{"Group": {group}, "Replace": {fmt.Sprintf("%v", productID)}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}}
+	} else {
+		headers = map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}}
+	}
+
+	log.Entry().Debugf("[DEBUG] ===> Headers for UploadScanFile upload: %v", headers)
 
 	uploadURL := fmt.Sprintf("%v/api/upload/%v", pc.serverURL, fileName)
 
@@ -303,27 +316,69 @@ func (pc *Protecode) UploadScanFile(cleanupMode, group, filePath, fileName strin
 		pc.logger.Info("Upload successful")
 	}
 
-	result := new(ResultData)
-	pc.mapResponse(r.Body, result)
+	log.Entry().Debugf("[DEBUG] ===> Upload request r: %v", r)
+	log.Entry().Debugf("[DEBUG] ===> Upload request r.StatusCode: %v", r.StatusCode)
 
-	return result
+	// For replaceBinary option response doesn't contain any result but just a message saying that product successfully replaced.
+	if replaceBinary && r.StatusCode == 201 {
+		result := new(ResultData)
+		result.Result.ProductID = productID
+		log.Entry().Debugf("[DEBUG] ===> Return 'replaceBinary && r.StatusCode == 201' from 'UploadScanFile' : %v", result)
+		return result
+
+	} else {
+		result := new(ResultData)
+		pc.mapResponse(r.Body, result)
+		log.Entry().Debugf("[DEBUG] ===> Return '!replaceBinary' from 'UploadScanFile' : %v", result)
+		return result
+	}
+
+	//return result
 }
 
 // DeclareFetchURL configures the fetch url for the protecode scan
-func (pc *Protecode) DeclareFetchURL(cleanupMode, group, fetchURL string) *ResultData {
+func (pc *Protecode) DeclareFetchURL(cleanupMode, group, fetchURL string, productID int, replaceBinary bool) *ResultData {
 	deleteBinary := (cleanupMode == "binary" || cleanupMode == "complete")
-	headers := map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}, "Url": {fetchURL}, "Content-Type": {"application/json"}}
+
+	var headers = make(map[string][]string)
+
+	if replaceBinary {
+		headers = map[string][]string{"Group": {group}, "Replace": {fmt.Sprintf("%v", productID)}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}, "Url": {fetchURL}, "Content-Type": {"application/json"}}
+	} else {
+		headers = map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}, "Url": {fetchURL}, "Content-Type": {"application/json"}}
+	}
+
+	log.Entry().Debugf("[DEBUG] ===> Headers for fetch upload: %v", headers)
+
+	//headers := map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}, "Url": {fetchURL}, "Content-Type": {"application/json"}}
 
 	protecodeURL := fmt.Sprintf("%v/api/fetch/", pc.serverURL)
-	r, err := pc.sendAPIRequest(http.MethodPost, protecodeURL, headers)
+	r, err, statusCode := pc.sendAPIRequest(http.MethodPost, protecodeURL, headers)
 	if err != nil {
 		pc.logger.WithError(err).Fatalf("Error during declare fetch url: %v", protecodeURL)
 	}
 
-	result := new(ResultData)
-	pc.mapResponse(*r, result)
+	log.Entry().Debugf("[DEBUG] ===> Fetch request r: %v", r)
+	log.Entry().Debugf("[DEBUG] ===> Fetch request r.StatusCode: %v", statusCode)
 
-	return result
+	// For replaceBinary option response doesn't contain any result but just a message saying that product successfully replaced.
+	if replaceBinary && statusCode == 201 {
+		result := new(ResultData)
+		result.Result.ProductID = productID
+		log.Entry().Debugf("[DEBUG] ===> Fetch Return 'replaceBinary && statusCode == 201' from 'DeclareFetchURL' : %v", result)
+		return result
+
+	} else {
+		result := new(ResultData)
+		pc.mapResponse(*r, result)
+		log.Entry().Debugf("[DEBUG] ===> Fetch Return '!replaceBinary' from 'DeclareFetchURL' : %v", result)
+		return result
+	}
+
+	// result := new(ResultData)
+	// pc.mapResponse(*r, result)
+
+	// return result
 }
 
 //PollForResult polls the protecode scan for the result scan
@@ -378,7 +433,8 @@ func (pc *Protecode) pullResult(productID int) (ResultData, error) {
 	headers := map[string][]string{
 		"acceptType": {"application/json"},
 	}
-	r, err := pc.sendAPIRequest(http.MethodGet, protecodeURL, headers)
+	r, err, _ := pc.sendAPIRequest(http.MethodGet, protecodeURL, headers)
+
 	if err != nil {
 		return *new(ResultData), err
 	}
@@ -390,29 +446,56 @@ func (pc *Protecode) pullResult(productID int) (ResultData, error) {
 }
 
 // LoadExistingProduct loads the existing product from protecode service
-func (pc *Protecode) LoadExistingProduct(group string, reuseExisting bool) int {
+func (pc *Protecode) LoadExistingProduct(group string, fileName string) int {
 	var productID int = -1
 
-	if reuseExisting {
-
-		protecodeURL := pc.createURL("/api/apps/", fmt.Sprintf("%v/", group), "")
-		headers := map[string][]string{
-			"acceptType": {"application/json"},
-		}
-
-		response := pc.loadExisting(protecodeURL, headers)
-		// by definition we will take the first one and trigger rescan
-		productID = response.Products[0].ProductID
-
-		pc.logger.Infof("Re-use existing Protecode scan - group: %v, productID: %v", group, productID)
+	protecodeURL := pc.createURL("/api/apps/", fmt.Sprintf("%v/", group), fileName)
+	headers := map[string][]string{
+		"acceptType": {"application/json"},
 	}
 
+	pc.logger.Infof("[DEBUG] ===> LoadExistingProduct searching a product (%v) with URL: %v", fileName, protecodeURL)
+
+	response := pc.loadExisting(protecodeURL, headers)
+
+	pc.logger.Infof("[DEBUG] ===> LoadExistingProduct response obj: %v", response)
+
+	if len(response.Products) > 0 {
+
+		pc.logger.Infof("[DEBUG] ===> LoadExistingProduct: response.Product obj: %v", response.Products)
+
+		// Highest product id means the latest scan for this particular product, therefore we take a product id with the highest number
+		for i := 0; i < len(response.Products); i++ {
+			// Check filename, it should be the same as we searched
+			if response.Products[i].FileName == fileName {
+				if productID < response.Products[i].ProductID {
+					productID = response.Products[i].ProductID
+				}
+			}
+		}
+
+		// productID = response.Products[0].ProductID
+
+		// for i := 1; i < len(response.Products); i++ {
+		// 	if productID < response.Products[i].ProductID {
+		// 		productID = response.Products[i].ProductID
+		// 	}
+		// }
+	}
+
+	//productID = response.Products[0].ProductID
+
+	pc.logger.Infof("Re-use existing Protecode scan - group: %v, productID: %v", group, productID)
+
+	pc.logger.Infof("[DEBUG] ===> LoadExistingProduct before return productID: %v", productID)
 	return productID
 }
 
+//
+
 func (pc *Protecode) loadExisting(protecodeURL string, headers map[string][]string) *ProductData {
 
-	r, err := pc.sendAPIRequest(http.MethodGet, protecodeURL, headers)
+	r, err, _ := pc.sendAPIRequest(http.MethodGet, protecodeURL, headers)
 	if err != nil {
 		pc.logger.WithError(err).Fatalf("Error during load existing product: %v", protecodeURL)
 	}
