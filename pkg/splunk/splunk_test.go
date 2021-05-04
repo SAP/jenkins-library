@@ -6,7 +6,9 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/jarcoal/httpmock"
+	"io/ioutil"
 	"net/http"
+	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -352,7 +354,7 @@ func Test_prepareTelemetry(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := Initialize("Correlation-Test", "splunkUrl", "TOKEN", "index", false)
-			if err != nil{
+			if err != nil {
 				t.Errorf("Error Initalizing Splunk. %v", err)
 			}
 			if got := prepareTelemetry(tt.args.customTelemetryData); !reflect.DeepEqual(got, tt.want) {
@@ -457,6 +459,66 @@ func Test_tryPostMessages(t *testing.T) {
 			}
 			if err := tryPostMessages(tt.args.telemetryData, tt.args.messages); (err != nil) != tt.wantErr {
 				t.Errorf("tryPostMessages() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_readPipelineEnvironment(t *testing.T) {
+	tests := []struct {
+		name        string
+		commitHash  string
+		branch      string
+		createFiles bool
+	}{
+		{
+			name:        "Test read pipelineEnvironment files not available",
+			commitHash:  "N/A",
+			branch:      "N/A",
+			createFiles: false,
+		},
+		{
+			name:        "Test read pipelineEnvironment files available",
+			commitHash:  "abcdef123",
+			branch:      "master",
+			createFiles: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			if tt.createFiles {
+				path := ".pipeline/commonPipelineEnvironment/git/"
+				err := os.MkdirAll(path, os.ModePerm)
+				if err != nil {
+					t.Errorf("Could not create .pipeline/ folders: %v", err)
+				}
+				branch := []byte("master")
+				err = ioutil.WriteFile(path+"branch", branch, 0644)
+				if err != nil {
+					t.Errorf("Could not create branch file: %v", err)
+				}
+				commitId := []byte("abcdef123")
+				err = ioutil.WriteFile(path+"commitId", commitId, 0644)
+				if err != nil {
+					t.Errorf("Could not create commitId file: %v", err)
+				}
+
+			}
+
+			commitHash, branch := readPipelineEnvironment()
+			if commitHash != tt.commitHash {
+				t.Errorf("readPipelineEnvironment() got = %v, want %v", commitHash, tt.commitHash)
+			}
+			if branch != tt.branch {
+				t.Errorf("readPipelineEnvironment() got1 = %v, want %v", branch, tt.branch)
+			}
+			if tt.createFiles {
+				err := os.RemoveAll(".pipeline")
+				if err != nil {
+					t.Errorf("Could not delete .pipeline folder: %v", err)
+				}
+
 			}
 		})
 	}

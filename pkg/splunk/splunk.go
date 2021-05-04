@@ -74,7 +74,6 @@ func Send(customTelemetryData *telemetry.CustomData, logCollector *log.Collector
 		if err != nil {
 			log.Entry().WithError(err).WithField("module", "logger/splunk").Warn("Error while sending logs")
 		}
-		return nil
 	} else {
 		// ErrorCode indicates an error in the step, so we want to send all the logs with telemetry
 		for i := 0; i < messagesLen; i += SplunkClient.postMessagesBatchSize {
@@ -106,24 +105,31 @@ type MonitoringData struct {
 	Branch          string `json:"Branch,omitempty"`
 }
 
-func prepareTelemetry(customTelemetryData telemetry.CustomData) MonitoringData {
-	tData := telemetry.GetData(&customTelemetryData)
+func readPipelineEnvironment() (string, string) {
 
 	// TODO: Dependent on a groovy step, which creates the folder.
 	// TODO: go git step here to read infos from git folder later add this to telemetry package?
 	content, err := ioutil.ReadFile(".pipeline/commonPipelineEnvironment/git/commitId")
 	if err != nil {
-		logrus.Warning("Could not read commitId file.", err)
+		log.Entry().Warnf("Could not read commitId file. %v", err)
 		content = []byte("N/A")
 	}
 	commitHash := string(content)
 
 	contentBranch, err := ioutil.ReadFile(".pipeline/commonPipelineEnvironment/git/branch")
 	if err != nil {
-		logrus.Warning("Could not read branch file.", err)
+		log.Entry().Warnf("Could not read branch file. %v", err)
 		contentBranch = []byte("N/A")
 	}
 	branch := string(contentBranch)
+
+	return commitHash, branch
+}
+
+func prepareTelemetry(customTelemetryData telemetry.CustomData) MonitoringData {
+	tData := telemetry.GetData(&customTelemetryData)
+
+	commitHash, branch := readPipelineEnvironment()
 
 	return MonitoringData{
 		PipelineUrlHash: tData.PipelineURLHash,
