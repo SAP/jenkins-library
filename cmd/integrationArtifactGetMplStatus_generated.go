@@ -64,7 +64,7 @@ func IntegrationArtifactGetMplStatusCommand() *cobra.Command {
 	var createIntegrationArtifactGetMplStatusCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Get the MPL status of an integration flow",
-		Long:  `With this step you can obtain information about the Message processing log status of integration flow using OData API.Learn more about the SAP Cloud Integration remote API for getting MPL status messages processed of an deployed integration artifact [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/d1679a80543f46509a7329243b595bdb.html).`,
+		Long:  `With this step you can obtain information about the Message Processing Log (MPL) status of integration flow using OData API. Learn more about the SAP Cloud Integration remote API for getting MPL status messages processed of an deployed integration artifact [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/d1679a80543f46509a7329243b595bdb.html).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
