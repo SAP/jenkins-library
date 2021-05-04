@@ -54,7 +54,6 @@ spec:
           - STAGES
           - STEPS
         mandatory: true
-  #outputs:
   containers:
     - name: karma
       image: node:lts-stretch
