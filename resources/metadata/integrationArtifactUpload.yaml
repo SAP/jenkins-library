@@ -1,6 +1,6 @@
 metadata:
   name: integrationArtifactUpload
-  description: Upload or Update an integration flow designtime artefact
+  description: Upload or Update an integration flow designtime artifact
   longDescription: |
     With this step you can either upload or update a integration flow designtime artifact using the OData API. Learn more about the SAP Cloud Integration remote API for updating an integration flow artifact [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/d1679a80543f46509a7329243b595bdb.html).
 
