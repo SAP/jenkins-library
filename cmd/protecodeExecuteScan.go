@@ -298,8 +298,8 @@ func fileExists(filename string) bool {
 	return !info.IsDir()
 }
 
-func hasExisting(productID int, reuseExisting bool) bool {
-	if (productID > 0) || reuseExisting {
+func hasExisting(productID int, verifyOnly bool) bool {
+	if (productID > 0) || verifyOnly {
 		return true
 	}
 	return false
