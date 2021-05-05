@@ -25,8 +25,9 @@ type detectExecuteScanOptions struct {
 	ServerURL                  string   `json:"serverUrl,omitempty"`
 	Groups                     []string `json:"groups,omitempty"`
 	FailOn                     []string `json:"failOn,omitempty"`
-	Version                    string   `json:"version,omitempty"`
 	VersioningModel            string   `json:"versioningModel,omitempty"`
+	Version                    string   `json:"version,omitempty"`
+	CustomScanVersion          string   `json:"customScanVersion,omitempty"`
 	ProjectSettingsFile        string   `json:"projectSettingsFile,omitempty"`
 	GlobalSettingsFile         string   `json:"globalSettingsFile,omitempty"`
 	M2Path                     string   `json:"m2Path,omitempty"`
@@ -110,8 +111,9 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "Server URL to the Synopsis Detect (formerly BlackDuck) Server.")
 	cmd.Flags().StringSliceVar(&stepConfig.Groups, "groups", []string{}, "Users groups to be assigned for the Project")
 	cmd.Flags().StringSliceVar(&stepConfig.FailOn, "failOn", []string{`BLOCKER`}, "Mark the current build as fail based on the policy categories applied.")
-	cmd.Flags().StringVar(&stepConfig.Version, "version", os.Getenv("PIPER_version"), "Defines the version number of the artifact being build in the pipeline. It is used as source for the Detect version.")
 	cmd.Flags().StringVar(&stepConfig.VersioningModel, "versioningModel", `major`, "The versioning model used for result reporting (based on the artifact version). Example 1.2.3 using `major` will result in version 1")
+	cmd.Flags().StringVar(&stepConfig.Version, "version", os.Getenv("PIPER_version"), "Defines the version number of the artifact being build in the pipeline. It is used as source for the Detect version.")
+	cmd.Flags().StringVar(&stepConfig.CustomScanVersion, "customScanVersion", os.Getenv("PIPER_customScanVersion"), "A custom version used along with the uploaded scan results.")
 	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Path or url to the mvn settings file that should be used as project settings file.")
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Path or url to the mvn settings file that should be used as global settings file")
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
@@ -243,6 +245,14 @@ func detectExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "detect/failOn"}},
 					},
 					{
+						Name:        "versioningModel",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
 						Name: "version",
 						ResourceRef: []config.ResourceReference{
 							{
@@ -256,9 +266,9 @@ func detectExecuteScanMetadata() config.StepData {
 						Aliases:   []config.Alias{{Name: "projectVersion"}, {Name: "detect/projectVersion"}},
 					},
 					{
-						Name:        "versioningModel",
+						Name:        "customScanVersion",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
+						Scope:       []string{"GENERAL", "STAGES", "STEPS", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},

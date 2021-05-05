@@ -81,7 +81,6 @@ func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExec
 	return nil
 }
 
-// reused by cmd/sonarExecuteScan.go
 // TODO: extract to version utils
 func handleArtifactVersion(artifactVersion string) string {
 	matches, _ := regexp.MatchString("([\\d\\.]){1,}-[\\d]{14}([\\Wa-z\\d]{41})?", artifactVersion)
