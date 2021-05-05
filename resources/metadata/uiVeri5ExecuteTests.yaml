@@ -50,7 +50,7 @@ spec:
       - name: testOptions
         type: string
         description:
-          "Deprecated and will result in an error if set. Please use runOptions instead. 
+          "Deprecated and will result in an error if set. Please use runOptions instead.
           Split the `testOptions` string at the whitespaces when migrating into `runOptions`."
         scope:
           - PARAMETERS
