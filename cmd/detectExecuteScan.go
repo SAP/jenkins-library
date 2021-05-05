@@ -134,7 +134,7 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 
 	detectVersionName := config.CustomScanVersion
 	if len(detectVersionName) > 0 {
-		log.Entry().Infof("Using custom version: %v", version)
+		log.Entry().Infof("Using custom version: %v", detectVersionName)
 	} else {
 		detectVersionName = versioning.ApplyVersioningModel(config.VersioningModel, coordinates)
 	}
