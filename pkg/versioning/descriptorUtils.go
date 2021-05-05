@@ -25,6 +25,6 @@ func DetermineProjectCoordinates(nameTemplate, versionScheme string, gav Coordin
 		log.Entry().Warnf("Unable to resolve project name: %v", err)
 	}
 
-	projectVersion := ApplyVersioningModel(versionScheme, gav)
+	projectVersion := ApplyVersioningModel(versionScheme, gav.Version)
 	return projectName, projectVersion
 }
