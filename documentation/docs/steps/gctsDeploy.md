@@ -30,6 +30,7 @@ gctsDeploy(
   vSID: 'ABC',
   branch: 'branch',
   commit: 'commit',
+  scope: 'scope',
   configuration: [dummyConfig: 'dummyval']
 )
 ```
@@ -49,6 +50,7 @@ steps:
     vSID: 'ABC'
     branch: 'branch'
     commit: 'commit'
+    scope: 'scope'
     configuration:
         dummyconfig: "dummyval"
 ```
