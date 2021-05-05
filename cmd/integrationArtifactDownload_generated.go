@@ -34,7 +34,7 @@ func IntegrationArtifactDownloadCommand() *cobra.Command {
 	var createIntegrationArtifactDownloadCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Download integration flow runtime artefact",
-		Long:  `With this step you can download a integration flow runtime artifact, which returns a zip file with the integration flow contents in to current workspace using the OData API. Learn more about the SAP Cloud Integration remote API for downloading an integration flow artifact [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/460dee19f9c141e88ba0454ce892247a.html).`,
+		Long:  `With this step you can download a integration flow runtime artifact, which returns a zip file with the integration flow contents in to current workspace using the OData API. Learn more about the SAP Cloud Integration remote API for downloading an integration flow artifact [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/d1679a80543f46509a7329243b595bdb.html).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
