@@ -148,7 +148,7 @@ func integrationArtifactDeployMetadata() config.StepData {
 					{
 						Name:        "integrationFlowVersion",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
@@ -172,7 +172,7 @@ func integrationArtifactDeployMetadata() config.StepData {
 					{
 						Name:        "oAuthTokenProviderUrl",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},

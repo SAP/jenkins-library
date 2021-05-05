@@ -51,6 +51,7 @@ spec:
         description: Specifies the version of the Integration Flow artifact
         scope:
           - PARAMETERS
+          - GENERAL
           - STAGES
           - STEPS
         mandatory: true
@@ -67,6 +68,7 @@ spec:
         description: Specifies the oAuth Provider protocol and host address, including the port. Please provide in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.
         scope:
           - PARAMETERS
+          - GENERAL
           - STAGES
           - STEPS
         mandatory: true
