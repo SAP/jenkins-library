@@ -42,9 +42,11 @@ type AuthEntry struct {
 }
 
 // CreateDockerConfigJSON writes the docker config.json file holding authentication and registry information
-func CreateDockerConfigJSON(registryURL, username, password, configPath string, fileUtils piperutils.FileUtils) (string, error) {
+func CreateDockerConfigJSON(registryURL, username, password, configPath, filePath string, fileUtils piperutils.FileUtils) (string, error) {
 
-	filePath := ".pipeline/dockerConfig.json"
+	if len(filePath) == 0 {
+		filePath = ".pipeline/dockerConfig.json"
+	}
 
 	dockerConfig := map[string]interface{}{}
 	if exists, _ := fileUtils.FileExists(configPath); exists {
