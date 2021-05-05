@@ -202,7 +202,10 @@ spec:
               - $(vaultPath)/protecode
               - $(vaultBasePath)/$(vaultPipelineName)/protecode
               - $(vaultBasePath)/GROUP-SECRETS/protecode
-      - name: artifactVersion
+      - name: version
+        aliases:
+          - name: artifactVersion
+            deprecated: true
         type: string
         description: The version of the artifact to allow identification in protecode backend
         resourceRef:
