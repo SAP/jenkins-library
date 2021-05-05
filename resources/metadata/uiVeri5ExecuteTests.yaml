@@ -51,7 +51,7 @@ spec:
         type: string
         description:
           "Deprecated and will result in an error if set. Please use runOptions instead.
-          Split the `testOptions` string at the whitespaces when migrating into `runOptions`."
+          Split the testOptions string at the whitespaces when migrating it into a list of runOptions."
         scope:
           - PARAMETERS
           - STAGES
