@@ -142,8 +142,8 @@ func getDockerImage(dClient piperDocker.Download, config *protecodeExecuteScanOp
 
 func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.Protecode, config *protecodeExecuteScanOptions, fileName string, writeReportToFile func(resp io.ReadCloser, reportFileName string) error) error {
 	//load existing product by filename
-	log.Entry().Debugf("Load existing product Group:%v Reuse:%v", config.Group, config.ReuseExisting)
-	productID := client.LoadExistingProduct(config.Group, config.ReuseExisting)
+	log.Entry().Debugf("Load existing product Group:%v Reuse:%v", config.Group, config.VerifyOnly)
+	productID := client.LoadExistingProduct(config.Group, config.VerifyOnly)
 
 	// check if no existing is found or reuse existing is false
 	productID = uploadScanOrDeclareFetch(*config, productID, client, fileName)
@@ -262,7 +262,7 @@ func createDockerClient(config *protecodeExecuteScanOptions) piperDocker.Downloa
 
 func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productID int, client protecode.Protecode, fileName string) int {
 	//check if the LoadExistingProduct) before returns an valid product id, than scip this
-	if !hasExisting(productID, config.ReuseExisting) {
+	if !hasExisting(productID, config.VerifyOnly) {
 		if len(config.FetchURL) > 0 {
 			log.Entry().Debugf("Declare fetch url %v", config.FetchURL)
 			resultData := client.DeclareFetchURL(config.CleanupMode, config.Group, config.FetchURL)
@@ -297,8 +297,8 @@ func fileExists(filename string) bool {
 	return !info.IsDir()
 }
 
-func hasExisting(productID int, reuseExisting bool) bool {
-	if (productID > 0) || reuseExisting {
+func hasExisting(productID int, verifyOnly bool) bool {
+	if (productID > 0) || verifyOnly {
 		return true
 	}
 	return false

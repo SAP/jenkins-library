@@ -237,7 +237,7 @@ func GetRespBodyHTTPStatusServiceErrorResponse() (*http.Response, error) {
 		StatusCode: 500,
 		Body:       ioutil.NopCloser(bytes.NewReader([]byte(``))),
 	}
-	return &resp, errors.New("Internal error")
+	return &resp, errors.New("401 Unauthorized")
 }
 
 //IntegrationArtifactDownloadCommandMockResponse -Provide http respose body
