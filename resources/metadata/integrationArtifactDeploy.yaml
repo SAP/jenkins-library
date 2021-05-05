@@ -42,6 +42,7 @@ spec:
         description: Specifies the ID of the Integration Flow artifact
         scope:
           - PARAMETERS
+          - GENERAL
           - STAGES
           - STEPS
         mandatory: true
