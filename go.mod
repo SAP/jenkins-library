@@ -28,7 +28,7 @@ require (
 	github.com/google/uuid v1.1.2
 	github.com/hashicorp/go-retryablehttp v0.6.7
 	github.com/hashicorp/vault v1.7.1
-	github.com/hashicorp/vault/api v1.0.5-0.20210210214158-405eced08457
+	github.com/hashicorp/vault/api v1.1.0
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/imdario/mergo v0.3.11 // indirect
 	github.com/jarcoal/httpmock v1.0.8
