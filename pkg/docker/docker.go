@@ -1,7 +1,10 @@
 package docker
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"io"
 	"net/url"
 	"strings"
@@ -32,6 +35,55 @@ type Download interface {
 	GetImageSource() (string, error)
 	DownloadImageToPath(imageSource, filePath string) (pkgutil.Image, error)
 	TarImage(writer io.Writer, image pkgutil.Image) error
+}
+
+type AuthEntry struct {
+	Auth string `json:"auth,omitempty"`
+}
+
+// CreateDockerConfigJSON writes the docker config.json file holding authentication and registry information
+func CreateDockerConfigJSON(registryURL, username, password, configPath string, fileUtils piperutils.FileUtils) (string, error) {
+
+	filePath := ".pipeline/dockerConfig.json"
+
+	dockerConfig := map[string]interface{}{}
+	if exists, _ := fileUtils.FileExists(configPath); exists {
+		dockerConfigContent, err := fileUtils.FileRead(configPath)
+		if err != nil {
+			return "", fmt.Errorf("failed to read file '%v': %w", configPath, err)
+		}
+
+		err = json.Unmarshal(dockerConfigContent, &dockerConfig)
+		if err != nil {
+			return "", fmt.Errorf("failed to unmarshal json file '%v': %w", configPath, err)
+		}
+	}
+
+	credentialsBase64 := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%v:%v", username, password)))
+	dockerAuth := AuthEntry{Auth: credentialsBase64}
+
+	if dockerConfig["auths"] == nil {
+		dockerConfig["auths"] = map[string]AuthEntry{registryURL: dockerAuth}
+	} else {
+		authEntries, ok := dockerConfig["auths"].(map[string]interface{})
+		if !ok {
+			return "", fmt.Errorf("failed to read authentication entries from file '%v': format invalid", configPath)
+		}
+		authEntries[registryURL] = dockerAuth
+		dockerConfig["auths"] = authEntries
+	}
+
+	jsonResult, err := json.Marshal(dockerConfig)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal Docker config.json: %w", err)
+	}
+
+	err = fileUtils.FileWrite(filePath, jsonResult, 0666)
+	if err != nil {
+		return "", fmt.Errorf("failed to write Docker config.json: %w", err)
+	}
+
+	return filePath, nil
 }
 
 // SetOptions sets options used for the docker client
