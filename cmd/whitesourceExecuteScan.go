@@ -476,7 +476,8 @@ func checkPolicyViolations(config *ScanOptions, scan *ws.Scan, sys whitesource, 
 		Overview: []reporting.OverviewRow{
 			{Description: "Total number of licensing vulnerabilities", Details: fmt.Sprint(policyViolationCount)},
 		},
-		ReportTime: utils.Now(),
+		SuccessfulScan: policyViolationCount == 0,
+		ReportTime:     utils.Now(),
 	}
 
 	// JSON reports are used by step pipelineCreateSummary in order to e.g. prepare an issue creation in GitHub
@@ -621,7 +622,8 @@ func createCustomVulnerabilityReport(config *ScanOptions, scan *ws.Scan, alerts 
 			{Description: "Total number of vulnerabilities", Details: fmt.Sprint(len(alerts))},
 			{Description: "Total number of high/critical vulnerabilities with CVSS score >= 7.0", Details: fmt.Sprint(severe)},
 		},
-		ReportTime: utils.Now(),
+		SuccessfulScan: severe == 0,
+		ReportTime:     utils.Now(),
 	}
 
 	detailTable := reporting.ScanDetailTable{
