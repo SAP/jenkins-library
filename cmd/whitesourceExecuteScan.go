@@ -102,7 +102,7 @@ func newWhitesourceUtils(config *ScanOptions) *whitesourceUtilsBundle {
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
 	// Configure HTTP Client
-	utils.SetOptions(piperhttp.ClientOptions{TransportTimeout: time.Duration(config.Timeout) * time.Second})
+	utils.SetOptions(piperhttp.ClientOptions{MaxRetries: 3, TransportTimeout: time.Duration(config.Timeout) * time.Second})
 	return &utils
 }
 
@@ -412,6 +412,7 @@ func wsScanOptions(config *ScanOptions) *ws.ScanOptions {
 		JreDownloadURL:             config.JreDownloadURL,
 		AgentURL:                   config.AgentURL,
 		ServiceURL:                 config.ServiceURL,
+		ScanPath:                   config.ScanPath,
 		Verbose:                    GeneralConfig.Verbose,
 	}
 }
