@@ -198,6 +198,9 @@ import hudson.AbortException
      * use this volume in an initContainer.
      */
     'containerMountPath',
+    'initContainerImage',
+    'initContainerCommand',
+
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.minus([
     'stashIncludes',
@@ -336,6 +339,7 @@ private String generatePodSpec(Map config) {
         spec      : [:]
     ]
     podSpec.spec += getAdditionalPodProperties(config)
+    podSpec.spec.initContainer = getInitContainer(config)
     podSpec.spec.containers = getContainerList(config)
     podSpec.spec.securityContext = getSecurityContext(config)
 
@@ -348,6 +352,7 @@ private String generatePodSpec(Map config) {
 
     return new JsonUtils().groovyObjectToPrettyJsonString(podSpec)
 }
+
 
 
 private String stashWorkspace(config, prefix, boolean chown = false, boolean stashBack = false) {
@@ -415,6 +420,40 @@ private void unstashWorkspace(config, prefix) {
         throw e
     }
 }
+
+private List getInitContainer(config){
+    def result = []
+    if (config.initContainerImage && config.containerMountPath) {
+        def initContainerName = config.initContainerImage.toLowerCase()
+        def initContainerSpec = [
+            name           : initContainerName,
+            image          : config.initContainerImage,
+            volumeMounts   : [[name: "volume", mountPath: config.containerMountPath]],
+        ]
+        if (config.initContainerCommand == null) {
+            echo "Please provide initContainerCommand for ${config.initContainerImage}"
+            initContainerSpec['command'] = [
+                '/usr/bin/tail',
+                '-f',
+                '/dev/null'
+            ]
+        } else {
+            echo "Command given : ${config.initContainerCommand}"
+            initContainerSpec['command'] = [
+                'sh',
+                '-c',
+                config.initContainerCommand
+            ]
+        }
+        result.push(initContainerSpec)
+    }
+    return result
+}
+
+
+
+
+
 
 private List getContainerList(config) {
 
@@ -497,13 +536,13 @@ private List getContainerList(config) {
             env            : getContainerEnvs(config, config.sidecarImage, config.sidecarEnvVars, config.sidecarWorkspace),
             command        : []
         ]
-
         def resources = getResources(sideCarContainerName, config)
         if(resources) {
             containerSpec.resources = resources
         }
         result.push(containerSpec)
     }
+
     return result
 }
 
