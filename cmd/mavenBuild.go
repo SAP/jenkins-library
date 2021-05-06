@@ -81,10 +81,13 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 	_, err := maven.Execute(&mavenOptions, utils)
 	if err == nil {
 		if config.Publish && !config.Verify {
-			deployFlags := []string{"-Dmaven.main.skip=true", "-Dmaven.test.skip=true", "-Dmaven.install.skip=true"}
 			log.Entry().Infof("publish detected, running mvn deploy")
 
 			runner := &command.Command{}
+			fileUtils := &piperutils.Files{}
+
+			deployFlags := []string{"-Dmaven.main.skip=true", "-Dmaven.test.skip=true", "-Dmaven.install.skip=true"}
+
 			if err := loadRemoteRepoCertificates(config.CustomTLSCertificateLinks, downloadClient, &deployFlags, runner, fileUtils); err != nil {
 				log.SetErrorCategory(log.ErrorInfrastructure)
 				return err
