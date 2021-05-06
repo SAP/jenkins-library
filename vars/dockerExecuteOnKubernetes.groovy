@@ -200,6 +200,7 @@ import hudson.AbortException
     'containerMountPath',
     'initContainerImage',
     'initContainerCommand',
+    'initContainerName',
 
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.minus([
@@ -425,7 +426,7 @@ private List getInitContainer(config){
     if (config.initContainerImage && config.containerMountPath) {
         def initContainerName = config.initContainerImage.toLowerCase()
         def initContainerSpec = [
-            name           : initContainerName,
+            name           : config.initContainerName,
             image          : config.initContainerImage,
             volumeMounts   : [[name: "volume", mountPath: config.containerMountPath]],
         ]
