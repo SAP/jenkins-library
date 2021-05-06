@@ -133,7 +133,13 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/repositoryID
-
+      - name: customTlsCertificateLinks
+        type: "[]string"
+        description: "List of download links to custom TLS certificates. This is required to ensure trusted connections to instances with repositories (like nexus) when publish flag is set to true."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   containers:
     - name: mvn
       image: maven:3.6-jdk-8
