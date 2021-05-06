@@ -349,6 +349,7 @@ private String generatePodSpec(Map config) {
                                     emptyDir: [:]
                                 ]]
     }
+    echo "podSpec: ${podSpec}"
 
     return new JsonUtils().groovyObjectToPrettyJsonString(podSpec)
 }
@@ -445,6 +446,7 @@ private List getInitContainer(config){
                 config.initContainerCommand
             ]
         }
+        echo "initContainerSpec configurations : ${initContainerSpec}"
         result.push(initContainerSpec)
     }
     return result
