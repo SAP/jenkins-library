@@ -85,7 +85,7 @@ spec:
         default: false
         aliases:
           - name: maven/createBOM
-      - name: mavenAltDeploymentRepositoryPassowrd
+      - name: altDeploymentRepositoryPassowrd
         type: string
         description: Password for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This password will be updated in settings.xml 
         scope:
@@ -96,16 +96,16 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/repositoryPassword
-          - name: mavenAltDeploymentRepositoryPassowrdId
+          - name: altDeploymentRepositoryPassowrdId
             type: secret
           - type: vaultSecretFile
             paths:
-              - $(vaultPath)/mavenaltdeploymentrepository-passowrd
-              - $(vaultBasePath)/$(vaultPipelineName)/mavenaltdeploymentrepository-passowrd
-              - $(vaultBasePath)/GROUP-SECRETS/mavenaltdeploymentrepository-passowrd
-      - name: mavenAltDeploymentRepositoryUser
+              - $(vaultPath)/altdeploymentrepository-passowrd
+              - $(vaultBasePath)/$(vaultPipelineName)/altdeploymentrepository-passowrd
+              - $(vaultBasePath)/GROUP-SECRETS/altdeploymentrepository-passowrd
+      - name: altDeploymentRepositoryUser
         type: string
-        description: User for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This user will be updated in settings.xml 
+        description: User for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This user will be updated in settings.xml . When no settings.xml a new one is created which with <servers> tag
         scope:
           - PARAMETERS
           - STAGES
@@ -113,9 +113,9 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/repositoryUsername
-      - name: mavenAltDeploymentRepositoryUrl
+      - name: altDeploymentRepositoryUrl
         type: string
-        description: Url for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This Url will be updated in settings.xml 
+        description: Url for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This Url will be updated in settings.xml . When no settings.xml a new one is created which with <servers> tag
         scope:
           - PARAMETERS
           - STAGES
@@ -123,9 +123,9 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/repositoryURL
-      - name: mavenAltDeploymentRepositoryID
+      - name: altDeploymentRepositoryID
         type: string
-        description: Id for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This id will be updated in settings.xml and will be used as a flag with DaltDeploymentRepository along with mavenAltDeploymentRepositoryUrl during maven deploy
+        description: Id for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This id will be updated in settings.xml and will be used as a flag with DaltDeploymentRepository along with mavenAltDeploymentRepositoryUrl during maven deploy . When no settings.xml a new one is created which with <servers> tag
         scope:
           - PARAMETERS
           - STAGES
