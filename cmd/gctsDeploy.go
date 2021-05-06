@@ -18,6 +18,9 @@ import (
 	"github.com/pkg/errors"
 )
 
+const repoStateExists = "RepoExists"
+const repoStateNew = "RepoNew"
+
 func gctsDeploy(config gctsDeployOptions, telemetryData *telemetry.CustomData) {
 	// for command execution use Command
 	c := command.Command{}
@@ -39,8 +42,6 @@ func gctsDeploy(config gctsDeployOptions, telemetryData *telemetry.CustomData) {
 
 func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.CustomData, command command.ExecRunner, httpClient piperhttp.Sender) error {
 	cookieJar, cookieErr := cookiejar.New(nil)
-	const repoStateExists = "RepoExists"
-	const repoStateNew = "RepoNew"
 	repoState := repoStateExists
 	branchRollbackRequired := false
 	if cookieErr != nil {
@@ -98,21 +99,10 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 		}
 
 		if config.Branch != "" || config.Commit != "" {
-			log.Entry().Infof("Setting VCS_NO_IMPORT to true")
-			noImportConfig := setConfigKeyBody{
-				Key:   "VCS_NO_IMPORT",
-				Value: "X",
-			}
-			setConfigKeyErr := setConfigKey(config, httpClient, &noImportConfig)
-			if setConfigKeyErr != nil {
-				log.Entry().WithError(setConfigKeyErr).Error("step execution failed at Set Config key for VCS_NO_IMPORT")
-				return setConfigKeyErr
-			}
-			cloneErr := cloneRepository(&cloneRepoOptions, telemetryData, httpClient)
-
-			if cloneErr != nil {
-				log.Entry().WithError(cloneErr).Error("step execution failed at Clone Repository")
-				return cloneErr
+			setNoImportAndCloneRepoErr := setNoImportAndCloneRepo(config, &cloneRepoOptions, httpClient, telemetryData)
+			if setNoImportAndCloneRepoErr != nil {
+				log.Entry().WithError(setNoImportAndCloneRepoErr).Error("step execution failed")
+				return setNoImportAndCloneRepoErr
 			}
 
 		} else {
@@ -150,51 +140,18 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 	}
 	targetBranch := config.Branch
 	if config.Branch != "" {
-		_, switchBranchErr := switchBranch(config, httpClient, currentBranch, targetBranch)
-		if switchBranchErr != nil {
-			log.Entry().WithError(switchBranchErr).Error("step execution failed at Switch Branch")
-			if repoState == repoStateNew && config.Rollback {
-				// Rollback branch. Resetting branches
-				targetBranch = repoMetadataInitState.Result.Branch
-				currentBranch = config.Branch
-				log.Entry().WithError(switchBranchErr).Errorf("Rolling Back from %v to %v", currentBranch, targetBranch)
-				switchBranch(config, httpClient, currentBranch, targetBranch)
-			}
-			return switchBranchErr
+		_, switchBranchWithRollbackErr := switchBranchWithRollback(config, httpClient, currentBranch, targetBranch, repoState, repoMetadataInitState)
+		if switchBranchWithRollbackErr != nil {
+			return switchBranchWithRollbackErr
 		}
 		currentBranch = config.Branch
 		branchRollbackRequired = true
 	}
 
 	if config.Commit != "" {
-		log.Entry().Infof("gCTS Deploy: Pull by Commit step execution to commit %v", config.Commit)
-		pullByCommitErr := pullByCommit(config, telemetryData, command, httpClient)
-		if pullByCommitErr != nil {
-			log.Entry().WithError(pullByCommitErr).Error("step execution failed at Pull By Commit. Trying to rollback to last commit")
-			if config.Rollback {
-				//Rollback to last commit.
-				rollbackOptions := gctsRollbackOptions{
-					Username:   config.Username,
-					Password:   config.Password,
-					Repository: config.Repository,
-					Host:       config.Host,
-					Client:     config.Client,
-				}
-				rollbackErr := rollback(&rollbackOptions, telemetryData, command, httpClient)
-				if rollbackErr != nil {
-					log.Entry().WithError(rollbackErr).Error("step execution failed while rolling back commit")
-					return rollbackErr
-				}
-				if repoState == repoStateNew && branchRollbackRequired {
-					// Rollback branch
-					// Rollback branch. Resetting branches
-					targetBranch = repoMetadataInitState.Result.Branch
-					currentBranch = config.Branch
-					log.Entry().Errorf("Rolling Back from %v to %v", currentBranch, targetBranch)
-					switchBranch(config, httpClient, currentBranch, targetBranch)
-				}
-			}
-			return pullByCommitErr
+		pullByCommitWithRollbackErr := pullByCommitWithRollback(config, telemetryData, command, httpClient, repoState, repoMetadataInitState, currentBranch, targetBranch, branchRollbackRequired)
+		if pullByCommitWithRollbackErr != nil {
+			return pullByCommitWithRollbackErr
 		}
 	} else {
 		if repoState == repoStateNew && (config.Commit != "" || config.Branch != "") {
@@ -203,59 +160,122 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 		}
 
 		if config.Scope != "" {
-			log.Entry().Infof("Removing VCS_NO_IMPORT configuration")
-			configToDelete := "VCS_NO_IMPORT"
-			deleteConfigKeyErr := deleteConfigKey(config, httpClient, configToDelete)
-			if deleteConfigKeyErr != nil {
-				log.Entry().WithError(deleteConfigKeyErr).Error("step execution failed at Set Config key for VCS_NO_IMPORT")
-				return deleteConfigKeyErr
+			removeNoImportAndDeployToSystemErr := removeNoImportAndDeployToSystem(config, httpClient)
+			if removeNoImportAndDeployToSystemErr != nil {
+				return removeNoImportAndDeployToSystemErr
 			}
-			// Get deploy scope and gctsDeploy
-			log.Entry().Infof("gCTS Deploy: Deploying Commit to ABAP System for Repository %v with scope %v", config.Repository, config.Scope)
-			deployErr := deployCommitToAbapSystem(config, httpClient)
-			if deployErr != nil {
-				log.Entry().WithError(deployErr).Error("step execution failed at Deploying Commit to ABAP system.")
-				return deployErr
-			}
-			// Execution Ends here for the step
+			// Step Execution Ends here
 			return nil
 		}
 
-		log.Entry().Infof("gCTS Deploy: Pull by Commit step execution")
-		pullByCommitErr := pullByCommit(config, telemetryData, command, httpClient)
-		if pullByCommitErr != nil {
-			log.Entry().WithError(pullByCommitErr).Error("step execution failed at Pull By Commit. Trying to rollback to last commit")
-			if config.Rollback {
-				//Rollback to last commit.
-				if repoState == repoStateNew {
-					// Rollback branch
-					targetBranch := repoMetadataInitState.Result.Branch
-					log.Entry().Errorf("Rolling Back from %v to %v", currentBranch, targetBranch)
-					switchBranch(config, httpClient, currentBranch, targetBranch)
-				}
-			}
-			return pullByCommitErr
+		pullByCommitWithRollbackErr := pullByCommitWithRollback(config, telemetryData, command, httpClient, repoState, repoMetadataInitState, currentBranch, targetBranch, branchRollbackRequired)
+		if pullByCommitWithRollbackErr != nil {
+			return pullByCommitWithRollbackErr
 		}
 	}
 
 	if repoState == repoStateNew {
-		log.Entry().Infof("Removing VCS_NO_IMPORT configuration")
-		configToDelete := "VCS_NO_IMPORT"
-		deleteConfigKeyErr := deleteConfigKey(config, httpClient, configToDelete)
-		if deleteConfigKeyErr != nil {
-			log.Entry().WithError(deleteConfigKeyErr).Error("step execution failed at Set Config key for VCS_NO_IMPORT")
-			return deleteConfigKeyErr
-		}
 		log.Entry().Infof("Setting deploy scope as current commit")
 		config.Scope = "CRNTCOMMIT"
-		log.Entry().Infof("gCTS Deploy: Deploying Commit to ABAP System for Repository %v with scope %v", config.Repository, config.Scope)
-		deployErr := deployCommitToAbapSystem(config, httpClient)
-		if deployErr != nil {
-			log.Entry().WithError(deployErr).Error("step execution failed at Deploying Commit to ABAP system.")
-			return deployErr
+		removeNoImportAndDeployToSystemErr := removeNoImportAndDeployToSystem(config, httpClient)
+		if removeNoImportAndDeployToSystemErr != nil {
+			return removeNoImportAndDeployToSystemErr
 		}
+
 	}
 
+	return nil
+}
+
+func removeNoImportAndDeployToSystem(config *gctsDeployOptions, httpClient piperhttp.Sender) error {
+	log.Entry().Infof("Removing VCS_NO_IMPORT configuration")
+	configToDelete := "VCS_NO_IMPORT"
+	deleteConfigKeyErr := deleteConfigKey(config, httpClient, configToDelete)
+	if deleteConfigKeyErr != nil {
+		log.Entry().WithError(deleteConfigKeyErr).Error("step execution failed at Set Config key for VCS_NO_IMPORT")
+		return deleteConfigKeyErr
+	}
+	// Get deploy scope and gctsDeploy
+	log.Entry().Infof("gCTS Deploy: Deploying Commit to ABAP System for Repository %v with scope %v", config.Repository, config.Scope)
+	deployErr := deployCommitToAbapSystem(config, httpClient)
+	if deployErr != nil {
+		log.Entry().WithError(deployErr).Error("step execution failed at Deploying Commit to ABAP system.")
+		return deployErr
+	}
+	return nil
+}
+
+func pullByCommitWithRollback(config *gctsDeployOptions, telemetryData *telemetry.CustomData, command command.ExecRunner,
+	httpClient piperhttp.Sender, repoState string, repoMetadataInitState *getRepositoryResponseBody,
+	currentBranch string, targetBranch string, branchRollbackRequired bool) error {
+
+	log.Entry().Infof("gCTS Deploy: Pull by Commit step execution to commit %v", config.Commit)
+	pullByCommitErr := pullByCommit(config, telemetryData, command, httpClient)
+	if pullByCommitErr != nil {
+		log.Entry().WithError(pullByCommitErr).Error("step execution failed at Pull By Commit. Trying to rollback to last commit")
+		if config.Rollback {
+			//Rollback to last commit.
+			rollbackOptions := gctsRollbackOptions{
+				Username:   config.Username,
+				Password:   config.Password,
+				Repository: config.Repository,
+				Host:       config.Host,
+				Client:     config.Client,
+			}
+			rollbackErr := rollback(&rollbackOptions, telemetryData, command, httpClient)
+			if rollbackErr != nil {
+				log.Entry().WithError(rollbackErr).Error("step execution failed while rolling back commit")
+				return rollbackErr
+			}
+			if repoState == repoStateNew && branchRollbackRequired {
+				// Rollback branch
+				// Rollback branch. Resetting branches
+				targetBranch = repoMetadataInitState.Result.Branch
+				currentBranch = config.Branch
+				log.Entry().Errorf("Rolling Back from %v to %v", currentBranch, targetBranch)
+				switchBranch(config, httpClient, currentBranch, targetBranch)
+			}
+		}
+		return pullByCommitErr
+	}
+	return nil
+
+}
+
+func switchBranchWithRollback(config *gctsDeployOptions, httpClient piperhttp.Sender, currentBranch string, targetBranch string, repoState string, repoMetadataInitState *getRepositoryResponseBody) (*switchBranchResponseBody, error) {
+	var response *switchBranchResponseBody
+	response, switchBranchErr := switchBranch(config, httpClient, currentBranch, targetBranch)
+	if switchBranchErr != nil {
+		log.Entry().WithError(switchBranchErr).Error("step execution failed at Switch Branch")
+		if repoState == repoStateNew && config.Rollback {
+			// Rollback branch. Resetting branches
+			targetBranch = repoMetadataInitState.Result.Branch
+			currentBranch = config.Branch
+			log.Entry().WithError(switchBranchErr).Errorf("Rolling Back from %v to %v", currentBranch, targetBranch)
+			switchBranch(config, httpClient, currentBranch, targetBranch)
+		}
+		return nil, switchBranchErr
+	}
+	return response, nil
+}
+
+func setNoImportAndCloneRepo(config *gctsDeployOptions, cloneRepoOptions *gctsCloneRepositoryOptions, httpClient piperhttp.Sender, telemetryData *telemetry.CustomData) error {
+	log.Entry().Infof("Setting VCS_NO_IMPORT to true")
+	noImportConfig := setConfigKeyBody{
+		Key:   "VCS_NO_IMPORT",
+		Value: "X",
+	}
+	setConfigKeyErr := setConfigKey(config, httpClient, &noImportConfig)
+	if setConfigKeyErr != nil {
+		log.Entry().WithError(setConfigKeyErr).Error("step execution failed at Set Config key for VCS_NO_IMPORT")
+		return setConfigKeyErr
+	}
+	cloneErr := cloneRepository(cloneRepoOptions, telemetryData, httpClient)
+
+	if cloneErr != nil {
+		log.Entry().WithError(cloneErr).Error("step execution failed at Clone Repository")
+		return cloneErr
+	}
 	return nil
 }
 
@@ -541,25 +561,13 @@ func createRepositoryForDeploy(config *gctsCreateRepositoryOptions, telemetryDat
 		return errors.Errorf("creating repository on the ABAP system %v failed: %v", config.Host, httpErr)
 	}
 
-	bodyText, readErr := ioutil.ReadAll(resp.Body)
-
-	if readErr != nil {
-		return errors.Wrapf(readErr, "creating repository on the ABAP system %v failed", config.Host)
-	}
-
-	response, parsingErr := gabs.ParseJSON([]byte(bodyText))
-
-	if parsingErr != nil {
-		return errors.Wrapf(parsingErr, "creating repository on the ABAP system %v failed", config.Host)
-	}
-
 	if httpErr != nil {
-		_, errorDumpParseErr := parseErrorDumpFromResponseBody(resp)
+		response, errorDumpParseErr := parseErrorDumpFromResponseBody(resp)
 		if errorDumpParseErr != nil {
 			return errorDumpParseErr
 		}
 		if resp.StatusCode == 500 {
-			if exception, ok := response.Path("exception").Data().(string); ok && exception == "Repository already exists" {
+			if response.Exception == "Repository already exists" {
 				log.Entry().
 					WithField("repository", config.Repository).
 					Infof("the repository already exists on the ABAP system %v", config.Host)

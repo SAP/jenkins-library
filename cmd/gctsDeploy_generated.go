@@ -14,21 +14,20 @@ import (
 )
 
 type gctsDeployOptions struct {
-	Username                  string                 `json:"username,omitempty"`
-	Password                  string                 `json:"password,omitempty"`
-	Repository                string                 `json:"repository,omitempty"`
-	Host                      string                 `json:"host,omitempty"`
-	Client                    string                 `json:"client,omitempty"`
-	Commit                    string                 `json:"commit,omitempty"`
-	RemoteRepositoryURL       string                 `json:"remoteRepositoryURL,omitempty"`
-	Role                      string                 `json:"role,omitempty"`
-	VSID                      string                 `json:"vSID,omitempty"`
-	Type                      string                 `json:"type,omitempty"`
-	Branch                    string                 `json:"branch,omitempty"`
-	Scope                     string                 `json:"scope,omitempty"`
-	Rollback                  bool                   `json:"rollback,omitempty"`
-	Configuration             map[string]interface{} `json:"configuration,omitempty"`
-	GithubPersonalAccessToken string                 `json:"githubPersonalAccessToken,omitempty"`
+	Username            string                 `json:"username,omitempty"`
+	Password            string                 `json:"password,omitempty"`
+	Repository          string                 `json:"repository,omitempty"`
+	Host                string                 `json:"host,omitempty"`
+	Client              string                 `json:"client,omitempty"`
+	Commit              string                 `json:"commit,omitempty"`
+	RemoteRepositoryURL string                 `json:"remoteRepositoryURL,omitempty"`
+	Role                string                 `json:"role,omitempty"`
+	VSID                string                 `json:"vSID,omitempty"`
+	Type                string                 `json:"type,omitempty"`
+	Branch              string                 `json:"branch,omitempty"`
+	Scope               string                 `json:"scope,omitempty"`
+	Rollback            bool                   `json:"rollback,omitempty"`
+	Configuration       map[string]interface{} `json:"configuration,omitempty"`
 }
 
 // GctsDeployCommand Deploys a Git Repository to a local Repository and then to an ABAP System
@@ -60,7 +59,6 @@ repository and then deploys it into the ABAP system.`,
 			}
 			log.RegisterSecret(stepConfig.Username)
 			log.RegisterSecret(stepConfig.Password)
-			log.RegisterSecret(stepConfig.GithubPersonalAccessToken)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -104,15 +102,14 @@ func addGctsDeployFlags(cmd *cobra.Command, stepConfig *gctsDeployOptions) {
 	cmd.Flags().StringVar(&stepConfig.Type, "type", `GIT`, "Type of the used source code management tool")
 	cmd.Flags().StringVar(&stepConfig.Branch, "branch", os.Getenv("PIPER_branch"), "Name of the branch to which the deploy has to be done to.")
 	cmd.Flags().StringVar(&stepConfig.Scope, "scope", os.Getenv("PIPER_scope"), "The scope of the gcts deploy api call")
-	cmd.Flags().BoolVar(&stepConfig.Rollback, "rollback", false, "The rollback flag for a failure during gcts deploy")
-
-	cmd.Flags().StringVar(&stepConfig.GithubPersonalAccessToken, "githubPersonalAccessToken", os.Getenv("PIPER_githubPersonalAccessToken"), "GitHub personal access token with at least read permissions for the remote repository")
+	cmd.Flags().BoolVar(&stepConfig.Rollback, "rollback", false, "The rollback flag for a failure during the deploy step. A true value would mean gCTS would roll back to the last clean state")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("repository")
 	cmd.MarkFlagRequired("host")
 	cmd.MarkFlagRequired("client")
+	cmd.MarkFlagRequired("remoteRepositoryURL")
 }
 
 // retrieve step metadata
@@ -191,7 +188,7 @@ func gctsDeployMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   false,
+						Mandatory:   true,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -249,19 +246,6 @@ func gctsDeployMetadata() config.StepData {
 						Type:        "map[string]interface{}",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "gctsRepositoryConfigurations"}},
-					},
-					{
-						Name: "githubPersonalAccessToken",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name: "githubPersonalAccessTokenId",
-								Type: "secret",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
 					},
 				},
 			},

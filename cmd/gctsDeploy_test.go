@@ -73,34 +73,8 @@ func TestGctsPullByCommitFailure(t *testing.T) {
 	t.Run("http error occurred", func(t *testing.T) {
 
 		httpClient := httpMockGcts{StatusCode: 500, ResponseBody: `{
-			"log": [
-				{
-					"time": 20180606130524,
-					"user": "JENKINS",
-					"section": "REPOSITORY_FACTORY",
-					"action": "CREATE_REPOSITORY",
-					"severity": "INFO",
-					"message": "Start action CREATE_REPOSITORY review",
-					"code": "GCTS.API.410"
-				}
-			],
-			"errorLog": [
-				{
-					"time": 20180606130524,
-					"user": "JENKINS",
-					"section": "REPOSITORY_FACTORY",
-					"action": "CREATE_REPOSITORY",
-					"severity": "INFO",
-					"message": "Start action CREATE_REPOSITORY review",
-					"code": "GCTS.API.410"
-				}
-			],
-			"exception": {
-				"message": "repository_not_found",
-				"description": "Repository not found",
-				"code": 404
-			}
-		}`}
+			"exception": "No relation between system and repository"
+		    }`}
 
 		err := pullByCommit(&config, nil, nil, &httpClient)
 
@@ -243,6 +217,7 @@ func TestGctsSwitchBranchFailure(t *testing.T) {
 			httpClient = httpMockGcts{StatusCode: 500, ResponseBody: `{
 				"errorLog": [
 				    {
+					"time": 20210414102742,
 					"severity": "ERROR",
 					"message": "The branch to switch to - 'feature1' - does not exist",
 					"code": "GCTS.CLIENT.1320"
@@ -346,43 +321,53 @@ func TestCreateRepositoryFailure(t *testing.T) {
 			httpClient = httpMockGcts{StatusCode: 500, ResponseBody: `{
 				"errorLog": [
 				    {
-					"time": 20210414105442,
+					"time": 20210506153611,
 					"user": "testUser",
 					"section": "SYSTEM",
 					"action": "CREATE_REPOSITORY",
 					"severity": "ERROR",
-					"message": "20210414105442: Error action CREATE_REPOSITORY Repository already exists"
-				    },
-				    {
-					"severity": "ERROR",
-					"message": "Could not create repository 'testRepoExists'.",
-					"code": "GCTS.API.703"
+					"message": "20210506153611: Error action CREATE_REPOSITORY Repository already exists"
 				    }
 				],
 				"log": [
 				    {
-					"time": 20210414105442,
-					"user": "testUser",
-					"section": "SYSTEM",
-					"action": "CREATE_REPOSITORY",
-					"severity": "INFO",
-					"message": "20210414105442: Start action CREATE_REPOSITORY"
-				    },
-				    {
-					"time": 20210414105442,
-					"user": "testUser",
-					"section": "REPOSITORY_FACTORY",
-					"action": "CREATE_REPOSITORY",
-					"severity": "INFO",
-					"message": "20210414105442: Start action CREATE_REPOSITORY testrepo"
-				    },
-				    {
-					"time": 20210414105442,
+					"time": 20210506153611,
 					"user": "testUser",
 					"section": "SYSTEM",
 					"action": "CREATE_REPOSITORY",
 					"severity": "ERROR",
-					"message": "20210414105442: Error action CREATE_REPOSITORY Repository already exists"
+					"message": "20210506153611: Error action CREATE_REPOSITORY Repository already exists"
+				    }
+				],
+				"exception": "Some Error"
+			    }`}
+		}
+
+		err := createRepositoryForDeploy(&config, nil, nil, &httpClient, nil)
+		assert.EqualError(t, err, "creating repository on the ABAP system http://testHost.com:50000 failed: a http error occurred")
+	})
+	t.Run("Create Repository Failure", func(t *testing.T) {
+		var httpClient httpMockGcts
+		if config.Repository == "testRepoExists" {
+			httpClient = httpMockGcts{StatusCode: 500, ResponseBody: `{
+				"errorLog": [
+				    {
+					"time": 20210506153611,
+					"user": "testUser",
+					"section": "SYSTEM",
+					"action": "CREATE_REPOSITORY",
+					"severity": "ERROR",
+					"message": "20210506153611: Error action CREATE_REPOSITORY Repository already exists"
+				    }
+				],
+				"log": [
+				    {
+					"time": 20210506153611,
+					"user": "testUser",
+					"section": "SYSTEM",
+					"action": "CREATE_REPOSITORY",
+					"severity": "ERROR",
+					"message": "20210506153611: Error action CREATE_REPOSITORY Repository already exists"
 				    }
 				],
 				"exception": "Repository already exists"
@@ -390,7 +375,7 @@ func TestCreateRepositoryFailure(t *testing.T) {
 		}
 
 		err := createRepositoryForDeploy(&config, nil, nil, &httpClient, nil)
-		assert.EqualError(t, err, "a http error occurred")
+		assert.NoError(t, err)
 	})
 }
 
@@ -641,7 +626,7 @@ func TestGctsDeployToAbapSystemFailure(t *testing.T) {
 	}
 	t.Run("Deploy to ABAP system Failure", func(t *testing.T) {
 		var httpClient httpMockGcts
-		if config.Host == "testRepoNotExists" {
+		if config.Repository == "testRepoNotExists" {
 			httpClient = httpMockGcts{StatusCode: 500, ResponseBody: `{
 				"exception": "No relation between system and repository"
 			    }`}
