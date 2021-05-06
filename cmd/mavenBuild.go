@@ -79,6 +79,7 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 	}
 
 	_, err := maven.Execute(&mavenOptions, utils)
+
 	if err == nil {
 		if config.Publish && !config.Verify {
 			log.Entry().Infof("publish detected, running mvn deploy")

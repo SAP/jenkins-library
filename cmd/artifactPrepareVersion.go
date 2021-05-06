@@ -3,14 +3,15 @@ package cmd
 import (
 	"bytes"
 	"fmt"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"io"
 	netHttp "net/http"
 	"os"
 	"strings"
 	"text/template"
 	"time"
+
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	gitUtils "github.com/SAP/jenkins-library/pkg/git"
@@ -58,6 +59,8 @@ type artifactPrepareVersionUtils interface {
 	FileExists(filename string) (bool, error)
 	Copy(src, dest string) (int64, error)
 	MkdirAll(path string, perm os.FileMode) error
+	FileWrite(path string, content []byte, perm os.FileMode) error
+	FileRead(path string) ([]byte, error)
 }
 
 type artifactPrepareVersionUtilsBundle struct {
