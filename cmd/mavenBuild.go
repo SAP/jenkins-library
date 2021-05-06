@@ -102,9 +102,9 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 				} else {
 					projectSettingsFile, err := maven.CreateNewProjectSettingsXML(config.AltDeploymentRepositoryID, config.AltDeploymentRepositoryUser, config.AltDeploymentRepositoryPassowrd, utils)
 					if err != nil {
-						mavenOptions.ProjectSettingsFile = projectSettingsFile
-					} else {
 						return err
+					} else {
+						mavenOptions.ProjectSettingsFile = projectSettingsFile
 					}
 				}
 			}
