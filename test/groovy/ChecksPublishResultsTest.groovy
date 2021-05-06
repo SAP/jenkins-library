@@ -182,9 +182,16 @@ class ChecksPublishResultsTest extends BasePiperTest {
     void testPublishWithChangedStepDefaultSettings() throws Exception {
         // init
         // pmd has been set to active: true in step configuration
-        def cpe = [configuration: [steps: [checksPublishResults: [pmd: [active: true]]]]]
+        nullScript.commonPipelineEnvironment.configuration =
+        [
+            steps: [
+                checksPublishResults: [
+                    pmd: [active: true]
+                ]
+            ]
+        ]
         // test
-        stepRule.step.checksPublishResults(script: [commonPipelineEnvironment: cpe])
+        stepRule.step.checksPublishResults(script: nullScript)
         // assert
         assertThat(publisherStepOptions, hasKey('PmdPublisher'))
         // ensure nothing else is published

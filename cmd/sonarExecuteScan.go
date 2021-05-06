@@ -10,6 +10,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bmatcuk/doublestar"
+	"github.com/pkg/errors"
+
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -18,8 +21,7 @@ import (
 	StepResults "github.com/SAP/jenkins-library/pkg/piperutils"
 	SonarUtils "github.com/SAP/jenkins-library/pkg/sonar"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/bmatcuk/doublestar"
-	"github.com/pkg/errors"
+	"github.com/SAP/jenkins-library/pkg/versioning"
 )
 
 type sonarSettings struct {
@@ -76,9 +78,13 @@ func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, i
 	// reroute command output to logging framework
 	runner.Stdout(log.Writer())
 	runner.Stderr(log.Writer())
-
-	client := piperhttp.Client{}
-	client.SetOptions(piperhttp.ClientOptions{TransportTimeout: 20 * time.Second})
+	// client for downloading the sonar-scanner
+	downloadClient := &piperhttp.Client{}
+	downloadClient.SetOptions(piperhttp.ClientOptions{TransportTimeout: 20 * time.Second})
+	// client for talking to the SonarQube API
+	apiClient := &piperhttp.Client{}
+	//TODO: implement certificate handling
+	apiClient.SetOptions(piperhttp.ClientOptions{TransportSkipVerification: true})
 
 	sonar = sonarSettings{
 		workingDir:  "./",
@@ -88,7 +94,7 @@ func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, i
 	}
 
 	influx.step_data.fields.sonar = false
-	if err := runSonar(config, &client, &runner); err != nil {
+	if err := runSonar(config, downloadClient, &runner, apiClient, influx); err != nil {
 		if log.GetErrorCategory() == log.ErrorUndefined && runner.GetExitCode() == 2 {
 			// see https://github.com/SonarSource/sonar-scanner-cli/blob/adb67d645c3bcb9b46f29dea06ba082ebec9ba7a/src/main/java/org/sonarsource/scanner/cli/Exit.java#L25
 			log.SetErrorCategory(log.ErrorConfiguration)
@@ -98,9 +104,18 @@ func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, i
 	influx.step_data.fields.sonar = true
 }
 
-func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runner command.ExecRunner) error {
+func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runner command.ExecRunner, apiClient SonarUtils.Sender, influx *sonarExecuteScanInflux) error {
 	if len(config.ServerURL) > 0 {
 		sonar.addEnvironment("SONAR_HOST_URL=" + config.ServerURL)
+	}
+	if len(config.Token) == 0 {
+		log.Entry().Warn("sonar token not set")
+		// use token provided by sonar-scanner-jenkins plugin
+		// https://github.com/SonarSource/sonar-scanner-jenkins/blob/441ef2f485884758b60767bed2ef8a1a0a7fc863/src/main/java/hudson/plugins/sonar/SonarBuildWrapper.java#L132
+		if len(os.Getenv("SONAR_AUTH_TOKEN")) > 0 {
+			log.Entry().Info("using token from env var SONAR_AUTH_TOKEN")
+			config.Token = os.Getenv("SONAR_AUTH_TOKEN")
+		}
 	}
 	if len(config.Token) > 0 {
 		sonar.addEnvironment("SONAR_TOKEN=" + config.Token)
@@ -108,9 +123,14 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 	if len(config.Organization) > 0 {
 		sonar.addOption("sonar.organization=" + config.Organization)
 	}
-	if len(config.ProjectVersion) > 0 {
-		// handleArtifactVersion is reused from cmd/protecodeExecuteScan.go
-		sonar.addOption("sonar.projectVersion=" + handleArtifactVersion(config.ProjectVersion))
+	if len(config.Version) > 0 {
+		version := config.CustomScanVersion
+		if len(version) > 0 {
+			log.Entry().Infof("Using custom version: %v", version)
+		} else {
+			version = versioning.ApplyVersioningModel(config.VersioningModel, versioning.Coordinates{Version: config.Version})
+		}
+		sonar.addOption("sonar.projectVersion=" + version)
 	}
 	if len(config.ProjectKey) > 0 {
 		sonar.addOption("sonar.projectKey=" + config.ProjectKey)
@@ -154,19 +174,77 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 	if err != nil {
 		return err
 	}
+
+	// as PRs are handled locally for legacy SonarQube systems, no measurements will be fetched.
+	if len(config.ChangeID) > 0 && config.LegacyPRHandling {
+		return nil
+	}
+
 	// load task results
 	taskReport, err := SonarUtils.ReadTaskReport(sonar.workingDir)
 	if err != nil {
-		log.Entry().WithError(err).Warning("Unable to read Sonar task report file.")
-	} else {
-		// write links JSON
-		links := []StepResults.Path{
-			{
-				Target: taskReport.DashboardURL,
-				Name:   "Sonar Web UI",
-			},
-		}
-		StepResults.PersistReportsAndLinks("sonarExecuteScan", sonar.workingDir, nil, links)
+		log.Entry().WithError(err).Warning("no scan report found")
+		return nil
+	}
+	// write links JSON
+	links := []StepResults.Path{
+		{
+			Target: taskReport.DashboardURL,
+			Name:   "Sonar Web UI",
+		},
+	}
+	StepResults.PersistReportsAndLinks("sonarExecuteScan", sonar.workingDir, nil, links)
+
+	if len(config.Token) == 0 {
+		log.Entry().Warn("no measurements are fetched due to missing credentials")
+		return nil
+	}
+	taskService := SonarUtils.NewTaskService(taskReport.ServerURL, config.Token, taskReport.TaskID, apiClient)
+	// wait for analysis task to complete
+	err = taskService.WaitForTask()
+	if err != nil {
+		return err
+	}
+	// fetch number of issues by severity
+	issueService := SonarUtils.NewIssuesService(taskReport.ServerURL, config.Token, taskReport.ProjectKey, config.Organization, config.BranchName, config.ChangeID, apiClient)
+	influx.sonarqube_data.fields.blocker_issues, err = issueService.GetNumberOfBlockerIssues()
+	if err != nil {
+		return err
+	}
+	influx.sonarqube_data.fields.critical_issues, err = issueService.GetNumberOfCriticalIssues()
+	if err != nil {
+		return err
+	}
+	influx.sonarqube_data.fields.major_issues, err = issueService.GetNumberOfMajorIssues()
+	if err != nil {
+		return err
+	}
+	influx.sonarqube_data.fields.minor_issues, err = issueService.GetNumberOfMinorIssues()
+	if err != nil {
+		return err
+	}
+	influx.sonarqube_data.fields.info_issues, err = issueService.GetNumberOfInfoIssues()
+	if err != nil {
+		return err
+	}
+	log.Entry().Debugf("Influx values: %v", influx.sonarqube_data.fields)
+	err = SonarUtils.WriteReport(SonarUtils.ReportData{
+		ServerURL:    taskReport.ServerURL,
+		ProjectKey:   taskReport.ProjectKey,
+		TaskID:       taskReport.TaskID,
+		ChangeID:     config.ChangeID,
+		BranchName:   config.BranchName,
+		Organization: config.Organization,
+		NumberOfIssues: SonarUtils.Issues{
+			Blocker:  influx.sonarqube_data.fields.blocker_issues,
+			Critical: influx.sonarqube_data.fields.critical_issues,
+			Major:    influx.sonarqube_data.fields.major_issues,
+			Minor:    influx.sonarqube_data.fields.minor_issues,
+			Info:     influx.sonarqube_data.fields.info_issues,
+		},
+	}, sonar.workingDir, ioutil.WriteFile)
+	if err != nil {
+		return err
 	}
 	return nil
 }

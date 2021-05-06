@@ -218,6 +218,40 @@ steps:
 		})
 	})
 
+	t.Run("Success case - environment nil", func(t *testing.T) {
+
+		testConfig := ""
+		filters := StepFilters{
+			General: []string{"p0"},
+		}
+
+		defaults1 := `general:
+  p0: p0_general_default
+`
+		var c Config
+		defaults := []io.ReadCloser{ioutil.NopCloser(strings.NewReader(defaults1))}
+
+		myConfig := ioutil.NopCloser(strings.NewReader(testConfig))
+
+		stepMeta := StepData{Spec: StepSpec{Inputs: StepInputs{Parameters: []StepParameters{
+			{Name: "p0", ResourceRef: []ResourceReference{{Name: "commonPipelineEnvironment", Param: "p0"}}},
+		}}}}
+
+		dir, err := ioutil.TempDir("", "")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+
+		// clean up tmp dir
+		defer os.RemoveAll(dir)
+
+		stepConfig, err := c.GetStepConfig(map[string]interface{}{}, "", myConfig, defaults, false, filters, []StepParameters{}, []StepSecrets{}, stepMeta.GetResourceParameters(dir, "commonPipelineEnvironment"), "stage1", "step1", []Alias{})
+
+		assert.Equal(t, nil, err, "error occurred but none expected")
+
+		assert.Equal(t, "p0_general_default", stepConfig.Config["p0"])
+	})
+
 	t.Run("Consider custom defaults from config", func(t *testing.T) {
 		var c Config
 		testConfDefaults := "customDefaults:\n- testDefaults.yaml"
@@ -292,7 +326,7 @@ steps:
 		var c Config
 		myConfig := ioutil.NopCloser(strings.NewReader("invalid config"))
 		_, err := c.GetStepConfig(nil, "", myConfig, nil, false, StepFilters{}, []StepParameters{}, nil, nil, "stage1", "step1", []Alias{})
-		assert.EqualError(t, err, "failed to parse custom pipeline configuration: format of configuration is invalid \"invalid config\": error unmarshaling JSON: json: cannot unmarshal string into Go value of type config.Config", "default error expected")
+		assert.EqualError(t, err, "failed to parse custom pipeline configuration: format of configuration is invalid \"invalid config\": error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type config.Config", "default error expected")
 	})
 
 	t.Run("Failure case defaults", func(t *testing.T) {
@@ -300,7 +334,7 @@ steps:
 		myConfig := ioutil.NopCloser(strings.NewReader(""))
 		myDefaults := []io.ReadCloser{ioutil.NopCloser(strings.NewReader("invalid defaults"))}
 		_, err := c.GetStepConfig(nil, "", myConfig, myDefaults, false, StepFilters{}, []StepParameters{}, nil, nil, "stage1", "step1", []Alias{})
-		assert.EqualError(t, err, "failed to read default configuration: error unmarshalling \"invalid defaults\": error unmarshaling JSON: json: cannot unmarshal string into Go value of type config.Config", "default error expected")
+		assert.EqualError(t, err, "failed to read default configuration: error unmarshalling \"invalid defaults\": error unmarshaling JSON: while decoding JSON: json: cannot unmarshal string into Go value of type config.Config", "default error expected")
 	})
 
 	//ToDo: test merging of env and parameters/flags

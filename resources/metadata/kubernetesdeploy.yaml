@@ -76,8 +76,7 @@ spec:
         aliases:
           - name: helmChartPath
         type: string
-        description: Defines the chart path for deployments using helm.
-        mandatory: true
+        description: Defines the chart path for deployments using helm. It is a mandatory parameter when `deployTool:helm` or `deployTool:helm3`.
         scope:
           - PARAMETERS
           - STAGES
@@ -151,8 +150,7 @@ spec:
         aliases:
           - name: helmDeploymentName
         type: string
-        description: Defines the name of the deployment.
-        mandatory: true
+        description: Defines the name of the deployment. It is a mandatory parameter when `deployTool:helm` or `deployTool:helm3`.
         scope:
           - PARAMETERS
           - STAGES
@@ -170,6 +168,15 @@ spec:
           - kubectl
           - helm
           - helm3
+      - name: forceUpdates
+        type: bool
+        description: "Helm only: force resource updates with helm parameter `--force`"
+        mandatory: false
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: true
       - name: helmDeployWaitSeconds
         type: int
         description: Number of seconds before helm deploy returns.
@@ -236,9 +243,9 @@ spec:
             type: secret
           - type: vaultSecretFile
             paths:
-            - $(vaultPath)/kube-config
-            - $(vaultBasePath)/$(vaultPipelineName)/kube-config
-            - $(vaultBasePath)/GROUP-SECRETS/kube-config
+              - $(vaultPath)/kube-config
+              - $(vaultBasePath)/$(vaultPipelineName)/kube-config
+              - $(vaultBasePath)/GROUP-SECRETS/kube-config
       - name: kubeContext
         type: string
         description: Defines the context to use from the \"kubeconfig\" file.
@@ -279,7 +286,7 @@ spec:
           - STAGES
           - STEPS
   containers:
-    - image: dtzar/helm-kubectl:3.1.2
+    - image: dtzar/helm-kubectl:3.4.1
       workingDir: /config
       options:
         - name: -u

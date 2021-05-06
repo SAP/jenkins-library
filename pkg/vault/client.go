@@ -46,6 +46,7 @@ func NewClient(config *Config, token string) (Client, error) {
 	}
 
 	client.SetToken(token)
+	log.Entry().Debugf("Login to vault %s in namespace %s successfull", config.Address, config.Namespace)
 	return Client{client.Logical(), config}, nil
 }
 
@@ -83,7 +84,6 @@ func NewClientWithAppRole(config *Config, roleID, secretID string) (Client, erro
 		return Client{}, fmt.Errorf("Could not obtain token from approle with role_id %s", roleID)
 	}
 
-	log.Entry().Debugf("Login to vault %s in namespace %s successfull", config.Address, config.Namespace)
 	return NewClient(config, authInfo.ClientToken)
 }
 
@@ -144,6 +144,35 @@ func (v Client) GetKvSecret(path string) (map[string]string, error) {
 		}
 	}
 	return secretData, nil
+}
+
+// WriteKvSecret writes secret to kv engine
+func (v Client) WriteKvSecret(path string, newSecret map[string]string) error {
+	oldSecret, err := v.GetKvSecret(path)
+	if err != nil {
+		return err
+	}
+	secret := make(map[string]interface{}, len(oldSecret))
+	for k, v := range oldSecret {
+		secret[k] = v
+	}
+	for k, v := range newSecret {
+		secret[k] = v
+	}
+	path = sanitizePath(path)
+	mountpath, version, err := v.getKvInfo(path)
+	if err != nil {
+		return err
+	}
+	if version == 2 {
+		path = addPrefixToKvPath(path, mountpath, "data")
+		secret = map[string]interface{}{"data": secret}
+	} else if version != 1 {
+		return fmt.Errorf("KV Engine in version %d is currently not supported", version)
+	}
+
+	_, err = v.lClient.Write(path, secret)
+	return err
 }
 
 // GenerateNewAppRoleSecret creates a new secret-id
@@ -215,6 +244,21 @@ func (v *Client) GetAppRoleSecretIDTtl(secretID, roleName string) (time.Duration
 	}
 
 	return ttl, nil
+}
+
+// RevokeToken revokes the token which is currently used.
+// The client can't be used anymore after this function was called.
+func (v Client) RevokeToken() error {
+	_, err := v.lClient.Write("auth/token/revoke-self", map[string]interface{}{})
+	return err
+}
+
+// MustRevokeToken same as RevokeToken but the programm is terminated with an error if this fails.
+// Should be used in defer statements only.
+func (v Client) MustRevokeToken() {
+	if err := v.RevokeToken(); err != nil {
+		log.Entry().WithError(err).Fatal("Could not revoke token")
+	}
 }
 
 // GetAppRoleName returns the AppRole role name which was used to authenticate.

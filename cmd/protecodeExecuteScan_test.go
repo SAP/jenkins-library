@@ -148,13 +148,13 @@ func TestRunProtecodeScan(t *testing.T) {
 	cachePath = dir
 
 	t.Run("With tar as scan image", func(t *testing.T) {
-		config := protecodeExecuteScanOptions{ServerURL: server.URL, TimeoutMinutes: "1", ReuseExisting: false, CleanupMode: "none", Group: "13", FetchURL: "/api/fetch/", ExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt"}
+		config := protecodeExecuteScanOptions{ServerURL: server.URL, TimeoutMinutes: "1", VerifyOnly: false, CleanupMode: "none", Group: "13", FetchURL: "/api/fetch/", ExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt"}
 		err = runProtecodeScan(&config, &influx, dClient)
 		assert.NoError(t, err)
 	})
 
 	t.Run("Without tar as scan image", func(t *testing.T) {
-		config := protecodeExecuteScanOptions{ServerURL: server.URL, ScanImage: "t", FilePath: path, TimeoutMinutes: "1", ReuseExisting: false, CleanupMode: "none", Group: "13", ExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt"}
+		config := protecodeExecuteScanOptions{ServerURL: server.URL, ScanImage: "t", FilePath: path, TimeoutMinutes: "1", VerifyOnly: false, CleanupMode: "none", Group: "13", ExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt"}
 		err = runProtecodeScan(&config, &influx, dClient)
 		assert.NoError(t, err)
 	})
@@ -265,7 +265,7 @@ func TestUploadScanOrDeclareFetch(t *testing.T) {
 
 	for _, c := range cases {
 		// test
-		config := protecodeExecuteScanOptions{ReuseExisting: c.reuse, CleanupMode: c.clean, Group: c.group, FetchURL: c.fetchURL, FilePath: c.filePath}
+		config := protecodeExecuteScanOptions{VerifyOnly: c.reuse, CleanupMode: c.clean, Group: c.group, FetchURL: c.fetchURL, FilePath: c.filePath}
 		got := uploadScanOrDeclareFetch(config, 0, pc, fileName)
 		// assert
 		assert.Equal(t, c.want, got)
@@ -335,16 +335,16 @@ func TestExecuteProtecodeScan(t *testing.T) {
 		err = os.Chdir(dir)
 		require.NoErrorf(t, err, "Failed to change into temporary directory: %v", err)
 		reportPath = dir
-		config := protecodeExecuteScanOptions{ReuseExisting: c.reuse, CleanupMode: c.clean, Group: c.group, FetchURL: c.fetchURL, TimeoutMinutes: "3", ExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt"}
+		config := protecodeExecuteScanOptions{VerifyOnly: c.reuse, CleanupMode: c.clean, Group: c.group, FetchURL: c.fetchURL, TimeoutMinutes: "3", ExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt"}
 		influxData := &protecodeExecuteScanInflux{}
 		// test
 		executeProtecodeScan(influxData, pc, &config, "dummy", writeReportToFileMock)
 		// assert
-		assert.Equal(t, "1125", influxData.protecode_data.fields.historical_vulnerabilities)
-		assert.Equal(t, "0", influxData.protecode_data.fields.triaged_vulnerabilities)
-		assert.Equal(t, "1", influxData.protecode_data.fields.excluded_vulnerabilities)
-		assert.Equal(t, "142", influxData.protecode_data.fields.major_vulnerabilities)
-		assert.Equal(t, "226", influxData.protecode_data.fields.vulnerabilities)
+		assert.Equal(t, 1125, influxData.protecode_data.fields.historical_vulnerabilities)
+		assert.Equal(t, 0, influxData.protecode_data.fields.triaged_vulnerabilities)
+		assert.Equal(t, 1, influxData.protecode_data.fields.excluded_vulnerabilities)
+		assert.Equal(t, 142, influxData.protecode_data.fields.major_vulnerabilities)
+		assert.Equal(t, 226, influxData.protecode_data.fields.vulnerabilities)
 	}
 }
 
@@ -399,16 +399,25 @@ func TestGetTarName(t *testing.T) {
 			"3.20.20-20200131085038+eeb7c1033339bfd404d21ec5e7dc05c80e9e985e",
 			"abc_3.tar",
 		},
-		"without version ": {
+		"without version": {
 			"abc",
 			"",
 			"abc.tar",
 		},
+		"ScanImage without sha as artifactVersion": {
+			"abc@sha256:12345",
+			"",
+			"abc.tar",
+		},
+		"ScanImage with sha as artifactVersion": {
+			"ppiper/cf-cli@sha256:c25dbacb9ab6e912afe0fe926d8f9d949c60adfe55d16778bde5941e6c37be11",
+			"c25dbacb9ab6e912afe0fe926d8f9d949c60adfe55d16778bde5941e6c37be11",
+			"ppiper_cf-cli_c25dbacb9ab6e912afe0fe926d8f9d949c60adfe55d16778bde5941e6c37be11.tar",
+		},
 	}
-
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
-			assert.Equal(t, c.expect, getTarName(&protecodeExecuteScanOptions{ScanImage: c.image, ArtifactVersion: c.version}))
+			assert.Equal(t, c.expect, getTarName(&protecodeExecuteScanOptions{ScanImage: c.image, Version: c.version}))
 		})
 	}
 }

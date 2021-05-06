@@ -36,6 +36,16 @@ import hudson.AbortException
         'additionalPodProperties',
         'resources',
     /**
+     * Set this to 'false' to bypass a docker image pull.
+     * Useful during development process. Allows testing of images which are available in the local registry only.
+     */
+    'dockerPullImage',
+    /**
+     * Set this to 'false' to bypass a docker image pull.
+     * Useful during development process. Allows testing of images which are available in the local registry only.
+     */
+    'sidecarPullImage',
+    /**
      * Print more detailed information into the log.
      * @possibleValues `true`, `false`
      */
@@ -77,7 +87,7 @@ import hudson.AbortException
     'containerEnvVars',
     /**
      * A map of docker image to the name of the container. The pod will be created with all the images from this map and they are labelled based on the value field of each map entry.
-     * Example: `['maven:3.5-jdk-8-alpine': 'mavenExecute', 'selenium/standalone-chrome': 'selenium', 'famiko/jmeter-base': 'checkJMeter', 'ppiper/cf-cli': 'cloudfoundry']`
+     * Example: `['maven:3.5-jdk-8-alpine': 'mavenExecute', 'selenium/standalone-chrome': 'selenium', 'famiko/jmeter-base': 'checkJMeter', 'ppiper/cf-cli:6': 'cloudfoundry']`
      */
     'containerMap',
     /**
@@ -109,11 +119,6 @@ import hudson.AbortException
      */
     'dockerImage',
     /**
-     * Set this to 'false' to bypass a docker image pull.
-     * Useful during development process. Allows testing of images which are available in the local registry only.
-     */
-    'dockerPullImage',
-    /**
      * Specifies a dedicated user home directory for the container which will be passed as value for environment variable `HOME`.
      */
     'dockerWorkspace',
@@ -126,11 +131,6 @@ import hudson.AbortException
      * Name of the container in local network.
      */
     'sidecarName',
-    /**
-     * Set this to 'false' to bypass a docker image pull.
-     * Useful during development process. Allows testing of images which are available in the local registry only.
-     */
-    'sidecarPullImage',
     /**
      * Command executed inside the container which returns exit code 0 when the container is ready to be used.
      */
@@ -191,6 +191,13 @@ import hudson.AbortException
      * to the step call takes precedence.
      */
     'resources',
+    /**
+     * The path to which a volume should be mounted to. This volume will be available at the same
+     * mount path in each container of the provided containerMap. The volume is of type emptyDir
+     * and has the name 'volume'. With the additionalPodProperties parameter one can for example
+     * use this volume in an initContainer.
+     */
+    'containerMountPath',
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.minus([
     'stashIncludes',
@@ -320,7 +327,6 @@ void executeOnPod(Map config, utils, Closure body, Script script) {
 }
 
 private String generatePodSpec(Map config) {
-    def containers = getContainerList(config)
     def podSpec = [
         apiVersion: "v1",
         kind      : "Pod",
@@ -332,6 +338,13 @@ private String generatePodSpec(Map config) {
     podSpec.spec += getAdditionalPodProperties(config)
     podSpec.spec.containers = getContainerList(config)
     podSpec.spec.securityContext = getSecurityContext(config)
+
+    if (config.containerMountPath) {
+        podSpec.spec.volumes = [[
+                                    name    : "volume",
+                                    emptyDir: [:]
+                                ]]
+    }
 
     return new JsonUtils().groovyObjectToPrettyJsonString(podSpec)
 }
@@ -433,6 +446,9 @@ private List getContainerList(config) {
             imagePullPolicy: pullImage ? "Always" : "IfNotPresent",
             env            : getContainerEnvs(config, imageName, config.dockerEnvVars, config.dockerWorkspace)
         ]
+        if (config.containerMountPath) {
+            containerSpec.volumeMounts = [[name: "volume", mountPath: config.containerMountPath]]
+        }
 
         def configuredCommand = config.containerCommands?.get(imageName)
         def shell = config.containerShell ?: '/bin/sh'

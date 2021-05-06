@@ -10,6 +10,7 @@
 1. [Debugging](#debugging)
 1. [Release](#release)
 1. [Pipeline Configuration](#pipeline-configuration)
+1. [Security Setup](#security-setup)
 
 ## Getting started
 
@@ -547,3 +548,46 @@ It only contains the paths of configurations which are **not** provided via `cus
 ## Additional Developer Hints
 
 You can find additional hints at [documentation/developer-hints](./documentation/developer_hints)
+
+## Security Setup
+
+Here some hints and tricks are described to enhance the security within the development process.
+
+1. [Signing Commits](#signing-commits)
+
+### Signing Commits
+
+In git, commits can be [signed](https://git-scm.com/book/en/v2/Git-Tools-Signing-Your-Work) to guarantee that that changes were made by the person named in the commit.
+The name and email used for commits can be easily modified in the local git setup and afterwards it cannot be distinguished anymore if the commit was done by the real person or by some potential attacker.
+
+In Windows, this can be done via [GnuPG](https://www.gnupg.org/(en)/download/index.html).
+Download and install the tool.
+Via the manager tool *Kleopatra* a new key pair can be easily created with a little wizard.
+Make sure that the name and email are the ones used in your git.
+
+The public key must then be added to the github's GPG section.
+The private key should be kept in a backup as this signature is bound to you and not your machine.
+
+The only thing left are some changes in the *.gitconfig* file.
+The file shall be located in your user directory.
+It might look something like the following.
+All parts that are not relevant for signing were removed.
+
+```
+[user]
+  name = My Name
+  email = my.name@sap.com
+  # Hash or email of you GPG key
+  signingkey = D3CF72CC4006DE245C049566242831AEEE9DA2DD
+[commit]
+  # enable signing for commits
+  gpgsign = true
+[tag]
+  # enable signing for tags (note the capital S)
+  gpgSign = true
+[gpg]
+  # Windows was not able to find the private key. Setting the gpg command to use solved this.
+  program = C:\\Program Files (x86)\\GnuPG\\bin\\gpg.exe
+```
+
+Add the three to four lines to you git config and this will do the necessary such that all your commits will be signed.

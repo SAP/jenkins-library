@@ -7,6 +7,7 @@ import (
 )
 
 func TestCloudFoundryCreateServiceKeyCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := CloudFoundryCreateServiceKeyCommand()
 

@@ -24,6 +24,7 @@ type abapEnvironmentRunATCCheckOptions struct {
 	Password           string `json:"password,omitempty"`
 	Host               string `json:"host,omitempty"`
 	AtcResultsFileName string `json:"atcResultsFileName,omitempty"`
+	GenerateHTML       bool   `json:"generateHTML,omitempty"`
 }
 
 // AbapEnvironmentRunATCCheckCommand Runs an ATC Check
@@ -101,7 +102,8 @@ func addAbapEnvironmentRunATCCheckFlags(cmd *cobra.Command, stepConfig *abapEnvi
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510")
 	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP Cloud Platform ABAP Environment system")
-	cmd.Flags().StringVar(&stepConfig.AtcResultsFileName, "atcResultsFileName", `ATCResults.xml`, "Specifies output file name for the results from the ATC run")
+	cmd.Flags().StringVar(&stepConfig.AtcResultsFileName, "atcResultsFileName", `ATCResults.xml`, "Specifies output file name for the results from the ATC run. This file name will also be used for generating the HTML file")
+	cmd.Flags().BoolVar(&stepConfig.GenerateHTML, "generateHTML", false, "Specifies whether the ATC results should also be generated as an HTML document")
 
 	cmd.MarkFlagRequired("atcConfig")
 	cmd.MarkFlagRequired("username")
@@ -211,10 +213,18 @@ func abapEnvironmentRunATCCheckMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
+					{
+						Name:        "generateHTML",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
 				},
 			},
 			Containers: []config.Container{
-				{Name: "cf", Image: "ppiper/cf-cli"},
+				{Name: "cf", Image: "ppiper/cf-cli:7"},
 			},
 		},
 	}

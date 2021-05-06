@@ -238,6 +238,7 @@ func ExcludeFiles(files, excludes []string) ([]string, error) {
 	var filteredFiles []string
 	for _, file := range files {
 		includeFile := true
+		file = filepath.FromSlash(file)
 		for _, exclude := range excludes {
 			matched, err := doublestar.PathMatch(exclude, file)
 			if err != nil {

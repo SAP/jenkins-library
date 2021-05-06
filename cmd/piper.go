@@ -34,6 +34,10 @@ type GeneralConfigOptions struct {
 	LogFormat            string
 	VaultRoleID          string
 	VaultRoleSecretID    string
+	VaultToken           string
+	VaultServerURL       string
+	VaultNamespace       string
+	VaultPath            string
 	HookConfig           HookConfiguration
 }
 
@@ -70,10 +74,13 @@ func Execute() {
 	rootCmd.AddCommand(DetectExecuteScanCommand())
 	rootCmd.AddCommand(HadolintExecuteCommand())
 	rootCmd.AddCommand(KarmaExecuteTestsCommand())
+	rootCmd.AddCommand(UiVeri5ExecuteTestsCommand())
 	rootCmd.AddCommand(SonarExecuteScanCommand())
 	rootCmd.AddCommand(KubernetesDeployCommand())
 	rootCmd.AddCommand(XsDeployCommand())
 	rootCmd.AddCommand(GithubCheckBranchProtectionCommand())
+	rootCmd.AddCommand(GithubCommentIssueCommand())
+	rootCmd.AddCommand(GithubCreateIssueCommand())
 	rootCmd.AddCommand(GithubCreatePullRequestCommand())
 	rootCmd.AddCommand(GithubPublishReleaseCommand())
 	rootCmd.AddCommand(GithubSetCommitStatusCommand())
@@ -118,6 +125,21 @@ func Execute() {
 	rootCmd.AddCommand(CloudFoundryCreateSpaceCommand())
 	rootCmd.AddCommand(CloudFoundryDeleteSpaceCommand())
 	rootCmd.AddCommand(VaultRotateSecretIdCommand())
+	rootCmd.AddCommand(CheckChangeInDevelopmentCommand())
+	rootCmd.AddCommand(TransportRequestUploadCTSCommand())
+	rootCmd.AddCommand(NewmanExecuteCommand())
+	rootCmd.AddCommand(IntegrationArtifactDeployCommand())
+	rootCmd.AddCommand(TransportRequestUploadSOLMANCommand())
+	rootCmd.AddCommand(IntegrationArtifactUpdateConfigurationCommand())
+	rootCmd.AddCommand(IntegrationArtifactGetMplStatusCommand())
+	rootCmd.AddCommand(IntegrationArtifactGetServiceEndpointCommand())
+	rootCmd.AddCommand(IntegrationArtifactDownloadCommand())
+	rootCmd.AddCommand(AbapEnvironmentAssembleConfirmCommand())
+	rootCmd.AddCommand(IntegrationArtifactUploadCommand())
+	rootCmd.AddCommand(TerraformExecuteCommand())
+	rootCmd.AddCommand(ContainerExecuteStructureTestsCommand())
+	rootCmd.AddCommand(BatsExecuteTestsCommand())
+	rootCmd.AddCommand(PipelineCreateScanSummaryCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
@@ -139,6 +161,9 @@ func addRootFlags(rootCmd *cobra.Command) {
 	rootCmd.PersistentFlags().BoolVar(&GeneralConfig.NoTelemetry, "noTelemetry", false, "Disables telemetry reporting")
 	rootCmd.PersistentFlags().BoolVarP(&GeneralConfig.Verbose, "verbose", "v", false, "verbose output")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.LogFormat, "logFormat", "default", "Log format to use. Options: default, timestamp, plain, full.")
+	rootCmd.PersistentFlags().StringVar(&GeneralConfig.VaultServerURL, "vaultServerUrl", "", "The vault server which should be used to fetch credentials")
+	rootCmd.PersistentFlags().StringVar(&GeneralConfig.VaultNamespace, "vaultNamespace", "", "The vault namespace which should be used to fetch credentials")
+	rootCmd.PersistentFlags().StringVar(&GeneralConfig.VaultPath, "vaultPath", "", "The path which should be used to fetch credentials")
 
 }
 
@@ -216,7 +241,10 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 	if GeneralConfig.VaultRoleSecretID == "" {
 		GeneralConfig.VaultRoleSecretID = os.Getenv("PIPER_vaultAppRoleSecretID")
 	}
-	myConfig.SetVaultCredentials(GeneralConfig.VaultRoleID, GeneralConfig.VaultRoleSecretID)
+	if GeneralConfig.VaultToken == "" {
+		GeneralConfig.VaultToken = os.Getenv("PIPER_vaultToken")
+	}
+	myConfig.SetVaultCredentials(GeneralConfig.VaultRoleID, GeneralConfig.VaultRoleSecretID, GeneralConfig.VaultToken)
 
 	if len(GeneralConfig.StepConfigJSON) != 0 {
 		// ignore config & defaults in favor of passed stepConfigJSON
@@ -258,6 +286,12 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 			}
 		}
 		stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, filters, metadata.Spec.Inputs.Parameters, metadata.Spec.Inputs.Secrets, resourceParams, GeneralConfig.StageName, stepName, metadata.Metadata.Aliases)
+		if verbose, ok := stepConfig.Config["verbose"].(bool); ok && verbose {
+			log.SetVerbose(verbose)
+			GeneralConfig.Verbose = verbose
+		} else if !ok && stepConfig.Config["verbose"] != nil {
+			log.Entry().Warnf("invalid value for parameter verbose: '%v'", stepConfig.Config["verbose"])
+		}
 		if err != nil {
 			return errors.Wrap(err, "retrieving step configuration failed")
 		}

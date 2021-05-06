@@ -41,9 +41,11 @@ func protecodeExecuteScan(config protecodeExecuteScanOptions, telemetryData *tel
 	c.Stderr(log.Writer())
 
 	dClient := createDockerClient(&config)
+	influx.step_data.fields.protecode = false
 	if err := runProtecodeScan(&config, influx, dClient); err != nil {
 		log.Entry().WithError(err).Fatal("Failed to execute protecode scan.")
 	}
+	influx.step_data.fields.protecode = true
 }
 
 func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExecuteScanInflux, dClient piperDocker.Download) error {
@@ -79,7 +81,6 @@ func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExec
 	return nil
 }
 
-// reused by cmd/sonarExecuteScan.go
 // TODO: extract to version utils
 func handleArtifactVersion(artifactVersion string) string {
 	matches, _ := regexp.MatchString("([\\d\\.]){1,}-[\\d]{14}([\\Wa-z\\d]{41})?", artifactVersion)
@@ -141,8 +142,8 @@ func getDockerImage(dClient piperDocker.Download, config *protecodeExecuteScanOp
 
 func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.Protecode, config *protecodeExecuteScanOptions, fileName string, writeReportToFile func(resp io.ReadCloser, reportFileName string) error) error {
 	//load existing product by filename
-	log.Entry().Debugf("Load existing product Group:%v Reuse:%v", config.Group, config.ReuseExisting)
-	productID := client.LoadExistingProduct(config.Group, config.ReuseExisting)
+	log.Entry().Debugf("Load existing product Group:%v Reuse:%v", config.Group, config.VerifyOnly)
+	productID := client.LoadExistingProduct(config.Group, config.VerifyOnly)
 
 	// check if no existing is found or reuse existing is false
 	productID = uploadScanOrDeclareFetch(*config, productID, client, fileName)
@@ -214,12 +215,12 @@ func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.P
 }
 
 func setInfluxData(influx *protecodeExecuteScanInflux, result map[string]int) {
-	influx.protecode_data.fields.historical_vulnerabilities = fmt.Sprintf("%v", result["historical_vulnerabilities"])
-	influx.protecode_data.fields.triaged_vulnerabilities = fmt.Sprintf("%v", result["triaged_vulnerabilities"])
-	influx.protecode_data.fields.excluded_vulnerabilities = fmt.Sprintf("%v", result["excluded_vulnerabilities"])
-	influx.protecode_data.fields.minor_vulnerabilities = fmt.Sprintf("%v", result["minor_vulnerabilities"])
-	influx.protecode_data.fields.major_vulnerabilities = fmt.Sprintf("%v", result["major_vulnerabilities"])
-	influx.protecode_data.fields.vulnerabilities = fmt.Sprintf("%v", result["vulnerabilities"])
+	influx.protecode_data.fields.historical_vulnerabilities = result["historical_vulnerabilities"]
+	influx.protecode_data.fields.triaged_vulnerabilities = result["triaged_vulnerabilities"]
+	influx.protecode_data.fields.excluded_vulnerabilities = result["excluded_vulnerabilities"]
+	influx.protecode_data.fields.minor_vulnerabilities = result["minor_vulnerabilities"]
+	influx.protecode_data.fields.major_vulnerabilities = result["major_vulnerabilities"]
+	influx.protecode_data.fields.vulnerabilities = result["vulnerabilities"]
 }
 
 func createClient(config *protecodeExecuteScanOptions) protecode.Protecode {
@@ -261,7 +262,7 @@ func createDockerClient(config *protecodeExecuteScanOptions) piperDocker.Downloa
 
 func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productID int, client protecode.Protecode, fileName string) int {
 	//check if the LoadExistingProduct) before returns an valid product id, than scip this
-	if !hasExisting(productID, config.ReuseExisting) {
+	if !hasExisting(productID, config.VerifyOnly) {
 		if len(config.FetchURL) > 0 {
 			log.Entry().Debugf("Declare fetch url %v", config.FetchURL)
 			resultData := client.DeclareFetchURL(config.CleanupMode, config.Group, config.FetchURL)
@@ -296,8 +297,8 @@ func fileExists(filename string) bool {
 	return !info.IsDir()
 }
 
-func hasExisting(productID int, reuseExisting bool) bool {
-	if (productID > 0) || reuseExisting {
+func hasExisting(productID int, verifyOnly bool) bool {
+	if (productID > 0) || verifyOnly {
 		return true
 	}
 	return false
@@ -329,12 +330,16 @@ func correctDockerConfigEnvVar(config *protecodeExecuteScanOptions) {
 
 func getTarName(config *protecodeExecuteScanOptions) string {
 	// remove original version
-	fileName := strings.TrimSuffix(config.ScanImage, ":"+config.ArtifactVersion)
+	fileName := strings.TrimSuffix(config.ScanImage, ":"+config.Version)
+	// remove sha digest if exists
+	sha256 := "@sha256"
+	if index := strings.Index(fileName, sha256); index > -1 {
+		fileName = fileName[:index]
+	}
 	// append trimmed version
-	if version := handleArtifactVersion(config.ArtifactVersion); len(version) > 0 {
+	if version := handleArtifactVersion(config.Version); len(version) > 0 {
 		fileName = fileName + "_" + version
 	}
-	// replace unwanted chars
 	fileName = strings.ReplaceAll(fileName, "/", "_")
 	return fileName + ".tar"
 }

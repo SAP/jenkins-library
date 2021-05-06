@@ -2,7 +2,7 @@
 
 Follow this guided tour to become familiar with the basics of using project "Piper".
 
-The public sample application [cloud-cf-helloworld-nodejs][cloud-cf-helloworld-nodejs] will be enriched with a pipeline which syncs the sources, builds these as MTA and deploys the result into a Cloud Foundry environment. The application contains a simple `nodejs` application. Deployed as web service, it serves static data.
+The public sample application [cloud-cf-helloworld-nodejs][cloud-cf-helloworld-nodejs] will be enriched with a pipeline which syncs the sources, builds these as multitarget applications and deploys the result into a Cloud Foundry environment. The application contains a simple `nodejs` application. Deployed as web service, it serves static data.
 
 **Recommendation:** We recommend to clone the sample application [cloud-cf-helloworld-nodejs][cloud-cf-helloworld-nodejs] and execute the instructions on your own repository. See **(Optional) Sample Application**.
 
@@ -50,7 +50,7 @@ Copy the sources of the application into your own Git repository. While we will 
 
 1. Create an organization on GitHub, if you haven't any yet. See [Creating a new organization][github-create-org].
 1. [Duplicate][github-duplicate-repo] the repository [cloud-cf-helloworld-nodejs][cloud-cf-helloworld-nodejs] into your GitHub organization. [Make this repository private][github-set-repo-visible]. **Note:** Forked public repositories cannot be made private.
-1. Get an account and space in the Cloud Foundry environment. For the deployment of the application you need access to a space on the Cloud Foundry environment of the SAP Cloud Platform. If you haven't any yet, get a [Trial Account][sap-cp-trial].
+1. Get an account and space in the Cloud Foundry environment. For the deployment of the application you need access to a space on the Cloud Foundry environment of the SAP Business Technology Platform (SAP BTP). If you haven't any yet, get a [Trial Account][sap-cp-trial].
 1. Select the `1_REST_persist_in_Memory` branch of your [cloud-cf-helloworld-nodejs] fork. Other branches might work as well, but this one is tested.
 
 ## Create Your First Pipeline
@@ -115,7 +115,7 @@ For additional information about multibranch pipelines, please refer to the [Jen
    }
    ```
 
-   The `mtaBuild` step calls a build tool to build a multi-target application (MTA). The tool consumes an MTA descriptor that contains the metadata of all entities which comprise an application or are used by one during deployment or runtime, and the dependencies between them. For more information about MTAs, see [sap.com][sap].
+The `mtaBuild` step calls a build tool to build a multitarget application (MTA). The tool consumes an MTA descriptor that contains the metadata of all entities which comprise an application or are used by one during deployment or runtime, and the dependencies between them. For more information about MTAs, see [sap.com][sap].
 
 1. Create the MTA descriptor file with the name `mta.yaml` in the root level of the repository. Insert the following code:
 
@@ -156,7 +156,7 @@ For additional information about multibranch pipelines, please refer to the [Jen
    }
    ```
 
-   The `cloudFoundryDeploy`  step calls the Cloud Foundry command line client to deploy the built MTA into SAP Cloud Platform.
+The `cloudFoundryDeploy`  step calls the Cloud Foundry command line client to deploy the built MTA into SAP BTP.
 
 1. To configure the step to deploy into the Cloud Foundry environment, in your repository, open the `.pipeline/config.yml` and add the following content:
 
@@ -189,9 +189,9 @@ If your pipeline fails, compare its files to the final [Jenkinsfile][guidedtour-
 
 ## Open Application
 
-Your application has been deployed into your space in the Cloud Foundry space on SAP Cloud Platform. Login to SAP Cloud Platform and navigate into you space.   **Result:** Your space contains the application `piper.node.hello.world`, the state of the application is `Started`.
+Your application has been deployed into your space in the Cloud Foundry space on SAP BTP. Login to SAP BTP and navigate into you space.   **Result:** Your space contains the application `piper.node.hello.world`, the state of the application is `Started`.
    <p align="center">
-   ![Deployed Application](images/SCPDeployApp-1.png "SAP Cloud Platform")
+  ![Deployed Application](images/SCPDeployApp-1.png "SAP Business Technology Platform")
    </p>
 
 Open the application name to get into the `Application Overview`. Open the **Application Route** and add `/users` to the URL. **Result:** The application returns a list of user data.

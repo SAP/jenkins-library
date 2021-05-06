@@ -36,18 +36,30 @@ func kubernetesDeploy(config kubernetesDeployOptions, telemetryData *telemetry.C
 	}
 	// reroute stderr output to logging framework, stdout will be used for command interactions
 	c.Stderr(log.Writer())
-	runKubernetesDeploy(config, &c, log.Writer())
-}
 
-func runKubernetesDeploy(config kubernetesDeployOptions, command command.ExecRunner, stdout io.Writer) {
-	if config.DeployTool == "helm" || config.DeployTool == "helm3" {
-		runHelmDeploy(config, command, stdout)
-	} else {
-		runKubectlDeploy(config, command)
+	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
+	err := runKubernetesDeploy(config, &c, log.Writer())
+	if err != nil {
+		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, stdout io.Writer) {
+func runKubernetesDeploy(config kubernetesDeployOptions, command command.ExecRunner, stdout io.Writer) error {
+	if config.DeployTool == "helm" || config.DeployTool == "helm3" {
+		return runHelmDeploy(config, command, stdout)
+	} else if config.DeployTool == "kubectl" {
+		return runKubectlDeploy(config, command)
+	}
+	return fmt.Errorf("Failed to execute deployments")
+}
+
+func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, stdout io.Writer) error {
+	if len(config.ChartPath) <= 0 {
+		return fmt.Errorf("chart path has not been set, please configure chartPath parameter")
+	}
+	if len(config.DeploymentName) <= 0 {
+		return fmt.Errorf("deployment name has not been set, please configure deploymentName parameter")
+	}
 	_, containerRegistry, err := splitRegistryURL(config.ContainerRegistryURL)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Container registry url '%v' incorrect", config.ContainerRegistryURL)
@@ -149,11 +161,14 @@ func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, s
 	upgradeParams = append(
 		upgradeParams,
 		"--install",
-		"--force",
 		"--namespace", config.Namespace,
 		"--set",
 		fmt.Sprintf("image.repository=%v/%v,image.tag=%v%v%v", containerRegistry, containerImageName, containerImageTag, secretsData, ingressHosts),
 	)
+
+	if config.ForceUpdates {
+		upgradeParams = append(upgradeParams, "--force")
+	}
 
 	if config.DeployTool == "helm" {
 		upgradeParams = append(upgradeParams, "--wait", "--timeout", strconv.Itoa(config.HelmDeployWaitSeconds))
@@ -181,10 +196,10 @@ func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, s
 	if err := command.RunExecutable("helm", upgradeParams...); err != nil {
 		log.Entry().WithError(err).Fatal("Helm upgrade call failed")
 	}
-
+	return nil
 }
 
-func runKubectlDeploy(config kubernetesDeployOptions, command command.ExecRunner) {
+func runKubectlDeploy(config kubernetesDeployOptions, command command.ExecRunner) error {
 	_, containerRegistry, err := splitRegistryURL(config.ContainerRegistryURL)
 	if err != nil {
 		log.Entry().WithError(err).Fatalf("Container registry url '%v' incorrect", config.ContainerRegistryURL)
@@ -258,6 +273,7 @@ func runKubectlDeploy(config kubernetesDeployOptions, command command.ExecRunner
 		log.Entry().Debugf("Running kubectl with following parameters: %v", kubeApplyParams)
 		log.Entry().WithError(err).Fatal("Deployment with kubectl failed.")
 	}
+	return nil
 }
 
 func splitRegistryURL(registryURL string) (protocol, registry string, err error) {

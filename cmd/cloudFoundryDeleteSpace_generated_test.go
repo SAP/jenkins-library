@@ -7,6 +7,7 @@ import (
 )
 
 func TestCloudFoundryDeleteSpaceCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := CloudFoundryDeleteSpaceCommand()
 

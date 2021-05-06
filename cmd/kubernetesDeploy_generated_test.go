@@ -7,6 +7,7 @@ import (
 )
 
 func TestKubernetesDeployCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := KubernetesDeployCommand()
 

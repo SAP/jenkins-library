@@ -1,3 +1,5 @@
+import com.cloudbees.groovy.cps.NonCPS
+
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.Utils
@@ -26,10 +28,15 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'application',
     /**
-     * The Jenkins credentials containing user and password used for SAP CP deployment.
+     * The Jenkins credentials containing either user and password (UsernamePassword type credential) or json containing clientId, client secret and oauth service url (SecretFile type credential) used for SAP CP deployment.
      * @parentConfigKey neo
      */
     'credentialsId',
+    /**
+     * The Jenkins credential of type 'UsernamePassword' or 'SecretFile'.
+     * @parentConfigKey neo
+     */
+    'credentialType',
     /**
      * Map of environment variables in the form of KEY: VALUE.
      * @parentConfigKey neo
@@ -172,6 +179,7 @@ void call(parameters = [:]) {
         configuration = configHelper
             .withMandatoryProperty('source')
             .withMandatoryProperty('neo/credentialsId')
+            .withMandatoryProperty('neo/credentialType')
             .withMandatoryProperty('neo/application', null, isWarParamsDeployMode)
             .withMandatoryProperty('neo/runtime', null, isWarParamsDeployMode)
             .withMandatoryProperty('neo/runtimeVersion', null, isWarParamsDeployMode)
@@ -203,13 +211,52 @@ void call(parameters = [:]) {
             stepParam3: parameters?.script == null,
         ], configuration)
 
+        if(configuration.neo.credentialType == 'UsernamePassword'){
+            withCredentials([usernamePassword(
+                credentialsId: configuration.neo.credentialsId,
+                passwordVariable: 'NEO_PASSWORD',
+                usernameVariable: 'NEO_USERNAME')]) {
 
-        withCredentials([usernamePassword(
-            credentialsId: configuration.neo.credentialsId,
-            passwordVariable: 'NEO_PASSWORD',
-            usernameVariable: 'NEO_USERNAME')]) {
+                assertPasswordRules(NEO_PASSWORD)
 
-            assertPasswordRules(NEO_PASSWORD)
+                dockerExecute(
+                    script: script,
+                    dockerImage: configuration.dockerImage,
+                    dockerEnvVars: configuration.dockerEnvVars,
+                    dockerOptions: configuration.dockerOptions
+                ) {
+
+                    StepAssertions.assertFileExists(this, configuration.source)
+
+                    for(CharSequence extensionFile in extensionFileNames) {
+                        StepAssertions.assertFileExists(this, extensionFile)
+                    }
+
+                    NeoCommandHelper neoCommandHelper = new NeoCommandHelper(
+                        this,
+                        deployMode,
+                        configuration.neo,
+                        extensionFileNames,
+                        NEO_USERNAME,
+                        NEO_PASSWORD,
+                        configuration.source
+                    )
+
+                    lock("$STEP_NAME:${neoCommandHelper.resourceLock()}") {
+                        deploy(script, configuration, neoCommandHelper, configuration.dockerImage, deployMode)
+                    }
+                    if(configuration.neo.invalidateCache == true) {
+                        if (configuration.deployMode == 'mta') {
+                            echo "Triggering invalidation of cache for html5 applications"
+                            invalidateCache(configuration)
+                        } else {
+                            echo "Invalidation of cache is ignored. It is performed only for html5 applications."
+                        }
+                    }
+                }
+            }
+        }
+        else if(configuration.neo.credentialType == 'SecretFile'){
 
             dockerExecute(
                 script: script,
@@ -217,35 +264,13 @@ void call(parameters = [:]) {
                 dockerEnvVars: configuration.dockerEnvVars,
                 dockerOptions: configuration.dockerOptions
             ) {
-
-                StepAssertions.assertFileExists(this, configuration.source)
-
-                for(CharSequence extensionFile in extensionFileNames) {
-                    StepAssertions.assertFileExists(this, extensionFile)
-                }
-
-                NeoCommandHelper neoCommandHelper = new NeoCommandHelper(
-                    this,
-                    deployMode,
-                    configuration.neo,
-                    extensionFileNames,
-                    NEO_USERNAME,
-                    NEO_PASSWORD,
-                    configuration.source
-                )
-
-                lock("$STEP_NAME:${neoCommandHelper.resourceLock()}") {
-                    deploy(script, configuration, neoCommandHelper, configuration.dockerImage, deployMode)
-                }
-                if(configuration.neo.invalidateCache == true) {
-                    if (configuration.deployMode == 'mta') {
-                        echo "Triggering invalidation of cache for html5 applications"
-                        invalidateCache(configuration)
-                    } else {
-                        echo "Invalidation of cache is ignored. It is performed only for html5 applications."
-                    }
+                withCredentials([file(credentialsId: configuration.neo.credentialsId, variable: 'oauth_deploy_cred')]) {
+                    deployWithBearerToken(oauth_deploy_cred, configuration, script)
                 }
             }
+        }
+        else {
+            error "Unsupported type of neo deploy credential."
         }
     }
 }
@@ -373,6 +398,76 @@ private deploy(script, Map configuration, NeoCommandHelper neoCommandHelper, doc
     }
 }
 
+private deployWithBearerToken(def credentialFilePath, Map configuration, Script script){
+
+    def deployArchive = script.commonPipelineEnvironment.getMtarFilePath()
+    def host = configuration.neo.host
+    def account = configuration.neo.account
+
+    def credentialFileContent = readFile(credentialFilePath)
+    def credentialsMap = parseJson(credentialFileContent)
+
+    def oauthClientId = credentialsMap.oauthClientId
+    def oauthClientSecret = credentialsMap.oauthClientSecret
+    def oauthUrl = credentialsMap.oauthServiceUrl
+
+    echo "[${STEP_NAME}] Retrieving oauth token..."
+
+    def myCurl = "curl --fail --silent --show-error --retry 12"
+    def token_json = sh(
+        script: """#!/bin/bash
+                    ${myCurl} -XPOST -u \"${oauthClientId}:${oauthClientSecret}\" \"${oauthUrl}/apitoken/v1?grant_type=client_credentials"
+                """,
+        returnStdout: true
+    )
+    def responseJson = readJSON text: token_json
+    def token = responseJson.access_token
+
+    echo "[${STEP_NAME}] Deploying '${deployArchive}' to '${account}'..."
+
+    def deploymentContentResponse = sh(
+        script: """#!/bin/bash
+                    ${myCurl} -XPOST -H \"Authorization: Bearer ${token}\" -F file=@\"${deployArchive}\" \"https://slservice.${host}/slservice/v1/oauth/accounts/${account}/mtars\"
+                """,
+        returnStdout: true
+    )
+    def deploymentJson = readJSON text: deploymentContentResponse
+    def deploymentId = deploymentJson.id
+
+    echo "[${STEP_NAME}] Deployment Id is '${deploymentId}'."
+
+    def statusPollScript = """#!/bin/bash
+                                ${myCurl} -XGET -H \"Authorization: Bearer ${token}\" \"https://slservice.${host}/slservice/v1/oauth/accounts/${account}/mtars/${deploymentId}\"
+                            """
+    def statusResponse = sh(script: statusPollScript, returnStdout: true)
+    def statusJson = readJSON text: statusResponse
+    def state = statusJson.state
+
+    while (state == 'RUNNING') {
+        sleep(10)
+        statusResponse = sh(script: statusPollScript, returnStdout: true)
+        statusJson = readJSON text: statusResponse
+        state = statusJson.state
+        echo "${STEP_NAME}] Deployment is still running..."
+    }
+
+    if (state == 'DONE') {
+        echo "[${STEP_NAME}] Deployment has succeeded."
+    } else if (state == 'FAILED') {
+        if(statusJson.progress[0]?.modules[0]?.error?.internalMessage) {
+            def message = statusJson.progress[0].modules[0].error.internalMessage
+            echo "[${STEP_NAME}] Deployment has failed with the message: ${message}"
+            error "[${STEP_NAME}] Deployment failure message: ${message}"
+        } else {
+            echo "[${STEP_NAME}] Deployment has failed with response: ${statusResponse}"
+            error "[${STEP_NAME}] Deployment failure reason: ${statusResponse}"
+        }
+    } else {
+        echo "[${STEP_NAME}] Unknown status '${state}'"
+        error "[${STEP_NAME}] Deployment failed with unknown status: ${state}"
+    }
+}
+
 private boolean isAppRunning(NeoCommandHelper commandHelper) {
     def status = sh script: "${commandHelper.statusCommand()} || true", returnStdout: true
     return status.contains('Status: STARTED')
@@ -404,4 +499,15 @@ private getDefaultSource(Script script, Map configuration, DeployMode deployMode
     String source = "${configuration.mavenDeploymentModule}/target/${pom.artifactId}.${pom.packaging}"
 
     return source
+}
+
+//Convert LazyMap instance produced after jsonSluper to a groovy based LinkedHashMap to overcome serialization issue
+@NonCPS
+def parseJson(credentialFileContent) {
+    def lazyMap = new groovy.json.JsonSlurper().parseText(credentialFileContent)
+    def map = [:]
+    for (prop in lazyMap) {
+        map[prop.key] = prop.value
+    }
+    return map
 }

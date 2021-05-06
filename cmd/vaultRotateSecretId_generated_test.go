@@ -7,6 +7,7 @@ import (
 )
 
 func TestVaultRotateSecretIdCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := VaultRotateSecretIdCommand()
 

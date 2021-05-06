@@ -7,6 +7,7 @@ import (
 )
 
 func TestAbapEnvironmentCreateSystemCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := AbapEnvironmentCreateSystemCommand()
 

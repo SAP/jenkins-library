@@ -24,6 +24,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			ChartPath:                 "path/to/chart",
 			DeploymentName:            "deploymentName",
 			DeployTool:                "helm",
+			ForceUpdates:              true,
 			HelmDeployWaitSeconds:     400,
 			IngressHosts:              []string{"ingress.host1", "ingress.host2"},
 			Image:                     "path/to/Image:latest",
@@ -56,11 +57,11 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"deploymentName",
 			"path/to/chart",
 			"--install",
-			"--force",
 			"--namespace",
 			"deploymentNamespace",
 			"--set",
 			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,imagePullSecrets[0].name=testSecret,ingress.hosts[0]=ingress.host1,ingress.hosts[1]=ingress.host2",
+			"--force",
 			"--wait",
 			"--timeout",
 			"400",
@@ -81,6 +82,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			ChartPath:                 "path/to/chart",
 			DeploymentName:            "deploymentName",
 			DeployTool:                "helm",
+			ForceUpdates:              true,
 			HelmDeployWaitSeconds:     400,
 			IngressHosts:              []string{"ingress.host1", "ingress.host2"},
 			Image:                     "path/to/Image:latest",
@@ -114,11 +116,11 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"deploymentName",
 			"path/to/chart",
 			"--install",
-			"--force",
 			"--namespace",
 			"deploymentNamespace",
 			"--set",
 			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,imagePullSecrets[0].name=testSecret,ingress.hosts[0]=ingress.host1,ingress.hosts[1]=ingress.host2",
+			"--force",
 			"--wait",
 			"--timeout",
 			"400",
@@ -138,6 +140,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			ChartPath:                 "path/to/chart",
 			DeploymentName:            "deploymentName",
 			DeployTool:                "helm3",
+			ForceUpdates:              true,
 			HelmDeployWaitSeconds:     400,
 			HelmValues:                []string{"values1.yaml", "values2.yaml"},
 			Image:                     "path/to/Image:latest",
@@ -171,11 +174,11 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"--values",
 			"values2.yaml",
 			"--install",
-			"--force",
 			"--namespace",
 			"deploymentNamespace",
 			"--set",
 			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,imagePullSecrets[0].name=testSecret",
+			"--force",
 			"--wait",
 			"--timeout",
 			"400s",
@@ -196,6 +199,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			ChartPath:                 "path/to/chart",
 			DeploymentName:            "deploymentName",
 			DeployTool:                "helm3",
+			ForceUpdates:              true,
 			HelmDeployWaitSeconds:     400,
 			HelmValues:                []string{"values1.yaml", "values2.yaml"},
 			Image:                     "path/to/Image:latest",
@@ -230,11 +234,11 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"--values",
 			"values2.yaml",
 			"--install",
-			"--force",
 			"--namespace",
 			"deploymentNamespace",
 			"--set",
 			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,secret.name=testSecret,secret.dockerconfigjson=ThisIsOurBase64EncodedSecret==,imagePullSecrets[0].name=testSecret",
+			"--force",
 			"--wait",
 			"--timeout",
 			"400s",
@@ -252,6 +256,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			ContainerRegistrySecret: "testSecret",
 			DeploymentName:          "deploymentName",
 			DeployTool:              "helm3",
+			ForceUpdates:            true,
 			HelmDeployWaitSeconds:   400,
 			IngressHosts:            []string{},
 			Image:                   "path/to/Image:latest",
@@ -272,7 +277,90 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"deploymentName",
 			"path/to/chart",
 			"--install",
+			"--namespace",
+			"deploymentNamespace",
+			"--set",
+			"image.repository=my.registry:55555/path/to/Image,image.tag=latest,imagePullSecrets[0].name=testSecret",
 			"--force",
+			"--wait",
+			"--timeout",
+			"400s",
+			"--atomic",
+			"--kube-context",
+			"testCluster",
+			"--testParam",
+			"testValue",
+		}, e.Calls[0].Params, "Wrong upgrade parameters")
+	})
+
+	t.Run("test helm v3 - fails without chart path", func(t *testing.T) {
+		opts := kubernetesDeployOptions{
+			ContainerRegistryURL:    "https://my.registry:55555",
+			ContainerRegistrySecret: "testSecret",
+			DeploymentName:          "deploymentName",
+			DeployTool:              "helm3",
+			ForceUpdates:            true,
+			HelmDeployWaitSeconds:   400,
+			IngressHosts:            []string{},
+			Image:                   "path/to/Image:latest",
+			AdditionalParameters:    []string{"--testParam", "testValue"},
+			KubeContext:             "testCluster",
+			Namespace:               "deploymentNamespace",
+		}
+		e := mock.ExecMockRunner{}
+
+		var stdout bytes.Buffer
+
+		err := runKubernetesDeploy(opts, &e, &stdout)
+		assert.EqualError(t, err, "chart path has not been set, please configure chartPath parameter")
+	})
+
+	t.Run("test helm v3 - fails without deployment name", func(t *testing.T) {
+		opts := kubernetesDeployOptions{
+			ContainerRegistryURL:    "https://my.registry:55555",
+			ContainerRegistrySecret: "testSecret",
+			ChartPath:               "path/to/chart",
+			DeployTool:              "helm3",
+			ForceUpdates:            true,
+			HelmDeployWaitSeconds:   400,
+			IngressHosts:            []string{},
+			Image:                   "path/to/Image:latest",
+			AdditionalParameters:    []string{"--testParam", "testValue"},
+			KubeContext:             "testCluster",
+			Namespace:               "deploymentNamespace",
+		}
+		e := mock.ExecMockRunner{}
+
+		var stdout bytes.Buffer
+
+		err := runKubernetesDeploy(opts, &e, &stdout)
+		assert.EqualError(t, err, "deployment name has not been set, please configure deploymentName parameter")
+	})
+
+	t.Run("test helm v3 - no force", func(t *testing.T) {
+		opts := kubernetesDeployOptions{
+			ContainerRegistryURL:    "https://my.registry:55555",
+			ChartPath:               "path/to/chart",
+			ContainerRegistrySecret: "testSecret",
+			DeploymentName:          "deploymentName",
+			DeployTool:              "helm3",
+			HelmDeployWaitSeconds:   400,
+			IngressHosts:            []string{},
+			Image:                   "path/to/Image:latest",
+			AdditionalParameters:    []string{"--testParam", "testValue"},
+			KubeContext:             "testCluster",
+			Namespace:               "deploymentNamespace",
+		}
+		e := mock.ExecMockRunner{}
+
+		var stdout bytes.Buffer
+
+		runKubernetesDeploy(opts, &e, &stdout)
+		assert.Equal(t, []string{
+			"upgrade",
+			"deploymentName",
+			"path/to/chart",
+			"--install",
 			"--namespace",
 			"deploymentNamespace",
 			"--set",

@@ -221,7 +221,7 @@ func abapEnvironmentCheckoutBranchMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "cf", Image: "ppiper/cf-cli"},
+				{Name: "cf", Image: "ppiper/cf-cli:7"},
 			},
 		},
 	}
