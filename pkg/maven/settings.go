@@ -1,12 +1,14 @@
 package maven
 
 import (
+	"encoding/xml"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 var getenv = os.Getenv
@@ -17,6 +19,7 @@ type SettingsDownloadUtils interface {
 	FileExists(filename string) (bool, error)
 	Copy(src, dest string) (int64, error)
 	MkdirAll(path string, perm os.FileMode) error
+	FileWrite(path string, content []byte, perm os.FileMode) error
 }
 
 // DownloadAndGetMavenParameters downloads the global or project settings file if the strings contain URLs.
@@ -79,6 +82,44 @@ func DownloadAndCopySettingsFiles(globalSettingsFile string, projectSettingsFile
 	}
 
 	return nil
+}
+
+func CreateNewProjectSettingsXML(altDeploymentRepositoryID string, altDeploymentRepositoryUser string, altDeploymentRepositoryPassword string, utils SettingsDownloadUtils) (string, error) {
+	settingsXML := Settings{
+		XMLName:        xml.Name{Local: "settings"},
+		Xsi:            "http://www.w3.org/2001/XMLSchema-instance",
+		SchemaLocation: "http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd",
+		Servers: ServersType{
+			ServerType: []Server{
+				{
+					ID:       altDeploymentRepositoryID,
+					Username: altDeploymentRepositoryUser,
+					Password: altDeploymentRepositoryPassword,
+				},
+			},
+		},
+	}
+
+	xmlstring, err := xml.MarshalIndent(settingsXML, "", "    ")
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal Settings.xml: %w", err)
+	}
+
+	xmlstring = []byte(xml.Header + string(xmlstring))
+
+	err = utils.FileWrite(".pipeline/mavenProjectSettings.xml", xmlstring, 0777)
+	if err != nil {
+		return "", fmt.Errorf("failed to write maven Project Settings xml: %w", err)
+	}
+
+	log.Entry().Infof("Successfully created maven project settings with <server> details at .pipeline/mavenProjectSettings.xml")
+
+	return ".pipeline/mavenProjectSettings.xml", nil
+
+}
+
+func UpdateProjectSettingsXML() {
+
 }
 
 func downloadAndCopySettingsFile(src string, dest string, utils SettingsDownloadUtils) error {
