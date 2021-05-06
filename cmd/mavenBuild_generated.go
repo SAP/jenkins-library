@@ -14,14 +14,18 @@ import (
 )
 
 type mavenBuildOptions struct {
-	PomPath                     string `json:"pomPath,omitempty"`
-	Flatten                     bool   `json:"flatten,omitempty"`
-	Verify                      bool   `json:"verify,omitempty"`
-	ProjectSettingsFile         string `json:"projectSettingsFile,omitempty"`
-	GlobalSettingsFile          string `json:"globalSettingsFile,omitempty"`
-	M2Path                      string `json:"m2Path,omitempty"`
-	LogSuccessfulMavenTransfers bool   `json:"logSuccessfulMavenTransfers,omitempty"`
-	CreateBOM                   bool   `json:"createBOM,omitempty"`
+	PomPath                              string `json:"pomPath,omitempty"`
+	Flatten                              bool   `json:"flatten,omitempty"`
+	Verify                               bool   `json:"verify,omitempty"`
+	ProjectSettingsFile                  string `json:"projectSettingsFile,omitempty"`
+	GlobalSettingsFile                   string `json:"globalSettingsFile,omitempty"`
+	M2Path                               string `json:"m2Path,omitempty"`
+	LogSuccessfulMavenTransfers          bool   `json:"logSuccessfulMavenTransfers,omitempty"`
+	CreateBOM                            bool   `json:"createBOM,omitempty"`
+	MavenAltDeploymentRepositoryPassowrd string `json:"mavenAltDeploymentRepositoryPassowrd,omitempty"`
+	MavenAltDeploymentRepositoryUser     string `json:"mavenAltDeploymentRepositoryUser,omitempty"`
+	MavenAltDeploymentRepositoryURL      string `json:"mavenAltDeploymentRepositoryUrl,omitempty"`
+	MavenAltDeploymentRepositoryID       string `json:"mavenAltDeploymentRepositoryID,omitempty"`
 }
 
 // MavenBuildCommand This step will install the maven project into the local maven repository.
@@ -52,6 +56,7 @@ supports ci friendly versioning by flattening the pom before installing.`,
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			log.RegisterSecret(stepConfig.MavenAltDeploymentRepositoryPassowrd)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -91,6 +96,10 @@ func addMavenBuildFlags(cmd *cobra.Command, stepConfig *mavenBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
 	cmd.Flags().BoolVar(&stepConfig.LogSuccessfulMavenTransfers, "logSuccessfulMavenTransfers", false, "Configures maven to log successful downloads. This is set to `false` by default to reduce the noise in build logs.")
 	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Creates the bill of materials (BOM) using CycloneDX Maven plugin.")
+	cmd.Flags().StringVar(&stepConfig.MavenAltDeploymentRepositoryPassowrd, "mavenAltDeploymentRepositoryPassowrd", os.Getenv("PIPER_mavenAltDeploymentRepositoryPassowrd"), "Password for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This password will be updated in settings.xml")
+	cmd.Flags().StringVar(&stepConfig.MavenAltDeploymentRepositoryUser, "mavenAltDeploymentRepositoryUser", os.Getenv("PIPER_mavenAltDeploymentRepositoryUser"), "User for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This user will be updated in settings.xml")
+	cmd.Flags().StringVar(&stepConfig.MavenAltDeploymentRepositoryURL, "mavenAltDeploymentRepositoryUrl", os.Getenv("PIPER_mavenAltDeploymentRepositoryUrl"), "Url for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This Url will be updated in settings.xml")
+	cmd.Flags().StringVar(&stepConfig.MavenAltDeploymentRepositoryID, "mavenAltDeploymentRepositoryID", os.Getenv("PIPER_mavenAltDeploymentRepositoryID"), "Id for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This id will be updated in settings.xml and will be used as a flag with DaltDeploymentRepository along with mavenAltDeploymentRepositoryUrl during maven deploy")
 
 }
 
@@ -168,6 +177,69 @@ func mavenBuildMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/createBOM"}},
+					},
+					{
+						Name: "mavenAltDeploymentRepositoryPassowrd",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/repositoryPassword",
+							},
+
+							{
+								Name: "mavenAltDeploymentRepositoryPassowrdId",
+								Type: "secret",
+							},
+
+							{
+								Name:  "",
+								Paths: []string{"$(vaultPath)/mavenaltdeploymentrepository-passowrd", "$(vaultBasePath)/$(vaultPipelineName)/mavenaltdeploymentrepository-passowrd", "$(vaultBasePath)/GROUP-SECRETS/mavenaltdeploymentrepository-passowrd"},
+								Type:  "vaultSecretFile",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+					},
+					{
+						Name: "mavenAltDeploymentRepositoryUser",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/repositoryUsername",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+					},
+					{
+						Name: "mavenAltDeploymentRepositoryUrl",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/repositoryURL",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+					},
+					{
+						Name: "mavenAltDeploymentRepositoryID",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/repositoryID",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 				},
 			},
