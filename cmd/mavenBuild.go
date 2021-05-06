@@ -87,6 +87,8 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 			runner := &command.Command{}
 			fileUtils := &piperutils.Files{}
 
+			log.Entry().Infof("Successfully found deployment user : '%s'", config.AltDeploymentRepositoryUser)
+
 			if len(config.AltDeploymentRepositoryID) > 0 && len(config.AltDeploymentRepositoryPassowrd) > 0 && len(config.AltDeploymentRepositoryUser) > 0 {
 				// update or create a new project settings xml
 				if len(config.ProjectSettingsFile) > 0 {
