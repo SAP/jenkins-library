@@ -14,18 +14,20 @@ import (
 )
 
 type mavenBuildOptions struct {
-	PomPath                         string `json:"pomPath,omitempty"`
-	Flatten                         bool   `json:"flatten,omitempty"`
-	Verify                          bool   `json:"verify,omitempty"`
-	ProjectSettingsFile             string `json:"projectSettingsFile,omitempty"`
-	GlobalSettingsFile              string `json:"globalSettingsFile,omitempty"`
-	M2Path                          string `json:"m2Path,omitempty"`
-	LogSuccessfulMavenTransfers     bool   `json:"logSuccessfulMavenTransfers,omitempty"`
-	CreateBOM                       bool   `json:"createBOM,omitempty"`
-	AltDeploymentRepositoryPassowrd string `json:"altDeploymentRepositoryPassowrd,omitempty"`
-	AltDeploymentRepositoryUser     string `json:"altDeploymentRepositoryUser,omitempty"`
-	AltDeploymentRepositoryURL      string `json:"altDeploymentRepositoryUrl,omitempty"`
-	AltDeploymentRepositoryID       string `json:"altDeploymentRepositoryID,omitempty"`
+	PomPath                         string   `json:"pomPath,omitempty"`
+	Flatten                         bool     `json:"flatten,omitempty"`
+	Verify                          bool     `json:"verify,omitempty"`
+	ProjectSettingsFile             string   `json:"projectSettingsFile,omitempty"`
+	GlobalSettingsFile              string   `json:"globalSettingsFile,omitempty"`
+	M2Path                          string   `json:"m2Path,omitempty"`
+	LogSuccessfulMavenTransfers     bool     `json:"logSuccessfulMavenTransfers,omitempty"`
+	CreateBOM                       bool     `json:"createBOM,omitempty"`
+	AltDeploymentRepositoryPassowrd string   `json:"altDeploymentRepositoryPassowrd,omitempty"`
+	AltDeploymentRepositoryUser     string   `json:"altDeploymentRepositoryUser,omitempty"`
+	AltDeploymentRepositoryURL      string   `json:"altDeploymentRepositoryUrl,omitempty"`
+	AltDeploymentRepositoryID       string   `json:"altDeploymentRepositoryID,omitempty"`
+	CustomTLSCertificateLinks       []string `json:"customTlsCertificateLinks,omitempty"`
+	Publish                         bool     `json:"publish,omitempty"`
 }
 
 // MavenBuildCommand This step will install the maven project into the local maven repository.
@@ -100,6 +102,8 @@ func addMavenBuildFlags(cmd *cobra.Command, stepConfig *mavenBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.AltDeploymentRepositoryUser, "altDeploymentRepositoryUser", os.Getenv("PIPER_altDeploymentRepositoryUser"), "User for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This user will be updated in settings.xml . When no settings.xml a new one is created which with <servers> tag")
 	cmd.Flags().StringVar(&stepConfig.AltDeploymentRepositoryURL, "altDeploymentRepositoryUrl", os.Getenv("PIPER_altDeploymentRepositoryUrl"), "Url for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This Url will be updated in settings.xml . When no settings.xml a new one is created which with <servers> tag")
 	cmd.Flags().StringVar(&stepConfig.AltDeploymentRepositoryID, "altDeploymentRepositoryID", os.Getenv("PIPER_altDeploymentRepositoryID"), "Id for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This id will be updated in settings.xml and will be used as a flag with DaltDeploymentRepository along with mavenAltDeploymentRepositoryUrl during maven deploy . When no settings.xml a new one is created which with <servers> tag")
+	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List of download links to custom TLS certificates. This is required to ensure trusted connections to instances with repositories (like nexus) when publish flag is set to true.")
+	cmd.Flags().BoolVar(&stepConfig.Publish, "publish", false, "Configures maven to run the deploy plugin to publish artifacts to a repository.")
 
 }
 
@@ -197,7 +201,7 @@ func mavenBuildMetadata() config.StepData {
 								Type:  "vaultSecretFile",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
@@ -210,7 +214,7 @@ func mavenBuildMetadata() config.StepData {
 								Param: "custom/repositoryUsername",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
@@ -223,7 +227,7 @@ func mavenBuildMetadata() config.StepData {
 								Param: "custom/repositoryURL",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
@@ -236,10 +240,26 @@ func mavenBuildMetadata() config.StepData {
 								Param: "custom/repositoryID",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+					},
+					{
+						Name:        "customTlsCertificateLinks",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "publish",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "maven/publish"}},
 					},
 				},
 			},
