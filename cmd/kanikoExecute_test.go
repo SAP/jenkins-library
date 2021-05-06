@@ -44,6 +44,9 @@ type kanikoFileMock struct {
 }
 
 func (f *kanikoFileMock) FileExists(path string) (bool, error) {
+	if len(path) == 0 {
+		return false, nil
+	}
 	return true, nil
 }
 
@@ -177,6 +180,7 @@ func TestRunKanikoExecute(t *testing.T) {
 		certClient := &kanikoMockClient{}
 		fileUtils := &kanikoFileMock{
 			fileWriteContent: map[string]string{},
+			fileReadContent:  map[string]string{"path/to/docker/config.json": `{"auths":{"custom":"test"}}`},
 			fileReadErr:      map[string]error{"/kaniko/ssl/certs/ca-certificates.crt": fmt.Errorf("read error")},
 		}
 
@@ -326,42 +330,6 @@ func TestRunKanikoExecute(t *testing.T) {
 		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, certClient, fileUtils)
 
 		assert.EqualError(t, err, "failed to update certificates: failed to load file '/kaniko/ssl/certs/ca-certificates.crt': read error")
-	})
-
-	t.Run("error case - dockerconfig read failed", func(t *testing.T) {
-		config := &kanikoExecuteOptions{
-			DockerConfigJSON: "path/to/docker/config.json",
-		}
-
-		runner := &mock.ExecMockRunner{}
-
-		certClient := &kanikoMockClient{}
-		fileUtils := &kanikoFileMock{
-			fileWriteContent: map[string]string{},
-			fileReadErr:      map[string]error{"path/to/docker/config.json": fmt.Errorf("read error")},
-		}
-
-		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, certClient, fileUtils)
-
-		assert.EqualError(t, err, "failed to read file 'path/to/docker/config.json': read error")
-	})
-
-	t.Run("error case - dockerconfig write failed", func(t *testing.T) {
-		config := &kanikoExecuteOptions{
-			DockerConfigJSON: "path/to/docker/config.json",
-		}
-
-		runner := &mock.ExecMockRunner{}
-
-		certClient := &kanikoMockClient{}
-		fileUtils := &kanikoFileMock{
-			fileWriteContent: map[string]string{},
-			fileWriteErr:     map[string]error{"/kaniko/.docker/config.json": fmt.Errorf("write error")},
-		}
-
-		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, certClient, fileUtils)
-
-		assert.EqualError(t, err, "failed to write file '/kaniko/.docker/config.json': write error")
 	})
 
 }

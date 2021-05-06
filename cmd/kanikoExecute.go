@@ -92,21 +92,14 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 		config.BuildOptions = append(config.BuildOptions, dest...)
 	}
 
-	dockerConfig := []byte(`{"auths":{}}`)
-	if len(config.DockerConfigJSON) > 0 {
-		var err error
-		dockerConfig, err = fileUtils.FileRead(config.DockerConfigJSON)
-		if err != nil {
-			return errors.Wrapf(err, "failed to read file '%v'", config.DockerConfigJSON)
-		}
-	} else if len(config.ContainerRegistryUser) > 0 &&
-		len(config.ContainerRegistryPassword) > 0 &&
-		len(config.ContainerRegistryURL) > 0 {
-		dockerConfig = generateDockerConfigJSON(config.ContainerRegistryUser, config.ContainerRegistryPassword, config.ContainerRegistryURL)
-	}
-
-	if err := fileUtils.FileWrite("/kaniko/.docker/config.json", dockerConfig, 0644); err != nil {
-		return errors.Wrap(err, "failed to write file '/kaniko/.docker/config.json'")
+	if _, err := docker.CreateDockerConfigJSON(
+		config.ContainerRegistryURL,
+		config.ContainerRegistryUser,
+		config.ContainerRegistryPassword,
+		config.DockerConfigJSON,
+		"/kaniko/.docker/config.json",
+		fileUtils); err != nil {
+		return err
 	}
 
 	cwd, err := os.Getwd()

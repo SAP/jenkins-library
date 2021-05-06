@@ -42,37 +42,43 @@ type AuthEntry struct {
 }
 
 // CreateDockerConfigJSON writes the docker config.json file holding authentication and registry information
-func CreateDockerConfigJSON(registryURL, username, password, configPath, filePath string, fileUtils piperutils.FileUtils) (string, error) {
+func CreateDockerConfigJSON(registryURL, username, password, sourceConfigPath, targetConfigPath string, fileUtils piperutils.FileUtils) (string, error) {
 
-	if len(filePath) == 0 {
-		filePath = ".pipeline/dockerConfig.json"
+	if len(targetConfigPath) == 0 {
+		targetConfigPath = ".pipeline/dockerConfig.json"
 	}
 
 	dockerConfig := map[string]interface{}{}
-	if exists, _ := fileUtils.FileExists(configPath); exists {
-		dockerConfigContent, err := fileUtils.FileRead(configPath)
+	if exists, _ := fileUtils.FileExists(sourceConfigPath); exists {
+		dockerConfigContent, err := fileUtils.FileRead(sourceConfigPath)
 		if err != nil {
-			return "", fmt.Errorf("failed to read file '%v': %w", configPath, err)
+			return "", fmt.Errorf("failed to read file '%v': %w", sourceConfigPath, err)
 		}
 
 		err = json.Unmarshal(dockerConfigContent, &dockerConfig)
 		if err != nil {
-			return "", fmt.Errorf("failed to unmarshal json file '%v': %w", configPath, err)
+			return "", fmt.Errorf("failed to unmarshal json file '%v': %w", sourceConfigPath, err)
 		}
 	}
 
-	credentialsBase64 := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%v:%v", username, password)))
-	dockerAuth := AuthEntry{Auth: credentialsBase64}
+	if len(registryURL) > 0 && len(username) > 0 && len(password) > 0 {
+		credentialsBase64 := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%v:%v", username, password)))
+		dockerAuth := AuthEntry{Auth: credentialsBase64}
+
+		if dockerConfig["auths"] == nil {
+			dockerConfig["auths"] = map[string]AuthEntry{registryURL: dockerAuth}
+		} else {
+			authEntries, ok := dockerConfig["auths"].(map[string]interface{})
+			if !ok {
+				return "", fmt.Errorf("failed to read authentication entries from file '%v': format invalid", sourceConfigPath)
+			}
+			authEntries[registryURL] = dockerAuth
+			dockerConfig["auths"] = authEntries
+		}
+	}
 
 	if dockerConfig["auths"] == nil {
-		dockerConfig["auths"] = map[string]AuthEntry{registryURL: dockerAuth}
-	} else {
-		authEntries, ok := dockerConfig["auths"].(map[string]interface{})
-		if !ok {
-			return "", fmt.Errorf("failed to read authentication entries from file '%v': format invalid", configPath)
-		}
-		authEntries[registryURL] = dockerAuth
-		dockerConfig["auths"] = authEntries
+		dockerConfig["auths"] = map[string]AuthEntry{}
 	}
 
 	jsonResult, err := json.Marshal(dockerConfig)
@@ -80,12 +86,12 @@ func CreateDockerConfigJSON(registryURL, username, password, configPath, filePat
 		return "", fmt.Errorf("failed to marshal Docker config.json: %w", err)
 	}
 
-	err = fileUtils.FileWrite(filePath, jsonResult, 0666)
+	err = fileUtils.FileWrite(targetConfigPath, jsonResult, 0666)
 	if err != nil {
-		return "", fmt.Errorf("failed to write Docker config.json: %w", err)
+		return "", fmt.Errorf("failed to write Docker config.json file to '%s': %w", targetConfigPath, err)
 	}
 
-	return filePath, nil
+	return targetConfigPath, nil
 }
 
 // SetOptions sets options used for the docker client
