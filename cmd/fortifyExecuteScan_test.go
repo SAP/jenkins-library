@@ -510,11 +510,12 @@ func TestTriggerFortifyScan(t *testing.T) {
 
 		utils := newFortifyTestUtilsBundle()
 		config := fortifyExecuteScanOptions{
-			BuildTool:           "maven",
-			AutodetectClasspath: true,
-			BuildDescriptorFile: "./pom.xml",
-			Memory:              "-Xmx4G -Xms2G",
-			Src:                 []string{"**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "src/main/resources/**/*", "src/main/java/**/*"}}
+			BuildTool:                "maven",
+			AutodetectClasspath:      true,
+			BuildDescriptorFile:      "./pom.xml",
+			AdditionalScanParameters: []string{"-Dtest=property"},
+			Memory:                   "-Xmx4G -Xms2G",
+			Src:                      []string{"**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "src/main/resources/**/*", "src/main/java/**/*"}}
 		triggerFortifyScan(config, &utils, "test", "testLabel", "my.group-myartifact")
 
 		assert.Equal(t, 3, utils.numExecutions)
@@ -526,7 +527,7 @@ func TestTriggerFortifyScan(t *testing.T) {
 		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-Xmx4G", "-Xms2G", "-cp", "some.jar;someother.jar", "**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "src/main/resources/**/*", "src/main/java/**/*"}, utils.executions[1].parameters)
 
 		assert.Equal(t, "sourceanalyzer", utils.executions[2].executable)
-		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-scan", "-Xmx4G", "-Xms2G", "-build-label", "testLabel", "-build-project", "my.group-myartifact", "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr"}, utils.executions[2].parameters)
+		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-scan", "-Xmx4G", "-Xms2G", "-Dtest=property", "-build-label", "testLabel", "-build-project", "my.group-myartifact", "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr"}, utils.executions[2].parameters)
 	})
 
 	t.Run("pip", func(t *testing.T) {
@@ -564,6 +565,30 @@ func TestTriggerFortifyScan(t *testing.T) {
 
 		assert.Equal(t, "sourceanalyzer", utils.executions[4].executable)
 		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-scan", "-Xmx4G", "-Xms2G", "-build-label", "testLabel", "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr"}, utils.executions[4].parameters)
+	})
+
+	t.Run("invalid buildTool", func(t *testing.T) {
+		dir, err := ioutil.TempDir("", "test trigger fortify scan")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+		defer func() {
+			_ = os.Chdir(oldCWD)
+			_ = os.RemoveAll(dir)
+		}()
+
+		utils := newFortifyTestUtilsBundle()
+		config := fortifyExecuteScanOptions{
+			BuildTool:           "docker",
+			AutodetectClasspath: true,
+		}
+		err = triggerFortifyScan(config, &utils, "test", "testLabel", "my.group-myartifact")
+
+		assert.Error(t, err)
+		assert.Equal(t, "buildTool 'docker' is not supported by this step", err.Error())
 	})
 }
 
@@ -616,7 +641,7 @@ func TestVerifyScanResultsFinishedUploading(t *testing.T) {
 	t.Run("error required auth", func(t *testing.T) {
 		ffMock := fortifyMock{}
 		err := verifyScanResultsFinishedUploadingDefaults(config, &ffMock, 4713)
-		assert.EqualError(t, err, "There are artifacts that require manual approval for Project Version 4713\n/html/ssc/index.jsp#!/version/4713/artifacts?filterSet=")
+		assert.EqualError(t, err, "There are artifacts that require manual approval for Project Version 4713, please visit Fortify SSC and approve them for processing\n/html/ssc/index.jsp#!/version/4713/artifacts?filterSet=")
 	})
 
 	t.Run("error polling timeout", func(t *testing.T) {

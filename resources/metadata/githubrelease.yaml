@@ -147,9 +147,9 @@ spec:
             type: secret
           - type: vaultSecret
             paths:
-            - $(vaultPath)/github
-            - $(vaultBasePath)/$(vaultPipelineName)/github
-            - $(vaultBasePath)/GROUP-SECRETS/github
+              - $(vaultPath)/github
+              - $(vaultBasePath)/$(vaultPipelineName)/github
+              - $(vaultBasePath)/GROUP-SECRETS/github
       - name: uploadUrl
         aliases:
           - name: githubUploadUrl

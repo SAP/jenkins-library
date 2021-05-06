@@ -43,9 +43,9 @@ spec:
         resourceRef:
           - type: vaultSecret
             paths:
-            - $(vaultPath)/sonar
-            - $(vaultBasePath)/$(vaultPipelineName)/sonar
-            - $(vaultBasePath)/GROUP-SECRETS/sonar
+              - $(vaultPath)/sonar
+              - $(vaultBasePath)/$(vaultPipelineName)/sonar
+              - $(vaultBasePath)/GROUP-SECRETS/sonar
           - name: sonarTokenCredentialsId
             type: secret
         aliases:
@@ -73,7 +73,20 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: projectVersion
+      - name: versioningModel
+        type: string
+        description: "The versioning model used for the version when reporting the results for the project."
+        scope: [GENERAL, STAGES, STEPS, PARAMETERS]
+        default: "major"
+        possibleValues:
+          - major
+          - major-minor
+          - semantic
+          - full
+      - name: version
+        aliases:
+          - name: projectVersion
+            deprecated: true
         type: string
         description: "The project version that is reported to SonarQube."
         scope:
@@ -83,6 +96,14 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: artifactVersion
+      - name: customScanVersion
+        type: string
+        description: "A custom version used along with the uploaded scan results."
+        longDescription: |-
+          Defines a custom version for the Sonar scan which deviates from the typical versioning pattern using [`version`](#version) and [`versioningModel`](#versioningModel).
+          It allows to set non-numeric versions as well and supersedes the value of [`version`](#version) which is calculated automatically.
+          The parameter is also used by other scan steps (e.g. Detect, Fortify, WhiteSource) and thus allows a common custom version across scan tools.
+        scope: [GENERAL, STAGES, STEPS, PARAMETERS]
       - name: projectKey
         type: string
         description: "The project key identifies the project in SonarQube."
@@ -206,9 +227,9 @@ spec:
             type: secret
           - type: vaultSecret
             paths:
-            - $(vaultPath)/github
-            - $(vaultBasePath)/$(vaultPipelineName)/github
-            - $(vaultBasePath)/GROUP-SECRETS/github
+              - $(vaultPath)/github
+              - $(vaultBasePath)/$(vaultPipelineName)/github
+              - $(vaultBasePath)/GROUP-SECRETS/github
       - name: disableInlineComments
         type: bool
         description: "Pull-Request only: Disables the pull-request decoration with inline comments.
@@ -259,6 +280,18 @@ spec:
             fields:
               - name: sonar
                 type: bool
+          - name: sonarqube_data
+            fields:
+              - name: blocker_issues
+                type: int
+              - name: critical_issues
+                type: int
+              - name: major_issues
+                type: int
+              - name: minor_issues
+                type: int
+              - name: info_issues
+                type: int
   containers:
     - name: sonar
       image: sonarsource/sonar-scanner-cli:4.5

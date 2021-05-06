@@ -95,7 +95,7 @@ func runIntegrationArtifactDownload(config *integrationArtifactDownloadOptions, 
 
 	if downloadResp.StatusCode == 200 {
 		workspaceRelativePath := config.DownloadPath
-		err = os.MkdirAll(workspaceRelativePath, 755)
+		err = os.MkdirAll(workspaceRelativePath, 0755)
 		if err != nil {
 			return errors.Wrapf(err, "Failed to create workspace directory")
 		}

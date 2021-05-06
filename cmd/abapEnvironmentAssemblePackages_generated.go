@@ -16,16 +16,17 @@ import (
 )
 
 type abapEnvironmentAssemblePackagesOptions struct {
-	CfAPIEndpoint       string `json:"cfApiEndpoint,omitempty"`
-	CfOrg               string `json:"cfOrg,omitempty"`
-	CfSpace             string `json:"cfSpace,omitempty"`
-	CfServiceInstance   string `json:"cfServiceInstance,omitempty"`
-	CfServiceKeyName    string `json:"cfServiceKeyName,omitempty"`
-	Host                string `json:"host,omitempty"`
-	Username            string `json:"username,omitempty"`
-	Password            string `json:"password,omitempty"`
-	AddonDescriptor     string `json:"addonDescriptor,omitempty"`
-	MaxRuntimeInMinutes int    `json:"maxRuntimeInMinutes,omitempty"`
+	CfAPIEndpoint               string `json:"cfApiEndpoint,omitempty"`
+	CfOrg                       string `json:"cfOrg,omitempty"`
+	CfSpace                     string `json:"cfSpace,omitempty"`
+	CfServiceInstance           string `json:"cfServiceInstance,omitempty"`
+	CfServiceKeyName            string `json:"cfServiceKeyName,omitempty"`
+	Host                        string `json:"host,omitempty"`
+	Username                    string `json:"username,omitempty"`
+	Password                    string `json:"password,omitempty"`
+	AddonDescriptor             string `json:"addonDescriptor,omitempty"`
+	MaxRuntimeInMinutes         int    `json:"maxRuntimeInMinutes,omitempty"`
+	PollIntervalsInMilliseconds int    `json:"pollIntervalsInMilliseconds,omitempty"`
 }
 
 type abapEnvironmentAssemblePackagesCommonPipelineEnvironment struct {
@@ -127,12 +128,14 @@ func addAbapEnvironmentAssemblePackagesFlags(cmd *cobra.Command, stepConfig *aba
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0582")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0582")
 	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions")
-	cmd.Flags().IntVar(&stepConfig.MaxRuntimeInMinutes, "maxRuntimeInMinutes", 360, "maximal runtime of the step")
+	cmd.Flags().IntVar(&stepConfig.MaxRuntimeInMinutes, "maxRuntimeInMinutes", 360, "maximal runtime of the step in minutes")
+	cmd.Flags().IntVar(&stepConfig.PollIntervalsInMilliseconds, "pollIntervalsInMilliseconds", 60000, "wait time in milliseconds till next status request in the backend system")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("addonDescriptor")
 	cmd.MarkFlagRequired("maxRuntimeInMinutes")
+	cmd.MarkFlagRequired("pollIntervalsInMilliseconds")
 }
 
 // retrieve step metadata
@@ -231,10 +234,18 @@ func abapEnvironmentAssemblePackagesMetadata() config.StepData {
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
 					},
+					{
+						Name:        "pollIntervalsInMilliseconds",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "int",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
+					},
 				},
 			},
 			Containers: []config.Container{
-				{Name: "cf", Image: "ppiper/cf-cli:6"},
+				{Name: "cf", Image: "ppiper/cf-cli:7"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

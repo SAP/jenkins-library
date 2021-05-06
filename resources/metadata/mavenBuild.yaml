@@ -74,6 +74,17 @@ spec:
         default: false
         aliases:
           - name: maven/logSuccessfulMavenTransfers
+      - name: createBOM
+        type: bool
+        description: Creates the bill of materials (BOM) using CycloneDX Maven plugin.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        default: false
+        aliases:
+          - name: maven/createBOM
 
   containers:
     - name: mvn

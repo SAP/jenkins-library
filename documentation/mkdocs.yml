@@ -12,6 +12,7 @@ nav:
         - 'ABAP Environment pipeline':
             - 'Introduction': pipelines/abapEnvironment/introduction.md
             - 'Configuration': pipelines/abapEnvironment/configuration.md
+            - 'Extensibility': pipelines/abapEnvironment/extensibility.md
             - 'Stages':
               - 'Initial Checks': pipelines/abapEnvironment/stages/initialChecks.md
               - 'Prepare System': pipelines/abapEnvironment/stages/prepareSystem.md
@@ -106,6 +107,7 @@ nav:
         - integrationArtifactGetMplStatus: steps/integrationArtifactGetMplStatus.md
         - integrationArtifactGetServiceEndpoint: steps/integrationArtifactGetServiceEndpoint.md
         - integrationArtifactUpdateConfiguration: steps/integrationArtifactUpdateConfiguration.md
+        - integrationArtifactUpload: steps/integrationArtifactUpload.md
         - jenkinsMaterializeLog: steps/jenkinsMaterializeLog.md
         - kanikoExecute: steps/kanikoExecute.md
         - karmaExecuteTests: steps/karmaExecuteTests.md

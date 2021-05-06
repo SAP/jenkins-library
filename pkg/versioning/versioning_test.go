@@ -118,6 +118,18 @@ func TestGetArtifact(t *testing.T) {
 		assert.Equal(t, "semver2", npm.VersioningScheme())
 	})
 
+	t.Run("yarn", func(t *testing.T) {
+		npm, err := GetArtifact("yarn", "", &Options{VersionField: "theversion"}, nil)
+
+		assert.NoError(t, err)
+
+		theType, ok := npm.(*JSONfile)
+		assert.True(t, ok)
+		assert.Equal(t, "package.json", theType.path)
+		assert.Equal(t, "version", theType.versionField)
+		assert.Equal(t, "semver2", npm.VersioningScheme())
+	})
+
 	t.Run("pip", func(t *testing.T) {
 		fileExists = func(string) (bool, error) { return true, nil }
 		pip, err := GetArtifact("pip", "", &Options{}, nil)

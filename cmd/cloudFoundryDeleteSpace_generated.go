@@ -105,6 +105,9 @@ func cloudFoundryDeleteSpaceMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Resources: []config.StepResources{
+					{Name: "deployDescriptor", Type: "stash"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "cfApiEndpoint",
