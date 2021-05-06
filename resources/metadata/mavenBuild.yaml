@@ -53,6 +53,9 @@ spec:
           - PARAMETERS
         aliases:
           - name: maven/globalSettingsFile
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/mavenGlobalSettingsFile
       - name: m2Path
         type: string
         description: Path to the location of the local repository that should be used.
