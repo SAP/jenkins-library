@@ -140,6 +140,18 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: publish
+        type: bool
+        description: Configures maven to run the deploy plugin to publish artifacts to staging repository.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        default: false
+        aliases:
+          - name: maven/publish
+          
   containers:
     - name: mvn
       image: maven:3.6-jdk-8
