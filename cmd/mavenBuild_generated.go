@@ -242,7 +242,7 @@ func mavenBuildMetadata() config.StepData {
 					{
 						Name:        "customTlsCertificateLinks",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
