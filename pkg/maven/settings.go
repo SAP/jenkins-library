@@ -20,6 +20,7 @@ type SettingsDownloadUtils interface {
 	Copy(src, dest string) (int64, error)
 	MkdirAll(path string, perm os.FileMode) error
 	FileWrite(path string, content []byte, perm os.FileMode) error
+	FileRead(path string) ([]byte, error)
 }
 
 // DownloadAndGetMavenParameters downloads the global or project settings file if the strings contain URLs.
@@ -118,8 +119,64 @@ func CreateNewProjectSettingsXML(altDeploymentRepositoryID string, altDeployment
 
 }
 
-func UpdateProjectSettingsXML() {
+func UpdateProjectSettingsXML(projectSettingsFile string, altDeploymentRepositoryID string, altDeploymentRepositoryUser string, altDeploymentRepositoryPassword string, utils SettingsDownloadUtils) error {
+	if exists, _ := utils.FileExists(projectSettingsFile); exists {
+		addServerTagtoProjectSettingsXML(projectSettingsFile, altDeploymentRepositoryID, altDeploymentRepositoryUser, altDeploymentRepositoryPassword, utils)
+	} else {
+		addServerTagtoProjectSettingsXML(".pipeline/mavenProjectSettings", altDeploymentRepositoryID, altDeploymentRepositoryUser, altDeploymentRepositoryPassword, utils)
+	}
+	return nil
 
+}
+
+func addServerTagtoProjectSettingsXML(projectSettingsFile string, altDeploymentRepositoryID string, altDeploymentRepositoryUser string, altDeploymentRepositoryPassword string, utils SettingsDownloadUtils) error {
+	var projectSettings Settings
+	settingsXMLContent, err := utils.FileRead(projectSettingsFile)
+	if err != nil {
+		return fmt.Errorf("failed to read file '%v': %w", projectSettingsFile, err)
+	}
+
+	err = xml.Unmarshal([]byte(settingsXMLContent), &projectSettings)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal settings xml file '%v': %w", projectSettingsFile, err)
+	}
+
+	if len(projectSettings.Servers.ServerType) == 0 {
+		projectSettings.Xsi = "http://www.w3.org/2001/XMLSchema-instance"
+		projectSettings.SchemaLocation = "http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd"
+		projectSettings.Servers.ServerType = []Server{
+			{
+				ID:       altDeploymentRepositoryID,
+				Username: altDeploymentRepositoryUser,
+				Password: altDeploymentRepositoryPassword,
+			},
+		}
+	} else if len(projectSettings.Servers.ServerType) > 0 { // if <server> tag is present then add the staging server tag
+		stagingServer := Server{
+			ID:       altDeploymentRepositoryID,
+			Username: altDeploymentRepositoryUser,
+			Password: altDeploymentRepositoryPassword,
+		}
+		projectSettings.Servers.ServerType = append(projectSettings.Servers.ServerType, stagingServer)
+	}
+
+	settingsXml, err := xml.MarshalIndent(projectSettings, "", "    ")
+	if err != nil {
+		fmt.Errorf("failed to marshal maven project settings xml: %w", err)
+	}
+	settingsXmlString := string(settingsXml)
+	Replacer := strings.NewReplacer("&#xA;", "", "&#x9;", "")
+	settingsXmlString = Replacer.Replace(settingsXmlString)
+
+	xmlstring := []byte(xml.Header + settingsXmlString)
+
+	err = utils.FileWrite(projectSettingsFile, xmlstring, 0777)
+	if err != nil {
+		fmt.Errorf("failed to write maven Settings xml: %w", err)
+	}
+	log.Entry().Infof("Successfully updated <server> details in maven project settings file : '%s'", projectSettingsFile)
+
+	return nil
 }
 
 func downloadAndCopySettingsFile(src string, dest string, utils SettingsDownloadUtils) error {

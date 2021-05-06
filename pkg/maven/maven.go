@@ -50,6 +50,7 @@ type Utils interface {
 	Copy(src, dest string) (int64, error)
 	MkdirAll(path string, perm os.FileMode) error
 	FileWrite(path string, content []byte, perm os.FileMode) error
+	FileRead(path string) ([]byte, error)
 }
 
 type utilsBundle struct {

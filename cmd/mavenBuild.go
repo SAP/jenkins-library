@@ -86,6 +86,21 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 			runner := &command.Command{}
 			fileUtils := &piperutils.Files{}
 
+			if len(config.AltDeploymentRepositoryID) > 0 && len(config.AltDeploymentRepositoryPassowrd) > 0 && len(config.AltDeploymentRepositoryUser) > 0 {
+				// update or create a new project settings xml
+				if len(config.ProjectSettingsFile) > 0 {
+					err := maven.UpdateProjectSettingsXML(config.ProjectSettingsFile, config.AltDeploymentRepositoryID, config.AltDeploymentRepositoryUser, config.AltDeploymentRepositoryPassowrd, utils)
+					if err != nil {
+						return err
+					}
+				} else {
+					projectSettingsFile, err := maven.CreateNewProjectSettingsXML(config.AltDeploymentRepositoryID, config.AltDeploymentRepositoryUser, config.AltDeploymentRepositoryPassowrd, utils)
+					if err != nil {
+						mavenOptions.ProjectSettingsFile = projectSettingsFile
+					}
+				}
+			}
+
 			deployFlags := []string{"-Dmaven.main.skip=true", "-Dmaven.test.skip=true", "-Dmaven.install.skip=true"}
 
 			if err := loadRemoteRepoCertificates(config.CustomTLSCertificateLinks, downloadClient, &deployFlags, runner, fileUtils); err != nil {
