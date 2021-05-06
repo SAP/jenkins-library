@@ -417,7 +417,7 @@ func TestGetTarName(t *testing.T) {
 	}
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {
-			assert.Equal(t, c.expect, getTarName(&protecodeExecuteScanOptions{ScanImage: c.image, ArtifactVersion: c.version}))
+			assert.Equal(t, c.expect, getTarName(&protecodeExecuteScanOptions{ScanImage: c.image, Version: c.version}))
 		})
 	}
 }
