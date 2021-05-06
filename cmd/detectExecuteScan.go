@@ -132,8 +132,12 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		Version: config.Version,
 	}
 
-	_, detectVersionName := versioning.DetermineProjectCoordinates("", config.VersioningModel, coordinates)
-
+	detectVersionName := config.CustomScanVersion
+	if len(detectVersionName) > 0 {
+		log.Entry().Infof("Using custom version: %v", detectVersionName)
+	} else {
+		detectVersionName = versioning.ApplyVersioningModel(config.VersioningModel, coordinates)
+	}
 	//Split on spaces, the scanPropeties, so that each property is available as a single string
 	//instead of all properties being part of a single string
 	config.ScanProperties = piperutils.SplitAndTrim(config.ScanProperties, " ")

@@ -57,9 +57,9 @@ spec:
         type: string
         description: Custom version of the Fortify project used as source.
         longDescription: |-
-          Defines a custom version for the Fortify scan which deviates from the typical versioning pattern using [`version`](#version) and [`versioningModel`](#versioningModel)
-          It allows to set non-numeric versions as well and supersedes the value of [`version`](#version) and [`versioningModel`](#versioningModel) which is calculated automatically.
-          The parameter is also used by other scan steps (e.g. Sonar, WhiteSource) and thus allows a common custom version across scan tools.
+          Defines a custom version for the Fortify scan which deviates from the typical versioning pattern using [`version`](#version) and [`versioningModel`](#versioningModel).
+          It allows to set non-numeric versions as well and supersedes the value of [`version`](#version) which is calculated automatically.
+          The parameter is also used by other scan steps (e.g. Detect, Sonar, WhiteSource) and thus allows a common custom version across scan tools.
         scope:
           - GENERAL
           - PARAMETERS
