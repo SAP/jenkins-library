@@ -194,17 +194,6 @@ func mavenBuildMetadata() config.StepData {
 								Name:  "commonPipelineEnvironment",
 								Param: "custom/repositoryPassword",
 							},
-
-							{
-								Name: "altDeploymentRepositoryPassowrdId",
-								Type: "secret",
-							},
-
-							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/altdeploymentrepository-passowrd", "$(vaultBasePath)/$(vaultPipelineName)/altdeploymentrepository-passowrd", "$(vaultBasePath)/GROUP-SECRETS/altdeploymentrepository-passowrd"},
-								Type:  "vaultSecretFile",
-							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
