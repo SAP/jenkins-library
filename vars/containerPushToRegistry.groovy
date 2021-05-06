@@ -38,6 +38,8 @@ import static com.sap.piper.Prerequisites.checkScript
     'sourceImage',
     /** Defines a registry url from where the image should optionally be pulled from, incl. the protocol like `https://my.registry.com`*/
     'sourceRegistryUrl',
+    /** Defines the id of the Jenkins username/password credentials containing the credentials for the source Docker registry. */
+    'sourceCredentialsId',
     /** Defines if the image should be tagged as `latest`*/
     'tagLatest'
 ])
@@ -95,7 +97,10 @@ void call(Map parameters = [:]) {
             if (config.sourceRegistry && config.sourceImage) {
 
                 def sourceBuildImage = docker.image(config.sourceImage)
-                docker.withRegistry(config.sourceRegistryUrl) {
+                docker.withRegistry(
+                    config.sourceRegistryUrl,
+                    config.sourceCredentialsId
+                ) {
                     sourceBuildImage.pull()
                 }
                 sh "docker tag ${config.sourceRegistry}/${config.sourceImage} ${config.dockerImage}"

@@ -241,7 +241,7 @@ func (c *Client) initialize() *http.Client {
 			retryClient.HTTPClient.Transport = transport
 		}
 		retryClient.CheckRetry = func(ctx context.Context, resp *http.Response, err error) (bool, error) {
-			if err != nil && strings.Contains(err.Error(), "timeout") {
+			if err != nil && (strings.Contains(err.Error(), "timeout") || strings.Contains(err.Error(), "timed out") || strings.Contains(err.Error(), "connection refused")) {
 				// Assuming timeouts could be retried
 				return true, nil
 			}

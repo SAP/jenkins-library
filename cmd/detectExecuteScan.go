@@ -111,6 +111,7 @@ func runDetect(config detectExecuteScanOptions, utils detectUtils) error {
 	script := strings.Join(args, " ")
 
 	envs := []string{"BLACKDUCK_SKIP_PHONE_HOME=true"}
+	envs = append(envs, config.CustomEnvironmentVariables...)
 
 	utils.SetDir(".")
 	utils.SetEnv(envs)
@@ -131,8 +132,12 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		Version: config.Version,
 	}
 
-	_, detectVersionName := versioning.DetermineProjectCoordinates("", config.VersioningModel, coordinates)
-
+	detectVersionName := config.CustomScanVersion
+	if len(detectVersionName) > 0 {
+		log.Entry().Infof("Using custom version: %v", detectVersionName)
+	} else {
+		detectVersionName = versioning.ApplyVersioningModel(config.VersioningModel, coordinates)
+	}
 	//Split on spaces, the scanPropeties, so that each property is available as a single string
 	//instead of all properties being part of a single string
 	config.ScanProperties = piperutils.SplitAndTrim(config.ScanProperties, " ")
@@ -143,7 +148,9 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 	}
 
 	if config.Unmap {
-		args = append(args, fmt.Sprintf("--detect.project.codelocation.unmap=true"))
+		if !piperutils.ContainsString(config.ScanProperties, "--detect.project.codelocation.unmap=true") {
+			args = append(args, fmt.Sprintf("--detect.project.codelocation.unmap=true"))
+		}
 		config.ScanProperties, _ = piperutils.RemoveAll(config.ScanProperties, "--detect.project.codelocation.unmap=false")
 	} else {
 		//When unmap is set to false, any occurances of unmap=true from scanProperties must be removed
@@ -169,9 +176,11 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		args = append(args, fmt.Sprintf("--detect.policy.check.fail.on.severities=%v", strings.Join(config.FailOn, ",")))
 	}
 
-	if len(config.CodeLocation) > 0 {
-		args = append(args, fmt.Sprintf("\"--detect.code.location.name='%v'\"", config.CodeLocation))
+	codelocation := config.CodeLocation
+	if len(codelocation) == 0 && len(config.ProjectName) > 0 {
+		codelocation = fmt.Sprintf("%v/%v", config.ProjectName, detectVersionName)
 	}
+	args = append(args, fmt.Sprintf("\"--detect.code.location.name='%v'\"", codelocation))
 
 	if len(config.ScanPaths) > 0 && len(config.ScanPaths[0]) > 0 {
 		args = append(args, fmt.Sprintf("--detect.blackduck.signature.scanner.paths=%v", strings.Join(config.ScanPaths, ",")))
