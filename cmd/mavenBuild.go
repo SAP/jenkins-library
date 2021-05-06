@@ -88,8 +88,11 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 			fileUtils := &piperutils.Files{}
 
 			log.Entry().Infof("Successfully found deployment user : '%s'", config.AltDeploymentRepositoryUser)
+			log.Entry().Infof("Successfully found deployment password : '%s'", config.AltDeploymentRepositoryPassowrd)
+			log.Entry().Infof("Successfully found deployment id : '%s'", config.AltDeploymentRepositoryID)
+			log.Entry().Infof("Successfully found deployment url : '%s'", config.AltDeploymentRepositoryURL)
 
-			if len(config.AltDeploymentRepositoryID) > 0 && len(config.AltDeploymentRepositoryPassowrd) > 0 && len(config.AltDeploymentRepositoryUser) > 0 {
+			if (len(config.AltDeploymentRepositoryID) > 0) && (len(config.AltDeploymentRepositoryPassowrd) > 0) && (len(config.AltDeploymentRepositoryUser) > 0) {
 				// update or create a new project settings xml
 				if len(config.ProjectSettingsFile) > 0 {
 					err := maven.UpdateProjectSettingsXML(config.ProjectSettingsFile, config.AltDeploymentRepositoryID, config.AltDeploymentRepositoryUser, config.AltDeploymentRepositoryPassowrd, utils)
@@ -100,6 +103,8 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 					projectSettingsFile, err := maven.CreateNewProjectSettingsXML(config.AltDeploymentRepositoryID, config.AltDeploymentRepositoryUser, config.AltDeploymentRepositoryPassowrd, utils)
 					if err != nil {
 						mavenOptions.ProjectSettingsFile = projectSettingsFile
+					} else {
+						return err
 					}
 				}
 			}
