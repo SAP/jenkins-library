@@ -108,7 +108,6 @@ spec:
         type: string
         description: User for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This user will be updated in settings.xml . When no settings.xml a new one is created which with <servers> tag
         scope:
-          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
@@ -119,7 +118,6 @@ spec:
         type: string
         description: Url for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This Url will be updated in settings.xml . When no settings.xml a new one is created which with <servers> tag
         scope:
-          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
@@ -130,7 +128,6 @@ spec:
         type: string
         description: Id for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This id will be updated in settings.xml and will be used as a flag with DaltDeploymentRepository along with mavenAltDeploymentRepositoryUrl during maven deploy . When no settings.xml a new one is created which with <servers> tag
         scope:
-          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
@@ -141,7 +138,6 @@ spec:
         type: "[]string"
         description: "List of download links to custom TLS certificates. This is required to ensure trusted connections to instances with repositories (like nexus) when publish flag is set to true."
         scope:
-          - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
@@ -149,7 +145,6 @@ spec:
         type: bool
         description: Configures maven to run the deploy plugin to publish artifacts to a repository.
         scope:
-          - GENERAL
           - STEPS
           - STAGES
           - PARAMETERS
