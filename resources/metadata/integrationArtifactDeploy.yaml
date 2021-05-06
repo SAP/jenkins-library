@@ -16,6 +16,7 @@ spec:
         description: User to authenticate to the SAP Cloud Platform Integration Service
         scope:
           - PARAMETERS
+          - GENERAL
           - STAGES
           - STEPS
         mandatory: true
@@ -29,6 +30,7 @@ spec:
         description: Password to authenticate to the SAP Cloud Platform Integration Service
         scope:
           - PARAMETERS
+          - GENERAL
           - STAGES
           - STEPS
         mandatory: true
