@@ -339,7 +339,7 @@ private String generatePodSpec(Map config) {
         spec      : [:]
     ]
     podSpec.spec += getAdditionalPodProperties(config)
-    podSpec.spec.initContainer = getInitContainer(config)
+    podSpec.spec.initContainers = getInitContainer(config)
     podSpec.spec.containers = getContainerList(config)
     podSpec.spec.securityContext = getSecurityContext(config)
 
