@@ -807,7 +807,6 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             dockerImage: 'maven:3.5-jdk-8-alpine',
             containerMountPath: '/opt',
         ) { bodyExecuted = true }
-
         def containerSpec = podSpec.spec.containers.find{it.image == "maven:3.5-jdk-8-alpine"}
         def initContainerSpec = podSpec.spec.initContainer
         assertTrue(bodyExecuted)

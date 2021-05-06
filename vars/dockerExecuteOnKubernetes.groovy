@@ -349,12 +349,10 @@ private String generatePodSpec(Map config) {
                                     emptyDir: [:]
                                 ]]
     }
-    echo "podSpec: ${podSpec}"
-
+    def test = new JsonUtils().groovyObjectToPrettyJsonString(podSpec)
+    echo "podSpec : ${test}"
     return new JsonUtils().groovyObjectToPrettyJsonString(podSpec)
 }
-
-
 
 private String stashWorkspace(config, prefix, boolean chown = false, boolean stashBack = false) {
     def stashName = "${prefix}-${config.uniqueId}"
