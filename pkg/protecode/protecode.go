@@ -1,11 +1,7 @@
 package protecode
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
@@ -142,30 +138,6 @@ func (pc *Protecode) createURL(path string, pValue string, fParam string) string
 	return protecodeURL.String()
 }
 
-func (pc *Protecode) mapResponse(r io.ReadCloser, response interface{}) {
-	defer r.Close()
-
-	buf := new(bytes.Buffer)
-	buf.ReadFrom(r)
-	newStr := buf.String()
-	if len(newStr) > 0 {
-
-		unquoted, err := strconv.Unquote(newStr)
-		if err != nil {
-			err = json.Unmarshal([]byte(newStr), response)
-			if err != nil {
-				pc.logger.WithError(err).Fatalf("Error during unqote response: %v", newStr)
-			}
-		} else {
-			err = json.Unmarshal([]byte(unquoted), response)
-		}
-
-		if err != nil {
-			pc.logger.WithError(err).Fatalf("Error during decode response: %v", newStr)
-		}
-	}
-}
-
 // ParseResultForInflux parses the result from the scan into the internal format
 func (pc *Protecode) ParseResultForInflux(result Result, excludeCVEs string) (map[string]int, []Vuln) {
 
@@ -245,77 +217,6 @@ func isSevereCVSS2(vulnerability Vulnerability) bool {
 	return cvss3 == 0 && vulnerability.Vuln.Cvss >= threshold
 }
 
-// DeleteScan deletes if configured the scan on the protecode server
-func (pc *Protecode) DeleteScan(cleanupMode string, productID int) {
-	switch cleanupMode {
-	case "none":
-	case "binary":
-	case "complete":
-		pc.logger.Info("Deleting scan from server.")
-		protecodeURL := pc.createURL("/api/product/", fmt.Sprintf("%v/", productID), "")
-		headers := map[string][]string{}
-
-		pc.send("DELETE", protecodeURL, headers)
-	default:
-		pc.logger.Fatalf("Unknown cleanup mode %v", cleanupMode)
-	}
-}
-
-// LoadReport loads the report of the protecode scan
-func (pc *Protecode) LoadReport(reportFileName string, productID int) *io.ReadCloser {
-
-	protecodeURL := pc.createURL("/api/product/", fmt.Sprintf("%v/pdf-report", productID), "")
-	headers := map[string][]string{
-		"Cache-Control": {"no-cache, no-store, must-revalidate"},
-		"Pragma":        {"no-cache"},
-		"Outputfile":    {reportFileName},
-	}
-
-	readCloser, err := pc.send(http.MethodGet, protecodeURL, headers)
-	if err != nil {
-		pc.logger.WithError(err).Fatalf("It is not possible to load report %v", protecodeURL)
-	}
-
-	return readCloser
-}
-
-// UploadScanFile upload the scan file to the protecode server
-func (pc *Protecode) UploadScanFile(cleanupMode, group, filePath, fileName string) *ResultData {
-	deleteBinary := (cleanupMode == "binary" || cleanupMode == "complete")
-	headers := map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}}
-
-	uploadURL := fmt.Sprintf("%v/api/upload/%v", pc.serverURL, fileName)
-
-	r, err := pc.client.UploadRequest(http.MethodPut, uploadURL, filePath, "file", headers, nil)
-	if err != nil {
-		pc.logger.WithError(err).Fatalf("Error during %v upload request", uploadURL)
-	} else {
-		pc.logger.Info("Upload successful")
-	}
-
-	result := new(ResultData)
-	pc.mapResponse(r.Body, result)
-
-	return result
-}
-
-// DeclareFetchURL configures the fetch url for the protecode scan
-func (pc *Protecode) DeclareFetchURL(cleanupMode, group, fetchURL string) *ResultData {
-	deleteBinary := (cleanupMode == "binary" || cleanupMode == "complete")
-	headers := map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}, "Url": {fetchURL}, "Content-Type": {"application/json"}}
-
-	protecodeURL := fmt.Sprintf("%v/api/fetch/", pc.serverURL)
-	r, err := pc.send(http.MethodPost, protecodeURL, headers)
-	if err != nil {
-		pc.logger.WithError(err).Fatalf("Error during declare fetch url: %v", protecodeURL)
-	}
-
-	result := new(ResultData)
-	pc.mapResponse(*r, result)
-
-	return result
-}
-
 //PollForResult polls the protecode scan for the result scan
 func (pc *Protecode) PollForResult(productID int, timeOutInMinutes string) ResultData {
 
@@ -363,34 +264,13 @@ func (pc *Protecode) PollForResult(productID int, timeOutInMinutes string) Resul
 	return response
 }
 
-func (pc *Protecode) pullResult(productID int) (ResultData, error) {
-	protecodeURL := pc.createURL("/api/product/", fmt.Sprintf("%v/", productID), "")
-	headers := map[string][]string{
-		"acceptType": {"application/json"},
-	}
-	r, err := pc.send(http.MethodGet, protecodeURL, headers)
-	if err != nil {
-		return *new(ResultData), err
-	}
-	result := new(ResultData)
-	pc.mapResponse(*r, result)
-
-	return *result, nil
-
-}
-
 // LoadExistingProduct loads the existing product from protecode service
 func (pc *Protecode) LoadExistingProduct(group string, verifyOnly bool) int {
 	var productID int = -1
 
 	if verifyOnly {
 
-		protecodeURL := pc.createURL("/api/apps/", fmt.Sprintf("%v/", group), "")
-		headers := map[string][]string{
-			"acceptType": {"application/json"},
-		}
-
-		response := pc.loadExisting(protecodeURL, headers)
+		response := pc.loadProductData(group)
 		// by definition we will take the first one and trigger rescan
 		productID = response.Products[0].ProductID
 
@@ -398,17 +278,4 @@ func (pc *Protecode) LoadExistingProduct(group string, verifyOnly bool) int {
 	}
 
 	return productID
-}
-
-func (pc *Protecode) loadExisting(protecodeURL string, headers map[string][]string) *ProductData {
-
-	r, err := pc.send(http.MethodGet, protecodeURL, headers)
-	if err != nil {
-		pc.logger.WithError(err).Fatalf("Error during load existing product: %v", protecodeURL)
-	}
-
-	result := new(ProductData)
-	pc.mapResponse(*r, result)
-
-	return result
 }
