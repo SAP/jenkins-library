@@ -174,7 +174,7 @@ func TestLoadExistingProductSuccess(t *testing.T) {
 	cases := []struct {
 		pc             Protecode
 		protecodeGroup string
-		reuseExisting  bool
+		verifyOnly     bool
 		want           int
 	}{
 		{Protecode{serverURL: server.URL, client: client, logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/protecode")}, "group", true, 1},
@@ -182,7 +182,7 @@ func TestLoadExistingProductSuccess(t *testing.T) {
 	}
 	for _, c := range cases {
 
-		got := c.pc.LoadExistingProduct(c.protecodeGroup, c.reuseExisting)
+		got := c.pc.LoadExistingProduct(c.protecodeGroup, c.verifyOnly)
 		assert.Equal(t, c.want, got)
 	}
 }

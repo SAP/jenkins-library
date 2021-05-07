@@ -390,10 +390,10 @@ func (pc *Protecode) pullResult(productID int) (ResultData, error) {
 }
 
 // LoadExistingProduct loads the existing product from protecode service
-func (pc *Protecode) LoadExistingProduct(group string, reuseExisting bool) int {
+func (pc *Protecode) LoadExistingProduct(group string, verifyOnly bool) int {
 	var productID int = -1
 
-	if reuseExisting {
+	if verifyOnly {
 
 		protecodeURL := pc.createURL("/api/apps/", fmt.Sprintf("%v/", group), "")
 		headers := map[string][]string{
