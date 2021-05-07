@@ -340,7 +340,7 @@ private String generatePodSpec(Map config) {
         spec      : [:]
     ]
     podSpec.spec += getAdditionalPodProperties(config)
-    podSpec.spec.initContainers = getInitContainer(config)
+    podSpec.spec.initContainers = getInitContainerList(config)
     podSpec.spec.containers = getContainerList(config)
     podSpec.spec.securityContext = getSecurityContext(config)
 
@@ -350,8 +350,7 @@ private String generatePodSpec(Map config) {
                                     emptyDir: [:]
                                 ]]
     }
-    def test = new JsonUtils().groovyObjectToPrettyJsonString(podSpec)
-    echo "podSpec : ${test}"
+
     return new JsonUtils().groovyObjectToPrettyJsonString(podSpec)
 }
 
@@ -421,8 +420,8 @@ private void unstashWorkspace(config, prefix) {
     }
 }
 
-private List getInitContainer(config){
-    def result = []
+private List getInitContainerList(config){
+    def initContainerSpecList = []
     if (config.initContainerImage && config.containerMountPath) {
         def initContainerName = config.initContainerImage.toLowerCase()
         def initContainerSpec = [
@@ -446,15 +445,10 @@ private List getInitContainer(config){
             ]
         }
         echo "initContainerSpec configurations : ${initContainerSpec}"
-        result.push(initContainerSpec)
+        initContainerSpecList.push(initContainerSpec)
     }
-    return result
+    return initContainerSpecList
 }
-
-
-
-
-
 
 private List getContainerList(config) {
 
@@ -543,7 +537,6 @@ private List getContainerList(config) {
         }
         result.push(containerSpec)
     }
-
     return result
 }
 
