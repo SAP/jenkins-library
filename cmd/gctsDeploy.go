@@ -75,13 +75,17 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 	log.Entry().Infof("gCTS Deploy : Checking if repository %v already exists", config.Repository)
 	repoMetadataInitState, getRepositoryErr := getRepository(config, httpClient)
 	currentBranch := repoMetadataInitState.Result.Branch
+	// If Repository does not exist in the system then Create and Clone Repository
 	if getRepositoryErr != nil {
+		// If scope is set for a new repository then creation/cloning of the repository cannot be done
 		if config.Scope != "" {
 			log.Entry().Error("Error during deploy : deploy scope cannot be provided while deploying a new repo")
 			return errors.New("Error in config file")
 		}
+		// State of the repository set for further processing during the step
 		repoState = repoStateNew
 		log.Entry().Infof("gCTS Deploy : Creating Repository Step for repository : %v", config.Repository)
+		// Parse the configuration parameter to a format that is accepted by the gcts api
 		configurations, _ := splitConfigurationToMap(config.Configuration, *configurationMetadata)
 		createErr := createRepositoryForDeploy(&createRepoOptions, telemetryData, command, httpClient, configurations)
 		if createErr != nil {
@@ -97,7 +101,9 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 			Host:       config.Host,
 			Client:     config.Client,
 		}
-
+		// No Import has to be set when there is a commit or branch parameter set
+		// This is required so that during the clone of the repo it is not imported into the system
+		// The import would be done at a later stage with the help of gcts deploy api call
 		if config.Branch != "" || config.Commit != "" {
 			setNoImportAndCloneRepoErr := setNoImportAndCloneRepo(config, &cloneRepoOptions, httpClient, telemetryData)
 			if setNoImportAndCloneRepoErr != nil {
@@ -106,6 +112,7 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 			}
 
 		} else {
+			// Clone Repository and Exit the step since there is no commit or branch parameters provided
 			cloneErr := cloneRepository(&cloneRepoOptions, telemetryData, httpClient)
 			if cloneErr != nil {
 				// Dump Error Log
@@ -117,6 +124,7 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 			return nil
 		}
 		log.Entry().Infof("gCTS Deploy : Reading repo information after cloning repository %v : ", config.Repository)
+		// Get the repository information for further processing of the step.
 		repoMetadataInitState, getRepositoryErr = getRepository(config, httpClient)
 		if getRepositoryErr != nil {
 			// Dump Error Log
@@ -126,6 +134,7 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 		currentBranch = repoMetadataInitState.Result.Branch
 	} else {
 		log.Entry().Infof("Repository %v already exists in the system, Checking for deploy scope", config.Repository)
+		// If deploy scope provided for an existing repository then deploy api is called and then execution ends
 		if config.Scope != "" {
 			log.Entry().Infof("Deploy scope exists for the repository in the configuration file")
 			log.Entry().Infof("gCTS Deploy: Deploying Commit to ABAP System for Repository %v with scope %v", config.Repository, config.Scope)
@@ -138,8 +147,10 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 		}
 		log.Entry().Infof("Deploy scope not set in the configuration file for repository : %v", config.Repository)
 	}
+	// branch to which the switching has to be done to
 	targetBranch := config.Branch
 	if config.Branch != "" {
+		// switch to a target branch, and if it fails rollback to the previous working state
 		_, switchBranchWithRollbackErr := switchBranchWithRollback(config, httpClient, currentBranch, targetBranch, repoState, repoMetadataInitState)
 		if switchBranchWithRollbackErr != nil {
 			return switchBranchWithRollbackErr
@@ -149,11 +160,13 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 	}
 
 	if config.Commit != "" {
+		// switch to a target commit and if it fails rollback to the previous working state
 		pullByCommitWithRollbackErr := pullByCommitWithRollback(config, telemetryData, command, httpClient, repoState, repoMetadataInitState, currentBranch, targetBranch, branchRollbackRequired)
 		if pullByCommitWithRollbackErr != nil {
 			return pullByCommitWithRollbackErr
 		}
 	} else {
+		// if commit parameter is not provided and its a new repo , then set config scope to "Current Commit" to be used with deploy api
 		if repoState == repoStateNew && (config.Commit != "" || config.Branch != "") {
 			log.Entry().Infof("Setting deploy scope as current commit")
 			config.Scope = "CRNTCOMMIT"
@@ -173,7 +186,10 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 			return pullByCommitWithRollbackErr
 		}
 	}
-
+	// A deploy is done with scope current commit if the repository is a new repo and
+	// branch and a commit parameters where also provided
+	// This is required so that the code base is imported into the system because during the
+	// switch branch and pull by commit the no import flag was set as true
 	if repoState == repoStateNew {
 		log.Entry().Infof("Setting deploy scope as current commit")
 		config.Scope = "CRNTCOMMIT"
@@ -187,6 +203,7 @@ func gctsDeployRepository(config *gctsDeployOptions, telemetryData *telemetry.Cu
 	return nil
 }
 
+// Function to remove the VCS_NO_IMPORT flag and do deploy into the abap system
 func removeNoImportAndDeployToSystem(config *gctsDeployOptions, httpClient piperhttp.Sender) error {
 	log.Entry().Infof("Removing VCS_NO_IMPORT configuration")
 	configToDelete := "VCS_NO_IMPORT"
@@ -205,6 +222,7 @@ func removeNoImportAndDeployToSystem(config *gctsDeployOptions, httpClient piper
 	return nil
 }
 
+// Function to pull by commit, it also does a rollback incase of errors during the pull
 func pullByCommitWithRollback(config *gctsDeployOptions, telemetryData *telemetry.CustomData, command command.ExecRunner,
 	httpClient piperhttp.Sender, repoState string, repoMetadataInitState *getRepositoryResponseBody,
 	currentBranch string, targetBranch string, branchRollbackRequired bool) error {
@@ -242,6 +260,7 @@ func pullByCommitWithRollback(config *gctsDeployOptions, telemetryData *telemetr
 
 }
 
+// Function to switch branches, it also does a rollback incase of errors during the switch
 func switchBranchWithRollback(config *gctsDeployOptions, httpClient piperhttp.Sender, currentBranch string, targetBranch string, repoState string, repoMetadataInitState *getRepositoryResponseBody) (*switchBranchResponseBody, error) {
 	var response *switchBranchResponseBody
 	response, switchBranchErr := switchBranch(config, httpClient, currentBranch, targetBranch)
@@ -259,6 +278,7 @@ func switchBranchWithRollback(config *gctsDeployOptions, httpClient piperhttp.Se
 	return response, nil
 }
 
+// Set VCS_NO_IMPORT flag to true and do a clone of the repo. This disables the repository objects to be pulled in to the system
 func setNoImportAndCloneRepo(config *gctsDeployOptions, cloneRepoOptions *gctsCloneRepositoryOptions, httpClient piperhttp.Sender, telemetryData *telemetry.CustomData) error {
 	log.Entry().Infof("Setting VCS_NO_IMPORT to true")
 	noImportConfig := setConfigKeyBody{
@@ -279,6 +299,7 @@ func setNoImportAndCloneRepo(config *gctsDeployOptions, cloneRepoOptions *gctsCl
 	return nil
 }
 
+// Function to switch branch
 func switchBranch(config *gctsDeployOptions, httpClient piperhttp.Sender, currentBranch string, targetBranch string) (*switchBranchResponseBody, error) {
 	var response switchBranchResponseBody
 	log.Entry().Infof("gCTS Deploy : Switching branch for repository : %v, from branch: %v to %v", config.Repository, currentBranch, targetBranch)
@@ -347,6 +368,7 @@ func deployCommitToAbapSystem(config *gctsDeployOptions, httpClient piperhttp.Se
 	return nil
 }
 
+// Uses the repository details to check if the repository already exists in the system or not
 func getRepository(config *gctsDeployOptions, httpClient piperhttp.Sender) (*getRepositoryResponseBody, error) {
 	var response getRepositoryResponseBody
 	requestURL := config.Host +
@@ -377,6 +399,7 @@ func getRepository(config *gctsDeployOptions, httpClient piperhttp.Sender) (*get
 	return &response, nil
 }
 
+// Function to delete configuration key for repositories
 func deleteConfigKey(deployConfig *gctsDeployOptions, httpClient piperhttp.Sender, configToDelete string) error {
 	log.Entry().Infof("gCTS Deploy : Delete configuration key %v", configToDelete)
 	requestURL := deployConfig.Host +
@@ -403,6 +426,7 @@ func deleteConfigKey(deployConfig *gctsDeployOptions, httpClient piperhttp.Sende
 	return nil
 }
 
+// Function to set configuration key for repositories
 func setConfigKey(deployConfig *gctsDeployOptions, httpClient piperhttp.Sender, configToSet *setConfigKeyBody) error {
 	log.Entry().Infof("gCTS Deploy : Start of set configuration key %v and value %v", configToSet.Key, configToSet.Value)
 	requestURL := deployConfig.Host +
@@ -651,6 +675,7 @@ func findConfigurationMetadata(configToFind string, configurationsAvailable conf
 	return configStruct, nil
 }
 
+// Error handling for failure responses from the gcts api calls
 func parseErrorDumpFromResponseBody(responseBody *http.Response) (*errorLogBody, error) {
 	var errorDump errorLogBody
 	parsingErr := piperhttp.ParseHTTPResponseBodyJSON(responseBody, &errorDump)
