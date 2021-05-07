@@ -3,7 +3,7 @@
 !!! caution "Current limitations"
 
       - [2102 only] TABU entries are currently not reflected in the object list during add-on build. With ABAP Environment release 2105 this will be supported.
-      - [2102 only] Using the short commit id in the add-on descriptor file does not work currently. Retrieve the long commit id instead by navigating to the branch in the Manage Software Components app, and selecting the commit in the list of commits. 
+      - [2102 only] Using the short commit id in the add-on descriptor file does not work currently. Retrieve the long commit id instead by navigating to the branch in the Manage Software Components app, and selecting the commit in the list of commits.
         This issue will be resolved with ABAP Environment release 2105.
       - gCTS-related restrictions apply, please refer to [gCTS: restrictions in supported object types](https://launchpad.support.sap.com/#/notes/2888887)
 
