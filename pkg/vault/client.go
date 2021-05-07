@@ -146,6 +146,35 @@ func (v Client) GetKvSecret(path string) (map[string]string, error) {
 	return secretData, nil
 }
 
+// WriteKvSecret writes secret to kv engine
+func (v Client) WriteKvSecret(path string, newSecret map[string]string) error {
+	oldSecret, err := v.GetKvSecret(path)
+	if err != nil {
+		return err
+	}
+	secret := make(map[string]interface{}, len(oldSecret))
+	for k, v := range oldSecret {
+		secret[k] = v
+	}
+	for k, v := range newSecret {
+		secret[k] = v
+	}
+	path = sanitizePath(path)
+	mountpath, version, err := v.getKvInfo(path)
+	if err != nil {
+		return err
+	}
+	if version == 2 {
+		path = addPrefixToKvPath(path, mountpath, "data")
+		secret = map[string]interface{}{"data": secret}
+	} else if version != 1 {
+		return fmt.Errorf("KV Engine in version %d is currently not supported", version)
+	}
+
+	_, err = v.lClient.Write(path, secret)
+	return err
+}
+
 // GenerateNewAppRoleSecret creates a new secret-id
 func (v *Client) GenerateNewAppRoleSecret(secretID, appRoleName string) (string, error) {
 	appRolePath := v.getAppRolePath(appRoleName)
