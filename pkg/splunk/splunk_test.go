@@ -472,34 +472,25 @@ func Test_tryPostMessages(t *testing.T) {
 
 func Test_readPipelineEnvironment(t *testing.T) {
 	tests := []struct {
-		name          string
-		commitHash    string
-		branch        string
-		gitOwner      string
-		gitRepository string
-		createFiles   bool
+		name       string
+		result     string
+		createFile bool
 	}{
 		{
-			name:          "Test read pipelineEnvironment files not available",
-			commitHash:    "N/A",
-			branch:        "N/A",
-			gitOwner:      "N/A",
-			gitRepository: "N/A",
-			createFiles:   false,
+			name:       "Test read pipelineEnvironment files not available",
+			result:     "N/A",
+			createFile: false,
 		},
 		{
-			name:          "Test read pipelineEnvironment files available",
-			commitHash:    "abcdef123",
-			branch:        "master",
-			gitOwner:      "piper",
-			gitRepository: "piper-splunk",
-			createFiles:   true,
+			name:       "Test read pipelineEnvironment files available",
+			result:     "master",
+			createFile: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			if tt.createFiles {
+			if tt.createFile {
 
 				// creating temporarily folders
 				path := ".pipeline/commonPipelineEnvironment/"
@@ -512,10 +503,6 @@ func Test_readPipelineEnvironment(t *testing.T) {
 				if err != nil {
 					t.Errorf("Could not create git folder: %v", err)
 				}
-				err = os.Mkdir(path+"github/", os.ModePerm)
-				if err != nil {
-					t.Errorf("Could not create github folder: %v", err)
-				}
 
 				// creating temporarily files with dummy content
 				branch := []byte("master")
@@ -523,39 +510,14 @@ func Test_readPipelineEnvironment(t *testing.T) {
 				if err != nil {
 					t.Errorf("Could not create branch file: %v", err)
 				}
-				commitId := []byte("abcdef123")
-				err = ioutil.WriteFile(path+"git/commitId", commitId, 0644)
-				if err != nil {
-					t.Errorf("Could not create commitId file: %v", err)
-				}
-				gitOwner := []byte("piper")
-				err = ioutil.WriteFile(path+"github/owner", gitOwner, 0644)
-				if err != nil {
-					t.Errorf("Could not create gitOwner file: %v", err)
-				}
-				gitRepository := []byte("piper-splunk")
-				err = ioutil.WriteFile(path+"github/repository", gitRepository, 0644)
-				if err != nil {
-					t.Errorf("Could not create gitOwner file: %v", err)
-				}
 
 			}
-
-			commitHash, branch, gitOwner, gitRepository := readPipelineEnvironment()
-			if commitHash != tt.commitHash {
-				t.Errorf("readPipelineEnvironment() got = %v, want %v", commitHash, tt.commitHash)
-			}
-			if branch != tt.branch {
-				t.Errorf("readPipelineEnvironment() got = %v, want %v", branch, tt.branch)
-			}
-			if gitOwner != tt.gitOwner {
-				t.Errorf("readPipelineEnvironment() got = %v, want %v", gitOwner, tt.gitOwner)
-			}
-			if gitRepository != tt.gitRepository {
-				t.Errorf("readPipelineEnvironment() got = %v, want %v", gitRepository, tt.gitRepository)
+			result := readCommonPipelineEnvironment("git/branch")
+			if result != tt.result {
+				t.Errorf("readCommonPipelineEnvironment() got = %v, want %v", result, tt.result)
 			}
 
-			if tt.createFiles {
+			if tt.createFile {
 				// deletes temp files
 				err := os.RemoveAll(".pipeline")
 				if err != nil {

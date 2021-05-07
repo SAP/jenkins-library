@@ -105,7 +105,6 @@ hooks:
     sendLogs: true
 ```
 
-Please do not add the `Splunk` keyword with the token, as it will be added automatically during initialization.
 `sendLogs` is a boolean, if set to true, the Splunk hook will send the collected logs in case of a failure of the step.
 If no failure occurred, no logs will be sent.
 

@@ -9,6 +9,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -36,12 +37,17 @@ var SplunkClient *Splunk
 
 func Initialize(correlationID, dsn, token, index string, sendLogs bool) error {
 	log.Entry().Debugf("Initializing Splunk with DSN %v", dsn)
+
+	if !strings.HasPrefix(token, "Splunk ") {
+		token = "Splunk " + token
+	}
+
 	log.RegisterSecret(token)
 	client := piperhttp.Client{}
 
 	client.SetOptions(piperhttp.ClientOptions{
 		MaxRequestDuration:        5 * time.Second,
-		Token:                     "Splunk " + token,
+		Token:                     token,
 		TransportSkipVerification: true,
 	})
 
@@ -61,19 +67,14 @@ func Send(customTelemetryData *telemetry.CustomData, logCollector *log.Collector
 	telemetryData := prepareTelemetry(*customTelemetryData)
 	messagesLen := len(logCollector.Messages)
 	// TODO: Logic for errorCategory (undefined, service, infrastructure)
-	if telemetryData.ErrorCode == "0" {
-		// Successful run, we only send the telemetry data, no logging information
+	if telemetryData.ErrorCode == "0" || (telemetryData.ErrorCode == "1" && !SplunkClient.sendLogs) {
+		// Either Successful run, we only send the telemetry data, no logging information
+		// OR Failure run and we do not want to send the logs
 		err := tryPostMessages(telemetryData, []log.Message{})
 		if err != nil {
 			log.Entry().WithError(err).WithField("module", "logger/splunk").Warn("Error while sending logs")
 		}
 		return nil
-	} else if telemetryData.ErrorCode == "1" && !SplunkClient.sendLogs {
-		// Failure run and we do not want to send the logs
-		err := tryPostMessages(telemetryData, []log.Message{})
-		if err != nil {
-			log.Entry().WithError(err).WithField("module", "logger/splunk").Warn("Error while sending logs")
-		}
 	} else {
 		// ErrorCode indicates an error in the step, so we want to send all the logs with telemetry
 		for i := 0; i < messagesLen; i += SplunkClient.postMessagesBatchSize {
@@ -90,39 +91,15 @@ func Send(customTelemetryData *telemetry.CustomData, logCollector *log.Collector
 	return nil
 }
 
-func readPipelineEnvironment() (string, string, string, string) {
+func readCommonPipelineEnvironment(filePath string) string {
 
 	// TODO: Dependent on a groovy step, which creates the folder.
-	// TODO: go git step here to read infos from git folder later add this to telemetry package?
-	contentCommitId, err := ioutil.ReadFile(".pipeline/commonPipelineEnvironment/git/commitId")
+	contentFile, err := ioutil.ReadFile(".pipeline/commonPipelineEnvironment/" + filePath)
 	if err != nil {
 		log.Entry().Warnf("Could not read commitId file. %v", err)
-		contentCommitId = []byte("N/A")
+		contentFile = []byte("N/A")
 	}
-	commitHash := string(contentCommitId)
-
-	contentBranch, err := ioutil.ReadFile(".pipeline/commonPipelineEnvironment/git/branch")
-	if err != nil {
-		log.Entry().Warnf("Could not read branch file. %v", err)
-		contentBranch = []byte("N/A")
-	}
-	branch := string(contentBranch)
-
-	contentRepository, err := ioutil.ReadFile(".pipeline/commonPipelineEnvironment/github/repository")
-	if err != nil {
-		log.Entry().Warnf("Could not read branch file. %v", err)
-		contentRepository = []byte("N/A")
-	}
-	gitRepository := string(contentRepository)
-
-	contentGitHubOwner, err := ioutil.ReadFile(".pipeline/commonPipelineEnvironment/github/owner")
-	if err != nil {
-		log.Entry().Warnf("Could not read branch file. %v", err)
-		contentGitHubOwner = []byte("N/A")
-	}
-	gitOwner := string(contentGitHubOwner)
-
-	return commitHash, branch, gitOwner, gitRepository
+	return string(contentFile)
 }
 
 // MonitoringData definition for monitoring
@@ -145,8 +122,6 @@ type MonitoringData struct {
 func prepareTelemetry(customTelemetryData telemetry.CustomData) MonitoringData {
 	tData := telemetry.GetData(&customTelemetryData)
 
-	commitHash, branch, gitOwner, gitRepository := readPipelineEnvironment()
-
 	return MonitoringData{
 		PipelineUrlHash: tData.PipelineURLHash,
 		BuildUrlHash:    tData.BuildURLHash,
@@ -157,10 +132,10 @@ func prepareTelemetry(customTelemetryData telemetry.CustomData) MonitoringData {
 		ErrorCode:       tData.CustomData.ErrorCode,
 		ErrorCategory:   tData.CustomData.ErrorCategory,
 		CorrelationID:   SplunkClient.correlationID,
-		CommitHash:      commitHash,
-		Branch:          branch,
-		GitOwner:        gitOwner,
-		GitRepository:   gitRepository,
+		CommitHash:      readCommonPipelineEnvironment("git/commitId"),
+		Branch:          readCommonPipelineEnvironment("git/branch"),
+		GitOwner:        readCommonPipelineEnvironment("github/owner"),
+		GitRepository:   readCommonPipelineEnvironment("github/repository"),
 	}
 }
 
@@ -191,14 +166,17 @@ func tryPostMessages(telemetryData MonitoringData, messages []log.Message) error
 
 	payload, err := json.Marshal(details)
 	if err != nil {
+		log.Entry().Errorf("Error while marshalling Splunk message details: %v", err)
 		return err
 	}
 
 	resp, err := SplunkClient.splunkClient.SendRequest(http.MethodPost, SplunkClient.splunkDsn, bytes.NewBuffer(payload), nil, nil)
 
 	if err != nil {
+		log.Entry().Errorf("Error sending the requets to Splunk: %v", err)
 		return err
 	}
+
 	defer func() {
 		err := resp.Body.Close()
 		if err != nil {
@@ -209,10 +187,11 @@ func tryPostMessages(telemetryData MonitoringData, messages []log.Message) error
 		rdr := io.LimitReader(resp.Body, 1000)
 		body, err := ioutil.ReadAll(rdr)
 		if err != nil {
+			log.Entry().Errorf("Error reading response body: %v", err)
 			return err
 		}
 		log.Entry().Errorf("%v: Splunk logging failed - %v", resp.Status, string(body))
-		return nil
+		return err
 	}
 	return nil
 }
