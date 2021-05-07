@@ -59,21 +59,21 @@ func (c *Config) ApplyAliasConfig(parameters []StepParameters, secrets []StepSec
 		c.copyStepAliasConfig(stepName, stepAliases)
 	}
 	for _, p := range parameters {
-		c.General = setParamValueFromAlias(c.General, filters.General, p.Name, p.Aliases)
+		c.General = setParamValueFromAlias(stepName, c.General, filters.General, p.Name, p.Aliases)
 		if c.Stages[stageName] != nil {
-			c.Stages[stageName] = setParamValueFromAlias(c.Stages[stageName], filters.Stages, p.Name, p.Aliases)
+			c.Stages[stageName] = setParamValueFromAlias(stepName, c.Stages[stageName], filters.Stages, p.Name, p.Aliases)
 		}
 		if c.Steps[stepName] != nil {
-			c.Steps[stepName] = setParamValueFromAlias(c.Steps[stepName], filters.Steps, p.Name, p.Aliases)
+			c.Steps[stepName] = setParamValueFromAlias(stepName, c.Steps[stepName], filters.Steps, p.Name, p.Aliases)
 		}
 	}
 	for _, s := range secrets {
-		c.General = setParamValueFromAlias(c.General, filters.General, s.Name, s.Aliases)
+		c.General = setParamValueFromAlias(stepName, c.General, filters.General, s.Name, s.Aliases)
 		if c.Stages[stageName] != nil {
-			c.Stages[stageName] = setParamValueFromAlias(c.Stages[stageName], filters.Stages, s.Name, s.Aliases)
+			c.Stages[stageName] = setParamValueFromAlias(stepName, c.Stages[stageName], filters.Stages, s.Name, s.Aliases)
 		}
 		if c.Steps[stepName] != nil {
-			c.Steps[stepName] = setParamValueFromAlias(c.Steps[stepName], filters.Steps, s.Name, s.Aliases)
+			c.Steps[stepName] = setParamValueFromAlias(stepName, c.Steps[stepName], filters.Steps, s.Name, s.Aliases)
 		}
 	}
 }
