@@ -87,26 +87,12 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 			runner := &command.Command{}
 			fileUtils := &piperutils.Files{}
 
-			log.Entry().Infof("Successfully found deployment user : '%s'", config.AltDeploymentRepositoryUser)
-			log.Entry().Infof("Successfully found deployment password : '%s'", config.AltDeploymentRepositoryPassowrd)
-			log.Entry().Infof("Successfully found deployment id : '%s'", config.AltDeploymentRepositoryID)
-			log.Entry().Infof("Successfully found deployment url : '%s'", config.AltDeploymentRepositoryURL)
-
 			if (len(config.AltDeploymentRepositoryID) > 0) && (len(config.AltDeploymentRepositoryPassowrd) > 0) && (len(config.AltDeploymentRepositoryUser) > 0) {
-				// update or create a new project settings xml
-				if len(config.ProjectSettingsFile) > 0 {
-					err := maven.UpdateProjectSettingsXML(config.ProjectSettingsFile, config.AltDeploymentRepositoryID, config.AltDeploymentRepositoryUser, config.AltDeploymentRepositoryPassowrd, utils)
-					if err != nil {
-						return err
-					}
-				} else {
-					projectSettingsFile, err := maven.CreateNewProjectSettingsXML(config.AltDeploymentRepositoryID, config.AltDeploymentRepositoryUser, config.AltDeploymentRepositoryPassowrd, utils)
-					if err != nil {
-						return err
-					} else {
-						mavenOptions.ProjectSettingsFile = projectSettingsFile
-					}
+				projectSettingsFilePath, err := createOrUpdateProjectSettingsXML(config.ProjectSettingsFile, config.AltDeploymentRepositoryID, config.AltDeploymentRepositoryUser, config.AltDeploymentRepositoryPassowrd, utils)
+				if err != nil {
+					return errors.Wrap(err, "Could not create or update project settings xml")
 				}
+				mavenOptions.ProjectSettingsFile = projectSettingsFilePath
 			}
 
 			deployFlags := []string{"-Dmaven.main.skip=true", "-Dmaven.test.skip=true", "-Dmaven.install.skip=true"}
@@ -128,6 +114,22 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 		}
 	}
 	return err
+}
+
+func createOrUpdateProjectSettingsXML(projectSettingsFile string, altDeploymentRepositoryID string, altDeploymentRepositoryUser string, altDeploymentRepositoryPassword string, utils maven.Utils) (string, error) {
+	if len(projectSettingsFile) > 0 {
+		projectSettingsFilePath, err := maven.UpdateProjectSettingsXML(projectSettingsFile, altDeploymentRepositoryID, altDeploymentRepositoryUser, altDeploymentRepositoryPassword, utils)
+		if err != nil {
+			return "", errors.Wrap(err, "Could not update settings xml")
+		}
+		return projectSettingsFilePath, nil
+	} else {
+		projectSettingsFilePath, err := maven.CreateNewProjectSettingsXML(altDeploymentRepositoryID, altDeploymentRepositoryUser, altDeploymentRepositoryPassword, utils)
+		if err != nil {
+			return "", errors.Wrap(err, "Could not create settings xml")
+		}
+		return projectSettingsFilePath, nil
+	}
 }
 
 func loadRemoteRepoCertificates(certificateList []string, client piperhttp.Downloader, flags *[]string, runner command.ExecRunner, fileUtils piperutils.FileUtils) error {

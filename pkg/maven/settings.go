@@ -119,13 +119,15 @@ func CreateNewProjectSettingsXML(altDeploymentRepositoryID string, altDeployment
 
 }
 
-func UpdateProjectSettingsXML(projectSettingsFile string, altDeploymentRepositoryID string, altDeploymentRepositoryUser string, altDeploymentRepositoryPassword string, utils SettingsDownloadUtils) error {
+func UpdateProjectSettingsXML(projectSettingsFile string, altDeploymentRepositoryID string, altDeploymentRepositoryUser string, altDeploymentRepositoryPassword string, utils SettingsDownloadUtils) (string, error) {
+	projectSettingsFileDestination := ".pipeline/mavenProjectSettings"
 	if exists, _ := utils.FileExists(projectSettingsFile); exists {
+		projectSettingsFileDestination = projectSettingsFile
 		addServerTagtoProjectSettingsXML(projectSettingsFile, altDeploymentRepositoryID, altDeploymentRepositoryUser, altDeploymentRepositoryPassword, utils)
 	} else {
 		addServerTagtoProjectSettingsXML(".pipeline/mavenProjectSettings", altDeploymentRepositoryID, altDeploymentRepositoryUser, altDeploymentRepositoryPassword, utils)
 	}
-	return nil
+	return projectSettingsFileDestination, nil
 
 }
 

@@ -90,7 +90,7 @@ spec:
           - name: maven/createBOM
       - name: altDeploymentRepositoryPassowrd
         type: string
-        description: Password for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This password will be updated in settings.xml 
+        description: Password for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This password will be updated in settings.xml . When no settings.xml is provided a new one is created corresponding with <servers> tag
         scope:
           - GENERAL
           - PARAMETERS
@@ -102,7 +102,7 @@ spec:
             param: custom/repositoryPassword
       - name: altDeploymentRepositoryUser
         type: string
-        description: User for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This user will be updated in settings.xml . When no settings.xml a new one is created which with <servers> tag
+        description: User for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This user will be updated in settings.xml . When no settings.xml is provided a new one is created corresponding with <servers> tag
         scope:
           - GENERAL
           - PARAMETERS
@@ -113,7 +113,7 @@ spec:
             param: custom/repositoryUsername
       - name: altDeploymentRepositoryUrl
         type: string
-        description: Url for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This Url will be updated in settings.xml . When no settings.xml a new one is created which with <servers> tag
+        description: Url for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This Url will be updated in settings.xml . When no settings.xml is provided a new one is created corresponding with <servers> tag
         scope:
           - GENERAL
           - PARAMETERS
@@ -124,7 +124,7 @@ spec:
             param: custom/repositoryUrl
       - name: altDeploymentRepositoryID
         type: string
-        description: Id for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This id will be updated in settings.xml and will be used as a flag with DaltDeploymentRepository along with mavenAltDeploymentRepositoryUrl during maven deploy . When no settings.xml a new one is created which with <servers> tag
+        description: Id for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This id will be updated in settings.xml and will be used as a flag with DaltDeploymentRepository along with mavenAltDeploymentRepositoryUrl during maven deploy . When no settings.xml is provided a new one is created corresponding with <servers> tag
         scope:
           - GENERAL
           - PARAMETERS
