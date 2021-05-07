@@ -138,7 +138,8 @@ func TestRunSonar(t *testing.T) {
 			Token:                     "secret-ABC",
 			ServerURL:                 sonarServerURL,
 			Organization:              "SAP",
-			ProjectVersion:            "1.2.3",
+			Version:                   "1.2.3",
+			VersioningModel:           "major",
 		}
 		fileUtilsExists = mockFileUtilsExists(true)
 		os.Setenv("PIPER_SONAR_LOAD_CERTIFICATES", "true")
@@ -151,7 +152,7 @@ func TestRunSonar(t *testing.T) {
 		err = runSonar(options, &mockDownloadClient, &mockRunner, apiClient, &sonarExecuteScanInflux{})
 		// assert
 		assert.NoError(t, err)
-		assert.Contains(t, sonar.options, "-Dsonar.projectVersion=1.2.3")
+		assert.Contains(t, sonar.options, "-Dsonar.projectVersion=1")
 		assert.Contains(t, sonar.options, "-Dsonar.organization=SAP")
 		assert.Contains(t, sonar.environment, "SONAR_HOST_URL="+sonarServerURL)
 		assert.Contains(t, sonar.environment, "SONAR_TOKEN=secret-ABC")

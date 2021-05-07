@@ -3,11 +3,12 @@ package vault
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
 	"path"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/stretchr/testify/mock"
 
@@ -15,6 +16,9 @@ import (
 
 	"github.com/hashicorp/vault/api"
 	"github.com/stretchr/testify/assert"
+
+	vaulthttp "github.com/hashicorp/vault/http"
+	"github.com/hashicorp/vault/vault"
 )
 
 type SecretData = map[string]interface{}
@@ -109,6 +113,63 @@ func TestGetKV1Secret(t *testing.T) {
 		assert.Empty(t, secret["key1"])
 
 	})
+}
+
+func TestWriteKvSecret(t *testing.T) {
+	const secretName = "secret/test"
+	tests := []struct {
+		name           string
+		initialSecret  map[string]string
+		writingSecret  map[string]string
+		expectedSecret map[string]string
+	}{
+		{
+			name:           "Test write new KV2 secret",
+			initialSecret:  nil,
+			writingSecret:  map[string]string{"key": "value"},
+			expectedSecret: map[string]string{"key": "value"},
+		},
+		{
+			name:           "Test rewrite KV2 secret with new keys",
+			initialSecret:  map[string]string{"key1": "value1"},
+			writingSecret:  map[string]string{"key2": "value2"},
+			expectedSecret: map[string]string{"key1": "value1", "key2": "value2"},
+		},
+		{
+			name:           "Test rewrite KV2 secret with existed keys",
+			initialSecret:  map[string]string{"key1": "value1"},
+			writingSecret:  map[string]string{"key1": "value2"},
+			expectedSecret: map[string]string{"key1": "value2"},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cluster := vault.NewTestCluster(t, &vault.CoreConfig{
+				DevToken: "token",
+			}, &vault.TestClusterOptions{
+				HandlerFunc: vaulthttp.Handler,
+			})
+
+			core := cluster.Cores[0].Core
+			vault.TestWaitActive(t, core)
+			vaultClient := cluster.Cores[0].Client
+			client := Client{vaultClient.Logical(), &Config{}}
+			cluster.Start()
+			defer cluster.Cleanup()
+
+			if test.initialSecret != nil {
+				err := client.WriteKvSecret(secretName, test.initialSecret)
+				assert.NoError(t, err)
+			}
+
+			err := client.WriteKvSecret(secretName, test.writingSecret)
+			assert.NoError(t, err)
+			secret, err := client.GetKvSecret(secretName)
+			assert.NoError(t, err)
+			assert.Equal(t, test.expectedSecret, secret)
+		})
+	}
 }
 
 func TestSecretIDGeneration(t *testing.T) {
