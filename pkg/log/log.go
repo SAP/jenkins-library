@@ -65,6 +65,7 @@ func (formatter *PiperLogFormatter) Format(entry *logrus.Entry) (bytes []byte, e
 
 // LibraryRepository that is passed into with -ldflags
 var LibraryRepository string
+var LibraryName string
 var logger *logrus.Entry
 var secrets []string
 

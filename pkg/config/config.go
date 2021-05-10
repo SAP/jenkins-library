@@ -85,7 +85,7 @@ func setParamValueFromAlias(stepName string, configMap map[string]interface{}, f
 			if aliasVal != nil {
 				configMap[name] = aliasVal
 				if a.Deprecated {
-					log.Entry().Warningf("[WARNING] The parameter '%v' is DEPRECATED, use '%v' instead. (%v/%v)", a.Name, name, "piper-lib-os", stepName)
+					log.Entry().Warningf("[WARNING] The parameter '%v' is DEPRECATED, use '%v' instead. (%v/%v)", a.Name, name, log.LibraryName, stepName)
 				}
 			}
 			if configMap[name] != nil {
