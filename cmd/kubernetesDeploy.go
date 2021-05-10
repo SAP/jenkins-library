@@ -225,23 +225,39 @@ func runKubectlDeploy(config kubernetesDeployOptions, command command.ExecRunner
 	}
 
 	if config.CreateDockerRegistrySecret {
-		if len(config.ContainerRegistryUser)+len(config.ContainerRegistryPassword) == 0 {
-			log.Entry().Fatal("Cannot create Container registry secret without proper registry username/password")
+		if len(config.DockerConfigJSON) == 0 && len(config.ContainerRegistryUser)+len(config.ContainerRegistryPassword) == 0 {
+			log.Entry().Fatal("Cannot create Container registry secret without proper registry username/password or docker config.json file")
 		}
-		// first check if secret already exists
-		kubeCheckParams := append(kubeParams, "get", "secret", config.ContainerRegistrySecret)
-		if err := command.RunExecutable("kubectl", kubeCheckParams...); err != nil {
-			log.Entry().Infof("Registry secret '%v' does not exist, let's create it ...", config.ContainerRegistrySecret)
-			kubeSecretParams := append(
-				kubeParams,
-				"create",
-				"secret",
+
+		kubeSecretParams := []string{
+			"create",
+			"secret",
+		}
+
+		if len(config.DockerConfigJSON) > 0 {
+			kubeSecretParams = append(
+				kubeSecretParams,
+				"generic",
+				config.ContainerRegistrySecret,
+				fmt.Sprintf("--from-file=.dockerconfigjson=%v", config.DockerConfigJSON),
+				"--type=\"kubernetes.io/dockerconfigjson\"",
+			)
+		} else {
+			kubeSecretParams = append(
+				kubeSecretParams,
 				"docker-registry",
 				config.ContainerRegistrySecret,
 				fmt.Sprintf("--docker-server=%v", containerRegistry),
 				fmt.Sprintf("--docker-username=%v", config.ContainerRegistryUser),
 				fmt.Sprintf("--docker-password=%v", config.ContainerRegistryPassword),
 			)
+
+		}
+		// first check if secret already exists
+		kubeCheckParams := append(kubeParams, "get", "secret", config.ContainerRegistrySecret)
+		if err := command.RunExecutable("kubectl", kubeCheckParams...); err != nil {
+			log.Entry().Infof("Registry secret '%v' does not exist, let's create it ...", config.ContainerRegistrySecret)
+			kubeSecretParams = append(kubeParams, kubeSecretParams...)
 			log.Entry().Infof("Creating container registry secret '%v'", config.ContainerRegistrySecret)
 			log.Entry().Debugf("Running kubectl with following parameters: %v", kubeSecretParams)
 			if err := command.RunExecutable("kubectl", kubeSecretParams...); err != nil {

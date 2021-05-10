@@ -454,6 +454,69 @@ spec:
 		assert.Contains(t, string(appTemplate), "my.registry:55555/path/to/Image:latest")
 	})
 
+	t.Run("test kubectl - create secret from docker config.json", func(t *testing.T) {
+		dir, err := ioutil.TempDir("", "")
+		defer os.RemoveAll(dir) // clean up
+		assert.NoError(t, err, "Error when creating temp dir")
+
+		opts := kubernetesDeployOptions{
+			AppTemplate:                filepath.Join(dir, "test.yaml"),
+			DockerConfigJSON:           "/path/to/.docker/config.json",
+			ContainerRegistryURL:       "https://my.registry:55555",
+			ContainerRegistryUser:      "registryUser",
+			ContainerRegistryPassword:  "********",
+			ContainerRegistrySecret:    "regSecret",
+			CreateDockerRegistrySecret: true,
+			DeployTool:                 "kubectl",
+			Image:                      "path/to/Image:latest",
+			AdditionalParameters:       []string{"--testParam", "testValue"},
+			KubeConfig:                 "This is my kubeconfig",
+			KubeContext:                "testCluster",
+			Namespace:                  "deploymentNamespace",
+		}
+
+		kubeYaml := `kind: Deployment
+metadata:
+spec:
+  spec:
+    image: <image-name>`
+
+		ioutil.WriteFile(opts.AppTemplate, []byte(kubeYaml), 0755)
+
+		e := mock.ExecMockRunner{
+			ShouldFailOnCommand: map[string]error{
+				"kubectl --insecure-skip-tls-verify=true --namespace=deploymentNamespace --context=testCluster get secret regSecret": fmt.Errorf("secret not found"),
+			},
+		}
+		var stdout bytes.Buffer
+		runKubernetesDeploy(opts, &e, &stdout)
+
+		assert.Equal(t, e.Env, []string{"KUBECONFIG=This is my kubeconfig"})
+
+		assert.Equal(t, "kubectl", e.Calls[0].Exec, "Wrong secret lookup command")
+		assert.Equal(t, []string{
+			"--insecure-skip-tls-verify=true",
+			fmt.Sprintf("--namespace=%v", opts.Namespace),
+			fmt.Sprintf("--context=%v", opts.KubeContext),
+			"get",
+			"secret",
+			opts.ContainerRegistrySecret,
+		}, e.Calls[0].Params, "kubectl parameters incorrect")
+
+		assert.Equal(t, "kubectl", e.Calls[1].Exec, "Wrong secret create command")
+		assert.Equal(t, []string{
+			"--insecure-skip-tls-verify=true",
+			fmt.Sprintf("--namespace=%v", opts.Namespace),
+			fmt.Sprintf("--context=%v", opts.KubeContext),
+			"create",
+			"secret",
+			"generic",
+			opts.ContainerRegistrySecret,
+			fmt.Sprintf("--from-file=.dockerconfigjson=%v", opts.DockerConfigJSON),
+			`--type="kubernetes.io/dockerconfigjson"`,
+		}, e.Calls[1].Params, "kubectl parameters incorrect")
+	})
+
 	t.Run("test kubectl - lookup secret/kubeconfig", func(t *testing.T) {
 		dir, err := ioutil.TempDir("", "")
 		defer os.RemoveAll(dir) // clean up
