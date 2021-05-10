@@ -131,6 +131,9 @@ func runWhitesourceExecuteScan(config *ScanOptions, scan *ws.Scan, utils whiteso
 	}
 
 	if err := resolveProjectIdentifiers(config, scan, utils, sys); err != nil {
+		if strings.Contains(fmt.Sprint(err), "User is not allowed to perform this action") {
+			log.SetErrorCategory(log.ErrorConfiguration)
+		}
 		return fmt.Errorf("failed to resolve project identifiers: %w", err)
 	}
 
@@ -166,6 +169,9 @@ func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUti
 		dClient := &piperDocker.Client{}
 		dClient.SetOptions(dClientOptions)
 		if err := runContainerSaveImage(&saveImageOptions, &telemetry.CustomData{}, "./cache", "", dClient); err != nil {
+			if strings.Contains(fmt.Sprint(err), "no image found") {
+				log.SetErrorCategory(log.ErrorConfiguration)
+			}
 			return errors.Wrapf(err, "failed to dowload Docker image %v", config.ScanImage)
 		}
 
@@ -573,6 +579,7 @@ func checkProjectSecurityViolations(cvssSeverityLimit float64, project ws.Projec
 	}
 	// https://github.com/SAP/jenkins-library/blob/master/vars/whitesourceExecuteScan.groovy#L558
 	if severeVulnerabilities > 0 {
+		log.SetErrorCategory(log.ErrorCompliance)
 		return severeVulnerabilities, alerts, fmt.Errorf("%v Open Source Software Security vulnerabilities with CVSS score greater "+
 			"or equal to %.1f detected in project %s",
 			severeVulnerabilities, cvssSeverityLimit, project.Name)
