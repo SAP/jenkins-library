@@ -32,7 +32,7 @@ type protecodeExecuteScanOptions struct {
 	VerifyOnly                  bool   `json:"verifyOnly,omitempty"`
 	Username                    string `json:"username,omitempty"`
 	Password                    string `json:"password,omitempty"`
-	ArtifactVersion             string `json:"artifactVersion,omitempty"`
+	Version                     string `json:"version,omitempty"`
 	PullRequestName             string `json:"pullRequestName,omitempty"`
 }
 
@@ -168,7 +168,7 @@ func addProtecodeExecuteScanFlags(cmd *cobra.Command, stepConfig *protecodeExecu
 	cmd.Flags().BoolVar(&stepConfig.VerifyOnly, "verifyOnly", false, "Whether the step shall only apply verification checks or whether it does a full scan and check cycle")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User which is used for the protecode scan")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password which is used for the user")
-	cmd.Flags().StringVar(&stepConfig.ArtifactVersion, "artifactVersion", os.Getenv("PIPER_artifactVersion"), "The version of the artifact to allow identification in protecode backend")
+	cmd.Flags().StringVar(&stepConfig.Version, "version", os.Getenv("PIPER_version"), "The version of the artifact to allow identification in protecode backend")
 	cmd.Flags().StringVar(&stepConfig.PullRequestName, "pullRequestName", os.Getenv("PIPER_pullRequestName"), "The name of the pull request")
 
 	cmd.MarkFlagRequired("serverUrl")
@@ -362,7 +362,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Aliases:   []config.Alias{},
 					},
 					{
-						Name: "artifactVersion",
+						Name: "version",
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "commonPipelineEnvironment",
@@ -372,7 +372,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{},
+						Aliases:   []config.Alias{{Name: "artifactVersion"}},
 					},
 					{
 						Name:        "pullRequestName",

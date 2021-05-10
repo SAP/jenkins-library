@@ -102,7 +102,7 @@ func newWhitesourceUtils(config *ScanOptions) *whitesourceUtilsBundle {
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
 	// Configure HTTP Client
-	utils.SetOptions(piperhttp.ClientOptions{TransportTimeout: time.Duration(config.Timeout) * time.Second})
+	utils.SetOptions(piperhttp.ClientOptions{MaxRetries: 3, TransportTimeout: time.Duration(config.Timeout) * time.Second})
 	return &utils
 }
 
