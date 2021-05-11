@@ -59,33 +59,33 @@ func (c *Config) ApplyAliasConfig(parameters []StepParameters, secrets []StepSec
 		c.copyStepAliasConfig(stepName, stepAliases)
 	}
 	for _, p := range parameters {
-		c.General = setParamValueFromAlias(c.General, filters.General, p.Name, p.Aliases)
+		c.General = setParamValueFromAlias(stepName, c.General, filters.General, p.Name, p.Aliases)
 		if c.Stages[stageName] != nil {
-			c.Stages[stageName] = setParamValueFromAlias(c.Stages[stageName], filters.Stages, p.Name, p.Aliases)
+			c.Stages[stageName] = setParamValueFromAlias(stepName, c.Stages[stageName], filters.Stages, p.Name, p.Aliases)
 		}
 		if c.Steps[stepName] != nil {
-			c.Steps[stepName] = setParamValueFromAlias(c.Steps[stepName], filters.Steps, p.Name, p.Aliases)
+			c.Steps[stepName] = setParamValueFromAlias(stepName, c.Steps[stepName], filters.Steps, p.Name, p.Aliases)
 		}
 	}
 	for _, s := range secrets {
-		c.General = setParamValueFromAlias(c.General, filters.General, s.Name, s.Aliases)
+		c.General = setParamValueFromAlias(stepName, c.General, filters.General, s.Name, s.Aliases)
 		if c.Stages[stageName] != nil {
-			c.Stages[stageName] = setParamValueFromAlias(c.Stages[stageName], filters.Stages, s.Name, s.Aliases)
+			c.Stages[stageName] = setParamValueFromAlias(stepName, c.Stages[stageName], filters.Stages, s.Name, s.Aliases)
 		}
 		if c.Steps[stepName] != nil {
-			c.Steps[stepName] = setParamValueFromAlias(c.Steps[stepName], filters.Steps, s.Name, s.Aliases)
+			c.Steps[stepName] = setParamValueFromAlias(stepName, c.Steps[stepName], filters.Steps, s.Name, s.Aliases)
 		}
 	}
 }
 
-func setParamValueFromAlias(configMap map[string]interface{}, filter []string, name string, aliases []Alias) map[string]interface{} {
+func setParamValueFromAlias(stepName string, configMap map[string]interface{}, filter []string, name string, aliases []Alias) map[string]interface{} {
 	if configMap != nil && configMap[name] == nil && sliceContains(filter, name) {
 		for _, a := range aliases {
 			aliasVal := getDeepAliasValue(configMap, a.Name)
 			if aliasVal != nil {
 				configMap[name] = aliasVal
 				if a.Deprecated {
-					log.Entry().WithField("package", "SAP/jenkins-library/pkg/config").Warningf("DEPRECATION NOTICE: old step config key '%v' used. Please switch to '%v'!", a.Name, name)
+					log.Entry().Warningf("[WARNING] The parameter '%v' is DEPRECATED, use '%v' instead. (%v/%v)", a.Name, name, log.LibraryName, stepName)
 				}
 			}
 			if configMap[name] != nil {
@@ -209,10 +209,10 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		} else {
 			//apply aliases
 			for _, p := range parameters {
-				params = setParamValueFromAlias(params, filters.Parameters, p.Name, p.Aliases)
+				params = setParamValueFromAlias(stepName, params, filters.Parameters, p.Name, p.Aliases)
 			}
 			for _, s := range secrets {
-				params = setParamValueFromAlias(params, filters.Parameters, s.Name, s.Aliases)
+				params = setParamValueFromAlias(stepName, params, filters.Parameters, s.Name, s.Aliases)
 			}
 
 			stepConfig.mixIn(params, filters.Parameters)
