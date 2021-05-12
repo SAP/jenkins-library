@@ -49,7 +49,7 @@ func (p *transportRequestDocIDFromGitCommonPipelineEnvironment) persist(path, re
 	}
 }
 
-// TransportRequestDocIDFromGitCommand Retrieve change document ID from Git Commit Messages
+// TransportRequestDocIDFromGitCommand Retrieves change document ID from Git repository
 func TransportRequestDocIDFromGitCommand() *cobra.Command {
 	const STEP_NAME = "transportRequestDocIDFromGit"
 
@@ -60,8 +60,8 @@ func TransportRequestDocIDFromGitCommand() *cobra.Command {
 
 	var createTransportRequestDocIDFromGitCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Retrieve change document ID from Git Commit Messages",
-		Long:  `Retrieve change document ID from Git Commit Messages.`,
+		Short: "Retrieves change document ID from Git repository",
+		Long:  `Scans the commit messages of the Git repository for a pattern to retrieve the change document ID.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -120,18 +120,15 @@ func transportRequestDocIDFromGitMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "transportRequestDocIDFromGit",
 			Aliases:     []config.Alias{},
-			Description: "Retrieve change document ID from Git Commit Messages",
+			Description: "Retrieves change document ID from Git repository",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
-				Resources: []config.StepResources{
-					{Name: "git", Type: "stash"},
-				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "gitFrom",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEP", "GENERAL"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "changeManagement/git/from"}},
@@ -139,7 +136,7 @@ func transportRequestDocIDFromGitMetadata() config.StepData {
 					{
 						Name:        "gitTo",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEP", "GENERAL"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "changeManagement/git/to"}},
@@ -147,7 +144,7 @@ func transportRequestDocIDFromGitMetadata() config.StepData {
 					{
 						Name:        "changeDocumentLabel",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEP", "GENERAL"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "changeManagement/changeDocumentLabel"}},
