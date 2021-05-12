@@ -159,24 +159,6 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: version
-        aliases:
-          - name: projectVersion
-          - name: detect/projectVersion
-        type: string
-        description: Defines the version number of the artifact being build in the pipeline. It is used as source for the Detect version.
-        longDescription: |-
-          Defines the version number of the artifact being build in the pipeline.
-          It is used for build version creation and as source for the Detect version.
-          **Typically it is available through the pipeline run.**
-          The project version of the Detect project is calculated using the [`versioningModel`](#versioningmodel).
-        resourceRef:
-          - name: commonPipelineEnvironment
-            param: artifactVersion
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
       - name: versioningModel
         type: string
         description: The versioning model used for result reporting (based on the artifact version). Example 1.2.3 using `major` will result in version 1
@@ -195,6 +177,32 @@ spec:
           - major-minor
           - semantic
           - full
+      - name: version
+        aliases:
+          - name: projectVersion
+          - name: detect/projectVersion
+        type: string
+        description: Defines the version number of the artifact being build in the pipeline. It is used as source for the Detect version.
+        longDescription: |-
+          Defines the version number of the artifact being build in the pipeline.
+          It is used for build version creation and as source for the Detect version.
+          **Typically it is available through the pipeline run.**
+          The project version of the Detect project is calculated using the [`versioningModel`](#versioningmodel).
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: artifactVersion
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: customScanVersion
+        type: string
+        description: "A custom version used along with the uploaded scan results."
+        longDescription: |-
+          Defines a custom version for the Detect scan which deviates from the typical versioning pattern using [`version`](#version) and [`versioningModel`](#versioningModel).
+          It allows to set non-numeric versions as well and supersedes the value of [`version`](#version) which is calculated automatically.
+          The parameter is also used by other scan steps (e.g. Fortify, Sonar, WhiteSource) and thus allows a common custom version across scan tools.
+        scope: [GENERAL, STAGES, STEPS, PARAMETERS]
       - name: projectSettingsFile
         type: string
         description: "Path or url to the mvn settings file that should be used as project settings file."

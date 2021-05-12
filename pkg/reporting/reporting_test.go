@@ -90,8 +90,9 @@ func TestToMarkdown(t *testing.T) {
 				{"overview 1", "1", Green},
 				{"overview 2", "2", Green},
 			},
-			FurtherInfo: "this is further information",
-			ReportTime:  time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
+			FurtherInfo:    "this is further information",
+			SuccessfulScan: true,
+			ReportTime:     time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
 			DetailTable: ScanDetailTable{
 				Headers: []string{"column 1", "column 2"},
 				Rows: []ScanRow{
@@ -107,7 +108,7 @@ func TestToMarkdown(t *testing.T) {
 		res, err := report.ToMarkdown()
 		result := string(res)
 		assert.NoError(t, err)
-		assert.Contains(t, result, `## Report Test Title`)
+		assert.Contains(t, result, `## :white_check_mark: Report Test Title`)
 		assert.Contains(t, result, `<td><b>sub 1:</b></td><td>1</td>`)
 		assert.Contains(t, result, `<td><b>sub 2:</b></td><td>2</td>`)
 		assert.Contains(t, result, `<tr><td>overview 1:</td><td>1</td></tr>`)
@@ -132,6 +133,7 @@ func TestToMarkdown(t *testing.T) {
 		res, err := report.ToMarkdown()
 		result := string(res)
 		assert.NoError(t, err)
+		assert.Contains(t, result, `## :x: Report Test Title`)
 		assert.NotContains(t, result, "<details><summary><i>Report Test Title details:</i></summary>")
 	})
 }

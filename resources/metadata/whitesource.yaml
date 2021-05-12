@@ -79,7 +79,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: ["unit-tests/pom.xml","integration-tests/pom.xml"]
+        default: ["unit-tests/pom.xml", "integration-tests/pom.xml"]
       - name: buildDescriptorFile
         type: string
         description: "Explicit path to the build descriptor file."
@@ -120,9 +120,9 @@ spec:
         type: string
         description: Custom version of the WhiteSource project used as source.
         longDescription: |-
-          Defines a custom version for the WhiteSource scan which deviates from the typical versioning pattern using [`version`](#version) and [`versioningModel`](#versioningModel)
+          Defines a custom version for the WhiteSource scan which deviates from the typical versioning pattern using [`version`](#version) and [`versioningModel`](#versioningModel).
           It allows to set non-numeric versions as well and supersedes the value of [`version`](#version) which is calculated automatically.
-          The parameter is also used by other scan steps (e.g. BlackDuck Detect) and thus allows a common custom version across scan tools.
+          The parameter is also used by other scan steps (e.g. Detect, Fortify, Sonar) and thus allows a common custom version across scan tools.
         scope:
           - GENERAL
           - PARAMETERS
@@ -136,6 +136,14 @@ spec:
           - STAGES
           - STEPS
         default: "-1"
+      - name: scanPath
+        type: string
+        description: "Directory where to start WhiteSource scan."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: "."
       - name: emailAddressesOfInitialProductAdmins
         type: "[]string"
         description: "The list of email addresses to assign as product admins for newly created WhiteSource products."
@@ -476,7 +484,7 @@ spec:
               value: docker
     - image: devxci/mbtci:1.1.1
       workingDir: /home/mta
-      env: [ ]
+      env: []
       conditions:
         - conditionRef: strings-equal
           params:

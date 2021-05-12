@@ -22,7 +22,7 @@ const projectRegEx = `Project name: ([^,]*), URL: (.*)`
 // ExecuteUAScan executes a scan with the Whitesource Unified Agent.
 func (s *Scan) ExecuteUAScan(config *ScanOptions, utils Utils) error {
 	if config.BuildTool != "mta" {
-		return s.ExecuteUAScanInPath(config, utils, ".")
+		return s.ExecuteUAScanInPath(config, utils, config.ScanPath)
 	}
 
 	log.Entry().Infof("Executing WhiteSource UA scan for MTA project")
@@ -30,11 +30,12 @@ func (s *Scan) ExecuteUAScan(config *ScanOptions, utils Utils) error {
 	if pomExists {
 		mavenConfig := *config
 		mavenConfig.BuildTool = "maven"
-		if err := s.ExecuteUAScanInPath(&mavenConfig, utils, "."); err != nil {
+		if err := s.ExecuteUAScanInPath(&mavenConfig, utils, config.ScanPath); err != nil {
 			return errors.Wrap(err, "failed to run scan for maven modules of mta")
 		}
 	} else {
 		if pomFiles, _ := utils.Glob("**/pom.xml"); len(pomFiles) > 0 {
+			log.SetErrorCategory(log.ErrorCustom)
 			return fmt.Errorf("mta project with java modules does not contain an aggregator pom.xml in the root - this is mandatory")
 		}
 	}
