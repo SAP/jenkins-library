@@ -64,6 +64,7 @@ func TestCheckCVsStep(t *testing.T) {
 		assert.Equal(t, "0001", addonDescriptorFinal.Repositories[0].Version)
 		assert.Equal(t, "0002", addonDescriptorFinal.Repositories[0].SpLevel)
 		assert.Equal(t, "0003", addonDescriptorFinal.Repositories[0].PatchLevel)
+		assert.Equal(t, "HUGO1234", addonDescriptorFinal.Repositories[0].CommitID)
 	})
 	t.Run("step error - in validate(no CommitID)", func(t *testing.T) {
 		config.AddonDescriptorFileName = "noCommitID"
