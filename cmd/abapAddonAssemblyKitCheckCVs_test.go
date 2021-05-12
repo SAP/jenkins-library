@@ -23,6 +23,20 @@ func mockReadAddonDescriptor(FileName string) (abaputils.AddonDescriptor, error)
 					{
 						Name:        "/DRNMSPC/COMP01",
 						VersionYAML: "1.2.3",
+						CommitID:    "HUGO1234",
+					},
+				},
+			}
+		}
+	case "noCommitID":
+		{
+			addonDescriptor = abaputils.AddonDescriptor{
+				AddonProduct:     "/DRNMSPC/PRD01",
+				AddonVersionYAML: "3.2.1",
+				Repositories: []abaputils.Repository{
+					{
+						Name:        "/DRNMSPC/COMP01",
+						VersionYAML: "1.2.3",
 					},
 				},
 			}
@@ -51,11 +65,17 @@ func TestCheckCVsStep(t *testing.T) {
 		assert.Equal(t, "0002", addonDescriptorFinal.Repositories[0].SpLevel)
 		assert.Equal(t, "0003", addonDescriptorFinal.Repositories[0].PatchLevel)
 	})
+	t.Run("step error - in validate(no CommitID)", func(t *testing.T) {
+		config.AddonDescriptorFileName = "noCommitID"
+		err := runAbapAddonAssemblyKitCheckCVs(&config, nil, client, &cpe, mockReadAddonDescriptor)
+		assert.Error(t, err, "Must end with error")
+		assert.Contains(t, err.Error(), "CommitID missing in repo")
+	})
 	t.Run("step error - in ReadAddonDescriptor", func(t *testing.T) {
 		config.AddonDescriptorFileName = "failing"
 		err := runAbapAddonAssemblyKitCheckCVs(&config, nil, client, &cpe, mockReadAddonDescriptor)
 		assert.Error(t, err, "Must end with error")
-		assert.Equal(t, "error in ReadAddonDescriptor", err.Error())
+		assert.Contains(t, "error in ReadAddonDescriptor", err.Error())
 	})
 	t.Run("step error - in validate", func(t *testing.T) {
 		config.AddonDescriptorFileName = "success"
@@ -93,6 +113,7 @@ func TestValidateCV(t *testing.T) {
 			Connector:   *conn,
 			Name:        "/DRNMSPC/COMP01",
 			VersionYAML: "1.2.3",
+			CommitID:    "HUGO1234",
 		}
 		conn.Client = &abaputils.ClientMock{
 			Body: responseCheckCVs,
@@ -112,6 +133,7 @@ func TestValidateCV(t *testing.T) {
 			Connector:   *conn,
 			Name:        "/DRNMSPC/COMP01",
 			VersionYAML: "1.2.3",
+			CommitID:    "HUGO1234",
 		}
 		err := c.validate()
 		assert.Error(t, err)
