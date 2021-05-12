@@ -243,7 +243,7 @@ func transportRequestUploadSOLMANMetadata() config.StepData {
 					{
 						Name:        "cmClientOpts",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEP", "GENERAL"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "[]string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "clientOpts"}, {Name: "changeManagement/clientOpts"}},
@@ -251,7 +251,7 @@ func transportRequestUploadSOLMANMetadata() config.StepData {
 					{
 						Name:        "gitFrom",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEP", "GENERAL"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "changeManagement/git/from"}},
@@ -259,7 +259,7 @@ func transportRequestUploadSOLMANMetadata() config.StepData {
 					{
 						Name:        "gitTo",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEP", "GENERAL"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "changeManagement/git/to"}},
@@ -267,7 +267,7 @@ func transportRequestUploadSOLMANMetadata() config.StepData {
 					{
 						Name:        "changeDocumentLabel",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEP", "GENERAL"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "changeManagement/changeDocumentLabel"}},
@@ -275,7 +275,7 @@ func transportRequestUploadSOLMANMetadata() config.StepData {
 					{
 						Name:        "transportRequestLabel",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEP", "GENERAL"},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "changeManagement/transportRequestLabel"}},
