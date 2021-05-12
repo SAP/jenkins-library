@@ -100,7 +100,7 @@ func getPmdMavenParameters(config *mavenExecuteStaticCodeChecksOptions) *maven.E
 
 	mavenOptions := maven.ExecuteOptions{
 		// check goal executes pmd goal first and fails the build if any violations were found
-		Goals:   []string{"org.apache.maven.plugins:maven-pmd-plugin:3.13.0:check"},
+		Goals:   []string{"org.apache.maven.plugins:maven-pmd-plugin:3.14.0:check"},
 		Defines: defines,
 	}
 

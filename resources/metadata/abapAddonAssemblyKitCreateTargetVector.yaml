@@ -1,10 +1,10 @@
 metadata:
-    name: abapAddonAssemblyKitCreateTargetVector
-    description: This step creates a Target Vector for software lifecycle operations
-    longDescription: |
-      This step takes the Product Version and the corresponding list of Software Component Versions from the addonDescriptor in the commonPipelineEnvironment.
-      With these it creates a Target Vector, which is necessary for executing software lifecylce operations in ABAP Cloud Platform systems.
-      The Target Vector describes the software state, which shall be reached in the managed ABAP Cloud Platform system.
+  name: abapAddonAssemblyKitCreateTargetVector
+  description: This step creates a Target Vector for software lifecycle operations
+  longDescription: |
+    This step takes the Product Version and the corresponding list of Software Component Versions from the addonDescriptor in the commonPipelineEnvironment.
+    With these it creates a Target Vector, which is necessary for executing software lifecylce operations in ABAP Cloud Platform systems.
+    The Target Vector describes the software state, which shall be reached in the managed ABAP Cloud Platform system.
 spec:
   inputs:
     secrets:
