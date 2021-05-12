@@ -143,7 +143,9 @@ nav:
         - testsPublishResults: steps/testsPublishResults.md
         - tmsUpload: steps/tmsUpload.md
         - transportRequestCreate: steps/transportRequestCreate.md
+        - transportRequestDocIDFromGit: steps/transportRequestDocIDFromGit.md
         - transportRequestRelease:  steps/transportRequestRelease.md
+        - transportRequestReqIDFromGit: steps/transportRequestReqIDFromGit.md
         - transportRequestUploadFile: steps/transportRequestUploadFile.md
         - uiVeri5ExecuteTests: steps/uiVeri5ExecuteTests.md
         - vaultRotateSecretId: steps/vaultRotateSecretId.md
