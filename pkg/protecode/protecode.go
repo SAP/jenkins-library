@@ -340,8 +340,8 @@ func (pc *Protecode) DeclareFetchURL(cleanupMode, group, fetchURL string) *Resul
 // to
 // B, R, F, S, D, P.
 // Only R and F indicate work has completed.
-func protecodeStillWorking(sts string) bool {
-	return sts != statusReady && sts != statusFailed
+func protecodeStillWorking(status string) bool {
+	return status != statusReady && status != statusFailed
 }
 
 //PollForResult polls the protecode scan for the result scan
