@@ -6,6 +6,7 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/pkg/errors"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -72,7 +73,7 @@ func Send(customTelemetryData *telemetry.CustomData, logCollector *log.Collector
 		// OR Failure run and we do not want to send the logs
 		err := tryPostMessages(telemetryData, []log.Message{})
 		if err != nil {
-			log.Entry().WithError(err).WithField("module", "logger/splunk").Warn("Error while sending logs")
+			return errors.Wrapf(err, "Error while sending logs: %v", err)
 		}
 		return nil
 	} else {
@@ -84,7 +85,7 @@ func Send(customTelemetryData *telemetry.CustomData, logCollector *log.Collector
 			}
 			err := tryPostMessages(telemetryData, logCollector.Messages[i:upperBound])
 			if err != nil {
-				log.Entry().WithError(err).WithField("module", "logger/splunk").Warn("Error while sending logs")
+				return errors.Wrapf(err, "Error while sending logs: %v", err)
 			}
 		}
 	}
@@ -166,32 +167,28 @@ func tryPostMessages(telemetryData MonitoringData, messages []log.Message) error
 
 	payload, err := json.Marshal(details)
 	if err != nil {
-		log.Entry().Errorf("Error while marshalling Splunk message details: %v", err)
-		return err
+		return errors.Wrapf(err, "Error while marshalling Splunk message details: %v", err)
 	}
 
 	resp, err := SplunkClient.splunkClient.SendRequest(http.MethodPost, SplunkClient.splunkDsn, bytes.NewBuffer(payload), nil, nil)
 
 	if err != nil {
-		log.Entry().Errorf("Error sending the requets to Splunk: %v", err)
-		return err
+		return errors.Wrapf(err, "Error sending the requets to Splunk: %v", err)
 	}
 
 	defer func() {
 		err := resp.Body.Close()
 		if err != nil {
-			log.Entry().Errorf("Closing response body failed: %v", err)
+			errors.Wrapf(err, "Closing response body failed: %v", err)
 		}
 	}()
 	if resp.StatusCode != http.StatusOK {
 		rdr := io.LimitReader(resp.Body, 1000)
 		body, err := ioutil.ReadAll(rdr)
 		if err != nil {
-			log.Entry().Errorf("Error reading response body: %v", err)
-			return err
+			return errors.Wrapf(err, "Error reading response body: %v", err)
 		}
-		log.Entry().Errorf("%v: Splunk logging failed - %v", resp.Status, string(body))
-		return err
+		return errors.Wrapf(err, "%v: Splunk logging failed - %v", resp.Status, string(body))
 	}
 	return nil
 }
