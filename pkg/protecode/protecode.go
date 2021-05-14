@@ -381,7 +381,7 @@ func (pc *Protecode) PollForResult(productID int, timeOutInMinutes string) Resul
 		}
 	}
 
-	if protecodeStillWorking(response.Result.Status) {
+	if scanInProgress(response.Result.Status) {
 		response, err = pc.pullResult(productID)
 
 		if len(response.Result.Components) < 1 {
