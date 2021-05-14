@@ -190,6 +190,9 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 			// commit changes and push to repository (including new version tag)
 			gitCommitID, err = pushChanges(config, newVersion, repository, worktree, now)
 			if err != nil {
+				if strings.Contains(fmt.Sprint(err), "reference already exists") {
+					log.SetErrorCategory(log.ErrorCustom)
+				}
 				return errors.Wrapf(err, "failed to push changes for version '%v'", newVersion)
 			}
 		}
