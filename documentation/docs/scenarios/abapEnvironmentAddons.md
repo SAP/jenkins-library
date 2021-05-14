@@ -1,27 +1,19 @@
-# Build and Publish Add-on Products on SAP BTP ABAP Environment
+# Build and Publish Add-on Products on SAP BTP, ABAP Environment
+
+!!! caution "Current limitations"
+
+      - [2102 only] TABU entries are currently not reflected in the object list during add-on build. With ABAP Environment release 2105 this will be supported.
+      - [2102 only] Using the short commit id in the add-on descriptor file does not work currently. Retrieve the long commit id instead by navigating to the branch in the Manage Software Components app, and selecting the commit in the list of commits.
+        This issue will be resolved with ABAP Environment release 2105.
+      - gCTS-related restrictions apply, please refer to [gCTS: restrictions in supported object types](https://launchpad.support.sap.com/#/notes/2888887)
 
 ## Introduction
 
-!!! caution "Upcoming 2102 release of SAP BTP ABAP Environment"
+This scenario describes how an add-on for the SAP BTP, ABAP environment is built. It is intended for SAP partners who want to provide a Software as a Service (SaaS) solution on the SAP BTP using the ABAP Environment. Therefore, a partner development contract (see [SAP PartnerEdge Test, Demo & Development Price List](https://partneredge.sap.com/en/library/assets/partnership/sales/order_license/pl_pl_part_price_list.html)) is required. This page aims to provide an overview of the build process of the add-on.
 
-    With the upcoming 2102 release of SAP BTP ABAP Environment some changes to the backend behavior of the MANAGE_GIT_REPOSITORY service are introduced. Specifically:
+The development on SAP BTP, ABAP environment systems is done within [“software components”](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/58480f43e0b64de782196922bc5f1ca0.html) (also called: “repositories”). The add-ons being built in this scenario are made up by one or multiple software components combined to an add-on product. The “ABAP environment pipeline” can be used to build and publish the add-on product. Please read on for more details about the Add-on Product and the build process.
 
-      - To pull a software component to a system, the software component needs to be cloned first.
-      - It is planned to add the possibility to clone a software component repeatedly with the hotfix collection HFC03 of release 2102
-
-    **Implications for the “abapEnvironmentPipeline”:**
-
-    If you are using the “Prepare System” stage to create a new ABAP Environment system, it is no longer possible to use the “Clone Repositories” stage with the “Pull” strategy or with the default strategy (no strategy specified). Please use the strategy “Clone” instead. For more information, have a look at the [stage documentation](../pipelines/abapEnvironment/stages/cloneRepositories.md).
-    The strategy “AddonBuild” will execute the abapEnvironmentCloneGitRepo instead of the previous logic. No configuration changes should be necessary.
-
-    Please be aware that a repeated execution of a pipeline using the strategy “Clone” or “AddonBuild” will not be possible until hotfix collection HFC03 (planned).
-    The recommended workaround is to replace the strategy “AddonBuild” with “CheckoutPull”, whenever the system from a previous pipeline run is reused.
-
-This scenario describes how an add-on for the SAP BTP ABAP Environment is built. It is intended for SAP partners who want to provide a Software as a Service (SaaS) solution on the SAP BTP using the ABAP Environment. Therefore, a partner development contract (see [SAP PartnerEdge Test, Demo & Development Price List](https://partneredge.sap.com/en/library/assets/partnership/sales/order_license/pl_pl_part_price_list.html)) is required. This page aims to provide an overview of the build process of the add-on.
-
-The development on SAP BTP ABAP Environment systems is done within [“software components”](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/58480f43e0b64de782196922bc5f1ca0.html) (also called: “repositories”). The add-ons being built in this scenario are made up by one or multiple software components combined to an add-on product. The “ABAP Environment Pipeline” can be used to build and publish the add-on product. Please read on for more details about the Add-on Product and the build process.
-
-Of course, this tackles only the upstream part of the SaaS solution lifecycle. Once the add-on is published, it can be consumed as a [multitenant application in ABAP Environment](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/195031ff8f484b51af16fe392ec2ae6e.html).
+Of course, this tackles only the upstream part of the SaaS solution lifecycle. Once the add-on is published, it can be consumed as a [multitenant application in ABAP environment](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/195031ff8f484b51af16fe392ec2ae6e.html).
 
 ## The Add-on Product
 
@@ -35,9 +27,9 @@ An add-on product version is defined by a name and a version string. The name of
 - The second number denotes the Support Package Stack level. A Support Package stack consists of Support Package deliveries of the contained software component versions. It is not possible to change the software component version bundle in such a delivery.
 - The third number denotes the Patch level. A Patch delivery contains Patch deliveries of the contained software component versions.
 
-!!! note "Development on SAP BTP ABAP Environment"
-    As you may know, the development in the SAP BTP ABAP Environment is done within [software component](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/58480f43e0b64de782196922bc5f1ca0.html). A software component is self-contained, and a reduced set of [objects and features of the ABAP programming language](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/c99ba0d28a1a4747b8f47eda06c6b4f1.html) can be used.
-    The software component and development objects must be created in a namespace, so that clashes between software of different vendors and SAP are avoided. Therefore, a namespace must be reserved before the development can start. [SAP note 105132](https://launchpad.support.sap.com/#/notes/105132) describes the namespace reservation process. The namespace must be reserved for the same customer number under which the “SAP CP ABAP ENVIRONMENT” tenants are licensed.
+!!! note "Development on SAP BTP, ABAP environment"
+    As you may know, the development in the SAP BTP, ABAP environment is done within [software component](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/58480f43e0b64de782196922bc5f1ca0.html). A software component is self-contained, and a reduced set of [objects and features of the ABAP programming language](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/c99ba0d28a1a4747b8f47eda06c6b4f1.html) can be used.
+    The software component and development objects must be created in a namespace, so that clashes between software of different vendors and SAP are avoided. Therefore, a namespace must be reserved before the development can start. [SAP note 105132](https://launchpad.support.sap.com/#/notes/105132) describes the namespace reservation process. The namespace must be reserved for the same customer number under which the “SAP BTP, ABAP ENVIRONMENT” tenants are licensed.
 
 ### Software Component Version
 
@@ -64,11 +56,11 @@ As explained above, the shipment of a software takes place via add-on product ve
 
 ## Building the Add-on Product
 
-The build process of an add-on product is orchestrated by a Jenkins Pipeline, the “ABAP Environment Pipeline” provided in this project. To run this pipeline, it only needs to be configured – which will be explained in the sections “Prerequisites” and “Configuration”.
+The build process of an add-on product is orchestrated by a Jenkins Pipeline, the “ABAP environment pipeline” provided in this project. To run this pipeline, it only needs to be configured – which will be explained in the sections “Prerequisites” and “Configuration”.
 
 ![ABAP Environment Pipeline Build](../images/abapEnvironmentBuildPipeline.png)
 
-The pipeline consists of different steps responsible for a single task. The steps themselves are grouped thematically into different stages. For example, early in the pipeline, the ABAP Environment system needs to be created and the communication needs to be set up. This is done in the “Prepare System” stage. You can read more about the different stages in the ABAP Environment Pipeline [documentation](https://sap.github.io/jenkins-library/pipelines/abapEnvironment/introduction/).
+The pipeline consists of different steps responsible for a single task. The steps themselves are grouped thematically into different stages. For example, early in the pipeline, the ABAP environment system needs to be created and the communication needs to be set up. This is done in the “Prepare System” stage. You can read more about the different stages in the ABAP environment pipeline [documentation](https://sap.github.io/jenkins-library/pipelines/abapEnvironment/introduction/).
 
 Different services and systems are required for the add-on build process.
 
@@ -78,12 +70,12 @@ With the following tools the add-on deliveries are created.
 
 #### Assembly System
 
-First the ABAP system responsible for the add-on assembly. It is created during the pipeline and deleted in the end. All actions related to the ABAP source code are executed on this system, e.g. running checks with the ABAP Test Cockpit (ATC) or the physical build of the software components. There are two communication scenarios containing the different APIs of the ABAP Environment System: [Test Integration](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html) and [Software Assembly Integration](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html).
+First the ABAP system responsible for the add-on assembly. It is created during the pipeline and deleted in the end. All actions related to the ABAP source code are executed on this system, e.g. running checks with the ABAP test cockpit (ATC) or the physical build of the software components. There are two communication scenarios containing the different APIs of the ABAP environment system: [Test Integration](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html) and [Software Assembly Integration](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html).
 The assembly system should be of [service type abap](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/f0163565eb554f009f990652ca41d1c6.html) and be provisioned with parameter `is_development_allowed = false` to prevent local changes.
 
 #### Add-on Assembly Kit as a Service (=AAKaaS)
 
-The Add-on Assembly Kit as a Service is responsible for registering and publishing the add-on product. It is accessible via APIs with an S-User.
+The Add-on Assembly Kit as a Service is responsible for registering and publishing the add-on product. It is accessible via APIs with a technical communication user.
 
 ### Deployment Tools
 
@@ -111,24 +103,24 @@ The communication with the AAKaaS needs a technical communication user. The crea
 
 #### Cloud Foundry Access
 
-ABAP Environment systems are created in the SAP BTP Cockpit. For this pipeline, the creation and deletion of the systems are automated via the Cloud Foundry Command Line Interface: [cf CLI](https://docs.cloudfoundry.org/cf-cli/). For this to work, two things need to be configured:
+ABAP environment systems are created in the SAP BTP cockpit. For this pipeline, the creation and deletion of the systems are automated via the Cloud Foundry command line interface: [cf CLI](https://docs.cloudfoundry.org/cf-cli/). For this to work, two things need to be configured:
 
 - Cloud Foundry needs to be enabled on subaccount level. This can be done on the Subaccount Overview page. The subaccount is then mapped to a “Cloud Foundry Organization”, for which you must provide a suitable name during the creation. Have a look at the [documentation](https://help.sap.com/viewer/a96b1df8525f41f79484717368e30626/Cloud/en-US/dc18bac42270468d84b6c030a668e003.html) for more details.
 - A (technical) user is required to access the SAP BTP via the cf CLI. The user needs to be a [member of the global account](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/4a0491330a164f5a873fa630c7f45f06.html) and has to have the [Space Developer](https://help.sap.com/viewer/a96b1df8525f41f79484717368e30626/Cloud/en-US/967fc4e2b1314cf7afc7d7043b53e566.html) role. The user and password need to be stored in the Jenkins Credentials Store.
 
-Later, during the pipeline configuration, you will specify the Service Plan, which will be used for the creation of an ABAP Environment system. Please make sure, that there are enough entitlements for this [Service Plan in the Subaccount](https://help.sap.com/viewer/a96b1df8525f41f79484717368e30626/Cloud/en-US/c40cb18aeaa343389036fdcdd03c41d0.html).
+Later, during the pipeline configuration, you will specify the Service Plan, which will be used for the creation of an ABAP environment system. Please make sure, that there are enough entitlements for this [Service Plan in the Subaccount](https://help.sap.com/viewer/a96b1df8525f41f79484717368e30626/Cloud/en-US/c40cb18aeaa343389036fdcdd03c41d0.html).
 
 #### Register Add-on Product for a Global Account
 
 The add-on product needs to be registered with SAP in order to be installable in the desired global account. More details will follow soon.
 
-#### Piper Library Version to SAP BTP ABAP Environment Dependency
+#### Project "Piper" Library Version to SAP BTP, ABAP Environment Dependency
 
-SAP BTP ABAP Environment Releases might require certain versions of the Piper Library. More Information can be found in [SAP Note 3032800](https://launchpad.support.sap.com/#/notes/3032800).
+SAP BTP ABAP environment releases might require certain versions of the project "Piper" Library. More Information can be found in [SAP Note 3032800](https://launchpad.support.sap.com/#/notes/3032800).
 
 ### Configuration
 
-In the following subsections, the pipeline configuration for this scenario is explained. To get a general overview on the ABAP Environment Pipeline configuration, have a look [here](https://sap.github.io/jenkins-library/pipelines/abapEnvironment/configuration/). In addition to the following sections explaining the configuration, there will be an example repository including all required files.
+In the following subsections, the pipeline configuration for this scenario is explained. To get a general overview on the ABAP environment pipeline configuration, have a look [here](https://sap.github.io/jenkins-library/pipelines/abapEnvironment/configuration/). In addition to the following sections explaining the configuration, there will be an example repository including all required files.
 
 #### Jenkinsfile
 
@@ -140,12 +132,12 @@ This file is the entry point of the pipeline. It should look like this:
 abapEnvironmentPipeline script: this
 ```
 
-The first line defines that the shared library, named “piper-lib-os” in the Jenkins Configuration, will be used. This is a reference to the [/SAP/Jenkins-library](https://github.com/SAP/jenkins-library/) of Project Piper.
+The first line defines that the shared library, named “piper-lib-os” in the Jenkins Configuration, will be used. This is a reference to the [/SAP/Jenkins-library](https://github.com/SAP/jenkins-library/) of project "Piper".
 
 !!! note "Jenkins Library Version"
     If desired, a specific release of this library can be requested: e.g. release 1.93.0 with `@Library('piper-lib-os@v1.93.0') _`. As the library is an Open Source project, it is possible that incompatible changes are introduced. If you want to avoid this, it is recommended to use such a specific release. If no release is specified, the newest version of the Jenkins-library will be used (pulled from the master branch).
 
-The second line `abapEnvironmentPipeline script: this` defines that the predefined “ABAP Environment Pipeline” will be executed.
+The second line `abapEnvironmentPipeline script: this` defines that the predefined “ABAP environment pipeline” will be executed.
 
 #### Pipeline configuration file
 
@@ -203,7 +195,7 @@ Invalid increase:
 
 #### Jenkins Job
 
-Once, the configuration in the git repository is completed, the pipeline on the Jenkins Server can be created. On your Jenkins Server click on “New Item” to create a new pipeline. Provide a name and select the type “Pipeline”. On the creation screen for the pipeline, scroll to the section Pipeline and select “Pipeline script from SCM”. Provide the URL (and credentials - if required) of the repository in which you configured the pipeline. Make sure the “Script Path” points to your Jenkinsfile - if you created the Jenkinsfile according to the documentation above, the default value should be correct.
+Once the configuration in the git repository is completed, the pipeline on the Jenkins Server can be created. On your Jenkins server click on “New Item” to create a new pipeline. Provide a name and select the type “Pipeline”. On the creation screen for the pipeline, scroll to the section Pipeline and select “Pipeline script from SCM”. Provide the URL (and credentials - if required) of the repository in which you configured the pipeline. Make sure the “Script Path” points to your Jenkinsfile - if you created the Jenkinsfile according to the documentation above, the default value should be correct.
 Make sure to check the general option "Do not allow concurrent builds" in order to prevent concurrent add-on build processes for the same version.
 
 ### Example

@@ -127,13 +127,19 @@ func Execute() {
 	rootCmd.AddCommand(VaultRotateSecretIdCommand())
 	rootCmd.AddCommand(CheckChangeInDevelopmentCommand())
 	rootCmd.AddCommand(TransportRequestUploadCTSCommand())
+	rootCmd.AddCommand(NewmanExecuteCommand())
 	rootCmd.AddCommand(IntegrationArtifactDeployCommand())
 	rootCmd.AddCommand(TransportRequestUploadSOLMANCommand())
 	rootCmd.AddCommand(IntegrationArtifactUpdateConfigurationCommand())
 	rootCmd.AddCommand(IntegrationArtifactGetMplStatusCommand())
+	rootCmd.AddCommand(IntegrationArtifactGetServiceEndpointCommand())
 	rootCmd.AddCommand(IntegrationArtifactDownloadCommand())
 	rootCmd.AddCommand(AbapEnvironmentAssembleConfirmCommand())
 	rootCmd.AddCommand(IntegrationArtifactUploadCommand())
+	rootCmd.AddCommand(TerraformExecuteCommand())
+	rootCmd.AddCommand(ContainerExecuteStructureTestsCommand())
+	rootCmd.AddCommand(BatsExecuteTestsCommand())
+	rootCmd.AddCommand(PipelineCreateScanSummaryCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
@@ -280,6 +286,12 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 			}
 		}
 		stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, filters, metadata.Spec.Inputs.Parameters, metadata.Spec.Inputs.Secrets, resourceParams, GeneralConfig.StageName, stepName, metadata.Metadata.Aliases)
+		if verbose, ok := stepConfig.Config["verbose"].(bool); ok && verbose {
+			log.SetVerbose(verbose)
+			GeneralConfig.Verbose = verbose
+		} else if !ok && stepConfig.Config["verbose"] != nil {
+			log.Entry().Warnf("invalid value for parameter verbose: '%v'", stepConfig.Config["verbose"])
+		}
 		if err != nil {
 			return errors.Wrap(err, "retrieving step configuration failed")
 		}

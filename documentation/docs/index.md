@@ -1,7 +1,7 @@
 # Project "Piper" User Documentation
 
 Continuous delivery is a method to develop software with short feedback cycles.
-It is applicable to projects both for SAP Cloud Platform and SAP on-premise platforms.
+It is applicable to projects both for SAP BTP and SAP on-premise platforms.
 SAP implements tooling for continuous delivery in project "Piper".
 The goal of project "Piper" is to substantially ease setting up continuous delivery in your project using SAP technologies.
 
@@ -22,7 +22,7 @@ In many cases, they should satisfy your requirements, and if this is the case, y
 
 ### The best-practice way: Ready-made pipelines
 
-**Are you building a standalone SAP Cloud Platform application, an application with the SAP Cloud SDK, or using the SAP Cloud Application Programming Model?<br>**
+**Are you building a standalone SAP BTP application, an application with the SAP Cloud SDK, or using the SAP Cloud Application Programming Model?<br>**
 Then continue reading about our [general purpose pipeline](stages/introduction/), which supports various technologies and programming languages.
 
 Previously, project "Piper" included also the SAP Cloud SDK Pipeline designed specifically for SAP Cloud SDK and SAP Cloud Application Model (CAP) projects.
@@ -40,7 +40,7 @@ You can run the best practice Jenkins pipelines out of the box, take them as a
 starting point for project-specific adaptations or implement your own pipelines
 from scratch using the shared library.
 
-For an example, you might want to check out our ["Build and Deploy SAPUI5 or SAP Fiori Applications on SAP Cloud Platform with Jenkins" scenario][piper-library-scenario].
+For an example, you might want to check out our ["Build and Deploy SAPUI5 or SAP Fiori Applications on SAP Business Technology Platform (SAP BTP) with Jenkins" scenario][piper-library-scenario].
 
 #### Extensibility
 

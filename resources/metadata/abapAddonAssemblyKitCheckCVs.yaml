@@ -1,9 +1,9 @@
 metadata:
-    name: abapAddonAssemblyKitCheckCVs
-    description: This step checks the validity of Software Component Versions.
-    longDescription: |
-      This steps takes a list of Software Component Versions from the addonDescriptorFileName and checks whether they exist or are a valid successor of an existing Software Component Version.
-      It resolves the dotted version string into version, support package level and patch level and writes it to the commonPipelineEnvironment.
+  name: abapAddonAssemblyKitCheckCVs
+  description: This step checks the validity of Software Component Versions.
+  longDescription: |
+    This steps takes a list of Software Component Versions from the addonDescriptorFileName and checks whether they exist or are a valid successor of an existing Software Component Version.
+    It resolves the dotted version string into version, support package level and patch level and writes it to the commonPipelineEnvironment.
 
 spec:
   inputs:

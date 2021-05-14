@@ -25,7 +25,7 @@ type integrationArtifactUploadOptions struct {
 	FilePath               string `json:"filePath,omitempty"`
 }
 
-// IntegrationArtifactUploadCommand Upload or Update an integration flow designtime artefact
+// IntegrationArtifactUploadCommand Upload or Update an integration flow designtime artifact
 func IntegrationArtifactUploadCommand() *cobra.Command {
 	const STEP_NAME = "integrationArtifactUpload"
 
@@ -35,8 +35,8 @@ func IntegrationArtifactUploadCommand() *cobra.Command {
 
 	var createIntegrationArtifactUploadCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Upload or Update an integration flow designtime artefact",
-		Long:  `With this step you can either upload or update a integration flow designtime artifact using the OData API. Learn more about the SAP Cloud Integration remote API for updating an integration flow artifact [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/83733a65c0214aa6acba035e8640bb5a.html).`,
+		Short: "Upload or Update an integration flow designtime artifact",
+		Long:  `With this step you can either upload or update a integration flow designtime artifact using the OData API. Learn more about the SAP Cloud Integration remote API for updating an integration flow artifact [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/d1679a80543f46509a7329243b595bdb.html).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -111,7 +111,7 @@ func integrationArtifactUploadMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "integrationArtifactUpload",
 			Aliases:     []config.Alias{},
-			Description: "Upload or Update an integration flow designtime artefact",
+			Description: "Upload or Update an integration flow designtime artifact",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{

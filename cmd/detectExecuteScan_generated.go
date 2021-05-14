@@ -14,28 +14,30 @@ import (
 )
 
 type detectExecuteScanOptions struct {
-	Token                   string   `json:"token,omitempty"`
-	CodeLocation            string   `json:"codeLocation,omitempty"`
-	ProjectName             string   `json:"projectName,omitempty"`
-	Scanners                []string `json:"scanners,omitempty"`
-	ScanPaths               []string `json:"scanPaths,omitempty"`
-	DependencyPath          string   `json:"dependencyPath,omitempty"`
-	Unmap                   bool     `json:"unmap,omitempty"`
-	ScanProperties          []string `json:"scanProperties,omitempty"`
-	ServerURL               string   `json:"serverUrl,omitempty"`
-	Groups                  []string `json:"groups,omitempty"`
-	FailOn                  []string `json:"failOn,omitempty"`
-	Version                 string   `json:"version,omitempty"`
-	VersioningModel         string   `json:"versioningModel,omitempty"`
-	ProjectSettingsFile     string   `json:"projectSettingsFile,omitempty"`
-	GlobalSettingsFile      string   `json:"globalSettingsFile,omitempty"`
-	M2Path                  string   `json:"m2Path,omitempty"`
-	InstallArtifacts        bool     `json:"installArtifacts,omitempty"`
-	IncludedPackageManagers []string `json:"includedPackageManagers,omitempty"`
-	ExcludedPackageManagers []string `json:"excludedPackageManagers,omitempty"`
-	MavenExcludedScopes     []string `json:"mavenExcludedScopes,omitempty"`
-	DetectTools             []string `json:"detectTools,omitempty"`
-	ScanOnChanges           bool     `json:"scanOnChanges,omitempty"`
+	Token                      string   `json:"token,omitempty"`
+	CodeLocation               string   `json:"codeLocation,omitempty"`
+	ProjectName                string   `json:"projectName,omitempty"`
+	Scanners                   []string `json:"scanners,omitempty"`
+	ScanPaths                  []string `json:"scanPaths,omitempty"`
+	DependencyPath             string   `json:"dependencyPath,omitempty"`
+	Unmap                      bool     `json:"unmap,omitempty"`
+	ScanProperties             []string `json:"scanProperties,omitempty"`
+	ServerURL                  string   `json:"serverUrl,omitempty"`
+	Groups                     []string `json:"groups,omitempty"`
+	FailOn                     []string `json:"failOn,omitempty"`
+	VersioningModel            string   `json:"versioningModel,omitempty"`
+	Version                    string   `json:"version,omitempty"`
+	CustomScanVersion          string   `json:"customScanVersion,omitempty"`
+	ProjectSettingsFile        string   `json:"projectSettingsFile,omitempty"`
+	GlobalSettingsFile         string   `json:"globalSettingsFile,omitempty"`
+	M2Path                     string   `json:"m2Path,omitempty"`
+	InstallArtifacts           bool     `json:"installArtifacts,omitempty"`
+	IncludedPackageManagers    []string `json:"includedPackageManagers,omitempty"`
+	ExcludedPackageManagers    []string `json:"excludedPackageManagers,omitempty"`
+	MavenExcludedScopes        []string `json:"mavenExcludedScopes,omitempty"`
+	DetectTools                []string `json:"detectTools,omitempty"`
+	ScanOnChanges              bool     `json:"scanOnChanges,omitempty"`
+	CustomEnvironmentVariables []string `json:"customEnvironmentVariables,omitempty"`
 }
 
 // DetectExecuteScanCommand Executes Synopsys Detect scan
@@ -105,15 +107,13 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().StringSliceVar(&stepConfig.ScanPaths, "scanPaths", []string{`.`}, "List of paths which should be scanned by the Synopsis Detect (formerly BlackDuck) scan.")
 	cmd.Flags().StringVar(&stepConfig.DependencyPath, "dependencyPath", `.`, "Absolute Path of the dependency management file of the project. This path represents the folder which contains the pom file, package.json etc. If the project contains multiple pom files, provide the path to the parent pom file or the base folder of the project")
 	cmd.Flags().BoolVar(&stepConfig.Unmap, "unmap", false, "Unmap flag will unmap all previous code locations and keep only the current scan results in the specified project version. Set this parameter to true, when the project version needs to store only the latest scan results.")
-	cmd.Flags().StringSliceVar(&stepConfig.ScanProperties, "scanProperties", []string{`--blackduck.signature.scanner.memory=4096`, `--blackduck.timeout=6000`, `--blackduck.trust.cert=true`, `--detect.report.timeout=4800`, `--logging.level.com.synopsys.integration=DEBUG`, `--detect.maven.excluded.scopes=test`}, "Properties passed to the Synopsis Detect (formerly BlackDuck) scan. You can find details in the [Synopsis Detect documentation](https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/622846/Using+Synopsys+Detect+Properties)")
+	cmd.Flags().StringSliceVar(&stepConfig.ScanProperties, "scanProperties", []string{`--blackduck.signature.scanner.memory=4096`, `--detect.timeout=6000`, `--blackduck.trust.cert=true`, `--logging.level.com.synopsys.integration=DEBUG`, `--detect.maven.excluded.scopes=test`}, "Properties passed to the Synopsis Detect (formerly BlackDuck) scan. You can find details in the [Synopsis Detect documentation](https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/622846/Using+Synopsys+Detect+Properties)")
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "Server URL to the Synopsis Detect (formerly BlackDuck) Server.")
 	cmd.Flags().StringSliceVar(&stepConfig.Groups, "groups", []string{}, "Users groups to be assigned for the Project")
 	cmd.Flags().StringSliceVar(&stepConfig.FailOn, "failOn", []string{`BLOCKER`}, "Mark the current build as fail based on the policy categories applied.")
-	cmd.Flags().StringVar(&stepConfig.Version, "version", os.Getenv("PIPER_version"), "Defines the version number of the artifact being build in the pipeline. It is used as source for the Detect version.")
 	cmd.Flags().StringVar(&stepConfig.VersioningModel, "versioningModel", `major`, "The versioning model used for result reporting (based on the artifact version). Example 1.2.3 using `major` will result in version 1")
-	cmd.Flags().StringVar(&stepConfig.BuildTool, "buildTool", os.Getenv("PIPER_buildTool"), "Scan type used for the step which can be `'maven'`")
-	cmd.Flags().BoolVar(&stepConfig.BuildCode, "buildCode", true, "To specify if a build is needed before running the scan")
-	cmd.Flags().StringSliceVar(&stepConfig.BuildDescriptorExcludeList, "buildDescriptorExcludeList", []string{``}, "List of build descriptors and therefore modules to exclude from the build, scan and assessment activities.")
+	cmd.Flags().StringVar(&stepConfig.Version, "version", os.Getenv("PIPER_version"), "Defines the version number of the artifact being build in the pipeline. It is used as source for the Detect version.")
+	cmd.Flags().StringVar(&stepConfig.CustomScanVersion, "customScanVersion", os.Getenv("PIPER_customScanVersion"), "A custom version used along with the uploaded scan results.")
 	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Path or url to the mvn settings file that should be used as project settings file.")
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Path or url to the mvn settings file that should be used as global settings file")
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
@@ -123,6 +123,7 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().StringSliceVar(&stepConfig.MavenExcludedScopes, "mavenExcludedScopes", []string{}, "The maven scopes that need to be excluded from the scan. For example, setting the value 'test' will exclude all components which are defined with a test scope in maven")
 	cmd.Flags().StringSliceVar(&stepConfig.DetectTools, "detectTools", []string{}, "The type of BlackDuck scanners to include while running the BlackDuck scan. By default All scanners are included. For the complete list of possible values, Please refer [Synopsys detect documentation](https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/631407160/Configuring+Detect+General+Properties#Detect-tools-included)")
 	cmd.Flags().BoolVar(&stepConfig.ScanOnChanges, "scanOnChanges", false, "This flag determines if the scan is submitted to the server. If set to true, then the scan request is submitted to the server only when changes are detected in the Open Source Bill of Materials If the flag is set to false, then the scan request is submitted to server regardless of any changes. For more details please refer to the [documentation](https://github.com/blackducksoftware/detect_rescan/blob/master/README.md)")
+	cmd.Flags().StringSliceVar(&stepConfig.CustomEnvironmentVariables, "customEnvironmentVariables", []string{}, "A list of environment variables which can be set to prepare the environment to run a BlackDuck scan.")
 
 	cmd.MarkFlagRequired("token")
 	cmd.MarkFlagRequired("projectName")
@@ -244,6 +245,14 @@ func detectExecuteScanMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "detect/failOn"}},
 					},
 					{
+						Name:        "versioningModel",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
 						Name: "version",
 						ResourceRef: []config.ResourceReference{
 							{
@@ -257,34 +266,10 @@ func detectExecuteScanMetadata() config.StepData {
 						Aliases:   []config.Alias{{Name: "projectVersion"}, {Name: "detect/projectVersion"}},
 					},
 					{
-						Name:        "versioningModel",
+						Name:        "customScanVersion",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
+						Scope:       []string{"GENERAL", "STAGES", "STEPS", "PARAMETERS"},
 						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "buildTool",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "buildCode",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
-						Type:        "bool",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "buildDescriptorExcludeList",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
@@ -357,6 +342,14 @@ func detectExecuteScanMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "customEnvironmentVariables",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},

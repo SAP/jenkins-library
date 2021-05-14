@@ -55,6 +55,7 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
             if (config.stashContent?.size() > 0) {
                 config.stashContent.add('pipelineConfigAndTests')
                 config.stashContent.add('piper-bin')
+                config.stashContent.add('pipelineStepReports')
             }
 
             if (parameters.stashNoDefaultExcludes) {
@@ -66,17 +67,22 @@ void call(Map parameters = [:], String stepName, String metadataFile, List crede
             dockerWrapper(script, stepName, config) {
                 handleErrorDetails(stepName) {
                     script.commonPipelineEnvironment.writeToDisk(script)
-                    try{
+                    utils.unstash('pipelineStepReports')
+                    try {
                         try {
-                            credentialWrapper(config, credentialInfo) {
-                                sh "${piperGoPath} ${stepName}${defaultConfigArgs}${customConfigArg}"
+                            try {
+                                credentialWrapper(config, credentialInfo) {
+                                    sh "${piperGoPath} ${stepName}${defaultConfigArgs}${customConfigArg}"
+                                }
+                            } finally {
+                                jenkinsUtils.handleStepResults(stepName, failOnMissingReports, failOnMissingLinks)
                             }
                         } finally {
-                            jenkinsUtils.handleStepResults(stepName, failOnMissingReports, failOnMissingLinks)
                             script.commonPipelineEnvironment.readFromDisk(script)
                         }
-                    }finally{
+                    } finally {
                         InfluxData.readFromDisk(script)
+                        stash name: 'pipelineStepReports', includes: '.pipeline/stepReports/**', allowEmpty: true
                     }
                 }
             }

@@ -46,30 +46,21 @@ the key value engine.
 
 ## Pipeline Configuration
 
-For pipelines to actually use the secrets stored in Vault you need to adjust your `config.yml`
+For pipelines to actually use the secrets stored in Vault you need to adjust your `config.yml`:
 
 ```yml
 general:
   ...
-  vaultAppRoleTokenCredentialsId: '<JENKINS_CREDENTIAL_ID_FOR_VAULT_APPROLE_ROLE_ID>'
-  vaultAppRoleSecretTokenCredentialsId: 'JENKINS_CREDENTIAL_ID_FOR_VAULT_APPROLE_SECRET_ID'
-  vaultPath: 'kv/my-pipeline' # the path under which your jenkins secrets are stored
   vaultServerUrl: '<YOUR_VAULT_SERVER_URL>'
   vaultNamespace: '<YOUR_NAMESPACE_NAME>' # if you are not using vault's namespace feature you can remove this line
+  vaultPath: 'kv/my-pipeline' # the path under which your jenkins secrets are stored
   ...
 ```
 
-Or if you chose to use Vault's token authentication then your  `config.yml` should look something like this.
+To authenticate you need to provide `PIPER_vaultAppRoleID` and `PIPER_vaultAppRoleSecretID` if you use app role authentication or `PIPER_vaultToken` if you use token authentication.
 
-```yaml
-general:
-...
-vaultTokenCredentialsId: '<JENKINS_CREDENTIAL_ID_FOR_YOUR_VAULT_TOKEN>'
-vaultPath: 'kv/my-pipeline' # the path under which your jenkins secrets are stored
-vaultServerUrl: '<YOUR_VAULT_SERVER_URL>'
-vaultNamespace: '<YOUR_NAMESPACE_NAME>' # if you are not using vault's namespace feature you can remove this line
-...
-```
+!!! note "Jenkins"
+    When running a step via the Jenkins library you can use Jenkins credentials for pass this values. Use `vaultAppRoleTokenCredentialsId` and `vaultAppRoleSecretTokenCredentialsId` or `vaultTokenCredentialsId` in your `config.yml`.
 
 ## Configuring the Secret Lookup
 
@@ -103,3 +94,27 @@ steps:
   executeBuild:
     skipVault: true   # Skip Vault Secret Lookup for this step
 ```
+
+## Using vault for test credentials
+
+Vault can be used with piper to fetch any credentials, e.g. when they need to be appended to test command. The configuration for vault test credentials can be added to **any** piper golang-based step. The configuration has to be done as follows:
+
+```yaml
+general:
+  < your vault configuration > # see above
+...
+steps:
+  < piper go step >:
+    vaultTestCredentialPath: 'myTestStepCrecetials'
+    vaultTestCredentialKeys: ['myAppId', 'myAppSecret']
+```
+
+The `vaultTestCredentialPath` parameter is the endpoint of your credential path in vault. Depending on your _general_ config, the lookup for the credential IDs will be done in the following order respectively locations. The first path with found test credentials will be used.
+
+1. `<vaultPath>/<vaultTestCredentialPath>`
+2. `<vaultBasePath>/<vaultPipelineName>/<vaultTestCredentialPath>`
+3. `<vaultBasePath>/GROUP-SECRETS/<vaultTestCredentialPath>`
+
+The `vaultTestCredentialKeys`parameter is a list of credential IDs. The secret value of the credential will be exposed as an environment variable prefixed by "PIPER_TESTCREDENTIAL_" and transformed to a valid variable name. For a credential ID named `myAppId` the forwarded environment variable to the step will be `PIPER_TESTCREDENTIAL_MYAPPID` containing the secret. Hyphens will be replaced by underscores and other non-alphanumeric characters will be removed.
+
+Extended logging for vault secret fetching (e.g. found credentials and environment variable names) can be activated via `verbose: true` configuration.

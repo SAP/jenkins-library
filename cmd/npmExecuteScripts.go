@@ -12,6 +12,7 @@ func npmExecuteScripts(config npmExecuteScriptsOptions, telemetryData *telemetry
 
 	err := runNpmExecuteScripts(npmExecutor, &config)
 	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
