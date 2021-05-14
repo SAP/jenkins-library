@@ -35,6 +35,7 @@ func (s *Scan) ExecuteUAScan(config *ScanOptions, utils Utils) error {
 		}
 	} else {
 		if pomFiles, _ := utils.Glob("**/pom.xml"); len(pomFiles) > 0 {
+			log.SetErrorCategory(log.ErrorCustom)
 			return fmt.Errorf("mta project with java modules does not contain an aggregator pom.xml in the root - this is mandatory")
 		}
 	}
