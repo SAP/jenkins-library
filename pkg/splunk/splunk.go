@@ -73,7 +73,7 @@ func Send(customTelemetryData *telemetry.CustomData, logCollector *log.Collector
 		// OR Failure run and we do not want to send the logs
 		err := tryPostMessages(telemetryData, []log.Message{})
 		if err != nil {
-			return errors.Wrapf(err, "Error while sending logs: %v", err)
+			return errors.Wrap(err, "error while sending logs")
 		}
 		return nil
 	} else {
@@ -85,7 +85,7 @@ func Send(customTelemetryData *telemetry.CustomData, logCollector *log.Collector
 			}
 			err := tryPostMessages(telemetryData, logCollector.Messages[i:upperBound])
 			if err != nil {
-				return errors.Wrapf(err, "Error while sending logs: %v", err)
+				return errors.Wrap(err, "error while sending logs")
 			}
 		}
 	}
@@ -167,26 +167,26 @@ func tryPostMessages(telemetryData MonitoringData, messages []log.Message) error
 
 	payload, err := json.Marshal(details)
 	if err != nil {
-		return errors.Wrapf(err, "Error while marshalling Splunk message details: %v", err)
+		return errors.Wrap(err, "error while marshalling Splunk message details")
 	}
 
 	resp, err := SplunkClient.splunkClient.SendRequest(http.MethodPost, SplunkClient.splunkDsn, bytes.NewBuffer(payload), nil, nil)
 
 	if err != nil {
-		return errors.Wrapf(err, "Error sending the requets to Splunk: %v", err)
+		return errors.Wrap(err, "error sending the requets to Splunk")
 	}
 
 	defer func() {
 		err := resp.Body.Close()
 		if err != nil {
-			errors.Wrapf(err, "Closing response body failed: %v", err)
+			errors.Wrap(err, "closing response body failed")
 		}
 	}()
 	if resp.StatusCode != http.StatusOK {
 		rdr := io.LimitReader(resp.Body, 1000)
 		body, err := ioutil.ReadAll(rdr)
 		if err != nil {
-			return errors.Wrapf(err, "Error reading response body: %v", err)
+			return errors.Wrap(err, "Error reading response body")
 		}
 		return errors.Wrapf(err, "%v: Splunk logging failed - %v", resp.Status, string(body))
 	}
