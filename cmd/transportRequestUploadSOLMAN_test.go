@@ -105,18 +105,14 @@ func TestTrSolmanRunTransportRequestUpload(t *testing.T) {
 func newConfigMock() *ConfigMock {
 	return &ConfigMock{
 		config: &transportRequestUploadSOLMANOptions{
-			Endpoint:              "https://example.org/solman",
-			Username:              "me",
-			Password:              "********",
-			ApplicationID:         "XYZ",
-			ChangeDocumentID:      "12345678",
-			TransportRequestID:    "87654321",
-			FilePath:              "myApp.abc",
-			CmClientOpts:          []string{"-Dtest=abc123"},
-			GitFrom:               "origin/master",
-			GitTo:                 "HEAD",
-			ChangeDocumentLabel:   "ChangeDocument",
-			TransportRequestLabel: "TransportRequest",
+			Endpoint:           "https://example.org/solman",
+			Username:           "me",
+			Password:           "********",
+			ApplicationID:      "XYZ",
+			ChangeDocumentID:   "12345678",
+			TransportRequestID: "87654321",
+			FilePath:           "myApp.abc",
+			CmClientOpts:       []string{"-Dtest=abc123"},
 		},
 	}
 }
