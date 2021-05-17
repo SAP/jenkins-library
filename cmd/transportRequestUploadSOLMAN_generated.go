@@ -16,18 +16,14 @@ import (
 )
 
 type transportRequestUploadSOLMANOptions struct {
-	Endpoint              string   `json:"endpoint,omitempty"`
-	Username              string   `json:"username,omitempty"`
-	Password              string   `json:"password,omitempty"`
-	ApplicationID         string   `json:"applicationId,omitempty"`
-	ChangeDocumentID      string   `json:"changeDocumentId,omitempty"`
-	TransportRequestID    string   `json:"transportRequestId,omitempty"`
-	FilePath              string   `json:"filePath,omitempty"`
-	CmClientOpts          []string `json:"cmClientOpts,omitempty"`
-	GitFrom               string   `json:"gitFrom,omitempty"`
-	GitTo                 string   `json:"gitTo,omitempty"`
-	ChangeDocumentLabel   string   `json:"changeDocumentLabel,omitempty"`
-	TransportRequestLabel string   `json:"transportRequestLabel,omitempty"`
+	Endpoint           string   `json:"endpoint,omitempty"`
+	Username           string   `json:"username,omitempty"`
+	Password           string   `json:"password,omitempty"`
+	ApplicationID      string   `json:"applicationId,omitempty"`
+	ChangeDocumentID   string   `json:"changeDocumentId,omitempty"`
+	TransportRequestID string   `json:"transportRequestId,omitempty"`
+	FilePath           string   `json:"filePath,omitempty"`
+	CmClientOpts       []string `json:"cmClientOpts,omitempty"`
 }
 
 type transportRequestUploadSOLMANCommonPipelineEnvironment struct {
@@ -131,10 +127,6 @@ func addTransportRequestUploadSOLMANFlags(cmd *cobra.Command, stepConfig *transp
 	cmd.Flags().StringVar(&stepConfig.TransportRequestID, "transportRequestId", os.Getenv("PIPER_transportRequestId"), "ID of the transport request to which the file is uploaded")
 	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "Name/Path of the file which should be uploaded")
 	cmd.Flags().StringSliceVar(&stepConfig.CmClientOpts, "cmClientOpts", []string{}, "Additional options handed over to the cm client")
-	cmd.Flags().StringVar(&stepConfig.GitFrom, "gitFrom", `origin/master`, "GIT starting point for retrieving the change document and transport request ID")
-	cmd.Flags().StringVar(&stepConfig.GitTo, "gitTo", `HEAD`, "GIT ending point for retrieving the change document and transport request ID")
-	cmd.Flags().StringVar(&stepConfig.ChangeDocumentLabel, "changeDocumentLabel", `ChangeDocument`, "Pattern used for identifying lines holding the change document ID. The GIT commit log messages are scanned for this label")
-	cmd.Flags().StringVar(&stepConfig.TransportRequestLabel, "transportRequestLabel", `TransportRequest`, "Pattern used for identifying lines holding the transport request ID. The GIT commit log messages are scanned for this label")
 
 	cmd.MarkFlagRequired("endpoint")
 	cmd.MarkFlagRequired("username")
@@ -247,38 +239,6 @@ func transportRequestUploadSOLMANMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "clientOpts"}, {Name: "changeManagement/clientOpts"}},
-					},
-					{
-						Name:        "gitFrom",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "changeManagement/git/from"}},
-					},
-					{
-						Name:        "gitTo",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "changeManagement/git/to"}},
-					},
-					{
-						Name:        "changeDocumentLabel",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "changeManagement/changeDocumentLabel"}},
-					},
-					{
-						Name:        "transportRequestLabel",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "changeManagement/transportRequestLabel"}},
 					},
 				},
 			},
