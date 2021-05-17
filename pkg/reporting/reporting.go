@@ -222,7 +222,7 @@ func (s *ScanReport) ToHTML() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-const reportMdTemplate = `## {{.Title}}
+const reportMdTemplate = `## {{if .SuccessfulScan}}:white_check_mark:{{else}}:x:{{end}} {{.Title}}
 
 <table>
 {{range $s := .Subheaders -}}

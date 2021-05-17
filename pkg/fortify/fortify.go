@@ -158,7 +158,7 @@ func (sys *SystemInstance) AuthenticateRequest(req runtime.ClientRequest, format
 // GetProjectByName returns the project identified by the name provided
 // autoCreate and projectVersion parameters only used if autoCreate=true
 func (sys *SystemInstance) GetProjectByName(projectName string, autoCreate bool, projectVersionName string) (*models.Project, error) {
-	nameParam := fmt.Sprintf("name=%v", projectName)
+	nameParam := fmt.Sprintf(`name:"%v"`, projectName)
 	params := &project_controller.ListProjectParams{Q: &nameParam}
 	params.WithTimeout(sys.timeout)
 	result, err := sys.client.ProjectController.ListProject(params, sys)

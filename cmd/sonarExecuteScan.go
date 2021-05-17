@@ -21,6 +21,7 @@ import (
 	StepResults "github.com/SAP/jenkins-library/pkg/piperutils"
 	SonarUtils "github.com/SAP/jenkins-library/pkg/sonar"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/versioning"
 )
 
 type sonarSettings struct {
@@ -122,9 +123,14 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 	if len(config.Organization) > 0 {
 		sonar.addOption("sonar.organization=" + config.Organization)
 	}
-	if len(config.ProjectVersion) > 0 {
-		// handleArtifactVersion is reused from cmd/protecodeExecuteScan.go
-		sonar.addOption("sonar.projectVersion=" + handleArtifactVersion(config.ProjectVersion))
+	if len(config.Version) > 0 {
+		version := config.CustomScanVersion
+		if len(version) > 0 {
+			log.Entry().Infof("Using custom version: %v", version)
+		} else {
+			version = versioning.ApplyVersioningModel(config.VersioningModel, config.Version)
+		}
+		sonar.addOption("sonar.projectVersion=" + version)
 	}
 	if len(config.ProjectKey) > 0 {
 		sonar.addOption("sonar.projectKey=" + config.ProjectKey)

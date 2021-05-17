@@ -127,13 +127,12 @@ func getDetectScript(config detectExecuteScanOptions, utils detectUtils) error {
 }
 
 func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectUtils) ([]string, error) {
-
-	coordinates := versioning.Coordinates{
-		Version: config.Version,
+	detectVersionName := config.CustomScanVersion
+	if len(detectVersionName) > 0 {
+		log.Entry().Infof("Using custom version: %v", detectVersionName)
+	} else {
+		detectVersionName = versioning.ApplyVersioningModel(config.VersioningModel, config.Version)
 	}
-
-	_, detectVersionName := versioning.DetermineProjectCoordinates("", config.VersioningModel, coordinates)
-
 	//Split on spaces, the scanPropeties, so that each property is available as a single string
 	//instead of all properties being part of a single string
 	config.ScanProperties = piperutils.SplitAndTrim(config.ScanProperties, " ")
