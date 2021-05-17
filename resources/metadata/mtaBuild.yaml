@@ -109,4 +109,3 @@ spec:
           - name: mtarFilePath
   containers:
     - image: devxci/mbtci:1.1.1
-    
