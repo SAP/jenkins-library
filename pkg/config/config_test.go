@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -649,6 +650,105 @@ func TestMerge(t *testing.T) {
 			stepConfig := StepConfig{Config: row.Source}
 			stepConfig.mixIn(row.MergeData, row.Filter)
 			assert.Equal(t, row.ExpectedOutput, stepConfig.Config, "Mixin  was incorrect")
+		})
+	}
+}
+
+func TestStepConfig_mixInHookConfig(t *testing.T) {
+	type fields struct {
+		Config     map[string]interface{}
+		HookConfig map[string]interface{}
+	}
+	type args struct {
+		mergeData map[string]interface{}
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   map[string]interface{}
+	}{
+		{name: "Splunk only",
+			fields: fields{
+				Config:     nil,
+				HookConfig: nil,
+			},
+			args: args{mergeData: map[string]interface{}{
+				"splunk": map[string]interface{}{
+					"dsn":      "dsn",
+					"token":    "token",
+					"sendLogs": "false",
+				},
+			}},
+			want: map[string]interface{}{
+				"splunk": map[string]interface{}{
+					"dsn":      "dsn",
+					"token":    "token",
+					"sendLogs": "false",
+				},
+			},
+		},
+		{name: "Sentry only",
+			fields: fields{
+				Config:     nil,
+				HookConfig: nil,
+			},
+			args: args{mergeData: map[string]interface{}{
+				"sentry": map[string]interface{}{
+					"dsn": "sentrydsn",
+				},
+			}},
+			want: map[string]interface{}{
+				"sentry": map[string]interface{}{
+					"dsn": "sentrydsn",
+				},
+			},
+		},
+		{name: "Splunk and Sentry",
+			fields: fields{
+				Config:     nil,
+				HookConfig: nil,
+			},
+			args: args{mergeData: map[string]interface{}{
+				"splunk": map[string]interface{}{
+					"dsn":      "dsn",
+					"token":    "token",
+					"sendLogs": "false",
+				},
+				"sentry": map[string]interface{}{
+					"dsn": "sentrydsn",
+				},
+			}},
+			want: map[string]interface{}{
+				"splunk": map[string]interface{}{
+					"dsn":      "dsn",
+					"token":    "token",
+					"sendLogs": "false",
+				},
+				"sentry": map[string]interface{}{
+					"dsn": "sentrydsn",
+				},
+			},
+		},
+		{name: "No Hook",
+			fields: fields{
+				Config:     nil,
+				HookConfig: nil,
+			},
+			args: args{mergeData: nil},
+			want: map[string]interface{}{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &StepConfig{
+				Config:     tt.fields.Config,
+				HookConfig: tt.fields.HookConfig,
+			}
+			s.mixInHookConfig(tt.args.mergeData)
+			if !reflect.DeepEqual(s.HookConfig, tt.want) {
+				t.Errorf("mixInHookConfig() = %v, want %v", s.HookConfig, tt.want)
+			}
 		})
 	}
 }
