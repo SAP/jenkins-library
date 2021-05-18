@@ -147,7 +147,6 @@ func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.P
 		log.Entry().Debugf("Load existing product Group:%v Reuse:%v", config.Group, config.VerifyOnly)
 		productID = client.LoadExistingProduct(config.Group)
 	}
-	//TODO: checking VerifyOnly should be enough here
 	if !hasExisting(productID, config.VerifyOnly) {
 		// check if no existing is found or reuse existing is false
 		productID = uploadScanOrDeclareFetch(*config, productID, client, fileName)
