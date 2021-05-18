@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"reflect"
 	"testing"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -108,4 +109,78 @@ func TestEnvVars(t *testing.T) {
 		os.Unsetenv("JOB_URL")
 		os.Unsetenv("BUILD_URL")
 	})
+}
+
+func TestGetData(t *testing.T) {
+	type args struct {
+		customData *CustomData
+	}
+	tests := []struct {
+		name string
+		args args
+		want Data
+	}{
+		{
+			"Test",
+			args{customData: &CustomData{
+				Duration:      "100",
+				ErrorCode:     "0",
+				ErrorCategory: "Undefined",
+			},
+			},
+			Data{
+				BaseData: BaseData{
+					ActionName:      "",
+					EventType:       "",
+					SiteID:          "",
+					URL:             "",
+					StepName:        "",
+					StageName:       "",
+					PipelineURLHash: "",
+					BuildURLHash:    "",
+				},
+				BaseMetaData: BaseMetaData{
+					StepNameLabel:        "stepName",
+					StageNameLabel:       "stageName",
+					PipelineURLHashLabel: "pipelineUrlHash",
+					BuildURLHashLabel:    "buildUrlHash",
+					DurationLabel:        "duration",
+					ExitCodeLabel:        "exitCode",
+					ErrorCategoryLabel:   "errorCategory",
+				},
+				CustomData: CustomData{
+					Duration:      "100",
+					ErrorCode:     "0",
+					ErrorCategory: "Undefined",
+					Custom1Label:  "",
+					Custom2Label:  "",
+					Custom3Label:  "",
+					Custom4Label:  "",
+					Custom5Label:  "",
+					Custom1:       "",
+					Custom2:       "",
+					Custom3:       "",
+					Custom4:       "",
+					Custom5:       "",
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			baseData = BaseData{
+				ActionName:      "",
+				EventType:       "",
+				SiteID:          "",
+				URL:             "",
+				StepName:        "",
+				StageName:       "",
+				PipelineURLHash: "",
+				BuildURLHash:    "",
+			}
+			if got := GetData(tt.args.customData); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetData() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
