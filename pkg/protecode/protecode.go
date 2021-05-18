@@ -418,22 +418,19 @@ func (pc *Protecode) pullResult(productID int) (ResultData, error) {
 }
 
 // LoadExistingProduct loads the existing product from protecode service
-func (pc *Protecode) LoadExistingProduct(group string, reuseExisting bool) int {
-	var productID int = -1
+func (pc *Protecode) LoadExistingProduct(group string) int {
+	productID := -1
 
-	if reuseExisting {
-
-		protecodeURL := pc.createURL("/api/apps/", fmt.Sprintf("%v/", group), "")
-		headers := map[string][]string{
-			"acceptType": {"application/json"},
-		}
-
-		response := pc.loadExisting(protecodeURL, headers)
-		// by definition we will take the first one and trigger rescan
-		productID = response.Products[0].ProductID
-
-		pc.logger.Infof("Re-use existing Protecode scan - group: %v, productID: %v", group, productID)
+	protecodeURL := pc.createURL("/api/apps/", fmt.Sprintf("%v/", group), "")
+	headers := map[string][]string{
+		"acceptType": {"application/json"},
 	}
+
+	response := pc.loadExisting(protecodeURL, headers)
+	// by definition we will take the first one and trigger rescan
+	productID = response.Products[0].ProductID
+
+	pc.logger.Infof("Re-use existing Protecode scan - group: %v, productID: %v", group, productID)
 
 	return productID
 }

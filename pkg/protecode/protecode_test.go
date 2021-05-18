@@ -169,15 +169,13 @@ func TestLoadExistingProductSuccess(t *testing.T) {
 	cases := []struct {
 		pc             Protecode
 		protecodeGroup string
-		reuseExisting  bool
 		want           int
 	}{
-		{makeProtecode(Options{ServerURL: server.URL}), "group", true, 1},
-		{makeProtecode(Options{ServerURL: server.URL}), "group32", false, -1},
+		{makeProtecode(Options{ServerURL: server.URL}), "group", 1},
 	}
 	for _, c := range cases {
 
-		got := c.pc.LoadExistingProduct(c.protecodeGroup, c.reuseExisting)
+		got := c.pc.LoadExistingProduct(c.protecodeGroup)
 		assert.Equal(t, c.want, got)
 	}
 }
