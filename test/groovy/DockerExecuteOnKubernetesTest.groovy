@@ -113,6 +113,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
                 pullImageMap.put(container.image.toString(), container.imagePullPolicy == "Always")
                 resources.put(container.name, container.resources)
             }
+
             body()
         })
         helper.registerAllowedMethod('stash', [Map.class], { m ->
@@ -527,6 +528,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             //nothing to exeute
         }
         assertThat(containerCommands, hasItem(['/bin/sh', '-c', '/busybox/tail -f /dev/null']))
+
     }
 
     @Test
@@ -808,7 +810,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             containerMountPath: '/opt',
         ) { bodyExecuted = true }
         def containerSpec = podSpec.spec.containers.find{it.image == "maven:3.5-jdk-8-alpine"}
-        def initContainerSpec = podSpec.spec.initContainer
+        def initContainerSpec = podSpec.spec.initContainers[0]
         assertTrue(bodyExecuted)
         assertEquals(
             [[
@@ -821,10 +823,31 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
                 "mountPath": "/opt"
             ]], containerSpec.volumeMounts)
         assertEquals(
-            [[[
+            [[
                  "name"     : "volume",
                  "mountPath": "/opt"
-             ]]], initContainerSpec.volumeMounts)
+             ]], initContainerSpec.volumeMounts)
+    }
+
+    @Test
+    void testInitContainerDefaultWithParameters() {
+        stepRule.step.dockerExecuteOnKubernetes(
+            script: nullScript,
+            juStabUtils: utils,
+            containerName: 'mycontainer',
+            initContainerImage: 'ppiper/cf-cli:?*qweqwewqe',
+            initContainerCommand: 'cp /usr/local/bin/cf7 /opt/bin/cf',
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+            containerMountPath: '/opt',
+        ) { bodyExecuted = true }
+        def initContainer = podSpec.spec.initContainers[0]
+        println(initContainer)
+        assertTrue(bodyExecuted)
+        assertEquals("ppiper_cf_cli___qweqwewqe", initContainer.name)
+        assertEquals("ppiper/cf-cli:?*qweqwewqe", initContainer.image)
+        //size 3 because initContainerCommand contains three items : [sh, -c, cp /usr/local/bin/cf7 /opt/bin/cf]
+        assertThat(initContainer.command.size(), is(3))
+
     }
 
     private container(options, body) {

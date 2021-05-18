@@ -198,9 +198,14 @@ import hudson.AbortException
      * use this volume in an initContainer.
      */
     'containerMountPath',
+     /**
+     * as `dockerImage` for the init container
+     */
     'initContainerImage',
+    /**
+     * Command executed inside the init container bash. Please enter command without any bash prefix
+     */
     'initContainerCommand',
-    'initContainerName',
 
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS.minus([
@@ -423,21 +428,22 @@ private void unstashWorkspace(config, prefix) {
 private List getInitContainerList(config){
     def initContainerSpecList = []
     if (config.initContainerImage && config.containerMountPath) {
-        def initContainerName = config.initContainerImage.toLowerCase()
+        // regex [\W_] matches any non-word character equivalent to [^a-zA-Z0-9_]
+        def initContainerName = config.initContainerImage.replaceAll(/[\W_]/,"_" )
         def initContainerSpec = [
-            name           : config.initContainerName,
-            image          : config.initContainerImage,
-            volumeMounts   : [[name: "volume", mountPath: config.containerMountPath]],
-        ]
+            name           : initContainerName,
+            image          : config.initContainerImage
+            ]
+        if (config.containerMountPath) {
+            initContainerSpec.volumeMounts = [[name: "volume", mountPath: config.containerMountPath]]
+        }
         if (config.initContainerCommand == null) {
-            echo "Please provide initContainerCommand for ${config.initContainerImage}"
             initContainerSpec['command'] = [
                 '/usr/bin/tail',
                 '-f',
                 '/dev/null'
             ]
         } else {
-            echo "Command given : ${config.initContainerCommand}"
             initContainerSpec['command'] = [
                 'sh',
                 '-c',
