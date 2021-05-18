@@ -7,7 +7,7 @@
 * You have an SAP Solution Manager user account and the roles required for uploading. See [SAP Solution Manager Administration](https://help.sap.com/viewer/c413647f87a54db59d18cb074ce3dafd/7.2.12/en-US/11505ddff03c4d74976dae648743e10e.html).
 * You have a change document to which your transport request is coupled.
 * You have a transport request, which is the target container of the upload.
-* You have installed the Change Management Client with the needed certificates.
+* You have installed the Change Management Client with the needed certificates. See [Change Management Client](#Change Management Client).
 
 ## Change Management Client
 
@@ -32,9 +32,9 @@ only the truststore of the environment needs to be extended.
 
 The target of the upload is a Transport Request, which is determined by the identifiers (ID)
 of the Request and the associated Change Document.
-`transportRequestUploadSOLMAN` allows to set these IDs by parameter or to use Git commit messages.
-As an additional option, IDs can be passed in via the Common Pipeline Environment. For example through a
-step that generates the IDs or obtains them differently.
+`transportRequestUploadSOLMAN` allows to set these IDs by parameter.
+As an additional option, IDs can be passed in via the Common Pipeline Environment.
+For example through a step that generates the IDs or obtains them differently.
 
 ### By Step Parameter
 
@@ -68,50 +68,10 @@ transportRequestUploadSOLMAN(
 )
 ```
 
-### By Git Commit Message
-
-If the identifiers are neither defined as step parameters nor by the Common Pipeline Environment,
-the Git commit messages (`git log`) of the project are searched for lines that follow a defined pattern.
-The pattern is specified by the label _changeDocumentLabel_ (default=`ChangeDocument`) resp.
-_transportRequestLabel_ (default=`TransportRequest`). Behind the label a colon,
-any blanks and the identifier are expected.
-
-```
-Release - define IDs for upload to Solution Manager
-
-    ChangeDocument: 1000001234
-    TransportRequest: ABCD10005E
-```
-
-The IDs dont need to be defined in the same commit message.
-
-The Git commit messages to be considered are determined by the parameters _gitFrom_ (default=`origin/master`)
-and _gitTo_ (default=`HEAD`). The naming follows the Git revision range representation `git log <gitFrom>..<gitTo>`.
-All commit messages accessible from _gitTo_ but not from _gitFrom_ are taken into account. If the scanner
-detects multiple IDs, it fails. So the commit range has to be chosen accordingly.
-
-In case of a pull request of a feature branch, the default should be sufficient as long as the transport request
-isn't changed. Only the commits (`HEAD`) that have not yet entered the main branch `origin/master` would be scanned.
-
-If uploading from the main branch, it must be assumed that former change document and transport request IDs
-are already contained in the history. In this case the new IDs should be maintained in the `HEAD` and
-_gitFrom_ be set to `HEAD~1`.
-
-```yaml
-general:
-  changeManagement:
-    git:
-      from: 'HEAD~1'
-```
-
 ## Common Pipeline Environment
 
-If `changeDocumentId` and `transportRequestId` are determined during runtime via the Git commit messages, they are entered into the `commonPipelineEnvironment` and can be retrieved accordingly.
-
-```
-  this.commonPipelineEnvironment.getValue('changeDocumentID')
-  this.commonPipelineEnvironment.getValue('transportRequestID')
-```
+OS Piper provides the steps [transportRequestDocIDFromGit](transportRequestDocIDFromGit.md) and [transportRequestReqIDFromGit](transportRequestReqIDFromGit.md) to get `changeDocumentId` and `transportRequestId` from the Git commit messages.
+The IDs are entered into the `commonPipelineEnvironment` and picked up there by the upload step.
 
 ## ${docGenParameters}
 
