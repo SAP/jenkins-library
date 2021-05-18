@@ -4,10 +4,10 @@
 
 ## Prerequisites
 
-## Administeing the Change Document ID by Git Commit Messages
+## Administering the Change Document ID by Git Commit Messages
 
 A `change document` documents activities in the change process.
-To [upload](transportRequestUploadSOLMAN.md) an artifact into a transport request, the Solution Manager expects the ID of an assigned change document.
+To upload an artifact into a transport request, the Solution Manager expects the ID of an assigned change document. See [transportRequestUploadSOLMAN](transportRequestUploadSOLMAN.md).
 
 `transportRequestDocIDFromGit` allows to retrieve the ID from a commit message of the Git repository of the project. This allows the developer to address the change document without having to change the setup of the pipeline.
 The developer only has to make sure that the ID is unique in the defined search range.
