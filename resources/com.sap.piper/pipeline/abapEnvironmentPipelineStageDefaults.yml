@@ -22,6 +22,7 @@ stages:
   Build:
     ordinal: 50
     cfServiceKeyName: 'sap_com_0582'
+    cfServiceKeyConfig: "{\"scenario_id\":\"SAP_COM_0582\",\"type\":\"basic\"}"
 
   'Integration Tests':
     ordinal: 60
