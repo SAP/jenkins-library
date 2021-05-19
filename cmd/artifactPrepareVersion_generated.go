@@ -42,6 +42,7 @@ type artifactPrepareVersionCommonPipelineEnvironment struct {
 	originalArtifactVersion string
 	git                     struct {
 		commitID      string
+		headCommitID  string
 		commitMessage string
 	}
 }
@@ -55,6 +56,7 @@ func (p *artifactPrepareVersionCommonPipelineEnvironment) persist(path, resource
 		{category: "", name: "artifactVersion", value: p.artifactVersion},
 		{category: "", name: "originalArtifactVersion", value: p.originalArtifactVersion},
 		{category: "git", name: "commitId", value: p.git.commitID},
+		{category: "git", name: "headCommitId", value: p.git.headCommitID},
 		{category: "git", name: "commitMessage", value: p.git.commitMessage},
 	}
 
@@ -425,6 +427,7 @@ func artifactPrepareVersionMetadata() config.StepData {
 							{"Name": "artifactVersion"},
 							{"Name": "originalArtifactVersion"},
 							{"Name": "git/commitId"},
+							{"Name": "git/headCommitId"},
 							{"Name": "git/commitMessage"},
 						},
 					},
