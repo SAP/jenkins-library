@@ -2,18 +2,18 @@ stages:
   Init: {}
   Initial Checks: {}
   Prepare System:
-    cfService: abap
-    cfServicePlan: standard
-    abapSystemIsDevelopmentAllowed: false
+    cfService: 'abap'
+    cfServicePlan: 'standard'
+    abapSystemIsDevelopmentAllowed: 'false'
     abapSystemSizeOfPersistence: 4
     abapSystemSizeOfRuntime: 1
   Clone Repositories: {}
   ATC: {}
   Build: {}
   Integration Tests:
-    cfService: abap
-    cfServicePlan: saas_oem
-    abapSystemIsDevelopmentAllowed: false
+    cfService: 'abap'
+    cfServicePlan: 'standard'
+    abapSystemIsDevelopmentAllowed: 'false'
     abapSystemSizeOfPersistence: 4
     abapSystemSizeOfRuntime: 1
     includeAddon: true
