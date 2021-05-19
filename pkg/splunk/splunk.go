@@ -114,6 +114,7 @@ type MonitoringData struct {
 	ErrorCode       string `json:"ErrorCode,omitempty"`
 	ErrorCategory   string `json:"ErrorCategory,omitempty"`
 	CorrelationID   string `json:"CorrelationID,omitempty"`
+	CommitId        string `json:"CommitId,omitempty"`
 	CommitHash      string `json:"CommitHash,omitempty"`
 	Branch          string `json:"Branch,omitempty"`
 	GitOwner        string `json:"GitOwner,omitempty"`
@@ -133,7 +134,8 @@ func prepareTelemetry(customTelemetryData telemetry.CustomData) MonitoringData {
 		ErrorCode:       tData.CustomData.ErrorCode,
 		ErrorCategory:   tData.CustomData.ErrorCategory,
 		CorrelationID:   SplunkClient.correlationID,
-		CommitHash:      readCommonPipelineEnvironment("git/commitId"),
+		CommitId:        readCommonPipelineEnvironment("git/commitId"),
+		CommitHash:      readCommonPipelineEnvironment("git/headCommitId"),
 		Branch:          readCommonPipelineEnvironment("git/branch"),
 		GitOwner:        readCommonPipelineEnvironment("github/owner"),
 		GitRepository:   readCommonPipelineEnvironment("github/repository"),
