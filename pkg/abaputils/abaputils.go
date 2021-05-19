@@ -99,7 +99,7 @@ func ReadServiceKeyAbapEnvironment(options AbapEnvironmentOptions, c command.Exe
 	// parse
 	json.Unmarshal([]byte(serviceKeyJSON), &abapServiceKey)
 	if abapServiceKey == (AbapServiceKey{}) {
-		return abapServiceKey, errors.New("Parsing the service key failed")
+		return abapServiceKey, errors.New("Parsing the service key failed. Service key is empty")
 	}
 
 	log.Entry().Info("Service Key read successfully")

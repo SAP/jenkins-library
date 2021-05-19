@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
 
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
@@ -75,6 +76,7 @@ func (c *componentVersion) initCV(repo abaputils.Repository, conn abapbuild.Conn
 	c.Connector = conn
 	c.Name = repo.Name
 	c.VersionYAML = repo.VersionYAML
+	c.CommitID = repo.CommitID
 }
 
 func (c *componentVersion) copyFieldsToRepo(initialRepo *abaputils.Repository) {
@@ -97,6 +99,11 @@ func (c *componentVersion) validate() error {
 	c.SpLevel = jCV.ComponentVersion.SpLevel
 	c.PatchLevel = jCV.ComponentVersion.PatchLevel
 	log.Entry().Infof("Resolved version %s, splevel %s, patchlevel %s", c.Version, c.SpLevel, c.PatchLevel)
+
+	if c.CommitID == "" {
+		return fmt.Errorf("CommitID missing in repo '%s' of the addon.yml", c.Name)
+	}
+
 	return nil
 }
 
@@ -111,4 +118,5 @@ type componentVersion struct {
 	Version     string `json:"Version"`
 	SpLevel     string `json:"SpLevel"`
 	PatchLevel  string `json:"PatchLevel"`
+	CommitID    string
 }

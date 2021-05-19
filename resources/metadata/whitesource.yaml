@@ -1,36 +1,92 @@
 metadata:
   name: whitesourceExecuteScan
-  description: BETA
+  description: Execute a WhiteSource scan
   longDescription: |-
-    BETA
     With this step [WhiteSource](https://www.whitesourcesoftware.com) security and license compliance scans can be executed and assessed.
     WhiteSource is a Software as a Service offering based on a so called unified agent that locally determines the dependency
     tree of a node.js, Java, Python, Ruby, or Scala based solution and sends it to the WhiteSource server for a policy based license compliance
     check and additional Free and Open Source Software Publicly Known Vulnerabilities detection.
+
+    The step uses the so-called WhiteSource Unified Agent. For details please refer to the [WhiteSource Unified Agent Documentation](https://whitesource.atlassian.net/wiki/spaces/WD/pages/33718339/Unified+Agent).
+
     !!! note "Docker Images"
         The underlying Docker images are public and specific to the solution's programming language(s) and therefore may have to be exchanged
         to fit to and support the relevant scenario. The default Python environment used is i.e. Python 3 based.
-    !!! warn "Restrictions"
-        Currently the step does contain hardened scan configurations for `scanType` `'pip'` and `'go'`. Other environments are still being elaborated,
-        so please thoroughly check your results and do not take them for granted by default.
-        Also not all environments have been thoroughly tested already therefore you might need to tweak around with the default containers used or
-        create your own ones to adequately support your scenario. To do so please modify `dockerImage` and `dockerWorkspace` parameters.
-        The step expects an environment containing the programming language related compiler/interpreter as well as the related build tool. For a list
-        of the supported build tools per environment please refer to the [WhiteSource Unified Agent Documentation](https://whitesource.atlassian.net/wiki/spaces/WD/pages/33718339/Unified+Agent).
 spec:
   inputs:
     secrets:
       - name: userTokenCredentialsId
         aliases:
           - name: whitesourceUserTokenCredentialsId
+          - name: whitesource/userTokenCredentialsId
+            deprecated: true
         description: Jenkins 'Secret text' credentials ID containing Whitesource user token.
         type: jenkins
       - name: orgAdminUserTokenCredentialsId
         aliases:
           - name: whitesourceOrgAdminUserTokenCredentialsId
+          - name: whitesource/orgAdminUserTokenCredentialsId
+            deprecated: true
         description: Jenkins 'Secret text' credentials ID containing Whitesource org admin token.
         type: jenkins
     params:
+      - name: agentDownloadUrl
+        type: string
+        description: "URL used to download the latest version of the WhiteSource Unified Agent."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: https://github.com/whitesource/unified-agent-distribution/releases/latest/download/wss-unified-agent.jar
+      - name: agentFileName
+        type: string
+        description: "Locally used name for the Unified Agent jar file after download."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: "wss-unified-agent.jar"
+      - name: agentParameters
+        type: "[]string"
+        description: "[NOT IMPLEMENTED] List of additional parameters passed to the Unified Agent command line."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: agentUrl
+        alias:
+          - name: whitesourceAgentUrl
+        type: string
+        description: "URL to the WhiteSource agent endpoint."
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: "https://saas.whitesourcesoftware.com/agent"
+      - name: aggregateVersionWideReport
+        type: bool
+        description: "This does not run a scan, instead just generated a report for all projects with
+          projectVersion = config.ProductVersion"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: buildDescriptorExcludeList
+        type: "[]string"
+        description: "List of build descriptors and therefore modules to exclude from the scan and assessment activities."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: ["unit-tests/pom.xml", "integration-tests/pom.xml"]
+      - name: buildDescriptorFile
+        type: string
+        description: "Explicit path to the build descriptor file."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: buildTool
         type: string
         description: "Defines the tool which is used for building the artifact."
@@ -43,26 +99,14 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: buildTool
-      - name: buildDescriptorFile
+      - name: configFilePath
         type: string
-        description: "Explicit path to the build descriptor file."
+        description: "Explicit path to the WhiteSource Unified Agent configuration file."
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: versioningModel
-        type: string
-        description: "The default project versioning model used in case `projectVersion` parameter is
-          empty for creating the version based on the build descriptor version to report results in
-          Whitesource, can be one of `'major'`, `'major-minor'`, `'semantic'`, `'full'`"
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-          - GENERAL
-        default: "major"
-        aliases:
-          - name: defaultVersioningModel
+        default: ./wss-unified-agent.config
       - name: createProductFromPipeline
         type: bool
         description: "Whether to create the related WhiteSource product on the fly based on the supplied pipeline
@@ -72,99 +116,88 @@ spec:
           - STAGES
           - STEPS
         default: true
-      - name: securityVulnerabilities
-        type: bool
-        description: "Whether security compliance is considered and reported as part of the assessment."
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        default: true
-      - name: timeout
-        type: int
-        description: "Timeout in seconds until an HTTP call is forcefully terminated."
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        default: 900
-      - name: agentDownloadUrl
+      - name: customScanVersion
         type: string
-        description: "URL used to download the latest version of the WhiteSource Unified Agent."
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        default: https://github.com/whitesource/unified-agent-distribution/releases/latest/download/wss-unified-agent.jar
-      - name: configFilePath
-        type: string
-        description: "Explicit path to the WhiteSource Unified Agent configuration file."
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        default: ./wss-generated-file.config
-      - name: reportDirectoryName
-        type: string
-        description: "Name of the directory to save vulnerability/risk reports to"
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        default: "whitesource-reports"
-      - name: aggregateVersionWideReport
-        type: bool
-        description: "This does not run a scan, instead just generated a report for all projects with
-          projectVersion = config.ProductVersion"
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        default: false
-      - name: vulnerabilityReportFormat
-        type: string
-        description: "Format of the file the vulnerability report is written to."
-        possibleValues: [xlsx, json, xml]
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        default: xlsx
-      - name: parallelLimit
-        type: string
-        description: '[NOT IMPLEMENTED] Limit of parallel jobs being run at once in case of `scanType:
-          ''mta''` based scenarios, defaults to `15`.'
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        default: 15
-      - name: reporting
-        type: bool
-        description: "Whether assessment is being done at all, defaults to `true`"
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        default: true
-      - name: serviceUrl
-        type: string
-        description: "URL to the WhiteSource server API used for communication."
+        description: Custom version of the WhiteSource project used as source.
+        longDescription: |-
+          Defines a custom version for the WhiteSource scan which deviates from the typical versioning pattern using [`version`](#version) and [`versioningModel`](#versioningModel).
+          It allows to set non-numeric versions as well and supersedes the value of [`version`](#version) which is calculated automatically.
+          The parameter is also used by other scan steps (e.g. Detect, Fortify, Sonar) and thus allows a common custom version across scan tools.
         scope:
           - GENERAL
           - PARAMETERS
           - STAGES
           - STEPS
-        default: "https://saas.whitesourcesoftware.com/api"
-      - name: buildDescriptorExcludeList
-        type: "[]string"
-        description: "List of build descriptors and therefore modules to exclude from the scan and assessment activities."
+      - name: cvssSeverityLimit
+        type: string
+        description: "Limit of tolerable CVSS v3 score upon assessment and in consequence fails the build."
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: ["unit-tests/pom.xml","integration-tests/pom.xml"]
+        default: "-1"
+      - name: scanPath
+        type: string
+        description: "Directory where to start WhiteSource scan."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: "."
+      - name: emailAddressesOfInitialProductAdmins
+        type: "[]string"
+        description: "The list of email addresses to assign as product admins for newly created WhiteSource products."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: excludes
+        type: "[]string"
+        description: List of file path patterns to exclude in the scan.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: includes
+        type: "[]string"
+        description: List of file path patterns to include in the scan.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: installCommand
+        type: string
+        description: "[NOT IMPLEMENTED] Install command that can be used to populate the default docker image for some scenarios."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: jreDownloadUrl
+        aliases:
+          - name: whitesource/jreDownloadUrl
+            deprecated: true
+        type: string
+        description: "URL used for downloading the Java Runtime Environment (JRE) required to run the
+          WhiteSource Unified Agent."
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: "https://github.com/SAP/SapMachine/releases/download/sapmachine-11.0.2/sapmachine-jre-11.0.2_linux-x64_bin.tar.gz"
+      - name: licensingVulnerabilities
+        type: bool
+        description: "[NOT IMPLEMENTED] Whether license compliance is considered and reported as part of the assessment."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: true
       - name: orgToken
+        aliases:
+          - name: whitesourceOrgToken
+          - name: whitesource/orgToken
+            deprecated: true
         type: string
         description: "WhiteSource token identifying your organization."
         scope:
@@ -177,63 +210,11 @@ spec:
         resourceRef:
           - name: orgAdminUserTokenCredentialsId
             type: secret
-      - name: userToken
-        type: string
-        description: "WhiteSource token identifying the user executing the scan."
-        scope:
-          - GENERAL
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        secret: true
-        mandatory: true
-        resourceRef:
-          - name: userTokenCredentialsId
-            type: secret
-      - name: licensingVulnerabilities
-        type: bool
-        description: "[NOT IMPLEMENTED] Whether license compliance is considered and reported as part of the assessment."
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        default: true
-      - name: agentFileName
-        type: string
-        description: "Locally used name for the Unified Agent jar file after download."
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        default: "wss-unified-agent.jar"
-      - name: emailAddressesOfInitialProductAdmins
-        type: "[]string"
-        description: "The list of email addresses to assign as product admins for newly created WhiteSource products."
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-      - name: productVersion
-        type: string
-        description: "Version of the WhiteSource product to be created and used for results aggregation,
-          usually determined automatically."
-        scope:
-          - GENERAL
-          - PARAMETERS
-          - STAGES
-          - STEPS
-      - name: jreDownloadUrl
-        type: string
-        description: "[NOT IMPLEMENTED] URL used for downloading the Java Runtime Environment (JRE) required to run the
-          WhiteSource Unified Agent."
-        scope:
-          - GENERAL
-          - PARAMETERS
-          - STAGES
-          - STEPS
       - name: productName
         aliases:
           - name: whitesourceProductName
+          - name: whitesource/productName
+            deprecated: true
         type: string
         description: "Name of the WhiteSource product used for results aggregation.
           This parameter is mandatory if the parameter `createProductFromPipeline` is set to `true`
@@ -244,6 +225,38 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: productToken
+        aliases:
+          - name: whitesourceProductToken
+          - name: whitesource/productToken
+            deprecated: true
+        type: string
+        description: "Token of the WhiteSource product to be created and used for results aggregation,
+          usually determined automatically. Can optionally be provided as an alternative to `productName`."
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: version
+        aliases:
+          - name: productVersion
+          - name: whitesourceProductVersion
+          - name: whitesource/productVersion
+            deprecated: true
+        type: string
+        description: Version of the WhiteSource product to be created and used for results aggregation.
+        longDescription: |-
+          Version of the WhiteSource product to be created and used for results aggregation.
+          This is usually determined automatically based on the information in the buildTool specific build descriptor file.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: artifactVersion
       - name: projectName
         aliases:
           - name: whitesourceProjectName
@@ -268,6 +281,105 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: reporting
+        type: bool
+        description: "Whether assessment is being done at all, defaults to `true`"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: true
+      - name: scanImage
+        type: string
+        description: "For `buildTool: docker`: Defines the docker image which should be scanned."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: scanImageIncludeLayers
+        type: bool
+        description: "For `buildTool: docker`: Defines if layers should be included."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: true
+      - name: scanImageRegistryUrl
+        type: string
+        description: "For `buildTool: docker`: Defines the registry where the scanImage is located."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: securityVulnerabilities
+        type: bool
+        description: "Whether security compliance is considered and reported as part of the assessment."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: true
+      - name: serviceUrl
+        aliases:
+          - name: whitesourceServiceUrl
+          - name: whitesource/serviceUrl
+            deprecated: true
+        type: string
+        description: "URL to the WhiteSource API endpoint."
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: "https://saas.whitesourcesoftware.com/api"
+      - name: timeout
+        type: int
+        description: "Timeout in seconds until an HTTP call is forcefully terminated."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: 900
+      - name: userToken
+        type: string
+        description: User token to access WhiteSource. In Jenkins use case this is automatically filled through the credentials.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        mandatory: true
+        resourceRef:
+          - name: userTokenCredentialsId
+            type: secret
+          - type: vaultSecret
+            paths:
+              - $(vaultPath)/whitesource
+              - $(vaultBasePath)/$(vaultPipelineName)/whitesource
+              - $(vaultBasePath)/GROUP-SECRETS/whitesource
+      - name: versioningModel
+        type: string
+        description: "The default project versioning model used in case `projectVersion` parameter is
+          empty for creating the version based on the build descriptor version to report results in
+          Whitesource, can be one of `'major'`, `'major-minor'`, `'semantic'`, `'full'`"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        default: "major"
+        aliases:
+          - name: defaultVersioningModel
+      - name: vulnerabilityReportFormat
+        type: string
+        description: "Format of the file the vulnerability report is written to."
+        possibleValues: [xlsx, json, xml]
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: xlsx
       - name: vulnerabilityReportTitle
         type: string
         description: "Title of vulnerability report written during the assessment phase."
@@ -276,70 +388,6 @@ spec:
           - STAGES
           - STEPS
         default: "WhiteSource Security Vulnerability Report"
-      - name: installCommand
-        type: string
-        description: "[NOT IMPLEMENTED] Install command that can be used to populate the default docker image for some scenarios."
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-      - name: scanType
-        type: string
-        description: "Type of development stack used to implement the solution.
-          For scan types other than `mta`, `maven`, and `npm`,
-          the WhiteSource Unified Agent is downloaded and used to perform the scan.
-          If the parameter is not provided, it is derived from the parameter `buildTool`,
-          which is usually configured in the general section of the pipeline config file."
-        scope:
-          - GENERAL
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        possibleValues: ["golang", "gradle", "maven", "mta", "npm", "pip", "yarn"]
-      - name: cvssSeverityLimit
-        type: string
-        description: "Limit of tolerable CVSS v3 score upon assessment and in consequence fails the build,
-          defaults to  `-1`."
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        default: "-1"
-      - name: includes
-        type: string
-        description: "Space separated list of file path patterns to include in the scan, slashes must be escaped for sed."
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        default: '**\/src\/main\/**\/*.java **\/*.py **\/*.go **\/*.js **\/*.ts'
-      - name: excludes
-        type: string
-        description: Space separated list of file path patterns to exclude in the scan
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        default: "tests/**/*.py **/src/test/**/*.java"
-      - name: productToken
-        aliases:
-          - name: whitesourceProductToken
-        type: string
-        description: "Token of the WhiteSource product to be created and used for results aggregation,
-          usually determined automatically. Can optionally be provided as an alternative to `productName`."
-        scope:
-          - GENERAL
-          - PARAMETERS
-          - STAGES
-          - STEPS
-      - name: agentParameters
-        type: string
-        description: "[NOT IMPLEMENTED] Additional parameters passed to the Unified Agent command line."
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-
         # Global maven settings, should be added to all maven steps
       - name: projectSettingsFile
         type: string
@@ -381,7 +429,6 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
-
       # Global npm settings, should be added to all npm steps
       - name: defaultNpmRegistry
         type: string
@@ -407,22 +454,65 @@ spec:
         params:
           - name: custom/whitesourceProjectNames
             type: "[]string"
+      - name: influx
+        type: influx
+        params:
+          - name: step_data
+            fields:
+              - name: whitesource
+                type: bool
+          - name: whitesource_data
+            fields:
+              - name: vulnerabilities
+                type: int
+              - name: major_vulnerabilities
+                type: int
+              - name: minor_vulnerabilities
+                type: int
+              - name: policy_violations
+                type: int
   containers:
-    - image: devxci/mbtci:1.0.14
-      workingDir: /home/mta
-      env: [ ]
-      conditions:
-        - conditionRef: strings-equal
-          params:
-            - name: scanType
-              value: mta
-    - image: maven:3.5-jdk-8
-      workingDir: /home/java
+    - image: buildpack-deps:stretch-curl
+      workingDir: /tmp
       env: []
       conditions:
         - conditionRef: strings-equal
           params:
-            - name: scanType
+            - name: buildTool
+              value: dub
+            - name: buildTool
+              value: docker
+    - image: devxci/mbtci:1.1.1
+      workingDir: /home/mta
+      env: []
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: buildTool
+              value: mta
+    - image: golang:1
+      workingDir: /go
+      env: []
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: buildTool
+              value: golang
+    - image: hseeberger/scala-sbt:8u181_2.12.8_1.2.8
+      workingDir: /tmp
+      env: []
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: buildTool
+              value: sbt
+    - image: maven:3.5-jdk-8
+      workingDir: /tmp
+      env: []
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: buildTool
               value: maven
     - image: node:lts-stretch
       workingDir: /home/node
@@ -430,21 +520,21 @@ spec:
       conditions:
         - conditionRef: strings-equal
           params:
-            - name: scanType
+            - name: buildTool
               value: npm
-    - image: hseeberger/scala-sbt:8u181_2.12.8_1.2.8
-      workingDir: /home/scala
+    - image: python:3.6-stretch
+      workingDir: /tmp
       env: []
       conditions:
         - conditionRef: strings-equal
           params:
-            - name: scanType
-              value: sbt
-    - image: buildpack-deps:stretch-curl
-      workingDir: /home/dub
+            - name: buildTool
+              value: pip
+    - image: node:lts-stretch
+      workingDir: /home/node
       env: []
       conditions:
         - conditionRef: strings-equal
           params:
-            - name: scanType
-              value: dub
+            - name: buildTool
+              value: yarn

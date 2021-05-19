@@ -36,6 +36,7 @@ type Client struct {
 	cookieJar                 http.CookieJar
 	doLogRequestBodyOnDebug   bool
 	doLogResponseBodyOnDebug  bool
+	useDefaultTransport       bool
 }
 
 // ClientOptions defines the options to be set on the client
@@ -57,6 +58,7 @@ type ClientOptions struct {
 	CookieJar                 http.CookieJar
 	DoLogRequestBodyOnDebug   bool
 	DoLogResponseBodyOnDebug  bool
+	UseDefaultTransport       bool
 }
 
 // TransportWrapper is a wrapper for central logging capabilities
@@ -127,8 +129,6 @@ func (c *Client) Upload(data UploadRequestData) (*http.Response, error) {
 		return nil, errors.New(fmt.Sprintf("Http method %v is not allowed. Possible values are %v or %v", data.Method, http.MethodPost, http.MethodPut))
 	}
 
-	httpClient := c.initialize()
-
 	bodyBuffer := &bytes.Buffer{}
 	bodyWriter := multipart.NewWriter(bodyBuffer)
 
@@ -164,12 +164,7 @@ func (c *Client) Upload(data UploadRequestData) (*http.Response, error) {
 	request.Header.Add("Content-Type", "multipart/form-data; boundary=\""+boundary+"\"")
 	request.Header.Add("Connection", "Keep-Alive")
 
-	response, err := httpClient.Do(request)
-	if err != nil {
-		return response, errors.Wrapf(err, "HTTP %v request to %v failed with error", data.Method, data.URL)
-	}
-
-	return c.handleResponse(response, data.URL)
+	return c.Send(request)
 }
 
 // SendRequest sends an http request with a defined method
@@ -177,25 +172,29 @@ func (c *Client) Upload(data UploadRequestData) (*http.Response, error) {
 // On error, any Response can be ignored and the Response.Body
 // does not need to be closed.
 func (c *Client) SendRequest(method, url string, body io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
-	httpClient := c.initialize()
-
 	request, err := c.createRequest(method, url, body, &header, cookies)
 	if err != nil {
 		return &http.Response{}, errors.Wrapf(err, "error creating %v request to %v", method, url)
 	}
 
+	return c.Send(request)
+}
+
+// Send sends an http request
+func (c *Client) Send(request *http.Request) (*http.Response, error) {
+	httpClient := c.initialize()
 	response, err := httpClient.Do(request)
 	if err != nil {
-		return response, errors.Wrapf(err, "error calling %v", url)
+		return response, errors.Wrapf(err, "HTTP %v request to %v failed", request.Method, request.URL)
 	}
-
-	return c.handleResponse(response, url)
+	return c.handleResponse(response, request.URL.String())
 }
 
 // SetOptions sets options used for the http client
 func (c *Client) SetOptions(options ClientOptions) {
 	c.doLogRequestBodyOnDebug = options.DoLogRequestBodyOnDebug
 	c.doLogResponseBodyOnDebug = options.DoLogResponseBodyOnDebug
+	c.useDefaultTransport = options.UseDefaultTransport
 	c.transportTimeout = options.TransportTimeout
 	c.transportSkipVerification = options.TransportSkipVerification
 	c.maxRequestDuration = options.MaxRequestDuration
@@ -237,14 +236,25 @@ func (c *Client) initialize() *http.Client {
 		retryClient := retryablehttp.NewClient()
 		retryClient.HTTPClient.Timeout = c.maxRequestDuration
 		retryClient.HTTPClient.Jar = c.cookieJar
-		retryClient.HTTPClient.Transport = transport
 		retryClient.RetryMax = c.maxRetries
+		if !c.useDefaultTransport {
+			retryClient.HTTPClient.Transport = transport
+		}
+		retryClient.CheckRetry = func(ctx context.Context, resp *http.Response, err error) (bool, error) {
+			if err != nil && (strings.Contains(err.Error(), "timeout") || strings.Contains(err.Error(), "timed out") || strings.Contains(err.Error(), "connection refused")) {
+				// Assuming timeouts could be retried
+				return true, nil
+			}
+			return retryablehttp.DefaultRetryPolicy(ctx, resp, err)
+		}
 		httpClient = retryClient.StandardClient()
 	} else {
 		httpClient = &http.Client{}
 		httpClient.Timeout = c.maxRequestDuration
 		httpClient.Jar = c.cookieJar
-		httpClient.Transport = transport
+		if !c.useDefaultTransport {
+			httpClient.Transport = transport
+		}
 	}
 
 	if c.transportSkipVerification {

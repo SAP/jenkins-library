@@ -211,10 +211,10 @@ steps:
       - 'deployDescriptor'
       - 'pipelineConfigAndTests'
     cf_native:
-      dockerImage: 'ppiper/cf-cli'
+      dockerImage: 'ppiper/cf-cli:6'
       dockerWorkspace: '/home/piper'
     mtaDeployPlugin:
-      dockerImage: 'ppiper/cf-cli'
+      dockerImage: 'ppiper/cf-cli:6'
       dockerWorkspace: '/home/piper'
     mta:
       deployTool: 'mtaDeployPlugin'
@@ -226,15 +226,6 @@ steps:
       deployTool: 'cf_native'
     kaniko:
       deployTool: 'cf_native'
-  containerExecuteStructureTests:
-    containerCommand: '/busybox/tail -f /dev/null'
-    containerShell: '/busybox/sh'
-    dockerImage: 'ppiper/container-structure-test'
-    dockerOptions: "-u 0 --entrypoint=''"
-    failOnError: true
-    stashContent:
-      - 'tests'
-    testReportFilePath: 'cst-report.json'
   debugReportArchive:
     shareConfidentialInformation: false
   dockerExecute:
@@ -358,91 +349,14 @@ steps:
     neoTargets: []
     enableZeroDowntimeDeployment: false
     parallelExecution: false
-  newmanExecute:
-    dockerImage: 'node:lts-stretch'
-    failOnError: true
-    newmanCollection: '**/*.postman_collection.json'
-    newmanEnvironment: ''
-    newmanGlobals: ''
-    newmanInstallCommand: 'npm install newman newman-reporter-html --global --quiet'
-    newmanRunCommand: "run '${config.newmanCollection}' --environment '${config.newmanEnvironment}' --globals '${config.newmanGlobals}' --reporters junit,html --reporter-junit-export 'target/newman/TEST-${collectionDisplayName}.xml' --reporter-html-export 'target/newman/TEST-${collectionDisplayName}.html'"
-    stashContent:
-      - 'tests'
   npmExecute:
     dockerImage: 'node:lts-stretch'
   npmExecuteScripts:
     install: true
   whitesourceExecuteScan:
-    createProductFromPipeline: true
-    emailAddressesOfInitialProductAdmins: []
-    buildDescriptorExcludeList: []
-    parallelLimit: 15
-    licensingVulnerabilities: true
-    securityVulnerabilities: true
-    cvssSeverityLimit: -1
-    reporting: true
     vulnerabilityReportFileName: 'piper_whitesource_vulnerability_report'
-    vulnerabilityReportTitle: 'WhiteSource Security Vulnerability Report'
-    projectNames: []
-    jreDownloadUrl: 'https://github.com/SAP/SapMachine/releases/download/sapmachine-11.0.2/sapmachine-jre-11.0.2_linux-x64_bin.tar.gz'
-    agentFileName: 'wss-unified-agent.jar'
-    agentDownloadUrl: 'https://github.com/whitesource/unified-agent-distribution/releases/latest/download/${config.agentFileName}'
-    agentParameters: ''
-    configFilePath: './wss-unified-agent.config'
-    mta:
-      stashContent:
-        - 'buildDescriptor'
-        - 'opensourceConfiguration'
-    maven:
-      buildDescriptorFile: './pom.xml'
-      dockerImage: 'maven:3.5-jdk-8'
-      dockerWorkspace: '/home/java'
-      stashContent:
-        - 'buildDescriptor'
-        - 'opensourceConfiguration'
-    npm:
-      buildDescriptorFile: './package.json'
-      dockerImage: 'node:lts-stretch'
-      dockerWorkspace: '/home/node'
-      stashContent:
-        - 'buildDescriptor'
-        - 'opensourceConfiguration'
-    pip:
-      buildDescriptorFile: './setup.py'
-      dockerImage: 'python:3.7.2-stretch'
-      dockerWorkspace: '/home/python'
-      stashContent:
-        - 'buildDescriptor'
-        - 'opensourceConfiguration'
-    golang:
-      buildDescriptorFile: './Gopkg.toml'
-      dockerImage: 'golang:1.12-stretch'
-      dockerWorkspace: '/home/dep'
-      stashContent:
-        - 'buildDescriptor'
-        - 'opensourceConfiguration'
-        - 'checkmarx'
-      additionalInstallCommand: >-
-        curl --fail https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-        && mkdir -p \$GOPATH/src/${config.whitesource.projectName.substring(0, config.whitesource.projectName.lastIndexOf('/'))}
-        && ln -s \$(pwd) \$GOPATH/src/${config.whitesource.projectName}
-        && cd \$GOPATH/src/${config.whitesource.projectName} && dep ensure
-    dub:
-      buildDescriptorFile: './dub.json'
-      dockerImage: 'buildpack-deps:stretch-curl'
-      dockerWorkspace: '/home/dub'
-      stashContent:
-        - 'buildDescriptor'
-        - 'checkmarx'
-    sbt:
-      buildDescriptorFile: './build.sbt'
-      dockerImage: 'hseeberger/scala-sbt:8u181_2.12.8_1.2.8'
-      dockerWorkspace: '/home/scala'
-      stashContent:
-        - 'buildDescriptor'
-        - 'opensourceConfiguration'
-    verbose: false
-    timeout: 0
+    stashExcludes:
+      stashBack: '.pipeline/** whitesourceExecuteScan_*.* whitesource-reports/**'
   pipelineExecute:
     branch: 'master'
     path: 'Jenkinsfile'
@@ -600,16 +514,6 @@ steps:
       verbose: false
   transportRequestRelease:
       verbose: false
-  uiVeri5ExecuteTests:
-    failOnError: false
-    dockerEnvVars: {}
-    installCommand: 'npm install @ui5/uiveri5 --global --quiet'
-    seleniumPort: 4444
-    stashContent:
-      - 'buildDescriptor'
-      - 'tests'
-    testOptions: ''
-    runCommand: "uiveri5 --seleniumAddress='http://${config.seleniumHost}:${config.seleniumPort}/wd/hub'"
   writeTemporaryCredentials:
     credentialsDirectories:
       - './'
@@ -634,3 +538,10 @@ steps:
     mode: 'DEPLOY'
     action: 'NONE'
     xsSessionFile: '.xsconfig'
+  piperPipelineStageInit:
+    stepMappings:
+      checkmarx: 'checkmarxExecuteScan'
+      fortify: 'fortifyExecuteScan'
+      karma: 'karmaExecuteTests'
+      whitesource: 'whitesourceExecuteScan'
+    labelPrefix: pr_

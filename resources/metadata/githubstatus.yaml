@@ -105,6 +105,7 @@ spec:
       - name: token
         aliases:
           - name: githubToken
+          - name: access_token
         description: GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line.
         scope:
           - GENERAL
@@ -119,6 +120,6 @@ spec:
             type: secret
           - type: vaultSecret
             paths:
-            - $(vaultPath)/github
-            - $(vaultBasePath)/$(vaultPipelineName)/github
-            - $(vaultBasePath)/GROUP-SECRETS/github
+              - $(vaultPath)/github
+              - $(vaultBasePath)/$(vaultPipelineName)/github
+              - $(vaultBasePath)/GROUP-SECRETS/github

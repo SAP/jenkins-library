@@ -1,9 +1,9 @@
 metadata:
-    name: abapAddonAssemblyKitCheckPV
-    description: This step checks the validity of a Addon Product Version.
-    longDescription: |
-      This step checks whether the Addon Product Version in the addonDescriptorFileName does exist or is a valid successor of an existing Product Version.
-      It resolves the dotted version string into version, support package stack level and patch level and writes it to the commonPipelineEnvironment.
+  name: abapAddonAssemblyKitCheckPV
+  description: This step checks the validity of a Addon Product Version.
+  longDescription: |
+    This step checks whether the Addon Product Version in the addonDescriptorFileName does exist or is a valid successor of an existing Product Version.
+    It resolves the dotted version string into version, support package stack level and patch level and writes it to the commonPipelineEnvironment.
 spec:
   inputs:
     secrets:

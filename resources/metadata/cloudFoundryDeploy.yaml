@@ -370,7 +370,7 @@ spec:
               - $(vaultBasePath)/GROUP-SECRETS/cloudfoundry-$(org)-$(space)
   containers:
     - name: cfDeploy
-      image: ppiper/cf-cli
+      image: ppiper/cf-cli:6
   outputs:
     resources:
       - name: influx

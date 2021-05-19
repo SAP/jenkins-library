@@ -3,8 +3,6 @@ package cmd
 import (
 	"bytes"
 	"fmt"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"io"
 	netHttp "net/http"
 	"os"
@@ -12,7 +10,11 @@ import (
 	"text/template"
 	"time"
 
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
+
 	"github.com/SAP/jenkins-library/pkg/command"
+	gitUtils "github.com/SAP/jenkins-library/pkg/git"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/versioning"
@@ -186,6 +188,9 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 			// commit changes and push to repository (including new version tag)
 			gitCommitID, err = pushChanges(config, newVersion, repository, worktree, now)
 			if err != nil {
+				if strings.Contains(fmt.Sprint(err), "reference already exists") {
+					log.SetErrorCategory(log.ErrorCustom)
+				}
 				return errors.Wrapf(err, "failed to push changes for version '%v'", newVersion)
 			}
 		}
@@ -203,7 +208,7 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 
 func openGit() (gitRepository, error) {
 	workdir, _ := os.Getwd()
-	return git.PlainOpen(workdir)
+	return gitUtils.PlainOpen(workdir)
 }
 
 func getGitCommitID(repository gitRepository) (plumbing.Hash, string, error) {

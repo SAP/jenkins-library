@@ -232,9 +232,7 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 		//ToDo: add condition param.Value and param.Name to filter as for Containers
 	}
 
-	if m.HasReference("vaultSecret") {
-		contextFilters = append(contextFilters, []string{"vaultAppRoleTokenCredentialsId", "vaultAppRoleSecretTokenCredentialsId"}...)
-	}
+	contextFilters = addVaultContextParametersFilter(m, contextFilters)
 
 	if len(contextFilters) > 0 {
 		filters.All = append(filters.All, contextFilters...)
@@ -246,6 +244,12 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 
 	}
 	return filters
+}
+
+func addVaultContextParametersFilter(m *StepData, contextFilters []string) []string {
+	contextFilters = append(contextFilters, []string{"vaultAppRoleTokenCredentialsId",
+		"vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}...)
+	return contextFilters
 }
 
 // GetContextDefaults retrieves context defaults like container image, name, env vars, resources, ...
@@ -355,7 +359,9 @@ func (m *StepData) GetResourceParameters(path, name string) map[string]interface
 	for _, param := range m.Spec.Inputs.Parameters {
 		for _, res := range param.ResourceRef {
 			if res.Name == name {
-				resourceParams[param.Name] = getParameterValue(path, res, param)
+				if val := getParameterValue(path, res, param); val != nil {
+					resourceParams[param.Name] = val
+				}
 			}
 		}
 	}
@@ -377,7 +383,11 @@ func (container *Container) commonConfiguration(keyPrefix string, config *map[st
 }
 
 func getParameterValue(path string, res ResourceReference, param StepParameters) interface{} {
-	if val := piperenv.GetResourceParameter(path, res.Name, res.Param); len(val) > 0 {
+	paramName := res.Param
+	if param.Type != "string" {
+		paramName += ".json"
+	}
+	if val := piperenv.GetResourceParameter(path, res.Name, paramName); len(val) > 0 {
 		if param.Type != "string" {
 			var unmarshalledValue interface{}
 			err := json.Unmarshal([]byte(val), &unmarshalledValue)

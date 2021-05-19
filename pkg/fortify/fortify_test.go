@@ -85,24 +85,34 @@ func TestGetProjectByName(t *testing.T) {
 	autocreateCalled := false
 	commitCalled := false
 	sys, server := spinUpServer(func(rw http.ResponseWriter, req *http.Request) {
-		if req.URL.Path == "/projects" && req.URL.RawQuery == "q=name%3Dpython-test" {
+		if req.URL.Path == "/projects" && req.URL.RawQuery == "q=name%3A%22python-test%22" {
 			header := rw.Header()
 			header.Add("Content-type", "application/json")
 			rw.Write([]byte(
 				`{"data": [{"_href": "https://fortify/ssc/api/v1/projects/4711","createdBy": "someUser","name": "python-test",
 				"description": "","id": 4711,"creationDate": "2018-12-03T06:29:38.197+0000","issueTemplateId": "dasdasdasdsadasdasdasdasdas"}],
 				"count": 1,"responseCode": 200,"links": {"last": {"href": "https://fortify/ssc/api/v1/projects?q=name%A3python-test&start=0"},
-				"first": {"href": "https://fortify/ssc/api/v1/projects?q=name%A3python-test&start=0"}}}`))
+				"first": {"href": "https://fortify/ssc/api/v1/projects?q=name%3Apython-test&start=0"}}}`))
 			return
 		}
-		if req.URL.Path == "/projects" && req.URL.RawQuery == "q=name%3Dpython-empty" {
+		if req.URL.Path == "/projects" && req.URL.RawQuery == "q=name%3A%22python+with+space+test%22" {
+			header := rw.Header()
+			header.Add("Content-type", "application/json")
+			rw.Write([]byte(
+				`{"data": [{"_href": "https://fortify/ssc/api/v1/projects/4711","createdBy": "someUser","name": "python with space test",
+				"description": "","id": 4711,"creationDate": "2018-12-03T06:29:38.197+0000","issueTemplateId": "dasdasdasdsadasdasdasdasdas"}],
+				"count": 1,"responseCode": 200,"links": {"last": {"href": "https://fortify/ssc/api/v1/projects?q=name%3A%22python+with+space+test%22&start=0"},
+				"first": {"href": "https://fortify/ssc/api/v1/projects?q=name%3A%22python+with+space+test%22&start=0"}}}`))
+			return
+		}
+		if req.URL.Path == "/projects" && req.URL.RawQuery == "q=name%3A%22python-empty%22" {
 			header := rw.Header()
 			header.Add("Content-type", "application/json")
 			rw.Write([]byte(
 				`{"data": [],"count": 0,"responseCode": 404,"links": {}}`))
 			return
 		}
-		if req.URL.Path == "/projects" && req.URL.RawQuery == "q=name%3Dpython-error" {
+		if req.URL.Path == "/projects" && req.URL.RawQuery == "q=name%3A%22python-error%22" {
 			rw.WriteHeader(400)
 			return
 		}
@@ -135,7 +145,7 @@ func TestGetProjectByName(t *testing.T) {
 			rw.Write([]byte(
 				`{"data": {"_href": "https://fortify/ssc/api/v1/projects/815", "committed": true,"createdBy": "someUser","name": "autocreate",
 				"description": "","id": 815,"creationDate": "2018-12-03T06:29:38.197+0000","issueTemplateId": "dasdasdasdsadasdasdasdasdas"},
-				"count": 1,"responseCode": 200,"links": {"last": {"href": "https://fortify/ssc/api/v1/projects?q=name%A3python-test&start=0"},
+				"count": 1,"responseCode": 200,"links": {"last": {"href": "https://fortify/ssc/api/v1/projects?q=name%3Apython-test&start=0"},
 				"first": {"href": ""}}}`))
 			return
 		}
@@ -147,6 +157,12 @@ func TestGetProjectByName(t *testing.T) {
 		result, err := sys.GetProjectByName("python-test", false, "")
 		assert.NoError(t, err, "GetProjectByName call not successful")
 		assert.Equal(t, "python-test", strings.ToLower(*result.Name), "Expected to get python-test")
+	})
+
+	t.Run("test space", func(t *testing.T) {
+		result, err := sys.GetProjectByName("python with space test", false, "")
+		assert.NoError(t, err, "GetProjectByName call not successful")
+		assert.Equal(t, "python with space test", strings.ToLower(*result.Name), "Expected to get python with space test")
 	})
 
 	t.Run("test empty", func(t *testing.T) {
@@ -1283,5 +1299,18 @@ func TestMergeProjectVersionStateOfPRIntoMaster(t *testing.T) {
 		assert.Equal(t, true, downloadCalled, "Expected different value")
 		assert.Equal(t, true, uploadCalled, "Expected different value")
 		assert.Equal(t, true, inactivateCalled, "Expected different value")
+	})
+}
+
+func TestBase64EndodePlainToken(t *testing.T) {
+	t.Run("Encoded token untouched", func(t *testing.T) {
+		token := "OTUzODcwNDYtNWFjOC00NTcwLTg3NWQtYTVlYzhiZDhkM2Qy"
+		encodedToken := base64EndodePlainToken(token)
+		assert.Equal(t, token, encodedToken)
+	})
+	t.Run("Unencoded token gets encoded", func(t *testing.T) {
+		token := "95387046-5ac8-4570-875d-a5ec8bd8d3d2"
+		encodedToken := base64EndodePlainToken(token)
+		assert.Equal(t, "OTUzODcwNDYtNWFjOC00NTcwLTg3NWQtYTVlYzhiZDhkM2Qy", encodedToken)
 	})
 }

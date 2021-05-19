@@ -29,6 +29,13 @@ spec:
       - name: opensourceConfiguration
         type: stash
     params:
+      - name: additionalScanParameters
+        description: List of additional scan parameters to be used for Fortify sourceanalyzer command execution.
+        type: "[]string"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: authToken
         type: string
         description: "The FortifyToken to use for authentication"
@@ -46,6 +53,18 @@ spec:
               - $(vaultPath)/fortify
               - $(vaultBasePath)/$(vaultPipelineName)/fortify
               - $(vaultBasePath)/GROUP-SECRETS/fortify
+      - name: customScanVersion
+        type: string
+        description: Custom version of the Fortify project used as source.
+        longDescription: |-
+          Defines a custom version for the Fortify scan which deviates from the typical versioning pattern using [`version`](#version) and [`versioningModel`](#versioningModel).
+          It allows to set non-numeric versions as well and supersedes the value of [`version`](#version) which is calculated automatically.
+          The parameter is also used by other scan steps (e.g. Detect, Sonar, WhiteSource) and thus allows a common custom version across scan tools.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: githubToken
         description: "GitHub personal access token as per
           https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line"
@@ -56,14 +75,16 @@ spec:
           - STEPS
         type: string
         secret: true
+        aliases:
+          - name: access_token
         resourceRef:
           - name: githubTokenCredentialsId
             type: secret
           - type: vaultSecret
             paths:
-            - $(vaultPath)/github
-            - $(vaultBasePath)/$(vaultPipelineName)/github
-            - $(vaultBasePath)/GROUP-SECRETS/github
+              - $(vaultPath)/github
+              - $(vaultBasePath)/$(vaultPipelineName)/github
+              - $(vaultBasePath)/GROUP-SECRETS/github
       - name: autoCreate
         type: bool
         description:
@@ -142,6 +163,23 @@ spec:
           - STAGES
           - STEPS
         default: true
+      - name: version
+        aliases:
+          - name: fortifyProjectVersion
+            deprecated: true
+        type: string
+        description: Version used in conjunction with [`versioningModel`](#versioningModel) to identify the Fortify project to be created and used for results aggregation.
+        longDescription: |-
+          Version used in conjunction with [`versioningModel`](#versioningModel) to identify the Fortify project to be created and used for results aggregation.
+          This is usually determined automatically based on the information in the buildTool specific build descriptor file.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: artifactVersion
       - name: buildDescriptorFile
         type: string
         conditions:
@@ -552,6 +590,10 @@ spec:
       - name: influx
         type: influx
         params:
+          - name: step_data
+            fields:
+              - name: fortify
+                type: bool
           - name: fortify_data
             fields:
               - name: projectName

@@ -63,5 +63,6 @@ func (v *Versionfile) SetVersion(version string) error {
 
 // GetCoordinates returns the coordinates
 func (v *Versionfile) GetCoordinates() (Coordinates, error) {
-	return nil, nil
+	result := Coordinates{}
+	return result, nil
 }

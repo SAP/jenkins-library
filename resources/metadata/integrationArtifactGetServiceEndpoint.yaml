@@ -1,0 +1,77 @@
+metadata:
+  name: integrationArtifactGetServiceEndpoint
+  description: Get an deployed CPI intgeration flow service endpoint
+  longDescription: |
+    With this step you can obtain information about the service endpoints exposed by SAP Cloud Platform Integration on a tenant using OData API. Learn more about the SAP Cloud Integration remote API for getting service endpoint of deployed integration artifact [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/d1679a80543f46509a7329243b595bdb.html).
+
+spec:
+  inputs:
+    secrets:
+      - name: cpiCredentialsId
+        description: Jenkins credentials ID containing username and password for authentication to the SAP Cloud Platform Integration API's
+        type: jenkins
+    params:
+      - name: username
+        type: string
+        description: User to authenticate to the SAP Cloud Platform Integration Service
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+        secret: true
+        resourceRef:
+          - name: cpiCredentialsId
+            type: secret
+            param: username
+      - name: password
+        type: string
+        description: Password to authenticate to the SAP Cloud Platform Integration Service
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+        secret: true
+        resourceRef:
+          - name: cpiCredentialsId
+            type: secret
+            param: password
+      - name: integrationFlowId
+        type: string
+        description: Specifies the ID of the Integration Flow artifact
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+      - name: platform
+        type: string
+        description: Specifies the running platform of the SAP Cloud platform integraion service
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+      - name: host
+        type: string
+        description: Specifies the protocol and host address, including the port. Please provide in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+      - name: oAuthTokenProviderUrl
+        type: string
+        description: Specifies the oAuth Provider protocol and host address, including the port. Please provide in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: custom/iFlowServiceEndpoint

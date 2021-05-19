@@ -114,6 +114,7 @@ public class CommonStepsTest extends BasePiperTest{
         'abapAddonAssemblyKitReleasePackages', //implementing new golang pattern without fields
         'abapAddonAssemblyKitReserveNextPackages', //implementing new golang pattern without fields
         'abapEnvironmentAssemblePackages', //implementing new golang pattern without fields
+        'abapEnvironmentAssembleConfirm', //implementing new golang pattern without fields
         'abapEnvironmentCheckoutBranch', //implementing new golang pattern without fields
         'abapEnvironmentCloneGitRepo', //implementing new golang pattern without fields
         'abapEnvironmentPullGitRepo', //implementing new golang pattern without fields
@@ -158,6 +159,7 @@ public class CommonStepsTest extends BasePiperTest{
         'mtaBuild', //implementing new golang pattern without fields
         'nexusUpload', //implementing new golang pattern without fields
         'piperPipelineStageArtifactDeployment', //stage without step flags
+        'pipelineCreateScanSummary', //stage without step flags
         'sonarExecuteScan', //implementing new golang pattern without fields
         'gctsCreateRepository', //implementing new golang pattern without fields
         'gctsRollback', //implementing new golang pattern without fields
@@ -168,9 +170,23 @@ public class CommonStepsTest extends BasePiperTest{
         'containerSaveImage', //implementing new golang pattern without fields
         'detectExecuteScan', //implementing new golang pattern without fields
         'kanikoExecute', //implementing new golang pattern without fields
+        'karmaExecuteTests', //implementing new golang pattern without fields
         'gitopsUpdateDeployment', //implementing new golang pattern without fields
         'vaultRotateSecretId', //implementing new golang pattern without fields
+        'deployIntegrationArtifact', //implementing new golang pattern without fields
+        'newmanExecute', //implementing new golang pattern without fields
+        'terraformExecute', //implementing new golang pattern without fields
+        'whitesourceExecuteScan', //implementing new golang pattern without fields
+        'uiVeri5ExecuteTests', //implementing new golang pattern without fields
         'integrationArtifactDeploy', //implementing new golang pattern without fields
+        'integrationArtifactUpdateConfiguration', //implementing new golang pattern without fields
+        'integrationArtifactGetMplStatus', //implementing new golang pattern without fields
+        'integrationArtifactGetServiceEndpoint', //implementing new golang pattern without fields
+        'integrationArtifactDownload', //implementing new golang pattern without fields
+        'integrationArtifactUpload', //implementing new golang pattern without fields
+        'containerExecuteStructureTests', //implementing new golang pattern without fields
+        'transportRequestUploadSOLMAN', //implementing new golang pattern without fields
+        'batsExecuteTests', //implementing new golang pattern without fields
     ]
 
     @Test

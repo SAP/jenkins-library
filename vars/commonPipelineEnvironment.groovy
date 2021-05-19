@@ -206,11 +206,15 @@ class commonPipelineEnvironment implements Serializable {
     }
 
     void writeValueToFile(script, String filename, value){
-        if (value){
-            if (!(value in CharSequence)) filename += '.json'
-            if (script.fileExists(filename)) return
-            if (!(value in CharSequence)) value = groovy.json.JsonOutput.toJson(value)
-            script.writeFile file: filename, text: value
+        try{
+            if (value){
+                if (!(value in CharSequence)) filename += '.json'
+                if (script.fileExists(filename)) return
+                if (!(value in CharSequence)) value = groovy.json.JsonOutput.toJson(value)
+                script.writeFile file: filename, text: value
+            }
+        }catch(StackOverflowError error) {
+            script.echo("failed to write file: " + filename)
         }
     }
 
@@ -228,7 +232,7 @@ class commonPipelineEnvironment implements Serializable {
             def param = fileName.split('/')[fileName.split('\\/').size()-1]
             if (param.endsWith(".json")){
                 param = param.replace(".json","")
-                valueMap[param] = script.readJSON(text: fileContent)
+                valueMap[param] = getJSONValue(script, fileContent)
             }else{
                 valueMap[param] = fileContent
             }
@@ -241,7 +245,7 @@ class commonPipelineEnvironment implements Serializable {
             def param = fileName.split('/')[fileName.split('\\/').size()-1]
             if (param.endsWith(".json")){
                 param = param.replace(".json","")
-                containerProperties[param] = script.readJSON(text: fileContent)
+                containerProperties[param] = getJSONValue(script, fileContent)
             }else{
                 containerProperties[param] = fileContent
             }
@@ -250,5 +254,27 @@ class commonPipelineEnvironment implements Serializable {
 
     List getCustomDefaults() {
         DefaultValueCache.getInstance().getCustomDefaults()
+    }
+
+    def getJSONValue(Script script, String text) {
+        try {
+            return script.readJSON(text: text)
+        } catch (net.sf.json.JSONException ex) {
+            // JSON reader cannot handle simple objects like bool, numbers, ...
+            // as such readJSON cannot read what writeJSON created in such cases
+            if (text in ['true', 'false']) {
+                return text.toBoolean()
+            }
+            if (text ==~ /[\d]+/) {
+                return text.toInteger()
+            }
+            if (text.contains('.')) {
+                return text.toFloat()
+            }
+            // no handling of strings since we expect strings in a non-json file
+            // see handling of *.json above
+
+            throw err
+        }
     }
 }
