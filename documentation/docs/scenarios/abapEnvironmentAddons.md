@@ -1,9 +1,11 @@
 # Build and Publish Add-on Products on SAP BTP, ABAP Environment
 
-!!! caution Current limitations
-    Please use the long commit ID in the commit ID field in the add-on descriptor file currently, if you are using the short commit ID the build process will fail.
-    To retrieve the long commit id, go into the Manage Software Components app, navigate to the branch, select the commit in the list of commits, field "Long Commit ID" becomes available.
-    This issue is planned to be resolved ABAP Environment release 2105.
+!!! caution "Current limitations"
+
+      - [2102 only] TABU entries are currently not reflected in the object list during add-on build. With ABAP Environment release 2105 this will be supported.
+      - [2102 only] Using the short commit id in the add-on descriptor file does not work currently. Retrieve the long commit id instead by navigating to the branch in the Manage Software Components app, and selecting the commit in the list of commits.
+        This issue will be resolved with ABAP Environment release 2105.
+      - gCTS-related restrictions apply, please refer to [gCTS: restrictions in supported object types](https://launchpad.support.sap.com/#/notes/2888887)
 
 ## Introduction
 
@@ -73,7 +75,7 @@ The assembly system should be of [service type abap](https://help.sap.com/viewer
 
 #### Add-on Assembly Kit as a Service (=AAKaaS)
 
-The Add-on Assembly Kit as a Service is responsible for registering and publishing the add-on product. It is accessible via APIs with an S-User.
+The Add-on Assembly Kit as a Service is responsible for registering and publishing the add-on product. It is accessible via APIs with a technical communication user.
 
 ### Deployment Tools
 

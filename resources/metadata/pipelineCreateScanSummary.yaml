@@ -23,3 +23,10 @@ spec:
           - STEPS
         type: string
         default: scanSummary.md
+      - name: pipelineLink
+        description: Link to the pipeline (e.g. Jenkins job url) for reference in the scan summary.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
