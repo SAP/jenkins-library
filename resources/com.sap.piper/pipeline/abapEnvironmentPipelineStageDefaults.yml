@@ -24,6 +24,14 @@ stages:
 
   'Integration Tests':
     ordinal: 60
+    ordinal: 20
+    cfService: 'abap'
+    cfServicePlan: 'saas_oem'
+    abapSystemIsDevelopmentAllowed: 'false'
+    abapSystemSizeOfPersistence: 4
+    abapSystemSizeOfRuntime: 1
+    confirmDeletion: 'true'
+    includeAddon: 'true'
 
   Confirm:
     ordinal: 70
