@@ -181,7 +181,7 @@ func TestAddBuildToolDefaults(t *testing.T) {
 		}
 		err := testConfig.addBuildToolDefaults(&whitesourceConfig, utilsMock)
 		assert.NoError(t, err)
-		assert.Contains(t, ConfigOptions{{Name: "includes", Value: "**/*.d **/*.di"}}, testConfig)
+		assert.Contains(t, testConfig, ConfigOptions{Name: "includes", Value: "**/*.d **/*.di"})
 	})
 
 	t.Run("error case", func(t *testing.T) {
