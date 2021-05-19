@@ -6,7 +6,7 @@
 
 ## Administering the Transport Request ID by Git Commit Messages
 
-The tranport request ID identifies a container in the ABAP development system that can be used to document and transport changes within the landscape.
+The transport request ID identifies a container in the ABAP development system that can be used to document and transport changes within the landscape.
 If artifacts created by a pipeline are to be loaded into such a container, then the transport request ID must be provided in an upload step. See [transportRequestUploadSOLMAN](transportRequestUploadSOLMAN.md).
 
 `transportRequestReqIDFromGit` allows to retrieve the ID from a commit message of the Git repository of the project. This allows the developer to address the transport request without having to change the setup of the pipeline.
