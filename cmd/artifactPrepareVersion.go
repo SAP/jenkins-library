@@ -142,6 +142,7 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 		return err
 	}
 	gitCommitID := gitCommit.String()
+
 	commonPipelineEnvironment.git.headCommitID = gitCommitID
 	newVersion := version
 
