@@ -1,23 +1,11 @@
 stages:
   Init: {}
   Initial Checks: {}
-  Prepare System:
-    cfService: 'abap'
-    cfServicePlan: 'standard'
-    abapSystemIsDevelopmentAllowed: 'false'
-    abapSystemSizeOfPersistence: 4
-    abapSystemSizeOfRuntime: 1
+  Prepare System: {}
   Clone Repositories: {}
   ATC: {}
   Build: {}
-  Integration Tests:
-    cfService: 'abap'
-    cfServicePlan: 'standard'
-    abapSystemIsDevelopmentAllowed: 'false'
-    abapSystemSizeOfPersistence: 4
-    abapSystemSizeOfRuntime: 1
-    includeAddon: true
-    confirmDeletion: true
+  Integration Tests: {}
   Confirm: {}
   Publish: {}
   Post: {}

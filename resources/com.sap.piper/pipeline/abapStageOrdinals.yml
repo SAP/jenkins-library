@@ -7,6 +7,11 @@ stages:
 
   'Prepare System':
     ordinal: 20
+    cfService: 'abap'
+    cfServicePlan: 'standard'
+    abapSystemIsDevelopmentAllowed: 'false'
+    abapSystemSizeOfPersistence: 4
+    abapSystemSizeOfRuntime: 1
 
   'Clone Repositories':
     ordinal: 30
