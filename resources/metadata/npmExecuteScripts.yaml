@@ -74,6 +74,41 @@ spec:
           - STAGES
           - PARAMETERS
         default: false
+      - name: publish
+        type: bool
+        description: Configures npm to publish the artifact to a repository.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: repositoryPassword
+        type: string
+        description: Password for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This password will be updated in settings.xml . When no settings.xml is provided a new one is created corresponding with <servers> tag
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/repositoryPassword
+          - type: vaultSecretFile
+            paths:
+              - $(vaultPath)/repository-password
+              - $(vaultBasePath)/$(vaultPipelineName)/repository-password
+              - $(vaultBasePath)/GROUP-SECRETS/repository-password
+      - name: repositoryUser
+        type: string
+        description: User for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This user will be updated in settings.xml . When no settings.xml is provided a new one is created corresponding with <servers> tag
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/repositoryUsername
   containers:
     - name: node
       image: node:12-buster-slim
