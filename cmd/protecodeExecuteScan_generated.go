@@ -28,6 +28,7 @@ type protecodeExecuteScanOptions struct {
 	TimeoutMinutes              string `json:"timeoutMinutes,omitempty"`
 	ServerURL                   string `json:"serverUrl,omitempty"`
 	ReportFileName              string `json:"reportFileName,omitempty"`
+	ScanResultFileName          string `json:"scanResultFileName,omitempty"`
 	FetchURL                    string `json:"fetchUrl,omitempty"`
 	Group                       string `json:"group,omitempty"`
 	VerifyOnly                  bool   `json:"verifyOnly,omitempty"`
@@ -180,6 +181,7 @@ func addProtecodeExecuteScanFlags(cmd *cobra.Command, stepConfig *protecodeExecu
 	cmd.Flags().StringVar(&stepConfig.TimeoutMinutes, "timeoutMinutes", `60`, "The timeout to wait for the scan to finish")
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "The URL to the Protecode backend")
 	cmd.Flags().StringVar(&stepConfig.ReportFileName, "reportFileName", `protecode_report.pdf`, "The file name of the report to be created")
+	cmd.Flags().StringVar(&stepConfig.ScanResultFileName, "scanResultFileName", `protecodescan_vulns.json`, "The file name of the scan result json file to be created")
 	cmd.Flags().StringVar(&stepConfig.FetchURL, "fetchUrl", os.Getenv("PIPER_fetchUrl"), "The URL to fetch the file or image to scan with Protecode.")
 	cmd.Flags().StringVar(&stepConfig.Group, "group", os.Getenv("PIPER_group"), "The Protecode group ID of your team")
 	cmd.Flags().BoolVar(&stepConfig.VerifyOnly, "verifyOnly", false, "Whether the step shall only apply verification checks or whether it does a full scan and check cycle")
@@ -308,6 +310,14 @@ func protecodeExecuteScanMetadata() config.StepData {
 					},
 					{
 						Name:        "reportFileName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "scanResultFileName",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",

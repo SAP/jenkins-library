@@ -25,7 +25,6 @@ import (
 
 const (
 	webReportPath  = "%s/products/%v/"
-	scanResultFile = "protecodescan_vulns.json"
 	stepResultFile = "protecodeExecuteScan.json"
 )
 
@@ -155,7 +154,7 @@ func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.P
 	result := client.PollForResult(productID, config.TimeoutMinutes)
 	// write results to file
 	jsonData, _ := json.Marshal(result)
-	ioutil.WriteFile(filepath.Join(reportPath, scanResultFile), jsonData, 0644)
+	ioutil.WriteFile(filepath.Join(reportPath, config.ScanResultFileName), jsonData, 0644)
 
 	//check if result is ok else notify
 	if protecode.HasFailed(result) {
@@ -198,7 +197,7 @@ func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.P
 	reports := []StepResults.Path{
 		{Target: config.ReportFileName, Mandatory: true},
 		{Target: stepResultFile, Mandatory: true},
-		{Target: scanResultFile, Mandatory: true},
+		{Target: config.ScanResultFileName, Mandatory: true},
 	}
 	// write links JSON
 	links := []StepResults.Path{
