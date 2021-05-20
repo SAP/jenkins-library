@@ -78,7 +78,6 @@ The following data will be sent to the endpoint if activated:
 * ErrorCode
 * ErrorCategory
 * CorrelationID (not hashed)
-* CommitId
 * CommitHash (Head commit hash of current build.)
 * Branch
 * GitOwner
@@ -136,7 +135,6 @@ If you encounter an error in a step that created `5k` log messages, piper will s
     "ErrorCode": "1",
     "ErrorCategory": "undefined",
     "CorrelationID": "https://example-jaasinstance.corp/job/myApp/job/microservice1/job/master/10/",
-    "CommitId": "578926132492j109nd1jdj0912j09129",
     "CommitHash": "961ed5cd98fb1e37415a91b46a5b9bdcef81b002",
     "Branch": "master",
     "GitOwner": "piper",

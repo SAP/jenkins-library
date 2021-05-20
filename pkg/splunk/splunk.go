@@ -114,7 +114,6 @@ type MonitoringData struct {
 	ErrorCode       string `json:"ErrorCode,omitempty"`
 	ErrorCategory   string `json:"ErrorCategory,omitempty"`
 	CorrelationID   string `json:"CorrelationID,omitempty"`
-	CommitId        string `json:"CommitId,omitempty"`
 	CommitHash      string `json:"CommitHash,omitempty"`
 	Branch          string `json:"Branch,omitempty"`
 	GitOwner        string `json:"GitOwner,omitempty"`
@@ -134,7 +133,6 @@ func prepareTelemetry(customTelemetryData telemetry.CustomData) MonitoringData {
 		ErrorCode:       tData.CustomData.ErrorCode,
 		ErrorCategory:   tData.CustomData.ErrorCategory,
 		CorrelationID:   SplunkClient.correlationID,
-		CommitId:        readCommonPipelineEnvironment("git/commitId"),
 		CommitHash:      readCommonPipelineEnvironment("git/headCommitId"),
 		Branch:          readCommonPipelineEnvironment("git/branch"),
 		GitOwner:        readCommonPipelineEnvironment("github/owner"),
@@ -175,7 +173,7 @@ func tryPostMessages(telemetryData MonitoringData, messages []log.Message) error
 	resp, err := SplunkClient.splunkClient.SendRequest(http.MethodPost, SplunkClient.splunkDsn, bytes.NewBuffer(payload), nil, nil)
 
 	if err != nil {
-		return errors.Wrap(err, "error sending the requets to Splunk")
+		return errors.Wrap(err, "error sending the requests to Splunk")
 	}
 
 	defer func() {
