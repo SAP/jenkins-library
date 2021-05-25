@@ -161,7 +161,6 @@ spec:
         default: false
         aliases:
           - name: maven/publish
-          
   containers:
     - name: mvn
       image: maven:3.6-jdk-8

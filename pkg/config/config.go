@@ -23,7 +23,7 @@ type Config struct {
 	General          map[string]interface{}            `json:"general"`
 	Stages           map[string]map[string]interface{} `json:"stages"`
 	Steps            map[string]map[string]interface{} `json:"steps"`
-	Hooks            *json.RawMessage                  `json:"hooks,omitempty"`
+	Hooks            map[string]interface{}            `json:"hooks,omitempty"`
 	defaults         PipelineDefaults
 	initialized      bool
 	openFile         func(s string) (io.ReadCloser, error)
@@ -33,7 +33,7 @@ type Config struct {
 // StepConfig defines the structure for merged step configuration
 type StepConfig struct {
 	Config     map[string]interface{}
-	HookConfig *json.RawMessage
+	HookConfig map[string]interface{}
 }
 
 // ReadConfig loads config and returns its content
@@ -189,11 +189,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		stepConfig.mixIn(def.Steps[stepName], filters.Steps)
 		stepConfig.mixIn(def.Stages[stageName], filters.Steps)
 		stepConfig.mixinVaultConfig(def.General, def.Steps[stepName], def.Stages[stageName])
-
-		// process hook configuration - this is only supported via defaults
-		if stepConfig.HookConfig == nil {
-			stepConfig.HookConfig = def.Hooks
-		}
+		stepConfig.mixInHookConfig(def.Hooks)
 	}
 
 	// read config & merge - general -> steps -> stages
@@ -341,6 +337,15 @@ func (s *StepConfig) mixIn(mergeData map[string]interface{}, filter []string) {
 	}
 
 	s.Config = merge(s.Config, filterMap(mergeData, filter))
+}
+
+func (s *StepConfig) mixInHookConfig(mergeData map[string]interface{}) {
+
+	if s.HookConfig == nil {
+		s.HookConfig = map[string]interface{}{}
+	}
+
+	s.HookConfig = merge(s.HookConfig, mergeData)
 }
 
 func (s *StepConfig) mixInStepDefaults(stepParams []StepParameters) {
