@@ -46,7 +46,7 @@ func UpdateCredential(credentialsManager CredentialsManager, domain string, cred
 
 	secretID := idField.String()
 	if secretID == "" {
-		return errors.New("Secret ID should not be empty")
+		return errors.New("secret ID should not be empty")
 	}
 
 	return credentialsManager.Update(context.Background(), domain, secretID, credential)

@@ -36,7 +36,7 @@ func TriggerJob(jenkins Jenkins, jobName string, parameters map[string]string) (
 	if queueID == 0 {
 		// handle rare error case where queueID is not set
 		// see https://github.com/bndr/gojenkins/issues/205
-		return nil, fmt.Errorf("Unable to queue build")
+		return nil, fmt.Errorf("unable to queue build")
 	}
 	// get task
 	return jenkins.GetQueueItem(queueID)

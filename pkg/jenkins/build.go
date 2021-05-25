@@ -27,12 +27,12 @@ func WaitForBuildToFinish(build Build, pollInterval time.Duration) {
 // Fails if build is running or no artifact is with the given name is found.
 func FetchBuildArtifact(build Build, fileName string) (Artifact, error) {
 	if build.IsRunning() {
-		return &ArtifactImpl{}, errors.New("Failed to fetch artifact: Job is still running")
+		return &ArtifactImpl{}, errors.New("failed to fetch artifact: Job is still running")
 	}
 	for _, artifact := range build.GetArtifacts() {
 		if artifact.FileName == fileName {
 			return &ArtifactImpl{artifact: artifact}, nil
 		}
 	}
-	return &ArtifactImpl{}, fmt.Errorf("Failed to fetch artifact: Artifact '%s' not found", fileName)
+	return &ArtifactImpl{}, fmt.Errorf("failed to fetch artifact: Artifact '%s' not found", fileName)
 }
