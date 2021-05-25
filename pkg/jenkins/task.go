@@ -1,6 +1,7 @@
 package jenkins
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -22,7 +23,7 @@ type TaskImpl struct {
 
 // Poll refers to the gojenkins.Task.Poll function.
 func (t *TaskImpl) Poll() (int, error) {
-	return t.Task.Poll()
+	return t.Task.Poll(context.Background())
 }
 
 // HasStarted checks if the wrapped gojenkins.Task has started by checking the assigned executable URL.

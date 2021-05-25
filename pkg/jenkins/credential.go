@@ -1,6 +1,7 @@
 package jenkins
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"reflect"
@@ -21,8 +22,9 @@ type SSHCredentials = gojenkins.SSHCredentials
 type DockerServerCredentials = gojenkins.DockerServerCredentials
 
 // CredentialsManager is utility to control credential plugin
+// mock generated with: mockery --name CredentialsManager --dir pkg/jenkins --output pkg/jenkins/mocks
 type CredentialsManager interface {
-	Update(string, string, interface{}) error
+	Update(context.Context, string, string, interface{}) error
 }
 
 // NewCredentialsManager returns a new CredentialManager
@@ -47,5 +49,5 @@ func UpdateCredential(credentialsManager CredentialsManager, domain string, cred
 		return errors.New("Secret ID should not be empty")
 	}
 
-	return credentialsManager.Update(domain, secretID, credential)
+	return credentialsManager.Update(context.Background(), domain, secretID, credential)
 }

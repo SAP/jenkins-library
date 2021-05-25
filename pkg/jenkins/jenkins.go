@@ -1,6 +1,7 @@
 package jenkins
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strings"
@@ -17,10 +18,10 @@ type Jenkins interface {
 }
 
 // Instance connects to a Jenkins instance and returns a handler.
-func Instance(client *http.Client, jenkinsURL, user, token string) (*gojenkins.Jenkins, error) {
+func Instance(client *http.Client, jenkinsURL, user, token string, ctx context.Context) (*gojenkins.Jenkins, error) {
 	return gojenkins.
 		CreateJenkins(client, jenkinsURL, user, token).
-		Init()
+		Init(ctx)
 }
 
 // TriggerJob starts a build for a given job name.
