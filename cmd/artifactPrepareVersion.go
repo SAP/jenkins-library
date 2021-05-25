@@ -145,6 +145,7 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 	}
 	gitCommitID := gitCommit.String()
 
+	commonPipelineEnvironment.git.headCommitID = gitCommitID
 	newVersion := version
 
 	if versioningType == "cloud" || versioningType == "cloud_noTag" {
@@ -200,7 +201,7 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 
 	log.Entry().Infof("New version: '%v'", newVersion)
 
-	commonPipelineEnvironment.git.commitID = gitCommitID
+	commonPipelineEnvironment.git.commitID = gitCommitID // this commitID changes and is not necessarily the HEAD commitID
 	commonPipelineEnvironment.artifactVersion = newVersion
 	commonPipelineEnvironment.originalArtifactVersion = version
 	commonPipelineEnvironment.git.commitMessage = gitCommitMessage
