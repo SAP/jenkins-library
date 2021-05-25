@@ -22,7 +22,7 @@ type mavenBuildOptions struct {
 	M2Path                          string   `json:"m2Path,omitempty"`
 	LogSuccessfulMavenTransfers     bool     `json:"logSuccessfulMavenTransfers,omitempty"`
 	CreateBOM                       bool     `json:"createBOM,omitempty"`
-	AltDeploymentRepositoryPassowrd string   `json:"altDeploymentRepositoryPassowrd,omitempty"`
+	AltDeploymentRepositoryPassword string   `json:"altDeploymentRepositoryPassword,omitempty"`
 	AltDeploymentRepositoryUser     string   `json:"altDeploymentRepositoryUser,omitempty"`
 	AltDeploymentRepositoryURL      string   `json:"altDeploymentRepositoryUrl,omitempty"`
 	AltDeploymentRepositoryID       string   `json:"altDeploymentRepositoryID,omitempty"`
@@ -58,7 +58,7 @@ supports ci friendly versioning by flattening the pom before installing.`,
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
-			log.RegisterSecret(stepConfig.AltDeploymentRepositoryPassowrd)
+			log.RegisterSecret(stepConfig.AltDeploymentRepositoryPassword)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -98,7 +98,7 @@ func addMavenBuildFlags(cmd *cobra.Command, stepConfig *mavenBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
 	cmd.Flags().BoolVar(&stepConfig.LogSuccessfulMavenTransfers, "logSuccessfulMavenTransfers", false, "Configures maven to log successful downloads. This is set to `false` by default to reduce the noise in build logs.")
 	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Creates the bill of materials (BOM) using CycloneDX Maven plugin.")
-	cmd.Flags().StringVar(&stepConfig.AltDeploymentRepositoryPassowrd, "altDeploymentRepositoryPassowrd", os.Getenv("PIPER_altDeploymentRepositoryPassowrd"), "Password for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This password will be updated in settings.xml . When no settings.xml is provided a new one is created corresponding with <servers> tag")
+	cmd.Flags().StringVar(&stepConfig.AltDeploymentRepositoryPassword, "altDeploymentRepositoryPassword", os.Getenv("PIPER_altDeploymentRepositoryPassword"), "Password for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This password will be updated in settings.xml . When no settings.xml is provided a new one is created corresponding with <servers> tag")
 	cmd.Flags().StringVar(&stepConfig.AltDeploymentRepositoryUser, "altDeploymentRepositoryUser", os.Getenv("PIPER_altDeploymentRepositoryUser"), "User for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This user will be updated in settings.xml . When no settings.xml is provided a new one is created corresponding with <servers> tag")
 	cmd.Flags().StringVar(&stepConfig.AltDeploymentRepositoryURL, "altDeploymentRepositoryUrl", os.Getenv("PIPER_altDeploymentRepositoryUrl"), "Url for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This Url will be updated in settings.xml . When no settings.xml is provided a new one is created corresponding with <servers> tag")
 	cmd.Flags().StringVar(&stepConfig.AltDeploymentRepositoryID, "altDeploymentRepositoryID", os.Getenv("PIPER_altDeploymentRepositoryID"), "Id for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This id will be updated in settings.xml and will be used as a flag with DaltDeploymentRepository along with mavenAltDeploymentRepositoryUrl during maven deploy . When no settings.xml is provided a new one is created corresponding with <servers> tag")
@@ -188,7 +188,7 @@ func mavenBuildMetadata() config.StepData {
 						Aliases:     []config.Alias{{Name: "maven/createBOM"}},
 					},
 					{
-						Name: "altDeploymentRepositoryPassowrd",
+						Name: "altDeploymentRepositoryPassword",
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "commonPipelineEnvironment",
@@ -196,7 +196,7 @@ func mavenBuildMetadata() config.StepData {
 							},
 
 							{
-								Name: "altDeploymentRepositoryPassowrdId",
+								Name: "altDeploymentRepositoryPasswordId",
 								Type: "secret",
 							},
 

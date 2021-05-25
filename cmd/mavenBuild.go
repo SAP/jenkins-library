@@ -87,8 +87,8 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 			runner := &command.Command{}
 			fileUtils := &piperutils.Files{}
 
-			if (len(config.AltDeploymentRepositoryID) > 0) && (len(config.AltDeploymentRepositoryPassowrd) > 0) && (len(config.AltDeploymentRepositoryUser) > 0) {
-				projectSettingsFilePath, err := createOrUpdateProjectSettingsXML(config.ProjectSettingsFile, config.AltDeploymentRepositoryID, config.AltDeploymentRepositoryUser, config.AltDeploymentRepositoryPassowrd, utils)
+			if (len(config.AltDeploymentRepositoryID) > 0) && (len(config.AltDeploymentRepositoryPassword) > 0) && (len(config.AltDeploymentRepositoryUser) > 0) {
+				projectSettingsFilePath, err := createOrUpdateProjectSettingsXML(config.ProjectSettingsFile, config.AltDeploymentRepositoryID, config.AltDeploymentRepositoryUser, config.AltDeploymentRepositoryPassword, utils)
 				if err != nil {
 					return errors.Wrap(err, "Could not create or update project settings xml")
 				}

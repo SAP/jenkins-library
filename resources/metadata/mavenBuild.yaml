@@ -10,6 +10,10 @@ metadata:
     supports ci friendly versioning by flattening the pom before installing.
 spec:
   inputs:
+    secrets:
+      - name: altDeploymentRepositoryPasswordId
+        description: Jenkins credentials ID containing the artifact deployment repository password.
+        type: jenkins
     params:
       - name: pomPath
         type: string
@@ -88,7 +92,7 @@ spec:
         default: false
         aliases:
           - name: maven/createBOM
-      - name: altDeploymentRepositoryPassowrd
+      - name: altDeploymentRepositoryPassword
         type: string
         description: Password for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This password will be updated in settings.xml . When no settings.xml is provided a new one is created corresponding with <servers> tag
         scope:
@@ -100,7 +104,7 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/repositoryPassword
-          - name: altDeploymentRepositoryPassowrdId
+          - name: altDeploymentRepositoryPasswordId
             type: secret
           - type: vaultSecretFile
             paths:
