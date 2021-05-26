@@ -17,18 +17,18 @@ type Jenkins interface {
 }
 
 // Instance connects to a Jenkins instance and returns a handler.
-func Instance(client *http.Client, jenkinsURL, user, token string, ctx context.Context) (*gojenkins.Jenkins, error) {
+func Instance(ctx context.Context, client *http.Client, jenkinsURL, user, token string) (*gojenkins.Jenkins, error) {
 	return gojenkins.
 		CreateJenkins(client, jenkinsURL, user, token).
 		Init(ctx)
 }
 
 // TriggerJob starts a build for a given job name.
-func TriggerJob(jenkins Jenkins, jobName string, parameters map[string]string) (*gojenkins.Build, error) {
+func TriggerJob(ctx context.Context, jenkins Jenkins, jobName string, parameters map[string]string) (*gojenkins.Build, error) {
 	// get job id
 	jobID := strings.ReplaceAll(jobName, "/", "/job/")
 	// start job
-	queueID, startBuildErr := jenkins.BuildJob(context.Background(), jobID, parameters)
+	queueID, startBuildErr := jenkins.BuildJob(ctx, jobID, parameters)
 	if startBuildErr != nil {
 		return nil, startBuildErr
 	}
@@ -40,5 +40,5 @@ func TriggerJob(jenkins Jenkins, jobName string, parameters map[string]string) (
 	}
 
 	// get build
-	return jenkins.GetBuildFromQueueID(context.Background(), queueID)
+	return jenkins.GetBuildFromQueueID(ctx, queueID)
 }

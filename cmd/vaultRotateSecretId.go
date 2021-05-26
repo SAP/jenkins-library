@@ -102,14 +102,15 @@ func runVaultRotateSecretID(utils vaultRotateSecretIDUtils) error {
 func writeVaultSecretIDToStore(config *vaultRotateSecretIdOptions, secretID string) error {
 	switch config.SecretStore {
 	case "jenkins":
-		instance, err := jenkins.Instance(&http.Client{}, config.JenkinsURL, config.JenkinsUsername, config.JenkinsToken, context.Background())
+		ctx := context.Background()
+		instance, err := jenkins.Instance(ctx, &http.Client{}, config.JenkinsURL, config.JenkinsUsername, config.JenkinsToken)
 		if err != nil {
 			log.Entry().Warn("Could not write secret ID back to jenkins")
 			return err
 		}
 		credManager := jenkins.NewCredentialsManager(instance)
 		credential := jenkins.StringCredentials{ID: config.VaultAppRoleSecretTokenCredentialsID, Secret: secretID}
-		return jenkins.UpdateCredential(credManager, config.JenkinsCredentialDomain, credential)
+		return jenkins.UpdateCredential(ctx, credManager, config.JenkinsCredentialDomain, credential)
 	}
 	return nil
 }

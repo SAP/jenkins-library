@@ -33,7 +33,7 @@ func NewCredentialsManager(jenkins *gojenkins.Jenkins) CredentialsManager {
 }
 
 // UpdateCredential overwrites an existing credential
-func UpdateCredential(credentialsManager CredentialsManager, domain string, credential interface{}) error {
+func UpdateCredential(ctx context.Context, credentialsManager CredentialsManager, domain string, credential interface{}) error {
 	credValue := reflect.ValueOf(credential)
 	if credValue.Kind() != reflect.Struct {
 		return fmt.Errorf("'credential' parameter is supposed to be a Credentials struct not '%s'", credValue.Type())
@@ -49,5 +49,5 @@ func UpdateCredential(credentialsManager CredentialsManager, domain string, cred
 		return errors.New("secret ID should not be empty")
 	}
 
-	return credentialsManager.Update(context.Background(), domain, secretID, credential)
+	return credentialsManager.Update(ctx, domain, secretID, credential)
 }
