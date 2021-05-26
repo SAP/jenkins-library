@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"net/http"
 	"time"
 
@@ -101,7 +102,7 @@ func runVaultRotateSecretID(utils vaultRotateSecretIDUtils) error {
 func writeVaultSecretIDToStore(config *vaultRotateSecretIdOptions, secretID string) error {
 	switch config.SecretStore {
 	case "jenkins":
-		instance, err := jenkins.Instance(&http.Client{}, config.JenkinsURL, config.JenkinsUsername, config.JenkinsToken)
+		instance, err := jenkins.Instance(&http.Client{}, config.JenkinsURL, config.JenkinsUsername, config.JenkinsToken, context.Background())
 		if err != nil {
 			log.Entry().Warn("Could not write secret ID back to jenkins")
 			return err
