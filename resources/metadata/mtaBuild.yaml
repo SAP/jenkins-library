@@ -48,6 +48,22 @@ spec:
           - STEPS
         mandatory: false
         default:
+      - name: source
+        type: string
+        description: "The path to the MTA project."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+      - name: target
+        type: string
+        description: "The folder for the generated `MTAR` file. If the parameter has been provided, the `MTAR` file is saved in the root of the folder provided by the argument."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
       - name: defaultNpmRegistry
         type: string
         description: "Url to the npm registry that should be used for installing npm dependencies."
