@@ -429,9 +429,9 @@ private List getInitContainerList(config){
     def initContainerSpecList = []
     if (config.initContainerImage && config.containerMountPath) {
         // regex [\W_] matches any non-word character equivalent to [^a-zA-Z0-9_]
-        def initContainerName = config.initContainerImage.replaceAll(/[\W_]/,"-" )
+        def initContainerName = config.initContainerImage.toLowerCase().replaceAll(/[\W_]/,"-" )
         def initContainerSpec = [
-            name           : initContainerName.toLowerCase(),
+            name           : initContainerName,
             image          : config.initContainerImage
             ]
         if (config.containerMountPath) {
