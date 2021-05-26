@@ -199,7 +199,7 @@ import hudson.AbortException
      */
     'containerMountPath',
      /**
-     * The DockerImage to run as initContainer.
+     * The docker image to run as initContainer.
      */
     'initContainerImage',
     /**

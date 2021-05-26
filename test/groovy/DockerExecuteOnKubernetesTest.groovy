@@ -842,7 +842,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         assertTrue(bodyExecuted)
         assertEquals("ppiper-cf-cli-sha256-latest", initContainer.name)
         assertEquals("ppiper/cf-cli@sha256:latest", initContainer.image)
-        assertTrue(initContainer.command.containsAll(expectedCommandOutput))
+        assertThat(initContainer.command, is(equalTo(expectedCommandOutput)))
     }
 
     @Test
@@ -858,7 +858,7 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         def initContainer = podSpec.spec.initContainers[0]
         def expectedCommandOutput = ["/usr/bin/tail", "-f", "/dev/null"]
         assertTrue(bodyExecuted)
-        assertTrue(initContainer.command.containsAll(expectedCommandOutput))
+        assertThat(initContainer.command, is(equalTo(expectedCommandOutput)))
     }
 
     private container(options, body) {
