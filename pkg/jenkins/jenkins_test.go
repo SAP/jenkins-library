@@ -13,6 +13,7 @@ import (
 )
 
 func TestTriggerJob(t *testing.T) {
+	ctx := context.Background()
 	jobName := "ContinuousDelivery/piper-library"
 	jobID := strings.ReplaceAll(jobName, "/", "/job/")
 	jobParameters := map[string]string{}
@@ -22,10 +23,10 @@ func TestTriggerJob(t *testing.T) {
 		queueID := int64(0)
 		jenkins := &mocks.Jenkins{}
 		jenkins.
-			On("BuildJob", context.Background(), jobID, map[string]string{}).
+			On("BuildJob", ctx, jobID, map[string]string{}).
 			Return(queueID, fmt.Errorf(mock.Anything))
 		// test
-		build, err := TriggerJob(jenkins, jobName, jobParameters)
+		build, err := TriggerJob(ctx, jenkins, jobName, jobParameters)
 		// asserts
 		jenkins.AssertExpectations(t)
 		assert.EqualError(t, err, mock.Anything)
@@ -36,10 +37,10 @@ func TestTriggerJob(t *testing.T) {
 		queueID := int64(0)
 		jenkins := &mocks.Jenkins{}
 		jenkins.
-			On("BuildJob", context.Background(), jobID, map[string]string{}).
+			On("BuildJob", ctx, jobID, map[string]string{}).
 			Return(queueID, nil)
 		// test
-		build, err := TriggerJob(jenkins, jobName, jobParameters)
+		build, err := TriggerJob(ctx, jenkins, jobName, jobParameters)
 		// asserts
 		jenkins.AssertExpectations(t)
 		assert.EqualError(t, err, "unable to queue build")
@@ -51,12 +52,12 @@ func TestTriggerJob(t *testing.T) {
 		jenkins := &mocks.Jenkins{}
 		jenkins.Test(t)
 		jenkins.
-			On("BuildJob", context.Background(), jobID, map[string]string{}).
+			On("BuildJob", ctx, jobID, map[string]string{}).
 			Return(queueID, nil).
-			On("GetBuildFromQueueID", context.Background(), queueID).
+			On("GetBuildFromQueueID", ctx, queueID).
 			Return(nil, fmt.Errorf(mock.Anything))
 		// test
-		build, err := TriggerJob(jenkins, jobName, jobParameters)
+		build, err := TriggerJob(ctx, jenkins, jobName, jobParameters)
 		// asserts
 		jenkins.AssertExpectations(t)
 		assert.EqualError(t, err, mock.Anything)
@@ -68,12 +69,12 @@ func TestTriggerJob(t *testing.T) {
 		jenkins := &mocks.Jenkins{}
 		jenkins.Test(t)
 		jenkins.
-			On("BuildJob", context.Background(), jobID, map[string]string{}).
+			On("BuildJob", ctx, jobID, map[string]string{}).
 			Return(queueID, nil).
-			On("GetBuildFromQueueID", context.Background(), queueID).
+			On("GetBuildFromQueueID", ctx, queueID).
 			Return(&gojenkins.Build{}, nil)
 		// test
-		build, err := TriggerJob(jenkins, jobName, jobParameters)
+		build, err := TriggerJob(ctx, jenkins, jobName, jobParameters)
 		// asserts
 		jenkins.AssertExpectations(t)
 		assert.NoError(t, err)
