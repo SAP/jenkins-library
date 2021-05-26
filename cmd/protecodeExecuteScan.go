@@ -274,7 +274,7 @@ func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productID int,
 		log.Entry().Debugf("Upload file path: %v", config.FilePath)
 		if len(config.FilePath) <= 0 {
 			//TODO: bubble up error
-			log.Entry().Fatalf("There is no file path configured for upload : %v", config.FilePath)
+			log.Entry().Fatalf("There is no file path configured for upload: %v", config.FilePath)
 		}
 		pathToFile := filepath.Join(config.FilePath, fileName)
 		if !(fileExists(pathToFile)) {
