@@ -161,7 +161,48 @@ class ContainerPushToRegistryTest extends BasePiperTest {
         assertThat(dockerMockPushes, hasItem('latest'))
     }
 
+    @Test
+    void testBuildImagePushArtifactVersion() throws Exception {
+        nullScript.globalPipelineEnvironment.setArtifactVersion('1.0.0')
+        def dockerBuildImage = new ContainerImageMock()
+        stepRule.step.containerPushToRegistry(
+            script: nullScript,
+            dockerRegistryUrl: 'https://testRegistry',
+            dockerCredentialsId: 'testCredentialsId',
+            dockerBuildImage: dockerBuildImage,
+            tagArtifactVersion: true
+        )
 
+        assertThat(dockerMock.targetRegistry.url, is('https://testRegistry'))
+        assertThat(dockerMock.targetRegistry.credentials, is('testCredentialsId'))
+        assertThat(dockerMock.sourceRegistry, is (null))
+        assertThat(dockerMock.image, is('test'))
+        assertThat(dockerMockPushes, hasItem('default'))
+        assertThat(dockerMockPushes, not(hasItem('latest')))
+        assertThat(dockerMockPushes, hasItem('1.0.0'))
+    }
+
+    @Test
+    void testBuildImagePushLatestAndArtifactVersion() throws Exception {
+        nullScript.globalPipelineEnvironment.setArtifactVersion('1.0.0')
+        def dockerBuildImage = new ContainerImageMock()
+        stepRule.step.containerPushToRegistry(
+            script: nullScript,
+            dockerRegistryUrl: 'https://testRegistry',
+            dockerCredentialsId: 'testCredentialsId',
+            dockerBuildImage: dockerBuildImage,
+            tagArtifactVersion: true,
+            tagLatest: true
+        )
+
+        assertThat(dockerMock.targetRegistry.url, is('https://testRegistry'))
+        assertThat(dockerMock.targetRegistry.credentials, is('testCredentialsId'))
+        assertThat(dockerMock.sourceRegistry, is (null))
+        assertThat(dockerMock.image, is('test'))
+        assertThat(dockerMockPushes, hasItem('default'))
+        assertThat(dockerMockPushes, hasItem('latest'))
+        assertThat(dockerMockPushes, hasItem('1.0.0'))
+    }
 
     @Test
     void testFromEnv() {
@@ -276,6 +317,48 @@ class ContainerPushToRegistryTest extends BasePiperTest {
 
         assertThat(shellCallRule.shell, hasItem('skopeo copy --src-tls-verify=false --dest-tls-verify=false --dest-creds=\'registryUser\':\'********\' docker://my.source.registry:44444/sourceImage:sourceTag docker://my.registry:55555/testImage:tag'))
         assertThat(shellCallRule.shell, hasItem('skopeo copy --src-tls-verify=false --dest-tls-verify=false --dest-creds=\'registryUser\':\'********\' docker://my.source.registry:44444/sourceImage:sourceTag docker://my.registry:55555/testImage:latest'))
+    }
+
+    @Test
+    void testKubernetesMoveTagArtifactVersion() {
+        nullScript.globalPipelineEnvironment.setArtifactVersion('1.0.0')
+        binding.setVariable('docker', null)
+        shellCallRule.setReturnValue('docker ps -q > /dev/null', 1)
+
+        stepRule.step.containerPushToRegistry(
+            script: nullScript,
+            dockerCredentialsId: 'testCredentialsId',
+            dockerImage: 'testImage:tag',
+            dockerRegistryUrl: 'https://my.registry:55555',
+            sourceImage: 'sourceImage:sourceTag',
+            sourceRegistryUrl: 'https://my.source.registry:44444',
+            tagArtifactVersion: true
+        )
+
+        assertThat(shellCallRule.shell, hasItem('skopeo copy --src-tls-verify=false --dest-tls-verify=false --dest-creds=\'registryUser\':\'********\' docker://my.source.registry:44444/sourceImage:sourceTag docker://my.registry:55555/testImage:tag'))
+        assertThat(shellCallRule.shell, hasItem('skopeo copy --src-tls-verify=false --dest-tls-verify=false --dest-creds=\'registryUser\':\'********\' docker://my.source.registry:44444/sourceImage:sourceTag docker://my.registry:55555/testImage:1.0.0'))
+    }
+
+    @Test
+    void testKubernetesMoveTagLatestAndArtifactVersion() {
+        nullScript.globalPipelineEnvironment.setArtifactVersion('1.0.0')
+        binding.setVariable('docker', null)
+        shellCallRule.setReturnValue('docker ps -q > /dev/null', 1)
+
+        stepRule.step.containerPushToRegistry(
+            script: nullScript,
+            dockerCredentialsId: 'testCredentialsId',
+            dockerImage: 'testImage:tag',
+            dockerRegistryUrl: 'https://my.registry:55555',
+            sourceImage: 'sourceImage:sourceTag',
+            sourceRegistryUrl: 'https://my.source.registry:44444',
+            tagLatest: true,
+            tagArtifactVersion: true
+        )
+
+        assertThat(shellCallRule.shell, hasItem('skopeo copy --src-tls-verify=false --dest-tls-verify=false --dest-creds=\'registryUser\':\'********\' docker://my.source.registry:44444/sourceImage:sourceTag docker://my.registry:55555/testImage:tag'))
+        assertThat(shellCallRule.shell, hasItem('skopeo copy --src-tls-verify=false --dest-tls-verify=false --dest-creds=\'registryUser\':\'********\' docker://my.source.registry:44444/sourceImage:sourceTag docker://my.registry:55555/testImage:latest'))
+        assertThat(shellCallRule.shell, hasItem('skopeo copy --src-tls-verify=false --dest-tls-verify=false --dest-creds=\'registryUser\':\'********\' docker://my.source.registry:44444/sourceImage:sourceTag docker://my.registry:55555/testImage:1.0.0'))
     }
 
     @Test
