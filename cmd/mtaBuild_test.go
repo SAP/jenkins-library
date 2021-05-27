@@ -176,6 +176,27 @@ func TestMarBuild(t *testing.T) {
 		assert.Equal(t, "myName.mtar", cpe.mtarFilePath)
 	})
 
+	t.Run("Mta build mbt toolset with custom source path", func(t *testing.T) {
+
+		utilsMock := newMtaBuildTestUtilsBundle()
+
+		cpe.mtarFilePath = ""
+
+		options := mtaBuildOptions{ApplicationName: "myApp", Platform: "CF", MtarName: "myName.mtar", Source: "mySourcePath/"}
+
+		utilsMock.AddFile("mySourcePath/package.json", []byte("{\"name\": \"myName\", \"version\": \"1.2.3\"}"))
+
+		err := runMtaBuild(options, &cpe, utilsMock)
+
+		assert.Nil(t, err)
+
+		if assert.Len(t, utilsMock.Calls, 1) {
+			assert.Equal(t, "mbt", utilsMock.Calls[0].Exec)
+			assert.Equal(t, []string{"build", "--mtar", "myName.mtar", "--platform", "CF", "--source", "mySourcePath/", "--target", "./"}, utilsMock.Calls[0].Params)
+		}
+		assert.Equal(t, "myName.mtar", cpe.mtarFilePath)
+	})
+
 	t.Run("M2Path related tests", func(t *testing.T) {
 		t.Run("Mta build mbt toolset with m2Path", func(t *testing.T) {
 
