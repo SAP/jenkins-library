@@ -184,7 +184,7 @@ func TestMarBuild(t *testing.T) {
 
 		options := mtaBuildOptions{ApplicationName: "myApp", Platform: "CF", MtarName: "myName.mtar", Source: "mySourcePath/"}
 
-		utilsMock.AddFile("mySourcePath/package.json", []byte("{\"name\": \"myName\", \"version\": \"1.2.3\"}"))
+		utilsMock.AddFile("/mySourcePath/package.json", []byte("{\"name\": \"myName\", \"version\": \"1.2.3\"}"))
 
 		err := runMtaBuild(options, &cpe, utilsMock)
 
