@@ -26,7 +26,6 @@ stages:
 
   'Integration Tests':
     ordinal: 60
-    ordinal: 20
     cfService: 'abap'
     cfServicePlan: 'saas_oem'
     abapSystemIsDevelopmentAllowed: 'false'
@@ -40,6 +39,7 @@ stages:
 
   Publish:
     ordinal: 80
+    targetVectorScope: 'P'
 
   Post:
     ordinal: 90
