@@ -5,7 +5,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/SAP/jenkins-library/pkg/transportrequest"
 	"github.com/SAP/jenkins-library/pkg/transportrequest/solman"
 )
 
@@ -59,17 +58,6 @@ func transportRequestUploadSOLMAN(config transportRequestUploadSOLMANOptions,
 	}
 }
 
-// mocking framework. Allows to redirect the containing methods
-type iTransportRequestUtils interface {
-	FindIDInRange(label, from, to string) (string, error)
-}
-type transportRequestUtils struct {
-}
-
-func (*transportRequestUtils) FindIDInRange(label, from, to string) (string, error) {
-	return transportrequest.FindIDInRange(label, from, to)
-}
-
 func runTransportRequestUploadSOLMAN(config *transportRequestUploadSOLMANOptions,
 	action solman.Action,
 	telemetryData *telemetry.CustomData,
@@ -82,52 +70,23 @@ func runTransportRequestUploadSOLMAN(config *transportRequestUploadSOLMANOptions
 		Password: config.Password,
 	})
 
-	cdID, err := getChangeDocumentID(config, &transportRequestUtils{})
-	if err != nil {
-		return err
-	}
-	action.WithChangeDocumentID(cdID)
-
-	trID, err := getTransportRequestID(config, &transportRequestUtils{})
-	if err != nil {
-		return err
-	}
-	action.WithTransportRequestID(trID)
+	action.WithTransportRequestID(config.TransportRequestID)
+	action.WithChangeDocumentID(config.ChangeDocumentID)
 	action.WithApplicationID(config.ApplicationID)
 	action.WithFile(config.FilePath)
 	action.WithCMOpts(config.CmClientOpts)
 
-	commonPipelineEnvironment.custom.changeDocumentID = cdID
-	commonPipelineEnvironment.custom.transportRequestID = trID
+	commonPipelineEnvironment.custom.transportRequestID = config.TransportRequestID
+	commonPipelineEnvironment.custom.changeDocumentID = config.ChangeDocumentID
 
-	err = action.Perform(utils, utils)
+	err := action.Perform(utils, utils)
 
 	if err == nil {
 		log.Entry().Infof("Upload of artifact '%s' to SAP Solution Manager succeeded (ChangeDocumentId: '%s', TransportRequestId: '%s').",
 			config.FilePath,
-			cdID,
-			trID,
+			config.ChangeDocumentID,
+			config.TransportRequestID,
 		)
 	}
 	return err
-}
-
-func getTransportRequestID(config *transportRequestUploadSOLMANOptions,
-	trUtils iTransportRequestUtils) (string, error) {
-
-	if len(config.TransportRequestID) > 0 {
-		return config.TransportRequestID, nil
-	}
-
-	return trUtils.FindIDInRange(config.TransportRequestLabel, config.GitFrom, config.GitTo)
-}
-
-func getChangeDocumentID(config *transportRequestUploadSOLMANOptions,
-	trUtils iTransportRequestUtils) (string, error) {
-
-	if len(config.ChangeDocumentID) > 0 {
-		return config.ChangeDocumentID, nil
-	}
-
-	return trUtils.FindIDInRange(config.ChangeDocumentLabel, config.GitFrom, config.GitTo)
 }

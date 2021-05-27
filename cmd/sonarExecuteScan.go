@@ -128,7 +128,7 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		if len(version) > 0 {
 			log.Entry().Infof("Using custom version: %v", version)
 		} else {
-			version = versioning.ApplyVersioningModel(config.VersioningModel, versioning.Coordinates{Version: config.Version})
+			version = versioning.ApplyVersioningModel(config.VersioningModel, config.Version)
 		}
 		sonar.addOption("sonar.projectVersion=" + version)
 	}

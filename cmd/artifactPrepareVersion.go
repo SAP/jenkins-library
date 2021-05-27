@@ -3,14 +3,15 @@ package cmd
 import (
 	"bytes"
 	"fmt"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"io"
 	netHttp "net/http"
 	"os"
 	"strings"
 	"text/template"
 	"time"
+
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	gitUtils "github.com/SAP/jenkins-library/pkg/git"
@@ -142,6 +143,7 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 	}
 	gitCommitID := gitCommit.String()
 
+	commonPipelineEnvironment.git.headCommitID = gitCommitID
 	newVersion := version
 
 	if versioningType == "cloud" || versioningType == "cloud_noTag" {
@@ -187,6 +189,9 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 			// commit changes and push to repository (including new version tag)
 			gitCommitID, err = pushChanges(config, newVersion, repository, worktree, now)
 			if err != nil {
+				if strings.Contains(fmt.Sprint(err), "reference already exists") {
+					log.SetErrorCategory(log.ErrorCustom)
+				}
 				return errors.Wrapf(err, "failed to push changes for version '%v'", newVersion)
 			}
 		}
@@ -194,7 +199,7 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 
 	log.Entry().Infof("New version: '%v'", newVersion)
 
-	commonPipelineEnvironment.git.commitID = gitCommitID
+	commonPipelineEnvironment.git.commitID = gitCommitID // this commitID changes and is not necessarily the HEAD commitID
 	commonPipelineEnvironment.artifactVersion = newVersion
 	commonPipelineEnvironment.originalArtifactVersion = version
 	commonPipelineEnvironment.git.commitMessage = gitCommitMessage

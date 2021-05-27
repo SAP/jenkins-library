@@ -26,6 +26,7 @@ func runKarma(config karmaExecuteTestsOptions, command command.ExecRunner) {
 		command.SetDir(module)
 		err := command.RunExecutable(installCommandTokens[0], installCommandTokens[1:]...)
 		if err != nil {
+			log.SetErrorCategory(log.ErrorCustom)
 			log.Entry().
 				WithError(err).
 				WithField("command", config.InstallCommand).
@@ -35,6 +36,7 @@ func runKarma(config karmaExecuteTestsOptions, command command.ExecRunner) {
 		command.SetDir(module)
 		err = command.RunExecutable(runCommandTokens[0], runCommandTokens[1:]...)
 		if err != nil {
+			log.SetErrorCategory(log.ErrorTest)
 			log.Entry().
 				WithError(err).
 				WithField("command", config.RunCommand).
