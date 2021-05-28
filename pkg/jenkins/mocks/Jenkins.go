@@ -15,23 +15,20 @@ type Jenkins struct {
 	mock.Mock
 }
 
-// BuildJob provides a mock function with given fields: ctx, name, options
-func (_m *Jenkins) BuildJob(ctx context.Context, name string, options ...interface{}) (int64, error) {
-	var _ca []interface{}
-	_ca = append(_ca, ctx, name)
-	_ca = append(_ca, options...)
-	ret := _m.Called(_ca...)
+// BuildJob provides a mock function with given fields: ctx, name, params
+func (_m *Jenkins) BuildJob(ctx context.Context, name string, params map[string]string) (int64, error) {
+	ret := _m.Called(ctx, name, params)
 
 	var r0 int64
-	if rf, ok := ret.Get(0).(func(context.Context, string, ...interface{}) int64); ok {
-		r0 = rf(ctx, name, options...)
+	if rf, ok := ret.Get(0).(func(context.Context, string, map[string]string) int64); ok {
+		r0 = rf(ctx, name, params)
 	} else {
 		r0 = ret.Get(0).(int64)
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, string, ...interface{}) error); ok {
-		r1 = rf(ctx, name, options...)
+	if rf, ok := ret.Get(1).(func(context.Context, string, map[string]string) error); ok {
+		r1 = rf(ctx, name, params)
 	} else {
 		r1 = ret.Error(1)
 	}
