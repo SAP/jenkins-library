@@ -12,6 +12,11 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+func TestInterfaceCompatibility(t *testing.T) {
+	var _ Jenkins = new(gojenkins.Jenkins)
+	var _ Build = new(gojenkins.Build)
+}
+
 func TestTriggerJob(t *testing.T) {
 	ctx := context.Background()
 	jobName := "ContinuousDelivery/piper-library"
