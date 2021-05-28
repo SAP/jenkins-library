@@ -132,7 +132,7 @@ void call(Map parameters = [:]) {
                         def latestImage = "${config.dockerImage.split(':')[0]}:latest"
                         dockerUtils.moveImage([image: config.sourceImage, registryUrl: config.sourceRegistryUrl], [image: latestImage, registryUrl: config.dockerRegistryUrl, credentialsId: config.dockerCredentialsId])
                     }
-                    if (config.tagLatest) {
+                    if (config.tagArtifactVersion) {
                         def imageName = "${config.dockerImage.split(':')[0]}:${config.artifactVersion}"
                         dockerUtils.moveImage([image: config.sourceImage, registryUrl: config.sourceRegistryUrl], [image: imageName, registryUrl: config.dockerRegistryUrl, credentialsId: config.dockerCredentialsId])
                     }
