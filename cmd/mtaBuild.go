@@ -185,9 +185,15 @@ func runMtaBuild(config mtaBuildOptions,
 		return err
 	}
 
-	call = append(call, "mbt", "build", "--mtar", mtarName, "--platform", platform.String(), "--source", config.Source, "--target", config.Target)
+	call = append(call, "mbt", "build", "--mtar", mtarName, "--platform", platform.String())
 	if len(config.Extensions) != 0 {
 		call = append(call, fmt.Sprintf("--extensions=%s", config.Extensions))
+	}
+	if config.Source != "" && config.Source != "./" {
+		call = append(call, "--source", config.Source)
+	}
+	if config.Target != "" && config.Target != "./" {
+		call = append(call, "--target", config.Target)
 	}
 
 	if err = addNpmBinToPath(utils); err != nil {
