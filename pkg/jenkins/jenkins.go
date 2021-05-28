@@ -12,7 +12,7 @@ import (
 // Jenkins is an interface to abstract gojenkins.Jenkins.
 // mock generated with: mockery --name Jenkins --dir pkg/jenkins --output pkg/jenkins/mocks
 type Jenkins interface {
-	BuildJob(ctx context.Context, name string, options ...interface{}) (int64, error)
+	BuildJob(ctx context.Context, name string, params map[string]string) (int64, error)
 	GetBuildFromQueueID(ctx context.Context, queueid int64) (*gojenkins.Build, error)
 }
 
