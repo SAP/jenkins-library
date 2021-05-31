@@ -28,21 +28,21 @@ spec:
     params:
       - name: installCommand
         type: string
-        description: "Defines the command for installing Gauge. Gauge should be installed to $HOME/bin/gauge. Example: curl -SsL https://downloads.gauge.org/stable | sh -s -- --location=$HOME/bin/gauge"
+        description: 'Defines the command for installing Gauge. Gauge should be installed using npm. Example: npm install -g @getgauge/cli@1.2.1'
         scope:
           - STEPS
           - STAGES
           - PARAMETERS
       - name: languageRunner
         type: string
-        description: "Defines the Gauge language runner to be used."
+        description: 'Defines the Gauge language runner to be used. Example: java'
         scope:
           - STEPS
           - STAGES
           - PARAMETERS
       - name: runCommand
         type: string
-        description: "Defines the command which is used for executing Gauge. Example: gauge run"
+        description: 'Defines the command which is used for executing Gauge. Example: run -s -p specs/'
         scope:
           - STEPS
           - STAGES

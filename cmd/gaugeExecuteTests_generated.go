@@ -124,9 +124,9 @@ You can use the [sample projects](https://github.com/getgauge/gauge-mvn-archetyp
 }
 
 func addGaugeExecuteTestsFlags(cmd *cobra.Command, stepConfig *gaugeExecuteTestsOptions) {
-	cmd.Flags().StringVar(&stepConfig.InstallCommand, "installCommand", os.Getenv("PIPER_installCommand"), "Defines the command for installing Gauge. Gauge should be installed to $HOME/bin/gauge. Example: curl -SsL https://downloads.gauge.org/stable | sh -s -- --location=$HOME/bin/gauge")
-	cmd.Flags().StringVar(&stepConfig.LanguageRunner, "languageRunner", os.Getenv("PIPER_languageRunner"), "Defines the Gauge language runner to be used.")
-	cmd.Flags().StringVar(&stepConfig.RunCommand, "runCommand", os.Getenv("PIPER_runCommand"), "Defines the command which is used for executing Gauge. Example: gauge run")
+	cmd.Flags().StringVar(&stepConfig.InstallCommand, "installCommand", os.Getenv("PIPER_installCommand"), "Defines the command for installing Gauge. Gauge should be installed using npm. Example: npm install -g @getgauge/cli@1.2.1")
+	cmd.Flags().StringVar(&stepConfig.LanguageRunner, "languageRunner", os.Getenv("PIPER_languageRunner"), "Defines the Gauge language runner to be used. Example: java")
+	cmd.Flags().StringVar(&stepConfig.RunCommand, "runCommand", os.Getenv("PIPER_runCommand"), "Defines the command which is used for executing Gauge. Example: run -s -p specs/")
 	cmd.Flags().StringVar(&stepConfig.TestOptions, "testOptions", os.Getenv("PIPER_testOptions"), "Allows to set specific options for the Gauge execution. Details can be found for example [in the Gauge Maven plugin documentation](https://github.com/getgauge-contrib/gauge-maven-plugin#executing-specs)")
 
 	cmd.MarkFlagRequired("runCommand")

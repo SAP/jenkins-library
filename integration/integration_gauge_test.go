@@ -15,6 +15,10 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 )
 
+const (
+	installCommand string = "npm install -g @getgauge/cli --prefix=~/.npm-global --unsafe-perm" //option --unsafe-perm need to install gauge in docker container. See this issue: https://github.com/getgauge/gauge/issues/1470
+)
+
 func runTest(t *testing.T, languageRunner string) {
 	ctx := context.Background()
 
@@ -35,8 +39,8 @@ func runTest(t *testing.T, languageRunner string) {
 	//workaround to use test script util it is possible to set workdir for Exec call
 	testScript := fmt.Sprintf(`#!/bin/sh
 cd /test
-/piperbin/piper gaugeExecuteTests --installCommand="curl -SsL https://downloads.gauge.org/stable | sh -s -- --location=$HOME/bin/gauge" --languageRunner=%v --runCommand="gauge run" >test-log.txt 2>&1
-`, languageRunner)
+/piperbin/piper gaugeExecuteTests --installCommand="%v" --languageRunner=%v --runCommand="run" >test-log.txt 2>&1
+`, installCommand, languageRunner)
 	ioutil.WriteFile(filepath.Join(tempDir, "runPiper.sh"), []byte(testScript), 0700)
 
 	reqNode := testcontainers.ContainerRequest{
