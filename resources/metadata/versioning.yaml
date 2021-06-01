@@ -270,6 +270,7 @@ spec:
           - name: artifactVersion
           - name: originalArtifactVersion
           - name: git/commitId
+          - name: git/headCommitId
           - name: git/commitMessage
   containers:
     - image: maven:3.6-jdk-8
