@@ -9,6 +9,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
@@ -24,6 +25,7 @@ type abapEnvironmentRunATCCheckOptions struct {
 	Password           string `json:"password,omitempty"`
 	Host               string `json:"host,omitempty"`
 	AtcResultsFileName string `json:"atcResultsFileName,omitempty"`
+	GenerateHTML       bool   `json:"generateHTML,omitempty"`
 }
 
 // AbapEnvironmentRunATCCheckCommand Runs an ATC Check
@@ -33,6 +35,7 @@ func AbapEnvironmentRunATCCheckCommand() *cobra.Command {
 	metadata := abapEnvironmentRunATCCheckMetadata()
 	var stepConfig abapEnvironmentRunATCCheckOptions
 	var startTime time.Time
+	var logCollector *log.CollectorHook
 
 	var createAbapEnvironmentRunATCCheckCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -67,6 +70,11 @@ Regardless of the option you chose, please make sure to provide the configuratio
 				log.RegisterHook(&sentryHook)
 			}
 
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
+				log.RegisterHook(logCollector)
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -77,10 +85,20 @@ Regardless of the option you chose, please make sure to provide the configuratio
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
+				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunk.Send(&telemetryData, logCollector)
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunk.Initialize(GeneralConfig.CorrelationID,
+					GeneralConfig.HookConfig.SplunkConfig.Dsn,
+					GeneralConfig.HookConfig.SplunkConfig.Token,
+					GeneralConfig.HookConfig.SplunkConfig.Index,
+					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+			}
 			abapEnvironmentRunATCCheck(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -101,7 +119,8 @@ func addAbapEnvironmentRunATCCheckFlags(cmd *cobra.Command, stepConfig *abapEnvi
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510")
 	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP Cloud Platform ABAP Environment system")
-	cmd.Flags().StringVar(&stepConfig.AtcResultsFileName, "atcResultsFileName", `ATCResults.xml`, "Specifies output file name for the results from the ATC run")
+	cmd.Flags().StringVar(&stepConfig.AtcResultsFileName, "atcResultsFileName", `ATCResults.xml`, "Specifies output file name for the results from the ATC run. This file name will also be used for generating the HTML file")
+	cmd.Flags().BoolVar(&stepConfig.GenerateHTML, "generateHTML", false, "Specifies whether the ATC results should also be generated as an HTML document")
 
 	cmd.MarkFlagRequired("atcConfig")
 	cmd.MarkFlagRequired("username")
@@ -208,6 +227,14 @@ func abapEnvironmentRunATCCheckMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "generateHTML",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},

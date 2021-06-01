@@ -9,6 +9,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
@@ -34,6 +35,7 @@ func NexusUploadCommand() *cobra.Command {
 	metadata := nexusUploadMetadata()
 	var stepConfig nexusUploadOptions
 	var startTime time.Time
+	var logCollector *log.CollectorHook
 
 	var createNexusUploadCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -80,6 +82,11 @@ If an image for mavenExecute is configured, and npm packages are to be published
 				log.RegisterHook(&sentryHook)
 			}
 
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
+				log.RegisterHook(logCollector)
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -90,10 +97,20 @@ If an image for mavenExecute is configured, and npm packages are to be published
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
+				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunk.Send(&telemetryData, logCollector)
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunk.Initialize(GeneralConfig.CorrelationID,
+					GeneralConfig.HookConfig.SplunkConfig.Dsn,
+					GeneralConfig.HookConfig.SplunkConfig.Token,
+					GeneralConfig.HookConfig.SplunkConfig.Index,
+					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+			}
 			nexusUpload(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -258,7 +275,7 @@ func nexusUploadMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "mvn-npm", Image: "devxci/mbtci:1.0.16.1"},
+				{Name: "mvn-npm", Image: "devxci/mbtci:1.1.1"},
 			},
 		},
 	}

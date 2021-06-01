@@ -211,6 +211,11 @@ func (c *Client) SetOptions(options ClientOptions) {
 	c.cookieJar = options.CookieJar
 }
 
+// StandardClient returns a stdlib *http.Client which respects the custom settings.
+func (c *Client) StandardClient() *http.Client {
+	return c.initialize()
+}
+
 func (c *Client) initialize() *http.Client {
 	c.applyDefaults()
 	c.logger = log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")
@@ -241,7 +246,7 @@ func (c *Client) initialize() *http.Client {
 			retryClient.HTTPClient.Transport = transport
 		}
 		retryClient.CheckRetry = func(ctx context.Context, resp *http.Response, err error) (bool, error) {
-			if err != nil && (strings.Contains(err.Error(), "timeout") || strings.Contains(err.Error(), "timed out")) {
+			if err != nil && (strings.Contains(err.Error(), "timeout") || strings.Contains(err.Error(), "timed out") || strings.Contains(err.Error(), "connection refused")) {
 				// Assuming timeouts could be retried
 				return true, nil
 			}

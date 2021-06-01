@@ -1,13 +1,16 @@
 package maven
 
 import (
+	"encoding/xml"
 	"fmt"
+	"net/http"
+	"os"
+	"strings"
+	"testing"
+
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
-	"net/http"
-	"os"
-	"testing"
 )
 
 func TestSettings(t *testing.T) {
@@ -91,6 +94,64 @@ func TestSettings(t *testing.T) {
 
 		if assert.Error(t, err) {
 			assert.Contains(t, err.Error(), "cannot copy '/opt/sap/maven/project-settings.xml': file does not exist")
+		}
+	})
+
+	t.Run("create new Project settings file", func(t *testing.T) {
+
+		utilsMock := newSettingsDownloadTestUtilsBundle()
+
+		projectSettingsFilePath, err := CreateNewProjectSettingsXML("dummyRepoId", "dummyRepoUser", "dummyRepoPassword", utilsMock)
+		if assert.NoError(t, err) {
+			projectSettingsContent, _ := utilsMock.FileRead(projectSettingsFilePath)
+			var projectSettings Settings
+
+			err = xml.Unmarshal(projectSettingsContent, &projectSettings)
+
+			if assert.NoError(t, err) {
+				assert.Equal(t, projectSettings.Servers.ServerType[0].ID, "dummyRepoId")
+				assert.Equal(t, projectSettings.Servers.ServerType[0].Username, "dummyRepoUser")
+				assert.Equal(t, projectSettings.Servers.ServerType[0].ID, "dummyRepoId")
+			}
+
+		}
+	})
+
+	t.Run("update server tag in existing settings file", func(t *testing.T) {
+
+		utilsMock := newSettingsDownloadTestUtilsBundle()
+		var projectSettings Settings
+		projectSettings.Xsi = "http://www.w3.org/2001/XMLSchema-instance"
+		projectSettings.SchemaLocation = "http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd"
+		projectSettings.Servers.ServerType = []Server{
+			{
+				ID:       "dummyRepoId1",
+				Username: "dummyRepoUser1",
+				Password: "dummyRepoId1",
+			},
+		}
+		settingsXml, err := xml.MarshalIndent(projectSettings, "", "    ")
+		settingsXmlString := string(settingsXml)
+		Replacer := strings.NewReplacer("&#xA;", "", "&#x9;", "")
+		settingsXmlString = Replacer.Replace(settingsXmlString)
+
+		xmlstring := []byte(xml.Header + settingsXmlString)
+
+		utilsMock.FileWrite(".pipeline/mavenProjectSettings", xmlstring, 0777)
+
+		projectSettingsFilePath, err := UpdateProjectSettingsXML(".pipeline/mavenProjectSettings", "dummyRepoId2", "dummyRepoUser2", "dummyRepoPassword2", utilsMock)
+		if assert.NoError(t, err) {
+			projectSettingsContent, _ := utilsMock.FileRead(projectSettingsFilePath)
+			var projectSettings Settings
+
+			err = xml.Unmarshal(projectSettingsContent, &projectSettings)
+
+			if assert.NoError(t, err) {
+				assert.Equal(t, projectSettings.Servers.ServerType[1].ID, "dummyRepoId2")
+				assert.Equal(t, projectSettings.Servers.ServerType[1].Username, "dummyRepoUser2")
+				assert.Equal(t, projectSettings.Servers.ServerType[1].ID, "dummyRepoId2")
+			}
+
 		}
 	})
 }

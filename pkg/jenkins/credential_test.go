@@ -1,6 +1,7 @@
 package jenkins
 
 import (
+	"context"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/jenkins/mocks"
@@ -10,6 +11,7 @@ import (
 
 func TestUpdateCredential(t *testing.T) {
 	t.Parallel()
+	ctx := context.Background()
 	const ID = "testID"
 	const testSecret = "testSecret"
 	const domain = "_"
@@ -18,9 +20,9 @@ func TestUpdateCredential(t *testing.T) {
 		credManagerMock := mocks.CredentialsManager{}
 		testCredential := StringCredentials{ID: ID, Secret: testSecret}
 
-		credManagerMock.On("Update", domain, ID, mock.Anything).Return(nil)
-		err := UpdateCredential(&credManagerMock, domain, testCredential)
-		credManagerMock.AssertCalled(t, "Update", domain, ID, testCredential)
+		credManagerMock.On("Update", ctx, domain, ID, mock.Anything).Return(nil)
+		err := UpdateCredential(ctx, &credManagerMock, domain, testCredential)
+		credManagerMock.AssertCalled(t, "Update", ctx, domain, ID, testCredential)
 
 		assert.NoError(t, err)
 	})
@@ -28,9 +30,9 @@ func TestUpdateCredential(t *testing.T) {
 	t.Run("Test that wrong credential type fails ", func(t *testing.T) {
 		credManagerMock := mocks.CredentialsManager{}
 
-		credManagerMock.On("Update", domain, ID, mock.Anything).Return(nil)
-		err := UpdateCredential(&credManagerMock, domain, 5)
-		credManagerMock.AssertNotCalled(t, "Update", domain, ID, mock.Anything)
+		credManagerMock.On("Update", ctx, domain, ID, mock.Anything).Return(nil)
+		err := UpdateCredential(ctx, &credManagerMock, domain, 5)
+		credManagerMock.AssertNotCalled(t, "Update", ctx, domain, ID, mock.Anything)
 		assert.EqualError(t, err, "'credential' parameter is supposed to be a Credentials struct not 'int'")
 	})
 
@@ -40,9 +42,9 @@ func TestUpdateCredential(t *testing.T) {
 			Secret: "Test",
 		}
 
-		credManagerMock.On("Update", domain, ID, mock.Anything).Return(nil)
-		err := UpdateCredential(&credManagerMock, domain, testCredential)
-		credManagerMock.AssertNotCalled(t, "Update", domain, ID, mock.Anything)
+		credManagerMock.On("Update", ctx, domain, ID, mock.Anything).Return(nil)
+		err := UpdateCredential(ctx, &credManagerMock, domain, testCredential)
+		credManagerMock.AssertNotCalled(t, "Update", ctx, domain, ID, mock.Anything)
 		assert.EqualError(t, err, "'credential' parameter is supposed to be a Credentials struct not 'struct { Secret string }'")
 	})
 
@@ -50,10 +52,10 @@ func TestUpdateCredential(t *testing.T) {
 		credManagerMock := mocks.CredentialsManager{}
 		testCredential := StringCredentials{ID: "", Secret: testSecret}
 
-		credManagerMock.On("Update", domain, ID, mock.Anything).Return(nil)
-		err := UpdateCredential(&credManagerMock, domain, testCredential)
-		credManagerMock.AssertNotCalled(t, "Update", domain, ID, mock.Anything)
-		assert.EqualError(t, err, "Secret ID should not be empty")
+		credManagerMock.On("Update", ctx, domain, ID, mock.Anything).Return(nil)
+		err := UpdateCredential(ctx, &credManagerMock, domain, testCredential)
+		credManagerMock.AssertNotCalled(t, "Update", ctx, domain, ID, mock.Anything)
+		assert.EqualError(t, err, "secret ID should not be empty")
 	})
 
 }
