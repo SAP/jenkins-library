@@ -1,3 +1,4 @@
+import static com.sap.piper.Prerequisites.checkScript
 import groovy.transform.Field
 
 @Field String STEP_NAME = getClass().getName()
