@@ -15,6 +15,8 @@ The development on SAP BTP, ABAP environment systems is done within [“software
 
 Of course, this tackles only the upstream part of the SaaS solution lifecycle. Once the add-on is published, it can be consumed as a [multitenant application in ABAP environment](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/195031ff8f484b51af16fe392ec2ae6e.html).
 
+A comprehensive guidance on how to develop and operate SaaS applications using add-ons, can be found [here](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/e34a329acc804c0e874496548183682f.html)
+
 ## The Add-on Product
 
 The installation and maintenance of ABAP software is done / controlled via add-on product versions. An **add-on product version** is a „bundle" of software component versions made available at the same time for implementing a well-defined scope of functionality. It is the technical / delivery view on a software portfolio.
@@ -156,10 +158,17 @@ repositories:
     branch: v1.2.0
     version: 1.2.0
     commitID: 7d4516e9
+    languages:
+      - DE
+      - EN
   - name: /NAMESPC/COMPONENTB
     branch: v2.0.0
     version: 2.0.0
     commitID: 9f102ffb
+    languages:
+      - DE
+      - EN
+      - FR
 ```
 
 Explanation of the keys:
@@ -172,6 +181,8 @@ The section “repositories” contains one or multiple software component versi
 - `name`: the technical name of the software component
 - `branch`: this is the release branch from the git repository
 - `version`: this is the technical software component version `<software component version>.<support package level>.<patch level>`
+- `commitID`: this is the commitID from the git repository
+- `languages`: specify the languages to be delivered according to ISO-639. For all deliveries of an Add-on Product Version, the languages should not change. If languages should be added, a new Add-on Product Version must be created.
 
 ##### Versioning Rules
 
