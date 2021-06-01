@@ -8,7 +8,7 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field String STEP_NAME = getClass().getName()
 
 void call(Map parameters = [:]) {
-    List credentials = [ ]
+    List credentials = [[type: 'token', id: 'altDeploymentRepositoryPasswordId', env: ['PIPER_altDeploymentRepositoryPassword']]]
     final script = checkScript(this, parameters) ?: this
     parameters = DownloadCacheUtils.injectDownloadCacheInParameters(script, parameters, BuildTool.MAVEN)
 

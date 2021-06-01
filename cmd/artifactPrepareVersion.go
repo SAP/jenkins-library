@@ -59,6 +59,8 @@ type artifactPrepareVersionUtils interface {
 	FileExists(filename string) (bool, error)
 	Copy(src, dest string) (int64, error)
 	MkdirAll(path string, perm os.FileMode) error
+	FileWrite(path string, content []byte, perm os.FileMode) error
+	FileRead(path string) ([]byte, error)
 }
 
 type artifactPrepareVersionUtilsBundle struct {
