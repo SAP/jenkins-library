@@ -17,6 +17,7 @@ import (
 
 func TestTriggerJob(t *testing.T) {
 	t.Skip("no Jenkins instance for testing available yet")
+	//TODO: check if testcontainers can be used
 	// init
 	ctx := context.Background()
 	// ctx = context.WithValue(ctx, "debug", true)
