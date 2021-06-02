@@ -36,7 +36,6 @@ require (
 	github.com/magicsong/color-glog v0.0.1 // indirect
 	github.com/magicsong/sonargo v0.0.1
 	github.com/mailru/easyjson v0.7.6 // indirect
-	github.com/moby/sys/mount v0.2.0 // indirect
 	github.com/motemen/go-nuts v0.0.0-20200601065735-3df31f16cb2f
 	github.com/piper-validation/fortify-client-go v0.0.0-20210114140201-1261216783c6
 	github.com/pkg/errors v0.9.1
@@ -54,5 +53,3 @@ require (
 	gopkg.in/ini.v1 v1.61.0
 	gopkg.in/yaml.v2 v2.3.0
 )
-
-replace golang.org/x/sys => golang.org/x/sys v0.0.0-20190813064441-fde4db37ae7a
