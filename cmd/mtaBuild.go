@@ -191,9 +191,13 @@ func runMtaBuild(config mtaBuildOptions,
 	}
 	if config.Source != "" && config.Source != "./" {
 		call = append(call, "--source", config.Source)
+	} else {
+		call = append(call, "--source", "./")
 	}
 	if config.Target != "" && config.Target != "./" {
 		call = append(call, "--target", config.Target)
+	} else {
+		call = append(call, "--target", "./")
 	}
 
 	if err = addNpmBinToPath(utils); err != nil {
