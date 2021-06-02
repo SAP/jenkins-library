@@ -36,13 +36,13 @@ func (_m *Jenkins) BuildJob(ctx context.Context, name string, params map[string]
 	return r0, r1
 }
 
-// GetBuildFromQueueID provides a mock function with given fields: ctx, queueid
-func (_m *Jenkins) GetBuildFromQueueID(ctx context.Context, queueid int64) (*gojenkins.Build, error) {
-	ret := _m.Called(ctx, queueid)
+// GetBuildFromQueueID provides a mock function with given fields: ctx, job, queueid
+func (_m *Jenkins) GetBuildFromQueueID(ctx context.Context, job *gojenkins.Job, queueid int64) (*gojenkins.Build, error) {
+	ret := _m.Called(ctx, job, queueid)
 
 	var r0 *gojenkins.Build
-	if rf, ok := ret.Get(0).(func(context.Context, int64) *gojenkins.Build); ok {
-		r0 = rf(ctx, queueid)
+	if rf, ok := ret.Get(0).(func(context.Context, *gojenkins.Job, int64) *gojenkins.Build); ok {
+		r0 = rf(ctx, job, queueid)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*gojenkins.Build)
@@ -50,11 +50,27 @@ func (_m *Jenkins) GetBuildFromQueueID(ctx context.Context, queueid int64) (*goj
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, int64) error); ok {
-		r1 = rf(ctx, queueid)
+	if rf, ok := ret.Get(1).(func(context.Context, *gojenkins.Job, int64) error); ok {
+		r1 = rf(ctx, job, queueid)
 	} else {
 		r1 = ret.Error(1)
 	}
 
 	return r0, r1
+}
+
+// GetJobObj provides a mock function with given fields: ctx, name
+func (_m *Jenkins) GetJobObj(ctx context.Context, name string) *gojenkins.Job {
+	ret := _m.Called(ctx, name)
+
+	var r0 *gojenkins.Job
+	if rf, ok := ret.Get(0).(func(context.Context, string) *gojenkins.Job); ok {
+		r0 = rf(ctx, name)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*gojenkins.Job)
+		}
+	}
+
+	return r0
 }
