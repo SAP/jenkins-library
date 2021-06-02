@@ -17,6 +17,7 @@ import (
 type pipelineCreateScanSummaryOptions struct {
 	FailedOnly     bool   `json:"failedOnly,omitempty"`
 	OutputFilePath string `json:"outputFilePath,omitempty"`
+	PipelineLink   string `json:"pipelineLink,omitempty"`
 }
 
 // PipelineCreateScanSummaryCommand Collect scan result information anc create a summary report
@@ -96,6 +97,7 @@ It is for example used to create a markdown file which can be used to create a G
 func addPipelineCreateScanSummaryFlags(cmd *cobra.Command, stepConfig *pipelineCreateScanSummaryOptions) {
 	cmd.Flags().BoolVar(&stepConfig.FailedOnly, "failedOnly", false, "Defines if only failed scans should be included into the summary.")
 	cmd.Flags().StringVar(&stepConfig.OutputFilePath, "outputFilePath", `scanSummary.md`, "Defines the filepath to the target file which will be created by the step.")
+	cmd.Flags().StringVar(&stepConfig.PipelineLink, "pipelineLink", os.Getenv("PIPER_pipelineLink"), "Link to the pipeline (e.g. Jenkins job url) for reference in the scan summary.")
 
 }
 
@@ -120,6 +122,14 @@ func pipelineCreateScanSummaryMetadata() config.StepData {
 					},
 					{
 						Name:        "outputFilePath",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "pipelineLink",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
