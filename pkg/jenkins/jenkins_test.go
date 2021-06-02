@@ -3,7 +3,6 @@ package jenkins
 import (
 	"context"
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/jenkins/mocks"
@@ -19,20 +18,41 @@ func TestInterfaceCompatibility(t *testing.T) {
 
 func TestTriggerJob(t *testing.T) {
 	ctx := context.Background()
-	jobName := "ContinuousDelivery/piper-library"
-	jobID := strings.ReplaceAll(jobName, "/", "/job/")
+	// jobName := "ContinuousDelivery/piper-library"
+	// jobID := strings.ReplaceAll(jobName, "/", "/job/")
 	jobParameters := map[string]string{}
 
+	t.Run("error - job not updated", func(t *testing.T) {
+		// init
+		jenkins := &mocks.Jenkins{}
+		jenkins.Test(t)
+		job := &mocks.Job{}
+		job.Test(t)
+		job.
+			On("Poll", ctx).Return(404, fmt.Errorf(mock.Anything))
+		// test
+		build, err := TriggerJob(ctx, jenkins, job, jobParameters)
+		// asserts
+		job.AssertExpectations(t)
+		jenkins.AssertExpectations(t)
+		assert.EqualError(t, err, fmt.Sprintf("failed to load job: %s", mock.Anything))
+		assert.Nil(t, build)
+	})
 	t.Run("error - task not started", func(t *testing.T) {
 		// init
 		queueID := int64(0)
 		jenkins := &mocks.Jenkins{}
-		jenkins.
-			On("BuildJob", ctx, jobID, map[string]string{}).
+		jenkins.Test(t)
+		job := &mocks.Job{}
+		job.Test(t)
+		job.
+			On("Poll", ctx).Return(200, nil).
+			On("InvokeSimple", ctx, map[string]string{}).
 			Return(queueID, fmt.Errorf(mock.Anything))
 		// test
-		build, err := TriggerJob(ctx, jenkins, jobName, jobParameters)
+		build, err := TriggerJob(ctx, jenkins, job, jobParameters)
 		// asserts
+		job.AssertExpectations(t)
 		jenkins.AssertExpectations(t)
 		assert.EqualError(t, err, mock.Anything)
 		assert.Nil(t, build)
@@ -41,12 +61,17 @@ func TestTriggerJob(t *testing.T) {
 		// init
 		queueID := int64(0)
 		jenkins := &mocks.Jenkins{}
-		jenkins.
-			On("BuildJob", ctx, jobID, map[string]string{}).
+		jenkins.Test(t)
+		job := &mocks.Job{}
+		job.Test(t)
+		job.
+			On("Poll", ctx).Return(200, nil).
+			On("InvokeSimple", ctx, jobParameters).
 			Return(queueID, nil)
 		// test
-		build, err := TriggerJob(ctx, jenkins, jobName, jobParameters)
+		build, err := TriggerJob(ctx, jenkins, job, jobParameters)
 		// asserts
+		job.AssertExpectations(t)
 		jenkins.AssertExpectations(t)
 		assert.EqualError(t, err, "unable to queue build")
 		assert.Nil(t, build)
@@ -56,14 +81,21 @@ func TestTriggerJob(t *testing.T) {
 		queueID := int64(43)
 		jenkins := &mocks.Jenkins{}
 		jenkins.Test(t)
-		jenkins.
-			On("BuildJob", ctx, jobID, map[string]string{}).
+		job := &mocks.Job{}
+		job.Test(t)
+		job.
+			On("Poll", ctx).Return(200, nil).
+			On("InvokeSimple", ctx, jobParameters).
 			Return(queueID, nil).
-			On("GetBuildFromQueueID", ctx, queueID).
+			On("GetJob").
+			Return(&gojenkins.Job{})
+		jenkins.
+			On("GetBuildFromQueueID", ctx, mock.Anything, queueID).
 			Return(nil, fmt.Errorf(mock.Anything))
 		// test
-		build, err := TriggerJob(ctx, jenkins, jobName, jobParameters)
+		build, err := TriggerJob(ctx, jenkins, job, jobParameters)
 		// asserts
+		job.AssertExpectations(t)
 		jenkins.AssertExpectations(t)
 		assert.EqualError(t, err, mock.Anything)
 		assert.Nil(t, build)
@@ -73,13 +105,19 @@ func TestTriggerJob(t *testing.T) {
 		queueID := int64(43)
 		jenkins := &mocks.Jenkins{}
 		jenkins.Test(t)
-		jenkins.
-			On("BuildJob", ctx, jobID, map[string]string{}).
+		job := &mocks.Job{}
+		job.Test(t)
+		job.
+			On("Poll", ctx).Return(200, nil).
+			On("InvokeSimple", ctx, jobParameters).
 			Return(queueID, nil).
-			On("GetBuildFromQueueID", ctx, queueID).
+			On("GetJob").
+			Return(&gojenkins.Job{})
+		jenkins.
+			On("GetBuildFromQueueID", ctx, mock.Anything, queueID).
 			Return(&gojenkins.Build{}, nil)
 		// test
-		build, err := TriggerJob(ctx, jenkins, jobName, jobParameters)
+		build, err := TriggerJob(ctx, jenkins, job, jobParameters)
 		// asserts
 		jenkins.AssertExpectations(t)
 		assert.NoError(t, err)
