@@ -18,8 +18,6 @@ func TestInterfaceCompatibility(t *testing.T) {
 
 func TestTriggerJob(t *testing.T) {
 	ctx := context.Background()
-	// jobName := "ContinuousDelivery/piper-library"
-	// jobID := strings.ReplaceAll(jobName, "/", "/job/")
 	jobParameters := map[string]string{}
 
 	t.Run("error - job not updated", func(t *testing.T) {
