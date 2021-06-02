@@ -15,7 +15,7 @@ spec:
         description: "Jenkins 'Secret text' credentials ID containing the token used to authenticate
           with the Github Server."
     params:
-      - name: instance
+      - name: instanceDummy
         type: string
         description: "Jenkins only: The name of the SonarQube instance defined in the Jenkins settings.
           DEPRECATED: use serverUrl parameter instead"
