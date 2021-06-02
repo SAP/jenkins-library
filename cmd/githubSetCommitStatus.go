@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -32,6 +34,9 @@ func runGithubSetCommitStatus(ctx context.Context, config *githubSetCommitStatus
 	status := github.RepoStatus{Context: &config.Context, Description: &config.Description, State: &config.Status, TargetURL: &config.TargetURL}
 	_, _, err := ghRepositoriesService.CreateStatus(ctx, config.Owner, config.Repository, config.CommitID, &status)
 	if err != nil {
+		if strings.Contains(fmt.Sprint(err), "No commit found for SHA") {
+			log.SetErrorCategory(log.ErrorCustom)
+		}
 		return errors.Wrapf(err, "failed to set status '%v' on commitId '%v'", config.Status, config.CommitID)
 	}
 	return nil

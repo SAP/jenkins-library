@@ -11,6 +11,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
+	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
@@ -28,6 +29,7 @@ type whitesourceExecuteScanOptions struct {
 	CreateProductFromPipeline            bool     `json:"createProductFromPipeline,omitempty"`
 	CustomScanVersion                    string   `json:"customScanVersion,omitempty"`
 	CvssSeverityLimit                    string   `json:"cvssSeverityLimit,omitempty"`
+	ScanPath                             string   `json:"scanPath,omitempty"`
 	EmailAddressesOfInitialProductAdmins []string `json:"emailAddressesOfInitialProductAdmins,omitempty"`
 	Excludes                             []string `json:"excludes,omitempty"`
 	Includes                             []string `json:"includes,omitempty"`
@@ -142,6 +144,7 @@ func WhitesourceExecuteScanCommand() *cobra.Command {
 	var startTime time.Time
 	var commonPipelineEnvironment whitesourceExecuteScanCommonPipelineEnvironment
 	var influx whitesourceExecuteScanInflux
+	var logCollector *log.CollectorHook
 
 	var createWhitesourceExecuteScanCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -178,6 +181,11 @@ The step uses the so-called WhiteSource Unified Agent. For details please refer 
 				log.RegisterHook(&sentryHook)
 			}
 
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
+				log.RegisterHook(logCollector)
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -190,10 +198,20 @@ The step uses the so-called WhiteSource Unified Agent. For details please refer 
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
+				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunk.Send(&telemetryData, logCollector)
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunk.Initialize(GeneralConfig.CorrelationID,
+					GeneralConfig.HookConfig.SplunkConfig.Dsn,
+					GeneralConfig.HookConfig.SplunkConfig.Token,
+					GeneralConfig.HookConfig.SplunkConfig.Index,
+					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+			}
 			whitesourceExecuteScan(stepConfig, &telemetryData, &commonPipelineEnvironment, &influx)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -217,6 +235,7 @@ func addWhitesourceExecuteScanFlags(cmd *cobra.Command, stepConfig *whitesourceE
 	cmd.Flags().BoolVar(&stepConfig.CreateProductFromPipeline, "createProductFromPipeline", true, "Whether to create the related WhiteSource product on the fly based on the supplied pipeline configuration.")
 	cmd.Flags().StringVar(&stepConfig.CustomScanVersion, "customScanVersion", os.Getenv("PIPER_customScanVersion"), "Custom version of the WhiteSource project used as source.")
 	cmd.Flags().StringVar(&stepConfig.CvssSeverityLimit, "cvssSeverityLimit", `-1`, "Limit of tolerable CVSS v3 score upon assessment and in consequence fails the build.")
+	cmd.Flags().StringVar(&stepConfig.ScanPath, "scanPath", `.`, "Directory where to start WhiteSource scan.")
 	cmd.Flags().StringSliceVar(&stepConfig.EmailAddressesOfInitialProductAdmins, "emailAddressesOfInitialProductAdmins", []string{}, "The list of email addresses to assign as product admins for newly created WhiteSource products.")
 	cmd.Flags().StringSliceVar(&stepConfig.Excludes, "excludes", []string{}, "List of file path patterns to exclude in the scan.")
 	cmd.Flags().StringSliceVar(&stepConfig.Includes, "includes", []string{}, "List of file path patterns to include in the scan.")
@@ -362,6 +381,14 @@ func whitesourceExecuteScanMetadata() config.StepData {
 					},
 					{
 						Name:        "cvssSeverityLimit",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "scanPath",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",

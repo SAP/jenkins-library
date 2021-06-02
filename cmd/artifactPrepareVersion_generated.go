@@ -11,6 +11,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
+	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
@@ -41,6 +42,7 @@ type artifactPrepareVersionCommonPipelineEnvironment struct {
 	originalArtifactVersion string
 	git                     struct {
 		commitID      string
+		headCommitID  string
 		commitMessage string
 	}
 }
@@ -54,6 +56,7 @@ func (p *artifactPrepareVersionCommonPipelineEnvironment) persist(path, resource
 		{category: "", name: "artifactVersion", value: p.artifactVersion},
 		{category: "", name: "originalArtifactVersion", value: p.originalArtifactVersion},
 		{category: "git", name: "commitId", value: p.git.commitID},
+		{category: "git", name: "headCommitId", value: p.git.headCommitID},
 		{category: "git", name: "commitMessage", value: p.git.commitMessage},
 	}
 
@@ -78,6 +81,7 @@ func ArtifactPrepareVersionCommand() *cobra.Command {
 	var stepConfig artifactPrepareVersionOptions
 	var startTime time.Time
 	var commonPipelineEnvironment artifactPrepareVersionCommonPipelineEnvironment
+	var logCollector *log.CollectorHook
 
 	var createArtifactPrepareVersionCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -167,6 +171,11 @@ Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to yo
 				log.RegisterHook(&sentryHook)
 			}
 
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
+				log.RegisterHook(logCollector)
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -178,10 +187,20 @@ Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to yo
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
+				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunk.Send(&telemetryData, logCollector)
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunk.Initialize(GeneralConfig.CorrelationID,
+					GeneralConfig.HookConfig.SplunkConfig.Dsn,
+					GeneralConfig.HookConfig.SplunkConfig.Token,
+					GeneralConfig.HookConfig.SplunkConfig.Index,
+					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+			}
 			artifactPrepareVersion(stepConfig, &telemetryData, &commonPipelineEnvironment)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -408,6 +427,7 @@ func artifactPrepareVersionMetadata() config.StepData {
 							{"Name": "artifactVersion"},
 							{"Name": "originalArtifactVersion"},
 							{"Name": "git/commitId"},
+							{"Name": "git/headCommitId"},
 							{"Name": "git/commitMessage"},
 						},
 					},
