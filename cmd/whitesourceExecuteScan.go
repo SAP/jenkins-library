@@ -852,7 +852,7 @@ func fillVulnerabilityExcelReport(alerts []ws.Alert, streamWriter *excelize.Stre
 	}
 
 	for i, alert := range alerts {
-		row := make([]interface{}, 5)
+		row := make([]interface{}, 6)
 		vuln := alert.Vulnerability
 		row[0] = vuln.CVSS3Severity
 		row[1] = alert.Library.Filename
