@@ -59,6 +59,8 @@ type artifactPrepareVersionUtils interface {
 	FileExists(filename string) (bool, error)
 	Copy(src, dest string) (int64, error)
 	MkdirAll(path string, perm os.FileMode) error
+	FileWrite(path string, content []byte, perm os.FileMode) error
+	FileRead(path string) ([]byte, error)
 }
 
 type artifactPrepareVersionUtilsBundle struct {
@@ -203,6 +205,17 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 	commonPipelineEnvironment.artifactVersion = newVersion
 	commonPipelineEnvironment.originalArtifactVersion = version
 	commonPipelineEnvironment.git.commitMessage = gitCommitMessage
+
+	// we may replace GetVersion() above with GetCoordinates() at some point ...
+	if config.FetchCoordinates {
+		coordinates, err := artifact.GetCoordinates()
+		if err != nil {
+			return fmt.Errorf("failed to get coordinates: %w", err)
+		}
+		commonPipelineEnvironment.artifactID = coordinates.ArtifactID
+		commonPipelineEnvironment.groupID = coordinates.GroupID
+		commonPipelineEnvironment.packaging = coordinates.Packaging
+	}
 
 	return nil
 }

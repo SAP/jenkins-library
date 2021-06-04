@@ -211,6 +211,11 @@ func (c *Client) SetOptions(options ClientOptions) {
 	c.cookieJar = options.CookieJar
 }
 
+// StandardClient returns a stdlib *http.Client which respects the custom settings.
+func (c *Client) StandardClient() *http.Client {
+	return c.initialize()
+}
+
 func (c *Client) initialize() *http.Client {
 	c.applyDefaults()
 	c.logger = log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")
