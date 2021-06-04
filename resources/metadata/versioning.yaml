@@ -139,6 +139,13 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: fetchCoordinates
+        type: bool
+        description: If set to `true` the step will retreive artifact coordinates and store them in the common pipeline environment.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: filePath
         type: string
         description: "Defines a custom path to the descriptor file. Build tool specific defaults are used (e.g. `maven: pom.xml`, `npm: package.json`, `mta: mta.yaml`)."
@@ -269,7 +276,11 @@ spec:
         params:
           - name: artifactVersion
           - name: originalArtifactVersion
+          - name: artifactId
+          - name: groupId
+          - name: packaging
           - name: git/commitId
+          - name: git/headCommitId
           - name: git/commitMessage
   containers:
     - image: maven:3.6-jdk-8
