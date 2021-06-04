@@ -13,6 +13,11 @@ class commonPipelineEnvironment implements Serializable {
     def artifactVersion
     def originalArtifactVersion
 
+    // stores additional artifact coordinates
+    def artifactId
+    def groupId
+    def packaging
+
     //stores the build tools if it inferred automatically, e.g. in the SAP Cloud SDK pipeline
     String buildTool
 
@@ -68,6 +73,10 @@ class commonPipelineEnvironment implements Serializable {
         appContainerProperties = [:]
         artifactVersion = null
         originalArtifactVersion = null
+
+        artifactId = null
+        groupId = null
+        packaging = null
 
         buildTool = null
 
@@ -180,6 +189,9 @@ class commonPipelineEnvironment implements Serializable {
 
     def files = [
         [filename: '.pipeline/commonPipelineEnvironment/artifactVersion', property: 'artifactVersion'],
+        [filename: '.pipeline/commonPipelineEnvironment/artifactId', property: 'artifactId'],
+        [filename: '.pipeline/commonPipelineEnvironment/groupId', property: 'groupId'],
+        [filename: '.pipeline/commonPipelineEnvironment/packaging', property: 'packaging'],
         [filename: '.pipeline/commonPipelineEnvironment/buildTool', property: 'buildTool'],
         [filename: '.pipeline/commonPipelineEnvironment/originalArtifactVersion', property: 'originalArtifactVersion'],
         [filename: '.pipeline/commonPipelineEnvironment/github/owner', property: 'githubOrg'],
