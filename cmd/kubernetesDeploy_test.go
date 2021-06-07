@@ -90,10 +90,10 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			Namespace:               "deploymentNamespace",
 		}
 
-		dockerConfigJSON := `{"kind": "Secret","data":{".dockerconfigjson": "ThisIsOurBase64EncodedSecret=="}}`
+		k8sSecretSpec := `{"kind": "Secret","data":{".dockerconfigjson": "ThisIsOurBase64EncodedSecret=="}}`
 		e := mock.ExecMockRunner{
 			StdoutReturn: map[string]string{
-				`kubectl create secret --insecure-skip-tls-verify=true --dry-run=true --output=json generic testSecret --from-file=.dockerconfigjson=/path/to/.docker/config.json --type="kubernetes.io/dockerconfigjson"`: dockerConfigJSON,
+				`kubectl create secret --insecure-skip-tls-verify=true --dry-run=true --output=json generic testSecret --from-file=.dockerconfigjson=/path/to/.docker/config.json --type="kubernetes.io/dockerconfigjson"`: k8sSecretSpec,
 			},
 		}
 
@@ -159,11 +159,11 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			KeepFailedDeployments:     true,
 		}
 
-		dockerConfigJSON := `{"kind": "Secret","data":{".dockerconfigjson": "ThisIsOurBase64EncodedSecret=="}}`
+		k8sSecretSpec := `{"kind": "Secret","data":{".dockerconfigjson": "ThisIsOurBase64EncodedSecret=="}}`
 
 		e := mock.ExecMockRunner{
 			StdoutReturn: map[string]string{
-				`kubectl create secret --insecure-skip-tls-verify=true --dry-run=true --output=json docker-registry testSecret --docker-server=my.registry:55555 --docker-username=registryUser --docker-password=\*\*\*\*\*\*\*\*`: dockerConfigJSON,
+				`kubectl create secret --insecure-skip-tls-verify=true --dry-run=true --output=json docker-registry testSecret --docker-server=my.registry:55555 --docker-username=registryUser --docker-password=\*\*\*\*\*\*\*\*`: k8sSecretSpec,
 			},
 		}
 
