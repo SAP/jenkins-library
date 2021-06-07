@@ -43,7 +43,7 @@ o 3d97415 (origin/master) merged change
 | |
 | o 0e82d9b new feature
 |/
-o 4378bb4 merged change 
+o 4378bb4 merged change
 
 ```
 
@@ -64,7 +64,7 @@ o 5c380ea adjust config.yaml
 |
 o 0e82d9b new feature
 |
-o 4378bb4 merged change 
+o 4378bb4 merged change
 
 ```
 
