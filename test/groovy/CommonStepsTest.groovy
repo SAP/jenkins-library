@@ -188,6 +188,7 @@ public class CommonStepsTest extends BasePiperTest{
         'transportRequestUploadSOLMAN', //implementing new golang pattern without fields
         'transportRequestReqIDFromGit', //implementing new golang pattern without fields
         'transportRequestDocIDFromGit', //implementing new golang pattern without fields
+        'gaugeExecuteTests', //implementing new golang pattern without fields
         'batsExecuteTests', //implementing new golang pattern without fields
     ]
 
