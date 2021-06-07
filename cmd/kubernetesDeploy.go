@@ -215,7 +215,7 @@ func runKubectlDeploy(config kubernetesDeployOptions, command command.ExecRunner
 	}
 
 	if config.CreateDockerRegistrySecret {
-		if len(config.DockerConfigJSON) == 0 && len(config.ContainerRegistryUser)+len(config.ContainerRegistryPassword) == 0 {
+		if len(config.DockerConfigJSON) == 0 && (len(config.ContainerRegistryUser) == 0 || len(config.ContainerRegistryPassword) == 0) {
 			log.Entry().Fatal("Cannot create Container registry secret without proper registry username/password or docker config.json file")
 		}
 
