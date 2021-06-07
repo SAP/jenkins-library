@@ -78,7 +78,7 @@ The following data will be sent to the endpoint if activated:
 * ErrorCode
 * ErrorCategory
 * CorrelationID (not hashed)
-* CommitHash
+* CommitHash (Head commit hash of current build.)
 * Branch
 * GitOwner
 * GitRepository
