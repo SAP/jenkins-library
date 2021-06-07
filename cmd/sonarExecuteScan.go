@@ -105,6 +105,9 @@ func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, i
 }
 
 func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runner command.ExecRunner, apiClient SonarUtils.Sender, influx *sonarExecuteScanInflux) error {
+	// Set config based on orchestrator-specific environment variables
+	detectParametersFromCI(&config)
+
 	if len(config.ServerURL) > 0 {
 		sonar.addEnvironment("SONAR_HOST_URL=" + config.ServerURL)
 	}
@@ -410,4 +413,22 @@ func getTempDir() string {
 		log.Entry().WithError(err).WithField("path", tmpFolder).Debug("Creating temp directory failed")
 	}
 	return tmpFolder
+}
+
+func detectParametersFromCI(options *sonarExecuteScanOptions) {
+	provider, err := SonarUtils.NewOrchestratorSpecificConfigProvider()
+	if err != nil {
+		log.Entry().WithError(err).Warning("Cannot infer config from CI environment")
+		return
+	}
+
+	if provider.IsPullRequest() {
+		config := provider.GetPullRequestConfig()
+		options.ChangeBranch = config.Branch
+		options.ChangeTarget = config.Base
+		options.ChangeID = config.Key
+	} else {
+		config := provider.GetBranchBuildConfig()
+		options.BranchName = config.Branch
+	}
 }
