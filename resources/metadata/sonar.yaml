@@ -164,17 +164,17 @@ spec:
       # Parameters for PR-Handling
       - name: changeId
         type: string
-        description: "Pull-Request only: The id of the pull-request. Automatically infered from environment variables on supported orchestrators."
+        description: "Pull-Request only: The id of the pull-request. Automatically inferred from environment variables on supported orchestrators."
         scope:
           - PARAMETERS
       - name: changeBranch
         type: string
-        description: "Pull-Request only: The name of the pull-request branch. Automatically infered from environment variables on supported orchestrators."
+        description: "Pull-Request only: The name of the pull-request branch. Automatically inferred from environment variables on supported orchestrators."
         scope:
           - PARAMETERS
       - name: changeTarget
         type: string
-        description: "Pull-Request only: The name of the base branch. Automatically infered from environment variables on supported orchestrators."
+        description: "Pull-Request only: The name of the base branch. Automatically inferred from environment variables on supported orchestrators."
         scope:
           - PARAMETERS
       - name: pullRequestProvider
