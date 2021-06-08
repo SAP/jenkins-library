@@ -46,7 +46,7 @@ func NewOrchestratorSpecificConfigProvider() (OrchestratorSpecificConfigProvidin
 	case Travis:
 		return &TravisConfigProvider{}, nil
 	default:
-		return nil, errors.New("internal error - Unable to detect orchestrator")
+		return nil, errors.New("unable to detect orchestrator")
 	}
 }
 
@@ -55,12 +55,12 @@ func DetectOrchestrator() (Orchestrator, error) {
 		return Orchestrator(AzureDevOps), nil
 	} else if isGitHubActions() {
 		return Orchestrator(GitHubActions), nil
-	} else if isTravis() {
-		return Orchestrator(Travis), nil
 	} else if isJenkins() {
 		return Orchestrator(Jenkins), nil
+	} else if isTravis() {
+		return Orchestrator(Travis), nil
 	} else {
-		return -2, errors.New("could not detect orchestrator. Supported is: Azure DevOps, GitHub Actions, Travis, Jenkins")
+		return -2, errors.New("unable to detect a supported orchestrator (Azure DevOps, GitHub Actions, Jenkins, Travis)")
 	}
 }
 
@@ -82,29 +82,9 @@ func truthy(key string) bool {
 	if !exists {
 		return false
 	}
-	if val == "no" || val == "false" || val == "off" || val == "0" || len(val) == 0 {
+	if len(val) == 0 || val == "no" || val == "false" || val == "off" || val == "0" {
 		return false
 	}
 
 	return true
-}
-
-func isAzure() bool {
-	envVars := []string{"AZURE_HTTP_USER_AGENT"}
-	return areIndicatingEnvVarsSet(envVars)
-}
-
-func isGitHubActions() bool {
-	envVars := []string{"GITHUB_ACTION", "GITHUB_ACTIONS"}
-	return areIndicatingEnvVarsSet(envVars)
-}
-
-func isTravis() bool {
-	envVars := []string{"TRAVIS"}
-	return areIndicatingEnvVarsSet(envVars)
-}
-
-func isJenkins() bool {
-	envVars := []string{"JENKINS_HOME", "JENKINS_URL"}
-	return areIndicatingEnvVarsSet(envVars)
 }

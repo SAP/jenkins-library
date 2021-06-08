@@ -17,5 +17,10 @@ func (a *TravisConfigProvider) GetPullRequestConfig() PullRequestConfig {
 }
 
 func (a *TravisConfigProvider) IsPullRequest() bool {
-	return os.Getenv("TRAVIS_PULL_REQUEST") != "false"
+	return truthy("TRAVIS_PULL_REQUEST")
+}
+
+func isJenkins() bool {
+	envVars := []string{"JENKINS_HOME", "JENKINS_URL"}
+	return areIndicatingEnvVarsSet(envVars)
 }

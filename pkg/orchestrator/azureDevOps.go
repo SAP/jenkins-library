@@ -24,3 +24,8 @@ func (a *AzureDevOpsConfigProvider) GetBranchBuildConfig() BranchBuildConfig {
 func (a *AzureDevOpsConfigProvider) IsPullRequest() bool {
 	return os.Getenv("BUILD_REASON") == "PullRequest"
 }
+
+func isAzure() bool {
+	envVars := []string{"AZURE_HTTP_USER_AGENT"}
+	return areIndicatingEnvVarsSet(envVars)
+}

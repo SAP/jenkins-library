@@ -2,7 +2,6 @@ package orchestrator
 
 import (
 	"os"
-	"strings"
 )
 
 type JenkinsConfigProvider struct{}
@@ -20,6 +19,10 @@ func (a *JenkinsConfigProvider) GetPullRequestConfig() PullRequestConfig {
 }
 
 func (a *JenkinsConfigProvider) IsPullRequest() bool {
-	tmp := os.Getenv("BRANCH_NAME")
-	return strings.HasPrefix(tmp, "PR")
+	return truthy("CHANGE_ID")
+}
+
+func isTravis() bool {
+	envVars := []string{"TRAVIS"}
+	return areIndicatingEnvVarsSet(envVars)
 }

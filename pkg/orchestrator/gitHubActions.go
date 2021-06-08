@@ -20,3 +20,8 @@ func (a *GitHubActionsConfigProvider) IsPullRequest() bool {
 	_, exists := os.LookupEnv("GITHUB_HEAD_REF")
 	return exists
 }
+
+func isGitHubActions() bool {
+	envVars := []string{"GITHUB_ACTION", "GITHUB_ACTIONS"}
+	return areIndicatingEnvVarsSet(envVars)
+}
