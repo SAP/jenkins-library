@@ -455,6 +455,7 @@ func Test_tryPostMessages(t *testing.T) {
 				Token:                     "TOKEN",
 				TransportSkipVerification: true,
 				UseDefaultTransport:       true,
+				MaxRetries:                0,
 			})
 			SplunkClient = &Splunk{
 				splunkClient:          client,
