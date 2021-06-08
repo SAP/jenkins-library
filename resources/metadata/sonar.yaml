@@ -148,7 +148,7 @@ spec:
       # Parameters for non-PR scans
       - name: branchName
         type: string
-        description: "Non-Pull-Request only: Name of the SonarQube branch that should be used to report findings to. Automatically infered from environment variables on supported orchestrators if `inferBranchName` is set to true."
+        description: "Non-Pull-Request only: Name of the SonarQube branch that should be used to report findings to. Automatically inferred from environment variables on supported orchestrators if `inferBranchName` is set to true."
         scope:
           - PARAMETERS
           - STAGES
