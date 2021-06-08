@@ -38,6 +38,17 @@ func TestOrchestrator(t *testing.T) {
 		assert.Equal(t, "AzureDevOps", o.String())
 	})
 
+	t.Run("Azure DevOps - false", func(t *testing.T) {
+		defer os.Unsetenv("AZURE_HTTP_USER_AGENT")
+
+		os.Setenv("AZURE_HTTP_USER_AGENT", "false")
+
+		o, err := DetectOrchestrator()
+
+		assert.EqualError(t, err, "could not detect orchestrator. Supported is: Azure DevOps, GitHub Actions, Travis, Jenkins")
+		assert.Equal(t, Orchestrator(-2), o)
+	})
+
 	t.Run("GitHub Actions", func(t *testing.T) {
 		defer os.Unsetenv("GITHUB_ACTIONS")
 

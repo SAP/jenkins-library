@@ -17,7 +17,7 @@ func resetEnv(e []string) {
 }
 
 func TestAzure(t *testing.T) {
-	t.Run("BranchBuild", func(t *testing.T) {
+	t.Run("Azure - BranchBuild", func(t *testing.T) {
 		defer resetEnv(os.Environ())
 		os.Setenv("BUILD_SOURCEBRANCH", "refs/heads/feat/test-azure")
 		os.Setenv("AZURE_HTTP_USER_AGENT", "FOO BAR BAZ")

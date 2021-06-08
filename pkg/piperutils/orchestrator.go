@@ -33,14 +33,24 @@ func DetectOrchestrator() (Orchestrator, error) {
 }
 
 func areIndicatingEnvVarsSet(envVars []string) bool {
+	found := false
 	for _, v := range envVars {
-		_, exists := os.LookupEnv(v)
-		if exists {
-			return true
-		}
+		found = truthy(v)
+	}
+	return found
+}
+
+// Checks if var is set and neither empty nor false
+func truthy(key string) bool {
+	val, exists := os.LookupEnv(key)
+	if !exists {
+		return false
+	}
+	if val == "no" || val == "false" || val == "off" || val == "0" || len(val) == 0 {
+		return false
 	}
 
-	return false
+	return true
 }
 
 func isAzure() bool {
