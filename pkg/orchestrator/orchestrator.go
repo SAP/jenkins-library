@@ -8,7 +8,8 @@ import (
 type Orchestrator int
 
 const (
-	AzureDevOps Orchestrator = iota
+	Unknown Orchestrator = iota
+	AzureDevOps
 	GitHubActions
 	Jenkins
 	Travis
@@ -45,6 +46,8 @@ func NewOrchestratorSpecificConfigProvider() (OrchestratorSpecificConfigProvidin
 		return &JenkinsConfigProvider{}, nil
 	case Travis:
 		return &TravisConfigProvider{}, nil
+	case Unknown:
+		fallthrough
 	default:
 		return nil, errors.New("unable to detect orchestrator")
 	}
@@ -60,13 +63,12 @@ func DetectOrchestrator() (Orchestrator, error) {
 	} else if isTravis() {
 		return Orchestrator(Travis), nil
 	} else {
-		// Return negative value to indicate error
-		return -1, errors.New("unable to detect a supported orchestrator (Azure DevOps, GitHub Actions, Jenkins, Travis)")
+		return Orchestrator(Unknown), errors.New("unable to detect a supported orchestrator (Azure DevOps, GitHub Actions, Jenkins, Travis)")
 	}
 }
 
 func (o Orchestrator) String() string {
-	return [...]string{"AzureDevOps", "GitHubActions", "Travis", "Jenkins"}[o]
+	return [...]string{"Unknown", "AzureDevOps", "GitHubActions", "Travis", "Jenkins"}[o]
 }
 
 func areIndicatingEnvVarsSet(envVars []string) bool {
