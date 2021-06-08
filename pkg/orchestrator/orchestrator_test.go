@@ -23,9 +23,8 @@ func TestOrchestrator(t *testing.T) {
 
 		os.Setenv("AZURE_HTTP_USER_AGENT", "FOO BAR BAZ")
 
-		o, err := DetectOrchestrator()
+		o := DetectOrchestrator()
 
-		assert.Nil(t, err)
 		assert.Equal(t, "AzureDevOps", o.String())
 	})
 }

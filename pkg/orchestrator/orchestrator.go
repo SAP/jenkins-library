@@ -32,12 +32,7 @@ type BranchBuildConfig struct {
 }
 
 func NewOrchestratorSpecificConfigProvider() (OrchestratorSpecificConfigProviding, error) {
-	o, err := DetectOrchestrator()
-	if err != nil {
-		return nil, err // Don't wrap error here -> Error message wouldn't change
-	}
-
-	switch o {
+	switch DetectOrchestrator() {
 	case AzureDevOps:
 		return &AzureDevOpsConfigProvider{}, nil
 	case GitHubActions:
@@ -49,21 +44,21 @@ func NewOrchestratorSpecificConfigProvider() (OrchestratorSpecificConfigProvidin
 	case Unknown:
 		fallthrough
 	default:
-		return nil, errors.New("unable to detect orchestrator")
+		return nil, errors.New("unable to detect a supported orchestrator (Azure DevOps, GitHub Actions, Jenkins, Travis)")
 	}
 }
 
-func DetectOrchestrator() (Orchestrator, error) {
+func DetectOrchestrator() Orchestrator {
 	if isAzure() {
-		return Orchestrator(AzureDevOps), nil
+		return Orchestrator(AzureDevOps)
 	} else if isGitHubActions() {
-		return Orchestrator(GitHubActions), nil
+		return Orchestrator(GitHubActions)
 	} else if isJenkins() {
-		return Orchestrator(Jenkins), nil
+		return Orchestrator(Jenkins)
 	} else if isTravis() {
-		return Orchestrator(Travis), nil
+		return Orchestrator(Travis)
 	} else {
-		return Orchestrator(Unknown), errors.New("unable to detect a supported orchestrator (Azure DevOps, GitHub Actions, Jenkins, Travis)")
+		return Orchestrator(Unknown)
 	}
 }
 

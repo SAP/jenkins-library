@@ -45,9 +45,8 @@ func TestAzure(t *testing.T) {
 
 		os.Setenv("AZURE_HTTP_USER_AGENT", "false")
 
-		o, err := DetectOrchestrator()
+		o := DetectOrchestrator()
 
-		assert.EqualError(t, err, "unable to detect a supported orchestrator (Azure DevOps, GitHub Actions, Jenkins, Travis)")
 		assert.Equal(t, Orchestrator(Unknown), o)
 	})
 }
