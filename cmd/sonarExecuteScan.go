@@ -427,18 +427,22 @@ func detectParametersFromCI(options *sonarExecuteScanOptions) {
 	if provider.IsPullRequest() {
 		config := provider.GetPullRequestConfig()
 		if len(options.ChangeBranch) == 0 {
+			log.Entry().Info("Infering parameter changeBranch from environment: " + config.Branch)
 			options.ChangeBranch = config.Branch
 		}
 		if len(options.ChangeTarget) == 0 {
+			log.Entry().Info("Infering parameter changeTarget from environment: " + config.Base)
 			options.ChangeTarget = config.Base
 		}
 		if len(options.ChangeID) == 0 {
+			log.Entry().Info("Infering parameter changeId from environment: " + config.Key)
 			options.ChangeID = config.Key
 		}
 	} else {
 		config := provider.GetBranchBuildConfig()
 
 		if options.InferBranchName && len(options.BranchName) == 0 {
+			log.Entry().Info("Infering parameter branchName from environment: " + config.Branch)
 			options.BranchName = config.Branch
 		}
 	}
