@@ -27,7 +27,8 @@ func TestOrchestrator(t *testing.T) {
 	})
 
 	t.Run("Azure DevOps", func(t *testing.T) {
-		defer os.Unsetenv("AZURE_HTTP_USER_AGENT")
+		defer resetEnv(os.Environ())
+		os.Clearenv()
 
 		os.Setenv("AZURE_HTTP_USER_AGENT", "FOO BAR BAZ")
 
@@ -39,7 +40,8 @@ func TestOrchestrator(t *testing.T) {
 	})
 
 	t.Run("Azure DevOps - false", func(t *testing.T) {
-		defer os.Unsetenv("AZURE_HTTP_USER_AGENT")
+		defer resetEnv(os.Environ())
+		os.Clearenv()
 
 		os.Setenv("AZURE_HTTP_USER_AGENT", "false")
 
@@ -50,7 +52,8 @@ func TestOrchestrator(t *testing.T) {
 	})
 
 	t.Run("GitHub Actions", func(t *testing.T) {
-		defer os.Unsetenv("GITHUB_ACTIONS")
+		defer resetEnv(os.Environ())
+		os.Clearenv()
 
 		os.Setenv("GITHUB_ACTIONS", "true")
 
@@ -61,7 +64,8 @@ func TestOrchestrator(t *testing.T) {
 	})
 
 	t.Run("Jenkins", func(t *testing.T) {
-		defer os.Unsetenv("JENKINS_HOME")
+		defer resetEnv(os.Environ())
+		os.Clearenv()
 
 		os.Setenv("JENKINS_URL", "https://foo.bar/baz")
 
@@ -72,7 +76,8 @@ func TestOrchestrator(t *testing.T) {
 	})
 
 	t.Run("Travis", func(t *testing.T) {
-		defer os.Unsetenv("TRAVIS")
+		defer resetEnv(os.Environ())
+		os.Clearenv()
 
 		os.Setenv("TRAVIS", "true")
 

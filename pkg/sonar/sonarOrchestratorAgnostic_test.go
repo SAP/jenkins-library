@@ -16,9 +16,21 @@ func resetEnv(e []string) {
 	}
 }
 
+func TestGeneral(t *testing.T) {
+	t.Run("Not running on CI", func(t *testing.T) {
+		defer resetEnv(os.Environ())
+		os.Clearenv()
+
+		_, err := NewOrchestratorSpecificConfigProvider()
+
+		assert.EqualError(t, err, "could not detect orchestrator. Supported is: Azure DevOps, GitHub Actions, Travis, Jenkins")
+	})
+}
+
 func TestAzure(t *testing.T) {
 	t.Run("Azure - BranchBuild", func(t *testing.T) {
 		defer resetEnv(os.Environ())
+		os.Clearenv()
 		os.Setenv("BUILD_SOURCEBRANCH", "refs/heads/feat/test-azure")
 		os.Setenv("AZURE_HTTP_USER_AGENT", "FOO BAR BAZ")
 		os.Setenv("BUILD_REASON", "pogo")
@@ -32,6 +44,7 @@ func TestAzure(t *testing.T) {
 
 	t.Run("PR", func(t *testing.T) {
 		defer resetEnv(os.Environ())
+		os.Clearenv()
 		os.Setenv("SYSTEM_PULLREQUEST_SOURCEBRANCH", "feat/test-azure")
 		os.Setenv("SYSTEM_PULLREQUEST_TARGETBRANCH", "main")
 		os.Setenv("SYSTEM_PULLREQUEST_PULLREQUESTID", "42")
@@ -45,19 +58,11 @@ func TestAzure(t *testing.T) {
 		assert.Equal(t, "main", c.Base)
 		assert.Equal(t, "42", c.Key)
 	})
-
-	t.Run("Not running on CI", func(t *testing.T) {
-		defer os.Setenv("AZURE_HTTP_USER_AGENT", os.Getenv("AZURE_HTTP_USER_AGENT"))
-		os.Unsetenv("AZURE_HTTP_USER_AGENT")
-
-		_, err := NewOrchestratorSpecificConfigProvider()
-
-		assert.EqualError(t, err, "could not detect orchestrator. Supported is: Azure DevOps, GitHub Actions, Travis, Jenkins")
-	})
 }
 func TestGitHubActions(t *testing.T) {
 	t.Run("BranchBuild", func(t *testing.T) {
 		defer resetEnv(os.Environ())
+		os.Clearenv()
 		os.Setenv("GITHUB_ACTIONS", "true")
 		os.Setenv("GITHUB_REF", "main")
 		os.Unsetenv("GITHUB_HEAD_REF")
@@ -71,6 +76,7 @@ func TestGitHubActions(t *testing.T) {
 
 	t.Run("PR", func(t *testing.T) {
 		defer resetEnv(os.Environ())
+		os.Clearenv()
 		os.Setenv("GITHUB_HEAD_REF", "feat/test-gh-actions")
 		os.Setenv("GITHUB_BASE_REF", "main")
 		os.Setenv("GITHUB_EVENT_PULL_REQUEST_NUMBER", "42")
@@ -87,6 +93,7 @@ func TestGitHubActions(t *testing.T) {
 func TestJenkins(t *testing.T) {
 	t.Run("BranchBuild", func(t *testing.T) {
 		defer resetEnv(os.Environ())
+		os.Clearenv()
 		os.Setenv("JENKINS_URL", "https://foo.bar/baz")
 		os.Setenv("BRANCH_NAME", "feat/test-jenkins")
 
@@ -99,6 +106,7 @@ func TestJenkins(t *testing.T) {
 
 	t.Run("PR", func(t *testing.T) {
 		defer resetEnv(os.Environ())
+		os.Clearenv()
 		os.Setenv("BRANCH_NAME", "PR-42")
 		os.Setenv("CHANGE_BRANCH", "feat/test-jenkins")
 		os.Setenv("CHANGE_TARGET", "main")
@@ -117,6 +125,7 @@ func TestJenkins(t *testing.T) {
 func TestTravis(t *testing.T) {
 	t.Run("BranchBuild", func(t *testing.T) {
 		defer resetEnv(os.Environ())
+		os.Clearenv()
 		os.Setenv("TRAVIS", "true")
 		os.Setenv("TRAVIS_BRANCH", "feat/test-travis")
 		os.Setenv("TRAVIS_PULL_REQUEST", "false")
@@ -130,6 +139,7 @@ func TestTravis(t *testing.T) {
 
 	t.Run("PR", func(t *testing.T) {
 		defer resetEnv(os.Environ())
+		os.Clearenv()
 		os.Setenv("TRAVIS_PULL_REQUEST_BRANCH", "feat/test-travis")
 		os.Setenv("TRAVIS_BRANCH", "main")
 		os.Setenv("TRAVIS_PULL_REQUEST", "42")
