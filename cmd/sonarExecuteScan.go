@@ -16,6 +16,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	FileUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 	SliceUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 	StepResults "github.com/SAP/jenkins-library/pkg/piperutils"
@@ -415,8 +416,9 @@ func getTempDir() string {
 	return tmpFolder
 }
 
+// Fetches parameters from environment variables and updates the options accordingly (only if not already set)
 func detectParametersFromCI(options *sonarExecuteScanOptions) {
-	provider, err := SonarUtils.NewOrchestratorSpecificConfigProvider()
+	provider, err := orchestrator.NewOrchestratorSpecificConfigProvider()
 	if err != nil {
 		log.Entry().WithError(err).Warning("Cannot infer config from CI environment")
 		return
@@ -424,11 +426,20 @@ func detectParametersFromCI(options *sonarExecuteScanOptions) {
 
 	if provider.IsPullRequest() {
 		config := provider.GetPullRequestConfig()
-		options.ChangeBranch = config.Branch
-		options.ChangeTarget = config.Base
-		options.ChangeID = config.Key
+		if len(options.ChangeBranch) == 0 {
+			options.ChangeBranch = config.Branch
+		}
+		if len(options.ChangeTarget) == 0 {
+			options.ChangeTarget = config.Base
+		}
+		if len(options.ChangeID) == 0 {
+			options.ChangeID = config.Key
+		}
 	} else {
 		config := provider.GetBranchBuildConfig()
-		options.BranchName = config.Branch
+
+		if len(options.BranchName) == 0 {
+			options.BranchName = config.Branch
+		}
 	}
 }

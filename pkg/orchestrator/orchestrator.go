@@ -1,4 +1,4 @@
-package piperutils
+package orchestrator
 
 import (
 	"errors"
@@ -14,8 +14,40 @@ const (
 	Travis
 )
 
-func (o Orchestrator) String() string {
-	return [...]string{"AzureDevOps", "GitHubActions", "Travis", "Jenkins"}[o]
+type OrchestratorSpecificConfigProviding interface {
+	GetBranchBuildConfig() BranchBuildConfig
+	GetPullRequestConfig() PullRequestConfig
+	IsPullRequest() bool
+}
+
+type PullRequestConfig struct {
+	Branch string
+	Base   string
+	Key    string
+}
+
+type BranchBuildConfig struct {
+	Branch string
+}
+
+func NewOrchestratorSpecificConfigProvider() (OrchestratorSpecificConfigProviding, error) {
+	o, err := DetectOrchestrator()
+	if err != nil {
+		return nil, err // Don't wrap error here -> Error message wouldn't change
+	}
+
+	switch o {
+	case AzureDevOps:
+		return &AzureDevOpsConfigProvider{}, nil
+	case GitHubActions:
+		return &GitHubActionsConfigProvider{}, nil
+	case Jenkins:
+		return &JenkinsConfigProvider{}, nil
+	case Travis:
+		return &TravisConfigProvider{}, nil
+	default:
+		return nil, errors.New("internal error - Unable to detect orchestrator")
+	}
 }
 
 func DetectOrchestrator() (Orchestrator, error) {
@@ -30,6 +62,10 @@ func DetectOrchestrator() (Orchestrator, error) {
 	} else {
 		return -2, errors.New("could not detect orchestrator. Supported is: Azure DevOps, GitHub Actions, Travis, Jenkins")
 	}
+}
+
+func (o Orchestrator) String() string {
+	return [...]string{"AzureDevOps", "GitHubActions", "Travis", "Jenkins"}[o]
 }
 
 func areIndicatingEnvVarsSet(envVars []string) bool {
