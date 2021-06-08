@@ -833,6 +833,8 @@ func newVulnerabilityExcelReport(alerts []ws.Alert, config *ScanOptions, utils w
 	if err := file.Write(stream); err != nil {
 		return err
 	}
+	filePath := piperutils.Path{Name: "aggregated-vulnerabilities", Target: fileName}
+	piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", []piperutils.Path{filePath}, nil)
 	return nil
 }
 
@@ -893,6 +895,8 @@ func newLibraryCSVReport(libraries map[string][]ws.Library, config *ScanOptions,
 	if err := utils.FileWrite(fileName, []byte(output), 0666); err != nil {
 		return err
 	}
+	filePath := piperutils.Path{Name: "aggregated-libraries", Target: fileName}
+	piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", []piperutils.Path{filePath}, nil)
 	return nil
 }
 
