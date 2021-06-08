@@ -417,6 +417,9 @@ func (c *Client) applyDefaults() {
 	if c.transportTimeout == 0 {
 		c.transportTimeout = 3 * time.Minute
 	}
+	if c.maxRetries == 0 {
+		c.maxRetries = 15
+	}
 	if c.logger == nil {
 		c.logger = log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")
 	}
