@@ -22,7 +22,7 @@ func (a *JenkinsConfigProvider) IsPullRequest() bool {
 	return truthy("CHANGE_ID")
 }
 
-func isTravis() bool {
-	envVars := []string{"TRAVIS"}
+func isJenkins() bool {
+	envVars := []string{"JENKINS_HOME", "JENKINS_URL"}
 	return areIndicatingEnvVarsSet(envVars)
 }

@@ -438,7 +438,7 @@ func detectParametersFromCI(options *sonarExecuteScanOptions) {
 	} else {
 		config := provider.GetBranchBuildConfig()
 
-		if len(options.BranchName) == 0 {
+		if options.InferBranchName && len(options.BranchName) == 0 {
 			options.BranchName = config.Branch
 		}
 	}

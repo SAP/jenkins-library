@@ -60,7 +60,8 @@ func DetectOrchestrator() (Orchestrator, error) {
 	} else if isTravis() {
 		return Orchestrator(Travis), nil
 	} else {
-		return -2, errors.New("unable to detect a supported orchestrator (Azure DevOps, GitHub Actions, Jenkins, Travis)")
+		// Return negative value to indicate error
+		return -1, errors.New("unable to detect a supported orchestrator (Azure DevOps, GitHub Actions, Jenkins, Travis)")
 	}
 }
 

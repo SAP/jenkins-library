@@ -20,7 +20,7 @@ func (a *TravisConfigProvider) IsPullRequest() bool {
 	return truthy("TRAVIS_PULL_REQUEST")
 }
 
-func isJenkins() bool {
-	envVars := []string{"JENKINS_HOME", "JENKINS_URL"}
+func isTravis() bool {
+	envVars := []string{"TRAVIS"}
 	return areIndicatingEnvVarsSet(envVars)
 }
