@@ -560,17 +560,6 @@ spec:
 
 		assert.Equal(t, e.Env, []string{"KUBECONFIG=This is my kubeconfig"})
 
-		assert.Equal(t, "kubectl", e.Calls[0].Exec, "Wrong secret lookup command")
-		assert.Equal(t, []string{
-			"--insecure-skip-tls-verify=true",
-			fmt.Sprintf("--namespace=%v", opts.Namespace),
-			fmt.Sprintf("--context=%v", opts.KubeContext),
-			"get",
-			"secret",
-			opts.ContainerRegistrySecret,
-		}, e.Calls[0].Params, "kubectl parameters incorrect")
-
-		assert.Equal(t, "kubectl", e.Calls[1].Exec, "Wrong secret create command")
 		assert.Equal(t, []string{
 			"--insecure-skip-tls-verify=true",
 			fmt.Sprintf("--namespace=%v", opts.Namespace),

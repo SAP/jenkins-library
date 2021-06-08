@@ -98,10 +98,9 @@ func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, s
 			secretsData = fmt.Sprintf(",imagePullSecrets[0].name=%v", config.ContainerRegistrySecret)
 		}
 	} else {
-		kubeSecretParams := defineKubeSecretParams(config, containerRegistry)
-
 		var dockerRegistrySecret bytes.Buffer
 		command.Stdout(&dockerRegistrySecret)
+		kubeSecretParams := defineKubeSecretParams(config, containerRegistry)
 		log.Entry().Infof("Calling kubectl create secret --dry-run=true ...")
 		log.Entry().Debugf("kubectl parameters %v", kubeSecretParams)
 		if err := command.RunExecutable("kubectl", kubeSecretParams...); err != nil {
@@ -219,11 +218,11 @@ func runKubectlDeploy(config kubernetesDeployOptions, command command.ExecRunner
 			log.Entry().Fatal("Cannot create Container registry secret without proper registry username/password or docker config.json file")
 		}
 
-		kubeSecretParams := defineKubeSecretParams(config, containerRegistry)
 		// first check if secret already exists
 		kubeCheckParams := append(kubeParams, "get", "secret", config.ContainerRegistrySecret)
 		if err := command.RunExecutable("kubectl", kubeCheckParams...); err != nil {
 			log.Entry().Infof("Registry secret '%v' does not exist, let's create it ...", config.ContainerRegistrySecret)
+			kubeSecretParams := defineKubeSecretParams(config, containerRegistry)
 			kubeSecretParams = append(kubeParams, kubeSecretParams...)
 			log.Entry().Infof("Creating container registry secret '%v'", config.ContainerRegistrySecret)
 			log.Entry().Debugf("Running kubectl with following parameters: %v", kubeSecretParams)
