@@ -1,0 +1,69 @@
+metadata:
+  name: batsExecuteTests
+  description: This step executes tests using the [Bash Automated Testing System - bats-core](https://github.com/bats-core/bats-core).
+  longDescription: |
+    Bats is a TAP-compliant testing framework for Bash. It provides a simple way to verify that the UNIX programs you write behave as expected. A Bats test file is a Bash script with special syntax for defining test cases. Under the hood, each test case is just a function with a description.
+spec:
+  inputs:
+    resources:
+      - name: tests
+        type: stash
+    params:
+      - name: outputFormat
+        type: string
+        description: Defines the format of the test result output. junit would be the standard for automated build environments but you could use also the option tap.
+        possibleValues: [tap, junit]
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        default: "junit"
+      - name: repository
+        type: string
+        description: Defines the version of bats-core to be used. By default we use the version from the master branch.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        default: "https://github.com/bats-core/bats-core.git"
+      - name: testPackage
+        type: string
+        description: For the transformation of the test result to xUnit format the node module tap-xunit is used. This parameter defines the name of the test package used in the xUnit result file.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        default: "piper-bats"
+      - name: testPath
+        type: string
+        description: Defines either the directory which contains the test files (*.bats) or a single file. You can find further details in the Bats-core documentation.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        default: "src/test"
+      - name: envVars
+        type: "[]string"
+        description: "Injects environment variables to step execution. Format of value must be ['<KEY1>=<VALUE1>','<KEY2>=<VALUE2>']. Example: ['CONTAINER_NAME=piper-jenskins','IMAGE_NAME=my-image']"
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+  outputs:
+    resources:
+      - name: influx
+        type: influx
+        params:
+          - name: step_data
+            fields:
+              - name: bats
+                type: bool
+  containers:
+    - name: bats
+      image: node:lts-stretch
+      workingDir: /home/node
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: outputFormat
+              value: junit
