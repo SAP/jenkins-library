@@ -88,6 +88,10 @@ func (w *whitesourceUtilsBundle) InstallAllNPMDependencies(config *ws.ScanOption
 	return w.getNpmExecutor(config).InstallAllDependencies(packageJSONFiles)
 }
 
+func (w *whitesourceUtilsBundle) SetOptions(o piperhttp.ClientOptions) {
+	w.Client.SetOptions(o)
+}
+
 func (w *whitesourceUtilsBundle) Now() time.Time {
 	return time.Now()
 }
