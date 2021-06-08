@@ -217,8 +217,8 @@ func (f *fortifyMock) GetProjectIssuesByIDAndFilterSetGroupedBySelector(id int64
 		}, nil
 	}
 	if issueFilterSelectorSet != nil && issueFilterSelectorSet.FilterBySet != nil && len(issueFilterSelectorSet.FilterBySet) > 0 && issueFilterSelectorSet.FilterBySet[0].GUID == "3" {
-		groupName:= "Suspicious"
-		groupName2:= "Exploitable"
+		groupName := "Suspicious"
+		groupName2 := "Exploitable"
 		group := "3"
 		total := int32(4)
 		audited := int32(0)
@@ -241,7 +241,7 @@ func (f *fortifyMock) GetProjectIssuesByIDAndFilterSetGroupedBySelector(id int64
 	audited3 := int32(4)
 	return []*models.ProjectVersionIssueGroup{
 		{ID: &group, CleanName: &group, TotalCount: &total, AuditedCount: &audited},
-		{ID: &group2, CleanName:&group2, TotalCount: &total2, AuditedCount: &audited2},
+		{ID: &group2, CleanName: &group2, TotalCount: &total2, AuditedCount: &audited2},
 		{ID: &group3, CleanName: &group3, TotalCount: &total3, AuditedCount: &audited3},
 	}, nil
 }

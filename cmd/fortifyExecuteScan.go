@@ -278,9 +278,8 @@ func verifyFFProjectCompliance(config fortifyExecuteScanOptions, sys fortify.Sys
 	influx.fortify_data.fields.projectName = *project.Name
 	influx.fortify_data.fields.projectVersion = *projectVersion.Name
 	influx.fortify_data.fields.violations = numberOfViolations
-	
 
-	scanReport:= createCustomReport(influx, issueGroups)
+	scanReport := createCustomReport(influx, issueGroups)
 	paths, err := writeCustomReports(scanReport, influx.fortify_data.fields.projectName, influx.fortify_data.fields.projectVersion)
 	reports = append(reports, paths...)
 	if numberOfViolations > 0 {
@@ -973,7 +972,6 @@ func createCustomReport(influx *fortifyExecuteScanInflux, issueGroups []*models.
 			{Description: "Unaudited spot check issues", Details: fmt.Sprint(data.spotChecksTotal - data.spotChecksAudited)},
 			{Description: "Total number of issues", Details: fmt.Sprint(data.suspicious)},
 			{Description: "Total number of exploitable issues", Details: fmt.Sprint(data.exploitable)},
-
 		},
 		ReportTime: time.Now(),
 	}
