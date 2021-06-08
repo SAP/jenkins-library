@@ -777,6 +777,7 @@ func TestAggregateVersionWideLibraries(t *testing.T) {
 			contents, _ := utils.FileRead(resource)
 			asString := string(contents)
 			assert.Equal(t, "Library Name, Project Name\nmock-library, mock-project\n", asString)
+			assert.True(t, utils.HasWrittenFile("whitesourceExecuteScan_reports.json"))
 		}
 	})
 }
@@ -805,6 +806,7 @@ func TestAggregateVersionWideVulnerabilities(t *testing.T) {
 		sheetContents, err := utils.FileRead(reportSheet)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, sheetContents)
+		assert.True(t, utils.HasWrittenFile("whitesourceExecuteScan_reports.json"))
 	})
 }
 
