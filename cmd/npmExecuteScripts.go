@@ -41,5 +41,17 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 		}
 	}
 
-	return npmExecutor.RunScriptsInAllPackages(config.RunScripts, nil, config.ScriptOptions, config.VirtualFrameBuffer, config.BuildDescriptorExcludeList, config.BuildDescriptorList)
+	err := npmExecutor.RunScriptsInAllPackages(config.RunScripts, nil, config.ScriptOptions, config.VirtualFrameBuffer, config.BuildDescriptorExcludeList, config.BuildDescriptorList)
+	if err != nil {
+		return err
+	}
+
+	if config.Publish {
+		err := npmExecutor.RunScriptsInAllPackages([]string{"publish"}, nil, []string{}, config.VirtualFrameBuffer, config.BuildDescriptorExcludeList, config.BuildDescriptorList)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
