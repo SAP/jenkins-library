@@ -78,7 +78,6 @@ transportRequestReqIDFromGit( script: this )
 transportRequestUploadSOLMAN( script: this, ... )
 ```
 
-
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}
