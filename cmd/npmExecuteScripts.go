@@ -3,6 +3,7 @@ package cmd
 import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/npm"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
@@ -47,7 +48,27 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 	}
 
 	if config.Publish {
-		err := npmExecutor.RunScriptsInAllPackages([]string{"publish"}, nil, []string{}, config.VirtualFrameBuffer, config.BuildDescriptorExcludeList, config.BuildDescriptorList)
+		npmrc := npm.NewNPMRC()
+
+		exists, err := piperutils.FileExists(".npmrc")
+		if err != nil {
+			return err
+		}
+		if !exists {
+			npmrc.Create()
+		}
+
+		err = npmrc.SetAuth(config.RepositoryURL, config.RepositoryPassword)
+		if err != nil {
+			return err
+		}
+
+		err = npmrc.Write()
+		if err != nil {
+			return err
+		}
+
+		err = npmExecutor.RunScriptsInAllPackages([]string{"publish"}, nil, []string{}, config.VirtualFrameBuffer, config.BuildDescriptorExcludeList, config.BuildDescriptorList)
 		if err != nil {
 			return err
 		}
