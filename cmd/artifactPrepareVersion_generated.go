@@ -23,6 +23,7 @@ type artifactPrepareVersionOptions struct {
 	CustomVersionSection   string `json:"customVersionSection,omitempty"`
 	CustomVersioningScheme string `json:"customVersioningScheme,omitempty"`
 	DockerVersionSource    string `json:"dockerVersionSource,omitempty"`
+	FetchCoordinates       bool   `json:"fetchCoordinates,omitempty"`
 	FilePath               string `json:"filePath,omitempty"`
 	GlobalSettingsFile     string `json:"globalSettingsFile,omitempty"`
 	IncludeCommitID        bool   `json:"includeCommitId,omitempty"`
@@ -40,8 +41,12 @@ type artifactPrepareVersionOptions struct {
 type artifactPrepareVersionCommonPipelineEnvironment struct {
 	artifactVersion         string
 	originalArtifactVersion string
+	artifactID              string
+	groupID                 string
+	packaging               string
 	git                     struct {
 		commitID      string
+		headCommitID  string
 		commitMessage string
 	}
 }
@@ -54,7 +59,11 @@ func (p *artifactPrepareVersionCommonPipelineEnvironment) persist(path, resource
 	}{
 		{category: "", name: "artifactVersion", value: p.artifactVersion},
 		{category: "", name: "originalArtifactVersion", value: p.originalArtifactVersion},
+		{category: "", name: "artifactId", value: p.artifactID},
+		{category: "", name: "groupId", value: p.groupID},
+		{category: "", name: "packaging", value: p.packaging},
 		{category: "git", name: "commitId", value: p.git.commitID},
+		{category: "git", name: "headCommitId", value: p.git.headCommitID},
 		{category: "git", name: "commitMessage", value: p.git.commitMessage},
 	}
 
@@ -214,8 +223,9 @@ func addArtifactPrepareVersionFlags(cmd *cobra.Command, stepConfig *artifactPrep
 	cmd.Flags().StringVar(&stepConfig.CommitUserName, "commitUserName", `Project Piper`, "Defines the user name which appears in version control for the versioning update (in case `versioningType: cloud`).")
 	cmd.Flags().StringVar(&stepConfig.CustomVersionField, "customVersionField", os.Getenv("PIPER_customVersionField"), "For `buildTool: custom`: Defines the field which contains the version in the descriptor file.")
 	cmd.Flags().StringVar(&stepConfig.CustomVersionSection, "customVersionSection", os.Getenv("PIPER_customVersionSection"), "For `buildTool: custom`: Defines the section for version retrieval in vase a *.ini/*.cfg file is used.")
-	cmd.Flags().StringVar(&stepConfig.CustomVersioningScheme, "customVersioningScheme", os.Getenv("PIPER_customVersioningScheme"), "For `buildTool: custom`: Defines the versioning scheme to be used (possible options `pep440`, `maven`, `semver2`).")
+	cmd.Flags().StringVar(&stepConfig.CustomVersioningScheme, "customVersioningScheme", os.Getenv("PIPER_customVersioningScheme"), "For `buildTool: custom`: Defines the versioning scheme to be used.")
 	cmd.Flags().StringVar(&stepConfig.DockerVersionSource, "dockerVersionSource", os.Getenv("PIPER_dockerVersionSource"), "For `buildTool: docker`: Defines the source of the version. Can be `FROM`, any supported _buildTool_ or an environment variable name.")
+	cmd.Flags().BoolVar(&stepConfig.FetchCoordinates, "fetchCoordinates", false, "If set to `true` the step will retreive artifact coordinates and store them in the common pipeline environment.")
 	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "Defines a custom path to the descriptor file. Build tool specific defaults are used (e.g. `maven: pom.xml`, `npm: package.json`, `mta: mta.yaml`).")
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Maven only - Path to the mvn settings file that should be used as global settings file.")
 	cmd.Flags().BoolVar(&stepConfig.IncludeCommitID, "includeCommitId", true, "Defines if the automatically generated version (`versioningType: cloud`) should include the commit id hash.")
@@ -288,6 +298,14 @@ func artifactPrepareVersionMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "fetchCoordinates",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
@@ -424,7 +442,11 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Parameters: []map[string]interface{}{
 							{"Name": "artifactVersion"},
 							{"Name": "originalArtifactVersion"},
+							{"Name": "artifactId"},
+							{"Name": "groupId"},
+							{"Name": "packaging"},
 							{"Name": "git/commitId"},
+							{"Name": "git/headCommitId"},
 							{"Name": "git/commitMessage"},
 						},
 					},

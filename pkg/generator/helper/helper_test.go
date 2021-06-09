@@ -30,6 +30,7 @@ spec:
         params:
           - name: artifactVersion
           - name: git/commitId
+          - name: git/headCommitId
           - name: git/branch
           - name: custom/customList
             type: "[]string"

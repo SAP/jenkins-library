@@ -676,7 +676,6 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
         def expectedSecurityContext = [runAsUser: 1000, fsGroup: 1000]
         nullScript.commonPipelineEnvironment.configuration = [general: [jenkinsKubernetes: [
             securityContext: expectedSecurityContext]]]
-
         stepRule.step.dockerExecuteOnKubernetes(
             script: nullScript,
             juStabUtils: utils,
@@ -803,11 +802,12 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
             script: nullScript,
             juStabUtils: utils,
             containerName: 'mycontainer',
+            initContainerImage: 'ppiper/cf-cli',
             dockerImage: 'maven:3.5-jdk-8-alpine',
             containerMountPath: '/opt',
         ) { bodyExecuted = true }
-
         def containerSpec = podSpec.spec.containers.find{it.image == "maven:3.5-jdk-8-alpine"}
+        def initContainerSpec = podSpec.spec.initContainers[0]
         assertTrue(bodyExecuted)
         assertEquals(
             [[
@@ -819,6 +819,46 @@ class DockerExecuteOnKubernetesTest extends BasePiperTest {
                 "name"     : "volume",
                 "mountPath": "/opt"
             ]], containerSpec.volumeMounts)
+        assertEquals(
+            [[
+                 "name"     : "volume",
+                 "mountPath": "/opt"
+             ]], initContainerSpec.volumeMounts)
+    }
+
+    @Test
+    void testInitContainerDefaultWithParameters() {
+        stepRule.step.dockerExecuteOnKubernetes(
+            script: nullScript,
+            juStabUtils: utils,
+            containerName: 'mycontainer',
+            initContainerImage: 'ppiper/cf-cli@sha256:latest',
+            initContainerCommand: 'cp /usr/local/bin/cf7 /opt/bin/cf',
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+            containerMountPath: '/opt',
+        ) { bodyExecuted = true }
+        def initContainer = podSpec.spec.initContainers[0]
+        def expectedCommandOutput = ["sh", "-c", "cp /usr/local/bin/cf7 /opt/bin/cf"]
+        assertTrue(bodyExecuted)
+        assertEquals("ppiper-cf-cli-sha256-latest", initContainer.name)
+        assertEquals("ppiper/cf-cli@sha256:latest", initContainer.image)
+        assertThat(initContainer.command, is(equalTo(expectedCommandOutput)))
+    }
+
+    @Test
+    void testInitContainerWithoutContainerCommand() {
+        stepRule.step.dockerExecuteOnKubernetes(
+            script: nullScript,
+            juStabUtils: utils,
+            containerName: 'mycontainer',
+            initContainerImage: 'ppiper/cf-cli@sha256:latest',
+            dockerImage: 'maven:3.5-jdk-8-alpine',
+            containerMountPath: '/opt',
+        ) { bodyExecuted = true }
+        def initContainer = podSpec.spec.initContainers[0]
+        def expectedCommandOutput = ["/usr/bin/tail", "-f", "/dev/null"]
+        assertTrue(bodyExecuted)
+        assertThat(initContainer.command, is(equalTo(expectedCommandOutput)))
     }
 
     private container(options, body) {
