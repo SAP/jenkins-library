@@ -3,7 +3,7 @@
 ## ${docGenDescription}
 
 !!! note "Executed on Jenkins Master"
-    This step is executed on the Jenkins master only. On the master note the project's Git repository is fully available. If kubernetes is used, the Git repository would have to be stashed. Depending on the size of the repository, this would be quite expensive or not possible at all.
+    This step is executed on the Jenkins master only. On the master node the project's Git repository is fully available. If kubernetes is used, the Git repository would have to be stashed. Depending on the size of the repository, this would be quite expensive or not possible at all.
 
 ## Administering the Change Document ID by Git Commit Messages
 

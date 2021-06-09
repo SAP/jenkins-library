@@ -3,7 +3,7 @@
 ## ${docGenDescription}
 
 !!! note "Executed on Jenkins Master"
-    This step is executed on the Jenkins master only. On the master note the project's Git repository is fully available. If kubernetes is used, the Git repository would have to be stashed. Depending on the size of the repository, this would be quite expensive or not possible at all.
+    This step is executed on the Jenkins master only. On the master node the project's Git repository is fully available. If kubernetes is used, the Git repository would have to be stashed. Depending on the size of the repository, this would be quite expensive or not possible at all.
 
 ## Administering the Transport Request ID by Git Commit Messages
 
@@ -47,14 +47,14 @@ o 3d97415 (origin/master) merged last change
 |
 | o d99fbf7 (HEAD) feature fixes
 | |
-| o 5c380ea TranportRequest: ABCD10001E
+| o 5c380ea TransportRequest: ABCD10001E
 | |
 | o 0e82d9b new feature
 |/
 o 4378bb4 last change
 ```
 
-If you want to retrieve the ID from the main branch, be aware that former change document IDs may already be in the history.
+If you want to retrieve the ID from the main branch, be aware that former transport request IDs may already be in the history.
 Adjust _gitFrom_ so that it points to a commit before your ID definition.
 
 ```yaml
@@ -69,14 +69,14 @@ o 3d97415 (origin/master) merge new feature
 o d99fbf7 feature fixes
 |
 o 5c380ea adjust config.yaml
-|           TranportRequest: ABCD10001E
+|           TransportRequest: ABCD10001E
 |
 o 0e82d9b new feature
 |
 o 4378bb4 merged last change
 ```
 
-Define _gitTo_, if it cannot be ruled out that further tranport request IDs have been merged in parallel.
+Define _gitTo_, if it cannot be ruled out that further transport request IDs have been merged in parallel.
 
 ```yaml
 steps:
@@ -91,7 +91,7 @@ o 3d97415 (origin/master) merge new feature
 . o d99fbf7 feature fixes
 . |
 . o 5c380ea adjust config.yaml
-. |           TranportRequest: ABCD10001E
+. |           TransportRequest: ABCD10001E
 . |
 . o 0e82d9b new feature
 |/
