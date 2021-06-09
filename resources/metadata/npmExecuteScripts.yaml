@@ -81,6 +81,17 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: repositoryUrl
+        type: string
+        description: ""
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/repositoryUrl
       - name: repositoryPassword
         type: string
         description: Password for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This password will be updated in settings.xml . When no settings.xml is provided a new one is created corresponding with <servers> tag

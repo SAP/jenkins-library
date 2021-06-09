@@ -24,6 +24,7 @@ type npmExecuteScriptsOptions struct {
 	BuildDescriptorList        []string `json:"buildDescriptorList,omitempty"`
 	CreateBOM                  bool     `json:"createBOM,omitempty"`
 	Publish                    bool     `json:"publish,omitempty"`
+	RepositoryURL              string   `json:"repositoryUrl,omitempty"`
 	RepositoryPassword         string   `json:"repositoryPassword,omitempty"`
 	RepositoryUser             string   `json:"repositoryUser,omitempty"`
 }
@@ -111,6 +112,7 @@ func addNpmExecuteScriptsFlags(cmd *cobra.Command, stepConfig *npmExecuteScripts
 	cmd.Flags().StringSliceVar(&stepConfig.BuildDescriptorList, "buildDescriptorList", []string{}, "List of build descriptors and therefore modules for execution of the npm scripts. The elements have to be paths to the build descriptors. **If set, buildDescriptorExcludeList will be ignored.**")
 	cmd.Flags().BoolVar(&stepConfig.CreateBOM, "createBOM", false, "Create a BOM xml using CycloneDX.")
 	cmd.Flags().BoolVar(&stepConfig.Publish, "publish", false, "Configures npm to publish the artifact to a repository.")
+	cmd.Flags().StringVar(&stepConfig.RepositoryURL, "repositoryUrl", os.Getenv("PIPER_repositoryUrl"), "")
 	cmd.Flags().StringVar(&stepConfig.RepositoryPassword, "repositoryPassword", os.Getenv("PIPER_repositoryPassword"), "Password for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This password will be updated in settings.xml . When no settings.xml is provided a new one is created corresponding with <servers> tag")
 	cmd.Flags().StringVar(&stepConfig.RepositoryUser, "repositoryUser", os.Getenv("PIPER_repositoryUser"), "User for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This user will be updated in settings.xml . When no settings.xml is provided a new one is created corresponding with <servers> tag")
 
@@ -201,6 +203,19 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+					},
+					{
+						Name: "repositoryUrl",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/repositoryUrl",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name: "repositoryPassword",
