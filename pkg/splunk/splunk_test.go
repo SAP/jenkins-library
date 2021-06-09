@@ -2,16 +2,17 @@ package splunk
 
 import (
 	"encoding/json"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/jarcoal/httpmock"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"reflect"
 	"testing"
 	"time"
+
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/jarcoal/httpmock"
 )
 
 func TestInitialize(t *testing.T) {
@@ -292,6 +293,7 @@ func TestSend(t *testing.T) {
 				Token:                     "TOKEN",
 				TransportSkipVerification: true,
 				UseDefaultTransport:       true,
+				MaxRetries:                -1,
 			})
 
 			SplunkClient = &Splunk{
@@ -455,7 +457,7 @@ func Test_tryPostMessages(t *testing.T) {
 				Token:                     "TOKEN",
 				TransportSkipVerification: true,
 				UseDefaultTransport:       true,
-				MaxRetries:                0,
+				MaxRetries:                -1,
 			})
 			SplunkClient = &Splunk{
 				splunkClient:          client,
