@@ -14,27 +14,26 @@
 The Change Management Client (CM Client) handles the access to SAP Solution Manager.
 The CM Client is a software running under Linux, which can initiate basic change management tasks
 in the Solution Manager as well as in the CTS. The client is used by default
-as  a [Docker image](https://hub.docker.com/r/ppiper/cm-client),
+as a [Docker image](https://hub.docker.com/r/ppiper/cm-client),
 but can also be installed as a [command line tool](https://github.com/SAP/devops-cm-client).
 
-### Certificates
+!!! note "Certificates"
+    It is expected that the Solution Manager endpoint is secured by SSL and sends a certificate accordingly.
+    The CM Client verifies the certificate. If the publisher of this certificate is unknown, the connection will be rejected.
+    The CM Client uses the underlying JDK procedures for the verification.
+    Accordingly, the issuer must be specified in the truststore of the JDK.
 
-It is expected that the Solution Manager endpoint is secured by SSL and sends a certificate accordingly.
-The certificate is verified by the CM Client. If the publisher of this certificate is unknown,
-the connection will be rejected. The client implemented in Java uses
-the underlying JDK procedures for the verification. Accordingly, the issuer must be specified in the
-truststore of the JDK. In the case of the [Docker image](https://hub.docker.com/r/ppiper/cm-client)
-a clone of the image must be created with the necessary certificate added to its truststore.
-In the case of the immediate [command line tool](https://github.com/SAP/devops-cm-client),
-only the truststore of the environment needs to be extended.
+Create a clone of the image and add the necessary certificate to its truststore in case you use the [Docker image](https://hub.docker.com/r/ppiper/cm-client).
+Extend the truststore of the environment with the necessary certificate in the case you use the immediate [command line tool](https://github.com/SAP/devops-cm-client).
 
-## Specifying the Change document and transport request
+## Specifying the Change Document and Transport Request
 
-The target of the upload is a Transport Request, which is determined by the identifiers (ID)
-of the Request and the associated Change Document.
-`transportRequestUploadSOLMAN` allows to set these IDs by parameter.
-As an additional option, IDs can be passed in via the Common Pipeline Environment.
-For example through a step that generates the IDs or obtains them differently.
+The target of the upload is a transport request and the associated change document.
+Both objects are identified by identifiers (ID).
+`transportRequestUploadSOLMAN` allows you to set IDs by parameter.
+Alternatively, you can pass the IDs through the Common Pipeline Environment.
+For example, by performing a step that generates the IDs or obtains them differently.
+See [transportRequestDocIDFromGit](transportRequestDocIDFromGit.md) and [transportRequestReqIDFromGit](transportRequestReqIDFromGit.md)
 
 ### By Step Parameter
 
@@ -70,8 +69,15 @@ transportRequestUploadSOLMAN(
 
 ## Common Pipeline Environment
 
-OS Piper provides the steps [transportRequestDocIDFromGit](transportRequestDocIDFromGit.md) and [transportRequestReqIDFromGit](transportRequestReqIDFromGit.md) to get `changeDocumentId` and `transportRequestId` from the Git commit messages.
-The IDs are entered into the `commonPipelineEnvironment` and picked up there by the upload step.
+With OS Piper you can use the steps [transportRequestDocIDFromGit](transportRequestDocIDFromGit.md) and [transportRequestReqIDFromGit](transportRequestReqIDFromGit.md) to obtain the `changeDocumentId` and `transportRequestId` values from your Git commit messages.
+The steps enter the IDs into the `commonPipelineEnvironment`, in turn, the upload step `transportRequestUploadSOLMAN` picks them up from there.
+
+```groovy
+transportRequestDocIDFromGit( script: this )
+transportRequestReqIDFromGit( script: this )
+transportRequestUploadSOLMAN( script: this, ... )
+```
+
 
 ## ${docGenParameters}
 
@@ -87,8 +93,8 @@ transportRequestUploadSOLMAN(
   endpoint: 'https://example.org/cm/solman/endpoint'
   applicationId: 'ABC',
   uploadCredentialsId: "SOLMAN_CRED_ID"
-  changeDocumentId: '12345678',
-  transportRequestId: '87654321',
+  changeDocumentId: '1000001234',
+  transportRequestId: 'ABCD10005E',
   filePath: '/path/file.ext',
   cmClientOpts: '-Dkey=value'
 )
