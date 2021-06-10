@@ -245,6 +245,9 @@ func (c *Client) initialize() *http.Client {
 	var httpClient *http.Client
 	if c.maxRetries > 0 {
 		retryClient := retryablehttp.NewClient()
+		localLogger := log.Entry()
+		localLogger.Level = logrus.DebugLevel
+		retryClient.Logger = localLogger
 		retryClient.HTTPClient.Timeout = c.maxRequestDuration
 		retryClient.HTTPClient.Jar = c.cookieJar
 		retryClient.RetryMax = c.maxRetries
@@ -252,8 +255,8 @@ func (c *Client) initialize() *http.Client {
 			retryClient.HTTPClient.Transport = transport
 		}
 		retryClient.CheckRetry = func(ctx context.Context, resp *http.Response, err error) (bool, error) {
-			if err != nil && (strings.Contains(err.Error(), "timeout") || strings.Contains(err.Error(), "timed out") || strings.Contains(err.Error(), "connection refused")) {
-				// Assuming timeouts could be retried
+			if err != nil && (strings.Contains(err.Error(), "timeout") || strings.Contains(err.Error(), "timed out") || strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "connection reset")) {
+				// Assuming timeouts, resets, and similar could be retried
 				return true, nil
 			}
 			return retryablehttp.DefaultRetryPolicy(ctx, resp, err)
