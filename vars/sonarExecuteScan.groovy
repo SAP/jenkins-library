@@ -50,9 +50,6 @@ void call(Map parameters = [:]) {
                 if(stepConfig.legacyPRHandling) {
                     checkMandatoryParameter(config, "githubTokenCredentialsId")
                 }
-                environment.add("PIPER_changeId=${env.CHANGE_ID}")
-                environment.add("PIPER_changeBranch=${env.CHANGE_BRANCH}")
-                environment.add("PIPER_changeTarget=${env.CHANGE_TARGET}")
             } else if (!isProductiveBranch(script) && stepConfig.inferBranchName && env.BRANCH_NAME) {
                 environment.add("PIPER_branchName=${env.BRANCH_NAME}")
             }
