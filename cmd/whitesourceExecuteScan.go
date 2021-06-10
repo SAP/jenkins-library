@@ -833,6 +833,8 @@ func newVulnerabilityExcelReport(alerts []ws.Alert, config *ScanOptions, utils w
 	if err := file.Write(stream); err != nil {
 		return err
 	}
+	filePath := piperutils.Path{Name: "aggregated-vulnerabilities", Target: fileName}
+	piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", []piperutils.Path{filePath}, nil)
 	return nil
 }
 
@@ -843,9 +845,10 @@ func fillVulnerabilityExcelReport(alerts []ws.Alert, streamWriter *excelize.Stre
 	}{
 		{"A1", "Severity"},
 		{"B1", "Library"},
-		{"C1", "Vulnerability ID"},
-		{"D1", "Project"},
-		{"E1", "Resolution"},
+		{"C1", "Vulnerability Id"},
+		{"D1", "CVSS 3"},
+		{"E1", "Project"},
+		{"F1", "Resolution"},
 	}
 	for _, row := range rows {
 		err := streamWriter.SetRow(row.axis, []interface{}{excelize.Cell{StyleID: styleID, Value: row.title}})
@@ -855,13 +858,14 @@ func fillVulnerabilityExcelReport(alerts []ws.Alert, streamWriter *excelize.Stre
 	}
 
 	for i, alert := range alerts {
-		row := make([]interface{}, 5)
+		row := make([]interface{}, 6)
 		vuln := alert.Vulnerability
-		row[0] = vuln.Severity
+		row[0] = vuln.CVSS3Severity
 		row[1] = alert.Library.Filename
-		row[2] = vuln.Level
-		row[3] = alert.Project
-		row[4] = vuln.FixResolutionText
+		row[2] = vuln.Name
+		row[3] = vuln.CVSS3Score
+		row[4] = alert.Project
+		row[5] = vuln.FixResolutionText
 		cell, _ := excelize.CoordinatesToCellName(1, i+2)
 		if err := streamWriter.SetRow(cell, row); err != nil {
 			log.Entry().Errorf("failed to write alert row: %v", err)
@@ -891,6 +895,8 @@ func newLibraryCSVReport(libraries map[string][]ws.Library, config *ScanOptions,
 	if err := utils.FileWrite(fileName, []byte(output), 0666); err != nil {
 		return err
 	}
+	filePath := piperutils.Path{Name: "aggregated-libraries", Target: fileName}
+	piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", []piperutils.Path{filePath}, nil)
 	return nil
 }
 
