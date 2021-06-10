@@ -30,7 +30,7 @@ jobs:
           flags: --token ${{ secrets.GITHUB_TOKEN }} --version latest --assetPath ./piper_master
       - env:
           CGO_ENABLED: 0
-          GOOS: darwin 
+          GOOS: darwin
           GOARCH: amd64
         run: |
           # See https://golang.org/cmd/link/ for info on -w (omit the DWARF symbol table) and -s (omit the symbol table and debug information)
@@ -46,7 +46,7 @@ jobs:
           flags: --token ${{ secrets.GITHUB_TOKEN }} --version latest --assetPath ./piper_master-darwin.x86_64
       - env:
           CGO_ENABLED: 0
-          GOOS: windows 
+          GOOS: windows
           GOARCH: amd64
         run: |
           # See https://golang.org/cmd/link/ for info on -w (omit the DWARF symbol table) and -s (omit the symbol table and debug information)
