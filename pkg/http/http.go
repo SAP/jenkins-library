@@ -45,8 +45,8 @@ type ClientOptions struct {
 	// request duration". If it is greater than 0, an overall, hard timeout
 	// for the request will be enforced. This should only be used if the
 	// length of the request bodies is known.
-	MaxRequestDuration        time.Duration
-	MaxRetries                int
+	MaxRequestDuration time.Duration
+	MaxRetries         int
 	// TransportTimeout defaults to 3 minutes, if not specified. It is
 	// used for the transport layer and duration of handshakes and such.
 	TransportTimeout          time.Duration
