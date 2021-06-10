@@ -156,16 +156,26 @@ func TestRetrieveHookConfig(t *testing.T) {
 	}{
 		{hookJSON: []byte(""), expectedHookConfig: HookConfiguration{}},
 		{hookJSON: []byte(`{"sentry":{"dsn":"https://my.sentry.dsn"}}`), expectedHookConfig: HookConfiguration{SentryConfig: SentryConfiguration{Dsn: "https://my.sentry.dsn"}}},
+		{hookJSON: []byte(`{"sentry":{"dsn":"https://my.sentry.dsn"}, "splunk":{"dsn":"https://my.splunk.dsn", "token": "mytoken", "index": "myindex", "sendLogs": true}}`),
+			expectedHookConfig: HookConfiguration{SentryConfig: SentryConfiguration{Dsn: "https://my.sentry.dsn"},
+				SplunkConfig: SplunkConfiguration{
+					Dsn:      "https://my.splunk.dsn",
+					Token:    "mytoken",
+					Index:    "myindex",
+					SendLogs: true,
+				},
+			},
+		},
 	}
 
 	for _, test := range tt {
 		var target HookConfiguration
-		var hookJSONRaw json.RawMessage
+		var hookJSONinterface map[string]interface{}
 		if len(test.hookJSON) > 0 {
-			err := json.Unmarshal(test.hookJSON, &hookJSONRaw)
+			err := json.Unmarshal(test.hookJSON, &hookJSONinterface)
 			assert.NoError(t, err)
 		}
-		retrieveHookConfig(&hookJSONRaw, &target)
+		retrieveHookConfig(hookJSONinterface, &target)
 		assert.Equal(t, test.expectedHookConfig, target)
 	}
 }

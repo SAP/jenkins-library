@@ -1,9 +1,8 @@
 # Build and Publish Add-on Products on SAP BTP, ABAP Environment
 
-!!! caution Current limitations
-    Please use the long commit ID in the commit ID field in the add-on descriptor file currently, if you are using the short commit ID the build process will fail.
-    To retrieve the long commit id, go into the Manage Software Components app, navigate to the branch, select the commit in the list of commits, field "Long Commit ID" becomes available.
-    This issue is planned to be resolved ABAP Environment release 2105.
+!!! caution "Current limitations"
+
+      - gCTS-related restrictions apply, please refer to [gCTS: restrictions in supported object types](https://launchpad.support.sap.com/#/notes/2888887)
 
 ## Introduction
 
@@ -12,6 +11,8 @@ This scenario describes how an add-on for the SAP BTP, ABAP environment is built
 The development on SAP BTP, ABAP environment systems is done within [“software components”](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/58480f43e0b64de782196922bc5f1ca0.html) (also called: “repositories”). The add-ons being built in this scenario are made up by one or multiple software components combined to an add-on product. The “ABAP environment pipeline” can be used to build and publish the add-on product. Please read on for more details about the Add-on Product and the build process.
 
 Of course, this tackles only the upstream part of the SaaS solution lifecycle. Once the add-on is published, it can be consumed as a [multitenant application in ABAP environment](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/195031ff8f484b51af16fe392ec2ae6e.html).
+
+A comprehensive guidance on how to develop and operate SaaS applications using add-ons, can be found [here](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/e34a329acc804c0e874496548183682f.html)
 
 ## The Add-on Product
 
@@ -73,7 +74,7 @@ The assembly system should be of [service type abap](https://help.sap.com/viewer
 
 #### Add-on Assembly Kit as a Service (=AAKaaS)
 
-The Add-on Assembly Kit as a Service is responsible for registering and publishing the add-on product. It is accessible via APIs with an S-User.
+The Add-on Assembly Kit as a Service is responsible for registering and publishing the add-on product. It is accessible via APIs with a technical communication user.
 
 ### Deployment Tools
 
@@ -154,10 +155,17 @@ repositories:
     branch: v1.2.0
     version: 1.2.0
     commitID: 7d4516e9
+    languages:
+      - DE
+      - EN
   - name: /NAMESPC/COMPONENTB
     branch: v2.0.0
     version: 2.0.0
     commitID: 9f102ffb
+    languages:
+      - DE
+      - EN
+      - FR
 ```
 
 Explanation of the keys:
@@ -170,6 +178,8 @@ The section “repositories” contains one or multiple software component versi
 - `name`: the technical name of the software component
 - `branch`: this is the release branch from the git repository
 - `version`: this is the technical software component version `<software component version>.<support package level>.<patch level>`
+- `commitID`: this is the commitID from the git repository
+- `languages`: specify the languages to be delivered according to ISO-639. For all deliveries of an Add-on Product Version, the languages should not change. If languages should be added, a new Add-on Product Version must be created.
 
 ##### Versioning Rules
 
