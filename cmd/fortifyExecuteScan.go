@@ -204,7 +204,7 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 	reports = append(reports, piperutils.Path{Target: fmt.Sprintf("%vtarget/fortify-scan.*", config.ModulePath)})
 	reports = append(reports, piperutils.Path{Target: fmt.Sprintf("%vtarget/*.fpr", config.ModulePath)})
 	if err != nil {
-		return reports, fmt.Errorf("Failed to scan project: %w", err)
+		return reports, errors.Wrapf(err, "failed to scan project")
 	}
 
 	var message string
