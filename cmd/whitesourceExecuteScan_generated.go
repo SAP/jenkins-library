@@ -409,6 +409,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     `.`,
 						Aliases:     []config.Alias{},
 					},
 					{

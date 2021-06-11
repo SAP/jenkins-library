@@ -149,6 +149,7 @@ func transportRequestReqIDFromGitMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     `origin/master`,
 						Aliases:     []config.Alias{{Name: "changeManagement/git/from"}},
 					},
 					{
@@ -157,6 +158,7 @@ func transportRequestReqIDFromGitMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     `HEAD`,
 						Aliases:     []config.Alias{{Name: "changeManagement/git/to"}},
 					},
 					{
@@ -165,6 +167,7 @@ func transportRequestReqIDFromGitMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     `TransportRequest`,
 						Aliases:     []config.Alias{{Name: "changeManagement/transportRequestLabel"}},
 					},
 				},

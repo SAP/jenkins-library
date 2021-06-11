@@ -136,6 +136,7 @@ func pipelineCreateScanSummaryMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_pipelineLink"),
 						Aliases:     []config.Alias{},
 					},
 				},

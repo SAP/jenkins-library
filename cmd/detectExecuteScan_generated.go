@@ -236,7 +236,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
-						Default:     true,
+						Default:     false,
 						Aliases:     []config.Alias{{Name: "detect/unmap"}},
 					},
 					{
@@ -281,6 +281,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     `major`,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -303,7 +304,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "STAGES", "STEPS", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     `major`,
+						Default:     os.Getenv("PIPER_customScanVersion"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -384,7 +385,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
-						Default:     true,
+						Default:     false,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -393,6 +394,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
+						Default:     []string{},
 						Aliases:     []config.Alias{},
 					},
 				},
