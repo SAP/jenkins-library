@@ -38,6 +38,12 @@ func runReadPipelineEnv() error {
 	}
 
 	bytes, err := json.MarshalIndent(cpe, "", "\t")
-	os.Stdout.Write(bytes)
+	if err != nil {
+		return err
+	}
+	_, err = os.Stdout.Write(bytes)
+	if err != nil {
+		return err
+	}
 	return nil
 }
