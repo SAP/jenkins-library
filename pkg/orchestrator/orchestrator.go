@@ -67,11 +67,12 @@ func (o Orchestrator) String() string {
 }
 
 func areIndicatingEnvVarsSet(envVars []string) bool {
-	found := false
 	for _, v := range envVars {
-		found = truthy(v)
+		if truthy(v) {
+			return true
+		}
 	}
-	return found
+	return false
 }
 
 // Checks if var is set and neither empty nor false
