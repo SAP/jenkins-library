@@ -39,6 +39,7 @@ func runWritePipelineEnv() error {
 	commonPipelineEnv := piperenv.CPEMap{}
 	err = json.Unmarshal(inBytes, &commonPipelineEnv)
 	if err != nil {
+		return err
 	}
 
 	rootPath := filepath.Join(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
@@ -48,6 +49,12 @@ func runWritePipelineEnv() error {
 	}
 
 	bytes, err := json.MarshalIndent(commonPipelineEnv, "", "\t")
-	os.Stdout.Write(bytes)
+	if err != nil {
+		return err
+	}
+	_, err = os.Stdout.Write(bytes)
+	if err != nil {
+		return err
+	}
 	return nil
 }
