@@ -86,7 +86,6 @@ func dirToMap(m map[string]interface{}, dirPath, prefix string) error {
 		m[path.Join(prefix, mapKey)] = value
 	}
 	return nil
-
 }
 
 func readFileContent(fullPath string) (string, interface{}, error) {
