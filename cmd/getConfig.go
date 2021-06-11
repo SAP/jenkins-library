@@ -62,7 +62,7 @@ func generateConfig() error {
 		return errors.Wrapf(err, "failed to resolve metadata: ")
 	}
 
-	fmt.Println(config.GetJSON(metadata))
+	//fmt.Println(config.GetJSON(metadata))
 
 	// prepare output resource directories:
 	// this is needed in order to have proper directory permissions in case
