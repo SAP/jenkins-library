@@ -178,6 +178,7 @@ func kubernetesDeployMetadata() config.StepData {
 					{Name: "kubeConfigFileCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing kubeconfig file. Details can be found in the [Kubernetes documentation](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/).", Type: "jenkins", Aliases: []config.Alias{{Name: "kubeCredentialsId", Deprecated: true}}},
 					{Name: "kubeTokenCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing token to authenticate to Kubernetes. This is an alternative way to using a kubeconfig file. Details can be found in the [Kubernetes documentation](https://kubernetes.io/docs/reference/access-authn-authz/authentication/).", Type: "jenkins", Aliases: []config.Alias{{Name: "k8sTokenCredentialsId", Deprecated: true}}},
 					{Name: "dockerCredentialsId", Type: "jenkins"},
+					{Name: "dockerConfigJsonCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)).", Type: "jenkins"},
 				},
 				Resources: []config.StepResources{
 					{Name: "deployDescriptor", Type: "stash"},
@@ -441,6 +442,7 @@ func kubernetesDeployMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS"},
 						Type:      "string",
 						Mandatory: false,
+						Default:   os.Getenv("PIPER_dockerConfigJSON"),
 						Aliases:   []config.Alias{},
 					},
 				},
