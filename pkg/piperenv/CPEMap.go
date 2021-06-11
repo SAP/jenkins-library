@@ -106,5 +106,4 @@ func readFileContent(fullPath string) (string, interface{}, error) {
 		return strings.TrimSuffix(fileName, ".json"), value, nil
 	}
 	return fileName, string(fileContent), nil
-
 }
