@@ -19,23 +19,29 @@ func karmaExecuteTests(config karmaExecuteTestsOptions, telemetryData *telemetry
 
 func runKarma(config karmaExecuteTestsOptions, command command.ExecRunner) {
 	installCommandTokens := tokenize(config.InstallCommand)
-	command.SetDir(config.ModulePath)
-	err := command.RunExecutable(installCommandTokens[0], installCommandTokens[1:]...)
-	if err != nil {
-		log.Entry().
-			WithError(err).
-			WithField("command", config.InstallCommand).
-			Fatal("failed to execute install command")
-	}
-
 	runCommandTokens := tokenize(config.RunCommand)
-	command.SetDir(config.ModulePath)
-	err = command.RunExecutable(runCommandTokens[0], runCommandTokens[1:]...)
-	if err != nil {
-		log.Entry().
-			WithError(err).
-			WithField("command", config.RunCommand).
-			Fatal("failed to execute run command")
+	modulePaths := config.Modules
+
+	for _, module := range modulePaths {
+		command.SetDir(module)
+		err := command.RunExecutable(installCommandTokens[0], installCommandTokens[1:]...)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorCustom)
+			log.Entry().
+				WithError(err).
+				WithField("command", config.InstallCommand).
+				Fatal("failed to execute install command")
+		}
+
+		command.SetDir(module)
+		err = command.RunExecutable(runCommandTokens[0], runCommandTokens[1:]...)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorTest)
+			log.Entry().
+				WithError(err).
+				WithField("command", config.RunCommand).
+				Fatal("failed to execute run command")
+		}
 	}
 }
 

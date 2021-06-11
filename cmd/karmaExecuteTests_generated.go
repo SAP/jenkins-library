@@ -9,14 +9,15 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
 
 type karmaExecuteTestsOptions struct {
-	InstallCommand string `json:"installCommand,omitempty"`
-	ModulePath     string `json:"modulePath,omitempty"`
-	RunCommand     string `json:"runCommand,omitempty"`
+	InstallCommand string   `json:"installCommand,omitempty"`
+	Modules        []string `json:"modules,omitempty"`
+	RunCommand     string   `json:"runCommand,omitempty"`
 }
 
 // KarmaExecuteTestsCommand Executes the Karma test runner
@@ -26,6 +27,7 @@ func KarmaExecuteTestsCommand() *cobra.Command {
 	metadata := karmaExecuteTestsMetadata()
 	var stepConfig karmaExecuteTestsOptions
 	var startTime time.Time
+	var logCollector *log.CollectorHook
 
 	var createKarmaExecuteTestsCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -61,6 +63,11 @@ In the Docker network, the containers can be referenced by the values provided i
 				log.RegisterHook(&sentryHook)
 			}
 
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
+				log.RegisterHook(logCollector)
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -71,10 +78,20 @@ In the Docker network, the containers can be referenced by the values provided i
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
+				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunk.Send(&telemetryData, logCollector)
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunk.Initialize(GeneralConfig.CorrelationID,
+					GeneralConfig.HookConfig.SplunkConfig.Dsn,
+					GeneralConfig.HookConfig.SplunkConfig.Token,
+					GeneralConfig.HookConfig.SplunkConfig.Index,
+					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+			}
 			karmaExecuteTests(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -87,11 +104,11 @@ In the Docker network, the containers can be referenced by the values provided i
 
 func addKarmaExecuteTestsFlags(cmd *cobra.Command, stepConfig *karmaExecuteTestsOptions) {
 	cmd.Flags().StringVar(&stepConfig.InstallCommand, "installCommand", `npm install --quiet`, "The command that is executed to install the test tool.")
-	cmd.Flags().StringVar(&stepConfig.ModulePath, "modulePath", `.`, "Define the path of the module to execute tests on.")
+	cmd.Flags().StringSliceVar(&stepConfig.Modules, "modules", []string{`.`}, "Define the paths of the modules to execute tests on.")
 	cmd.Flags().StringVar(&stepConfig.RunCommand, "runCommand", `npm run karma`, "The command that is executed to start the tests.")
 
 	cmd.MarkFlagRequired("installCommand")
-	cmd.MarkFlagRequired("modulePath")
+	cmd.MarkFlagRequired("modules")
 	cmd.MarkFlagRequired("runCommand")
 }
 
@@ -120,10 +137,10 @@ func karmaExecuteTestsMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "modulePath",
+						Name:        "modules",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
+						Type:        "[]string",
 						Mandatory:   true,
 						Default:     `.`,
 						Aliases:     []config.Alias{},
@@ -140,7 +157,7 @@ func karmaExecuteTestsMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "karma", Image: "node:lts-stretch", EnvVars: []config.EnvVar{{Name: "no_proxy", Value: "localhost,selenium,$no_proxy"}, {Name: "NO_PROXY", Value: "localhost,selenium,$NO_PROXY"}}, WorkingDir: "/home/node"},
+				{Name: "karma", Image: "node:lts-stretch", EnvVars: []config.EnvVar{{Name: "no_proxy", Value: "localhost,selenium,$no_proxy"}, {Name: "NO_PROXY", Value: "localhost,selenium,$NO_PROXY"}, {Name: "PIPER_SELENIUM_HOSTNAME", Value: "karma"}, {Name: "PIPER_SELENIUM_WEBDRIVER_HOSTNAME", Value: "selenium"}, {Name: "PIPER_SELENIUM_WEBDRIVER_PORT", Value: "4444"}}, WorkingDir: "/home/node"},
 			},
 			Sidecars: []config.Container{
 				{Name: "selenium", Image: "selenium/standalone-chrome", EnvVars: []config.EnvVar{{Name: "NO_PROXY", Value: "localhost,karma,$NO_PROXY"}, {Name: "no_proxy", Value: "localhost,selenium,$no_proxy"}}},

@@ -9,6 +9,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
@@ -25,18 +26,19 @@ type integrationArtifactUploadOptions struct {
 	FilePath               string `json:"filePath,omitempty"`
 }
 
-// IntegrationArtifactUploadCommand Upload or Update an integration flow designtime artefact
+// IntegrationArtifactUploadCommand Upload or Update an integration flow designtime artifact
 func IntegrationArtifactUploadCommand() *cobra.Command {
 	const STEP_NAME = "integrationArtifactUpload"
 
 	metadata := integrationArtifactUploadMetadata()
 	var stepConfig integrationArtifactUploadOptions
 	var startTime time.Time
+	var logCollector *log.CollectorHook
 
 	var createIntegrationArtifactUploadCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Upload or Update an integration flow designtime artefact",
-		Long:  `With this step you can either upload or update a integration flow designtime artifact using the OData API. Learn more about the SAP Cloud Integration remote API for updating an integration flow artifact [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/83733a65c0214aa6acba035e8640bb5a.html).`,
+		Short: "Upload or Update an integration flow designtime artifact",
+		Long:  `With this step you can either upload or update a integration flow designtime artifact using the OData API. Learn more about the SAP Cloud Integration remote API for updating an integration flow artifact [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/d1679a80543f46509a7329243b595bdb.html).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -59,6 +61,11 @@ func IntegrationArtifactUploadCommand() *cobra.Command {
 				log.RegisterHook(&sentryHook)
 			}
 
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
+				log.RegisterHook(logCollector)
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -69,10 +76,20 @@ func IntegrationArtifactUploadCommand() *cobra.Command {
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
+				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunk.Send(&telemetryData, logCollector)
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunk.Initialize(GeneralConfig.CorrelationID,
+					GeneralConfig.HookConfig.SplunkConfig.Dsn,
+					GeneralConfig.HookConfig.SplunkConfig.Token,
+					GeneralConfig.HookConfig.SplunkConfig.Index,
+					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+			}
 			integrationArtifactUpload(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -111,7 +128,7 @@ func integrationArtifactUploadMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "integrationArtifactUpload",
 			Aliases:     []config.Alias{},
-			Description: "Upload or Update an integration flow designtime artefact",
+			Description: "Upload or Update an integration flow designtime artifact",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{

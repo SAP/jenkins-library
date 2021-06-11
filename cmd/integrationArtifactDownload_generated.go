@@ -9,6 +9,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
@@ -30,11 +31,12 @@ func IntegrationArtifactDownloadCommand() *cobra.Command {
 	metadata := integrationArtifactDownloadMetadata()
 	var stepConfig integrationArtifactDownloadOptions
 	var startTime time.Time
+	var logCollector *log.CollectorHook
 
 	var createIntegrationArtifactDownloadCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Download integration flow runtime artefact",
-		Long:  `With this step you can download a integration flow runtime artifact, which returns a zip file with the integration flow contents in to current workspace using the OData API. Learn more about the SAP Cloud Integration remote API for downloading an integration flow artifact [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/460dee19f9c141e88ba0454ce892247a.html).`,
+		Long:  `With this step you can download a integration flow runtime artifact, which returns a zip file with the integration flow contents in to current workspace using the OData API. Learn more about the SAP Cloud Integration remote API for downloading an integration flow artifact [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/d1679a80543f46509a7329243b595bdb.html).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -57,6 +59,11 @@ func IntegrationArtifactDownloadCommand() *cobra.Command {
 				log.RegisterHook(&sentryHook)
 			}
 
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
+				log.RegisterHook(logCollector)
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -67,10 +74,20 @@ func IntegrationArtifactDownloadCommand() *cobra.Command {
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
+				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunk.Send(&telemetryData, logCollector)
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunk.Initialize(GeneralConfig.CorrelationID,
+					GeneralConfig.HookConfig.SplunkConfig.Dsn,
+					GeneralConfig.HookConfig.SplunkConfig.Token,
+					GeneralConfig.HookConfig.SplunkConfig.Index,
+					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+			}
 			integrationArtifactDownload(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")

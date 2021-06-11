@@ -9,31 +9,42 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
 
 type gctsDeployOptions struct {
-	Username   string `json:"username,omitempty"`
-	Password   string `json:"password,omitempty"`
-	Repository string `json:"repository,omitempty"`
-	Host       string `json:"host,omitempty"`
-	Client     string `json:"client,omitempty"`
-	Commit     string `json:"commit,omitempty"`
+	Username            string                 `json:"username,omitempty"`
+	Password            string                 `json:"password,omitempty"`
+	Repository          string                 `json:"repository,omitempty"`
+	Host                string                 `json:"host,omitempty"`
+	Client              string                 `json:"client,omitempty"`
+	Commit              string                 `json:"commit,omitempty"`
+	RemoteRepositoryURL string                 `json:"remoteRepositoryURL,omitempty"`
+	Role                string                 `json:"role,omitempty"`
+	VSID                string                 `json:"vSID,omitempty"`
+	Type                string                 `json:"type,omitempty"`
+	Branch              string                 `json:"branch,omitempty"`
+	Scope               string                 `json:"scope,omitempty"`
+	Rollback            bool                   `json:"rollback,omitempty"`
+	Configuration       map[string]interface{} `json:"configuration,omitempty"`
 }
 
-// GctsDeployCommand Pulls a commit from the remote Git repository to a local repository
+// GctsDeployCommand Deploys a Git Repository to a local Repository and then to an ABAP System
 func GctsDeployCommand() *cobra.Command {
 	const STEP_NAME = "gctsDeploy"
 
 	metadata := gctsDeployMetadata()
 	var stepConfig gctsDeployOptions
 	var startTime time.Time
+	var logCollector *log.CollectorHook
 
 	var createGctsDeployCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Pulls a commit from the remote Git repository to a local repository",
-		Long:  `Pulls a commit from the corresponding remote Git repository to a specified local repository on an ABAP system. If no <commit> parameter is specified, this step will pull the latest commit available on the remote repository.`,
+		Short: "Deploys a Git Repository to a local Repository and then to an ABAP System",
+		Long: `The steps deploys a git repository to an ABAP System. If a repository does not exists in the system, it creates and clones it to the local
+repository and then deploys it into the ABAP system.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -56,6 +67,11 @@ func GctsDeployCommand() *cobra.Command {
 				log.RegisterHook(&sentryHook)
 			}
 
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
+				log.RegisterHook(logCollector)
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -66,10 +82,20 @@ func GctsDeployCommand() *cobra.Command {
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
+				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunk.Send(&telemetryData, logCollector)
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunk.Initialize(GeneralConfig.CorrelationID,
+					GeneralConfig.HookConfig.SplunkConfig.Dsn,
+					GeneralConfig.HookConfig.SplunkConfig.Token,
+					GeneralConfig.HookConfig.SplunkConfig.Index,
+					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+			}
 			gctsDeploy(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -87,12 +113,20 @@ func addGctsDeployFlags(cmd *cobra.Command, stepConfig *gctsDeployOptions) {
 	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the protocol and host address, including the port. Please provide in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.")
 	cmd.Flags().StringVar(&stepConfig.Client, "client", os.Getenv("PIPER_client"), "Specifies the client of the ABAP system to be addressed")
 	cmd.Flags().StringVar(&stepConfig.Commit, "commit", os.Getenv("PIPER_commit"), "Specifies the commit to be deployed")
+	cmd.Flags().StringVar(&stepConfig.RemoteRepositoryURL, "remoteRepositoryURL", os.Getenv("PIPER_remoteRepositoryURL"), "URL of the corresponding remote repository")
+	cmd.Flags().StringVar(&stepConfig.Role, "role", os.Getenv("PIPER_role"), "Role of the local repository. Choose between 'TARGET' and 'SOURCE'. Local repositories with a TARGET role will NOT be able to be the source of code changes")
+	cmd.Flags().StringVar(&stepConfig.VSID, "vSID", os.Getenv("PIPER_vSID"), "Virtual SID of the local repository. The vSID corresponds to the transport route that delivers content to the remote Git repository")
+	cmd.Flags().StringVar(&stepConfig.Type, "type", `GIT`, "Type of the used source code management tool")
+	cmd.Flags().StringVar(&stepConfig.Branch, "branch", os.Getenv("PIPER_branch"), "Name of the branch to which the deploy has to be done to.")
+	cmd.Flags().StringVar(&stepConfig.Scope, "scope", os.Getenv("PIPER_scope"), "The scope of the gcts deploy api call")
+	cmd.Flags().BoolVar(&stepConfig.Rollback, "rollback", false, "The rollback flag for a failure during the deploy step. A true value would mean gCTS would roll back to the last clean state")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("repository")
 	cmd.MarkFlagRequired("host")
 	cmd.MarkFlagRequired("client")
+	cmd.MarkFlagRequired("remoteRepositoryURL")
 }
 
 // retrieve step metadata
@@ -101,7 +135,7 @@ func gctsDeployMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "gctsDeploy",
 			Aliases:     []config.Alias{},
-			Description: "Pulls a commit from the remote Git repository to a local repository",
+			Description: "Deploys a Git Repository to a local Repository and then to an ABAP System",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -174,6 +208,70 @@ func gctsDeployMetadata() config.StepData {
 						Mandatory:   false,
 						Default:     os.Getenv("PIPER_commit"),
 						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "remoteRepositoryURL",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "role",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "vSID",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "type",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "branch",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "scope",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "rollback",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "configuration",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "map[string]interface{}",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "gctsRepositoryConfigurations"}},
 					},
 				},
 			},

@@ -9,6 +9,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
@@ -30,6 +31,7 @@ func GctsRollbackCommand() *cobra.Command {
 	metadata := gctsRollbackMetadata()
 	var stepConfig gctsRollbackOptions
 	var startTime time.Time
+	var logCollector *log.CollectorHook
 
 	var createGctsRollbackCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -60,6 +62,11 @@ gctsRollback will rollback to the previously active commit in the local reposito
 				log.RegisterHook(&sentryHook)
 			}
 
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
+				log.RegisterHook(logCollector)
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -70,10 +77,20 @@ gctsRollback will rollback to the previously active commit in the local reposito
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
+				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunk.Send(&telemetryData, logCollector)
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunk.Initialize(GeneralConfig.CorrelationID,
+					GeneralConfig.HookConfig.SplunkConfig.Dsn,
+					GeneralConfig.HookConfig.SplunkConfig.Token,
+					GeneralConfig.HookConfig.SplunkConfig.Index,
+					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+			}
 			gctsRollback(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
