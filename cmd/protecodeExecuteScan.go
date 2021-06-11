@@ -55,7 +55,7 @@ func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExec
 	//create client for sending api request
 	log.Entry().Debug("Create protecode client")
 	client := createClient(config)
-	if len(config.FetchURL) <= 0 {
+	if len(config.FetchURL) == 0 && len(config.FilePath) == 0 {
 		log.Entry().Debugf("Get docker image: %v, %v, %v, %v", config.ScanImage, config.DockerRegistryURL, config.FilePath, config.IncludeLayers)
 		fileName, filePath, err = getDockerImage(dClient, config)
 		if err != nil {
