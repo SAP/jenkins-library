@@ -7,7 +7,7 @@ require (
 	github.com/GoogleContainerTools/container-diff v0.15.0
 	github.com/Jeffail/gabs/v2 v2.6.0
 	github.com/Masterminds/goutils v1.1.0 // indirect
-	github.com/Masterminds/semver v1.5.0 // indirect
+	github.com/Masterminds/semver v1.5.0
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/asaskevich/govalidator v0.0.0-20200907205600-7a23bdc65eef // indirect
 	github.com/bmatcuk/doublestar v1.3.2
@@ -31,6 +31,7 @@ require (
 	github.com/hashicorp/vault/api v1.1.0
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/imdario/mergo v0.3.11 // indirect
+	github.com/influxdata/influxdb-client-go/v2 v2.4.0
 	github.com/jarcoal/httpmock v1.0.8
 	github.com/magiconair/properties v1.8.4
 	github.com/magicsong/color-glog v0.0.1 // indirect
