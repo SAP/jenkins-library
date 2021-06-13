@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -46,6 +47,7 @@ func newIntegrationArtifactGetMplStatusUtils() integrationArtifactGetMplStatusUt
 func integrationArtifactGetMplStatus(config integrationArtifactGetMplStatusOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *integrationArtifactGetMplStatusCommonPipelineEnvironment) {
 	// Utils can be used wherever the command.ExecRunner interface is expected.
 	// It can also be used for example as a mavenExecRunner.
+	fileUtils := &piperutils.Files{}
 	httpClient := &piperhttp.Client{}
 	// For HTTP calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	// and use a  &piperhttp.Client{} in a custom system
@@ -53,20 +55,31 @@ func integrationArtifactGetMplStatus(config integrationArtifactGetMplStatusOptio
 
 	// Error situations should be bubbled up until they reach the line below which will then stop execution
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
-	err := runIntegrationArtifactGetMplStatus(&config, telemetryData, httpClient, commonPipelineEnvironment)
+	err := runIntegrationArtifactGetMplStatus(&config, telemetryData, httpClient, commonPipelineEnvironment, fileUtils)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runIntegrationArtifactGetMplStatus(config *integrationArtifactGetMplStatusOptions, telemetryData *telemetry.CustomData, httpClient piperhttp.Sender, commonPipelineEnvironment *integrationArtifactGetMplStatusCommonPipelineEnvironment) error {
+func runIntegrationArtifactGetMplStatus(
+	config *integrationArtifactGetMplStatusOptions,
+	telemetryData *telemetry.CustomData,
+	httpClient piperhttp.Sender,
+	commonPipelineEnvironment *integrationArtifactGetMplStatusCommonPipelineEnvironment,
+	fileUtils piperutils.FileUtils) error {
+
+	serviceKey, err := cpi.ReadCpiServiceKeyFile(config.ServiceKey, fileUtils)
+	if err != nil {
+		return err
+	}
+
 	clientOptions := piperhttp.ClientOptions{}
 	httpClient.SetOptions(clientOptions)
 	header := make(http.Header)
 	header.Add("Accept", "application/json")
 	mplStatusEncodedURL := fmt.Sprintf("%s/api/v1/MessageProcessingLogs?$filter=IntegrationArtifact/Id"+url.QueryEscape(" eq ")+"'%s'&$orderby="+
-		url.QueryEscape("LogEnd desc")+"&$top=1", config.Host, config.IntegrationFlowID)
-	tokenParameters := cpi.TokenParameters{TokenURL: config.OAuthTokenProviderURL, Username: config.Username, Password: config.Password, Client: httpClient}
+		url.QueryEscape("LogEnd desc")+"&$top=1", serviceKey.Host, config.IntegrationFlowID)
+	tokenParameters := cpi.TokenParameters{TokenURL: serviceKey.Uaa.OAuthTokenProviderURL, Username: serviceKey.Uaa.ClientId, Password: serviceKey.Uaa.ClientSecret, Client: httpClient}
 	token, err := cpi.CommonUtils.GetBearerToken(tokenParameters)
 	if err != nil {
 		return errors.Wrap(err, "failed to fetch Bearer Token")

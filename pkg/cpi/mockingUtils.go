@@ -4,12 +4,55 @@ package cpi
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/pkg/errors"
 )
+
+type FileMock struct {
+	FileReadContent map[string]string
+	FileReadErr     map[string]error
+}
+
+func (f *FileMock) FileExists(path string) (bool, error) {
+	return true, nil
+}
+
+func (f *FileMock) Copy(src, dest string) (int64, error) {
+	return 0, nil
+}
+
+func (f *FileMock) FileRead(path string) ([]byte, error) {
+	if f.FileReadErr[path] != nil {
+		return []byte{}, f.FileReadErr[path]
+	}
+	return []byte(f.FileReadContent[path]), nil
+}
+
+func (f *FileMock) FileWrite(path string, content []byte, perm os.FileMode) error {
+	return fmt.Errorf("not implemented. func is only present in order to fullfil the interface contract. Needs to be ajusted in case it gets used.")
+}
+
+func (f *FileMock) MkdirAll(path string, perm os.FileMode) error {
+	return nil
+}
+
+func (f *FileMock) Chmod(path string, mode os.FileMode) error {
+	return fmt.Errorf("not implemented. func is only present in order to fullfil the interface contract. Needs to be ajusted in case it gets used.")
+}
+
+func (f *FileMock) Abs(path string) (string, error) {
+	return "", fmt.Errorf("not implemented. func is only present in order to fullfil the interface contract. Needs to be ajusted in case it gets used.")
+}
+
+func (f *FileMock) Glob(pattern string) (matches []string, err error) {
+	return nil, fmt.Errorf("not implemented. func is only present in order to fullfil the interface contract. Needs to be ajusted in case it gets used.")
+}
+
 
 //GetCPIFunctionMockResponse -Generate mock response payload for different CPI functions
 func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, error) {

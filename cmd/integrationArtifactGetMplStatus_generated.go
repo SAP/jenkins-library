@@ -17,12 +17,9 @@ import (
 )
 
 type integrationArtifactGetMplStatusOptions struct {
-	Username              string `json:"username,omitempty"`
-	Password              string `json:"password,omitempty"`
-	IntegrationFlowID     string `json:"integrationFlowId,omitempty"`
-	Platform              string `json:"platform,omitempty"`
-	Host                  string `json:"host,omitempty"`
-	OAuthTokenProviderURL string `json:"oAuthTokenProviderUrl,omitempty"`
+	ServiceKey        string `json:"serviceKey,omitempty"`
+	IntegrationFlowID string `json:"integrationFlowId,omitempty"`
+	Platform          string `json:"platform,omitempty"`
 }
 
 type integrationArtifactGetMplStatusCommonPipelineEnvironment struct {
@@ -81,8 +78,7 @@ func IntegrationArtifactGetMplStatusCommand() *cobra.Command {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
-			log.RegisterSecret(stepConfig.Username)
-			log.RegisterSecret(stepConfig.Password)
+			log.RegisterSecret(stepConfig.ServiceKey)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -130,18 +126,12 @@ func IntegrationArtifactGetMplStatusCommand() *cobra.Command {
 }
 
 func addIntegrationArtifactGetMplStatusFlags(cmd *cobra.Command, stepConfig *integrationArtifactGetMplStatusOptions) {
-	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User to authenticate to the SAP Cloud Platform Integration Service")
-	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password to authenticate to the SAP Cloud Platform Integration Service")
+	cmd.Flags().StringVar(&stepConfig.ServiceKey, "serviceKey", os.Getenv("PIPER_serviceKey"), "Path to the service key file to access the Cloud Integration Runtime API")
 	cmd.Flags().StringVar(&stepConfig.IntegrationFlowID, "integrationFlowId", os.Getenv("PIPER_integrationFlowId"), "Specifies the ID of the Integration Flow artifact")
 	cmd.Flags().StringVar(&stepConfig.Platform, "platform", os.Getenv("PIPER_platform"), "Specifies the running platform of the SAP Cloud platform integraion service")
-	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the protocol and host address, including the port. Please provide in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.")
-	cmd.Flags().StringVar(&stepConfig.OAuthTokenProviderURL, "oAuthTokenProviderUrl", os.Getenv("PIPER_oAuthTokenProviderUrl"), "Specifies the oAuth Provider protocol and host address, including the port. Please provide in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.")
 
-	cmd.MarkFlagRequired("username")
-	cmd.MarkFlagRequired("password")
+	cmd.MarkFlagRequired("serviceKey")
 	cmd.MarkFlagRequired("integrationFlowId")
-	cmd.MarkFlagRequired("host")
-	cmd.MarkFlagRequired("oAuthTokenProviderUrl")
 }
 
 // retrieve step metadata
@@ -155,38 +145,23 @@ func integrationArtifactGetMplStatusMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "cpiCredentialsId", Description: "Jenkins credentials ID containing username and password for authentication to the SAP Cloud Platform Integration API's", Type: "jenkins"},
+					{Name: "cpiRuntimeServiceKeyCredentialId", Description: "Jenkins secret file credential ID containing the service key to the SAP Cloud Integration Runtime API", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{
-						Name: "username",
+						Name: "serviceKey",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "cpiCredentialsId",
-								Param: "username",
+								Name:  "cpiRuntimeServiceKeyCredentialId",
+								Param: "serviceKey",
 								Type:  "secret",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:     []string{"PARAMETERS"},
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_username"),
-					},
-					{
-						Name: "password",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "cpiCredentialsId",
-								Param: "password",
-								Type:  "secret",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_password"),
+						Default:   os.Getenv("PIPER_serviceKey"),
 					},
 					{
 						Name:        "integrationFlowId",
@@ -205,24 +180,6 @@ func integrationArtifactGetMplStatusMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_platform"),
-					},
-					{
-						Name:        "host",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_host"),
-					},
-					{
-						Name:        "oAuthTokenProviderUrl",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_oAuthTokenProviderUrl"),
 					},
 				},
 			},
