@@ -152,6 +152,8 @@ func Execute() {
 	rootCmd.AddCommand(PipelineCreateScanSummaryCommand())
 	rootCmd.AddCommand(TransportRequestDocIDFromGitCommand())
 	rootCmd.AddCommand(TransportRequestReqIDFromGitCommand())
+	rootCmd.AddCommand(WritePipelineEnv())
+	rootCmd.AddCommand(ReadPipelineEnv())
 	rootCmd.AddCommand(InfluxWriteDataCommand())
 
 	addRootFlags(rootCmd)
