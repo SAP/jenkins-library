@@ -178,16 +178,20 @@ func xsDeployMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+
+						Mandatory: false,
+						Default:   os.Getenv("PIPER_deployOpts"),
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "operationIdLogPattern",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "deployIdLogPattern"}},
+
+						Mandatory: false,
+						Default:   `^.*xs bg-deploy -i (.*) -a.*$`,
+						Aliases:   []config.Alias{{Name: "deployIdLogPattern"}},
 					},
 					{
 						Name: "mtaPath",
@@ -197,9 +201,11 @@ func xsDeployMetadata() config.StepData {
 								Param: "mtaPath",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
+						Scope: []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:  "string",
+
 						Mandatory: true,
+						Default:   os.Getenv("PIPER_mtaPath"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -207,16 +213,20 @@ func xsDeployMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+
+						Mandatory: false,
+						Default:   `NONE`,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "mode",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+
+						Mandatory: true,
+						Default:   `DEPLOY`,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name: "operationId",
@@ -226,9 +236,11 @@ func xsDeployMetadata() config.StepData {
 								Param: "operationId",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
+						Scope: []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:  "string",
+
 						Mandatory: false,
+						Default:   os.Getenv("PIPER_operationId"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -236,8 +248,10 @@ func xsDeployMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+
+						Mandatory: true,
+						Default:   os.Getenv("PIPER_apiUrl"),
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name: "username",
@@ -248,9 +262,11 @@ func xsDeployMetadata() config.StepData {
 								Type:  "secret",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
+						Scope: []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:  "string",
+
 						Mandatory: true,
+						Default:   os.Getenv("PIPER_username"),
 						Aliases:   []config.Alias{{Name: "user"}},
 					},
 					{
@@ -262,9 +278,11 @@ func xsDeployMetadata() config.StepData {
 								Type:  "secret",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
+						Scope: []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:  "string",
+
 						Mandatory: true,
+						Default:   os.Getenv("PIPER_password"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -272,32 +290,40 @@ func xsDeployMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+
+						Mandatory: true,
+						Default:   os.Getenv("PIPER_org"),
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "space",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+
+						Mandatory: true,
+						Default:   os.Getenv("PIPER_space"),
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "loginOpts",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+
+						Mandatory: true,
+						Default:   os.Getenv("PIPER_loginOpts"),
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "xsSessionFile",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+
+						Mandatory: false,
+						Default:   os.Getenv("PIPER_xsSessionFile"),
+						Aliases:   []config.Alias{},
 					},
 				},
 			},

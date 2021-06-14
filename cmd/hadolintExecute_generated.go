@@ -127,8 +127,10 @@ func hadolintExecuteMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+
+						Mandatory: false,
+						Default:   os.Getenv("PIPER_configurationUrl"),
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name: "configurationUsername",
@@ -139,9 +141,11 @@ func hadolintExecuteMetadata() config.StepData {
 								Type:  "secret",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
+						Scope: []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:  "string",
+
 						Mandatory: false,
+						Default:   os.Getenv("PIPER_configurationUsername"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -153,9 +157,11 @@ func hadolintExecuteMetadata() config.StepData {
 								Type:  "secret",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
+						Scope: []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:  "string",
+
 						Mandatory: false,
+						Default:   os.Getenv("PIPER_configurationPassword"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -163,24 +169,30 @@ func hadolintExecuteMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "dockerfile"}},
+
+						Mandatory: false,
+						Default:   `./Dockerfile`,
+						Aliases:   []config.Alias{{Name: "dockerfile"}},
 					},
 					{
 						Name:        "configurationFile",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+
+						Mandatory: false,
+						Default:   `.hadolint.yaml`,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "reportFile",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+
+						Mandatory: false,
+						Default:   `hadolint.xml`,
+						Aliases:   []config.Alias{},
 					},
 				},
 			},

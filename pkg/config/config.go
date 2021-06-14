@@ -255,7 +255,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 				if ok && subMap[p.Name] != nil {
 					stepConfig.Config[p.Name] = subMap[p.Name]
 				} else {
-					stepConfig.Config[p.Name] = p.Default
+					//stepConfig.Config[p.Name] = p.Default
 				}
 			}
 		}
@@ -353,9 +353,19 @@ func (s *StepConfig) mixInStepDefaults(stepParams []StepParameters) {
 		s.Config = map[string]interface{}{}
 	}
 
+	// conditional defaults not handled properly
 	for _, p := range stepParams {
 		if p.Default != nil {
-			s.Config[p.Name] = p.Default
+			if len(p.Conditions) == 0 {
+				s.Config[p.Name] = p.Default
+			} else {
+				for _, cond := range p.Conditions {
+					for _, param := range cond.Params {
+						s.Config[param.Value] = map[string]interface{}{p.Name: p.Default}
+					}
+				}
+
+			}
 		}
 	}
 }

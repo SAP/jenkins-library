@@ -134,8 +134,10 @@ func cloudFoundryDeleteSpaceMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/apiEndpoint"}},
+
+						Mandatory: true,
+						Default:   `https://api.cf.eu10.hana.ondemand.com`,
+						Aliases:   []config.Alias{{Name: "cloudFoundry/apiEndpoint"}},
 					},
 					{
 						Name: "username",
@@ -146,9 +148,11 @@ func cloudFoundryDeleteSpaceMetadata() config.StepData {
 								Type:  "secret",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
+						Scope: []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:  "string",
+
 						Mandatory: true,
+						Default:   os.Getenv("PIPER_username"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -160,9 +164,11 @@ func cloudFoundryDeleteSpaceMetadata() config.StepData {
 								Type:  "secret",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
+						Scope: []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:  "string",
+
 						Mandatory: true,
+						Default:   os.Getenv("PIPER_password"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -170,16 +176,20 @@ func cloudFoundryDeleteSpaceMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/org"}},
+
+						Mandatory: true,
+						Default:   os.Getenv("PIPER_cfOrg"),
+						Aliases:   []config.Alias{{Name: "cloudFoundry/org"}},
 					},
 					{
 						Name:        "cfSpace",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/space"}},
+
+						Mandatory: true,
+						Default:   os.Getenv("PIPER_cfSpace"),
+						Aliases:   []config.Alias{{Name: "cloudFoundry/space"}},
 					},
 				},
 			},

@@ -147,8 +147,10 @@ func githubSetCommitStatusMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "githubApiUrl"}},
+
+						Mandatory: true,
+						Default:   `https://api.github.com`,
+						Aliases:   []config.Alias{{Name: "githubApiUrl"}},
 					},
 					{
 						Name: "commitId",
@@ -158,9 +160,11 @@ func githubSetCommitStatusMetadata() config.StepData {
 								Param: "git/commitId",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
+						Scope: []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:  "string",
+
 						Mandatory: true,
+						Default:   os.Getenv("PIPER_commitId"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -168,16 +172,20 @@ func githubSetCommitStatusMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+
+						Mandatory: true,
+						Default:   os.Getenv("PIPER_context"),
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "description",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+
+						Mandatory: false,
+						Default:   os.Getenv("PIPER_description"),
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name: "owner",
@@ -187,9 +195,11 @@ func githubSetCommitStatusMetadata() config.StepData {
 								Param: "github/owner",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
+						Scope: []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:  "string",
+
 						Mandatory: true,
+						Default:   os.Getenv("PIPER_owner"),
 						Aliases:   []config.Alias{{Name: "githubOrg"}},
 					},
 					{
@@ -200,9 +210,11 @@ func githubSetCommitStatusMetadata() config.StepData {
 								Param: "github/repository",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
+						Scope: []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:  "string",
+
 						Mandatory: true,
+						Default:   os.Getenv("PIPER_repository"),
 						Aliases:   []config.Alias{{Name: "githubRepo"}},
 					},
 					{
@@ -210,16 +222,20 @@ func githubSetCommitStatusMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+
+						Mandatory: true,
+						Default:   os.Getenv("PIPER_status"),
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "targetUrl",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+
+						Mandatory: false,
+						Default:   os.Getenv("PIPER_targetUrl"),
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name: "token",
@@ -235,9 +251,11 @@ func githubSetCommitStatusMetadata() config.StepData {
 								Type:  "vaultSecret",
 							},
 						},
-						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
+						Scope: []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:  "string",
+
 						Mandatory: true,
+						Default:   os.Getenv("PIPER_token"),
 						Aliases:   []config.Alias{{Name: "githubToken"}, {Name: "access_token"}},
 					},
 				},

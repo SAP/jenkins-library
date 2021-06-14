@@ -115,8 +115,10 @@ func terraformExecuteMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+
+						Mandatory: false,
+						Default:   `plan`,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name: "terraformSecrets",
@@ -127,9 +129,11 @@ func terraformExecuteMetadata() config.StepData {
 								Type:  "vaultSecretFile",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
+						Scope: []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:  "string",
+
 						Mandatory: false,
+						Default:   os.Getenv("PIPER_terraformSecrets"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -137,8 +141,10 @@ func terraformExecuteMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+
+						Mandatory: false,
+						Default:   []string{},
+						Aliases:   []config.Alias{},
 					},
 				},
 			},

@@ -174,8 +174,10 @@ func transportRequestUploadSOLMANMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "changeManagement/endpoint"}},
+
+						Mandatory: true,
+						Default:   os.Getenv("PIPER_endpoint"),
+						Aliases:   []config.Alias{{Name: "changeManagement/endpoint"}},
 					},
 					{
 						Name: "username",
@@ -186,9 +188,11 @@ func transportRequestUploadSOLMANMetadata() config.StepData {
 								Type:  "secret",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:      "string",
+						Scope: []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:  "string",
+
 						Mandatory: true,
+						Default:   os.Getenv("PIPER_username"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -200,9 +204,11 @@ func transportRequestUploadSOLMANMetadata() config.StepData {
 								Type:  "secret",
 							},
 						},
-						Scope:     []string{"PARAMETERS"},
-						Type:      "string",
+						Scope: []string{"PARAMETERS"},
+						Type:  "string",
+
 						Mandatory: true,
+						Default:   os.Getenv("PIPER_password"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -210,8 +216,10 @@ func transportRequestUploadSOLMANMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
+
+						Mandatory: true,
+						Default:   os.Getenv("PIPER_applicationId"),
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name: "changeDocumentId",
@@ -221,9 +229,11 @@ func transportRequestUploadSOLMANMetadata() config.StepData {
 								Param: "custom/changeDocumentId",
 							},
 						},
-						Scope:     []string{"PARAMETERS"},
-						Type:      "string",
+						Scope: []string{"PARAMETERS"},
+						Type:  "string",
+
 						Mandatory: true,
+						Default:   os.Getenv("PIPER_changeDocumentId"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -234,9 +244,11 @@ func transportRequestUploadSOLMANMetadata() config.StepData {
 								Param: "custom/transportRequestId",
 							},
 						},
-						Scope:     []string{"PARAMETERS"},
-						Type:      "string",
+						Scope: []string{"PARAMETERS"},
+						Type:  "string",
+
 						Mandatory: true,
+						Default:   os.Getenv("PIPER_transportRequestId"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -247,9 +259,11 @@ func transportRequestUploadSOLMANMetadata() config.StepData {
 								Param: "mtarFilePath",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:      "string",
+						Scope: []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:  "string",
+
 						Mandatory: true,
+						Default:   os.Getenv("PIPER_filePath"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -257,8 +271,10 @@ func transportRequestUploadSOLMANMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "[]string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "clientOpts"}, {Name: "changeManagement/clientOpts"}},
+
+						Mandatory: true,
+						Default:   []string{},
+						Aliases:   []config.Alias{{Name: "clientOpts"}, {Name: "changeManagement/clientOpts"}},
 					},
 				},
 			},

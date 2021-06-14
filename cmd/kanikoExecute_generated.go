@@ -167,32 +167,40 @@ func kanikoExecuteMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+
+						Mandatory: false,
+						Default:   []string{`--skip-tls-verify-pull`},
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "containerBuildOptions",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+
+						Mandatory: false,
+						Default:   os.Getenv("PIPER_containerBuildOptions"),
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name:        "containerImage",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "containerImageNameAndTag"}},
+
+						Mandatory: false,
+						Default:   os.Getenv("PIPER_containerImage"),
+						Aliases:   []config.Alias{{Name: "containerImageNameAndTag"}},
 					},
 					{
 						Name:        "containerImageName",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "dockerImageName"}},
+
+						Mandatory: false,
+						Default:   os.Getenv("PIPER_containerImageName"),
+						Aliases:   []config.Alias{{Name: "dockerImageName"}},
 					},
 					{
 						Name: "containerImageTag",
@@ -202,9 +210,11 @@ func kanikoExecuteMetadata() config.StepData {
 								Param: "artifactVersion",
 							},
 						},
-						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
+						Scope: []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:  "string",
+
 						Mandatory: false,
+						Default:   os.Getenv("PIPER_containerImageTag"),
 						Aliases:   []config.Alias{{Name: "artifactVersion"}},
 					},
 					{
@@ -212,8 +222,10 @@ func kanikoExecuteMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+
+						Mandatory: false,
+						Default:   `rm -f /kaniko/.docker/config.json`,
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name: "containerRegistryUrl",
@@ -223,9 +235,11 @@ func kanikoExecuteMetadata() config.StepData {
 								Param: "container/registryUrl",
 							},
 						},
-						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
+						Scope: []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:  "string",
+
 						Mandatory: false,
+						Default:   os.Getenv("PIPER_containerRegistryUrl"),
 						Aliases:   []config.Alias{{Name: "dockerRegistryUrl"}},
 					},
 					{
@@ -233,8 +247,10 @@ func kanikoExecuteMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+
+						Mandatory: false,
+						Default:   []string{},
+						Aliases:   []config.Alias{},
 					},
 					{
 						Name: "dockerConfigJSON",
@@ -255,9 +271,11 @@ func kanikoExecuteMetadata() config.StepData {
 								Type:  "vaultSecretFile",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
+						Scope: []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:  "string",
+
 						Mandatory: false,
+						Default:   os.Getenv("PIPER_dockerConfigJSON"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -265,8 +283,10 @@ func kanikoExecuteMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "dockerfile"}},
+
+						Mandatory: false,
+						Default:   `Dockerfile`,
+						Aliases:   []config.Alias{{Name: "dockerfile"}},
 					},
 				},
 			},
