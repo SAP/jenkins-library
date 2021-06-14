@@ -59,7 +59,7 @@ func generateConfig() error {
 
 	metadata, err := resolveMetadata()
 	if err != nil {
-		return errors.Wrapf(err, "failed to resolve metadata: ")
+		return errors.Wrapf(err, "failed to resolve metadata")
 	}
 
 
