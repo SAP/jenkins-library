@@ -2,7 +2,6 @@ package npm
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 )
@@ -30,16 +29,16 @@ func (exec *Execute) PublishAllPackages(packageJSONFiles []string, registry stri
 func (exec *Execute) publish(packageJSON, registry string) error {
 	execRunner := exec.Utils.GetExecRunner()
 
-	oldWorkingDirectory, err := exec.Utils.Getwd()
-	if err != nil {
-		return fmt.Errorf("failed to get current working directory before executing npm scripts: %w", err)
-	}
+	// oldWorkingDirectory, err := exec.Utils.Getwd()
+	// if err != nil {
+	// 	return fmt.Errorf("failed to get current working directory before executing npm scripts: %w", err)
+	// }
 
-	dir := filepath.Dir(packageJSON)
-	err = exec.Utils.Chdir(dir)
-	if err != nil {
-		return fmt.Errorf("failed to change into directory for executing script: %w", err)
-	}
+	// dir := filepath.Dir(packageJSON)
+	// err = exec.Utils.Chdir(dir)
+	// if err != nil {
+	// 	return fmt.Errorf("failed to change into directory for executing script: %w", err)
+	// }
 
 	// err = exec.SetNpmRegistries()
 	// if err != nil {
@@ -67,15 +66,15 @@ func (exec *Execute) publish(packageJSON, registry string) error {
 	// 	"It is recommended to create a `package-lock.json` file by running `npm Install` locally." +
 	// 	" Add this file to your version control. " +
 	// 	"By doing so, the builds of your application become more reliable.")
-	err = execRunner.RunExecutable("npm", "publish", "--registery", registry)
+	err := execRunner.RunExecutable("npm", "publish", packageJSON, "--dry-run", "--registery", registry)
 	if err != nil {
 		return err
 	}
 	// }
 
-	err = exec.Utils.Chdir(oldWorkingDirectory)
-	if err != nil {
-		return fmt.Errorf("failed to change back into original directory: %w", err)
-	}
+	// err = exec.Utils.Chdir(oldWorkingDirectory)
+	// if err != nil {
+	// 	return fmt.Errorf("failed to change back into original directory: %w", err)
+	// }
 	return nil
 }
