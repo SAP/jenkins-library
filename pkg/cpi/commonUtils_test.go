@@ -1,8 +1,6 @@
 package cpi
 
 import (
-	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -18,24 +16,15 @@ func TestReadCpiServiceKeyFile(t *testing.T) {
 			}`
 	faultyServiceKey := `this is not json`
 
-	type args struct {
-		serviceKeyPath string
-		fileUtils      piperutils.FileUtils
-	}
 	tests := []struct {
 		name              string
-		args              args
+		serviceKey        string
 		wantCpiServiceKey CpiServiceKey
 		wantedErrorMsg    string
 	}{
 		{
 			"happy path",
-			args{
-				serviceKeyPath: "positive/outcome/serviceKey.json",
-				fileUtils: &FileMock{
-					FileReadContent: map[string]string{"positive/outcome/serviceKey.json": properServiceKey},
-				},
-			},
+			properServiceKey,
 			CpiServiceKey{
 				Host: "https://demo",
 				Uaa: OAuth{
@@ -48,30 +37,14 @@ func TestReadCpiServiceKeyFile(t *testing.T) {
 		},
 		{
 			"faulty json",
-			args{
-				serviceKeyPath: "",
-				fileUtils: &FileMock{
-					FileReadContent: map[string]string{"faulty/serviceKey.json": faultyServiceKey},
-				},
-			},
+			faultyServiceKey,
 			CpiServiceKey{},
-			"error unmarshalling serviceKey: unexpected end of JSON input",
-		},
-		{
-			"read file error",
-			args{
-				serviceKeyPath: "non/existent/serviceKey.json",
-				fileUtils: &FileMock{
-					FileReadErr: map[string]error{"non/existent/serviceKey.json": errors.New("this file does not exist")},
-				},
-			},
-			CpiServiceKey{},
-			"error reading serviceKey file: this file does not exist",
+			"error unmarshalling serviceKey: invalid character 'h' in literal true (expecting 'r')",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotCpiServiceKey, err := ReadCpiServiceKeyFile(tt.args.serviceKeyPath, tt.args.fileUtils)
+			gotCpiServiceKey, err := ReadCpiServiceKey(tt.serviceKey)
 			if tt.wantedErrorMsg != "" {
 				assert.EqualError(t, err, tt.wantedErrorMsg)
 			}

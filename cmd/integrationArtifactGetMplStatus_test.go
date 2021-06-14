@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"github.com/SAP/jenkins-library/pkg/cpi"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
@@ -33,19 +32,15 @@ func TestRunIntegrationArtifactGetMplStatus(t *testing.T) {
 				"url": "https://demo/oauth/token"
 			}
 		}`
-		serviceKeyPath := "path/to/serviceKey.json"
-		fileUtils := &cpi.FileMock{
-			FileReadContent: map[string]string{serviceKeyPath: serviceKey},
-		}
 		config := integrationArtifactGetMplStatusOptions{
-			ServiceKey:        serviceKeyPath,
+			ServiceKey:        serviceKey,
 			IntegrationFlowID: "flow1",
 			Platform:          "cf",
 		}
 
 		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactGetMplStatus", ResponseBody: ``, TestType: "Positive"}
 		seOut := integrationArtifactGetMplStatusCommonPipelineEnvironment{}
-		err := runIntegrationArtifactGetMplStatus(&config, nil, &httpClient, &seOut, fileUtils)
+		err := runIntegrationArtifactGetMplStatus(&config, nil, &httpClient, &seOut)
 
 		if assert.NoError(t, err) {
 			assert.EqualValues(t, seOut.custom.iFlowMplStatus, "COMPLETED")
@@ -70,12 +65,8 @@ func TestRunIntegrationArtifactGetMplStatus(t *testing.T) {
 				"url": "https://demo/oauth/token"
 			}
 		}`
-		serviceKeyPath := "path/to/serviceKey.json"
-		fileUtils := &cpi.FileMock{
-			FileReadContent: map[string]string{serviceKeyPath: serviceKey},
-		}
 		config := integrationArtifactGetMplStatusOptions{
-			ServiceKey:        serviceKeyPath,
+			ServiceKey:        serviceKey,
 			IntegrationFlowID: "flow1",
 			Platform:          "cf",
 		}
@@ -83,7 +74,7 @@ func TestRunIntegrationArtifactGetMplStatus(t *testing.T) {
 		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactGetMplStatus", ResponseBody: ``, TestType: "Negative"}
 
 		seOut := integrationArtifactGetMplStatusCommonPipelineEnvironment{}
-		err := runIntegrationArtifactGetMplStatus(&config, nil, &httpClient, &seOut, fileUtils)
+		err := runIntegrationArtifactGetMplStatus(&config, nil, &httpClient, &seOut)
 		assert.EqualValues(t, seOut.custom.iFlowMplStatus, "")
 		assert.EqualError(t, err, "HTTP GET request to https://demo/api/v1/MessageProcessingLogs?$filter=IntegrationArtifact/"+
 			"Id+eq+'flow1'&$orderby=LogEnd+desc&$top=1 failed with error: "+

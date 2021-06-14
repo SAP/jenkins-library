@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -47,7 +46,6 @@ func newIntegrationArtifactGetMplStatusUtils() integrationArtifactGetMplStatusUt
 func integrationArtifactGetMplStatus(config integrationArtifactGetMplStatusOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *integrationArtifactGetMplStatusCommonPipelineEnvironment) {
 	// Utils can be used wherever the command.ExecRunner interface is expected.
 	// It can also be used for example as a mavenExecRunner.
-	fileUtils := &piperutils.Files{}
 	httpClient := &piperhttp.Client{}
 	// For HTTP calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	// and use a  &piperhttp.Client{} in a custom system
@@ -55,7 +53,7 @@ func integrationArtifactGetMplStatus(config integrationArtifactGetMplStatusOptio
 
 	// Error situations should be bubbled up until they reach the line below which will then stop execution
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
-	err := runIntegrationArtifactGetMplStatus(&config, telemetryData, httpClient, commonPipelineEnvironment, fileUtils)
+	err := runIntegrationArtifactGetMplStatus(&config, telemetryData, httpClient, commonPipelineEnvironment)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
@@ -65,10 +63,9 @@ func runIntegrationArtifactGetMplStatus(
 	config *integrationArtifactGetMplStatusOptions,
 	telemetryData *telemetry.CustomData,
 	httpClient piperhttp.Sender,
-	commonPipelineEnvironment *integrationArtifactGetMplStatusCommonPipelineEnvironment,
-	fileUtils piperutils.FileUtils) error {
+	commonPipelineEnvironment *integrationArtifactGetMplStatusCommonPipelineEnvironment) error {
 
-	serviceKey, err := cpi.ReadCpiServiceKeyFile(config.ServiceKey, fileUtils)
+	serviceKey, err := cpi.ReadCpiServiceKey(config.ServiceKey)
 	if err != nil {
 		return err
 	}

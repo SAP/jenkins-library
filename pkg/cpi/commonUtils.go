@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"io/ioutil"
 	"net/http"
 
@@ -36,15 +35,8 @@ type OAuth struct {
 	ClientSecret          string `json:"clientsecret"`
 }
 
-// ReadCpiServiceKeyFile unmarshalls the give json service key string.
-func ReadCpiServiceKeyFile(serviceKeyPath string, fileUtils piperutils.FileUtils) (cpiServiceKey CpiServiceKey, err error) {
-
-	serviceKeyJSON, err := fileUtils.FileRead(serviceKeyPath)
-	if err != nil {
-		err = errors.Wrap(err, "error reading serviceKey file")
-		return
-	}
-
+// ReadCpiServiceKey unmarshalls the give json service key string.
+func ReadCpiServiceKey(serviceKeyJSON string) (cpiServiceKey CpiServiceKey, err error) {
 	// parse
 	err = json.Unmarshal([]byte(serviceKeyJSON), &cpiServiceKey)
 	if err != nil {
