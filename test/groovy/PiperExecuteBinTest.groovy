@@ -119,11 +119,12 @@ class PiperExecuteBinTest extends BasePiperTest {
 
     @Test
     void testPiperExecuteBinDefault() {
-        shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/test.yaml\'', '{"fileCredentialsId":"credFile", "tokenCredentialsId":"credToken", "credentialsId":"credUsernamePassword", "dockerImage":"my.Registry/my/image:latest"}')
+        shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/test.yaml\'', '{"fileCredentialsId":"credFile", "tokenCredentialsId":"credToken", "textCredentialsId":"credText", "credentialsId":"credUsernamePassword", "dockerImage":"my.Registry/my/image:latest"}')
 
         List stepCredentials = [
             [type: 'file', id: 'fileCredentialsId', env: ['PIPER_credFile']],
             [type: 'token', id: 'tokenCredentialsId', env: ['PIPER_credToken']],
+            [type: 'secretText', id: 'textCredentialsId', env: ['PIPER_credText']],
             [type: 'usernamePassword', id: 'credentialsId', env: ['PIPER_user', 'PIPER_password']],
         ]
         stepRule.step.piperExecuteBin(
@@ -141,10 +142,11 @@ class PiperExecuteBinTest extends BasePiperTest {
         assertThat(writeFileRule.files['.pipeline/tmp/metadata/test.yaml'], containsString('name: testStep'))
         assertThat(withEnvArgs[0], allOf(startsWith('PIPER_parametersJSON'), containsString('"testParam":"This is test content"')))
         assertThat(shellCallRule.shell[1], is('./piper testStep'))
-        assertThat(credentials.size(), is(3))
+        assertThat(credentials.size(), is(4))
         assertThat(credentials[0], allOf(hasEntry('credentialsId', 'credFile'), hasEntry('variable', 'PIPER_credFile')))
         assertThat(credentials[1], allOf(hasEntry('credentialsId', 'credToken'), hasEntry('variable', 'PIPER_credToken')))
-        assertThat(credentials[2], allOf(hasEntry('credentialsId', 'credUsernamePassword'), hasEntry('usernameVariable', 'PIPER_user') , hasEntry('passwordVariable', 'PIPER_password')))
+        assertThat(credentials[2], allOf(hasEntry('credentialsId', 'credText'), hasEntry('variable', 'PIPER_credText')))
+        assertThat(credentials[3], allOf(hasEntry('credentialsId', 'credUsernamePassword'), hasEntry('usernameVariable', 'PIPER_user') , hasEntry('passwordVariable', 'PIPER_password')))
 
         assertThat(dockerExecuteRule.dockerParams.dockerImage, is('my.Registry/my/image:latest'))
         assertThat(dockerExecuteRule.dockerParams.stashContent, is([]))
