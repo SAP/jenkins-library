@@ -41,7 +41,7 @@ func TestUploadRFC(t *testing.T) {
 		err := upload.Perform(&exec)
 
 		if assert.NoError(t, err) {
-			assert.Equal(t, exec.Calls, []mock.ExecCall{mock.ExecCall{Exec: "cts", Params: []string{"uploadToABAP:123456"}}})
+			assert.Equal(t, exec.Calls, []mock.ExecCall{{Exec: "cts", Params: []string{"uploadToABAP:123456"}}})
 			assert.Subset(t, []string{
 				"ABAP_DEVELOPMENT_SERVER=https://example.org/rfc",
 				"ABAP_DEVELOPMENT_USER=me",
