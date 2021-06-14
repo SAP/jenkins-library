@@ -57,6 +57,7 @@ func NpmExecuteScriptsCommand() *cobra.Command {
 				return err
 			}
 			log.RegisterSecret(stepConfig.RepositoryPassword)
+			log.RegisterSecret(stepConfig.RepositoryUsername)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)

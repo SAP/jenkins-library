@@ -112,6 +112,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        secret: true
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/repositoryUsername
