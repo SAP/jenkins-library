@@ -75,4 +75,4 @@ spec:
         default: hadolint.xml
   containers:
     - name: hadolint
-      image: hadolint/hadolint:latest-debian
+      image: hadolint/hadolint:latest-alpine
