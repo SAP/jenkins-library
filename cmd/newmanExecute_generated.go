@@ -166,6 +166,7 @@ func newmanExecuteMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     `**/*.postman_collection.json`,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -174,6 +175,7 @@ func newmanExecuteMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_newmanRunCommand"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -182,6 +184,7 @@ func newmanExecuteMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
+						Default:     []string{`run`, `{{.NewmanCollection}}`, `--reporters`, `cli,junit,html`, `--reporter-junit-export`, `target/newman/TEST-{{.CollectionDisplayName}}.xml`, `--reporter-html-export`, `target/newman/TEST-{{.CollectionDisplayName}}.html`},
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -190,6 +193,7 @@ func newmanExecuteMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     `npm install newman newman-reporter-html --global --quiet`,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -198,6 +202,7 @@ func newmanExecuteMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_newmanEnvironment"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -206,6 +211,7 @@ func newmanExecuteMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_newmanGlobals"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -214,6 +220,7 @@ func newmanExecuteMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
+						Default:     true,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -222,6 +229,7 @@ func newmanExecuteMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
+						Default:     []string{},
 						Aliases:     []config.Alias{},
 					},
 				},

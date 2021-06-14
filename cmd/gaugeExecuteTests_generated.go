@@ -159,6 +159,9 @@ func gaugeExecuteTestsMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "seleniumHubCredentialsId", Description: "Defines the id of the user/password credentials to be used to connect to a Selenium Hub. The credentials are provided in the environment variables `PIPER_SELENIUM_HUB_USER` and `PIPER_SELENIUM_HUB_PASSWORD`.", Type: "jenkins"},
+				},
 				Resources: []config.StepResources{
 					{Name: "buildDescriptor", Type: "stash"},
 					{Name: "tests", Type: "stash"},
@@ -170,6 +173,7 @@ func gaugeExecuteTestsMetadata() config.StepData {
 						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_installCommand"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -178,6 +182,7 @@ func gaugeExecuteTestsMetadata() config.StepData {
 						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_languageRunner"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -186,6 +191,7 @@ func gaugeExecuteTestsMetadata() config.StepData {
 						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     os.Getenv("PIPER_runCommand"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -194,6 +200,7 @@ func gaugeExecuteTestsMetadata() config.StepData {
 						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_testOptions"),
 						Aliases:     []config.Alias{},
 					},
 				},

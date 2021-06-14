@@ -120,6 +120,9 @@ func abapAddonAssemblyKitPublishTargetVectorMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "abapAddonAssemblyKitCredentialsId", Description: "Credential stored in Jenkins for the Addon Assembly Kit as a Service (AAKaaS) system", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "abapAddonAssemblyKitEndpoint",
@@ -127,6 +130,7 @@ func abapAddonAssemblyKitPublishTargetVectorMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     `https://apps.support.sap.com`,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -135,6 +139,7 @@ func abapAddonAssemblyKitPublishTargetVectorMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     os.Getenv("PIPER_username"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -143,6 +148,7 @@ func abapAddonAssemblyKitPublishTargetVectorMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     os.Getenv("PIPER_password"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -151,6 +157,7 @@ func abapAddonAssemblyKitPublishTargetVectorMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_targetVectorScope"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -164,6 +171,7 @@ func abapAddonAssemblyKitPublishTargetVectorMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
+						Default:   os.Getenv("PIPER_addonDescriptor"),
 						Aliases:   []config.Alias{},
 					},
 				},

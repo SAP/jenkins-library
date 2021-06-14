@@ -160,6 +160,7 @@ func batsExecuteTestsMetadata() config.StepData {
 						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     `junit`,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -168,6 +169,7 @@ func batsExecuteTestsMetadata() config.StepData {
 						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     `https://github.com/bats-core/bats-core.git`,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -176,6 +178,7 @@ func batsExecuteTestsMetadata() config.StepData {
 						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     `piper-bats`,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -184,6 +187,7 @@ func batsExecuteTestsMetadata() config.StepData {
 						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     `src/test`,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -192,6 +196,7 @@ func batsExecuteTestsMetadata() config.StepData {
 						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:        "[]string",
 						Mandatory:   false,
+						Default:     []string{},
 						Aliases:     []config.Alias{},
 					},
 				},

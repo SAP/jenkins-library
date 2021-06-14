@@ -157,6 +157,9 @@ func detectExecuteScanMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "detectTokenCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing the API token used to authenticate with the Synopsis Detect (formerly BlackDuck) Server.", Type: "jenkins", Aliases: []config.Alias{{Name: "apiTokenCredentialsId", Deprecated: false}}},
+				},
 				Resources: []config.StepResources{
 					{Name: "buildDescriptor", Type: "stash"},
 					{Name: "checkmarx", Type: "stash"},
@@ -179,6 +182,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
+						Default:   os.Getenv("PIPER_token"),
 						Aliases:   []config.Alias{{Name: "blackduckToken"}, {Name: "detectToken"}, {Name: "apiToken"}, {Name: "detect/apiToken"}},
 					},
 					{
@@ -187,6 +191,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_codeLocation"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -195,6 +200,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     os.Getenv("PIPER_projectName"),
 						Aliases:     []config.Alias{{Name: "detect/projectName"}},
 					},
 					{
@@ -203,6 +209,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
+						Default:     []string{`signature`},
 						Aliases:     []config.Alias{{Name: "detect/scanners"}},
 					},
 					{
@@ -211,6 +218,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
+						Default:     []string{`.`},
 						Aliases:     []config.Alias{{Name: "detect/scanPaths"}},
 					},
 					{
@@ -219,6 +227,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     `.`,
 						Aliases:     []config.Alias{{Name: "detect/dependencyPath"}},
 					},
 					{
@@ -227,6 +236,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
+						Default:     false,
 						Aliases:     []config.Alias{{Name: "detect/unmap"}},
 					},
 					{
@@ -235,6 +245,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
+						Default:     []string{`--blackduck.signature.scanner.memory=4096`, `--detect.timeout=6000`, `--blackduck.trust.cert=true`, `--logging.level.com.synopsys.integration=DEBUG`, `--detect.maven.excluded.scopes=test`},
 						Aliases:     []config.Alias{{Name: "detect/scanProperties"}},
 					},
 					{
@@ -243,6 +254,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     os.Getenv("PIPER_serverUrl"),
 						Aliases:     []config.Alias{{Name: "detect/serverUrl"}},
 					},
 					{
@@ -251,6 +263,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
+						Default:     []string{},
 						Aliases:     []config.Alias{{Name: "detect/groups"}},
 					},
 					{
@@ -259,6 +272,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
+						Default:     []string{`BLOCKER`},
 						Aliases:     []config.Alias{{Name: "detect/failOn"}},
 					},
 					{
@@ -267,6 +281,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     `major`,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -280,6 +295,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
+						Default:   os.Getenv("PIPER_version"),
 						Aliases:   []config.Alias{{Name: "projectVersion"}, {Name: "detect/projectVersion"}},
 					},
 					{
@@ -288,6 +304,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "STAGES", "STEPS", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_customScanVersion"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -296,6 +313,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_projectSettingsFile"),
 						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile"}},
 					},
 					{
@@ -304,6 +322,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_globalSettingsFile"),
 						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile"}},
 					},
 					{
@@ -312,6 +331,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_m2Path"),
 						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
 					},
 					{
@@ -320,6 +340,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "bool",
 						Mandatory:   false,
+						Default:     false,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -328,6 +349,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
+						Default:     []string{},
 						Aliases:     []config.Alias{{Name: "detect/includedPackageManagers"}},
 					},
 					{
@@ -336,6 +358,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
+						Default:     []string{},
 						Aliases:     []config.Alias{{Name: "detect/excludedPackageManagers"}},
 					},
 					{
@@ -344,6 +367,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
+						Default:     []string{},
 						Aliases:     []config.Alias{{Name: "detect/mavenExcludedScopes"}},
 					},
 					{
@@ -352,6 +376,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
+						Default:     []string{},
 						Aliases:     []config.Alias{{Name: "detect/detectTools"}},
 					},
 					{
@@ -360,6 +385,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
+						Default:     false,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -368,6 +394,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
+						Default:     []string{},
 						Aliases:     []config.Alias{},
 					},
 				},

@@ -126,6 +126,7 @@ func containerExecuteStructureTestsMetadata() config.StepData {
 						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:        "bool",
 						Mandatory:   false,
+						Default:     false,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -134,6 +135,7 @@ func containerExecuteStructureTestsMetadata() config.StepData {
 						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     os.Getenv("PIPER_testConfiguration"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -142,6 +144,7 @@ func containerExecuteStructureTestsMetadata() config.StepData {
 						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_testDriver"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -150,6 +153,7 @@ func containerExecuteStructureTestsMetadata() config.StepData {
 						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     os.Getenv("PIPER_testImage"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -158,6 +162,7 @@ func containerExecuteStructureTestsMetadata() config.StepData {
 						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     `cst-report.json`,
 						Aliases:     []config.Alias{},
 					},
 				},
