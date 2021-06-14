@@ -2,8 +2,6 @@ package npm
 
 import (
 	"fmt"
-
-	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 // PublishAllPackages executes npm or yarn Install for all package.json fileUtils defined in packageJSONFiles
@@ -50,7 +48,7 @@ func (exec *Execute) publish(packageJSON, registry string) error {
 	// 	return err
 	// }
 
-	log.Entry().WithField("WorkingDirectory", dir).Info("Running Publish")
+	// log.Entry().WithField("WorkingDirectory", dir).Info("Running Publish")
 	// if packageLockExists {
 	// 	err = execRunner.RunExecutable("npm", "ci")
 	// 	if err != nil {
