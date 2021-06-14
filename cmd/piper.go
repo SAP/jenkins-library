@@ -136,6 +136,7 @@ func Execute() {
 	rootCmd.AddCommand(VaultRotateSecretIdCommand())
 	rootCmd.AddCommand(CheckChangeInDevelopmentCommand())
 	rootCmd.AddCommand(TransportRequestUploadCTSCommand())
+	rootCmd.AddCommand(TransportRequestUploadRFCCommand())
 	rootCmd.AddCommand(NewmanExecuteCommand())
 	rootCmd.AddCommand(IntegrationArtifactDeployCommand())
 	rootCmd.AddCommand(TransportRequestUploadSOLMANCommand())
