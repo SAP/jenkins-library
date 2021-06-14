@@ -252,10 +252,6 @@ func artifactPrepareVersionMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
-				Secrets: []config.StepSecrets{
-					{Name: "gitHttpsCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing username/password for http access to your git repository.", Type: "jenkins"},
-					{Name: "gitSshKeyCredentialsId", Description: "Jenkins 'SSH Username with private key' credentials ID ssh key for accessing your git repository. You can find details about how to generate an ssh key in the [GitHub documentation](https://docs.github.com/en/enterprise/2.15/user/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent).", Type: "jenkins", Aliases: []config.Alias{{Name: "gitCredentialsId", Deprecated: true}}},
-				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "buildTool",
@@ -263,7 +259,6 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Default:     os.Getenv("PIPER_buildTool"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -272,7 +267,6 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     `Project Piper`,
 						Aliases:     []config.Alias{{Name: "gitUserName"}},
 					},
 					{
@@ -281,7 +275,6 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     os.Getenv("PIPER_customVersionField"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -290,7 +283,6 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     os.Getenv("PIPER_customVersionSection"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -299,7 +291,6 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     os.Getenv("PIPER_customVersioningScheme"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -308,7 +299,6 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     os.Getenv("PIPER_dockerVersionSource"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -317,7 +307,6 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
-						Default:     false,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -326,7 +315,6 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     os.Getenv("PIPER_filePath"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -335,7 +323,6 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     os.Getenv("PIPER_globalSettingsFile"),
 						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile"}},
 					},
 					{
@@ -344,7 +331,6 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
-						Default:     true,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -353,7 +339,6 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     os.Getenv("PIPER_m2Path"),
 						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
 					},
 					{
@@ -374,7 +359,6 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Default:   os.Getenv("PIPER_password"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -383,7 +367,6 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     os.Getenv("PIPER_projectSettingsFile"),
 						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile"}},
 					},
 					{
@@ -392,7 +375,6 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:        "bool",
 						Mandatory:   false,
-						Default:     false,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -401,7 +383,6 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     `build_`,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -410,7 +391,6 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:        "bool",
 						Mandatory:   false,
-						Default:     false,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -431,7 +411,6 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Default:   os.Getenv("PIPER_username"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -440,7 +419,6 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     os.Getenv("PIPER_versioningTemplate"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -449,7 +427,6 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     `cloud`,
 						Aliases:     []config.Alias{},
 					},
 				},
