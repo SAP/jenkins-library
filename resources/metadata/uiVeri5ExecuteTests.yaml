@@ -1,0 +1,85 @@
+metadata:
+  name: uiVeri5ExecuteTests
+  description: Executes UI5 e2e tests using uiVeri5
+  longDescription: |
+    In this step the ([UIVeri5 tests](https://github.com/SAP/ui5-uiveri5)) are executed.
+
+#    The step is using `dockerExecute` step to spin up two containers in a Docker network:
+#    * a Selenium/Chrome container (`selenium/standalone-chrome`)
+#    * a NodeJS container (`node:lts-stretch`)
+#    In the Docker network, the containers can be referenced by the values provided in `dockerName` and `sidecarName`, the default values are `uiVeri5` and `selenium`.
+#   !!! note
+#        In a Kubernetes environment, the containers both need to be referenced with `localhost`.
+spec:
+  inputs:
+    resources:
+      - name: buildDescriptor
+        type: stash
+      - name: tests
+        type: stash
+    params:
+      - name: installCommand
+        type: string
+        description: The command that is executed to install the uiveri5 test tool.
+        default: npm install @ui5/uiveri5 --global --quiet
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+      - name: runCommand
+        type: string
+        description: "The command that is executed to start the tests."
+        default: /home/node/.npm-global/bin/uiveri5
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+      - name: runOptions
+        type: "[]string"
+        description: "Options to append to the runCommand, last parameter has to be path to conf.js (default if missing: ./conf.js)."
+        default: ["--seleniumAddress=http://localhost:4444/wd/hub"]
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+      - name: testOptions
+        type: string
+        description: "Deprecated and will result in an error if set. Please use runOptions instead. Split the testOptions string at the whitespaces when migrating it into a list of runOptions."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: testServerUrl
+        type: string
+        description: "URL pointing to the deployment."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+  containers:
+    - name: uiVeri5
+      image: node:lts-stretch
+      env:
+        - name: no_proxy
+          value: localhost,selenium,$no_proxy
+        - name: NO_PROXY
+          value: localhost,selenium,$NO_PROXY
+      workingDir: /home/node
+  sidecars:
+    - image: selenium/standalone-chrome
+      name: selenium
+      securityContext:
+        privileged: true
+      volumeMounts:
+        - mountPath: /dev/shm
+          name: dev-shm
+      env:
+        - name: "NO_PROXY"
+          value: "localhost,selenium,$NO_PROXY"
+        - name: "no_proxy"
+          value: "localhost,selenium,$no_proxy"

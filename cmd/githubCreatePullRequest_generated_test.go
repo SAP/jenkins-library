@@ -7,6 +7,7 @@ import (
 )
 
 func TestGithubCreatePullRequestCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := GithubCreatePullRequestCommand()
 

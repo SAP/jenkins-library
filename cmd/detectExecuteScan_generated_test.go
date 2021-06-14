@@ -7,6 +7,7 @@ import (
 )
 
 func TestDetectExecuteScanCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := DetectExecuteScanCommand()
 

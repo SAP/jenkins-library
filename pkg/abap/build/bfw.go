@@ -162,7 +162,6 @@ func (b *Build) Start(phase string, inputValues Values) error {
 	b.Startedby = jBuild.Build.Startedby
 	b.StartedAt = jBuild.Build.StartedAt
 	b.FinishedAt = jBuild.Build.FinishedAt
-	fmt.Println("Hello")
 	return nil
 }
 
@@ -327,6 +326,10 @@ func (t *task) getResults() error {
 		t.Results = jResults.ResultResults.Results
 		for i := range t.Results {
 			t.Results[i].connector = t.connector
+		}
+		if len(t.Results) == 0 {
+			//prevent 2nd GET request - no new results will occure...
+			t.Results = append(t.Results, Result{Name: "Dummy"})
 		}
 	}
 	return nil

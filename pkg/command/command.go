@@ -18,6 +18,7 @@ import (
 type Command struct {
 	ErrorCategoryMapping map[string][]string
 	dir                  string
+	stdin                io.Reader
 	stdout               io.Writer
 	stderr               io.Writer
 	env                  []string
@@ -28,8 +29,11 @@ type runner interface {
 	SetDir(dir string)
 	SetEnv(env []string)
 	AppendEnv(env []string)
+	Stdin(in io.Reader)
 	Stdout(out io.Writer)
 	Stderr(err io.Writer)
+	GetStdout() io.Writer
+	GetStderr() io.Writer
 }
 
 // ExecRunner mock for intercepting calls to executables
@@ -60,6 +64,11 @@ func (c *Command) AppendEnv(env []string) {
 	c.env = append(c.env, env...)
 }
 
+// Stdin ..
+func (c *Command) Stdin(stdin io.Reader) {
+	c.stdin = stdin
+}
+
 // Stdout ..
 func (c *Command) Stdout(stdout io.Writer) {
 	c.stdout = stdout
@@ -68,6 +77,16 @@ func (c *Command) Stdout(stdout io.Writer) {
 // Stderr ..
 func (c *Command) Stderr(stderr io.Writer) {
 	c.stderr = stderr
+}
+
+// GetStdout Returns the writer for stdout
+func (c *Command) GetStdout() io.Writer {
+	return c.stdout
+}
+
+//GetStderr Retursn the writer for stderr
+func (c *Command) GetStderr() io.Writer {
+	return c.stderr
 }
 
 // ExecCommand defines how to execute os commands
@@ -115,6 +134,10 @@ func (c *Command) RunExecutable(executable string, params ...string) error {
 
 	appendEnvironment(cmd, c.env)
 
+	if c.stdin != nil {
+		cmd.Stdin = c.stdin
+	}
+
 	if err := c.runCmd(cmd); err != nil {
 		return errors.Wrapf(err, "running command '%v' failed", executable)
 	}
@@ -137,6 +160,10 @@ func (c *Command) RunExecutableInBackground(executable string, params ...string)
 	log.Entry().Infof("running command: %v %v", executable, strings.Join(params, (" ")))
 
 	appendEnvironment(cmd, c.env)
+
+	if c.stdin != nil {
+		cmd.Stdin = c.stdin
+	}
 
 	execution, err := c.startCmd(cmd)
 
@@ -348,5 +375,6 @@ func cmdPipes(cmd *exec.Cmd) (io.ReadCloser, io.ReadCloser, error) {
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "getting Stderr pipe failed")
 	}
+
 	return stdout, stderr, nil
 }

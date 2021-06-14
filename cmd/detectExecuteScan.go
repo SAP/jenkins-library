@@ -10,8 +10,6 @@ import (
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/maven"
 
-	sliceUtils "github.com/SAP/jenkins-library/pkg/piperutils"
-
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
@@ -79,7 +77,7 @@ func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData)
 
 func runDetect(config detectExecuteScanOptions, utils detectUtils) error {
 	// detect execution details, see https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/88440888/Sample+Synopsys+Detect+Scan+Configuration+Scenarios+for+Black+Duck
-	err := utils.DownloadFile("https://detect.synopsys.com/detect.sh", "detect.sh", nil, nil)
+	err := getDetectScript(config, utils)
 	if err != nil {
 		return fmt.Errorf("failed to download 'detect.sh' script: %w", err)
 	}
@@ -113,6 +111,7 @@ func runDetect(config detectExecuteScanOptions, utils detectUtils) error {
 	script := strings.Join(args, " ")
 
 	envs := []string{"BLACKDUCK_SKIP_PHONE_HOME=true"}
+	envs = append(envs, config.CustomEnvironmentVariables...)
 
 	utils.SetDir(".")
 	utils.SetEnv(envs)
@@ -120,15 +119,38 @@ func runDetect(config detectExecuteScanOptions, utils detectUtils) error {
 	return utils.RunShell("/bin/bash", script)
 }
 
-func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectUtils) ([]string, error) {
+func getDetectScript(config detectExecuteScanOptions, utils detectUtils) error {
+	if config.ScanOnChanges {
+		return utils.DownloadFile("https://raw.githubusercontent.com/blackducksoftware/detect_rescan/master/detect_rescan.sh", "detect.sh", nil, nil)
+	}
+	return utils.DownloadFile("https://detect.synopsys.com/detect.sh", "detect.sh", nil, nil)
+}
 
-	coordinates := struct {
-		Version string
-	}{
-		Version: config.Version,
+func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectUtils) ([]string, error) {
+	detectVersionName := config.CustomScanVersion
+	if len(detectVersionName) > 0 {
+		log.Entry().Infof("Using custom version: %v", detectVersionName)
+	} else {
+		detectVersionName = versioning.ApplyVersioningModel(config.VersioningModel, config.Version)
+	}
+	//Split on spaces, the scanPropeties, so that each property is available as a single string
+	//instead of all properties being part of a single string
+	config.ScanProperties = piperutils.SplitAndTrim(config.ScanProperties, " ")
+
+	if config.ScanOnChanges {
+		args = append(args, "--report")
+		config.Unmap = false
 	}
 
-	_, detectVersionName := versioning.DetermineProjectCoordinates("", config.VersioningModel, coordinates)
+	if config.Unmap {
+		if !piperutils.ContainsString(config.ScanProperties, "--detect.project.codelocation.unmap=true") {
+			args = append(args, fmt.Sprintf("--detect.project.codelocation.unmap=true"))
+		}
+		config.ScanProperties, _ = piperutils.RemoveAll(config.ScanProperties, "--detect.project.codelocation.unmap=false")
+	} else {
+		//When unmap is set to false, any occurances of unmap=true from scanProperties must be removed
+		config.ScanProperties, _ = piperutils.RemoveAll(config.ScanProperties, "--detect.project.codelocation.unmap=true")
+	}
 
 	args = append(args, config.ScanProperties...)
 
@@ -136,12 +158,12 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 	args = append(args, fmt.Sprintf("--blackduck.api.token=%v", config.Token))
 	// ProjectNames, VersionName, GroupName etc can contain spaces and need to be escaped using double quotes in CLI
 	// Hence the string need to be surrounded by \"
-	args = append(args, fmt.Sprintf("--detect.project.name=\\\"%v\\\"", config.ProjectName))
-	args = append(args, fmt.Sprintf("--detect.project.version.name=\\\"%v\\\"", detectVersionName))
+	args = append(args, fmt.Sprintf("\"--detect.project.name='%v'\"", config.ProjectName))
+	args = append(args, fmt.Sprintf("\"--detect.project.version.name='%v'\"", detectVersionName))
 
 	// Groups parameter is added only when there is atleast one non-empty groupname provided
 	if len(config.Groups) > 0 && len(config.Groups[0]) > 0 {
-		args = append(args, fmt.Sprintf("--detect.project.user.groups=\\\"%v\\\"", strings.Join(config.Groups, "\\\",\\\"")))
+		args = append(args, fmt.Sprintf("\"--detect.project.user.groups='%v'\"", strings.Join(config.Groups, ",")))
 	}
 
 	// Atleast 1, non-empty category to fail on must be provided
@@ -149,18 +171,36 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 		args = append(args, fmt.Sprintf("--detect.policy.check.fail.on.severities=%v", strings.Join(config.FailOn, ",")))
 	}
 
-	codeLocation := config.CodeLocation
-	if len(codeLocation) == 0 && len(config.ProjectName) > 0 {
-		codeLocation = fmt.Sprintf("%v/%v", config.ProjectName, detectVersionName)
+	codelocation := config.CodeLocation
+	if len(codelocation) == 0 && len(config.ProjectName) > 0 {
+		codelocation = fmt.Sprintf("%v/%v", config.ProjectName, detectVersionName)
 	}
-	args = append(args, fmt.Sprintf("--detect.code.location.name=\\\"%v\\\"", codeLocation))
+	args = append(args, fmt.Sprintf("\"--detect.code.location.name='%v'\"", codelocation))
 
-	if sliceUtils.ContainsString(config.Scanners, "signature") {
+	if len(config.ScanPaths) > 0 && len(config.ScanPaths[0]) > 0 {
 		args = append(args, fmt.Sprintf("--detect.blackduck.signature.scanner.paths=%v", strings.Join(config.ScanPaths, ",")))
 	}
 
-	if sliceUtils.ContainsString(config.Scanners, "source") {
-		args = append(args, fmt.Sprintf("--detect.source.path=%v", config.ScanPaths[0]))
+	if len(config.DependencyPath) > 0 {
+		args = append(args, fmt.Sprintf("--detect.source.path=%v", config.DependencyPath))
+	} else {
+		args = append(args, fmt.Sprintf("--detect.source.path='.'"))
+	}
+
+	if len(config.IncludedPackageManagers) > 0 {
+		args = append(args, fmt.Sprintf("--detect.included.detector.types=%v", strings.ToUpper(strings.Join(config.IncludedPackageManagers, ","))))
+	}
+
+	if len(config.ExcludedPackageManagers) > 0 {
+		args = append(args, fmt.Sprintf("--detect.excluded.detector.types=%v", strings.ToUpper(strings.Join(config.ExcludedPackageManagers, ","))))
+	}
+
+	if len(config.MavenExcludedScopes) > 0 {
+		args = append(args, fmt.Sprintf("--detect.maven.excluded.scopes=%v", strings.ToLower(strings.Join(config.MavenExcludedScopes, ","))))
+	}
+
+	if len(config.DetectTools) > 0 {
+		args = append(args, fmt.Sprintf("--detect.tools=%v", strings.Join(config.DetectTools, ",")))
 	}
 
 	mavenArgs, err := maven.DownloadAndGetMavenParameters(config.GlobalSettingsFile, config.ProjectSettingsFile, utils)

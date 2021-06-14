@@ -30,6 +30,7 @@ spec:
         params:
           - name: artifactVersion
           - name: git/commitId
+          - name: git/headCommitId
           - name: git/branch
           - name: custom/customList
             type: "[]string"
@@ -42,6 +43,9 @@ spec:
             tags:
               - name: t1
   inputs:
+    resources:
+      - name: stashName
+        type: stash
     params:
       - name: param0
         type: string

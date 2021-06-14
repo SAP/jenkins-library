@@ -7,6 +7,7 @@ import (
 )
 
 func TestJsonApplyPatchCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := JsonApplyPatchCommand()
 

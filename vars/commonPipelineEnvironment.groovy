@@ -13,6 +13,11 @@ class commonPipelineEnvironment implements Serializable {
     def artifactVersion
     def originalArtifactVersion
 
+    // stores additional artifact coordinates
+    def artifactId
+    def groupId
+    def packaging
+
     //stores the build tools if it inferred automatically, e.g. in the SAP Cloud SDK pipeline
     String buildTool
 
@@ -68,6 +73,10 @@ class commonPipelineEnvironment implements Serializable {
         appContainerProperties = [:]
         artifactVersion = null
         originalArtifactVersion = null
+
+        artifactId = null
+        groupId = null
+        packaging = null
 
         buildTool = null
 
@@ -180,6 +189,9 @@ class commonPipelineEnvironment implements Serializable {
 
     def files = [
         [filename: '.pipeline/commonPipelineEnvironment/artifactVersion', property: 'artifactVersion'],
+        [filename: '.pipeline/commonPipelineEnvironment/artifactId', property: 'artifactId'],
+        [filename: '.pipeline/commonPipelineEnvironment/groupId', property: 'groupId'],
+        [filename: '.pipeline/commonPipelineEnvironment/packaging', property: 'packaging'],
         [filename: '.pipeline/commonPipelineEnvironment/buildTool', property: 'buildTool'],
         [filename: '.pipeline/commonPipelineEnvironment/originalArtifactVersion', property: 'originalArtifactVersion'],
         [filename: '.pipeline/commonPipelineEnvironment/github/owner', property: 'githubOrg'],
@@ -192,34 +204,30 @@ class commonPipelineEnvironment implements Serializable {
     ]
 
     void writeToDisk(script) {
-
         files.each({f  ->
-            if (this[f.property] && !script.fileExists(f.filename)) {
-                script.writeFile file: f.filename, text: this[f.property]
-            }
+            writeValueToFile(script, f.filename, this[f.property])
         })
 
         containerProperties.each({key, value ->
-            def fileName = ".pipeline/commonPipelineEnvironment/container/${key}"
-            if (value && !script.fileExists(fileName)) {
-                if(value in CharSequence) {
-                    script.writeFile file: fileName, text: value
-                } else {
-                    script.writeFile file: fileName, text: groovy.json.JsonOutput.toJson(value)
-                }
-            }
+            writeValueToFile(script, ".pipeline/commonPipelineEnvironment/container/${key}", value)
         })
 
         valueMap.each({key, value ->
-            def fileName = ".pipeline/commonPipelineEnvironment/custom/${key}"
-            if (value && !script.fileExists(fileName)) {
-                if(value in CharSequence) {
-                    script.writeFile file: fileName, text: value
-                } else {
-                    script.writeFile file: fileName, text: groovy.json.JsonOutput.toJson(value)
-                }
-            }
+            writeValueToFile(script, ".pipeline/commonPipelineEnvironment/custom/${key}", value)
         })
+    }
+
+    void writeValueToFile(script, String filename, value){
+        try{
+            if (value){
+                if (!(value in CharSequence)) filename += '.json'
+                if (script.fileExists(filename)) return
+                if (!(value in CharSequence)) value = groovy.json.JsonOutput.toJson(value)
+                script.writeFile file: filename, text: value
+            }
+        }catch(StackOverflowError error) {
+            script.echo("failed to write file: " + filename)
+        }
     }
 
     void readFromDisk(script) {
@@ -236,7 +244,7 @@ class commonPipelineEnvironment implements Serializable {
             def param = fileName.split('/')[fileName.split('\\/').size()-1]
             if (param.endsWith(".json")){
                 param = param.replace(".json","")
-                valueMap[param] = script.readJSON(text: fileContent)
+                valueMap[param] = getJSONValue(script, fileContent)
             }else{
                 valueMap[param] = fileContent
             }
@@ -249,7 +257,7 @@ class commonPipelineEnvironment implements Serializable {
             def param = fileName.split('/')[fileName.split('\\/').size()-1]
             if (param.endsWith(".json")){
                 param = param.replace(".json","")
-                containerProperties[param] = script.readJSON(text: fileContent)
+                containerProperties[param] = getJSONValue(script, fileContent)
             }else{
                 containerProperties[param] = fileContent
             }
@@ -258,5 +266,27 @@ class commonPipelineEnvironment implements Serializable {
 
     List getCustomDefaults() {
         DefaultValueCache.getInstance().getCustomDefaults()
+    }
+
+    def getJSONValue(Script script, String text) {
+        try {
+            return script.readJSON(text: text)
+        } catch (net.sf.json.JSONException ex) {
+            // JSON reader cannot handle simple objects like bool, numbers, ...
+            // as such readJSON cannot read what writeJSON created in such cases
+            if (text in ['true', 'false']) {
+                return text.toBoolean()
+            }
+            if (text ==~ /[\d]+/) {
+                return text.toInteger()
+            }
+            if (text.contains('.')) {
+                return text.toFloat()
+            }
+            // no handling of strings since we expect strings in a non-json file
+            // see handling of *.json above
+
+            throw err
+        }
     }
 }

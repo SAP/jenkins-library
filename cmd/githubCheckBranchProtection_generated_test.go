@@ -7,6 +7,7 @@ import (
 )
 
 func TestGithubCheckBranchProtectionCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := GithubCheckBranchProtectionCommand()
 

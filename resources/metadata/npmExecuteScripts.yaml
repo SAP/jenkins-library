@@ -65,6 +65,15 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: createBOM
+        type: bool
+        description: Create a BOM xml using CycloneDX.
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        default: false
   containers:
     - name: node
       image: node:12-buster-slim

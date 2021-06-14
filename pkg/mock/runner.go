@@ -16,6 +16,7 @@ type ExecMockRunner struct {
 	Env                 []string
 	ExitCode            int
 	Calls               []ExecCall
+	stdin               io.Reader
 	stdout              io.Writer
 	stderr              io.Writer
 	StdoutReturn        map[string]string
@@ -39,6 +40,7 @@ type ShellMockRunner struct {
 	ExitCode            int
 	Calls               []string
 	Shell               []string
+	stdin               io.Reader
 	stdout              io.Writer
 	stderr              io.Writer
 	StdoutReturn        map[string]string
@@ -86,12 +88,24 @@ func (m *ExecMockRunner) RunExecutableInBackground(e string, p ...string) (comma
 	return &execution, nil
 }
 
+func (m *ExecMockRunner) Stdin(in io.Reader) {
+	m.stdin = in
+}
+
 func (m *ExecMockRunner) Stdout(out io.Writer) {
 	m.stdout = out
 }
 
+func (m *ExecMockRunner) GetStdout() io.Writer {
+	return m.stdout
+}
+
 func (m *ExecMockRunner) Stderr(err io.Writer) {
 	m.stderr = err
+}
+
+func (m *ExecMockRunner) GetStderr() io.Writer {
+	return m.stderr
 }
 
 func (m *ShellMockRunner) SetDir(d string) {
@@ -185,8 +199,20 @@ func handleCall(call string, stdoutReturn map[string]string, shouldFailOnCommand
 	return nil
 }
 
+func (m *ShellMockRunner) Stdin(in io.Reader) {
+	m.stdin = in
+}
+
 func (m *ShellMockRunner) Stdout(out io.Writer) {
 	m.stdout = out
+}
+
+func (m *ShellMockRunner) GetStdout() io.Writer {
+	return m.stdout
+}
+
+func (m *ShellMockRunner) GetStderr() io.Writer {
+	return m.stderr
 }
 
 func (m *ShellMockRunner) Stderr(err io.Writer) {

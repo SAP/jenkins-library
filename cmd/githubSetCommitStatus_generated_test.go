@@ -7,6 +7,7 @@ import (
 )
 
 func TestGithubSetCommitStatusCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := GithubSetCommitStatusCommand()
 

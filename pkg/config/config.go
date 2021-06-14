@@ -23,7 +23,7 @@ type Config struct {
 	General          map[string]interface{}            `json:"general"`
 	Stages           map[string]map[string]interface{} `json:"stages"`
 	Steps            map[string]map[string]interface{} `json:"steps"`
-	Hooks            *json.RawMessage                  `json:"hooks,omitempty"`
+	Hooks            map[string]interface{}            `json:"hooks,omitempty"`
 	defaults         PipelineDefaults
 	initialized      bool
 	openFile         func(s string) (io.ReadCloser, error)
@@ -33,7 +33,7 @@ type Config struct {
 // StepConfig defines the structure for merged step configuration
 type StepConfig struct {
 	Config     map[string]interface{}
-	HookConfig *json.RawMessage
+	HookConfig map[string]interface{}
 }
 
 // ReadConfig loads config and returns its content
@@ -59,33 +59,33 @@ func (c *Config) ApplyAliasConfig(parameters []StepParameters, secrets []StepSec
 		c.copyStepAliasConfig(stepName, stepAliases)
 	}
 	for _, p := range parameters {
-		c.General = setParamValueFromAlias(c.General, filters.General, p.Name, p.Aliases)
+		c.General = setParamValueFromAlias(stepName, c.General, filters.General, p.Name, p.Aliases)
 		if c.Stages[stageName] != nil {
-			c.Stages[stageName] = setParamValueFromAlias(c.Stages[stageName], filters.Stages, p.Name, p.Aliases)
+			c.Stages[stageName] = setParamValueFromAlias(stepName, c.Stages[stageName], filters.Stages, p.Name, p.Aliases)
 		}
 		if c.Steps[stepName] != nil {
-			c.Steps[stepName] = setParamValueFromAlias(c.Steps[stepName], filters.Steps, p.Name, p.Aliases)
+			c.Steps[stepName] = setParamValueFromAlias(stepName, c.Steps[stepName], filters.Steps, p.Name, p.Aliases)
 		}
 	}
 	for _, s := range secrets {
-		c.General = setParamValueFromAlias(c.General, filters.General, s.Name, s.Aliases)
+		c.General = setParamValueFromAlias(stepName, c.General, filters.General, s.Name, s.Aliases)
 		if c.Stages[stageName] != nil {
-			c.Stages[stageName] = setParamValueFromAlias(c.Stages[stageName], filters.Stages, s.Name, s.Aliases)
+			c.Stages[stageName] = setParamValueFromAlias(stepName, c.Stages[stageName], filters.Stages, s.Name, s.Aliases)
 		}
 		if c.Steps[stepName] != nil {
-			c.Steps[stepName] = setParamValueFromAlias(c.Steps[stepName], filters.Steps, s.Name, s.Aliases)
+			c.Steps[stepName] = setParamValueFromAlias(stepName, c.Steps[stepName], filters.Steps, s.Name, s.Aliases)
 		}
 	}
 }
 
-func setParamValueFromAlias(configMap map[string]interface{}, filter []string, name string, aliases []Alias) map[string]interface{} {
+func setParamValueFromAlias(stepName string, configMap map[string]interface{}, filter []string, name string, aliases []Alias) map[string]interface{} {
 	if configMap != nil && configMap[name] == nil && sliceContains(filter, name) {
 		for _, a := range aliases {
 			aliasVal := getDeepAliasValue(configMap, a.Name)
 			if aliasVal != nil {
 				configMap[name] = aliasVal
 				if a.Deprecated {
-					log.Entry().WithField("package", "SAP/jenkins-library/pkg/config").Warningf("DEPRECATION NOTICE: old step config key '%v' used. Please switch to '%v'!", a.Name, name)
+					log.Entry().Warningf("[WARNING] The parameter '%v' is DEPRECATED, use '%v' instead. (%v/%v)", a.Name, name, log.LibraryName, stepName)
 				}
 			}
 			if configMap[name] != nil {
@@ -179,21 +179,18 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	// initialize with defaults from step.yaml
 	stepConfig.mixInStepDefaults(parameters)
 
+	// merge parameters provided by Piper environment
+	stepConfig.mixIn(envParameters, filters.All)
+
 	// read defaults & merge general -> steps (-> general -> steps ...)
 	for _, def := range c.defaults.Defaults {
 		def.ApplyAliasConfig(parameters, secrets, filters, stageName, stepName, stepAliases)
 		stepConfig.mixIn(def.General, filters.General)
 		stepConfig.mixIn(def.Steps[stepName], filters.Steps)
 		stepConfig.mixIn(def.Stages[stageName], filters.Steps)
-
-		// process hook configuration - this is only supported via defaults
-		if stepConfig.HookConfig == nil {
-			stepConfig.HookConfig = def.Hooks
-		}
+		stepConfig.mixinVaultConfig(def.General, def.Steps[stepName], def.Stages[stageName])
+		stepConfig.mixInHookConfig(def.Hooks)
 	}
-
-	// merge parameters provided by Piper environment
-	stepConfig.mixIn(envParameters, filters.All)
 
 	// read config & merge - general -> steps -> stages
 	stepConfig.mixIn(c.General, filters.General)
@@ -212,10 +209,10 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		} else {
 			//apply aliases
 			for _, p := range parameters {
-				params = setParamValueFromAlias(params, filters.Parameters, p.Name, p.Aliases)
+				params = setParamValueFromAlias(stepName, params, filters.Parameters, p.Name, p.Aliases)
 			}
 			for _, s := range secrets {
-				params = setParamValueFromAlias(params, filters.Parameters, s.Name, s.Aliases)
+				params = setParamValueFromAlias(stepName, params, filters.Parameters, s.Name, s.Aliases)
 			}
 
 			stepConfig.mixIn(params, filters.Parameters)
@@ -229,18 +226,23 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 
 	if verbose, ok := stepConfig.Config["verbose"].(bool); ok && verbose {
 		log.SetVerbose(verbose)
-	} else if !ok {
+	} else if !ok && stepConfig.Config["verbose"] != nil {
 		log.Entry().Warnf("invalid value for parameter verbose: '%v'", stepConfig.Config["verbose"])
 	}
 
-	stepConfig.mixIn(c.General, vaultFilter)
-	// fetch secrets from vault
-	vaultClient, err := getVaultClientFromConfig(stepConfig, c.vaultCredentials)
-	if err != nil {
-		return StepConfig{}, err
-	}
-	if vaultClient != nil {
-		resolveAllVaultReferences(&stepConfig, vaultClient, parameters)
+	stepConfig.mixinVaultConfig(c.General, c.Steps[stepName], c.Stages[stageName])
+	// check whether vault should be skipped
+	if skip, ok := stepConfig.Config["skipVault"].(bool); !ok || !skip {
+		// fetch secrets from vault
+		vaultClient, err := getVaultClientFromConfig(stepConfig, c.vaultCredentials)
+		if err != nil {
+			return StepConfig{}, err
+		}
+		if vaultClient != nil {
+			defer vaultClient.MustRevokeToken()
+			resolveAllVaultReferences(&stepConfig, vaultClient, parameters)
+			resolveVaultTestCredentials(&stepConfig, vaultClient)
+		}
 	}
 
 	// finally do the condition evaluation post processing
@@ -261,11 +263,14 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	return stepConfig, nil
 }
 
-// SetVaultCredentials sets the appRoleID and the appRoleSecretID to load additional configuration from vault
-func (c *Config) SetVaultCredentials(appRoleID, appRoleSecretID string) {
+// SetVaultCredentials sets the appRoleID and the appRoleSecretID or the vaultTokento load additional
+//configuration from vault
+// Either appRoleID and appRoleSecretID or vaultToken must be specified.
+func (c *Config) SetVaultCredentials(appRoleID, appRoleSecretID string, vaultToken string) {
 	c.vaultCredentials = VaultCredentials{
 		AppRoleID:       appRoleID,
 		AppRoleSecretID: appRoleSecretID,
+		VaultToken:      vaultToken,
 	}
 }
 
@@ -334,6 +339,15 @@ func (s *StepConfig) mixIn(mergeData map[string]interface{}, filter []string) {
 	s.Config = merge(s.Config, filterMap(mergeData, filter))
 }
 
+func (s *StepConfig) mixInHookConfig(mergeData map[string]interface{}) {
+
+	if s.HookConfig == nil {
+		s.HookConfig = map[string]interface{}{}
+	}
+
+	s.HookConfig = merge(s.HookConfig, mergeData)
+}
+
 func (s *StepConfig) mixInStepDefaults(stepParams []StepParameters) {
 	if s.Config == nil {
 		s.Config = map[string]interface{}{}
@@ -376,7 +390,7 @@ func filterMap(data map[string]interface{}, filter []string) map[string]interfac
 	}
 
 	for key, value := range data {
-		if len(filter) == 0 || sliceContains(filter, key) {
+		if value != nil && (len(filter) == 0 || sliceContains(filter, key)) {
 			result[key] = value
 		}
 	}

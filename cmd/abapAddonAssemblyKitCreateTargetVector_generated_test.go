@@ -7,6 +7,7 @@ import (
 )
 
 func TestAbapAddonAssemblyKitCreateTargetVectorCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := AbapAddonAssemblyKitCreateTargetVectorCommand()
 

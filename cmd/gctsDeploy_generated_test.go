@@ -7,6 +7,7 @@ import (
 )
 
 func TestGctsDeployCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := GctsDeployCommand()
 

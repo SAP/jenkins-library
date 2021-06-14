@@ -7,6 +7,7 @@ import (
 )
 
 func TestGithubPublishReleaseCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := GithubPublishReleaseCommand()
 

@@ -12,6 +12,7 @@ nav:
         - 'ABAP Environment pipeline':
             - 'Introduction': pipelines/abapEnvironment/introduction.md
             - 'Configuration': pipelines/abapEnvironment/configuration.md
+            - 'Extensibility': pipelines/abapEnvironment/extensibility.md
             - 'Stages':
               - 'Initial Checks': pipelines/abapEnvironment/stages/initialChecks.md
               - 'Prepare System': pipelines/abapEnvironment/stages/prepareSystem.md
@@ -57,6 +58,7 @@ nav:
         - abapAddonAssemblyKitReleasePackages: steps/abapAddonAssemblyKitReleasePackages.md
         - abapAddonAssemblyKitReserveNextPackages: steps/abapAddonAssemblyKitReserveNextPackages.md
         - abapEnvironmentAssemblePackages: steps/abapEnvironmentAssemblePackages.md
+        - abapEnvironmentAssembleConfirm: steps/abapEnvironmentAssembleConfirm.md
         - abapEnvironmentCheckoutBranch: steps/abapEnvironmentCheckoutBranch.md
         - abapEnvironmentCloneGitRepo: steps/abapEnvironmentCloneGitRepo.md
         - abapEnvironmentCreateSystem: steps/abapEnvironmentCreateSystem.md
@@ -91,6 +93,8 @@ nav:
         - gctsExecuteABAPUnitTests: steps/gctsExecuteABAPUnitTests.md
         - gctsRollback: steps/gctsRollback.md
         - githubCheckBranchProtection: steps/githubCheckBranchProtection.md
+        - githubCommentIssue: steps/githubCommentIssue.md
+        - githubCreateIssue: steps/githubCreateIssue.md
         - githubCreatePullRequest: steps/githubCreatePullRequest.md
         - githubPublishRelease: steps/githubPublishRelease.md
         - githubSetCommitStatus: steps/githubSetCommitStatus.md
@@ -98,6 +102,12 @@ nav:
         - handlePipelineStepErrors: steps/handlePipelineStepErrors.md
         - healthExecuteCheck: steps/healthExecuteCheck.md
         - influxWriteData: steps/influxWriteData.md
+        - integrationArtifactDeploy: steps/integrationArtifactDeploy.md
+        - integrationArtifactDownload: steps/integrationArtifactDownload.md
+        - integrationArtifactGetMplStatus: steps/integrationArtifactGetMplStatus.md
+        - integrationArtifactGetServiceEndpoint: steps/integrationArtifactGetServiceEndpoint.md
+        - integrationArtifactUpdateConfiguration: steps/integrationArtifactUpdateConfiguration.md
+        - integrationArtifactUpload: steps/integrationArtifactUpload.md
         - jenkinsMaterializeLog: steps/jenkinsMaterializeLog.md
         - kanikoExecute: steps/kanikoExecute.md
         - karmaExecuteTests: steps/karmaExecuteTests.md
@@ -134,8 +144,11 @@ nav:
         - testsPublishResults: steps/testsPublishResults.md
         - tmsUpload: steps/tmsUpload.md
         - transportRequestCreate: steps/transportRequestCreate.md
+        - transportRequestDocIDFromGit: steps/transportRequestDocIDFromGit.md
         - transportRequestRelease:  steps/transportRequestRelease.md
+        - transportRequestReqIDFromGit: steps/transportRequestReqIDFromGit.md
         - transportRequestUploadFile: steps/transportRequestUploadFile.md
+        - transportRequestUploadSOLMAN: steps/transportRequestUploadSOLMAN.md
         - uiVeri5ExecuteTests: steps/uiVeri5ExecuteTests.md
         - vaultRotateSecretId: steps/vaultRotateSecretId.md
         - whitesourceExecuteScan: steps/whitesourceExecuteScan.md

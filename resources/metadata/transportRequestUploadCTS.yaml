@@ -1,0 +1,129 @@
+metadata:
+  name: transportRequestUploadCTS
+  aliases:
+    - name: transportRequestUploadFile
+  description: "Uploads content to a transport request"
+  longDescription: |
+    Uploads content to a transport request.
+spec:
+  inputs:
+    secrets:
+      - name: uploadCredentialsId
+        description: Jenkins 'Username with password' credentials ID containing user and password to authenticate against the ABAP backend.
+        type: jenkins
+        aliases:
+          - name: changeManagement/credentialsId
+    params:
+      - name: description
+        type: string
+        description: "The description of the application. the desription is only taken into account for a new upload. In case of an update the description will not be updated."
+        default: "Deployed with Piper based on SAP Fiori tools"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: endpoint
+        type: string
+        description: "The service endpoint"
+        aliases:
+          - name: changeManagement/endpoint
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: client
+        type: string
+        aliases:
+          - name: changeManagement/client
+        description: "The ABAP client"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: username
+        type: string
+        mandatory: true
+        description: "The deploy user"
+        secret: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: password
+        type: string
+        mandatory: true
+        description: "The password for the deploy user"
+        secret: true
+        scope:
+          - PARAMETERS
+      - name: applicationName
+        type: string
+        mandatory: true
+        description: "The name of the application."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: abapPackage
+        type: string
+        mandatory: true
+        description: "The ABAP package name of your application"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: osDeployUser
+        type: string
+        default: node
+        description: "By default we use a standard node docker image and prepare some fiori related packages before performing the deployment. For that we need to launch the image with root privileges. After that, before actually performing the deployment we swith to a non root user. This user can be specified here."
+        aliases:
+          - name: changeManagement/cts/osDeployUser
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: deployConfigFile
+        default: ui5-deploy.yaml
+        type: string
+        aliases:
+          - name: changeManagement/cts/deployConfigFile
+          - name: cts/deployConfigFile
+        description: "The ABAP package name of your application"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: transportRequestId
+        type: string
+        mandatory: true
+        description: "The id of the transport request to upload the file. This parameter is only taken into account when provided via signature to the step."
+        scope:
+          - PARAMETERS
+      - name: deployToolDependencies
+        type: "[]string"
+        description: "By default we use a standard node docker iamge and prepare some fiori related packages performing the deployment. The additional dependencies can be provided here. In case you use an already prepared docker image which contains the required dependencies, the empty list can be provide here. Caused hereby installing additional dependencies will be skipped."
+        aliases:
+          - name: changeManagement/cts/deployToolDependencies
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: npmInstallOpts
+        type: "[]string"
+        description: "A list containing additional options for the npm install call. `-g`, `--global` is always assumed. Can be used for e.g. providing custom registries (`--registry https://your.registry.com`) or for providing the verbose flag (`--verbose`) for troubleshooting."
+        aliases:
+          - name: changeManagement/cts/deployToolDependencies
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL

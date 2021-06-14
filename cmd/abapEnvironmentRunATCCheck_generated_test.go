@@ -7,6 +7,7 @@ import (
 )
 
 func TestAbapEnvironmentRunATCCheckCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := AbapEnvironmentRunATCCheckCommand()
 
