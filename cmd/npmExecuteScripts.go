@@ -73,7 +73,12 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 			return err
 		}
 
-		err = npmExecutor.RunScriptsInAllPackages([]string{"publish"}, nil, []string{}, config.VirtualFrameBuffer, config.BuildDescriptorExcludeList, config.BuildDescriptorList)
+		packageJSONFiles, err := npmExecutor.FindPackageJSONFilesWithExcludes(config.BuildDescriptorExcludeList)
+		if err != nil {
+			return err
+		}
+
+		err = npmExecutor.PublishAllPackages(packageJSONFiles)
 		if err != nil {
 			return err
 		}
