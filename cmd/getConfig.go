@@ -62,7 +62,6 @@ func generateConfig() error {
 		return errors.Wrapf(err, "failed to resolve metadata")
 	}
 
-
 	// prepare output resource directories:
 	// this is needed in order to have proper directory permissions in case
 	// resources written inside a container image with a different user

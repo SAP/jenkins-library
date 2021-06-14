@@ -204,7 +204,7 @@ func testStepMetadata() config.StepData {
 						Scope:     []string{"GENERAL","PARAMETERS",},
 						Type:      "string",
 						Mandatory: true,
-						Default: `val0`,
+						Default:   `val0`,
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -213,7 +213,7 @@ func testStepMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS",},
 						Type:      "string",
 						Mandatory: false,
-						Default: os.Getenv("PIPER_param1"),
+						Default:   os.Getenv("PIPER_param1"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -222,7 +222,7 @@ func testStepMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS",},
 						Type:      "string",
 						Mandatory: true,
-						Default: os.Getenv("PIPER_param2"),
+						Default:   os.Getenv("PIPER_param2"),
 						Aliases:   []config.Alias{},
 					},
 				},
