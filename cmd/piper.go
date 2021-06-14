@@ -147,10 +147,13 @@ func Execute() {
 	rootCmd.AddCommand(IntegrationArtifactUploadCommand())
 	rootCmd.AddCommand(TerraformExecuteCommand())
 	rootCmd.AddCommand(ContainerExecuteStructureTestsCommand())
+	rootCmd.AddCommand(GaugeExecuteTestsCommand())
 	rootCmd.AddCommand(BatsExecuteTestsCommand())
 	rootCmd.AddCommand(PipelineCreateScanSummaryCommand())
 	rootCmd.AddCommand(TransportRequestDocIDFromGitCommand())
 	rootCmd.AddCommand(TransportRequestReqIDFromGitCommand())
+	rootCmd.AddCommand(WritePipelineEnv())
+	rootCmd.AddCommand(ReadPipelineEnv())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {

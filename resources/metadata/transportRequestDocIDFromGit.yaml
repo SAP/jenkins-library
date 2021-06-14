@@ -2,7 +2,8 @@ metadata:
   name: transportRequestDocIDFromGit
   description: "Retrieves change document ID from Git repository"
   longDescription: |
-    Scans the commit messages of the Git repository for a pattern to retrieve the change document ID.
+    This step scans the commit messages of the Git repository for a pattern to retrieve the change document ID.
+    It is primarily made for the transportRequestUploadSOLMAN step to provide the change document ID by Git means.
 spec:
   inputs:
     params:

@@ -127,6 +127,7 @@ func uiVeri5ExecuteTestsMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     `npm install @ui5/uiveri5 --global --quiet`,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -135,6 +136,7 @@ func uiVeri5ExecuteTestsMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     `/home/node/.npm-global/bin/uiveri5`,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -143,6 +145,7 @@ func uiVeri5ExecuteTestsMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   true,
+						Default:     []string{`--seleniumAddress=http://localhost:4444/wd/hub`},
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -151,6 +154,7 @@ func uiVeri5ExecuteTestsMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_testOptions"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -159,6 +163,7 @@ func uiVeri5ExecuteTestsMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_testServerUrl"),
 						Aliases:     []config.Alias{},
 					},
 				},

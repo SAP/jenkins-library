@@ -122,6 +122,9 @@ func karmaExecuteTestsMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "seleniumHubCredentialsId", Description: "Defines the id of the user/password credentials to be used to connect to a Selenium Hub. The credentials are provided in the environment variables `PIPER_SELENIUM_HUB_USER` and `PIPER_SELENIUM_HUB_PASSWORD`.", Type: "jenkins"},
+				},
 				Resources: []config.StepResources{
 					{Name: "buildDescriptor", Type: "stash"},
 					{Name: "tests", Type: "stash"},
@@ -133,6 +136,7 @@ func karmaExecuteTestsMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     `npm install --quiet`,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -141,6 +145,7 @@ func karmaExecuteTestsMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   true,
+						Default:     []string{`.`},
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -149,6 +154,7 @@ func karmaExecuteTestsMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     `npm run karma`,
 						Aliases:     []config.Alias{},
 					},
 				},

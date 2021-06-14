@@ -63,7 +63,8 @@ func TransportRequestDocIDFromGitCommand() *cobra.Command {
 	var createTransportRequestDocIDFromGitCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Retrieves change document ID from Git repository",
-		Long:  `Scans the commit messages of the Git repository for a pattern to retrieve the change document ID.`,
+		Long: `This step scans the commit messages of the Git repository for a pattern to retrieve the change document ID.
+It is primarily made for the transportRequestUploadSOLMAN step to provide the change document ID by Git means.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -148,6 +149,7 @@ func transportRequestDocIDFromGitMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     `origin/master`,
 						Aliases:     []config.Alias{{Name: "changeManagement/git/from"}},
 					},
 					{
@@ -156,6 +158,7 @@ func transportRequestDocIDFromGitMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     `HEAD`,
 						Aliases:     []config.Alias{{Name: "changeManagement/git/to"}},
 					},
 					{
@@ -164,6 +167,7 @@ func transportRequestDocIDFromGitMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     `ChangeDocument`,
 						Aliases:     []config.Alias{{Name: "changeManagement/changeDocumentLabel"}},
 					},
 				},

@@ -190,13 +190,15 @@ func TestCustomArtifact(t *testing.T) {
 	}
 
 	for _, test := range tt {
-		res, err := customArtifact(test.file, test.field, test.section, test.scheme)
+		t.Run(test.file, func(t *testing.T) {
+			res, err := customArtifact(test.file, test.field, test.section, test.scheme)
+			if len(test.expectedErr) == 0 {
+				assert.NoError(t, err)
+				assert.Equal(t, test.expected, res)
+			} else {
+				assert.EqualError(t, err, test.expectedErr)
+			}
+		})
 
-		if len(test.expectedErr) == 0 {
-			assert.NoError(t, err)
-			assert.Equal(t, test.expected, res)
-		} else {
-			assert.EqualError(t, err, test.expectedErr)
-		}
 	}
 }
