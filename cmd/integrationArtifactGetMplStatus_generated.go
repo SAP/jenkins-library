@@ -126,7 +126,7 @@ func IntegrationArtifactGetMplStatusCommand() *cobra.Command {
 }
 
 func addIntegrationArtifactGetMplStatusFlags(cmd *cobra.Command, stepConfig *integrationArtifactGetMplStatusOptions) {
-	cmd.Flags().StringVar(&stepConfig.ServiceKey, "serviceKey", os.Getenv("PIPER_serviceKey"), "Path to the service key file to access the Cloud Integration Runtime API")
+	cmd.Flags().StringVar(&stepConfig.ServiceKey, "serviceKey", os.Getenv("PIPER_serviceKey"), "Service key JSON string to access the Cloud Integration API")
 	cmd.Flags().StringVar(&stepConfig.IntegrationFlowID, "integrationFlowId", os.Getenv("PIPER_integrationFlowId"), "Specifies the ID of the Integration Flow artifact")
 	cmd.Flags().StringVar(&stepConfig.Platform, "platform", os.Getenv("PIPER_platform"), "Specifies the running platform of the SAP Cloud platform integraion service")
 
@@ -152,7 +152,7 @@ func integrationArtifactGetMplStatusMetadata() config.StepData {
 						Name: "serviceKey",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "cpiRuntimeServiceKeyCredentialId",
+								Name:  "cpiServiceKeyCredentialId",
 								Param: "serviceKey",
 								Type:  "secret",
 							},
