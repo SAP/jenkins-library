@@ -190,7 +190,7 @@ func npmExecuteScriptsMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "node", Image: "node:12-buster-slim"},
+				{Name: "node", Image: "node:12-buster"},
 			},
 		},
 	}
