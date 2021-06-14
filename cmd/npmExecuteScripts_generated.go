@@ -224,12 +224,6 @@ func npmExecuteScriptsMetadata() config.StepData {
 								Name:  "commonPipelineEnvironment",
 								Param: "custom/repositoryPassword",
 							},
-
-							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/repository-password", "$(vaultBasePath)/$(vaultPipelineName)/repository-password", "$(vaultBasePath)/GROUP-SECRETS/repository-password"},
-								Type:  "vaultSecretFile",
-							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
