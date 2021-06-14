@@ -43,3 +43,4 @@ stages:
 
   Post:
     ordinal: 90
+    cfDeleteServiceKeys: true
