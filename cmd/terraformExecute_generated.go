@@ -116,6 +116,7 @@ func terraformExecuteMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     `plan`,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -130,6 +131,7 @@ func terraformExecuteMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
+						Default:   os.Getenv("PIPER_terraformSecrets"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -138,6 +140,7 @@ func terraformExecuteMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
+						Default:     []string{},
 						Aliases:     []config.Alias{},
 					},
 				},

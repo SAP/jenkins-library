@@ -143,6 +143,7 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
+						Default:     true,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -151,6 +152,7 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
+						Default:     true,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -159,6 +161,7 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
+						Default:     []string{},
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -167,6 +170,7 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_spotBugsExcludeFilterFile"),
 						Aliases:     []config.Alias{{Name: "spotBugs/excludeFilterFile"}},
 					},
 					{
@@ -175,6 +179,7 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_spotBugsIncludeFilterFile"),
 						Aliases:     []config.Alias{{Name: "spotBugs/includeFilterFile"}},
 					},
 					{
@@ -183,6 +188,7 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "int",
 						Mandatory:   false,
+						Default:     0,
 						Aliases:     []config.Alias{{Name: "spotBugs/maxAllowedViolations"}},
 					},
 					{
@@ -191,6 +197,7 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "int",
 						Mandatory:   false,
+						Default:     0,
 						Aliases:     []config.Alias{{Name: "pmd/failurePriority"}},
 					},
 					{
@@ -199,6 +206,7 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "int",
 						Mandatory:   false,
+						Default:     0,
 						Aliases:     []config.Alias{{Name: "pmd/maxAllowedViolations"}},
 					},
 					{
@@ -207,6 +215,7 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_projectSettingsFile"),
 						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile"}},
 					},
 					{
@@ -215,6 +224,7 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_globalSettingsFile"),
 						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile"}},
 					},
 					{
@@ -223,6 +233,7 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_m2Path"),
 						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
 					},
 					{
@@ -231,6 +242,7 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "bool",
 						Mandatory:   false,
+						Default:     false,
 						Aliases:     []config.Alias{{Name: "maven/logSuccessfulMavenTransfers"}},
 					},
 					{
@@ -239,6 +251,7 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "bool",
 						Mandatory:   false,
+						Default:     false,
 						Aliases:     []config.Alias{},
 					},
 				},

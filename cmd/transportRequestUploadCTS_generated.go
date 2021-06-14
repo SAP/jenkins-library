@@ -134,6 +134,9 @@ func transportRequestUploadCTSMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "uploadCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing user and password to authenticate against the ABAP backend.", Type: "jenkins", Aliases: []config.Alias{{Name: "changeManagement/credentialsId", Deprecated: false}}},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "description",
@@ -141,6 +144,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     `Deployed with Piper based on SAP Fiori tools`,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -149,6 +153,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_endpoint"),
 						Aliases:     []config.Alias{{Name: "changeManagement/endpoint"}},
 					},
 					{
@@ -157,6 +162,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     os.Getenv("PIPER_client"),
 						Aliases:     []config.Alias{{Name: "changeManagement/client"}},
 					},
 					{
@@ -165,6 +171,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     os.Getenv("PIPER_username"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -173,6 +180,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     os.Getenv("PIPER_password"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -181,6 +189,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     os.Getenv("PIPER_applicationName"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -189,6 +198,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     os.Getenv("PIPER_abapPackage"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -197,6 +207,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     `node`,
 						Aliases:     []config.Alias{{Name: "changeManagement/cts/osDeployUser"}},
 					},
 					{
@@ -205,6 +216,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
+						Default:     `ui5-deploy.yaml`,
 						Aliases:     []config.Alias{{Name: "changeManagement/cts/deployConfigFile"}, {Name: "cts/deployConfigFile"}},
 					},
 					{
@@ -213,6 +225,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     os.Getenv("PIPER_transportRequestId"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -221,6 +234,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "[]string",
 						Mandatory:   false,
+						Default:     []string{},
 						Aliases:     []config.Alias{{Name: "changeManagement/cts/deployToolDependencies"}},
 					},
 					{
@@ -229,6 +243,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "[]string",
 						Mandatory:   false,
+						Default:     []string{},
 						Aliases:     []config.Alias{{Name: "changeManagement/cts/deployToolDependencies"}},
 					},
 				},

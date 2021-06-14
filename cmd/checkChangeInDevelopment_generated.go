@@ -128,6 +128,7 @@ func checkChangeInDevelopmentMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     os.Getenv("PIPER_endpoint"),
 						Aliases:     []config.Alias{{Name: "changeManagement/endpoint"}},
 					},
 					{
@@ -136,6 +137,7 @@ func checkChangeInDevelopmentMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     os.Getenv("PIPER_username"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -144,6 +146,7 @@ func checkChangeInDevelopmentMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     os.Getenv("PIPER_password"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -152,6 +155,7 @@ func checkChangeInDevelopmentMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
+						Default:     os.Getenv("PIPER_changeDocumentId"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -160,6 +164,7 @@ func checkChangeInDevelopmentMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
+						Default:     true,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -168,6 +173,7 @@ func checkChangeInDevelopmentMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
+						Default:     []string{},
 						Aliases:     []config.Alias{},
 					},
 				},
