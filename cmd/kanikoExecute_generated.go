@@ -252,7 +252,7 @@ func kanikoExecuteMetadata() config.StepData {
 								Type:  "vaultSecretFile",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:     []string{"PARAMETERS"},
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},

@@ -45,3 +45,6 @@
 /vars/sonarExecuteScan.groovy @CCFenner
 /cmd/sonarExecuteScan.go @CCFenner
 /cmd/sonarExecuteScan_test.go @CCFenner
+
+##### Orchestrator #####
+pkg/orchestrator/ @inf2381
