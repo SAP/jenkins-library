@@ -171,7 +171,7 @@ func TestMarBuild(t *testing.T) {
 
 		if assert.Len(t, utilsMock.Calls, 1) {
 			assert.Equal(t, "mbt", utilsMock.Calls[0].Exec)
-			assert.Equal(t, []string{"build", "--mtar", "myName.mtar", "--platform", "CF", "--target", "./", "--source", "./"}, utilsMock.Calls[0].Params)
+			assert.Equal(t, []string{"build", "--mtar", "myName.mtar", "--platform", "CF", "--source", "./", "--target", "./"}, utilsMock.Calls[0].Params)
 		}
 		assert.Equal(t, "myName.mtar", cpe.mtarFilePath)
 	})
