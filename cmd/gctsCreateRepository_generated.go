@@ -144,7 +144,6 @@ func gctsCreateRepositoryMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Default:   os.Getenv("PIPER_username"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -159,7 +158,6 @@ func gctsCreateRepositoryMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Default:   os.Getenv("PIPER_password"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -168,7 +166,6 @@ func gctsCreateRepositoryMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Default:     os.Getenv("PIPER_repository"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -177,7 +174,6 @@ func gctsCreateRepositoryMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Default:     os.Getenv("PIPER_host"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -186,7 +182,6 @@ func gctsCreateRepositoryMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Default:     os.Getenv("PIPER_client"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -195,7 +190,6 @@ func gctsCreateRepositoryMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     os.Getenv("PIPER_remoteRepositoryURL"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -204,7 +198,6 @@ func gctsCreateRepositoryMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     os.Getenv("PIPER_role"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -213,7 +206,6 @@ func gctsCreateRepositoryMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     os.Getenv("PIPER_vSID"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -222,7 +214,6 @@ func gctsCreateRepositoryMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     `GIT`,
 						Aliases:     []config.Alias{},
 					},
 				},

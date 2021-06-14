@@ -168,7 +168,6 @@ func kanikoExecuteMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
-						Default:     []string{`--skip-tls-verify-pull`},
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -177,7 +176,6 @@ func kanikoExecuteMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     os.Getenv("PIPER_containerBuildOptions"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -186,7 +184,6 @@ func kanikoExecuteMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     os.Getenv("PIPER_containerImage"),
 						Aliases:     []config.Alias{{Name: "containerImageNameAndTag"}},
 					},
 					{
@@ -195,7 +192,6 @@ func kanikoExecuteMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     os.Getenv("PIPER_containerImageName"),
 						Aliases:     []config.Alias{{Name: "dockerImageName"}},
 					},
 					{
@@ -209,7 +205,6 @@ func kanikoExecuteMetadata() config.StepData {
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Default:   os.Getenv("PIPER_containerImageTag"),
 						Aliases:   []config.Alias{{Name: "artifactVersion"}},
 					},
 					{
@@ -218,7 +213,6 @@ func kanikoExecuteMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     `rm -f /kaniko/.docker/config.json`,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -232,7 +226,6 @@ func kanikoExecuteMetadata() config.StepData {
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Default:   os.Getenv("PIPER_containerRegistryUrl"),
 						Aliases:   []config.Alias{{Name: "dockerRegistryUrl"}},
 					},
 					{
@@ -241,7 +234,6 @@ func kanikoExecuteMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
-						Default:     []string{},
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -266,7 +258,6 @@ func kanikoExecuteMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Default:   os.Getenv("PIPER_dockerConfigJSON"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -275,7 +266,6 @@ func kanikoExecuteMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     `Dockerfile`,
 						Aliases:     []config.Alias{{Name: "dockerfile"}},
 					},
 				},

@@ -170,7 +170,6 @@ func integrationArtifactGetMplStatusMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Default:   os.Getenv("PIPER_username"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -185,7 +184,6 @@ func integrationArtifactGetMplStatusMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Default:   os.Getenv("PIPER_password"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -194,7 +192,6 @@ func integrationArtifactGetMplStatusMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Default:     os.Getenv("PIPER_integrationFlowId"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -203,7 +200,6 @@ func integrationArtifactGetMplStatusMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     os.Getenv("PIPER_platform"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -212,7 +208,6 @@ func integrationArtifactGetMplStatusMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Default:     os.Getenv("PIPER_host"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -221,7 +216,6 @@ func integrationArtifactGetMplStatusMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Default:     os.Getenv("PIPER_oAuthTokenProviderUrl"),
 						Aliases:     []config.Alias{},
 					},
 				},

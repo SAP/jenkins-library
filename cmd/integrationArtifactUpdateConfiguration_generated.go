@@ -147,7 +147,6 @@ func integrationArtifactUpdateConfigurationMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Default:   os.Getenv("PIPER_username"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -162,7 +161,6 @@ func integrationArtifactUpdateConfigurationMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Default:   os.Getenv("PIPER_password"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -171,7 +169,6 @@ func integrationArtifactUpdateConfigurationMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Default:     os.Getenv("PIPER_integrationFlowId"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -180,7 +177,6 @@ func integrationArtifactUpdateConfigurationMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Default:     os.Getenv("PIPER_integrationFlowVersion"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -189,7 +185,6 @@ func integrationArtifactUpdateConfigurationMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     os.Getenv("PIPER_platform"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -198,7 +193,6 @@ func integrationArtifactUpdateConfigurationMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Default:     os.Getenv("PIPER_host"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -207,7 +201,6 @@ func integrationArtifactUpdateConfigurationMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Default:     os.Getenv("PIPER_oAuthTokenProviderUrl"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -216,7 +209,6 @@ func integrationArtifactUpdateConfigurationMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Default:     os.Getenv("PIPER_parameterKey"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -225,7 +217,6 @@ func integrationArtifactUpdateConfigurationMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Default:     os.Getenv("PIPER_parameterValue"),
 						Aliases:     []config.Alias{},
 					},
 				},

@@ -135,7 +135,6 @@ func cloudFoundryDeleteServiceMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
-						Default:     os.Getenv("PIPER_cfApiEndpoint"),
 						Aliases:     []config.Alias{{Name: "cloudFoundry/apiEndpoint"}},
 					},
 					{
@@ -156,7 +155,6 @@ func cloudFoundryDeleteServiceMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Default:   os.Getenv("PIPER_username"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -177,7 +175,6 @@ func cloudFoundryDeleteServiceMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Default:   os.Getenv("PIPER_password"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -186,7 +183,6 @@ func cloudFoundryDeleteServiceMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
-						Default:     os.Getenv("PIPER_cfOrg"),
 						Aliases:     []config.Alias{{Name: "cloudFoundry/org"}},
 					},
 					{
@@ -195,7 +191,6 @@ func cloudFoundryDeleteServiceMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
-						Default:     os.Getenv("PIPER_cfSpace"),
 						Aliases:     []config.Alias{{Name: "cloudFoundry/space"}},
 					},
 					{
@@ -204,7 +199,6 @@ func cloudFoundryDeleteServiceMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
-						Default:     os.Getenv("PIPER_cfServiceInstance"),
 						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceInstance"}},
 					},
 					{
@@ -213,7 +207,6 @@ func cloudFoundryDeleteServiceMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
-						Default:     false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/cfDeleteServiceKeys"}},
 					},
 				},

@@ -173,7 +173,6 @@ func gaugeExecuteTestsMetadata() config.StepData {
 						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     os.Getenv("PIPER_installCommand"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -182,7 +181,6 @@ func gaugeExecuteTestsMetadata() config.StepData {
 						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     os.Getenv("PIPER_languageRunner"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -191,7 +189,6 @@ func gaugeExecuteTestsMetadata() config.StepData {
 						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   true,
-						Default:     os.Getenv("PIPER_runCommand"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -200,7 +197,6 @@ func gaugeExecuteTestsMetadata() config.StepData {
 						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     os.Getenv("PIPER_testOptions"),
 						Aliases:     []config.Alias{},
 					},
 				},

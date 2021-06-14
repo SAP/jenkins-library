@@ -135,7 +135,6 @@ func cloudFoundryCreateSpaceMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
-						Default:     `https://api.cf.eu10.hana.ondemand.com`,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/apiEndpoint"}},
 					},
 					{
@@ -150,7 +149,6 @@ func cloudFoundryCreateSpaceMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Default:   os.Getenv("PIPER_username"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -165,7 +163,6 @@ func cloudFoundryCreateSpaceMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Default:   os.Getenv("PIPER_password"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -174,7 +171,6 @@ func cloudFoundryCreateSpaceMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
-						Default:     os.Getenv("PIPER_cfOrg"),
 						Aliases:     []config.Alias{{Name: "cloudFoundry/org"}},
 					},
 					{
@@ -183,7 +179,6 @@ func cloudFoundryCreateSpaceMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
-						Default:     os.Getenv("PIPER_cfSpace"),
 						Aliases:     []config.Alias{{Name: "cloudFoundry/space"}},
 					},
 				},
