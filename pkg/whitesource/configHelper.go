@@ -134,7 +134,6 @@ func (c *ConfigOptions) addGeneralDefaults(config *ScanOptions, utils Utils, pro
 		{Name: "userKey", Value: config.UserToken, Force: true},
 		{Name: "forceUpdate", Value: true, Force: true},
 		{Name: "offline", Value: false, Force: true},
-		{Name: "ignoreSourceFiles", Value: true, Force: true},
 		{Name: "resolveAllDependencies", Value: false, Force: true},
 		{Name: "failErrorLevel", Value: "ALL", Force: true},
 		{Name: "case.sensitive.glob", Value: false},
@@ -159,20 +158,24 @@ func (c *ConfigOptions) addBuildToolDefaults(config *ScanOptions, utils Utils) e
 			{Name: "docker.excludeBaseImage", Value: "true", Force: false},
 		},
 		"dub": {
+			{Name: "ignoreSourceFiles", Value: true, Force: true},
 			{Name: "includes", Value: "**/*.d **/*.di"},
 		},
 		//ToDo: rename to go?
 		//ToDo: switch to gomod as dependency manager
 		"golang": {
+			{Name: "ignoreSourceFiles", Value: true, Force: true},
 			{Name: "go.resolveDependencies", Value: true, Force: true},
 			{Name: "go.ignoreSourceFiles", Value: true, Force: true},
 			{Name: "go.collectDependenciesAtRuntime", Value: false},
 			{Name: "go.dependencyManager", Value: "modules"},
 		},
 		"gradle": {
+			{Name: "ignoreSourceFiles", Value: true, Force: true},
 			{Name: "gradle.localRepositoryPath", Value: ".gradle", Force: false},
 		},
 		"maven": {
+			{Name: "ignoreSourceFiles", Value: true, Force: true},
 			{Name: "updateEmptyProject", Value: true, Force: true},
 			{Name: "maven.resolveDependencies", Value: true, Force: true},
 			{Name: "maven.ignoreSourceFiles", Value: true, Force: true},
@@ -186,6 +189,7 @@ func (c *ConfigOptions) addBuildToolDefaults(config *ScanOptions, utils Utils) e
 			{Name: "excludes", Value: "**/*sources.jar **/*javadoc.jar"},
 		},
 		"npm": {
+			{Name: "ignoreSourceFiles", Value: true, Force: true},
 			{Name: "npm.resolveDependencies", Value: true, Force: true},
 			{Name: "npm.ignoreSourceFiles", Value: true, Force: true},
 			{Name: "npm.ignoreNpmLsErrors", Value: true},
@@ -195,6 +199,7 @@ func (c *ConfigOptions) addBuildToolDefaults(config *ScanOptions, utils Utils) e
 			{Name: "npm.resolveLockFile", Value: true},
 		},
 		"pip": {
+			{Name: "ignoreSourceFiles", Value: true, Force: true},
 			{Name: "python.resolveDependencies", Value: true, Force: true},
 			{Name: "python.ignoreSourceFiles", Value: true, Force: true},
 			{Name: "python.ignorePipInstallErrors", Value: false},
@@ -209,6 +214,7 @@ func (c *ConfigOptions) addBuildToolDefaults(config *ScanOptions, utils Utils) e
 			{Name: "excludes", Value: "**/*sources.jar **/*javadoc.jar"},
 		},
 		"sbt": {
+			{Name: "ignoreSourceFiles", Value: true, Force: true},
 			{Name: "sbt.resolveDependencies", Value: true, Force: true},
 			{Name: "sbt.ignoreSourceFiles", Value: true, Force: true},
 			{Name: "sbt.aggregateModules", Value: false, Force: true},
@@ -217,6 +223,7 @@ func (c *ConfigOptions) addBuildToolDefaults(config *ScanOptions, utils Utils) e
 			{Name: "excludes", Value: "**/*sources.jar **/*javadoc.jar"},
 		},
 		"yarn": {
+			{Name: "ignoreSourceFiles", Value: true, Force: true},
 			{Name: "npm.resolveDependencies", Value: true, Force: true},
 			{Name: "npm.ignoreSourceFiles", Value: true, Force: true},
 			{Name: "npm.yarnProject", Value: true, Force: true},
