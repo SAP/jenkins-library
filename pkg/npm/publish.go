@@ -2,6 +2,7 @@ package npm
 
 import (
 	"fmt"
+	"path/filepath"
 )
 
 // PublishAllPackages executes npm or yarn Install for all package.json fileUtils defined in packageJSONFiles
@@ -64,7 +65,7 @@ func (exec *Execute) publish(packageJSON, registry string) error {
 	// 	"It is recommended to create a `package-lock.json` file by running `npm Install` locally." +
 	// 	" Add this file to your version control. " +
 	// 	"By doing so, the builds of your application become more reliable.")
-	err := execRunner.RunExecutable("npm", "publish", "./"+packageJSON, "--dry-run", "--registery", registry)
+	err := execRunner.RunExecutable("npm", "publish", filepath.Dir(packageJSON), "--dry-run", "--registery", registry)
 	if err != nil {
 		return err
 	}
