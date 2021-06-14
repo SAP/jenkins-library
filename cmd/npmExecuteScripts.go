@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"encoding/base64"
+	"fmt"
+
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/npm"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
@@ -58,7 +61,9 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 			npmrc.Create()
 		}
 
-		err = npmrc.SetAuth(config.RepositoryURL, config.RepositoryPassword)
+		token := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", config.RepositoryUsername, config.RepositoryPassword)))
+
+		err = npmrc.SetAuth(config.RepositoryURL, token)
 		if err != nil {
 			return err
 		}
