@@ -16,11 +16,13 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	FileUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 	SliceUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 	StepResults "github.com/SAP/jenkins-library/pkg/piperutils"
 	SonarUtils "github.com/SAP/jenkins-library/pkg/sonar"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/versioning"
 )
 
 type sonarSettings struct {
@@ -104,6 +106,9 @@ func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, i
 }
 
 func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runner command.ExecRunner, apiClient SonarUtils.Sender, influx *sonarExecuteScanInflux) error {
+	// Set config based on orchestrator-specific environment variables
+	detectParametersFromCI(&config)
+
 	if len(config.ServerURL) > 0 {
 		sonar.addEnvironment("SONAR_HOST_URL=" + config.ServerURL)
 	}
@@ -122,9 +127,14 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 	if len(config.Organization) > 0 {
 		sonar.addOption("sonar.organization=" + config.Organization)
 	}
-	if len(config.ProjectVersion) > 0 {
-		// handleArtifactVersion is reused from cmd/protecodeExecuteScan.go
-		sonar.addOption("sonar.projectVersion=" + handleArtifactVersion(config.ProjectVersion))
+	if len(config.Version) > 0 {
+		version := config.CustomScanVersion
+		if len(version) > 0 {
+			log.Entry().Infof("Using custom version: %v", version)
+		} else {
+			version = versioning.ApplyVersioningModel(config.VersioningModel, config.Version)
+		}
+		sonar.addOption("sonar.projectVersion=" + version)
 	}
 	if len(config.ProjectKey) > 0 {
 		sonar.addOption("sonar.projectKey=" + config.ProjectKey)
@@ -404,4 +414,36 @@ func getTempDir() string {
 		log.Entry().WithError(err).WithField("path", tmpFolder).Debug("Creating temp directory failed")
 	}
 	return tmpFolder
+}
+
+// Fetches parameters from environment variables and updates the options accordingly (only if not already set)
+func detectParametersFromCI(options *sonarExecuteScanOptions) {
+	provider, err := orchestrator.NewOrchestratorSpecificConfigProvider()
+	if err != nil {
+		log.Entry().WithError(err).Warning("Cannot infer config from CI environment")
+		return
+	}
+
+	if provider.IsPullRequest() {
+		config := provider.GetPullRequestConfig()
+		if len(options.ChangeBranch) == 0 {
+			log.Entry().Info("Inferring parameter changeBranch from environment: " + config.Branch)
+			options.ChangeBranch = config.Branch
+		}
+		if len(options.ChangeTarget) == 0 {
+			log.Entry().Info("Inferring parameter changeTarget from environment: " + config.Base)
+			options.ChangeTarget = config.Base
+		}
+		if len(options.ChangeID) == 0 {
+			log.Entry().Info("Inferring parameter changeId from environment: " + config.Key)
+			options.ChangeID = config.Key
+		}
+	} else {
+		config := provider.GetBranchBuildConfig()
+
+		if options.InferBranchName && len(options.BranchName) == 0 {
+			log.Entry().Info("Inferring parameter branchName from environment: " + config.Branch)
+			options.BranchName = config.Branch
+		}
+	}
 }

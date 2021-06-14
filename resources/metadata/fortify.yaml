@@ -6,6 +6,8 @@ metadata:
 
     The Fortify step triggers a scan locally on your Jenkins within a docker container so finally you have to supply a docker image with a Fortify SCA
     and Java plus Maven or alternatively Python installed into it for being able to perform any scans.
+    !!! hint "Scanning MTA projects"
+        Build type `maven` requires a so called aggregator pom which includes all modules to be scanned. If used in a mta-project which includes non-java submodules as maven dependency (e.g. node via frontend-maven-plugin), exclude those by specifying java path explicitly, e.g. `java/**/src/main/java/**/*`.
 
 spec:
   inputs:
@@ -57,9 +59,9 @@ spec:
         type: string
         description: Custom version of the Fortify project used as source.
         longDescription: |-
-          Defines a custom version for the Fortify scan which deviates from the typical versioning pattern using [`version`](#version) and [`versioningModel`](#versioningModel)
-          It allows to set non-numeric versions as well and supersedes the value of [`version`](#version) and [`versioningModel`](#versioningModel) which is calculated automatically.
-          The parameter is also used by other scan steps (e.g. BlackDuck Detect) and thus allows a common custom version across scan tools.
+          Defines a custom version for the Fortify scan which deviates from the typical versioning pattern using [`version`](#version) and [`versioningModel`](#versioningModel).
+          It allows to set non-numeric versions as well and supersedes the value of [`version`](#version) which is calculated automatically.
+          The parameter is also used by other scan steps (e.g. Detect, Sonar, WhiteSource) and thus allows a common custom version across scan tools.
         scope:
           - GENERAL
           - PARAMETERS

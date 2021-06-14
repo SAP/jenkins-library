@@ -1,6 +1,7 @@
 package jenkins
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"reflect"
@@ -21,8 +22,9 @@ type SSHCredentials = gojenkins.SSHCredentials
 type DockerServerCredentials = gojenkins.DockerServerCredentials
 
 // CredentialsManager is utility to control credential plugin
+// mock generated with: mockery --name CredentialsManager --dir pkg/jenkins --output pkg/jenkins/mocks
 type CredentialsManager interface {
-	Update(string, string, interface{}) error
+	Update(context.Context, string, string, interface{}) error
 }
 
 // NewCredentialsManager returns a new CredentialManager
@@ -31,7 +33,7 @@ func NewCredentialsManager(jenkins *gojenkins.Jenkins) CredentialsManager {
 }
 
 // UpdateCredential overwrites an existing credential
-func UpdateCredential(credentialsManager CredentialsManager, domain string, credential interface{}) error {
+func UpdateCredential(ctx context.Context, credentialsManager CredentialsManager, domain string, credential interface{}) error {
 	credValue := reflect.ValueOf(credential)
 	if credValue.Kind() != reflect.Struct {
 		return fmt.Errorf("'credential' parameter is supposed to be a Credentials struct not '%s'", credValue.Type())
@@ -44,8 +46,8 @@ func UpdateCredential(credentialsManager CredentialsManager, domain string, cred
 
 	secretID := idField.String()
 	if secretID == "" {
-		return errors.New("Secret ID should not be empty")
+		return errors.New("secret ID should not be empty")
 	}
 
-	return credentialsManager.Update(domain, secretID, credential)
+	return credentialsManager.Update(ctx, domain, secretID, credential)
 }

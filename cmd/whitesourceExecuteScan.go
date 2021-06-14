@@ -88,6 +88,10 @@ func (w *whitesourceUtilsBundle) InstallAllNPMDependencies(config *ws.ScanOption
 	return w.getNpmExecutor(config).InstallAllDependencies(packageJSONFiles)
 }
 
+func (w *whitesourceUtilsBundle) SetOptions(o piperhttp.ClientOptions) {
+	w.Client.SetOptions(o)
+}
+
 func (w *whitesourceUtilsBundle) Now() time.Time {
 	return time.Now()
 }
@@ -102,7 +106,7 @@ func newWhitesourceUtils(config *ScanOptions) *whitesourceUtilsBundle {
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
 	// Configure HTTP Client
-	utils.SetOptions(piperhttp.ClientOptions{TransportTimeout: time.Duration(config.Timeout) * time.Second})
+	utils.SetOptions(piperhttp.ClientOptions{MaxRetries: 3, TransportTimeout: time.Duration(config.Timeout) * time.Second})
 	return &utils
 }
 
@@ -131,6 +135,9 @@ func runWhitesourceExecuteScan(config *ScanOptions, scan *ws.Scan, utils whiteso
 	}
 
 	if err := resolveProjectIdentifiers(config, scan, utils, sys); err != nil {
+		if strings.Contains(fmt.Sprint(err), "User is not allowed to perform this action") {
+			log.SetErrorCategory(log.ErrorConfiguration)
+		}
 		return fmt.Errorf("failed to resolve project identifiers: %w", err)
 	}
 
@@ -166,6 +173,9 @@ func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUti
 		dClient := &piperDocker.Client{}
 		dClient.SetOptions(dClientOptions)
 		if err := runContainerSaveImage(&saveImageOptions, &telemetry.CustomData{}, "./cache", "", dClient); err != nil {
+			if strings.Contains(fmt.Sprint(err), "no image found") {
+				log.SetErrorCategory(log.ErrorConfiguration)
+			}
 			return errors.Wrapf(err, "failed to dowload Docker image %v", config.ScanImage)
 		}
 
@@ -412,6 +422,7 @@ func wsScanOptions(config *ScanOptions) *ws.ScanOptions {
 		JreDownloadURL:             config.JreDownloadURL,
 		AgentURL:                   config.AgentURL,
 		ServiceURL:                 config.ServiceURL,
+		ScanPath:                   config.ScanPath,
 		Verbose:                    GeneralConfig.Verbose,
 	}
 }
@@ -475,7 +486,8 @@ func checkPolicyViolations(config *ScanOptions, scan *ws.Scan, sys whitesource, 
 		Overview: []reporting.OverviewRow{
 			{Description: "Total number of licensing vulnerabilities", Details: fmt.Sprint(policyViolationCount)},
 		},
-		ReportTime: utils.Now(),
+		SuccessfulScan: policyViolationCount == 0,
+		ReportTime:     utils.Now(),
 	}
 
 	// JSON reports are used by step pipelineCreateSummary in order to e.g. prepare an issue creation in GitHub
@@ -572,6 +584,7 @@ func checkProjectSecurityViolations(cvssSeverityLimit float64, project ws.Projec
 	}
 	// https://github.com/SAP/jenkins-library/blob/master/vars/whitesourceExecuteScan.groovy#L558
 	if severeVulnerabilities > 0 {
+		log.SetErrorCategory(log.ErrorCompliance)
 		return severeVulnerabilities, alerts, fmt.Errorf("%v Open Source Software Security vulnerabilities with CVSS score greater "+
 			"or equal to %.1f detected in project %s",
 			severeVulnerabilities, cvssSeverityLimit, project.Name)
@@ -620,7 +633,8 @@ func createCustomVulnerabilityReport(config *ScanOptions, scan *ws.Scan, alerts 
 			{Description: "Total number of vulnerabilities", Details: fmt.Sprint(len(alerts))},
 			{Description: "Total number of high/critical vulnerabilities with CVSS score >= 7.0", Details: fmt.Sprint(severe)},
 		},
-		ReportTime: utils.Now(),
+		SuccessfulScan: severe == 0,
+		ReportTime:     utils.Now(),
 	}
 
 	detailTable := reporting.ScanDetailTable{
@@ -819,6 +833,8 @@ func newVulnerabilityExcelReport(alerts []ws.Alert, config *ScanOptions, utils w
 	if err := file.Write(stream); err != nil {
 		return err
 	}
+	filePath := piperutils.Path{Name: "aggregated-vulnerabilities", Target: fileName}
+	piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", []piperutils.Path{filePath}, nil)
 	return nil
 }
 
@@ -829,9 +845,10 @@ func fillVulnerabilityExcelReport(alerts []ws.Alert, streamWriter *excelize.Stre
 	}{
 		{"A1", "Severity"},
 		{"B1", "Library"},
-		{"C1", "Vulnerability ID"},
-		{"D1", "Project"},
-		{"E1", "Resolution"},
+		{"C1", "Vulnerability Id"},
+		{"D1", "CVSS 3"},
+		{"E1", "Project"},
+		{"F1", "Resolution"},
 	}
 	for _, row := range rows {
 		err := streamWriter.SetRow(row.axis, []interface{}{excelize.Cell{StyleID: styleID, Value: row.title}})
@@ -841,13 +858,14 @@ func fillVulnerabilityExcelReport(alerts []ws.Alert, streamWriter *excelize.Stre
 	}
 
 	for i, alert := range alerts {
-		row := make([]interface{}, 5)
+		row := make([]interface{}, 6)
 		vuln := alert.Vulnerability
-		row[0] = vuln.Severity
+		row[0] = vuln.CVSS3Severity
 		row[1] = alert.Library.Filename
-		row[2] = vuln.Level
-		row[3] = alert.Project
-		row[4] = vuln.FixResolutionText
+		row[2] = vuln.Name
+		row[3] = vuln.CVSS3Score
+		row[4] = alert.Project
+		row[5] = vuln.FixResolutionText
 		cell, _ := excelize.CoordinatesToCellName(1, i+2)
 		if err := streamWriter.SetRow(cell, row); err != nil {
 			log.Entry().Errorf("failed to write alert row: %v", err)
@@ -877,6 +895,8 @@ func newLibraryCSVReport(libraries map[string][]ws.Library, config *ScanOptions,
 	if err := utils.FileWrite(fileName, []byte(output), 0666); err != nil {
 		return err
 	}
+	filePath := piperutils.Path{Name: "aggregated-libraries", Target: fileName}
+	piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", []piperutils.Path{filePath}, nil)
 	return nil
 }
 

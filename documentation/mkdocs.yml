@@ -12,6 +12,7 @@ nav:
         - 'ABAP Environment pipeline':
             - 'Introduction': pipelines/abapEnvironment/introduction.md
             - 'Configuration': pipelines/abapEnvironment/configuration.md
+            - 'Extensibility': pipelines/abapEnvironment/extensibility.md
             - 'Stages':
               - 'Initial Checks': pipelines/abapEnvironment/stages/initialChecks.md
               - 'Prepare System': pipelines/abapEnvironment/stages/prepareSystem.md
@@ -143,8 +144,11 @@ nav:
         - testsPublishResults: steps/testsPublishResults.md
         - tmsUpload: steps/tmsUpload.md
         - transportRequestCreate: steps/transportRequestCreate.md
+        - transportRequestDocIDFromGit: steps/transportRequestDocIDFromGit.md
         - transportRequestRelease:  steps/transportRequestRelease.md
+        - transportRequestReqIDFromGit: steps/transportRequestReqIDFromGit.md
         - transportRequestUploadFile: steps/transportRequestUploadFile.md
+        - transportRequestUploadSOLMAN: steps/transportRequestUploadSOLMAN.md
         - uiVeri5ExecuteTests: steps/uiVeri5ExecuteTests.md
         - vaultRotateSecretId: steps/vaultRotateSecretId.md
         - whitesourceExecuteScan: steps/whitesourceExecuteScan.md
