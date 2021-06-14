@@ -220,7 +220,6 @@ func {{ .StepName }}Metadata() config.StepData {
 						Scope:     []string{{ "{" }}{{ range $notused, $scope := $value.Scope }}"{{ $scope }}",{{ end }}{{ "}" }},
 						Type:      "{{ $value.Type }}",
 						Mandatory: {{ $value.Mandatory }},
-						{{if $value.Default -}} Default:   {{ $value.Default }}, {{- end}}
 						Aliases:   []config.Alias{{ "{" }}{{ range $notused, $alias := $value.Aliases }}{{ "{" }}Name: "{{ $alias.Name }}"{{ "}" }},{{ end }}{{ "}" }},
 					},{{ end }}
 				},
