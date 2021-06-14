@@ -109,7 +109,7 @@ spec:
               - $(vaultPath)/repository-password
               - $(vaultBasePath)/$(vaultPipelineName)/repository-password
               - $(vaultBasePath)/GROUP-SECRETS/repository-password
-      - name: repositoryUser
+      - name: repositoryUsername
         type: string
         description: User for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This user will be updated in settings.xml . When no settings.xml is provided a new one is created corresponding with <servers> tag
         scope:

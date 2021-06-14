@@ -26,7 +26,7 @@ type npmExecuteScriptsOptions struct {
 	Publish                    bool     `json:"publish,omitempty"`
 	RepositoryURL              string   `json:"repositoryUrl,omitempty"`
 	RepositoryPassword         string   `json:"repositoryPassword,omitempty"`
-	RepositoryUser             string   `json:"repositoryUser,omitempty"`
+	RepositoryUsername         string   `json:"repositoryUsername,omitempty"`
 }
 
 // NpmExecuteScriptsCommand Execute npm run scripts on all npm packages in a project
@@ -114,7 +114,7 @@ func addNpmExecuteScriptsFlags(cmd *cobra.Command, stepConfig *npmExecuteScripts
 	cmd.Flags().BoolVar(&stepConfig.Publish, "publish", false, "Configures npm to publish the artifact to a repository.")
 	cmd.Flags().StringVar(&stepConfig.RepositoryURL, "repositoryUrl", os.Getenv("PIPER_repositoryUrl"), "")
 	cmd.Flags().StringVar(&stepConfig.RepositoryPassword, "repositoryPassword", os.Getenv("PIPER_repositoryPassword"), "Password for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This password will be updated in settings.xml . When no settings.xml is provided a new one is created corresponding with <servers> tag")
-	cmd.Flags().StringVar(&stepConfig.RepositoryUser, "repositoryUser", os.Getenv("PIPER_repositoryUser"), "User for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This user will be updated in settings.xml . When no settings.xml is provided a new one is created corresponding with <servers> tag")
+	cmd.Flags().StringVar(&stepConfig.RepositoryUsername, "repositoryUsername", os.Getenv("PIPER_repositoryUsername"), "User for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This user will be updated in settings.xml . When no settings.xml is provided a new one is created corresponding with <servers> tag")
 
 }
 
@@ -237,7 +237,7 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Aliases:   []config.Alias{},
 					},
 					{
-						Name: "repositoryUser",
+						Name: "repositoryUsername",
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "commonPipelineEnvironment",
