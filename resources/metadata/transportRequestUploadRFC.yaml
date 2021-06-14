@@ -1,0 +1,144 @@
+metadata:
+  name: transportRequestUploadRFC
+  aliases:
+    - name: transportRequestUploadFile
+  description: "Uploads content to a transport request"
+  longDescription: |
+    Uploads content to a transport request.
+spec:
+  inputs:
+    secrets:
+      - name: uploadCredentialsId
+        description: Jenkins 'Username with password' credentials ID containing user and password to authenticate against the ABAP backend.
+        type: jenkins
+        aliases:
+          - name: changeManagement/credentialsId
+    params:
+      - name: endpoint
+        type: string
+        mandatory: true
+        description: "Service endpoint"
+        aliases:
+          - name: changeManagement/endpoint
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: client
+        type: string
+        aliases:
+          - name: changeManagement/rfc/developmentClient
+        description: "AS ABAP client number"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: instance
+        type: string
+        aliases:
+          - name: changeManagement/rfc/developmentInstance
+        description: "AS ABAP instance number"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: username
+        type: string
+        mandatory: true
+        description: "Deploy user"
+        secret: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: password
+        type: string
+        mandatory: true
+        description: "Password for the deploy user"
+        secret: true
+        scope:
+          - PARAMETERS
+      - name: applicationName
+        type: string
+        mandatory: true
+        description: "Name of the application."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: applicationDescription
+        type: string
+        mandatory: false
+        description: "Description of the application."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: abapPackage
+        type: string
+        mandatory: true
+        description: "ABAP package name of your application"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: applicationUrl
+        type: string
+        mandatory: true
+        description: "URL where to find the UI5 package to upload to the transport request"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: abapPackage
+        type: string
+        mandatory: true
+        description: "ABAP package name of your application"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: codePage
+        type: string
+        default: "UTF-8"
+        description: "Code page"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: acceptUnixStyleLineEndings
+        type: bool
+        default: true
+        description: "If unix style line endings should be accepted"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: failUploadOnWarning
+        type: bool
+        default: true
+        aliases:
+          - name: failOnWarning
+        description: "If the upload should fail in case the log contains warnings"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: transportRequestId
+        type: string
+        mandatory: true
+        description: "Transport request id"
+        scope:
+          - PARAMETERS
