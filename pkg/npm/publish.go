@@ -8,7 +8,7 @@ import (
 )
 
 // PublishAllPackages executes npm or yarn Install for all package.json fileUtils defined in packageJSONFiles
-func (exec *Execute) PublishAllPackages(packageJSONFiles []string) error {
+func (exec *Execute) PublishAllPackages(packageJSONFiles []string, registry string) error {
 	for _, packageJSON := range packageJSONFiles {
 		fileExists, err := exec.Utils.FileExists(packageJSON)
 		if err != nil {
@@ -18,7 +18,7 @@ func (exec *Execute) PublishAllPackages(packageJSONFiles []string) error {
 			return fmt.Errorf("package.json file '%s' not found: %w", packageJSON, err)
 		}
 
-		err = exec.publish(packageJSON)
+		err = exec.publish(packageJSON, registry)
 		if err != nil {
 			return err
 		}
@@ -27,7 +27,7 @@ func (exec *Execute) PublishAllPackages(packageJSONFiles []string) error {
 }
 
 // publish executes npm publish for package.json
-func (exec *Execute) publish(packageJSON string) error {
+func (exec *Execute) publish(packageJSON, registry string) error {
 	execRunner := exec.Utils.GetExecRunner()
 
 	oldWorkingDirectory, err := exec.Utils.Getwd()
@@ -41,10 +41,10 @@ func (exec *Execute) publish(packageJSON string) error {
 		return fmt.Errorf("failed to change into directory for executing script: %w", err)
 	}
 
-	err = exec.SetNpmRegistries()
-	if err != nil {
-		return err
-	}
+	// err = exec.SetNpmRegistries()
+	// if err != nil {
+	// 	return err
+	// }
 
 	// packageLockExists, yarnLockExists, err := exec.checkIfLockFilesExist()
 	// if err != nil {
@@ -67,7 +67,7 @@ func (exec *Execute) publish(packageJSON string) error {
 	// 	"It is recommended to create a `package-lock.json` file by running `npm Install` locally." +
 	// 	" Add this file to your version control. " +
 	// 	"By doing so, the builds of your application become more reliable.")
-	err = execRunner.RunExecutable("npm", "publish")
+	err = execRunner.RunExecutable("npm", "publish", "--registery", registry)
 	if err != nil {
 		return err
 	}

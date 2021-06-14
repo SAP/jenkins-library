@@ -78,7 +78,7 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 			return err
 		}
 
-		err = npmExecutor.PublishAllPackages(packageJSONFiles)
+		err = npmExecutor.PublishAllPackages(packageJSONFiles, config.RepositoryURL)
 		if err != nil {
 			return err
 		}
