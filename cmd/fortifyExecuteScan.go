@@ -303,7 +303,7 @@ func prepareReportData(influx *fortifyExecuteScanInflux) fortify.FortifyReportDa
 	output.Suppressed = input.suppressed
 	output.Suspicious = input.suspicious
 	return output
-} 
+}
 
 func analyseUnauditedIssues(config fortifyExecuteScanOptions, sys fortify.System, projectVersion *models.ProjectVersion, filterSet *models.FilterSet, issueFilterSelectorSet *models.IssueFilterSelectorSet, influx *fortifyExecuteScanInflux, auditStatus map[string]string) (int, []*models.ProjectVersionIssueGroup, error) {
 	log.Entry().Info("Analyzing unaudited issues")

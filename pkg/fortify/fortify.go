@@ -66,7 +66,6 @@ type System interface {
 	UploadResultFile(endpoint, file string, projectVersionID int64) error
 	DownloadReportFile(endpoint string, reportID int64) ([]byte, error)
 	DownloadResultFile(endpoint string, projectVersionID int64) ([]byte, error)
-
 }
 
 // SystemInstance is the specific instance
