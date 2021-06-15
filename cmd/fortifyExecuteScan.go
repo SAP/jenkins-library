@@ -605,7 +605,8 @@ func autoresolveMavenClasspath(config fortifyExecuteScanOptions, file string, ut
 	}
 	_, err := maven.Execute(&executeOptions, utils)
 	if err != nil {
-		log.Entry().WithError(err).Fatal("failed to determine classpath using Maven")
+		log.Entry().WithError(err).Error("failed to determine classpath using Maven")
+		return err
 	}
 	return readAllClasspathFiles(file)
 }
