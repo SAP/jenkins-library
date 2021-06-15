@@ -248,17 +248,19 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	// finally do the condition evaluation post processing
 	for _, p := range parameters {
 		if len(p.Conditions) > 0 {
-			// retrieve first parameter for which the condition applies
-			// ToDo: support multiple conditions/paramters
-			cp := p.Conditions[0].Params[0]
-			// retireve configuration value of condition parameter
-			dependentValue := stepConfig.Config[cp.Name]
-			// check if configuration of condition parameter matches the value
-			// if so and if no config applied yet, then try to apply the value
-			if cmp.Equal(dependentValue, cp.Value) && stepConfig.Config[p.Name] == nil {
-				subMap, ok := stepConfig.Config[dependentValue.(string)].(map[string]interface{})
-				if ok && subMap[p.Name] != nil {
-					stepConfig.Config[p.Name] = subMap[p.Name]
+			for _, cond := range p.Conditions {
+				for _, param := range cond.Params {
+					// retrieve configuration value of condition parameter
+					dependentValue := stepConfig.Config[param.Name]
+					// check if configuration of condition parameter matches the value
+					// so far string-equals condition is assumed here
+					// if so and if no config applied yet, then try to apply the value
+					if cmp.Equal(dependentValue, param.Value) && stepConfig.Config[p.Name] == nil {
+						subMap, ok := stepConfig.Config[dependentValue.(string)].(map[string]interface{})
+						if ok && subMap[p.Name] != nil {
+							stepConfig.Config[p.Name] = subMap[p.Name]
+						}
+					}
 				}
 			}
 		}
@@ -358,6 +360,7 @@ func (s *StepConfig) mixInStepDefaults(stepParams []StepParameters) {
 
 	// conditional defaults need to be written to a sub map
 	// in order to prevent a "last one wins" situation
+	// this is then considered at the end of GetStepConfig once the complete configuration is known
 	for _, p := range stepParams {
 		if p.Default != nil {
 			if len(p.Conditions) == 0 {
