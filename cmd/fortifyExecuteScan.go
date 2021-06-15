@@ -196,7 +196,10 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 		}
 	}
 
-	triggerFortifyScan(config, utils, buildID, buildLabel, fortifyProjectName)
+	err = triggerFortifyScan(config, utils, buildID, buildLabel, fortifyProjectName)
+	if err != nil {
+		return reports, err
+	}
 
 	reports = append(reports, piperutils.Path{Target: fmt.Sprintf("%vtarget/fortify-scan.*", config.ModulePath)})
 	reports = append(reports, piperutils.Path{Target: fmt.Sprintf("%vtarget/*.fpr", config.ModulePath)})
@@ -590,7 +593,7 @@ func autoresolvePipClasspath(executable string, parameters []string, file string
 	return readClasspathFile(file), nil
 }
 
-func autoresolveMavenClasspath(config fortifyExecuteScanOptions, file string, utils fortifyUtils) string {
+func autoresolveMavenClasspath(config fortifyExecuteScanOptions, file string, utils fortifyUtils) (string, err) {
 	if filepath.IsAbs(file) {
 		log.Entry().Warnf("Passing an absolute path for -Dmdep.outputFile results in the classpath only for the last module in multi-module maven projects.")
 	}
@@ -606,9 +609,9 @@ func autoresolveMavenClasspath(config fortifyExecuteScanOptions, file string, ut
 	_, err := maven.Execute(&executeOptions, utils)
 	if err != nil {
 		log.Entry().WithError(err).Error("failed to determine classpath using Maven")
-		return err
+		return nil, err
 	}
-	return readAllClasspathFiles(file)
+	return readAllClasspathFiles(file), nil
 }
 
 // readAllClasspathFiles tests whether the passed file is an absolute path. If not, it will glob for
@@ -677,7 +680,10 @@ func triggerFortifyScan(config fortifyExecuteScanOptions, utils fortifyUtils, bu
 	classpath := ""
 	if config.BuildTool == "maven" {
 		if config.AutodetectClasspath {
-			classpath = autoresolveMavenClasspath(config, classpathFileName, utils)
+			classpath, err = autoresolveMavenClasspath(config, classpathFileName, utils)
+			if err != nil {
+				return err
+			}
 		}
 		config.Translate, err = populateMavenTranslate(&config, classpath)
 		if err != nil {
