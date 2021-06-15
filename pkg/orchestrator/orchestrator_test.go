@@ -27,4 +27,30 @@ func TestOrchestrator(t *testing.T) {
 
 		assert.Equal(t, "AzureDevOps", o.String())
 	})
+
+	t.Run("Test areIndicatingEnvVarsSet", func(t *testing.T) {
+		defer resetEnv(os.Environ())
+		os.Clearenv()
+
+		envVars := []string{"GITHUB_ACTION", "GITHUB_ACTIONS"}
+
+		os.Setenv("GITHUB_ACTION", "true")
+		tmp := areIndicatingEnvVarsSet(envVars)
+		assert.True(t, tmp)
+
+		os.Unsetenv("GITHUB_ACTION")
+		os.Setenv("GITHUB_ACTIONS", "true")
+		tmp = areIndicatingEnvVarsSet(envVars)
+		assert.True(t, tmp)
+
+		os.Setenv("GITHUB_ACTION", "1")
+		os.Setenv("GITHUB_ACTIONS", "false")
+		tmp = areIndicatingEnvVarsSet(envVars)
+		assert.True(t, tmp)
+
+		os.Setenv("GITHUB_ACTION", "false")
+		os.Setenv("GITHUB_ACTIONS", "0")
+		tmp = areIndicatingEnvVarsSet(envVars)
+		assert.False(t, tmp)
+	})
 }
