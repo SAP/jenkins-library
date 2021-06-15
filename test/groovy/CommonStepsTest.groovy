@@ -190,6 +190,7 @@ public class CommonStepsTest extends BasePiperTest{
         'transportRequestDocIDFromGit', //implementing new golang pattern without fields
         'gaugeExecuteTests', //implementing new golang pattern without fields
         'batsExecuteTests', //implementing new golang pattern without fields
+        'transportRequestUploadRFC', //implementing new golang pattern without fields
     ]
 
     @Test
