@@ -76,4 +76,4 @@ spec:
         default: false
   containers:
     - name: node
-      image: node:12-buster
+      image: node:lts-stretch
