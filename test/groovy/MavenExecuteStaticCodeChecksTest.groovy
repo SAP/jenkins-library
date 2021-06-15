@@ -74,6 +74,8 @@ class MavenExecuteStaticCodeChecksTest extends BasePiperTest {
         shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/mavenStaticCodeChecks.yaml\'', '{"dockerImage": "maven:3.6-jdk-8"}')
 
         helper.registerAllowedMethod('findFiles', [Map.class], {return null})
+        helper.registerAllowedMethod("writePipelineEnv", [Map.class], {m -> return })
+        helper.registerAllowedMethod("readPipelineEnv", [Map.class], {m -> return })
     }
 
     @Test
