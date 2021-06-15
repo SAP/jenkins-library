@@ -15,13 +15,10 @@ import (
 )
 
 type integrationArtifactUpdateConfigurationOptions struct {
-	Username               string `json:"username,omitempty"`
-	Password               string `json:"password,omitempty"`
+	ServiceKey             string `json:"serviceKey,omitempty"`
 	IntegrationFlowID      string `json:"integrationFlowId,omitempty"`
 	IntegrationFlowVersion string `json:"integrationFlowVersion,omitempty"`
 	Platform               string `json:"platform,omitempty"`
-	Host                   string `json:"host,omitempty"`
-	OAuthTokenProviderURL  string `json:"oAuthTokenProviderUrl,omitempty"`
 	ParameterKey           string `json:"parameterKey,omitempty"`
 	ParameterValue         string `json:"parameterValue,omitempty"`
 }
@@ -53,8 +50,7 @@ func IntegrationArtifactUpdateConfigurationCommand() *cobra.Command {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
-			log.RegisterSecret(stepConfig.Username)
-			log.RegisterSecret(stepConfig.Password)
+			log.RegisterSecret(stepConfig.ServiceKey)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -101,22 +97,16 @@ func IntegrationArtifactUpdateConfigurationCommand() *cobra.Command {
 }
 
 func addIntegrationArtifactUpdateConfigurationFlags(cmd *cobra.Command, stepConfig *integrationArtifactUpdateConfigurationOptions) {
-	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User to authenticate to the SAP Cloud Platform Integration Service")
-	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password to authenticate to the SAP Cloud Platform Integration Service")
+	cmd.Flags().StringVar(&stepConfig.ServiceKey, "serviceKey", os.Getenv("PIPER_serviceKey"), "Service key JSON string to access the Cloud Integration API")
 	cmd.Flags().StringVar(&stepConfig.IntegrationFlowID, "integrationFlowId", os.Getenv("PIPER_integrationFlowId"), "Specifies the ID of the Integration Flow artifact")
 	cmd.Flags().StringVar(&stepConfig.IntegrationFlowVersion, "integrationFlowVersion", os.Getenv("PIPER_integrationFlowVersion"), "Specifies the version of the Integration Flow artifact")
 	cmd.Flags().StringVar(&stepConfig.Platform, "platform", os.Getenv("PIPER_platform"), "Specifies the running platform of the SAP Cloud platform integraion service")
-	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the protocol and host address, including the port. Please provide in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.")
-	cmd.Flags().StringVar(&stepConfig.OAuthTokenProviderURL, "oAuthTokenProviderUrl", os.Getenv("PIPER_oAuthTokenProviderUrl"), "Specifies the oAuth Provider protocol and host address, including the port. Please provide in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.")
 	cmd.Flags().StringVar(&stepConfig.ParameterKey, "parameterKey", os.Getenv("PIPER_parameterKey"), "Specifies the externalized parameter name.")
 	cmd.Flags().StringVar(&stepConfig.ParameterValue, "parameterValue", os.Getenv("PIPER_parameterValue"), "Specifies the externalized parameter value.")
 
-	cmd.MarkFlagRequired("username")
-	cmd.MarkFlagRequired("password")
+	cmd.MarkFlagRequired("serviceKey")
 	cmd.MarkFlagRequired("integrationFlowId")
 	cmd.MarkFlagRequired("integrationFlowVersion")
-	cmd.MarkFlagRequired("host")
-	cmd.MarkFlagRequired("oAuthTokenProviderUrl")
 	cmd.MarkFlagRequired("parameterKey")
 	cmd.MarkFlagRequired("parameterValue")
 }
@@ -132,38 +122,23 @@ func integrationArtifactUpdateConfigurationMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "cpiCredentialsId", Description: "Jenkins credentials ID containing username and password for authentication to the SAP Cloud Platform Integration API's", Type: "jenkins"},
+					{Name: "cpiServiceKeyCredentialId", Description: "Jenkins credential ID for secret text containing the service key to the SAP Cloud Integration API", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{
-						Name: "username",
+						Name: "serviceKey",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "cpiCredentialsId",
-								Param: "username",
+								Name:  "cpiServiceKeyCredentialId",
+								Param: "serviceKey",
 								Type:  "secret",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:     []string{"PARAMETERS"},
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_username"),
-					},
-					{
-						Name: "password",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "cpiCredentialsId",
-								Param: "password",
-								Type:  "secret",
-							},
-						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: true,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_password"),
+						Default:   os.Getenv("PIPER_serviceKey"),
 					},
 					{
 						Name:        "integrationFlowId",
@@ -191,24 +166,6 @@ func integrationArtifactUpdateConfigurationMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_platform"),
-					},
-					{
-						Name:        "host",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_host"),
-					},
-					{
-						Name:        "oAuthTokenProviderUrl",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_oAuthTokenProviderUrl"),
 					},
 					{
 						Name:        "parameterKey",
