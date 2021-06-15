@@ -145,7 +145,7 @@ func integrationArtifactGetMplStatusMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "cpiRuntimeServiceKeyCredentialId", Description: "Jenkins secret file credential ID containing the service key to the SAP Cloud Integration Runtime API", Type: "jenkins"},
+					{Name: "cpiServiceKeyCredentialId", Description: "Jenkins credential ID for secret text containing the service key to the SAP Cloud Integration API", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{
