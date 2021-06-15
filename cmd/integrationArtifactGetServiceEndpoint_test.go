@@ -3,22 +3,8 @@ package cmd
 import (
 	"testing"
 
-	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
 )
-
-type integrationArtifactGetServiceEndpointMockUtils struct {
-	*mock.ExecMockRunner
-	*mock.FilesMock
-}
-
-func newIntegrationArtifactGetServiceEndpointTestsUtils() integrationArtifactGetServiceEndpointMockUtils {
-	utils := integrationArtifactGetServiceEndpointMockUtils{
-		ExecMockRunner: &mock.ExecMockRunner{},
-		FilesMock:      &mock.FilesMock{},
-	}
-	return utils
-}
 
 func TestRunIntegrationArtifactGetServiceEndpoint(t *testing.T) {
 	t.Parallel()
