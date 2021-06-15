@@ -221,7 +221,7 @@ func {{ .StepName }}Metadata() config.StepData {
 						Type:      "{{ $value.Type }}",
 						Mandatory: {{ $value.Mandatory }},
 						Aliases:   []config.Alias{{ "{" }}{{ range $notused, $alias := $value.Aliases }}{{ "{" }}Name: "{{ $alias.Name }}"{{ "}" }},{{ end }}{{ "}" }},
-						{{ if $value.Default -}} Default: {{ $value.Default }}, {{- end}}{{ if $value.Conditions }}
+						{{ if $value.Default -}} Default:   {{ $value.Default }}, {{- end}}{{ if $value.Conditions }}
 						Conditions: []config.Condition{ {{- range $i, $cond := $value.Conditions }} {ConditionRef: "{{$cond.ConditionRef}}", Params: []config.Param{ {{- range $j, $p := $cond.Params}} { Name: "{{$p.Name}}", Value: "{{$p.Value}}" }, {{end -}} } }, {{ end -}} },{{- end }}
 					},{{ end }}
 				},
