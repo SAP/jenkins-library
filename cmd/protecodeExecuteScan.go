@@ -265,7 +265,6 @@ func createDockerClient(config *protecodeExecuteScanOptions) piperDocker.Downloa
 }
 
 func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productID int, client protecode.Protecode, fileName string) int {
-	productID = -1
 	if len(config.FetchURL) > 0 {
 		log.Entry().Debugf("Declare fetch url %v", config.FetchURL)
 		resultData := client.DeclareFetchURL(config.CleanupMode, config.Group, config.FetchURL)
