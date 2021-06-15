@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/SAP/jenkins-library/pkg/cpi"
 	"path/filepath"
 	"testing"
 
@@ -44,7 +45,7 @@ func TestRunIntegrationArtifactUpload(t *testing.T) {
 			FilePath:               path,
 		}
 
-		httpClient := httpMockCpis{CPIFunction: "", ResponseBody: ``, TestType: "PositiveAndCreateIntegrationDesigntimeArtifactResBody"}
+		httpClient := cpi.HttpMockCpis{CPIFunction: "", ResponseBody: ``, TestType: "PositiveAndCreateIntegrationDesigntimeArtifactResBody"}
 
 		err = runIntegrationArtifactUpload(&config, nil, &filesMock, &httpClient)
 
@@ -80,7 +81,7 @@ func TestRunIntegrationArtifactUpload(t *testing.T) {
 			FilePath:               path,
 		}
 
-		httpClient := httpMockCpis{CPIFunction: "", ResponseBody: ``, TestType: "PositiveAndUpdateIntegrationDesigntimeArtifactResBody"}
+		httpClient := cpi.HttpMockCpis{CPIFunction: "", ResponseBody: ``, TestType: "PositiveAndUpdateIntegrationDesigntimeArtifactResBody"}
 
 		err = runIntegrationArtifactUpload(&config, nil, &files, &httpClient)
 
@@ -110,7 +111,7 @@ func TestRunIntegrationArtifactUpload(t *testing.T) {
 			FilePath:               "path",
 		}
 
-		httpClient := httpMockCpis{CPIFunction: "", ResponseBody: ``, TestType: "NegativeAndGetIntegrationDesigntimeArtifactResBody"}
+		httpClient := cpi.HttpMockCpis{CPIFunction: "", ResponseBody: ``, TestType: "NegativeAndGetIntegrationDesigntimeArtifactResBody"}
 
 		err := runIntegrationArtifactUpload(&config, nil, nil, &httpClient)
 		assert.Error(t, err)
@@ -136,7 +137,7 @@ func TestRunIntegrationArtifactUpload(t *testing.T) {
 			FilePath:               path,
 		}
 
-		httpClient := httpMockCpis{CPIFunction: "", ResponseBody: ``, TestType: "NegativeAndCreateIntegrationDesigntimeArtifactResBody"}
+		httpClient := cpi.HttpMockCpis{CPIFunction: "", ResponseBody: ``, TestType: "NegativeAndCreateIntegrationDesigntimeArtifactResBody"}
 
 		err = runIntegrationArtifactUpload(&config, nil, &files, &httpClient)
 		assert.EqualError(t, err, "HTTP POST request to https://demo/api/v1/IntegrationDesigntimeArtifactSaveAsVersion?Id='flow4'&SaveAsVersion='1.0.4' failed with error: : 401 Unauthorized")
@@ -162,7 +163,7 @@ func TestRunIntegrationArtifactUpload(t *testing.T) {
 			FilePath:               path,
 		}
 
-		httpClient := httpMockCpis{CPIFunction: "", ResponseBody: ``, TestType: "NegativeAndUpdateIntegrationDesigntimeArtifactResBody"}
+		httpClient := cpi.HttpMockCpis{CPIFunction: "", ResponseBody: ``, TestType: "NegativeAndUpdateIntegrationDesigntimeArtifactResBody"}
 
 		err = runIntegrationArtifactUpload(&config, nil, &filesMock, &httpClient)
 		assert.EqualError(t, err, "HTTP POST request to https://demo/api/v1/IntegrationDesigntimeArtifacts failed with error: : 401 Unauthorized")

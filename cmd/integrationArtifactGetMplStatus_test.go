@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/SAP/jenkins-library/pkg/cpi"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
@@ -33,7 +34,7 @@ func TestRunIntegrationArtifactGetMplStatus(t *testing.T) {
 			Platform:              "cf",
 		}
 
-		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactGetMplStatus", ResponseBody: ``, TestType: "Positive"}
+		httpClient := cpi.HttpMockCpis{CPIFunction: "IntegrationArtifactGetMplStatus", ResponseBody: ``, TestType: "Positive"}
 		seOut := integrationArtifactGetMplStatusCommonPipelineEnvironment{}
 		err := runIntegrationArtifactGetMplStatus(&config, nil, &httpClient, &seOut)
 		assert.EqualValues(t, seOut.custom.iFlowMplStatus, "COMPLETED")
@@ -61,7 +62,7 @@ func TestRunIntegrationArtifactGetMplStatus(t *testing.T) {
 			Platform:              "cf",
 		}
 
-		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactGetMplStatus", ResponseBody: ``, TestType: "Negative"}
+		httpClient := cpi.HttpMockCpis{CPIFunction: "IntegrationArtifactGetMplStatus", ResponseBody: ``, TestType: "Negative"}
 
 		seOut := integrationArtifactGetMplStatusCommonPipelineEnvironment{}
 		err := runIntegrationArtifactGetMplStatus(&config, nil, &httpClient, &seOut)
