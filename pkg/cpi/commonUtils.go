@@ -24,7 +24,7 @@ type TokenParameters struct {
 }
 
 // CpiServiceKey contains information about a CPI service key
-type CpiServiceKey struct {
+type ServiceKey struct {
 	Host string `json:"url"`
 	Uaa  OAuth  `json:"uaa"`
 }
@@ -36,7 +36,7 @@ type OAuth struct {
 }
 
 // ReadCpiServiceKey unmarshalls the give json service key string.
-func ReadCpiServiceKey(serviceKeyJSON string) (cpiServiceKey CpiServiceKey, err error) {
+func ReadCpiServiceKey(serviceKeyJSON string) (cpiServiceKey ServiceKey, err error) {
 	// parse
 	err = json.Unmarshal([]byte(serviceKeyJSON), &cpiServiceKey)
 	if err != nil {

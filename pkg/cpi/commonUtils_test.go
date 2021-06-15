@@ -19,13 +19,13 @@ func TestReadCpiServiceKeyFile(t *testing.T) {
 	tests := []struct {
 		name              string
 		serviceKey        string
-		wantCpiServiceKey CpiServiceKey
+		wantCpiServiceKey ServiceKey
 		wantedErrorMsg    string
 	}{
 		{
 			"happy path",
 			properServiceKey,
-			CpiServiceKey{
+			ServiceKey{
 				Host: "https://demo",
 				Uaa: OAuth{
 					OAuthTokenProviderURL: "https://demo/oauth/token",
@@ -38,7 +38,7 @@ func TestReadCpiServiceKeyFile(t *testing.T) {
 		{
 			"faulty json",
 			faultyServiceKey,
-			CpiServiceKey{},
+			ServiceKey{},
 			"error unmarshalling serviceKey: invalid character 'h' in literal true (expecting 'r')",
 		},
 	}
