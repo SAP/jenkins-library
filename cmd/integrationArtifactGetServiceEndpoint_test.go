@@ -24,13 +24,18 @@ func TestRunIntegrationArtifactGetServiceEndpoint(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Successfully Test of Get Integration Flow Service Endpoint", func(t *testing.T) {
+		serviceKey := `{
+			"url": "https://demo",
+			"uaa": {
+				"clientid": "demouser",
+				"clientsecret": "******",
+				"url": "https://demo/oauth/token"
+			}
+		}`
 		config := integrationArtifactGetServiceEndpointOptions{
-			Host:                  "https://demo",
-			OAuthTokenProviderURL: "https://demo/oauth/token",
-			Username:              "demouser",
-			Password:              "******",
-			IntegrationFlowID:     "CPI_IFlow_Call_using_Cert",
-			Platform:              "cf",
+			ServiceKey:        serviceKey,
+			IntegrationFlowID: "CPI_IFlow_Call_using_Cert",
+			Platform:          "cf",
 		}
 
 		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactGetServiceEndpoint", ResponseBody: ``, TestType: "PositiveAndGetetIntegrationArtifactGetServiceResBody"}
@@ -52,13 +57,18 @@ func TestRunIntegrationArtifactGetServiceEndpoint(t *testing.T) {
 	})
 
 	t.Run("Failed Test of Get Integration Flow MPL Status", func(t *testing.T) {
+		serviceKey := `{
+			"url": "https://demo",
+			"uaa": {
+				"clientid": "demouser",
+				"clientsecret": "******",
+				"url": "https://demo/oauth/token"
+			}
+		}`
 		config := integrationArtifactGetServiceEndpointOptions{
-			Host:                  "https://demo",
-			OAuthTokenProviderURL: "https://demo/oauth/token",
-			Username:              "demouser",
-			Password:              "******",
-			IntegrationFlowID:     "CPI_IFlow_Call_using_Cert",
-			Platform:              "cf",
+			ServiceKey:        serviceKey,
+			IntegrationFlowID: "CPI_IFlow_Call_using_Cert",
+			Platform:          "cf",
 		}
 
 		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactGetServiceEndpoint", ResponseBody: ``, TestType: "Negative"}
