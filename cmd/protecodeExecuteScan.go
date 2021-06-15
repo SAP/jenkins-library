@@ -147,9 +147,9 @@ func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.P
 		log.Entry().Debugf("Load existing product Group:%v Reuse:%v", config.Group, config.VerifyOnly)
 		productID = client.LoadExistingProduct(config.Group)
 	}
-	if !hasExisting(productID, config.VerifyOnly) {
+	if !config.VerifyOnly || productID <= 0 {
 		// check if no existing is found or reuse existing is false
-		productID = uploadScanOrDeclareFetch(*config, productID, client, fileName)
+		productID = uploadScanOrDeclareFetch(*config, client, fileName)
 	}
 	if productID <= 0 {
 		return fmt.Errorf("the product id is not valid '%d'", productID)
@@ -264,11 +264,11 @@ func createDockerClient(config *protecodeExecuteScanOptions) piperDocker.Downloa
 	return dClient
 }
 
-func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productID int, client protecode.Protecode, fileName string) int {
+func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, client protecode.Protecode, fileName string) int {
 	if len(config.FetchURL) > 0 {
 		log.Entry().Debugf("Declare fetch url %v", config.FetchURL)
 		resultData := client.DeclareFetchURL(config.CleanupMode, config.Group, config.FetchURL)
-		productID = resultData.Result.ProductID
+		return resultData.Result.ProductID
 	} else {
 		log.Entry().Debugf("Upload file path: %v", config.FilePath)
 		if len(config.FilePath) <= 0 {
@@ -287,9 +287,8 @@ func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productID int,
 		}
 
 		resultData := client.UploadScanFile(config.CleanupMode, config.Group, pathToFile, combinedFileName)
-		productID = resultData.Result.ProductID
+		return resultData.Result.ProductID
 	}
-	return productID
 }
 
 func fileExists(filename string) bool {
@@ -298,13 +297,6 @@ func fileExists(filename string) bool {
 		return false
 	}
 	return !info.IsDir()
-}
-
-func hasExisting(productID int, verifyOnly bool) bool {
-	if (productID > 0) || verifyOnly {
-		return true
-	}
-	return false
 }
 
 var writeReportToFile = func(resp io.ReadCloser, reportFileName string) error {
