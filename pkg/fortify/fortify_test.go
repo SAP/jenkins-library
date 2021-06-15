@@ -126,7 +126,7 @@ func TestGetProjectByName(t *testing.T) {
 				"project":{"id":815,"name":"autocreate","description":"","creationDate":"2018-12-03T06:29:38.197+0000","createdBy":"someUser",
 				"issueTemplateId":"dasdasdasdsadasdasdasdasdas"},"sourceBasePath":null,"mode":"BASIC","masterAttrGuid":"sddasdasda","obfuscatedId":null,
 				"id":10172,"customTagValuesAutoApply":null,"issueTemplateId":"dasdasdasdsadasdasdasdasdas","loadProperties":null,"predictionPolicy":null,
-				"bugTrackerPluginId":null,"owner":"admin","_href":"https://fortify.mo.sap.corp/ssc/api/v1/projectVersions/10172",
+				"bugTrackerPluginId":null,"owner":"admin","_href":"https://fortify/ssc/api/v1/projectVersions/10172",
 				"committed":true,"bugTrackerEnabled":false,"active":true,"snapshotOutOfDate":false,"issueTemplateModifiedTime":1578411924701,
 				"securityGroup":null,"creationDate":"2018-02-09T16:59:41.297+0000","refreshRequired":false,"issueTemplateName":"someTemplate",
 				"migrationVersion":null,"createdBy":"admin","name":"0","siteId":null,"staleIssueTemplate":false,"autoPredict":null,
@@ -134,8 +134,8 @@ func TestGetProjectByName(t *testing.T) {
 				"lastFprUploadDate":"2018-02-09T16:59:53.497+0000","extraMessage":null,"analysisUploadEnabled":true,"batchBugSubmissionExists":false,
 				"hasCustomIssues":false,"metricEvaluationDate":"2018-03-10T00:02:45.553+0000","deltaPeriod":7,"issueCountDelta":0,"percentAuditedDelta":0.0,
 				"criticalPriorityIssueCountDelta":0,"percentCriticalPriorityIssuesAuditedDelta":0.0},"assignedIssuesCount":0,"status":null},
-				"count":1,"responseCode":200,"links":{"last":{"href":"https://fortify.mo.sap.corp/ssc/api/v1/projects/815/versions?start=0"},
-				"first":{"href":"https://fortify.mo.sap.corp/ssc/api/v1/projects/815/versions?start=0"}}}`))
+				"count":1,"responseCode":200,"links":{"last":{"href":"https://fortify/ssc/api/v1/projects/815/versions?start=0"},
+				"first":{"href":"https://fortify/ssc/api/v1/projects/815/versions?start=0"}}}`))
 			return
 		}
 		if req.URL.Path == "/projectVersions/10172" {
@@ -195,7 +195,7 @@ func TestGetProjectVersionDetailsByProjectIDAndVersionName(t *testing.T) {
 				"project":{"id":4711,"name":"python-test","description":"","creationDate":"2018-12-03T06:29:38.197+0000","createdBy":"someUser",
 				"issueTemplateId":"dasdasdasdsadasdasdasdasdas"},"sourceBasePath":null,"mode":"BASIC","masterAttrGuid":"sddasdasda","obfuscatedId":null,
 				"id":10172,"customTagValuesAutoApply":null,"issueTemplateId":"dasdasdasdsadasdasdasdasdas","loadProperties":null,"predictionPolicy":null,
-				"bugTrackerPluginId":null,"owner":"admin","_href":"https://fortify.mo.sap.corp/ssc/api/v1/projectVersions/10172",
+				"bugTrackerPluginId":null,"owner":"admin","_href":"https://fortify/ssc/api/v1/projectVersions/10172",
 				"committed":true,"bugTrackerEnabled":false,"active":true,"snapshotOutOfDate":false,"issueTemplateModifiedTime":1578411924701,
 				"securityGroup":null,"creationDate":"2018-02-09T16:59:41.297+0000","refreshRequired":false,"issueTemplateName":"someTemplate",
 				"migrationVersion":null,"createdBy":"admin","name":"0","siteId":null,"staleIssueTemplate":false,"autoPredict":null,
@@ -203,8 +203,8 @@ func TestGetProjectVersionDetailsByProjectIDAndVersionName(t *testing.T) {
 				"lastFprUploadDate":"2018-02-09T16:59:53.497+0000","extraMessage":null,"analysisUploadEnabled":true,"batchBugSubmissionExists":false,
 				"hasCustomIssues":false,"metricEvaluationDate":"2018-03-10T00:02:45.553+0000","deltaPeriod":7,"issueCountDelta":0,"percentAuditedDelta":0.0,
 				"criticalPriorityIssueCountDelta":0,"percentCriticalPriorityIssuesAuditedDelta":0.0},"assignedIssuesCount":0,"status":null}],
-				"count":1,"responseCode":200,"links":{"last":{"href":"https://fortify.mo.sap.corp/ssc/api/v1/projects/4711/versions?start=0"},
-				"first":{"href":"https://fortify.mo.sap.corp/ssc/api/v1/projects/4711/versions?start=0"}}}`))
+				"count":1,"responseCode":200,"links":{"last":{"href":"https://fortify/ssc/api/v1/projects/4711/versions?start=0"},
+				"first":{"href":"https://fortify/ssc/api/v1/projects/4711/versions?start=0"}}}`))
 			return
 		}
 		if req.URL.Path == "/projects/777/versions" {
@@ -227,7 +227,7 @@ func TestGetProjectVersionDetailsByProjectIDAndVersionName(t *testing.T) {
 				"project":{"id":815,"name":"autocreate","description":"","creationDate":"2018-12-03T06:29:38.197+0000","createdBy":"someUser",
 				"issueTemplateId":"dasdasdasdsadasdasdasdasdas"},"sourceBasePath":null,"mode":"BASIC","masterAttrGuid":"sddasdasda","obfuscatedId":null,
 				"id":10172,"customTagValuesAutoApply":null,"issueTemplateId":"dasdasdasdsadasdasdasdasdas","loadProperties":null,"predictionPolicy":null,
-				"bugTrackerPluginId":null,"owner":"admin","_href":"https://fortify.mo.sap.corp/ssc/api/v1/projectVersions/10172",
+				"bugTrackerPluginId":null,"owner":"admin","_href":"https://fortify/ssc/api/v1/projectVersions/10172",
 				"committed":true,"bugTrackerEnabled":false,"active":true,"snapshotOutOfDate":false,"issueTemplateModifiedTime":1578411924701,
 				"securityGroup":null,"creationDate":"2018-02-09T16:59:41.297+0000","refreshRequired":false,"issueTemplateName":"someTemplate",
 				"migrationVersion":null,"createdBy":"admin","name":"0","siteId":null,"staleIssueTemplate":false,"autoPredict":null,
@@ -235,8 +235,8 @@ func TestGetProjectVersionDetailsByProjectIDAndVersionName(t *testing.T) {
 				"lastFprUploadDate":"2018-02-09T16:59:53.497+0000","extraMessage":null,"analysisUploadEnabled":true,"batchBugSubmissionExists":false,
 				"hasCustomIssues":false,"metricEvaluationDate":"2018-03-10T00:02:45.553+0000","deltaPeriod":7,"issueCountDelta":0,"percentAuditedDelta":0.0,
 				"criticalPriorityIssueCountDelta":0,"percentCriticalPriorityIssuesAuditedDelta":0.0},"assignedIssuesCount":0,"status":null},
-				"count":1,"responseCode":200,"links":{"last":{"href":"https://fortify.mo.sap.corp/ssc/api/v1/projects/815/versions?start=0"},
-				"first":{"href":"https://fortify.mo.sap.corp/ssc/api/v1/projects/815/versions?start=0"}}}`))
+				"count":1,"responseCode":200,"links":{"last":{"href":"https://fortify/ssc/api/v1/projects/815/versions?start=0"},
+				"first":{"href":"https://fortify/ssc/api/v1/projects/815/versions?start=0"}}}`))
 			return
 		}
 		if req.URL.Path == "/projectVersions/0" {
@@ -247,7 +247,7 @@ func TestGetProjectVersionDetailsByProjectIDAndVersionName(t *testing.T) {
 				"project":{"id":815,"name":"autocreate","description":"","creationDate":"2018-12-03T06:29:38.197+0000","createdBy":"someUser",
 				"issueTemplateId":"dasdasdasdsadasdasdasdasdas"},"sourceBasePath":null,"mode":"BASIC","masterAttrGuid":"sddasdasda","obfuscatedId":null,
 				"id":10172,"customTagValuesAutoApply":null,"issueTemplateId":"dasdasdasdsadasdasdasdasdas","loadProperties":null,"predictionPolicy":null,
-				"bugTrackerPluginId":null,"owner":"admin","_href":"https://fortify.mo.sap.corp/ssc/api/v1/projectVersions/10172",
+				"bugTrackerPluginId":null,"owner":"admin","_href":"https://fortify/ssc/api/v1/projectVersions/10172",
 				"committed":true,"bugTrackerEnabled":false,"active":true,"snapshotOutOfDate":false,"issueTemplateModifiedTime":1578411924701,
 				"securityGroup":null,"creationDate":"2018-02-09T16:59:41.297+0000","refreshRequired":false,"issueTemplateName":"someTemplate",
 				"migrationVersion":null,"createdBy":"admin","name":"0","siteId":null,"staleIssueTemplate":false,"autoPredict":null,
@@ -255,8 +255,8 @@ func TestGetProjectVersionDetailsByProjectIDAndVersionName(t *testing.T) {
 				"lastFprUploadDate":"2018-02-09T16:59:53.497+0000","extraMessage":null,"analysisUploadEnabled":true,"batchBugSubmissionExists":false,
 				"hasCustomIssues":false,"metricEvaluationDate":"2018-03-10T00:02:45.553+0000","deltaPeriod":7,"issueCountDelta":0,"percentAuditedDelta":0.0,
 				"criticalPriorityIssueCountDelta":0,"percentCriticalPriorityIssuesAuditedDelta":0.0},"assignedIssuesCount":0,"status":null},
-				"count":1,"responseCode":200,"links":{"last":{"href":"https://fortify.mo.sap.corp/ssc/api/v1/projects/815/versions?start=0"},
-				"first":{"href":"https://fortify.mo.sap.corp/ssc/api/v1/projects/815/versions?start=0"}}}`))
+				"count":1,"responseCode":200,"links":{"last":{"href":"https://fortify/ssc/api/v1/projects/815/versions?start=0"},
+				"first":{"href":"https://fortify/ssc/api/v1/projects/815/versions?start=0"}}}`))
 			return
 		}
 	})
@@ -295,7 +295,7 @@ func TestGetProjectVersionAttributesByProjectVersionID(t *testing.T) {
 			header := rw.Header()
 			header.Add("Content-type", "application/json")
 			rw.Write([]byte(
-				`{"data": [{"_href": "https://fortify.mo.sap.corp/ssc/api/v1/projectVersions/4711/attributes/4712","attributeDefinitionId": 31,
+				`{"data": [{"_href": "https://fortify/ssc/api/v1/projectVersions/4711/attributes/4712","attributeDefinitionId": 31,
 				"values": null,"guid": "gdgfdgfdgfdgfd","id": 4712,"value": "abcd"}],"count": 8,"responseCode": 200}`))
 			return
 		}
@@ -433,7 +433,7 @@ func TestProjectVersionCopyFromPartial(t *testing.T) {
 				"project":{"id":4711,"name":"python-test","description":"","creationDate":"2018-12-03T06:29:38.197+0000","createdBy":"someUser",
 				"issueTemplateId":"dasdasdasdsadasdasdasdasdas"},"sourceBasePath":null,"mode":"BASIC","masterAttrGuid":"sddasdasda","obfuscatedId":null,
 				"id":10172,"customTagValuesAutoApply":null,"issueTemplateId":"dasdasdasdsadasdasdasdasdas","loadProperties":null,"predictionPolicy":null,
-				"bugTrackerPluginId":null,"owner":"admin","_href":"https://fortify.mo.sap.corp/ssc/api/v1/projectVersions/10172",
+				"bugTrackerPluginId":null,"owner":"admin","_href":"https://fortify/ssc/api/v1/projectVersions/10172",
 				"committed":true,"bugTrackerEnabled":false,"active":true,"snapshotOutOfDate":false,"issueTemplateModifiedTime":1578411924701,
 				"securityGroup":null,"creationDate":"2018-02-09T16:59:41.297+0000","refreshRequired":false,"issueTemplateName":"someTemplate",
 				"migrationVersion":null,"createdBy":"admin","name":"0","siteId":null,"staleIssueTemplate":false,"autoPredict":null,
@@ -441,8 +441,8 @@ func TestProjectVersionCopyFromPartial(t *testing.T) {
 				"lastFprUploadDate":"2018-02-09T16:59:53.497+0000","extraMessage":null,"analysisUploadEnabled":true,"batchBugSubmissionExists":false,
 				"hasCustomIssues":false,"metricEvaluationDate":"2018-03-10T00:02:45.553+0000","deltaPeriod":7,"issueCountDelta":0,"percentAuditedDelta":0.0,
 				"criticalPriorityIssueCountDelta":0,"percentCriticalPriorityIssuesAuditedDelta":0.0},"assignedIssuesCount":0,"status":null}],
-				"count":1,"responseCode":200,"links":{"last":{"href":"https://fortify.mo.sap.corp/ssc/api/v1/projects/4711/versions?start=0"},
-				"first":{"href":"https://fortify.mo.sap.corp/ssc/api/v1/projects/4711/versions?start=0"}}}`))
+				"count":1,"responseCode":200,"links":{"last":{"href":"https://fortify/ssc/api/v1/projects/4711/versions?start=0"},
+				"first":{"href":"https://fortify/ssc/api/v1/projects/4711/versions?start=0"}}}`))
 			return
 		}
 	})
@@ -472,7 +472,7 @@ func TestProjectVersionCopyCurrentState(t *testing.T) {
 				"project":{"id":4711,"name":"python-test","description":"","creationDate":"2018-12-03T06:29:38.197+0000","createdBy":"someUser",
 				"issueTemplateId":"dasdasdasdsadasdasdasdasdas"},"sourceBasePath":null,"mode":"BASIC","masterAttrGuid":"sddasdasda","obfuscatedId":null,
 				"id":10172,"customTagValuesAutoApply":null,"issueTemplateId":"dasdasdasdsadasdasdasdasdas","loadProperties":null,"predictionPolicy":null,
-				"bugTrackerPluginId":null,"owner":"admin","_href":"https://fortify.mo.sap.corp/ssc/api/v1/projectVersions/10172",
+				"bugTrackerPluginId":null,"owner":"admin","_href":"https://fortify/ssc/api/v1/projectVersions/10172",
 				"committed":true,"bugTrackerEnabled":false,"active":true,"snapshotOutOfDate":false,"issueTemplateModifiedTime":1578411924701,
 				"securityGroup":null,"creationDate":"2018-02-09T16:59:41.297+0000","refreshRequired":false,"issueTemplateName":"someTemplate",
 				"migrationVersion":null,"createdBy":"admin","name":"0","siteId":null,"staleIssueTemplate":false,"autoPredict":null,
@@ -480,8 +480,8 @@ func TestProjectVersionCopyCurrentState(t *testing.T) {
 				"lastFprUploadDate":"2018-02-09T16:59:53.497+0000","extraMessage":null,"analysisUploadEnabled":true,"batchBugSubmissionExists":false,
 				"hasCustomIssues":false,"metricEvaluationDate":"2018-03-10T00:02:45.553+0000","deltaPeriod":7,"issueCountDelta":0,"percentAuditedDelta":0.0,
 				"criticalPriorityIssueCountDelta":0,"percentCriticalPriorityIssuesAuditedDelta":0.0},"assignedIssuesCount":0,"status":null}],
-				"count":1,"responseCode":200,"links":{"last":{"href":"https://fortify.mo.sap.corp/ssc/api/v1/projects/4711/versions?start=0"},
-				"first":{"href":"https://fortify.mo.sap.corp/ssc/api/v1/projects/4711/versions?start=0"}}}`))
+				"count":1,"responseCode":200,"links":{"last":{"href":"https://fortify/ssc/api/v1/projects/4711/versions?start=0"},
+				"first":{"href":"https://fortify/ssc/api/v1/projects/4711/versions?start=0"}}}`))
 			return
 		}
 	})
@@ -1102,7 +1102,7 @@ func TestLookupOrCreateProjectVersionDetailsForPullRequest(t *testing.T) {
 			header := rw.Header()
 			header.Add("Content-type", "application/json")
 			rw.Write([]byte(
-				`{"data": [{"_href": "https://fortify.mo.sap.corp/ssc/api/v1/projectVersions/4711/attributes/4712","attributeDefinitionId": 31,
+				`{"data": [{"_href": "https://fortify/ssc/api/v1/projectVersions/4711/attributes/4712","attributeDefinitionId": 31,
 				"values": null,"guid": "gdgfdgfdgfdgfd","id": 4712,"value": "abcd"}],"count": 8,"responseCode": 200}`))
 			return
 		}
@@ -1126,7 +1126,7 @@ func TestLookupOrCreateProjectVersionDetailsForPullRequest(t *testing.T) {
 				"project":{"id":4711,"name":"python-test","description":"","creationDate":"2018-12-03T06:29:38.197+0000","createdBy":"someUser",
 				"issueTemplateId":"dasdasdasdsadasdasdasdasdas"},"sourceBasePath":null,"mode":"BASIC","masterAttrGuid":"sddasdasda","obfuscatedId":null,
 				"id":10172,"customTagValuesAutoApply":null,"issueTemplateId":"dasdasdasdsadasdasdasdasdas","loadProperties":null,"predictionPolicy":null,
-				"bugTrackerPluginId":null,"owner":"admin","_href":"https://fortify.mo.sap.corp/ssc/api/v1/projectVersions/10172",
+				"bugTrackerPluginId":null,"owner":"admin","_href":"https://fortify/ssc/api/v1/projectVersions/10172",
 				"committed":true,"bugTrackerEnabled":false,"active":true,"snapshotOutOfDate":false,"issueTemplateModifiedTime":1578411924701,
 				"securityGroup":null,"creationDate":"2018-02-09T16:59:41.297+0000","refreshRequired":false,"issueTemplateName":"someTemplate",
 				"migrationVersion":null,"createdBy":"admin","name":"0","siteId":null,"staleIssueTemplate":false,"autoPredict":null,
@@ -1134,8 +1134,8 @@ func TestLookupOrCreateProjectVersionDetailsForPullRequest(t *testing.T) {
 				"lastFprUploadDate":"2018-02-09T16:59:53.497+0000","extraMessage":null,"analysisUploadEnabled":true,"batchBugSubmissionExists":false,
 				"hasCustomIssues":false,"metricEvaluationDate":"2018-03-10T00:02:45.553+0000","deltaPeriod":7,"issueCountDelta":0,"percentAuditedDelta":0.0,
 				"criticalPriorityIssueCountDelta":0,"percentCriticalPriorityIssuesAuditedDelta":0.0},"assignedIssuesCount":0,"status":null}],
-				"count":1,"responseCode":200,"links":{"last":{"href":"https://fortify.mo.sap.corp/ssc/api/v1/projects/4711/versions?start=0"},
-				"first":{"href":"https://fortify.mo.sap.corp/ssc/api/v1/projects/4711/versions?start=0"}}}`))
+				"count":1,"responseCode":200,"links":{"last":{"href":"https://fortify/ssc/api/v1/projects/4711/versions?start=0"},
+				"first":{"href":"https://fortify/ssc/api/v1/projects/4711/versions?start=0"}}}`))
 			return
 		}
 		if req.URL.Path == "/projectVersions/10172" {
@@ -1152,7 +1152,7 @@ func TestLookupOrCreateProjectVersionDetailsForPullRequest(t *testing.T) {
 				"project":{"id":4711,"name":"python-test","description":"","creationDate":"2018-12-03T06:29:38.197+0000","createdBy":"someUser",
 				"issueTemplateId":"dasdasdasdsadasdasdasdasdas"},"sourceBasePath":null,"mode":"BASIC","masterAttrGuid":"sddasdasda","obfuscatedId":null,
 				"id":10172,"customTagValuesAutoApply":null,"issueTemplateId":"dasdasdasdsadasdasdasdasdas","loadProperties":null,"predictionPolicy":null,
-				"bugTrackerPluginId":null,"owner":"admin","_href":"https://fortify.mo.sap.corp/ssc/api/v1/projectVersions/10172",
+				"bugTrackerPluginId":null,"owner":"admin","_href":"https://fortify/ssc/api/v1/projectVersions/10172",
 				"committed":true,"bugTrackerEnabled":false,"active":true,"snapshotOutOfDate":false,"issueTemplateModifiedTime":1578411924701,
 				"securityGroup":null,"creationDate":"2018-02-09T16:59:41.297+0000","refreshRequired":false,"issueTemplateName":"someTemplate",
 				"migrationVersion":null,"createdBy":"admin","name":"0","siteId":null,"staleIssueTemplate":false,"autoPredict":null,
@@ -1160,8 +1160,8 @@ func TestLookupOrCreateProjectVersionDetailsForPullRequest(t *testing.T) {
 				"lastFprUploadDate":"2018-02-09T16:59:53.497+0000","extraMessage":null,"analysisUploadEnabled":true,"batchBugSubmissionExists":false,
 				"hasCustomIssues":false,"metricEvaluationDate":"2018-03-10T00:02:45.553+0000","deltaPeriod":7,"issueCountDelta":0,"percentAuditedDelta":0.0,
 				"criticalPriorityIssueCountDelta":0,"percentCriticalPriorityIssuesAuditedDelta":0.0},"assignedIssuesCount":0,"status":null}],
-				"count":1,"responseCode":200,"links":{"last":{"href":"https://fortify.mo.sap.corp/ssc/api/v1/projects/4711/versions?start=0"},
-				"first":{"href":"https://fortify.mo.sap.corp/ssc/api/v1/projects/4711/versions?start=0"}}}`))
+				"count":1,"responseCode":200,"links":{"last":{"href":"https://fortify/ssc/api/v1/projects/4711/versions?start=0"},
+				"first":{"href":"https://fortify/ssc/api/v1/projects/4711/versions?start=0"}}}`))
 			return
 		}
 		if req.URL.Path == "/projectVersions/10172/authEntities" {
@@ -1234,7 +1234,7 @@ func TestMergeProjectVersionStateOfPRIntoMaster(t *testing.T) {
 			"project":{"id":4711,"name":"product.some.com","description":"","creationDate":"2018-12-03T06:29:38.197+0000","createdBy":"someUser",
 			"issueTemplateId":"dasdasdasdsadasdasdasdasdas"},"sourceBasePath":null,"mode":"BASIC","masterAttrGuid":"sddasdasda","obfuscatedId":null,
 			"id":10172,"customTagValuesAutoApply":null,"issueTemplateId":"dasdasdasdsadasdasdasdasdas","loadProperties":null,"predictionPolicy":null,
-			"bugTrackerPluginId":null,"owner":"admin","_href":"https://fortify.mo.sap.corp/ssc/api/v1/projectVersions/10172",
+			"bugTrackerPluginId":null,"owner":"admin","_href":"https://fortify/ssc/api/v1/projectVersions/10172",
 			"committed":true,"bugTrackerEnabled":false,"active":true,"snapshotOutOfDate":false,"issueTemplateModifiedTime":1578411924701,
 			"securityGroup":null,"creationDate":"2018-02-09T16:59:41.297+0000","refreshRequired":false,"issueTemplateName":"someTemplate",
 			"migrationVersion":null,"createdBy":"admin","name":"PR-815","siteId":null,"staleIssueTemplate":false,"autoPredict":null,
@@ -1242,8 +1242,8 @@ func TestMergeProjectVersionStateOfPRIntoMaster(t *testing.T) {
 			"lastFprUploadDate":"2018-02-09T16:59:53.497+0000","extraMessage":null,"analysisUploadEnabled":true,"batchBugSubmissionExists":false,
 			"hasCustomIssues":false,"metricEvaluationDate":"2018-03-10T00:02:45.553+0000","deltaPeriod":7,"issueCountDelta":0,"percentAuditedDelta":0.0,
 			"criticalPriorityIssueCountDelta":0,"percentCriticalPriorityIssuesAuditedDelta":0.0},"assignedIssuesCount":0,"status":null}],
-			"count":1,"responseCode":200,"links":{"last":{"href":"https://fortify.mo.sap.corp/ssc/api/v1/projects/4711/versions?start=0"},
-			"first":{"href":"https://fortify.mo.sap.corp/ssc/api/v1/projects/4711/versions?start=0"}}}`))
+			"count":1,"responseCode":200,"links":{"last":{"href":"https://fortify/ssc/api/v1/projects/4711/versions?start=0"},
+			"first":{"href":"https://fortify/ssc/api/v1/projects/4711/versions?start=0"}}}`))
 			getPRProjectVersionCalled = true
 			return
 		}

@@ -217,6 +217,8 @@ func (f *fortifyMock) GetProjectIssuesByIDAndFilterSetGroupedBySelector(id int64
 		}, nil
 	}
 	if issueFilterSelectorSet != nil && issueFilterSelectorSet.FilterBySet != nil && len(issueFilterSelectorSet.FilterBySet) > 0 && issueFilterSelectorSet.FilterBySet[0].GUID == "3" {
+		groupName := "Suspicious"
+		groupName2 := "Exploitable"
 		group := "3"
 		total := int32(4)
 		audited := int32(0)
@@ -224,8 +226,8 @@ func (f *fortifyMock) GetProjectIssuesByIDAndFilterSetGroupedBySelector(id int64
 		total2 := int32(5)
 		audited2 := int32(0)
 		return []*models.ProjectVersionIssueGroup{
-			{ID: &group, TotalCount: &total, AuditedCount: &audited},
-			{ID: &group2, TotalCount: &total2, AuditedCount: &audited2},
+			{ID: &group, CleanName: &groupName, TotalCount: &total, AuditedCount: &audited},
+			{ID: &group2, CleanName: &groupName2, TotalCount: &total2, AuditedCount: &audited2},
 		}, nil
 	}
 	group := "Audit All"
@@ -238,9 +240,9 @@ func (f *fortifyMock) GetProjectIssuesByIDAndFilterSetGroupedBySelector(id int64
 	total3 := int32(5)
 	audited3 := int32(4)
 	return []*models.ProjectVersionIssueGroup{
-		{ID: &group, TotalCount: &total, AuditedCount: &audited},
-		{ID: &group2, TotalCount: &total2, AuditedCount: &audited2},
-		{ID: &group3, TotalCount: &total3, AuditedCount: &audited3},
+		{ID: &group, CleanName: &group, TotalCount: &total, AuditedCount: &audited},
+		{ID: &group2, CleanName: &group2, TotalCount: &total2, AuditedCount: &audited2},
+		{ID: &group3, CleanName: &group3, TotalCount: &total3, AuditedCount: &audited3},
 	}, nil
 }
 func (f *fortifyMock) ReduceIssueFilterSelectorSet(issueFilterSelectorSet *models.IssueFilterSelectorSet, names []string, options []string) *models.IssueFilterSelectorSet {
@@ -432,8 +434,9 @@ func TestAnalyseSuspiciousExploitable(t *testing.T) {
 			},
 		},
 	}
-	issues := analyseSuspiciousExploitable(config, &ff, &projectVersion, &models.FilterSet{}, &selectorSet, &influx, auditStatus)
+	issues, groups := analyseSuspiciousExploitable(config, &ff, &projectVersion, &models.FilterSet{}, &selectorSet, &influx, auditStatus)
 	assert.Equal(t, 9, issues)
+	assert.Equal(t, 2, len(groups))
 
 	assert.Equal(t, 4, influx.fortify_data.fields.suspicious)
 	assert.Equal(t, 5, influx.fortify_data.fields.exploitable)
@@ -481,9 +484,10 @@ func TestAnalyseUnauditedIssues(t *testing.T) {
 			},
 		},
 	}
-	issues, err := analyseUnauditedIssues(config, &ff, &projectVersion, &models.FilterSet{}, &selectorSet, &influx, auditStatus)
+	issues, groups, err := analyseUnauditedIssues(config, &ff, &projectVersion, &models.FilterSet{}, &selectorSet, &influx, auditStatus)
 	assert.NoError(t, err)
 	assert.Equal(t, 13, issues)
+	assert.Equal(t, 3, len(groups))
 
 	assert.Equal(t, 15, influx.fortify_data.fields.auditAllTotal)
 	assert.Equal(t, 12, influx.fortify_data.fields.auditAllAudited)
