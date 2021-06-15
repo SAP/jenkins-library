@@ -30,11 +30,17 @@ func TestRunIntegrationArtifactDownload(t *testing.T) {
 		tempDir, tmpErr := ioutil.TempDir("", "")
 		defer os.RemoveAll(tempDir) // clean up
 		assert.NoError(t, tmpErr, "Error when creating temp dir")
+		serviceKey := `{
+			"url": "https://demo",
+			"uaa": {
+				"clientid": "demouser",
+				"clientsecret": "******",
+				"url": "https://demo/oauth/token"
+			}
+		}`
+
 		config := integrationArtifactDownloadOptions{
-			Host:                   "https://demo",
-			OAuthTokenProviderURL:  "https://demo/oauth/token",
-			Username:               "demouser",
-			Password:               "******",
+			ServiceKey:             serviceKey,
 			IntegrationFlowID:      "flow1",
 			IntegrationFlowVersion: "1.0.1",
 			DownloadPath:           tempDir,
@@ -58,11 +64,17 @@ func TestRunIntegrationArtifactDownload(t *testing.T) {
 	})
 
 	t.Run("Failed case of Integration Flow artifact Download", func(t *testing.T) {
+		serviceKey := `{
+			"url": "https://demo",
+			"uaa": {
+				"clientid": "demouser",
+				"clientsecret": "******",
+				"url": "https://demo/oauth/token"
+			}
+		}`
+
 		config := integrationArtifactDownloadOptions{
-			Host:                   "https://demo",
-			OAuthTokenProviderURL:  "https://demo/oauth/token",
-			Username:               "demouser",
-			Password:               "******",
+			ServiceKey:             serviceKey,
 			IntegrationFlowID:      "flow1",
 			IntegrationFlowVersion: "1.0.1",
 			DownloadPath:           "tmp",

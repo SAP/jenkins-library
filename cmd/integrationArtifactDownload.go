@@ -66,8 +66,12 @@ func runIntegrationArtifactDownload(config *integrationArtifactDownloadOptions, 
 	clientOptions := piperhttp.ClientOptions{}
 	header := make(http.Header)
 	header.Add("Accept", "application/zip")
-	downloadArtifactURL := fmt.Sprintf("%s/api/v1/IntegrationDesigntimeArtifacts(Id='%s',Version='%s')/$value", config.Host, config.IntegrationFlowID, config.IntegrationFlowVersion)
-	tokenParameters := cpi.TokenParameters{TokenURL: config.OAuthTokenProviderURL, Username: config.Username, Password: config.Password, Client: httpClient}
+	serviceKey, err := cpi.ReadCpiServiceKey(config.ServiceKey)
+	if err != nil {
+		return err
+	}
+	downloadArtifactURL := fmt.Sprintf("%s/api/v1/IntegrationDesigntimeArtifacts(Id='%s',Version='%s')/$value", serviceKey.Host, config.IntegrationFlowID, config.IntegrationFlowVersion)
+	tokenParameters := cpi.TokenParameters{TokenURL: serviceKey.Uaa.OAuthTokenProviderURL, Username: serviceKey.Uaa.ClientId, Password: serviceKey.Uaa.ClientSecret, Client: httpClient}
 	token, err := cpi.CommonUtils.GetBearerToken(tokenParameters)
 	if err != nil {
 		return errors.Wrap(err, "failed to fetch Bearer Token")
