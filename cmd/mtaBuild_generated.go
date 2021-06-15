@@ -199,6 +199,7 @@ func mtaBuildMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `./`,
 					},
 					{
 						Name:        "target",
@@ -207,6 +208,7 @@ func mtaBuildMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `./`,
 					},
 					{
 						Name:        "defaultNpmRegistry",
