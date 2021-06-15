@@ -219,10 +219,10 @@ func {{ .StepName }}Metadata() config.StepData {
 						ResourceRef: []config.ResourceReference{{ "{" }}{{ range $notused, $ref := $value.ResourceRef }}{{ template "resourceRefs" $ref }}{{ end }}{{ "}" }},
 						Scope:     []string{{ "{" }}{{ range $notused, $scope := $value.Scope }}"{{ $scope }}",{{ end }}{{ "}" }},
 						Type:      "{{ $value.Type }}",
-						{{ if $value.Conditions -}} Conditions: []config.Condition{ {{- range $i, $cond := $value.Conditions }} {ConditionRef: "{{$cond.ConditionRef}}", Params: []config.Param{ {{- range $j, $p := $cond.Params}} { Name: "{{$p.Name}}", Value: "{{$p.Value}}" }, {{end -}} } }, {{ end -}} },{{- end }}
 						Mandatory: {{ $value.Mandatory }},
-						{{if $value.Default -}} Default: {{ $value.Default }}, {{- end}}
 						Aliases:   []config.Alias{{ "{" }}{{ range $notused, $alias := $value.Aliases }}{{ "{" }}Name: "{{ $alias.Name }}"{{ "}" }},{{ end }}{{ "}" }},
+						{{ if $value.Default -}} Default: {{ $value.Default }}, {{- end}}{{ if $value.Conditions }}
+						Conditions: []config.Condition{ {{- range $i, $cond := $value.Conditions }} {ConditionRef: "{{$cond.ConditionRef}}", Params: []config.Param{ {{- range $j, $p := $cond.Params}} { Name: "{{$p.Name}}", Value: "{{$p.Value}}" }, {{end -}} } }, {{ end -}} },{{- end }}
 					},{{ end }}
 				},
 			},
