@@ -90,23 +90,8 @@ class PiperExecuteBinTest extends BasePiperTest {
         helper.registerAllowedMethod('withCredentials', [List, Closure], { l, c ->
             l.each {m ->
                 credentials.add(m)
-                if (m.credentialsId == 'credFile') {
-                    binding.setProperty('PIPER_credFile', 'credFileContent')
-                } else if (m.credentialsId == 'credToken') {
-                    binding.setProperty('PIPER_credToken','credTokenContent')
-                } else if (m.credentialsId == 'credUsernamePassword') {
-                    binding.setProperty('PIPER_user', 'userId')
-                    binding.setProperty('PIPER_password', '********')
-                }
             }
-            try {
-                c()
-            } finally {
-                binding.setProperty('PIPER_credFile', null)
-                binding.setProperty('PIPER_credToken', null)
-                binding.setProperty('PIPER_user', null)
-                binding.setProperty('PIPER_password', null)
-            }
+            c()
         })
 
         helper.registerAllowedMethod('archiveArtifacts', [Map.class], {m ->
