@@ -829,7 +829,7 @@ func TestAutoresolveClasspath(t *testing.T) {
 	t.Run("error pip file", func(t *testing.T) {
 		utils := newFortifyTestUtilsBundle()
 
-		_, err := autoresolvePipClasspath("python2", []string{"-c", "import sys;p=sys.path;p.remove('');print(';'.join(p))"}, "\\0", &utils)
+		_, err := autoresolvePipClasspath("python2", []string{"-c", "import sys;p=sys.path;p.remove('');print(';'.join(p))"}, "../.", &utils)
 		assert.Error(t, err)
 	})
 
@@ -862,7 +862,7 @@ func TestAutoresolveClasspath(t *testing.T) {
 	t.Run("error maven", func(t *testing.T) {
 		utils := newFortifyTestUtilsBundle()
 
-		_, err := autoresolveMavenClasspath(fortifyExecuteScanOptions{BuildDescriptorFile: "pom.xml"}, "\\0", &utils)
+		_, err := autoresolveMavenClasspath(fortifyExecuteScanOptions{BuildDescriptorFile: "pom.xml"}, "../.", &utils)
 		assert.Error(t, err)
 	})
 }
