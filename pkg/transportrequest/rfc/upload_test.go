@@ -73,7 +73,7 @@ func TestUploadRFC(t *testing.T) {
 
 		if assert.Error(t, err) {
 			// Don't want to rely on the order, hence not checking for the full string ...
-			assert.Contains(t, err.Error(), "Cannot perform artifact upload. The following parameters are not available")
+			assert.Contains(t, err.Error(), "cannot perform artifact upload. The following parameters are not available")
 			assert.Contains(t, err.Error(), "Connection.Endpoint")
 			assert.Contains(t, err.Error(), "Application.AbapPackage")
 		}
