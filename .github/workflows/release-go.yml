@@ -18,11 +18,9 @@ jobs:
       - name: Prepare Release
         run: |
           curl --insecure --silent --location --write-out '%{http_code}' --output ./piper_master https://github.com/SAP/jenkins-library/releases/latest/download/piper_master
-          curl --insecure --silent --location --write-out '%{http_code}' --output ./piper_master https://github.com/SAP/jenkins-library/releases/latest/download/piper_master-darwin.x86_64
-          curl --insecure --silent --location --write-out '%{http_code}' --output ./piper_master https://github.com/SAP/jenkins-library/releases/latest/download/piper_master-win.x86_64.exe
+          curl --insecure --silent --location --write-out '%{http_code}' --output ./piper-darwin.x86_64 https://github.com/SAP/jenkins-library/releases/latest/download/piper_master-darwin.x86_64
+          curl --insecure --silent --location --write-out '%{http_code}' --output ./piper-win.x86_64.exe https://github.com/SAP/jenkins-library/releases/latest/download/piper_master-win.x86_64.exe
           cp ./piper_master ./piper
-          cp ./piper_master-darwin.x86_64 ./piper-darwin.x86_64
-          cp ./piper_master-win.x86_64.exe ./piper-win.x86_64.exe
           npm install semver --quiet
           echo "PIPER_version=v$(node_modules/.bin/semver -i minor $(curl --silent "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/latest" | jq -r .tag_name))" >> $GITHUB_ENV
       - uses: SAP/project-piper-action@master
