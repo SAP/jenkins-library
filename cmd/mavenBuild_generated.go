@@ -134,9 +134,6 @@ func mavenBuildMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
-				Secrets: []config.StepSecrets{
-					{Name: "altDeploymentRepositoryPasswordId", Description: "Jenkins credentials ID containing the artifact deployment repository password.", Type: "jenkins"},
-				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "pomPath",
@@ -144,7 +141,6 @@ func mavenBuildMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     `pom.xml`,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -153,7 +149,6 @@ func mavenBuildMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS"},
 						Type:        "bool",
 						Mandatory:   false,
-						Default:     true,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -162,7 +157,6 @@ func mavenBuildMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS"},
 						Type:        "bool",
 						Mandatory:   false,
-						Default:     false,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -171,7 +165,6 @@ func mavenBuildMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     os.Getenv("PIPER_projectSettingsFile"),
 						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile"}},
 					},
 					{
@@ -185,7 +178,6 @@ func mavenBuildMetadata() config.StepData {
 						Scope:     []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:      "string",
 						Mandatory: false,
-						Default:   os.Getenv("PIPER_globalSettingsFile"),
 						Aliases:   []config.Alias{{Name: "maven/globalSettingsFile"}},
 					},
 					{
@@ -194,7 +186,6 @@ func mavenBuildMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     os.Getenv("PIPER_m2Path"),
 						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
 					},
 					{
@@ -203,7 +194,6 @@ func mavenBuildMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "bool",
 						Mandatory:   false,
-						Default:     false,
 						Aliases:     []config.Alias{{Name: "maven/logSuccessfulMavenTransfers"}},
 					},
 					{
@@ -212,7 +202,6 @@ func mavenBuildMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "bool",
 						Mandatory:   false,
-						Default:     false,
 						Aliases:     []config.Alias{{Name: "maven/createBOM"}},
 					},
 					{
@@ -237,7 +226,6 @@ func mavenBuildMetadata() config.StepData {
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Default:   os.Getenv("PIPER_altDeploymentRepositoryPassword"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -251,7 +239,6 @@ func mavenBuildMetadata() config.StepData {
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Default:   os.Getenv("PIPER_altDeploymentRepositoryUser"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -265,7 +252,6 @@ func mavenBuildMetadata() config.StepData {
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Default:   os.Getenv("PIPER_altDeploymentRepositoryUrl"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -279,7 +265,6 @@ func mavenBuildMetadata() config.StepData {
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Default:   os.Getenv("PIPER_altDeploymentRepositoryID"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -288,7 +273,6 @@ func mavenBuildMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
-						Default:     []string{},
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -297,7 +281,6 @@ func mavenBuildMetadata() config.StepData {
 						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:        "bool",
 						Mandatory:   false,
-						Default:     false,
 						Aliases:     []config.Alias{{Name: "maven/publish"}},
 					},
 				},

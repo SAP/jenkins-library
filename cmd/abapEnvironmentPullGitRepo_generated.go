@@ -134,9 +134,6 @@ func abapEnvironmentPullGitRepoMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
-				Secrets: []config.StepSecrets{
-					{Name: "abapCredentialsId", Description: "Jenkins credentials ID containing user and password to authenticate to the Cloud Platform ABAP Environment system or the Cloud Foundry API", Type: "jenkins", Aliases: []config.Alias{{Name: "cfCredentialsId", Deprecated: false}, {Name: "credentialsId", Deprecated: false}}},
-				},
 				Parameters: []config.StepParameters{
 					{
 						Name: "username",
@@ -150,7 +147,6 @@ func abapEnvironmentPullGitRepoMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Default:   os.Getenv("PIPER_username"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -165,7 +161,6 @@ func abapEnvironmentPullGitRepoMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Default:   os.Getenv("PIPER_password"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -174,7 +169,6 @@ func abapEnvironmentPullGitRepoMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
-						Default:     []string{},
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -183,7 +177,6 @@ func abapEnvironmentPullGitRepoMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     os.Getenv("PIPER_repositories"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -192,7 +185,6 @@ func abapEnvironmentPullGitRepoMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     os.Getenv("PIPER_host"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -201,7 +193,6 @@ func abapEnvironmentPullGitRepoMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     os.Getenv("PIPER_cfApiEndpoint"),
 						Aliases:     []config.Alias{{Name: "cloudFoundry/apiEndpoint"}},
 					},
 					{
@@ -210,7 +201,6 @@ func abapEnvironmentPullGitRepoMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     os.Getenv("PIPER_cfOrg"),
 						Aliases:     []config.Alias{{Name: "cloudFoundry/org"}},
 					},
 					{
@@ -219,7 +209,6 @@ func abapEnvironmentPullGitRepoMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     os.Getenv("PIPER_cfSpace"),
 						Aliases:     []config.Alias{{Name: "cloudFoundry/space"}},
 					},
 					{
@@ -228,7 +217,6 @@ func abapEnvironmentPullGitRepoMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     os.Getenv("PIPER_cfServiceInstance"),
 						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceInstance"}},
 					},
 					{
@@ -237,7 +225,6 @@ func abapEnvironmentPullGitRepoMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     os.Getenv("PIPER_cfServiceKeyName"),
 						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceKey"}, {Name: "cloudFoundry/serviceKeyName"}, {Name: "cfServiceKey"}},
 					},
 					{
@@ -246,7 +233,6 @@ func abapEnvironmentPullGitRepoMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS"},
 						Type:        "bool",
 						Mandatory:   false,
-						Default:     false,
 						Aliases:     []config.Alias{},
 					},
 				},

@@ -35,7 +35,6 @@ type stepInfo struct {
 	Sidecars         []config.Container
 	Outputs          config.StepOutputs
 	Resources        []config.StepResources
-	Secrets          []config.StepSecrets
 }
 
 //StepGoTemplate ...
@@ -190,17 +189,6 @@ func {{ .StepName }}Metadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
-				{{ if .Secrets -}}
-				Secrets: []config.StepSecrets{
-					{{- range $secrets := .Secrets }}
-					{
-						{{- if $secrets.Name -}} Name: "{{$secrets.Name}}",{{- end }}
-						{{- if $secrets.Description -}} Description: "{{$secrets.Description}}",{{- end }}
-						{{- if $secrets.Type -}} Type: "{{$secrets.Type}}",{{- end }}
-						{{- if $secrets.Aliases -}} Aliases: []config.Alias{ {{- range $i, $a := $secrets.Aliases }} {Name: "{{$a.Name}}", Deprecated: {{$a.Deprecated}}}, {{ end -}}  },{{- end }}
-					}, {{ end }}
-				},
-				{{ end -}}
 				{{ if .Resources -}}
 				Resources: []config.StepResources{
 					{{- range $resource := .Resources }}
@@ -220,7 +208,6 @@ func {{ .StepName }}Metadata() config.StepData {
 						Scope:     []string{{ "{" }}{{ range $notused, $scope := $value.Scope }}"{{ $scope }}",{{ end }}{{ "}" }},
 						Type:      "{{ $value.Type }}",
 						Mandatory: {{ $value.Mandatory }},
-						{{if $value.Default -}} Default:   {{ $value.Default }}, {{- end}}
 						Aliases:   []config.Alias{{ "{" }}{{ range $notused, $alias := $value.Aliases }}{{ "{" }}Name: "{{ $alias.Name }}"{{ "}" }},{{ end }}{{ "}" }},
 					},{{ end }}
 				},
@@ -586,7 +573,6 @@ func getStepInfo(stepData *config.StepData, osImport bool, exportPrefix string) 
 			Sidecars:         stepData.Spec.Sidecars,
 			Outputs:          stepData.Spec.Outputs,
 			Resources:        stepData.Spec.Inputs.Resources,
-			Secrets:          stepData.Spec.Inputs.Secrets,
 		},
 		err
 }

@@ -14,31 +14,32 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type transportRequestUploadCTSOptions struct {
-	Description            string   `json:"description,omitempty"`
-	Endpoint               string   `json:"endpoint,omitempty"`
-	Client                 string   `json:"client,omitempty"`
-	Username               string   `json:"username,omitempty"`
-	Password               string   `json:"password,omitempty"`
-	ApplicationName        string   `json:"applicationName,omitempty"`
-	AbapPackage            string   `json:"abapPackage,omitempty"`
-	OsDeployUser           string   `json:"osDeployUser,omitempty"`
-	DeployConfigFile       string   `json:"deployConfigFile,omitempty"`
-	TransportRequestID     string   `json:"transportRequestId,omitempty"`
-	DeployToolDependencies []string `json:"deployToolDependencies,omitempty"`
-	NpmInstallOpts         []string `json:"npmInstallOpts,omitempty"`
+type transportRequestUploadRFCOptions struct {
+	Endpoint                   string `json:"endpoint,omitempty"`
+	Client                     string `json:"client,omitempty"`
+	Instance                   string `json:"instance,omitempty"`
+	Username                   string `json:"username,omitempty"`
+	Password                   string `json:"password,omitempty"`
+	ApplicationName            string `json:"applicationName,omitempty"`
+	ApplicationDescription     string `json:"applicationDescription,omitempty"`
+	AbapPackage                string `json:"abapPackage,omitempty"`
+	ApplicationURL             string `json:"applicationUrl,omitempty"`
+	CodePage                   string `json:"codePage,omitempty"`
+	AcceptUnixStyleLineEndings bool   `json:"acceptUnixStyleLineEndings,omitempty"`
+	FailUploadOnWarning        bool   `json:"failUploadOnWarning,omitempty"`
+	TransportRequestID         string `json:"transportRequestId,omitempty"`
 }
 
-// TransportRequestUploadCTSCommand Uploads content to a transport request
-func TransportRequestUploadCTSCommand() *cobra.Command {
-	const STEP_NAME = "transportRequestUploadCTS"
+// TransportRequestUploadRFCCommand Uploads content to a transport request
+func TransportRequestUploadRFCCommand() *cobra.Command {
+	const STEP_NAME = "transportRequestUploadRFC"
 
-	metadata := transportRequestUploadCTSMetadata()
-	var stepConfig transportRequestUploadCTSOptions
+	metadata := transportRequestUploadRFCMetadata()
+	var stepConfig transportRequestUploadRFCOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
 
-	var createTransportRequestUploadCTSCmd = &cobra.Command{
+	var createTransportRequestUploadRFCCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Uploads content to a transport request",
 		Long:  `Uploads content to a transport request.`,
@@ -93,42 +94,46 @@ func TransportRequestUploadCTSCommand() *cobra.Command {
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			transportRequestUploadCTS(stepConfig, &telemetryData)
+			transportRequestUploadRFC(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
 
-	addTransportRequestUploadCTSFlags(createTransportRequestUploadCTSCmd, &stepConfig)
-	return createTransportRequestUploadCTSCmd
+	addTransportRequestUploadRFCFlags(createTransportRequestUploadRFCCmd, &stepConfig)
+	return createTransportRequestUploadRFCCmd
 }
 
-func addTransportRequestUploadCTSFlags(cmd *cobra.Command, stepConfig *transportRequestUploadCTSOptions) {
-	cmd.Flags().StringVar(&stepConfig.Description, "description", `Deployed with Piper based on SAP Fiori tools`, "The description of the application. the desription is only taken into account for a new upload. In case of an update the description will not be updated.")
-	cmd.Flags().StringVar(&stepConfig.Endpoint, "endpoint", os.Getenv("PIPER_endpoint"), "The service endpoint")
-	cmd.Flags().StringVar(&stepConfig.Client, "client", os.Getenv("PIPER_client"), "The ABAP client")
-	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "The deploy user")
-	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "The password for the deploy user")
-	cmd.Flags().StringVar(&stepConfig.ApplicationName, "applicationName", os.Getenv("PIPER_applicationName"), "The name of the application.")
-	cmd.Flags().StringVar(&stepConfig.AbapPackage, "abapPackage", os.Getenv("PIPER_abapPackage"), "The ABAP package name of your application")
-	cmd.Flags().StringVar(&stepConfig.OsDeployUser, "osDeployUser", `node`, "By default we use a standard node docker image and prepare some fiori related packages before performing the deployment. For that we need to launch the image with root privileges. After that, before actually performing the deployment we swith to a non root user. This user can be specified here.")
-	cmd.Flags().StringVar(&stepConfig.DeployConfigFile, "deployConfigFile", `ui5-deploy.yaml`, "The ABAP package name of your application")
-	cmd.Flags().StringVar(&stepConfig.TransportRequestID, "transportRequestId", os.Getenv("PIPER_transportRequestId"), "The id of the transport request to upload the file. This parameter is only taken into account when provided via signature to the step.")
-	cmd.Flags().StringSliceVar(&stepConfig.DeployToolDependencies, "deployToolDependencies", []string{}, "By default we use a standard node docker iamge and prepare some fiori related packages performing the deployment. The additional dependencies can be provided here. In case you use an already prepared docker image which contains the required dependencies, the empty list can be provide here. Caused hereby installing additional dependencies will be skipped.")
-	cmd.Flags().StringSliceVar(&stepConfig.NpmInstallOpts, "npmInstallOpts", []string{}, "A list containing additional options for the npm install call. `-g`, `--global` is always assumed. Can be used for e.g. providing custom registries (`--registry https://your.registry.com`) or for providing the verbose flag (`--verbose`) for troubleshooting.")
+func addTransportRequestUploadRFCFlags(cmd *cobra.Command, stepConfig *transportRequestUploadRFCOptions) {
+	cmd.Flags().StringVar(&stepConfig.Endpoint, "endpoint", os.Getenv("PIPER_endpoint"), "Service endpoint")
+	cmd.Flags().StringVar(&stepConfig.Client, "client", os.Getenv("PIPER_client"), "AS ABAP client number")
+	cmd.Flags().StringVar(&stepConfig.Instance, "instance", os.Getenv("PIPER_instance"), "AS ABAP instance number")
+	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "Deploy user")
+	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for the deploy user")
+	cmd.Flags().StringVar(&stepConfig.ApplicationName, "applicationName", os.Getenv("PIPER_applicationName"), "Name of the application.")
+	cmd.Flags().StringVar(&stepConfig.ApplicationDescription, "applicationDescription", os.Getenv("PIPER_applicationDescription"), "Description of the application.")
+	cmd.Flags().StringVar(&stepConfig.AbapPackage, "abapPackage", os.Getenv("PIPER_abapPackage"), "ABAP package name of your application")
+	cmd.Flags().StringVar(&stepConfig.ApplicationURL, "applicationUrl", os.Getenv("PIPER_applicationUrl"), "URL where to find the UI5 package to upload to the transport request")
+	cmd.Flags().StringVar(&stepConfig.CodePage, "codePage", `UTF-8`, "Code page")
+	cmd.Flags().BoolVar(&stepConfig.AcceptUnixStyleLineEndings, "acceptUnixStyleLineEndings", true, "If unix style line endings should be accepted")
+	cmd.Flags().BoolVar(&stepConfig.FailUploadOnWarning, "failUploadOnWarning", true, "If the upload should fail in case the log contains warnings")
+	cmd.Flags().StringVar(&stepConfig.TransportRequestID, "transportRequestId", os.Getenv("PIPER_transportRequestId"), "Transport request id")
 
+	cmd.MarkFlagRequired("endpoint")
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("applicationName")
+	cmd.MarkFlagRequired("abapPackage")
+	cmd.MarkFlagRequired("applicationUrl")
 	cmd.MarkFlagRequired("abapPackage")
 	cmd.MarkFlagRequired("transportRequestId")
 }
 
 // retrieve step metadata
-func transportRequestUploadCTSMetadata() config.StepData {
+func transportRequestUploadRFCMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:        "transportRequestUploadCTS",
+			Name:        "transportRequestUploadRFC",
 			Aliases:     []config.Alias{{Name: "transportRequestUploadFile", Deprecated: false}},
 			Description: "Uploads content to a transport request",
 		},
@@ -136,19 +141,11 @@ func transportRequestUploadCTSMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name:        "description",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
 						Name:        "endpoint",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
-						Mandatory:   false,
+						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "changeManagement/endpoint"}},
 					},
 					{
@@ -157,7 +154,15 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "changeManagement/client"}},
+						Aliases:     []config.Alias{{Name: "changeManagement/rfc/developmentClient"}},
+					},
+					{
+						Name:        "instance",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "changeManagement/rfc/developmentInstance"}},
 					},
 					{
 						Name:        "username",
@@ -184,6 +189,14 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
+						Name:        "applicationDescription",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
 						Name:        "abapPackage",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
@@ -192,20 +205,44 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "osDeployUser",
+						Name:        "applicationUrl",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "changeManagement/cts/osDeployUser"}},
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
 					},
 					{
-						Name:        "deployConfigFile",
+						Name:        "abapPackage",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "codePage",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "changeManagement/cts/deployConfigFile"}, {Name: "cts/deployConfigFile"}},
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "acceptUnixStyleLineEndings",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "failUploadOnWarning",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "failOnWarning"}},
 					},
 					{
 						Name:        "transportRequestId",
@@ -214,22 +251,6 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "deployToolDependencies",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "[]string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "changeManagement/cts/deployToolDependencies"}},
-					},
-					{
-						Name:        "npmInstallOpts",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "[]string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "changeManagement/cts/deployToolDependencies"}},
 					},
 				},
 			},

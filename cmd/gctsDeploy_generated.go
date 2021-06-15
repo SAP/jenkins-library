@@ -139,9 +139,6 @@ func gctsDeployMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
-				Secrets: []config.StepSecrets{
-					{Name: "abapCredentialsId", Description: "Jenkins credentials ID containing username and password for authentication to the ABAP system on which you want to deploy a commit", Type: "jenkins"},
-				},
 				Parameters: []config.StepParameters{
 					{
 						Name: "username",
@@ -155,7 +152,6 @@ func gctsDeployMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Default:   os.Getenv("PIPER_username"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -170,7 +166,6 @@ func gctsDeployMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Default:   os.Getenv("PIPER_password"),
 						Aliases:   []config.Alias{},
 					},
 					{
@@ -179,7 +174,6 @@ func gctsDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Default:     os.Getenv("PIPER_repository"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -188,7 +182,6 @@ func gctsDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Default:     os.Getenv("PIPER_host"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -197,7 +190,6 @@ func gctsDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Default:     os.Getenv("PIPER_client"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -206,7 +198,6 @@ func gctsDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     os.Getenv("PIPER_commit"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -215,7 +206,6 @@ func gctsDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Default:     os.Getenv("PIPER_remoteRepositoryURL"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -224,7 +214,6 @@ func gctsDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     os.Getenv("PIPER_role"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -233,7 +222,6 @@ func gctsDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     os.Getenv("PIPER_vSID"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -242,7 +230,6 @@ func gctsDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     `GIT`,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -251,7 +238,6 @@ func gctsDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     os.Getenv("PIPER_branch"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -260,7 +246,6 @@ func gctsDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Default:     os.Getenv("PIPER_scope"),
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -269,7 +254,6 @@ func gctsDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
-						Default:     false,
 						Aliases:     []config.Alias{},
 					},
 					{
@@ -278,8 +262,7 @@ func gctsDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "map[string]interface{}",
 						Mandatory:   false,
-
-						Aliases: []config.Alias{{Name: "gctsRepositoryConfigurations"}},
+						Aliases:     []config.Alias{{Name: "gctsRepositoryConfigurations"}},
 					},
 				},
 			},
