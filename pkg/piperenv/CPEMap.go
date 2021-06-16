@@ -62,7 +62,7 @@ func (c CPEMap) WriteToDisk(rootDirectory string) error {
 
 func dirToMap(m map[string]interface{}, dirPath, prefix string) error {
 	if stat, err := os.Stat(dirPath); err != nil || !stat.IsDir() {
-		return fmt.Errorf("stat on '%s' failed. Not a dir?: %w", dirPath, err)
+		return nil
 	}
 
 	items, err := ioutil.ReadDir(dirPath)
