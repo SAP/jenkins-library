@@ -117,6 +117,9 @@ func influxWriteDataMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "influxTokenId", Description: "Influxdb token for authentication to the InfluxDB. In 1.8 version use 'username:password' instead.", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "serverUrl",
@@ -125,6 +128,7 @@ func influxWriteDataMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_serverUrl"),
 					},
 					{
 						Name: "authToken",
@@ -138,6 +142,7 @@ func influxWriteDataMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_authToken"),
 					},
 					{
 						Name:        "bucket",
@@ -146,6 +151,7 @@ func influxWriteDataMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `piper`,
 					},
 					{
 						Name:        "organization",
@@ -154,6 +160,7 @@ func influxWriteDataMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_organization"),
 					},
 					{
 						Name:        "dataMap",

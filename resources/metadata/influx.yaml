@@ -7,7 +7,7 @@ spec:
   inputs:
     secrets:
       - name: influxTokenId
-        description: Influxdb token for authentication to the InfluxDB. In 1.8 version use "username:password" instead.
+        description: Influxdb token for authentication to the InfluxDB. In 1.8 version use 'username:password' instead.
         type: jenkins
     params:
       - name: serverUrl
@@ -48,7 +48,7 @@ spec:
           - STEPS
       - name: dataMap
         type: "map[string]interface{}"
-        description: "Map of fields for each measurements. For example: ['series_1':['field_a':11,'field_b':12],'series_2':['field_c':21,'field_d':22]]" 
+        description: "Map of fields for each measurements. For example: ['series_1':['field_a':11,'field_b':12],'series_2':['field_c':21,'field_d':22]]"
         scope:
           - PARAMETERS
           - STAGES
@@ -57,7 +57,7 @@ spec:
         mandatory: true
       - name: dataMapTags
         type: "map[string]interface{}"
-        description: "Map of tags for each measurements. For example: ['series_1':['tag_a':'a','tag_b':'b'],'series_2':['tag_c':'c','tag_d':'d']]" 
+        description: "Map of tags for each measurements. For example: ['series_1':['tag_a':'a','tag_b':'b'],'series_2':['tag_c':'c','tag_d':'d']]"
         scope:
           - PARAMETERS
           - STAGES

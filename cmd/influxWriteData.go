@@ -19,7 +19,7 @@ func influxWriteData(config influxWriteDataOptions, telemetryData *telemetry.Cus
 func writeData(config *influxWriteDataOptions, telemetryData *telemetry.CustomData) error {
 	log.Entry().Info("influxWriteData step")
 
-	client, err := influx.NewClient(config.InfluxVersion, config.ServerURL, config.AuthToken, config.Organization, config.Bucket)
+	client, err := influx.NewClient(config.ServerURL, config.AuthToken, config.Organization, config.Bucket)
 	if err != nil {
 		return err
 	}
