@@ -65,8 +65,10 @@ func AbapAddonAssemblyKitCheckPVCommand() *cobra.Command {
 	var createAbapAddonAssemblyKitCheckPVCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "This step checks the validity of a Addon Product Version.",
-		Long: `This step checks whether the Addon Product Version in the addonDescriptorFileName does exist or is a valid successor of an existing Product Version.
-It resolves the dotted version string into version, support package stack level and patch level and writes it to the commonPipelineEnvironment.`,
+		Long: `This step checks by calling AAKaaS whether the Addon Product Version in the addonDescriptor configuration file specified via addonDescriptorFileName (e.g. addon.yml) does exist or is a valid successor of an existing Product Version.
+It resolves the dotted version string into version, support package stack level and patch level and writes it to the addonDescriptor structure in the Piper commonPipelineEnvironment for usage of subsequent pipeline steps.
+<br />
+For Terminology refere to the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -153,7 +155,7 @@ func abapAddonAssemblyKitCheckPVMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "abapAddonAssemblyKitCredentialsId", Description: "Credential stored in Jenkins for the Addon Assembly Kit as a Service (AAKaaS) system", Type: "jenkins"},
+					{Name: "abapAddonAssemblyKitCredentialsId", Description: "CredentialsId stored in Jenkins for the Addon Assembly Kit as a Service (AAKaaS) system", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{

@@ -155,7 +155,7 @@ func abapAddonAssemblyKitCheckCVsMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "abapAddonAssemblyKitCredentialsId", Description: "Credential stored in Jenkins for the Addon Assembly Kit as a Service (AAKaaS) system", Type: "jenkins"},
+					{Name: "abapAddonAssemblyKitCredentialsId", Description: "CredentialsId stored in Jenkins for the Addon Assembly Kit as a Service (AAKaaS) system", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{
