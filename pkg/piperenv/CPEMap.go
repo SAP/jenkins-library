@@ -1,6 +1,7 @@
 package piperenv
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -100,7 +101,9 @@ func readFileContent(fullPath string) (string, interface{}, error) {
 	if strings.HasSuffix(fullPath, ".json") {
 		// value is json encoded
 		var value interface{}
-		err = json.Unmarshal(fileContent, &value)
+		decoder := json.NewDecoder(bytes.NewReader(fileContent))
+		decoder.UseNumber()
+		err = decoder.Decode(&value)
 		if err != nil {
 			return "", nil, err
 		}
