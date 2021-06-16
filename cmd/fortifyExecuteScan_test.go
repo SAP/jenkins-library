@@ -336,7 +336,13 @@ func (er *execRunnerMock) RunExecutable(e string, p ...string) error {
 	classpathPip := "/usr/lib/python35.zip;/usr/lib/python3.5;/usr/lib/python3.5/plat-x86_64-linux-gnu;/usr/lib/python3.5/lib-dynload;/home/piper/.local/lib/python3.5/site-packages;/usr/local/lib/python3.5/dist-packages;/usr/lib/python3/dist-packages;./lib"
 	classpathMaven := "some.jar;someother.jar"
 	if e == "python2" {
-		er.currentExecution().outWriter.Write([]byte(classpathPip))
+		if p[1] == "invalid" {
+			return errors.New("Invalid command")
+		}
+		_, err := er.currentExecution().outWriter.Write([]byte(classpathPip))
+		if err != nil {
+			return err
+		}
 	} else if e == "mvn" {
 		path := strings.ReplaceAll(p[2], "-Dmdep.outputFile=", "")
 		err := ioutil.WriteFile(path, []byte(classpathMaven), 0644)
@@ -820,6 +826,25 @@ func TestAutoresolveClasspath(t *testing.T) {
 		assert.Equal(t, "/usr/lib/python35.zip;/usr/lib/python3.5;/usr/lib/python3.5/plat-x86_64-linux-gnu;/usr/lib/python3.5/lib-dynload;/home/piper/.local/lib/python3.5/site-packages;/usr/local/lib/python3.5/dist-packages;/usr/lib/python3/dist-packages;./lib", result, "Expected different result")
 	})
 
+	t.Run("error pip file", func(t *testing.T) {
+		utils := newFortifyTestUtilsBundle()
+
+		_, err := autoresolvePipClasspath("python2", []string{"-c", "import sys;p=sys.path;p.remove('');print(';'.join(p))"}, "../.", &utils)
+		assert.Error(t, err)
+	})
+
+	t.Run("error pip command", func(t *testing.T) {
+		utils := newFortifyTestUtilsBundle()
+		dir, err := ioutil.TempDir("", "classpath")
+		assert.NoError(t, err, "Unexpected error detected")
+		defer os.RemoveAll(dir)
+		file := filepath.Join(dir, "cp.txt")
+
+		_, err = autoresolvePipClasspath("python2", []string{"-c", "invalid"}, file, &utils)
+		assert.Error(t, err)
+		assert.Equal(t, "failed to run classpath autodetection command python2 with parameters [-c invalid]: Invalid command", err.Error())
+	})
+
 	t.Run("success maven", func(t *testing.T) {
 		utils := newFortifyTestUtilsBundle()
 		dir, err := ioutil.TempDir("", "classpath")
@@ -827,10 +852,18 @@ func TestAutoresolveClasspath(t *testing.T) {
 		defer os.RemoveAll(dir)
 		file := filepath.Join(dir, "cp.txt")
 
-		result := autoresolveMavenClasspath(fortifyExecuteScanOptions{BuildDescriptorFile: "pom.xml"}, file, &utils)
+		result, err := autoresolveMavenClasspath(fortifyExecuteScanOptions{BuildDescriptorFile: "pom.xml"}, file, &utils)
+		assert.NoError(t, err)
 		assert.Equal(t, "mvn", utils.executions[0].executable, "Expected different executable")
 		assert.Equal(t, []string{"--file", "pom.xml", fmt.Sprintf("-Dmdep.outputFile=%v", file), "-DincludeScope=compile", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "dependency:build-classpath"}, utils.executions[0].parameters, "Expected different parameters")
 		assert.Equal(t, "some.jar;someother.jar", result, "Expected different result")
+	})
+
+	t.Run("error maven", func(t *testing.T) {
+		utils := newFortifyTestUtilsBundle()
+
+		_, err := autoresolveMavenClasspath(fortifyExecuteScanOptions{BuildDescriptorFile: "pom.xml"}, "../.", &utils)
+		assert.Error(t, err)
 	})
 }
 

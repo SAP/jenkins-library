@@ -150,6 +150,7 @@ func transportRequestDocIDFromGitMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "changeManagement/git/from"}},
+						Default:     `origin/master`,
 					},
 					{
 						Name:        "gitTo",
@@ -158,6 +159,7 @@ func transportRequestDocIDFromGitMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "changeManagement/git/to"}},
+						Default:     `HEAD`,
 					},
 					{
 						Name:        "changeDocumentLabel",
@@ -166,6 +168,7 @@ func transportRequestDocIDFromGitMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "changeManagement/changeDocumentLabel"}},
+						Default:     `ChangeDocument`,
 					},
 				},
 			},

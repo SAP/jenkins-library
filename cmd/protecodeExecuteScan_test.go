@@ -266,7 +266,7 @@ func TestUploadScanOrDeclareFetch(t *testing.T) {
 	for _, c := range cases {
 		// test
 		config := protecodeExecuteScanOptions{VerifyOnly: c.reuse, CleanupMode: c.clean, Group: c.group, FetchURL: c.fetchURL, FilePath: c.filePath}
-		got := uploadScanOrDeclareFetch(config, 0, pc, fileName)
+		got := uploadScanOrDeclareFetch(config, pc, fileName)
 		// assert
 		assert.Equal(t, c.want, got)
 	}

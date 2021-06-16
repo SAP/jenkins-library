@@ -7,7 +7,7 @@ void call(Map parameters = [:]) {
     final script = checkScript(this, parameters) ?: this
     String piperGoPath = parameters.piperGoPath ?: './piper'
     Map cpe = script.commonPipelineEnvironment.getCPEMap(script)
-    if (!cpe) {
+    if (cpe == null) {
         return
     }
     def jsonMap = groovy.json.JsonOutput.toJson(cpe)

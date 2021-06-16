@@ -139,6 +139,9 @@ func transportRequestUploadRFCMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "uploadCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing user and password to authenticate against the ABAP backend.", Type: "jenkins", Aliases: []config.Alias{{Name: "changeManagement/credentialsId", Deprecated: false}}},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "endpoint",
@@ -147,6 +150,7 @@ func transportRequestUploadRFCMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "changeManagement/endpoint"}},
+						Default:     os.Getenv("PIPER_endpoint"),
 					},
 					{
 						Name:        "client",
@@ -155,6 +159,7 @@ func transportRequestUploadRFCMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "changeManagement/rfc/developmentClient"}},
+						Default:     os.Getenv("PIPER_client"),
 					},
 					{
 						Name:        "instance",
@@ -163,6 +168,7 @@ func transportRequestUploadRFCMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "changeManagement/rfc/developmentInstance"}},
+						Default:     os.Getenv("PIPER_instance"),
 					},
 					{
 						Name:        "username",
@@ -171,6 +177,7 @@ func transportRequestUploadRFCMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_username"),
 					},
 					{
 						Name:        "password",
@@ -179,6 +186,7 @@ func transportRequestUploadRFCMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_password"),
 					},
 					{
 						Name:        "applicationName",
@@ -187,6 +195,7 @@ func transportRequestUploadRFCMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_applicationName"),
 					},
 					{
 						Name:        "applicationDescription",
@@ -195,6 +204,7 @@ func transportRequestUploadRFCMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_applicationDescription"),
 					},
 					{
 						Name:        "abapPackage",
@@ -203,6 +213,7 @@ func transportRequestUploadRFCMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_abapPackage"),
 					},
 					{
 						Name:        "applicationUrl",
@@ -211,6 +222,7 @@ func transportRequestUploadRFCMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_applicationUrl"),
 					},
 					{
 						Name:        "abapPackage",
@@ -219,6 +231,7 @@ func transportRequestUploadRFCMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_abapPackage"),
 					},
 					{
 						Name:        "codePage",
@@ -227,6 +240,7 @@ func transportRequestUploadRFCMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `UTF-8`,
 					},
 					{
 						Name:        "acceptUnixStyleLineEndings",
@@ -235,6 +249,7 @@ func transportRequestUploadRFCMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
 						Name:        "failUploadOnWarning",
@@ -243,6 +258,7 @@ func transportRequestUploadRFCMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "failOnWarning"}},
+						Default:     true,
 					},
 					{
 						Name:        "transportRequestId",
@@ -251,6 +267,7 @@ func transportRequestUploadRFCMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_transportRequestId"),
 					},
 				},
 			},
