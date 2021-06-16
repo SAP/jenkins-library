@@ -66,7 +66,7 @@ func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExec
 			log.Entry().Debugf("Filepath for upload image: %v", config.FilePath)
 		}
 	} else {
-		fileName = config.FileName	
+		fileName = config.FilePath	
 	}
 
 	log.Entry().Debug("Execute protecode scan")
