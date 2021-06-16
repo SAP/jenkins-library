@@ -120,7 +120,8 @@ spec:
           - name: container/registryUrl
           - name: container/imageNameTag
   containers:
-    - image: gcr.io/kaniko-project/executor:debug
+    # https://github.com/GoogleContainerTools/kaniko/issues/1586
+    - image: gcr.io/kaniko-project/executor:v1.3.0-debug
       command:
         - /busybox/tail -f /dev/null
       shell: /busybox/sh
