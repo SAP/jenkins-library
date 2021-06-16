@@ -60,6 +60,7 @@ void call(Map parameters = [:]) {
                 piperExecuteBin.dockerWrapper(script, STEP_NAME, config){
                     if(!fileExists('.git')) utils.unstash('git')
                     piperExecuteBin.handleErrorDetails(STEP_NAME) {
+                        writePipelineEnv(script: script, piperGoPath: piperGoPath)
                         withSonarQubeEnv(stepConfig.instance) {
                             withEnv(environment){
                                 influxWrapper(script){
