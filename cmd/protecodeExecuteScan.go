@@ -65,6 +65,10 @@ func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExec
 			(*config).FilePath = filePath
 			log.Entry().Debugf("Filepath for upload image: %v", config.FilePath)
 		}
+	} else if len(config.FilePath) > 0 {
+		parts := strings.Split(config.FilePath, "/")
+		(*config).FilePath = strings.Join(parts[:len(parts)-1], "/")
+		fileName = parts[len(parts)-1]
 	}
 
 	log.Entry().Debug("Execute protecode scan")
