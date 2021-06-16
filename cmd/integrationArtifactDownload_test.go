@@ -31,11 +31,11 @@ func TestRunIntegrationArtifactDownload(t *testing.T) {
 		defer os.RemoveAll(tempDir) // clean up
 		assert.NoError(t, tmpErr, "Error when creating temp dir")
 		serviceKey := `{
-			"url": "https://demo",
-			"uaa": {
+			"oauth": {
+				"url": "https://demo",
 				"clientid": "demouser",
 				"clientsecret": "******",
-				"url": "https://demo/oauth/token"
+				"tokenurl": "https://demo/oauth/token"
 			}
 		}`
 
@@ -65,11 +65,11 @@ func TestRunIntegrationArtifactDownload(t *testing.T) {
 
 	t.Run("Failed case of Integration Flow artifact Download", func(t *testing.T) {
 		serviceKey := `{
-			"url": "https://demo",
-			"uaa": {
+			"oauth": {
+				"url": "https://demo",
 				"clientid": "demouser",
 				"clientsecret": "******",
-				"url": "https://demo/oauth/token"
+				"tokenurl": "https://demo/oauth/token"
 			}
 		}`
 

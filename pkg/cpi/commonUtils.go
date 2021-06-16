@@ -25,12 +25,12 @@ type TokenParameters struct {
 
 // CpiServiceKey contains information about a CPI service key
 type ServiceKey struct {
-	Host string `json:"url"`
-	Uaa  OAuth  `json:"uaa"`
+	OAuth OAuth `json:"oauth"`
 }
 
 type OAuth struct {
-	OAuthTokenProviderURL string `json:"url"`
+	Host                  string `json:"url"`
+	OAuthTokenProviderURL string `json:"tokenurl"`
 	ClientId              string `json:"clientid"`
 	ClientSecret          string `json:"clientsecret"`
 }

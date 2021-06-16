@@ -73,8 +73,8 @@ func runIntegrationArtifactUpload(config *integrationArtifactUploadOptions, tele
 	clientOptions := piperhttp.ClientOptions{}
 	header := make(http.Header)
 	header.Add("Accept", "application/json")
-	iFlowStatusServiceURL := fmt.Sprintf("%s/api/v1/IntegrationDesigntimeArtifacts(Id='%s',Version='%s')", serviceKey.Host, config.IntegrationFlowID, config.IntegrationFlowVersion)
-	tokenParameters := cpi.TokenParameters{TokenURL: serviceKey.Uaa.OAuthTokenProviderURL, Username: serviceKey.Uaa.ClientId, Password: serviceKey.Uaa.ClientSecret, Client: httpClient}
+	iFlowStatusServiceURL := fmt.Sprintf("%s/api/v1/IntegrationDesigntimeArtifacts(Id='%s',Version='%s')", serviceKey.OAuth.Host, config.IntegrationFlowID, config.IntegrationFlowVersion)
+	tokenParameters := cpi.TokenParameters{TokenURL: serviceKey.OAuth.OAuthTokenProviderURL, Username: serviceKey.OAuth.ClientId, Password: serviceKey.OAuth.ClientSecret, Client: httpClient}
 	token, err := cpi.CommonUtils.GetBearerToken(tokenParameters)
 	if err != nil {
 		return errors.Wrap(err, "failed to fetch Bearer Token")
@@ -90,9 +90,9 @@ func runIntegrationArtifactUpload(config *integrationArtifactUploadOptions, tele
 		defer iFlowStatusResp.Body.Close()
 	}
 	if iFlowStatusResp.StatusCode == 200 {
-		return UpdateIntegrationArtifact(config, httpClient, fileUtils, serviceKey.Host)
+		return UpdateIntegrationArtifact(config, httpClient, fileUtils, serviceKey.OAuth.Host)
 	} else if httpErr != nil && iFlowStatusResp.StatusCode == 404 {
-		return UploadIntegrationArtifact(config, httpClient, fileUtils, serviceKey.Host)
+		return UploadIntegrationArtifact(config, httpClient, fileUtils, serviceKey.OAuth.Host)
 	}
 
 	if iFlowStatusResp == nil {

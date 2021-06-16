@@ -25,11 +25,11 @@ func TestRunIntegrationArtifactGetServiceEndpoint(t *testing.T) {
 
 	t.Run("Successfully Test of Get Integration Flow Service Endpoint", func(t *testing.T) {
 		serviceKey := `{
-			"url": "https://demo",
-			"uaa": {
+			"oauth": {
+				"url": "https://demo",
 				"clientid": "demouser",
 				"clientsecret": "******",
-				"url": "https://demo/oauth/token"
+				"tokenurl": "https://demo/oauth/token"
 			}
 		}`
 		config := integrationArtifactGetServiceEndpointOptions{
@@ -58,11 +58,11 @@ func TestRunIntegrationArtifactGetServiceEndpoint(t *testing.T) {
 
 	t.Run("Failed Test of Get Integration Flow MPL Status", func(t *testing.T) {
 		serviceKey := `{
-			"url": "https://demo",
-			"uaa": {
+			"oauth": {
+				"url": "https://demo",
 				"clientid": "demouser",
 				"clientsecret": "******",
-				"url": "https://demo/oauth/token"
+				"tokenurl": "https://demo/oauth/token"
 			}
 		}`
 		config := integrationArtifactGetServiceEndpointOptions{

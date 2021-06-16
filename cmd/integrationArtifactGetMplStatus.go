@@ -75,8 +75,8 @@ func runIntegrationArtifactGetMplStatus(
 	header := make(http.Header)
 	header.Add("Accept", "application/json")
 	mplStatusEncodedURL := fmt.Sprintf("%s/api/v1/MessageProcessingLogs?$filter=IntegrationArtifact/Id"+url.QueryEscape(" eq ")+"'%s'&$orderby="+
-		url.QueryEscape("LogEnd desc")+"&$top=1", serviceKey.Host, config.IntegrationFlowID)
-	tokenParameters := cpi.TokenParameters{TokenURL: serviceKey.Uaa.OAuthTokenProviderURL, Username: serviceKey.Uaa.ClientId, Password: serviceKey.Uaa.ClientSecret, Client: httpClient}
+		url.QueryEscape("LogEnd desc")+"&$top=1", serviceKey.OAuth.Host, config.IntegrationFlowID)
+	tokenParameters := cpi.TokenParameters{TokenURL: serviceKey.OAuth.OAuthTokenProviderURL, Username: serviceKey.OAuth.ClientId, Password: serviceKey.OAuth.ClientSecret, Client: httpClient}
 	token, err := cpi.CommonUtils.GetBearerToken(tokenParameters)
 	if err != nil {
 		return errors.Wrap(err, "failed to fetch Bearer Token")

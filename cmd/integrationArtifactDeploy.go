@@ -72,9 +72,9 @@ func runIntegrationArtifactDeploy(config *integrationArtifactDeployOptions, tele
 	if err != nil {
 		return err
 	}
-	deployURL := fmt.Sprintf("%s/api/v1/DeployIntegrationDesigntimeArtifact?Id='%s'&Version='%s'", serviceKey.Host, config.IntegrationFlowID, config.IntegrationFlowVersion)
+	deployURL := fmt.Sprintf("%s/api/v1/DeployIntegrationDesigntimeArtifact?Id='%s'&Version='%s'", serviceKey.OAuth.Host, config.IntegrationFlowID, config.IntegrationFlowVersion)
 
-	tokenParameters := cpi.TokenParameters{TokenURL: serviceKey.Uaa.OAuthTokenProviderURL, Username: serviceKey.Uaa.ClientId, Password: serviceKey.Uaa.ClientSecret, Client: httpClient}
+	tokenParameters := cpi.TokenParameters{TokenURL: serviceKey.OAuth.OAuthTokenProviderURL, Username: serviceKey.OAuth.ClientId, Password: serviceKey.OAuth.ClientSecret, Client: httpClient}
 	token, err := cpi.CommonUtils.GetBearerToken(tokenParameters)
 	if err != nil {
 		return errors.Wrap(err, "failed to fetch Bearer Token")
@@ -99,7 +99,7 @@ func runIntegrationArtifactDeploy(config *integrationArtifactDeployOptions, tele
 		log.Entry().
 			WithField("IntegrationFlowID", config.IntegrationFlowID).
 			Info("successfully deployed into CPI runtime")
-		deploymentError := pollIFlowDeploymentStatus(retryCount, config, httpClient, serviceKey.Host)
+		deploymentError := pollIFlowDeploymentStatus(retryCount, config, httpClient, serviceKey.OAuth.Host)
 		return deploymentError
 	}
 	responseBody, readErr := ioutil.ReadAll(deployResp.Body)

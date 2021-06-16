@@ -67,8 +67,8 @@ func runIntegrationArtifactUpdateConfiguration(config *integrationArtifactUpdate
 	if err != nil {
 		return err
 	}
-	configUpdateURL := fmt.Sprintf("%s/api/v1/IntegrationDesigntimeArtifacts(Id='%s',Version='%s')/$links/Configurations('%s')", serviceKey.Host, config.IntegrationFlowID, config.IntegrationFlowVersion, config.ParameterKey)
-	tokenParameters := cpi.TokenParameters{TokenURL: serviceKey.Uaa.OAuthTokenProviderURL, Username: serviceKey.Uaa.ClientId, Password: serviceKey.Uaa.ClientSecret, Client: httpClient}
+	configUpdateURL := fmt.Sprintf("%s/api/v1/IntegrationDesigntimeArtifacts(Id='%s',Version='%s')/$links/Configurations('%s')", serviceKey.OAuth.Host, config.IntegrationFlowID, config.IntegrationFlowVersion, config.ParameterKey)
+	tokenParameters := cpi.TokenParameters{TokenURL: serviceKey.OAuth.OAuthTokenProviderURL, Username: serviceKey.OAuth.ClientId, Password: serviceKey.OAuth.ClientSecret, Client: httpClient}
 	token, err := cpi.CommonUtils.GetBearerToken(tokenParameters)
 	if err != nil {
 		return errors.Wrap(err, "failed to fetch Bearer Token")

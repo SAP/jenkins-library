@@ -23,11 +23,11 @@ func TestRunIntegrationArtifactUpdateConfiguration(t *testing.T) {
 
 	t.Run("Successfully update of Integration Flow configuration parameter test", func(t *testing.T) {
 		serviceKey := `{
-			"url": "https://demo",
-			"uaa": {
+			"oauth": {
+				"url": "https://demo",
 				"clientid": "demouser",
 				"clientsecret": "******",
-				"url": "https://demo/oauth/token"
+				"tokenurl": "https://demo/oauth/token"
 			}
 		}`
 		config := integrationArtifactUpdateConfigurationOptions{
@@ -57,11 +57,11 @@ func TestRunIntegrationArtifactUpdateConfiguration(t *testing.T) {
 
 	t.Run("Failed case of Integration Flow configuration parameter Test", func(t *testing.T) {
 		serviceKey := `{
-			"url": "https://demo",
-			"uaa": {
+			"oauth": {
+				"url": "https://demo",
 				"clientid": "demouser",
 				"clientsecret": "******",
-				"url": "https://demo/oauth/token"
+				"tokenurl": "https://demo/oauth/token"
 			}
 		}`
 		config := integrationArtifactUpdateConfigurationOptions{
@@ -80,11 +80,11 @@ func TestRunIntegrationArtifactUpdateConfiguration(t *testing.T) {
 
 	t.Run("Failed case of Integration Flow configuration parameter test with error body", func(t *testing.T) {
 		serviceKey := `{
-			"url": "https://demo",
-			"uaa": {
+			"oauth": {
+				"url": "https://demo",
 				"clientid": "demouser",
 				"clientsecret": "******",
-				"url": "https://demo/oauth/token"
+				"tokenurl": "https://demo/oauth/token"
 			}
 		}`
 		config := integrationArtifactUpdateConfigurationOptions{

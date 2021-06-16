@@ -33,11 +33,11 @@ func TestRunIntegrationArtifactUpload(t *testing.T) {
 		assert.True(t, exists)
 
 		serviceKey := `{
-			"url": "https://demo",
-			"uaa": {
+			"oauth": {
+				"url": "https://demo",
 				"clientid": "demouser",
 				"clientsecret": "******",
-				"url": "https://demo/oauth/token"
+				"tokenurl": "https://demo/oauth/token"
 			}
 		}`
 
@@ -75,11 +75,11 @@ func TestRunIntegrationArtifactUpload(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, exists)
 		serviceKey := `{
-			"url": "https://demo",
-			"uaa": {
+			"oauth": {
+				"url": "https://demo",
 				"clientid": "demouser",
 				"clientsecret": "******",
-				"url": "https://demo/oauth/token"
+				"tokenurl": "https://demo/oauth/token"
 			}
 		}`
 		config := integrationArtifactUploadOptions{
@@ -110,11 +110,11 @@ func TestRunIntegrationArtifactUpload(t *testing.T) {
 	t.Run("Failed case of Integration Flow Get Test", func(t *testing.T) {
 
 		serviceKey := `{
-			"url": "https://demo",
-			"uaa": {
+			"oauth": {
+				"url": "https://demo",
 				"clientid": "demouser",
 				"clientsecret": "******",
-				"url": "https://demo/oauth/token"
+				"tokenurl": "https://demo/oauth/token"
 			}
 		}`
 		config := integrationArtifactUploadOptions{
@@ -141,11 +141,11 @@ func TestRunIntegrationArtifactUpload(t *testing.T) {
 		assert.True(t, exists)
 
 		serviceKey := `{
-			"url": "https://demo",
-			"uaa": {
+			"oauth": {
+				"url": "https://demo",
 				"clientid": "demouser",
 				"clientsecret": "******",
-				"url": "https://demo/oauth/token"
+				"tokenurl": "https://demo/oauth/token"
 			}
 		}`
 		config := integrationArtifactUploadOptions{
@@ -172,11 +172,11 @@ func TestRunIntegrationArtifactUpload(t *testing.T) {
 		assert.True(t, exists)
 
 		serviceKey := `{
-			"url": "https://demo",
-			"uaa": {
+			"oauth": {
+				"url": "https://demo",
 				"clientid": "demouser",
 				"clientsecret": "******",
-				"url": "https://demo/oauth/token"
+				"tokenurl": "https://demo/oauth/token"
 			}
 		}`
 		config := integrationArtifactUploadOptions{

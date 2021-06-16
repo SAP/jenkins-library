@@ -30,11 +30,11 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 
 	t.Run("Successfull Integration Flow Deploy Test", func(t *testing.T) {
 		serviceKey := `{
-			"url": "https://demo",
-			"uaa": {
+			"oauth": {
+				"url": "https://demo",
 				"clientid": "demouser",
 				"clientsecret": "******",
-				"url": "https://demo/oauth/token"
+				"tokenurl": "https://demo/oauth/token"
 			}
 		}`
 
@@ -64,11 +64,11 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 	t.Run("Trigger Failure for Integration Flow Deployment", func(t *testing.T) {
 
 		serviceKey := `{
-			"url": "https://demo",
-			"uaa": {
+			"oauth": {
+				"url": "https://demo",
 				"clientid": "demouser",
 				"clientsecret": "******",
-				"url": "https://demo/oauth/token"
+				"tokenurl": "https://demo/oauth/token"
 			}
 		}`
 
@@ -98,11 +98,11 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 	t.Run("Failed Integration Flow Deploy Test", func(t *testing.T) {
 
 		serviceKey := `{
-			"url": "https://demo",
-			"uaa": {
+			"oauth": {
+				"url": "https://demo",
 				"clientid": "demouser",
 				"clientsecret": "******",
-				"url": "https://demo/oauth/token"
+				"tokenurl": "https://demo/oauth/token"
 			}
 		}`
 
@@ -124,11 +124,11 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 		clientOptions := piperhttp.ClientOptions{}
 		clientOptions.Token = fmt.Sprintf("Bearer %s", "Demo")
 		serviceKey := `{
-			"url": "https://demo",
-			"uaa": {
+			"oauth": {
+				"url": "https://demo",
 				"clientid": "demouser",
 				"clientsecret": "******",
-				"url": "https://demo/oauth/token"
+				"tokenurl": "https://demo/oauth/token"
 			}
 		}`
 
@@ -152,11 +152,11 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 		clientOptions := piperhttp.ClientOptions{}
 		clientOptions.Token = fmt.Sprintf("Bearer %s", "Demo")
 		serviceKey := `{
-			"url": "https://demo",
-			"uaa": {
+			"oauth": {
+				"url": "https://demo",
 				"clientid": "demouser",
 				"clientsecret": "******",
-				"url": "https://demo/oauth/token"
+				"tokenurl": "https://demo/oauth/token"
 			}
 		}`
 

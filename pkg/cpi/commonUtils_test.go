@@ -7,11 +7,11 @@ import (
 
 func TestReadCpiServiceKeyFile(t *testing.T) {
 	properServiceKey := `{
-			"url": "https://demo",
-			"uaa": {
+			"oauth": {
+				"url": "https://demo",
 				"clientid": "demouser",
 				"clientsecret": "******",
-				"url": "https://demo/oauth/token"
+				"tokenurl": "https://demo/oauth/token"
 				}
 			}`
 	faultyServiceKey := `this is not json`
@@ -26,8 +26,8 @@ func TestReadCpiServiceKeyFile(t *testing.T) {
 			"happy path",
 			properServiceKey,
 			ServiceKey{
-				Host: "https://demo",
-				Uaa: OAuth{
+				OAuth: OAuth{
+					Host:                  "https://demo",
 					OAuthTokenProviderURL: "https://demo/oauth/token",
 					ClientId:              "demouser",
 					ClientSecret:          "******",
