@@ -33,4 +33,5 @@ steps:
     abapAddonAssemblyKitCredentialsId: 'abapAddonAssemblyKitCredentialsId',
     addonDescriptorFileName: 'addon.yml'
 ```
+
 More convenient ways of configuration (e.g. on stage level) are described in the respective scenario/pipeline documentation.
