@@ -15,13 +15,12 @@ import (
 )
 
 type influxWriteDataOptions struct {
-	InfluxVersion string                 `json:"influxVersion,omitempty"`
-	ServerURL     string                 `json:"serverUrl,omitempty"`
-	AuthToken     string                 `json:"authToken,omitempty"`
-	Bucket        string                 `json:"bucket,omitempty"`
-	Organization  string                 `json:"organization,omitempty"`
-	DataMap       map[string]interface{} `json:"dataMap,omitempty"`
-	DataMapTags   map[string]interface{} `json:"dataMapTags,omitempty"`
+	ServerURL    string                 `json:"serverUrl,omitempty"`
+	AuthToken    string                 `json:"authToken,omitempty"`
+	Bucket       string                 `json:"bucket,omitempty"`
+	Organization string                 `json:"organization,omitempty"`
+	DataMap      map[string]interface{} `json:"dataMap,omitempty"`
+	DataMapTags  map[string]interface{} `json:"dataMapTags,omitempty"`
 }
 
 // InfluxWriteDataCommand Writes metrics to influxdb
@@ -98,13 +97,11 @@ func InfluxWriteDataCommand() *cobra.Command {
 }
 
 func addInfluxWriteDataFlags(cmd *cobra.Command, stepConfig *influxWriteDataOptions) {
-	cmd.Flags().StringVar(&stepConfig.InfluxVersion, "influxVersion", os.Getenv("PIPER_influxVersion"), "Version of the Influx")
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "Base URL to the InfluxDB server")
 	cmd.Flags().StringVar(&stepConfig.AuthToken, "authToken", os.Getenv("PIPER_authToken"), "Token to authenticate to the Influxdb")
 	cmd.Flags().StringVar(&stepConfig.Bucket, "bucket", `piper`, "Name of database (1.8) or bucket (2.0)")
 	cmd.Flags().StringVar(&stepConfig.Organization, "organization", os.Getenv("PIPER_organization"), "Name of influx organization. Only for Influxdb 2.0")
 
-	cmd.MarkFlagRequired("influxVersion")
 	cmd.MarkFlagRequired("serverUrl")
 	cmd.MarkFlagRequired("authToken")
 	cmd.MarkFlagRequired("dataMap")
@@ -121,14 +118,6 @@ func influxWriteDataMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
-					{
-						Name:        "influxVersion",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-					},
 					{
 						Name:        "serverUrl",
 						ResourceRef: []config.ResourceReference{},

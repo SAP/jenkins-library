@@ -10,14 +10,6 @@ spec:
         description: Influxdb token for authentication to the InfluxDB. In 1.8 version use "username:password" instead.
         type: jenkins
     params:
-      - name: influxVersion
-        type: string
-        description: Version of the Influx
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        mandatory: true
       - name: serverUrl
         type: string
         description: Base URL to the InfluxDB server
