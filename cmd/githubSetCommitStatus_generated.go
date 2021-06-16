@@ -138,6 +138,9 @@ func githubSetCommitStatusMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "githubTokenCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "apiUrl",
@@ -146,6 +149,7 @@ func githubSetCommitStatusMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "githubApiUrl"}},
+						Default:     `https://api.github.com`,
 					},
 					{
 						Name: "commitId",
@@ -159,6 +163,7 @@ func githubSetCommitStatusMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_commitId"),
 					},
 					{
 						Name:        "context",
@@ -167,6 +172,7 @@ func githubSetCommitStatusMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_context"),
 					},
 					{
 						Name:        "description",
@@ -175,6 +181,7 @@ func githubSetCommitStatusMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_description"),
 					},
 					{
 						Name: "owner",
@@ -188,6 +195,7 @@ func githubSetCommitStatusMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{{Name: "githubOrg"}},
+						Default:   os.Getenv("PIPER_owner"),
 					},
 					{
 						Name: "repository",
@@ -201,6 +209,7 @@ func githubSetCommitStatusMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{{Name: "githubRepo"}},
+						Default:   os.Getenv("PIPER_repository"),
 					},
 					{
 						Name:        "status",
@@ -209,6 +218,7 @@ func githubSetCommitStatusMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_status"),
 					},
 					{
 						Name:        "targetUrl",
@@ -217,6 +227,7 @@ func githubSetCommitStatusMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_targetUrl"),
 					},
 					{
 						Name: "token",
@@ -236,6 +247,7 @@ func githubSetCommitStatusMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{{Name: "githubToken"}, {Name: "access_token"}},
+						Default:   os.Getenv("PIPER_token"),
 					},
 				},
 			},

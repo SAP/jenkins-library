@@ -118,6 +118,9 @@ func hadolintExecuteMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "configurationCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing username/password for access to your remote configuration file.", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "configurationUrl",
@@ -126,6 +129,7 @@ func hadolintExecuteMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_configurationUrl"),
 					},
 					{
 						Name: "configurationUsername",
@@ -140,6 +144,7 @@ func hadolintExecuteMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_configurationUsername"),
 					},
 					{
 						Name: "configurationPassword",
@@ -154,6 +159,7 @@ func hadolintExecuteMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_configurationPassword"),
 					},
 					{
 						Name:        "dockerFile",
@@ -162,6 +168,7 @@ func hadolintExecuteMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "dockerfile"}},
+						Default:     `./Dockerfile`,
 					},
 					{
 						Name:        "configurationFile",
@@ -170,6 +177,7 @@ func hadolintExecuteMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `.hadolint.yaml`,
 					},
 					{
 						Name:        "reportFile",
@@ -178,6 +186,7 @@ func hadolintExecuteMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `hadolint.xml`,
 					},
 				},
 			},

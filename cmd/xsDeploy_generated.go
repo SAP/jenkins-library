@@ -169,6 +169,9 @@ func xsDeployMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "credentialsId", Description: "Jenkins 'Username with password' credentials ID containing username/password for accessing xs endpoint.", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "deployOpts",
@@ -177,6 +180,7 @@ func xsDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_deployOpts"),
 					},
 					{
 						Name:        "operationIdLogPattern",
@@ -185,6 +189,7 @@ func xsDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "deployIdLogPattern"}},
+						Default:     `^.*xs bg-deploy -i (.*) -a.*$`,
 					},
 					{
 						Name: "mtaPath",
@@ -198,6 +203,7 @@ func xsDeployMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_mtaPath"),
 					},
 					{
 						Name:        "action",
@@ -206,6 +212,7 @@ func xsDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `NONE`,
 					},
 					{
 						Name:        "mode",
@@ -214,6 +221,7 @@ func xsDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     `DEPLOY`,
 					},
 					{
 						Name: "operationId",
@@ -227,6 +235,7 @@ func xsDeployMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_operationId"),
 					},
 					{
 						Name:        "apiUrl",
@@ -235,6 +244,7 @@ func xsDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_apiUrl"),
 					},
 					{
 						Name: "username",
@@ -249,6 +259,7 @@ func xsDeployMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{{Name: "user"}},
+						Default:   os.Getenv("PIPER_username"),
 					},
 					{
 						Name: "password",
@@ -263,6 +274,7 @@ func xsDeployMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_password"),
 					},
 					{
 						Name:        "org",
@@ -271,6 +283,7 @@ func xsDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_org"),
 					},
 					{
 						Name:        "space",
@@ -279,6 +292,7 @@ func xsDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_space"),
 					},
 					{
 						Name:        "loginOpts",
@@ -287,6 +301,7 @@ func xsDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_loginOpts"),
 					},
 					{
 						Name:        "xsSessionFile",
@@ -295,6 +310,7 @@ func xsDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_xsSessionFile"),
 					},
 				},
 			},
