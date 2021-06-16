@@ -71,7 +71,7 @@ func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExec
 		if len(pathFragment) > 0 {
 			(*config).FilePath = pathFragment
 		} else {
-		        (*config).FilePath = "./"
+			(*config).FilePath = "./"
 		}
 		fileName = parts[len(parts)-1]
 	}
