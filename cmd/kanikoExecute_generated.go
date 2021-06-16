@@ -158,6 +158,9 @@ func kanikoExecuteMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "dockerConfigJsonCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)). You can create it like explained in the Docker Success Center in the article about [how to generate a new auth in the config.json file](https://success.docker.com/article/generate-new-auth-in-config-json-file).", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "buildOptions",
@@ -166,6 +169,7 @@ func kanikoExecuteMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     []string{`--skip-tls-verify-pull`},
 					},
 					{
 						Name:        "containerBuildOptions",
@@ -174,6 +178,7 @@ func kanikoExecuteMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_containerBuildOptions"),
 					},
 					{
 						Name:        "containerImage",
@@ -182,6 +187,7 @@ func kanikoExecuteMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "containerImageNameAndTag"}},
+						Default:     os.Getenv("PIPER_containerImage"),
 					},
 					{
 						Name:        "containerImageName",
@@ -190,6 +196,7 @@ func kanikoExecuteMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "dockerImageName"}},
+						Default:     os.Getenv("PIPER_containerImageName"),
 					},
 					{
 						Name: "containerImageTag",
@@ -203,6 +210,7 @@ func kanikoExecuteMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "artifactVersion"}},
+						Default:   os.Getenv("PIPER_containerImageTag"),
 					},
 					{
 						Name:        "containerPreparationCommand",
@@ -211,6 +219,7 @@ func kanikoExecuteMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `rm -f /kaniko/.docker/config.json`,
 					},
 					{
 						Name: "containerRegistryUrl",
@@ -224,6 +233,7 @@ func kanikoExecuteMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "dockerRegistryUrl"}},
+						Default:   os.Getenv("PIPER_containerRegistryUrl"),
 					},
 					{
 						Name:        "customTlsCertificateLinks",
@@ -232,6 +242,7 @@ func kanikoExecuteMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 					{
 						Name: "dockerConfigJSON",
@@ -252,10 +263,11 @@ func kanikoExecuteMetadata() config.StepData {
 								Type:  "vaultSecretFile",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:     []string{"PARAMETERS"},
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_dockerConfigJSON"),
 					},
 					{
 						Name:        "dockerfilePath",
@@ -264,6 +276,7 @@ func kanikoExecuteMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "dockerfile"}},
+						Default:     `Dockerfile`,
 					},
 				},
 			},

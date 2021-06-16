@@ -141,12 +141,16 @@ func getDockerImage(dClient piperDocker.Download, config *protecodeExecuteScanOp
 }
 
 func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.Protecode, config *protecodeExecuteScanOptions, fileName string, writeReportToFile func(resp io.ReadCloser, reportFileName string) error) error {
-	//load existing product by filename
-	log.Entry().Debugf("Load existing product Group:%v Reuse:%v", config.Group, config.VerifyOnly)
-	productID := client.LoadExistingProduct(config.Group, config.VerifyOnly)
-
-	// check if no existing is found or reuse existing is false
-	productID = uploadScanOrDeclareFetch(*config, productID, client, fileName)
+	productID := -1
+	if config.VerifyOnly {
+		//load existing product by filename
+		log.Entry().Debugf("Load existing product Group:%v Reuse:%v", config.Group, config.VerifyOnly)
+		productID = client.LoadExistingProduct(config.Group)
+	}
+	if !config.VerifyOnly || productID <= 0 {
+		// check if no existing is found or reuse existing is false
+		productID = uploadScanOrDeclareFetch(*config, client, fileName)
+	}
 	if productID <= 0 {
 		return fmt.Errorf("the product id is not valid '%d'", productID)
 	}
@@ -260,33 +264,31 @@ func createDockerClient(config *protecodeExecuteScanOptions) piperDocker.Downloa
 	return dClient
 }
 
-func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productID int, client protecode.Protecode, fileName string) int {
-	//check if the LoadExistingProduct) before returns an valid product id, than scip this
-	if !hasExisting(productID, config.VerifyOnly) {
-		if len(config.FetchURL) > 0 {
-			log.Entry().Debugf("Declare fetch url %v", config.FetchURL)
-			resultData := client.DeclareFetchURL(config.CleanupMode, config.Group, config.FetchURL)
-			productID = resultData.Result.ProductID
-		} else {
-			log.Entry().Debugf("Upload file path: %v", config.FilePath)
-			if len(config.FilePath) <= 0 {
-				log.Entry().Fatalf("There is no file path configured for upload : %v", config.FilePath)
-			}
-			pathToFile := filepath.Join(config.FilePath, fileName)
-			if !(fileExists(pathToFile)) {
-				log.Entry().Fatalf("There is no file for upload: %v", pathToFile)
-			}
-
-			combinedFileName := fileName
-			if len(config.PullRequestName) > 0 {
-				combinedFileName = fmt.Sprintf("%v_%v", config.PullRequestName, fileName)
-			}
-
-			resultData := client.UploadScanFile(config.CleanupMode, config.Group, pathToFile, combinedFileName)
-			productID = resultData.Result.ProductID
+func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, client protecode.Protecode, fileName string) int {
+	if len(config.FetchURL) > 0 {
+		log.Entry().Debugf("Declare fetch url %v", config.FetchURL)
+		resultData := client.DeclareFetchURL(config.CleanupMode, config.Group, config.FetchURL)
+		return resultData.Result.ProductID
+	} else {
+		log.Entry().Debugf("Upload file path: %v", config.FilePath)
+		if len(config.FilePath) <= 0 {
+			//TODO: bubble up error
+			log.Entry().Fatalf("There is no file path configured for upload: %v", config.FilePath)
 		}
+		pathToFile := filepath.Join(config.FilePath, fileName)
+		if !(fileExists(pathToFile)) {
+			//TODO: bubble up error
+			log.Entry().Fatalf("There is no file for upload: %v", pathToFile)
+		}
+
+		combinedFileName := fileName
+		if len(config.PullRequestName) > 0 {
+			combinedFileName = fmt.Sprintf("%v_%v", config.PullRequestName, fileName)
+		}
+
+		resultData := client.UploadScanFile(config.CleanupMode, config.Group, pathToFile, combinedFileName)
+		return resultData.Result.ProductID
 	}
-	return productID
 }
 
 func fileExists(filename string) bool {
@@ -295,13 +297,6 @@ func fileExists(filename string) bool {
 		return false
 	}
 	return !info.IsDir()
-}
-
-func hasExisting(productID int, verifyOnly bool) bool {
-	if (productID > 0) || verifyOnly {
-		return true
-	}
-	return false
 }
 
 var writeReportToFile = func(resp io.ReadCloser, reportFileName string) error {
