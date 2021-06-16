@@ -110,6 +110,6 @@ func TestNumbersArePassedCorrectly(t *testing.T) {
 func TestCommonPipelineEnvDirNotPresent(t *testing.T) {
 	cpe := CPEMap{}
 	err := cpe.LoadFromDisk("/path/does/not/exist")
-	assert.NoError(t, err)
-	assert.Len(t, cpe, 0)
+	require.NoError(t, err)
+	require.Len(t, cpe, 0)
 }
