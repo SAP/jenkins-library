@@ -71,7 +71,7 @@ If a package does not exist yet in the package registry, it is created there. Th
 The steps waits until the status "P" or "R" is achieved.
 The name, type and namespace of each package is written back to the addonDescriptor in the commonPipelineEnvironment.
 <br />
-For Terminology refere to the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).`,
+For Terminology refer to the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)

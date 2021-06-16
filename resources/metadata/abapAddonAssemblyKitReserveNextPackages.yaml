@@ -9,7 +9,7 @@ metadata:
     The steps waits until the status "P" or "R" is achieved.
     The name, type and namespace of each package is written back to the addonDescriptor in the commonPipelineEnvironment.
     <br />
-    For Terminology refere to the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).
+    For Terminology refer to the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).
 spec:
   inputs:
     secrets:

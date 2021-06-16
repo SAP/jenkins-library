@@ -68,7 +68,7 @@ func AbapAddonAssemblyKitCheckCVsCommand() *cobra.Command {
 		Long: `This steps takes the list of ABAP Software Component Versions(repositories) from the addonDescriptor configuration file specified via addonDescriptorFileName (e.g. addon.yml) and checks by calling AAKaaS whether they exist or are a valid successor of an existing Software Component Version.
 It resolves the dotted version string into version, support package level and patch level and writes it to the addonDescriptor structure in the Piper commonPipelineEnvironment for usage of subsequent pipeline steps.
 <br />
-For Terminology refere to the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).`,
+For Terminology refer to the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)

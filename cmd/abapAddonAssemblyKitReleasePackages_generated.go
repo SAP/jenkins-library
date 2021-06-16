@@ -67,7 +67,7 @@ func AbapAddonAssemblyKitReleasePackagesCommand() *cobra.Command {
 		Long: `This step takes the list of Software Component Versions from the addonDescriptor in the commonPipelineEnvironment.
 The physical Delivery Packages in status “L” are released. The new status "R"eleased is written back to the addonDescriptor in the commonPipelineEnvironment.
 <br />
-For Terminology refere to the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).`,
+For Terminology refer to the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)

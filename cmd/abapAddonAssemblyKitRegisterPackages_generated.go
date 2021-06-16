@@ -69,7 +69,7 @@ For Packages in status "P" = planned it uploads the SAR archive with the data fi
 and creates physical Delivery Package in AAKaaS.
 The new status "L" = locked is written back to the addonDescriptor in the commonPipelineEnvironment.
 <br />
-For Terminology refere to the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).`,
+For Terminology refer to the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)

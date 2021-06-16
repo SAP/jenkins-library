@@ -7,7 +7,7 @@ metadata:
     and creates physical Delivery Package in AAKaaS.
     The new status "L" = locked is written back to the addonDescriptor in the commonPipelineEnvironment.
     <br />
-    For Terminology refere to the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).
+    For Terminology refer to the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).
 
 spec:
   inputs:

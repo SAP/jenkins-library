@@ -68,7 +68,7 @@ func AbapAddonAssemblyKitCheckPVCommand() *cobra.Command {
 		Long: `This step checks by calling AAKaaS whether the Addon Product Version in the addonDescriptor configuration file specified via addonDescriptorFileName (e.g. addon.yml) does exist or is a valid successor of an existing Product Version.
 It resolves the dotted version string into version, support package stack level and patch level and writes it to the addonDescriptor structure in the Piper commonPipelineEnvironment for usage of subsequent pipeline steps.
 <br />
-For Terminology refere to the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).`,
+For Terminology refer to the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)

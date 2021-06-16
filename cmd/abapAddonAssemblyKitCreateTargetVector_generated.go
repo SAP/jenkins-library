@@ -68,7 +68,7 @@ func AbapAddonAssemblyKitCreateTargetVectorCommand() *cobra.Command {
 With these it creates a Target Vector, which is necessary for executing software lifecylce operations in ABAP Cloud Platform systems.
 The Target Vector describes the software state, which shall be reached in the managed ABAP Cloud Platform system.
 <br />
-For Terminology refere to the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).`,
+For Terminology refer to the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
