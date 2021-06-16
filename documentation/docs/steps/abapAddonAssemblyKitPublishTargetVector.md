@@ -9,6 +9,8 @@
 * The Target Vector ID is taken from the addonDescriptor in the commonPipelineEnvironment.
 * If you run prior to this step the step [abapAddonAssemblyKitCreateTargetVector](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitCreateTargetVector), the Target Vector will be created and its ID will be written to the commonPipelineEnvironment
 
+A detailed description of all prerequisites of the scenario and how to configure them can be found in the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).
+
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}
@@ -19,7 +21,7 @@
 
 ### Configuration in the config.yml
 
-The recommended way to configure your pipeline is via the config.yml file. In this case, calling the step in the Jenkinsfile looks:
+The recommended way to configure your pipeline is via the config.yml file. In this case, calling the step in the Jenkinsfile is reduced to one line:
 
 ```groovy
 abapAddonAssemblyKitPublishTargetVector(
@@ -28,58 +30,12 @@ abapAddonAssemblyKitPublishTargetVector(
                     )
 ```
 
-The config.yml should look like this:
+If the step is to be configured individually the config.yml should look like this:
 
 ```yaml
 steps:
   abapAddonAssemblyKitPublishTargetVector:
-    abapAddonAssemblyKitCredentialsId: 'abapAddonAssemblyKitCredentialsId',
-    abapAddonAssemblyKitEndpoint: 'https://myabapAddonAssemblyKitEndpoint.com',
+    abapAddonAssemblyKitCredentialsId: 'abapAddonAssemblyKitCredentialsId'
 ```
 
-### Input via the CommonPipelineEnvironment
-
-Mandatory fields:
-
-```json
-{"addonProduct":"",
-"addonVersion":"",
-"addonVersionAAK":"",
-"addonUniqueID":"",
-"customerID":"",
-"AddonSpsLevel":"",
-"AddonPatchLevel":"",
-"TargetVectorID":"W7Q00207512600000188",
-"repositories":[
-  {
-    "name":"",
-    "tag":"",
-    "branch":"",
-    "version":"",
-    "versionAAK":"",
-    "PackageName":"",
-    "PackageType":"",
-    "SpLevel":"",
-    "PatchLevel":"",
-    "PredecessorCommitID":"",
-    "Status":"",
-    "Namespace":"",
-    "SarXMLFilePath":""
-  },
-  {
-    "name":"",
-    "tag":"",
-    "branch":"",
-    "version":"",
-    "versionAAK":"",
-    "PackageName":"",
-    "PackageType":"",
-    "SpLevel":"",
-    "PatchLevel":"",
-    "PredecessorCommitID":"",
-    "Status":"",
-    "Namespace":"",
-    "SarXMLFilePath":""
-  }
-]}
-```
+More convenient ways of configuration (e.g. on stage level) are described in the respective scenario/pipeline documentation.
