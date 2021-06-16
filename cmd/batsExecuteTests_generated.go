@@ -161,6 +161,7 @@ func batsExecuteTestsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `junit`,
 					},
 					{
 						Name:        "repository",
@@ -169,6 +170,7 @@ func batsExecuteTestsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `https://github.com/bats-core/bats-core.git`,
 					},
 					{
 						Name:        "testPackage",
@@ -177,6 +179,7 @@ func batsExecuteTestsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `piper-bats`,
 					},
 					{
 						Name:        "testPath",
@@ -185,6 +188,7 @@ func batsExecuteTestsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `src/test`,
 					},
 					{
 						Name:        "envVars",
@@ -193,6 +197,7 @@ func batsExecuteTestsMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 				},
 			},
