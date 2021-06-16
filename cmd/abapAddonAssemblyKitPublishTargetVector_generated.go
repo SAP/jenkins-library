@@ -9,6 +9,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
@@ -28,6 +29,7 @@ func AbapAddonAssemblyKitPublishTargetVectorCommand() *cobra.Command {
 	metadata := abapAddonAssemblyKitPublishTargetVectorMetadata()
 	var stepConfig abapAddonAssemblyKitPublishTargetVectorOptions
 	var startTime time.Time
+	var logCollector *log.CollectorHook
 
 	var createAbapAddonAssemblyKitPublishTargetVectorCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -56,6 +58,11 @@ With targetVectorScope "T" the Target Vector will be published to the test envir
 				log.RegisterHook(&sentryHook)
 			}
 
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
+				log.RegisterHook(logCollector)
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -66,10 +73,20 @@ With targetVectorScope "T" the Target Vector will be published to the test envir
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
+				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunk.Send(&telemetryData, logCollector)
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunk.Initialize(GeneralConfig.CorrelationID,
+					GeneralConfig.HookConfig.SplunkConfig.Dsn,
+					GeneralConfig.HookConfig.SplunkConfig.Token,
+					GeneralConfig.HookConfig.SplunkConfig.Index,
+					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+			}
 			abapAddonAssemblyKitPublishTargetVector(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -103,6 +120,9 @@ func abapAddonAssemblyKitPublishTargetVectorMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "abapAddonAssemblyKitCredentialsId", Description: "Credential stored in Jenkins for the Addon Assembly Kit as a Service (AAKaaS) system", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "abapAddonAssemblyKitEndpoint",
@@ -111,6 +131,7 @@ func abapAddonAssemblyKitPublishTargetVectorMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     `https://apps.support.sap.com`,
 					},
 					{
 						Name:        "username",
@@ -119,6 +140,7 @@ func abapAddonAssemblyKitPublishTargetVectorMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_username"),
 					},
 					{
 						Name:        "password",
@@ -127,6 +149,7 @@ func abapAddonAssemblyKitPublishTargetVectorMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_password"),
 					},
 					{
 						Name:        "targetVectorScope",
@@ -135,6 +158,7 @@ func abapAddonAssemblyKitPublishTargetVectorMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_targetVectorScope"),
 					},
 					{
 						Name: "addonDescriptor",
@@ -148,6 +172,7 @@ func abapAddonAssemblyKitPublishTargetVectorMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_addonDescriptor"),
 					},
 				},
 			},

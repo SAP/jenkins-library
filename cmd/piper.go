@@ -41,14 +41,23 @@ type GeneralConfigOptions struct {
 	HookConfig           HookConfiguration
 }
 
-// HookConfiguration contains the configuration for supported hooks, so far only Sentry is supported.
+// HookConfiguration contains the configuration for supported hooks, so far Sentry and Splunk are supported.
 type HookConfiguration struct {
 	SentryConfig SentryConfiguration `json:"sentry,omitempty"`
+	SplunkConfig SplunkConfiguration `json:"splunk,omitempty"`
 }
 
 // SentryConfiguration defines the configuration options for the Sentry logging system
 type SentryConfiguration struct {
 	Dsn string `json:"dsn,omitempty"`
+}
+
+// SplunkConfiguration defines the configuration options for the Splunk logging system
+type SplunkConfiguration struct {
+	Dsn      string `json:"dsn,omitempty"`
+	Token    string `json:"token,omitempty"`
+	Index    string `json:"index,omitempty"`
+	SendLogs bool   `json:"sendLogs"`
 }
 
 var rootCmd = &cobra.Command{
@@ -127,6 +136,7 @@ func Execute() {
 	rootCmd.AddCommand(VaultRotateSecretIdCommand())
 	rootCmd.AddCommand(CheckChangeInDevelopmentCommand())
 	rootCmd.AddCommand(TransportRequestUploadCTSCommand())
+	rootCmd.AddCommand(TransportRequestUploadRFCCommand())
 	rootCmd.AddCommand(NewmanExecuteCommand())
 	rootCmd.AddCommand(IntegrationArtifactDeployCommand())
 	rootCmd.AddCommand(TransportRequestUploadSOLMANCommand())
@@ -138,8 +148,13 @@ func Execute() {
 	rootCmd.AddCommand(IntegrationArtifactUploadCommand())
 	rootCmd.AddCommand(TerraformExecuteCommand())
 	rootCmd.AddCommand(ContainerExecuteStructureTestsCommand())
+	rootCmd.AddCommand(GaugeExecuteTestsCommand())
 	rootCmd.AddCommand(BatsExecuteTestsCommand())
 	rootCmd.AddCommand(PipelineCreateScanSummaryCommand())
+	rootCmd.AddCommand(TransportRequestDocIDFromGitCommand())
+	rootCmd.AddCommand(TransportRequestReqIDFromGitCommand())
+	rootCmd.AddCommand(WritePipelineEnv())
+	rootCmd.AddCommand(ReadPipelineEnv())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
@@ -312,10 +327,14 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 	return nil
 }
 
-func retrieveHookConfig(source *json.RawMessage, target *HookConfiguration) {
+func retrieveHookConfig(source map[string]interface{}, target *HookConfiguration) {
 	if source != nil {
 		log.Entry().Info("Retrieving hook configuration")
-		err := json.Unmarshal(*source, target)
+		b, err := json.Marshal(source)
+		if err != nil {
+			log.Entry().Warningf("Failed to marshal source hook configuration: %v", err)
+		}
+		err = json.Unmarshal(b, target)
 		if err != nil {
 			log.Entry().Warningf("Failed to retrieve hook configuration: %v", err)
 		}

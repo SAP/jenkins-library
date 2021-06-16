@@ -9,6 +9,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
@@ -35,6 +36,7 @@ func TransportRequestUploadCTSCommand() *cobra.Command {
 	metadata := transportRequestUploadCTSMetadata()
 	var stepConfig transportRequestUploadCTSOptions
 	var startTime time.Time
+	var logCollector *log.CollectorHook
 
 	var createTransportRequestUploadCTSCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -62,6 +64,11 @@ func TransportRequestUploadCTSCommand() *cobra.Command {
 				log.RegisterHook(&sentryHook)
 			}
 
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
+				log.RegisterHook(logCollector)
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -72,10 +79,20 @@ func TransportRequestUploadCTSCommand() *cobra.Command {
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
+				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunk.Send(&telemetryData, logCollector)
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunk.Initialize(GeneralConfig.CorrelationID,
+					GeneralConfig.HookConfig.SplunkConfig.Dsn,
+					GeneralConfig.HookConfig.SplunkConfig.Token,
+					GeneralConfig.HookConfig.SplunkConfig.Index,
+					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+			}
 			transportRequestUploadCTS(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -117,6 +134,9 @@ func transportRequestUploadCTSMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "uploadCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing user and password to authenticate against the ABAP backend.", Type: "jenkins", Aliases: []config.Alias{{Name: "changeManagement/credentialsId", Deprecated: false}}},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "description",
@@ -125,6 +145,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `Deployed with Piper based on SAP Fiori tools`,
 					},
 					{
 						Name:        "endpoint",
@@ -133,6 +154,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "changeManagement/endpoint"}},
+						Default:     os.Getenv("PIPER_endpoint"),
 					},
 					{
 						Name:        "client",
@@ -141,6 +163,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "changeManagement/client"}},
+						Default:     os.Getenv("PIPER_client"),
 					},
 					{
 						Name:        "username",
@@ -149,6 +172,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_username"),
 					},
 					{
 						Name:        "password",
@@ -157,6 +181,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_password"),
 					},
 					{
 						Name:        "applicationName",
@@ -165,6 +190,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_applicationName"),
 					},
 					{
 						Name:        "abapPackage",
@@ -173,6 +199,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_abapPackage"),
 					},
 					{
 						Name:        "osDeployUser",
@@ -181,6 +208,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "changeManagement/cts/osDeployUser"}},
+						Default:     `node`,
 					},
 					{
 						Name:        "deployConfigFile",
@@ -189,6 +217,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "changeManagement/cts/deployConfigFile"}, {Name: "cts/deployConfigFile"}},
+						Default:     `ui5-deploy.yaml`,
 					},
 					{
 						Name:        "transportRequestId",
@@ -197,6 +226,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_transportRequestId"),
 					},
 					{
 						Name:        "deployToolDependencies",
@@ -205,6 +235,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "changeManagement/cts/deployToolDependencies"}},
+						Default:     []string{},
 					},
 					{
 						Name:        "npmInstallOpts",
@@ -213,6 +244,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "changeManagement/cts/deployToolDependencies"}},
+						Default:     []string{},
 					},
 				},
 			},

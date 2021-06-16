@@ -11,6 +11,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
+	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
@@ -59,6 +60,7 @@ func AbapAddonAssemblyKitCheckCVsCommand() *cobra.Command {
 	var stepConfig abapAddonAssemblyKitCheckCVsOptions
 	var startTime time.Time
 	var commonPipelineEnvironment abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment
+	var logCollector *log.CollectorHook
 
 	var createAbapAddonAssemblyKitCheckCVsCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -87,6 +89,11 @@ It resolves the dotted version string into version, support package level and pa
 				log.RegisterHook(&sentryHook)
 			}
 
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
+				log.RegisterHook(logCollector)
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -98,10 +105,20 @@ It resolves the dotted version string into version, support package level and pa
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
+				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunk.Send(&telemetryData, logCollector)
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunk.Initialize(GeneralConfig.CorrelationID,
+					GeneralConfig.HookConfig.SplunkConfig.Dsn,
+					GeneralConfig.HookConfig.SplunkConfig.Token,
+					GeneralConfig.HookConfig.SplunkConfig.Index,
+					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+			}
 			abapAddonAssemblyKitCheckCVs(stepConfig, &telemetryData, &commonPipelineEnvironment)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -135,6 +152,9 @@ func abapAddonAssemblyKitCheckCVsMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "abapAddonAssemblyKitCredentialsId", Description: "Credential stored in Jenkins for the Addon Assembly Kit as a Service (AAKaaS) system", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "abapAddonAssemblyKitEndpoint",
@@ -143,6 +163,7 @@ func abapAddonAssemblyKitCheckCVsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     `https://apps.support.sap.com`,
 					},
 					{
 						Name:        "username",
@@ -151,6 +172,7 @@ func abapAddonAssemblyKitCheckCVsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_username"),
 					},
 					{
 						Name:        "password",
@@ -159,6 +181,7 @@ func abapAddonAssemblyKitCheckCVsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_password"),
 					},
 					{
 						Name:        "addonDescriptorFileName",
@@ -167,6 +190,7 @@ func abapAddonAssemblyKitCheckCVsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     `addon.yml`,
 					},
 					{
 						Name: "addonDescriptor",
@@ -180,6 +204,7 @@ func abapAddonAssemblyKitCheckCVsMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_addonDescriptor"),
 					},
 				},
 			},
