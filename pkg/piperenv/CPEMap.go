@@ -3,6 +3,7 @@ package piperenv
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/SAP/jenkins-library/pkg/log"
 	"io/ioutil"
 	"os"
 	"path"
@@ -62,6 +63,7 @@ func (c CPEMap) WriteToDisk(rootDirectory string) error {
 
 func dirToMap(m map[string]interface{}, dirPath, prefix string) error {
 	if stat, err := os.Stat(dirPath); err != nil || !stat.IsDir() {
+		log.Entry().Debugf("stat on %s failed. Path does not exist", dirPath)
 		return nil
 	}
 
