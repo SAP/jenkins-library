@@ -134,6 +134,9 @@ func transportRequestUploadCTSMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "uploadCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing user and password to authenticate against the ABAP backend.", Type: "jenkins", Aliases: []config.Alias{{Name: "changeManagement/credentialsId", Deprecated: false}}},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "description",
@@ -142,6 +145,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `Deployed with Piper based on SAP Fiori tools`,
 					},
 					{
 						Name:        "endpoint",
@@ -150,6 +154,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "changeManagement/endpoint"}},
+						Default:     os.Getenv("PIPER_endpoint"),
 					},
 					{
 						Name:        "client",
@@ -158,6 +163,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "changeManagement/client"}},
+						Default:     os.Getenv("PIPER_client"),
 					},
 					{
 						Name:        "username",
@@ -166,6 +172,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_username"),
 					},
 					{
 						Name:        "password",
@@ -174,6 +181,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_password"),
 					},
 					{
 						Name:        "applicationName",
@@ -182,6 +190,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_applicationName"),
 					},
 					{
 						Name:        "abapPackage",
@@ -190,6 +199,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_abapPackage"),
 					},
 					{
 						Name:        "osDeployUser",
@@ -198,6 +208,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "changeManagement/cts/osDeployUser"}},
+						Default:     `node`,
 					},
 					{
 						Name:        "deployConfigFile",
@@ -206,6 +217,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "changeManagement/cts/deployConfigFile"}, {Name: "cts/deployConfigFile"}},
+						Default:     `ui5-deploy.yaml`,
 					},
 					{
 						Name:        "transportRequestId",
@@ -214,6 +226,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_transportRequestId"),
 					},
 					{
 						Name:        "deployToolDependencies",
@@ -222,6 +235,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "changeManagement/cts/deployToolDependencies"}},
+						Default:     []string{},
 					},
 					{
 						Name:        "npmInstallOpts",
@@ -230,6 +244,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "changeManagement/cts/deployToolDependencies"}},
+						Default:     []string{},
 					},
 				},
 			},

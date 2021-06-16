@@ -126,6 +126,9 @@ func integrationArtifactDownloadMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "cpiCredentialsId", Description: "Jenkins credentials ID containing username and password for authentication to the SAP Cloud Platform Integration API's", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name: "username",
@@ -140,6 +143,7 @@ func integrationArtifactDownloadMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_username"),
 					},
 					{
 						Name: "password",
@@ -154,6 +158,7 @@ func integrationArtifactDownloadMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_password"),
 					},
 					{
 						Name:        "integrationFlowId",
@@ -162,6 +167,7 @@ func integrationArtifactDownloadMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_integrationFlowId"),
 					},
 					{
 						Name:        "integrationFlowVersion",
@@ -170,6 +176,7 @@ func integrationArtifactDownloadMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_integrationFlowVersion"),
 					},
 					{
 						Name:        "host",
@@ -178,6 +185,7 @@ func integrationArtifactDownloadMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_host"),
 					},
 					{
 						Name:        "oAuthTokenProviderUrl",
@@ -186,6 +194,7 @@ func integrationArtifactDownloadMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_oAuthTokenProviderUrl"),
 					},
 					{
 						Name:        "downloadPath",
@@ -194,6 +203,7 @@ func integrationArtifactDownloadMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_downloadPath"),
 					},
 				},
 			},
