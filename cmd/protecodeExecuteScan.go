@@ -67,7 +67,12 @@ func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExec
 		}
 	} else if len(config.FilePath) > 0 {
 		parts := strings.Split(config.FilePath, "/")
-		(*config).FilePath = strings.Join(parts[:len(parts)-1], "/")
+		pathFragment := strings.Join(parts[:len(parts)-1], "/")
+		if len(pathFragment > 0 {
+			(*config).FilePath = pathFragment
+		} else {
+		        (*config).FilePath = "./"
+		}
 		fileName = parts[len(parts)-1]
 	}
 
