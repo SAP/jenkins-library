@@ -9,7 +9,6 @@
 * For each Software Component Version which should be part of the Target Vector, the name and the resolved version(version, splevel and patchlevel) as well as the Delivery Package must be part of the addonDescriptor structure in Piper commonPipelineEnvironment. This is the case if the step [abapAddonAssemblyKitCheckCVs](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitCheckCVs) has been executed before.
 * The Delivery Packages must exist in the package registry (status "P" = planned) which is the case if step [abapAddonAssemblyKitReserveNextPackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitReserveNextPackages) has been executed before. Alternatively the package can already exist as physical packages (status "L" = locked or "R" = released).
 
-
 A detailed description of all prerequisites of the scenario and how to configure them can be found in the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).
 
 ## ${docGenParameters}
