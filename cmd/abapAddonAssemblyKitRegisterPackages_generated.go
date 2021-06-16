@@ -66,7 +66,7 @@ func AbapAddonAssemblyKitRegisterPackagesCommand() *cobra.Command {
 		Short: "This step uploads the SAR archives and creates physical Delivery Packages to AAKaaS.",
 		Long: `This step takes the list of Software Component Versions from the addonDescriptor in the commonPipelineEnvironment.
 For Packages in status "P" = planned it uploads the SAR archive with the data file and metadata XML of the Delivery Packages composed and exported in the build system
-and creates physical Delivery Package in AAKaaS. 
+and creates physical Delivery Package in AAKaaS.
 The new status "L" = locked is written back to the addonDescriptor in the commonPipelineEnvironment.
 <br />
 For Terminology refere to the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).`,
