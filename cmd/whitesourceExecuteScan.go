@@ -781,7 +781,7 @@ func aggregateVersionWideVulnerabilities(config *ScanOptions, utils whitesourceU
 		projectVersion := strings.Split(project.Name, " - ")[1]
 		if projectVersion == config.Version {
 			projectNames += project.Name + "\n"
-			alerts, err := sys.GetProjectAlerts(project.Token)
+			alerts, err := sys.GetProjectAlertsByType(project.Token, "SECURITY_VULNERABILITY")
 			if err != nil {
 				return err
 			}
