@@ -630,8 +630,8 @@ func autoresolveMavenClasspath(config fortifyExecuteScanOptions, file string, ut
 		ProjectSettingsFile: config.ProjectSettingsFile,
 		GlobalSettingsFile:  config.GlobalSettingsFile,
 		M2Path:              config.M2Path,
-		Goals:               []string{"dependency:build-classpath"},
-		Defines:             []string{fmt.Sprintf("-Dmdep.outputFile=%v", file), "-DincludeScope=compile"},
+		Goals:               []string{"dependency:build-classpath", "install"},
+		Defines:             []string{fmt.Sprintf("-Dmdep.outputFile=%v", file), "-DincludeScope=compile", "-DskipTests"},
 		ReturnStdout:        false,
 	}
 	_, err := maven.Execute(&executeOptions, utils)
