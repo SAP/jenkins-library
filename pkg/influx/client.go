@@ -23,8 +23,7 @@ type Client struct {
 }
 
 // NewClient instantiates a Client
-func NewClient(serverUrl string, authToken string, organization string, bucket string) (*Client, error) {
-	influxClient := influxdb2.NewClient(serverUrl, authToken)
+func NewClient(influxClient influxdb2.Client, organization string, bucket string) *Client {
 	ctx := context.Background()
 	client := Client{
 		client:       influxClient,
@@ -32,7 +31,7 @@ func NewClient(serverUrl string, authToken string, organization string, bucket s
 		organization: organization,
 		bucket:       bucket,
 	}
-	return &client, nil
+	return &client
 }
 
 // WriteMetrics writes metrics to InfluxDB

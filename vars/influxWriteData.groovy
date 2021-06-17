@@ -8,7 +8,6 @@ void call(Map parameters = [:]) {
         List credentials = [
         [type: 'token', id: 'influxTokenId', env: ['PIPER_influxToken']]
         ]
-        parameters.piperGoPath = "./piper123"
         def script = checkScript(this, parameters) ?: this
         piperExecuteBin.prepareMetadataResource(script, METADATA_FILE)
         String piperGoPath = parameters.piperGoPath ?: './piper'
@@ -16,8 +15,17 @@ void call(Map parameters = [:]) {
         String customConfigArg = piperExecuteBin.getCustomConfigArg(script)
         Map stepConfig = readJSON(text: sh(returnStdout: true, script: "${piperGoPath} getConfig --stepMetadata '.pipeline/tmp/${METADATA_FILE}'${customDefaultConfig}${customConfigArg}"))
         echo "Step Config: ${stepConfig}"
-        parameters.dataMap = stepConfig.dataMap
-        parameters.dataMapTags = stepConfig.dataMapTags
+        // Create groovy-side metrics
+        stepDataMap = stepConfig.dataMap ?: [:]
+        parametersDataMap = parameters.dataMap ?: [:]
+        dataMap = stepDataMap + parametersDataMap
+        parameters.dataMap = dataMap
+
+        stepDataMapTags = stepConfig.dataMapTags ?: [:]
+        parametersDataMapTags = parameters.dataMapTags ?: [:]
+        dataMap = stepDataMapTags + parametersDataMapTags
+        parameters.dataMapTags = stepDataMapTags
+        
         parameters.dataMap.series_3 = [field_e: 31, field_g: 32]
         parameters.dataMapTags.series_3 = [tag_e: 'e', tag_g: 'g']
         piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)

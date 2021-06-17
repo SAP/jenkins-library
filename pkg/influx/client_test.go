@@ -1,7 +1,6 @@
 package influx
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -69,12 +68,7 @@ func TestWriteMetrics(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			influxClientMock := &mocks.Client{}
-			client := Client{
-				client:       influxClientMock,
-				ctx:          context.Background(),
-				organization: "organization",
-				bucket:       "piper",
-			}
+			client := NewClient(influxClientMock, "org", "piper")
 			writeAPIBlockingMock := &mocks.WriteAPIBlocking{}
 			writeAPIBlockingMock.On("WritePoint", client.ctx, mock.Anything).Return(tt.writePointErr)
 			influxClientMock.On("WriteAPIBlocking", client.organization, client.bucket).Return(writeAPIBlockingMock)
