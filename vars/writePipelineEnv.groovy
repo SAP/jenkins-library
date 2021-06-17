@@ -15,7 +15,7 @@ void call(Map parameters = [:]) {
     }
     try {
         def jsonMap = groovy.json.JsonOutput.toJson(cpe)
-    } catch (ex java.lang.StackOverflowError) {
+    } catch (java.lang.StackOverflowError ex) {
         echo "stack overflow error occured - ignoring it for now"
     }
     
