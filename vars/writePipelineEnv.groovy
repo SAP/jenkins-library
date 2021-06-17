@@ -11,7 +11,6 @@ void call(Map parameters = [:]) {
         return
     }
     def jsonMap = groovy.json.JsonOutput.toJson(cpe)
-    
     def writePipelineEnvCommand = """
 ${piperGoPath} writePipelineEnv <<EOF
 ${jsonMap}
