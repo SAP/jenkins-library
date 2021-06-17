@@ -185,7 +185,7 @@ func transportRequestUploadRFCMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "changeManagement/rfc/developmentInstance"}},
+						Aliases:     []config.Alias{{Name: "changeManagement/instance"}},
 					},
 					{
 						Name: "username",
@@ -221,7 +221,7 @@ func transportRequestUploadRFCMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "changeManagement/rfc/developmentClient"}},
+						Aliases:     []config.Alias{{Name: "changeManagement/client"}},
 					},
 					{
 						Name:        "applicationName",
