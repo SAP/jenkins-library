@@ -13,7 +13,7 @@ void call(Map parameters = [:]) {
     if (cpe == null) {
         return
     }
-    string jsonMap
+    String jsonMap
     try {
         jsonMap = groovy.json.JsonOutput.toJson(cpe)
     } catch (java.lang.StackOverflowError ex) {
