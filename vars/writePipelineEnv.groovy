@@ -6,19 +6,11 @@ import groovy.transform.Field
 void call(Map parameters = [:]) {
     final script = checkScript(this, parameters) ?: this
     String piperGoPath = parameters?.piperGoPath ?: './piper'
-    echo "before getCPEMap()"
     Map cpe = script?.commonPipelineEnvironment?.getCPEMap(script)
-    echo "after getCPEMap()"
-    echo "CPE: ${cpe}"
     if (cpe == null) {
         return
     }
-    String jsonMap
-    try {
-        jsonMap = groovy.json.JsonOutput.toJson(cpe)
-    } catch (java.lang.StackOverflowError ex) {
-        echo "stack overflow error occured - ignoring it for now"
-    }
+    def jsonMap = groovy.json.JsonOutput.toJson(cpe)
     
     def writePipelineEnvCommand = """
 ${piperGoPath} writePipelineEnv <<EOF
