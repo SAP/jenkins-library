@@ -5,8 +5,8 @@ import groovy.transform.Field
 
 void call(Map parameters = [:]) {
     final script = checkScript(this, parameters) ?: this
-    String piperGoPath = parameters.piperGoPath ?: './piper'
-    Map cpe = script.commonPipelineEnvironment.getCPEMap(script)
+    String piperGoPath = parameters?.piperGoPath ?: './piper'
+    Map cpe = script?.commonPipelineEnvironment?.getCPEMap(script)
     if (cpe == null) {
         return
     }
@@ -18,4 +18,7 @@ EOF
 """
 
     def output = script.sh(returnStdout: true, script: writePipelineEnvCommand)
+    if (parameters?.verbose) {
+        script.echo("wrote commonPipelineEnvironment: ${output}")
+    }
 }
