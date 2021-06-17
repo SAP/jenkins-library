@@ -51,7 +51,7 @@ func (p *abapAddonAssemblyKitRegisterPackagesCommonPipelineEnvironment) persist(
 	}
 }
 
-// AbapAddonAssemblyKitRegisterPackagesCommand This step uploads the SAR archives and creates physical Delivery Packages in in the File Content Management System of SAP.
+// AbapAddonAssemblyKitRegisterPackagesCommand This step uploads the SAR archives and creates physical Delivery Packages to AAKaaS.
 func AbapAddonAssemblyKitRegisterPackagesCommand() *cobra.Command {
 	const STEP_NAME = "abapAddonAssemblyKitRegisterPackages"
 
@@ -63,11 +63,13 @@ func AbapAddonAssemblyKitRegisterPackagesCommand() *cobra.Command {
 
 	var createAbapAddonAssemblyKitRegisterPackagesCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "This step uploads the SAR archives and creates physical Delivery Packages in in the File Content Management System of SAP.",
+		Short: "This step uploads the SAR archives and creates physical Delivery Packages to AAKaaS.",
 		Long: `This step takes the list of Software Component Versions from the addonDescriptor in the commonPipelineEnvironment.
-For Packages in status "P"lanned it uploads the SAR archive with the data file and metadata XML of the Delivery Packages composed and exported in the Final Assembly system.
-and creates physical Delivery Packages. The Packages ares saved in the File Content Management System of SAP.
-The new status "L"ocked is written back to the addonDescriptor in the commonPipelineEnvironment.`,
+For Packages in status "P" = planned it uploads the SAR archive with the data file and metadata XML of the Delivery Packages composed and exported in the build system
+and creates physical Delivery Package in AAKaaS.
+The new status "L" = locked is written back to the addonDescriptor in the commonPipelineEnvironment.
+<br />
+For Terminology refer to the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -148,7 +150,7 @@ func abapAddonAssemblyKitRegisterPackagesMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "abapAddonAssemblyKitRegisterPackages",
 			Aliases:     []config.Alias{},
-			Description: "This step uploads the SAR archives and creates physical Delivery Packages in in the File Content Management System of SAP.",
+			Description: "This step uploads the SAR archives and creates physical Delivery Packages to AAKaaS.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
