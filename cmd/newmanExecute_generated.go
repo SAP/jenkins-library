@@ -167,6 +167,7 @@ func newmanExecuteMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `**/*.postman_collection.json`,
 					},
 					{
 						Name:        "newmanRunCommand",
@@ -175,6 +176,7 @@ func newmanExecuteMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_newmanRunCommand"),
 					},
 					{
 						Name:        "runOptions",
@@ -183,6 +185,7 @@ func newmanExecuteMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     []string{`run`, `{{.NewmanCollection}}`, `--reporters`, `cli,junit,html`, `--reporter-junit-export`, `target/newman/TEST-{{.CollectionDisplayName}}.xml`, `--reporter-html-export`, `target/newman/TEST-{{.CollectionDisplayName}}.html`},
 					},
 					{
 						Name:        "newmanInstallCommand",
@@ -191,6 +194,7 @@ func newmanExecuteMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `npm install newman newman-reporter-html --global --quiet`,
 					},
 					{
 						Name:        "newmanEnvironment",
@@ -199,6 +203,7 @@ func newmanExecuteMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_newmanEnvironment"),
 					},
 					{
 						Name:        "newmanGlobals",
@@ -207,6 +212,7 @@ func newmanExecuteMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_newmanGlobals"),
 					},
 					{
 						Name:        "failOnError",
@@ -215,6 +221,7 @@ func newmanExecuteMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
 						Name:        "cfAppsWithSecrets",
@@ -223,6 +230,7 @@ func newmanExecuteMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 				},
 			},

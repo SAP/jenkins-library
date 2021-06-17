@@ -191,6 +191,8 @@ public class CommonStepsTest extends BasePiperTest{
         'gaugeExecuteTests', //implementing new golang pattern without fields
         'batsExecuteTests', //implementing new golang pattern without fields
         'transportRequestUploadRFC', //implementing new golang pattern without fields
+        'writePipelineEnv', //implementing new golang pattern without fields
+        'readPipelineEnv', //implementing new golang pattern without fields
     ]
 
     @Test
