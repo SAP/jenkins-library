@@ -50,6 +50,8 @@ class GithubPublishReleaseTest extends BasePiperTest {
         })
         credentialsRule.withCredentials('githubTokenId', 'thisIsATestToken')
         shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/githubrelease.yaml\'', '{"githubTokenCredentialsId":"githubTokenId"}')
+        helper.registerAllowedMethod("writePipelineEnv", [Map.class], {m -> return })
+        helper.registerAllowedMethod("readPipelineEnv", [Map.class], {m -> return })
     }
 
     @Test
