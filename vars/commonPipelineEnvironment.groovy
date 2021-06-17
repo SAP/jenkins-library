@@ -224,7 +224,7 @@ class commonPipelineEnvironment implements Serializable {
     void createMapEntry(script, Map resMap, String filename, value) {
         try{
             //if (value) {
-            if (value != null && !(value instanceof JSONNull))
+            if (value != null && !(value instanceof net.sf.json.JSONNull))
                 // prefix is assumed by step if nothing else is specified
                 def prefix = ~/^.pipeline\/commonPipelineEnvironment\//
                 filename -= prefix
