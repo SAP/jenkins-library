@@ -16,6 +16,7 @@ import (
 
 type mavenBuildOptions struct {
 	PomPath                         string   `json:"pomPath,omitempty"`
+	Profiles                        []string `json:"profiles,omitempty"`
 	Flatten                         bool     `json:"flatten,omitempty"`
 	Verify                          bool     `json:"verify,omitempty"`
 	ProjectSettingsFile             string   `json:"projectSettingsFile,omitempty"`
@@ -108,6 +109,7 @@ supports ci friendly versioning by flattening the pom before installing.`,
 
 func addMavenBuildFlags(cmd *cobra.Command, stepConfig *mavenBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.PomPath, "pomPath", `pom.xml`, "Path to the pom file which should be installed including all children.")
+	cmd.Flags().StringSliceVar(&stepConfig.Profiles, "profiles", []string{}, "Defines list of maven build profiles to be used.")
 	cmd.Flags().BoolVar(&stepConfig.Flatten, "flatten", true, "Defines if the pom files should be flattened to support ci friendly maven versioning.")
 	cmd.Flags().BoolVar(&stepConfig.Verify, "verify", false, "Instead of installing the artifact only the verify lifecycle phase is executed.")
 	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Path to the mvn settings file that should be used as project settings file.")
@@ -146,6 +148,15 @@ func mavenBuildMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     `pom.xml`,
+					},
+					{
+						Name:        "profiles",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 					{
 						Name:        "flatten",
