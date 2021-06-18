@@ -163,7 +163,7 @@ class ContainerPushToRegistryTest extends BasePiperTest {
 
     @Test
     void testBuildImagePushArtifactVersion() throws Exception {
-        nullScript.globalPipelineEnvironment.setArtifactVersion('1.0.0')
+        nullScript.commonPipelineEnvironment.setArtifactVersion('1.0.0')
         def dockerBuildImage = new ContainerImageMock()
         stepRule.step.containerPushToRegistry(
             script: nullScript,
@@ -184,7 +184,7 @@ class ContainerPushToRegistryTest extends BasePiperTest {
 
     @Test
     void testBuildImagePushLatestAndArtifactVersion() throws Exception {
-        nullScript.globalPipelineEnvironment.setArtifactVersion('1.0.0')
+        nullScript.commonPipelineEnvironment.setArtifactVersion('1.0.0')
         def dockerBuildImage = new ContainerImageMock()
         stepRule.step.containerPushToRegistry(
             script: nullScript,
@@ -321,7 +321,7 @@ class ContainerPushToRegistryTest extends BasePiperTest {
 
     @Test
     void testKubernetesMoveTagArtifactVersion() {
-        nullScript.globalPipelineEnvironment.setArtifactVersion('1.0.0')
+        nullScript.commonPipelineEnvironment.setArtifactVersion('1.0.0')
         binding.setVariable('docker', null)
         shellCallRule.setReturnValue('docker ps -q > /dev/null', 1)
 
@@ -341,7 +341,7 @@ class ContainerPushToRegistryTest extends BasePiperTest {
 
     @Test
     void testKubernetesMoveTagLatestAndArtifactVersion() {
-        nullScript.globalPipelineEnvironment.setArtifactVersion('1.0.0')
+        nullScript.commonPipelineEnvironment.setArtifactVersion('1.0.0')
         binding.setVariable('docker', null)
         shellCallRule.setReturnValue('docker ps -q > /dev/null', 1)
 

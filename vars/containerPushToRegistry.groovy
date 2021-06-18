@@ -70,7 +70,7 @@ void call(Map parameters = [:]) {
             .mixin(parameters, PARAMETER_KEYS)
             .addIfEmpty('sourceImage', script.commonPipelineEnvironment.getValue('containerImage'))
             .addIfEmpty('sourceRegistryUrl', script.commonPipelineEnvironment.getValue('containerRegistryUrl'))
-            .mixin(artifactVersion: script.globalPipelineEnvironment.getArtifactVersion())
+            .mixin(artifactVersion: script.commonPipelineEnvironment.getArtifactVersion())
             .withMandatoryProperty('dockerCredentialsId')
             .withMandatoryProperty('dockerRegistryUrl')
             .use()
