@@ -10,6 +10,8 @@
 * The Software Component Versions must be valid.
 * The validation is performed and the required information is written to the CommonPipelineEnvironment if you run prior to this step the step [abapAddonAssemblyKitCheckCVs](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitCheckCVs)
 
+A detailed description of all prerequisites of the scenario and how to configure them can be found in the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).
+
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}
@@ -26,58 +28,12 @@ The recommended way to configure your pipeline is via the config.yml file. In th
 abapAddonAssemblyKitReserveNextPackages script: this
 ```
 
-The config.yml should look like this:
+If the step is to be configured individually the config.yml should look like this:
 
 ```yaml
 steps:
   abapAddonAssemblyKitReserveNextPackages:
-    abapAddonAssemblyKitCredentialsId: 'abapAddonAssemblyKitCredentialsId',
-    abapAddonAssemblyKitEndpoint: 'https://myabapAddonAssemblyKitEndpoint.com',
+    abapAddonAssemblyKitCredentialsId: 'abapAddonAssemblyKitCredentialsId'
 ```
 
-### Input via the CommonPipelineEnvironment
-
-Mandatory fields:
-
-```json
-{"addonProduct":"",
-"addonVersion":"",
-"addonVersionAAK":"",
-"addonUniqueID":"",
-"customerID":"",
-"AddonSpsLevel":"",
-"AddonPatchLevel":"",
-"TargetVectorID":"",
-"repositories":[
-  {
-    "name":"/DMO/REPO_A",
-    "tag":"",
-    "branch":"",
-    "version":"1.0.1",
-    "versionAAK":"",
-    "PackageName":"",
-    "PackageType":"",
-    "SpLevel":"",
-    "PatchLevel":"",
-    "PredecessorCommitID":"",
-    "Status":"",
-    "Namespace":"",
-    "SarXMLFilePath":""
-  },
-  {
-    "name":"/DMO/REPO_B",
-    "tag":"",
-    "branch":"",
-    "version":"2.1.1",
-    "versionAAK":"",
-    "PackageName":"",
-    "PackageType":"",
-    "SpLevel":"",
-    "PatchLevel":"",
-    "PredecessorCommitID":"",
-    "Status":"",
-    "Namespace":"",
-    "SarXMLFilePath":""
-  }
-]}
-```
+More convenient ways of configuration (e.g. on stage level) are described in the respective scenario/pipeline documentation.

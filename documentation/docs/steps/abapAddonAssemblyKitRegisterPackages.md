@@ -10,6 +10,8 @@
 * The information will be written to the commonPipelineEnvironment if you run prior to this step the step [abapAddonAssemblyKitReserveNextPackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitReserveNextPackages)
 * The SAR archive is produced if you run the step [abapEnvironmentAssemblePackages](https://sap.github.io/jenkins-library/steps/abapEnvironmentAssemblePackages)
 
+A detailed description of all prerequisites of the scenario and how to configure them can be found in the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).
+
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}
@@ -26,58 +28,12 @@ The recommended way to configure your pipeline is via the config.yml file. In th
 abapAddonAssemblyKitRegisterPackages script: this
 ```
 
-The config.yml should look like this:
+If the step is to be configured individually the config.yml should look like this:
 
 ```yaml
 steps:
   abapAddonAssemblyKitRegisterPackages:
-    abapAddonAssemblyKitCredentialsId: 'abapAddonAssemblyKitCredentialsId',
-    abapAddonAssemblyKitEndpoint: 'https://myabapAddonAssemblyKitEndpoint.com',
+    abapAddonAssemblyKitCredentialsId: 'abapAddonAssemblyKitCredentialsId'
 ```
 
-### Input via the CommonPipelineEnvironment
-
-Mandatory fields:
-
-```json
-{"addonProduct":"",
-"addonVersion":"",
-"addonVersionAAK":"",
-"addonUniqueID":"",
-"customerID":"",
-"AddonSpsLevel":"",
-"AddonPatchLevel":"",
-"TargetVectorID":"",
-"repositories":[
-  {
-    "name":,
-    "tag":"",
-    "branch":"",
-    "version":"",
-    "versionAAK":"",
-    "PackageName":"SAPK001001REPOA",
-    "PackageType":"",
-    "SpLevel":"",
-    "PatchLevel":"",
-    "PredecessorCommitID":"",
-    "Status":"P",
-    "Namespace":"",
-    "SarXMLFilePath":".pipeline/commonPipelineEnvironment/SAPK001001REPOA.SAR"
-  },
-  {
-    "name":"",
-    "tag":"",
-    "branch":"",
-    "version":"",
-    "versionAAK":"",
-    "PackageName":"SAPK002001REPOB",
-    "PackageType":"",
-    "SpLevel":"",
-    "PatchLevel":"",
-    "PredecessorCommitID":"",
-    "Status":"R",
-    "Namespace":"",
-    "SarXMLFilePath":".pipeline/commonPipelineEnvironment/SAPK002001REPOB.SAR"
-  }
-]}
-```
+More convenient ways of configuration (e.g. on stage level) are described in the respective scenario/pipeline documentation.
