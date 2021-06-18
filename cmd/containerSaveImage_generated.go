@@ -128,6 +128,7 @@ func containerSaveImageMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{{Name: "dockerRegistryUrl"}},
+						Default:   os.Getenv("PIPER_containerRegistryUrl"),
 					},
 					{
 						Name: "containerImage",
@@ -141,6 +142,7 @@ func containerSaveImageMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{{Name: "dockerImage"}, {Name: "scanImage"}},
+						Default:   os.Getenv("PIPER_containerImage"),
 					},
 					{
 						Name:        "filePath",
@@ -149,6 +151,7 @@ func containerSaveImageMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_filePath"),
 					},
 					{
 						Name:        "includeLayers",
@@ -157,6 +160,7 @@ func containerSaveImageMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 				},
 			},

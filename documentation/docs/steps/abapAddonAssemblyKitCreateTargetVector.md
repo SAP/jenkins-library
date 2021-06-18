@@ -5,11 +5,11 @@
 ## Prerequisites
 
 * The credentials to access the AAKaaS (e.g. S-User) must be stored in the Jenkins Credential Store
-* This step needs the Product Version name and the resolved version(version, spslevel and patchlevel).
-* It also needs for each Software Component Version which should be part of the Target Vector, the name and the resolved version(version, splevel and patchlevel) as well as the Delivery Package.
-* The Delivery Packages must exist in the package registry (status "P") or already as physical packages (status "L" or "R").
-* This information is taken from the addonDescriptor in the commonPipelineEnvironment.
-* If you run prior to this step the steps: [abapAddonAssemblyKitCheckCVs](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitCheckCVs), [abapAddonAssemblyKitCheckPV](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitCheckPV) and [abapAddonAssemblyKitReserveNextPackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitReserveNextPackages) you will get the needed information.
+* Product Version name and the resolved version(version, spslevel and patchlevel) must be part of the addonDescriptor structure in Piper commonPipelineEnvironment. This is the case if the step [abapAddonAssemblyKitCheckPV](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitCheckPV) has been executed before.
+* For each Software Component Version which should be part of the Target Vector, the name and the resolved version(version, splevel and patchlevel) as well as the Delivery Package must be part of the addonDescriptor structure in Piper commonPipelineEnvironment. This is the case if the step [abapAddonAssemblyKitCheckCVs](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitCheckCVs) has been executed before.
+* The Delivery Packages must exist in the package registry (status "P" = planned) which is the case if step [abapAddonAssemblyKitReserveNextPackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitReserveNextPackages) has been executed before. Alternatively the package can already exist as physical packages (status "L" = locked or "R" = released).
+
+A detailed description of all prerequisites of the scenario and how to configure them can be found in the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).
 
 ## ${docGenParameters}
 
@@ -27,56 +27,12 @@ The recommended way to configure your pipeline is via the config.yml file. In th
 abapAddonAssemblyKitCreateTargetVector script: this
 ```
 
-The config.yml should look like this:
+If the step is to be configured individually the config.yml should look like this:
 
 ```yaml
 steps:
   abapAddonAssemblyKitCreateTargetVector:
-    abapAddonAssemblyKitCredentialsId: 'abapAddonAssemblyKitCredentialsId',
-    abapAddonAssemblyKitEndpoint: 'https://myabapAddonAssemblyKitEndpoint.com',
+    abapAddonAssemblyKitCredentialsId: 'abapAddonAssemblyKitCredentialsId'
 ```
 
-### Input via the CommonPipelineEnvironment
-
-```json
-{"addonProduct":"/DMO/myAddonProduct",
-"addonVersion":"",
-"addonVersionAAK":"0003",
-"addonUniqueID":"",
-"customerID":"",
-"AddonSpsLevel":"0001",
-"AddonPatchLevel":"0004",
-"TargetVectorID":"",
-"repositories":[
-  {
-    "name":"/DMO/REPO_A",
-    "tag":"",
-    "branch":"",
-    "version":"",
-    "versionAAK":"0001",
-    "PackageName":"SAPK001001REPOA",
-    "PackageType":"",
-    "SpLevel":"0000",
-    "PatchLevel":"0001",
-    "PredecessorCommitID":"",
-    "Status":"L",
-    "Namespace":"",
-    "SarXMLFilePath":""
-  },
-  {
-    "name":"/DMO/REPO_B",
-    "tag":"",
-    "branch":"",
-    "version":"",
-    "versionAAK":"0002",
-    "PackageName":"SAPK002001REPOB",
-    "PackageType":"",
-    "SpLevel":"0001",
-    "PatchLevel":"0001",
-    "PredecessorCommitID":"",
-    "Status":"R",
-    "Namespace":"",
-    "SarXMLFilePath":""
-  }
-]}
-```
+More convenient ways of configuration (e.g. on stage level) are described in the respective scenario/pipeline documentation.

@@ -154,6 +154,9 @@ func integrationArtifactGetMplStatusMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "cpiCredentialsId", Description: "Jenkins credentials ID containing username and password for authentication to the SAP Cloud Platform Integration API's", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name: "username",
@@ -168,6 +171,7 @@ func integrationArtifactGetMplStatusMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_username"),
 					},
 					{
 						Name: "password",
@@ -182,6 +186,7 @@ func integrationArtifactGetMplStatusMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_password"),
 					},
 					{
 						Name:        "integrationFlowId",
@@ -190,6 +195,7 @@ func integrationArtifactGetMplStatusMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_integrationFlowId"),
 					},
 					{
 						Name:        "platform",
@@ -198,6 +204,7 @@ func integrationArtifactGetMplStatusMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_platform"),
 					},
 					{
 						Name:        "host",
@@ -206,6 +213,7 @@ func integrationArtifactGetMplStatusMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_host"),
 					},
 					{
 						Name:        "oAuthTokenProviderUrl",
@@ -214,6 +222,7 @@ func integrationArtifactGetMplStatusMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_oAuthTokenProviderUrl"),
 					},
 				},
 			},

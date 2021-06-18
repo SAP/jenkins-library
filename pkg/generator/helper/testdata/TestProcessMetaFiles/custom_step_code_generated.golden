@@ -205,6 +205,7 @@ func testStepMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   `val0`,
 					},
 					{
 						Name:      "param1",
@@ -213,6 +214,7 @@ func testStepMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_param1"),
 					},
 					{
 						Name:      "param2",
@@ -221,6 +223,7 @@ func testStepMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_param2"),
 					},
 				},
 			},
