@@ -516,7 +516,7 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 					log.Entry().Infof("cert not appended to root ca %v", certificate)
 				}
 
-				transport = &TransportWrapper{
+				*transport = TransportWrapper{
 					Transport: &http.Transport{
 						DialContext: (&net.Dialer{
 							Timeout: c.transportTimeout,
