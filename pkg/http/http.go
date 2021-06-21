@@ -461,6 +461,7 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 
 	for _, certificate := range c.trustedCerts {
 		filename := path.Base(certificate) // decode?
+		filename = strings.ReplaceAll(filename, " ", "")
 		target := filepath.Join(trustStoreDir, filename)
 		if exists, _ := fileUtils.FileExists(target); !exists {
 			log.Entry().WithField("source", certificate).WithField("target", target).Info("Downloading TLS certificate")
@@ -507,12 +508,12 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 
 				certs, err := ioutil.ReadFile(target)
 				if err != nil {
-					return errors.Wrapf(err, "Failed to append %q to RootCAs: %v", target, err)
+					return errors.Wrapf(err, "Failed to read cert file %v", err, certificate)
 				}
 
 				// Append our cert to the system pool
 				if ok := rootCAs.AppendCertsFromPEM(certs); !ok {
-					log.Entry().Info("No certs appended, using system certs only")
+					return fmt.Errorf("unable to add cert %v to the rootCA", certificate)
 				}
 
 				transport = &TransportWrapper{
