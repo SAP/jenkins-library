@@ -311,7 +311,7 @@ func transportRequestUploadRFCMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Name: "rfcclient", Image: "ppiper/node-rfc"},
+				{Name: "rfcclient", Image: "rfc-client"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{
