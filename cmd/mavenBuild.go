@@ -29,6 +29,12 @@ func mavenBuild(config mavenBuildOptions, telemetryData *telemetry.CustomData) {
 func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomData, utils maven.Utils) error {
 	downloadClient := &piperhttp.Client{}
 
+	clientOptions := piperhttp.ClientOptions{
+		TrustedCerts: config.CustomTLSCertificateLinks,
+	}
+
+	downloadClient.SetOptions(clientOptions)
+
 	var flags = []string{"-update-snapshots", "--batch-mode"}
 
 	if len(config.Profiles) > 0 {
