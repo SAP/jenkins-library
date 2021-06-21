@@ -152,4 +152,4 @@ spec:
           - name: custom/transportRequestId
   containers:
     - name: rfcclient
-      image: ppiper/node-rfc
+      image: rfc-client
