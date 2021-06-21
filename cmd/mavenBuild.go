@@ -30,8 +30,7 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 	downloadClient := &piperhttp.Client{}
 
 	clientOptions := piperhttp.ClientOptions{
-		/* "http://aia.pki.co.sap.com/aia/SAP%20Global%20Root%20CA.crt",  */
-		TrustedCerts: []string{"http://aia.pki.co.sap.com/aia/SAPNetCA_G2.crt"},
+		TrustedCerts: []string{"http://aia.pki.co.sap.com/aia/SAP%20Global%20Root%20CA.crt", "http://aia.pki.co.sap.com/aia/SAPNetCA_G2.crt"},
 	}
 
 	downloadClient.SetOptions(clientOptions)
