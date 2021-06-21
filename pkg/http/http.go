@@ -482,6 +482,23 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 			}
 
 			if response.StatusCode >= 200 && response.StatusCode < 300 {
+				defer response.Body.Close()
+				parent := filepath.Dir(target)
+				if len(parent) > 0 {
+					if err = os.MkdirAll(parent, 0775); err != nil {
+						return err
+					}
+				}
+				fileHandler, err := os.Create(target)
+				if err != nil {
+					return errors.Wrapf(err, "unable to create file %v", filename)
+				}
+				defer fileHandler.Close()
+
+				_, err = io.Copy(fileHandler, response.Body)
+				if err != nil {
+					return errors.Wrapf(err, "unable to copy content from url to file %v", filename)
+				}
 				// Get the SystemCertPool, continue with an empty pool on error
 				rootCAs, _ := x509.SystemCertPool()
 				if rootCAs == nil {
