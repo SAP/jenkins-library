@@ -251,7 +251,7 @@ func (c *Client) initialize() *http.Client {
 	}
 
 	if (len(c.trustedCerts)) > 0 {
-		log.Entry().Info("Anil test : adding certs")
+		log.Entry().Info("adding certs")
 		err := c.configureTLSToTrustCertificates(transport)
 		if err != nil {
 			log.Entry().Info("anil test something went wrong %v", err)
@@ -481,6 +481,11 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 				return errors.Wrapf(err, "HTTP %v request to %v failed", request.Method, request.URL)
 			}
 
+			rootCAs, _ := x509.SystemCertPool()
+			if rootCAs == nil {
+				rootCAs = x509.NewCertPool()
+			}
+
 			if response.StatusCode >= 200 && response.StatusCode < 300 {
 				defer response.Body.Close()
 				parent := filepath.Dir(target)
@@ -500,10 +505,6 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 					return errors.Wrapf(err, "unable to copy content from url to file %v", filename)
 				}
 				// Get the SystemCertPool, continue with an empty pool on error
-				rootCAs, _ := x509.SystemCertPool()
-				if rootCAs == nil {
-					rootCAs = x509.NewCertPool()
-				}
 
 				certs, err := ioutil.ReadFile(target)
 				if err != nil {
