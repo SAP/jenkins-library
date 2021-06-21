@@ -4,9 +4,9 @@
 
 ## Prerequisites
 
-* You have created an RFC destination on ABAP system side and registered an RFC server.
-* You have an user account on the ABAB system and the roles required for uploading via RFC.
-* You have created a transport request on the ABAB backend, which is the target container of the upload.
+* You have enabled RFC on the ABAP system.
+* You have an user account on the ABAP system and the roles required for uploading via RFC.
+* You have created a transport request on the ABAP system, which is the target container of the upload.
 * You have installed an RFC library based Connector Client. See [RFC Client](#[RFC Client).
 
 ## RFC Client
@@ -18,7 +18,7 @@ Make the image known to the pipeline in the configuration.
 ```yaml
 steps:
   transportRequestUploadRFC:
-    dockerImage: '<my>/rfc-client'
+    dockerImage: 'my/rfc-client'
 ```
 
 The RFC Client connects to the ABAP system using the [SAP NetWeaver RFC SDK](https://support.sap.com/en/product/connectors/nwrfcsdk.html).
@@ -30,7 +30,7 @@ The target of the upload is a transport request, identified by an identifier (ID
 The step `transportRequestUploadRFC` allows you to set the ID by parameter.
 Alternatively, you can pass the ID through the Common Pipeline Environment.
 For example, by performing a step that generates the ID or obtains it differently.
-See [transportRequestReqIDFromGit](transportRequestReqIDFromGit.md)
+See [transportRequestReqIDFromGit](transportRequestReqIDFromGit.md).
 
 ### By Step Parameter
 
@@ -64,7 +64,7 @@ transportRequestUploadRFC(
 ## Common Pipeline Environment
 
 With OS Piper you can use the step [transportRequestReqIDFromGit](transportRequestReqIDFromGit.md) to obtain the  `transportRequestId` value from your Git commit messages.
-The step enter the ID into the `commonPipelineEnvironment`, in turn, the upload step `transportRequestUploadRFC` picks it up from there.
+The step extracts the ID from the commit messages of your project repository and enters it into the `commonPipelineEnvironment`, in turn, the upload step `transportRequestUploadRFC` picks it up from there.
 
 ```groovy
 transportRequestReqIDFromGit( script: this )
@@ -80,30 +80,22 @@ transportRequestUploadRFC( script: this, ... )
 ## Example
 
 ```yaml
+# config.yaml
 steps:
   transportRequestUploadRFC:
     changeManagement:
       credentialsId: 'RFC_CREDENTIALS_ID'
-      endpoint: '<Application server URL>'
+      endpoint: 'https://example.org/cm/rfc/endpoint'
       instance: '00'
       client: '001'
-    abapPackage: ''
-    applicationDescription: ''
-    applicationName: ''
-    dockerImage: '<my>/rfc-client'
+    abapPackage: 'PACK'
+    applicationDescription: 'Lorem ipsum'
+    applicationName: 'APP'
+    dockerImage: 'my/rfc-client'
 ```
 
 ```groovy
-transportRequestUploadRFC(
-  script: this,
-                transportRequestId: "A5DK000085",
-                applicationUrl: 'https://nexussnap.wdf.sap.corp:8443/nexus/content/repositories/deploy.snapshots/com/sap/marcusholl/1.0-SNAPSHOT/archive.zip'
-  endpoint: 'https://example.org/cm/rfc/endpoint'
-  applicationId: 'ABC',
-  uploadCredentialsId: "RFC_CREDENTIALS_ID"
-  changeDocumentId: '1000001234',
-  transportRequestId: 'ABCD10005E',
-  filePath: '/path/file.ext',
-  cmClientOpts: '-Dkey=value'
-)
+// pipeline script
+transportRequestReqIDFromGit( script: this )
+transportRequestUploadRFC( script: this, applicationUrl: 'https://example.org/appl/url/archive.zip')
 ```
