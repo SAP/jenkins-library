@@ -7,6 +7,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/xml"
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -453,6 +454,7 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 	if err != nil {
 		return errors.Wrap(err, "failed to create trust store directory")
 	}
+	insecure := flag.Bool("insecure-ssl", false, "Accept/Ignore all server SSL certificates")
 
 	for _, certificate := range c.trustedCerts {
 		filename := path.Base(certificate) // decode?
@@ -502,7 +504,7 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 						ExpectContinueTimeout: c.transportTimeout,
 						TLSHandshakeTimeout:   c.transportTimeout,
 						TLSClientConfig: &tls.Config{
-							InsecureSkipVerify: false,
+							InsecureSkipVerify: *insecure,
 							RootCAs:            rootCAs,
 						},
 					},
