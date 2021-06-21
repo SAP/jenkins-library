@@ -513,6 +513,7 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 
 				// Append our cert to the system pool
 				if ok := rootCAs.AppendCertsFromPEM(certs); !ok {
+					log.Entry().Infof("certificate not added")
 					return fmt.Errorf("unable to add cert %v to the rootCA", certificate)
 				}
 
