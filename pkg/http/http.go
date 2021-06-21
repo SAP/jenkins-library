@@ -7,7 +7,6 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/xml"
-	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -457,7 +456,7 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 	if err != nil {
 		return errors.Wrap(err, "failed to create trust store directory")
 	}
-	insecure := flag.Bool("insecure-ssl", false, "Accept/Ignore all server SSL certificates")
+	/* insecure := flag.Bool("insecure-ssl", false, "Accept/Ignore all server SSL certificates") */
 
 	for _, certificate := range c.trustedCerts {
 		filename := path.Base(certificate) // decode?
@@ -513,8 +512,7 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 
 				// Append our cert to the system pool
 				if ok := rootCAs.AppendCertsFromPEM(certs); !ok {
-					log.Entry().Infof("certificate not added")
-					return fmt.Errorf("unable to add cert %v to the rootCA", certificate)
+					log.Entry().Infof("cert not appended to root ca %v", certificate)
 				}
 
 				transport = &TransportWrapper{
@@ -526,7 +524,7 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 						ExpectContinueTimeout: c.transportTimeout,
 						TLSHandshakeTimeout:   c.transportTimeout,
 						TLSClientConfig: &tls.Config{
-							InsecureSkipVerify: *insecure,
+							InsecureSkipVerify: false,
 							RootCAs:            rootCAs,
 						},
 					},
