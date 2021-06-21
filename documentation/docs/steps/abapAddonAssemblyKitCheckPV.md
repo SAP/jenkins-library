@@ -4,7 +4,7 @@
 
 ## Prerequisites
 
-* The credentials to access the AAKaaS (e.g. S-User) must be stored in the Jenkins Credential Store
+* The credentials to access the AAKaaS (Technical Communication User) must be stored in the Jenkins Credential Store
 * The step needs an addon.yml containing information about the Product Version and corresponding Software Component Versions/Repositories
 
 A detailed description of all prerequisites of the scenario and how to configure them can be found in the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).
