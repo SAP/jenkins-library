@@ -95,8 +95,8 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 		if config.Publish && !config.Verify {
 			log.Entry().Infof("publish detected, running mvn deploy")
 
-			runner := &command.Command{}
-			fileUtils := &piperutils.Files{}
+			/* runner := &command.Command{}
+			fileUtils := &piperutils.Files{} */
 
 			if (len(config.AltDeploymentRepositoryID) > 0) && (len(config.AltDeploymentRepositoryPassword) > 0) && (len(config.AltDeploymentRepositoryUser) > 0) {
 				projectSettingsFilePath, err := createOrUpdateProjectSettingsXML(config.ProjectSettingsFile, config.AltDeploymentRepositoryID, config.AltDeploymentRepositoryUser, config.AltDeploymentRepositoryPassword, utils)
@@ -111,10 +111,10 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 				deployFlags = append(deployFlags, "-DaltDeploymentRepository="+config.AltDeploymentRepositoryID+"::default::"+config.AltDeploymentRepositoryURL)
 			}
 
-			if err := loadRemoteRepoCertificates(config.CustomTLSCertificateLinks, downloadClient, &deployFlags, runner, fileUtils); err != nil {
+			/* if err := loadRemoteRepoCertificates(config.CustomTLSCertificateLinks, downloadClient, &deployFlags, runner, fileUtils); err != nil {
 				log.SetErrorCategory(log.ErrorInfrastructure)
 				return err
-			}
+			} */
 			mavenOptions.Flags = deployFlags
 			mavenOptions.Goals = []string{"deploy"}
 			mavenOptions.Defines = []string{}
