@@ -40,7 +40,7 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
-        default: "test"        
+        default: "test"
       - name: installArtifacts
         type: bool
         description:
