@@ -251,7 +251,7 @@ func (c *Client) initialize() *http.Client {
 	}
 
 	if (len(c.trustedCerts)) > 0 {
-		log.Entry().Info("adding certs")
+		log.Entry().Info("adding certs for tls to trust")
 		err := c.configureTLSToTrustCertificates(transport)
 		if err != nil {
 			log.Entry().Info("anil test something went wrong %v", err)
