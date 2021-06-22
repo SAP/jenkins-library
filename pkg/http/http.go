@@ -459,6 +459,12 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 	/* insecure := flag.Bool("insecure-ssl", false, "Accept/Ignore all server SSL certificates") */
 
 	for _, certificate := range c.trustedCerts {
+		rootCAs, _ := x509.SystemCertPool()
+
+		if rootCAs == nil {
+			rootCAs = x509.NewCertPool()
+		}
+
 		filename := path.Base(certificate) // decode?
 		filename = strings.ReplaceAll(filename, " ", "")
 		target := filepath.Join(trustStoreDir, filename)
@@ -479,11 +485,6 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 			response, err := httpClient.Do(request)
 			if err != nil {
 				return errors.Wrapf(err, "HTTP %v request to %v failed", request.Method, request.URL)
-			}
-
-			rootCAs, _ := x509.SystemCertPool()
-			if rootCAs == nil {
-				rootCAs = x509.NewCertPool()
 			}
 
 			if response.StatusCode >= 200 && response.StatusCode < 300 {
@@ -533,13 +534,40 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 					doLogResponseBodyOnDebug: c.doLogResponseBodyOnDebug,
 				}
 
-				log.Entry().Infof("%v appended to root CA", certificate)
+				log.Entry().Infof("%v appended to root CA successfully", certificate)
 
 			} else {
 				return errors.Wrapf(err, "Download of TLS certificate %v failed with status code %v", certificate, response.StatusCode)
 			}
 		} else {
-			log.Entry().Infof("skipped %v append to root CA it exists", certificate)
+			log.Entry().Infof("existing certs found, appending to rootCA")
+			certs, err := ioutil.ReadFile(target)
+			if err != nil {
+				return errors.Wrapf(err, "Failed to read cert file %v", err, certificate)
+			}
+
+			// Append our cert to the system pool
+			if ok := rootCAs.AppendCertsFromPEM(certs); !ok {
+				log.Entry().Infof("cert not appended to root ca %v", certificate)
+			}
+
+			*transport = TransportWrapper{
+				Transport: &http.Transport{
+					DialContext: (&net.Dialer{
+						Timeout: c.transportTimeout,
+					}).DialContext,
+					ResponseHeaderTimeout: c.transportTimeout,
+					ExpectContinueTimeout: c.transportTimeout,
+					TLSHandshakeTimeout:   c.transportTimeout,
+					TLSClientConfig: &tls.Config{
+						InsecureSkipVerify: false,
+						RootCAs:            rootCAs,
+					},
+				},
+				doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,
+				doLogResponseBodyOnDebug: c.doLogResponseBodyOnDebug,
+			}
+			log.Entry().Infof("%v appended to root CA successfully", certificate)
 		}
 
 	}

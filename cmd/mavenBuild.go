@@ -35,7 +35,7 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 
 	downloadClient.SetOptions(clientOptions)
 
-	if err := downloadClient.DownloadFile("https://github.wdf.sap.corp/raw/SGS/Hadolint-Dockerfile/master/.hadolint.yaml", "hadolint.yaml", nil, nil); err != nil {
+	if err := downloadClient.DownloadFile("https://github.wdf.sap.corp/raw/SGS/Hadolint-Dockerfile/master/.hadolint.yaml?token=AAABWT5YTRYTYIBFAFPCIETA3LPKK", "hadolint.yaml", nil, nil); err != nil {
 		return errors.Wrapf(err, "Download of TLS certificate failed")
 	} else {
 		log.Entry().Info("download file successfull")
