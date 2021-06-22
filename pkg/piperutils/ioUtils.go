@@ -14,16 +14,16 @@ func CopyData(dst io.Writer, src io.Reader) (int64, error) {
 	done := false
 
 	for {
-		n, err := src.Read(tmp)
-		bytesRead += int64(n)
+		nr, err := src.Read(tmp)
+		bytesRead += int64(nr)
 		if err != nil {
 			if err != io.EOF {
 				return bytesRead, errors.Wrap(err, "read error")
 			}
 			done = true
 		}
-		n, err = dst.Write(tmp[:n])
-		bytesWritten += int64(n)
+		nw, err := dst.Write(tmp[:nr])
+		bytesWritten += int64(nw)
 		if err != nil {
 			return bytesWritten, errors.Wrap(err, "write error")
 		}
