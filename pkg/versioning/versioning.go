@@ -9,8 +9,13 @@ import (
 	"github.com/SAP/jenkins-library/pkg/maven"
 )
 
-// Coordinates to address the artifact
-type Coordinates interface{}
+// Coordinates to address the artifact coordinates like groupId, artifactId, version and packaging
+type Coordinates struct {
+	GroupID    string
+	ArtifactID string
+	Version    string
+	Packaging  string
+}
 
 // Artifact defines the versioning operations for various build tools
 type Artifact interface {
@@ -124,7 +129,7 @@ func GetArtifact(buildTool, buildDescriptorFilePath string, opts *Options, utils
 			versionField:    "version",
 			artifactIDField: "ID",
 		}
-	case "npm":
+	case "npm", "yarn":
 		if len(buildDescriptorFilePath) == 0 {
 			buildDescriptorFilePath = "package.json"
 		}

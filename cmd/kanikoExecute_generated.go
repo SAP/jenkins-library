@@ -11,6 +11,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
+	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
@@ -66,6 +67,7 @@ func KanikoExecuteCommand() *cobra.Command {
 	var stepConfig kanikoExecuteOptions
 	var startTime time.Time
 	var commonPipelineEnvironment kanikoExecuteCommonPipelineEnvironment
+	var logCollector *log.CollectorHook
 
 	var createKanikoExecuteCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -92,6 +94,11 @@ func KanikoExecuteCommand() *cobra.Command {
 				log.RegisterHook(&sentryHook)
 			}
 
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
+				log.RegisterHook(logCollector)
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -103,10 +110,20 @@ func KanikoExecuteCommand() *cobra.Command {
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
+				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunk.Send(&telemetryData, logCollector)
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunk.Initialize(GeneralConfig.CorrelationID,
+					GeneralConfig.HookConfig.SplunkConfig.Dsn,
+					GeneralConfig.HookConfig.SplunkConfig.Token,
+					GeneralConfig.HookConfig.SplunkConfig.Index,
+					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+			}
 			kanikoExecute(stepConfig, &telemetryData, &commonPipelineEnvironment)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -141,6 +158,9 @@ func kanikoExecuteMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "dockerConfigJsonCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)). You can create it like explained in the Docker Success Center in the article about [how to generate a new auth in the config.json file](https://success.docker.com/article/generate-new-auth-in-config-json-file).", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "buildOptions",
@@ -149,6 +169,7 @@ func kanikoExecuteMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     []string{`--skip-tls-verify-pull`},
 					},
 					{
 						Name:        "containerBuildOptions",
@@ -157,6 +178,7 @@ func kanikoExecuteMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_containerBuildOptions"),
 					},
 					{
 						Name:        "containerImage",
@@ -165,6 +187,7 @@ func kanikoExecuteMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "containerImageNameAndTag"}},
+						Default:     os.Getenv("PIPER_containerImage"),
 					},
 					{
 						Name:        "containerImageName",
@@ -173,6 +196,7 @@ func kanikoExecuteMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "dockerImageName"}},
+						Default:     os.Getenv("PIPER_containerImageName"),
 					},
 					{
 						Name: "containerImageTag",
@@ -186,6 +210,7 @@ func kanikoExecuteMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "artifactVersion"}},
+						Default:   os.Getenv("PIPER_containerImageTag"),
 					},
 					{
 						Name:        "containerPreparationCommand",
@@ -194,6 +219,7 @@ func kanikoExecuteMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `rm -f /kaniko/.docker/config.json`,
 					},
 					{
 						Name: "containerRegistryUrl",
@@ -207,6 +233,7 @@ func kanikoExecuteMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "dockerRegistryUrl"}},
+						Default:   os.Getenv("PIPER_containerRegistryUrl"),
 					},
 					{
 						Name:        "customTlsCertificateLinks",
@@ -215,10 +242,16 @@ func kanikoExecuteMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 					{
 						Name: "dockerConfigJSON",
 						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/dockerConfigJSON",
+							},
+
 							{
 								Name: "dockerConfigJsonCredentialsId",
 								Type: "secret",
@@ -230,10 +263,11 @@ func kanikoExecuteMetadata() config.StepData {
 								Type:  "vaultSecretFile",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:     []string{"PARAMETERS"},
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_dockerConfigJSON"),
 					},
 					{
 						Name:        "dockerfilePath",
@@ -242,11 +276,12 @@ func kanikoExecuteMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "dockerfile"}},
+						Default:     `Dockerfile`,
 					},
 				},
 			},
 			Containers: []config.Container{
-				{Image: "gcr.io/kaniko-project/executor:debug", Options: []config.Option{{Name: "-u", Value: "0"}, {Name: "--entrypoint", Value: "''"}}},
+				{Image: "gcr.io/kaniko-project/executor:v1.3.0-debug", Options: []config.Option{{Name: "-u", Value: "0"}, {Name: "--entrypoint", Value: "''"}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

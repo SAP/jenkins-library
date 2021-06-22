@@ -89,6 +89,14 @@ type Protecode struct {
 	logger    *logrus.Entry
 }
 
+// Just calls SetOptions which makes sure logger is set.
+// Added to make test code more resilient
+func makeProtecode(opts Options) Protecode {
+	ret := Protecode{}
+	ret.SetOptions(opts)
+	return ret
+}
+
 //Options struct which can be used to configure the Protecode struct
 type Options struct {
 	ServerURL string
@@ -118,6 +126,7 @@ func (pc *Protecode) createURL(path string, pValue string, fParam string) string
 
 	protecodeURL, err := url.Parse(pc.serverURL)
 	if err != nil {
+		//TODO: bubble up error
 		pc.logger.WithError(err).Fatal("Malformed URL")
 	}
 
@@ -154,6 +163,7 @@ func (pc *Protecode) mapResponse(r io.ReadCloser, response interface{}) {
 		if err != nil {
 			err = json.Unmarshal([]byte(newStr), response)
 			if err != nil {
+				//TODO: bubble up error
 				pc.logger.WithError(err).Fatalf("Error during unqote response: %v", newStr)
 			}
 		} else {
@@ -161,6 +171,7 @@ func (pc *Protecode) mapResponse(r io.ReadCloser, response interface{}) {
 		}
 
 		if err != nil {
+			//TODO: bubble up error
 			pc.logger.WithError(err).Fatalf("Error during decode response: %v", newStr)
 		}
 	}
@@ -267,6 +278,7 @@ func (pc *Protecode) DeleteScan(cleanupMode string, productID int) {
 
 		pc.sendAPIRequest("DELETE", protecodeURL, headers)
 	default:
+		//TODO: bubble up error
 		pc.logger.Fatalf("Unknown cleanup mode %v", cleanupMode)
 	}
 }
@@ -283,6 +295,7 @@ func (pc *Protecode) LoadReport(reportFileName string, productID int) *io.ReadCl
 
 	readCloser, err := pc.sendAPIRequest(http.MethodGet, protecodeURL, headers)
 	if err != nil {
+		//TODO: bubble up error
 		pc.logger.WithError(err).Fatalf("It is not possible to load report %v", protecodeURL)
 	}
 
@@ -298,6 +311,7 @@ func (pc *Protecode) UploadScanFile(cleanupMode, group, filePath, fileName strin
 
 	r, err := pc.client.UploadRequest(http.MethodPut, uploadURL, filePath, "file", headers, nil)
 	if err != nil {
+		//TODO: bubble up error
 		pc.logger.WithError(err).Fatalf("Error during %v upload request", uploadURL)
 	} else {
 		pc.logger.Info("Upload successful")
@@ -317,6 +331,7 @@ func (pc *Protecode) DeclareFetchURL(cleanupMode, group, fetchURL string) *Resul
 	protecodeURL := fmt.Sprintf("%v/api/fetch/", pc.serverURL)
 	r, err := pc.sendAPIRequest(http.MethodPost, protecodeURL, headers)
 	if err != nil {
+		//TODO: bubble up error
 		pc.logger.WithError(err).Fatalf("Error during declare fetch url: %v", protecodeURL)
 	}
 
@@ -324,6 +339,16 @@ func (pc *Protecode) DeclareFetchURL(cleanupMode, group, fetchURL string) *Resul
 	pc.mapResponse(*r, result)
 
 	return result
+}
+
+// 2021-04-20 d :
+// Found, via web search, an announcement that the set of status codes is expanding from
+// B, R, F
+// to
+// B, R, F, S, D, P.
+// Only R and F indicate work has completed.
+func scanInProgress(status string) bool {
+	return status != statusReady && status != statusFailed
 }
 
 //PollForResult polls the protecode scan for the result scan
@@ -351,7 +376,7 @@ func (pc *Protecode) PollForResult(productID int, timeOutInMinutes string) Resul
 			i = 0
 			return response
 		}
-		if len(response.Result.Components) > 0 && response.Result.Status != statusBusy {
+		if !scanInProgress(response.Result.Status) {
 			ticker.Stop()
 			i = 0
 			break
@@ -363,10 +388,21 @@ func (pc *Protecode) PollForResult(productID int, timeOutInMinutes string) Resul
 		}
 	}
 
-	if len(response.Result.Components) == 0 || response.Result.Status == statusBusy {
+	if scanInProgress(response.Result.Status) {
 		response, err = pc.pullResult(productID)
-		if err != nil || len(response.Result.Components) == 0 || response.Result.Status == statusBusy {
-			pc.logger.Fatal("No result after polling")
+
+		if len(response.Result.Components) < 1 {
+			// 2020-04-20 d :
+			// We are required to scan all images including 3rd party ones.
+			// We have found that Crossplane makes use docker images that contain no
+			// executable code.
+			// So we can no longer treat an empty Components list as an error.
+			pc.logger.Warn("Protecode scan did not identify any components.")
+		}
+
+		if err != nil || response.Result.Status == statusBusy {
+			//TODO: bubble up error
+			pc.logger.Fatalf("No result after polling err: %v protecode status: %v", err, response.Result.Status)
 		}
 	}
 
@@ -390,22 +426,19 @@ func (pc *Protecode) pullResult(productID int) (ResultData, error) {
 }
 
 // LoadExistingProduct loads the existing product from protecode service
-func (pc *Protecode) LoadExistingProduct(group string, reuseExisting bool) int {
-	var productID int = -1
+func (pc *Protecode) LoadExistingProduct(group string) int {
+	productID := -1
 
-	if reuseExisting {
-
-		protecodeURL := pc.createURL("/api/apps/", fmt.Sprintf("%v/", group), "")
-		headers := map[string][]string{
-			"acceptType": {"application/json"},
-		}
-
-		response := pc.loadExisting(protecodeURL, headers)
-		// by definition we will take the first one and trigger rescan
-		productID = response.Products[0].ProductID
-
-		pc.logger.Infof("Re-use existing Protecode scan - group: %v, productID: %v", group, productID)
+	protecodeURL := pc.createURL("/api/apps/", fmt.Sprintf("%v/", group), "")
+	headers := map[string][]string{
+		"acceptType": {"application/json"},
 	}
+
+	response := pc.loadExisting(protecodeURL, headers)
+	// by definition we will take the first one and trigger rescan
+	productID = response.Products[0].ProductID
+
+	pc.logger.Infof("Re-use existing Protecode scan - group: %v, productID: %v", group, productID)
 
 	return productID
 }
@@ -414,6 +447,7 @@ func (pc *Protecode) loadExisting(protecodeURL string, headers map[string][]stri
 
 	r, err := pc.sendAPIRequest(http.MethodGet, protecodeURL, headers)
 	if err != nil {
+		//TODO: bubble up error
 		pc.logger.WithError(err).Fatalf("Error during load existing product: %v", protecodeURL)
 	}
 

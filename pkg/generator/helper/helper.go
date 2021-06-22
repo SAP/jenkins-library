@@ -34,6 +34,8 @@ type stepInfo struct {
 	Containers       []config.Container
 	Sidecars         []config.Container
 	Outputs          config.StepOutputs
+	Resources        []config.StepResources
+	Secrets          []config.StepSecrets
 }
 
 //StepGoTemplate ...
@@ -58,6 +60,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	{{ end -}}
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/spf13/cobra"
 )
 
@@ -84,6 +87,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 	var startTime time.Time
 	{{- range $notused, $oRes := .OutputResources }}
 	var {{ index $oRes "name" }} {{ index $oRes "objectname" }}{{ end }}
+	var logCollector *log.CollectorHook
 
 	var {{.CreateCmdVar}} = &cobra.Command{
 		Use:   STEP_NAME,
@@ -111,6 +115,11 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 				log.RegisterHook(&sentryHook)
 			}
 
+			if len({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				logCollector = &log.CollectorHook{CorrelationID: {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID}
+				log.RegisterHook(logCollector)
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -123,10 +132,20 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
+				if len({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunk.Send(&telemetryData, logCollector)
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.NoTelemetry, STEP_NAME)
+			if len({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunk.Initialize({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID,
+				{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.Dsn,
+				{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.Token,
+				{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.Index,
+				{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+			}
 			{{.StepName}}(stepConfig, &telemetryData{{ range $notused, $oRes := .OutputResources}}, &{{ index $oRes "name" }}{{ end }})
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -171,6 +190,28 @@ func {{ .StepName }}Metadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				{{ if .Secrets -}}
+				Secrets: []config.StepSecrets{
+					{{- range $secrets := .Secrets }}
+					{
+						{{- if $secrets.Name -}} Name: "{{$secrets.Name}}",{{- end }}
+						{{- if $secrets.Description -}} Description: "{{$secrets.Description}}",{{- end }}
+						{{- if $secrets.Type -}} Type: "{{$secrets.Type}}",{{- end }}
+						{{- if $secrets.Aliases -}} Aliases: []config.Alias{ {{- range $i, $a := $secrets.Aliases }} {Name: "{{$a.Name}}", Deprecated: {{$a.Deprecated}}}, {{ end -}}  },{{- end }}
+					}, {{ end }}
+				},
+				{{ end -}}
+				{{ if .Resources -}}
+				Resources: []config.StepResources{
+					{{- range $resource := .Resources }}
+					{
+						{{- if $resource.Name -}} Name: "{{$resource.Name}}",{{- end }}
+						{{- if $resource.Description -}} Description: "{{$resource.Description}}",{{- end }}
+						{{- if $resource.Type -}} Type: "{{$resource.Type}}",{{- end }}
+						{{- if $resource.Conditions -}} Conditions: []config.Condition{ {{- range $i, $cond := $resource.Conditions }} {ConditionRef: "{{$cond.ConditionRef}}", Params: []config.Param{ {{- range $j, $p := $cond.Params}} { Name: "{{$p.Name}}", Value: "{{$p.Value}}" }, {{end -}} } }, {{ end -}} },{{ end }}
+					},{{- end }}
+				},
+				{{ end -}}
 				Parameters: []config.StepParameters{
 					{{- range $key, $value := .StepParameters }}
 					{
@@ -180,6 +221,8 @@ func {{ .StepName }}Metadata() config.StepData {
 						Type:      "{{ $value.Type }}",
 						Mandatory: {{ $value.Mandatory }},
 						Aliases:   []config.Alias{{ "{" }}{{ range $notused, $alias := $value.Aliases }}{{ "{" }}Name: "{{ $alias.Name }}"{{ "}" }},{{ end }}{{ "}" }},
+						{{ if $value.Default -}} Default:   {{ $value.Default }}, {{- end}}{{ if $value.Conditions }}
+						Conditions: []config.Condition{ {{- range $i, $cond := $value.Conditions }} {ConditionRef: "{{$cond.ConditionRef}}", Params: []config.Param{ {{- range $j, $p := $cond.Params}} { Name: "{{$p.Name}}", Value: "{{$p.Value}}" }, {{end -}} } }, {{ end -}} },{{- end }}
 					},{{ end }}
 				},
 			},
@@ -223,6 +266,7 @@ func {{ .StepName }}Metadata() config.StepData {
 							{{ if $p.tags}}{"tags": []map[string]string{ {{- range $j, $t := $p.tags}} {"name": "{{$t.name}}"}, {{end -}} } },{{ end -}}
 						{{ end }}
 						{{ if $res.Parameters -}} }, {{- end }}
+						{{- if $res.Conditions -}} Conditions: []config.Condition{ {{- range $i, $cond := $res.Conditions }} {ConditionRef: "{{$cond.ConditionRef}}", Params: []config.Param{ {{- range $j, $p := $cond.Params}} { Name: "{{$p.Name}}", Value: "{{$p.Value}}" }, {{end -}} } }, {{ end -}} },{{ end }}
 					}, {{- end }}
 				},
 			}, {{- end }}
@@ -542,6 +586,8 @@ func getStepInfo(stepData *config.StepData, osImport bool, exportPrefix string) 
 			Containers:       stepData.Spec.Containers,
 			Sidecars:         stepData.Spec.Sidecars,
 			Outputs:          stepData.Spec.Outputs,
+			Resources:        stepData.Spec.Inputs.Resources,
+			Secrets:          stepData.Spec.Inputs.Secrets,
 		},
 		err
 }

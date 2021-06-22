@@ -1,9 +1,15 @@
 package whitesource
 
 import (
+	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
+	"os"
 	"path/filepath"
+	"regexp"
+	"sync"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
@@ -11,11 +17,12 @@ import (
 
 const jvmTarGz = "jvm.tar.gz"
 const jvmDir = "./jvm"
+const projectRegEx = `Project name: ([^,]*), URL: (.*)`
 
 // ExecuteUAScan executes a scan with the Whitesource Unified Agent.
 func (s *Scan) ExecuteUAScan(config *ScanOptions, utils Utils) error {
 	if config.BuildTool != "mta" {
-		return s.ExecuteUAScanInPath(config, utils, ".")
+		return s.ExecuteUAScanInPath(config, utils, config.ScanPath)
 	}
 
 	log.Entry().Infof("Executing WhiteSource UA scan for MTA project")
@@ -23,13 +30,14 @@ func (s *Scan) ExecuteUAScan(config *ScanOptions, utils Utils) error {
 	if pomExists {
 		mavenConfig := *config
 		mavenConfig.BuildTool = "maven"
-		if err := s.ExecuteUAScanInPath(&mavenConfig, utils, "."); err != nil {
+		if err := s.ExecuteUAScanInPath(&mavenConfig, utils, config.ScanPath); err != nil {
 			return errors.Wrap(err, "failed to run scan for maven modules of mta")
 		}
 	} else {
-		// ToDo: only warning message?
-		//log.Entry().Warning("MTA project does not contain a pom.xml in the root. Scan results might be incomplete")
-		return fmt.Errorf("mta project does not contain an aggregator pom.xml in the root - this is mandatory")
+		if pomFiles, _ := utils.Glob("**/pom.xml"); len(pomFiles) > 0 {
+			log.SetErrorCategory(log.ErrorCustom)
+			return fmt.Errorf("mta project with java modules does not contain an aggregator pom.xml in the root - this is mandatory")
+		}
 	}
 
 	packageJSONFiles, err := utils.FindPackageJSONFiles(config)
@@ -81,7 +89,7 @@ func (s *Scan) ExecuteUAScanInPath(config *ScanOptions, utils Utils, scanPath st
 		return err
 	}
 
-	configPath, err := config.RewriteUAConfigurationFile(utils)
+	configPath, err := config.RewriteUAConfigurationFile(utils, s.AggregateProjectName)
 	if err != nil {
 		return err
 	}
@@ -90,11 +98,32 @@ func (s *Scan) ExecuteUAScanInPath(config *ScanOptions, utils Utils, scanPath st
 		scanPath = "."
 	}
 
-	// ToDo: remove parameters which are added to UA config via RewriteUAConfigurationFile()
-	// let the scanner resolve project name on its own?
-	err = utils.RunExecutable(javaPath, "-jar", config.AgentFileName, "-d", scanPath, "-c", configPath,
-		"-apiKey", config.OrgToken, "-userKey", config.UserToken, "-project", s.AggregateProjectName,
-		"-product", config.ProductName, "-productVersion", s.ProductVersion, "-wss.url", config.AgentURL)
+	// log parsing in order to identify the projects WhiteSource really scanned
+	// we may refactor this in case there is a safer way to identify the projects e.g. via REST API
+
+	//ToDO: we only need stdOut or stdErr, let's see where UA writes to ...
+	prOut, stdOut := io.Pipe()
+	trOut := io.TeeReader(prOut, os.Stderr)
+	utils.Stdout(stdOut)
+
+	prErr, stdErr := io.Pipe()
+	trErr := io.TeeReader(prErr, os.Stderr)
+	utils.Stdout(stdErr)
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		scanLog(trOut, s)
+	}()
+
+	go func() {
+		defer wg.Done()
+		scanLog(trErr, s)
+	}()
+
+	err = utils.RunExecutable(javaPath, "-jar", config.AgentFileName, "-d", scanPath, "-c", configPath, "-wss.url", config.AgentURL)
 
 	if err := removeJre(javaPath, utils); err != nil {
 		log.Entry().Warning(err)
@@ -218,4 +247,49 @@ func getProjectNameFromPackageJSON(packageJSONPath string, utils Utils) (string,
 	}
 
 	return projectName, nil
+}
+
+func scanLog(in io.Reader, scan *Scan) {
+	scanner := bufio.NewScanner(in)
+	scanner.Split(scanShortLines)
+	for scanner.Scan() {
+		line := scanner.Text()
+		parseForProjects(line, scan)
+	}
+	if err := scanner.Err(); err != nil {
+		log.Entry().WithError(err).Info("failed to scan log file")
+	}
+}
+
+func parseForProjects(logLine string, scan *Scan) {
+	compile := regexp.MustCompile(projectRegEx)
+	values := compile.FindStringSubmatch(logLine)
+
+	if len(values) > 0 && scan.scannedProjects != nil && len(scan.scannedProjects[values[1]].Name) == 0 {
+		scan.scannedProjects[values[1]] = Project{Name: values[1]}
+	}
+
+}
+
+func scanShortLines(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	lenData := len(data)
+	if atEOF && lenData == 0 {
+		return 0, nil, nil
+	}
+	if lenData > 32767 && !bytes.Contains(data[0:lenData], []byte("\n")) {
+		// we will neglect long output
+		// no use cases known where this would be relevant
+		return lenData, nil, nil
+	}
+	if i := bytes.IndexByte(data, '\n'); i >= 0 && i < 32767 {
+		// We have a full newline-terminated line with a size limit
+		// Size limit is required since otherwise scanner would stall
+		return i + 1, data[0:i], nil
+	}
+	// If we're at EOF, we have a final, non-terminated line. Return it.
+	if atEOF {
+		return len(data), data, nil
+	}
+	// Request more data.
+	return 0, nil, nil
 }

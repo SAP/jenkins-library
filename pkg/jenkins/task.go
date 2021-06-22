@@ -1,6 +1,7 @@
 package jenkins
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -8,11 +9,12 @@ import (
 )
 
 // Task is an interface to abstract gojenkins.Task.
+// mock generated with: mockery --name Task --dir pkg/jenkins --output pkg/jenkins/mocks
 type Task interface {
-	Poll() (int, error)
+	Poll(context.Context) (int, error)
 	BuildNumber() (int64, error)
 	HasStarted() bool
-	WaitToStart(pollInterval time.Duration) (int64, error)
+	WaitToStart(ctx context.Context, pollInterval time.Duration) (int64, error)
 }
 
 // TaskImpl is a wrapper struct for gojenkins.Task that respects the Task interface.
@@ -21,8 +23,8 @@ type TaskImpl struct {
 }
 
 // Poll refers to the gojenkins.Task.Poll function.
-func (t *TaskImpl) Poll() (int, error) {
-	return t.Task.Poll()
+func (t *TaskImpl) Poll(ctx context.Context) (int, error) {
+	return t.Task.Poll(ctx)
 }
 
 // HasStarted checks if the wrapped gojenkins.Task has started by checking the assigned executable URL.
@@ -39,13 +41,13 @@ func (t *TaskImpl) BuildNumber() (int64, error) {
 }
 
 // WaitToStart waits till the build has started.
-func (t *TaskImpl) WaitToStart(pollInterval time.Duration) (int64, error) {
+func (t *TaskImpl) WaitToStart(ctx context.Context, pollInterval time.Duration) (int64, error) {
 	for retry := 0; retry < 15; {
 		if t.HasStarted() {
 			return t.BuildNumber()
 		}
 		time.Sleep(pollInterval)
-		t.Poll()
+		t.Poll(ctx)
 		retry++
 	}
 	return 0, fmt.Errorf("build did not start in a reasonable amount of time")

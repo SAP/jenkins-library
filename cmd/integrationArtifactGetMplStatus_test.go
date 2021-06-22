@@ -61,11 +61,13 @@ func TestRunIntegrationArtifactGetMplStatus(t *testing.T) {
 			Platform:              "cf",
 		}
 
-		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactDeploy", ResponseBody: ``, TestType: "Negative"}
+		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactGetMplStatus", ResponseBody: ``, TestType: "Negative"}
 
 		seOut := integrationArtifactGetMplStatusCommonPipelineEnvironment{}
 		err := runIntegrationArtifactGetMplStatus(&config, nil, &httpClient, &seOut)
 		assert.EqualValues(t, seOut.custom.iFlowMplStatus, "")
-		assert.EqualError(t, err, "HTTP GET request to https://demo/api/v1/MessageProcessingLogs?$filter=IntegrationArtifact/Id+eq+'flow1'&$orderby=LogEnd+desc&$top=1 failed with error: Internal Server Error")
+		assert.EqualError(t, err, "HTTP GET request to https://demo/api/v1/MessageProcessingLogs?$filter=IntegrationArtifact/"+
+			"Id+eq+'flow1'&$orderby=LogEnd+desc&$top=1 failed with error: "+
+			"Unable to get integration flow MPL status, Response Status code:400")
 	})
 }

@@ -6,17 +6,17 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"io"
+	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
 	"testing"
 
-	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/stretchr/testify/assert"
 
-	"io/ioutil"
-	"path/filepath"
+	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 func TestPiperHelp(t *testing.T) {

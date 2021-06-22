@@ -9,6 +9,8 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/reporting"
+	ws "github.com/SAP/jenkins-library/pkg/whitesource"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -55,15 +57,9 @@ func generateConfig() error {
 	var myConfig config.Config
 	var stepConfig config.StepConfig
 
-	var metadata config.StepData
-	metadataFile, err := configOptions.openFile(configOptions.stepMetadata)
+	metadata, err := resolveMetadata()
 	if err != nil {
-		return errors.Wrap(err, "metadata: open failed")
-	}
-
-	err = metadata.ReadPipelineStepData(metadataFile)
-	if err != nil {
-		return errors.Wrap(err, "metadata: read failed")
+		return errors.Wrapf(err, "failed to resolve metadata")
 	}
 
 	// prepare output resource directories:
@@ -131,9 +127,8 @@ func addConfigFlags(cmd *cobra.Command) {
 
 	cmd.Flags().StringVar(&configOptions.parametersJSON, "parametersJSON", os.Getenv("PIPER_parametersJSON"), "Parameters to be considered in JSON format")
 	cmd.Flags().StringVar(&configOptions.stepMetadata, "stepMetadata", "", "Step metadata, passed as path to yaml")
+	cmd.Flags().StringVar(&configOptions.stepName, "stepName", "", "Step name, used to get step metadata if yaml path is not set")
 	cmd.Flags().BoolVar(&configOptions.contextConfig, "contextConfig", false, "Defines if step context configuration should be loaded instead of step config")
-
-	_ = cmd.MarkFlagRequired("stepMetadata")
 
 }
 
@@ -178,4 +173,46 @@ func prepareOutputEnvironment(outputResources []config.StepResources, envRootPat
 			}
 		}
 	}
+
+	// prepare additional output directories known to possibly create permission issues when created from within a container
+	// ToDo: evaluate if we can rather call this only in the correct step context (we know the step when calling getConfig!)
+	// Could this be part of the container definition in the step.yaml?
+	stepOutputDirectories := []string{
+		reporting.StepReportDirectory, // standard directory to collect md reports for pipelineCreateScanSummary
+		ws.ReportsDirectory,           // standard directory for reports created by whitesourceExecuteScan
+	}
+
+	for _, dir := range stepOutputDirectories {
+		if _, err := os.Stat(dir); os.IsNotExist(err) {
+			log.Entry().Debugf("Creating directory: %v", dir)
+			os.MkdirAll(dir, 0777)
+		}
+	}
+}
+
+func resolveMetadata() (config.StepData, error) {
+	var metadata config.StepData
+	if configOptions.stepMetadata != "" {
+		metadataFile, err := configOptions.openFile(configOptions.stepMetadata)
+		if err != nil {
+			return metadata, errors.Wrap(err, "open failed")
+		}
+
+		err = metadata.ReadPipelineStepData(metadataFile)
+		if err != nil {
+			return metadata, errors.Wrap(err, "read failed")
+		}
+	} else {
+		if configOptions.stepName != "" {
+			metadataMap := GetAllStepMetadata()
+			var ok bool
+			metadata, ok = metadataMap[configOptions.stepName]
+			if !ok {
+				return metadata, errors.Errorf("could not retrieve by stepName %v", configOptions.stepName)
+			}
+		} else {
+			return metadata, errors.Errorf("either one of stepMetadata or stepName parameter has to be passed")
+		}
+	}
+	return metadata, nil
 }

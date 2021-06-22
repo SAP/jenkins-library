@@ -94,9 +94,8 @@ spec:
         type: string
         aliases:
           - name: changeManagement/cts/deployConfigFile
-        description: "The ABAP package name of your application"
-        aliases:
           - name: cts/deployConfigFile
+        description: "The ABAP package name of your application"
         scope:
           - PARAMETERS
           - STAGES

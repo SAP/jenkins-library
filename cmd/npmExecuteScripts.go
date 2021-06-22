@@ -12,6 +12,7 @@ func npmExecuteScripts(config npmExecuteScriptsOptions, telemetryData *telemetry
 
 	err := runNpmExecuteScripts(npmExecutor, &config)
 	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
@@ -25,6 +26,17 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 
 		err = npmExecutor.InstallAllDependencies(packageJSONFiles)
 		if err != nil {
+			return err
+		}
+	}
+
+	if config.CreateBOM {
+		packageJSONFiles, err := npmExecutor.FindPackageJSONFilesWithExcludes(config.BuildDescriptorExcludeList)
+		if err != nil {
+			return err
+		}
+
+		if err := npmExecutor.CreateBOM(packageJSONFiles); err != nil {
 			return err
 		}
 	}

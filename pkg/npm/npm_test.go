@@ -1,10 +1,11 @@
 package npm
 
 import (
-	"github.com/SAP/jenkins-library/pkg/mock"
-	"github.com/stretchr/testify/assert"
 	"path/filepath"
 	"testing"
+
+	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/stretchr/testify/assert"
 )
 
 type npmMockUtilsBundle struct {
@@ -335,6 +336,33 @@ func TestNpm(t *testing.T) {
 			assert.True(t, xvfbCall.Execution.Killed)
 
 			assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "foo"}}, utils.execRunner.Calls[2])
+		}
+	})
+
+	t.Run("Create BOM", func(t *testing.T) {
+		utils := newNpmMockUtilsBundle()
+		utils.AddFile("package.json", []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
+		utils.AddFile("package-lock.json", []byte("{}"))
+		utils.AddFile(filepath.Join("src", "package.json"), []byte("{\"scripts\": { \"ci-lint\": \"exit 0\" } }"))
+		utils.AddFile(filepath.Join("src", "package-lock.json"), []byte("{}"))
+
+		options := ExecutorOptions{}
+		options.DefaultNpmRegistry = "foo.bar"
+
+		exec := &Execute{
+			Utils:   &utils,
+			Options: options,
+		}
+		err := exec.CreateBOM([]string{"package.json", filepath.Join("src", "package.json")})
+
+		if assert.NoError(t, err) {
+			if assert.Equal(t, 3, len(utils.execRunner.Calls)) {
+				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"install", "@cyclonedx/bom", "--no-save"}}, utils.execRunner.Calls[0])
+				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: []string{"cyclonedx-bom", ".", "--schema", "1.2",
+					"--include-license-text", "false", "--include-dev", "false", "--output", "bom.xml"}}, utils.execRunner.Calls[1])
+				assert.Equal(t, mock.ExecCall{Exec: "npx", Params: []string{"cyclonedx-bom", "src", "--append", "bom.xml",
+					"--schema", "1.2", "--include-license-text", "false", "--include-dev", "false", "--output", "bom.xml"}}, utils.execRunner.Calls[2])
+			}
 		}
 	})
 }

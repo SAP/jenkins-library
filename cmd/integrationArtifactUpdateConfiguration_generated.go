@@ -9,6 +9,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
@@ -32,11 +33,12 @@ func IntegrationArtifactUpdateConfigurationCommand() *cobra.Command {
 	metadata := integrationArtifactUpdateConfigurationMetadata()
 	var stepConfig integrationArtifactUpdateConfigurationOptions
 	var startTime time.Time
+	var logCollector *log.CollectorHook
 
 	var createIntegrationArtifactUpdateConfigurationCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Update integration flow Configuration parameter",
-		Long:  `With this step you can update the value for a configuration parameters of a designtime integration flow using the OData API. Learn more about the SAP Cloud Integration remote API for configuration update of the integration flow parameter [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/83733a65c0214aa6acba035e8640bb5a.html).`,
+		Long:  `With this step you can update the value for a configuration parameters of a designtime integration flow using the OData API. Learn more about the SAP Cloud Integration remote API for configuration update of the integration flow parameter [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/d1679a80543f46509a7329243b595bdb.html).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -59,6 +61,11 @@ func IntegrationArtifactUpdateConfigurationCommand() *cobra.Command {
 				log.RegisterHook(&sentryHook)
 			}
 
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
+				log.RegisterHook(logCollector)
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -69,10 +76,20 @@ func IntegrationArtifactUpdateConfigurationCommand() *cobra.Command {
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
+				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunk.Send(&telemetryData, logCollector)
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunk.Initialize(GeneralConfig.CorrelationID,
+					GeneralConfig.HookConfig.SplunkConfig.Dsn,
+					GeneralConfig.HookConfig.SplunkConfig.Token,
+					GeneralConfig.HookConfig.SplunkConfig.Index,
+					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+			}
 			integrationArtifactUpdateConfiguration(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -114,6 +131,9 @@ func integrationArtifactUpdateConfigurationMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "cpiCredentialsId", Description: "Jenkins credentials ID containing username and password for authentication to the SAP Cloud Platform Integration API's", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name: "username",
@@ -128,6 +148,7 @@ func integrationArtifactUpdateConfigurationMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_username"),
 					},
 					{
 						Name: "password",
@@ -142,6 +163,7 @@ func integrationArtifactUpdateConfigurationMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_password"),
 					},
 					{
 						Name:        "integrationFlowId",
@@ -150,6 +172,7 @@ func integrationArtifactUpdateConfigurationMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_integrationFlowId"),
 					},
 					{
 						Name:        "integrationFlowVersion",
@@ -158,6 +181,7 @@ func integrationArtifactUpdateConfigurationMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_integrationFlowVersion"),
 					},
 					{
 						Name:        "platform",
@@ -166,6 +190,7 @@ func integrationArtifactUpdateConfigurationMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_platform"),
 					},
 					{
 						Name:        "host",
@@ -174,6 +199,7 @@ func integrationArtifactUpdateConfigurationMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_host"),
 					},
 					{
 						Name:        "oAuthTokenProviderUrl",
@@ -182,6 +208,7 @@ func integrationArtifactUpdateConfigurationMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_oAuthTokenProviderUrl"),
 					},
 					{
 						Name:        "parameterKey",
@@ -190,6 +217,7 @@ func integrationArtifactUpdateConfigurationMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_parameterKey"),
 					},
 					{
 						Name:        "parameterValue",
@@ -198,6 +226,7 @@ func integrationArtifactUpdateConfigurationMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_parameterValue"),
 					},
 				},
 			},
