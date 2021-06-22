@@ -31,13 +31,21 @@ func WritePipelineEnv() *cobra.Command {
 }
 
 func runWritePipelineEnv() error {
-	inBytes, err := ioutil.ReadAll(os.Stdin)
-	if err != nil {
-		return err
+	pipelineEnv, ok := os.LookupEnv("PIPER_pipelineEnv")
+	inBytes := []byte(pipelineEnv)
+	if !ok {
+		var err error
+		inBytes, err = ioutil.ReadAll(os.Stdin)
+		if err != nil {
+			return err
+		}
+	}
+	if len(inBytes) == 0 {
+		return nil
 	}
 
 	commonPipelineEnv := piperenv.CPEMap{}
-	err = json.Unmarshal(inBytes, &commonPipelineEnv)
+	err := json.Unmarshal(inBytes, &commonPipelineEnv)
 	if err != nil {
 		return err
 	}
