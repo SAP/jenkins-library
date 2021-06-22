@@ -254,10 +254,10 @@ func (c *Client) initialize() *http.Client {
 		log.Entry().Info("adding certs for tls to trust")
 		err := c.configureTLSToTrustCertificates(transport)
 		if err != nil {
-			log.Entry().Info("anil test something went wrong %v", err)
+			log.Entry().Infof("adding certs for tls config failed : v%, continuing with the existing tsl config", err)
 		}
 	} else {
-		log.Entry().Info("Anil test : not adding certs")
+		log.Entry().Info("no trusted certs found continuing with existing tls config")
 	}
 
 	var httpClient *http.Client
@@ -465,12 +465,11 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 			rootCAs = x509.NewCertPool()
 		}
 
-		filename := path.Base(certificate) // decode?
+		filename := path.Base(certificate)
 		filename = strings.ReplaceAll(filename, " ", "")
 		target := filepath.Join(trustStoreDir, filename)
 		if exists, _ := fileUtils.FileExists(target); !exists {
 			log.Entry().WithField("source", certificate).WithField("target", target).Info("Downloading TLS certificate")
-			// download certificate
 			request, err := http.NewRequest("GET", certificate, nil)
 			if err != nil {
 				return err
@@ -505,8 +504,8 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 				if err != nil {
 					return errors.Wrapf(err, "unable to copy content from url to file %v", filename)
 				}
-				// Get the SystemCertPool, continue with an empty pool on error
 
+				// Get the SystemCertPool, continue with an empty pool on error
 				certs, err := ioutil.ReadFile(target)
 				if err != nil {
 					return errors.Wrapf(err, "Failed to read cert file %v", err, certificate)
@@ -515,6 +514,7 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 				// Append our cert to the system pool
 				if ok := rootCAs.AppendCertsFromPEM(certs); !ok {
 					log.Entry().Infof("cert not appended to root ca %v", certificate)
+					return fmt.Errorf("cert not appended to root ca %v", certificate)
 				}
 
 				*transport = TransportWrapper{
