@@ -73,8 +73,9 @@ func runHadolint(config hadolintExecuteOptions, utils hadolintUtils) error {
 	// load config file from URL
 	if !hasConfigurationFile(config.ConfigurationFile, utils) && len(config.ConfigurationURL) > 0 {
 		clientOptions := piperhttp.ClientOptions{
-			TransportTimeout:          20 * time.Second,
-			TransportSkipVerification: true,
+			TransportTimeout: 20 * time.Second,
+			/* TransportSkipVerification: true, */
+			TrustedCerts: []string{"http://aia.pki.co.sap.com/aia/SAP%20Global%20Root%20CA.crt", "http://aia.pki.co.sap.com/aia/SAPNetCA_G2.crt"},
 		}
 		if len(config.ConfigurationUsername) > 0 {
 			clientOptions.Username = config.ConfigurationUsername
