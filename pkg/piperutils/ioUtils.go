@@ -12,7 +12,7 @@ func CopyData(dst io.Writer, src io.Reader) (int64, error) {
 	bytesRead := int64(0)
 	bytesWritten := int64(0)
 	done := false
-	
+
 	for {
 		n, err := src.Read(tmp)
 		bytesRead += int64(n)
