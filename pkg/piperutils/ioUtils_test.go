@@ -14,7 +14,8 @@ func TestCopyData(t *testing.T) {
 		if err != nil {
 			t.Fatal("Failed to create src file")
 		}
-		_, err = src.Write([]byte{byte(1), byte(2), byte(3)})
+		data := []byte{byte(1), byte(2), byte(3)}
+		_, err = src.Write(data)
 		src.Close()
 		src, err = os.OpenFile(srcName, os.O_CREATE, 0700)
 
@@ -25,9 +26,16 @@ func TestCopyData(t *testing.T) {
 		}
 
 		result, err := CopyData(dst, src)
+		src.Close()
+		dst.Close()
+		dst, err = os.OpenFile(dstName, os.O_CREATE, 0700)
+		dataRead := make([]byte, 3)
+		dst.Read(dataRead)
+		dst.Close()
 
 		assert.NoError(t, err, "Didn't expert error but got one")
 		assert.Equal(t, int64(3), result, "Expected true but got false")
+		assert.Equal(t, data, dataRead, "data written %v is different to data read %v")
 	})
 	runInTempDir(t, "copying file succeeds", "dir2", func(t *testing.T) {
 		srcName := "testFile"
@@ -50,6 +58,8 @@ func TestCopyData(t *testing.T) {
 		}
 
 		result, err := CopyData(dst, src)
+		src.Close()
+		dst.Close()
 
 		assert.NoError(t, err, "Didn't expert error but got one")
 		assert.Equal(t, int64(300), result, "Expected true but got false")
@@ -75,6 +85,8 @@ func TestCopyData(t *testing.T) {
 		}
 
 		result, err := CopyData(dst, src)
+		src.Close()
+		dst.Close()
 
 		assert.Error(t, err, "Expected error but got none")
 		assert.Equal(t, int64(0), result, "Expected true but got false")
@@ -93,15 +105,17 @@ func TestCopyData(t *testing.T) {
 		src.Close()
 		src, err = os.OpenFile(srcName, os.O_CREATE, 0700)
 
-		dstName := "testFile2"
+		dstName := "testFileExclus"
 		dst, err := os.OpenFile(dstName, os.O_CREATE, 0700)
 		if err != nil {
-			t.Fatal("Failed to create dst file")
+			t.Fatalf("Failed to create dst file: %v", err)
 		}
 		dst.Close()
 		dst, err = os.OpenFile(dstName, os.O_RDONLY, 0700)
 
 		result, err := CopyData(dst, src)
+		src.Close()
+		dst.Close()
 
 		assert.Error(t, err, "Expected error but got none")
 		assert.Equal(t, int64(0), result, "Expected true but got false")
