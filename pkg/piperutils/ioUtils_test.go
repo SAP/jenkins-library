@@ -9,17 +9,23 @@ import (
 
 func TestCopyData(t *testing.T) {
 	runInTempDir(t, "copying file succeeds", "dir1", func(t *testing.T) {
-		srcName := "testFile"
+		srcName := "testFileSrc"
 		src, err := os.OpenFile(srcName, os.O_CREATE, 0700)
 		if err != nil {
 			t.Fatal("Failed to create src file")
 		}
 		data := []byte{byte(1), byte(2), byte(3)}
 		_, err = src.Write(data)
+		if err != nil {
+			t.Fatal("Failed to write data to src file")
+		}
 		src.Close()
 		src, err = os.OpenFile(srcName, os.O_CREATE, 0700)
+		if err != nil {
+			t.Fatal("Failed to reopen src file")
+		}
 
-		dstName := "testFile2"
+		dstName := "testFileTgt"
 		dst, err := os.OpenFile(dstName, os.O_CREATE, 0700)
 		if err != nil {
 			t.Fatal("Failed to create dst file")
