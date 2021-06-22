@@ -29,18 +29,6 @@ func mavenBuild(config mavenBuildOptions, telemetryData *telemetry.CustomData) {
 func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomData, utils maven.Utils) error {
 	downloadClient := &piperhttp.Client{}
 
-	clientOptions := piperhttp.ClientOptions{
-		TrustedCerts: []string{"http://aia.pki.co.sap.com/aia/SAP%20Global%20Root%20CA.crt", "http://aia.pki.co.sap.com/aia/SAPNetCA_G2.crt"},
-	}
-
-	downloadClient.SetOptions(clientOptions)
-
-	if err := downloadClient.DownloadFile("https://github.wdf.sap.corp/raw/SGS/Hadolint-Dockerfile/master/.hadolint.yaml?token=AAABWT5YTRYTYIBFAFPCIETA3LPKK", "hadolint.yaml", nil, nil); err != nil {
-		return errors.Wrapf(err, "Download of TLS certificate failed")
-	} else {
-		log.Entry().Info("download file successfull")
-	}
-
 	var flags = []string{"-update-snapshots", "--batch-mode"}
 
 	if len(config.Profiles) > 0 {
