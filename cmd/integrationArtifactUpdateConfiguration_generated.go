@@ -15,7 +15,7 @@ import (
 )
 
 type integrationArtifactUpdateConfigurationOptions struct {
-	ServiceKey             string `json:"serviceKey,omitempty"`
+	APIServiceKey          string `json:"apiServiceKey,omitempty"`
 	IntegrationFlowID      string `json:"integrationFlowId,omitempty"`
 	IntegrationFlowVersion string `json:"integrationFlowVersion,omitempty"`
 	Platform               string `json:"platform,omitempty"`
@@ -50,7 +50,7 @@ func IntegrationArtifactUpdateConfigurationCommand() *cobra.Command {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
-			log.RegisterSecret(stepConfig.ServiceKey)
+			log.RegisterSecret(stepConfig.APIServiceKey)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -97,14 +97,14 @@ func IntegrationArtifactUpdateConfigurationCommand() *cobra.Command {
 }
 
 func addIntegrationArtifactUpdateConfigurationFlags(cmd *cobra.Command, stepConfig *integrationArtifactUpdateConfigurationOptions) {
-	cmd.Flags().StringVar(&stepConfig.ServiceKey, "serviceKey", os.Getenv("PIPER_serviceKey"), "Service key JSON string to access the Cloud Integration API")
+	cmd.Flags().StringVar(&stepConfig.APIServiceKey, "apiServiceKey", os.Getenv("PIPER_apiServiceKey"), "Service key JSON string to access the Cloud Integration API")
 	cmd.Flags().StringVar(&stepConfig.IntegrationFlowID, "integrationFlowId", os.Getenv("PIPER_integrationFlowId"), "Specifies the ID of the Integration Flow artifact")
 	cmd.Flags().StringVar(&stepConfig.IntegrationFlowVersion, "integrationFlowVersion", os.Getenv("PIPER_integrationFlowVersion"), "Specifies the version of the Integration Flow artifact")
 	cmd.Flags().StringVar(&stepConfig.Platform, "platform", os.Getenv("PIPER_platform"), "Specifies the running platform of the SAP Cloud platform integraion service")
 	cmd.Flags().StringVar(&stepConfig.ParameterKey, "parameterKey", os.Getenv("PIPER_parameterKey"), "Specifies the externalized parameter name.")
 	cmd.Flags().StringVar(&stepConfig.ParameterValue, "parameterValue", os.Getenv("PIPER_parameterValue"), "Specifies the externalized parameter value.")
 
-	cmd.MarkFlagRequired("serviceKey")
+	cmd.MarkFlagRequired("apiServiceKey")
 	cmd.MarkFlagRequired("integrationFlowId")
 	cmd.MarkFlagRequired("integrationFlowVersion")
 	cmd.MarkFlagRequired("parameterKey")
@@ -122,11 +122,11 @@ func integrationArtifactUpdateConfigurationMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "cpiServiceKeyCredentialId", Description: "Jenkins credential ID for secret text containing the service key to the SAP Cloud Integration API", Type: "jenkins"},
+					{Name: "cpiAPIServiceKeyCredentialId", Description: "Jenkins credential ID for secret text containing the service key to the SAP Cloud Integration API", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{
-						Name: "serviceKey",
+						Name: "apiServiceKey",
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "cpiServiceKeyCredentialId",
@@ -138,7 +138,7 @@ func integrationArtifactUpdateConfigurationMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_serviceKey"),
+						Default:   os.Getenv("PIPER_apiServiceKey"),
 					},
 					{
 						Name:        "integrationFlowId",

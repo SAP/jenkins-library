@@ -15,7 +15,7 @@ import (
 )
 
 type integrationArtifactUploadOptions struct {
-	ServiceKey             string `json:"serviceKey,omitempty"`
+	APIServiceKey          string `json:"apiServiceKey,omitempty"`
 	IntegrationFlowID      string `json:"integrationFlowId,omitempty"`
 	IntegrationFlowVersion string `json:"integrationFlowVersion,omitempty"`
 	IntegrationFlowName    string `json:"integrationFlowName,omitempty"`
@@ -50,7 +50,7 @@ func IntegrationArtifactUploadCommand() *cobra.Command {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
-			log.RegisterSecret(stepConfig.ServiceKey)
+			log.RegisterSecret(stepConfig.APIServiceKey)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -97,14 +97,14 @@ func IntegrationArtifactUploadCommand() *cobra.Command {
 }
 
 func addIntegrationArtifactUploadFlags(cmd *cobra.Command, stepConfig *integrationArtifactUploadOptions) {
-	cmd.Flags().StringVar(&stepConfig.ServiceKey, "serviceKey", os.Getenv("PIPER_serviceKey"), "Service key JSON string to access the Cloud Integration API")
+	cmd.Flags().StringVar(&stepConfig.APIServiceKey, "apiServiceKey", os.Getenv("PIPER_apiServiceKey"), "Service key JSON string to access the Cloud Integration API")
 	cmd.Flags().StringVar(&stepConfig.IntegrationFlowID, "integrationFlowId", os.Getenv("PIPER_integrationFlowId"), "Specifies the ID of the Integration Flow artifact")
 	cmd.Flags().StringVar(&stepConfig.IntegrationFlowVersion, "integrationFlowVersion", os.Getenv("PIPER_integrationFlowVersion"), "Specifies the version of the Integration Flow artifact")
 	cmd.Flags().StringVar(&stepConfig.IntegrationFlowName, "integrationFlowName", os.Getenv("PIPER_integrationFlowName"), "Specifies the Name of the Integration Flow artifact")
 	cmd.Flags().StringVar(&stepConfig.PackageID, "packageId", os.Getenv("PIPER_packageId"), "Specifies the ID of the Integration Package")
 	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "Specifies integration artifact relative file path.")
 
-	cmd.MarkFlagRequired("serviceKey")
+	cmd.MarkFlagRequired("apiServiceKey")
 	cmd.MarkFlagRequired("integrationFlowId")
 	cmd.MarkFlagRequired("integrationFlowVersion")
 	cmd.MarkFlagRequired("integrationFlowName")
@@ -123,11 +123,11 @@ func integrationArtifactUploadMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "cpiServiceKeyCredentialId", Description: "Jenkins credential ID for secret text containing the service key to the SAP Cloud Integration API", Type: "jenkins"},
+					{Name: "cpiAPIServiceKeyCredentialId", Description: "Jenkins credential ID for secret text containing the service key to the SAP Cloud Integration API", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{
-						Name: "serviceKey",
+						Name: "apiServiceKey",
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "cpiServiceKeyCredentialId",
@@ -139,7 +139,7 @@ func integrationArtifactUploadMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_serviceKey"),
+						Default:   os.Getenv("PIPER_apiServiceKey"),
 					},
 					{
 						Name:        "integrationFlowId",

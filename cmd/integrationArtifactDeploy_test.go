@@ -29,7 +29,7 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Successfull Integration Flow Deploy Test", func(t *testing.T) {
-		serviceKey := `{
+		apiServiceKey := `{
 			"oauth": {
 				"url": "https://demo",
 				"clientid": "demouser",
@@ -39,7 +39,7 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 		}`
 
 		config := integrationArtifactDeployOptions{
-			ServiceKey:             serviceKey,
+			APIServiceKey:          apiServiceKey,
 			IntegrationFlowID:      "flow1",
 			IntegrationFlowVersion: "1.0.1",
 			Platform:               "cf",
@@ -63,7 +63,7 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 
 	t.Run("Trigger Failure for Integration Flow Deployment", func(t *testing.T) {
 
-		serviceKey := `{
+		apiServiceKey := `{
 			"oauth": {
 				"url": "https://demo",
 				"clientid": "demouser",
@@ -73,7 +73,7 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 		}`
 
 		config := integrationArtifactDeployOptions{
-			ServiceKey:             serviceKey,
+			APIServiceKey:          apiServiceKey,
 			IntegrationFlowID:      "flow1",
 			IntegrationFlowVersion: "1.0.1",
 			Platform:               "cf",
@@ -97,7 +97,7 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 
 	t.Run("Failed Integration Flow Deploy Test", func(t *testing.T) {
 
-		serviceKey := `{
+		apiServiceKey := `{
 			"oauth": {
 				"url": "https://demo",
 				"clientid": "demouser",
@@ -107,7 +107,7 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 		}`
 
 		config := integrationArtifactDeployOptions{
-			ServiceKey:             serviceKey,
+			APIServiceKey:          apiServiceKey,
 			IntegrationFlowID:      "flow1",
 			IntegrationFlowVersion: "1.0.1",
 			Platform:               "cf",
@@ -123,7 +123,7 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 	t.Run("Successfull GetIntegrationArtifactDeployStatus Test", func(t *testing.T) {
 		clientOptions := piperhttp.ClientOptions{}
 		clientOptions.Token = fmt.Sprintf("Bearer %s", "Demo")
-		serviceKey := `{
+		apiServiceKey := `{
 			"oauth": {
 				"url": "https://demo",
 				"clientid": "demouser",
@@ -133,7 +133,7 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 		}`
 
 		config := integrationArtifactDeployOptions{
-			ServiceKey:             serviceKey,
+			APIServiceKey:          apiServiceKey,
 			IntegrationFlowID:      "flow1",
 			IntegrationFlowVersion: "1.0.1",
 			Platform:               "cf",
@@ -151,7 +151,7 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 	t.Run("Successfull GetIntegrationArtifactDeployError Test", func(t *testing.T) {
 		clientOptions := piperhttp.ClientOptions{}
 		clientOptions.Token = fmt.Sprintf("Bearer %s", "Demo")
-		serviceKey := `{
+		apiServiceKey := `{
 			"oauth": {
 				"url": "https://demo",
 				"clientid": "demouser",
@@ -161,7 +161,7 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 		}`
 
 		config := integrationArtifactDeployOptions{
-			ServiceKey:             serviceKey,
+			APIServiceKey:          apiServiceKey,
 			IntegrationFlowID:      "flow1",
 			IntegrationFlowVersion: "1.0.1",
 			Platform:               "cf",

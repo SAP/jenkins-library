@@ -63,7 +63,7 @@ func integrationArtifactUpdateConfiguration(config integrationArtifactUpdateConf
 
 func runIntegrationArtifactUpdateConfiguration(config *integrationArtifactUpdateConfigurationOptions, telemetryData *telemetry.CustomData, httpClient piperhttp.Sender) error {
 	clientOptions := piperhttp.ClientOptions{}
-	serviceKey, err := cpi.ReadCpiServiceKey(config.ServiceKey)
+	serviceKey, err := cpi.ReadCpiServiceKey(config.APIServiceKey)
 	if err != nil {
 		return err
 	}

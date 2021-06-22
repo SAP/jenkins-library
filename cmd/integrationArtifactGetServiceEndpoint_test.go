@@ -24,7 +24,7 @@ func TestRunIntegrationArtifactGetServiceEndpoint(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Successfully Test of Get Integration Flow Service Endpoint", func(t *testing.T) {
-		serviceKey := `{
+		apiServiceKey := `{
 			"oauth": {
 				"url": "https://demo",
 				"clientid": "demouser",
@@ -33,7 +33,7 @@ func TestRunIntegrationArtifactGetServiceEndpoint(t *testing.T) {
 			}
 		}`
 		config := integrationArtifactGetServiceEndpointOptions{
-			ServiceKey:        serviceKey,
+			APIServiceKey:     apiServiceKey,
 			IntegrationFlowID: "CPI_IFlow_Call_using_Cert",
 			Platform:          "cf",
 		}
@@ -57,7 +57,7 @@ func TestRunIntegrationArtifactGetServiceEndpoint(t *testing.T) {
 	})
 
 	t.Run("Failed Test of Get Integration Flow MPL Status", func(t *testing.T) {
-		serviceKey := `{
+		apiServiceKey := `{
 			"oauth": {
 				"url": "https://demo",
 				"clientid": "demouser",
@@ -66,7 +66,7 @@ func TestRunIntegrationArtifactGetServiceEndpoint(t *testing.T) {
 			}
 		}`
 		config := integrationArtifactGetServiceEndpointOptions{
-			ServiceKey:        serviceKey,
+			APIServiceKey:     apiServiceKey,
 			IntegrationFlowID: "CPI_IFlow_Call_using_Cert",
 			Platform:          "cf",
 		}

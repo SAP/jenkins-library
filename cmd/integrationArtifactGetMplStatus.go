@@ -65,7 +65,7 @@ func runIntegrationArtifactGetMplStatus(
 	httpClient piperhttp.Sender,
 	commonPipelineEnvironment *integrationArtifactGetMplStatusCommonPipelineEnvironment) error {
 
-	serviceKey, err := cpi.ReadCpiServiceKey(config.ServiceKey)
+	serviceKey, err := cpi.ReadCpiServiceKey(config.APIServiceKey)
 	if err != nil {
 		return err
 	}

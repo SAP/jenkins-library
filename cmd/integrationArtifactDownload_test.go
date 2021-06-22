@@ -30,7 +30,7 @@ func TestRunIntegrationArtifactDownload(t *testing.T) {
 		tempDir, tmpErr := ioutil.TempDir("", "")
 		defer os.RemoveAll(tempDir) // clean up
 		assert.NoError(t, tmpErr, "Error when creating temp dir")
-		serviceKey := `{
+		apiServiceKey := `{
 			"oauth": {
 				"url": "https://demo",
 				"clientid": "demouser",
@@ -40,7 +40,7 @@ func TestRunIntegrationArtifactDownload(t *testing.T) {
 		}`
 
 		config := integrationArtifactDownloadOptions{
-			ServiceKey:             serviceKey,
+			APIServiceKey:          apiServiceKey,
 			IntegrationFlowID:      "flow1",
 			IntegrationFlowVersion: "1.0.1",
 			DownloadPath:           tempDir,
@@ -64,7 +64,7 @@ func TestRunIntegrationArtifactDownload(t *testing.T) {
 	})
 
 	t.Run("Failed case of Integration Flow artifact Download", func(t *testing.T) {
-		serviceKey := `{
+		apiServiceKey := `{
 			"oauth": {
 				"url": "https://demo",
 				"clientid": "demouser",
@@ -74,7 +74,7 @@ func TestRunIntegrationArtifactDownload(t *testing.T) {
 		}`
 
 		config := integrationArtifactDownloadOptions{
-			ServiceKey:             serviceKey,
+			APIServiceKey:          apiServiceKey,
 			IntegrationFlowID:      "flow1",
 			IntegrationFlowVersion: "1.0.1",
 			DownloadPath:           "tmp",

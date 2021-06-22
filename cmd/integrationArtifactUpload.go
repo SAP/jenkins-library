@@ -65,7 +65,7 @@ func integrationArtifactUpload(config integrationArtifactUploadOptions, telemetr
 
 func runIntegrationArtifactUpload(config *integrationArtifactUploadOptions, telemetryData *telemetry.CustomData, fileUtils piperutils.FileUtils, httpClient piperhttp.Sender) error {
 
-	serviceKey, err := cpi.ReadCpiServiceKey(config.ServiceKey)
+	serviceKey, err := cpi.ReadCpiServiceKey(config.APIServiceKey)
 	if err != nil {
 		return err
 	}

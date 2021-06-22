@@ -64,7 +64,7 @@ func runIntegrationArtifactGetServiceEndpoint(config *integrationArtifactGetServ
 	clientOptions := piperhttp.ClientOptions{}
 	header := make(http.Header)
 	header.Add("Accept", "application/json")
-	serviceKey, err := cpi.ReadCpiServiceKey(config.ServiceKey)
+	serviceKey, err := cpi.ReadCpiServiceKey(config.APIServiceKey)
 	if err != nil {
 		return err
 	}

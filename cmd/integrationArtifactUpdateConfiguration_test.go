@@ -22,7 +22,7 @@ func TestRunIntegrationArtifactUpdateConfiguration(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Successfully update of Integration Flow configuration parameter test", func(t *testing.T) {
-		serviceKey := `{
+		apiServiceKey := `{
 			"oauth": {
 				"url": "https://demo",
 				"clientid": "demouser",
@@ -31,7 +31,7 @@ func TestRunIntegrationArtifactUpdateConfiguration(t *testing.T) {
 			}
 		}`
 		config := integrationArtifactUpdateConfigurationOptions{
-			ServiceKey:             serviceKey,
+			APIServiceKey:          apiServiceKey,
 			IntegrationFlowID:      "flow1",
 			IntegrationFlowVersion: "1.0.1",
 			ParameterKey:           "myheader",
@@ -56,7 +56,7 @@ func TestRunIntegrationArtifactUpdateConfiguration(t *testing.T) {
 	})
 
 	t.Run("Failed case of Integration Flow configuration parameter Test", func(t *testing.T) {
-		serviceKey := `{
+		apiServiceKey := `{
 			"oauth": {
 				"url": "https://demo",
 				"clientid": "demouser",
@@ -65,7 +65,7 @@ func TestRunIntegrationArtifactUpdateConfiguration(t *testing.T) {
 			}
 		}`
 		config := integrationArtifactUpdateConfigurationOptions{
-			ServiceKey:             serviceKey,
+			APIServiceKey:          apiServiceKey,
 			IntegrationFlowID:      "flow1",
 			IntegrationFlowVersion: "1.0.1",
 			ParameterKey:           "myheader",
@@ -79,7 +79,7 @@ func TestRunIntegrationArtifactUpdateConfiguration(t *testing.T) {
 	})
 
 	t.Run("Failed case of Integration Flow configuration parameter test with error body", func(t *testing.T) {
-		serviceKey := `{
+		apiServiceKey := `{
 			"oauth": {
 				"url": "https://demo",
 				"clientid": "demouser",
@@ -88,7 +88,7 @@ func TestRunIntegrationArtifactUpdateConfiguration(t *testing.T) {
 			}
 		}`
 		config := integrationArtifactUpdateConfigurationOptions{
-			ServiceKey:             serviceKey,
+			APIServiceKey:          apiServiceKey,
 			IntegrationFlowID:      "flow1",
 			IntegrationFlowVersion: "1.0.1",
 			ParameterKey:           "myheader",

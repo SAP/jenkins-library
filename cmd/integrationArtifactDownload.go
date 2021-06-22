@@ -66,7 +66,7 @@ func runIntegrationArtifactDownload(config *integrationArtifactDownloadOptions, 
 	clientOptions := piperhttp.ClientOptions{}
 	header := make(http.Header)
 	header.Add("Accept", "application/zip")
-	serviceKey, err := cpi.ReadCpiServiceKey(config.ServiceKey)
+	serviceKey, err := cpi.ReadCpiServiceKey(config.APIServiceKey)
 	if err != nil {
 		return err
 	}
