@@ -1,12 +1,8 @@
 package cmd
 
 import (
-	"encoding/base64"
-	"fmt"
-
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/npm"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 )
 
@@ -51,34 +47,12 @@ func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOpt
 	}
 
 	if config.Publish {
-		npmrc := npm.NewNPMRC()
-
-		exists, err := piperutils.FileExists(".npmrc")
-		if err != nil {
-			return err
-		}
-		if !exists {
-			npmrc.Create()
-		}
-
-		token := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", config.RepositoryUsername, config.RepositoryPassword)))
-
-		err = npmrc.SetAuth(config.RepositoryURL, token)
-		if err != nil {
-			return err
-		}
-
-		err = npmrc.Write()
-		if err != nil {
-			return err
-		}
-
 		packageJSONFiles, err := npmExecutor.FindPackageJSONFilesWithExcludes(config.BuildDescriptorExcludeList)
 		if err != nil {
 			return err
 		}
 
-		err = npmExecutor.PublishAllPackages(packageJSONFiles, config.RepositoryURL)
+		err = npmExecutor.PublishAllPackages(packageJSONFiles, config.RepositoryURL, config.RepositoryUsername, config.RepositoryPassword)
 		if err != nil {
 			return err
 		}
