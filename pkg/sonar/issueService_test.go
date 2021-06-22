@@ -18,7 +18,7 @@ func TestIssueService(t *testing.T) {
 		defer httpmock.DeactivateAndReset()
 
 		sender := &piperhttp.Client{}
-		sender.SetOptions(piperhttp.ClientOptions{UseDefaultTransport: true})
+		sender.SetOptions(piperhttp.ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
 		// add response handler
 		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+EndpointIssuesSearch+"", httpmock.NewStringResponder(http.StatusOK, responseIssueSearchCritical))
 		// create service instance
@@ -35,7 +35,7 @@ func TestIssueService(t *testing.T) {
 		defer httpmock.DeactivateAndReset()
 
 		sender := &piperhttp.Client{}
-		sender.SetOptions(piperhttp.ClientOptions{UseDefaultTransport: true})
+		sender.SetOptions(piperhttp.ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
 		// add response handler
 		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+EndpointIssuesSearch+"", httpmock.NewStringResponder(http.StatusNotFound, responseIssueSearchError))
 		// create service instance
@@ -52,7 +52,7 @@ func TestIssueService(t *testing.T) {
 		defer httpmock.DeactivateAndReset()
 
 		sender := &piperhttp.Client{}
-		sender.SetOptions(piperhttp.ClientOptions{UseDefaultTransport: true})
+		sender.SetOptions(piperhttp.ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
 		// add response handler
 		httpmock.RegisterResponder(http.MethodGet, testURL+"/api/"+EndpointIssuesSearch+"", httpmock.NewStringResponder(http.StatusOK, responseIssueSearchCritical))
 		// create service instance

@@ -121,6 +121,7 @@ func jsonApplyPatchMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_input"),
 					},
 					{
 						Name:        "patch",
@@ -129,6 +130,7 @@ func jsonApplyPatchMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_patch"),
 					},
 					{
 						Name:        "output",
@@ -137,6 +139,7 @@ func jsonApplyPatchMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_output"),
 					},
 				},
 			},

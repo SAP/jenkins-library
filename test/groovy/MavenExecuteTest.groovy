@@ -56,6 +56,8 @@ class MavenExecuteTest extends BasePiperTest {
         )
 
         helper.registerAllowedMethod('findFiles', [Map.class], {return null})
+        helper.registerAllowedMethod("writePipelineEnv", [Map.class], {m -> return })
+        helper.registerAllowedMethod("readPipelineEnv", [Map.class], {m -> return })
     }
 
     @Test

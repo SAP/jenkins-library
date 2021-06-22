@@ -51,7 +51,9 @@ func runGithubCreateIssue(ctx context.Context, config *githubCreateIssueOptions,
 
 	newIssue, resp, err := ghCreateIssueService.Create(ctx, config.Owner, config.Repository, &issue)
 	if err != nil {
-		log.Entry().Errorf("GitHub response code %v", resp.Status)
+		if resp != nil {
+			log.Entry().Errorf("GitHub response code %v", resp.Status)
+		}
 		return errors.Wrap(err, "error occurred when creating issue")
 	}
 	log.Entry().Debugf("New issue created: %v", newIssue)
