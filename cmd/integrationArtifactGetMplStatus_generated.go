@@ -11,6 +11,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
+	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
@@ -60,11 +61,12 @@ func IntegrationArtifactGetMplStatusCommand() *cobra.Command {
 	var stepConfig integrationArtifactGetMplStatusOptions
 	var startTime time.Time
 	var commonPipelineEnvironment integrationArtifactGetMplStatusCommonPipelineEnvironment
+	var logCollector *log.CollectorHook
 
 	var createIntegrationArtifactGetMplStatusCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Get the MPL status of an integration flow",
-		Long:  `With this step you can obtain information about the Message processing log status of integration flow using OData API.Learn more about the SAP Cloud Integration remote API for getting MPL status messages processed of an deployed integration artifact [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/05fa2a8b31d14c11a4e72e833e5e9f7d.html).`,
+		Long:  `With this step you can obtain information about the Message Processing Log (MPL) status of integration flow using OData API. Learn more about the SAP Cloud Integration remote API for getting MPL status messages processed of an deployed integration artifact [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/d1679a80543f46509a7329243b595bdb.html).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -87,6 +89,11 @@ func IntegrationArtifactGetMplStatusCommand() *cobra.Command {
 				log.RegisterHook(&sentryHook)
 			}
 
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
+				log.RegisterHook(logCollector)
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -98,10 +105,20 @@ func IntegrationArtifactGetMplStatusCommand() *cobra.Command {
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
+				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunk.Send(&telemetryData, logCollector)
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunk.Initialize(GeneralConfig.CorrelationID,
+					GeneralConfig.HookConfig.SplunkConfig.Dsn,
+					GeneralConfig.HookConfig.SplunkConfig.Token,
+					GeneralConfig.HookConfig.SplunkConfig.Index,
+					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+			}
 			integrationArtifactGetMplStatus(stepConfig, &telemetryData, &commonPipelineEnvironment)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -137,6 +154,9 @@ func integrationArtifactGetMplStatusMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "cpiCredentialsId", Description: "Jenkins credentials ID containing username and password for authentication to the SAP Cloud Platform Integration API's", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name: "username",
@@ -151,6 +171,7 @@ func integrationArtifactGetMplStatusMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_username"),
 					},
 					{
 						Name: "password",
@@ -165,6 +186,7 @@ func integrationArtifactGetMplStatusMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_password"),
 					},
 					{
 						Name:        "integrationFlowId",
@@ -173,6 +195,7 @@ func integrationArtifactGetMplStatusMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_integrationFlowId"),
 					},
 					{
 						Name:        "platform",
@@ -181,6 +204,7 @@ func integrationArtifactGetMplStatusMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_platform"),
 					},
 					{
 						Name:        "host",
@@ -189,6 +213,7 @@ func integrationArtifactGetMplStatusMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_host"),
 					},
 					{
 						Name:        "oAuthTokenProviderUrl",
@@ -197,6 +222,7 @@ func integrationArtifactGetMplStatusMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_oAuthTokenProviderUrl"),
 					},
 				},
 			},

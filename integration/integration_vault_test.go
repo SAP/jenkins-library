@@ -65,6 +65,70 @@ func TestGetVaultSecret(t *testing.T) {
 
 }
 
+func TestWriteVaultSecret(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	const testToken = "vault-token"
+
+	req := testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			AlwaysPullImage: true,
+			Image:           "vault:1.4.3",
+			ExposedPorts:    []string{"8200/tcp"},
+			Env:             map[string]string{"VAULT_DEV_ROOT_TOKEN_ID": testToken},
+			WaitingFor:      wait.ForLog("Vault server started!").WithStartupTimeout(20 * time.Second)},
+
+		Started: true,
+	}
+
+	vaultContainer, err := testcontainers.GenericContainer(ctx, req)
+	assert.NoError(t, err)
+	defer vaultContainer.Terminate(ctx)
+
+	ip, err := vaultContainer.Host(ctx)
+	assert.NoError(t, err)
+	port, err := vaultContainer.MappedPort(ctx, "8200")
+	host := fmt.Sprintf("http://%s:%s", ip, port.Port())
+	config := &vault.Config{Config: &api.Config{Address: host}}
+	// setup vault for testing
+	secretData := map[string]string{
+		"key1": "value1",
+		"key2": "value2",
+	}
+
+	client, err := vault.NewClient(config, testToken)
+	assert.NoError(t, err)
+
+	err = client.WriteKvSecret("secret/test", secretData)
+	assert.NoError(t, err)
+
+	secret, err := client.GetKvSecret("secret/test")
+	assert.NoError(t, err)
+	assert.Equal(t, "value1", secret["key1"])
+	assert.Equal(t, "value2", secret["key2"])
+
+	// enabling KV engine 1
+	vaultClient, err := api.NewClient(config.Config)
+	assert.NoError(t, err)
+	vaultClient.SetToken(testToken)
+	_, err = vaultClient.Logical().Write("sys/mounts/kv", SecretData{
+		"path": "kv",
+		"type": "kv",
+		"options": SecretData{
+			"version": "1",
+		},
+	})
+	assert.NoError(t, err)
+
+	err = client.WriteKvSecret("secret/test1", secretData)
+	assert.NoError(t, err)
+
+	secret, err = client.GetKvSecret("secret/test1")
+	assert.NoError(t, err)
+	assert.Equal(t, "value1", secret["key1"])
+	assert.Equal(t, "value2", secret["key2"])
+}
+
 func TestVaultAppRole(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
@@ -141,6 +205,57 @@ func TestVaultAppRole(t *testing.T) {
 		fetchedRoleName, err := client.GetAppRoleName()
 		assert.NoError(t, err)
 		assert.Equal(t, appRoleName, fetchedRoleName)
+	})
+}
+
+func TestTokenRevocation(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	const testToken = "vault-token"
+	const appRolePath = "auth/approle/role/test"
+	const appRoleName = "test"
+
+	req := testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			AlwaysPullImage: true,
+			Image:           "vault:1.4.3",
+			ExposedPorts:    []string{"8200/tcp"},
+			Env:             map[string]string{"VAULT_DEV_ROOT_TOKEN_ID": testToken},
+			WaitingFor:      wait.ForLog("Vault server started!").WithStartupTimeout(20 * time.Second)},
+
+		Started: true,
+	}
+
+	vaultContainer, err := testcontainers.GenericContainer(ctx, req)
+	assert.NoError(t, err)
+	defer vaultContainer.Terminate(ctx)
+
+	ip, err := vaultContainer.Host(ctx)
+	assert.NoError(t, err)
+	port, err := vaultContainer.MappedPort(ctx, "8200")
+	host := fmt.Sprintf("http://%s:%s", ip, port.Port())
+	config := &vault.Config{Config: &api.Config{Address: host}}
+
+	secretIDMetadata := map[string]interface{}{
+		"field1": "value1",
+	}
+
+	roleID, secretID := setupVaultAppRole(t, config, testToken, appRolePath, secretIDMetadata)
+
+	t.Run("Test Revocation works", func(t *testing.T) {
+		client, err := vault.NewClientWithAppRole(config, roleID, secretID)
+		assert.NoError(t, err)
+		secret, err := client.GetSecret("auth/token/lookup-self")
+		meta := secret.Data["meta"].(SecretData)
+		assert.Equal(t, meta["field1"], "value1")
+		assert.Equal(t, meta["role_name"], "test")
+		assert.NoError(t, err)
+
+		err = client.RevokeToken()
+		assert.NoError(t, err)
+
+		_, err = client.GetSecret("auth/token/lookup-self")
+		assert.Error(t, err)
 	})
 }
 

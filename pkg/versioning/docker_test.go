@@ -177,6 +177,5 @@ func TestGetCoordinates(t *testing.T) {
 
 	coordinates, err := docker.GetCoordinates()
 	assert.NoError(t, err)
-	assert.Equal(t, DockerDescriptor{GroupID: "", ArtifactID: "my_test_image_tag", Version: ""}, coordinates)
-	//assert.Equal(t, DockerDescriptor{GroupID: "", ArtifactID: "my_test_image_tag", Version: "1.2.3"}, coordinates)
+	assert.Equal(t, Coordinates{GroupID: "", ArtifactID: "my_test_image_tag", Version: ""}, coordinates)
 }

@@ -36,7 +36,7 @@ func TestSend(t *testing.T) {
 		defer httpmock.DeactivateAndReset()
 		httpmock.RegisterResponder(http.MethodGet, testURL, httpmock.NewStringResponder(200, `OK`))
 		client := Client{}
-		client.SetOptions(ClientOptions{UseDefaultTransport: true})
+		client.SetOptions(ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
 		// when
 		response, err := client.Send(request)
 		// then
@@ -49,7 +49,7 @@ func TestSend(t *testing.T) {
 		defer httpmock.DeactivateAndReset()
 		httpmock.RegisterResponder(http.MethodGet, testURL, httpmock.NewErrorResponder(errors.New("failure")))
 		client := Client{}
-		client.SetOptions(ClientOptions{UseDefaultTransport: true})
+		client.SetOptions(ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
 		// when
 		response, err := client.Send(request)
 		// then
@@ -67,7 +67,7 @@ func TestDefaultTransport(t *testing.T) {
 		httpmock.RegisterResponder(http.MethodGet, testURL, httpmock.NewStringResponder(200, `OK`))
 
 		client := Client{}
-		client.SetOptions(ClientOptions{UseDefaultTransport: true})
+		client.SetOptions(ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
 		// test
 		response, err := client.SendRequest("GET", testURL, nil, nil, nil)
 		// assert
@@ -89,7 +89,8 @@ func TestDefaultTransport(t *testing.T) {
 		_, err := client.SendRequest("GET", testURL, nil, nil, nil)
 		// assert
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "connect: connection refused")
+		assert.Contains(t, err.Error(), "connection")
+		assert.Contains(t, err.Error(), "refused")
 		assert.Equal(t, 0, httpmock.GetTotalCallCount(), "unexpected number of requests")
 	})
 }
@@ -174,7 +175,7 @@ func TestSendRequest(t *testing.T) {
 
 func TestSetOptions(t *testing.T) {
 	c := Client{}
-	opts := ClientOptions{TransportTimeout: 10, MaxRequestDuration: 5, Username: "TestUser", Password: "TestPassword", Token: "TestToken", Logger: log.Entry().WithField("package", "github.com/SAP/jenkins-library/pkg/http")}
+	opts := ClientOptions{MaxRetries: -1, TransportTimeout: 10, MaxRequestDuration: 5, Username: "TestUser", Password: "TestPassword", Token: "TestToken", Logger: log.Entry().WithField("package", "github.com/SAP/jenkins-library/pkg/http")}
 	c.SetOptions(opts)
 
 	assert.Equal(t, opts.TransportTimeout, c.transportTimeout)
@@ -256,12 +257,12 @@ func TestUploadRequest(t *testing.T) {
 		cookies       []*http.Cookie
 		expected      string
 	}{
-		{clientOptions: ClientOptions{}, method: "PUT", expected: "OK"},
-		{clientOptions: ClientOptions{}, method: "POST", expected: "OK"},
-		{clientOptions: ClientOptions{}, method: "POST", header: map[string][]string{"Testheader": {"Test1", "Test2"}}, expected: "OK"},
-		{clientOptions: ClientOptions{}, cookies: []*http.Cookie{{Name: "TestCookie1", Value: "TestValue1"}, {Name: "TestCookie2", Value: "TestValue2"}}, method: "POST", expected: "OK"},
-		{clientOptions: ClientOptions{Username: "TestUser", Password: "TestPwd"}, method: "POST", expected: "OK"},
-		{clientOptions: ClientOptions{Username: "UserOnly", Password: ""}, method: "POST", expected: "OK"},
+		{clientOptions: ClientOptions{MaxRetries: -1}, method: "PUT", expected: "OK"},
+		{clientOptions: ClientOptions{MaxRetries: -1}, method: "POST", expected: "OK"},
+		{clientOptions: ClientOptions{MaxRetries: -1}, method: "POST", header: map[string][]string{"Testheader": {"Test1", "Test2"}}, expected: "OK"},
+		{clientOptions: ClientOptions{MaxRetries: -1}, cookies: []*http.Cookie{{Name: "TestCookie1", Value: "TestValue1"}, {Name: "TestCookie2", Value: "TestValue2"}}, method: "POST", expected: "OK"},
+		{clientOptions: ClientOptions{MaxRetries: -1, Username: "TestUser", Password: "TestPwd"}, method: "POST", expected: "OK"},
+		{clientOptions: ClientOptions{MaxRetries: -1, Username: "UserOnly", Password: ""}, method: "POST", expected: "OK"},
 	}
 
 	client := Client{logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")}
@@ -401,12 +402,14 @@ func TestMaxRetries(t *testing.T) {
 		method       string
 		responseCode int
 		errorText    string
+		timeout      bool
 	}{
+		{client: Client{maxRetries: 1, useDefaultTransport: true, transportSkipVerification: true, transportTimeout: 1 * time.Microsecond}, responseCode: 666, timeout: true, countedCalls: 2, method: http.MethodPost, errorText: "timeout awaiting response headers"},
 		{client: Client{maxRetries: 0}, countedCalls: 1, method: http.MethodGet, responseCode: 500, errorText: "Internal Server Error"},
 		{client: Client{maxRetries: 2}, countedCalls: 3, method: http.MethodGet, responseCode: 500, errorText: "Internal Server Error"},
 		{client: Client{maxRetries: 3}, countedCalls: 4, method: http.MethodPost, responseCode: 503, errorText: "Service Unavailable"},
-		{client: Client{maxRetries: 3}, countedCalls: 4, method: http.MethodPut, responseCode: 506, errorText: "Variant Also Negotiates"},
-		{client: Client{maxRetries: 3}, countedCalls: 4, method: http.MethodHead, responseCode: 502, errorText: "Bad Gateway"},
+		{client: Client{maxRetries: 1}, countedCalls: 2, method: http.MethodPut, responseCode: 506, errorText: "Variant Also Negotiates"},
+		{client: Client{maxRetries: 1}, countedCalls: 2, method: http.MethodHead, responseCode: 502, errorText: "Bad Gateway"},
 		{client: Client{maxRetries: 3}, countedCalls: 1, method: http.MethodHead, responseCode: 404, errorText: "Not Found"},
 		{client: Client{maxRetries: 3}, countedCalls: 1, method: http.MethodHead, responseCode: 401, errorText: "Authentication Error"},
 		{client: Client{maxRetries: 3}, countedCalls: 1, method: http.MethodHead, responseCode: 403, errorText: "Authorization Error"},
@@ -417,6 +420,9 @@ func TestMaxRetries(t *testing.T) {
 		count := 0
 		svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			count++
+			if testCase.timeout && count == 0 {
+				time.Sleep(3 * time.Microsecond)
+			}
 			w.WriteHeader(testCase.responseCode)
 		}))
 		defer svr.Close()

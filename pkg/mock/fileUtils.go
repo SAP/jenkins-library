@@ -74,6 +74,7 @@ func (f *FilesMock) init() {
 // current directory of the FilesMock.
 // Relative segments such as "../" are currently NOT supported.
 func (f *FilesMock) toAbsPath(path string) string {
+	path = filepath.FromSlash(path)
 	if path == "." {
 		return f.Separator + f.CurrentDir
 	}
@@ -346,6 +347,7 @@ func (f *FilesMock) Getwd() (string, error) {
 // The directory needs to exist according to the files and directories via AddFile() and AddDirectory().
 // The implementation does not support relative path components such as "..".
 func (f *FilesMock) Chdir(path string) error {
+	path = filepath.FromSlash(path)
 	if path == "." || path == "."+f.Separator {
 		return nil
 	}

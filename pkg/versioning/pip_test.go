@@ -188,10 +188,9 @@ func TestPipGetCoordinates(t *testing.T) {
 		}
 
 		coordinates, err := pip.GetCoordinates()
-		pipDescriptor := coordinates.(*PipDescriptor)
 		assert.NoError(t, err)
-		assert.Equal(t, "simple-python", pipDescriptor.ArtifactID)
-		assert.Equal(t, "1.2.3", pipDescriptor.Version)
+		assert.Equal(t, "simple-python", coordinates.ArtifactID)
+		assert.Equal(t, "1.2.3", coordinates.Version)
 
 	})
 
@@ -207,10 +206,9 @@ func TestPipGetCoordinates(t *testing.T) {
 		}
 
 		coordinates, err := pip.GetCoordinates()
-		pipDescriptor := coordinates.(*PipDescriptor)
 		assert.NoError(t, err)
-		assert.Equal(t, "", pipDescriptor.ArtifactID)
-		assert.Equal(t, "1.2.3", pipDescriptor.Version)
+		assert.Equal(t, "", coordinates.ArtifactID)
+		assert.Equal(t, "1.2.3", coordinates.Version)
 
 	})
 

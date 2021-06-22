@@ -1,10 +1,11 @@
 package whitesource
 
 import (
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestAppendScannedProjectVersion(t *testing.T) {
@@ -174,6 +175,39 @@ func TestScannedProjects(t *testing.T) {
 		assert.Len(t, projects, 2)
 		assert.Contains(t, projects, Project{Name: "module-a - 1"})
 		assert.Contains(t, projects, Project{Name: "module-b - 1"})
+	})
+}
+
+func TestScannedProjectNames(t *testing.T) {
+	t.Parallel()
+
+	t.Run("empty project list", func(t *testing.T) {
+		scan := &Scan{ProductVersion: "1"}
+		assert.Equal(t, []string{}, scan.ScannedProjectNames())
+	})
+
+	t.Run("one project", func(t *testing.T) {
+		scan := &Scan{ProductVersion: "1"}
+		scan.AppendScannedProject("testProject1")
+		assert.Equal(t, []string{"testProject1 - 1"}, scan.ScannedProjectNames())
+	})
+
+	t.Run("multiple sorted", func(t *testing.T) {
+		scan := &Scan{ProductVersion: "1"}
+		scan.AppendScannedProject("testProject1")
+		scan.AppendScannedProject("testProject2")
+		scan.AppendScannedProject("testProject3")
+
+		assert.Equal(t, []string{"testProject1 - 1", "testProject2 - 1", "testProject3 - 1"}, scan.ScannedProjectNames())
+	})
+
+	t.Run("multiple mixed", func(t *testing.T) {
+		scan := &Scan{ProductVersion: "1"}
+		scan.AppendScannedProject("testProject3")
+		scan.AppendScannedProject("testProject1")
+		scan.AppendScannedProject("testProject2")
+
+		assert.Equal(t, []string{"testProject1 - 1", "testProject2 - 1", "testProject3 - 1"}, scan.ScannedProjectNames())
 	})
 }
 

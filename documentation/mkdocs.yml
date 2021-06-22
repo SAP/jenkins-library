@@ -12,6 +12,7 @@ nav:
         - 'ABAP Environment pipeline':
             - 'Introduction': pipelines/abapEnvironment/introduction.md
             - 'Configuration': pipelines/abapEnvironment/configuration.md
+            - 'Extensibility': pipelines/abapEnvironment/extensibility.md
             - 'Stages':
               - 'Initial Checks': pipelines/abapEnvironment/stages/initialChecks.md
               - 'Prepare System': pipelines/abapEnvironment/stages/prepareSystem.md
@@ -102,9 +103,11 @@ nav:
         - healthExecuteCheck: steps/healthExecuteCheck.md
         - influxWriteData: steps/influxWriteData.md
         - integrationArtifactDeploy: steps/integrationArtifactDeploy.md
+        - integrationArtifactDownload: steps/integrationArtifactDownload.md
         - integrationArtifactGetMplStatus: steps/integrationArtifactGetMplStatus.md
         - integrationArtifactGetServiceEndpoint: steps/integrationArtifactGetServiceEndpoint.md
         - integrationArtifactUpdateConfiguration: steps/integrationArtifactUpdateConfiguration.md
+        - integrationArtifactUpload: steps/integrationArtifactUpload.md
         - jenkinsMaterializeLog: steps/jenkinsMaterializeLog.md
         - kanikoExecute: steps/kanikoExecute.md
         - karmaExecuteTests: steps/karmaExecuteTests.md
@@ -141,8 +144,11 @@ nav:
         - testsPublishResults: steps/testsPublishResults.md
         - tmsUpload: steps/tmsUpload.md
         - transportRequestCreate: steps/transportRequestCreate.md
+        - transportRequestDocIDFromGit: steps/transportRequestDocIDFromGit.md
         - transportRequestRelease:  steps/transportRequestRelease.md
+        - transportRequestReqIDFromGit: steps/transportRequestReqIDFromGit.md
         - transportRequestUploadFile: steps/transportRequestUploadFile.md
+        - transportRequestUploadSOLMAN: steps/transportRequestUploadSOLMAN.md
         - uiVeri5ExecuteTests: steps/uiVeri5ExecuteTests.md
         - vaultRotateSecretId: steps/vaultRotateSecretId.md
         - whitesourceExecuteScan: steps/whitesourceExecuteScan.md

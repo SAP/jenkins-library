@@ -211,10 +211,10 @@ steps:
       - 'deployDescriptor'
       - 'pipelineConfigAndTests'
     cf_native:
-      dockerImage: 'ppiper/cf-cli:v5'
+      dockerImage: 'ppiper/cf-cli:6'
       dockerWorkspace: '/home/piper'
     mtaDeployPlugin:
-      dockerImage: 'ppiper/cf-cli:v5'
+      dockerImage: 'ppiper/cf-cli:6'
       dockerWorkspace: '/home/piper'
     mta:
       deployTool: 'mtaDeployPlugin'
@@ -226,15 +226,6 @@ steps:
       deployTool: 'cf_native'
     kaniko:
       deployTool: 'cf_native'
-  containerExecuteStructureTests:
-    containerCommand: '/busybox/tail -f /dev/null'
-    containerShell: '/busybox/sh'
-    dockerImage: 'ppiper/container-structure-test'
-    dockerOptions: "-u 0 --entrypoint=''"
-    failOnError: true
-    stashContent:
-      - 'tests'
-    testReportFilePath: 'cst-report.json'
   debugReportArchive:
     shareConfidentialInformation: false
   dockerExecute:
@@ -358,16 +349,6 @@ steps:
     neoTargets: []
     enableZeroDowntimeDeployment: false
     parallelExecution: false
-  newmanExecute:
-    dockerImage: 'node:lts-stretch'
-    failOnError: true
-    newmanCollection: '**/*.postman_collection.json'
-    newmanEnvironment: ''
-    newmanGlobals: ''
-    newmanInstallCommand: 'npm install newman newman-reporter-html --global --quiet'
-    newmanRunCommand: "run '${config.newmanCollection}' --environment '${config.newmanEnvironment}' --globals '${config.newmanGlobals}' --reporters junit,html --reporter-junit-export 'target/newman/TEST-${collectionDisplayName}.xml' --reporter-html-export 'target/newman/TEST-${collectionDisplayName}.html'"
-    stashContent:
-      - 'tests'
   npmExecute:
     dockerImage: 'node:lts-stretch'
   npmExecuteScripts:
@@ -557,3 +538,10 @@ steps:
     mode: 'DEPLOY'
     action: 'NONE'
     xsSessionFile: '.xsconfig'
+  piperPipelineStageInit:
+    stepMappings:
+      checkmarx: 'checkmarxExecuteScan'
+      fortify: 'fortifyExecuteScan'
+      karma: 'karmaExecuteTests'
+      whitesource: 'whitesourceExecuteScan'
+    labelPrefix: pr_

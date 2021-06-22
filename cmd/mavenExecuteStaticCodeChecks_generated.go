@@ -9,6 +9,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
@@ -36,6 +37,7 @@ func MavenExecuteStaticCodeChecksCommand() *cobra.Command {
 	metadata := mavenExecuteStaticCodeChecksMetadata()
 	var stepConfig mavenExecuteStaticCodeChecksOptions
 	var startTime time.Time
+	var logCollector *log.CollectorHook
 
 	var createMavenExecuteStaticCodeChecksCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -68,6 +70,11 @@ For PMD the failure priority and the max allowed violations are configurable via
 				log.RegisterHook(&sentryHook)
 			}
 
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
+				log.RegisterHook(logCollector)
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -78,10 +85,20 @@ For PMD the failure priority and the max allowed violations are configurable via
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
+				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunk.Send(&telemetryData, logCollector)
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunk.Initialize(GeneralConfig.CorrelationID,
+					GeneralConfig.HookConfig.SplunkConfig.Dsn,
+					GeneralConfig.HookConfig.SplunkConfig.Token,
+					GeneralConfig.HookConfig.SplunkConfig.Index,
+					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+			}
 			mavenExecuteStaticCodeChecks(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -127,6 +144,7 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
 						Name:        "pmd",
@@ -135,6 +153,7 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
 						Name:        "mavenModulesExcludes",
@@ -143,6 +162,7 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 					{
 						Name:        "spotBugsExcludeFilterFile",
@@ -151,6 +171,7 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "spotBugs/excludeFilterFile"}},
+						Default:     os.Getenv("PIPER_spotBugsExcludeFilterFile"),
 					},
 					{
 						Name:        "spotBugsIncludeFilterFile",
@@ -159,6 +180,7 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "spotBugs/includeFilterFile"}},
+						Default:     os.Getenv("PIPER_spotBugsIncludeFilterFile"),
 					},
 					{
 						Name:        "spotBugsMaxAllowedViolations",
@@ -167,6 +189,7 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "spotBugs/maxAllowedViolations"}},
+						Default:     0,
 					},
 					{
 						Name:        "pmdFailurePriority",
@@ -175,6 +198,7 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "pmd/failurePriority"}},
+						Default:     0,
 					},
 					{
 						Name:        "pmdMaxAllowedViolations",
@@ -183,6 +207,7 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "pmd/maxAllowedViolations"}},
+						Default:     0,
 					},
 					{
 						Name:        "projectSettingsFile",
@@ -191,6 +216,7 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile"}},
+						Default:     os.Getenv("PIPER_projectSettingsFile"),
 					},
 					{
 						Name:        "globalSettingsFile",
@@ -199,6 +225,7 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile"}},
+						Default:     os.Getenv("PIPER_globalSettingsFile"),
 					},
 					{
 						Name:        "m2Path",
@@ -207,6 +234,7 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
+						Default:     os.Getenv("PIPER_m2Path"),
 					},
 					{
 						Name:        "logSuccessfulMavenTransfers",
@@ -215,6 +243,7 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/logSuccessfulMavenTransfers"}},
+						Default:     false,
 					},
 					{
 						Name:        "installArtifacts",
@@ -223,6 +252,7 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 				},
 			},

@@ -18,7 +18,7 @@ func TestRewriteUAConfigurationFile(t *testing.T) {
 		utilsMock := NewScanUtilsMock()
 		utilsMock.AddFile(config.ConfigFilePath, []byte("test = dummy"))
 
-		path, err := config.RewriteUAConfigurationFile(utilsMock)
+		path, err := config.RewriteUAConfigurationFile(utilsMock, "")
 		assert.NoError(t, err)
 		newUAConfig, err := utilsMock.FileRead(path)
 		assert.NoError(t, err)
@@ -33,7 +33,7 @@ func TestRewriteUAConfigurationFile(t *testing.T) {
 		}
 		utilsMock := NewScanUtilsMock()
 
-		path, err := config.RewriteUAConfigurationFile(utilsMock)
+		path, err := config.RewriteUAConfigurationFile(utilsMock, "")
 		assert.NoError(t, err)
 
 		newUAConfig, err := utilsMock.FileRead(path)
@@ -49,7 +49,7 @@ func TestRewriteUAConfigurationFile(t *testing.T) {
 		utilsMock := NewScanUtilsMock()
 		utilsMock.FileWriteError = fmt.Errorf("failed to write file")
 
-		_, err := config.RewriteUAConfigurationFile(utilsMock)
+		_, err := config.RewriteUAConfigurationFile(utilsMock, "")
 		assert.Contains(t, fmt.Sprint(err), "failed to write file")
 	})
 }
@@ -63,6 +63,8 @@ func TestUpdateConfig(t *testing.T) {
 		"not_forced":           "not_forced_original",
 		"dont_omit_forced":     "dont_omit_forced_original",
 		"dont_omit_not_forced": "dont_omit_not_forced_original",
+		"append":               "original_value appended by",
+		"append_empty":         "",
 	}
 	testConfig := ConfigOptions{
 		{Name: "non_existing_forced", Value: "non_existing_forced_val", Force: true},
@@ -73,6 +75,8 @@ func TestUpdateConfig(t *testing.T) {
 		{Name: "dont_omit", Value: "dont_omit_val", OmitIfPresent: "dependent_notExisting"},
 		{Name: "dont_omit_forced", Value: "dont_omit_forced_val", OmitIfPresent: "dependent_notExisting", Force: true},
 		{Name: "dont_omit_not_forced", Value: "dont_omit_not_forced_val", OmitIfPresent: "dependent_notExisting", Force: false},
+		{Name: "append", Value: "appended_val", Append: true},
+		{Name: "append_empty", Value: "appended_val", Append: true},
 	}
 
 	updatedConfig := testConfig.updateConfig(&originalConfig)
@@ -86,6 +90,8 @@ func TestUpdateConfig(t *testing.T) {
 	assert.Equal(t, "dont_omit_val", updatedConfig["dont_omit"])
 	assert.Equal(t, "dont_omit_forced_val", updatedConfig["dont_omit_forced"])
 	assert.Equal(t, "dont_omit_not_forced_original", updatedConfig["dont_omit_not_forced"])
+	assert.Equal(t, "original_value appended by appended_val", updatedConfig["append"])
+	assert.Equal(t, "appended_val", updatedConfig["append_empty"])
 }
 
 func TestAddGeneralDefaults(t *testing.T) {
@@ -103,7 +109,7 @@ func TestAddGeneralDefaults(t *testing.T) {
 			ProjectName:    "testProject",
 			UserToken:      "testuserKey",
 		}
-		testConfig.addGeneralDefaults(&whitesourceConfig, utilsMock)
+		testConfig.addGeneralDefaults(&whitesourceConfig, utilsMock, "")
 		assert.Equal(t, "checkPolicies", testConfig[0].Name)
 		assert.Equal(t, true, testConfig[0].Value)
 		assert.Equal(t, "forceCheckAllDependencies", testConfig[1].Name)
@@ -128,11 +134,12 @@ func TestAddGeneralDefaults(t *testing.T) {
 			ProjectName:    "testProject",
 			UserToken:      "testuserKey",
 		}
-		testConfig.addGeneralDefaults(&whitesourceConfig, utilsMock)
+		testConfig.addGeneralDefaults(&whitesourceConfig, utilsMock, "anotherProject")
 		assert.Equal(t, "checkPolicies", testConfig[0].Name)
 		assert.Equal(t, false, testConfig[0].Value)
 		assert.Equal(t, "forceCheckAllDependencies", testConfig[1].Name)
 		assert.Equal(t, false, testConfig[1].Value)
+		assert.Equal(t, "anotherProject", testConfig[5].Value)
 	})
 
 	t.Run("verbose", func(t *testing.T) {
@@ -140,7 +147,7 @@ func TestAddGeneralDefaults(t *testing.T) {
 		whitesourceConfig := ScanOptions{
 			Verbose: true,
 		}
-		testConfig.addGeneralDefaults(&whitesourceConfig, utilsMock)
+		testConfig.addGeneralDefaults(&whitesourceConfig, utilsMock, "")
 		assert.Equal(t, "log.level", testConfig[2].Name)
 		assert.Equal(t, "debug", testConfig[2].Value)
 		assert.Equal(t, "log.files.level", testConfig[3].Name)
@@ -153,7 +160,7 @@ func TestAddGeneralDefaults(t *testing.T) {
 			Excludes: []string{"**/excludes1", "**/excludes2"},
 			Includes: []string{"**/includes1", "**/includes2"},
 		}
-		testConfig.addGeneralDefaults(&whitesourceConfig, utilsMock)
+		testConfig.addGeneralDefaults(&whitesourceConfig, utilsMock, "")
 		assert.Equal(t, "excludes", testConfig[2].Name)
 		assert.Equal(t, "**/excludes1 **/excludes2", testConfig[2].Value)
 		assert.Equal(t, true, testConfig[2].Force)
@@ -174,7 +181,7 @@ func TestAddBuildToolDefaults(t *testing.T) {
 		}
 		err := testConfig.addBuildToolDefaults(&whitesourceConfig, utilsMock)
 		assert.NoError(t, err)
-		assert.Equal(t, ConfigOptions{{Name: "includes", Value: "**/*.d **/*.di"}}, testConfig)
+		assert.Equal(t, ConfigOptions{{Name: "ignoreSourceFiles", Value: true, Force: true}, {Name: "includes", Value: "**/*.d **/*.di"}}, testConfig)
 	})
 
 	t.Run("error case", func(t *testing.T) {
@@ -210,7 +217,7 @@ func TestAddBuildToolDefaults(t *testing.T) {
 		}
 		utilsMock.AddFile("unit-tests/pom.xml", []byte("dummy"))
 		testConfig.addBuildToolDefaults(&whitesourceConfig, utilsMock)
-		assert.Contains(t, testConfig, ConfigOption{Name: "maven.additionalArguments", Value: "--global-settings global-settings.xml --settings project-settings.xml --projects !unit-tests", Force: true})
+		assert.Contains(t, testConfig, ConfigOption{Name: "maven.additionalArguments", Value: "--global-settings global-settings.xml --settings project-settings.xml --projects !unit-tests", Append: true})
 	})
 
 	t.Run("Docker - default", func(t *testing.T) {

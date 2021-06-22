@@ -24,7 +24,7 @@ func (m *mavenMock) SetVersion(v string) error {
 	return nil
 }
 func (m *mavenMock) GetCoordinates() (Coordinates, error) {
-	return &MavenDescriptor{GroupID: m.groupID, ArtifactID: m.artifactID, Version: m.version, Packaging: m.packaging}, nil
+	return Coordinates{GroupID: m.groupID, ArtifactID: m.artifactID, Version: m.version, Packaging: m.packaging}, nil
 }
 
 type pipMock struct {
@@ -43,7 +43,7 @@ func (p *pipMock) SetVersion(v string) error {
 	return nil
 }
 func (p *pipMock) GetCoordinates() (Coordinates, error) {
-	return &PipDescriptor{ArtifactID: p.artifactID, Version: p.version}, nil
+	return Coordinates{ArtifactID: p.artifactID, Version: p.version}, nil
 }
 
 func TestDetermineProjectCoordinatesWithCustomVersion(t *testing.T) {
