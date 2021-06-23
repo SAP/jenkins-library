@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// CopyData transfers the bytes from src to dst without doing close handling implicitly.
 func CopyData(dst io.Writer, src io.Reader) (int64, error) {
 	tmp := make([]byte, 256)
 	bytesRead := int64(0)
