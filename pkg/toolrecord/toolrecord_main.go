@@ -42,8 +42,7 @@ type Toolrecord struct {
 	reportFileName string
 }
 
-// toolrecord.New initialize a new toolrecord
-//
+// New - initialize a new toolrecord
 func New(workspace, toolName, toolInstance string) *Toolrecord {
 	tr := Toolrecord{}
 
@@ -66,6 +65,9 @@ func New(workspace, toolName, toolInstance string) *Toolrecord {
 	return &tr
 }
 
+// AddKeyData - add one key to the current toolrecord
+// calls must follow the tool's hierachy ( e.g. org -> project)
+// as DisplayName & DisplayURL are based on the call sequence
 func (tr *Toolrecord) AddKeyData(keyname, keyvalue, displayname, url string) error {
 	if keyname == "" {
 		return errors.New("TR_ADD_KEY: empty keyname")
@@ -78,6 +80,8 @@ func (tr *Toolrecord) AddKeyData(keyname, keyvalue, displayname, url string) err
 	return nil
 }
 
+// AddContext - add additional context information
+// second call with the same label will overwrite the first call's data
 func (tr *Toolrecord) AddContext(label string, data interface{}) error {
 	if label == "" {
 		return errors.New("TR_ADD_CONTEXT: no label supplied")
@@ -86,10 +90,12 @@ func (tr *Toolrecord) AddContext(label string, data interface{}) error {
 	return nil
 }
 
+// GetFileName - local filename for the current record
 func (tr *Toolrecord) GetFileName() string {
 	return tr.reportFileName
 }
 
+// Persist - write the current record to file system
 func (tr *Toolrecord) Persist() error {
 	if tr.workspace == "" {
 		return errors.New("TR_PERSIST: empty workspace ")
