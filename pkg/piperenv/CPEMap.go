@@ -3,6 +3,7 @@ package piperenv
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/SAP/jenkins-library/pkg/log"
 	"io/ioutil"
 	"os"
 	"path"
@@ -27,20 +28,20 @@ func (c *CPEMap) LoadFromDisk(path string) error {
 
 // WriteToDisk writes the CPEMap to a disk and uses rootDirectory as the starting point
 func (c CPEMap) WriteToDisk(rootDirectory string) error {
-	err := os.MkdirAll(rootDirectory, 0755)
+	err := os.MkdirAll(rootDirectory, 0777)
 	if err != nil {
 		return err
 	}
 
 	for k, v := range c {
 		entryPath := path.Join(rootDirectory, k)
-		err := os.MkdirAll(filepath.Dir(entryPath), 0755)
+		err := os.MkdirAll(filepath.Dir(entryPath), 0777)
 		if err != nil {
 			return err
 		}
 		// if v is a string no json marshalling is needed
 		if vString, ok := v.(string); ok {
-			err := ioutil.WriteFile(entryPath, []byte(vString), 0644)
+			err := ioutil.WriteFile(entryPath, []byte(vString), 0666)
 			if err != nil {
 				return err
 			}
@@ -52,7 +53,7 @@ func (c CPEMap) WriteToDisk(rootDirectory string) error {
 			return err
 		}
 
-		err = ioutil.WriteFile(fmt.Sprintf("%s.json", entryPath), jsonVal, 0644)
+		err = ioutil.WriteFile(fmt.Sprintf("%s.json", entryPath), jsonVal, 0666)
 		if err != nil {
 			return err
 		}
@@ -62,7 +63,8 @@ func (c CPEMap) WriteToDisk(rootDirectory string) error {
 
 func dirToMap(m map[string]interface{}, dirPath, prefix string) error {
 	if stat, err := os.Stat(dirPath); err != nil || !stat.IsDir() {
-		return fmt.Errorf("stat on '%s' failed. Not a dir?: %w", dirPath, err)
+		log.Entry().Debugf("stat on %s failed. Path does not exist", dirPath)
+		return nil
 	}
 
 	items, err := ioutil.ReadDir(dirPath)

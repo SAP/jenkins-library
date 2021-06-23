@@ -129,6 +129,7 @@ func checkChangeInDevelopmentMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "changeManagement/endpoint"}},
+						Default:     os.Getenv("PIPER_endpoint"),
 					},
 					{
 						Name:        "username",
@@ -137,6 +138,7 @@ func checkChangeInDevelopmentMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_username"),
 					},
 					{
 						Name:        "password",
@@ -145,6 +147,7 @@ func checkChangeInDevelopmentMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_password"),
 					},
 					{
 						Name:        "changeDocumentId",
@@ -153,6 +156,7 @@ func checkChangeInDevelopmentMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_changeDocumentId"),
 					},
 					{
 						Name:        "failIfStatusIsNotInDevelopment",
@@ -161,6 +165,7 @@ func checkChangeInDevelopmentMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
 						Name:        "clientOpts",
@@ -169,6 +174,7 @@ func checkChangeInDevelopmentMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 				},
 			},
