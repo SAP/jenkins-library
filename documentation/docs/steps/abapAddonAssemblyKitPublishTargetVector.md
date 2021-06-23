@@ -4,7 +4,7 @@
 
 ## Prerequisites
 
-* The credentials to access the AAKaaS (e.g. S-User) must be stored in the Jenkins Credential Store
+* The credentials to access the AAKaaS (Technical Communication User) must be stored in the Jenkins Credential Store
 * This step needs an existing Target Vector as well as the scope where it should be published.
 * The Target Vector ID is taken from the addonDescriptor in the commonPipelineEnvironment.
 * If you run prior to this step the step [abapAddonAssemblyKitCreateTargetVector](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitCreateTargetVector), the Target Vector will be created and its ID will be written to the commonPipelineEnvironment
