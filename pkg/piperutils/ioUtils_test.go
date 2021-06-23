@@ -10,11 +10,14 @@ import (
 func TestCopyData(t *testing.T) {
 	runInTempDir(t, "copying file succeeds small", "dir1", func(t *testing.T) {
 		srcName := "testFileSrc"
-		src, err := os.OpenFile(srcName, os.O_CREATE | os.O_RDWR, 0700)
+		src, err := os.OpenFile(srcName, os.O_CREATE|os.O_RDWR, 0700)
 		if err != nil {
 			t.Fatal("Failed to create src file")
 		}
-		data := []byte{byte(32), byte(42), byte(53)}
+		data := make([]byte, 3)
+		data[0] = byte(32)
+		data[1] = byte(42)
+		data[2] = byte(52)
 		_, err = src.Write(data)
 		if err != nil {
 			t.Fatalf("Failed to write data to src file: %v", err)
