@@ -17,7 +17,9 @@ type keydataset struct {
 	URL         string // direct URL to navigate to this key in the tool backend - optional
 }
 
-type toolrecord struct {
+// Toolrecord holds all data to locate a tool result
+// in the tool's backend
+type Toolrecord struct {
 	RecordVersion int
 
 	ToolName     string
@@ -40,8 +42,10 @@ type toolrecord struct {
 	reportFileName string
 }
 
-func New(workspace, toolName, toolInstance string) *toolrecord {
-	tr := toolrecord{}
+// toolrecord.New initialize a new toolrecord
+//
+func New(workspace, toolName, toolInstance string) *Toolrecord {
+	tr := Toolrecord{}
 
 	tr.RecordVersion = 1
 	tr.ToolName = toolName
@@ -62,7 +66,7 @@ func New(workspace, toolName, toolInstance string) *toolrecord {
 	return &tr
 }
 
-func (tr *toolrecord) AddKeyData(keyname, keyvalue, displayname, url string) error {
+func (tr *Toolrecord) AddKeyData(keyname, keyvalue, displayname, url string) error {
 	if keyname == "" {
 		return errors.New("TR_ADD_KEY: empty keyname")
 	}
@@ -74,7 +78,7 @@ func (tr *toolrecord) AddKeyData(keyname, keyvalue, displayname, url string) err
 	return nil
 }
 
-func (tr *toolrecord) AddContext(label string, data interface{}) error {
+func (tr *Toolrecord) AddContext(label string, data interface{}) error {
 	if label == "" {
 		return errors.New("TR_ADD_CONTEXT: no label supplied")
 	}
@@ -82,11 +86,11 @@ func (tr *toolrecord) AddContext(label string, data interface{}) error {
 	return nil
 }
 
-func (tr *toolrecord) GetFileName() string {
+func (tr *Toolrecord) GetFileName() string {
 	return tr.reportFileName
 }
 
-func (tr *toolrecord) Persist() error {
+func (tr *Toolrecord) Persist() error {
 	if tr.workspace == "" {
 		return errors.New("TR_PERSIST: empty workspace ")
 	}
