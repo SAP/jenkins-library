@@ -6,7 +6,7 @@ metadata:
 spec:
   inputs:
     secrets:
-      - name: influxTokenId
+      - name: influxAuthTokenId
         description: Influxdb token for authentication to the InfluxDB. In 1.8 version use 'username:password' instead.
         type: jenkins
     params:
@@ -31,6 +31,11 @@ spec:
         resourceRef:
           - name: influxAuthTokenId
             type: secret
+          - type: vaultSecret
+            paths:
+              - $(vaultPath)/influxdb
+              - $(vaultBasePath)/$(vaultPipelineName)/influxdb
+              - $(vaultBasePath)/GROUP-SECRETS/influxdb
       - name: bucket
         type: string
         description: Name of database (1.8) or bucket (2.0)
@@ -47,20 +52,22 @@ spec:
           - STAGES
           - STEPS
       - name: dataMap
-        type: "map[string]interface{}"
-        description: "Map of fields for each measurements. For example: ['series_1':['field_a':11,'field_b':12],'series_2':['field_c':21,'field_d':22]]"
+        type: string
+        description:
+          "Map of fields for each measurements. It has to be a JSON string.
+          For example: {'series_1':{'field_a':11,'field_b':12},'series_2':{'field_c':21,'field_d':22}}"
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
-          - GENERAL
         mandatory: true
       - name: dataMapTags
-        type: "map[string]interface{}"
-        description: "Map of tags for each measurements. For example: ['series_1':['tag_a':'a','tag_b':'b'],'series_2':['tag_c':'c','tag_d':'d']]"
+        type: string
+        description:
+          "Map of tags for each measurements. It has to be a JSON string.
+          For example: {'series_1':{'tag_a':'a','tag_b':'b'},'series_2':{'tag_c':'c','tag_d':'d'}}"
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
-          - GENERAL
         mandatory: false

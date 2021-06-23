@@ -192,7 +192,6 @@ public class CommonStepsTest extends BasePiperTest{
         'batsExecuteTests', //implementing new golang pattern without fields
         'writePipelineEnv', //implementing new golang pattern without fields
         'readPipelineEnv', //implementing new golang pattern without fields
-        'influxWriteData', //implementing new golang pattern without fields
     ]
 
     @Test

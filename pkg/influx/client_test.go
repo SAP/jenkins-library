@@ -12,53 +12,33 @@ func TestWriteMetrics(t *testing.T) {
 	errWriteMetrics := errors.New("error")
 	tests := []struct {
 		name          string
-		dataMap       map[string]interface{}
-		dataMapTags   map[string]interface{}
+		dataMap       map[string]map[string]interface{}
+		dataMapTags   map[string]map[string]string
 		writePointErr error
 		err           error
 	}{
 		{
-			"Test writing metrics with correct data - success",
-			map[string]interface{}{
-				"series_1": map[string]interface{}{"field_a": 11, "field_b": 12},
-				"series_2": map[string]interface{}{"field_c": 21, "field_d": 22},
+			"Test writing metrics - success",
+			map[string]map[string]interface{}{
+				"series_1": {"field_a": 11, "field_b": 12},
+				"series_2": {"field_c": 21, "field_d": 22},
 			},
-			map[string]interface{}{
-				"series_1": map[string]interface{}{"tag_a": "a", "tag_b": "b"},
-				"series_2": map[string]interface{}{"tag_c": "c", "tag_d": "d"},
+			map[string]map[string]string{
+				"series_1": {"tag_a": "a", "tag_b": "b"},
+				"series_2": {"tag_c": "c", "tag_d": "d"},
 			},
 			nil,
 			nil,
 		},
 		{
-			"Test writing metrics with wrong dataMap - failed",
-			map[string]interface{}{"series_1": "something"},
-			map[string]interface{}{
-				"series_1": map[string]interface{}{"tag_a": "a", "tag_b": "b"},
-				"series_2": map[string]interface{}{"tag_c": "c", "tag_d": "d"},
+			"Test writing metrics - failed",
+			map[string]map[string]interface{}{
+				"series_1": {"field_a": 11, "field_b": 12},
+				"series_2": {"field_c": 21, "field_d": 22},
 			},
-			nil,
-			errFieldsMapAssertion,
-		},
-		{
-			"Test writing metrics with wrong dataMapTags - failed",
-			map[string]interface{}{
-				"series_1": map[string]interface{}{"field_a": 11, "field_b": 12},
-				"series_2": map[string]interface{}{"field_c": 21, "field_d": 22},
-			},
-			map[string]interface{}{"series_1": "something"},
-			nil,
-			errTagsMapAssertion,
-		},
-		{
-			"Test writing metrics with correct data - failed",
-			map[string]interface{}{
-				"series_1": map[string]interface{}{"field_a": 11, "field_b": 12},
-				"series_2": map[string]interface{}{"field_c": 21, "field_d": 22},
-			},
-			map[string]interface{}{
-				"series_1": map[string]interface{}{"tag_a": "a", "tag_b": "b"},
-				"series_2": map[string]interface{}{"tag_c": "c", "tag_d": "d"},
+			map[string]map[string]string{
+				"series_1": {"tag_a": "a", "tag_b": "b"},
+				"series_2": {"tag_c": "c", "tag_d": "d"},
 			},
 			errWriteMetrics,
 			errWriteMetrics,

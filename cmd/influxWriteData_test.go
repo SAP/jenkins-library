@@ -5,39 +5,58 @@ import (
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/influx/mocks"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
 func TestWriteData(t *testing.T) {
 	options := &influxWriteDataOptions{
-		"http://localhost:8086",
-		"authToken",
-		"piper",
-		"org",
-		map[string]interface{}{
-			"series_1": map[string]interface{}{"field_a": 11, "field_b": 12},
-			"series_2": map[string]interface{}{"field_c": 21, "field_d": 22},
-		},
-		map[string]interface{}{
-			"series_1": map[string]interface{}{"tag_a": "a", "tag_b": "b"},
-			"series_2": map[string]interface{}{"tag_c": "c", "tag_d": "d"},
-		},
+		ServerURL:    "http://localhost:8086",
+		AuthToken:    "authToken",
+		Bucket:       "piper",
+		Organization: "org",
 	}
-	errWriteData := errors.New("error")
+	errString := "some error"
+	errWriteData := errors.New(errString)
 	tests := []struct {
-		name         string
-		writeDataErr error
-		expectedErr  error
+		name          string
+		dataMap       string
+		dataMapTags   string
+		writeDataErr  error
+		errExpected   bool
+		errIncludeStr string
 	}{
 		{
-			"Test writing data - success",
+			"Test writing metrics with correct json data - success",
+			`{"series_1": {"field_a": 11, "field_b": 12}, "series_2": {"field_c": 21, "field_d": 22}}`,
+			`{"series_1": {"tag_a": "a", "tag_b": "b"}, "series_2": {"tag_c": "c", "tag_d": "d"}}`,
 			nil,
-			nil,
+			false,
+			"",
 		},
 		{
-			"Test writing data - failed",
+			"Test writing metrics with invalid dataMap",
+			`"series_1": {"field_a": 11, "field_b": 12}, "series_2": {"field_c": 21, "field_d": 22}`,
+			`{"series_1": {"tag_a": "a", "tag_b": "b"}, "series_2": {"tag_c": "c", "tag_d": "d"}}`,
+			nil,
+			false,
+			"Failed to unmarshal dataMap:",
+		},
+		{
+			"Test writing metrics with invalid dataMapTags",
+			`{"series_1": {"field_a": 11, "field_b": 12}, "series_2": {"field_c": 21, "field_d": 22}}`,
+			`{"series_1": {"tag_a": 2, "tag_b": "b"}, "series_2": {"tag_c": "c", "tag_d": "d"}}`,
+			nil,
+			false,
+			"Failed to unmarshal dataMapTags:",
+		},
+		{
+			"Test writing metrics with correct json data - failed",
+			`{"series_1": {"field_a": 11, "field_b": 12}, "series_2": {"field_c": 21, "field_d": 22}}`,
+			`{"series_1": {"tag_a": "a", "tag_b": "b"}, "series_2": {"tag_c": "c", "tag_d": "d"}}`,
 			errWriteData,
-			errWriteData,
+			true,
+			errString,
 		},
 	}
 
@@ -47,9 +66,11 @@ func TestWriteData(t *testing.T) {
 			writeAPIBlockingMock := &mocks.WriteAPIBlocking{}
 			writeAPIBlockingMock.On("WritePoint", mock.Anything, mock.Anything).Return(tt.writeDataErr)
 			influxClientMock.On("WriteAPIBlocking", mock.Anything, mock.Anything).Return(writeAPIBlockingMock)
+			options.DataMap = tt.dataMap
+			options.DataMapTags = tt.dataMapTags
 			err := writeData(options, influxClientMock)
-			if err != tt.expectedErr {
-				t.Errorf("\nactual: %q\nexpected: %q\n", err, tt.expectedErr)
+			if err != nil {
+				assert.Contains(t, err.Error(), tt.errIncludeStr)
 			}
 		})
 	}

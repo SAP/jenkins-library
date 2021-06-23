@@ -15,12 +15,12 @@ import (
 )
 
 type influxWriteDataOptions struct {
-	ServerURL    string                 `json:"serverUrl,omitempty"`
-	AuthToken    string                 `json:"authToken,omitempty"`
-	Bucket       string                 `json:"bucket,omitempty"`
-	Organization string                 `json:"organization,omitempty"`
-	DataMap      map[string]interface{} `json:"dataMap,omitempty"`
-	DataMapTags  map[string]interface{} `json:"dataMapTags,omitempty"`
+	ServerURL    string `json:"serverUrl,omitempty"`
+	AuthToken    string `json:"authToken,omitempty"`
+	Bucket       string `json:"bucket,omitempty"`
+	Organization string `json:"organization,omitempty"`
+	DataMap      string `json:"dataMap,omitempty"`
+	DataMapTags  string `json:"dataMapTags,omitempty"`
 }
 
 // InfluxWriteDataCommand Writes metrics to influxdb
@@ -101,6 +101,8 @@ func addInfluxWriteDataFlags(cmd *cobra.Command, stepConfig *influxWriteDataOpti
 	cmd.Flags().StringVar(&stepConfig.AuthToken, "authToken", os.Getenv("PIPER_authToken"), "Token to authenticate to the Influxdb")
 	cmd.Flags().StringVar(&stepConfig.Bucket, "bucket", `piper`, "Name of database (1.8) or bucket (2.0)")
 	cmd.Flags().StringVar(&stepConfig.Organization, "organization", os.Getenv("PIPER_organization"), "Name of influx organization. Only for Influxdb 2.0")
+	cmd.Flags().StringVar(&stepConfig.DataMap, "dataMap", os.Getenv("PIPER_dataMap"), "Map of fields for each measurements. It has to be a JSON string. For example: {'series_1':{'field_a':11,'field_b':12},'series_2':{'field_c':21,'field_d':22}}")
+	cmd.Flags().StringVar(&stepConfig.DataMapTags, "dataMapTags", os.Getenv("PIPER_dataMapTags"), "Map of tags for each measurements. It has to be a JSON string. For example: {'series_1':{'tag_a':'a','tag_b':'b'},'series_2':{'tag_c':'c','tag_d':'d'}}")
 
 	cmd.MarkFlagRequired("serverUrl")
 	cmd.MarkFlagRequired("authToken")
@@ -118,7 +120,7 @@ func influxWriteDataMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "influxTokenId", Description: "Influxdb token for authentication to the InfluxDB. In 1.8 version use 'username:password' instead.", Type: "jenkins"},
+					{Name: "influxAuthTokenId", Description: "Influxdb token for authentication to the InfluxDB. In 1.8 version use 'username:password' instead.", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{
@@ -136,6 +138,12 @@ func influxWriteDataMetadata() config.StepData {
 							{
 								Name: "influxAuthTokenId",
 								Type: "secret",
+							},
+
+							{
+								Name:  "",
+								Paths: []string{"$(vaultPath)/influxdb", "$(vaultBasePath)/$(vaultPipelineName)/influxdb", "$(vaultBasePath)/GROUP-SECRETS/influxdb"},
+								Type:  "vaultSecret",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -165,18 +173,20 @@ func influxWriteDataMetadata() config.StepData {
 					{
 						Name:        "dataMap",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "map[string]interface{}",
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_dataMap"),
 					},
 					{
 						Name:        "dataMapTags",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "map[string]interface{}",
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_dataMapTags"),
 					},
 				},
 			},

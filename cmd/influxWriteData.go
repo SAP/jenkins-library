@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"encoding/json"
+	"fmt"
+
 	"github.com/SAP/jenkins-library/pkg/influx"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -21,7 +24,17 @@ func writeData(config *influxWriteDataOptions, influxClient influxdb2.Client) er
 	log.Entry().Info("influxWriteData step")
 
 	client := influx.NewClient(influxClient, config.Organization, config.Bucket)
-	if err := client.WriteMetrics(config.DataMap, config.DataMapTags); err != nil {
+	var dataMap map[string]map[string]interface{}
+	if err := json.Unmarshal([]byte(config.DataMap), &dataMap); err != nil {
+		return fmt.Errorf("Failed to unmarshal dataMap: %v", err)
+	}
+	var dataMapTags map[string]map[string]string
+	if config.DataMapTags != "" {
+		if err := json.Unmarshal([]byte(config.DataMapTags), &dataMapTags); err != nil {
+			return fmt.Errorf("Failed to unmarshal dataMapTags: %v", err)
+		}
+	}
+	if err := client.WriteMetrics(dataMap, dataMapTags); err != nil {
 		return err
 	}
 	log.Entry().Info("Metrics have been written successfully")
