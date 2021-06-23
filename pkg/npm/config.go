@@ -38,7 +38,7 @@ func NewNPMRC(path string) NPMRC {
 	if !strings.HasPrefix(path, configFilename) {
 		path = filepath.Join(path, configFilename)
 	}
-	return NPMRC{path: path, values: &properties.Properties{}}
+	return NPMRC{path: path, values: properties.NewProperties()}
 }
 
 type NPMRC struct {
