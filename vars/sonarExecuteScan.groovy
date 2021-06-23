@@ -38,8 +38,8 @@ void call(Map parameters = [:]) {
             }
             // get step configuration to access `instance` & `customTlsCertificateLinks` & `owner` & `repository`
             // & `legacyPRHandling` & `inferBranchName`
-            // writeToDisk needs to be called here as owner and repository may come from the pipeline environment
-            script.commonPipelineEnvironment.writeToDisk(script)
+            // writePipelineEnv needs to be called here as owner and repository may come from the pipeline environment
+            writePipelineEnv(script: script, piperGoPath: piperGoPath)
             Map stepConfig = readJSON(text: sh(returnStdout: true, script: "${piperGoPath} getConfig --stepMetadata '.pipeline/tmp/${METADATA_FILE}'${customDefaultConfig}${customConfigArg}"))
             echo "Step Config: ${stepConfig}"
 
@@ -60,6 +60,7 @@ void call(Map parameters = [:]) {
                 piperExecuteBin.dockerWrapper(script, STEP_NAME, config){
                     if(!fileExists('.git')) utils.unstash('git')
                     piperExecuteBin.handleErrorDetails(STEP_NAME) {
+                        writePipelineEnv(script: script, piperGoPath: piperGoPath)
                         withSonarQubeEnv(stepConfig.instance) {
                             withEnv(environment){
                                 influxWrapper(script){
@@ -68,7 +69,7 @@ void call(Map parameters = [:]) {
                                         archiveArtifacts artifacts: "sonarscan.json", allowEmptyArchive: true
                                     }
                                     jenkinsUtils.handleStepResults(STEP_NAME, false, false)
-                                    script.commonPipelineEnvironment.readFromDisk(script)
+                                    readPipelineEnv(script: script, piperGoPath: piperGoPath)
                                 }
                             }
                         }

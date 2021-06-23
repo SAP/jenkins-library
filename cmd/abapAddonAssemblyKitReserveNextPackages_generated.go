@@ -67,9 +67,11 @@ func AbapAddonAssemblyKitReserveNextPackagesCommand() *cobra.Command {
 		Long: `This step takes the list of Software Component Versions from the addonDescriptor in the commonPipelineEnvironment and determines the ABAP delivery packages.
 If a package does not exist yet in the package registry, it is created there. The response contains detail information for this package and a package status, which determines the next actions:
 "P": Package was created in the registry; production can be started / continued
-"R": Package exists and is already released; production is not needed and must be skipped
+"R": Package exists and is already released; production is not needed and will be skipped
 The steps waits until the status "P" or "R" is achieved.
-The name, type and namespace of each package is written back to the addonDescriptor in the commonPipelineEnvironment.`,
+The name, type and namespace of each package is written back to the addonDescriptor in the commonPipelineEnvironment.
+<br />
+For Terminology refer to the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -154,6 +156,9 @@ func abapAddonAssemblyKitReserveNextPackagesMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "abapAddonAssemblyKitCredentialsId", Description: "Credential stored in Jenkins for the Addon Assembly Kit as a Service (AAKaaS) system", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "abapAddonAssemblyKitEndpoint",
@@ -162,6 +167,7 @@ func abapAddonAssemblyKitReserveNextPackagesMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     `https://apps.support.sap.com`,
 					},
 					{
 						Name:        "username",
@@ -170,6 +176,7 @@ func abapAddonAssemblyKitReserveNextPackagesMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_username"),
 					},
 					{
 						Name:        "password",
@@ -178,6 +185,7 @@ func abapAddonAssemblyKitReserveNextPackagesMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_password"),
 					},
 					{
 						Name: "addonDescriptor",
@@ -191,6 +199,7 @@ func abapAddonAssemblyKitReserveNextPackagesMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_addonDescriptor"),
 					},
 				},
 			},

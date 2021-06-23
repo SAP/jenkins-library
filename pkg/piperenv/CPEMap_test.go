@@ -84,3 +84,10 @@ func TestCPEMap_LoadFromDisk(t *testing.T) {
 	assert.Equal(t, "Wayne", cpe["Batman/Bruce"])
 	assert.Equal(t, float64(54), cpe["Batman/Test"])
 }
+
+func TestCommonPipelineEnvDirNotPresent(t *testing.T) {
+	cpe := CPEMap{}
+	err := cpe.LoadFromDisk("/path/does/not/exist")
+	assert.NoError(t, err)
+	assert.Len(t, cpe, 0)
+}
