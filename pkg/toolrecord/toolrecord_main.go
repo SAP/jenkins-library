@@ -14,7 +14,7 @@ type keydataset struct {
 	Name        string // technical name from the tool
 	Value       string // technical value
 	DisplayName string // user friendly name - optional
-	Url         string // direct URL to navigate to this key in the tool backend - optional
+	URL         string // direct URL to navigate to this key in the tool backend - optional
 }
 
 type toolrecord struct {
@@ -27,7 +27,7 @@ type toolrecord struct {
 	// picks the most specific URL + concatenate the dimension names
 	// for easy dashboard / xls creation
 	DisplayName string
-	DisplayUrl  string
+	DisplayURL  string
 
 	// detailed keydata - needs tool-specific parsing
 	Keys []keydataset
@@ -69,7 +69,7 @@ func (tr *toolrecord) AddKeyData(keyname, keyvalue, displayname, url string) err
 	if keyvalue == "" {
 		return fmt.Errorf("TR_ADD_KEY: empty keyvalue for %v", keyname)
 	}
-	keydata := keydataset{Name: keyname, Value: keyvalue, DisplayName: displayname, Url: url}
+	keydata := keydataset{Name: keyname, Value: keyvalue, DisplayName: displayname, URL: url}
 	tr.Keys = append(tr.Keys, keydata)
 	return nil
 }
@@ -98,7 +98,7 @@ func (tr *toolrecord) Persist() error {
 	}
 	// convenience aggregation
 	displayName := ""
-	displayUrl := ""
+	displayURL := ""
 	for _, keyset := range tr.Keys {
 		// create "name1 - name2 - name3"
 		subDisplayName := keyset.DisplayName
@@ -108,13 +108,13 @@ func (tr *toolrecord) Persist() error {
 			}
 			displayName = displayName + subDisplayName
 		}
-		subUrl := keyset.Url
-		if subUrl != "" {
-			displayUrl = subUrl
+		subURL := keyset.URL
+		if subURL != "" {
+			displayURL = subURL
 		}
 	}
 	tr.DisplayName = displayName
-	tr.DisplayUrl = displayUrl
+	tr.DisplayURL = displayURL
 
 	file, _ := json.Marshal(tr)
 	err := ioutil.WriteFile(tr.GetFileName(), file, 0644)
