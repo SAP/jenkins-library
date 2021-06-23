@@ -8,16 +8,16 @@ import (
 )
 
 func TestCopyData(t *testing.T) {
-	runInTempDir(t, "copying file succeeds", "dir1", func(t *testing.T) {
+	runInTempDir(t, "copying file succeeds small", "dir1", func(t *testing.T) {
 		srcName := "testFileSrc"
-		src, err := os.OpenFile(srcName, os.O_CREATE, 0700)
+		src, err := os.OpenFile(srcName, os.O_CREATE | os.O_RDWR, 0700)
 		if err != nil {
 			t.Fatal("Failed to create src file")
 		}
-		data := []byte{byte(1), byte(2), byte(3)}
+		data := []byte{byte(32), byte(42), byte(53)}
 		_, err = src.Write(data)
 		if err != nil {
-			t.Fatal("Failed to write data to src file")
+			t.Fatalf("Failed to write data to src file: %v", err)
 		}
 		src.Close()
 		src, err = os.OpenFile(srcName, os.O_CREATE, 0700)
@@ -43,7 +43,7 @@ func TestCopyData(t *testing.T) {
 		assert.Equal(t, int64(3), result, "Expected true but got false")
 		assert.Equal(t, data, dataRead, "data written %v is different to data read %v")
 	})
-	runInTempDir(t, "copying file succeeds", "dir2", func(t *testing.T) {
+	runInTempDir(t, "copying file succeeds larger", "dir2", func(t *testing.T) {
 		srcName := "testFile"
 		src, err := os.OpenFile(srcName, os.O_CREATE, 0700)
 		if err != nil {
@@ -70,7 +70,7 @@ func TestCopyData(t *testing.T) {
 		assert.NoError(t, err, "Didn't expert error but got one")
 		assert.Equal(t, int64(300), result, "Expected true but got false")
 	})
-	runInTempDir(t, "copying file succeeds", "dir3", func(t *testing.T) {
+	runInTempDir(t, "copying file fails on read", "dir3", func(t *testing.T) {
 		srcName := "testFileExcl"
 		src, err := os.OpenFile(srcName, os.O_CREATE, 0700)
 		if err != nil {
@@ -97,7 +97,7 @@ func TestCopyData(t *testing.T) {
 		assert.Error(t, err, "Expected error but got none")
 		assert.Equal(t, int64(0), result, "Expected true but got false")
 	})
-	runInTempDir(t, "copying file succeeds", "dir4", func(t *testing.T) {
+	runInTempDir(t, "copying file fails on write", "dir4", func(t *testing.T) {
 		srcName := "testFileExcl"
 		src, err := os.OpenFile(srcName, os.O_CREATE, 0700)
 		if err != nil {
