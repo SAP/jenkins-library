@@ -23,13 +23,13 @@ func TestCopyData(t *testing.T) {
 			t.Fatalf("Failed to write data to src file: %v", err)
 		}
 		src.Close()
-		src, err = os.OpenFile(srcName, os.O_CREATE, 0700)
+		src, err = os.OpenFile(srcName, os.O_CREATE|os.O_RDWR, 0700)
 		if err != nil {
 			t.Fatal("Failed to reopen src file")
 		}
 
 		dstName := "testFileTgt"
-		dst, err := os.OpenFile(dstName, os.O_CREATE, 0700)
+		dst, err := os.OpenFile(dstName, os.O_CREATE|os.O_RDWR, 0700)
 		if err != nil {
 			t.Fatal("Failed to create dst file")
 		}
@@ -37,7 +37,7 @@ func TestCopyData(t *testing.T) {
 		result, err := CopyData(dst, src)
 		src.Close()
 		dst.Close()
-		dst, err = os.OpenFile(dstName, os.O_CREATE, 0700)
+		dst, err = os.OpenFile(dstName, os.O_CREATE|os.O_RDWR, 0700)
 		dataRead := make([]byte, 3)
 		dst.Read(dataRead)
 		dst.Close()
@@ -48,7 +48,7 @@ func TestCopyData(t *testing.T) {
 	})
 	runInTempDir(t, "copying file succeeds larger", "dir2", func(t *testing.T) {
 		srcName := "testFile"
-		src, err := os.OpenFile(srcName, os.O_CREATE, 0700)
+		src, err := os.OpenFile(srcName, os.O_CREATE|os.O_RDWR, 0700)
 		if err != nil {
 			t.Fatal("Failed to create src file")
 		}
@@ -58,10 +58,10 @@ func TestCopyData(t *testing.T) {
 		}
 		_, err = src.Write(data)
 		src.Close()
-		src, err = os.OpenFile(srcName, os.O_CREATE, 0700)
+		src, err = os.OpenFile(srcName, os.O_CREATE|os.O_RDWR, 0700)
 
 		dstName := "testFile2"
-		dst, err := os.OpenFile(dstName, os.O_CREATE, 0700)
+		dst, err := os.OpenFile(dstName, os.O_CREATE|os.O_RDWR, 0700)
 		if err != nil {
 			t.Fatal("Failed to create dst file")
 		}
@@ -75,7 +75,7 @@ func TestCopyData(t *testing.T) {
 	})
 	runInTempDir(t, "copying file fails on read", "dir3", func(t *testing.T) {
 		srcName := "testFileExcl"
-		src, err := os.OpenFile(srcName, os.O_CREATE, 0700)
+		src, err := os.OpenFile(srcName, os.O_CREATE|os.O_RDWR, 0700)
 		if err != nil {
 			t.Fatalf("Failed to create src file %v", err)
 		}
@@ -88,7 +88,7 @@ func TestCopyData(t *testing.T) {
 		src, err = os.OpenFile(srcName, os.O_WRONLY, 0700)
 
 		dstName := "testFile2"
-		dst, err := os.OpenFile(dstName, os.O_CREATE, 0700)
+		dst, err := os.OpenFile(dstName, os.O_CREATE|os.O_RDWR, 0700)
 		if err != nil {
 			t.Fatal("Failed to create dst file")
 		}
@@ -102,7 +102,7 @@ func TestCopyData(t *testing.T) {
 	})
 	runInTempDir(t, "copying file fails on write", "dir4", func(t *testing.T) {
 		srcName := "testFileExcl"
-		src, err := os.OpenFile(srcName, os.O_CREATE, 0700)
+		src, err := os.OpenFile(srcName, os.O_CREATE|os.O_RDWR, 0700)
 		if err != nil {
 			t.Fatalf("Failed to create src file %v", err)
 		}
@@ -112,10 +112,10 @@ func TestCopyData(t *testing.T) {
 		}
 		_, err = src.Write(data)
 		src.Close()
-		src, err = os.OpenFile(srcName, os.O_CREATE, 0700)
+		src, err = os.OpenFile(srcName, os.O_CREATE|os.O_RDWR, 0700)
 
 		dstName := "testFileExclus"
-		dst, err := os.OpenFile(dstName, os.O_CREATE, 0700)
+		dst, err := os.OpenFile(dstName, os.O_CREATE|os.O_RDWR, 0700)
 		if err != nil {
 			t.Fatalf("Failed to create dst file: %v", err)
 		}
