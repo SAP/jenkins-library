@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -28,6 +29,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/maven"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/toolrecord"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 
 	piperGithub "github.com/SAP/jenkins-library/pkg/github"
@@ -170,6 +172,16 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 	filterSet, err := sys.GetFilterSetOfProjectVersionByTitle(projectVersion.ID, config.FilterSetTitle)
 	if filterSet == nil || err != nil {
 		return reports, fmt.Errorf("Failed to load filter set with title %v", config.FilterSetTitle)
+	}
+
+	// create toolrecord file
+	// tbd - how to handle verifyOnly
+	toolRecordFileName, err := createToolRecordFortify("./", config, project.ID, fortifyProjectName, fortifyProjectVersion)
+	if err != nil {
+		// do not fail until the framework is well established
+		log.Entry().Warning("TR_FORTIFY: Failed to create toolrecord file ...", err)
+	} else {
+		reports = append(reports, piperutils.Path{Target: toolRecordFileName})
 	}
 
 	if config.VerifyOnly {
@@ -630,8 +642,8 @@ func autoresolveMavenClasspath(config fortifyExecuteScanOptions, file string, ut
 		ProjectSettingsFile: config.ProjectSettingsFile,
 		GlobalSettingsFile:  config.GlobalSettingsFile,
 		M2Path:              config.M2Path,
-		Goals:               []string{"dependency:build-classpath"},
-		Defines:             []string{fmt.Sprintf("-Dmdep.outputFile=%v", file), "-DincludeScope=compile"},
+		Goals:               []string{"dependency:build-classpath", "package"},
+		Defines:             []string{fmt.Sprintf("-Dmdep.outputFile=%v", file), "-DincludeScope=compile", "-DskipTests"},
 		ReturnStdout:        false,
 	}
 	_, err := maven.Execute(&executeOptions, utils)
@@ -972,4 +984,30 @@ func getSeparator() string {
 		return ";"
 	}
 	return ":"
+}
+
+func createToolRecordFortify(workspace string, config fortifyExecuteScanOptions, projectID int64, projectName, projectVersion string) (string, error) {
+	record := toolrecord.New(workspace, "fortify", config.ServerURL)
+	// Project
+	err := record.AddKeyData("project",
+		strconv.FormatInt(projectID, 10),
+		projectName,
+		"")
+	if err != nil {
+		return "", err
+	}
+	// projectVersion
+	projectVersionURL := config.ServerURL + "/ssc/html/ssc/version/" + projectVersion
+	err = record.AddKeyData("projectVersion",
+		projectVersion,
+		projectVersion,
+		projectVersionURL)
+	if err != nil {
+		return "", err
+	}
+	err = record.Persist()
+	if err != nil {
+		return "", err
+	}
+	return record.GetFileName(), nil
 }

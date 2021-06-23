@@ -48,7 +48,7 @@ func runMavenExecuteIntegration(config *mavenExecuteIntegrationOptions, utils ma
 		M2Path:              config.M2Path,
 		ProjectSettingsFile: config.ProjectSettingsFile,
 		GlobalSettingsFile:  config.GlobalSettingsFile,
-		Goals:               []string{"org.jacoco:jacoco-maven-plugin:prepare-agent", "test"},
+		Goals:               []string{"org.jacoco:jacoco-maven-plugin:prepare-agent", config.Goal},
 		Defines:             []string{retryDefine, forkCountDefine},
 	}
 

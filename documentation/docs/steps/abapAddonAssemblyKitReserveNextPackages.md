@@ -4,7 +4,7 @@
 
 ## Prerequisites
 
-* The credentials to access the AAKaaS (e.g. S-User) must be stored in the Jenkins Credential Store
+* The credentials to access the AAKaaS (Technical Communication User) must be stored in the Jenkins Credential Store
 * The step needs information about the Software Component Versions for which packages should be reserved.
 * This information is provided via the addonDescriptor in the commonPipelineEnvironment where the fields 'name' and 'version' in the repositories list need to be filled.
 * The Software Component Versions must be valid.
