@@ -42,7 +42,7 @@ func TestCopyData(t *testing.T) {
 		dst.Read(dataRead)
 		dst.Close()
 
-		assert.NoError(t, err, "Didn't expert error but got one")
+		assert.NoError(t, err, "Didn't expect error but got one")
 		assert.Equal(t, int64(3), result, "Expected true but got false")
 		assert.Equal(t, data, dataRead, "data written %v is different to data read %v")
 	})
@@ -70,7 +70,7 @@ func TestCopyData(t *testing.T) {
 		src.Close()
 		dst.Close()
 
-		assert.NoError(t, err, "Didn't expert error but got one")
+		assert.NoError(t, err, "Didn't expect error but got one")
 		assert.Equal(t, int64(300), result, "Expected true but got false")
 	})
 	runInTempDir(t, "copying file fails on read", "dir3", func(t *testing.T) {
