@@ -116,4 +116,16 @@ func TestMavenBuild(t *testing.T) {
 		assert.Contains(t, mockedUtils.Calls[1].Params, "-DaltDeploymentRepository=ID::default::http://sampleRepo.com")
 	})
 
+	t.Run("mavenBuild accepts profiles", func(t *testing.T) {
+		mockedUtils := newMavenMockUtils()
+
+		config := mavenBuildOptions{Profiles: []string{"profile1", "profile2"}}
+
+		err := runMavenBuild(&config, nil, &mockedUtils)
+
+		assert.Nil(t, err)
+		assert.Contains(t, mockedUtils.Calls[0].Params, "--activate-profiles")
+		assert.Contains(t, mockedUtils.Calls[0].Params, "profile1,profile2")
+	})
+
 }

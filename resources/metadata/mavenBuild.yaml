@@ -23,6 +23,14 @@ spec:
           - STEPS
         mandatory: false
         default: pom.xml
+      - name: profiles
+        type: "[]string"
+        description: Defines list of maven build profiles to be used.
+        scope:
+          - PARAMETERS
+          - GENERAL
+          - STAGES
+          - STEPS
       - name: flatten
         type: bool
         description: Defines if the pom files should be flattened to support ci friendly maven versioning.
