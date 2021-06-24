@@ -2,7 +2,7 @@ metadata:
   name: transportRequestUploadRFC
   aliases:
     - name: transportRequestUploadFile
-  description: Uploads a UI5 application as ZIP file to the ABAP system via RFC connections.
+  description: This step uploads a UI5 application as ZIP file to the ABAP system via RFC connections.
   longDescription: |
     This step uploads a UI5 application as ZIP file to the ABAP system via RFC connections.
 spec:

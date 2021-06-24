@@ -60,7 +60,7 @@ func (p *transportRequestUploadRFCCommonPipelineEnvironment) persist(path, resou
 	}
 }
 
-// TransportRequestUploadRFCCommand Uploads a UI5 application as ZIP file to the ABAP system via RFC connections.
+// TransportRequestUploadRFCCommand This step uploads a UI5 application as ZIP file to the ABAP system via RFC connections.
 func TransportRequestUploadRFCCommand() *cobra.Command {
 	const STEP_NAME = "transportRequestUploadRFC"
 
@@ -72,7 +72,7 @@ func TransportRequestUploadRFCCommand() *cobra.Command {
 
 	var createTransportRequestUploadRFCCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Uploads a UI5 application as ZIP file to the ABAP system via RFC connections.",
+		Short: "This step uploads a UI5 application as ZIP file to the ABAP system via RFC connections.",
 		Long:  `This step uploads a UI5 application as ZIP file to the ABAP system via RFC connections.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
@@ -166,7 +166,7 @@ func transportRequestUploadRFCMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "transportRequestUploadRFC",
 			Aliases:     []config.Alias{{Name: "transportRequestUploadFile", Deprecated: false}},
-			Description: "Uploads a UI5 application as ZIP file to the ABAP system via RFC connections.",
+			Description: "This step uploads a UI5 application as ZIP file to the ABAP system via RFC connections.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
