@@ -16,8 +16,6 @@ spec:
         description: Service key JSON string to access the Cloud Integration API
         scope:
           - PARAMETERS
-          - STAGES
-          - STEPS
         mandatory: true
         secret: true
         resourceRef:

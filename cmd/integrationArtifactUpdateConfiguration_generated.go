@@ -134,7 +134,7 @@ func integrationArtifactUpdateConfigurationMetadata() config.StepData {
 								Type:  "secret",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:     []string{"PARAMETERS"},
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
