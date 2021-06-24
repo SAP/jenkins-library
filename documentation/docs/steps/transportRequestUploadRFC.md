@@ -12,12 +12,12 @@
 
 The RFC Client connects to your ABAP system using the [SAP NetWeaver RFC SDK](https://support.sap.com/en/product/connectors/nwrfcsdk.html).
 
-For more information, see [classical SAP connectivity technology RFC](https://help.sap.com/viewer/753088fc00704d0a80e7fbd6803c8adb/1709%20000/en-US/4888068ad9134076e10000000a42189d.html) for detailed information.
+For more information, see [classical SAP connectivity technology RFC](https://help.sap.com/viewer/753088fc00704d0a80e7fbd6803c8adb/1709%20000/en-US/4888068ad9134076e10000000a42189d.html).
 
 To install an RFC library based Connector Client, proceed as follows:
 
 1. Create a Docker image as described in the Git repository [devops-docker-images/node-rfc](https://github.com/rodibrin/devops-docker-images/tree/master/node-rfc).
-1. Import/push your image to your private [Docker Hub registry](https://hub.docker.com/).
+1. Push your image to your private [Docker Hub registry](https://hub.docker.com/).
 1. Add the following to your config.yml file:
 
 ```yaml
