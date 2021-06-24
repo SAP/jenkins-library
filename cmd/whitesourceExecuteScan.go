@@ -22,6 +22,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/toolrecord"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 	"github.com/pkg/errors"
 )
@@ -106,7 +107,7 @@ func newWhitesourceUtils(config *ScanOptions) *whitesourceUtilsBundle {
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
 	// Configure HTTP Client
-	utils.SetOptions(piperhttp.ClientOptions{MaxRetries: 3, TransportTimeout: time.Duration(config.Timeout) * time.Second})
+	utils.SetOptions(piperhttp.ClientOptions{TransportTimeout: time.Duration(config.Timeout) * time.Second})
 	return &utils
 }
 
@@ -246,6 +247,17 @@ func checkAndReportScanResults(config *ScanOptions, scan *ws.Scan, utils whiteso
 			checkErrors = append(checkErrors, fmt.Sprint(err))
 		}
 	}
+
+	// create toolrecord file
+	// tbd - how to handle verifyOnly
+	toolRecordFileName, err := createToolRecordWhitesource("./", config)
+	if err != nil {
+		// do not fail until the framework is well established
+		log.Entry().Warning("TR_WHITESOURCE: Failed to create toolrecord file ...", err)
+	} else {
+		reportPaths = append(reportPaths, piperutils.Path{Target: toolRecordFileName})
+	}
+
 	if len(checkErrors) > 0 {
 		return reportPaths, fmt.Errorf(strings.Join(checkErrors, ": "))
 	}
@@ -781,7 +793,7 @@ func aggregateVersionWideVulnerabilities(config *ScanOptions, utils whitesourceU
 		projectVersion := strings.Split(project.Name, " - ")[1]
 		if projectVersion == config.Version {
 			projectNames += project.Name + "\n"
-			alerts, err := sys.GetProjectAlerts(project.Token)
+			alerts, err := sys.GetProjectAlertsByType(project.Token, "SECURITY_VULNERABILITY")
 			if err != nil {
 				return err
 			}
@@ -910,4 +922,26 @@ func persistScannedProjects(config *ScanOptions, scan *ws.Scan, commonPipelineEn
 		projectNames = scan.ScannedProjectNames()
 	}
 	commonPipelineEnvironment.custom.whitesourceProjectNames = projectNames
+}
+
+// create toolrecord file for whitesource
+//
+// Limitation: as the toolrecord file is designed to point to one scan result this generate a pointer
+// to the product only, and not to the scanned projects
+//
+func createToolRecordWhitesource(workspace string, config *whitesourceExecuteScanOptions) (string, error) {
+	record := toolrecord.New(workspace, "whitesource", config.ServiceURL)
+	productURL := config.ServiceURL + "/Wss/WSS.html#!product;token=" + config.ProductToken
+	err := record.AddKeyData("product",
+		config.ProductToken,
+		config.ProductName,
+		productURL)
+	if err != nil {
+		return "", err
+	}
+	err = record.Persist()
+	if err != nil {
+		return "", err
+	}
+	return record.GetFileName(), nil
 }

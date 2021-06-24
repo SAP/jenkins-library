@@ -127,6 +127,7 @@ func containerExecuteStructureTestsMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name:        "testConfiguration",
@@ -135,6 +136,7 @@ func containerExecuteStructureTestsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_testConfiguration"),
 					},
 					{
 						Name:        "testDriver",
@@ -143,6 +145,7 @@ func containerExecuteStructureTestsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_testDriver"),
 					},
 					{
 						Name:        "testImage",
@@ -151,6 +154,7 @@ func containerExecuteStructureTestsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_testImage"),
 					},
 					{
 						Name:        "testReportFilePath",
@@ -159,6 +163,7 @@ func containerExecuteStructureTestsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `cst-report.json`,
 					},
 				},
 			},

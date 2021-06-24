@@ -127,6 +127,9 @@ func githubCheckBranchProtectionMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "githubTokenCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "apiUrl",
@@ -135,6 +138,7 @@ func githubCheckBranchProtectionMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "githubApiUrl"}},
+						Default:     `https://api.github.com`,
 					},
 					{
 						Name:        "branch",
@@ -143,6 +147,7 @@ func githubCheckBranchProtectionMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     `master`,
 					},
 					{
 						Name: "owner",
@@ -156,6 +161,7 @@ func githubCheckBranchProtectionMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{{Name: "githubOrg"}},
+						Default:   os.Getenv("PIPER_owner"),
 					},
 					{
 						Name: "repository",
@@ -169,6 +175,7 @@ func githubCheckBranchProtectionMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{{Name: "githubRepo"}},
+						Default:   os.Getenv("PIPER_repository"),
 					},
 					{
 						Name:        "requiredChecks",
@@ -177,6 +184,7 @@ func githubCheckBranchProtectionMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 					{
 						Name:        "requireEnforceAdmins",
@@ -185,6 +193,7 @@ func githubCheckBranchProtectionMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name:        "requiredApprovingReviewCount",
@@ -193,6 +202,7 @@ func githubCheckBranchProtectionMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     0,
 					},
 					{
 						Name: "token",
@@ -212,6 +222,7 @@ func githubCheckBranchProtectionMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{{Name: "githubToken"}, {Name: "access_token"}},
+						Default:   os.Getenv("PIPER_token"),
 					},
 				},
 			},
