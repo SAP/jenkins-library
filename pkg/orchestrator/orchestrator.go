@@ -12,12 +12,14 @@ const (
 	AzureDevOps
 	GitHubActions
 	Jenkins
-	Travis
 )
 
 type OrchestratorSpecificConfigProviding interface {
-	GetBranchBuildConfig() BranchBuildConfig
+	GetBranch() string
+	GetBuildUrl() string
+	GetCommit() string
 	GetPullRequestConfig() PullRequestConfig
+	GetRepoUrl() string
 	IsPullRequest() bool
 }
 
@@ -25,10 +27,6 @@ type PullRequestConfig struct {
 	Branch string
 	Base   string
 	Key    string
-}
-
-type BranchBuildConfig struct {
-	Branch string
 }
 
 func NewOrchestratorSpecificConfigProvider() (OrchestratorSpecificConfigProviding, error) {
@@ -39,12 +37,10 @@ func NewOrchestratorSpecificConfigProvider() (OrchestratorSpecificConfigProvidin
 		return &GitHubActionsConfigProvider{}, nil
 	case Jenkins:
 		return &JenkinsConfigProvider{}, nil
-	case Travis:
-		return &TravisConfigProvider{}, nil
 	case Unknown:
 		fallthrough
 	default:
-		return nil, errors.New("unable to detect a supported orchestrator (Azure DevOps, GitHub Actions, Jenkins, Travis)")
+		return nil, errors.New("unable to detect a supported orchestrator (Azure DevOps, GitHub Actions, Jenkins)")
 	}
 }
 
@@ -55,15 +51,13 @@ func DetectOrchestrator() Orchestrator {
 		return Orchestrator(GitHubActions)
 	} else if isJenkins() {
 		return Orchestrator(Jenkins)
-	} else if isTravis() {
-		return Orchestrator(Travis)
 	} else {
 		return Orchestrator(Unknown)
 	}
 }
 
 func (o Orchestrator) String() string {
-	return [...]string{"Unknown", "AzureDevOps", "GitHubActions", "Travis", "Jenkins"}[o]
+	return [...]string{"Unknown", "AzureDevOps", "GitHubActions", "Jenkins"}[o]
 }
 
 func areIndicatingEnvVarsSet(envVars []string) bool {
