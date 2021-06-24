@@ -23,15 +23,16 @@ type TokenParameters struct {
 	Client                       piperhttp.Sender
 }
 
-// CpiServiceKey contains information about a CPI service key
+// ServiceKey contains information about a CPI service key
 type ServiceKey struct {
 	OAuth OAuth `json:"oauth"`
 }
 
+// OAuth is inside a CPI service key and contains more needed information
 type OAuth struct {
 	Host                  string `json:"url"`
 	OAuthTokenProviderURL string `json:"tokenurl"`
-	ClientId              string `json:"clientid"`
+	ClientID              string `json:"clientid"`
 	ClientSecret          string `json:"clientsecret"`
 }
 

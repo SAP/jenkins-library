@@ -69,7 +69,7 @@ func runIntegrationArtifactGetServiceEndpoint(config *integrationArtifactGetServ
 		return err
 	}
 	servieEndpointURL := fmt.Sprintf("%s/api/v1/ServiceEndpoints?$expand=EntryPoints", serviceKey.OAuth.Host)
-	tokenParameters := cpi.TokenParameters{TokenURL: serviceKey.OAuth.OAuthTokenProviderURL, Username: serviceKey.OAuth.ClientId, Password: serviceKey.OAuth.ClientSecret, Client: httpClient}
+	tokenParameters := cpi.TokenParameters{TokenURL: serviceKey.OAuth.OAuthTokenProviderURL, Username: serviceKey.OAuth.ClientID, Password: serviceKey.OAuth.ClientSecret, Client: httpClient}
 	token, err := cpi.CommonUtils.GetBearerToken(tokenParameters)
 	if err != nil {
 		return errors.Wrap(err, "failed to fetch Bearer Token")

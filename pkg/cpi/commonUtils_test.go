@@ -29,7 +29,7 @@ func TestReadCpiServiceKeyFile(t *testing.T) {
 				OAuth: OAuth{
 					Host:                  "https://demo",
 					OAuthTokenProviderURL: "https://demo/oauth/token",
-					ClientId:              "demouser",
+					ClientID:              "demouser",
 					ClientSecret:          "******",
 				},
 			},
