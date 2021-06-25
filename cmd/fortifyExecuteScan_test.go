@@ -855,15 +855,8 @@ func TestAutoresolveClasspath(t *testing.T) {
 		result, err := autoresolveMavenClasspath(fortifyExecuteScanOptions{BuildDescriptorFile: "pom.xml"}, file, &utils)
 		assert.NoError(t, err)
 		assert.Equal(t, "mvn", utils.executions[0].executable, "Expected different executable")
-		assert.Equal(t, []string{"--file", "pom.xml", fmt.Sprintf("-Dmdep.outputFile=%v", file), "-DincludeScope=compile", "-DskipTests", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "dependency:build-classpath", "package"}, utils.executions[0].parameters, "Expected different parameters")
+		assert.Equal(t, []string{"--file", "pom.xml", fmt.Sprintf("-Dmdep.outputFile=%v", file), "-DincludeScope=compile", "-DskipTests", "--fail-at-end", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "dependency:build-classpath", "package"}, utils.executions[0].parameters, "Expected different parameters")
 		assert.Equal(t, "some.jar;someother.jar", result, "Expected different result")
-	})
-
-	t.Run("error maven", func(t *testing.T) {
-		utils := newFortifyTestUtilsBundle()
-
-		_, err := autoresolveMavenClasspath(fortifyExecuteScanOptions{BuildDescriptorFile: "pom.xml"}, "../.", &utils)
-		assert.Error(t, err)
 	})
 }
 

@@ -637,13 +637,14 @@ func autoresolveMavenClasspath(config fortifyExecuteScanOptions, file string, ut
 	if filepath.IsAbs(file) {
 		log.Entry().Warnf("Passing an absolute path for -Dmdep.outputFile results in the classpath only for the last module in multi-module maven projects.")
 	}
+	defines := generateMavenFortifyDefines(&config, file)
 	executeOptions := maven.ExecuteOptions{
 		PomPath:             config.BuildDescriptorFile,
 		ProjectSettingsFile: config.ProjectSettingsFile,
 		GlobalSettingsFile:  config.GlobalSettingsFile,
 		M2Path:              config.M2Path,
 		Goals:               []string{"dependency:build-classpath", "package"},
-		Defines:             []string{fmt.Sprintf("-Dmdep.outputFile=%v", file), "-DincludeScope=compile", "-DskipTests", "--fail-at-end"},
+		Defines:             defines,
 		ReturnStdout:        false,
 	}
 	_, err := maven.Execute(&executeOptions, utils)
@@ -651,6 +652,34 @@ func autoresolveMavenClasspath(config fortifyExecuteScanOptions, file string, ut
 		log.Entry().WithError(err).Warnf("failed to determine classpath using Maven: %v", err)
 	}
 	return readAllClasspathFiles(file), nil
+}
+
+func generateMavenFortifyDefines(config *fortifyExecuteScanOptions, file string) []string {
+	defines := []string{
+		fmt.Sprintf("-Dmdep.outputFile=%v", file),
+		"-DincludeScope=compile",
+		"-DskipTests",
+		"--fail-at-end"}
+
+	if len(config.BuildDescriptorExcludeList) > 0 {
+		// From the documentation, these are file paths to a module's pom.xml.
+		// For MTA projects, we support pom.xml files here and skip others.
+		for _, exclude := range config.BuildDescriptorExcludeList {
+			if !strings.HasSuffix(exclude, "pom.xml") {
+				continue
+			}
+			exists, _ := piperutils.FileExists(exclude)
+			if !exists {
+				continue
+			}
+			moduleName := filepath.Dir(exclude)
+			if moduleName != "" {
+				defines = append(defines, "-pl", "!"+moduleName)
+			}
+		}
+	}
+
+	return defines
 }
 
 // readAllClasspathFiles tests whether the passed file is an absolute path. If not, it will glob for
