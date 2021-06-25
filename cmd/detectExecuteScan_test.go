@@ -66,6 +66,26 @@ func TestRunDetect(t *testing.T) {
 		assert.Equal(t, expectedScript, utilsMock.Calls[0])
 	})
 
+	t.Run("success case - with report", func(t *testing.T) {
+		t.Parallel()
+		utilsMock := newDetectTestUtilsBundle()
+		utilsMock.AddFile("detect.sh", []byte(""))
+		utilsMock.AddFile("detect.risk.report.pdf", []byte(""))
+		err := runDetect(detectExecuteScanOptions{}, utilsMock)
+
+		assert.Equal(t, utilsMock.downloadedFiles["https://detect.synopsys.com/detect.sh"], "detect.sh")
+		assert.True(t, utilsMock.HasRemovedFile("detect.sh"))
+		assert.NoError(t, err)
+		assert.Equal(t, ".", utilsMock.Dir, "Wrong execution directory used")
+		assert.Equal(t, "/bin/bash", utilsMock.Shell[0], "Bash shell expected")
+		expectedScript := "./detect.sh --blackduck.url= --blackduck.api.token= \"--detect.project.name=''\" \"--detect.project.version.name=''\" \"--detect.code.location.name=''\" --detect.source.path='.'"
+		assert.Equal(t, expectedScript, utilsMock.Calls[0])
+
+		content, err := utilsMock.FileRead("blackduck-ip.json")
+		assert.NoError(t, err)
+		assert.Contains(t, string(content), `"policyViolations":0`)
+	})
+
 	t.Run("failure case", func(t *testing.T) {
 		t.Parallel()
 		utilsMock := newDetectTestUtilsBundle()

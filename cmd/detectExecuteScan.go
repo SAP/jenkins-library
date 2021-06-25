@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -116,7 +117,31 @@ func runDetect(config detectExecuteScanOptions, utils detectUtils) error {
 	utils.SetDir(".")
 	utils.SetEnv(envs)
 
-	return utils.RunShell("/bin/bash", script)
+	err = utils.RunShell("/bin/bash", script)
+	if err == nil {
+		violations := struct {
+			PolicyViolations int      `json:"policyViolations"`
+			Reports          []string `json:"reports"`
+		}{
+			PolicyViolations: 0,
+			Reports:          []string{},
+		}
+
+		if exists, err := utils.FileExists("detect.risk.report.pdf"); err != nil && exists {
+			violations.Reports = append(violations.Reports, "detect.risk.report.pdf")
+		}
+
+		violationContent, err := json.Marshal(violations)
+		if err != nil {
+			return fmt.Errorf("failed to marshal policy violation data: %w", err)
+		}
+
+		err = utils.FileWrite("blackduck-ip.json", violationContent, 0666)
+		if err != nil {
+			return fmt.Errorf("failed to write policy violation report: %w", err)
+		}
+	}
+	return err
 }
 
 func getDetectScript(config detectExecuteScanOptions, utils detectUtils) error {
