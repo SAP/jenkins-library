@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"encoding/json"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
@@ -45,7 +46,9 @@ func runWritePipelineEnv() error {
 	}
 
 	commonPipelineEnv := piperenv.CPEMap{}
-	err := json.Unmarshal(inBytes, &commonPipelineEnv)
+	decoder := json.NewDecoder(bytes.NewReader(inBytes))
+	decoder.UseNumber()
+	err := decoder.Decode(&commonPipelineEnv)
 	if err != nil {
 		return err
 	}
@@ -56,11 +59,11 @@ func runWritePipelineEnv() error {
 		return err
 	}
 
-	bytes, err := json.MarshalIndent(commonPipelineEnv, "", "\t")
+	writtenBytes, err := json.MarshalIndent(commonPipelineEnv, "", "\t")
 	if err != nil {
 		return err
 	}
-	_, err = os.Stdout.Write(bytes)
+	_, err = os.Stdout.Write(writtenBytes)
 	if err != nil {
 		return err
 	}
