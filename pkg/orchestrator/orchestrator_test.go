@@ -14,7 +14,7 @@ func TestOrchestrator(t *testing.T) {
 
 		_, err := NewOrchestratorSpecificConfigProvider()
 
-		assert.EqualError(t, err, "unable to detect a supported orchestrator (Azure DevOps, GitHub Actions, Jenkins, Travis)")
+		assert.EqualError(t, err, "unable to detect a supported orchestrator (Azure DevOps, GitHub Actions, Jenkins)")
 	})
 
 	t.Run("Test orchestrator.toString()", func(t *testing.T) {
