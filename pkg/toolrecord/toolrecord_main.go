@@ -14,10 +14,12 @@ type keydataset struct {
 	Name        string // technical name from the tool
 	Value       string // technical value
 	DisplayName string // user friendly name - optional
-	Url         string // direct URL to navigate to this key in the tool backend - optional
+	URL         string // direct URL to navigate to this key in the tool backend - optional
 }
 
-type toolrecord struct {
+// Toolrecord holds all data to locate a tool result
+// in the tool's backend
+type Toolrecord struct {
 	RecordVersion int
 
 	ToolName     string
@@ -27,7 +29,7 @@ type toolrecord struct {
 	// picks the most specific URL + concatenate the dimension names
 	// for easy dashboard / xls creation
 	DisplayName string
-	DisplayUrl  string
+	DisplayURL  string
 
 	// detailed keydata - needs tool-specific parsing
 	Keys []keydataset
@@ -40,8 +42,9 @@ type toolrecord struct {
 	reportFileName string
 }
 
-func New(workspace, toolName, toolInstance string) *toolrecord {
-	tr := toolrecord{}
+// New - initialize a new toolrecord
+func New(workspace, toolName, toolInstance string) *Toolrecord {
+	tr := Toolrecord{}
 
 	tr.RecordVersion = 1
 	tr.ToolName = toolName
@@ -62,19 +65,24 @@ func New(workspace, toolName, toolInstance string) *toolrecord {
 	return &tr
 }
 
-func (tr *toolrecord) AddKeyData(keyname, keyvalue, displayname, url string) error {
+// AddKeyData - add one key to the current toolrecord
+// calls must follow the tool's hierachy ( e.g. org -> project)
+// as DisplayName & DisplayURL are based on the call sequence
+func (tr *Toolrecord) AddKeyData(keyname, keyvalue, displayname, url string) error {
 	if keyname == "" {
 		return errors.New("TR_ADD_KEY: empty keyname")
 	}
 	if keyvalue == "" {
 		return fmt.Errorf("TR_ADD_KEY: empty keyvalue for %v", keyname)
 	}
-	keydata := keydataset{Name: keyname, Value: keyvalue, DisplayName: displayname, Url: url}
+	keydata := keydataset{Name: keyname, Value: keyvalue, DisplayName: displayname, URL: url}
 	tr.Keys = append(tr.Keys, keydata)
 	return nil
 }
 
-func (tr *toolrecord) AddContext(label string, data interface{}) error {
+// AddContext - add additional context information
+// second call with the same label will overwrite the first call's data
+func (tr *Toolrecord) AddContext(label string, data interface{}) error {
 	if label == "" {
 		return errors.New("TR_ADD_CONTEXT: no label supplied")
 	}
@@ -82,11 +90,13 @@ func (tr *toolrecord) AddContext(label string, data interface{}) error {
 	return nil
 }
 
-func (tr *toolrecord) GetFileName() string {
+// GetFileName - local filename for the current record
+func (tr *Toolrecord) GetFileName() string {
 	return tr.reportFileName
 }
 
-func (tr *toolrecord) Persist() error {
+// Persist - write the current record to file system
+func (tr *Toolrecord) Persist() error {
 	if tr.workspace == "" {
 		return errors.New("TR_PERSIST: empty workspace ")
 	}
@@ -98,7 +108,7 @@ func (tr *toolrecord) Persist() error {
 	}
 	// convenience aggregation
 	displayName := ""
-	displayUrl := ""
+	displayURL := ""
 	for _, keyset := range tr.Keys {
 		// create "name1 - name2 - name3"
 		subDisplayName := keyset.DisplayName
@@ -108,13 +118,13 @@ func (tr *toolrecord) Persist() error {
 			}
 			displayName = displayName + subDisplayName
 		}
-		subUrl := keyset.Url
-		if subUrl != "" {
-			displayUrl = subUrl
+		subURL := keyset.URL
+		if subURL != "" {
+			displayURL = subURL
 		}
 	}
 	tr.DisplayName = displayName
-	tr.DisplayUrl = displayUrl
+	tr.DisplayURL = displayURL
 
 	file, _ := json.Marshal(tr)
 	err := ioutil.WriteFile(tr.GetFileName(), file, 0644)
