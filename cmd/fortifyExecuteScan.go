@@ -642,14 +642,13 @@ func autoresolveMavenClasspath(config fortifyExecuteScanOptions, file string, ut
 		ProjectSettingsFile: config.ProjectSettingsFile,
 		GlobalSettingsFile:  config.GlobalSettingsFile,
 		M2Path:              config.M2Path,
-		Goals:               []string{"dependency:build-classpath"},
+		Goals:               []string{"dependency:build-classpath", "package"},
 		Defines:             []string{fmt.Sprintf("-Dmdep.outputFile=%v", file), "-DincludeScope=compile", "-DskipTests", "--fail-at-end"},
 		ReturnStdout:        false,
 	}
 	_, err := maven.Execute(&executeOptions, utils)
 	if err != nil {
-		log.Entry().WithError(err).Error("failed to determine classpath using Maven")
-		return "", err
+		log.Entry().WithError(err).Warnf("failed to determine classpath using Maven: %v", err)
 	}
 	return readAllClasspathFiles(file), nil
 }
