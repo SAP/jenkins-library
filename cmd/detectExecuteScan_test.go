@@ -70,7 +70,7 @@ func TestRunDetect(t *testing.T) {
 		t.Parallel()
 		utilsMock := newDetectTestUtilsBundle()
 		utilsMock.AddFile("detect.sh", []byte(""))
-		utilsMock.AddFile("detect.risk.report.pdf", []byte(""))
+		utilsMock.AddFile("my_BlackDuck_RiskReport.pdf", []byte(""))
 		err := runDetect(detectExecuteScanOptions{}, utilsMock)
 
 		assert.Equal(t, utilsMock.downloadedFiles["https://detect.synopsys.com/detect.sh"], "detect.sh")

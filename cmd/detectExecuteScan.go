@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -127,8 +128,10 @@ func runDetect(config detectExecuteScanOptions, utils detectUtils) error {
 			Reports:          []string{},
 		}
 
-		if exists, err := utils.FileExists("detect.risk.report.pdf"); err != nil && exists {
-			violations.Reports = append(violations.Reports, "detect.risk.report.pdf")
+		if files, err := utils.Glob("**/*BlackDuck_RiskReport.pdf"); err != nil && len(files) > 0 {
+			// there should only be one RiskReport thus only taking the first one
+			_, reportFile := filepath.Split(files[0])
+			violations.Reports = append(violations.Reports, reportFile)
 		}
 
 		violationContent, err := json.Marshal(violations)
