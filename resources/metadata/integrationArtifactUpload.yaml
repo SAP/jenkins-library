@@ -19,7 +19,7 @@ spec:
         mandatory: true
         secret: true
         resourceRef:
-          - name: cpiServiceKeyCredentialId
+          - name: cpiApiServiceKeyCredentialsId
             type: secret
             param: serviceKey
       - name: integrationFlowId
