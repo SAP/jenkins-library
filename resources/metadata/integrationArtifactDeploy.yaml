@@ -7,7 +7,7 @@ metadata:
 spec:
   inputs:
     secrets:
-      - name: cpiAPIServiceKeyCredentialId
+      - name: cpiApiServiceKeyCredentialsId
         description: Jenkins credential ID for secret text containing the service key to the SAP Cloud Integration API
         type: jenkins
     params:
