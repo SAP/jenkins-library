@@ -129,7 +129,7 @@ func integrationArtifactUpdateConfigurationMetadata() config.StepData {
 						Name: "apiServiceKey",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "cpiServiceKeyCredentialId",
+								Name:  "cpiApiServiceKeyCredentialsId",
 								Param: "serviceKey",
 								Type:  "secret",
 							},
