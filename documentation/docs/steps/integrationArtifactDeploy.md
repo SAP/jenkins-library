@@ -24,7 +24,7 @@ Example of a YAML configuration file (such as `.pipeline/config.yaml`).
 steps:
   <...>
   integrationArtifactDeploy:
-    cpiAPIServiceKeyCredentialId: 'MY_API_SERVICE_KEY'
+    cpiApiServiceKeyCredentialsId: 'MY_API_SERVICE_KEY'
     integrationFlowId: 'MY_INTEGRATION_FLOW_NAME'
     integrationFlowVersion: 'MY_INTEGRATION_FLOW_VERSION'
     platform: cf
