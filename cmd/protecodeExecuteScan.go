@@ -9,6 +9,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -21,6 +22,7 @@ import (
 	StepResults "github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/protecode"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/toolrecord"
 )
 
 const (
@@ -214,10 +216,21 @@ func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.P
 		{Target: scanResultFile, Mandatory: true},
 	}
 	// write links JSON
+	webuiURL := fmt.Sprintf(webReportPath, config.ServerURL, productID)
 	links := []StepResults.Path{
-		{Name: "Protecode WebUI", Target: fmt.Sprintf(webReportPath, config.ServerURL, productID)},
+		{Name: "Protecode WebUI", Target: webuiURL},
 		{Name: "Protecode Report", Target: path.Join("artifact", config.ReportFileName), Scope: "job"},
 	}
+
+	// create toolrecord file
+	toolRecordFileName, err := createToolRecordProtecode("./", config, productID, webuiURL)
+	if err != nil {
+		// do not fail until the framework is well established
+		log.Entry().Warning("TR_PROTECODE: Failed to create toolrecord file ...", err)
+	} else {
+		reports = append(reports, StepResults.Path{Target: toolRecordFileName})
+	}
+
 	StepResults.PersistReportsAndLinks("protecodeExecuteScan", "", reports, links)
 
 	if config.FailOnSevereVulnerabilities && protecode.HasSevereVulnerabilities(result.Result, config.ExcludeCVEs) {
@@ -346,4 +359,29 @@ func getTarName(config *protecodeExecuteScanOptions) string {
 	}
 	fileName = strings.ReplaceAll(fileName, "/", "_")
 	return fileName + ".tar"
+}
+
+// create toolrecord file for protecode
+// todo: check if group and product names can be retrieved
+func createToolRecordProtecode(workspace string, config *protecodeExecuteScanOptions, productID int, webuiURL string) (string, error) {
+	record := toolrecord.New(workspace, "protecode", config.ServerURL)
+	err := record.AddKeyData("group",
+		config.Group,
+		config.Group,
+		"")
+	if err != nil {
+		return "", err
+	}
+	err = record.AddKeyData("product",
+		strconv.Itoa(productID),
+		strconv.Itoa(productID),
+		webuiURL)
+	if err != nil {
+		return "", err
+	}
+	err = record.Persist()
+	if err != nil {
+		return "", err
+	}
+	return record.GetFileName(), nil
 }

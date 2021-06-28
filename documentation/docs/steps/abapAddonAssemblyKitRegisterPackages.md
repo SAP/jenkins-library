@@ -4,7 +4,7 @@
 
 ## Prerequisites
 
-* The credentials to access the AAKaaS (e.g. S-User) must be stored in the Jenkins Credential Store
+* The credentials to access the AAKaaS (Technical Communication User) must be stored in the Jenkins Credential Store
 * This step needs the names of the packages which should be registered. For each package a SAR archive with the data file and metadata XML must be provided.
 * The package names and their status are taken from the addonDescriptor in the commonPipelineEnvironment, as well as the SarXMLFilePath with the path to the SAR file.
 * The information will be written to the commonPipelineEnvironment if you run prior to this step the step [abapAddonAssemblyKitReserveNextPackages](https://sap.github.io/jenkins-library/steps/abapAddonAssemblyKitReserveNextPackages)
