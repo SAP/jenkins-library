@@ -1,7 +1,9 @@
 package cpi
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/SAP/jenkins-library/pkg/log"
 	"io/ioutil"
 	"net/http"
 
@@ -19,6 +21,32 @@ type CommonUtils interface {
 type TokenParameters struct {
 	TokenURL, Username, Password string
 	Client                       piperhttp.Sender
+}
+
+// ServiceKey contains information about a CPI service key
+type ServiceKey struct {
+	OAuth OAuth `json:"oauth"`
+}
+
+// OAuth is inside a CPI service key and contains more needed information
+type OAuth struct {
+	Host                  string `json:"url"`
+	OAuthTokenProviderURL string `json:"tokenurl"`
+	ClientID              string `json:"clientid"`
+	ClientSecret          string `json:"clientsecret"`
+}
+
+// ReadCpiServiceKey unmarshalls the give json service key string.
+func ReadCpiServiceKey(serviceKeyJSON string) (cpiServiceKey ServiceKey, err error) {
+	// parse
+	err = json.Unmarshal([]byte(serviceKeyJSON), &cpiServiceKey)
+	if err != nil {
+		err = errors.Wrap(err, "error unmarshalling serviceKey")
+		return
+	}
+
+	log.Entry().Info("CPI serviceKey read successfully")
+	return
 }
 
 // GetBearerToken -Provides the bearer token for making CPI OData calls
