@@ -24,7 +24,7 @@ Example for the use in a YAML configuration file (such as `.pipeline/config.yaml
 steps:
   <...>
   integrationArtifactUpload:
-    cpiAPIServiceKeyCredentialId: 'MY_API_SERVICE_KEY'
+    cpiApiServiceKeyCredentialsId: 'MY_API_SERVICE_KEY'
     integrationFlowId: 'MY_INTEGRATION_FLOW_ID'
     integrationFlowVersion: 'MY_INTEGRATION_FLOW_VERSION'
     integrationFlowName: 'MY_INTEGRATION_FLOW_Name'
