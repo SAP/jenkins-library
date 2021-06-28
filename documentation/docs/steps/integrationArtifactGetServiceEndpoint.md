@@ -24,9 +24,7 @@ Example for the use in a YAML configuration file (such as `.pipeline/config.yaml
 steps:
   <...>
   integrationArtifactGetServiceEndpoint:
-    cpiCredentialsId: 'MY_CPI_OAUTH_CREDENTIALSID_IN_JENKINS'
+    cpiAPIServiceKeyCredentialId: 'MY_API_SERVICE_KEY'
     integrationFlowId: 'MY_INTEGRATION_FLOW_ID'
     platform: cf
-    host: https://CPI_HOST_ITSPACES_URL
-    oAuthTokenProviderUrl: https://CPI_HOST_OAUTH_URL
 ```
