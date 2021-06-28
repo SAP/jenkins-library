@@ -72,6 +72,7 @@ func GetAllStepMetadata() map[string]config.StepData {
 		"containerSaveImage":                      containerSaveImageMetadata(),
 		"sonarExecuteScan":                        sonarExecuteScanMetadata(),
 		"terraformExecute":                        terraformExecuteMetadata(),
+		"transportRequestCreateCTS":               transportRequestCreateCTSMetadata(),
 		"transportRequestDocIDFromGit":            transportRequestDocIDFromGitMetadata(),
 		"transportRequestReqIDFromGit":            transportRequestReqIDFromGitMetadata(),
 		"transportRequestUploadCTS":               transportRequestUploadCTSMetadata(),

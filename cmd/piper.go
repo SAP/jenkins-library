@@ -145,6 +145,7 @@ func Execute() {
 	rootCmd.AddCommand(IntegrationArtifactGetServiceEndpointCommand())
 	rootCmd.AddCommand(IntegrationArtifactDownloadCommand())
 	rootCmd.AddCommand(AbapEnvironmentAssembleConfirmCommand())
+	rootCmd.AddCommand(TransportRequestCreateCTSCommand())
 	rootCmd.AddCommand(IntegrationArtifactUploadCommand())
 	rootCmd.AddCommand(TerraformExecuteCommand())
 	rootCmd.AddCommand(ContainerExecuteStructureTestsCommand())
