@@ -59,14 +59,24 @@ func integrationArtifactGetMplStatus(config integrationArtifactGetMplStatusOptio
 	}
 }
 
-func runIntegrationArtifactGetMplStatus(config *integrationArtifactGetMplStatusOptions, telemetryData *telemetry.CustomData, httpClient piperhttp.Sender, commonPipelineEnvironment *integrationArtifactGetMplStatusCommonPipelineEnvironment) error {
+func runIntegrationArtifactGetMplStatus(
+	config *integrationArtifactGetMplStatusOptions,
+	telemetryData *telemetry.CustomData,
+	httpClient piperhttp.Sender,
+	commonPipelineEnvironment *integrationArtifactGetMplStatusCommonPipelineEnvironment) error {
+
+	serviceKey, err := cpi.ReadCpiServiceKey(config.APIServiceKey)
+	if err != nil {
+		return err
+	}
+
 	clientOptions := piperhttp.ClientOptions{}
 	httpClient.SetOptions(clientOptions)
 	header := make(http.Header)
 	header.Add("Accept", "application/json")
 	mplStatusEncodedURL := fmt.Sprintf("%s/api/v1/MessageProcessingLogs?$filter=IntegrationArtifact/Id"+url.QueryEscape(" eq ")+"'%s'&$orderby="+
-		url.QueryEscape("LogEnd desc")+"&$top=1", config.Host, config.IntegrationFlowID)
-	tokenParameters := cpi.TokenParameters{TokenURL: config.OAuthTokenProviderURL, Username: config.Username, Password: config.Password, Client: httpClient}
+		url.QueryEscape("LogEnd desc")+"&$top=1", serviceKey.OAuth.Host, config.IntegrationFlowID)
+	tokenParameters := cpi.TokenParameters{TokenURL: serviceKey.OAuth.OAuthTokenProviderURL, Username: serviceKey.OAuth.ClientID, Password: serviceKey.OAuth.ClientSecret, Client: httpClient}
 	token, err := cpi.CommonUtils.GetBearerToken(tokenParameters)
 	if err != nil {
 		return errors.Wrap(err, "failed to fetch Bearer Token")

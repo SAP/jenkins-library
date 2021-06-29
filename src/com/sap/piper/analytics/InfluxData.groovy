@@ -45,7 +45,7 @@ class InfluxData implements Serializable{
         List influxDataFiles = script.findFiles(glob: "${pathPrefix}**")?.toList()
 
         influxDataFiles.each({f ->
-            script.echo "Reading file form disk: ${f}"
+            script.echo "Reading file from disk: ${f}"
             List parts = f.toString().replace(pathPrefix, '')?.split('/')?.toList()
 
             if(parts?.size() == 3){

@@ -28,6 +28,7 @@ type testStepCommonPipelineEnvironment struct {
 	artifactVersion string
 	git struct {
 		commitID string
+		headCommitID string
 		branch string
 	}
 	custom struct {
@@ -43,6 +44,7 @@ func (p *testStepCommonPipelineEnvironment) persist(path, resourceName string) {
 	}{
 		{category: "", name: "artifactVersion", value: p.artifactVersion},
 		{category: "git", name: "commitId", value: p.git.commitID},
+		{category: "git", name: "headCommitId", value: p.git.headCommitID},
 		{category: "git", name: "branch", value: p.git.branch},
 		{category: "custom", name: "customList", value: p.custom.customList},
 	}
@@ -203,6 +205,7 @@ func testStepMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   `val0`,
 					},
 					{
 						Name:      "param1",
@@ -211,6 +214,7 @@ func testStepMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_param1"),
 					},
 					{
 						Name:      "param2",
@@ -219,6 +223,7 @@ func testStepMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_param2"),
 					},
 				},
 			},
@@ -230,6 +235,7 @@ func testStepMetadata() config.StepData {
 						Parameters: []map[string]interface{}{
 							{"Name": "artifactVersion"},
 							{"Name": "git/commitId"},
+							{"Name": "git/headCommitId"},
 							{"Name": "git/branch"},
 							{"Name": "custom/customList"},
 						},

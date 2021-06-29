@@ -45,18 +45,19 @@ func TestConfigCommand(t *testing.T) {
 	})
 
 	t.Run("Required flags", func(t *testing.T) {
-		exp := []string{"stepMetadata"}
+		exp := []string{}
 		assert.Equal(t, exp, gotReq, "required flags incorrect")
 	})
 
 	t.Run("Optional flags", func(t *testing.T) {
-		exp := []string{"contextConfig", "output", "parametersJSON"}
+		exp := []string{"contextConfig", "output", "parametersJSON", "stepMetadata", "stepName"}
 		assert.Equal(t, exp, gotOpt, "optional flags incorrect")
 	})
 
 	t.Run("Run", func(t *testing.T) {
 		t.Run("Success case", func(t *testing.T) {
 			configOptions.openFile = configOpenFileMock
+			configOptions.stepName = "githubCreateIssue"
 			cmd.Run(cmd, []string{})
 		})
 	})
@@ -309,4 +310,26 @@ func TestPrepareOutputEnvironment(t *testing.T) {
 	assert.NoDirExists(t, filepath.Join(dir, "commonPipelineEnvironment", "path2", "param2"))
 	assert.NoDirExists(t, filepath.Join(dir, "influx", "measurement0", "influx0_0"))
 	assert.NoDirExists(t, filepath.Join(dir, "influx", "measurement1", "influx0_1"))
+}
+
+func TestResolveMetadata(t *testing.T) {
+
+	t.Run("Succes - stepName", func(t *testing.T) {
+		configOptions.stepName = "githubCreateIssue"
+		stepData, err := resolveMetadata()
+		assert.NoError(t, err)
+		assert.Equal(t, "githubCreateIssue", stepData.Metadata.Name)
+	})
+
+	t.Run("Error - wrong stepName", func(t *testing.T) {
+		configOptions.stepName = "notExisting"
+		_, err := resolveMetadata()
+		assert.EqualError(t, err, "could not retrieve by stepName notExisting")
+	})
+
+	t.Run("Error - missing input", func(t *testing.T) {
+		configOptions.stepName = ""
+		_, err := resolveMetadata()
+		assert.EqualError(t, err, "either one of stepMetadata or stepName parameter has to be passed")
+	})
 }

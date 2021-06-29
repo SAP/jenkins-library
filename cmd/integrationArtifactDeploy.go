@@ -68,8 +68,13 @@ func runIntegrationArtifactDeploy(config *integrationArtifactDeployOptions, tele
 	clientOptions := piperhttp.ClientOptions{}
 	header := make(http.Header)
 	header.Add("Accept", "application/json")
-	deployURL := fmt.Sprintf("%s/api/v1/DeployIntegrationDesigntimeArtifact?Id='%s'&Version='%s'", config.Host, config.IntegrationFlowID, config.IntegrationFlowVersion)
-	tokenParameters := cpi.TokenParameters{TokenURL: config.OAuthTokenProviderURL, Username: config.Username, Password: config.Password, Client: httpClient}
+	serviceKey, err := cpi.ReadCpiServiceKey(config.APIServiceKey)
+	if err != nil {
+		return err
+	}
+	deployURL := fmt.Sprintf("%s/api/v1/DeployIntegrationDesigntimeArtifact?Id='%s'&Version='%s'", serviceKey.OAuth.Host, config.IntegrationFlowID, config.IntegrationFlowVersion)
+
+	tokenParameters := cpi.TokenParameters{TokenURL: serviceKey.OAuth.OAuthTokenProviderURL, Username: serviceKey.OAuth.ClientID, Password: serviceKey.OAuth.ClientSecret, Client: httpClient}
 	token, err := cpi.CommonUtils.GetBearerToken(tokenParameters)
 	if err != nil {
 		return errors.Wrap(err, "failed to fetch Bearer Token")
@@ -94,7 +99,7 @@ func runIntegrationArtifactDeploy(config *integrationArtifactDeployOptions, tele
 		log.Entry().
 			WithField("IntegrationFlowID", config.IntegrationFlowID).
 			Info("successfully deployed into CPI runtime")
-		deploymentError := pollIFlowDeploymentStatus(retryCount, config, httpClient)
+		deploymentError := pollIFlowDeploymentStatus(retryCount, config, httpClient, serviceKey.OAuth.Host)
 		return deploymentError
 	}
 	responseBody, readErr := ioutil.ReadAll(deployResp.Body)
@@ -107,12 +112,12 @@ func runIntegrationArtifactDeploy(config *integrationArtifactDeployOptions, tele
 }
 
 //pollIFlowDeploymentStatus - Poll the integration flow deployment status, return status or error details
-func pollIFlowDeploymentStatus(retryCount int, config *integrationArtifactDeployOptions, httpClient piperhttp.Sender) error {
+func pollIFlowDeploymentStatus(retryCount int, config *integrationArtifactDeployOptions, httpClient piperhttp.Sender, apiHost string) error {
 
 	if retryCount <= 0 {
 		return errors.New("failed to start integration artifact after retrying several times")
 	}
-	deployStatus, err := getIntegrationArtifactDeployStatus(config, httpClient)
+	deployStatus, err := getIntegrationArtifactDeployStatus(config, httpClient, apiHost)
 	if err != nil {
 		return err
 	}
@@ -124,7 +129,7 @@ func pollIFlowDeploymentStatus(retryCount int, config *integrationArtifactDeploy
 		sleepTime := int(retryCount * 3)
 		time.Sleep(time.Duration(sleepTime) * time.Second)
 		retryCount--
-		return pollIFlowDeploymentStatus(retryCount, config, httpClient)
+		return pollIFlowDeploymentStatus(retryCount, config, httpClient, apiHost)
 	}
 
 	//if artifact started, then just return
@@ -134,7 +139,7 @@ func pollIFlowDeploymentStatus(retryCount int, config *integrationArtifactDeploy
 
 	//if error return immediately with error details
 	if deployStatus == "ERROR" {
-		resp, err := getIntegrationArtifactDeployError(config, httpClient)
+		resp, err := getIntegrationArtifactDeployError(config, httpClient, apiHost)
 		if err != nil {
 			return err
 		}
@@ -154,12 +159,12 @@ func getHTTPErrorMessage(httpErr error, response *http.Response, httpMethod, sta
 }
 
 //getIntegrationArtifactDeployStatus - Get integration artifact Deploy Status
-func getIntegrationArtifactDeployStatus(config *integrationArtifactDeployOptions, httpClient piperhttp.Sender) (string, error) {
+func getIntegrationArtifactDeployStatus(config *integrationArtifactDeployOptions, httpClient piperhttp.Sender, apiHost string) (string, error) {
 	httpMethod := "GET"
 	header := make(http.Header)
 	header.Add("content-type", "application/json")
 	header.Add("Accept", "application/json")
-	deployStatusURL := fmt.Sprintf("%s/api/v1/IntegrationRuntimeArtifacts('%s')", config.Host, config.IntegrationFlowID)
+	deployStatusURL := fmt.Sprintf("%s/api/v1/IntegrationRuntimeArtifacts('%s')", apiHost, config.IntegrationFlowID)
 	deployStatusResp, httpErr := httpClient.SendRequest(httpMethod, deployStatusURL, nil, header, nil)
 
 	if deployStatusResp != nil && deployStatusResp.Body != nil {
@@ -193,11 +198,11 @@ func getIntegrationArtifactDeployStatus(config *integrationArtifactDeployOptions
 }
 
 //getIntegrationArtifactDeployError - Get integration artifact deploy error details
-func getIntegrationArtifactDeployError(config *integrationArtifactDeployOptions, httpClient piperhttp.Sender) (string, error) {
+func getIntegrationArtifactDeployError(config *integrationArtifactDeployOptions, httpClient piperhttp.Sender, apiHost string) (string, error) {
 	httpMethod := "GET"
 	header := make(http.Header)
 	header.Add("content-type", "application/json")
-	errorStatusURL := fmt.Sprintf("%s/api/v1/IntegrationRuntimeArtifacts('%s')/ErrorInformation/$value", config.Host, config.IntegrationFlowID)
+	errorStatusURL := fmt.Sprintf("%s/api/v1/IntegrationRuntimeArtifacts('%s')/ErrorInformation/$value", apiHost, config.IntegrationFlowID)
 	errorStatusResp, httpErr := httpClient.SendRequest(httpMethod, errorStatusURL, nil, header, nil)
 
 	if errorStatusResp != nil && errorStatusResp.Body != nil {

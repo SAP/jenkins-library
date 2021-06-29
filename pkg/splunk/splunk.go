@@ -3,15 +3,16 @@ package splunk
 import (
 	"bytes"
 	"encoding/json"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
+
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/pkg/errors"
 
 	"github.com/sirupsen/logrus"
 )
@@ -50,6 +51,7 @@ func Initialize(correlationID, dsn, token, index string, sendLogs bool) error {
 		MaxRequestDuration:        5 * time.Second,
 		Token:                     token,
 		TransportSkipVerification: true,
+		MaxRetries:                -1,
 	})
 
 	SplunkClient = &Splunk{
@@ -133,7 +135,7 @@ func prepareTelemetry(customTelemetryData telemetry.CustomData) MonitoringData {
 		ErrorCode:       tData.CustomData.ErrorCode,
 		ErrorCategory:   tData.CustomData.ErrorCategory,
 		CorrelationID:   SplunkClient.correlationID,
-		CommitHash:      readCommonPipelineEnvironment("git/commitId"),
+		CommitHash:      readCommonPipelineEnvironment("git/headCommitId"),
 		Branch:          readCommonPipelineEnvironment("git/branch"),
 		GitOwner:        readCommonPipelineEnvironment("github/owner"),
 		GitRepository:   readCommonPipelineEnvironment("github/repository"),
@@ -173,7 +175,7 @@ func tryPostMessages(telemetryData MonitoringData, messages []log.Message) error
 	resp, err := SplunkClient.splunkClient.SendRequest(http.MethodPost, SplunkClient.splunkDsn, bytes.NewBuffer(payload), nil, nil)
 
 	if err != nil {
-		return errors.Wrap(err, "error sending the requets to Splunk")
+		return errors.Wrap(err, "error sending the requests to Splunk")
 	}
 
 	defer func() {
