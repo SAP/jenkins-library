@@ -44,7 +44,7 @@ func TestRunIntegrationArtifactTriggerIntegrationTest(t *testing.T) {
 
 		utils := newIntegrationArtifactTriggerIntegrationTestTestsUtils()
 		utils.AddFile("file.txt", []byte("dummycontent"))
-		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactGetServiceEndpoint", ResponseBody: ``, TestType: "PositiveAndGetetIntegrationArtifactGetServiceResBody"}
+		httpClient := httpMockCpis{CPIFunction: "TriggerIntegrationTest", ResponseBody: ``, TestType: "Positive"}
 
 		//test
 		err := callIFlowURL(&config, nil, utils, &httpClient, "")
@@ -73,7 +73,7 @@ func TestRunIntegrationArtifactTriggerIntegrationTest(t *testing.T) {
 
 		utils := newIntegrationArtifactTriggerIntegrationTestTestsUtils()
 		//no file created here. error expected
-		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactGetServiceEndpoint", ResponseBody: ``, TestType: "PositiveAndGetetIntegrationArtifactGetServiceResBody"}
+		httpClient := httpMockCpis{CPIFunction: "TriggerIntegrationTest", ResponseBody: ``, TestType: "Positive"}
 
 		//test
 		err := callIFlowURL(&config, nil, utils, &httpClient, "")
@@ -106,7 +106,7 @@ func TestRunIntegrationArtifactTriggerIntegrationTest(t *testing.T) {
 		utils := newIntegrationArtifactTriggerIntegrationTestTestsUtils()
 		utils.AddFile(config.MessageBodyPath, []byte("dummycontent1")) //have to add a file here to see in utils
 		ioutil.WriteFile(config.MessageBodyPath, []byte("dummycontent2"), 0755)
-		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactGetServiceEndpoint", ResponseBody: ``, TestType: "PositiveAndGetetIntegrationArtifactGetServiceResBody"}
+		httpClient := httpMockCpis{CPIFunction: "TriggerIntegrationTest", ResponseBody: ``, TestType: "Positive"}
 
 		//test
 		err = callIFlowURL(&config, nil, utils, &httpClient, "https://my-service.com/endpoint")
@@ -138,7 +138,7 @@ func TestRunIntegrationArtifactTriggerIntegrationTest(t *testing.T) {
 		utils := newIntegrationArtifactTriggerIntegrationTestTestsUtils()
 		//utils.AddFile(config.MessageBodyPath, []byte("dummycontent1")) //have to add a file here to see in utils
 		//ioutil.WriteFile(config.MessageBodyPath, []byte("dummycontent2"), 0755)
-		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactGetServiceEndpoint", ResponseBody: ``, TestType: "PositiveAndGetetIntegrationArtifactGetServiceResBody"}
+		httpClient := httpMockCpis{CPIFunction: "TriggerIntegrationTest", ResponseBody: ``, TestType: "Positive"}
 
 		//test
 		err := callIFlowURL(&config, nil, utils, &httpClient, "https://my-service.com/endpoint")
@@ -174,7 +174,7 @@ func TestRunIntegrationArtifactTriggerIntegrationTest(t *testing.T) {
 		utils := newIntegrationArtifactTriggerIntegrationTestTestsUtils()
 		utils.AddFile(config.MessageBodyPath, []byte(nil)) //have to add a file here to see in utils
 		ioutil.WriteFile(config.MessageBodyPath, []byte(nil), 0755)
-		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactGetServiceEndpoint", ResponseBody: ``, TestType: "PositiveAndGetetIntegrationArtifactGetServiceResBody"}
+		httpClient := httpMockCpis{CPIFunction: "TriggerIntegrationTest", ResponseBody: ``, TestType: "Positive"}
 
 		//test
 		err = callIFlowURL(&config, nil, utils, &httpClient, "")

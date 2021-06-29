@@ -48,6 +48,8 @@ func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, 
 		return GetIntegrationArtifactDeployStatusMockResponse(testType)
 	case "GetIntegrationArtifactDeployErrorDetails":
 		return GetIntegrationArtifactDeployErrorDetailsMockResponse(testType)
+	case "TriggerIntegrationTest":
+		return TriggerIntegrationTestMockResponse(testType)
 	default:
 		res := http.Response{
 			StatusCode: 404,
@@ -160,6 +162,27 @@ func GetIntegrationArtifactGetServiceEndpointCommandMockResponse(testCaseType st
 	}
 	return &res, errors.New("Unable to get integration flow service endpoint, Response Status code:400")
 }
+
+//TriggerIntegrationTestMockResponse
+func TriggerIntegrationTestMockResponse(testCaseType string) (*http.Response, error) {
+	if testCaseType == "Positive" {
+		return &http.Response{
+			StatusCode: 200,
+		},nil
+	}
+	res := http.Response{
+		StatusCode: 400,
+		Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+					"code": "Bad Request",
+					"message": {
+					"@lang": "en",
+					"#text": "invalid"
+					}
+				}`))),
+	}
+	return &res, errors.New("Unable to trigger integration test, Response Status code:400")
+}
+
 
 //GetIntegrationArtifactGetServiceEndpointPositiveCaseRespBody -Provide http respose body for positive case
 func GetIntegrationArtifactGetServiceEndpointPositiveCaseRespBody() (*http.Response, error) {
@@ -482,6 +505,7 @@ func GetIntegrationArtifactDeployErrorDetailsMockResponse(testType string) (*htt
 
 	return GetMockResponseByTestTypeAndMockFunctionName("GetIntegrationArtifactDeployErrorDetailsMockResponse", "PositiveAndGetDeployedIntegrationDesigntimeArtifactErrorResBody")
 }
+
 
 //GetIntegrationArtifactDeployStatusMockResponseBody -Provide http respose body
 func GetIntegrationArtifactDeployStatusMockResponseBody() (*http.Response, error) {
