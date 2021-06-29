@@ -138,17 +138,18 @@ func createOrUpdateProjectSettingsXML(projectSettingsFile string, altDeploymentR
 }
 
 func loadRemoteRepoCertificates(certificateList []string, client piperhttp.Downloader, flags *[]string, runner command.ExecRunner, fileUtils piperutils.FileUtils) error {
-	trustStore := filepath.Join(getWorkingDirForTrustStore(), ".pipeline", "keystore.jks")
+	/* trustStore := filepath.Join(getWorkingDirForTrustStore(), ".pipeline", "keystore.jks") */
+	trustStore := filepath.Join("$JAVA_HOME/lib/security/cacerts")
 	log.Entry().Infof("using trust store %s", trustStore)
 
-	if exists, _ := fileUtils.FileExists(trustStore); exists {
-		maven_opts := "-Djavax.net.ssl.trustStore=" + trustStore + " -Djavax.net.ssl.trustStorePassword=changeit"
-		err := os.Setenv("MAVEN_OPTS", maven_opts)
-		if err != nil {
-			return errors.Wrap(err, "Could not create MAVEN_OPTS environment variable ")
-		}
-		log.Entry().WithField("trust store", trustStore).Info("Using local trust store")
-	}
+	// if exists, _ := fileUtils.FileExists(trustStore); exists {
+	// 	maven_opts := "-Djavax.net.ssl.trustStore=" + trustStore + " -Djavax.net.ssl.trustStorePassword=changeit"
+	// 	err := os.Setenv("MAVEN_OPTS", maven_opts)
+	// 	if err != nil {
+	// 		return errors.Wrap(err, "Could not create MAVEN_OPTS environment variable ")
+	// 	}
+	// 	log.Entry().WithField("trust store", trustStore).Info("Using local trust store")
+	// }
 
 	if len(certificateList) > 0 {
 		keytoolOptions := []string{
@@ -177,11 +178,11 @@ func loadRemoteRepoCertificates(certificateList []string, client piperhttp.Downl
 			}
 		}
 
-		maven_opts := "-Djavax.net.ssl.trustStore=.pipeline/keystore.jks -Djavax.net.ssl.trustStorePassword=changeit"
-		err := os.Setenv("MAVEN_OPTS", maven_opts)
-		if err != nil {
-			return errors.Wrap(err, "Could not create MAVEN_OPTS environment variable ")
-		}
+		// maven_opts := "-Djavax.net.ssl.trustStore=.pipeline/keystore.jks -Djavax.net.ssl.trustStorePassword=changeit"
+		// err := os.Setenv("MAVEN_OPTS", maven_opts)
+		// if err != nil {
+		// 	return errors.Wrap(err, "Could not create MAVEN_OPTS environment variable ")
+		// }
 		log.Entry().WithField("trust store", trustStore).Info("Using local trust store")
 	} else {
 		log.Entry().Debug("Download of TLS certificates skipped")
