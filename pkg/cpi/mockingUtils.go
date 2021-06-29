@@ -168,7 +168,7 @@ func TriggerIntegrationTestMockResponse(testCaseType string) (*http.Response, er
 	if testCaseType == "Positive" {
 		return &http.Response{
 			StatusCode: 200,
-		},nil
+		}, nil
 	}
 	res := http.Response{
 		StatusCode: 400,
@@ -182,7 +182,6 @@ func TriggerIntegrationTestMockResponse(testCaseType string) (*http.Response, er
 	}
 	return &res, errors.New("Unable to trigger integration test, Response Status code:400")
 }
-
 
 //GetIntegrationArtifactGetServiceEndpointPositiveCaseRespBody -Provide http respose body for positive case
 func GetIntegrationArtifactGetServiceEndpointPositiveCaseRespBody() (*http.Response, error) {
@@ -505,7 +504,6 @@ func GetIntegrationArtifactDeployErrorDetailsMockResponse(testType string) (*htt
 
 	return GetMockResponseByTestTypeAndMockFunctionName("GetIntegrationArtifactDeployErrorDetailsMockResponse", "PositiveAndGetDeployedIntegrationDesigntimeArtifactErrorResBody")
 }
-
 
 //GetIntegrationArtifactDeployStatusMockResponseBody -Provide http respose body
 func GetIntegrationArtifactDeployStatusMockResponseBody() (*http.Response, error) {

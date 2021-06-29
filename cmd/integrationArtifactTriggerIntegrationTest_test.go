@@ -113,8 +113,8 @@ func TestRunIntegrationArtifactTriggerIntegrationTest(t *testing.T) {
 
 		//assert
 		assert.NoError(t, err)
-		assert.Equal(t,"POST", httpClient.Method)
-		assert.Equal(t,"https://my-service.com/endpoint", httpClient.URL)
+		assert.Equal(t, "POST", httpClient.Method)
+		assert.Equal(t, "https://my-service.com/endpoint", httpClient.URL)
 	})
 
 	t.Run("No MessageBodyPath still works (SUCCESS) callIFlowURL", func(t *testing.T) {
@@ -145,8 +145,8 @@ func TestRunIntegrationArtifactTriggerIntegrationTest(t *testing.T) {
 
 		//assert
 		assert.NoError(t, err)
-		assert.Equal(t,"GET", httpClient.Method)
-		assert.Equal(t,"https://my-service.com/endpoint", httpClient.URL)
+		assert.Equal(t, "GET", httpClient.Method)
+		assert.Equal(t, "https://my-service.com/endpoint", httpClient.URL)
 
 	})
 
