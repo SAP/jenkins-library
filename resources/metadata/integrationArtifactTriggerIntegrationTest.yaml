@@ -44,12 +44,14 @@ spec:
           - cf
           - neo
       - name: iFlowServiceEndpointUrl
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/iFlowServiceEndpoint
         type: string
         description: Specifies the URL endpoint of the iFlow. Please provide in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.
         scope:
           - PARAMETERS
-          - STAGES
-          - STEPS
+        mandatory: true
       - name: contentType
         type: string
         description: Specifies the content type of the file defined in messageBodyPath e.g. application/json

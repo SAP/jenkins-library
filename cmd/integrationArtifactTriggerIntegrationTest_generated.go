@@ -106,6 +106,7 @@ func addIntegrationArtifactTriggerIntegrationTestFlags(cmd *cobra.Command, stepC
 
 	cmd.MarkFlagRequired("iFlowServiceKey")
 	cmd.MarkFlagRequired("integrationFlowId")
+	cmd.MarkFlagRequired("iFlowServiceEndpointUrl")
 }
 
 // retrieve step metadata
@@ -156,13 +157,18 @@ func integrationArtifactTriggerIntegrationTestMetadata() config.StepData {
 						Default:     `cf`,
 					},
 					{
-						Name:        "iFlowServiceEndpointUrl",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_iFlowServiceEndpointUrl"),
+						Name: "iFlowServiceEndpointUrl",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/iFlowServiceEndpoint",
+							},
+						},
+						Scope:     []string{"PARAMETERS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_iFlowServiceEndpointUrl"),
 					},
 					{
 						Name:        "contentType",
