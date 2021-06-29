@@ -17,7 +17,7 @@ import (
 type integrationArtifactTriggerIntegrationTestOptions struct {
 	IFlowServiceKey         string `json:"iFlowServiceKey,omitempty"`
 	IntegrationFlowID       string `json:"integrationFlowId,omitempty"`
-	Platform                string `json:"platform,omitempty"`
+	CpiPlatform             string `json:"cpiPlatform,omitempty"`
 	IFlowServiceEndpointURL string `json:"iFlowServiceEndpointUrl,omitempty"`
 	ContentType             string `json:"contentType,omitempty"`
 	MessageBodyPath         string `json:"messageBodyPath,omitempty"`
@@ -99,7 +99,7 @@ func IntegrationArtifactTriggerIntegrationTestCommand() *cobra.Command {
 func addIntegrationArtifactTriggerIntegrationTestFlags(cmd *cobra.Command, stepConfig *integrationArtifactTriggerIntegrationTestOptions) {
 	cmd.Flags().StringVar(&stepConfig.IFlowServiceKey, "iFlowServiceKey", os.Getenv("PIPER_iFlowServiceKey"), "User to authenticate to the SAP Cloud Platform Integration Service")
 	cmd.Flags().StringVar(&stepConfig.IntegrationFlowID, "integrationFlowId", os.Getenv("PIPER_integrationFlowId"), "Specifies the ID of the Integration Flow artifact")
-	cmd.Flags().StringVar(&stepConfig.Platform, "platform", `cf`, "Specifies the running platform of the SAP Cloud platform integraion service")
+	cmd.Flags().StringVar(&stepConfig.CpiPlatform, "cpiPlatform", `cf`, "Specifies the running platform of the SAP Cloud platform integraion service")
 	cmd.Flags().StringVar(&stepConfig.IFlowServiceEndpointURL, "iFlowServiceEndpointUrl", os.Getenv("PIPER_iFlowServiceEndpointUrl"), "Specifies the URL endpoint of the iFlow. Please provide in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.")
 	cmd.Flags().StringVar(&stepConfig.ContentType, "contentType", os.Getenv("PIPER_contentType"), "Specifies the content type of the file defined in messageBodyPath e.g. application/json")
 	cmd.Flags().StringVar(&stepConfig.MessageBodyPath, "messageBodyPath", os.Getenv("PIPER_messageBodyPath"), "Speficfies the relative file path to the message body.")
@@ -148,9 +148,9 @@ func integrationArtifactTriggerIntegrationTestMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_integrationFlowId"),
 					},
 					{
-						Name:        "platform",
+						Name:        "cpiPlatform",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"GLOBAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},

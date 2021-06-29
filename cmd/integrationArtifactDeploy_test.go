@@ -42,7 +42,7 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 			APIServiceKey:          apiServiceKey,
 			IntegrationFlowID:      "flow1",
 			IntegrationFlowVersion: "1.0.1",
-			Platform:               "cf",
+			CpiPlatform:            "cf",
 		}
 
 		httpClient := httpMockCpis{CPIFunction: "", ResponseBody: ``, TestType: "PositiveAndDeployIntegrationDesigntimeArtifactResBody"}
@@ -76,7 +76,7 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 			APIServiceKey:          apiServiceKey,
 			IntegrationFlowID:      "flow1",
 			IntegrationFlowVersion: "1.0.1",
-			Platform:               "cf",
+			CpiPlatform:            "cf",
 		}
 
 		httpClient := httpMockCpis{CPIFunction: "FailIntegrationDesigntimeArtifactDeployment", ResponseBody: ``, TestType: "Negative"}
@@ -110,7 +110,7 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 			APIServiceKey:          apiServiceKey,
 			IntegrationFlowID:      "flow1",
 			IntegrationFlowVersion: "1.0.1",
-			Platform:               "cf",
+			CpiPlatform:            "cf",
 		}
 
 		httpClient := httpMockCpis{CPIFunction: "", ResponseBody: ``, TestType: "NegativeAndDeployIntegrationDesigntimeArtifactResBody"}
@@ -136,7 +136,7 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 			APIServiceKey:          apiServiceKey,
 			IntegrationFlowID:      "flow1",
 			IntegrationFlowVersion: "1.0.1",
-			Platform:               "cf",
+			CpiPlatform:            "cf",
 		}
 
 		httpClient := httpMockCpis{CPIFunction: "GetIntegrationArtifactDeployStatus", Options: clientOptions, ResponseBody: ``, TestType: "PositiveAndDeployIntegrationDesigntimeArtifactResBody"}
@@ -164,7 +164,7 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 			APIServiceKey:          apiServiceKey,
 			IntegrationFlowID:      "flow1",
 			IntegrationFlowVersion: "1.0.1",
-			Platform:               "cf",
+			CpiPlatform:            "cf",
 		}
 
 		httpClient := httpMockCpis{CPIFunction: "GetIntegrationArtifactDeployErrorDetails", Options: clientOptions, ResponseBody: ``, TestType: "PositiveAndGetDeployedIntegrationDesigntimeArtifactErrorResBody"}

@@ -31,10 +31,11 @@ spec:
           - STEPS
           - GENERAL
         mandatory: true
-      - name: platform
+      - name: cpiPlatform
         type: string
         description: Specifies the running platform of the SAP Cloud platform integraion service
         scope:
+          - GLOBAL
           - PARAMETERS
           - STAGES
           - STEPS

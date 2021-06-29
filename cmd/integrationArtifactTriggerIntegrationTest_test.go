@@ -37,7 +37,7 @@ func TestRunIntegrationArtifactTriggerIntegrationTest(t *testing.T) {
 		config := integrationArtifactTriggerIntegrationTestOptions{
 			IFlowServiceKey:   iFlowServiceKey,
 			IntegrationFlowID: "CPI_IFlow_Call_using_Cert",
-			Platform:          "cf",
+			CpiPlatform:       "cf",
 			MessageBodyPath:   "/file.txt",
 			ContentType:       "",
 		}
@@ -66,7 +66,7 @@ func TestRunIntegrationArtifactTriggerIntegrationTest(t *testing.T) {
 		config := integrationArtifactTriggerIntegrationTestOptions{
 			IFlowServiceKey:   iFlowServiceKey,
 			IntegrationFlowID: "CPI_IFlow_Call_using_Cert",
-			Platform:          "cf",
+			CpiPlatform:       "cf",
 			MessageBodyPath:   "test.txt",
 			ContentType:       "txt",
 		}
@@ -98,7 +98,7 @@ func TestRunIntegrationArtifactTriggerIntegrationTest(t *testing.T) {
 		config := integrationArtifactTriggerIntegrationTestOptions{
 			IFlowServiceKey:   iFlowServiceKey,
 			IntegrationFlowID: "CPI_IFlow_Call_using_Cert",
-			Platform:          "cf",
+			CpiPlatform:       "cf",
 			MessageBodyPath:   filepath.Join(dir, "test.txt"),
 			ContentType:       "txt",
 		}
@@ -130,7 +130,7 @@ func TestRunIntegrationArtifactTriggerIntegrationTest(t *testing.T) {
 		config := integrationArtifactTriggerIntegrationTestOptions{
 			IFlowServiceKey:   iFlowServiceKey,
 			IntegrationFlowID: "CPI_IFlow_Call_using_Cert",
-			Platform:          "cf",
+			CpiPlatform:       "cf",
 			MessageBodyPath:   "",
 			ContentType:       "txt",
 		}
@@ -166,7 +166,7 @@ func TestRunIntegrationArtifactTriggerIntegrationTest(t *testing.T) {
 		config := integrationArtifactTriggerIntegrationTestOptions{
 			IFlowServiceKey:   iFlowServiceKey,
 			IntegrationFlowID: "CPI_IFlow_Call_using_Cert",
-			Platform:          "cf",
+			CpiPlatform:       "cf",
 			MessageBodyPath:   filepath.Join(dir, "test.txt"),
 			ContentType:       "txt",
 		}
