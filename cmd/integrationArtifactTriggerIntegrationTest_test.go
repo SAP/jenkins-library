@@ -109,10 +109,12 @@ func TestRunIntegrationArtifactTriggerIntegrationTest(t *testing.T) {
 		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactGetServiceEndpoint", ResponseBody: ``, TestType: "PositiveAndGetetIntegrationArtifactGetServiceResBody"}
 
 		//test
-		err = callIFlowURL(&config, nil, utils, &httpClient, "")
+		err = callIFlowURL(&config, nil, utils, &httpClient, "https://my-service.com/endpoint")
 
 		//assert
 		assert.NoError(t, err)
+		assert.Equal(t,"POST", httpClient.Method)
+		assert.Equal(t,"https://my-service.com/endpoint", httpClient.URL)
 	})
 
 	t.Run("No MessageBodyPath still works (SUCCESS) callIFlowURL", func(t *testing.T) {
@@ -139,10 +141,13 @@ func TestRunIntegrationArtifactTriggerIntegrationTest(t *testing.T) {
 		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactGetServiceEndpoint", ResponseBody: ``, TestType: "PositiveAndGetetIntegrationArtifactGetServiceResBody"}
 
 		//test
-		err := callIFlowURL(&config, nil, utils, &httpClient, "")
+		err := callIFlowURL(&config, nil, utils, &httpClient, "https://my-service.com/endpoint")
 
 		//assert
 		assert.NoError(t, err)
+		assert.Equal(t,"GET", httpClient.Method)
+		assert.Equal(t,"https://my-service.com/endpoint", httpClient.URL)
+
 	})
 
 	t.Run("nil fileBody (SUCCESS) callIFlowURL", func(t *testing.T) {
