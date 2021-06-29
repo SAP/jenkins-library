@@ -508,7 +508,7 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 				// Get the SystemCertPool, continue with an empty pool on error
 				certs, err := ioutil.ReadFile(target)
 				if err != nil {
-					return errors.Wrapf(err, "Failed to read cert file %v", err, certificate)
+					return errors.Wrapf(err, "Failed to read cert file %v", certificate)
 				}
 
 				// Append our cert to the system pool
@@ -543,7 +543,7 @@ func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) er
 			log.Entry().Infof("existing certs found, appending to rootCA")
 			certs, err := ioutil.ReadFile(target)
 			if err != nil {
-				return errors.Wrapf(err, "Failed to read cert file %v", err, certificate)
+				return errors.Wrapf(err, "Failed to read cert file %v", certificate)
 			}
 
 			// Append our cert to the system pool
