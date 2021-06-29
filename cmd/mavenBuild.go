@@ -27,7 +27,7 @@ func mavenBuild(config mavenBuildOptions, telemetryData *telemetry.CustomData) {
 }
 
 func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomData, utils maven.Utils) error {
-	downloadClient := &piperhttp.Client{}
+	/* downloadClient := &piperhttp.Client{} */
 
 	var flags = []string{"-update-snapshots", "--batch-mode"}
 
@@ -89,8 +89,8 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 		if config.Publish && !config.Verify {
 			log.Entry().Infof("publish detected, running mvn deploy")
 
-			runner := &command.Command{}
-			fileUtils := &piperutils.Files{}
+			/* runner := &command.Command{}
+			fileUtils := &piperutils.Files{} */
 
 			if (len(config.AltDeploymentRepositoryID) > 0) && (len(config.AltDeploymentRepositoryPassword) > 0) && (len(config.AltDeploymentRepositoryUser) > 0) {
 				projectSettingsFilePath, err := createOrUpdateProjectSettingsXML(config.ProjectSettingsFile, config.AltDeploymentRepositoryID, config.AltDeploymentRepositoryUser, config.AltDeploymentRepositoryPassword, utils)
@@ -105,10 +105,11 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 				deployFlags = append(deployFlags, "-DaltDeploymentRepository="+config.AltDeploymentRepositoryID+"::default::"+config.AltDeploymentRepositoryURL)
 			}
 
-			if err := loadRemoteRepoCertificates(config.CustomTLSCertificateLinks, downloadClient, &deployFlags, runner, fileUtils); err != nil {
+			/* if err := loadRemoteRepoCertificates(config.CustomTLSCertificateLinks, downloadClient, &deployFlags, runner, fileUtils); err != nil {
 				log.SetErrorCategory(log.ErrorInfrastructure)
 				return err
-			}
+			} */
+
 			mavenOptions.Flags = deployFlags
 			mavenOptions.Goals = []string{"deploy"}
 			mavenOptions.Defines = []string{}
@@ -138,18 +139,17 @@ func createOrUpdateProjectSettingsXML(projectSettingsFile string, altDeploymentR
 }
 
 func loadRemoteRepoCertificates(certificateList []string, client piperhttp.Downloader, flags *[]string, runner command.ExecRunner, fileUtils piperutils.FileUtils) error {
-	/* trustStore := filepath.Join(getWorkingDirForTrustStore(), ".pipeline", "keystore.jks") */
-	trustStore := filepath.Join("$JAVA_HOME/jre/lib/security/cacerts")
+	trustStore := filepath.Join(getWorkingDirForTrustStore(), ".pipeline", "keystore.jks")
 	log.Entry().Infof("using trust store %s", trustStore)
 
-	// if exists, _ := fileUtils.FileExists(trustStore); exists {
-	// 	maven_opts := "-Djavax.net.ssl.trustStore=" + trustStore + " -Djavax.net.ssl.trustStorePassword=changeit"
-	// 	err := os.Setenv("MAVEN_OPTS", maven_opts)
-	// 	if err != nil {
-	// 		return errors.Wrap(err, "Could not create MAVEN_OPTS environment variable ")
-	// 	}
-	// 	log.Entry().WithField("trust store", trustStore).Info("Using local trust store")
-	// }
+	if exists, _ := fileUtils.FileExists(trustStore); exists {
+		maven_opts := "-Djavax.net.ssl.trustStore=" + trustStore + " -Djavax.net.ssl.trustStorePassword=changeit"
+		err := os.Setenv("MAVEN_OPTS", maven_opts)
+		if err != nil {
+			return errors.Wrap(err, "Could not create MAVEN_OPTS environment variable ")
+		}
+		log.Entry().WithField("trust store", trustStore).Info("Using local trust store")
+	}
 
 	if len(certificateList) > 0 {
 		keytoolOptions := []string{
@@ -178,11 +178,11 @@ func loadRemoteRepoCertificates(certificateList []string, client piperhttp.Downl
 			}
 		}
 
-		// maven_opts := "-Djavax.net.ssl.trustStore=.pipeline/keystore.jks -Djavax.net.ssl.trustStorePassword=changeit"
-		// err := os.Setenv("MAVEN_OPTS", maven_opts)
-		// if err != nil {
-		// 	return errors.Wrap(err, "Could not create MAVEN_OPTS environment variable ")
-		// }
+		maven_opts := "-Djavax.net.ssl.trustStore=.pipeline/keystore.jks -Djavax.net.ssl.trustStorePassword=changeit"
+		err := os.Setenv("MAVEN_OPTS", maven_opts)
+		if err != nil {
+			return errors.Wrap(err, "Could not create MAVEN_OPTS environment variable ")
+		}
 		log.Entry().WithField("trust store", trustStore).Info("Using local trust store")
 	} else {
 		log.Entry().Debug("Download of TLS certificates skipped")
