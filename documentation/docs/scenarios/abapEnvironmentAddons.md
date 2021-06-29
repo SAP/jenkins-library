@@ -78,7 +78,8 @@ The assembly system should be of [service type abap](https://help.sap.com/viewer
 
 #### Add-on Assembly Kit as a Service (=AAKaaS)
 
-The Add-on Assembly Kit as a Service is responsible for registering and publishing the add-on product. It is accessible via APIs with a technical communication user.
+The Add-on Assembly Kit as a Service is responsible for registering and publishing the add-on product. On a high level it is a service offered in the SAP support backbone (thus access is given via Technical Communication User) that, similar to the Software Delivery Assembler (SDA, transaction SSDA), packs the delivery into an importable package format.
+
 
 ### Deployment Tools
 
