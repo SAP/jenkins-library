@@ -80,7 +80,6 @@ The assembly system should be of [service type abap](https://help.sap.com/viewer
 
 The Add-on Assembly Kit as a Service is responsible for registering and publishing the add-on product. On a high level it is a service offered in the SAP support backbone (thus access is given via Technical Communication User) that, similar to the Software Delivery Assembler (SDA, transaction SSDA), packs the delivery into an importable package format.
 
-
 ### Deployment Tools
 
 With these SAP tools the assembled add-on deliveries are deployed to ABAP systems, for example into the [installation test system](#installation-test-system).
