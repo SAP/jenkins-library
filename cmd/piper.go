@@ -156,6 +156,7 @@ func Execute() {
 	rootCmd.AddCommand(TransportRequestReqIDFromGitCommand())
 	rootCmd.AddCommand(WritePipelineEnv())
 	rootCmd.AddCommand(ReadPipelineEnv())
+	rootCmd.AddCommand(InfluxWriteDataCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
