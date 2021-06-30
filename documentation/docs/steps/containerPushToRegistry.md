@@ -28,7 +28,7 @@ containerPushToRegistry script: this,
                         dockerRegistryUrl: 'https://my.target.docker.registry:50000'
 ```
 
-**OPTION B:** To push a locally build docker image into the target registry (only possible when a Docker deamon is available on your Jenkins node):
+**OPTION B:** To push a locally built docker image into the target registry (only possible when a Docker daemon is available on your Jenkins node):
 
 ```groovy
 containerPushToRegistry script: this,

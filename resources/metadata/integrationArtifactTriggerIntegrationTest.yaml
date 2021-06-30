@@ -1,0 +1,70 @@
+metadata:
+  name: integrationArtifactTriggerIntegrationTest
+  description: Test the service endpoint of your iFlow
+  longDescription: |
+    With this step you can test your intergration flow  exposed by SAP Cloud Platform Integration on a tenant using OData API.Learn more about the SAP Cloud Integration remote API for getting service endpoint of deployed integration artifact [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/d1679a80543f46509a7329243b595bdb.html).
+
+spec:
+  inputs:
+    secrets:
+      - name: iFlowCredentialsId
+        description: Jenkins credentials ID containing username and password for authentication to the SAP Cloud Platform Integration API's
+        type: jenkins
+    params:
+      - name: iFlowServiceKey
+        type: string
+        description: User to authenticate to the SAP Cloud Platform Integration Service
+        scope:
+          - PARAMETERS
+        mandatory: true
+        secret: true
+        resourceRef:
+          - name: iFlowCredentialsId
+            type: secret
+            param: iFlowServiceKey
+      - name: integrationFlowId
+        type: string
+        description: Specifies the ID of the Integration Flow artifact
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: true
+      - name: platform
+        type: string
+        description: Specifies the running platform of the SAP Cloud platform integraion service
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+        default: cf
+        possibleValues:
+          - cf
+          - neo
+      - name: iFlowServiceEndpointUrl
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/iFlowServiceEndpoint
+        type: string
+        description: Specifies the URL endpoint of the iFlow. Please provide in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.
+        scope:
+          - PARAMETERS
+        mandatory: true
+      - name: contentType
+        type: string
+        description: Specifies the content type of the file defined in messageBodyPath e.g. application/json
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+      - name: messageBodyPath
+        type: string
+        description: Speficfies the relative file path to the message body.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
