@@ -602,8 +602,9 @@ func whitesourceExecuteScanMetadata() config.StepData {
 							},
 
 							{
-								Name: "whitesourceVaultSecret",
-								Type: "vaultSecret",
+								Name:    "whitesourceVaultSecret",
+								Type:    "vaultSecret",
+								Default: "whitesource",
 							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},

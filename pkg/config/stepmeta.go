@@ -61,11 +61,11 @@ type StepParameters struct {
 
 // ResourceReference defines the parameters of a resource reference
 type ResourceReference struct {
-	Name    string   `json:"name"`
-	Type    string   `json:"type,omitempty"`
-	Param   string   `json:"param,omitempty"`
-	Paths   []string `json:"paths,omitempty"`
-	Aliases []Alias  `json:"aliases,omitempty"`
+	Name    string  `json:"name"`
+	Type    string  `json:"type,omitempty"`
+	Param   string  `json:"param,omitempty"`
+	Default string  `json:"default,omitempty"`
+	Aliases []Alias `json:"aliases,omitempty"`
 }
 
 // Alias defines a step input parameter alias
@@ -79,7 +79,6 @@ type StepResources struct {
 	Name        string                   `json:"name"`
 	Description string                   `json:"description,omitempty"`
 	Type        string                   `json:"type,omitempty"`
-	Default     string                   `json:"default,omitemptys"`
 	Parameters  []map[string]interface{} `json:"params,omitempty"`
 	Conditions  []Condition              `json:"conditions,omitempty"`
 }

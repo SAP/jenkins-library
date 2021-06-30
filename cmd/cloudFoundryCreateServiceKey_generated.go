@@ -151,8 +151,9 @@ func cloudFoundryCreateServiceKeyMetadata() config.StepData {
 							},
 
 							{
-								Name: "cloudfoundryVaultSecretName",
-								Type: "vaultSecret",
+								Name:    "cloudfoundryVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "cloudfoundry-$(org)-$(space)",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -171,8 +172,9 @@ func cloudFoundryCreateServiceKeyMetadata() config.StepData {
 							},
 
 							{
-								Name: "cloudfoundryVaultSecretName",
-								Type: "vaultSecret",
+								Name:    "cloudfoundryVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "cloudfoundry-$(org)-$(space)",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},

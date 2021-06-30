@@ -368,8 +368,9 @@ func kubernetesDeployMetadata() config.StepData {
 							},
 
 							{
-								Name: "kubeConfigFileSecretName",
-								Type: "vaultSecretFile",
+								Name:    "kubeConfigFileSecretName",
+								Type:    "vaultSecretFile",
+								Default: "kube-config",
 							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},

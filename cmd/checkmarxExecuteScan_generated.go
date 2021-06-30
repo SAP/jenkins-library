@@ -376,8 +376,9 @@ func checkmarxExecuteScanMetadata() config.StepData {
 							},
 
 							{
-								Name: "checkmarxVaultSecretName",
-								Type: "vaultSecret",
+								Name:    "checkmarxVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "checkmarx",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -459,8 +460,9 @@ func checkmarxExecuteScanMetadata() config.StepData {
 							},
 
 							{
-								Name: "checkmarxVaultSecretName",
-								Type: "vaultSecret",
+								Name:    "checkmarxVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "checkmarx",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},

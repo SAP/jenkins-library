@@ -140,8 +140,9 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Name: "jenkinsUrl",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name: "jenkinsVaultSecret",
-								Type: "vaultSecret",
+								Name:    "jenkinsVaultSecret",
+								Type:    "vaultSecret",
+								Default: "jenkins",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -163,8 +164,9 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Name: "jenkinsUsername",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name: "jenkinsVaultSecret",
-								Type: "vaultSecret",
+								Name:    "jenkinsVaultSecret",
+								Type:    "vaultSecret",
+								Default: "jenkins",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -177,8 +179,9 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Name: "jenkinsToken",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name: "jenkinsVaultSecret",
-								Type: "vaultSecret",
+								Name:    "jenkinsVaultSecret",
+								Type:    "vaultSecret",
+								Default: "jenkins",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},

@@ -193,8 +193,9 @@ func githubCommentIssueMetadata() config.StepData {
 							},
 
 							{
-								Name: "githubVaultSecretName",
-								Type: "vaultSecret",
+								Name:    "githubVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "github",
 							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},

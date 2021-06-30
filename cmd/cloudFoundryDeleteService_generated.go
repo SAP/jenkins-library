@@ -148,8 +148,9 @@ func cloudFoundryDeleteServiceMetadata() config.StepData {
 							},
 
 							{
-								Name: "cloudfoundryVaultSecretName",
-								Type: "vaultSecret",
+								Name:    "cloudfoundryVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "cloudfoundry-$(org)-$(space)",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -168,8 +169,9 @@ func cloudFoundryDeleteServiceMetadata() config.StepData {
 							},
 
 							{
-								Name: "cloudfoundryVaultSecretName",
-								Type: "vaultSecret",
+								Name:    "cloudfoundryVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "cloudfoundry-$(org)-$(space)",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},

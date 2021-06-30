@@ -45,6 +45,12 @@ var (
 		vaultTestCredentialKeys,
 	}
 
+	rootPaths = []string{
+		"$(vaultPath)",
+		"$(vaultBasePath)/$(vaultPipelineName)",
+		"$(vaultBasePath)/GROUP-SECRETS",
+	}
+
 	// VaultSecretFileDirectory holds the directory for the current step run to temporarily store secret files fetched from vault
 	VaultSecretFileDirectory = ""
 )
@@ -292,10 +298,9 @@ func lookupPath(client vaultClient, path string, param *StepParameters) *string 
 }
 
 func getSecretReferencePaths(reference *ResourceReference, config map[string]interface{}) []string {
-	rootPaths := getRootPaths(config)
 	retPaths := make([]string, 0, len(rootPaths))
-	secretName := reference.Name
-	if providedName, ok := config[reference.Param].(string); ok && providedName != "" {
+	secretName := reference.Default
+	if providedName, ok := config[reference.Name].(string); ok && providedName != "" {
 		secretName = providedName
 	}
 	for _, rootPath := range rootPaths {
@@ -303,24 +308,6 @@ func getSecretReferencePaths(reference *ResourceReference, config map[string]int
 		retPaths = append(retPaths, fullPath)
 	}
 	return retPaths
-}
-
-func getRootPaths(config map[string]interface{}) []string {
-	rawPaths, ok := config[vaultRootPaths]
-	if !ok {
-		log.Entry().Warn("No vaultRootPath configured")
-		return nil
-	}
-	switch paths := rawPaths.(type) {
-	case string:
-		return []string{paths}
-	case []interface{}:
-		return toStringSlice(paths)
-	case []string:
-		return paths
-	default:
-		return nil
-	}
 }
 
 func toStringSlice(interfaceSlice []interface{}) []string {

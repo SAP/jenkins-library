@@ -319,8 +319,9 @@ func fortifyExecuteScanMetadata() config.StepData {
 							},
 
 							{
-								Name: "fortifyVaultSecretName",
-								Type: "vaultSecret",
+								Name:    "fortifyVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "fortify",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -356,8 +357,9 @@ func fortifyExecuteScanMetadata() config.StepData {
 							},
 
 							{
-								Name: "githubVaultSecretName",
-								Type: "vaultSecret",
+								Name:    "githubVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "github",
 							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},

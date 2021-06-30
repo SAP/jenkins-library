@@ -174,8 +174,9 @@ func detectExecuteScanMetadata() config.StepData {
 							},
 
 							{
-								Name: "detectVaultSecretName",
-								Type: "vaultSecret",
+								Name:    "detectVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "detect",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
