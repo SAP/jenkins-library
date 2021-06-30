@@ -11,6 +11,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
+	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
@@ -67,6 +68,7 @@ func NewmanExecuteCommand() *cobra.Command {
 	var stepConfig newmanExecuteOptions
 	var startTime time.Time
 	var influx newmanExecuteInflux
+	var logCollector *log.CollectorHook
 
 	var createNewmanExecuteCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -92,6 +94,11 @@ func NewmanExecuteCommand() *cobra.Command {
 				log.RegisterHook(&sentryHook)
 			}
 
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
+				log.RegisterHook(logCollector)
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -103,10 +110,20 @@ func NewmanExecuteCommand() *cobra.Command {
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
+				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunk.Send(&telemetryData, logCollector)
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunk.Initialize(GeneralConfig.CorrelationID,
+					GeneralConfig.HookConfig.SplunkConfig.Dsn,
+					GeneralConfig.HookConfig.SplunkConfig.Token,
+					GeneralConfig.HookConfig.SplunkConfig.Index,
+					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+			}
 			newmanExecute(stepConfig, &telemetryData, &influx)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -150,6 +167,7 @@ func newmanExecuteMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `**/*.postman_collection.json`,
 					},
 					{
 						Name:        "newmanRunCommand",
@@ -158,6 +176,7 @@ func newmanExecuteMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_newmanRunCommand"),
 					},
 					{
 						Name:        "runOptions",
@@ -166,6 +185,7 @@ func newmanExecuteMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     []string{`run`, `{{.NewmanCollection}}`, `--reporters`, `cli,junit,html`, `--reporter-junit-export`, `target/newman/TEST-{{.CollectionDisplayName}}.xml`, `--reporter-html-export`, `target/newman/TEST-{{.CollectionDisplayName}}.html`},
 					},
 					{
 						Name:        "newmanInstallCommand",
@@ -174,6 +194,7 @@ func newmanExecuteMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `npm install newman newman-reporter-html --global --quiet`,
 					},
 					{
 						Name:        "newmanEnvironment",
@@ -182,6 +203,7 @@ func newmanExecuteMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_newmanEnvironment"),
 					},
 					{
 						Name:        "newmanGlobals",
@@ -190,6 +212,7 @@ func newmanExecuteMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_newmanGlobals"),
 					},
 					{
 						Name:        "failOnError",
@@ -198,6 +221,7 @@ func newmanExecuteMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
 						Name:        "cfAppsWithSecrets",
@@ -206,6 +230,7 @@ func newmanExecuteMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 				},
 			},

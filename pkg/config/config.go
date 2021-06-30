@@ -23,7 +23,7 @@ type Config struct {
 	General          map[string]interface{}            `json:"general"`
 	Stages           map[string]map[string]interface{} `json:"stages"`
 	Steps            map[string]map[string]interface{} `json:"steps"`
-	Hooks            *json.RawMessage                  `json:"hooks,omitempty"`
+	Hooks            map[string]interface{}            `json:"hooks,omitempty"`
 	defaults         PipelineDefaults
 	initialized      bool
 	openFile         func(s string) (io.ReadCloser, error)
@@ -33,7 +33,7 @@ type Config struct {
 // StepConfig defines the structure for merged step configuration
 type StepConfig struct {
 	Config     map[string]interface{}
-	HookConfig *json.RawMessage
+	HookConfig map[string]interface{}
 }
 
 // ReadConfig loads config and returns its content
@@ -59,33 +59,33 @@ func (c *Config) ApplyAliasConfig(parameters []StepParameters, secrets []StepSec
 		c.copyStepAliasConfig(stepName, stepAliases)
 	}
 	for _, p := range parameters {
-		c.General = setParamValueFromAlias(c.General, filters.General, p.Name, p.Aliases)
+		c.General = setParamValueFromAlias(stepName, c.General, filters.General, p.Name, p.Aliases)
 		if c.Stages[stageName] != nil {
-			c.Stages[stageName] = setParamValueFromAlias(c.Stages[stageName], filters.Stages, p.Name, p.Aliases)
+			c.Stages[stageName] = setParamValueFromAlias(stepName, c.Stages[stageName], filters.Stages, p.Name, p.Aliases)
 		}
 		if c.Steps[stepName] != nil {
-			c.Steps[stepName] = setParamValueFromAlias(c.Steps[stepName], filters.Steps, p.Name, p.Aliases)
+			c.Steps[stepName] = setParamValueFromAlias(stepName, c.Steps[stepName], filters.Steps, p.Name, p.Aliases)
 		}
 	}
 	for _, s := range secrets {
-		c.General = setParamValueFromAlias(c.General, filters.General, s.Name, s.Aliases)
+		c.General = setParamValueFromAlias(stepName, c.General, filters.General, s.Name, s.Aliases)
 		if c.Stages[stageName] != nil {
-			c.Stages[stageName] = setParamValueFromAlias(c.Stages[stageName], filters.Stages, s.Name, s.Aliases)
+			c.Stages[stageName] = setParamValueFromAlias(stepName, c.Stages[stageName], filters.Stages, s.Name, s.Aliases)
 		}
 		if c.Steps[stepName] != nil {
-			c.Steps[stepName] = setParamValueFromAlias(c.Steps[stepName], filters.Steps, s.Name, s.Aliases)
+			c.Steps[stepName] = setParamValueFromAlias(stepName, c.Steps[stepName], filters.Steps, s.Name, s.Aliases)
 		}
 	}
 }
 
-func setParamValueFromAlias(configMap map[string]interface{}, filter []string, name string, aliases []Alias) map[string]interface{} {
+func setParamValueFromAlias(stepName string, configMap map[string]interface{}, filter []string, name string, aliases []Alias) map[string]interface{} {
 	if configMap != nil && configMap[name] == nil && sliceContains(filter, name) {
 		for _, a := range aliases {
 			aliasVal := getDeepAliasValue(configMap, a.Name)
 			if aliasVal != nil {
 				configMap[name] = aliasVal
 				if a.Deprecated {
-					log.Entry().WithField("package", "SAP/jenkins-library/pkg/config").Warningf("DEPRECATION NOTICE: old step config key '%v' used. Please switch to '%v'!", a.Name, name)
+					log.Entry().Warningf("[WARNING] The parameter '%v' is DEPRECATED, use '%v' instead. (%v/%v)", a.Name, name, log.LibraryName, stepName)
 				}
 			}
 			if configMap[name] != nil {
@@ -189,11 +189,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		stepConfig.mixIn(def.Steps[stepName], filters.Steps)
 		stepConfig.mixIn(def.Stages[stageName], filters.Steps)
 		stepConfig.mixinVaultConfig(def.General, def.Steps[stepName], def.Stages[stageName])
-
-		// process hook configuration - this is only supported via defaults
-		if stepConfig.HookConfig == nil {
-			stepConfig.HookConfig = def.Hooks
-		}
+		stepConfig.mixInHookConfig(def.Hooks)
 	}
 
 	// read config & merge - general -> steps -> stages
@@ -213,10 +209,10 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		} else {
 			//apply aliases
 			for _, p := range parameters {
-				params = setParamValueFromAlias(params, filters.Parameters, p.Name, p.Aliases)
+				params = setParamValueFromAlias(stepName, params, filters.Parameters, p.Name, p.Aliases)
 			}
 			for _, s := range secrets {
-				params = setParamValueFromAlias(params, filters.Parameters, s.Name, s.Aliases)
+				params = setParamValueFromAlias(stepName, params, filters.Parameters, s.Name, s.Aliases)
 			}
 
 			stepConfig.mixIn(params, filters.Parameters)
@@ -252,14 +248,19 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	// finally do the condition evaluation post processing
 	for _, p := range parameters {
 		if len(p.Conditions) > 0 {
-			cp := p.Conditions[0].Params[0]
-			dependentValue := stepConfig.Config[cp.Name]
-			if cmp.Equal(dependentValue, cp.Value) && stepConfig.Config[p.Name] == nil {
-				subMap, ok := stepConfig.Config[dependentValue.(string)].(map[string]interface{})
-				if ok && subMap[p.Name] != nil {
-					stepConfig.Config[p.Name] = subMap[p.Name]
-				} else {
-					stepConfig.Config[p.Name] = p.Default
+			for _, cond := range p.Conditions {
+				for _, param := range cond.Params {
+					// retrieve configuration value of condition parameter
+					dependentValue := stepConfig.Config[param.Name]
+					// check if configuration of condition parameter matches the value
+					// so far string-equals condition is assumed here
+					// if so and if no config applied yet, then try to apply the value
+					if cmp.Equal(dependentValue, param.Value) && stepConfig.Config[p.Name] == nil {
+						subMap, ok := stepConfig.Config[dependentValue.(string)].(map[string]interface{})
+						if ok && subMap[p.Name] != nil {
+							stepConfig.Config[p.Name] = subMap[p.Name]
+						}
+					}
 				}
 			}
 		}
@@ -343,14 +344,34 @@ func (s *StepConfig) mixIn(mergeData map[string]interface{}, filter []string) {
 	s.Config = merge(s.Config, filterMap(mergeData, filter))
 }
 
+func (s *StepConfig) mixInHookConfig(mergeData map[string]interface{}) {
+
+	if s.HookConfig == nil {
+		s.HookConfig = map[string]interface{}{}
+	}
+
+	s.HookConfig = merge(s.HookConfig, mergeData)
+}
+
 func (s *StepConfig) mixInStepDefaults(stepParams []StepParameters) {
 	if s.Config == nil {
 		s.Config = map[string]interface{}{}
 	}
 
+	// conditional defaults need to be written to a sub map
+	// in order to prevent a "last one wins" situation
+	// this is then considered at the end of GetStepConfig once the complete configuration is known
 	for _, p := range stepParams {
 		if p.Default != nil {
-			s.Config[p.Name] = p.Default
+			if len(p.Conditions) == 0 {
+				s.Config[p.Name] = p.Default
+			} else {
+				for _, cond := range p.Conditions {
+					for _, param := range cond.Params {
+						s.Config[param.Value] = map[string]interface{}{p.Name: p.Default}
+					}
+				}
+			}
 		}
 	}
 }

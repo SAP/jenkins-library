@@ -184,9 +184,15 @@ public class CommonStepsTest extends BasePiperTest{
         'integrationArtifactGetServiceEndpoint', //implementing new golang pattern without fields
         'integrationArtifactDownload', //implementing new golang pattern without fields
         'integrationArtifactUpload', //implementing new golang pattern without fields
+        'integrationArtifactTriggerIntegrationTest', //implementing new golang pattern without fields
         'containerExecuteStructureTests', //implementing new golang pattern without fields
         'transportRequestUploadSOLMAN', //implementing new golang pattern without fields
+        'transportRequestReqIDFromGit', //implementing new golang pattern without fields
+        'transportRequestDocIDFromGit', //implementing new golang pattern without fields
+        'gaugeExecuteTests', //implementing new golang pattern without fields
         'batsExecuteTests', //implementing new golang pattern without fields
+        'writePipelineEnv', //implementing new golang pattern without fields
+        'readPipelineEnv', //implementing new golang pattern without fields
     ]
 
     @Test

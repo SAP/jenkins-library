@@ -30,6 +30,7 @@ spec:
         params:
           - name: artifactVersion
           - name: git/commitId
+          - name: git/headCommitId
           - name: git/branch
           - name: custom/customList
             type: "[]string"
@@ -99,7 +100,7 @@ func TestProcessMetaFiles(t *testing.T) {
 		}
 		resultFilePath := filepath.Join("cmd", "testStep_generated.go")
 		assert.Equal(t, string(expected), string(files[resultFilePath]))
-		t.Log(string(files[resultFilePath]))
+		//t.Log(string(files[resultFilePath]))
 	})
 
 	t.Run("test code", func(t *testing.T) {
@@ -123,7 +124,7 @@ func TestProcessMetaFiles(t *testing.T) {
 		}
 		resultFilePath := filepath.Join("cmd", "testStep_generated.go")
 		assert.Equal(t, string(expected), string(files[resultFilePath]))
-		t.Log(string(files[resultFilePath]))
+		//t.Log(string(files[resultFilePath]))
 	})
 }
 

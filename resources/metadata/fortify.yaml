@@ -6,6 +6,8 @@ metadata:
 
     The Fortify step triggers a scan locally on your Jenkins within a docker container so finally you have to supply a docker image with a Fortify SCA
     and Java plus Maven or alternatively Python installed into it for being able to perform any scans.
+    !!! hint "Scanning MTA projects"
+        Build type `maven` requires a so called aggregator pom which includes all modules to be scanned. If used in a mta-project which includes non-java submodules as maven dependency (e.g. node via frontend-maven-plugin), exclude those by specifying java path explicitly, e.g. `java/**/src/main/java/**/*`.
 
 spec:
   inputs:
@@ -53,6 +55,14 @@ spec:
               - $(vaultPath)/fortify
               - $(vaultBasePath)/$(vaultPipelineName)/fortify
               - $(vaultBasePath)/GROUP-SECRETS/fortify
+      - name: buildDescriptorExcludeList
+        type: "[]string"
+        description: "List of build descriptors and therefore modules to exclude from the scan and assessment activities."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: ["unit-tests/pom.xml", "integration-tests/pom.xml"]
       - name: customScanVersion
         type: string
         description: Custom version of the Fortify project used as source.
