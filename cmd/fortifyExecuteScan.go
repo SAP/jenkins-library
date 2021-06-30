@@ -659,6 +659,7 @@ func generateMavenFortifyDefines(config *fortifyExecuteScanOptions, file string)
 		fmt.Sprintf("-Dmdep.outputFile=%v", file),
 		"-DincludeScope=compile",
 		"-DskipTests",
+		"-Dmaven.javadoc.skip=true",
 		"--fail-at-end"}
 
 	if len(config.BuildDescriptorExcludeList) > 0 {
