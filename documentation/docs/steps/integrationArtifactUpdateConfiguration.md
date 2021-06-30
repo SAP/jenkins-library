@@ -27,7 +27,6 @@ steps:
     cpiApiServiceKeyCredentialsId: 'MY_API_SERVICE_KEY'
     integrationFlowId: 'MY_INTEGRATION_FLOW_NAME'
     integrationFlowVersion: 'MY_INTEGRATION_FLOW_VERSION'
-    platform: 'cf'
     parameterKey: 'MY_INTEGRATION_FLOW_CONFIG_PARAMETER_NAME'
     parameterValue: 'MY_INTEGRATION_FLOW_CONFIG_PARAMETER_VALUE'
 ```
