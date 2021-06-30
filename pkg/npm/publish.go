@@ -54,7 +54,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string) e
 		}
 	}
 
-	err := execRunner.RunExecutable("npm", "publish", filepath.Dir(packageJSON), "--dry-run")
+	err := execRunner.RunExecutable("npm", "publish", filepath.Dir(packageJSON))
 	if err != nil {
 		return err
 	}
