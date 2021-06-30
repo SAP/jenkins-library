@@ -146,6 +146,7 @@ func Execute() {
 	rootCmd.AddCommand(IntegrationArtifactDownloadCommand())
 	rootCmd.AddCommand(AbapEnvironmentAssembleConfirmCommand())
 	rootCmd.AddCommand(IntegrationArtifactUploadCommand())
+	rootCmd.AddCommand(IntegrationArtifactTriggerIntegrationTestCommand())
 	rootCmd.AddCommand(TerraformExecuteCommand())
 	rootCmd.AddCommand(ContainerExecuteStructureTestsCommand())
 	rootCmd.AddCommand(GaugeExecuteTestsCommand())
