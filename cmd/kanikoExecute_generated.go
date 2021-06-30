@@ -258,9 +258,8 @@ func kanikoExecuteMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/docker-config", "$(vaultBasePath)/$(vaultPipelineName)/docker-config", "$(vaultBasePath)/GROUP-SECRETS/docker-config"},
-								Type:  "vaultSecretFile",
+								Name: "dockerConfigFileVaultSecretName",
+								Type: "vaultSecretFile",
 							},
 						},
 						Scope:     []string{"PARAMETERS"},

@@ -3,6 +3,7 @@ package config
 import (
 	"io/ioutil"
 	"os"
+	"path"
 	"regexp"
 	"strings"
 
@@ -13,22 +14,33 @@ import (
 )
 
 const (
+	vaultRootPaths               = "vaultRootPaths"
 	vaultTestCredentialPath      = "vaultTestCredentialPath"
 	vaultTestCredentialKeys      = "vaultTestCredentialKeys"
 	vaultTestCredentialEnvPrefix = "PIPER_TESTCREDENTIAL_"
+	vaultAppRoleID               = "vaultAppRoleID"
+	vaultAppRoleSecretID         = "vaultAppRoleSecreId"
+	vaultServerUrl               = "vaultServerUrl"
+	vaultNamespace               = "vaultNamespace"
+	vaultBasePath                = "vaultBasePath"
+	vaultPipelineName            = "vaultPipelineName"
+	vaultPath                    = "vaultPath"
+	skipVault                    = "skipVault"
+	vaultDisableOverwrite        = "vaultDisableOverwrite"
 )
 
 var (
 	vaultFilter = []string{
-		"vaultAppRoleID",
-		"vaultAppRoleSecreId",
-		"vaultServerUrl",
-		"vaultNamespace",
-		"vaultBasePath",
-		"vaultPipelineName",
-		"vaultPath",
-		"skipVault",
-		"vaultDisableOverwrite",
+		vaultRootPaths,
+		vaultAppRoleID,
+		vaultAppRoleSecretID,
+		vaultServerUrl,
+		vaultNamespace,
+		vaultBasePath,
+		vaultPipelineName,
+		vaultPath,
+		skipVault,
+		vaultDisableOverwrite,
 		vaultTestCredentialPath,
 		vaultTestCredentialKeys,
 	}
@@ -108,7 +120,7 @@ func resolveVaultReference(ref *ResourceReference, config *StepConfig, client va
 	}
 
 	var secretValue *string
-	for _, vaultPath := range ref.Paths {
+	for _, vaultPath := range getSecretReferencePaths(ref, config.Config) {
 		// it should be possible to configure the root path were the secret is stored
 		vaultPath, ok := interpolation.ResolveString(vaultPath, config.Config)
 		if !ok {
@@ -277,4 +289,48 @@ func lookupPath(client vaultClient, path string, param *StepParameters) *string 
 		}
 	}
 	return nil
+}
+
+func getSecretReferencePaths(reference *ResourceReference, config map[string]interface{}) []string {
+	rootPaths := getRootPaths(config)
+	retPaths := make([]string, 0, len(rootPaths))
+	secretName := reference.Name
+	if providedName, ok := config[reference.Param].(string); ok && providedName != "" {
+		secretName = providedName
+	}
+	for _, rootPath := range rootPaths {
+		fullPath := path.Join(rootPath, secretName)
+		retPaths = append(retPaths, fullPath)
+	}
+	return retPaths
+}
+
+func getRootPaths(config map[string]interface{}) []string {
+	rawPaths, ok := config[vaultRootPaths]
+	if !ok {
+		log.Entry().Warn("No vaultRootPath configured")
+		return nil
+	}
+	switch paths := rawPaths.(type) {
+	case string:
+		return []string{paths}
+	case []interface{}:
+		return toStringSlice(paths)
+	case []string:
+		return paths
+	default:
+		return nil
+	}
+}
+
+func toStringSlice(interfaceSlice []interface{}) []string {
+	retSlice := make([]string, 0, len(interfaceSlice))
+	for _, vRaw := range interfaceSlice {
+		if v, ok := vRaw.(string); ok {
+			retSlice = append(retSlice, v)
+			continue
+		}
+		log.Entry().Warnf("'%s' needs to be of type string or an array of strings but got %T (%[2]v)", vaultPath, vRaw)
+	}
+	return retSlice
 }

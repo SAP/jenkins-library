@@ -79,6 +79,7 @@ type StepResources struct {
 	Name        string                   `json:"name"`
 	Description string                   `json:"description,omitempty"`
 	Type        string                   `json:"type,omitempty"`
+	Default     string                   `json:"default,omitemptys"`
 	Parameters  []map[string]interface{} `json:"params,omitempty"`
 	Conditions  []Condition              `json:"conditions,omitempty"`
 }

@@ -123,9 +123,8 @@ func terraformExecuteMetadata() config.StepData {
 						Name: "terraformSecrets",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/terraformExecute", "$(vaultBasePath)/$(vaultPipelineName)/terraformExecute", "$(vaultBasePath)/GROUP-SECRETS/terraformExecute"},
-								Type:  "vaultSecretFile",
+								Name: "terraformExecuteFileVaultSecret",
+								Type: "vaultSecretFile",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
