@@ -411,6 +411,23 @@ func (m *StepParameters) GetReference(refType string) *ResourceReference {
 	return nil
 }
 
+func getFilterForResourceReferences(params []StepParameters) []string {
+	var filter []string
+	for _, param := range params {
+		reference := param.GetReference("vaultSecret")
+		if reference == nil {
+			reference = param.GetReference("vaultSecretFile")
+		}
+		if reference == nil {
+			return filter
+		}
+		if reference.Name != "" {
+			filter = append(filter, reference.Name)
+		}
+	}
+	return filter
+}
+
 // HasReference checks whether StepData contains a parameter that has Reference with the given type
 func (m *StepData) HasReference(refType string) bool {
 	for _, param := range m.Spec.Inputs.Parameters {

@@ -68,9 +68,10 @@ type vaultClient interface {
 	MustRevokeToken()
 }
 
-func (s *StepConfig) mixinVaultConfig(configs ...map[string]interface{}) {
+func (s *StepConfig) mixinVaultConfig(parameters []StepParameters, configs ...map[string]interface{}) {
 	for _, config := range configs {
 		s.mixIn(config, vaultFilter)
+		s.mixIn(config, getFilterForResourceReferences(parameters))
 	}
 }
 

@@ -2,28 +2,30 @@ package config
 
 import (
 	"fmt"
+	"github.com/stretchr/testify/mock"
 	"io/ioutil"
 	"os"
+	"path"
 	"strings"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/config/mocks"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 func TestVaultConfigLoad(t *testing.T) {
 	const secretName = "testSecret"
+	const secretNameOverrideKey = "mySecretVaultSecretName"
 	t.Parallel()
 	t.Run("Load secret from vault", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
 		stepConfig := StepConfig{Config: map[string]interface{}{
-			"vaultBasePath": "team1",
+			"vaultPath": "team1",
 		}}
-		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", "$(vaultBasePath)/pipelineA")}
+		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", secretNameOverrideKey, secretName)}
 		vaultData := map[string]string{secretName: "value1"}
 
-		vaultMock.On("GetKvSecret", "team1/pipelineA").Return(vaultData, nil)
+		vaultMock.On("GetKvSecret", path.Join("team1", secretName)).Return(vaultData, nil)
 		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams)
 		assert.Equal(t, "value1", stepConfig.Config[secretName])
 	})
@@ -31,13 +33,13 @@ func TestVaultConfigLoad(t *testing.T) {
 	t.Run("Secrets are not overwritten", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
 		stepConfig := StepConfig{Config: map[string]interface{}{
-			"vaultBasePath":         "team1",
+			"vaultPath":             "team1",
 			secretName:              "preset value",
 			"vaultDisableOverwrite": true,
 		}}
-		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", "$(vaultBasePath)/pipelineA")}
+		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", secretNameOverrideKey, secretName)}
 		vaultData := map[string]string{secretName: "value1"}
-		vaultMock.On("GetKvSecret", "team1/pipelineA").Return(vaultData, nil)
+		vaultMock.On("GetKvSecret", path.Join("team1", secretName)).Return(vaultData, nil)
 		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams)
 
 		assert.Equal(t, "preset value", stepConfig.Config[secretName])
@@ -46,12 +48,12 @@ func TestVaultConfigLoad(t *testing.T) {
 	t.Run("Secrets can be overwritten", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
 		stepConfig := StepConfig{Config: map[string]interface{}{
-			"vaultBasePath": "team1",
-			secretName:      "preset value",
+			"vaultPath": "team1",
+			secretName:  "preset value",
 		}}
-		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", "$(vaultBasePath)/pipelineA")}
+		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", secretNameOverrideKey, secretName)}
 		vaultData := map[string]string{secretName: "value1"}
-		vaultMock.On("GetKvSecret", "team1/pipelineA").Return(vaultData, nil)
+		vaultMock.On("GetKvSecret", path.Join("team1", secretName)).Return(vaultData, nil)
 		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams)
 
 		assert.Equal(t, "value1", stepConfig.Config[secretName])
@@ -60,10 +62,10 @@ func TestVaultConfigLoad(t *testing.T) {
 	t.Run("Error is passed through", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
 		stepConfig := StepConfig{Config: map[string]interface{}{
-			"vaultBasePath": "team1",
+			"vaultPath": "team1",
 		}}
-		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", "$(vaultBasePath)/pipelineA")}
-		vaultMock.On("GetKvSecret", "team1/pipelineA").Return(nil, fmt.Errorf("test"))
+		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", secretNameOverrideKey, secretName)}
+		vaultMock.On("GetKvSecret", path.Join("team1", secretName)).Return(nil, fmt.Errorf("test"))
 		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams)
 		assert.Len(t, stepConfig.Config, 1)
 	})
@@ -71,10 +73,10 @@ func TestVaultConfigLoad(t *testing.T) {
 	t.Run("Secret doesn't exist", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
 		stepConfig := StepConfig{Config: map[string]interface{}{
-			"vaultBasePath": "team1",
+			"vaultPath": "team1",
 		}}
-		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", "$(vaultBasePath)/pipelineA")}
-		vaultMock.On("GetKvSecret", "team1/pipelineA").Return(nil, nil)
+		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", secretNameOverrideKey, secretName)}
+		vaultMock.On("GetKvSecret", path.Join("team1", secretName)).Return(nil, nil)
 		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams)
 		assert.Len(t, stepConfig.Config, 1)
 	})
@@ -83,13 +85,13 @@ func TestVaultConfigLoad(t *testing.T) {
 		aliasName := "alias"
 		vaultMock := &mocks.VaultMock{}
 		stepConfig := StepConfig{Config: map[string]interface{}{
-			"vaultBasePath": "team1",
+			"vaultPath": "team1",
 		}}
-		param := stepParam(secretName, "vaultSecret", "$(vaultBasePath)/pipelineA")
+		param := stepParam(secretName, "vaultSecret", secretNameOverrideKey, secretName)
 		addAlias(&param, aliasName)
 		stepParams := []StepParameters{param}
 		vaultData := map[string]string{aliasName: "value1"}
-		vaultMock.On("GetKvSecret", "team1/pipelineA").Return(vaultData, nil)
+		vaultMock.On("GetKvSecret", path.Join("team1", secretName)).Return(vaultData, nil)
 		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams)
 		assert.Equal(t, "value1", stepConfig.Config[secretName])
 	})
@@ -97,37 +99,23 @@ func TestVaultConfigLoad(t *testing.T) {
 	t.Run("Search over multiple paths", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
 		stepConfig := StepConfig{Config: map[string]interface{}{
-			"vaultBasePath": "team1",
+			"vaultBasePath": "team2",
+			"vaultPath":     "team1",
 		}}
 		stepParams := []StepParameters{
-			stepParam(secretName, "vaultSecret", "$(vaultBasePath)/pipelineA", "$(vaultBasePath)/pipelineB"),
+			stepParam(secretName, "vaultSecret", secretNameOverrideKey, secretName),
 		}
 		vaultData := map[string]string{secretName: "value1"}
-		vaultMock.On("GetKvSecret", "team1/pipelineA").Return(nil, nil)
-		vaultMock.On("GetKvSecret", "team1/pipelineB").Return(vaultData, nil)
+		vaultMock.On("GetKvSecret", path.Join("team1", secretName)).Return(nil, nil)
+		vaultMock.On("GetKvSecret", path.Join("team2/GROUP-SECRETS", secretName)).Return(vaultData, nil)
 		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams)
 		assert.Equal(t, "value1", stepConfig.Config[secretName])
-	})
-
-	t.Run("Stop lookup when secret was found", func(t *testing.T) {
-		vaultMock := &mocks.VaultMock{}
-		stepConfig := StepConfig{Config: map[string]interface{}{
-			"vaultBasePath": "team1",
-		}}
-		stepParams := []StepParameters{
-			stepParam(secretName, "vaultSecret", "$(vaultBasePath)/pipelineA", "$(vaultBasePath)/pipelineB"),
-		}
-		vaultData := map[string]string{secretName: "value1"}
-		vaultMock.On("GetKvSecret", "team1/pipelineA").Return(vaultData, nil)
-		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams)
-		assert.Equal(t, "value1", stepConfig.Config[secretName])
-		vaultMock.AssertNotCalled(t, "GetKvSecret", "team1/pipelineB")
 	})
 
 	t.Run("No BasePath is stepConfig.Configured", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
 		stepConfig := StepConfig{Config: map[string]interface{}{}}
-		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", "$(vaultBasePath)/pipelineA")}
+		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", secretNameOverrideKey, secretName)}
 		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams)
 		assert.Equal(t, nil, stepConfig.Config[secretName])
 		vaultMock.AssertNotCalled(t, "GetKvSecret", mock.AnythingOfType("string"))
@@ -136,14 +124,15 @@ func TestVaultConfigLoad(t *testing.T) {
 
 func TestVaultSecretFiles(t *testing.T) {
 	const secretName = "testSecret"
+	const secretNameOverrideKey = "mySecretVaultSecretName"
 	t.Run("Test Vault Secret File Reference", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
 		stepConfig := StepConfig{Config: map[string]interface{}{
 			"vaultPath": "team1",
 		}}
-		stepParams := []StepParameters{stepParam(secretName, "vaultSecretFile", "$(vaultPath)/pipelineA")}
+		stepParams := []StepParameters{stepParam(secretName, "vaultSecretFile", secretNameOverrideKey, secretName)}
 		vaultData := map[string]string{secretName: "value1"}
-		vaultMock.On("GetKvSecret", "team1/pipelineA").Return(vaultData, nil)
+		vaultMock.On("GetKvSecret", path.Join("team1", secretName)).Return(vaultData, nil)
 		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams)
 		assert.NotNil(t, stepConfig.Config[secretName])
 		path := stepConfig.Config[secretName].(string)
@@ -161,10 +150,10 @@ func TestVaultSecretFiles(t *testing.T) {
 		stepConfig := StepConfig{Config: map[string]interface{}{
 			"vaultPath": "team1",
 		}}
-		stepParams := []StepParameters{stepParam(secretName, "vaultSecretFile", "$(vaultPath)/pipelineA")}
+		stepParams := []StepParameters{stepParam(secretName, "vaultSecretFile", secretNameOverrideKey, secretName)}
 		vaultData := map[string]string{secretName: "value1"}
 		assert.NoDirExists(t, VaultSecretFileDirectory)
-		vaultMock.On("GetKvSecret", "team1/pipelineA").Return(vaultData, nil)
+		vaultMock.On("GetKvSecret", path.Join("team1", secretName)).Return(vaultData, nil)
 		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams)
 		assert.NotNil(t, stepConfig.Config[secretName])
 		path := stepConfig.Config[secretName].(string)
@@ -191,7 +180,7 @@ func TestMixinVault(t *testing.T) {
 		"unknownConfig":  "test",
 	}
 
-	config.mixinVaultConfig(general, steps)
+	config.mixinVaultConfig(nil, general, steps)
 
 	assert.Contains(t, config.Config, "vaultServerUrl")
 	assert.Equal(t, vaultServerUrl, config.Config["vaultServerUrl"])
@@ -201,14 +190,15 @@ func TestMixinVault(t *testing.T) {
 
 }
 
-func stepParam(name string, refType string, refPaths ...string) StepParameters {
+func stepParam(name, refType, vaultSecretNameProperty, defaultSecretNameName string) StepParameters {
 	return StepParameters{
 		Name:    name,
 		Aliases: []Alias{},
 		ResourceRef: []ResourceReference{
 			{
-				Type:  refType,
-				Paths: refPaths,
+				Type:    refType,
+				Name:    vaultSecretNameProperty,
+				Default: defaultSecretNameName,
 			},
 		},
 	}
