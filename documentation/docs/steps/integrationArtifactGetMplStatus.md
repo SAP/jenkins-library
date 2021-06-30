@@ -24,7 +24,7 @@ Example for the use in a YAML configuration file (such as `.pipeline/config.yaml
 steps:
   <...>
   integrationArtifactGetMplStatus:
-    cpiAPIServiceKeyCredentialId: 'MY_API_SERVICE_KEY'
+    cpiApiServiceKeyCredentialsId: 'MY_API_SERVICE_KEY'
     integrationFlowId: 'INTEGRATION_FLOW_ID'
     platform: cf
 ```

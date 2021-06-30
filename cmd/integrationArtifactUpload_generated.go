@@ -123,15 +123,15 @@ func integrationArtifactUploadMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "cpiAPIServiceKeyCredentialId", Description: "Jenkins credential ID for secret text containing the service key to the SAP Cloud Integration API", Type: "jenkins"},
+					{Name: "cpiApiServiceKeyCredentialsId", Description: "Jenkins credential ID for secret text containing the service key to the SAP Cloud Integration API", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{
 						Name: "apiServiceKey",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "cpiServiceKeyCredentialId",
-								Param: "serviceKey",
+								Name:  "cpiApiServiceKeyCredentialsId",
+								Param: "apiServiceKey",
 								Type:  "secret",
 							},
 						},
@@ -144,7 +144,7 @@ func integrationArtifactUploadMetadata() config.StepData {
 					{
 						Name:        "integrationFlowId",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
@@ -153,7 +153,7 @@ func integrationArtifactUploadMetadata() config.StepData {
 					{
 						Name:        "integrationFlowVersion",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},

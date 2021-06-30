@@ -7,7 +7,7 @@ metadata:
 spec:
   inputs:
     secrets:
-      - name: cpiAPIServiceKeyCredentialId
+      - name: cpiApiServiceKeyCredentialsId
         description: Jenkins credential ID for secret text containing the service key to the SAP Cloud Integration API
         type: jenkins
     params:
@@ -19,9 +19,9 @@ spec:
         mandatory: true
         secret: true
         resourceRef:
-          - name: cpiServiceKeyCredentialId
+          - name: cpiApiServiceKeyCredentialsId
             type: secret
-            param: serviceKey
+            param: apiServiceKey
       - name: integrationFlowId
         type: string
         description: Specifies the ID of the Integration Flow artifact
@@ -35,6 +35,7 @@ spec:
         description: Specifies the version of the Integration Flow artifact
         scope:
           - PARAMETERS
+          - GENERAL
           - STAGES
           - STEPS
         mandatory: true
