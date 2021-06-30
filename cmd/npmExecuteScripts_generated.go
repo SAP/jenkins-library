@@ -212,6 +212,7 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name: "repositoryUrl",
@@ -225,6 +226,7 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_repositoryUrl"),
 					},
 					{
 						Name: "repositoryPassword",
@@ -238,6 +240,7 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_repositoryPassword"),
 					},
 					{
 						Name: "repositoryUsername",
@@ -251,6 +254,7 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_repositoryUsername"),
 					},
 				},
 			},
