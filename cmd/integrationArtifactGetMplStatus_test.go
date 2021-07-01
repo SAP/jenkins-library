@@ -35,7 +35,6 @@ func TestRunIntegrationArtifactGetMplStatus(t *testing.T) {
 		config := integrationArtifactGetMplStatusOptions{
 			APIServiceKey:     apiServiceKey,
 			IntegrationFlowID: "flow1",
-			Platform:          "cf",
 		}
 
 		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactGetMplStatus", ResponseBody: ``, TestType: "Positive"}
@@ -68,7 +67,6 @@ func TestRunIntegrationArtifactGetMplStatus(t *testing.T) {
 		config := integrationArtifactGetMplStatusOptions{
 			APIServiceKey:     apiServiceKey,
 			IntegrationFlowID: "flow1",
-			Platform:          "cf",
 		}
 
 		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactGetMplStatus", ResponseBody: ``, TestType: "Negative"}

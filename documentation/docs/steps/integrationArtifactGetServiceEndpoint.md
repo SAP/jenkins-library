@@ -26,5 +26,4 @@ steps:
   integrationArtifactGetServiceEndpoint:
     cpiApiServiceKeyCredentialsId: 'MY_API_SERVICE_KEY'
     integrationFlowId: 'MY_INTEGRATION_FLOW_ID'
-    platform: cf
 ```
