@@ -71,7 +71,10 @@ type vaultClient interface {
 func (s *StepConfig) mixinVaultConfig(parameters []StepParameters, configs ...map[string]interface{}) {
 	for _, config := range configs {
 		s.mixIn(config, vaultFilter)
-		s.mixIn(config, getFilterForResourceReferences(parameters))
+		// when an empty filter is returned we skip the mixin call since an empty filter will allow everything
+		if referencesFilter := getFilterForResourceReferences(parameters); len(referencesFilter) > 0 {
+			s.mixIn(config, referencesFilter)
+		}
 	}
 }
 
