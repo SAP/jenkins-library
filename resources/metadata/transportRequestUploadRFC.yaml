@@ -29,6 +29,8 @@ spec:
         type: string
         aliases:
           - name: changeManagement/instance
+          - name: changeManagement/developmentInstance
+          - name: changeManagement/rfc/developmentInstance
         description: "AS ABAP instance number"
         scope:
           - PARAMETERS
@@ -64,6 +66,8 @@ spec:
         type: string
         aliases:
           - name: changeManagement/client
+          - name: changeManagement/developmentClient
+          - name: changeManagement/rfc/developmentClient
         description: "AS ABAP client number"
         scope:
           - PARAMETERS
