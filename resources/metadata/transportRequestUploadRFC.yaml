@@ -30,9 +30,6 @@ spec:
         aliases:
           - name: changeManagement/instance
           - name: changeManagement/rfc/developmentInstance
-            deprecated: true
-          - name: changeManagement/developmentInstance
-            deprecated: true
         description: "AS ABAP instance number"
         scope:
           - PARAMETERS
@@ -69,9 +66,6 @@ spec:
         aliases:
           - name: changeManagement/client
           - name: changeManagement/rfc/developmentClient
-            deprecated: true
-          - name: changeManagement/developmentClient
-            deprecated: true
         description: "AS ABAP client number"
         scope:
           - PARAMETERS
