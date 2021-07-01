@@ -187,9 +187,9 @@ func tryPostMessages(telemetryData MonitoringData, messages []log.Message) error
 
 	if resp.StatusCode != http.StatusOK {
 		// log it to stdout
-		log.Entry().Infof("%v: Splunk logging failed - %v", resp.Status, string(body))
 		rdr := io.LimitReader(resp.Body, 1000)
 		body, err := ioutil.ReadAll(rdr)
+		log.Entry().Infof("%v: Splunk logging failed - %v", resp.Status, string(body))
 		if err != nil {
 			return errors.Wrap(err, "Error reading response body from Splunk.")
 		}
