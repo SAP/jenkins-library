@@ -45,7 +45,9 @@ var (
 		vaultTestCredentialKeys,
 	}
 
-	rootPaths = []string{
+	// VaultRootPaths are the lookup paths piper tries to use during the vault lookup.
+	// A path is only used if it's variables can be interpolated from the config
+	VaultRootPaths = []string{
 		"$(vaultPath)",
 		"$(vaultBasePath)/$(vaultPipelineName)",
 		"$(vaultBasePath)/GROUP-SECRETS",
@@ -302,12 +304,12 @@ func lookupPath(client vaultClient, path string, param *StepParameters) *string 
 }
 
 func getSecretReferencePaths(reference *ResourceReference, config map[string]interface{}) []string {
-	retPaths := make([]string, 0, len(rootPaths))
+	retPaths := make([]string, 0, len(VaultRootPaths))
 	secretName := reference.Default
 	if providedName, ok := config[reference.Name].(string); ok && providedName != "" {
 		secretName = providedName
 	}
-	for _, rootPath := range rootPaths {
+	for _, rootPath := range VaultRootPaths {
 		fullPath := path.Join(rootPath, secretName)
 		retPaths = append(retPaths, fullPath)
 	}
