@@ -31,14 +31,6 @@ spec:
           - STAGES
           - STEPS
         mandatory: true
-      - name: platform
-        type: string
-        description: Specifies the running platform of the SAP Cloud platform integraion service
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        mandatory: false
   outputs:
     resources:
       - name: commonPipelineEnvironment
