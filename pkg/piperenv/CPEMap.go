@@ -1,6 +1,7 @@
 package piperenv
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -28,20 +29,20 @@ func (c *CPEMap) LoadFromDisk(path string) error {
 
 // WriteToDisk writes the CPEMap to a disk and uses rootDirectory as the starting point
 func (c CPEMap) WriteToDisk(rootDirectory string) error {
-	err := os.MkdirAll(rootDirectory, 0755)
+	err := os.MkdirAll(rootDirectory, 0777)
 	if err != nil {
 		return err
 	}
 
 	for k, v := range c {
 		entryPath := path.Join(rootDirectory, k)
-		err := os.MkdirAll(filepath.Dir(entryPath), 0755)
+		err := os.MkdirAll(filepath.Dir(entryPath), 0777)
 		if err != nil {
 			return err
 		}
 		// if v is a string no json marshalling is needed
 		if vString, ok := v.(string); ok {
-			err := ioutil.WriteFile(entryPath, []byte(vString), 0644)
+			err := ioutil.WriteFile(entryPath, []byte(vString), 0666)
 			if err != nil {
 				return err
 			}
@@ -53,7 +54,7 @@ func (c CPEMap) WriteToDisk(rootDirectory string) error {
 			return err
 		}
 
-		err = ioutil.WriteFile(fmt.Sprintf("%s.json", entryPath), jsonVal, 0644)
+		err = ioutil.WriteFile(fmt.Sprintf("%s.json", entryPath), jsonVal, 0666)
 		if err != nil {
 			return err
 		}
@@ -100,7 +101,9 @@ func readFileContent(fullPath string) (string, interface{}, error) {
 	if strings.HasSuffix(fullPath, ".json") {
 		// value is json encoded
 		var value interface{}
-		err = json.Unmarshal(fileContent, &value)
+		decoder := json.NewDecoder(bytes.NewReader(fileContent))
+		decoder.UseNumber()
+		err = decoder.Decode(&value)
 		if err != nil {
 			return "", nil, err
 		}

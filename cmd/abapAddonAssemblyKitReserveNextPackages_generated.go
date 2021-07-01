@@ -67,9 +67,11 @@ func AbapAddonAssemblyKitReserveNextPackagesCommand() *cobra.Command {
 		Long: `This step takes the list of Software Component Versions from the addonDescriptor in the commonPipelineEnvironment and determines the ABAP delivery packages.
 If a package does not exist yet in the package registry, it is created there. The response contains detail information for this package and a package status, which determines the next actions:
 "P": Package was created in the registry; production can be started / continued
-"R": Package exists and is already released; production is not needed and must be skipped
+"R": Package exists and is already released; production is not needed and will be skipped
 The steps waits until the status "P" or "R" is achieved.
-The name, type and namespace of each package is written back to the addonDescriptor in the commonPipelineEnvironment.`,
+The name, type and namespace of each package is written back to the addonDescriptor in the commonPipelineEnvironment.
+<br />
+For Terminology refer to the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
