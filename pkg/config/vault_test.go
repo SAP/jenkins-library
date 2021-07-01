@@ -30,6 +30,20 @@ func TestVaultConfigLoad(t *testing.T) {
 		assert.Equal(t, "value1", stepConfig.Config[secretName])
 	})
 
+	t.Run("Load secret from vault with path override", func(t *testing.T) {
+		vaultMock := &mocks.VaultMock{}
+		stepConfig := StepConfig{Config: map[string]interface{}{
+			"vaultPath": "team1",
+			secretNameOverrideKey: "overrideSecretName",
+		}}
+		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", secretNameOverrideKey, secretName)}
+		vaultData := map[string]string{secretName: "value1"}
+
+		vaultMock.On("GetKvSecret", path.Join("team1", "overrideSecretName")).Return(vaultData, nil)
+		resolveAllVaultReferences(&stepConfig, vaultMock, stepParams)
+		assert.Equal(t, "value1", stepConfig.Config[secretName])
+	})
+
 	t.Run("Secrets are not overwritten", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
 		stepConfig := StepConfig{Config: map[string]interface{}{
