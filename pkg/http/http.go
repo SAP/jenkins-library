@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/motemen/go-nuts/roundtime"
 	"github.com/pkg/errors"
@@ -146,7 +147,7 @@ func (c *Client) Upload(data UploadRequestData) (*http.Response, error) {
 		return &http.Response{}, errors.Wrapf(err, "error creating form file %v for field %v", data.File, data.FileFieldName)
 	}
 
-	_, err = io.Copy(fileWriter, data.FileContent)
+	_, err = piperutils.CopyData(fileWriter, data.FileContent)
 	if err != nil {
 		return &http.Response{}, errors.Wrapf(err, "unable to copy file content of %v into request body", data.File)
 	}

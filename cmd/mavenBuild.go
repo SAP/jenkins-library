@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -29,6 +30,10 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 	downloadClient := &piperhttp.Client{}
 
 	var flags = []string{"-update-snapshots", "--batch-mode"}
+
+	if len(config.Profiles) > 0 {
+		flags = append(flags, "--activate-profiles", strings.Join(config.Profiles, ","))
+	}
 
 	exists, _ := utils.FileExists("integration-tests/pom.xml")
 	if exists {
