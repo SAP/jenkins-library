@@ -8,12 +8,12 @@ spec:
   inputs:
     secrets:
       - name: iFlowServiceKeyCredentialsId
-        description: Jenkins secret text credential ID containing the service key to the Process Integration Runtime instance of plan 'integration-flow'
+        description: Jenkins secret text credential ID containing the service key to the Process Integration Runtime service instance of plan 'integration-flow'
         type: jenkins
     params:
       - name: iFlowServiceKey
         type: string
-        description: Service key JSON string to access the Process Integration Runtime instance of plan 'integration-flow'
+        description: Service key JSON string to access the Process Integration Runtime service instance of plan 'integration-flow'
         scope:
           - PARAMETERS
         mandatory: true
