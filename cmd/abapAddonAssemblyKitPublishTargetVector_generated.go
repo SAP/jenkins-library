@@ -35,7 +35,9 @@ func AbapAddonAssemblyKitPublishTargetVectorCommand() *cobra.Command {
 		Use:   STEP_NAME,
 		Short: "This step triggers the publication of the Target Vector according to the specified scope.",
 		Long: `This step reads the Target Vector ID from the addonDescriptor in the commonPipelineEnvironment and triggers the publication of the Target Vector.
-With targetVectorScope "T" the Target Vector will be published to the test environment and with targetVectorScope "P" it will be published to the productive environment.`,
+With targetVectorScope "T" the Target Vector will be published to the test environment and with targetVectorScope "P" it will be published to the productive environment.
+<br />
+For Terminology refer to the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
