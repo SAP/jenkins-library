@@ -532,7 +532,7 @@ func TestTriggerFortifyScan(t *testing.T) {
 		assert.Equal(t, 3, utils.numExecutions)
 
 		assert.Equal(t, "mvn", utils.executions[0].executable)
-		assert.Equal(t, []string{"--file", "./pom.xml", "-Dmdep.outputFile=fortify-execute-scan-cp.txt", "-DincludeScope=compile", "-DskipTests", "-Dmaven.javadoc.skip=true", "--fail-at-end", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "dependency:build-classpath", "package"}, utils.executions[0].parameters)
+		assert.Equal(t, []string{"--file", "./pom.xml", "-Dmdep.outputFile=fortify-execute-scan-cp.txt", "-Dfortify", "-DincludeScope=compile", "-DskipTests", "-Dmaven.javadoc.skip=true", "--fail-at-end", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "dependency:build-classpath", "package"}, utils.executions[0].parameters)
 
 		assert.Equal(t, "sourceanalyzer", utils.executions[1].executable)
 		assert.True(t, reflect.DeepEqual([]string{"-verbose", "-64", "-b", "test", "-Xmx4G", "-Xms2G", "-cp", "some.jar;someother.jar", "-exclude", "**/target/**/*:**/src/test/resources/**/*", "**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "src/main/resources/**/*", "src/main/java/**/*"}, utils.executions[1].parameters) || reflect.DeepEqual([]string{"-verbose", "-64", "-b", "test", "-Xmx4G", "-Xms2G", "-cp", "some.jar;someother.jar", "-exclude", "**/target/**/*;**/src/test/resources/**/*", "**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "src/main/resources/**/*", "src/main/java/**/*"}, utils.executions[1].parameters))
@@ -856,7 +856,7 @@ func TestAutoresolveClasspath(t *testing.T) {
 		result, err := autoresolveMavenClasspath(fortifyExecuteScanOptions{BuildDescriptorFile: "pom.xml"}, file, &utils)
 		assert.NoError(t, err)
 		assert.Equal(t, "mvn", utils.executions[0].executable, "Expected different executable")
-		assert.Equal(t, []string{"--file", "pom.xml", fmt.Sprintf("-Dmdep.outputFile=%v", file), "-DincludeScope=compile", "-DskipTests", "-Dmaven.javadoc.skip=true", "--fail-at-end", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "dependency:build-classpath", "package"}, utils.executions[0].parameters, "Expected different parameters")
+		assert.Equal(t, []string{"--file", "pom.xml", fmt.Sprintf("-Dmdep.outputFile=%v", file), "-Dfortify", "-DincludeScope=compile", "-DskipTests", "-Dmaven.javadoc.skip=true", "--fail-at-end", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "dependency:build-classpath", "package"}, utils.executions[0].parameters, "Expected different parameters")
 		assert.Equal(t, "some.jar;someother.jar", result, "Expected different result")
 	})
 }

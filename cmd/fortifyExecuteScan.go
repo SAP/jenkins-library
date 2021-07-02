@@ -657,6 +657,7 @@ func autoresolveMavenClasspath(config fortifyExecuteScanOptions, file string, ut
 func generateMavenFortifyDefines(config *fortifyExecuteScanOptions, file string) []string {
 	defines := []string{
 		fmt.Sprintf("-Dmdep.outputFile=%v", file),
+		"-Dfortify",
 		"-DincludeScope=compile",
 		"-DskipTests",
 		"-Dmaven.javadoc.skip=true",
