@@ -33,7 +33,7 @@ func TestVaultConfigLoad(t *testing.T) {
 	t.Run("Load secret from vault with path override", func(t *testing.T) {
 		vaultMock := &mocks.VaultMock{}
 		stepConfig := StepConfig{Config: map[string]interface{}{
-			"vaultPath": "team1",
+			"vaultPath":           "team1",
 			secretNameOverrideKey: "overrideSecretName",
 		}}
 		stepParams := []StepParameters{stepParam(secretName, "vaultSecret", secretNameOverrideKey, secretName)}
