@@ -83,7 +83,7 @@ func TestRunWhitesourceExecuteScan(t *testing.T) {
 		// test
 		err := runWhitesourceExecuteScan(&config, scan, utilsMock, systemMock, &cpe, &influx)
 		// assert
-		assert.EqualError(t, err, "no project with token 'no-such-project-token' found in Whitesource")
+		assert.EqualError(t, err, "failed to resolve and aggregate project name: failed to get project by token: no project with token 'no-such-project-token' found in Whitesource")
 		assert.Equal(t, "", config.ProjectName)
 		assert.Equal(t, "", scan.AggregateProjectName)
 	})
@@ -330,7 +330,7 @@ func TestResolveProjectIdentifiers(t *testing.T) {
 		// test
 		err := resolveProjectIdentifiers(&config, scan, utilsMock, systemMock)
 		// assert
-		assert.EqualError(t, err, "no product with name 'does-not-exist' found in Whitesource")
+		assert.EqualError(t, err, "error resolving product token: failed to get product by name: no product with name 'does-not-exist' found in Whitesource")
 	})
 	t.Run("product not found, created from pipeline", func(t *testing.T) {
 		// init

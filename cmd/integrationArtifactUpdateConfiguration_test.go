@@ -10,11 +10,16 @@ func TestRunIntegrationArtifactUpdateConfiguration(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Successfully update of Integration Flow configuration parameter test", func(t *testing.T) {
+		apiServiceKey := `{
+			"oauth": {
+				"url": "https://demo",
+				"clientid": "demouser",
+				"clientsecret": "******",
+				"tokenurl": "https://demo/oauth/token"
+			}
+		}`
 		config := integrationArtifactUpdateConfigurationOptions{
-			Host:                   "https://demo",
-			OAuthTokenProviderURL:  "https://demo/oauth/token",
-			Username:               "demouser",
-			Password:               "******",
+			APIServiceKey:          apiServiceKey,
 			IntegrationFlowID:      "flow1",
 			IntegrationFlowVersion: "1.0.1",
 			ParameterKey:           "myheader",
@@ -39,11 +44,16 @@ func TestRunIntegrationArtifactUpdateConfiguration(t *testing.T) {
 	})
 
 	t.Run("Failed case of Integration Flow configuration parameter Test", func(t *testing.T) {
+		apiServiceKey := `{
+			"oauth": {
+				"url": "https://demo",
+				"clientid": "demouser",
+				"clientsecret": "******",
+				"tokenurl": "https://demo/oauth/token"
+			}
+		}`
 		config := integrationArtifactUpdateConfigurationOptions{
-			Host:                   "https://demo",
-			OAuthTokenProviderURL:  "https://demo/oauth/token",
-			Username:               "demouser",
-			Password:               "******",
+			APIServiceKey:          apiServiceKey,
 			IntegrationFlowID:      "flow1",
 			IntegrationFlowVersion: "1.0.1",
 			ParameterKey:           "myheader",
@@ -57,11 +67,16 @@ func TestRunIntegrationArtifactUpdateConfiguration(t *testing.T) {
 	})
 
 	t.Run("Failed case of Integration Flow configuration parameter test with error body", func(t *testing.T) {
+		apiServiceKey := `{
+			"oauth": {
+				"url": "https://demo",
+				"clientid": "demouser",
+				"clientsecret": "******",
+				"tokenurl": "https://demo/oauth/token"
+			}
+		}`
 		config := integrationArtifactUpdateConfigurationOptions{
-			Host:                   "https://demo",
-			OAuthTokenProviderURL:  "https://demo/oauth/token",
-			Username:               "demouser",
-			Password:               "******",
+			APIServiceKey:          apiServiceKey,
 			IntegrationFlowID:      "flow1",
 			IntegrationFlowVersion: "1.0.1",
 			ParameterKey:           "myheader",

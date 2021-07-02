@@ -5,17 +5,21 @@ import groovy.transform.Field
 
 void call(Map parameters = [:]) {
     final script = checkScript(this, parameters) ?: this
-    String piperGoPath = parameters.piperGoPath ?: './piper'
-    Map cpe = script.commonPipelineEnvironment.getCPEMap(script)
-    if (!cpe) {
+    String piperGoPath = parameters?.piperGoPath ?: './piper'
+    Map cpe = script?.commonPipelineEnvironment?.getCPEMap(script)
+    if (cpe == null) {
         return
     }
-    def jsonMap = groovy.json.JsonOutput.toJson(cpe)
-    def writePipelineEnvCommand = """
-${piperGoPath} writePipelineEnv <<EOF
-${jsonMap}
-EOF
-"""
 
-    def output = script.sh(returnStdout: true, script: writePipelineEnvCommand)
+    def jsonMap = groovy.json.JsonOutput.toJson(cpe)
+    if (piperGoPath && jsonMap) {
+        withEnv(["PIPER_pipelineEnv=${jsonMap}"]) {
+            def output = script.sh(returnStdout: true, script: "${piperGoPath} writePipelineEnv")
+            if (parameters?.verbose) {
+                script.echo("wrote commonPipelineEnvironment: ${output}")
+            }
+        }
+    } else {
+        script.echo("can't write pipelineEnvironment: piperGoPath: ${piperGoPath} piperEnvironment ${jsonMap}")
+    }
 }

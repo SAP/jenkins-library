@@ -65,8 +65,9 @@ func AbapAddonAssemblyKitReleasePackagesCommand() *cobra.Command {
 		Use:   STEP_NAME,
 		Short: "This step releases the physical Delivery Packages",
 		Long: `This step takes the list of Software Component Versions from the addonDescriptor in the commonPipelineEnvironment.
-The physical Delivery Packages in status “L” are released and uploaded to the "ABAP CP" section in the SAP artifactory object
-store. The new status "R"eleased is written back to the addonDescriptor in the commonPipelineEnvironment.`,
+The physical Delivery Packages in status “L” are released. The new status "R"eleased is written back to the addonDescriptor in the commonPipelineEnvironment.
+<br />
+For Terminology refer to the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -149,6 +150,9 @@ func abapAddonAssemblyKitReleasePackagesMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "abapAddonAssemblyKitCredentialsId", Description: "Credential stored in Jenkins for the Addon Assembly Kit as a Service (AAKaaS) system", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "abapAddonAssemblyKitEndpoint",
@@ -157,6 +161,7 @@ func abapAddonAssemblyKitReleasePackagesMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     `https://apps.support.sap.com`,
 					},
 					{
 						Name:        "username",
@@ -165,6 +170,7 @@ func abapAddonAssemblyKitReleasePackagesMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_username"),
 					},
 					{
 						Name:        "password",
@@ -173,6 +179,7 @@ func abapAddonAssemblyKitReleasePackagesMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_password"),
 					},
 					{
 						Name: "addonDescriptor",
@@ -186,6 +193,7 @@ func abapAddonAssemblyKitReleasePackagesMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_addonDescriptor"),
 					},
 				},
 			},

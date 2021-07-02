@@ -19,11 +19,17 @@ func TestRunIntegrationArtifactUpload(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, exists)
 
+		apiServiceKey := `{
+			"oauth": {
+				"url": "https://demo",
+				"clientid": "demouser",
+				"clientsecret": "******",
+				"tokenurl": "https://demo/oauth/token"
+			}
+		}`
+
 		config := integrationArtifactUploadOptions{
-			Host:                   "https://demo",
-			OAuthTokenProviderURL:  "https://demo/oauth/token",
-			Username:               "demouser",
-			Password:               "******",
+			APIServiceKey:          apiServiceKey,
 			IntegrationFlowName:    "flow4",
 			IntegrationFlowID:      "flow4",
 			IntegrationFlowVersion: "1.0.4",
@@ -55,11 +61,16 @@ func TestRunIntegrationArtifactUpload(t *testing.T) {
 		exists, err := files.FileExists(path)
 		assert.NoError(t, err)
 		assert.True(t, exists)
+		apiServiceKey := `{
+			"oauth": {
+				"url": "https://demo",
+				"clientid": "demouser",
+				"clientsecret": "******",
+				"tokenurl": "https://demo/oauth/token"
+			}
+		}`
 		config := integrationArtifactUploadOptions{
-			Host:                   "https://demo",
-			OAuthTokenProviderURL:  "https://demo/oauth/token",
-			Username:               "demouser",
-			Password:               "******",
+			APIServiceKey:          apiServiceKey,
 			IntegrationFlowName:    "flow4",
 			IntegrationFlowID:      "flow4",
 			IntegrationFlowVersion: "1.0.4",
@@ -85,11 +96,16 @@ func TestRunIntegrationArtifactUpload(t *testing.T) {
 
 	t.Run("Failed case of Integration Flow Get Test", func(t *testing.T) {
 
+		apiServiceKey := `{
+			"oauth": {
+				"url": "https://demo",
+				"clientid": "demouser",
+				"clientsecret": "******",
+				"tokenurl": "https://demo/oauth/token"
+			}
+		}`
 		config := integrationArtifactUploadOptions{
-			Host:                   "https://demo",
-			OAuthTokenProviderURL:  "https://demo/oauth/token",
-			Username:               "demouser",
-			Password:               "******",
+			APIServiceKey:          apiServiceKey,
 			IntegrationFlowName:    "flow4",
 			IntegrationFlowID:      "flow4",
 			IntegrationFlowVersion: "1.0.4",
@@ -111,11 +127,16 @@ func TestRunIntegrationArtifactUpload(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, exists)
 
+		apiServiceKey := `{
+			"oauth": {
+				"url": "https://demo",
+				"clientid": "demouser",
+				"clientsecret": "******",
+				"tokenurl": "https://demo/oauth/token"
+			}
+		}`
 		config := integrationArtifactUploadOptions{
-			Host:                   "https://demo",
-			OAuthTokenProviderURL:  "https://demo/oauth/token",
-			Username:               "demouser",
-			Password:               "******",
+			APIServiceKey:          apiServiceKey,
 			IntegrationFlowName:    "flow4",
 			IntegrationFlowID:      "flow4",
 			IntegrationFlowVersion: "1.0.4",
@@ -137,11 +158,16 @@ func TestRunIntegrationArtifactUpload(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, exists)
 
+		apiServiceKey := `{
+			"oauth": {
+				"url": "https://demo",
+				"clientid": "demouser",
+				"clientsecret": "******",
+				"tokenurl": "https://demo/oauth/token"
+			}
+		}`
 		config := integrationArtifactUploadOptions{
-			Host:                   "https://demo",
-			OAuthTokenProviderURL:  "https://demo/oauth/token",
-			Username:               "demouser",
-			Password:               "******",
+			APIServiceKey:          apiServiceKey,
 			IntegrationFlowName:    "flow4",
 			IntegrationFlowID:      "flow4",
 			IntegrationFlowVersion: "1.0.4",

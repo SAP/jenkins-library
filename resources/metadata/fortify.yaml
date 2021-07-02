@@ -55,6 +55,14 @@ spec:
               - $(vaultPath)/fortify
               - $(vaultBasePath)/$(vaultPipelineName)/fortify
               - $(vaultBasePath)/GROUP-SECRETS/fortify
+      - name: buildDescriptorExcludeList
+        type: "[]string"
+        description: "List of build descriptors and therefore modules to exclude from the scan and assessment activities."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: ["unit-tests/pom.xml", "integration-tests/pom.xml"]
       - name: customScanVersion
         type: string
         description: Custom version of the Fortify project used as source.

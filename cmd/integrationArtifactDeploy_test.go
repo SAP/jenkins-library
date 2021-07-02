@@ -17,15 +17,19 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Successfull Integration Flow Deploy Test", func(t *testing.T) {
+		apiServiceKey := `{
+			"oauth": {
+				"url": "https://demo",
+				"clientid": "demouser",
+				"clientsecret": "******",
+				"tokenurl": "https://demo/oauth/token"
+			}
+		}`
 
 		config := integrationArtifactDeployOptions{
-			Host:                   "https://demo",
-			OAuthTokenProviderURL:  "https://demo/oauth/token",
-			Username:               "demouser",
-			Password:               "******",
+			APIServiceKey:          apiServiceKey,
 			IntegrationFlowID:      "flow1",
 			IntegrationFlowVersion: "1.0.1",
-			Platform:               "cf",
 		}
 
 		httpClient := httpMockCpis{CPIFunction: "", ResponseBody: ``, TestType: "PositiveAndDeployIntegrationDesigntimeArtifactResBody"}
@@ -46,14 +50,19 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 
 	t.Run("Trigger Failure for Integration Flow Deployment", func(t *testing.T) {
 
+		apiServiceKey := `{
+			"oauth": {
+				"url": "https://demo",
+				"clientid": "demouser",
+				"clientsecret": "******",
+				"tokenurl": "https://demo/oauth/token"
+			}
+		}`
+
 		config := integrationArtifactDeployOptions{
-			Host:                   "https://demo",
-			OAuthTokenProviderURL:  "https://demo/oauth/token",
-			Username:               "demouser",
-			Password:               "******",
+			APIServiceKey:          apiServiceKey,
 			IntegrationFlowID:      "flow1",
 			IntegrationFlowVersion: "1.0.1",
-			Platform:               "cf",
 		}
 
 		httpClient := httpMockCpis{CPIFunction: "FailIntegrationDesigntimeArtifactDeployment", ResponseBody: ``, TestType: "Negative"}
@@ -74,14 +83,19 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 
 	t.Run("Failed Integration Flow Deploy Test", func(t *testing.T) {
 
+		apiServiceKey := `{
+			"oauth": {
+				"url": "https://demo",
+				"clientid": "demouser",
+				"clientsecret": "******",
+				"tokenurl": "https://demo/oauth/token"
+			}
+		}`
+
 		config := integrationArtifactDeployOptions{
-			Host:                   "https://demo",
-			OAuthTokenProviderURL:  "https://demo/oauth/token",
-			Username:               "demouser",
-			Password:               "******",
+			APIServiceKey:          apiServiceKey,
 			IntegrationFlowID:      "flow1",
 			IntegrationFlowVersion: "1.0.1",
-			Platform:               "cf",
 		}
 
 		httpClient := httpMockCpis{CPIFunction: "", ResponseBody: ``, TestType: "NegativeAndDeployIntegrationDesigntimeArtifactResBody"}
@@ -94,19 +108,24 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 	t.Run("Successfull GetIntegrationArtifactDeployStatus Test", func(t *testing.T) {
 		clientOptions := piperhttp.ClientOptions{}
 		clientOptions.Token = fmt.Sprintf("Bearer %s", "Demo")
+		apiServiceKey := `{
+			"oauth": {
+				"url": "https://demo",
+				"clientid": "demouser",
+				"clientsecret": "******",
+				"tokenurl": "https://demo/oauth/token"
+			}
+		}`
+
 		config := integrationArtifactDeployOptions{
-			Host:                   "https://demo",
-			OAuthTokenProviderURL:  "https://demo/oauth/token",
-			Username:               "demouser",
-			Password:               "******",
+			APIServiceKey:          apiServiceKey,
 			IntegrationFlowID:      "flow1",
 			IntegrationFlowVersion: "1.0.1",
-			Platform:               "cf",
 		}
 
 		httpClient := httpMockCpis{CPIFunction: "GetIntegrationArtifactDeployStatus", Options: clientOptions, ResponseBody: ``, TestType: "PositiveAndDeployIntegrationDesigntimeArtifactResBody"}
 
-		resp, err := getIntegrationArtifactDeployStatus(&config, &httpClient)
+		resp, err := getIntegrationArtifactDeployStatus(&config, &httpClient, "https://demo")
 
 		assert.Equal(t, "STARTED", resp)
 
@@ -116,19 +135,24 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 	t.Run("Successfull GetIntegrationArtifactDeployError Test", func(t *testing.T) {
 		clientOptions := piperhttp.ClientOptions{}
 		clientOptions.Token = fmt.Sprintf("Bearer %s", "Demo")
+		apiServiceKey := `{
+			"oauth": {
+				"url": "https://demo",
+				"clientid": "demouser",
+				"clientsecret": "******",
+				"tokenurl": "https://demo/oauth/token"
+			}
+		}`
+
 		config := integrationArtifactDeployOptions{
-			Host:                   "https://demo",
-			OAuthTokenProviderURL:  "https://demo/oauth/token",
-			Username:               "demouser",
-			Password:               "******",
+			APIServiceKey:          apiServiceKey,
 			IntegrationFlowID:      "flow1",
 			IntegrationFlowVersion: "1.0.1",
-			Platform:               "cf",
 		}
 
 		httpClient := httpMockCpis{CPIFunction: "GetIntegrationArtifactDeployErrorDetails", Options: clientOptions, ResponseBody: ``, TestType: "PositiveAndGetDeployedIntegrationDesigntimeArtifactErrorResBody"}
 
-		resp, err := getIntegrationArtifactDeployError(&config, &httpClient)
+		resp, err := getIntegrationArtifactDeployError(&config, &httpClient, "https://demo")
 
 		assert.Equal(t, "{\"message\": \"java.lang.IllegalStateException: No credentials for 'smtp' found\"}", resp)
 

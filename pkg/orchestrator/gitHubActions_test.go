@@ -11,15 +11,21 @@ func TestGitHubActions(t *testing.T) {
 	t.Run("BranchBuild", func(t *testing.T) {
 		defer resetEnv(os.Environ())
 		os.Clearenv()
-		os.Setenv("GITHUB_ACTIONS", "true")
-		os.Setenv("GITHUB_REF", "main")
 		os.Unsetenv("GITHUB_HEAD_REF")
+		os.Setenv("GITHUB_ACTIONS", "true")
+		os.Setenv("GITHUB_REF", "refs/heads/feat/test-gh-actions")
+		os.Setenv("GITHUB_RUN_ID", "42")
+		os.Setenv("GITHUB_SHA", "abcdef42713")
+		os.Setenv("GITHUB_SERVER_URL", "github.com/")
+		os.Setenv("GITHUB_REPOSITORY", "foo/bar")
 
 		p, _ := NewOrchestratorSpecificConfigProvider()
-		c := p.GetBranchBuildConfig()
 
 		assert.False(t, p.IsPullRequest())
-		assert.Equal(t, "main", c.Branch)
+		assert.Equal(t, "github.com/foo/bar/actions/runs/42", p.GetBuildUrl())
+		assert.Equal(t, "feat/test-gh-actions", p.GetBranch())
+		assert.Equal(t, "abcdef42713", p.GetCommit())
+		assert.Equal(t, "github.com/foo/bar", p.GetRepoUrl())
 	})
 
 	t.Run("PR", func(t *testing.T) {
