@@ -5,10 +5,12 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
@@ -16,10 +18,10 @@ import (
 
 type transportRequestUploadRFCOptions struct {
 	Endpoint                   string `json:"endpoint,omitempty"`
-	Client                     string `json:"client,omitempty"`
 	Instance                   string `json:"instance,omitempty"`
 	Username                   string `json:"username,omitempty"`
 	Password                   string `json:"password,omitempty"`
+	Client                     string `json:"client,omitempty"`
 	ApplicationName            string `json:"applicationName,omitempty"`
 	ApplicationDescription     string `json:"applicationDescription,omitempty"`
 	AbapPackage                string `json:"abapPackage,omitempty"`
@@ -30,19 +32,48 @@ type transportRequestUploadRFCOptions struct {
 	TransportRequestID         string `json:"transportRequestId,omitempty"`
 }
 
-// TransportRequestUploadRFCCommand Uploads content to a transport request
+type transportRequestUploadRFCCommonPipelineEnvironment struct {
+	custom struct {
+		transportRequestID string
+	}
+}
+
+func (p *transportRequestUploadRFCCommonPipelineEnvironment) persist(path, resourceName string) {
+	content := []struct {
+		category string
+		name     string
+		value    interface{}
+	}{
+		{category: "custom", name: "transportRequestId", value: p.custom.transportRequestID},
+	}
+
+	errCount := 0
+	for _, param := range content {
+		err := piperenv.SetResourceParameter(path, resourceName, filepath.Join(param.category, param.name), param.value)
+		if err != nil {
+			log.Entry().WithError(err).Error("Error persisting piper environment.")
+			errCount++
+		}
+	}
+	if errCount > 0 {
+		log.Entry().Fatal("failed to persist Piper environment")
+	}
+}
+
+// TransportRequestUploadRFCCommand Uploads a UI5 application as ZIP file to the ABAP system via RFC connections.
 func TransportRequestUploadRFCCommand() *cobra.Command {
 	const STEP_NAME = "transportRequestUploadRFC"
 
 	metadata := transportRequestUploadRFCMetadata()
 	var stepConfig transportRequestUploadRFCOptions
 	var startTime time.Time
+	var commonPipelineEnvironment transportRequestUploadRFCCommonPipelineEnvironment
 	var logCollector *log.CollectorHook
 
 	var createTransportRequestUploadRFCCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Uploads content to a transport request",
-		Long:  `Uploads content to a transport request.`,
+		Short: "Uploads a UI5 application as ZIP file to the ABAP system via RFC connections.",
+		Long:  `This step uploads a UI5 application as ZIP file to the ABAP system via RFC connections.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -77,6 +108,7 @@ func TransportRequestUploadRFCCommand() *cobra.Command {
 			telemetryData.ErrorCode = "1"
 			handler := func() {
 				config.RemoveVaultSecretFiles()
+				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
@@ -94,7 +126,7 @@ func TransportRequestUploadRFCCommand() *cobra.Command {
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			transportRequestUploadRFC(stepConfig, &telemetryData)
+			transportRequestUploadRFC(stepConfig, &telemetryData, &commonPipelineEnvironment)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
@@ -105,19 +137,19 @@ func TransportRequestUploadRFCCommand() *cobra.Command {
 }
 
 func addTransportRequestUploadRFCFlags(cmd *cobra.Command, stepConfig *transportRequestUploadRFCOptions) {
-	cmd.Flags().StringVar(&stepConfig.Endpoint, "endpoint", os.Getenv("PIPER_endpoint"), "Service endpoint")
-	cmd.Flags().StringVar(&stepConfig.Client, "client", os.Getenv("PIPER_client"), "AS ABAP client number")
+	cmd.Flags().StringVar(&stepConfig.Endpoint, "endpoint", os.Getenv("PIPER_endpoint"), "Service endpoint, Application server URL")
 	cmd.Flags().StringVar(&stepConfig.Instance, "instance", os.Getenv("PIPER_instance"), "AS ABAP instance number")
-	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "Deploy user")
-	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for the deploy user")
-	cmd.Flags().StringVar(&stepConfig.ApplicationName, "applicationName", os.Getenv("PIPER_applicationName"), "Name of the application.")
-	cmd.Flags().StringVar(&stepConfig.ApplicationDescription, "applicationDescription", os.Getenv("PIPER_applicationDescription"), "Description of the application.")
-	cmd.Flags().StringVar(&stepConfig.AbapPackage, "abapPackage", os.Getenv("PIPER_abapPackage"), "ABAP package name of your application")
-	cmd.Flags().StringVar(&stepConfig.ApplicationURL, "applicationUrl", os.Getenv("PIPER_applicationUrl"), "URL where to find the UI5 package to upload to the transport request")
+	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "Service user for uploading to the ABAP backend via RFC")
+	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Service user password for uploading to the ABAP backend via RFC")
+	cmd.Flags().StringVar(&stepConfig.Client, "client", os.Getenv("PIPER_client"), "AS ABAP client number")
+	cmd.Flags().StringVar(&stepConfig.ApplicationName, "applicationName", os.Getenv("PIPER_applicationName"), "Name of the UI5 application")
+	cmd.Flags().StringVar(&stepConfig.ApplicationDescription, "applicationDescription", os.Getenv("PIPER_applicationDescription"), "Description of the UI5 application")
+	cmd.Flags().StringVar(&stepConfig.AbapPackage, "abapPackage", os.Getenv("PIPER_abapPackage"), "ABAP package name of the UI5 application")
+	cmd.Flags().StringVar(&stepConfig.ApplicationURL, "applicationUrl", os.Getenv("PIPER_applicationUrl"), "URL of the UI5 application package to upload to the ABAP backend via RFC")
 	cmd.Flags().StringVar(&stepConfig.CodePage, "codePage", `UTF-8`, "Code page")
 	cmd.Flags().BoolVar(&stepConfig.AcceptUnixStyleLineEndings, "acceptUnixStyleLineEndings", true, "If unix style line endings should be accepted")
 	cmd.Flags().BoolVar(&stepConfig.FailUploadOnWarning, "failUploadOnWarning", true, "If the upload should fail in case the log contains warnings")
-	cmd.Flags().StringVar(&stepConfig.TransportRequestID, "transportRequestId", os.Getenv("PIPER_transportRequestId"), "Transport request id")
+	cmd.Flags().StringVar(&stepConfig.TransportRequestID, "transportRequestId", os.Getenv("PIPER_transportRequestId"), "ID of the transport request to which the UI5 application is uploaded")
 
 	cmd.MarkFlagRequired("endpoint")
 	cmd.MarkFlagRequired("username")
@@ -125,7 +157,6 @@ func addTransportRequestUploadRFCFlags(cmd *cobra.Command, stepConfig *transport
 	cmd.MarkFlagRequired("applicationName")
 	cmd.MarkFlagRequired("abapPackage")
 	cmd.MarkFlagRequired("applicationUrl")
-	cmd.MarkFlagRequired("abapPackage")
 	cmd.MarkFlagRequired("transportRequestId")
 }
 
@@ -135,12 +166,12 @@ func transportRequestUploadRFCMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "transportRequestUploadRFC",
 			Aliases:     []config.Alias{{Name: "transportRequestUploadFile", Deprecated: false}},
-			Description: "Uploads content to a transport request",
+			Description: "Uploads a UI5 application as ZIP file to the ABAP system via RFC connections.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "uploadCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing user and password to authenticate against the ABAP backend.", Type: "jenkins", Aliases: []config.Alias{{Name: "changeManagement/credentialsId", Deprecated: false}}},
+					{Name: "uploadCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing user and password to authenticate against the ABAP backend", Type: "jenkins", Aliases: []config.Alias{{Name: "changeManagement/credentialsId", Deprecated: false}}},
 				},
 				Parameters: []config.StepParameters{
 					{
@@ -153,40 +184,52 @@ func transportRequestUploadRFCMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_endpoint"),
 					},
 					{
-						Name:        "client",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "changeManagement/rfc/developmentClient"}},
-						Default:     os.Getenv("PIPER_client"),
-					},
-					{
 						Name:        "instance",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "changeManagement/rfc/developmentInstance"}},
+						Aliases:     []config.Alias{{Name: "changeManagement/instance"}, {Name: "changeManagement/rfc/developmentInstance"}},
 						Default:     os.Getenv("PIPER_instance"),
 					},
 					{
-						Name:        "username",
+						Name: "username",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "uploadCredentialsId",
+								Param: "username",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_username"),
+					},
+					{
+						Name: "password",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "uploadCredentialsId",
+								Param: "password",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_password"),
+					},
+					{
+						Name:        "client",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_username"),
-					},
-					{
-						Name:        "password",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_password"),
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "changeManagement/client"}, {Name: "changeManagement/rfc/developmentClient"}},
+						Default:     os.Getenv("PIPER_client"),
 					},
 					{
 						Name:        "applicationName",
@@ -225,15 +268,6 @@ func transportRequestUploadRFCMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_applicationUrl"),
 					},
 					{
-						Name:        "abapPackage",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_abapPackage"),
-					},
-					{
 						Name:        "codePage",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
@@ -261,13 +295,32 @@ func transportRequestUploadRFCMetadata() config.StepData {
 						Default:     true,
 					},
 					{
-						Name:        "transportRequestId",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_transportRequestId"),
+						Name: "transportRequestId",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/transportRequestId",
+							},
+						},
+						Scope:     []string{"PARAMETERS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_transportRequestId"),
+					},
+				},
+			},
+			Containers: []config.Container{
+				{Name: "rfcclient", Image: "rfc-client"},
+			},
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{
+						Name: "commonPipelineEnvironment",
+						Type: "piperEnvironment",
+						Parameters: []map[string]interface{}{
+							{"Name": "custom/transportRequestId"},
+						},
 					},
 				},
 			},
