@@ -27,7 +27,6 @@ func mavenBuild(config mavenBuildOptions, telemetryData *telemetry.CustomData) {
 }
 
 func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomData, utils maven.Utils) error {
-	/* downloadClient := &piperhttp.Client{} */
 
 	var flags = []string{"-update-snapshots", "--batch-mode"}
 
@@ -89,9 +88,6 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 		if config.Publish && !config.Verify {
 			log.Entry().Infof("publish detected, running mvn deploy")
 
-			/* runner := &command.Command{}
-			fileUtils := &piperutils.Files{} */
-
 			if (len(config.AltDeploymentRepositoryID) > 0) && (len(config.AltDeploymentRepositoryPassword) > 0) && (len(config.AltDeploymentRepositoryUser) > 0) {
 				projectSettingsFilePath, err := createOrUpdateProjectSettingsXML(config.ProjectSettingsFile, config.AltDeploymentRepositoryID, config.AltDeploymentRepositoryUser, config.AltDeploymentRepositoryPassword, utils)
 				if err != nil {
@@ -105,10 +101,15 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 				deployFlags = append(deployFlags, "-DaltDeploymentRepository="+config.AltDeploymentRepositoryID+"::default::"+config.AltDeploymentRepositoryURL)
 			}
 
-			/* if err := loadRemoteRepoCertificates(config.CustomTLSCertificateLinks, downloadClient, &deployFlags, runner, fileUtils); err != nil {
-				log.SetErrorCategory(log.ErrorInfrastructure)
-				return err
-			} */
+			downloadClient := &piperhttp.Client{}
+			runner := &command.Command{}
+			fileUtils := &piperutils.Files{}
+			if len(config.CustomTLSCertificateLinks) > 0 {
+				if err := loadRemoteRepoCertificates(config.CustomTLSCertificateLinks, downloadClient, &deployFlags, runner, fileUtils); err != nil {
+					log.SetErrorCategory(log.ErrorInfrastructure)
+					return err
+				}
+			}
 
 			mavenOptions.Flags = deployFlags
 			mavenOptions.Goals = []string{"deploy"}
@@ -139,6 +140,11 @@ func createOrUpdateProjectSettingsXML(projectSettingsFile string, altDeploymentR
 }
 
 func loadRemoteRepoCertificates(certificateList []string, client piperhttp.Downloader, flags *[]string, runner command.ExecRunner, fileUtils piperutils.FileUtils) error {
+	if err := fileUtils.Chdir("$JAVA_HOME"); err != nil {
+		workingDirectory := getWorkingDirForTrustStore()
+		log.Entry().Infof("using trust store %s", workingDirectory)
+	}
+
 	trustStore := filepath.Join(getWorkingDirForTrustStore(), ".pipeline", "keystore.jks")
 	log.Entry().Infof("using trust store %s", trustStore)
 
