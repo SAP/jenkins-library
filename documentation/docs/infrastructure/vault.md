@@ -46,30 +46,21 @@ the key value engine.
 
 ## Pipeline Configuration
 
-For pipelines to actually use the secrets stored in Vault you need to adjust your `config.yml`
+For pipelines to actually use the secrets stored in Vault you need to adjust your `config.yml`:
 
 ```yml
 general:
   ...
-  vaultAppRoleTokenCredentialsId: '<JENKINS_CREDENTIAL_ID_FOR_VAULT_APPROLE_ROLE_ID>'
-  vaultAppRoleSecretTokenCredentialsId: 'JENKINS_CREDENTIAL_ID_FOR_VAULT_APPROLE_SECRET_ID'
-  vaultPath: 'kv/my-pipeline' # the path under which your jenkins secrets are stored
   vaultServerUrl: '<YOUR_VAULT_SERVER_URL>'
   vaultNamespace: '<YOUR_NAMESPACE_NAME>' # if you are not using vault's namespace feature you can remove this line
+  vaultPath: 'kv/my-pipeline' # the path under which your jenkins secrets are stored
   ...
 ```
 
-Or if you chose to use Vault's token authentication then your  `config.yml` should look something like this.
+To authenticate you need to provide `PIPER_vaultAppRoleID` and `PIPER_vaultAppRoleSecretID` if you use app role authentication or `PIPER_vaultToken` if you use token authentication.
 
-```yaml
-general:
-...
-vaultTokenCredentialsId: '<JENKINS_CREDENTIAL_ID_FOR_YOUR_VAULT_TOKEN>'
-vaultPath: 'kv/my-pipeline' # the path under which your jenkins secrets are stored
-vaultServerUrl: '<YOUR_VAULT_SERVER_URL>'
-vaultNamespace: '<YOUR_NAMESPACE_NAME>' # if you are not using vault's namespace feature you can remove this line
-...
-```
+!!! note "Jenkins"
+    When running a step via the Jenkins library you can use Jenkins credentials for pass this values. Use `vaultAppRoleTokenCredentialsId` and `vaultAppRoleSecretTokenCredentialsId` or `vaultTokenCredentialsId` in your `config.yml`.
 
 ## Configuring the Secret Lookup
 

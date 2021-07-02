@@ -11,6 +11,7 @@ import (
 	"syscall"
 
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/pkg/errors"
 )
 
@@ -18,6 +19,7 @@ import (
 type Command struct {
 	ErrorCategoryMapping map[string][]string
 	dir                  string
+	stdin                io.Reader
 	stdout               io.Writer
 	stderr               io.Writer
 	env                  []string
@@ -28,6 +30,7 @@ type runner interface {
 	SetDir(dir string)
 	SetEnv(env []string)
 	AppendEnv(env []string)
+	Stdin(in io.Reader)
 	Stdout(out io.Writer)
 	Stderr(err io.Writer)
 	GetStdout() io.Writer
@@ -60,6 +63,11 @@ func (c *Command) SetEnv(env []string) {
 // AppendEnv appends environment variables to be used for execution
 func (c *Command) AppendEnv(env []string) {
 	c.env = append(c.env, env...)
+}
+
+// Stdin ..
+func (c *Command) Stdin(stdin io.Reader) {
+	c.stdin = stdin
 }
 
 // Stdout ..
@@ -127,6 +135,10 @@ func (c *Command) RunExecutable(executable string, params ...string) error {
 
 	appendEnvironment(cmd, c.env)
 
+	if c.stdin != nil {
+		cmd.Stdin = c.stdin
+	}
+
 	if err := c.runCmd(cmd); err != nil {
 		return errors.Wrapf(err, "running command '%v' failed", executable)
 	}
@@ -149,6 +161,10 @@ func (c *Command) RunExecutableInBackground(executable string, params ...string)
 	log.Entry().Infof("running command: %v %v", executable, strings.Join(params, (" ")))
 
 	appendEnvironment(cmd, c.env)
+
+	if c.stdin != nil {
+		cmd.Stdin = c.stdin
+	}
 
 	execution, err := c.startCmd(cmd)
 
@@ -235,12 +251,12 @@ func (c *Command) startCmd(cmd *exec.Cmd) (*execution, error) {
 	}
 
 	go func() {
-		_, execution.errCopyStdout = io.Copy(c.stdout, srcOut)
+		_, execution.errCopyStdout = piperutils.CopyData(c.stdout, srcOut)
 		execution.wg.Done()
 	}()
 
 	go func() {
-		_, execution.errCopyStderr = io.Copy(c.stderr, srcErr)
+		_, execution.errCopyStderr = piperutils.CopyData(c.stderr, srcErr)
 		execution.wg.Done()
 	}()
 
@@ -360,5 +376,6 @@ func cmdPipes(cmd *exec.Cmd) (io.ReadCloser, io.ReadCloser, error) {
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "getting Stderr pipe failed")
 	}
+
 	return stdout, stderr, nil
 }

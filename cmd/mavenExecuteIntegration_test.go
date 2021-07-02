@@ -36,6 +36,7 @@ func TestHappyPathIntegrationTests(t *testing.T) {
 	config := mavenExecuteIntegrationOptions{
 		Retry:     2,
 		ForkCount: "1C",
+		Goal:      "post-integration-test",
 	}
 
 	err := runMavenExecuteIntegration(&config, utils)
@@ -51,7 +52,7 @@ func TestHappyPathIntegrationTests(t *testing.T) {
 		"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
 		"--batch-mode",
 		"org.jacoco:jacoco-maven-plugin:prepare-agent",
-		"test",
+		"post-integration-test",
 	}
 
 	assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: expectedParameters1}, utils.ExecMockRunner.Calls[0])

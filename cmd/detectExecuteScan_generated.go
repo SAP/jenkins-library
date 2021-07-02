@@ -9,6 +9,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
@@ -25,8 +26,9 @@ type detectExecuteScanOptions struct {
 	ServerURL                  string   `json:"serverUrl,omitempty"`
 	Groups                     []string `json:"groups,omitempty"`
 	FailOn                     []string `json:"failOn,omitempty"`
-	Version                    string   `json:"version,omitempty"`
 	VersioningModel            string   `json:"versioningModel,omitempty"`
+	Version                    string   `json:"version,omitempty"`
+	CustomScanVersion          string   `json:"customScanVersion,omitempty"`
 	ProjectSettingsFile        string   `json:"projectSettingsFile,omitempty"`
 	GlobalSettingsFile         string   `json:"globalSettingsFile,omitempty"`
 	M2Path                     string   `json:"m2Path,omitempty"`
@@ -46,6 +48,7 @@ func DetectExecuteScanCommand() *cobra.Command {
 	metadata := detectExecuteScanMetadata()
 	var stepConfig detectExecuteScanOptions
 	var startTime time.Time
+	var logCollector *log.CollectorHook
 
 	var createDetectExecuteScanCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -74,6 +77,11 @@ Please configure your BlackDuck server Url using the serverUrl parameter and the
 				log.RegisterHook(&sentryHook)
 			}
 
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
+				log.RegisterHook(logCollector)
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -84,10 +92,20 @@ Please configure your BlackDuck server Url using the serverUrl parameter and the
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
+				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunk.Send(&telemetryData, logCollector)
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunk.Initialize(GeneralConfig.CorrelationID,
+					GeneralConfig.HookConfig.SplunkConfig.Dsn,
+					GeneralConfig.HookConfig.SplunkConfig.Token,
+					GeneralConfig.HookConfig.SplunkConfig.Index,
+					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+			}
 			detectExecuteScan(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -110,8 +128,9 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().StringVar(&stepConfig.ServerURL, "serverUrl", os.Getenv("PIPER_serverUrl"), "Server URL to the Synopsis Detect (formerly BlackDuck) Server.")
 	cmd.Flags().StringSliceVar(&stepConfig.Groups, "groups", []string{}, "Users groups to be assigned for the Project")
 	cmd.Flags().StringSliceVar(&stepConfig.FailOn, "failOn", []string{`BLOCKER`}, "Mark the current build as fail based on the policy categories applied.")
-	cmd.Flags().StringVar(&stepConfig.Version, "version", os.Getenv("PIPER_version"), "Defines the version number of the artifact being build in the pipeline. It is used as source for the Detect version.")
 	cmd.Flags().StringVar(&stepConfig.VersioningModel, "versioningModel", `major`, "The versioning model used for result reporting (based on the artifact version). Example 1.2.3 using `major` will result in version 1")
+	cmd.Flags().StringVar(&stepConfig.Version, "version", os.Getenv("PIPER_version"), "Defines the version number of the artifact being build in the pipeline. It is used as source for the Detect version.")
+	cmd.Flags().StringVar(&stepConfig.CustomScanVersion, "customScanVersion", os.Getenv("PIPER_customScanVersion"), "A custom version used along with the uploaded scan results.")
 	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Path or url to the mvn settings file that should be used as project settings file.")
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Path or url to the mvn settings file that should be used as global settings file")
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
@@ -138,6 +157,9 @@ func detectExecuteScanMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "detectTokenCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing the API token used to authenticate with the Synopsis Detect (formerly BlackDuck) Server.", Type: "jenkins", Aliases: []config.Alias{{Name: "apiTokenCredentialsId", Deprecated: false}}},
+				},
 				Resources: []config.StepResources{
 					{Name: "buildDescriptor", Type: "stash"},
 					{Name: "checkmarx", Type: "stash"},
@@ -161,6 +183,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{{Name: "blackduckToken"}, {Name: "detectToken"}, {Name: "apiToken"}, {Name: "detect/apiToken"}},
+						Default:   os.Getenv("PIPER_token"),
 					},
 					{
 						Name:        "codeLocation",
@@ -169,6 +192,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_codeLocation"),
 					},
 					{
 						Name:        "projectName",
@@ -177,6 +201,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "detect/projectName"}},
+						Default:     os.Getenv("PIPER_projectName"),
 					},
 					{
 						Name:        "scanners",
@@ -185,6 +210,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "detect/scanners"}},
+						Default:     []string{`signature`},
 					},
 					{
 						Name:        "scanPaths",
@@ -193,6 +219,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "detect/scanPaths"}},
+						Default:     []string{`.`},
 					},
 					{
 						Name:        "dependencyPath",
@@ -201,6 +228,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "detect/dependencyPath"}},
+						Default:     `.`,
 					},
 					{
 						Name:        "unmap",
@@ -209,6 +237,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "detect/unmap"}},
+						Default:     false,
 					},
 					{
 						Name:        "scanProperties",
@@ -217,6 +246,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "detect/scanProperties"}},
+						Default:     []string{`--blackduck.signature.scanner.memory=4096`, `--detect.timeout=6000`, `--blackduck.trust.cert=true`, `--logging.level.com.synopsys.integration=DEBUG`, `--detect.maven.excluded.scopes=test`},
 					},
 					{
 						Name:        "serverUrl",
@@ -225,6 +255,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "detect/serverUrl"}},
+						Default:     os.Getenv("PIPER_serverUrl"),
 					},
 					{
 						Name:        "groups",
@@ -233,6 +264,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "detect/groups"}},
+						Default:     []string{},
 					},
 					{
 						Name:        "failOn",
@@ -241,6 +273,16 @@ func detectExecuteScanMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "detect/failOn"}},
+						Default:     []string{`BLOCKER`},
+					},
+					{
+						Name:        "versioningModel",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `major`,
 					},
 					{
 						Name: "version",
@@ -254,14 +296,16 @@ func detectExecuteScanMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "projectVersion"}, {Name: "detect/projectVersion"}},
+						Default:   os.Getenv("PIPER_version"),
 					},
 					{
-						Name:        "versioningModel",
+						Name:        "customScanVersion",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
+						Scope:       []string{"GENERAL", "STAGES", "STEPS", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_customScanVersion"),
 					},
 					{
 						Name:        "projectSettingsFile",
@@ -270,6 +314,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile"}},
+						Default:     os.Getenv("PIPER_projectSettingsFile"),
 					},
 					{
 						Name:        "globalSettingsFile",
@@ -278,6 +323,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile"}},
+						Default:     os.Getenv("PIPER_globalSettingsFile"),
 					},
 					{
 						Name:        "m2Path",
@@ -286,6 +332,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
+						Default:     os.Getenv("PIPER_m2Path"),
 					},
 					{
 						Name:        "installArtifacts",
@@ -294,6 +341,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name:        "includedPackageManagers",
@@ -302,6 +350,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "detect/includedPackageManagers"}},
+						Default:     []string{},
 					},
 					{
 						Name:        "excludedPackageManagers",
@@ -310,6 +359,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "detect/excludedPackageManagers"}},
+						Default:     []string{},
 					},
 					{
 						Name:        "mavenExcludedScopes",
@@ -318,6 +368,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "detect/mavenExcludedScopes"}},
+						Default:     []string{},
 					},
 					{
 						Name:        "detectTools",
@@ -326,6 +377,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "detect/detectTools"}},
+						Default:     []string{},
 					},
 					{
 						Name:        "scanOnChanges",
@@ -334,6 +386,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name:        "customEnvironmentVariables",
@@ -342,6 +395,7 @@ func detectExecuteScanMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 				},
 			},

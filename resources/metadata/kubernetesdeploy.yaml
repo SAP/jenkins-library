@@ -40,6 +40,9 @@ spec:
         type: jenkins
       - name: dockerCredentialsId
         type: jenkins
+      - name: dockerConfigJsonCredentialsId
+        description: Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)).
+        type: jenkins
     resources:
       - name: deployDescriptor
         type: stash
@@ -243,9 +246,9 @@ spec:
             type: secret
           - type: vaultSecretFile
             paths:
-            - $(vaultPath)/kube-config
-            - $(vaultBasePath)/$(vaultPipelineName)/kube-config
-            - $(vaultBasePath)/GROUP-SECRETS/kube-config
+              - $(vaultPath)/kube-config
+              - $(vaultBasePath)/$(vaultPipelineName)/kube-config
+              - $(vaultBasePath)/GROUP-SECRETS/kube-config
       - name: kubeContext
         type: string
         description: Defines the context to use from the \"kubeconfig\" file.
@@ -285,8 +288,24 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: dockerConfigJSON
+        type: string
+        description: Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).
+        scope:
+          - PARAMETERS
+        secret: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/dockerConfigJSON
+          - name: dockerConfigJsonCredentialsId
+            type: secret
+          - type: vaultSecretFile
+            paths:
+              - $(vaultPath)/docker-config
+              - $(vaultBasePath)/$(vaultPipelineName)/docker-config
+              - $(vaultBasePath)/GROUP-SECRETS/docker-config
   containers:
-    - image: dtzar/helm-kubectl:3.1.2
+    - image: dtzar/helm-kubectl:3.4.1
       workingDir: /config
       options:
         - name: -u

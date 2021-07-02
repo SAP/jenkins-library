@@ -16,6 +16,7 @@ type ExecMockRunner struct {
 	Env                 []string
 	ExitCode            int
 	Calls               []ExecCall
+	stdin               io.Reader
 	stdout              io.Writer
 	stderr              io.Writer
 	StdoutReturn        map[string]string
@@ -39,6 +40,7 @@ type ShellMockRunner struct {
 	ExitCode            int
 	Calls               []string
 	Shell               []string
+	stdin               io.Reader
 	stdout              io.Writer
 	stderr              io.Writer
 	StdoutReturn        map[string]string
@@ -84,6 +86,10 @@ func (m *ExecMockRunner) RunExecutableInBackground(e string, p ...string) (comma
 		return nil, err
 	}
 	return &execution, nil
+}
+
+func (m *ExecMockRunner) Stdin(in io.Reader) {
+	m.stdin = in
 }
 
 func (m *ExecMockRunner) Stdout(out io.Writer) {
@@ -191,6 +197,10 @@ func handleCall(call string, stdoutReturn map[string]string, shouldFailOnCommand
 	}
 
 	return nil
+}
+
+func (m *ShellMockRunner) Stdin(in io.Reader) {
+	m.stdin = in
 }
 
 func (m *ShellMockRunner) Stdout(out io.Writer) {
