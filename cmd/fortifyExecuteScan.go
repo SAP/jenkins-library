@@ -657,6 +657,7 @@ func autoresolveMavenClasspath(config fortifyExecuteScanOptions, file string, ut
 func generateMavenFortifyDefines(config *fortifyExecuteScanOptions, file string) []string {
 	defines := []string{
 		fmt.Sprintf("-Dmdep.outputFile=%v", file),
+		// Parameter to indicate to maven build that the fortify step is the trigger, can be used for optimizations
 		"-Dfortify",
 		"-DincludeScope=compile",
 		"-DskipTests",
