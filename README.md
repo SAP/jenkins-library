@@ -2,6 +2,7 @@
 [![Test Coverage](https://api.codeclimate.com/v1/badges/0e6a23344616e29b4ed0/test_coverage)](https://codeclimate.com/github/SAP/jenkins-library/test_coverage)
 [![Go Report Card](https://goreportcard.com/badge/github.com/SAP/jenkins-library)](https://goreportcard.com/report/github.com/SAP/jenkins-library)
 [![REUSE status](https://api.reuse.software/badge/github.com/SAP/jenkins-library)](https://api.reuse.software/info/github.com/SAP/jenkins-library)
+[![PkgGoDev](https://pkg.go.dev/badge/mod/github.com/SAP/jenkins-library)](https://pkg.go.dev/github.com/SAP/jenkins-library)
 
 # Project Piper Repository
 
