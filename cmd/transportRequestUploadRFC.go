@@ -34,25 +34,30 @@ func newTransportRequestUploadRFCUtils() transportRequestUploadRFCUtils {
 	return &utils
 }
 
-func transportRequestUploadRFC(config transportRequestUploadRFCOptions, telemetryData *telemetry.CustomData) {
+func transportRequestUploadRFC(config transportRequestUploadRFCOptions,
+	telemetryData *telemetry.CustomData,
+	commonPipelineEnvironment *transportRequestUploadRFCCommonPipelineEnvironment) {
 	// Utils can be used wherever the command.ExecRunner interface is expected.
 	// It can also be used for example as a mavenExecRunner.
 	utils := newTransportRequestUploadRFCUtils()
 
-	action := rfc.UploadAction{}
 	// For HTTP calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	// and use a  &piperhttp.Client{} in a custom system
 	// Example: step checkmarxExecuteScan.go
 
 	// Error situations should be bubbled up until they reach the line below which will then stop execution
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
-	err := runTransportRequestUploadRFC(&config, &action, telemetryData, utils)
+	err := runTransportRequestUploadRFC(&config, &rfc.UploadAction{}, telemetryData, utils, commonPipelineEnvironment)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runTransportRequestUploadRFC(config *transportRequestUploadRFCOptions, action rfc.Upload, telemetryData *telemetry.CustomData, cmd rfc.Exec) error {
+func runTransportRequestUploadRFC(config *transportRequestUploadRFCOptions,
+	action rfc.Upload,
+	telemetryData *telemetry.CustomData,
+	utils rfc.Exec,
+	commonPipelineEnvironment *transportRequestUploadRFCCommonPipelineEnvironment) error {
 
 	action.WithConnection(
 		rfc.Connection{
@@ -81,5 +86,15 @@ func runTransportRequestUploadRFC(config *transportRequestUploadRFCOptions, acti
 	action.WithTransportRequestID(config.TransportRequestID)
 	action.WithApplicationURL(config.ApplicationURL)
 
-	return action.Perform(cmd)
+	commonPipelineEnvironment.custom.transportRequestID = config.TransportRequestID
+
+	err := action.Perform(utils)
+
+	if err == nil {
+		log.Entry().Infof("Upload of artifact '%s' to ABAP backend succeeded (TransportRequestId: '%s').",
+			config.ApplicationURL,
+			config.TransportRequestID,
+		)
+	}
+	return err
 }

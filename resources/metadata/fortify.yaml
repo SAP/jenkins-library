@@ -55,6 +55,14 @@ spec:
               - $(vaultPath)/fortify
               - $(vaultBasePath)/$(vaultPipelineName)/fortify
               - $(vaultBasePath)/GROUP-SECRETS/fortify
+      - name: buildDescriptorExcludeList
+        type: "[]string"
+        description: "List of build descriptors and therefore modules to exclude from the scan and assessment activities."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: ["unit-tests/pom.xml", "integration-tests/pom.xml"]
       - name: customScanVersion
         type: string
         description: Custom version of the Fortify project used as source.
@@ -324,7 +332,8 @@ spec:
         description:
           "A list of source directories to scan. Wildcards can be used, e.g., `'src/main/java/**/*'`.
           If `'translate'` is set, this will ignored. The default value for `buildTool: 'maven'` is
-          `['**/*.xml', '**/*.html', '**/*.jsp', '**/*.js', '**/src/main/resources/**/*', '**/src/main/java/**/*']`, for
+          `['**/*.xml', '**/*.html', '**/*.jsp', '**/*.js', '**/src/main/resources/**/*', '**/src/main/java/**/*',
+          '**/target/main/java/**/*', '**/target/main/resources/**/*', '**/target/generated-sources/**/*']`, for
           `buildTool: 'pip'` it is `['./**/*']`."
         scope:
           - PARAMETERS
@@ -334,7 +343,8 @@ spec:
         type: "[]string"
         description:
           "A list of directories/files to be excluded from the scan. Wildcards can be used, e.g.,
-          `'**/Test.java'`. If `translate` is set, this will ignored."
+          `'**/Test.java'`. If `translate` is set, this will ignored. The default value for `buildTool: 'maven'` is
+          `['**/target/**/*', '**/src/test/resources/**/*']`, for `buildTool: 'pip'` it is `['./**/tests/**/*', './**/setup.py']`."
         scope:
           - PARAMETERS
           - STAGES

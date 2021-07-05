@@ -6,11 +6,23 @@ import (
 
 type JenkinsConfigProvider struct{}
 
-func (a *JenkinsConfigProvider) GetBranchBuildConfig() BranchBuildConfig {
-	return BranchBuildConfig{Branch: os.Getenv("BRANCH_NAME")}
+func (j *JenkinsConfigProvider) GetBranch() string {
+	return os.Getenv("GIT_BRANCH")
 }
 
-func (a *JenkinsConfigProvider) GetPullRequestConfig() PullRequestConfig {
+func (j *JenkinsConfigProvider) GetBuildUrl() string {
+	return os.Getenv("BUILD_URL")
+}
+
+func (j *JenkinsConfigProvider) GetCommit() string {
+	return os.Getenv("GIT_COMMIT")
+}
+
+func (j *JenkinsConfigProvider) GetRepoUrl() string {
+	return os.Getenv("GIT_URL")
+}
+
+func (j *JenkinsConfigProvider) GetPullRequestConfig() PullRequestConfig {
 	return PullRequestConfig{
 		Branch: os.Getenv("CHANGE_BRANCH"),
 		Base:   os.Getenv("CHANGE_TARGET"),
@@ -18,7 +30,7 @@ func (a *JenkinsConfigProvider) GetPullRequestConfig() PullRequestConfig {
 	}
 }
 
-func (a *JenkinsConfigProvider) IsPullRequest() bool {
+func (j *JenkinsConfigProvider) IsPullRequest() bool {
 	return truthy("CHANGE_ID")
 }
 
