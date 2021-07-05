@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/pkg/errors"
 )
@@ -32,6 +33,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string) e
 	execRunner := exec.Utils.GetExecRunner()
 
 	if len(registry) > 0 {
+		log.Entry().Info("Registry provided, creating .npmrc file!")
 		npmrc := NewNPMRC(filepath.Dir(packageJSON))
 
 		exists, err := piperutils.FileExists(npmrc.path)
@@ -52,6 +54,8 @@ func (exec *Execute) publish(packageJSON, registry, username, password string) e
 		if err != nil {
 			return err
 		}
+	} else {
+		log.Entry().Info("No registry provided!")
 	}
 
 	err := execRunner.RunExecutable("npm", "publish", filepath.Dir(packageJSON))
