@@ -35,7 +35,6 @@ func TestRunIntegrationArtifactGetServiceEndpoint(t *testing.T) {
 		config := integrationArtifactGetServiceEndpointOptions{
 			APIServiceKey:     apiServiceKey,
 			IntegrationFlowID: "CPI_IFlow_Call_using_Cert",
-			Platform:          "cf",
 		}
 
 		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactGetServiceEndpoint", ResponseBody: ``, TestType: "PositiveAndGetetIntegrationArtifactGetServiceResBody"}
@@ -68,7 +67,6 @@ func TestRunIntegrationArtifactGetServiceEndpoint(t *testing.T) {
 		config := integrationArtifactGetServiceEndpointOptions{
 			APIServiceKey:     apiServiceKey,
 			IntegrationFlowID: "CPI_IFlow_Call_using_Cert",
-			Platform:          "cf",
 		}
 
 		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactGetServiceEndpoint", ResponseBody: ``, TestType: "Negative"}
