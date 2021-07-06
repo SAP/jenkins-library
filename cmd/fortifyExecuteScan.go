@@ -637,21 +637,52 @@ func autoresolveMavenClasspath(config fortifyExecuteScanOptions, file string, ut
 	if filepath.IsAbs(file) {
 		log.Entry().Warnf("Passing an absolute path for -Dmdep.outputFile results in the classpath only for the last module in multi-module maven projects.")
 	}
+	defines := generateMavenFortifyDefines(&config, file)
 	executeOptions := maven.ExecuteOptions{
 		PomPath:             config.BuildDescriptorFile,
 		ProjectSettingsFile: config.ProjectSettingsFile,
 		GlobalSettingsFile:  config.GlobalSettingsFile,
 		M2Path:              config.M2Path,
-		Goals:               []string{"dependency:build-classpath"},
-		Defines:             []string{fmt.Sprintf("-Dmdep.outputFile=%v", file), "-DincludeScope=compile"},
+		Goals:               []string{"dependency:build-classpath", "package"},
+		Defines:             defines,
 		ReturnStdout:        false,
 	}
 	_, err := maven.Execute(&executeOptions, utils)
 	if err != nil {
-		log.Entry().WithError(err).Error("failed to determine classpath using Maven")
-		return "", err
+		log.Entry().WithError(err).Warnf("failed to determine classpath using Maven: %v", err)
 	}
 	return readAllClasspathFiles(file), nil
+}
+
+func generateMavenFortifyDefines(config *fortifyExecuteScanOptions, file string) []string {
+	defines := []string{
+		fmt.Sprintf("-Dmdep.outputFile=%v", file),
+		// Parameter to indicate to maven build that the fortify step is the trigger, can be used for optimizations
+		"-Dfortify",
+		"-DincludeScope=compile",
+		"-DskipTests",
+		"-Dmaven.javadoc.skip=true",
+		"--fail-at-end"}
+
+	if len(config.BuildDescriptorExcludeList) > 0 {
+		// From the documentation, these are file paths to a module's pom.xml.
+		// For MTA projects, we support pom.xml files here and skip others.
+		for _, exclude := range config.BuildDescriptorExcludeList {
+			if !strings.HasSuffix(exclude, "pom.xml") {
+				continue
+			}
+			exists, _ := piperutils.FileExists(exclude)
+			if !exists {
+				continue
+			}
+			moduleName := filepath.Dir(exclude)
+			if moduleName != "" {
+				defines = append(defines, "-pl", "!"+moduleName)
+			}
+		}
+	}
+
+	return defines
 }
 
 // readAllClasspathFiles tests whether the passed file is an absolute path. If not, it will glob for
@@ -794,9 +825,9 @@ func populateMavenTranslate(config *fortifyExecuteScanOptions, classpath string)
 	translateList[0]["classpath"] = classpath
 
 	setTranslateEntryIfNotEmpty(translateList[0], "src", ":", config.Src,
-		[]string{"**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "**/src/main/resources/**/*", "**/src/main/java/**/*"})
+		[]string{"**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "**/src/main/resources/**/*", "**/src/main/java/**/*", "**/target/main/java/**/*", "**/target/main/resources/**/*", "**/target/generated-sources/**/*"})
 
-	setTranslateEntryIfNotEmpty(translateList[0], "exclude", getSeparator(), config.Exclude, []string{})
+	setTranslateEntryIfNotEmpty(translateList[0], "exclude", getSeparator(), config.Exclude, []string{"**/target/**/*", "**/src/test/resources/**/*"})
 
 	translateJSON, err := json.Marshal(translateList)
 

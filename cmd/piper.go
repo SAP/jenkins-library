@@ -146,6 +146,7 @@ func Execute() {
 	rootCmd.AddCommand(IntegrationArtifactDownloadCommand())
 	rootCmd.AddCommand(AbapEnvironmentAssembleConfirmCommand())
 	rootCmd.AddCommand(IntegrationArtifactUploadCommand())
+	rootCmd.AddCommand(IntegrationArtifactTriggerIntegrationTestCommand())
 	rootCmd.AddCommand(TerraformExecuteCommand())
 	rootCmd.AddCommand(ContainerExecuteStructureTestsCommand())
 	rootCmd.AddCommand(GaugeExecuteTestsCommand())
@@ -155,6 +156,7 @@ func Execute() {
 	rootCmd.AddCommand(TransportRequestReqIDFromGitCommand())
 	rootCmd.AddCommand(WritePipelineEnv())
 	rootCmd.AddCommand(ReadPipelineEnv())
+	rootCmd.AddCommand(InfluxWriteDataCommand())
 
 	addRootFlags(rootCmd)
 	if err := rootCmd.Execute(); err != nil {
