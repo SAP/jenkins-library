@@ -33,11 +33,6 @@ import groovy.transform.Field
      */
     'cpd',
     /**
-     * Publishes Findbugs findings with the [Findbugs plugin](https://plugins.jenkins.io/findbugs).
-     * @possibleValues `true`, `false`, `Map`
-     */
-    'findbugs',
-    /**
      * Publishes Checkstyle findings with the [Checkstyle plugin](https://plugins.jenkins.io/checkstyle).
      * @possibleValues `true`, `false`, `Map`
      */
@@ -102,7 +97,6 @@ void call(Map parameters = [:]) {
         // JAVA
         report(pmdParser(createToolOptions(configuration.pmd)), configuration.pmd, configuration.archive)
         report(cpd(createToolOptions(configuration.cpd)), configuration.cpd, configuration.archive)
-        report(findBugs(createToolOptions(configuration.findbugs, [useRankAsPriority: true])), configuration.findbugs, configuration.archive)
         report(checkStyle(createToolOptions(configuration.checkstyle)), configuration.checkstyle, configuration.archive)
         // JAVA SCRIPT
         report(esLint(createToolOptions(configuration.eslint)), configuration.eslint, configuration.archive)
