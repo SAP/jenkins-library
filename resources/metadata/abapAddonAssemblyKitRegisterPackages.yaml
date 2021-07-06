@@ -1,11 +1,13 @@
 metadata:
   name: abapAddonAssemblyKitRegisterPackages
-  description: This step uploads the SAR archives and creates physical Delivery Packages in in the File Content Management System of SAP.
+  description: This step uploads the SAR archives and creates physical Delivery Packages to AAKaaS.
   longDescription: |
     This step takes the list of Software Component Versions from the addonDescriptor in the commonPipelineEnvironment.
-    For Packages in status "P"lanned it uploads the SAR archive with the data file and metadata XML of the Delivery Packages composed and exported in the Final Assembly system.
-    and creates physical Delivery Packages. The Packages ares saved in the File Content Management System of SAP.
-    The new status "L"ocked is written back to the addonDescriptor in the commonPipelineEnvironment.
+    For Packages in status "P" = planned it uploads the SAR archive with the data file and metadata XML of the Delivery Packages composed and exported in the build system
+    and creates physical Delivery Package in AAKaaS.
+    The new status "L" = locked is written back to the addonDescriptor in the commonPipelineEnvironment.
+    <br />
+    For Terminology refer to the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).
 
 spec:
   inputs:

@@ -64,9 +64,12 @@ func runIntegrationArtifactGetServiceEndpoint(config *integrationArtifactGetServ
 	clientOptions := piperhttp.ClientOptions{}
 	header := make(http.Header)
 	header.Add("Accept", "application/json")
-
-	servieEndpointURL := fmt.Sprintf("%s/api/v1/ServiceEndpoints?$expand=EntryPoints", config.Host)
-	tokenParameters := cpi.TokenParameters{TokenURL: config.OAuthTokenProviderURL, Username: config.Username, Password: config.Password, Client: httpClient}
+	serviceKey, err := cpi.ReadCpiServiceKey(config.APIServiceKey)
+	if err != nil {
+		return err
+	}
+	servieEndpointURL := fmt.Sprintf("%s/api/v1/ServiceEndpoints?$expand=EntryPoints", serviceKey.OAuth.Host)
+	tokenParameters := cpi.TokenParameters{TokenURL: serviceKey.OAuth.OAuthTokenProviderURL, Username: serviceKey.OAuth.ClientID, Password: serviceKey.OAuth.ClientSecret, Client: httpClient}
 	token, err := cpi.CommonUtils.GetBearerToken(tokenParameters)
 	if err != nil {
 		return errors.Wrap(err, "failed to fetch Bearer Token")

@@ -439,11 +439,10 @@ func detectParametersFromCI(options *sonarExecuteScanOptions) {
 			options.ChangeID = config.Key
 		}
 	} else {
-		config := provider.GetBranchBuildConfig()
-
+		branch := provider.GetBranch()
 		if options.InferBranchName && len(options.BranchName) == 0 {
-			log.Entry().Info("Inferring parameter branchName from environment: " + config.Branch)
-			options.BranchName = config.Branch
+			log.Entry().Info("Inferring parameter branchName from environment: " + branch)
+			options.BranchName = branch
 		}
 	}
 }

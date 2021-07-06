@@ -31,6 +31,7 @@ require (
 	github.com/hashicorp/vault/api v1.1.0
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/imdario/mergo v0.3.11 // indirect
+	github.com/influxdata/influxdb-client-go/v2 v2.4.0
 	github.com/jarcoal/httpmock v1.0.8
 	github.com/magiconair/properties v1.8.4
 	github.com/magicsong/color-glog v0.0.1 // indirect
