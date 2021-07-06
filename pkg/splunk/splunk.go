@@ -174,8 +174,19 @@ func tryPostMessages(telemetryData MonitoringData, messages []log.Message) error
 
 	resp, err := SplunkClient.splunkClient.SendRequest(http.MethodPost, SplunkClient.splunkDsn, bytes.NewBuffer(payload), nil, nil)
 
+	if resp.StatusCode != http.StatusOK {
+		// log it to stdout
+		rdr := io.LimitReader(resp.Body, 1000)
+		body, err_read := ioutil.ReadAll(rdr)
+		log.Entry().Infof("%v: Splunk logging failed - %v", resp.Status, string(body))
+		if err_read != nil {
+			return errors.Wrap(err_read, "Error reading response body from Splunk.")
+		}
+		return errors.Wrapf(err, "%v: Splunk logging failed - %v", resp.Status, string(body))
+	}
+
 	if err != nil {
-		errors.Wrap(err, "error sending the requests to Splunk")
+		return errors.Wrap(err, "error sending the requests to Splunk")
 	}
 
 	defer func() {
@@ -185,15 +196,5 @@ func tryPostMessages(telemetryData MonitoringData, messages []log.Message) error
 		}
 	}()
 
-	if resp.StatusCode != http.StatusOK {
-		// log it to stdout
-		rdr := io.LimitReader(resp.Body, 1000)
-		body, err := ioutil.ReadAll(rdr)
-		log.Entry().Infof("%v: Splunk logging failed - %v", resp.Status, string(body))
-		if err != nil {
-			return errors.Wrap(err, "Error reading response body from Splunk.")
-		}
-		return errors.Wrapf(err, "%v: Splunk logging failed - %v", resp.Status, string(body))
-	}
 	return nil
 }
