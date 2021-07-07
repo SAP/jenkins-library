@@ -866,7 +866,7 @@ func TestPopulateMavenTranslate(t *testing.T) {
 		config := fortifyExecuteScanOptions{Src: []string{"./**/*"}}
 		translate, err := populateMavenTranslate(&config, "")
 		assert.NoError(t, err)
-		assert.True(t, `[{"classpath":"","exclude":**/src/test/**/*","src":"./**/*"}]` == translate || `[{"classpath":"","exclude":"**/src/test/**/*","src":"./**/*"}]` == translate)
+		assert.Equal(t, `[{"classpath":"","exclude":"**/src/test/**/*","src":"./**/*"}]`, translate)
 	})
 
 	t.Run("exclude without translate", func(t *testing.T) {
