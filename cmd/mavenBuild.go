@@ -142,14 +142,17 @@ func createOrUpdateProjectSettingsXML(projectSettingsFile string, altDeploymentR
 func loadRemoteRepoCertificates(certificateList []string, client piperhttp.Downloader, flags *[]string, runner command.ExecRunner, fileUtils piperutils.FileUtils) error {
 	if err := fileUtils.Chdir(os.Getenv("$JAVA_HOME")); err != nil {
 		return errors.Wrap(err, "Could not find the java home environment variable ")
+	} else {
+		javaHomePath := getWorkingDirForTrustStore()
+		log.Entry().Infof("current location is %s", javaHomePath)
 	}
 
 	if err := fileUtils.Chdir(os.Getenv("$JRE_HOME")); err != nil {
 		return errors.Wrap(err, "Could not find the jre home environment variable ")
+	} else {
+		javaJrePath := getWorkingDirForTrustStore()
+		log.Entry().Infof("current location is %s", javaJrePath)
 	}
-
-	javaPath := getWorkingDirForTrustStore()
-	log.Entry().Infof("current location is %s", javaPath)
 
 	trustStore := filepath.Join(getWorkingDirForTrustStore(), ".pipeline", "keystore.jks")
 	log.Entry().Infof("using trust store %s", trustStore)
