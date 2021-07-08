@@ -501,7 +501,7 @@ func TestResolveAccessTokens(t *testing.T) {
 	}
 
 	for _, test := range tt {
-		assert.Equal(t, test.expectedTokenMap, resolveAccessTokens(test.tokenList), test.description)
+		assert.Equal(t, test.expectedTokenMap, ResolveAccessTokens(test.tokenList), test.description)
 	}
 }
 

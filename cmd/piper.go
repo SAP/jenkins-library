@@ -186,7 +186,7 @@ func addRootFlags(rootCmd *cobra.Command) {
 
 }
 
-func resolveAccessTokens(tokenList []string) map[string]string {
+func ResolveAccessTokens(tokenList []string) map[string]string {
 	tokenMap := map[string]string{}
 	for _, tokenEntry := range tokenList {
 		log.Entry().Debugf("processing token %v", tokenEntry)

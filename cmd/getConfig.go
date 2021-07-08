@@ -38,7 +38,7 @@ func ConfigCommand() *cobra.Command {
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 			initStageName(false)
-			GeneralConfig.GitHubAccessTokens = resolveAccessTokens(GeneralConfig.GitHubTokens)
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 		},
 		Run: func(cmd *cobra.Command, _ []string) {
 			err := generateConfig()
