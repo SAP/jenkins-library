@@ -146,7 +146,7 @@ func addTransportRequestUploadCTSFlags(cmd *cobra.Command, stepConfig *transport
 	cmd.Flags().StringVar(&stepConfig.OsDeployUser, "osDeployUser", `node`, "Docker image user performing the deployment")
 	cmd.Flags().StringVar(&stepConfig.DeployConfigFile, "deployConfigFile", `ui5-deploy.yaml`, "Configuration file for the fiori deployment")
 	cmd.Flags().StringVar(&stepConfig.TransportRequestID, "transportRequestId", os.Getenv("PIPER_transportRequestId"), "ID of the transport request to which the UI5 application is uploaded")
-	cmd.Flags().StringSliceVar(&stepConfig.DeployToolDependencies, "deployToolDependencies", []string{`@ui5/cli`, `@sap/ux-ui5-tooling`, `@ui5/logger`, `@ui5/fs`}, "List of additional dependencies to fiori related packages needed to install on a standard node docker image. Provide an empty list, in case your docker image already contains the required dependencies. Caused hereby installing additional dependencies will be skipped")
+	cmd.Flags().StringSliceVar(&stepConfig.DeployToolDependencies, "deployToolDependencies", []string{`@ui5/cli`, `@sap/ux-ui5-tooling`, `@ui5/logger`, `@ui5/fs`}, "List of additional dependencies to fiori related packages. By default a standard node docker image is used on which the dependencies are installed. Provide an empty list, in case your docker image already contains the required dependencies")
 	cmd.Flags().StringSliceVar(&stepConfig.NpmInstallOpts, "npmInstallOpts", []string{}, "List of additional installation options for the npm install call. `-g`, `--global` is always assumed. Can be used for e.g. providing custom registries (`--registry https://your.registry.com`) or for providing the verbose flag (`--verbose`) for troubleshooting")
 
 	cmd.MarkFlagRequired("username")

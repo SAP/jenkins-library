@@ -116,7 +116,9 @@ spec:
       - name: deployToolDependencies
         type: "[]string"
         default: ['@ui5/cli', '@sap/ux-ui5-tooling', '@ui5/logger', '@ui5/fs']
-        description: "List of additional dependencies to fiori related packages needed to install on a standard node docker image. Provide an empty list, in case your docker image already contains the required dependencies. Caused hereby installing additional dependencies will be skipped"
+        description: "List of additional dependencies to fiori related packages.
+           By default a standard node docker image is used on which the dependencies are installed.
+           Provide an empty list, in case your docker image already contains the required dependencies"
         aliases:
           - name: changeManagement/deployToolDependencies
           - name: changeManagement/cts/deployToolDependencies
