@@ -85,8 +85,9 @@ func TestRunTransportRequestUploadCTS(t *testing.T) {
 		}
 
 		actionMock := &UploadActionMock{thrown: nil}
+		cpe := &transportRequestUploadCTSCommonPipelineEnvironment{}
 		// test
-		err := runTransportRequestUploadCTS(&config, actionMock, nil, newTransportRequestUploadCTSTestsUtils())
+		err := runTransportRequestUploadCTS(&config, actionMock, nil, newTransportRequestUploadCTSTestsUtils(), cpe)
 
 		// assert
 		if assert.NoError(t, err) {
@@ -136,12 +137,14 @@ func TestRunTransportRequestUploadCTS(t *testing.T) {
 			DeployToolDependencies: []string{"@ui5/cli", "@sap/ux-ui5-tooling"},
 			NpmInstallOpts:         []string{"--verbose", "--registry", "https://registry.example.org/"},
 		}
+		cpe := &transportRequestUploadCTSCommonPipelineEnvironment{}
 
 		err := runTransportRequestUploadCTS(
 			&config,
 			&UploadActionMock{thrown: fmt.Errorf("something went wrong")},
 			nil,
-			newTransportRequestUploadCTSTestsUtils())
+			newTransportRequestUploadCTSTestsUtils(),
+			cpe)
 		assert.EqualError(t, err, "something went wrong")
 	})
 }
