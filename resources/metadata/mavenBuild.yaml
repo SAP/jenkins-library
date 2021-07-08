@@ -169,6 +169,15 @@ spec:
         default: false
         aliases:
           - name: maven/publish
+      - name: javaCaCertFilePath
+        type: string
+        description: path to the cacerts file used by Java. When maven publish is set to True (to deploy the artifact to a repository with a self signed cert) and customTlsCertificateLinks are provided trust the self signed certs, Piper will extend the existing Java cacerts to include the new self signed certs. if not provided Piper will search for the cacerts in $JAVA/jre/lib/security/cacerts
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        aliases:
+          - name: maven/javaCaCertFilePath
   containers:
     - name: mvn
       image: maven:3.6-jdk-8
