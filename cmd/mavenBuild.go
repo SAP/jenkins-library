@@ -140,18 +140,23 @@ func createOrUpdateProjectSettingsXML(projectSettingsFile string, altDeploymentR
 }
 
 func loadRemoteRepoCertificates(certificateList []string, client piperhttp.Downloader, flags *[]string, runner command.ExecRunner, fileUtils piperutils.FileUtils) error {
-	if err := fileUtils.Chdir(os.Getenv("JAVA_HOME") + "/jre/lib/security"); err != nil {
-		return errors.Wrap(err, "Could not find the java home environment variable ")
-	} /* else {
-		javaHomePath := getWorkingDirForTrustStore()
-		log.Entry().Infof("current location is %s", javaHomePath)
-	} */
 	existingJavaCaCerts := filepath.Join(os.Getenv("JAVA_HOME"), "jre", "lib", "security", "cacerts")
-	trustStore := filepath.Join(getWorkingDirForTrustStore(), ".pipeline", "keystore.jks")
 
-	_, err := fileUtils.Copy(existingJavaCaCerts, trustStore)
+	exists, err := fileUtils.FileExists(existingJavaCaCerts)
 
 	if err != nil {
+		return errors.Wrap(err, "Could not find the existing java cacerts")
+	}
+
+	if !exists {
+		return errors.Wrap(err, "Could not find the existing java cacerts")
+	}
+
+	trustStore := filepath.Join(getWorkingDirForTrustStore(), ".pipeline", "keystore.jks")
+
+	_, fileUtilserr := fileUtils.Copy(existingJavaCaCerts, trustStore)
+
+	if fileUtilserr != nil {
 		return errors.Wrap(err, "Could not copy existing cacerts into new keystore ")
 	}
 
