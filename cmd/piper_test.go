@@ -487,3 +487,40 @@ bar: 42
 		assert.False(t, hasFailed, "Expected checkTypes() NOT to exit via logging framework")
 	})
 }
+
+func TestResolveAccessTokens(t *testing.T) {
+	tt := []struct {
+		description      string
+		tokenList        []string
+		expectedTokenMap map[string]string
+	}{
+		{description: "empty tokens", tokenList: []string{}, expectedTokenMap: map[string]string{}},
+		{description: "invalid token", tokenList: []string{"onlyToken"}, expectedTokenMap: map[string]string{}},
+		{description: "one token", tokenList: []string{"github.com:token1"}, expectedTokenMap: map[string]string{"github.com": "token1"}},
+		{description: "more tokens", tokenList: []string{"github.com:token1", "github.corp:token2"}, expectedTokenMap: map[string]string{"github.com": "token1", "github.corp": "token2"}},
+	}
+
+	for _, test := range tt {
+		assert.Equal(t, test.expectedTokenMap, resolveAccessTokens(test.tokenList), test.description)
+	}
+}
+
+func TestAccessTokensFromEnvJSON(t *testing.T) {
+	tt := []struct {
+		description       string
+		inputJSON         string
+		expectedTokenList []string
+	}{
+		{description: "empty ENV", inputJSON: "", expectedTokenList: []string{}},
+		{description: "invalid JSON", inputJSON: "{", expectedTokenList: []string{}},
+		{description: "empty JSON 1", inputJSON: "{}", expectedTokenList: []string{}},
+		{description: "empty JSON 2", inputJSON: "[]]", expectedTokenList: []string{}},
+		{description: "invalid JSON format", inputJSON: `{"test":"test"}`, expectedTokenList: []string{}},
+		{description: "one token", inputJSON: `["github.com:token1"]`, expectedTokenList: []string{"github.com:token1"}},
+		{description: "more tokens", inputJSON: `["github.com:token1","github.corp:token2"]`, expectedTokenList: []string{"github.com:token1", "github.corp:token2"}},
+	}
+
+	for _, test := range tt {
+		assert.Equal(t, test.expectedTokenList, accessTokensFromEnvJSON(test.inputJSON), test.description)
+	}
+}
