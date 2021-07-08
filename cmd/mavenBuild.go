@@ -105,7 +105,7 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 			runner := &command.Command{}
 			fileUtils := &piperutils.Files{}
 			if len(config.CustomTLSCertificateLinks) > 0 {
-				if err := loadRemoteRepoCertificates(config.CustomTLSCertificateLinks, downloadClient, &deployFlags, runner, fileUtils); err != nil {
+				if err := loadRemoteRepoCertificates(config.CustomTLSCertificateLinks, downloadClient, &deployFlags, runner, fileUtils, config.JavaCaCertFilePath); err != nil {
 					log.SetErrorCategory(log.ErrorInfrastructure)
 					return err
 				}
@@ -139,8 +139,12 @@ func createOrUpdateProjectSettingsXML(projectSettingsFile string, altDeploymentR
 	}
 }
 
-func loadRemoteRepoCertificates(certificateList []string, client piperhttp.Downloader, flags *[]string, runner command.ExecRunner, fileUtils piperutils.FileUtils) error {
+func loadRemoteRepoCertificates(certificateList []string, client piperhttp.Downloader, flags *[]string, runner command.ExecRunner, fileUtils piperutils.FileUtils, javaCaCertFilePath string) error {
 	existingJavaCaCerts := filepath.Join(os.Getenv("JAVA_HOME"), "jre", "lib", "security", "cacerts")
+
+	if len(javaCaCertFilePath) > 0 {
+		existingJavaCaCerts = javaCaCertFilePath
+	}
 
 	exists, err := fileUtils.FileExists(existingJavaCaCerts)
 
