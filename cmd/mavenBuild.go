@@ -203,6 +203,7 @@ func loadRemoteRepoCertificates(certificateList []string, client piperhttp.Downl
 				return errors.Wrap(err, "Adding certificate to keystore failed")
 			}
 		}
+		log.Entry().Infof("custom tls certificates successfully added to the trust store %s", trustStore)
 	} else {
 		log.Entry().Debug("Download of TLS certificates skipped")
 	}
