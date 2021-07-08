@@ -199,12 +199,12 @@ func loadRemoteRepoCertificates(certificateList []string, client piperhttp.Downl
 			}
 		}
 
-		maven_opts := "-Djavax.net.ssl.trustStore=.pipeline/mavenCaCerts -Djavax.net.ssl.trustStorePassword=changeit"
+		/* maven_opts := "-Djavax.net.ssl.trustStore=.pipeline/mavenCaCerts -Djavax.net.ssl.trustStorePassword=changeit"
 		err := os.Setenv("MAVEN_OPTS", maven_opts)
 		if err != nil {
 			return errors.Wrap(err, "Could not create MAVEN_OPTS environment variable ")
 		}
-		log.Entry().WithField("trust store", trustStore).Info("Using local trust store")
+		log.Entry().WithField("trust store", trustStore).Info("Using local trust store") */
 	} else {
 		log.Entry().Debug("Download of TLS certificates skipped")
 	}
