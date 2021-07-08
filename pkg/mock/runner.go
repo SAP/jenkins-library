@@ -223,7 +223,7 @@ type StepOptions struct {
 	TestParam string `json:"testParam,omitempty"`
 }
 
-func OpenFileMock(name string) (io.ReadCloser, error) {
+func OpenFileMock(name string, tokens map[string]string) (io.ReadCloser, error) {
 	var r string
 	switch name {
 	case "testDefaults.yml":
