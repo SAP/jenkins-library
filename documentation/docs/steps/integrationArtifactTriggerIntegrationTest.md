@@ -26,5 +26,4 @@ steps:
     integrationFlowId: 'INTEGRATION_FLOW_ID'
     contentType: 'text/plain'
     messageBodyPath: 'myIntegrationsTest/testBody'
-    platform: cf
 ```

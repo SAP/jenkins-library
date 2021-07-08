@@ -8,12 +8,12 @@ spec:
   inputs:
     secrets:
       - name: cpiApiServiceKeyCredentialsId
-        description: Jenkins credential ID for secret text containing the service key to the SAP Cloud Integration API
+        description: Jenkins secret text credential ID containing the service key to the Process Integration Runtime service instance of plan 'api'
         type: jenkins
     params:
       - name: apiServiceKey
         type: string
-        description: Service key JSON string to access the Cloud Integration API
+        description: Service key JSON string to access the Process Integration Runtime service instance of plan 'api'
         scope:
           - PARAMETERS
         mandatory: true
@@ -40,14 +40,6 @@ spec:
           - STAGES
           - STEPS
         mandatory: true
-      - name: platform
-        type: string
-        description: Specifies the running platform of the SAP Cloud platform integraion service
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        mandatory: false
       - name: parameterKey
         type: string
         description: Specifies the externalized parameter name.
