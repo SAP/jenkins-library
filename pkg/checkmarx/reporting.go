@@ -15,7 +15,6 @@ import (
 )
 
 func CreateCustomReport(data map[string]interface{}) reporting.ScanReport {
-
 	scanReport := reporting.ScanReport{
 		Title: "Checkmarx SAST Report",
 		Subheaders: []reporting.Subheader{
@@ -57,13 +56,13 @@ func CreateCustomReport(data map[string]interface{}) reporting.ScanReport {
 			{Description: "Low urgent issues", Details: fmt.Sprint(data["Low"].(map[string]int)["Urgent"])},
 			{Description: "Low proposed not exploitable issues", Details: fmt.Sprint(data["Low"].(map[string]int)["ProposedNotExploitable"])},
 			{Description: "Low to verify issues", Details: fmt.Sprint(data["Low"].(map[string]int)["ToVerify"])},
-			{Description: "Information issues", Details: fmt.Sprint(data["Information"].(map[string]int)["Issues"])},
-			{Description: "Information not false positive issues", Details: fmt.Sprint(data["Information"].(map[string]int)["NotFalsePositive"])},
-			{Description: "Information not exploitable issues", Details: fmt.Sprint(data["Information"].(map[string]int)["NotExploitable"])},
-			{Description: "Information confirmed issues", Details: fmt.Sprint(data["Information"].(map[string]int)["Confirmed"])},
-			{Description: "Information urgent issues", Details: fmt.Sprint(data["Information"].(map[string]int)["Urgent"])},
-			{Description: "Information proposed not exploitable issues", Details: fmt.Sprint(data["Information"].(map[string]int)["ProposedNotExploitable"])},
-			{Description: "Information to verify issues", Details: fmt.Sprint(data["Information"].(map[string]int)["ToVerify"])},
+			{Description: "Informational issues", Details: fmt.Sprint(data["Information"].(map[string]int)["Issues"])},
+			{Description: "Informational not false positive issues", Details: fmt.Sprint(data["Information"].(map[string]int)["NotFalsePositive"])},
+			{Description: "Informational not exploitable issues", Details: fmt.Sprint(data["Information"].(map[string]int)["NotExploitable"])},
+			{Description: "Informational confirmed issues", Details: fmt.Sprint(data["Information"].(map[string]int)["Confirmed"])},
+			{Description: "Informational urgent issues", Details: fmt.Sprint(data["Information"].(map[string]int)["Urgent"])},
+			{Description: "Informational proposed not exploitable issues", Details: fmt.Sprint(data["Information"].(map[string]int)["ProposedNotExploitable"])},
+			{Description: "Informational to verify issues", Details: fmt.Sprint(data["Information"].(map[string]int)["ToVerify"])},
 		},
 		ReportTime: time.Now(),
 	}
