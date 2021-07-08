@@ -319,10 +319,10 @@ func OpenPiperFile(name string, accessTokens map[string]string) (io.ReadCloser, 
 		return os.Open(name)
 	}
 
-	return readHttpFile(name, accessTokens)
+	return httpReadFile(name, accessTokens)
 }
 
-func readHttpFile(name string, accessTokens map[string]string) (io.ReadCloser, error) {
+func httpReadFile(name string, accessTokens map[string]string) (io.ReadCloser, error) {
 
 	u, err := url.Parse(name)
 	if err != nil {

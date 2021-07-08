@@ -186,6 +186,8 @@ func addRootFlags(rootCmd *cobra.Command) {
 
 }
 
+// ResolveAccessTokens reads a list of tokens in format host:token passed via command line
+// and transfers this into a map as a more consumable format.
 func ResolveAccessTokens(tokenList []string) map[string]string {
 	tokenMap := map[string]string{}
 	for _, tokenEntry := range tokenList {
