@@ -118,6 +118,8 @@ func TestStepCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(piperOsCmd.GeneralConfig.Verbose)
 
+			piperOsCmd.GeneralConfig.GitHubAccessTokens = piperOsCmd.ResolveAccessTokens(piperOsCmd.GeneralConfig.GitHubTokens)
+
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: piperOsCmd.GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)

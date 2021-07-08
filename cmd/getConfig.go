@@ -21,7 +21,7 @@ type configCommandOptions struct {
 	stepMetadata   string //metadata to be considered, can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
 	stepName       string
 	contextConfig  bool
-	openFile       func(s string) (io.ReadCloser, error)
+	openFile       func(s string, t map[string]string) (io.ReadCloser, error)
 }
 
 var configOptions configCommandOptions
@@ -38,6 +38,7 @@ func ConfigCommand() *cobra.Command {
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 			initStageName(false)
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 		},
 		Run: func(cmd *cobra.Command, _ []string) {
 			err := generateConfig()
@@ -72,7 +73,7 @@ func generateConfig() error {
 
 	projectConfigFile := getProjectConfigFile(GeneralConfig.CustomConfig)
 
-	customConfig, err := configOptions.openFile(projectConfigFile)
+	customConfig, err := configOptions.openFile(projectConfigFile, GeneralConfig.GitHubAccessTokens)
 	if err != nil {
 		if !os.IsNotExist(err) {
 			return errors.Wrapf(err, "config: open configuration file '%v' failed", projectConfigFile)
@@ -86,7 +87,7 @@ func generateConfig() error {
 	}
 
 	for _, f := range GeneralConfig.DefaultConfig {
-		fc, err := configOptions.openFile(f)
+		fc, err := configOptions.openFile(f, GeneralConfig.GitHubAccessTokens)
 		// only create error for non-default values
 		if err != nil && f != ".pipeline/defaults.yaml" {
 			return errors.Wrapf(err, "config: getting defaults failed: '%v'", f)
@@ -193,7 +194,7 @@ func prepareOutputEnvironment(outputResources []config.StepResources, envRootPat
 func resolveMetadata() (config.StepData, error) {
 	var metadata config.StepData
 	if configOptions.stepMetadata != "" {
-		metadataFile, err := configOptions.openFile(configOptions.stepMetadata)
+		metadataFile, err := configOptions.openFile(configOptions.stepMetadata, GeneralConfig.GitHubAccessTokens)
 		if err != nil {
 			return metadata, errors.Wrap(err, "open failed")
 		}
