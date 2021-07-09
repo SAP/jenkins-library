@@ -20,8 +20,6 @@ import static org.hamcrest.Matchers.hasSize
 import static org.hamcrest.Matchers.hasEntry
 import static org.junit.Assert.assertThat
 
-import org.hamcrest.Matchers
-
 import util.Rules
 import util.JenkinsReadYamlRule
 import util.JenkinsStepRule
