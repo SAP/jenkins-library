@@ -827,7 +827,7 @@ func populateMavenTranslate(config *fortifyExecuteScanOptions, classpath string)
 	setTranslateEntryIfNotEmpty(translateList[0], "src", ":", config.Src,
 		[]string{"**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "**/src/main/resources/**/*", "**/src/main/java/**/*", "**/target/main/java/**/*", "**/target/main/resources/**/*", "**/target/generated-sources/**/*"})
 
-	setTranslateEntryIfNotEmpty(translateList[0], "exclude", getSeparator(), config.Exclude, []string{"**/target/**/*", "**/src/test/resources/**/*"})
+	setTranslateEntryIfNotEmpty(translateList[0], "exclude", getSeparator(), config.Exclude, []string{"**/src/test/**/*"})
 
 	translateJSON, err := json.Marshal(translateList)
 
