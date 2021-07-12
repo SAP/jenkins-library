@@ -96,7 +96,7 @@ func WriteCustomReports(scanReport reporting.ScanReport, projectName, projectID 
 			return reportPaths, errors.Wrap(err, "failed to create reporting directory")
 		}
 	}
-	if err := utils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("checkmarxExecuteScan_sast_%v.json", reportShaFortify([]string{projectName, projectID}))), jsonReport, 0666); err != nil {
+	if err := utils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("checkmarxExecuteScan_sast_%v.json", reportShaCheckmarx([]string{projectName, projectID}))), jsonReport, 0666); err != nil {
 		return reportPaths, errors.Wrapf(err, "failed to write json report")
 	}
 	// we do not add the json report to the overall list of reports for now,
@@ -106,7 +106,7 @@ func WriteCustomReports(scanReport reporting.ScanReport, projectName, projectID 
 	return reportPaths, nil
 }
 
-func reportShaFortify(parts []string) string {
+func reportShaCheckmarx(parts []string) string {
 	reportShaData := []byte(strings.Join(parts, ","))
 	return fmt.Sprintf("%x", sha1.Sum(reportShaData))
 }
