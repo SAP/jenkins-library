@@ -225,7 +225,12 @@ func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.P
 	// write custom report
 	scanReport := protecode.CreateCustomReport(fileName, productID, parsedResult, vulns)
 	paths, err := protecode.WriteCustomReports(scanReport, fileName, fmt.Sprint(productID))
-	reports = append(reports, paths...)
+	if err != nil {
+		// do not fail - consider failing later on
+		log.Entry().Warning("failed to create custom HTML/MarkDown file ...", err)
+	} else {
+		reports = append(reports, paths...)
+	}
 
 	// create toolrecord file
 	toolRecordFileName, err := createToolRecordProtecode("./", config, productID, webuiURL)
