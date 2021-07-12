@@ -38,10 +38,13 @@ func (exec *Execute) publish(packageJSON, registry, username, password string) e
 
 		if exists, err := piperutils.FileExists(npmrc.filepath); exists {
 			if err != nil {
-				return errors.Wrapf(err, "failed to read existing %s file", npmrc.filepath)
+				return errors.Wrapf(err, "failed to check existing %s file", npmrc.filepath)
 			}
 			log.Entry().Debug("loading existing file")
-			npmrc.Load()
+			err = npmrc.Load()
+			if err != nil {
+				return errors.Wrapf(err, "failed to read existing %s file", npmrc.filepath)
+			}
 			log.Entry().Debugf("content: %s", npmrc.Print())
 		}
 

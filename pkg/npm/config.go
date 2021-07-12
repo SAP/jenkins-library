@@ -59,8 +59,13 @@ func (rc NPMRC) Write() error {
 	return nil
 }
 
-func (rc NPMRC) Load() {
-	rc.values = properties.MustLoadFile(rc.filepath, properties.UTF8)
+func (rc NPMRC) Load() error {
+	values, err := properties.LoadFile(rc.filepath, properties.UTF8)
+	if err != nil {
+		return err
+	}
+	rc.values = values
+	return err
 }
 
 func (rc NPMRC) Print() string {
