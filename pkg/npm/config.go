@@ -3,12 +3,12 @@ package npm
 import (
 	"encoding/base64"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/magiconair/properties"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -49,16 +49,20 @@ type NPMRC struct {
 func (rc NPMRC) Write() error {
 	file, err := os.OpenFile(rc.path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		log.Println(err)
+		return errors.Wrapf(err, "failed to open %s", rc.path)
 	}
 	defer file.Close()
 	_, err = file.WriteString(rc.values.String())
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to write %s", rc.path)
 	}
 	return nil
 }
 
 func (rc NPMRC) Load() {
 	rc.values = properties.MustLoadFile(rc.path, properties.UTF8)
+}
+
+func (rc NPMRC) Print() string {
+	return rc.values.String()
 }

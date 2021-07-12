@@ -38,16 +38,19 @@ func (exec *Execute) publish(packageJSON, registry, username, password string) e
 
 		exists, err := piperutils.FileExists(npmrc.path)
 		if err != nil {
-			return errors.Wrapf(err, "failed to read %s file", npmrc.path)
+			return errors.Wrapf(err, "failed to read existing %s file", npmrc.path)
 		}
 		if exists {
 			npmrc.Load()
 		}
+		log.Entry().Debugf("content: %s", npmrc.Print())
 
 		npmrc.Set("registry", registry)
+		log.Entry().Debugf("content: %s", npmrc.Print())
 
 		if len(username) > 0 && len(password) > 0 {
 			npmrc.SetAuth(registry, username, password)
+			log.Entry().Debugf("content: %s", npmrc.Print())
 		}
 
 		err = npmrc.Write()
@@ -58,7 +61,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string) e
 		log.Entry().Info("No registry provided!")
 	}
 
-	err := execRunner.RunExecutable("npm", "publish", filepath.Dir(packageJSON))
+	err := execRunner.RunExecutable("npm", "publish --dry-run", filepath.Dir(packageJSON))
 	if err != nil {
 		return err
 	}
