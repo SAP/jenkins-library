@@ -60,7 +60,7 @@ func (p *transportRequestUploadRFCCommonPipelineEnvironment) persist(path, resou
 	}
 }
 
-// TransportRequestUploadRFCCommand Uploads a UI5 application as ZIP file to the ABAP system via RFC connections.
+// TransportRequestUploadRFCCommand This step uploads a UI5 application as ZIP file to the ABAP system via RFC connections.
 func TransportRequestUploadRFCCommand() *cobra.Command {
 	const STEP_NAME = "transportRequestUploadRFC"
 
@@ -72,12 +72,14 @@ func TransportRequestUploadRFCCommand() *cobra.Command {
 
 	var createTransportRequestUploadRFCCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Uploads a UI5 application as ZIP file to the ABAP system via RFC connections.",
+		Short: "This step uploads a UI5 application as ZIP file to the ABAP system via RFC connections.",
 		Long:  `This step uploads a UI5 application as ZIP file to the ABAP system via RFC connections.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
+
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
@@ -139,13 +141,13 @@ func TransportRequestUploadRFCCommand() *cobra.Command {
 func addTransportRequestUploadRFCFlags(cmd *cobra.Command, stepConfig *transportRequestUploadRFCOptions) {
 	cmd.Flags().StringVar(&stepConfig.Endpoint, "endpoint", os.Getenv("PIPER_endpoint"), "Service endpoint, Application server URL")
 	cmd.Flags().StringVar(&stepConfig.Instance, "instance", os.Getenv("PIPER_instance"), "AS ABAP instance number")
-	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "Service user for uploading to the ABAP backend via RFC")
-	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Service user password for uploading to the ABAP backend via RFC")
+	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "Service user for uploading to the ABAP system via RFC")
+	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Service user password for uploading to the ABAP system via RFC")
 	cmd.Flags().StringVar(&stepConfig.Client, "client", os.Getenv("PIPER_client"), "AS ABAP client number")
 	cmd.Flags().StringVar(&stepConfig.ApplicationName, "applicationName", os.Getenv("PIPER_applicationName"), "Name of the UI5 application")
 	cmd.Flags().StringVar(&stepConfig.ApplicationDescription, "applicationDescription", os.Getenv("PIPER_applicationDescription"), "Description of the UI5 application")
 	cmd.Flags().StringVar(&stepConfig.AbapPackage, "abapPackage", os.Getenv("PIPER_abapPackage"), "ABAP package name of the UI5 application")
-	cmd.Flags().StringVar(&stepConfig.ApplicationURL, "applicationUrl", os.Getenv("PIPER_applicationUrl"), "URL of the UI5 application package to upload to the ABAP backend via RFC")
+	cmd.Flags().StringVar(&stepConfig.ApplicationURL, "applicationUrl", os.Getenv("PIPER_applicationUrl"), "URL of the UI5 application package to upload to the ABAP system via RFC")
 	cmd.Flags().StringVar(&stepConfig.CodePage, "codePage", `UTF-8`, "Code page")
 	cmd.Flags().BoolVar(&stepConfig.AcceptUnixStyleLineEndings, "acceptUnixStyleLineEndings", true, "If unix style line endings should be accepted")
 	cmd.Flags().BoolVar(&stepConfig.FailUploadOnWarning, "failUploadOnWarning", true, "If the upload should fail in case the log contains warnings")
@@ -166,12 +168,12 @@ func transportRequestUploadRFCMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "transportRequestUploadRFC",
 			Aliases:     []config.Alias{{Name: "transportRequestUploadFile", Deprecated: false}},
-			Description: "Uploads a UI5 application as ZIP file to the ABAP system via RFC connections.",
+			Description: "This step uploads a UI5 application as ZIP file to the ABAP system via RFC connections.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "uploadCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing user and password to authenticate against the ABAP backend", Type: "jenkins", Aliases: []config.Alias{{Name: "changeManagement/credentialsId", Deprecated: false}}},
+					{Name: "uploadCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing user and password to authenticate against the ABAP system", Type: "jenkins", Aliases: []config.Alias{{Name: "changeManagement/credentialsId", Deprecated: false}}},
 				},
 				Parameters: []config.StepParameters{
 					{

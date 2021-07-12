@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func configOpenFileMock(name string) (io.ReadCloser, error) {
+func configOpenFileMock(name string, tokens map[string]string) (io.ReadCloser, error) {
 	var r string
 	switch name {
 	case "TestAddCustomDefaults_default1":
