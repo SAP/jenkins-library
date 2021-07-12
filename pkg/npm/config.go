@@ -47,7 +47,7 @@ type NPMRC struct {
 }
 
 func (rc NPMRC) Write() error {
-	file, err := os.OpenFile(rc.path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(rc.path /*os.O_APPEND|*/, os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return errors.Wrapf(err, "failed to open %s", rc.path)
 	}
