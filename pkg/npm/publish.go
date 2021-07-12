@@ -61,7 +61,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string) e
 		log.Entry().Info("No registry provided!")
 	}
 
-	err := execRunner.RunExecutable("npm", "publish --dry-run", filepath.Dir(packageJSON))
+	err := execRunner.RunExecutable("npm", "publish", filepath.Dir(packageJSON), "--dry-run")
 	if err != nil {
 		return err
 	}
