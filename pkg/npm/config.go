@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/magiconair/properties"
 	"github.com/pkg/errors"
 )
@@ -60,7 +61,9 @@ func (rc NPMRC) Write() error {
 }
 
 func (rc NPMRC) Load() error {
+	log.Entry().Debugf("loading existing file %s", rc.filepath)
 	values, err := properties.LoadFile(rc.filepath, properties.UTF8)
+	log.Entry().Debug("content: %s", values.String())
 	if err != nil {
 		return err
 	}
