@@ -33,17 +33,17 @@ func (exec *Execute) publish(packageJSON, registry, username, password string) e
 	execRunner := exec.Utils.GetExecRunner()
 
 	if len(registry) > 0 {
-		log.Entry().Info("Registry provided, creating .npmrc file!")
+		log.Entry().Info("Registry provided, modifying .npmrc file!")
 		npmrc := NewNPMRC(filepath.Dir(packageJSON))
 
-		exists, err := piperutils.FileExists(npmrc.path)
-		if err != nil {
-			return errors.Wrapf(err, "failed to read existing %s file", npmrc.path)
-		}
-		if exists {
+		if exists, err := piperutils.FileExists(npmrc.filepath); exists {
+			if err != nil {
+				return errors.Wrapf(err, "failed to read existing %s file", npmrc.filepath)
+			}
+			log.Entry().Debug("loading existing file")
 			npmrc.Load()
+			log.Entry().Debugf("content: %s", npmrc.Print())
 		}
-		log.Entry().Debugf("content: %s", npmrc.Print())
 
 		npmrc.Set("registry", registry)
 		log.Entry().Debugf("content: %s", npmrc.Print())
@@ -53,8 +53,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string) e
 			log.Entry().Debugf("content: %s", npmrc.Print())
 		}
 
-		err = npmrc.Write()
-		if err != nil {
+		if err := npmrc.Write(); err != nil {
 			return err
 		}
 	} else {

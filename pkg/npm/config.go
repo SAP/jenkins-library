@@ -35,32 +35,32 @@ func (rc NPMRC) Set(key, value string) {
 }
 
 func NewNPMRC(path string) NPMRC {
-	if !strings.HasPrefix(path, configFilename) {
+	if !strings.HasSuffix(path, configFilename) {
 		path = filepath.Join(path, configFilename)
 	}
-	return NPMRC{path: path, values: properties.NewProperties()}
+	return NPMRC{filepath: path, values: properties.NewProperties()}
 }
 
 type NPMRC struct {
-	path   string
-	values *properties.Properties
+	filepath string
+	values   *properties.Properties
 }
 
 func (rc NPMRC) Write() error {
-	file, err := os.OpenFile(rc.path /*os.O_APPEND|*/, os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(rc.filepath /*os.O_APPEND|*/, os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		return errors.Wrapf(err, "failed to open %s", rc.path)
+		return errors.Wrapf(err, "failed to open %s", rc.filepath)
 	}
 	defer file.Close()
 	_, err = file.WriteString(rc.values.String())
 	if err != nil {
-		return errors.Wrapf(err, "failed to write %s", rc.path)
+		return errors.Wrapf(err, "failed to write %s", rc.filepath)
 	}
 	return nil
 }
 
 func (rc NPMRC) Load() {
-	rc.values = properties.MustLoadFile(rc.path, properties.UTF8)
+	rc.values = properties.MustLoadFile(rc.filepath, properties.UTF8)
 }
 
 func (rc NPMRC) Print() string {
