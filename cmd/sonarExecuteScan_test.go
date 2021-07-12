@@ -142,12 +142,6 @@ func TestRunSonar(t *testing.T) {
 			VersioningModel:           "major",
 		}
 		fileUtilsExists = mockFileUtilsExists(true)
-		os.Setenv("PIPER_SONAR_LOAD_CERTIFICATES", "true")
-		require.Equal(t, "true", os.Getenv("PIPER_SONAR_LOAD_CERTIFICATES"), "PIPER_SONAR_LOAD_CERTIFICATES must be set")
-		defer func() {
-			fileUtilsExists = FileUtils.FileExists
-			os.Unsetenv("PIPER_SONAR_LOAD_CERTIFICATES")
-		}()
 		// test
 		err = runSonar(options, &mockDownloadClient, &mockRunner, apiClient, &sonarExecuteScanInflux{})
 		// assert
@@ -446,12 +440,6 @@ func TestSonarLoadCertificates(t *testing.T) {
 			options:     []string{},
 		}
 		fileUtilsExists = mockFileUtilsExists(false)
-		os.Setenv("PIPER_SONAR_LOAD_CERTIFICATES", "true")
-		require.Equal(t, "true", os.Getenv("PIPER_SONAR_LOAD_CERTIFICATES"), "PIPER_SONAR_LOAD_CERTIFICATES must be set")
-		defer func() {
-			fileUtilsExists = FileUtils.FileExists
-			os.Unsetenv("PIPER_SONAR_LOAD_CERTIFICATES")
-		}()
 		// test
 		err := loadCertificates([]string{"https://sap.com/custom-1.crt", "https://sap.com/custom-2.crt"}, &mockClient, &mockRunner)
 		// assert
@@ -471,7 +459,6 @@ func TestSonarLoadCertificates(t *testing.T) {
 			options:     []string{},
 		}
 		fileUtilsExists = mockFileUtilsExists(false)
-		require.Empty(t, os.Getenv("PIPER_SONAR_LOAD_CERTIFICATES"), "PIPER_SONAR_LOAD_CERTIFICATES must not be set")
 		defer func() { fileUtilsExists = FileUtils.FileExists }()
 		// test
 		err := loadCertificates([]string{"any-certificate-url"}, &mockClient, &mockRunner)
@@ -488,12 +475,6 @@ func TestSonarLoadCertificates(t *testing.T) {
 			options:     []string{},
 		}
 		fileUtilsExists = mockFileUtilsExists(false)
-		os.Setenv("PIPER_SONAR_LOAD_CERTIFICATES", "true")
-		require.Equal(t, "true", os.Getenv("PIPER_SONAR_LOAD_CERTIFICATES"), "PIPER_SONAR_LOAD_CERTIFICATES must be set")
-		defer func() {
-			fileUtilsExists = FileUtils.FileExists
-			os.Unsetenv("PIPER_SONAR_LOAD_CERTIFICATES")
-		}()
 		// test
 		err := loadCertificates([]string{}, &mockClient, &mockRunner)
 		// assert
