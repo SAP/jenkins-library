@@ -451,22 +451,6 @@ func TestSonarLoadCertificates(t *testing.T) {
 		assert.Contains(t, sonar.environment, "SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore="+filepath.Join(getWorkingDir(), ".certificates", "cacerts")+" -Djavax.net.ssl.trustStorePassword=changeit")
 	})
 
-	t.Run("use local trust store with downloaded certificates - deactivated", func(t *testing.T) {
-		// init
-		sonar = sonarSettings{
-			binary:      "sonar-scanner",
-			environment: []string{},
-			options:     []string{},
-		}
-		fileUtilsExists = mockFileUtilsExists(false)
-		defer func() { fileUtilsExists = FileUtils.FileExists }()
-		// test
-		err := loadCertificates([]string{"any-certificate-url"}, &mockClient, &mockRunner)
-		// assert
-		assert.NoError(t, err)
-		assert.NotContains(t, sonar.environment, "SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore="+filepath.Join(getWorkingDir(), ".certificates", "cacerts")+" -Djavax.net.ssl.trustStorePassword=changeit")
-	})
-
 	t.Run("use no trust store", func(t *testing.T) {
 		// init
 		sonar = sonarSettings{
