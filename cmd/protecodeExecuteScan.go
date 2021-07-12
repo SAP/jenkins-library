@@ -222,6 +222,11 @@ func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.P
 		{Name: "Protecode Report", Target: path.Join("artifact", config.ReportFileName), Scope: "job"},
 	}
 
+	// write custom report
+	scanReport := protecode.CreateCustomReport(fileName, productID, parsedResult, vulns)
+	paths, err := protecode.WriteCustomReports(scanReport, fileName, fmt.Sprint(productID))
+	reports = append(reports, paths...)
+
 	// create toolrecord file
 	toolRecordFileName, err := createToolRecordProtecode("./", config, productID, webuiURL)
 	if err != nil {
