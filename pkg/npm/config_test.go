@@ -4,7 +4,10 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/magiconair/properties"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewNPMRC(t *testing.T) {
@@ -28,4 +31,28 @@ func TestNewNPMRC(t *testing.T) {
 			}
 		})
 	}
+}
+
+func mockLoadProperties(t *testing.T, result *properties.Properties, err error) func(filename string, enc properties.Encoding) (*properties.Properties, error) {
+	return func(filename string, enc properties.Encoding) (*properties.Properties, error) {
+		return result, err
+	}
+}
+
+func TestLoad(t *testing.T) {
+	// init
+	config := NewNPMRC("")
+
+	new := properties.NewProperties()
+	new.Set("test", "anything")
+	loadProperties = mockLoadProperties(t, new, nil)
+	require.NotEmpty(t, new.Keys())
+
+	require.Empty(t, config.values.Keys())
+	// test
+	err := config.Load()
+	// assert
+	assert.NoError(t, err)
+	assert.NotEmpty(t, config.values.Keys())
+
 }
