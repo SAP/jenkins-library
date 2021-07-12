@@ -33,34 +33,30 @@ func (exec *Execute) publish(packageJSON, registry, username, password string) e
 	execRunner := exec.Utils.GetExecRunner()
 
 	if len(registry) > 0 {
-		log.Entry().Info("Registry provided, modifying .npmrc file!")
 		npmrc := NewNPMRC(filepath.Dir(packageJSON))
-
+		// check existing .npmrc file
 		if exists, err := piperutils.FileExists(npmrc.filepath); exists {
 			if err != nil {
-				return errors.Wrapf(err, "failed to check existing %s file", npmrc.filepath)
+				return errors.Wrapf(err, "failed to check for existing %s file", npmrc.filepath)
 			}
-			log.Entry().Debug("loading existing file")
-			err = npmrc.Load()
-			if err != nil {
+			log.Entry().Debugf("loading existing %s file", npmrc.filepath)
+			if err = npmrc.Load(); err != nil {
 				return errors.Wrapf(err, "failed to read existing %s file", npmrc.filepath)
 			}
-			log.Entry().Debugf("content: %s", npmrc.Print())
 		}
-
+		// set registry
 		npmrc.Set("registry", registry)
-		log.Entry().Debugf("content: %s", npmrc.Print())
-
+		// set registry auth
 		if len(username) > 0 && len(password) > 0 {
 			npmrc.SetAuth(registry, username, password)
-			log.Entry().Debugf("content: %s", npmrc.Print())
 		}
-
+		//
+		// update .npmrc
 		if err := npmrc.Write(); err != nil {
-			return err
+			return errors.Wrapf(err, "failed to update %s file", npmrc.filepath)
 		}
 	} else {
-		log.Entry().Info("No registry provided!")
+		log.Entry().Debug("no registry provided")
 	}
 
 	err := execRunner.RunExecutable("npm", "publish", filepath.Dir(packageJSON))
