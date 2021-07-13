@@ -102,7 +102,7 @@ func (action *UploadAction) Perform(command Exec) error {
 		return fmt.Errorf("invalid configuration parameters detected. SOLMAN upload parameter may be missing : %w", err)
 	}
 	if len(parametersWithMissingValues) != 0 {
-		return fmt.Errorf("Cannot perform artifact upload. The following parameters are not available %s", parametersWithMissingValues)
+		return fmt.Errorf("cannot perform artifact upload. The following parameters are not available %s", parametersWithMissingValues)
 	}
 
 	command.SetEnv([]string{

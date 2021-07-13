@@ -17,7 +17,6 @@ import (
 type integrationArtifactTriggerIntegrationTestOptions struct {
 	IFlowServiceKey         string `json:"iFlowServiceKey,omitempty"`
 	IntegrationFlowID       string `json:"integrationFlowId,omitempty"`
-	Platform                string `json:"platform,omitempty"`
 	IFlowServiceEndpointURL string `json:"iFlowServiceEndpointUrl,omitempty"`
 	ContentType             string `json:"contentType,omitempty"`
 	MessageBodyPath         string `json:"messageBodyPath,omitempty"`
@@ -40,6 +39,8 @@ func IntegrationArtifactTriggerIntegrationTestCommand() *cobra.Command {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
+
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
@@ -97,9 +98,8 @@ func IntegrationArtifactTriggerIntegrationTestCommand() *cobra.Command {
 }
 
 func addIntegrationArtifactTriggerIntegrationTestFlags(cmd *cobra.Command, stepConfig *integrationArtifactTriggerIntegrationTestOptions) {
-	cmd.Flags().StringVar(&stepConfig.IFlowServiceKey, "iFlowServiceKey", os.Getenv("PIPER_iFlowServiceKey"), "User to authenticate to the SAP Cloud Platform Integration Service")
+	cmd.Flags().StringVar(&stepConfig.IFlowServiceKey, "iFlowServiceKey", os.Getenv("PIPER_iFlowServiceKey"), "Service key JSON string to access the Process Integration Runtime service instance of plan 'integration-flow'")
 	cmd.Flags().StringVar(&stepConfig.IntegrationFlowID, "integrationFlowId", os.Getenv("PIPER_integrationFlowId"), "Specifies the ID of the Integration Flow artifact")
-	cmd.Flags().StringVar(&stepConfig.Platform, "platform", `cf`, "Specifies the running platform of the SAP Cloud platform integraion service")
 	cmd.Flags().StringVar(&stepConfig.IFlowServiceEndpointURL, "iFlowServiceEndpointUrl", os.Getenv("PIPER_iFlowServiceEndpointUrl"), "Specifies the URL endpoint of the iFlow. Please provide in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.")
 	cmd.Flags().StringVar(&stepConfig.ContentType, "contentType", os.Getenv("PIPER_contentType"), "Specifies the content type of the file defined in messageBodyPath e.g. application/json")
 	cmd.Flags().StringVar(&stepConfig.MessageBodyPath, "messageBodyPath", os.Getenv("PIPER_messageBodyPath"), "Speficfies the relative file path to the message body.")
@@ -120,14 +120,14 @@ func integrationArtifactTriggerIntegrationTestMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "iFlowCredentialsId", Description: "Jenkins credentials ID containing username and password for authentication to the SAP Cloud Platform Integration API's", Type: "jenkins"},
+					{Name: "iFlowServiceKeyCredentialsId", Description: "Jenkins secret text credential ID containing the service key to the Process Integration Runtime service instance of plan 'integration-flow'", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{
 						Name: "iFlowServiceKey",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "iFlowCredentialsId",
+								Name:  "iFlowServiceKeyCredentialsId",
 								Param: "iFlowServiceKey",
 								Type:  "secret",
 							},
@@ -146,15 +146,6 @@ func integrationArtifactTriggerIntegrationTestMetadata() config.StepData {
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_integrationFlowId"),
-					},
-					{
-						Name:        "platform",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     `cf`,
 					},
 					{
 						Name: "iFlowServiceEndpointUrl",

@@ -657,8 +657,11 @@ func autoresolveMavenClasspath(config fortifyExecuteScanOptions, file string, ut
 func generateMavenFortifyDefines(config *fortifyExecuteScanOptions, file string) []string {
 	defines := []string{
 		fmt.Sprintf("-Dmdep.outputFile=%v", file),
+		// Parameter to indicate to maven build that the fortify step is the trigger, can be used for optimizations
+		"-Dfortify",
 		"-DincludeScope=compile",
 		"-DskipTests",
+		"-Dmaven.javadoc.skip=true",
 		"--fail-at-end"}
 
 	if len(config.BuildDescriptorExcludeList) > 0 {
@@ -822,9 +825,9 @@ func populateMavenTranslate(config *fortifyExecuteScanOptions, classpath string)
 	translateList[0]["classpath"] = classpath
 
 	setTranslateEntryIfNotEmpty(translateList[0], "src", ":", config.Src,
-		[]string{"**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "**/src/main/resources/**/*", "**/src/main/java/**/*"})
+		[]string{"**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "**/src/main/resources/**/*", "**/src/main/java/**/*", "**/target/main/java/**/*", "**/target/main/resources/**/*", "**/target/generated-sources/**/*"})
 
-	setTranslateEntryIfNotEmpty(translateList[0], "exclude", getSeparator(), config.Exclude, []string{})
+	setTranslateEntryIfNotEmpty(translateList[0], "exclude", getSeparator(), config.Exclude, []string{"**/src/test/**/*"})
 
 	translateJSON, err := json.Marshal(translateList)
 
