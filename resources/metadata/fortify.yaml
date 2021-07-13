@@ -9,6 +9,12 @@ metadata:
     !!! hint "Scanning MTA projects"
         Build type `maven` requires a so called aggregator pom which includes all modules to be scanned. If used in a mta-project which includes non-java submodules as maven dependency (e.g. node via frontend-maven-plugin), exclude those by specifying java path explicitly, e.g. `java/**/src/main/java/**/*`.
 
+    Besides triggering a scan the step verifies the results after they have been uploaded and processed by the Fortify SSC. By default the following KPIs are enforced:
+    * All issues must be audited from the Corporate Security Requirements folder.
+    * All issues must be audited from the Audit All folder.
+    * At least one issue per category must be audited from the Spot Checks of Each Category folder.
+    * Nothing needs to be audited from the Optional folder.
+
 spec:
   inputs:
     secrets:
@@ -332,7 +338,8 @@ spec:
         description:
           "A list of source directories to scan. Wildcards can be used, e.g., `'src/main/java/**/*'`.
           If `'translate'` is set, this will ignored. The default value for `buildTool: 'maven'` is
-          `['**/*.xml', '**/*.html', '**/*.jsp', '**/*.js', '**/src/main/resources/**/*', '**/src/main/java/**/*']`, for
+          `['**/*.xml', '**/*.html', '**/*.jsp', '**/*.js', '**/src/main/resources/**/*', '**/src/main/java/**/*',
+          '**/target/main/java/**/*', '**/target/main/resources/**/*', '**/target/generated-sources/**/*']`, for
           `buildTool: 'pip'` it is `['./**/*']`."
         scope:
           - PARAMETERS
@@ -342,7 +349,8 @@ spec:
         type: "[]string"
         description:
           "A list of directories/files to be excluded from the scan. Wildcards can be used, e.g.,
-          `'**/Test.java'`. If `translate` is set, this will ignored."
+          `'**/Test.java'`. If `translate` is set, this will ignored. The default value for `buildTool: 'maven'` is
+          `['**/src/test/**/*']`, for `buildTool: 'pip'` it is `['./**/tests/**/*', './**/setup.py']`."
         scope:
           - PARAMETERS
           - STAGES

@@ -35,7 +35,6 @@ func TestRunIntegrationArtifactGetMplStatus(t *testing.T) {
 		config := integrationArtifactGetMplStatusOptions{
 			APIServiceKey:     apiServiceKey,
 			IntegrationFlowID: "flow1",
-			Platform:          "cf",
 		}
 
 		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactGetMplStatus", ResponseBody: ``, TestType: "Positive"}
@@ -46,7 +45,7 @@ func TestRunIntegrationArtifactGetMplStatus(t *testing.T) {
 			assert.EqualValues(t, seOut.custom.iFlowMplStatus, "COMPLETED")
 
 			t.Run("check url", func(t *testing.T) {
-				assert.Equal(t, "https://demo/api/v1/MessageProcessingLogs?$filter=IntegrationArtifact/Id+eq+'flow1'&$orderby=LogEnd+desc&$top=1", httpClient.URL)
+				assert.Equal(t, "https://demo/api/v1/MessageProcessingLogs?$filter=IntegrationArtifact/Id+eq+'flow1'+and+Status+ne+'DISCARDED'&$orderby=LogEnd+desc&$top=1", httpClient.URL)
 			})
 
 			t.Run("check method", func(t *testing.T) {
@@ -68,7 +67,6 @@ func TestRunIntegrationArtifactGetMplStatus(t *testing.T) {
 		config := integrationArtifactGetMplStatusOptions{
 			APIServiceKey:     apiServiceKey,
 			IntegrationFlowID: "flow1",
-			Platform:          "cf",
 		}
 
 		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactGetMplStatus", ResponseBody: ``, TestType: "Negative"}
@@ -77,7 +75,7 @@ func TestRunIntegrationArtifactGetMplStatus(t *testing.T) {
 		err := runIntegrationArtifactGetMplStatus(&config, nil, &httpClient, &seOut)
 		assert.EqualValues(t, seOut.custom.iFlowMplStatus, "")
 		assert.EqualError(t, err, "HTTP GET request to https://demo/api/v1/MessageProcessingLogs?$filter=IntegrationArtifact/"+
-			"Id+eq+'flow1'&$orderby=LogEnd+desc&$top=1 failed with error: "+
+			"Id+eq+'flow1'+and+Status+ne+'DISCARDED'&$orderby=LogEnd+desc&$top=1 failed with error: "+
 			"Unable to get integration flow MPL status, Response Status code:400")
 	})
 }
