@@ -43,6 +43,8 @@ func NpmExecuteScriptsCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
@@ -130,6 +132,7 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
 						Name:        "runScripts",
@@ -138,6 +141,7 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 					{
 						Name:        "defaultNpmRegistry",
@@ -146,6 +150,7 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "npm/defaultNpmRegistry"}},
+						Default:     os.Getenv("PIPER_defaultNpmRegistry"),
 					},
 					{
 						Name:        "virtualFrameBuffer",
@@ -154,6 +159,7 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name:        "scriptOptions",
@@ -162,6 +168,7 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 					{
 						Name:        "buildDescriptorExcludeList",
@@ -170,6 +177,7 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     []string{`deployment/**`},
 					},
 					{
 						Name:        "buildDescriptorList",
@@ -178,6 +186,7 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 					{
 						Name:        "createBOM",
@@ -186,11 +195,12 @@ func npmExecuteScriptsMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 				},
 			},
 			Containers: []config.Container{
-				{Name: "node", Image: "node:12-buster-slim"},
+				{Name: "node", Image: "node:lts-stretch"},
 			},
 		},
 	}

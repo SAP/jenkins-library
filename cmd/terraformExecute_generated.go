@@ -38,6 +38,8 @@ func TerraformExecuteCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
@@ -117,6 +119,7 @@ func terraformExecuteMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `plan`,
 					},
 					{
 						Name: "terraformSecrets",
@@ -131,6 +134,7 @@ func terraformExecuteMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_terraformSecrets"),
 					},
 					{
 						Name:        "additionalArgs",
@@ -139,6 +143,7 @@ func terraformExecuteMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 				},
 			},

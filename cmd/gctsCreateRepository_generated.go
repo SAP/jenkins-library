@@ -44,6 +44,8 @@ func GctsCreateRepositoryCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
@@ -128,6 +130,9 @@ func gctsCreateRepositoryMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "abapCredentialsId", Description: "Jenkins credentials ID containing username and password for authentication to the ABAP system on which you want to create the repository", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name: "username",
@@ -142,6 +147,7 @@ func gctsCreateRepositoryMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_username"),
 					},
 					{
 						Name: "password",
@@ -156,6 +162,7 @@ func gctsCreateRepositoryMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_password"),
 					},
 					{
 						Name:        "repository",
@@ -164,6 +171,7 @@ func gctsCreateRepositoryMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_repository"),
 					},
 					{
 						Name:        "host",
@@ -172,6 +180,7 @@ func gctsCreateRepositoryMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_host"),
 					},
 					{
 						Name:        "client",
@@ -180,6 +189,7 @@ func gctsCreateRepositoryMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_client"),
 					},
 					{
 						Name:        "remoteRepositoryURL",
@@ -188,6 +198,7 @@ func gctsCreateRepositoryMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_remoteRepositoryURL"),
 					},
 					{
 						Name:        "role",
@@ -196,6 +207,7 @@ func gctsCreateRepositoryMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_role"),
 					},
 					{
 						Name:        "vSID",
@@ -204,6 +216,7 @@ func gctsCreateRepositoryMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_vSID"),
 					},
 					{
 						Name:        "type",
@@ -212,6 +225,7 @@ func gctsCreateRepositoryMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `GIT`,
 					},
 				},
 			},

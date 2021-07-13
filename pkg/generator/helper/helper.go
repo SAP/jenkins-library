@@ -35,6 +35,7 @@ type stepInfo struct {
 	Sidecars         []config.Container
 	Outputs          config.StepOutputs
 	Resources        []config.StepResources
+	Secrets          []config.StepSecrets
 }
 
 //StepGoTemplate ...
@@ -96,6 +97,8 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.Verbose)
+
+			{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.GitHubAccessTokens = {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}ResolveAccessTokens({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID, Path: path}
@@ -189,6 +192,17 @@ func {{ .StepName }}Metadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				{{ if .Secrets -}}
+				Secrets: []config.StepSecrets{
+					{{- range $secrets := .Secrets }}
+					{
+						{{- if $secrets.Name -}} Name: "{{$secrets.Name}}",{{- end }}
+						{{- if $secrets.Description -}} Description: "{{$secrets.Description}}",{{- end }}
+						{{- if $secrets.Type -}} Type: "{{$secrets.Type}}",{{- end }}
+						{{- if $secrets.Aliases -}} Aliases: []config.Alias{ {{- range $i, $a := $secrets.Aliases }} {Name: "{{$a.Name}}", Deprecated: {{$a.Deprecated}}}, {{ end -}}  },{{- end }}
+					}, {{ end }}
+				},
+				{{ end -}}
 				{{ if .Resources -}}
 				Resources: []config.StepResources{
 					{{- range $resource := .Resources }}
@@ -209,6 +223,8 @@ func {{ .StepName }}Metadata() config.StepData {
 						Type:      "{{ $value.Type }}",
 						Mandatory: {{ $value.Mandatory }},
 						Aliases:   []config.Alias{{ "{" }}{{ range $notused, $alias := $value.Aliases }}{{ "{" }}Name: "{{ $alias.Name }}"{{ "}" }},{{ end }}{{ "}" }},
+						{{ if $value.Default -}} Default:   {{ $value.Default }}, {{- end}}{{ if $value.Conditions }}
+						Conditions: []config.Condition{ {{- range $i, $cond := $value.Conditions }} {ConditionRef: "{{$cond.ConditionRef}}", Params: []config.Param{ {{- range $j, $p := $cond.Params}} { Name: "{{$p.Name}}", Value: "{{$p.Value}}" }, {{end -}} } }, {{ end -}} },{{- end }}
 					},{{ end }}
 				},
 			},
@@ -573,6 +589,7 @@ func getStepInfo(stepData *config.StepData, osImport bool, exportPrefix string) 
 			Sidecars:         stepData.Spec.Sidecars,
 			Outputs:          stepData.Spec.Outputs,
 			Resources:        stepData.Spec.Inputs.Resources,
+			Secrets:          stepData.Spec.Inputs.Secrets,
 		},
 		err
 }

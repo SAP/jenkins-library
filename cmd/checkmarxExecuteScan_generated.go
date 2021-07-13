@@ -198,6 +198,8 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
@@ -296,6 +298,9 @@ func checkmarxExecuteScanMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "checkmarxCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing username and password to communicate with the Checkmarx backend.", Type: "jenkins"},
+				},
 				Resources: []config.StepResources{
 					{Name: "checkmarx", Type: "stash"},
 				},
@@ -307,6 +312,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
 						Name:        "filterPattern",
@@ -315,6 +321,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `!**/node_modules/**, !**/.xmake/**, !**/*_test.go, !**/vendor/**/*.go, **/*.html, **/*.xml, **/*.go, **/*.py, **/*.js, **/*.scala, **/*.ts`,
 					},
 					{
 						Name:        "fullScanCycle",
@@ -323,6 +330,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `5`,
 					},
 					{
 						Name:        "fullScansScheduled",
@@ -331,6 +339,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
 						Name:        "generatePdfReport",
@@ -339,6 +348,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
 						Name:        "incremental",
@@ -347,6 +357,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
 						Name:        "maxRetries",
@@ -355,6 +366,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     3,
 					},
 					{
 						Name: "password",
@@ -375,6 +387,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_password"),
 					},
 					{
 						Name:        "preset",
@@ -383,6 +396,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_preset"),
 					},
 					{
 						Name:        "projectName",
@@ -391,6 +405,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "checkmarxProject"}, {Name: "checkMarxProjectName"}},
+						Default:     os.Getenv("PIPER_projectName"),
 					},
 					{
 						Name:        "pullRequestName",
@@ -399,6 +414,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_pullRequestName"),
 					},
 					{
 						Name:        "serverUrl",
@@ -407,6 +423,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "checkmarxServerUrl"}},
+						Default:     os.Getenv("PIPER_serverUrl"),
 					},
 					{
 						Name:        "sourceEncoding",
@@ -415,6 +432,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `1`,
 					},
 					{
 						Name:        "teamId",
@@ -423,6 +441,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "checkmarxGroupId"}, {Name: "groupId"}},
+						Default:     os.Getenv("PIPER_teamId"),
 					},
 					{
 						Name:        "teamName",
@@ -431,6 +450,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_teamName"),
 					},
 					{
 						Name: "username",
@@ -451,6 +471,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_username"),
 					},
 					{
 						Name:        "verifyOnly",
@@ -459,6 +480,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name:        "vulnerabilityThresholdEnabled",
@@ -467,6 +489,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
 						Name:        "vulnerabilityThresholdHigh",
@@ -475,6 +498,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     100,
 					},
 					{
 						Name:        "vulnerabilityThresholdLow",
@@ -483,6 +507,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     10,
 					},
 					{
 						Name:        "vulnerabilityThresholdMedium",
@@ -491,6 +516,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     100,
 					},
 					{
 						Name:        "vulnerabilityThresholdResult",
@@ -499,6 +525,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `FAILURE`,
 					},
 					{
 						Name:        "vulnerabilityThresholdUnit",
@@ -507,6 +534,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `percentage`,
 					},
 				},
 			},

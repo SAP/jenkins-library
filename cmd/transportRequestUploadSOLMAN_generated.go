@@ -78,6 +78,8 @@ The application ID specifies how the file needs to be handled on server side.`,
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
@@ -165,6 +167,9 @@ func transportRequestUploadSOLMANMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "uploadCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing user and password to authenticate against the ABAP backend", Type: "jenkins", Aliases: []config.Alias{{Name: "changeManagement/credentialsId", Deprecated: false}}},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "endpoint",
@@ -173,6 +178,7 @@ func transportRequestUploadSOLMANMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "changeManagement/endpoint"}},
+						Default:     os.Getenv("PIPER_endpoint"),
 					},
 					{
 						Name: "username",
@@ -187,6 +193,7 @@ func transportRequestUploadSOLMANMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_username"),
 					},
 					{
 						Name: "password",
@@ -201,6 +208,7 @@ func transportRequestUploadSOLMANMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_password"),
 					},
 					{
 						Name:        "applicationId",
@@ -209,6 +217,7 @@ func transportRequestUploadSOLMANMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_applicationId"),
 					},
 					{
 						Name: "changeDocumentId",
@@ -222,6 +231,7 @@ func transportRequestUploadSOLMANMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_changeDocumentId"),
 					},
 					{
 						Name: "transportRequestId",
@@ -235,6 +245,7 @@ func transportRequestUploadSOLMANMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_transportRequestId"),
 					},
 					{
 						Name: "filePath",
@@ -248,6 +259,7 @@ func transportRequestUploadSOLMANMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_filePath"),
 					},
 					{
 						Name:        "cmClientOpts",
@@ -256,6 +268,7 @@ func transportRequestUploadSOLMANMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "clientOpts"}, {Name: "changeManagement/clientOpts"}},
+						Default:     []string{},
 					},
 				},
 			},

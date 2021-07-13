@@ -16,6 +16,7 @@ import (
 
 type mavenBuildOptions struct {
 	PomPath                         string   `json:"pomPath,omitempty"`
+	Profiles                        []string `json:"profiles,omitempty"`
 	Flatten                         bool     `json:"flatten,omitempty"`
 	Verify                          bool     `json:"verify,omitempty"`
 	ProjectSettingsFile             string   `json:"projectSettingsFile,omitempty"`
@@ -50,6 +51,8 @@ supports ci friendly versioning by flattening the pom before installing.`,
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
+
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
@@ -108,6 +111,7 @@ supports ci friendly versioning by flattening the pom before installing.`,
 
 func addMavenBuildFlags(cmd *cobra.Command, stepConfig *mavenBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.PomPath, "pomPath", `pom.xml`, "Path to the pom file which should be installed including all children.")
+	cmd.Flags().StringSliceVar(&stepConfig.Profiles, "profiles", []string{}, "Defines list of maven build profiles to be used.")
 	cmd.Flags().BoolVar(&stepConfig.Flatten, "flatten", true, "Defines if the pom files should be flattened to support ci friendly maven versioning.")
 	cmd.Flags().BoolVar(&stepConfig.Verify, "verify", false, "Instead of installing the artifact only the verify lifecycle phase is executed.")
 	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Path to the mvn settings file that should be used as project settings file.")
@@ -134,6 +138,9 @@ func mavenBuildMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "altDeploymentRepositoryPasswordId", Description: "Jenkins credentials ID containing the artifact deployment repository password.", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "pomPath",
@@ -142,6 +149,16 @@ func mavenBuildMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `pom.xml`,
+					},
+					{
+						Name:        "profiles",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 					{
 						Name:        "flatten",
@@ -150,6 +167,7 @@ func mavenBuildMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
 						Name:        "verify",
@@ -158,6 +176,7 @@ func mavenBuildMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name:        "projectSettingsFile",
@@ -166,6 +185,7 @@ func mavenBuildMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile"}},
+						Default:     os.Getenv("PIPER_projectSettingsFile"),
 					},
 					{
 						Name: "globalSettingsFile",
@@ -179,6 +199,7 @@ func mavenBuildMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "maven/globalSettingsFile"}},
+						Default:   os.Getenv("PIPER_globalSettingsFile"),
 					},
 					{
 						Name:        "m2Path",
@@ -187,6 +208,7 @@ func mavenBuildMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
+						Default:     os.Getenv("PIPER_m2Path"),
 					},
 					{
 						Name:        "logSuccessfulMavenTransfers",
@@ -195,6 +217,7 @@ func mavenBuildMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/logSuccessfulMavenTransfers"}},
+						Default:     false,
 					},
 					{
 						Name:        "createBOM",
@@ -203,6 +226,7 @@ func mavenBuildMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/createBOM"}},
+						Default:     false,
 					},
 					{
 						Name: "altDeploymentRepositoryPassword",
@@ -227,6 +251,7 @@ func mavenBuildMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_altDeploymentRepositoryPassword"),
 					},
 					{
 						Name: "altDeploymentRepositoryUser",
@@ -240,6 +265,7 @@ func mavenBuildMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_altDeploymentRepositoryUser"),
 					},
 					{
 						Name: "altDeploymentRepositoryUrl",
@@ -253,6 +279,7 @@ func mavenBuildMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_altDeploymentRepositoryUrl"),
 					},
 					{
 						Name: "altDeploymentRepositoryID",
@@ -266,6 +293,7 @@ func mavenBuildMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_altDeploymentRepositoryID"),
 					},
 					{
 						Name:        "customTlsCertificateLinks",
@@ -274,6 +302,7 @@ func mavenBuildMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 					{
 						Name:        "publish",
@@ -282,6 +311,7 @@ func mavenBuildMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/publish"}},
+						Default:     false,
 					},
 				},
 			},

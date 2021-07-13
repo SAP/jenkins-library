@@ -41,6 +41,8 @@ It can be used no matter if a Docker daemon is available or not. It will also wo
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
@@ -128,6 +130,7 @@ func containerSaveImageMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{{Name: "dockerRegistryUrl"}},
+						Default:   os.Getenv("PIPER_containerRegistryUrl"),
 					},
 					{
 						Name: "containerImage",
@@ -141,6 +144,7 @@ func containerSaveImageMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{{Name: "dockerImage"}, {Name: "scanImage"}},
+						Default:   os.Getenv("PIPER_containerImage"),
 					},
 					{
 						Name:        "filePath",
@@ -149,6 +153,7 @@ func containerSaveImageMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_filePath"),
 					},
 					{
 						Name:        "includeLayers",
@@ -157,6 +162,7 @@ func containerSaveImageMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 				},
 			},

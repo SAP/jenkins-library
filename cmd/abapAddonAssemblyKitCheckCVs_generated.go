@@ -52,7 +52,7 @@ func (p *abapAddonAssemblyKitCheckCVsCommonPipelineEnvironment) persist(path, re
 	}
 }
 
-// AbapAddonAssemblyKitCheckCVsCommand This step checks the validity of Software Component Versions.
+// AbapAddonAssemblyKitCheckCVsCommand This step checks the validity of ABAP Software Component Versions.
 func AbapAddonAssemblyKitCheckCVsCommand() *cobra.Command {
 	const STEP_NAME = "abapAddonAssemblyKitCheckCVs"
 
@@ -64,13 +64,17 @@ func AbapAddonAssemblyKitCheckCVsCommand() *cobra.Command {
 
 	var createAbapAddonAssemblyKitCheckCVsCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "This step checks the validity of Software Component Versions.",
-		Long: `This steps takes a list of Software Component Versions from the addonDescriptorFileName and checks whether they exist or are a valid successor of an existing Software Component Version.
-It resolves the dotted version string into version, support package level and patch level and writes it to the commonPipelineEnvironment.`,
+		Short: "This step checks the validity of ABAP Software Component Versions.",
+		Long: `This steps takes the list of ABAP Software Component Versions(repositories) from the addonDescriptor configuration file specified via addonDescriptorFileName (e.g. addon.yml) and checks by calling AAKaaS whether they exist or are a valid successor of an existing Software Component Version.
+It resolves the dotted version string into version, support package level and patch level and writes it to the addonDescriptor structure in the Piper commonPipelineEnvironment for usage of subsequent pipeline steps.
+<br />
+For Terminology refer to the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
+
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
@@ -148,10 +152,13 @@ func abapAddonAssemblyKitCheckCVsMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "abapAddonAssemblyKitCheckCVs",
 			Aliases:     []config.Alias{},
-			Description: "This step checks the validity of Software Component Versions.",
+			Description: "This step checks the validity of ABAP Software Component Versions.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "abapAddonAssemblyKitCredentialsId", Description: "CredentialsId stored in Jenkins for the Addon Assembly Kit as a Service (AAKaaS) system", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "abapAddonAssemblyKitEndpoint",
@@ -160,6 +167,7 @@ func abapAddonAssemblyKitCheckCVsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     `https://apps.support.sap.com`,
 					},
 					{
 						Name:        "username",
@@ -168,6 +176,7 @@ func abapAddonAssemblyKitCheckCVsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_username"),
 					},
 					{
 						Name:        "password",
@@ -176,6 +185,7 @@ func abapAddonAssemblyKitCheckCVsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_password"),
 					},
 					{
 						Name:        "addonDescriptorFileName",
@@ -184,6 +194,7 @@ func abapAddonAssemblyKitCheckCVsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     `addon.yml`,
 					},
 					{
 						Name: "addonDescriptor",
@@ -197,6 +208,7 @@ func abapAddonAssemblyKitCheckCVsMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_addonDescriptor"),
 					},
 				},
 			},

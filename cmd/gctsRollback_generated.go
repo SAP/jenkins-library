@@ -44,6 +44,8 @@ gctsRollback will rollback to the previously active commit in the local reposito
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
@@ -127,6 +129,10 @@ func gctsRollbackMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "abapCredentialsId", Description: "Jenkins credentials ID containing username and password for authentication to the ABAP system on which you want to perform the rollback", Type: "jenkins"},
+					{Name: "githubPersonalAccessTokenId", Description: "GitHub personal access token with at least read permissions for the remote repository", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name: "username",
@@ -141,6 +147,7 @@ func gctsRollbackMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_username"),
 					},
 					{
 						Name: "password",
@@ -155,6 +162,7 @@ func gctsRollbackMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_password"),
 					},
 					{
 						Name:        "repository",
@@ -163,6 +171,7 @@ func gctsRollbackMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_repository"),
 					},
 					{
 						Name:        "host",
@@ -171,6 +180,7 @@ func gctsRollbackMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_host"),
 					},
 					{
 						Name:        "client",
@@ -179,6 +189,7 @@ func gctsRollbackMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_client"),
 					},
 					{
 						Name:        "commit",
@@ -187,6 +198,7 @@ func gctsRollbackMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_commit"),
 					},
 					{
 						Name: "githubPersonalAccessToken",
@@ -200,6 +212,7 @@ func gctsRollbackMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_githubPersonalAccessToken"),
 					},
 				},
 			},

@@ -55,6 +55,8 @@ For PMD the failure priority and the max allowed violations are configurable via
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
@@ -144,6 +146,7 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
 						Name:        "pmd",
@@ -152,6 +155,7 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
 						Name:        "mavenModulesExcludes",
@@ -160,6 +164,7 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 					{
 						Name:        "spotBugsExcludeFilterFile",
@@ -168,6 +173,7 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "spotBugs/excludeFilterFile"}},
+						Default:     os.Getenv("PIPER_spotBugsExcludeFilterFile"),
 					},
 					{
 						Name:        "spotBugsIncludeFilterFile",
@@ -176,6 +182,7 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "spotBugs/includeFilterFile"}},
+						Default:     os.Getenv("PIPER_spotBugsIncludeFilterFile"),
 					},
 					{
 						Name:        "spotBugsMaxAllowedViolations",
@@ -184,6 +191,7 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "spotBugs/maxAllowedViolations"}},
+						Default:     0,
 					},
 					{
 						Name:        "pmdFailurePriority",
@@ -192,6 +200,7 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "pmd/failurePriority"}},
+						Default:     0,
 					},
 					{
 						Name:        "pmdMaxAllowedViolations",
@@ -200,6 +209,7 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "pmd/maxAllowedViolations"}},
+						Default:     0,
 					},
 					{
 						Name:        "projectSettingsFile",
@@ -208,6 +218,7 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile"}},
+						Default:     os.Getenv("PIPER_projectSettingsFile"),
 					},
 					{
 						Name:        "globalSettingsFile",
@@ -216,6 +227,7 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile"}},
+						Default:     os.Getenv("PIPER_globalSettingsFile"),
 					},
 					{
 						Name:        "m2Path",
@@ -224,6 +236,7 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
+						Default:     os.Getenv("PIPER_m2Path"),
 					},
 					{
 						Name:        "logSuccessfulMavenTransfers",
@@ -232,6 +245,7 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/logSuccessfulMavenTransfers"}},
+						Default:     false,
 					},
 					{
 						Name:        "installArtifacts",
@@ -240,6 +254,7 @@ func mavenExecuteStaticCodeChecksMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 				},
 			},

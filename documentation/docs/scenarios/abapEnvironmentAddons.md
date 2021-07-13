@@ -53,6 +53,10 @@ As explained above, the shipment of a software takes place via add-on product ve
   - Software component release
   - Delivery Package, which delivers the versions
 
+In stage *Build* a target vector for the particular add-on product version is published in test scope. This makes it possible to perform a add-on test installation in stage *Integration Tests*. At this point the new add-on product version is not available for add-on updates and can only be installed during system provisioning by providing the `addon_product_version` parameter explicitly.
+
+In stage *Publish* the target vector is then published in production scope, so that the new version will become available for addon update and installation during system provisioning without providing a particular `addon_product_version`.
+
 ## Building the Add-on Product
 
 The build process of an add-on product is orchestrated by a Jenkins Pipeline, the “ABAP environment pipeline” provided in this project. To run this pipeline, it only needs to be configured – which will be explained in the sections “Prerequisites” and “Configuration”.
@@ -82,7 +86,7 @@ With these SAP tools the assembled add-on deliveries are deployed to ABAP system
 
 #### Installation Test System
 
-In order to verify that the delivery packages included in the add-on product version being built are installable, a target vector is published in "test" scope. In the *Integration Tests* stage an ABAP system of service plan `saas_oem` is created. This ABAP system makes it possible to install a specific add-on product version into an ABAP system that is provisioned. The installation test system should be be provisioned with parameter `is_development_allowed = false` to prevent local changes.
+In order to verify that the delivery packages included in the add-on product version being built are installable, a target vector is published in "test" scope. In the *Integration Tests* stage an ABAP system of [service plan `saas_oem`](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/1697387c02e74e66a55cf21a05678167.html) is created. This  makes it possible to install a specific add-on product version into an ABAP system that is provisioned. The installation test system should be be provisioned with the parameter `is_development_allowed = false` to prevent local changes.
 
 ### Prerequisites
 
@@ -98,7 +102,7 @@ The pipeline configuration is done in a git repository (for example on GitHub). 
 
 #### Add-on Assembly Kit as a Service (=AAKaaS)
 
-The communication with the AAKaaS needs a technical communication user. The creation and activation of such a user is described in [SAP note 2174416](https://launchpad.support.sap.com/#/notes/2174416). Make sure that this technical communication user is assigned to the customer number under which the “SAP CP ABAP ENVIRONMENT” tenants are licensed and for which the development namespace was reserved. The user and password need to be stored in the Jenkins Credentials Store.
+The communication with the AAKaaS needs a technical communication user. The creation and activation of such a user is described in [SAP note 2174416](https://launchpad.support.sap.com/#/notes/2174416). Make sure that this technical communication user is assigned to the customer number under which the SAP BTP, ABAP Environment instances are licensed and for which the development namespace was reserved. The user and password need to be stored in the Jenkins Credentials Store.
 
 #### Cloud Foundry Access
 
@@ -111,7 +115,14 @@ Later, during the pipeline configuration, you will specify the Service Plan, whi
 
 #### Register Add-on Product for a Global Account
 
-The add-on product needs to be registered with SAP in order to be installable in the desired global account. More details will follow soon.
+The registration of a new add-on product is a manual step. Your add-on product should only be installed in ABAP systems within your global production account. Therefore, the add-on product name and global production account need to be registered with SAP. This process is described in [Build](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/3bf575a3dc5043f895f8bd411d2a86a1.html#loio25049720bde447e395b3df0bc05e5a50) in section *Register add-on product/global production account*.
+
+- As an add-on admin, create an incident using component BC-CP-ABA, and provide the following information:
+Add-on product name = `addonProduct` in `addon.yml` file, e.g. /NAMESPACE/NAME
+
+- Global production account ID = *Account ID* in section *Global Account Info* on the overview page of your global account, e.g. `151b5fdc-58c1-4a55-95e1-467df2134c5f` (Feature Set A) or *Global Account Info* on the *Usage Analytics* page of your global account (Feature Set B).
+
+This step can be triggered by you or by SAP partner management (governance process to be negotiated). As a response to the service request, SAP creates a configuration for the requested add-on product so that the add-on product can be installed in the global account.
 
 #### Project "Piper" Library Version to SAP BTP, ABAP Environment Dependency
 

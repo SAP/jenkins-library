@@ -127,11 +127,15 @@ spec:
           - STEPS
       - name: customVersioningScheme
         type: string
-        description: "For `buildTool: custom`: Defines the versioning scheme to be used (possible options `pep440`, `maven`, `semver2`)."
+        description: "For `buildTool: custom`: Defines the versioning scheme to be used."
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
+        possibleValues:
+          - maven
+          - pep440
+          - semver2
       - name: dockerVersionSource
         type: string
         description: "For `buildTool: docker`: Defines the source of the version. Can be `FROM`, any supported _buildTool_ or an environment variable name."
