@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/pkg/errors"
+
+	"github.com/SAP/jenkins-library/pkg/log"
+	CredentialUtils "github.com/SAP/jenkins-library/pkg/piperutils"
+	FileUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 // PublishAllPackages executes npm or yarn Install for all package.json fileUtils defined in packageJSONFiles
@@ -35,7 +37,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string) e
 	if len(registry) > 0 {
 		npmrc := NewNPMRC(filepath.Dir(packageJSON))
 		// check existing .npmrc file
-		if exists, err := piperutils.FileExists(npmrc.filepath); exists {
+		if exists, err := FileUtils.FileExists(npmrc.filepath); exists {
 			if err != nil {
 				return errors.Wrapf(err, "failed to check for existing %s file", npmrc.filepath)
 			}
@@ -43,16 +45,18 @@ func (exec *Execute) publish(packageJSON, registry, username, password string) e
 			if err = npmrc.Load(); err != nil {
 				return errors.Wrapf(err, "failed to read existing %s file", npmrc.filepath)
 			}
+		} else {
+			log.Entry().Debug("creating .npmrc file")
 		}
 		// set registry
+		log.Entry().Debug("adding registry", registry)
 		npmrc.Set("registry", registry)
 		// set registry auth
 		if len(username) > 0 && len(password) > 0 {
+			log.Entry().Debug("adding registry credentials")
+			npmrc.Set("_auth", CredentialUtils.EncodeUsernamePassword(username, password))
 			npmrc.Set("always-auth", "true")
-			npmrc.Set("_auth", encode(username, password))
-			// npmrc.SetAuth(registry, username, password)
 		}
-		//
 		// update .npmrc
 		if err := npmrc.Write(); err != nil {
 			return errors.Wrapf(err, "failed to update %s file", npmrc.filepath)
