@@ -48,7 +48,9 @@ func (exec *Execute) publish(packageJSON, registry, username, password string) e
 		npmrc.Set("registry", registry)
 		// set registry auth
 		if len(username) > 0 && len(password) > 0 {
-			npmrc.SetAuth(registry, username, password)
+			npmrc.Set("always-auth", "true")
+			npmrc.Set("_auth", encode(username, password))
+			// npmrc.SetAuth(registry, username, password)
 		}
 		//
 		// update .npmrc
