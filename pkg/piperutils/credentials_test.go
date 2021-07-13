@@ -38,7 +38,7 @@ func TestEncodeToken(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := EncodeToken(tt.args.token); got != tt.want {
+			if got := EncodeString(tt.args.token); got != tt.want {
 				t.Errorf("EncodeToken() = %v, want %v", got, tt.want)
 			}
 		})

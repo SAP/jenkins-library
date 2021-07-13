@@ -5,10 +5,10 @@ import (
 	"fmt"
 )
 
-func EncodeToken(token string) string {
+func EncodeString(token string) string {
 	return base64.StdEncoding.EncodeToString([]byte(token))
 }
 
 func EncodeUsernamePassword(username, password string) string {
-	return EncodeToken(fmt.Sprintf("%s:%s", username, password))
+	return EncodeString(fmt.Sprintf("%s:%s", username, password))
 }
