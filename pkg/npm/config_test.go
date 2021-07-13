@@ -45,7 +45,7 @@ func TestLoad(t *testing.T) {
 
 	new := properties.NewProperties()
 	new.Set("test", "anything")
-	loadProperties = mockLoadProperties(t, new, nil)
+	propertiesLoadFile = mockLoadProperties(t, new, nil)
 	require.NotEmpty(t, new.Keys())
 
 	require.Empty(t, config.values.Keys())
