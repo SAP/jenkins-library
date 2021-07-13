@@ -30,14 +30,7 @@ type NPMRC struct {
 }
 
 func (rc *NPMRC) Write() error {
-	err := ioutil.WriteFile(rc.filepath, []byte(rc.values.String()), 0644)
-	// file, err := os.OpenFile(rc.filepath, os.O_CREATE|os.O_WRONLY, 0644)
-	// if err != nil {
-	// 	return errors.Wrapf(err, "failed to open %s", rc.filepath)
-	// }
-	// defer file.Close()
-	// _, err = file.WriteString(rc.values.String())
-	if err != nil {
+	if err := ioutil.WriteFile(rc.filepath, []byte(rc.values.String()), 0644); err != nil {
 		return errors.Wrapf(err, "failed to write %s", rc.filepath)
 	}
 	return nil
