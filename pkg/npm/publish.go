@@ -49,7 +49,7 @@ func (exec *Execute) publish(packageJSON, registry, username, password string) e
 			log.Entry().Debug("creating .npmrc file")
 		}
 		// set registry
-		log.Entry().Debug("adding registry", registry)
+		log.Entry().Debugf("adding registry %s", registry)
 		npmrc.Set("registry", registry)
 		// set registry auth
 		if len(username) > 0 && len(password) > 0 {
