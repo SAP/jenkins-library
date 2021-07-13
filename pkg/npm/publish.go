@@ -11,7 +11,7 @@ import (
 	FileUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
-// PublishAllPackages executes npm or yarn Install for all package.json fileUtils defined in packageJSONFiles
+// PublishAllPackages executes npm publish for all package.json files defined in packageJSONFiles list
 func (exec *Execute) PublishAllPackages(packageJSONFiles []string, registry, username, password string) error {
 	for _, packageJSON := range packageJSONFiles {
 		fileExists, err := exec.Utils.FileExists(packageJSON)
