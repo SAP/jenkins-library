@@ -375,10 +375,10 @@ func getTarName(config *protecodeExecuteScanOptions) string {
 // todo: check if group and product names can be retrieved
 func createToolRecordProtecode(workspace string, config *protecodeExecuteScanOptions, productID int, webuiURL string) (string, error) {
 	record := toolrecord.New(workspace, "protecode", config.ServerURL)
-	groupURL = config.ServerURL + "/#/groups/"+Config.Group
+	groupURL := config.ServerURL + "/#/groups/" + config.Group
 	err := record.AddKeyData("group",
 		config.Group,
-		config.Group, # todo figure out display name
+		config.Group, // todo figure out display name
 		groupURL)
 	if err != nil {
 		return "", err
