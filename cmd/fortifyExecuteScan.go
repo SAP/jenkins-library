@@ -259,7 +259,7 @@ func verifyFFProjectCompliance(config fortifyExecuteScanOptions, sys fortify.Sys
 	reports := []piperutils.Path{}
 	// Generate report
 	if config.Reporting {
-		resultURL := []byte(fmt.Sprintf("https://fortify.tools.sap/ssc/html/ssc/version/%v/fix/null/", projectVersion.ID))
+		resultURL := []byte(fmt.Sprintf("%v/html/ssc/version/%v/fix/null/", config.ServerURL, projectVersion.ID))
 		ioutil.WriteFile(fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, *project.Name, *projectVersion.Name, "txt"), resultURL, 0700)
 
 		data, err := generateAndDownloadQGateReport(config, sys, project, projectVersion)
