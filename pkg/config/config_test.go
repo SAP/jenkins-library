@@ -25,7 +25,7 @@ func (errReadCloser) Close() error {
 	return nil
 }
 
-func customDefaultsOpenFileMock(name string) (io.ReadCloser, error) {
+func customDefaultsOpenFileMock(name string, tokens map[string]string) (io.ReadCloser, error) {
 	return ioutil.NopCloser(strings.NewReader("general:\n  p0: p0_custom_default\nstages:\n  stage1:\n    p1: p1_custom_default")), nil
 }
 

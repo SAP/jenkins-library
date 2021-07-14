@@ -302,6 +302,10 @@ func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx
 		reports = append(reports, piperutils.Path{Target: toolRecordFileName})
 	}
 
+	scanReport := checkmarx.CreateCustomReport(results)
+	paths, err := checkmarx.WriteCustomReports(scanReport, fmt.Sprint(results["ProjectName"]), fmt.Sprint(results["ProjectID"]))
+	reports = append(reports, paths...)
+
 	links := []piperutils.Path{{Target: results["DeepLink"].(string), Name: "Checkmarx Web UI"}}
 	piperutils.PersistReportsAndLinks("checkmarxExecuteScan", utils.GetWorkspace(), reports, links)
 
