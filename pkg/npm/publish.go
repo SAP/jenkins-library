@@ -34,6 +34,25 @@ func (exec *Execute) PublishAllPackages(packageJSONFiles []string, registry, use
 func (exec *Execute) publish(packageJSON, registry, username, password string) error {
 	execRunner := exec.Utils.GetExecRunner()
 
+	npmignore := NewNPMIgnore(filepath.Dir(packageJSON))
+	if exists, err := FileUtils.FileExists(npmignore.filepath); exists {
+		if err != nil {
+			return errors.Wrapf(err, "failed to check for existing %s file", npmignore.filepath)
+		}
+		log.Entry().Debugf("loading existing %s file", npmignore.filepath)
+		if err = npmignore.Load(); err != nil {
+			return errors.Wrapf(err, "failed to read existing %s file", npmignore.filepath)
+		}
+	} else {
+		log.Entry().Debug("creating .npmignore file")
+	}
+	npmignore.Add("**/piper")
+	npmignore.Add("**/sap-piper")
+	// update .npmrc
+	if err := npmignore.Write(); err != nil {
+		return errors.Wrapf(err, "failed to update %s file", npmignore.filepath)
+	}
+
 	if len(registry) > 0 {
 		npmrc := NewNPMRC(filepath.Dir(packageJSON))
 		// check existing .npmrc file
