@@ -9,11 +9,6 @@
 * You have the S_DEVELOP authorization for operations on a SAPUI5 ABAP repository.
 * You have created a transport request on the ABAP system, which is the target container of the SAPUI5 application to upload.
 
-[SAP Fiori Tools User Guide](https://help.sap.com/viewer/17d50220bcd848aa854c9c182d65b699/Latest/en-US)
-[SAP Fiori Tools Deployment](https://help.sap.com/viewer/17d50220bcd848aa854c9c182d65b699/Latest/en-US/1b7a3be8d99c45aead90528ef472af37.html)
-[Generate Deployment Configuration ABAP](https://help.sap.com/viewer/17d50220bcd848aa854c9c182d65b699/Latest/en-US/c06b9cbb3f3641aabfe3a5d199e855a0.html)
-[Fiori Deploy](https://www.npmjs.com/package/@sap/ux-ui5-tooling#fiori-deploy---performs-the-deployment-of-the-application-into-an-abap-system)
-
 ## Upload Client Setup
 
 The step `transportRequestUploadCTS` uses the [Node.js](https://nodejs.org)-based [SAP Fiori tools](https://help.sap.com/viewer/product/SAP_FIORI_tools/Latest/en-US) to upload your SAPUI5 application to the UI5 repository service of your ABAP back-end infrastructure. It performs a deployment running the [Fiori deploy command](https://www.npmjs.com/package/@sap/ux-ui5-tooling#fiori-deploy---performs-the-deployment-of-the-application-into-an-abap-system) on a Docker image.
