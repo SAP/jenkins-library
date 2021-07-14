@@ -46,7 +46,9 @@ func (exec *Execute) publish(packageJSON, registry, username, password string) e
 	} else {
 		log.Entry().Debug("creating .npmignore file")
 	}
+	log.Entry().Debug("adding **/piper")
 	npmignore.Add("**/piper")
+	log.Entry().Debug("adding **/sap-piper")
 	npmignore.Add("**/sap-piper")
 	// update .npmrc
 	if err := npmignore.Write(); err != nil {
