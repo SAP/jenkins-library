@@ -59,7 +59,7 @@ func (p *transportRequestUploadCTSCommonPipelineEnvironment) persist(path, resou
 	}
 }
 
-// TransportRequestUploadCTSCommand Uploads a UI5 application from your project folder to the ABAP system via CTS connections.
+// TransportRequestUploadCTSCommand Uploads a UI5 application to the SAPUI5 ABAP repository.
 func TransportRequestUploadCTSCommand() *cobra.Command {
 	const STEP_NAME = "transportRequestUploadCTS"
 
@@ -71,8 +71,9 @@ func TransportRequestUploadCTSCommand() *cobra.Command {
 
 	var createTransportRequestUploadCTSCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Uploads a UI5 application from your project folder to the ABAP system via CTS connections.",
-		Long:  `This step uploads a UI5 application from your project folder to the ABAP system via CTS connections.`,
+		Short: "Uploads a UI5 application to the SAPUI5 ABAP repository.",
+		Long: `This step uploads a UI5 application from your project folder to the SAPUI5 ABAP repository of the SAPUI5 ABAP back-end infrastructure using the SAPUI5 Repository OData service.
+It processes the results of the ` + "`" + `ui5 build` + "`" + ` command of the SAPUI5 toolset.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -138,8 +139,8 @@ func TransportRequestUploadCTSCommand() *cobra.Command {
 }
 
 func addTransportRequestUploadCTSFlags(cmd *cobra.Command, stepConfig *transportRequestUploadCTSOptions) {
-	cmd.Flags().StringVar(&stepConfig.Description, "description", `Deployed with Piper based on SAP Fiori tools`, "The description of the application. The desription is only taken into account for a new upload. In case of an update the description will not be updated.")
-	cmd.Flags().StringVar(&stepConfig.Endpoint, "endpoint", os.Getenv("PIPER_endpoint"), "The ODATA service endpoint")
+	cmd.Flags().StringVar(&stepConfig.Description, "description", `Deployed with Piper based on SAP Fiori tools`, "The description of the application. The description is only taken into account for a new upload. In case of an update the description will not be updated.")
+	cmd.Flags().StringVar(&stepConfig.Endpoint, "endpoint", os.Getenv("PIPER_endpoint"), "The ODATA service endpoint: https://<host>:<port>/sap/opu/odata/SAP/SCTS_CLOUD_API_ODATA_SRV")
 	cmd.Flags().StringVar(&stepConfig.Client, "client", os.Getenv("PIPER_client"), "The ABAP client")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "Service user for uploading to the ABAP system via CTS")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Service user password for uploading to the ABAP system via CTS")
@@ -164,7 +165,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "transportRequestUploadCTS",
 			Aliases:     []config.Alias{{Name: "transportRequestUploadFile", Deprecated: false}},
-			Description: "Uploads a UI5 application from your project folder to the ABAP system via CTS connections.",
+			Description: "Uploads a UI5 application to the SAPUI5 ABAP repository.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
