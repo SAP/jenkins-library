@@ -33,17 +33,6 @@ func (ignorefile *NPMIgnore) Write() error {
 		return errors.Wrapf(err, "failed to write %s", ignorefile.filepath)
 	}
 	return nil
-	// file, err := os.Create(ignore.filepath)
-	// if err != nil {
-	// 	return err
-	// }
-	// defer file.Close()
-
-	// w := bufio.NewWriter(file)
-	// for _, line := range ignore.values {
-	// 	fmt.Fprintln(w, line)
-	// }
-	// return w.Flush()
 }
 
 func (ignorefile *NPMIgnore) Load() error {
