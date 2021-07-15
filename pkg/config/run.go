@@ -4,76 +4,50 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/SAP/jenkins-library/pkg/helper"
-
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/bmatcuk/doublestar"
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 )
 
 // RunConfig ...
 type RunConfig struct {
-	ConditionFilePath    string
-	Conditions           RunConditions
-	DeactivateStage      map[string]bool
-	DeactivateStageSteps map[string]map[string]bool
+	StageConfigFile io.ReadCloser
+	StageConfig     StageConfig
+	RunSteps        map[string]map[string]bool
+	OpenFile        func(s string, t map[string]string) (io.ReadCloser, error)
 }
 
-// RunConditions ...
-type RunConditions struct {
-	// StageConditions map[string]StepConditions `json:"stages,omitempty"`
-	StageConditions map[string]map[string]PipelineConditions `json:"stages,omitempty"`
+type StageConfig struct {
+	Stages map[string]StepConditions `json:"stages,omitempty"`
 }
 
-// PipelineConditions ..
-type PipelineConditions struct {
-	Conditions []v1beta1.PipelineTaskCondition `json:"conditions,omitempty"`
-}
-
-// Retriever ...
-type Retriever interface {
-	GetStepConfig(
-		flagValues map[string]interface{},
-		paramJSON string,
-		configuration io.ReadCloser,
-		defaults []io.ReadCloser,
-		ignoreCustomDefaults bool,
-		filters StepFilters,
-		parameters []StepParameters,
-		secrets []StepSecrets,
-		envParameters map[string]interface{},
-		stageName string,
-		stepName string,
-		stepAliases []Alias,
-	) (StepConfig, error)
+type StepConditions struct {
+	Conditions map[string]map[string]interface{} `json:"stepConditions,omitempty"`
 }
 
 // InitRunConfig ...
-func (r *RunConfig) InitRunConfig(config Retriever, stages map[string]map[string]interface{}, filters map[string]StepFilters, parameters map[string][]StepParameters, secrets map[string][]StepSecrets, stepAliases map[string][]Alias, glob func(pattern string) (matches []string, err error)) error {
-	if glob == nil {
-		glob = doublestar.Glob
-	}
-	r.DeactivateStage = map[string]bool{}
-	r.DeactivateStageSteps = map[string]map[string]bool{}
+func (r *RunConfig) InitRunConfig(config *Config, filters map[string]StepFilters, parameters map[string][]StepParameters,
+	secrets map[string][]StepSecrets, stepAliases map[string][]Alias, glob func(pattern string) (matches []string, err error),
+	openFile func(s string, t map[string]string) (io.ReadCloser, error)) error {
+	r.OpenFile = openFile
+	r.RunSteps = map[string]map[string]bool{}
 
-	if len(r.Conditions.StageConditions) == 0 {
+	if len(r.StageConfig.Stages) == 0 {
 		if err := r.loadConditions(); err != nil {
 			return errors.Wrap(err, "failed to load pipeline run conditions")
 		}
 	}
 
-	err := r.evaluateConditions(config, filters, parameters, secrets, stepAliases)
+	err := r.evaluateConditions(config, filters, parameters, secrets, stepAliases, glob)
 	if err != nil {
-		log.Entry().Errorf("Failed to evaluate step conditions: %v", err)
+		return errors.Wrap(err, "failed to evaluate step conditions: %v")
 	}
 
 	return nil
 }
 
 // ToDo: optimize parameter handling
-func (r *RunConfig) getStepConfig(config Retriever, stageName, stepName string, filters map[string]StepFilters, parameters map[string][]StepParameters, secrets map[string][]StepSecrets, stepAliases map[string][]Alias) (StepConfig, error) {
+func (r *RunConfig) getStepConfig(config *Config, stageName, stepName string, filters map[string]StepFilters,
+	parameters map[string][]StepParameters, secrets map[string][]StepSecrets, stepAliases map[string][]Alias) (StepConfig, error) {
 	// no support for flag values and envParameters
 	// so far not considered necessary
 
@@ -85,37 +59,18 @@ func (r *RunConfig) getStepConfig(config Retriever, stageName, stepName string, 
 	// not considered releavant for pipeline yaml syntax resolution
 	paramJSON := ""
 
-	return config.GetStepConfig(flagValues, paramJSON, nil, nil, false, filters[stepName], parameters[stepName], secrets[stepName], envParameters, stageName, stepName, stepAliases[stepName])
-}
-
-func (r *RunConfig) deactivateStageStep(stageName, stepName string) {
-	// todo: refactor logic of deactivate stage: check if stage is empty after condition eval?
-	// r.DeactivateStage[stageName] = true
-	if r.DeactivateStageSteps == nil {
-		r.DeactivateStageSteps = map[string]map[string]bool{}
-	}
-	if r.DeactivateStageSteps[stageName] == nil {
-		r.DeactivateStageSteps[stageName] = map[string]bool{}
-	}
-	r.DeactivateStageSteps[stageName][stepName] = true
+	return config.GetStepConfig(flagValues, paramJSON, nil, nil, false, filters[stepName], parameters[stepName], secrets[stepName],
+		envParameters, stageName, stepName, stepAliases[stepName])
 }
 
 func (r *RunConfig) loadConditions() error {
-	if r.ConditionFilePath == "" {
-		return errors.Errorf("empty conditions file path: could not load stage conditions")
-	}
-	conditionFile, err := helper.OpenFile(r.ConditionFilePath, helper.GithubCredentials)
+	defer r.StageConfigFile.Close()
+	content, err := ioutil.ReadAll(r.StageConfigFile)
 	if err != nil {
-		return errors.Errorf("cannot open stash settings: %v", err)
+		return errors.Wrapf(err, "error: failed to read the stageConfig file")
 	}
 
-	defer conditionFile.Close()
-	content, err := ioutil.ReadAll(conditionFile)
-	if err != nil {
-		return errors.Wrapf(err, "error reading %v", r.ConditionFilePath)
-	}
-
-	err = yaml.Unmarshal(content, &r.Conditions)
+	err = yaml.Unmarshal(content, &r.StageConfig)
 	if err != nil {
 		return errors.Errorf("format of configuration is invalid %q: %v", content, err)
 	}
