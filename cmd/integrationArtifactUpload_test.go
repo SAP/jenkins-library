@@ -23,7 +23,7 @@ func newIntegrationArtifactUploadTestsUtils() integrationArtifactUploadMockUtils
 
 func TestRunIntegrationArtifactUpload(t *testing.T) {
 	t.Parallel()
-	
+
 	t.Run("Successfull Integration Flow Create Test", func(t *testing.T) {
 		filesMock := mock.FilesMock{}
 		path := filepath.Join("tempDir", "iflow4.zip")
