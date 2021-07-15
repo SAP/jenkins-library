@@ -23,7 +23,7 @@ func newIntegrationArtifactUploadTestsUtils() integrationArtifactUploadMockUtils
 
 func TestRunIntegrationArtifactUpload(t *testing.T) {
 	t.Parallel()
-
+	
 	t.Run("Successfull Integration Flow Create Test", func(t *testing.T) {
 		filesMock := mock.FilesMock{}
 		path := filepath.Join("tempDir", "iflow4.zip")
@@ -42,12 +42,11 @@ func TestRunIntegrationArtifactUpload(t *testing.T) {
 		}`
 
 		config := integrationArtifactUploadOptions{
-			APIServiceKey:          apiServiceKey,
-			IntegrationFlowName:    "flow4",
-			IntegrationFlowID:      "flow4",
-			IntegrationFlowVersion: "1.0.4",
-			PackageID:              "CICD",
-			FilePath:               path,
+			APIServiceKey:       apiServiceKey,
+			IntegrationFlowName: "flow4",
+			IntegrationFlowID:   "flow4",
+			PackageID:           "CICD",
+			FilePath:            path,
 		}
 
 		httpClient := httpMockCpis{CPIFunction: "", ResponseBody: ``, TestType: "PositiveAndCreateIntegrationDesigntimeArtifactResBody"}
@@ -57,11 +56,11 @@ func TestRunIntegrationArtifactUpload(t *testing.T) {
 		if assert.NoError(t, err) {
 
 			t.Run("check url", func(t *testing.T) {
-				assert.Equal(t, "https://demo/api/v1/IntegrationDesigntimeArtifactSaveAsVersion?Id='flow4'&SaveAsVersion='1.0.4'", httpClient.URL)
+				assert.Equal(t, "https://demo/api/v1/IntegrationDesigntimeArtifacts(Id='flow4',Version='Active')", httpClient.URL)
 			})
 
 			t.Run("check method", func(t *testing.T) {
-				assert.Equal(t, "POST", httpClient.Method)
+				assert.Equal(t, "PUT", httpClient.Method)
 			})
 		}
 	})
@@ -83,12 +82,11 @@ func TestRunIntegrationArtifactUpload(t *testing.T) {
 			}
 		}`
 		config := integrationArtifactUploadOptions{
-			APIServiceKey:          apiServiceKey,
-			IntegrationFlowName:    "flow4",
-			IntegrationFlowID:      "flow4",
-			IntegrationFlowVersion: "1.0.4",
-			PackageID:              "CICD",
-			FilePath:               path,
+			APIServiceKey:       apiServiceKey,
+			IntegrationFlowName: "flow4",
+			IntegrationFlowID:   "flow4",
+			PackageID:           "CICD",
+			FilePath:            path,
 		}
 
 		httpClient := httpMockCpis{CPIFunction: "", ResponseBody: ``, TestType: "PositiveAndUpdateIntegrationDesigntimeArtifactResBody"}
@@ -118,12 +116,11 @@ func TestRunIntegrationArtifactUpload(t *testing.T) {
 			}
 		}`
 		config := integrationArtifactUploadOptions{
-			APIServiceKey:          apiServiceKey,
-			IntegrationFlowName:    "flow4",
-			IntegrationFlowID:      "flow4",
-			IntegrationFlowVersion: "1.0.4",
-			PackageID:              "CICD",
-			FilePath:               "path",
+			APIServiceKey:       apiServiceKey,
+			IntegrationFlowName: "flow4",
+			IntegrationFlowID:   "flow4",
+			PackageID:           "CICD",
+			FilePath:            "path",
 		}
 
 		httpClient := httpMockCpis{CPIFunction: "", ResponseBody: ``, TestType: "NegativeAndGetIntegrationDesigntimeArtifactResBody"}
@@ -149,18 +146,17 @@ func TestRunIntegrationArtifactUpload(t *testing.T) {
 			}
 		}`
 		config := integrationArtifactUploadOptions{
-			APIServiceKey:          apiServiceKey,
-			IntegrationFlowName:    "flow4",
-			IntegrationFlowID:      "flow4",
-			IntegrationFlowVersion: "1.0.4",
-			PackageID:              "CICD",
-			FilePath:               path,
+			APIServiceKey:       apiServiceKey,
+			IntegrationFlowName: "flow4",
+			IntegrationFlowID:   "flow4",
+			PackageID:           "CICD",
+			FilePath:            path,
 		}
 
 		httpClient := httpMockCpis{CPIFunction: "", ResponseBody: ``, TestType: "NegativeAndCreateIntegrationDesigntimeArtifactResBody"}
 
 		err = runIntegrationArtifactUpload(&config, nil, &files, &httpClient)
-		assert.EqualError(t, err, "HTTP POST request to https://demo/api/v1/IntegrationDesigntimeArtifactSaveAsVersion?Id='flow4'&SaveAsVersion='1.0.4' failed with error: : 401 Unauthorized")
+		assert.EqualError(t, err, "HTTP PUT request to https://demo/api/v1/IntegrationDesigntimeArtifacts(Id='flow4',Version='Active') failed with error: : 401 Unauthorized")
 	})
 
 	t.Run("Failed case of Integration Flow Create Test", func(t *testing.T) {
@@ -180,12 +176,11 @@ func TestRunIntegrationArtifactUpload(t *testing.T) {
 			}
 		}`
 		config := integrationArtifactUploadOptions{
-			APIServiceKey:          apiServiceKey,
-			IntegrationFlowName:    "flow4",
-			IntegrationFlowID:      "flow4",
-			IntegrationFlowVersion: "1.0.4",
-			PackageID:              "CICD",
-			FilePath:               path,
+			APIServiceKey:       apiServiceKey,
+			IntegrationFlowName: "flow4",
+			IntegrationFlowID:   "flow4",
+			PackageID:           "CICD",
+			FilePath:            path,
 		}
 
 		httpClient := httpMockCpis{CPIFunction: "", ResponseBody: ``, TestType: "NegativeAndUpdateIntegrationDesigntimeArtifactResBody"}
