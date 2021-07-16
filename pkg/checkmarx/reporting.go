@@ -14,7 +14,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-func CreateCustomReport(data map[string]interface{}) reporting.ScanReport {
+func CreateCustomReport(data map[string]interface{}, insecure, neutral []string) reporting.ScanReport {
+	deepLink := fmt.Sprintf(`<a href="%v" target="_blank">Link to scan in CX UI</a>`, data["DeepLink"])
+	
 	scanReport := reporting.ScanReport{
 		Title: "Checkmarx SAST Report",
 		Subheaders: []reporting.Subheader{
@@ -32,40 +34,72 @@ func CreateCustomReport(data map[string]interface{}) reporting.ScanReport {
 			{Description: "Lines of code scanned", Details: fmt.Sprint(data["LinesOfCodeScanned)"])},
 			{Description: "Files scanned", Details: fmt.Sprint(data["FilesScanned)"])},
 			{Description: "Checkmarx version", Details: fmt.Sprint(data["CheckmarxVersion"])},
-			{Description: "Deep link", Details: fmt.Sprint(data["DeepLink"])},
+			{Description: "Deep link", Details: deepLink},
 		},
 		Overview: []reporting.OverviewRow{
-			{Description: "High issues", Details: fmt.Sprint(data["High"].(map[string]int)["Issues"])},
-			{Description: "High not false positive issues", Details: fmt.Sprint(data["High"].(map[string]int)["NotFalsePositive"])},
-			{Description: "High not exploitable issues", Details: fmt.Sprint(data["High"].(map[string]int)["NotExploitable"])},
-			{Description: "High confirmed issues", Details: fmt.Sprint(data["High"].(map[string]int)["Confirmed"])},
-			{Description: "High urgent issues", Details: fmt.Sprint(data["High"].(map[string]int)["Urgent"])},
-			{Description: "High proposed not exploitable issues", Details: fmt.Sprint(data["High"].(map[string]int)["ProposedNotExploitable"])},
-			{Description: "High to verify issues", Details: fmt.Sprint(data["High"].(map[string]int)["ToVerify"])},
-			{Description: "Medium issues", Details: fmt.Sprint(data["Medium"].(map[string]int)["Issues"])},
-			{Description: "Medium not false positive issues", Details: fmt.Sprint(data["Medium"].(map[string]int)["NotFalsePositive"])},
-			{Description: "Medium not exploitable issues", Details: fmt.Sprint(data["Medium"].(map[string]int)["NotExploitable"])},
-			{Description: "Medium confirmed issues", Details: fmt.Sprint(data["Medium"].(map[string]int)["Confirmed"])},
-			{Description: "Medium urgent issues", Details: fmt.Sprint(data["Medium"].(map[string]int)["Urgent"])},
-			{Description: "Medium proposed not exploitable issues", Details: fmt.Sprint(data["Medium"].(map[string]int)["ProposedNotExploitable"])},
-			{Description: "Medium to verify issues", Details: fmt.Sprint(data["Medium"].(map[string]int)["ToVerify"])},
-			{Description: "Low issues", Details: fmt.Sprint(data["Low"].(map[string]int)["Issues"])},
-			{Description: "Low not false positive issues", Details: fmt.Sprint(data["Low"].(map[string]int)["NotFalsePositive"])},
-			{Description: "Low not exploitable issues", Details: fmt.Sprint(data["Low"].(map[string]int)["NotExploitable"])},
-			{Description: "Low confirmed issues", Details: fmt.Sprint(data["Low"].(map[string]int)["Confirmed"])},
-			{Description: "Low urgent issues", Details: fmt.Sprint(data["Low"].(map[string]int)["Urgent"])},
-			{Description: "Low proposed not exploitable issues", Details: fmt.Sprint(data["Low"].(map[string]int)["ProposedNotExploitable"])},
-			{Description: "Low to verify issues", Details: fmt.Sprint(data["Low"].(map[string]int)["ToVerify"])},
-			{Description: "Informational issues", Details: fmt.Sprint(data["Information"].(map[string]int)["Issues"])},
-			{Description: "Informational not false positive issues", Details: fmt.Sprint(data["Information"].(map[string]int)["NotFalsePositive"])},
-			{Description: "Informational not exploitable issues", Details: fmt.Sprint(data["Information"].(map[string]int)["NotExploitable"])},
-			{Description: "Informational confirmed issues", Details: fmt.Sprint(data["Information"].(map[string]int)["Confirmed"])},
-			{Description: "Informational urgent issues", Details: fmt.Sprint(data["Information"].(map[string]int)["Urgent"])},
-			{Description: "Informational proposed not exploitable issues", Details: fmt.Sprint(data["Information"].(map[string]int)["ProposedNotExploitable"])},
-			{Description: "Informational to verify issues", Details: fmt.Sprint(data["Information"].(map[string]int)["ToVerify"])},
 		},
 		ReportTime: time.Now(),
 	}
+
+	for _, issue := range insecure {
+		row := reporting.OverviewRow{}
+		row.Description = fmt.Sprint(issue)
+		row.Style = reporting.Red
+
+		scanReport.Overview = append(scanReport.Overview, row)
+	}
+	for _, issue := range neutral {
+		row := reporting.OverviewRow{}
+		row.Description = fmt.Sprint(issue)
+
+		scanReport.Overview = append(scanReport.Overview, row)
+	}
+
+	detailTable := reporting.ScanDetailTable{
+		Headers: []string{
+			"KPI",
+			"Count",
+		},
+		WithCounter:   false,
+	}
+	detailRows := []reporting.OverviewRow{
+		{Description: "High issues", Details: fmt.Sprint(data["High"].(map[string]int)["Issues"])},
+		{Description: "High not false positive issues", Details: fmt.Sprint(data["High"].(map[string]int)["NotFalsePositive"])},
+		{Description: "High not exploitable issues", Details: fmt.Sprint(data["High"].(map[string]int)["NotExploitable"])},
+		{Description: "High confirmed issues", Details: fmt.Sprint(data["High"].(map[string]int)["Confirmed"])},
+		{Description: "High urgent issues", Details: fmt.Sprint(data["High"].(map[string]int)["Urgent"])},
+		{Description: "High proposed not exploitable issues", Details: fmt.Sprint(data["High"].(map[string]int)["ProposedNotExploitable"])},
+		{Description: "High to verify issues", Details: fmt.Sprint(data["High"].(map[string]int)["ToVerify"])},
+		{Description: "Medium issues", Details: fmt.Sprint(data["Medium"].(map[string]int)["Issues"])},
+		{Description: "Medium not false positive issues", Details: fmt.Sprint(data["Medium"].(map[string]int)["NotFalsePositive"])},
+		{Description: "Medium not exploitable issues", Details: fmt.Sprint(data["Medium"].(map[string]int)["NotExploitable"])},
+		{Description: "Medium confirmed issues", Details: fmt.Sprint(data["Medium"].(map[string]int)["Confirmed"])},
+		{Description: "Medium urgent issues", Details: fmt.Sprint(data["Medium"].(map[string]int)["Urgent"])},
+		{Description: "Medium proposed not exploitable issues", Details: fmt.Sprint(data["Medium"].(map[string]int)["ProposedNotExploitable"])},
+		{Description: "Medium to verify issues", Details: fmt.Sprint(data["Medium"].(map[string]int)["ToVerify"])},
+		{Description: "Low issues", Details: fmt.Sprint(data["Low"].(map[string]int)["Issues"])},
+		{Description: "Low not false positive issues", Details: fmt.Sprint(data["Low"].(map[string]int)["NotFalsePositive"])},
+		{Description: "Low not exploitable issues", Details: fmt.Sprint(data["Low"].(map[string]int)["NotExploitable"])},
+		{Description: "Low confirmed issues", Details: fmt.Sprint(data["Low"].(map[string]int)["Confirmed"])},
+		{Description: "Low urgent issues", Details: fmt.Sprint(data["Low"].(map[string]int)["Urgent"])},
+		{Description: "Low proposed not exploitable issues", Details: fmt.Sprint(data["Low"].(map[string]int)["ProposedNotExploitable"])},
+		{Description: "Low to verify issues", Details: fmt.Sprint(data["Low"].(map[string]int)["ToVerify"])},
+		{Description: "Informational issues", Details: fmt.Sprint(data["Information"].(map[string]int)["Issues"])},
+		{Description: "Informational not false positive issues", Details: fmt.Sprint(data["Information"].(map[string]int)["NotFalsePositive"])},
+		{Description: "Informational not exploitable issues", Details: fmt.Sprint(data["Information"].(map[string]int)["NotExploitable"])},
+		{Description: "Informational confirmed issues", Details: fmt.Sprint(data["Information"].(map[string]int)["Confirmed"])},
+		{Description: "Informational urgent issues", Details: fmt.Sprint(data["Information"].(map[string]int)["Urgent"])},
+		{Description: "Informational proposed not exploitable issues", Details: fmt.Sprint(data["Information"].(map[string]int)["ProposedNotExploitable"])},
+		{Description: "Informational to verify issues", Details: fmt.Sprint(data["Information"].(map[string]int)["ToVerify"])},
+	}
+	for _, detailRow := range detailRows {
+		row := reporting.ScanRow{}
+		row.AddColumn(detailRow.Description, 0)
+		row.AddColumn(detailRow.Details, 0)
+
+		detailTable.Rows = append(detailTable.Rows, row)
+	}
+	scanReport.DetailTable = detailTable
 
 	return scanReport
 }

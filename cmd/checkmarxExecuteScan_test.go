@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/bmatcuk/doublestar"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -13,6 +12,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/bmatcuk/doublestar"
 
 	"github.com/SAP/jenkins-library/pkg/checkmarx"
 	"github.com/stretchr/testify/assert"
@@ -870,72 +871,88 @@ func TestEnforceThresholds(t *testing.T) {
 		t.Parallel()
 
 		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "percentage", VulnerabilityThresholdHigh: 100, VulnerabilityThresholdEnabled: true}
-		insecure := enforceThresholds(options, results)
+		insecure, insecureResults, neutralResults := enforceThresholds(options, results)
 
 		assert.Equal(t, true, insecure, "Expected results to be insecure but where not")
+		assert.Equal(t, 1, len(insecureResults))
+		assert.Equal(t, 2, len(neutralResults))
 	})
 
 	t.Run("absolute high violation", func(t *testing.T) {
 		t.Parallel()
 
 		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "absolute", VulnerabilityThresholdHigh: 5, VulnerabilityThresholdEnabled: true}
-		insecure := enforceThresholds(options, results)
+		insecure, insecureResults, neutralResults := enforceThresholds(options, results)
 
 		assert.Equal(t, true, insecure, "Expected results to be insecure but where not")
+		assert.Equal(t, 1, len(insecureResults))
+		assert.Equal(t, 2, len(neutralResults))
 	})
 
 	t.Run("percentage medium violation", func(t *testing.T) {
 		t.Parallel()
 
 		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "percentage", VulnerabilityThresholdMedium: 100, VulnerabilityThresholdEnabled: true}
-		insecure := enforceThresholds(options, results)
+		insecure, insecureResults, neutralResults := enforceThresholds(options, results)
 
 		assert.Equal(t, true, insecure, "Expected results to be insecure but where not")
+		assert.Equal(t, 1, len(insecureResults))
+		assert.Equal(t, 2, len(neutralResults))
 	})
 
 	t.Run("absolute medium violation", func(t *testing.T) {
 		t.Parallel()
 
 		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "absolute", VulnerabilityThresholdMedium: 5, VulnerabilityThresholdEnabled: true}
-		insecure := enforceThresholds(options, results)
+		insecure, insecureResults, neutralResults := enforceThresholds(options, results)
 
 		assert.Equal(t, true, insecure, "Expected results to be insecure but where not")
+		assert.Equal(t, 1, len(insecureResults))
+		assert.Equal(t, 2, len(neutralResults))
 	})
 
 	t.Run("percentage low violation", func(t *testing.T) {
 		t.Parallel()
 
 		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "percentage", VulnerabilityThresholdLow: 100, VulnerabilityThresholdEnabled: true}
-		insecure := enforceThresholds(options, results)
+		insecure, insecureResults, neutralResults := enforceThresholds(options, results)
 
 		assert.Equal(t, true, insecure, "Expected results to be insecure but where not")
+		assert.Equal(t, 1, len(insecureResults))
+		assert.Equal(t, 2, len(neutralResults))
 	})
 
 	t.Run("absolute low violation", func(t *testing.T) {
 		t.Parallel()
 
 		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "absolute", VulnerabilityThresholdLow: 5, VulnerabilityThresholdEnabled: true}
-		insecure := enforceThresholds(options, results)
+		insecure, insecureResults, neutralResults := enforceThresholds(options, results)
 
 		assert.Equal(t, true, insecure, "Expected results to be insecure but where not")
+		assert.Equal(t, 1, len(insecureResults))
+		assert.Equal(t, 2, len(neutralResults))
 	})
 
 	t.Run("percentage no violation", func(t *testing.T) {
 		t.Parallel()
 
 		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "percentage", VulnerabilityThresholdLow: 0, VulnerabilityThresholdEnabled: true}
-		insecure := enforceThresholds(options, results)
+		insecure, insecureResults, neutralResults := enforceThresholds(options, results)
 
 		assert.Equal(t, false, insecure, "Expected results to be insecure but where not")
+		assert.Equal(t, 0, len(insecureResults))
+		assert.Equal(t, 3, len(neutralResults))
 	})
 
 	t.Run("absolute no violation", func(t *testing.T) {
 		t.Parallel()
 
 		options := checkmarxExecuteScanOptions{VulnerabilityThresholdUnit: "absolute", VulnerabilityThresholdLow: 15, VulnerabilityThresholdMedium: 15, VulnerabilityThresholdHigh: 15, VulnerabilityThresholdEnabled: true}
-		insecure := enforceThresholds(options, results)
+		insecure, insecureResults, neutralResults := enforceThresholds(options, results)
 
 		assert.Equal(t, false, insecure, "Expected results to be insecure but where not")
+		assert.Equal(t, 0, len(insecureResults))
+		assert.Equal(t, 3, len(neutralResults))
 	})
 }
 
