@@ -413,7 +413,7 @@ func GetCPIFunctionNameByURLCheck(url, method, testType string) string {
 	case "https://demo/api/v1/IntegrationDesigntimeArtifacts(Id='flow4',Version='1.0.4')":
 		return GetFunctionNameByTestTypeAndMethod(method, testType)
 
-	case "https://demo/api/v1/IntegrationDesigntimeArtifactSaveAsVersion?Id='flow4'&SaveAsVersion='1.0.4'":
+	case "https://demo/api/v1/IntegrationDesigntimeArtifacts(Id='flow4',Version='Active')":
 		return GetFunctionNameByTestTypeAndMethod(method, testType)
 
 	case "https://demo/api/v1/IntegrationDesigntimeArtifacts":
@@ -448,10 +448,9 @@ func GetFunctionNameByTestTypeAndMethod(method, testType string) string {
 		if method == "GET" {
 			return "GetIntegrationDesigntimeArtifact"
 		}
-		if method == "POST" {
+		if method == "PUT" {
 			return "UploadIntegrationDesigntimeArtifactNegative"
 		}
-
 	case "NegativeAndUpdateIntegrationDesigntimeArtifactResBody":
 		if method == "GET" {
 			return "GetIntegrationDesigntimeArtifact"
@@ -487,7 +486,7 @@ func GetFunctionNamePositiveAndCreateIntegrationDesigntimeArtifactResBody(method
 	if method == "GET" {
 		return "GetIntegrationDesigntimeArtifact"
 	}
-	if method == "POST" {
+	if method == "PUT" {
 		return "UploadIntegrationDesigntimeArtifact"
 	}
 	return ""
