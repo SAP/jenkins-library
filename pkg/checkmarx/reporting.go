@@ -16,7 +16,7 @@ import (
 
 func CreateCustomReport(data map[string]interface{}, insecure, neutral []string) reporting.ScanReport {
 	deepLink := fmt.Sprintf(`<a href="%v" target="_blank">Link to scan in CX UI</a>`, data["DeepLink"])
-	
+
 	scanReport := reporting.ScanReport{
 		Title: "Checkmarx SAST Report",
 		Subheaders: []reporting.Subheader{
@@ -36,8 +36,7 @@ func CreateCustomReport(data map[string]interface{}, insecure, neutral []string)
 			{Description: "Checkmarx version", Details: fmt.Sprint(data["CheckmarxVersion"])},
 			{Description: "Deep link", Details: deepLink},
 		},
-		Overview: []reporting.OverviewRow{
-		},
+		Overview:   []reporting.OverviewRow{},
 		ReportTime: time.Now(),
 	}
 
@@ -60,7 +59,7 @@ func CreateCustomReport(data map[string]interface{}, insecure, neutral []string)
 			"KPI",
 			"Count",
 		},
-		WithCounter:   false,
+		WithCounter: false,
 	}
 	detailRows := []reporting.OverviewRow{
 		{Description: "High issues", Details: fmt.Sprint(data["High"].(map[string]int)["Issues"])},

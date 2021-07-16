@@ -874,8 +874,8 @@ func TestEnforceThresholds(t *testing.T) {
 		insecure, insecureResults, neutralResults := enforceThresholds(options, results)
 
 		assert.Equal(t, true, insecure, "Expected results to be insecure but where not")
-		assert.Equal(t, 1, len(insecureResults))
-		assert.Equal(t, 2, len(neutralResults))
+		assert.Equal(t, 1, len(insecureResults), fmt.Sprintf("Unexpected number of results: %v", insecureResults))
+		assert.Equal(t, 2, len(neutralResults), fmt.Sprintf("Unexpected number of results: %v", neutralResults))
 	})
 
 	t.Run("absolute high violation", func(t *testing.T) {
@@ -885,8 +885,8 @@ func TestEnforceThresholds(t *testing.T) {
 		insecure, insecureResults, neutralResults := enforceThresholds(options, results)
 
 		assert.Equal(t, true, insecure, "Expected results to be insecure but where not")
-		assert.Equal(t, 1, len(insecureResults))
-		assert.Equal(t, 2, len(neutralResults))
+		assert.Equal(t, 3, len(insecureResults), fmt.Sprintf("Unexpected number of results: %v", insecureResults))
+		assert.Equal(t, 0, len(neutralResults), fmt.Sprintf("Unexpected number of results: %v", neutralResults))
 	})
 
 	t.Run("percentage medium violation", func(t *testing.T) {
@@ -896,8 +896,8 @@ func TestEnforceThresholds(t *testing.T) {
 		insecure, insecureResults, neutralResults := enforceThresholds(options, results)
 
 		assert.Equal(t, true, insecure, "Expected results to be insecure but where not")
-		assert.Equal(t, 1, len(insecureResults))
-		assert.Equal(t, 2, len(neutralResults))
+		assert.Equal(t, 1, len(insecureResults), fmt.Sprintf("Unexpected number of results: %v", insecureResults))
+		assert.Equal(t, 2, len(neutralResults), fmt.Sprintf("Unexpected number of results: %v", neutralResults))
 	})
 
 	t.Run("absolute medium violation", func(t *testing.T) {
@@ -907,8 +907,8 @@ func TestEnforceThresholds(t *testing.T) {
 		insecure, insecureResults, neutralResults := enforceThresholds(options, results)
 
 		assert.Equal(t, true, insecure, "Expected results to be insecure but where not")
-		assert.Equal(t, 1, len(insecureResults))
-		assert.Equal(t, 2, len(neutralResults))
+		assert.Equal(t, 3, len(insecureResults), fmt.Sprintf("Unexpected number of results: %v", insecureResults))
+		assert.Equal(t, 0, len(neutralResults), fmt.Sprintf("Unexpected number of results: %v", neutralResults))
 	})
 
 	t.Run("percentage low violation", func(t *testing.T) {
@@ -918,8 +918,8 @@ func TestEnforceThresholds(t *testing.T) {
 		insecure, insecureResults, neutralResults := enforceThresholds(options, results)
 
 		assert.Equal(t, true, insecure, "Expected results to be insecure but where not")
-		assert.Equal(t, 1, len(insecureResults))
-		assert.Equal(t, 2, len(neutralResults))
+		assert.Equal(t, 1, len(insecureResults), fmt.Sprintf("Unexpected number of results: %v", insecureResults))
+		assert.Equal(t, 2, len(neutralResults), fmt.Sprintf("Unexpected number of results: %v", neutralResults))
 	})
 
 	t.Run("absolute low violation", func(t *testing.T) {
@@ -929,8 +929,8 @@ func TestEnforceThresholds(t *testing.T) {
 		insecure, insecureResults, neutralResults := enforceThresholds(options, results)
 
 		assert.Equal(t, true, insecure, "Expected results to be insecure but where not")
-		assert.Equal(t, 1, len(insecureResults))
-		assert.Equal(t, 2, len(neutralResults))
+		assert.Equal(t, 3, len(insecureResults), fmt.Sprintf("Unexpected number of results: %v", insecureResults))
+		assert.Equal(t, 0, len(neutralResults), fmt.Sprintf("Unexpected number of results: %v", neutralResults))
 	})
 
 	t.Run("percentage no violation", func(t *testing.T) {
@@ -940,8 +940,8 @@ func TestEnforceThresholds(t *testing.T) {
 		insecure, insecureResults, neutralResults := enforceThresholds(options, results)
 
 		assert.Equal(t, false, insecure, "Expected results to be insecure but where not")
-		assert.Equal(t, 0, len(insecureResults))
-		assert.Equal(t, 3, len(neutralResults))
+		assert.Equal(t, 0, len(insecureResults), fmt.Sprintf("Unexpected number of results: %v", insecureResults))
+		assert.Equal(t, 3, len(neutralResults), fmt.Sprintf("Unexpected number of results: %v", neutralResults))
 	})
 
 	t.Run("absolute no violation", func(t *testing.T) {
@@ -951,8 +951,8 @@ func TestEnforceThresholds(t *testing.T) {
 		insecure, insecureResults, neutralResults := enforceThresholds(options, results)
 
 		assert.Equal(t, false, insecure, "Expected results to be insecure but where not")
-		assert.Equal(t, 0, len(insecureResults))
-		assert.Equal(t, 3, len(neutralResults))
+		assert.Equal(t, 0, len(insecureResults), fmt.Sprintf("Unexpected number of results: %v", insecureResults))
+		assert.Equal(t, 3, len(neutralResults), fmt.Sprintf("Unexpected number of results: %v", neutralResults))
 	})
 }
 
