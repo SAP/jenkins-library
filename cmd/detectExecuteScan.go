@@ -119,7 +119,7 @@ func runDetect(config detectExecuteScanOptions, utils detectUtils) error {
 	utils.SetEnv(envs)
 
 	err = utils.RunShell("/bin/bash", script)
-	if err == nil {
+	if err == nil && piperutils.ContainsString(config.FailOn, "BLOCKER") {
 		violations := struct {
 			PolicyViolations int      `json:"policyViolations"`
 			Reports          []string `json:"reports"`
