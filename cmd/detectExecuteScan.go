@@ -128,7 +128,7 @@ func runDetect(config detectExecuteScanOptions, utils detectUtils) error {
 			Reports:          []string{},
 		}
 
-		if files, err := utils.Glob("**/*BlackDuck_RiskReport.pdf"); err != nil && len(files) > 0 {
+		if files, err := utils.Glob("**/*BlackDuck_RiskReport.pdf"); err == nil && len(files) > 0 {
 			// there should only be one RiskReport thus only taking the first one
 			_, reportFile := filepath.Split(files[0])
 			violations.Reports = append(violations.Reports, reportFile)
