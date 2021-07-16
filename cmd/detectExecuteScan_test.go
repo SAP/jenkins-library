@@ -71,7 +71,7 @@ func TestRunDetect(t *testing.T) {
 		utilsMock := newDetectTestUtilsBundle()
 		utilsMock.AddFile("detect.sh", []byte(""))
 		utilsMock.AddFile("my_BlackDuck_RiskReport.pdf", []byte(""))
-		err := runDetect(detectExecuteScanOptions{}, utilsMock)
+		err := runDetect(detectExecuteScanOptions{FailOn: []string{"BLOCKER"}}, utilsMock)
 
 		assert.Equal(t, utilsMock.downloadedFiles["https://detect.synopsys.com/detect.sh"], "detect.sh")
 		assert.True(t, utilsMock.HasRemovedFile("detect.sh"))
