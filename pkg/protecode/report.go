@@ -59,7 +59,7 @@ func writeJSON(path, name string, data interface{}, writeToFile func(f string, d
 
 func CreateCustomReport(productName string, productID int, data map[string]int, vulns []Vuln) reporting.ScanReport {
 	scanReport := reporting.ScanReport{
-		Title: "Procode Vulnerability Report",
+		Title: "Protecode Vulnerability Report",
 		Subheaders: []reporting.Subheader{
 			{Description: "Product name", Details: productName},
 			{Description: "Product ID", Details: fmt.Sprint(productID)},
