@@ -173,7 +173,7 @@ func addRootFlags(rootCmd *cobra.Command) {
 
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.CorrelationID, "correlationID", os.Getenv("PIPER_correlationID"), "ID for unique identification of a pipeline run")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.CustomConfig, "customConfig", ".pipeline/config.yml", "Path to the pipeline configuration file")
-	rootCmd.PersistentFlags().StringSliceVar(&GeneralConfig.GitHubTokens, "gitHubTokens", accessTokensFromEnvJSON(os.Getenv("PIPER_gitHubTokens")), "List of entries in form of <hostname>:<token> to allow GitHub token authentication for downloading config / defaults")
+	rootCmd.PersistentFlags().StringSliceVar(&GeneralConfig.GitHubTokens, "gitHubTokens", AccessTokensFromEnvJSON(os.Getenv("PIPER_gitHubTokens")), "List of entries in form of <hostname>:<token> to allow GitHub token authentication for downloading config / defaults")
 	rootCmd.PersistentFlags().StringSliceVar(&GeneralConfig.DefaultConfig, "defaultConfig", []string{".pipeline/defaults.yaml"}, "Default configurations, passed as path to yaml file")
 	rootCmd.PersistentFlags().BoolVar(&GeneralConfig.IgnoreCustomDefaults, "ignoreCustomDefaults", false, "Disables evaluation of the parameter 'customDefaults' in the pipeline configuration file")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.ParametersJSON, "parametersJSON", os.Getenv("PIPER_parametersJSON"), "Parameters to be considered in JSON format")
@@ -205,7 +205,8 @@ func ResolveAccessTokens(tokenList []string) map[string]string {
 	return tokenMap
 }
 
-func accessTokensFromEnvJSON(env string) []string {
+// AccessTokensFromEnvJSON resolves access tokens when passed as JSON in an environment variable
+func AccessTokensFromEnvJSON(env string) []string {
 	accessTokens := []string{}
 	if len(env) == 0 {
 		return accessTokens
