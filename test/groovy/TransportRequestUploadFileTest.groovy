@@ -1,10 +1,13 @@
-import static org.hamcrest.Matchers.allOf
-import static org.hamcrest.Matchers.containsString
 
 import java.util.List
 import java.util.Map
 
-import org.hamcrest.Matchers
+import static org.hamcrest.Matchers.*
+import static org.hamcrest.Matchers.allOf
+import static org.hamcrest.Matchers.containsString
+import static org.hamcrest.Matchers.hasEntry
+import static org.junit.Assert.assertThat
+
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -68,69 +71,22 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     }
 
     @Test
-    public void changeDocumentIdNotProvidedSOLMANTest() {
-
-        // we expect the failure only for SOLMAN (which is the default).
-        // Use case for CTS without change document id is checked by the
-        // straight forward test case for CTS
-
-        thrown.expect(IllegalArgumentException)
-        thrown.expectMessage("Change document id not provided (parameter: 'changeDocumentId' provided to the step call or via commit history).")
-
-        ChangeManagement cm = new ChangeManagement(nullScript) {
-            String getChangeDocumentId(
-                                       String from,
-                                       String to,
-                                       String pattern,
-                                       String format
-                                    ) {
-                                        throw new ChangeManagementException('Cannot retrieve changeId from git commits.')
-                                      }
-        }
-
-        stepRule.step.transportRequestUploadFile(script: nullScript, transportRequestId: '001', applicationId: 'app', filePath: '/path', cmUtils: cm)
-    }
-
-    @Test
-    public void transportRequestIdNotProvidedTest() {
-
-        ChangeManagement cm = new ChangeManagement(nullScript) {
-            String getTransportRequestId(
-                                       String from,
-                                       String to,
-                                       String pattern,
-                                       String format
-                                    ) {
-                                        throw new ChangeManagementException('Cannot retrieve transport request id from git commits.')
-                                    }
-        }
-
-        thrown.expect(IllegalArgumentException)
-        thrown.expectMessage("Transport request id not provided (parameter: 'transportRequestId' provided to the step call or via commit history).")
-
-        stepRule.step.transportRequestUploadFile(script: nullScript, changeDocumentId: '001', applicationId: 'app', filePath: '/path', cmUtils: cm)
-    }
-
-    @Test
-    public void applicationIdNotProvidedSOLMANTest() {
-
-        // we expect the failure only for SOLMAN (which is the default).
-        // Use case for CTS without applicationId is checked by the
-        // straight forward test case for CTS
-
-        thrown.expect(IllegalArgumentException)
-        thrown.expectMessage("ERROR - NO VALUE AVAILABLE FOR applicationId")
-
-        stepRule.step.transportRequestUploadFile(script: nullScript, changeDocumentId: '001', transportRequestId: '001', filePath: '/path')
-    }
-
-    @Test
     public void filePathNotProvidedTest() {
 
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage("ERROR - NO VALUE AVAILABLE FOR filePath")
 
-        stepRule.step.transportRequestUploadFile(script: nullScript, changeDocumentId: '001', transportRequestId: '001', applicationId: 'app')
+        stepRule.step.transportRequestUploadFile(script: nullScript, 
+            changeDocumentId: '001', 
+            transportRequestId: '001', 
+            applicationId: 'app',
+            changeManagement: [
+                type: 'SOLMAN',
+                endpoint: 'https://example.org/cm',
+                clientOpts: '--client opts'
+            ],
+            credentialsId: 'CM'
+            )
     }
 
     @Test
@@ -395,183 +351,6 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                  cmUtils: cm,)
     }
 
-    @Test
-    public void uploadFileToTransportRequestSOLMANSuccessTest() {
-
-        // Here we test only the case where the transportRequestId is
-        // provided via parameters. The other cases are tested by
-        // corresponding tests for StepHelpers#getTransportRequestId(./.)
-
-        loggingRule.expect("[INFO] Uploading file '/path' to transport request '002' of change document '001'.")
-        loggingRule.expect("[INFO] File '/path' has been successfully uploaded to transport request '002' of change document '001'.")
-
-        ChangeManagement cm = new ChangeManagement(nullScript) {
-            void uploadFileToTransportRequestSOLMAN(
-                                              Map docker,
-                                              String changeId,
-                                              String transportRequestId,
-                                              String applicationId,
-                                              String filePath,
-                                              String endpoint,
-                                              String credentialsId,
-                                              String cmclientOpts) {
-
-                cmUtilReceivedParams.docker = docker
-                cmUtilReceivedParams.changeId = changeId
-                cmUtilReceivedParams.transportRequestId = transportRequestId
-                cmUtilReceivedParams.applicationId = applicationId
-                cmUtilReceivedParams.filePath = filePath
-                cmUtilReceivedParams.endpoint = endpoint
-                cmUtilReceivedParams.credentialsId = credentialsId
-                cmUtilReceivedParams.cmclientOpts = cmclientOpts
-            }
-        }
-
-        stepRule.step.transportRequestUploadFile(script: nullScript,
-                      changeDocumentId: '001',
-                      transportRequestId: '002',
-                      applicationId: 'app',
-                      filePath: '/path',
-                      cmUtils: cm)
-
-        assert cmUtilReceivedParams ==
-            [
-                docker: [
-                    image: 'ppiper/cm-client',
-                    pullImage: true,
-                    envVars: [:],
-                    options: [],
-                ],
-                changeId: '001',
-                transportRequestId: '002',
-                applicationId: 'app',
-                filePath: '/path',
-                endpoint: 'https://example.org/cm',
-                credentialsId: 'CM',
-                cmclientOpts: ''
-            ]
-    }
-
-    @Test
-    public void uploadFileToTransportRequestSOLMANSuccessApplicationIdFromConfigurationTest() {
-
-        nullScript.commonPipelineEnvironment.configuration.put(['steps',
-                                                                   [transportRequestUploadFile:
-                                                                       [applicationId: 'AppIdfromConfig']]])
-
-        ChangeManagement cm = new ChangeManagement(nullScript) {
-            void uploadFileToTransportRequestSOLMAN(
-                                              Map docker,
-                                              String changeId,
-                                              String transportRequestId,
-                                              String applicationId,
-                                              String filePath,
-                                              String endpoint,
-                                              String credentialsId,
-                                              String cmclientOpts) {
-
-                cmUtilReceivedParams.applicationId = applicationId
-            }
-        }
-
-        stepRule.step.transportRequestUploadFile(
-                      script: nullScript,
-                      changeDocumentId: '001',
-                      transportRequestId: '002',
-                      filePath: '/path',
-                      cmUtils: cm)
-
-        assert cmUtilReceivedParams.applicationId == 'AppIdfromConfig'
-    }
-
-    @Test
-    public void uploadFileToTransportRequestSOLMANFilePathFromParameters() {
-
-        // this one is not used when file path is provided via signature
-        nullScript.commonPipelineEnvironment.setMtarFilePath('/path2')
-
-        ChangeManagement cm = new ChangeManagement(nullScript) {
-            void uploadFileToTransportRequestSOLMAN(
-                                              Map docker,
-                                              String changeId,
-                                              String transportRequestId,
-                                              String applicationId,
-                                              String filePath,
-                                              String endpoint,
-                                              String credentialsId,
-                                              String cmclientOpts) {
-
-                cmUtilReceivedParams.filePath = filePath
-            }
-        }
-
-        stepRule.step.transportRequestUploadFile(script: nullScript,
-                      changeDocumentId: '001',
-                      transportRequestId: '002',
-                      applicationId: 'app',
-                      filePath: '/path',
-                      cmUtils: cm)
-
-        assert cmUtilReceivedParams.filePath == '/path'
-    }
-
-    @Test
-    public void uploadFileToTransportRequestSOLMANFilePathFromCommonPipelineEnvironment() {
-
-        // this one is used since there is nothing in the signature
-        nullScript.commonPipelineEnvironment.setMtarFilePath('/path2')
-
-        ChangeManagement cm = new ChangeManagement(nullScript) {
-            void uploadFileToTransportRequestSOLMAN(
-                                              Map docker,
-                                              String changeId,
-                                              String transportRequestId,
-                                              String applicationId,
-                                              String filePath,
-                                              String endpoint,
-                                              String credentialsId,
-                                              String cmclientOpts) {
-
-                cmUtilReceivedParams.filePath = filePath
-            }
-        }
-
-        stepRule.step.transportRequestUploadFile(script: nullScript,
-                      changeDocumentId: '001',
-                      transportRequestId: '002',
-                      applicationId: 'app',
-                      cmUtils: cm)
-
-        assert cmUtilReceivedParams.filePath == '/path2'
-    }
-
-    @Test
-    public void uploadFileToTransportRequestSOLMANUploadFailureTest() {
-
-        thrown.expect(AbortException)
-        thrown.expectMessage('Upload failure.')
-
-        ChangeManagement cm = new ChangeManagement(nullScript) {
-            void uploadFileToTransportRequestSOLMAN(
-                                              Map docker,
-                                              String changeId,
-                                              String transportRequestId,
-                                              String applicationId,
-                                              String filePath,
-                                              String endpoint,
-                                              String credentialsId,
-                                              String cmclientOpts) {
-                throw new ChangeManagementException('Upload failure.')
-            }
-        }
-
-        stepRule.step.transportRequestUploadFile(script: nullScript,
-                      changeDocumentId: '001',
-                      transportRequestId: '001',
-                      applicationId: 'app',
-                      filePath: '/path',
-                      cmUtils: cm)
-    }
 
     @Test
     public void invalidBackendTypeTest() {
@@ -594,5 +373,282 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         stepRule.step.transportRequestUploadFile(script: nullScript,
             changeManagement: [type: 'NONE'])
     }
+
+
+    @Test
+    public void trUploadFile_SOLMAN_success_Test() {
+
+        def calledWithParameters,
+            calledWithStepName,
+            calledWithMetadata,
+            calledWithCredentials
+
+        helper.registerAllowedMethod( 'piperExecuteBin', [Map, String, String, List], {
+            params, stepName, metaData, creds ->
+                calledWithParameters = params
+                calledWithStepName = stepName
+                calledWithMetadata = metaData
+                calledWithCredentials = creds
+            }
+        )
+
+        stepRule.step.transportRequestUploadFile(script: nullScript,
+            changeDocumentId: '001',
+            transportRequestId: '002',
+            applicationId: 'app',
+            filePath: '/path',
+            changeManagement: [
+                type: 'SOLMAN',
+                endpoint: 'https://example.org/cm',
+                clientOpts: '--client opts'
+            ],
+            credentialsId: 'CM'
+        )
+
+        assertThat(calledWithStepName, is('transportRequestUploadSOLMAN'))
+        assertThat(calledWithParameters.changeDocumentId, is('001'))
+        assertThat(calledWithParameters.transportRequestId, is('002'))
+        assertThat(calledWithParameters.applicationId, is('app'))
+        assertThat(calledWithParameters.filePath, is('/path'))
+        assertThat(calledWithParameters.endpoint, is('https://example.org/cm'))
+        assertThat(calledWithParameters.cmClientOpts, is('--client opts'))
+        assertThat(calledWithParameters.uploadCredentialsId, is('CM'))
+    }
+
+    @Test
+    public void trUploadFile_SOLMAN_paramFromStep_Test() {
+
+        def calledWithParameters,
+            calledWithStepName,
+            calledWithMetadata,
+            calledWithCredentials
+
+        helper.registerAllowedMethod( 'piperExecuteBin', [Map, String, String, List], {
+            params, stepName, metaData, creds ->
+                calledWithParameters = params
+                calledWithStepName = stepName
+                calledWithMetadata = metaData
+                calledWithCredentials = creds
+            }
+        )
+        
+        nullScript.commonPipelineEnvironment.configuration.put(['steps',
+                                                                   [transportRequestUploadFile:
+                                                                       [applicationId: 'AppIdfromConfig']]])
+
+        stepRule.step.transportRequestUploadFile(script: nullScript,
+            changeDocumentId: '001',
+            transportRequestId: '002',
+            filePath: '/path',
+            changeManagement: [
+                type: 'SOLMAN',
+                endpoint: 'https://example.org/cm',
+                clientOpts: '--client opts'
+            ],
+            credentialsId: 'CM'
+        )
+
+        assertThat(calledWithParameters.applicationId, is('AppIdfromConfig'))
+    }
+    
+    @Test
+    public void trUploadFile_SOLMAN_FilePathFromParameters_Test() {
+
+        // this one is not used when file path is provided via signature
+        nullScript.commonPipelineEnvironment.setMtarFilePath('/pathByCPE')
+
+        def calledWithParameters,
+            calledWithStepName,
+            calledWithMetadata,
+            calledWithCredentials
+
+        helper.registerAllowedMethod( 'piperExecuteBin', [Map, String, String, List], {
+            params, stepName, metaData, creds ->
+                calledWithParameters = params
+                calledWithStepName = stepName
+                calledWithMetadata = metaData
+                calledWithCredentials = creds
+            }
+        )
+        
+        stepRule.step.transportRequestUploadFile(script: nullScript,
+            changeDocumentId: '001',
+            transportRequestId: '002',
+            applicationId: 'app',
+            filePath: '/pathByParam',
+            changeManagement: [
+                type: 'SOLMAN',
+                endpoint: 'https://example.org/cm',
+                clientOpts: '--client opts'
+            ],
+            credentialsId: 'CM'
+        )
+
+        assertThat(calledWithParameters.filePath, is('/pathByParam'))
+    }
+    
+    @Test
+    public void trUploadFile_SOLMAN_FilePathFromCPE_Test() {
+
+        // this one is not used when file path is provided via signature
+        nullScript.commonPipelineEnvironment.setMtarFilePath('/pathByCPE')
+
+        def calledWithParameters,
+            calledWithStepName,
+            calledWithMetadata,
+            calledWithCredentials
+
+        helper.registerAllowedMethod( 'piperExecuteBin', [Map, String, String, List], {
+            params, stepName, metaData, creds ->
+                calledWithParameters = params
+                calledWithStepName = stepName
+                calledWithMetadata = metaData
+                calledWithCredentials = creds
+            }
+        )
+        
+        stepRule.step.transportRequestUploadFile(script: nullScript,
+            changeDocumentId: '001',
+            transportRequestId: '002',
+            applicationId: 'app',
+            changeManagement: [
+                type: 'SOLMAN',
+                endpoint: 'https://example.org/cm',
+                clientOpts: '--client opts'
+            ],
+            credentialsId: 'CM'
+        )
+
+        assertThat(calledWithParameters.filePath, is('/pathByCPE'))
+    }
+
+    @Test
+    public void trUploadFile_SOLMAN_failsIfAppidIsMissing_Test() {
+        def calledWithParameters,
+            calledWithStepName,
+            calledWithMetadata,
+            calledWithCredentials
+    
+        helper.registerAllowedMethod( 'piperExecuteBin', [Map, String, String, List], { 
+            params, stepName, metaData, creds ->
+                calledWithParameters = params
+                calledWithStepName = stepName
+                calledWithMetadata = metaData
+                calledWithCredentials = creds
+            }
+        )
+    
+        // we expect the failure only for SOLMAN (which is the default).
+        // Use case for CTS without applicationId is checked by the
+        // straight forward test case for CTS
+        
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage("ERROR - NO VALUE AVAILABLE FOR applicationId")
+
+        stepRule.step.transportRequestUploadFile(script: nullScript,
+            changeDocumentId: '001',
+            transportRequestId: '002',
+            filePath: '/pathByParam',
+            changeManagement: [
+                type: 'SOLMAN',
+                endpoint: 'https://example.org/cm',
+                clientOpts: '--client opts'
+            ],
+            credentialsId: 'CM'
+        )
+    }
+    
+    @Test
+    public void trUploadFile_SOLMAN_failsIfDocidIsMissing_Test() {
+      
+        ChangeManagement cm = new ChangeManagement(nullScript) {
+            String getChangeDocumentId( String from, String to, String pattern, String format ) {
+                 throw new ChangeManagementException('Cannot retrieve changeId from git commits.')
+            }
+        }
+
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage("Change document id not provided (parameter: 'changeDocumentId' provided to the step call or via commit history).")
+
+        ChangeManagement cm = new ChangeManagement(nullScript) {
+          String getChangeDocumentId(
+                                     String from,
+                                     String to,
+                                     String pattern,
+                                     String format
+                                  ) {
+                                      throw new ChangeManagementException('Cannot retrieve changeId from git commits.')
+                                    }
+        }
+
+        stepRule.step.transportRequestUploadFile(script: nullScript,
+            transportRequestId: '002',
+            applicationId: 'app',
+            filePath: '/pathByParam',
+            changeManagement: [
+                type: 'SOLMAN',
+                endpoint: 'https://example.org/cm',
+                clientOpts: '--client opts'
+            ],
+            credentialsId: 'CM', 
+            cmUtils: cm
+        )
+    }
+    
+    @Test
+    public void trUploadFile_SOLMAN_failsIfTridIsMissing_Test() {
+
+        ChangeManagement cm = new ChangeManagement(nullScript) {
+            String getTransportRequestId( String from, String to, String pattern, String format ) {
+              throw new ChangeManagementException('Cannot retrieve transport request id from git commits.')
+            }
+        }
+    
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage("Transport request id not provided (parameter: 'transportRequestId' provided to the step call or via commit history).")
+
+        stepRule.step.transportRequestUploadFile(script: nullScript,
+            changeDocumentId: '001',
+            applicationId: 'app',
+            filePath: '/pathByParam',
+            changeManagement: [
+                type: 'SOLMAN',
+                endpoint: 'https://example.org/cm',
+                clientOpts: '--client opts'
+            ],
+            credentialsId: 'CM', 
+            cmUtils: cm
+        )
+    }
+    
+    @Test
+    public void trUploadFile_SOLMAN_failsIfStepThrowsException_Test() {
+        def calledWithParameters,
+            calledWithStepName,
+            calledWithMetadata,
+            calledWithCredentials
+    
+        helper.registerAllowedMethod( 'piperExecuteBin', [Map, String, String, List], { 
+                throw new AbortException('piperExecuteBin throws exit code 1')
+            }
+        )
+    
+        thrown.expect(AbortException)
+        thrown.expectMessage("piperExecuteBin throws exit code 1")
+
+        stepRule.step.transportRequestUploadFile(script: nullScript,
+            changeDocumentId: '001',
+            transportRequestId: '002',
+            applicationId: 'app',
+            filePath: '/pathByParam',
+            changeManagement: [
+                type: 'SOLMAN',
+                endpoint: 'https://example.org/cm',
+                clientOpts: '--client opts'
+            ],
+            credentialsId: 'CM'
+        )
+    }
+
 
 }
