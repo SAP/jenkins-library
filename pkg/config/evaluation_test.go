@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"io"
 	"io/ioutil"
 	"strings"
@@ -95,6 +96,24 @@ stages:
 			wantErr: false,
 		},
 		{
+			name: "test config condition - wrong usage with list",
+			customConfig: &Config{
+				General: map[string]interface{}{},
+				Stages:  map[string]map[string]interface{}{},
+				Steps:   map[string]map[string]interface{}{},
+			},
+			stageConfig: ioutil.NopCloser(strings.NewReader(`
+stages:
+  testStage1:
+    stepConditions:
+      firstStep:
+        config: 
+         - testGeneral
+            `)),
+			runStepsExpected: map[string]map[string]bool{},
+			wantErr:          true,
+		},
+		{
 			name: "test config value condition - success",
 			customConfig: &Config{
 				General: map[string]interface{}{
@@ -176,6 +195,24 @@ stages:
 			wantErr: false,
 		},
 		{
+			name: "test configKey condition - not list",
+			customConfig: &Config{
+				General: map[string]interface{}{
+					"myKey1_1": "myVal1_1",
+				},
+				Stages: map[string]map[string]interface{}{},
+				Steps:  map[string]map[string]interface{}{},
+			},
+			stageConfig: ioutil.NopCloser(strings.NewReader(`
+stages:
+  testStage1:
+    stepConditions:
+      firstStep:
+        configKeys: myKey1_1
+            `)),
+			wantErr: true,
+		},
+		{
 			name: "test configKey condition - success",
 			customConfig: &Config{
 				General: map[string]interface{}{
@@ -240,6 +277,26 @@ stages:
 			wantErr: false,
 		},
 		{
+			name: "test filePattern condition - error while searching files by pattern",
+			customConfig: &Config{
+				General: map[string]interface{}{},
+				Stages:  map[string]map[string]interface{}{},
+				Steps:   map[string]map[string]interface{}{},
+			},
+			stageConfig: ioutil.NopCloser(strings.NewReader(`
+stages:
+  testStage1:
+    stepConditions:
+      firstStep:
+        filePattern: '**/conf.js'
+            `)),
+			runStepsExpected: map[string]map[string]bool{},
+			globFunc: func(pattern string) ([]string, error) {
+				return nil, errors.New("failed to check if file exists")
+			},
+			wantErr: true,
+		},
+		{
 			name:     "test filePattern condition with list - success",
 			globFunc: evaluateConditionsGlobMock,
 			customConfig: &Config{
@@ -256,7 +313,8 @@ stages:
          - '**/conf.js'
          - 'myCollection.json'
       secondStep:
-        filePattern: '**/conf.jsx'
+        filePattern: 
+         - '**/conf.jsx'
             `)),
 			runStepsExpected: map[string]map[string]bool{
 				"testStage1": {
@@ -267,8 +325,64 @@ stages:
 			wantErr: false,
 		},
 		{
+			name: "test filePattern condition with list - error while searching files by pattern",
+			customConfig: &Config{
+				General: map[string]interface{}{},
+				Stages:  map[string]map[string]interface{}{},
+				Steps:   map[string]map[string]interface{}{},
+			},
+			stageConfig: ioutil.NopCloser(strings.NewReader(`
+stages:
+  testStage1:
+    stepConditions:
+      firstStep:
+        filePattern:
+         - '**/conf.js'
+         - 'myCollection.json'
+            `)),
+			runStepsExpected: map[string]map[string]bool{},
+			globFunc: func(pattern string) ([]string, error) {
+				return nil, errors.New("failed to check if file exists")
+			},
+			wantErr: true,
+		},
+		{
 			name:     "test filePatternFromConfig condition - success",
 			globFunc: evaluateConditionsGlobMock,
+			customConfig: &Config{
+				General: map[string]interface{}{},
+				Stages:  map[string]map[string]interface{}{},
+				Steps: map[string]map[string]interface{}{
+					"firstStep": {
+						"myVal1": "**/conf.js",
+					},
+					"thirdStep": {
+						"myVal3": "**/conf.jsx",
+					},
+				},
+			},
+			stageConfig: ioutil.NopCloser(strings.NewReader(`
+stages:
+  testStage1:
+    stepConditions:
+      firstStep:
+        filePatternFromConfig: myVal1
+      secondStep:
+        filePatternFromConfig: myVal2
+      thirdStep:
+        filePatternFromConfig: myVal3
+            `)),
+			runStepsExpected: map[string]map[string]bool{
+				"testStage1": {
+					"firstStep":  true,
+					"secondStep": false,
+					"thirdStep":  false,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test filePatternFromConfig condition - error while searching files by pattern",
 			customConfig: &Config{
 				General: map[string]interface{}{},
 				Stages:  map[string]map[string]interface{}{},
@@ -284,16 +398,12 @@ stages:
     stepConditions:
       firstStep:
         filePatternFromConfig: myVal1
-      secondStep:
-        filePatternFromConfig: myVal2
             `)),
-			runStepsExpected: map[string]map[string]bool{
-				"testStage1": {
-					"firstStep":  true,
-					"secondStep": false,
-				},
+			runStepsExpected: map[string]map[string]bool{},
+			globFunc: func(pattern string) ([]string, error) {
+				return nil, errors.New("failed to check if file exists")
 			},
-			wantErr: false,
+			wantErr: true,
 		},
 		{
 			name:     "test npmScripts condition - success",
@@ -367,6 +477,27 @@ stages:
 			runStepsExpected: map[string]map[string]bool{},
 			globFunc: func(pattern string) ([]string, error) {
 				return []string{"_package.json"}, nil
+			},
+			wantErr: true,
+		},
+		{
+			name: "test npmScripts condition - error while searching package.json",
+			customConfig: &Config{
+				General: map[string]interface{}{},
+				Stages:  map[string]map[string]interface{}{},
+				Steps:   map[string]map[string]interface{}{},
+			},
+			stageConfig: ioutil.NopCloser(strings.NewReader(`
+stages:
+  testStage1:
+    stepConditions:
+      firstStep:
+        npmScripts:
+         - 'npmScript3'
+            `)),
+			runStepsExpected: map[string]map[string]bool{},
+			globFunc: func(pattern string) ([]string, error) {
+				return nil, errors.New("failed to check if file exists")
 			},
 			wantErr: true,
 		},
