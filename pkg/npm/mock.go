@@ -120,3 +120,8 @@ func (n *NpmExecutorMock) SetNpmRegistries() error {
 func (n *NpmExecutorMock) CreateBOM(packageJSONFiles []string) error {
 	return nil
 }
+
+// CreateBOM mock implementation
+func (n *NpmExecutorMock) PublishAllPackages(packageJSONFiles []string, registry, username, password string) error {
+	return nil
+}
