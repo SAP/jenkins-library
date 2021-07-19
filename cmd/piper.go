@@ -159,6 +159,7 @@ func Execute() {
 	rootCmd.AddCommand(WritePipelineEnv())
 	rootCmd.AddCommand(ReadPipelineEnv())
 	rootCmd.AddCommand(InfluxWriteDataCommand())
+	rootCmd.AddCommand(CheckStepActiveCommand())
 
 	addRootFlags(rootCmd)
 
