@@ -72,7 +72,7 @@ func runIntegrationArtifactDeploy(config *integrationArtifactDeployOptions, tele
 	if err != nil {
 		return err
 	}
-	deployURL := fmt.Sprintf("%s/api/v1/DeployIntegrationDesigntimeArtifact?Id='%s'&Version='%s'", serviceKey.OAuth.Host, config.IntegrationFlowID, config.IntegrationFlowVersion)
+	deployURL := fmt.Sprintf("%s/api/v1/DeployIntegrationDesigntimeArtifact?Id='%s'&Version='%s'", serviceKey.OAuth.Host, config.IntegrationFlowID, "Active")
 
 	tokenParameters := cpi.TokenParameters{TokenURL: serviceKey.OAuth.OAuthTokenProviderURL, Username: serviceKey.OAuth.ClientID, Password: serviceKey.OAuth.ClientSecret, Client: httpClient}
 	token, err := cpi.CommonUtils.GetBearerToken(tokenParameters)

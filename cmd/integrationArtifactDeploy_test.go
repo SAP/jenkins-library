@@ -39,9 +39,8 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 		}`
 
 		config := integrationArtifactDeployOptions{
-			APIServiceKey:          apiServiceKey,
-			IntegrationFlowID:      "flow1",
-			IntegrationFlowVersion: "1.0.1",
+			APIServiceKey:     apiServiceKey,
+			IntegrationFlowID: "flow1",
 		}
 
 		httpClient := httpMockCpis{CPIFunction: "", ResponseBody: ``, TestType: "PositiveAndDeployIntegrationDesigntimeArtifactResBody"}
@@ -72,9 +71,8 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 		}`
 
 		config := integrationArtifactDeployOptions{
-			APIServiceKey:          apiServiceKey,
-			IntegrationFlowID:      "flow1",
-			IntegrationFlowVersion: "1.0.1",
+			APIServiceKey:     apiServiceKey,
+			IntegrationFlowID: "flow1",
 		}
 
 		httpClient := httpMockCpis{CPIFunction: "FailIntegrationDesigntimeArtifactDeployment", ResponseBody: ``, TestType: "Negative"}
@@ -84,7 +82,7 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 		if assert.Error(t, err) {
 
 			t.Run("check url", func(t *testing.T) {
-				assert.Equal(t, "https://demo/api/v1/DeployIntegrationDesigntimeArtifact?Id='flow1'&Version='1.0.1'", httpClient.URL)
+				assert.Equal(t, "https://demo/api/v1/DeployIntegrationDesigntimeArtifact?Id='flow1'&Version='Active'", httpClient.URL)
 			})
 
 			t.Run("check method", func(t *testing.T) {
@@ -105,9 +103,8 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 		}`
 
 		config := integrationArtifactDeployOptions{
-			APIServiceKey:          apiServiceKey,
-			IntegrationFlowID:      "flow1",
-			IntegrationFlowVersion: "1.0.1",
+			APIServiceKey:     apiServiceKey,
+			IntegrationFlowID: "flow1",
 		}
 
 		httpClient := httpMockCpis{CPIFunction: "", ResponseBody: ``, TestType: "NegativeAndDeployIntegrationDesigntimeArtifactResBody"}
@@ -130,9 +127,8 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 		}`
 
 		config := integrationArtifactDeployOptions{
-			APIServiceKey:          apiServiceKey,
-			IntegrationFlowID:      "flow1",
-			IntegrationFlowVersion: "1.0.1",
+			APIServiceKey:     apiServiceKey,
+			IntegrationFlowID: "flow1",
 		}
 
 		httpClient := httpMockCpis{CPIFunction: "GetIntegrationArtifactDeployStatus", Options: clientOptions, ResponseBody: ``, TestType: "PositiveAndDeployIntegrationDesigntimeArtifactResBody"}
@@ -157,9 +153,8 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 		}`
 
 		config := integrationArtifactDeployOptions{
-			APIServiceKey:          apiServiceKey,
-			IntegrationFlowID:      "flow1",
-			IntegrationFlowVersion: "1.0.1",
+			APIServiceKey:     apiServiceKey,
+			IntegrationFlowID: "flow1",
 		}
 
 		httpClient := httpMockCpis{CPIFunction: "GetIntegrationArtifactDeployErrorDetails", Options: clientOptions, ResponseBody: ``, TestType: "PositiveAndGetDeployedIntegrationDesigntimeArtifactErrorResBody"}

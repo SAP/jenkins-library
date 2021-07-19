@@ -15,9 +15,8 @@ import (
 )
 
 type integrationArtifactDeployOptions struct {
-	APIServiceKey          string `json:"apiServiceKey,omitempty"`
-	IntegrationFlowID      string `json:"integrationFlowId,omitempty"`
-	IntegrationFlowVersion string `json:"integrationFlowVersion,omitempty"`
+	APIServiceKey     string `json:"apiServiceKey,omitempty"`
+	IntegrationFlowID string `json:"integrationFlowId,omitempty"`
 }
 
 // IntegrationArtifactDeployCommand Deploy a CPI integration flow
@@ -98,11 +97,9 @@ func IntegrationArtifactDeployCommand() *cobra.Command {
 func addIntegrationArtifactDeployFlags(cmd *cobra.Command, stepConfig *integrationArtifactDeployOptions) {
 	cmd.Flags().StringVar(&stepConfig.APIServiceKey, "apiServiceKey", os.Getenv("PIPER_apiServiceKey"), "Service key JSON string to access the Process Integration Runtime service instance of plan 'api'")
 	cmd.Flags().StringVar(&stepConfig.IntegrationFlowID, "integrationFlowId", os.Getenv("PIPER_integrationFlowId"), "Specifies the ID of the Integration Flow artifact")
-	cmd.Flags().StringVar(&stepConfig.IntegrationFlowVersion, "integrationFlowVersion", os.Getenv("PIPER_integrationFlowVersion"), "Specifies the version of the Integration Flow artifact")
 
 	cmd.MarkFlagRequired("apiServiceKey")
 	cmd.MarkFlagRequired("integrationFlowId")
-	cmd.MarkFlagRequired("integrationFlowVersion")
 }
 
 // retrieve step metadata
@@ -142,15 +139,6 @@ func integrationArtifactDeployMetadata() config.StepData {
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_integrationFlowId"),
-					},
-					{
-						Name:        "integrationFlowVersion",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_integrationFlowVersion"),
 					},
 				},
 			},
