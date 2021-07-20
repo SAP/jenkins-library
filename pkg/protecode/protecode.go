@@ -329,7 +329,14 @@ func (pc *Protecode) UploadScanFile(cleanupMode, group, filePath, fileName strin
 // DeclareFetchURL configures the fetch url for the protecode scan
 func (pc *Protecode) DeclareFetchURL(cleanupMode, group, fetchURL string) *ResultData {
 	deleteBinary := (cleanupMode == "binary" || cleanupMode == "complete")
-	headers := map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}, "Url": {fetchURL}, "Content-Type": {"application/json"}}
+	headers := map[string][]string{
+		"Group":         {group},
+		"Delete-Binary": {fmt.Sprintf("%v", deleteBinary)},
+		"Url":           {fetchURL},
+		"Version":       {"1"},
+		"Replace":	 {"534156"},
+		"Content-Type":  {"application/json"},
+	}
 
 	protecodeURL := fmt.Sprintf("%v/api/fetch/", pc.serverURL)
 	r, err := pc.sendAPIRequest(http.MethodPost, protecodeURL, headers)
