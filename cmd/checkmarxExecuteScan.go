@@ -302,18 +302,26 @@ func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx
 		reports = append(reports, piperutils.Path{Target: toolRecordFileName})
 	}
 
-	scanReport := checkmarx.CreateCustomReport(results)
-	paths, err := checkmarx.WriteCustomReports(scanReport, fmt.Sprint(results["ProjectName"]), fmt.Sprint(results["ProjectID"]))
-	reports = append(reports, paths...)
-
 	links := []piperutils.Path{{Target: results["DeepLink"].(string), Name: "Checkmarx Web UI"}}
 	piperutils.PersistReportsAndLinks("checkmarxExecuteScan", utils.GetWorkspace(), reports, links)
 
 	reportToInflux(results, influx)
 
 	insecure := false
+	insecureResults := []string{}
+	neutralResults := []string{}
+
+	err = nil
 	if config.VulnerabilityThresholdEnabled {
-		insecure = enforceThresholds(config, results)
+		insecure, insecureResults, neutralResults = enforceThresholds(config, results)
+		scanReport := checkmarx.CreateCustomReport(results, insecureResults, neutralResults)
+		paths, err := checkmarx.WriteCustomReports(scanReport, fmt.Sprint(results["ProjectName"]), fmt.Sprint(results["ProjectID"]))
+		if err != nil {
+			// do not fail until we have a better idea to handle it
+			log.Entry().Warning("failed to write HTML/MarkDown report file ...", err)
+		} else {
+			reports = append(reports, paths...)
+		}
 	}
 
 	if insecure {
@@ -427,7 +435,9 @@ func downloadAndSaveReport(sys checkmarx.System, reportFileName string, scanID i
 	return utils.WriteFile(reportFileName, report, 0700)
 }
 
-func enforceThresholds(config checkmarxExecuteScanOptions, results map[string]interface{}) bool {
+func enforceThresholds(config checkmarxExecuteScanOptions, results map[string]interface{}) (bool, []string, []string) {
+	neutralResults := []string{}
+	insecureResults := []string{}
 	insecure := false
 	cxHighThreshold := config.VulnerabilityThresholdHigh
 	cxMediumThreshold := config.VulnerabilityThresholdMedium
@@ -492,13 +502,32 @@ func enforceThresholds(config checkmarxExecuteScanOptions, results map[string]in
 		}
 	}
 
+	highText := fmt.Sprintf("High %v%v %v", highValue, unit, highViolation)
+	mediumText := fmt.Sprintf("Medium %v%v %v", mediumValue, unit, mediumViolation)
+	lowText := fmt.Sprintf("Low %v%v %v", lowValue, unit, lowViolation)
+	if len(highViolation) > 0 {
+		insecureResults = append(insecureResults, highText)
+	} else {
+		neutralResults = append(neutralResults, highText)
+	}
+	if len(mediumViolation) > 0 {
+		insecureResults = append(insecureResults, mediumText)
+	} else {
+		neutralResults = append(neutralResults, mediumText)
+	}
+	if len(lowViolation) > 0 {
+		insecureResults = append(insecureResults, lowText)
+	} else {
+		neutralResults = append(neutralResults, lowText)
+	}
+
 	log.Entry().Infoln("")
-	log.Entry().Infof("High %v%v %v", highValue, unit, highViolation)
-	log.Entry().Infof("Medium %v%v %v", mediumValue, unit, mediumViolation)
-	log.Entry().Infof("Low %v%v %v", lowValue, unit, lowViolation)
+	log.Entry().Info(highText)
+	log.Entry().Info(mediumText)
+	log.Entry().Info(lowText)
 	log.Entry().Infoln("")
 
-	return insecure
+	return insecure, insecureResults, neutralResults
 }
 
 func createAndConfigureNewProject(sys checkmarx.System, projectName, teamID string, presetIDValue int, presetValue, engineConfiguration string) (checkmarx.Project, error) {
