@@ -339,7 +339,10 @@ func pushChanges(config *artifactPrepareVersionOptions, newVersion string, repos
 	}
 	var updatedRemoteOrigin *git.Remote
 
-	urls := originUrls(repository)
+	urls, err := originUrls(repository)
+	if err != nil {
+		return commitID, fmt.Errorf("Error retrieving remote url: %w", err)
+	}
 	if len(urls) == 0 {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return commitID, fmt.Errorf("no remote url maintained")
@@ -424,12 +427,12 @@ func addAndCommit(config *artifactPrepareVersionOptions, worktree gitWorktree, n
 	return commit, nil
 }
 
-func originUrls(repository gitRepository) []string {
+func originUrls(repository gitRepository) ([]string, error) {
 	remote, err := repository.Remote("origin")
 	if err != nil || remote == nil {
-		return []string{}
+		return []string{}, err
 	}
-	return remote.Config().URLs
+	return remote.Config().URLs, nil
 }
 
 func convertHTTPToSSHURL(url string) string {
