@@ -98,10 +98,8 @@ spec:
           - name: dockerConfigJsonCredentialsId
             type: secret
           - type: vaultSecretFile
-            paths:
-              - $(vaultPath)/docker-config
-              - $(vaultBasePath)/$(vaultPipelineName)/docker-config
-              - $(vaultBasePath)/GROUP-SECRETS/docker-config
+            name: dockerConfigFileVaultSecretName
+            default: docker-config
       - name: dockerfilePath
         aliases:
           - name: dockerfile

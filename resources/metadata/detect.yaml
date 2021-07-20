@@ -35,10 +35,8 @@ spec:
           - name: detectTokenCredentialsId
             type: secret
           - type: vaultSecret
-            paths:
-              - $(vaultPath)/detect
-              - $(vaultBasePath)/$(vaultPipelineName)/detect
-              - $(vaultBasePath)/GROUP-SECRETS/detect
+            name: detectVaultSecretName
+            default: detect
         scope:
           - PARAMETERS
           - STAGES

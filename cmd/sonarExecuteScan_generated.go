@@ -241,9 +241,9 @@ func sonarExecuteScanMetadata() config.StepData {
 						Name: "token",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/sonar", "$(vaultBasePath)/$(vaultPipelineName)/sonar", "$(vaultBasePath)/GROUP-SECRETS/sonar"},
-								Type:  "vaultSecret",
+								Name:    "sonarSecretName",
+								Type:    "vaultSecret",
+								Default: "sonar",
 							},
 
 							{
@@ -452,9 +452,9 @@ func sonarExecuteScanMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/github", "$(vaultBasePath)/$(vaultPipelineName)/github", "$(vaultBasePath)/GROUP-SECRETS/github"},
-								Type:  "vaultSecret",
+								Name:    "githubVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "github",
 							},
 						},
 						Scope:     []string{"PARAMETERS"},

@@ -32,10 +32,8 @@ spec:
           - name: influxAuthTokenId
             type: secret
           - type: vaultSecret
-            paths:
-              - $(vaultPath)/influxdb
-              - $(vaultBasePath)/$(vaultPipelineName)/influxdb
-              - $(vaultBasePath)/GROUP-SECRETS/influxdb
+            name: influxVaultSecretName
+            default: influxdb
       - name: bucket
         type: string
         description: Name of database (1.8) or bucket (2.0)
