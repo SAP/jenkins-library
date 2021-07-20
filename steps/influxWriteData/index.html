@@ -1,0 +1,3067 @@
+
+
+
+
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      <meta http-equiv="x-ua-compatible" content="ie=edge">
+      
+      
+      
+      
+        <meta name="lang:clipboard.copy" content="Copy to clipboard">
+      
+        <meta name="lang:clipboard.copied" content="Copied to clipboard">
+      
+        <meta name="lang:search.language" content="en">
+      
+        <meta name="lang:search.pipeline.stopwords" content="True">
+      
+        <meta name="lang:search.pipeline.trimmer" content="True">
+      
+        <meta name="lang:search.result.none" content="No matching documents">
+      
+        <meta name="lang:search.result.one" content="1 matching document">
+      
+        <meta name="lang:search.result.other" content="# matching documents">
+      
+        <meta name="lang:search.tokenizer" content="[\s\-]+">
+      
+      <link rel="shortcut icon" href="../../images/favicon.ico">
+      <meta name="generator" content="mkdocs-1.0.3, mkdocs-material-3.0.4">
+    
+    
+      
+        <title>influxWriteData - Project "Piper": Continuous Delivery for the SAP Ecosystem</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/application.451f80e5.css">
+      
+        <link rel="stylesheet" href="../../assets/stylesheets/application-palette.22915126.css">
+      
+      
+        
+        
+        <meta name="theme-color" content="#009688">
+      
+    
+    
+      <script src="../../assets/javascripts/modernizr.1aa3b519.js"></script>
+    
+    
+      
+        <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700|Roboto+Mono">
+        <style>body,input{font-family:"Roboto","Helvetica Neue",Helvetica,Arial,sans-serif}code,kbd,pre{font-family:"Roboto Mono","Courier New",Courier,monospace}</style>
+      
+    
+    <link rel="stylesheet" href="../../assets/fonts/material-icons.css">
+    
+      <link rel="stylesheet" href="../../css/extra.css">
+    
+    
+  </head>
+  
+    
+    
+    <body dir="ltr" data-md-color-primary="teal" data-md-color-accent="purple">
+  
+    <svg class="md-svg">
+      <defs>
+        
+        
+          <svg xmlns="http://www.w3.org/2000/svg" width="416" height="448"
+    viewBox="0 0 416 448" id="__github">
+  <path fill="currentColor" d="M160 304q0 10-3.125 20.5t-10.75 19-18.125
+        8.5-18.125-8.5-10.75-19-3.125-20.5 3.125-20.5 10.75-19 18.125-8.5
+        18.125 8.5 10.75 19 3.125 20.5zM320 304q0 10-3.125 20.5t-10.75
+        19-18.125 8.5-18.125-8.5-10.75-19-3.125-20.5 3.125-20.5 10.75-19
+        18.125-8.5 18.125 8.5 10.75 19 3.125 20.5zM360
+        304q0-30-17.25-51t-46.75-21q-10.25 0-48.75 5.25-17.75 2.75-39.25
+        2.75t-39.25-2.75q-38-5.25-48.75-5.25-29.5 0-46.75 21t-17.25 51q0 22 8
+        38.375t20.25 25.75 30.5 15 35 7.375 37.25 1.75h42q20.5 0
+        37.25-1.75t35-7.375 30.5-15 20.25-25.75 8-38.375zM416 260q0 51.75-15.25
+        82.75-9.5 19.25-26.375 33.25t-35.25 21.5-42.5 11.875-42.875 5.5-41.75
+        1.125q-19.5 0-35.5-0.75t-36.875-3.125-38.125-7.5-34.25-12.875-30.25-20.25-21.5-28.75q-15.5-30.75-15.5-82.75
+        0-59.25 34-99-6.75-20.5-6.75-42.5 0-29 12.75-54.5 27 0 47.5 9.875t47.25
+        30.875q36.75-8.75 77.25-8.75 37 0 70 8 26.25-20.5
+        46.75-30.25t47.25-9.75q12.75 25.5 12.75 54.5 0 21.75-6.75 42 34 40 34
+        99.5z" />
+</svg>
+        
+      </defs>
+    </svg>
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" data-md-component="overlay" for="__drawer"></label>
+    
+      <a href="../../#influxwritedata" tabindex="1" class="md-skip">
+        Skip to content
+      </a>
+    
+    
+      <header class="md-header" data-md-component="header">
+  <nav class="md-header-nav md-grid">
+    <div class="md-flex">
+      <div class="md-flex__cell md-flex__cell--shrink">
+        <a href="../.." title="Project "Piper": Continuous Delivery for the SAP Ecosystem" class="md-header-nav__button md-logo">
+          
+            <img src="../../images/piper_400_white.png" width="24" height="24">
+          
+        </a>
+      </div>
+      <div class="md-flex__cell md-flex__cell--shrink">
+        <label class="md-icon md-icon--menu md-header-nav__button" for="__drawer"></label>
+      </div>
+      <div class="md-flex__cell md-flex__cell--stretch">
+        <div class="md-flex__ellipsis md-header-nav__title" data-md-component="title">
+          
+            
+              <span class="md-header-nav__topic">
+                Project "Piper": Continuous Delivery for the SAP Ecosystem
+              </span>
+              <span class="md-header-nav__topic">
+                influxWriteData
+              </span>
+            
+          
+        </div>
+      </div>
+      <div class="md-flex__cell md-flex__cell--shrink">
+        
+          
+            <label class="md-icon md-icon--search md-header-nav__button" for="__search"></label>
+            
+<div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="query" data-md-state="active">
+      <label class="md-icon md-search__icon" for="__search"></label>
+      <button type="reset" class="md-icon md-search__icon" data-md-component="reset" tabindex="-1">
+        &#xE5CD;
+      </button>
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="result">
+          <div class="md-search-result__meta">
+            Type to start searching
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+          
+        
+      </div>
+      
+        <div class="md-flex__cell md-flex__cell--shrink">
+          <div class="md-header-nav__source">
+            
+
+
+  
+
+
+  <a href="https://github.com/SAP/jenkins-library/" title="Go to repository" class="md-source" data-md-source="github">
+    
+      <div class="md-source__icon">
+        <svg viewBox="0 0 24 24" width="24" height="24">
+          <use xlink:href="#__github" width="24" height="24"></use>
+        </svg>
+      </div>
+    
+    <div class="md-source__repository">
+      GitHub
+    </div>
+  </a>
+
+          </div>
+        </div>
+      
+    </div>
+  </nav>
+</header>
+    
+    <div class="md-container">
+      
+        
+      
+      
+      <main class="md-main">
+        <div class="md-main__inner md-grid" data-md-component="container">
+          
+            
+              <div class="md-sidebar md-sidebar--primary" data-md-component="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    <nav class="md-nav md-nav--primary" data-md-level="0">
+  <label class="md-nav__title md-nav__title--site" for="__drawer">
+    <a href="../.." title="Project "Piper": Continuous Delivery for the SAP Ecosystem" class="md-nav__button md-logo">
+      
+        <img src="../../images/piper_400_white.png" width="48" height="48">
+      
+    </a>
+    Project "Piper": Continuous Delivery for the SAP Ecosystem
+  </label>
+  
+    <div class="md-nav__source">
+      
+
+
+  
+
+
+  <a href="https://github.com/SAP/jenkins-library/" title="Go to repository" class="md-source" data-md-source="github">
+    
+      <div class="md-source__icon">
+        <svg viewBox="0 0 24 24" width="24" height="24">
+          <use xlink:href="#__github" width="24" height="24"></use>
+        </svg>
+      </div>
+    
+    <div class="md-source__repository">
+      GitHub
+    </div>
+  </a>
+
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../.." title="Home" class="md-nav__link">
+      Home
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../../guidedtour/" title="Getting Started With Project "Piper"" class="md-nav__link">
+      Getting Started With Project "Piper"
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../../configuration/" title="Configuration" class="md-nav__link">
+      Configuration
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item md-nav__item--nested">
+    
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-4" type="checkbox" id="nav-4">
+    
+    <label class="md-nav__link" for="nav-4">
+      Infrastructure
+    </label>
+    <nav class="md-nav" data-md-component="collapsible" data-md-level="1">
+      <label class="md-nav__title" for="nav-4">
+        Infrastructure
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../infrastructure/overview/" title="Overview" class="md-nav__link">
+      Overview
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../infrastructure/customjenkins/" title="Custom Jenkins Setup" class="md-nav__link">
+      Custom Jenkins Setup
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../infrastructure/vault/" title="Vault For Pipline Secrets" class="md-nav__link">
+      Vault For Pipline Secrets
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../infrastructure/docker-rate-limit/" title="Fixing docker rate limit" class="md-nav__link">
+      Fixing docker rate limit
+    </a>
+  </li>
+
+        
+      </ul>
+    </nav>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item md-nav__item--nested">
+    
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-5" type="checkbox" id="nav-5">
+    
+    <label class="md-nav__link" for="nav-5">
+      Pipelines
+    </label>
+    <nav class="md-nav" data-md-component="collapsible" data-md-level="1">
+      <label class="md-nav__title" for="nav-5">
+        Pipelines
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+
+  <li class="md-nav__item md-nav__item--nested">
+    
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-5-1" type="checkbox" id="nav-5-1">
+    
+    <label class="md-nav__link" for="nav-5-1">
+      ABAP Environment pipeline
+    </label>
+    <nav class="md-nav" data-md-component="collapsible" data-md-level="2">
+      <label class="md-nav__title" for="nav-5-1">
+        ABAP Environment pipeline
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../pipelines/abapEnvironment/introduction/" title="Introduction" class="md-nav__link">
+      Introduction
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../pipelines/abapEnvironment/configuration/" title="Configuration" class="md-nav__link">
+      Configuration
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../pipelines/abapEnvironment/extensibility/" title="Extensibility" class="md-nav__link">
+      Extensibility
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item md-nav__item--nested">
+    
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-5-1-4" type="checkbox" id="nav-5-1-4">
+    
+    <label class="md-nav__link" for="nav-5-1-4">
+      Stages
+    </label>
+    <nav class="md-nav" data-md-component="collapsible" data-md-level="3">
+      <label class="md-nav__title" for="nav-5-1-4">
+        Stages
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../pipelines/abapEnvironment/stages/initialChecks/" title="Initial Checks" class="md-nav__link">
+      Initial Checks
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../pipelines/abapEnvironment/stages/prepareSystem/" title="Prepare System" class="md-nav__link">
+      Prepare System
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../pipelines/abapEnvironment/stages/cloneRepositories/" title="Clone Repositories" class="md-nav__link">
+      Clone Repositories
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../pipelines/abapEnvironment/stages/ATC/" title="ATC" class="md-nav__link">
+      ATC
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../pipelines/abapEnvironment/stages/build/" title="Build" class="md-nav__link">
+      Build
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../pipelines/abapEnvironment/stages/integrationTest/" title="Integration Tests" class="md-nav__link">
+      Integration Tests
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../pipelines/abapEnvironment/stages/confirm/" title="Confirm" class="md-nav__link">
+      Confirm
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../pipelines/abapEnvironment/stages/publish/" title="Publish" class="md-nav__link">
+      Publish
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../pipelines/abapEnvironment/stages/post/" title="Post" class="md-nav__link">
+      Post
+    </a>
+  </li>
+
+        
+      </ul>
+    </nav>
+  </li>
+
+        
+      </ul>
+    </nav>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item md-nav__item--nested">
+    
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-5-2" type="checkbox" id="nav-5-2">
+    
+    <label class="md-nav__link" for="nav-5-2">
+      General purpose pipeline
+    </label>
+    <nav class="md-nav" data-md-component="collapsible" data-md-level="2">
+      <label class="md-nav__title" for="nav-5-2">
+        General purpose pipeline
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../stages/introduction/" title="Introduction" class="md-nav__link">
+      Introduction
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../stages/examples/" title="Examples" class="md-nav__link">
+      Examples
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item md-nav__item--nested">
+    
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-5-2-3" type="checkbox" id="nav-5-2-3">
+    
+    <label class="md-nav__link" for="nav-5-2-3">
+      Stages
+    </label>
+    <nav class="md-nav" data-md-component="collapsible" data-md-level="3">
+      <label class="md-nav__title" for="nav-5-2-3">
+        Stages
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../stages/init/" title="Init Stage" class="md-nav__link">
+      Init Stage
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../stages/prvoting/" title="Pull-Request Voting Stage" class="md-nav__link">
+      Pull-Request Voting Stage
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../stages/build/" title="Build Stage" class="md-nav__link">
+      Build Stage
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../stages/additionalunittests/" title="Additional Unit Test Stage" class="md-nav__link">
+      Additional Unit Test Stage
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../stages/integration/" title="Integration Stage" class="md-nav__link">
+      Integration Stage
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../stages/acceptance/" title="Acceptance Stage" class="md-nav__link">
+      Acceptance Stage
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../stages/security/" title="Security Stage" class="md-nav__link">
+      Security Stage
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../stages/performance/" title="Performance Stage" class="md-nav__link">
+      Performance Stage
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../stages/compliance/" title="Compliance" class="md-nav__link">
+      Compliance
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../stages/confirm/" title="Confirm Stage" class="md-nav__link">
+      Confirm Stage
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../stages/promote/" title="Promote Stage" class="md-nav__link">
+      Promote Stage
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../stages/release/" title="Release Stage" class="md-nav__link">
+      Release Stage
+    </a>
+  </li>
+
+        
+      </ul>
+    </nav>
+  </li>
+
+        
+      </ul>
+    </nav>
+  </li>
+
+        
+      </ul>
+    </nav>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item md-nav__item--nested">
+    
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-6" type="checkbox" id="nav-6">
+    
+    <label class="md-nav__link" for="nav-6">
+      Scenarios
+    </label>
+    <nav class="md-nav" data-md-component="collapsible" data-md-level="1">
+      <label class="md-nav__title" for="nav-6">
+        Scenarios
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../scenarios/changeManagement/" title="Build and Deploy Hybrid Applications with SAP Solution Manager" class="md-nav__link">
+      Build and Deploy Hybrid Applications with SAP Solution Manager
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../scenarios/ui5-sap-cp/Readme/" title="Build and Deploy SAPUI5/SAP Fiori Applications on SAP Cloud Platform" class="md-nav__link">
+      Build and Deploy SAPUI5/SAP Fiori Applications on SAP Cloud Platform
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../scenarios/CAP_Scenario/" title="Build and Deploy SAP Cloud Application Programming Model Applications" class="md-nav__link">
+      Build and Deploy SAP Cloud Application Programming Model Applications
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../scenarios/TMS_Extension/" title="Integrate SAP Cloud Platform Transport Management Into Your CI/CD Pipeline" class="md-nav__link">
+      Integrate SAP Cloud Platform Transport Management Into Your CI/CD Pipeline
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../scenarios/xsa-deploy/Readme/" title="Build and Deploy SAP Fiori Applications on SAP HANA Extended Application Services, Advanced Model" class="md-nav__link">
+      Build and Deploy SAP Fiori Applications on SAP HANA Extended Application Services, Advanced Model
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../scenarios/upload-to-transportrequest/Readme/" title="Build an SAP Fiori Application and Attach It to a Transport Request on an ABAP System" class="md-nav__link">
+      Build an SAP Fiori Application and Attach It to a Transport Request on an ABAP System
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../scenarios/abapEnvironmentAddons/" title="Build and Publish Add-on Products on SAP BTP, ABAP Environment" class="md-nav__link">
+      Build and Publish Add-on Products on SAP BTP, ABAP Environment
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../scenarios/abapEnvironmentTest/" title="Continuous Testing on SAP BTP, ABAP Environment" class="md-nav__link">
+      Continuous Testing on SAP BTP, ABAP Environment
+    </a>
+  </li>
+
+        
+      </ul>
+    </nav>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../../extensibility/" title="Extensibility" class="md-nav__link">
+      Extensibility
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+  
+
+
+  <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-8" type="checkbox" id="nav-8" checked>
+    
+    <label class="md-nav__link" for="nav-8">
+      Library steps
+    </label>
+    <nav class="md-nav" data-md-component="collapsible" data-md-level="1">
+      <label class="md-nav__title" for="nav-8">
+        Library steps
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../abapAddonAssemblyKitCheckCVs/" title="abapAddonAssemblyKitCheckCVs" class="md-nav__link">
+      abapAddonAssemblyKitCheckCVs
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../abapAddonAssemblyKitCheckPV/" title="abapAddonAssemblyKitCheckCVs" class="md-nav__link">
+      abapAddonAssemblyKitCheckCVs
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../abapAddonAssemblyKitCreateTargetVector/" title="abapAddonAssemblyKitCreateTargetVector" class="md-nav__link">
+      abapAddonAssemblyKitCreateTargetVector
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../abapAddonAssemblyKitPublishTargetVector/" title="abapAddonAssemblyKitPublishTargetVector" class="md-nav__link">
+      abapAddonAssemblyKitPublishTargetVector
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../abapAddonAssemblyKitRegisterPackages/" title="abapAddonAssemblyKitRegisterPackages" class="md-nav__link">
+      abapAddonAssemblyKitRegisterPackages
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../abapAddonAssemblyKitReleasePackages/" title="abapAddonAssemblyKitReleasePackages" class="md-nav__link">
+      abapAddonAssemblyKitReleasePackages
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../abapAddonAssemblyKitReserveNextPackages/" title="abapAddonAssemblyKitReserveNextPackages" class="md-nav__link">
+      abapAddonAssemblyKitReserveNextPackages
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../abapEnvironmentAssemblePackages/" title="abapEnvironmentAssemblePackages" class="md-nav__link">
+      abapEnvironmentAssemblePackages
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../abapEnvironmentAssembleConfirm/" title="abapEnvironmentAssembleConfirm" class="md-nav__link">
+      abapEnvironmentAssembleConfirm
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../abapEnvironmentCheckoutBranch/" title="abapEnvironmentCheckoutBranch" class="md-nav__link">
+      abapEnvironmentCheckoutBranch
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../abapEnvironmentCloneGitRepo/" title="abapEnvironmentCloneGitRepo" class="md-nav__link">
+      abapEnvironmentCloneGitRepo
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../abapEnvironmentCreateSystem/" title="abapEnvironmentCreateSystem" class="md-nav__link">
+      abapEnvironmentCreateSystem
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../abapEnvironmentPullGitRepo/" title="abapEnvironmentPullGitRepo" class="md-nav__link">
+      abapEnvironmentPullGitRepo
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../abapEnvironmentRunATCCheck/" title="abapEnvironmentRunATCCheck" class="md-nav__link">
+      abapEnvironmentRunATCCheck
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../artifactPrepareVersion/" title="artifactPrepareVersion" class="md-nav__link">
+      artifactPrepareVersion
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../batsExecuteTests/" title="batsExecuteTests" class="md-nav__link">
+      batsExecuteTests
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../buildExecute/" title="buildExecute" class="md-nav__link">
+      buildExecute
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../checkChangeInDevelopment/" title="checkChangeInDevelopment" class="md-nav__link">
+      checkChangeInDevelopment
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../checkmarxExecuteScan/" title="checkmarxExecuteScan" class="md-nav__link">
+      checkmarxExecuteScan
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../checksPublishResults/" title="checksPublishResults" class="md-nav__link">
+      checksPublishResults
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../cfManifestSubstituteVariables/" title="cfManifestSubstituteVariables" class="md-nav__link">
+      cfManifestSubstituteVariables
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../cloudFoundryCreateService/" title="cloudFoundryCreateService" class="md-nav__link">
+      cloudFoundryCreateService
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../cloudFoundryCreateServiceKey/" title="cloudFoundryCreateServiceKey" class="md-nav__link">
+      cloudFoundryCreateServiceKey
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../cloudFoundryDeleteService/" title="cloudFoundryDeleteService" class="md-nav__link">
+      cloudFoundryDeleteService
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../cloudFoundryDeploy/" title="cloudFoundryDeploy" class="md-nav__link">
+      cloudFoundryDeploy
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../commonPipelineEnvironment/" title="commonPipelineEnvironment" class="md-nav__link">
+      commonPipelineEnvironment
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../containerExecuteStructureTests/" title="containerExecuteStructureTests" class="md-nav__link">
+      containerExecuteStructureTests
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../containerPushToRegistry/" title="containerPushToRegistry" class="md-nav__link">
+      containerPushToRegistry
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../debugReportArchive/" title="debugReportArchive" class="md-nav__link">
+      debugReportArchive
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../detectExecuteScan/" title="detectExecuteScan" class="md-nav__link">
+      detectExecuteScan
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../dockerExecute/" title="dockerExecute" class="md-nav__link">
+      dockerExecute
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../dockerExecuteOnKubernetes/" title="dockerExecuteOnKubernetes" class="md-nav__link">
+      dockerExecuteOnKubernetes
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../dubExecute/" title="dubExecute" class="md-nav__link">
+      dubExecute
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../durationMeasure/" title="durationMeasure" class="md-nav__link">
+      durationMeasure
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../fortifyExecuteScan/" title="fortifyExecuteScan" class="md-nav__link">
+      fortifyExecuteScan
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../gatlingExecuteTests/" title="gatlingExecuteTests" class="md-nav__link">
+      gatlingExecuteTests
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../gaugeExecuteTests/" title="gaugeExecuteTests" class="md-nav__link">
+      gaugeExecuteTests
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../gctsCloneRepository/" title="gctsCloneRepository" class="md-nav__link">
+      gctsCloneRepository
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../gctsCreateRepository/" title="gctsCreateRepository" class="md-nav__link">
+      gctsCreateRepository
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../gctsDeploy/" title="gctsDeploy" class="md-nav__link">
+      gctsDeploy
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../gctsExecuteABAPUnitTests/" title="gctsExecuteABAPUnitTests" class="md-nav__link">
+      gctsExecuteABAPUnitTests
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../gctsRollback/" title="gctsRollback" class="md-nav__link">
+      gctsRollback
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../githubCheckBranchProtection/" title="githubCheckBranchProtection" class="md-nav__link">
+      githubCheckBranchProtection
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../githubCommentIssue/" title="githubCommentIssue" class="md-nav__link">
+      githubCommentIssue
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../githubCreateIssue/" title="githubCreateIssue" class="md-nav__link">
+      githubCreateIssue
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../githubCreatePullRequest/" title="githubCreatePullRequest" class="md-nav__link">
+      githubCreatePullRequest
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../githubPublishRelease/" title="githubPublishRelease" class="md-nav__link">
+      githubPublishRelease
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../githubSetCommitStatus/" title="githubSetCommitStatus" class="md-nav__link">
+      githubSetCommitStatus
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../hadolintExecute/" title="hadolintExecute" class="md-nav__link">
+      hadolintExecute
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../handlePipelineStepErrors/" title="handlePipelineStepErrors" class="md-nav__link">
+      handlePipelineStepErrors
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../healthExecuteCheck/" title="healthExecuteCheck" class="md-nav__link">
+      healthExecuteCheck
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+  
+
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+    
+      
+    
+    
+      <label class="md-nav__link md-nav__link--active" for="__toc">
+        influxWriteData
+      </label>
+    
+    <a href="./" title="influxWriteData" class="md-nav__link md-nav__link--active">
+      influxWriteData
+    </a>
+    
+      
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#description" title="Description" class="md-nav__link">
+    Description
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" title="Prerequisites" class="md-nav__link">
+    Prerequisites
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#setting-up-influxdb-with-grafana" title="Setting up InfluxDB with Grafana" class="md-nav__link">
+    Setting up InfluxDB with Grafana
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pipeline-configuration" title="Pipeline configuration" class="md-nav__link">
+    Pipeline configuration
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configure-jenkins" title="Configure Jenkins" class="md-nav__link">
+    Configure Jenkins
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adapt-pipeline-configuration" title="Adapt pipeline configuration" class="md-nav__link">
+    Adapt pipeline configuration
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#parameters" title="Parameters" class="md-nav__link">
+    Parameters
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-configuration" title="Step configuration" class="md-nav__link">
+    Step configuration
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dependencies" title="Dependencies" class="md-nav__link">
+    Dependencies
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example" title="Example" class="md-nav__link">
+    Example
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#work-with-influxdb-and-grafana" title="Work with InfluxDB and Grafana" class="md-nav__link">
+    Work with InfluxDB and Grafana
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-collected-in-influxdb" title="Data collected in InfluxDB" class="md-nav__link">
+    Data collected in InfluxDB
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#collected-influxdb-measurements" title="Collected InfluxDB measurements" class="md-nav__link">
+    Collected InfluxDB measurements
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#examples-for-influxdb-queries-which-can-be-used-in-grafana" title="Examples for InfluxDB queries which can be used in Grafana" class="md-nav__link">
+    Examples for InfluxDB queries which can be used in Grafana
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-1-select-last-10-successful-builds" title="Example 1: Select last 10 successful builds" class="md-nav__link">
+    Example 1: Select last 10 successful builds
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-2-select-last-10-step-names-of-failed-builds" title="Example 2: Select last 10 step names of failed builds" class="md-nav__link">
+    Example 2: Select last 10 step names of failed builds
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-3-select-build-duration-of-step-for-a-specific-project" title="Example 3: Select build duration of step for a specific project" class="md-nav__link">
+    Example 3: Select build duration of step for a specific project
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-4-get-transparency-about-successfulfailed-steps-for-a-specific-project" title="Example 4: Get transparency about successful/failed steps for a specific project" class="md-nav__link">
+    Example 4: Get transparency about successful/failed steps for a specific project
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+      
+      
+      
+      
+    </ul>
+  
+</nav>
+    
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../integrationArtifactDeploy/" title="integrationArtifactDeploy" class="md-nav__link">
+      integrationArtifactDeploy
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../integrationArtifactDownload/" title="integrationArtifactDownload" class="md-nav__link">
+      integrationArtifactDownload
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../integrationArtifactGetMplStatus/" title="integrationArtifactGetMplStatus" class="md-nav__link">
+      integrationArtifactGetMplStatus
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../integrationArtifactGetServiceEndpoint/" title="integrationArtifactGetServiceEndpoint" class="md-nav__link">
+      integrationArtifactGetServiceEndpoint
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../integrationArtifactUpdateConfiguration/" title="integrationArtifactUpdateConfiguration" class="md-nav__link">
+      integrationArtifactUpdateConfiguration
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../integrationArtifactUpload/" title="integrationArtifactUpload" class="md-nav__link">
+      integrationArtifactUpload
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../jenkinsMaterializeLog/" title="jenkinsMaterializeLog" class="md-nav__link">
+      jenkinsMaterializeLog
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../kanikoExecute/" title="kanikoExecute" class="md-nav__link">
+      kanikoExecute
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../karmaExecuteTests/" title="karmaExecuteTests" class="md-nav__link">
+      karmaExecuteTests
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../kubernetesDeploy/" title="kubernetesDeploy" class="md-nav__link">
+      kubernetesDeploy
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../mailSendNotification/" title="mailSendNotification" class="md-nav__link">
+      mailSendNotification
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../malwareExecuteScan/" title="malwareExecuteScan" class="md-nav__link">
+      malwareExecuteScan
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../mavenBuild/" title="mavenBuild" class="md-nav__link">
+      mavenBuild
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../mavenExecute/" title="mavenExecute" class="md-nav__link">
+      mavenExecute
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../mavenExecuteIntegration/" title="mavenExecuteIntegration" class="md-nav__link">
+      mavenExecuteIntegration
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../mavenExecuteStaticCodeChecks/" title="mavenExecuteStaticCodeChecks" class="md-nav__link">
+      mavenExecuteStaticCodeChecks
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../mtaBuild/" title="mtaBuild" class="md-nav__link">
+      mtaBuild
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../multicloudDeploy/" title="multicloudDeploy" class="md-nav__link">
+      multicloudDeploy
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../neoDeploy/" title="neoDeploy" class="md-nav__link">
+      neoDeploy
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../newmanExecute/" title="newmanExecute" class="md-nav__link">
+      newmanExecute
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../nexusUpload/" title="nexusUpload" class="md-nav__link">
+      nexusUpload
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../npmExecuteEndToEndTests/" title="npmExecuteEndToEndTests" class="md-nav__link">
+      npmExecuteEndToEndTests
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../npmExecuteLint/" title="npmExecuteLint" class="md-nav__link">
+      npmExecuteLint
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../npmExecuteScripts/" title="npmExecuteScripts" class="md-nav__link">
+      npmExecuteScripts
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../pipelineExecute/" title="pipelineExecute" class="md-nav__link">
+      pipelineExecute
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../pipelineRestartSteps/" title="pipelineRestartSteps" class="md-nav__link">
+      pipelineRestartSteps
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../pipelineStashFiles/" title="pipelineStashFiles" class="md-nav__link">
+      pipelineStashFiles
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../pipelineStashFilesAfterBuild/" title="pipelineStashFilesAfterBuild" class="md-nav__link">
+      pipelineStashFilesAfterBuild
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../pipelineStashFilesBeforeBuild/" title="pipelineStashFilesBeforeBuild" class="md-nav__link">
+      pipelineStashFilesBeforeBuild
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../piperLoadGlobalExtensions/" title="piperLoadGlobalExtensions" class="md-nav__link">
+      piperLoadGlobalExtensions
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../piperPublishWarnings/" title="piperPublishWarnings" class="md-nav__link">
+      piperPublishWarnings
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../prepareDefaultValues/" title="prepareDefaultValues" class="md-nav__link">
+      prepareDefaultValues
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../protecodeExecuteScan/" title="protecodeExecuteScan" class="md-nav__link">
+      protecodeExecuteScan
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../seleniumExecuteTests/" title="seleniumExecuteTests" class="md-nav__link">
+      seleniumExecuteTests
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../setupCommonPipelineEnvironment/" title="setupCommonPipelineEnvironment" class="md-nav__link">
+      setupCommonPipelineEnvironment
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../slackSendNotification/" title="slackSendNotification" class="md-nav__link">
+      slackSendNotification
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../snykExecute/" title="snykExecute" class="md-nav__link">
+      snykExecute
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../sonarExecuteScan/" title="sonarExecuteScan" class="md-nav__link">
+      sonarExecuteScan
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../spinnakerTriggerPipeline/" title="spinnakerTriggerPipeline" class="md-nav__link">
+      spinnakerTriggerPipeline
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../testsPublishResults/" title="testsPublishResults" class="md-nav__link">
+      testsPublishResults
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../tmsUpload/" title="tmsUpload" class="md-nav__link">
+      tmsUpload
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../transportRequestCreate/" title="transportRequestCreate" class="md-nav__link">
+      transportRequestCreate
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../transportRequestDocIDFromGit/" title="transportRequestDocIDFromGit" class="md-nav__link">
+      transportRequestDocIDFromGit
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../transportRequestRelease/" title="transportRequestRelease" class="md-nav__link">
+      transportRequestRelease
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../transportRequestReqIDFromGit/" title="transportRequestReqIDFromGit" class="md-nav__link">
+      transportRequestReqIDFromGit
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../transportRequestUploadFile/" title="transportRequestUploadFile" class="md-nav__link">
+      transportRequestUploadFile
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../transportRequestUploadRFC/" title="transportRequestUploadRFC" class="md-nav__link">
+      transportRequestUploadRFC
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../transportRequestUploadSOLMAN/" title="transportRequestUploadSOLMAN" class="md-nav__link">
+      transportRequestUploadSOLMAN
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../uiVeri5ExecuteTests/" title="uiVeri5ExecuteTests" class="md-nav__link">
+      uiVeri5ExecuteTests
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../vaultRotateSecretId/" title="vaultRotateSecretId" class="md-nav__link">
+      vaultRotateSecretId
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../whitesourceExecuteScan/" title="whitesourceExecuteScan" class="md-nav__link">
+      whitesourceExecuteScan
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../writeTemporaryCredentials/" title="writeTemporaryCredentials" class="md-nav__link">
+      writeTemporaryCredentials
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../xsDeploy/" title="xsDeploy" class="md-nav__link">
+      xsDeploy
+    </a>
+  </li>
+
+        
+      </ul>
+    </nav>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item md-nav__item--nested">
+    
+      <input class="md-toggle md-nav__toggle" data-md-toggle="nav-9" type="checkbox" id="nav-9">
+    
+    <label class="md-nav__link" for="nav-9">
+      Library Steps (deprecated)
+    </label>
+    <nav class="md-nav" data-md-component="collapsible" data-md-level="1">
+      <label class="md-nav__title" for="nav-9">
+        Library Steps (deprecated)
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../artifactSetVersion/" title="artifactSetVersion" class="md-nav__link">
+      artifactSetVersion
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../npmExecute/" title="npmExecute" class="md-nav__link">
+      npmExecute
+    </a>
+  </li>
+
+        
+      </ul>
+    </nav>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../../cli/" title="Command line tool" class="md-nav__link">
+      Command line tool
+    </a>
+  </li>
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#description" title="Description" class="md-nav__link">
+    Description
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" title="Prerequisites" class="md-nav__link">
+    Prerequisites
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#setting-up-influxdb-with-grafana" title="Setting up InfluxDB with Grafana" class="md-nav__link">
+    Setting up InfluxDB with Grafana
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pipeline-configuration" title="Pipeline configuration" class="md-nav__link">
+    Pipeline configuration
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#configure-jenkins" title="Configure Jenkins" class="md-nav__link">
+    Configure Jenkins
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adapt-pipeline-configuration" title="Adapt pipeline configuration" class="md-nav__link">
+    Adapt pipeline configuration
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#parameters" title="Parameters" class="md-nav__link">
+    Parameters
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-configuration" title="Step configuration" class="md-nav__link">
+    Step configuration
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dependencies" title="Dependencies" class="md-nav__link">
+    Dependencies
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example" title="Example" class="md-nav__link">
+    Example
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#work-with-influxdb-and-grafana" title="Work with InfluxDB and Grafana" class="md-nav__link">
+    Work with InfluxDB and Grafana
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-collected-in-influxdb" title="Data collected in InfluxDB" class="md-nav__link">
+    Data collected in InfluxDB
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#collected-influxdb-measurements" title="Collected InfluxDB measurements" class="md-nav__link">
+    Collected InfluxDB measurements
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#examples-for-influxdb-queries-which-can-be-used-in-grafana" title="Examples for InfluxDB queries which can be used in Grafana" class="md-nav__link">
+    Examples for InfluxDB queries which can be used in Grafana
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-1-select-last-10-successful-builds" title="Example 1: Select last 10 successful builds" class="md-nav__link">
+    Example 1: Select last 10 successful builds
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-2-select-last-10-step-names-of-failed-builds" title="Example 2: Select last 10 step names of failed builds" class="md-nav__link">
+    Example 2: Select last 10 step names of failed builds
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-3-select-build-duration-of-step-for-a-specific-project" title="Example 3: Select build duration of step for a specific project" class="md-nav__link">
+    Example 3: Select build duration of step for a specific project
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-4-get-transparency-about-successfulfailed-steps-for-a-specific-project" title="Example 4: Get transparency about successful/failed steps for a specific project" class="md-nav__link">
+    Example 4: Get transparency about successful/failed steps for a specific project
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+      
+      
+      
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content">
+            <article class="md-content__inner md-typeset">
+              
+                
+                  <a href="https://github.com/SAP/jenkins-library/edit/master/documentation/docs/steps/influxWriteData.md" title="Edit this page" class="md-icon md-content__icon">&#xE3C9;</a>
+                
+                
+                <h1 id="influxwritedata">influxWriteData<a class="headerlink" href="#influxwritedata" title="Permanent link">&para;</a></h1>
+<h2 id="description">Description<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
+<p>Since your Continuous Delivery Pipeline in Jenkins provides your productive development and delivery infrastructure you should monitor the pipeline to ensure it runs as expected. How to setup this monitoring is described in the following.</p>
+<p>You basically need three components:</p>
+<ul>
+<li>The <a href="https://wiki.jenkins-ci.org/display/JENKINS/InfluxDB+Plugin">InfluxDB Jenkins plugin</a> which allows you to send build metrics to InfluxDB servers</li>
+<li>The <a href="https://www.influxdata.com/time-series-platform/influxdb/">InfluxDB</a> to store this data (Docker available)</li>
+<li>A <a href="http://grafana.org/">Grafana</a> dashboard to visualize the data stored in InfluxDB (Docker available)</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">no InfluxDB available?</p>
+<p>If you don't have an InfluxDB available yet this step will still provide you some benefit.</p>
+<p>It will create following files for you and archive them into your build:</p>
+<ul>
+<li><code>jenkins_data.json</code>: This file gives you build-specific information, like e.g. build result, stage where the build failed</li>
+<li><code>influx_data.json</code>: This file gives you detailed information about your pipeline, e.g. stage durations, steps executed, ...</li>
+</ul>
+</div>
+<h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
+<h3 id="setting-up-influxdb-with-grafana">Setting up InfluxDB with Grafana<a class="headerlink" href="#setting-up-influxdb-with-grafana" title="Permanent link">&para;</a></h3>
+<p>The easiest way to start with is using the available official docker images.
+You can either run these docker containers on the same host on which you run your Jenkins or each docker on individual VMs (hosts).
+Very basic setup can be done like that (with user "admin" and password "adminPwd" for both InfluxDB and Grafana):</p>
+<div class="codehilite"><pre><span></span>docker run -d -p 8083:8083 -p 8086:8086 --restart=always --name influxdb -v /var/influx_data:/var/lib/influxdb influxdb
+docker run -d -p 3000:3000 --name grafana --restart=always --link influxdb:influxdb -e &quot;GF_SECURITY_ADMIN_PASSWORD=adminPwd&quot; grafana/grafana
+</pre></div>
+
+
+<p>For more advanced setup please reach out to the respective documentation:</p>
+<ul>
+<li>InfluxDB (<a href="https://hub.docker.com/_/influxdb/">Docker Hub</a> <a href="https://github.com/docker-library/docs/tree/master/influxdb">GitHub</a>)</li>
+<li>Grafana (<a href="https://hub.docker.com/r/grafana/grafana/">Docker Hub</a> <a href="https://github.com/grafana/grafana-docker">GitHub</a>)</li>
+</ul>
+<p>After you have started your InfluxDB docker you need to create a database:</p>
+<ul>
+<li>in a Webbrowser open the InfluxDB Web-UI using the following URL: &lt;host of your docker&gt;:8083 (port 8083 is used for access via Web-UI, for Jenkins you use port 8086 to access the DB)</li>
+<li>create new DB (the name of this DB you need to provide later to Jenkins)</li>
+<li>create Admin user (this user you need to provide later to Jenkins)</li>
+</ul>
+<div class="admonition hint">
+<p class="admonition-title">With InfluxDB version 1.1 the InfluxDB Web-UI is deprecated</p>
+</div>
+<p>You can perform the above steps via commandline:</p>
+<ul>
+<li>The following command will create a database with name &lt;databasename&gt;</li>
+</ul>
+<p><code>curl -i -XPOST http://localhost:8086/query --data-urlencode "q=CREATE DATABASE \&lt;databasename\&gt;"</code></p>
+<ul>
+<li>The admin user with the name &lt;adminusername&gt; and the password &lt;adminuserpwd&gt; can be created with</li>
+</ul>
+<p><code>curl -i -XPOST http://localhost:8086/query --data-urlencode "q=CREATE USER \&lt;adminusername\&gt; WITH PASSWORD '\&lt;adminuserpwd\&gt;' WITH ALL PRIVILEGES"</code></p>
+<p>Once you have started both docker containers and Influx and Grafana are running you need to configure the Jenkins Plugin according to your settings.</p>
+<h2 id="pipeline-configuration">Pipeline configuration<a class="headerlink" href="#pipeline-configuration" title="Permanent link">&para;</a></h2>
+<p>To setup your Jenkins you need to do two configuration steps:</p>
+<ol>
+<li>Configure Jenkins (via Manage Jenkins)</li>
+<li>Adapt pipeline configuration</li>
+</ol>
+<h3 id="configure-jenkins">Configure Jenkins<a class="headerlink" href="#configure-jenkins" title="Permanent link">&para;</a></h3>
+<p>Once the plugin is available in your Jenkins:</p>
+<ul>
+<li>go to "Manage Jenkins" &gt; "Configure System" &gt; scroll down to section "influxdb target"</li>
+<li>maintain Influx data</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Jenkins as a Service</p>
+<p>For Jenkins as a Service instances this is already preset to the local InfluxDB with the name <code>jenkins</code>. In this case there is not need to do any additional configuration.</p>
+</div>
+<h3 id="adapt-pipeline-configuration">Adapt pipeline configuration<a class="headerlink" href="#adapt-pipeline-configuration" title="Permanent link">&para;</a></h3>
+<p>You need to define the influxDB server in your pipeline as it is defined in the InfluxDb plugin configuration (see above).</p>
+<div class="codehilite"><pre><span></span><span class="na">influxDBServer</span><span class="o">=</span><span class="s">jenkins</span>
+</pre></div>
+
+<h2 id="parameters">Parameters<a class="headerlink" href="#parameters" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>name</th>
+<th>mandatory</th>
+<th>default</th>
+<th>possible values</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>artifactVersion</code></td>
+<td>no</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>customData</code></td>
+<td>no</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>customDataMap</code></td>
+<td>no</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>customDataMapTags</code></td>
+<td>no</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>customDataTags</code></td>
+<td>no</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>influxPrefix</code></td>
+<td>no</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>influxServer</code></td>
+<td>no</td>
+<td>``</td>
+<td></td>
+</tr>
+<tr>
+<td><code>script</code></td>
+<td>yes</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>sonarTokenCredentialsId</code></td>
+<td>no</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>wrapInNode</code></td>
+<td>no</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><code>artifactVersion</code> - Defines the version of the current artifact. Defaults to <code>commonPipelineEnvironment.getArtifactVersion()</code></li>
+<li><code>customData</code> - Defines custom data (map of key-value pairs) to be written to Influx into measurement <code>jenkins_custom_data</code>. Defaults to <code>commonPipelineEnvironment.getInfluxCustomData()</code></li>
+<li><code>customDataMap</code> - Defines a map of measurement names containing custom data (map of key-value pairs) to be written to Influx. Defaults to <code>commonPipelineEnvironment.getInfluxCustomDataMap()</code></li>
+<li><code>customDataMapTags</code> - Defines a map of measurement names containing tags (map of key-value pairs) to be written to Influx. Defaults to <code>commonPipelineEnvironment.getInfluxCustomDataTags()</code></li>
+<li><code>customDataTags</code> - Defines tags (map of key-value pairs) to be written to Influx into measurement <code>jenkins_custom_data</code>. Defaults to <code>commonPipelineEnvironment.getInfluxCustomDataTags()</code></li>
+<li><code>influxPrefix</code> - Defines a custom prefix. For example in multi branch pipelines, where every build is named after the branch built and thus you have different builds called 'master' that report different metrics.</li>
+<li><code>influxServer</code> - Defines the name of the Influx server as configured in Jenkins global configuration.</li>
+<li><code>script</code> - The common script environment of the Jenkinsfile running. Typically the reference to the script calling the pipeline step is provided with the <code>this</code> parameter, as in <code>script: this</code>. This allows the function to access the <code>commonPipelineEnvironment</code> for retrieving, e.g. configuration parameters.</li>
+<li><code>sonarTokenCredentialsId</code> - </li>
+<li><code>wrapInNode</code> - Defines if a dedicated node/executor should be created in the pipeline run. This is especially relevant when running the step in a declarative <code>POST</code> stage where by default no executor is available.</li>
+</ul>
+<h2 id="step-configuration">Step configuration<a class="headerlink" href="#step-configuration" title="Permanent link">&para;</a></h2>
+<p>We recommend to define values of step parameters via <a href="../../configuration/">config.yml file</a>.</p>
+<p>In following sections of the config.yml the configuration is possible:</p>
+<table>
+<thead>
+<tr>
+<th>parameter</th>
+<th>general</th>
+<th>step/stage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>artifactVersion</code></td>
+<td></td>
+<td>X</td>
+</tr>
+<tr>
+<td><code>customData</code></td>
+<td></td>
+<td>X</td>
+</tr>
+<tr>
+<td><code>customDataMap</code></td>
+<td></td>
+<td>X</td>
+</tr>
+<tr>
+<td><code>customDataMapTags</code></td>
+<td></td>
+<td>X</td>
+</tr>
+<tr>
+<td><code>customDataTags</code></td>
+<td></td>
+<td>X</td>
+</tr>
+<tr>
+<td><code>influxPrefix</code></td>
+<td></td>
+<td>X</td>
+</tr>
+<tr>
+<td><code>influxServer</code></td>
+<td></td>
+<td>X</td>
+</tr>
+<tr>
+<td><code>script</code></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>sonarTokenCredentialsId</code></td>
+<td></td>
+<td>X</td>
+</tr>
+<tr>
+<td><code>wrapInNode</code></td>
+<td></td>
+<td>X</td>
+</tr>
+</tbody>
+</table>
+<h2 id="dependencies">Dependencies<a class="headerlink" href="#dependencies" title="Permanent link">&para;</a></h2>
+<p>The step depends on the following Jenkins plugins</p>
+<ul>
+<li><a href="https://plugins.jenkins.io/credentials-binding">credentials-binding</a></li>
+<li><a href="https://plugins.jenkins.io/pipeline-utility-steps">pipeline-utility-steps</a></li>
+<li><a href="https://plugins.jenkins.io/workflow-basic-steps">workflow-basic-steps</a></li>
+<li><a href="https://plugins.jenkins.io/workflow-cps-global-lib">workflow-cps-global-lib</a></li>
+<li><a href="https://plugins.jenkins.io/workflow-durable-task-step">workflow-durable-task-step</a></li>
+</ul>
+<p>Transitive dependencies are omitted.</p>
+<p>The list might be incomplete.</p>
+<p>Consider using the <a href="https://cloud.docker.com/u/ppiper/repository/docker/ppiper/jenkins-master">ppiper/jenkins-master</a>
+docker image. This images comes with preinstalled plugins.</p>
+<h2 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h2>
+<div class="codehilite"><pre><span></span><span class="n">influxWriteData</span> <span class="nl">script:</span> <span class="k">this</span>
+</pre></div>
+
+<h2 id="work-with-influxdb-and-grafana">Work with InfluxDB and Grafana<a class="headerlink" href="#work-with-influxdb-and-grafana" title="Permanent link">&para;</a></h2>
+<p>You can access your <strong>Grafana</strong> via Web-UI: &lt;host of your grafana(-docker)&gt;:&lt;port3000&gt;
+(or another port in case you have defined another one when starting your docker)</p>
+<p>As a first step you need to add your InfluxDB as Data source to your Grafana:</p>
+<ul>
+<li>Login as user admin (PW as defined when starting your docker)</li>
+<li>in the navigation go to data sources -&gt; add data source:</li>
+<li>name</li>
+<li>type: InfluxDB</li>
+<li>Url: <code>http://&lt;host of your InfluxDB server&gt;:&lt;port&gt;</code></li>
+<li>Access: direct (not via proxy)</li>
+<li>database: <code>&lt;name of the DB as specified above&gt;</code></li>
+<li>User: <code>&lt;name of the admin user as specified in step above&gt;</code></li>
+<li>Password: <code>&lt;password of the admin user as specified in step above&gt;</code></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Jenkins as a Service</p>
+<p>For Jenkins as a Service the data source configuration is already available.</p>
+<p>Therefore no need to go through the data source configuration step unless you want to add additional data sources.</p>
+</div>
+<h2 id="data-collected-in-influxdb">Data collected in InfluxDB<a class="headerlink" href="#data-collected-in-influxdb" title="Permanent link">&para;</a></h2>
+<p>The Influx plugin collects following data in the project "Piper" context:</p>
+<ul>
+<li>All data as per default <a href="https://wiki.jenkins.io/display/JENKINS/InfluxDB+Plugin">InfluxDB plugin capabilities</a></li>
+<li>Additional data collected via <code>InfluxData.addField(measurement, key, value)</code></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Add custom information to your InfluxDB</p>
+<p>You can simply add custom data collected during your pipeline runs via available data objects.
+Example:</p>
+<div class="codehilite"><pre><span></span><span class="c1">//add data to measurement jenkins_custom_data - value can be a String or a Number</span>
+<span class="n">commonPipelineEnvironment</span><span class="o">.</span><span class="na">setInfluxCustomDataProperty</span><span class="o">(</span><span class="s1">&#39;myProperty&#39;</span><span class="o">,</span> <span class="mi">2018</span><span class="o">)</span>
+</pre></div>
+
+</div>
+<h3 id="collected-influxdb-measurements">Collected InfluxDB measurements<a class="headerlink" href="#collected-influxdb-measurements" title="Permanent link">&para;</a></h3>
+<p>Measurements are potentially pre-fixed - see parameter <code>influxPrefix</code> above.</p>
+<table>
+<thead>
+<tr>
+<th>Measurement name</th>
+<th>data column</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>All measurements</strong></td>
+<td><ul><li>build_number</li><li>project_name</li></ul></td>
+<td>All below measurements will have these columns. <br />Details see <a href="https://wiki.jenkins.io/display/JENKINS/InfluxDB+Plugin">InfluxDB plugin documentation</a></td>
+</tr>
+<tr>
+<td>jenkins_data</td>
+<td><ul><li>build_result</li><li>build_time</li><li>last_successful_build</li><li>tests_failed</li><li>tests_skipped</li><li>tests_total</li><li>...</li></ul></td>
+<td>Details see <a href="https://wiki.jenkins.io/display/JENKINS/InfluxDB+Plugin">InfluxDB plugin documentation</a></td>
+</tr>
+<tr>
+<td>cobertura_data</td>
+<td><ul><li>cobertura_branch_coverage_rate</li><li>cobertura_class_coverage_rate</li><li>cobertura_line_coverage_rate</li><li>cobertura_package_coverage_rate</li><li>...</li></ul></td>
+<td>Details see <a href="https://wiki.jenkins.io/display/JENKINS/InfluxDB+Plugin">InfluxDB plugin documentation</a></td>
+</tr>
+<tr>
+<td>jacoco_data</td>
+<td><ul><li>jacoco_branch_coverage_rate</li><li>jacoco_class_coverage_rate</li><li>jacoco_instruction_coverage_rate</li><li>jacoco_line_coverage_rate</li><li>jacoco_method_coverage_rate</li></ul></td>
+<td>Details see <a href="https://wiki.jenkins.io/display/JENKINS/InfluxDB+Plugin">InfluxDB plugin documentation</a></td>
+</tr>
+<tr>
+<td>performance_data</td>
+<td><ul><li>90Percentile</li><li>average</li><li>max</li><li>median</li><li>min</li><li>error_count</li><li>error_percent</li><li>...</li></ul></td>
+<td>Details see <a href="https://wiki.jenkins.io/display/JENKINS/InfluxDB+Plugin">InfluxDB plugin documentation</a></td>
+</tr>
+<tr>
+<td>sonarqube_data</td>
+<td><ul><li>blocker_issues</li><li>critical_issues</li><li>info_issues</li><li>major_issues</li><li>minor_issues</li><li>lines_of_code</li><li>...</li></ul></td>
+<td>Details see <a href="https://wiki.jenkins.io/display/JENKINS/InfluxDB+Plugin">InfluxDB plugin documentation</a></td>
+</tr>
+<tr>
+<td>jenkins_custom_data</td>
+<td>project "Piper" fills following colums by default: <br /><ul><li>build_result</li><li>build_result_key</li><li>build_step (-&gt;step in case of error)</li><li>build_error (-&gt;error message in case of error)</li></ul></td>
+<td>filled by <code>commonPipelineEnvironment.setInfluxCustomDataProperty()</code></td>
+</tr>
+<tr>
+<td>pipeline_data</td>
+<td>Examples from the project "Piper" templates:<br /><ul><li>build_duration</li><li>opa_duration</li><li>deploy_test_duration</li><li>deploy_test_duration</li><li>fortify_duration</li><li>release_duration</li><li>...</li></ul></td>
+<td>filled by step <a href="../durationMeasure/"><code>measureDuration</code></a> using parameter <code>measurementName</code></td>
+</tr>
+<tr>
+<td>step_data</td>
+<td>Considered, e.g.:<br /><ul><li>build_url</li><li>bats</li><li>checkmarx</li><li>fortify</li><li>gauge</li><li>nsp</li><li>snyk</li><li>sonar</li><li>...</li></ul></td>
+<td>filled by <code>InfluxData.addField('step_data', key, value)</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="examples-for-influxdb-queries-which-can-be-used-in-grafana">Examples for InfluxDB queries which can be used in Grafana<a class="headerlink" href="#examples-for-influxdb-queries-which-can-be-used-in-grafana" title="Permanent link">&para;</a></h3>
+<div class="admonition caution">
+<p class="admonition-title">Project Names containing dashes (-)</p>
+<p>The InfluxDB plugin replaces dashes (-) with underscores (_).</p>
+<p>Please keep this in mind when specifying your project_name for a InfluxDB query.</p>
+</div>
+<h4 id="example-1-select-last-10-successful-builds">Example 1: Select last 10 successful builds<a class="headerlink" href="#example-1-select-last-10-successful-builds" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><span class="k">select</span> <span class="n">top</span><span class="p">(</span><span class="n">build_number</span><span class="p">,</span><span class="mi">10</span><span class="p">),</span> <span class="n">build_result</span> <span class="k">from</span> <span class="n">jenkins_data</span> <span class="k">WHERE</span> <span class="n">build_result</span> <span class="o">=</span> <span class="s1">&#39;SUCCESS&#39;</span>
+</pre></div>
+
+<h4 id="example-2-select-last-10-step-names-of-failed-builds">Example 2: Select last 10 step names of failed builds<a class="headerlink" href="#example-2-select-last-10-step-names-of-failed-builds" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><span class="k">select</span> <span class="n">top</span><span class="p">(</span><span class="n">build_number</span><span class="p">,</span><span class="mi">10</span><span class="p">),</span> <span class="n">build_result</span><span class="p">,</span> <span class="n">build_step</span> <span class="k">from</span> <span class="n">jenkins_custom_data</span> <span class="k">WHERE</span> <span class="n">build_result</span> <span class="o">=</span> <span class="s1">&#39;FAILURE&#39;</span>
+</pre></div>
+
+<h4 id="example-3-select-build-duration-of-step-for-a-specific-project">Example 3: Select build duration of step for a specific project<a class="headerlink" href="#example-3-select-build-duration-of-step-for-a-specific-project" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><span class="k">select</span> <span class="n">build_duration</span> <span class="o">/</span> <span class="mi">1000</span> <span class="k">from</span> <span class="ss">&quot;pipeline_data&quot;</span> <span class="k">WHERE</span> <span class="n">project_name</span><span class="o">=</span><span class="s1">&#39;PiperTestOrg_piper_test_master&#39;</span>
+</pre></div>
+
+<h4 id="example-4-get-transparency-about-successfulfailed-steps-for-a-specific-project">Example 4: Get transparency about successful/failed steps for a specific project<a class="headerlink" href="#example-4-get-transparency-about-successfulfailed-steps-for-a-specific-project" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><span class="k">select</span> <span class="n">top</span><span class="p">(</span><span class="n">build_number</span><span class="p">,</span><span class="mi">10</span><span class="p">)</span> <span class="k">AS</span> <span class="ss">&quot;Build&quot;</span><span class="p">,</span> <span class="n">build_url</span><span class="p">,</span> <span class="n">build_quality</span><span class="p">,</span> <span class="n">fortify</span><span class="p">,</span> <span class="n">gauge</span><span class="p">,</span> <span class="n">vulas</span><span class="p">,</span> <span class="n">opa</span> <span class="k">from</span> <span class="n">step_data</span> <span class="k">WHERE</span> <span class="n">project_name</span><span class="o">=</span><span class="s1">&#39;PiperTestOrg_piper_test_master&#39;</span>
+</pre></div>
+
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>With this query you can create transparency about which steps ran successfully / not successfully in your pipeline and which ones were not executed at all.</p>
+<p>By specifying all the steps you consider relevant in your select statement it is very easy to create this transparency.</p>
+</div>
+                
+                  
+                
+              
+              
+                
+
+
+              
+            </article>
+          </div>
+        </div>
+      </main>
+      
+        
+<footer class="md-footer">
+  
+    <div class="md-footer-nav">
+      <nav class="md-footer-nav__inner md-grid">
+        
+          <a href="../healthExecuteCheck/" title="healthExecuteCheck" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+            <div class="md-flex__cell md-flex__cell--shrink">
+              <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
+            </div>
+            <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+              <span class="md-flex__ellipsis">
+                <span class="md-footer-nav__direction">
+                  Previous
+                </span>
+                healthExecuteCheck
+              </span>
+            </div>
+          </a>
+        
+        
+          <a href="../integrationArtifactDeploy/" title="integrationArtifactDeploy" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+            <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+              <span class="md-flex__ellipsis">
+                <span class="md-footer-nav__direction">
+                  Next
+                </span>
+                integrationArtifactDeploy
+              </span>
+            </div>
+            <div class="md-flex__cell md-flex__cell--shrink">
+              <i class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
+            </div>
+          </a>
+        
+      </nav>
+    </div>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-footer-copyright">
+        
+        powered by
+        <a href="https://www.mkdocs.org">MkDocs</a>
+        and
+        <a href="https://squidfunk.github.io/mkdocs-material/">
+          Material for MkDocs</a>
+      </div>
+      
+        
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    
+      <script src="../../assets/javascripts/application.583bbe55.js"></script>
+      
+      <script>app.initialize({version:"1.0.3",url:{base:"../.."}})</script>
+      
+    
+    
+      
+    
+  </body>
+</html>
