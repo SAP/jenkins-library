@@ -82,6 +82,10 @@ func (f *kanikoFileMock) Glob(pattern string) (matches []string, err error) {
 	return nil, fmt.Errorf("not implemented. func is only present in order to fullfil the interface contract. Needs to be ajusted in case it gets used.")
 }
 
+func (f *kanikoFileMock) Chdir(pattern string) error {
+	return nil
+}
+
 func TestRunKanikoExecute(t *testing.T) {
 
 	commonPipelineEnvironment := kanikoExecuteCommonPipelineEnvironment{}
