@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
-	"strings"
 	"time"
 )
 
@@ -56,9 +56,9 @@ func New(workspace, toolName, toolInstance string) *Toolrecord {
 
 	now := time.Now().UTC()
 	reportFileName := filepath.Join(workspace,
+		"toolruns",
 		"toolrun_"+toolName+"_"+
-			now.Format("20210731")+
-			strings.ReplaceAll(now.Format("15:04:05"), ":", "")+
+			now.Format("20060102150405")+
 			".json")
 	tr.reportFileName = reportFileName
 
@@ -106,6 +106,12 @@ func (tr *Toolrecord) Persist() error {
 	if tr.ToolInstance == "" {
 		return errors.New("TR_PERSIST: empty instanceName")
 	}
+	// create workspace/toolrecord
+	dirPath := filepath.Join(tr.workspace, "toolruns")
+	err := os.MkdirAll(dirPath, os.ModePerm)
+	if err != nil {
+		return fmt.Errorf("TR_PERSIST: %v", err)
+	}
 	// convenience aggregation
 	displayName := ""
 	displayURL := ""
@@ -127,7 +133,7 @@ func (tr *Toolrecord) Persist() error {
 	tr.DisplayURL = displayURL
 
 	file, _ := json.Marshal(tr)
-	err := ioutil.WriteFile(tr.GetFileName(), file, 0644)
+	err = ioutil.WriteFile(tr.GetFileName(), file, 0644)
 	if err != nil {
 		return fmt.Errorf("TR_PERSIST: %v", err)
 	}

@@ -1,4 +1,4 @@
-Purpose of the "toolrecord" feature is to provide a common result file for all code scanners that allows consumers of the piper result files to locate the results in the respective tool backends for further reporting and post processing
+Purpose of the "toolrecord" feature is to provide a common result file for tools (e.g. code scanners) to allow consumers of the piper result files to locate the results in the respective tool backends for further reporting and post processing
 
 Currently it contains the minimal information to detect which tools have been executed, and where to locate the results in the respective tool backends.
 
