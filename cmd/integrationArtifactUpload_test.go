@@ -8,19 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type integrationArtifactUploadMockUtils struct {
-	*mock.ExecMockRunner
-	*mock.FilesMock
-}
-
-func newIntegrationArtifactUploadTestsUtils() integrationArtifactUploadMockUtils {
-	utils := integrationArtifactUploadMockUtils{
-		ExecMockRunner: &mock.ExecMockRunner{},
-		FilesMock:      &mock.FilesMock{},
-	}
-	return utils
-}
-
 func TestRunIntegrationArtifactUpload(t *testing.T) {
 	t.Parallel()
 
