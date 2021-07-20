@@ -39,7 +39,8 @@ import groovy.text.GStringTemplateEngine
      */
     'gitBranch',
     /**
-     * Only if `testRepository` is provided: Credentials for a protected testRepository
+     * If `testRepository` is provided: Credentials for a protected testRepository.
+     * Also used for sshagent to allow running npm install with github dependencies.
      * @possibleValues Jenkins credentials id
      */
     'gitSshKeyCredentialsId',
@@ -135,6 +136,10 @@ void call(Map parameters = [:], Closure body) {
                     :utils.unstashAll(config.stashContent)
                 if (config.seleniumHubCredentialsId) {
                     withCredentials([usernamePassword(credentialsId: config.seleniumHubCredentialsId, passwordVariable: 'PIPER_SELENIUM_HUB_PASSWORD', usernameVariable: 'PIPER_SELENIUM_HUB_USER')]) {
+                        body()
+                    }
+                } else if (config.gitSshKeyCredentialsId) {
+                    sshagent([config.gitSshKeyCredentialsId]) {
                         body()
                     }
                 } else {
