@@ -368,6 +368,15 @@ spec:
               - $(vaultPath)/cloudfoundry-$(org)-$(space)
               - $(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(org)-$(space)
               - $(vaultBasePath)/GROUP-SECRETS/cloudfoundry-$(org)-$(space)
+      - name: cfTrace
+        type: bool
+        default: true
+        description: "Output the CloudFoundry trace logs."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
   containers:
     - name: cfDeploy
       image: ppiper/cf-cli:6
