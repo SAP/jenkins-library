@@ -134,6 +134,14 @@ spec:
           - STAGES
           - STEPS
         default: protecode_report.pdf
+      - name: scanResultFileName
+        type: string
+        description: The file name of the scan result json file to be created
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: protecodescan_vulns.json
       - name: fetchUrl
         type: string
         description: The URL to fetch the file or image to scan with Protecode.
