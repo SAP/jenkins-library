@@ -33,4 +33,10 @@ func TestGetImageSource(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, c.want, got)
 	}
+
+	// negative case
+	options := ClientOptions{ImageName: "abc", RegistryURL: " http: //aa.bb"}
+	client.SetOptions(options)
+	_, err := client.GetImageSource()
+	assert.NotNil(t, err)
 }
