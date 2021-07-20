@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/SAP/jenkins-library/pkg/cpi"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -46,7 +47,7 @@ func TestRunIntegrationArtifactDownload(t *testing.T) {
 			DownloadPath:           tempDir,
 		}
 
-		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactDownload", ResponseBody: ``, TestType: "PositiveAndGetetIntegrationArtifactDownloadResBody"}
+		httpClient := cpi.HttpMockCpis{CPIFunction: "IntegrationArtifactDownload", ResponseBody: ``, TestType: "PositiveAndGetetIntegrationArtifactDownloadResBody"}
 
 		err := runIntegrationArtifactDownload(&config, nil, &httpClient)
 		absolutePath := filepath.Join(tempDir, "flow1.zip")
@@ -80,7 +81,7 @@ func TestRunIntegrationArtifactDownload(t *testing.T) {
 			DownloadPath:           "tmp",
 		}
 
-		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactDownload", ResponseBody: ``, TestType: "Negative"}
+		httpClient := cpi.HttpMockCpis{CPIFunction: "IntegrationArtifactDownload", ResponseBody: ``, TestType: "Negative"}
 
 		err := runIntegrationArtifactDownload(&config, nil, &httpClient)
 

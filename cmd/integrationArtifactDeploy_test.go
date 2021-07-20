@@ -1,11 +1,7 @@
 package cmd
 
 import (
-	"bytes"
 	"fmt"
-	"io"
-	"io/ioutil"
-	"net/http"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/cpi"
@@ -44,7 +40,7 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 			IntegrationFlowVersion: "1.0.1",
 		}
 
-		httpClient := httpMockCpis{CPIFunction: "", ResponseBody: ``, TestType: "PositiveAndDeployIntegrationDesigntimeArtifactResBody"}
+		httpClient := cpi.HttpMockCpis{CPIFunction: "", ResponseBody: ``, TestType: "PositiveAndDeployIntegrationDesigntimeArtifactResBody"}
 
 		err := runIntegrationArtifactDeploy(&config, nil, &httpClient)
 
@@ -77,7 +73,7 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 			IntegrationFlowVersion: "1.0.1",
 		}
 
-		httpClient := httpMockCpis{CPIFunction: "FailIntegrationDesigntimeArtifactDeployment", ResponseBody: ``, TestType: "Negative"}
+		httpClient := cpi.HttpMockCpis{CPIFunction: "FailIntegrationDesigntimeArtifactDeployment", ResponseBody: ``, TestType: "Negative"}
 
 		err := runIntegrationArtifactDeploy(&config, nil, &httpClient)
 
@@ -110,7 +106,7 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 			IntegrationFlowVersion: "1.0.1",
 		}
 
-		httpClient := httpMockCpis{CPIFunction: "", ResponseBody: ``, TestType: "NegativeAndDeployIntegrationDesigntimeArtifactResBody"}
+		httpClient := cpi.HttpMockCpis{CPIFunction: "", ResponseBody: ``, TestType: "NegativeAndDeployIntegrationDesigntimeArtifactResBody"}
 
 		err := runIntegrationArtifactDeploy(&config, nil, &httpClient)
 
@@ -135,7 +131,7 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 			IntegrationFlowVersion: "1.0.1",
 		}
 
-		httpClient := httpMockCpis{CPIFunction: "GetIntegrationArtifactDeployStatus", Options: clientOptions, ResponseBody: ``, TestType: "PositiveAndDeployIntegrationDesigntimeArtifactResBody"}
+		httpClient := cpi.HttpMockCpis{CPIFunction: "GetIntegrationArtifactDeployStatus", Options: clientOptions, ResponseBody: ``, TestType: "PositiveAndDeployIntegrationDesigntimeArtifactResBody"}
 
 		resp, err := getIntegrationArtifactDeployStatus(&config, &httpClient, "https://demo")
 
@@ -162,7 +158,7 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 			IntegrationFlowVersion: "1.0.1",
 		}
 
-		httpClient := httpMockCpis{CPIFunction: "GetIntegrationArtifactDeployErrorDetails", Options: clientOptions, ResponseBody: ``, TestType: "PositiveAndGetDeployedIntegrationDesigntimeArtifactErrorResBody"}
+		httpClient := cpi.HttpMockCpis{CPIFunction: "GetIntegrationArtifactDeployErrorDetails", Options: clientOptions, ResponseBody: ``, TestType: "PositiveAndGetDeployedIntegrationDesigntimeArtifactErrorResBody"}
 
 		resp, err := getIntegrationArtifactDeployError(&config, &httpClient, "https://demo")
 
@@ -170,52 +166,4 @@ func TestRunIntegrationArtifactDeploy(t *testing.T) {
 
 		assert.NoError(t, err)
 	})
-}
-
-type httpMockCpis struct {
-	Method       string
-	URL          string
-	Header       map[string][]string
-	ResponseBody string
-	Options      piperhttp.ClientOptions
-	StatusCode   int
-	CPIFunction  string
-	TestType     string
-}
-
-func (c *httpMockCpis) SetOptions(options piperhttp.ClientOptions) {
-	c.Options = options
-}
-
-func (c *httpMockCpis) SendRequest(method string, url string, r io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
-
-	c.Method = method
-	c.URL = url
-
-	if r != nil {
-		_, err := ioutil.ReadAll(r)
-
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if c.Options.Token == "" {
-		c.ResponseBody = "{\r\n\t\t\t\"access_token\": \"demotoken\",\r\n\t\t\t\"token_type\": \"Bearer\",\r\n\t\t\t\"expires_in\": 3600,\r\n\t\t\t\"scope\": \"\"\r\n\t\t}"
-		c.StatusCode = 200
-		res := http.Response{
-			StatusCode: c.StatusCode,
-			Header:     c.Header,
-			Body:       ioutil.NopCloser(bytes.NewReader([]byte(c.ResponseBody))),
-		}
-		return &res, nil
-	}
-	if c.CPIFunction == "" {
-		c.CPIFunction = cpi.GetCPIFunctionNameByURLCheck(url, method, c.TestType)
-		resp, error := cpi.GetCPIFunctionMockResponse(c.CPIFunction, c.TestType)
-		c.CPIFunction = ""
-		return resp, error
-	}
-
-	return cpi.GetCPIFunctionMockResponse(c.CPIFunction, c.TestType)
 }

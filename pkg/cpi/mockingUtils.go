@@ -4,12 +4,62 @@ package cpi
 
 import (
 	"bytes"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
 
 	"github.com/pkg/errors"
 )
+
+type HttpMockCpis struct {
+	Method       string
+	URL          string
+	Header       map[string][]string
+	ResponseBody string
+	Options      piperhttp.ClientOptions
+	StatusCode   int
+	CPIFunction  string
+	TestType     string
+}
+
+func (c *HttpMockCpis) SetOptions(options piperhttp.ClientOptions) {
+	c.Options = options
+}
+
+func (c *HttpMockCpis) SendRequest(method string, url string, r io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
+
+	c.Method = method
+	c.URL = url
+
+	if r != nil {
+		_, err := ioutil.ReadAll(r)
+
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if c.Options.Token == "" {
+		c.ResponseBody = "{\r\n\t\t\t\"access_token\": \"demotoken\",\r\n\t\t\t\"token_type\": \"Bearer\",\r\n\t\t\t\"expires_in\": 3600,\r\n\t\t\t\"scope\": \"\"\r\n\t\t}"
+		c.StatusCode = 200
+		res := http.Response{
+			StatusCode: c.StatusCode,
+			Header:     c.Header,
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(c.ResponseBody))),
+		}
+		return &res, nil
+	}
+	if c.CPIFunction == "" {
+		c.CPIFunction = GetCPIFunctionNameByURLCheck(url, method, c.TestType)
+		resp, error := GetCPIFunctionMockResponse(c.CPIFunction, c.TestType)
+		c.CPIFunction = ""
+		return resp, error
+	}
+
+	return GetCPIFunctionMockResponse(c.CPIFunction, c.TestType)
+}
 
 //GetCPIFunctionMockResponse -Generate mock response payload for different CPI functions
 func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, error) {

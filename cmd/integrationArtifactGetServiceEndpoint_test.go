@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/SAP/jenkins-library/pkg/cpi"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
@@ -37,7 +38,7 @@ func TestRunIntegrationArtifactGetServiceEndpoint(t *testing.T) {
 			IntegrationFlowID: "CPI_IFlow_Call_using_Cert",
 		}
 
-		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactGetServiceEndpoint", ResponseBody: ``, TestType: "PositiveAndGetetIntegrationArtifactGetServiceResBody"}
+		httpClient := cpi.HttpMockCpis{CPIFunction: "IntegrationArtifactGetServiceEndpoint", ResponseBody: ``, TestType: "PositiveAndGetetIntegrationArtifactGetServiceResBody"}
 		seOut := integrationArtifactGetServiceEndpointCommonPipelineEnvironment{}
 		err := runIntegrationArtifactGetServiceEndpoint(&config, nil, &httpClient, &seOut)
 		assert.EqualValues(t, seOut.custom.iFlowServiceEndpoint, "https://demo.cfapps.sap.hana.ondemand.com/http/testwithcert")
@@ -69,7 +70,7 @@ func TestRunIntegrationArtifactGetServiceEndpoint(t *testing.T) {
 			IntegrationFlowID: "CPI_IFlow_Call_using_Cert",
 		}
 
-		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactGetServiceEndpoint", ResponseBody: ``, TestType: "Negative"}
+		httpClient := cpi.HttpMockCpis{CPIFunction: "IntegrationArtifactGetServiceEndpoint", ResponseBody: ``, TestType: "Negative"}
 
 		seOut := integrationArtifactGetServiceEndpointCommonPipelineEnvironment{}
 		err := runIntegrationArtifactGetServiceEndpoint(&config, nil, &httpClient, &seOut)

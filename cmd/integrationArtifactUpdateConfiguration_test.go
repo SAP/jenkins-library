@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/SAP/jenkins-library/pkg/cpi"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
@@ -38,7 +39,7 @@ func TestRunIntegrationArtifactUpdateConfiguration(t *testing.T) {
 			ParameterValue:         "def",
 		}
 
-		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactUpdateConfiguration", ResponseBody: ``, TestType: "Positive", Method: "PUT", URL: "https://demo/api/v1/IntegrationDesigntimeArtifacts(Id='flow1',Version='1.0.1')"}
+		httpClient := cpi.HttpMockCpis{CPIFunction: "IntegrationArtifactUpdateConfiguration", ResponseBody: ``, TestType: "Positive", Method: "PUT", URL: "https://demo/api/v1/IntegrationDesigntimeArtifacts(Id='flow1',Version='1.0.1')"}
 
 		err := runIntegrationArtifactUpdateConfiguration(&config, nil, &httpClient)
 
@@ -72,7 +73,7 @@ func TestRunIntegrationArtifactUpdateConfiguration(t *testing.T) {
 			ParameterValue:         "def",
 		}
 
-		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactUpdateConfiguration", ResponseBody: ``, TestType: "Negative"}
+		httpClient := cpi.HttpMockCpis{CPIFunction: "IntegrationArtifactUpdateConfiguration", ResponseBody: ``, TestType: "Negative"}
 
 		err := runIntegrationArtifactUpdateConfiguration(&config, nil, &httpClient)
 		assert.EqualError(t, err, "HTTP \"PUT\" request to \"https://demo/api/v1/IntegrationDesigntimeArtifacts(Id='flow1',Version='1.0.1')/$links/Configurations('myheader')\" failed with error: Not found - either wrong version for the given Id or wrong parameter key")
@@ -95,7 +96,7 @@ func TestRunIntegrationArtifactUpdateConfiguration(t *testing.T) {
 			ParameterValue:         "def",
 		}
 
-		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactUpdateConfiguration", ResponseBody: ``, TestType: "Negative_With_ResponseBody"}
+		httpClient := cpi.HttpMockCpis{CPIFunction: "IntegrationArtifactUpdateConfiguration", ResponseBody: ``, TestType: "Negative_With_ResponseBody"}
 
 		err := runIntegrationArtifactUpdateConfiguration(&config, nil, &httpClient)
 		assert.EqualError(t, err, "Failed to update the integration flow configuration parameter, Response Status code: 400")
