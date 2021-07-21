@@ -81,11 +81,9 @@ func TestRunIntegrationArtifactGetMplStatus(t *testing.T) {
 	})
 
 	t.Run(" Integration flow message processing get Error message test", func(t *testing.T) {
-		
 		clientOptions := piperhttp.ClientOptions{}
 		clientOptions.Token = fmt.Sprintf("Bearer %s", "Demo")
 		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactGetMplStatusError",Options: clientOptions, ResponseBody: ``, TestType: "Negative"}
-
 		seOut := integrationArtifactGetMplStatusCommonPipelineEnvironment{}
 		message, err := getIntegrationArtifactMPLError(&seOut, "1000111", &httpClient, "demo")
 		assert.NoError(t, err)
@@ -94,4 +92,3 @@ func TestRunIntegrationArtifactGetMplStatus(t *testing.T) {
 	})
 
 }
-
