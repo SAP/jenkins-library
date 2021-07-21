@@ -15,12 +15,11 @@ import (
 )
 
 type integrationArtifactUploadOptions struct {
-	APIServiceKey          string `json:"apiServiceKey,omitempty"`
-	IntegrationFlowID      string `json:"integrationFlowId,omitempty"`
-	IntegrationFlowVersion string `json:"integrationFlowVersion,omitempty"`
-	IntegrationFlowName    string `json:"integrationFlowName,omitempty"`
-	PackageID              string `json:"packageId,omitempty"`
-	FilePath               string `json:"filePath,omitempty"`
+	APIServiceKey       string `json:"apiServiceKey,omitempty"`
+	IntegrationFlowID   string `json:"integrationFlowId,omitempty"`
+	IntegrationFlowName string `json:"integrationFlowName,omitempty"`
+	PackageID           string `json:"packageId,omitempty"`
+	FilePath            string `json:"filePath,omitempty"`
 }
 
 // IntegrationArtifactUploadCommand Upload or Update an integration flow designtime artifact
@@ -101,14 +100,12 @@ func IntegrationArtifactUploadCommand() *cobra.Command {
 func addIntegrationArtifactUploadFlags(cmd *cobra.Command, stepConfig *integrationArtifactUploadOptions) {
 	cmd.Flags().StringVar(&stepConfig.APIServiceKey, "apiServiceKey", os.Getenv("PIPER_apiServiceKey"), "Service key JSON string to access the Process Integration Runtime service instance of plan 'api'")
 	cmd.Flags().StringVar(&stepConfig.IntegrationFlowID, "integrationFlowId", os.Getenv("PIPER_integrationFlowId"), "Specifies the ID of the Integration Flow artifact")
-	cmd.Flags().StringVar(&stepConfig.IntegrationFlowVersion, "integrationFlowVersion", os.Getenv("PIPER_integrationFlowVersion"), "Specifies the version of the Integration Flow artifact")
 	cmd.Flags().StringVar(&stepConfig.IntegrationFlowName, "integrationFlowName", os.Getenv("PIPER_integrationFlowName"), "Specifies the Name of the Integration Flow artifact")
 	cmd.Flags().StringVar(&stepConfig.PackageID, "packageId", os.Getenv("PIPER_packageId"), "Specifies the ID of the Integration Package")
 	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "Specifies integration artifact relative file path.")
 
 	cmd.MarkFlagRequired("apiServiceKey")
 	cmd.MarkFlagRequired("integrationFlowId")
-	cmd.MarkFlagRequired("integrationFlowVersion")
 	cmd.MarkFlagRequired("integrationFlowName")
 	cmd.MarkFlagRequired("packageId")
 	cmd.MarkFlagRequired("filePath")
@@ -151,15 +148,6 @@ func integrationArtifactUploadMetadata() config.StepData {
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_integrationFlowId"),
-					},
-					{
-						Name:        "integrationFlowVersion",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_integrationFlowVersion"),
 					},
 					{
 						Name:        "integrationFlowName",
