@@ -71,53 +71,6 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     }
 
     @Test
-    public void filePathNotProvidedTest() {
-
-        thrown.expect(IllegalArgumentException)
-        thrown.expectMessage("ERROR - NO VALUE AVAILABLE FOR filePath")
-
-        stepRule.step.transportRequestUploadFile(script: nullScript, 
-            changeDocumentId: '001', 
-            transportRequestId: '001', 
-            applicationId: 'app',
-            changeManagement: [
-                type: 'SOLMAN',
-                endpoint: 'https://example.org/cm',
-                clientOpts: '--client opts'
-            ],
-            credentialsId: 'CM'
-            )
-    }
-
-    @Test
-    public void uploadFileToTransportRequestSOLMANFailureTest() {
-
-        ChangeManagement cm = new ChangeManagement(nullScript) {
-            void uploadFileToTransportRequestSOLMAN(
-                                              Map docker,
-                                              String changeId,
-                                              String transportRequestId,
-                                              String applicationId,
-                                              String filePath,
-                                              String endpoint,
-                                              String credentialsId,
-                                              String cmclientOpts) {
-                throw new ChangeManagementException('Exception message')
-            }
-        }
-
-        thrown.expect(AbortException)
-        thrown.expectMessage("Exception message")
-
-        stepRule.step.transportRequestUploadFile(script: nullScript,
-                      changeDocumentId: '001',
-                      transportRequestId: '001',
-                      applicationId: 'app',
-                      filePath: '/path',
-                      cmUtils: cm)
-    }
-
-    @Test
     public void uploadFileToTransportRequestCTSSuccessTest() {
 
         loggingRule.expect("[INFO] Uploading application 'myApp' to transport request '002'.")
@@ -376,7 +329,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
 
 
     @Test
-    public void trUploadFile_SOLMAN_success_Test() {
+    public void trUploadFile_SOLMAN_uploadSucceeds_Test() {
 
         def calledWithParameters,
             calledWithStepName,
@@ -521,7 +474,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
 
         assertThat(calledWithParameters.filePath, is('/pathByCPE'))
     }
-
+    
     @Test
     public void trUploadFile_SOLMAN_failsIfAppidIsMissing_Test() {
         def calledWithParameters,
@@ -570,17 +523,6 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage("Change document id not provided (parameter: 'changeDocumentId' provided to the step call or via commit history).")
 
-        ChangeManagement cm = new ChangeManagement(nullScript) {
-          String getChangeDocumentId(
-                                     String from,
-                                     String to,
-                                     String pattern,
-                                     String format
-                                  ) {
-                                      throw new ChangeManagementException('Cannot retrieve changeId from git commits.')
-                                    }
-        }
-
         stepRule.step.transportRequestUploadFile(script: nullScript,
             transportRequestId: '002',
             applicationId: 'app',
@@ -622,11 +564,26 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     }
     
     @Test
+    public void trUploadFile_SOLMAN_failsIfFilePathIsMissingTest() {
+
+        thrown.expect(IllegalArgumentException)
+        thrown.expectMessage("ERROR - NO VALUE AVAILABLE FOR filePath")
+
+        stepRule.step.transportRequestUploadFile(script: nullScript,
+            changeDocumentId: '001',
+            transportRequestId: '001',
+            applicationId: 'app',
+            changeManagement: [
+                type: 'SOLMAN',
+                endpoint: 'https://example.org/cm',
+                clientOpts: '--client opts'
+            ],
+            credentialsId: 'CM'
+            )
+    }
+
+    @Test
     public void trUploadFile_SOLMAN_failsIfStepThrowsException_Test() {
-        def calledWithParameters,
-            calledWithStepName,
-            calledWithMetadata,
-            calledWithCredentials
     
         helper.registerAllowedMethod( 'piperExecuteBin', [Map, String, String, List], { 
                 throw new AbortException('piperExecuteBin throws exit code 1')
