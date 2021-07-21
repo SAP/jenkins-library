@@ -38,4 +38,3 @@ spec:
         params:
           - name: custom/iFlowMplStatus
           - name: custom/iFlowMplError
-
