@@ -12,7 +12,7 @@ The development on SAP BTP, ABAP environment systems is done within [“software
 
 Of course, this tackles only the upstream part of the SaaS solution lifecycle. Once the add-on is published, it can be consumed as a [multitenant application in ABAP environment](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/195031ff8f484b51af16fe392ec2ae6e.html).
 
-A comprehensive guidance on how to develop and operate SaaS applications using add-ons, can be found [here](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/e34a329acc804c0e874496548183682f.html)
+A comprehensive guidance on how to develop and operate SaaS applications using add-ons, can be found [here](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/e3c38ebaefc44523b679e7a0c375bc86.html).
 
 ## The Add-on Product
 
@@ -20,7 +20,9 @@ The installation and maintenance of ABAP software is done / controlled via add-o
 
 ### Add-on Product Version
 
-An add-on product version is defined by a name and a version string. The name of an add-on product is a string with a maximum of 30 characters and consists of the [namespace](https://launchpad.support.sap.com/#/notes/84282) and a freely chooseble part - `/NAMESPC/PRODUCTX`. The version string consists of three numbers separated by a dot - `1.2.0`. The numbers in the version string have a hierarchic relationship:
+An add-on product version is defined by a name and a version string. The name of an add-on product is a string with a maximum of 30 characters and consists of the [namespace](https://launchpad.support.sap.com/#/notes/84282) and a freely chooseble part - `/NAMESPC/PRODUCTX`. The add-on product name should only include uppercase characters.
+
+The version string consists of three numbers separated by a dot - `1.2.0`. The numbers in the version string have a hierarchic relationship:
 
 - The first number denotes the release. Release deliveries contain the complete scope of functionality. It is possible to change the software component version bundle in a new release.
 - The second number denotes the Support Package Stack level. A Support Package stack consists of Support Package deliveries of the contained software component versions. It is not possible to change the software component version bundle in such a delivery.
@@ -78,7 +80,7 @@ The assembly system should be of [service type abap](https://help.sap.com/viewer
 
 #### Add-on Assembly Kit as a Service (=AAKaaS)
 
-The Add-on Assembly Kit as a Service is responsible for registering and publishing the add-on product. It is accessible via APIs with a technical communication user.
+The Add-on Assembly Kit as a Service is responsible for registering and publishing the add-on product. On a high level it is a service offered in the SAP Service & Support systems (thus access is granted via Technical Communication User) that, similar to the Software Delivery Assembler (SDA, transaction SSDA), packs the delivery into an importable package format.
 
 ### Deployment Tools
 

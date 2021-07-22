@@ -46,8 +46,8 @@ nav:
         - 'Integrate SAP Cloud Platform Transport Management Into Your CI/CD Pipeline': scenarios/TMS_Extension.md
         - 'Build and Deploy SAP Fiori Applications on SAP HANA Extended Application Services, Advanced Model': scenarios/xsa-deploy/Readme.md
         - 'Build an SAP Fiori Application and Attach It to a Transport Request on an ABAP System': scenarios/upload-to-transportrequest/Readme.md
-        - 'Build and Publish Add-on Products on SAP Cloud Platform ABAP Environment': scenarios/abapEnvironmentAddons.md
-        - 'Continuous Testing on SAP Cloud Platform ABAP Environment': scenarios/abapEnvironmentTest.md
+        - 'Build and Publish Add-on Products on SAP BTP, ABAP Environment': scenarios/abapEnvironmentAddons.md
+        - 'Continuous Testing on SAP BTP, ABAP Environment': scenarios/abapEnvironmentTest.md
     - Extensibility: extensibility.md
     - 'Library steps':
         - abapAddonAssemblyKitCheckCVs: steps/abapAddonAssemblyKitCheckCVs.md
@@ -148,6 +148,7 @@ nav:
         - transportRequestRelease:  steps/transportRequestRelease.md
         - transportRequestReqIDFromGit: steps/transportRequestReqIDFromGit.md
         - transportRequestUploadFile: steps/transportRequestUploadFile.md
+        - transportRequestUploadRFC: steps/transportRequestUploadRFC.md
         - transportRequestUploadSOLMAN: steps/transportRequestUploadSOLMAN.md
         - uiVeri5ExecuteTests: steps/uiVeri5ExecuteTests.md
         - vaultRotateSecretId: steps/vaultRotateSecretId.md
