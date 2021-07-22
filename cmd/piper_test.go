@@ -521,6 +521,6 @@ func TestAccessTokensFromEnvJSON(t *testing.T) {
 	}
 
 	for _, test := range tt {
-		assert.Equal(t, test.expectedTokenList, accessTokensFromEnvJSON(test.inputJSON), test.description)
+		assert.Equal(t, test.expectedTokenList, AccessTokensFromEnvJSON(test.inputJSON), test.description)
 	}
 }
