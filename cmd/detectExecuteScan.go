@@ -16,6 +16,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/toolrecord"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 )
 
@@ -74,6 +75,13 @@ func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData)
 		log.Entry().
 			WithError(err).
 			Fatal("failed to execute detect scan")
+	}
+
+	// create Toolrecord file
+	toolRecordFileName, err := createToolRecordDetect("./", config)
+	if err != nil {
+		// do not fail until the framework is well established
+		log.Entry().Warning("TR_DETECT: Failed to create toolrecord file "+toolRecordFileName, err)
 	}
 }
 
@@ -249,4 +257,27 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 	}
 
 	return args, nil
+}
+
+// create toolrecord file for detect
+//
+//
+func createToolRecordDetect(workspace string, config detectExecuteScanOptions) (string, error) {
+	record := toolrecord.New(workspace, "detectExecute", config.ServerURL)
+
+	projectId := ""  // todo needs more research; according to synopsis documentation
+	productURL := "" // relevant ids can be found in the logfile
+	err := record.AddKeyData("project",
+		projectId,
+		config.ProjectName,
+		productURL)
+	if err != nil {
+		return "", err
+	}
+	record.AddContext("DetectTools", config.DetectTools)
+	err = record.Persist()
+	if err != nil {
+		return "", err
+	}
+	return record.GetFileName(), nil
 }
