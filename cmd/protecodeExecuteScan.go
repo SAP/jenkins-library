@@ -222,6 +222,16 @@ func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.P
 		{Name: "Protecode Report", Target: path.Join("artifact", config.ReportFileName), Scope: "job"},
 	}
 
+	// write custom report
+	scanReport := protecode.CreateCustomReport(fileName, productID, parsedResult, vulns)
+	paths, err := protecode.WriteCustomReports(scanReport, fileName, fmt.Sprint(productID))
+	if err != nil {
+		// do not fail - consider failing later on
+		log.Entry().Warning("failed to create custom HTML/MarkDown file ...", err)
+	} else {
+		reports = append(reports, paths...)
+	}
+
 	// create toolrecord file
 	toolRecordFileName, err := createToolRecordProtecode("./", config, productID, webuiURL)
 	if err != nil {
@@ -365,16 +375,17 @@ func getTarName(config *protecodeExecuteScanOptions) string {
 // todo: check if group and product names can be retrieved
 func createToolRecordProtecode(workspace string, config *protecodeExecuteScanOptions, productID int, webuiURL string) (string, error) {
 	record := toolrecord.New(workspace, "protecode", config.ServerURL)
+	groupURL := config.ServerURL + "/#/groups/" + config.Group
 	err := record.AddKeyData("group",
 		config.Group,
-		config.Group,
-		"")
+		config.Group, // todo figure out display name
+		groupURL)
 	if err != nil {
 		return "", err
 	}
 	err = record.AddKeyData("product",
 		strconv.Itoa(productID),
-		strconv.Itoa(productID),
+		strconv.Itoa(productID), // todo figure out display name
 		webuiURL)
 	if err != nil {
 		return "", err

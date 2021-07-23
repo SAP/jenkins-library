@@ -26,7 +26,6 @@ steps:
   integrationArtifactUpload:
     cpiApiServiceKeyCredentialsId: 'MY_API_SERVICE_KEY'
     integrationFlowId: 'MY_INTEGRATION_FLOW_ID'
-    integrationFlowVersion: 'MY_INTEGRATION_FLOW_VERSION'
     integrationFlowName: 'MY_INTEGRATION_FLOW_Name'
     packageId: 'MY_INTEGRATION_Package_ID'
     filePath: 'MY_INTEGRATION_FLOW_Artifact_Relative_Path'
