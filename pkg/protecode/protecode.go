@@ -16,6 +16,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// ReportsDirectory defines the subfolder for the Protecode reports which are generated
+const ReportsDirectory = "protecode"
+
 // ProductData holds the product information of the protecode product
 type ProductData struct {
 	Products []Product `json:"products,omitempty"`

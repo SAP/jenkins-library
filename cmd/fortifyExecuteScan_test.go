@@ -535,7 +535,7 @@ func TestTriggerFortifyScan(t *testing.T) {
 		assert.Equal(t, []string{"--file", "./pom.xml", "-Dmdep.outputFile=fortify-execute-scan-cp.txt", "-Dfortify", "-DincludeScope=compile", "-DskipTests", "-Dmaven.javadoc.skip=true", "--fail-at-end", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "dependency:build-classpath", "package"}, utils.executions[0].parameters)
 
 		assert.Equal(t, "sourceanalyzer", utils.executions[1].executable)
-		assert.True(t, reflect.DeepEqual([]string{"-verbose", "-64", "-b", "test", "-Xmx4G", "-Xms2G", "-cp", "some.jar;someother.jar", "-exclude", "**/target/**/*:**/src/test/resources/**/*", "**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "src/main/resources/**/*", "src/main/java/**/*"}, utils.executions[1].parameters) || reflect.DeepEqual([]string{"-verbose", "-64", "-b", "test", "-Xmx4G", "-Xms2G", "-cp", "some.jar;someother.jar", "-exclude", "**/target/**/*;**/src/test/resources/**/*", "**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "src/main/resources/**/*", "src/main/java/**/*"}, utils.executions[1].parameters))
+		assert.True(t, reflect.DeepEqual([]string{"-verbose", "-64", "-b", "test", "-Xmx4G", "-Xms2G", "-cp", "some.jar;someother.jar", "-exclude", "**/src/test/**/*", "**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "src/main/resources/**/*", "src/main/java/**/*"}, utils.executions[1].parameters) || reflect.DeepEqual([]string{"-verbose", "-64", "-b", "test", "-Xmx4G", "-Xms2G", "-cp", "some.jar;someother.jar", "-exclude", "**/src/test/**/*", "**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "src/main/resources/**/*", "src/main/java/**/*"}, utils.executions[1].parameters))
 
 		assert.Equal(t, "sourceanalyzer", utils.executions[2].executable)
 		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-scan", "-Xmx4G", "-Xms2G", "-Dtest=property", "-build-label", "testLabel", "-build-project", "my.group-myartifact", "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr"}, utils.executions[2].parameters)
@@ -866,7 +866,7 @@ func TestPopulateMavenTranslate(t *testing.T) {
 		config := fortifyExecuteScanOptions{Src: []string{"./**/*"}}
 		translate, err := populateMavenTranslate(&config, "")
 		assert.NoError(t, err)
-		assert.True(t, `[{"classpath":"","exclude":"**/target/**/*:**/src/test/resources/**/*","src":"./**/*"}]` == translate || `[{"classpath":"","exclude":"**/target/**/*;**/src/test/resources/**/*","src":"./**/*"}]` == translate)
+		assert.Equal(t, `[{"classpath":"","exclude":"**/src/test/**/*","src":"./**/*"}]`, translate)
 	})
 
 	t.Run("exclude without translate", func(t *testing.T) {

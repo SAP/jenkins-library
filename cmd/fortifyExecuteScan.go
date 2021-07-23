@@ -176,7 +176,7 @@ func runFortifyScan(config fortifyExecuteScanOptions, sys fortify.System, utils 
 
 	// create toolrecord file
 	// tbd - how to handle verifyOnly
-	toolRecordFileName, err := createToolRecordFortify("./", config, project.ID, fortifyProjectName, fortifyProjectVersion)
+	toolRecordFileName, err := createToolRecordFortify("./", config, project.ID, fortifyProjectName, projectVersion.ID, fortifyProjectVersion)
 	if err != nil {
 		// do not fail until the framework is well established
 		log.Entry().Warning("TR_FORTIFY: Failed to create toolrecord file ...", err)
@@ -259,7 +259,7 @@ func verifyFFProjectCompliance(config fortifyExecuteScanOptions, sys fortify.Sys
 	reports := []piperutils.Path{}
 	// Generate report
 	if config.Reporting {
-		resultURL := []byte(fmt.Sprintf("https://fortify.tools.sap/ssc/html/ssc/version/%v/fix/null/", projectVersion.ID))
+		resultURL := []byte(fmt.Sprintf("%v/html/ssc/version/%v/fix/null/", config.ServerURL, projectVersion.ID))
 		ioutil.WriteFile(fmt.Sprintf("%vtarget/%v-%v.%v", config.ModulePath, *project.Name, *projectVersion.Name, "txt"), resultURL, 0700)
 
 		data, err := generateAndDownloadQGateReport(config, sys, project, projectVersion)
@@ -827,7 +827,7 @@ func populateMavenTranslate(config *fortifyExecuteScanOptions, classpath string)
 	setTranslateEntryIfNotEmpty(translateList[0], "src", ":", config.Src,
 		[]string{"**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "**/src/main/resources/**/*", "**/src/main/java/**/*", "**/target/main/java/**/*", "**/target/main/resources/**/*", "**/target/generated-sources/**/*"})
 
-	setTranslateEntryIfNotEmpty(translateList[0], "exclude", getSeparator(), config.Exclude, []string{"**/target/**/*", "**/src/test/resources/**/*"})
+	setTranslateEntryIfNotEmpty(translateList[0], "exclude", getSeparator(), config.Exclude, []string{"**/src/test/**/*"})
 
 	translateJSON, err := json.Marshal(translateList)
 
@@ -1017,7 +1017,7 @@ func getSeparator() string {
 	return ":"
 }
 
-func createToolRecordFortify(workspace string, config fortifyExecuteScanOptions, projectID int64, projectName, projectVersion string) (string, error) {
+func createToolRecordFortify(workspace string, config fortifyExecuteScanOptions, projectID int64, projectName string, projectVersionID int64, projectVersion string) (string, error) {
 	record := toolrecord.New(workspace, "fortify", config.ServerURL)
 	// Project
 	err := record.AddKeyData("project",
@@ -1028,9 +1028,9 @@ func createToolRecordFortify(workspace string, config fortifyExecuteScanOptions,
 		return "", err
 	}
 	// projectVersion
-	projectVersionURL := config.ServerURL + "/ssc/html/ssc/version/" + projectVersion
+	projectVersionURL := config.ServerURL + "/html/ssc/version/" + strconv.FormatInt(projectVersionID, 10)
 	err = record.AddKeyData("projectVersion",
-		projectVersion,
+		strconv.FormatInt(projectVersionID, 10),
 		projectVersion,
 		projectVersionURL)
 	if err != nil {
