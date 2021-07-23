@@ -1,10 +1,12 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -14,6 +16,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/toolrecord"
 	"github.com/SAP/jenkins-library/pkg/versioning"
 )
 
@@ -73,6 +76,13 @@ func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData)
 			WithError(err).
 			Fatal("failed to execute detect scan")
 	}
+
+	// create Toolrecord file
+	toolRecordFileName, err := createToolRecordDetect("./", config)
+	if err != nil {
+		// do not fail until the framework is well established
+		log.Entry().Warning("TR_DETECT: Failed to create toolrecord file "+toolRecordFileName, err)
+	}
 }
 
 func runDetect(config detectExecuteScanOptions, utils detectUtils) error {
@@ -116,7 +126,33 @@ func runDetect(config detectExecuteScanOptions, utils detectUtils) error {
 	utils.SetDir(".")
 	utils.SetEnv(envs)
 
-	return utils.RunShell("/bin/bash", script)
+	err = utils.RunShell("/bin/bash", script)
+	if err == nil && piperutils.ContainsString(config.FailOn, "BLOCKER") {
+		violations := struct {
+			PolicyViolations int      `json:"policyViolations"`
+			Reports          []string `json:"reports"`
+		}{
+			PolicyViolations: 0,
+			Reports:          []string{},
+		}
+
+		if files, err := utils.Glob("**/*BlackDuck_RiskReport.pdf"); err == nil && len(files) > 0 {
+			// there should only be one RiskReport thus only taking the first one
+			_, reportFile := filepath.Split(files[0])
+			violations.Reports = append(violations.Reports, reportFile)
+		}
+
+		violationContent, err := json.Marshal(violations)
+		if err != nil {
+			return fmt.Errorf("failed to marshal policy violation data: %w", err)
+		}
+
+		err = utils.FileWrite("blackduck-ip.json", violationContent, 0666)
+		if err != nil {
+			return fmt.Errorf("failed to write policy violation report: %w", err)
+		}
+	}
+	return err
 }
 
 func getDetectScript(config detectExecuteScanOptions, utils detectUtils) error {
@@ -221,4 +257,27 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 	}
 
 	return args, nil
+}
+
+// create toolrecord file for detect
+//
+//
+func createToolRecordDetect(workspace string, config detectExecuteScanOptions) (string, error) {
+	record := toolrecord.New(workspace, "detectExecute", config.ServerURL)
+
+	projectId := ""  // todo needs more research; according to synopsis documentation
+	productURL := "" // relevant ids can be found in the logfile
+	err := record.AddKeyData("project",
+		projectId,
+		config.ProjectName,
+		productURL)
+	if err != nil {
+		return "", err
+	}
+	record.AddContext("DetectTools", config.DetectTools)
+	err = record.Persist()
+	if err != nil {
+		return "", err
+	}
+	return record.GetFileName(), nil
 }
