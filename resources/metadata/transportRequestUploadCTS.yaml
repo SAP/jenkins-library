@@ -26,7 +26,7 @@ spec:
           - GENERAL
       - name: endpoint
         type: string
-        description: "The ODATA service endpoint: https://<host>:<port>/sap/opu/odata/SAP/SCTS_CLOUD_API_ODATA_SRV"
+        description: "The ODATA service endpoint: https://<host>:<port>"
         aliases:
           - name: changeManagement/endpoint
           - name: changeManagement/cts/endpoint

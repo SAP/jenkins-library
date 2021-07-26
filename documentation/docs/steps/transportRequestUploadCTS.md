@@ -6,7 +6,7 @@
 
 * You have installed the SAP component SAP_UI 7.53 or higher on your ABAP system.
 * You have enabled the OData Service to Load Data to the [SAPUI5 ABAP Repository](https://sapui5.hana.ondemand.com/#/topic/a883327a82ef4cc792f3c1e7b7a48de8.html)
-* You have the S_DEVELOP authorization for operations on a SAPUI5 ABAP repository.
+* You have the [S_DEVELOP authorization](https://sapui5.hana.ondemand.com/#/topic/a883327a82ef4cc792f3c1e7b7a48de8.html) for operations on a SAPUI5 ABAP repository.
 * You have created a transport request on the ABAP system, which is the target container of the SAPUI5 application to upload.
 
 ## Upload Client Setup
@@ -59,7 +59,7 @@ Build your SAPUI5 application with the build command of the SAPUI5 toolset and u
       "scripts": {
          "start": "ui5 serve",
          "test": "npm run lint",
-         "build": "ui5 build -a --clean-dest",
+         "build": "ui5 build --clean-dest",
          ...
       },
       "dependencies": {},
@@ -82,8 +82,10 @@ Build your SAPUI5 application with the build command of the SAPUI5 toolset and u
 
 ## Uploading the SAPUI5 Application
 
-The Fiori toolset uses the [ODATA service](https://ui5.sap.com/#/topic/a883327a82ef4cc792f3c1e7b7a48de8) to load your UI5 application to the SAPUI5 ABAP Repository.
+The Fiori toolset uses the [ODATA service](https://ui5.sap.com/#/topic/a883327a82ef4cc792f3c1e7b7a48de8) to upload your UI5 application to the SAPUI5 ABAP Repository.
 The access is controlled by Basic Authentication (user/password based authentication).
+
+**Note:** Do not upload to SAP BTP. The SAP Business Technology Platform does not support Basic Authentication.
 
 **Note:** Use an HTTPS endpoint to ensure the encryption of your credentials.
 
@@ -150,7 +152,7 @@ steps:
   transportRequestUploadCTS:
     changeManagement:
       credentialsId: 'CTS_CREDENTIALS_ID'
-      endpoint: 'https://example.org/sap/opu/odata/SAP/SCTS_CLOUD_API_ODATA_SRV'
+      endpoint: 'https://example.org'
       client: '001'
     abapPackage: 'PACK'
     applicationName: 'APP'

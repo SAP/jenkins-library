@@ -140,7 +140,7 @@ It processes the results of the ` + "`" + `ui5 build` + "`" + ` command of the S
 
 func addTransportRequestUploadCTSFlags(cmd *cobra.Command, stepConfig *transportRequestUploadCTSOptions) {
 	cmd.Flags().StringVar(&stepConfig.Description, "description", `Deployed with Piper based on SAP Fiori tools`, "The description of the application. The description is only taken into account for a new upload. In case of an update the description will not be updated.")
-	cmd.Flags().StringVar(&stepConfig.Endpoint, "endpoint", os.Getenv("PIPER_endpoint"), "The ODATA service endpoint: https://<host>:<port>/sap/opu/odata/SAP/SCTS_CLOUD_API_ODATA_SRV")
+	cmd.Flags().StringVar(&stepConfig.Endpoint, "endpoint", os.Getenv("PIPER_endpoint"), "The ODATA service endpoint: https://<host>:<port>")
 	cmd.Flags().StringVar(&stepConfig.Client, "client", os.Getenv("PIPER_client"), "The ABAP client")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "Service user for uploading to the SAPUI5 ABAP repository")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Service user password for uploading to the SAPUI5 ABAP repository")
