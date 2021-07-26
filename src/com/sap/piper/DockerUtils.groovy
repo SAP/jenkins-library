@@ -37,20 +37,27 @@ class DockerUtils implements Serializable {
         def targetImageFullName = targetDockerRegistry + target.image
 
         if (!withDockerDaemon()) {
-            script.withCredentials([script.usernamePassword(
-                credentialsId: target.credentialsId,
-                passwordVariable: 'password',
-                usernameVariable: 'userid'
-            )]) {
-                skopeoMoveImage(sourceImageFullName, targetImageFullName, script.userid, script.password)
+            script.withCredentials([
+                script.usernamePassword(
+                    credentialsId: source.credentialsId,
+                    usernameVariable: 'sourceUserId',
+                    passwordVariable: 'sourcePassword'
+                ),
+                script.usernamePassword(
+                    credentialsId: target.credentialsId,
+                    usernameVariable: 'targetUserId',
+                    passwordVariable: 'targetPassword'
+                )
+            ]) {
+                skopeoMoveImage(sourceImageFullName, script.sourceUserId, script.sourcePassword, targetImageFullName, script.targetUserId, script.targetPassword)
             }
         }
         //else not yet implemented here - available directly via containerPushToRegistry
 
     }
 
-    private void skopeoMoveImage(sourceImageFullName, targetImageFullName, targetUserId, targetPassword) {
-        script.sh "skopeo copy --src-tls-verify=false --dest-tls-verify=false --dest-creds=${BashUtils.quoteAndEscape(targetUserId)}:${BashUtils.quoteAndEscape(targetPassword)} docker://${sourceImageFullName} docker://${targetImageFullName}"
+    private void skopeoMoveImage(sourceImageFullName, sourceUserId, sourcePassword, targetImageFullName, targetUserId, targetPassword) {
+        script.sh "skopeo copy --src-tls-verify=false --dest-tls-verify=false --src-creds=${BashUtils.quoteAndEscape(sourceUserId)}:${BashUtils.quoteAndEscape(sourcePassword)} --dest-creds=${BashUtils.quoteAndEscape(targetUserId)}:${BashUtils.quoteAndEscape(targetPassword)} docker://${sourceImageFullName} docker://${targetImageFullName}"
     }
 
 
