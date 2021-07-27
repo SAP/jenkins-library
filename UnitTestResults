@@ -1,0 +1,5 @@
+<checkstyle version="">
+ <unitTestFile name="scts_adt_test.clas:cl_eclipse_test---ltcl_eclipse_test">
+  <unitTestError message="Different values&#xA;  Expected [Hello World] Actual [Hello world]&#xA;Test &#39;LTCL_ECLIPSE_TEST-&gt;FIRST_METHOD&#39; in Main Program &#39;CL_ECLIPSE_TEST===============CP&#39;&#xA;Stack: &#xA;Include: &lt;CL_ECLIPSE_TEST===============CCAU&gt; Line: &lt;19&gt; (FIRST_METHOD)&#xA;" source="first_method" line="" severity="Assert Failure"></unitTestError>
+ </unitTestFile>
+</checkstyle>

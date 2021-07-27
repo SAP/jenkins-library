@@ -14,12 +14,17 @@ import (
 )
 
 type gctsExecuteABAPUnitTestsOptions struct {
-	Username   string `json:"username,omitempty"`
-	Password   string `json:"password,omitempty"`
-	Repository string `json:"repository,omitempty"`
-	Host       string `json:"host,omitempty"`
-	Client     string `json:"client,omitempty"`
-	CommitID   string `json:"commitId,omitempty"`
+	Username     string `json:"username,omitempty"`
+	Password     string `json:"password,omitempty"`
+	Repository   string `json:"repository,omitempty"`
+	Host         string `json:"host,omitempty"`
+	Client       string `json:"client,omitempty"`
+	Scope        string `json:"scope,omitempty"`
+	CommitID     string `json:"commitId,omitempty"`
+	MaxTimeOut   int    `json:"maxTimeOut,omitempty"`
+	CheckVariant string `json:"checkVariant,omitempty"`
+	UnitTest     string `json:"unitTest,omitempty"`
+	AtcCheck     string `json:"atcCheck,omitempty"`
 }
 
 // GctsExecuteABAPUnitTestsCommand Runs ABAP unit tests for all packages of the specified repository
@@ -86,13 +91,19 @@ func addGctsExecuteABAPUnitTestsFlags(cmd *cobra.Command, stepConfig *gctsExecut
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Specifies the name (ID) of the local repsitory on the ABAP system")
 	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the protocol and host address, including the port. Please provide in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.")
 	cmd.Flags().StringVar(&stepConfig.Client, "client", os.Getenv("PIPER_client"), "Specifies the client of the ABAP system to be addressed")
-	cmd.Flags().StringVar(&stepConfig.CommitID, "commitId", os.Getenv("PIPER_commitId"), "commit")
+	cmd.Flags().StringVar(&stepConfig.Scope, "scope", os.Getenv("PIPER_scope"), "Specifies the scope of objects to be tested")
+	cmd.Flags().StringVar(&stepConfig.CommitID, "commitId", os.Getenv("PIPER_commitId"), "The commit that triggered the pipeline")
+	cmd.Flags().IntVar(&stepConfig.MaxTimeOut, "maxTimeOut", 0, "Maximum waiting time for results of the execution of ABAP Unit Tests")
+	cmd.Flags().StringVar(&stepConfig.CheckVariant, "checkVariant", os.Getenv("PIPER_checkVariant"), "Check Variant for ATC Checks")
+	cmd.Flags().StringVar(&stepConfig.UnitTest, "unitTest", os.Getenv("PIPER_unitTest"), "Specifies whether to execute Unit Tests")
+	cmd.Flags().StringVar(&stepConfig.AtcCheck, "atcCheck", os.Getenv("PIPER_atcCheck"), "Specifies whether to execute ATC Check")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("repository")
 	cmd.MarkFlagRequired("host")
 	cmd.MarkFlagRequired("client")
+	cmd.MarkFlagRequired("scope")
 	cmd.MarkFlagRequired("commitId")
 }
 
@@ -160,11 +171,51 @@ func gctsExecuteABAPUnitTestsMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 					},
 					{
+						Name:        "scope",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
+					},
+					{
 						Name:        "commitId",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "maxTimeOut",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "checkVariant",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "unitTest",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "atcCheck",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
 				},

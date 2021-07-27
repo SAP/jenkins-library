@@ -61,11 +61,52 @@ spec:
           - STAGES
           - STEPS
         mandatory: true
+      - name: scope
+        type: string
+        enum:
+          - CHANGED
+          - PACKAGE
+          - REPOSITORY  
+        description: Specifies the scope of objects to be tested
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true    
       - name: commitId
         type: string
-        description: commit
+        description: The commit that triggered the pipeline
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
         mandatory: true
+      - name: maxTimeOut
+        type: int
+        description: Maximum waiting time for results of the execution of ABAP Unit Tests
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: checkVariant
+        type: string
+        description: Check Variant for ATC Checks
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: unitTest
+        type: string
+        description: Specifies whether to execute Unit Tests
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: atcCheck
+        type: string
+        description: Specifies whether to execute ATC Check
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+ 
