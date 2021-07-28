@@ -50,6 +50,8 @@ func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, 
 		return GetIntegrationArtifactDeployErrorDetailsMockResponse(testType)
 	case "TriggerIntegrationTest":
 		return TriggerIntegrationTestMockResponse(testType)
+	case "IntegrationArtifactGetMplStatusError":
+		return GetIntegrationArtifactDeployErrorStatusMockResponseBody()
 	default:
 		res := http.Response{
 			StatusCode: 404,
@@ -418,7 +420,7 @@ func GetCPIFunctionNameByURLCheck(url, method, testType string) string {
 
 	case "https://demo/api/v1/IntegrationDesigntimeArtifacts":
 		return GetFunctionNameByTestTypeAndMethod(method, testType)
-	case "https://demo/api/v1/DeployIntegrationDesigntimeArtifact?Id='flow1'&Version='1.0.1'":
+	case "https://demo/api/v1/DeployIntegrationDesigntimeArtifact?Id='flow1'&Version='Active'":
 		return GetFunctionNameByTestTypeAndMethod(method, testType)
 	case "https://demo/api/v1/IntegrationRuntimeArtifacts('flow1')":
 		return "GetIntegrationArtifactDeployStatus"
