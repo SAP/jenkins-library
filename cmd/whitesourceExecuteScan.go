@@ -250,7 +250,7 @@ func checkAndReportScanResults(config *ScanOptions, scan *ws.Scan, utils whiteso
 
 	// create toolrecord file
 	// tbd - how to handle verifyOnly
-	toolRecordFileName, err := createToolRecordWhitesource("./", config)
+	toolRecordFileName, err := createToolRecordWhitesource("./", config, scan)
 	if err != nil {
 		// do not fail until the framework is well established
 		log.Entry().Warning("TR_WHITESOURCE: Failed to create toolrecord file ...", err)
@@ -929,7 +929,7 @@ func persistScannedProjects(config *ScanOptions, scan *ws.Scan, commonPipelineEn
 // Limitation: as the toolrecord file is designed to point to one scan result this generate a pointer
 // to the product only, and not to the scanned projects
 //
-func createToolRecordWhitesource(workspace string, config *whitesourceExecuteScanOptions) (string, error) {
+func createToolRecordWhitesource(workspace string, config *whitesourceExecuteScanOptions, scan *ws.Scan) (string, error) {
 	record := toolrecord.New(workspace, "whitesource", config.ServiceURL)
 	productURL := config.ServiceURL + "/Wss/WSS.html#!product;token=" + config.ProductToken
 	err := record.AddKeyData("product",
@@ -939,6 +939,8 @@ func createToolRecordWhitesource(workspace string, config *whitesourceExecuteSca
 	if err != nil {
 		return "", err
 	}
+	record.AddContext("scannedProjects", scan.ScannedProjectNames)
+	record.AddContext("configuredProject", config.ProjectName+" - "+config.Version)
 	err = record.Persist()
 	if err != nil {
 		return "", err
