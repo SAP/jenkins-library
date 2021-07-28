@@ -42,7 +42,13 @@ func gctsExecuteABAPUnitTests(config gctsExecuteABAPUnitTestsOptions, telemetryD
 
 	if config.Scope == "LOCAL_CHANGED_OBJECTS" {
 
+		log.Entry().
+			Info("Local Changed Objects")
+
 		changedObjects, getObjectsErr = getLocalChangedObjects(&config, httpClient)
+
+		log.Entry().
+			WithField("changedObjects", changedObjects)
 
 	} else if config.Scope == "REMOTE_CHANGED_OBJECTS" {
 
