@@ -1119,7 +1119,12 @@ func getLocalChangedPackages(config *gctsExecuteABAPUnitTestsOptions, client pip
 
 	lastLocalCommit = repository.Result.CurrentCommit
 
+	log.Entry().
+		Info("last local commit", lastLocalCommit)
 	objectResponse, objectErr = getObjectDifference(config, lastLocalCommit, triggeredCommit, client)
+
+	log.Entry().
+		Info("object delta", objectResponse.Objects)
 	if objectErr != nil {
 		return []objectstruct{}, errors.Wrap(objectErr, "get object difference failed")
 	}
