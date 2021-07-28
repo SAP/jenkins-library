@@ -133,11 +133,11 @@ func runIntegrationArtifactGetMplStatus(
 }
 
 //getIntegrationArtifactMPLError - Get integration artifact MPL error details
-func getIntegrationArtifactMPLError(commonPipelineEnvironment *integrationArtifactGetMplStatusCommonPipelineEnvironment, mplId string, httpClient piperhttp.Sender, apiHost string) (string, error) {
+func getIntegrationArtifactMPLError(commonPipelineEnvironment *integrationArtifactGetMplStatusCommonPipelineEnvironment, mplID string, httpClient piperhttp.Sender, apiHost string) (string, error) {
 	httpMethod := "GET"
 	header := make(http.Header)
 	header.Add("content-type", "application/json")
-	errorStatusURL := fmt.Sprintf("%s/api/v1/MessageProcessingLogs('%s')/ErrorInformation/$value", apiHost, mplId)
+	errorStatusURL := fmt.Sprintf("%s/api/v1/MessageProcessingLogs('%s')/ErrorInformation/$value", apiHost, mplID)
 	errorStatusResp, httpErr := httpClient.SendRequest(httpMethod, errorStatusURL, nil, header, nil)
 
 	if errorStatusResp != nil && errorStatusResp.Body != nil {
@@ -150,7 +150,7 @@ func getIntegrationArtifactMPLError(commonPipelineEnvironment *integrationArtifa
 
 	if errorStatusResp.StatusCode == http.StatusOK {
 		log.Entry().
-			WithField("MPLID", mplId).
+			WithField("MPLID", mplID).
 			Info("Successfully retrieved Integration Flow artefact message processing error")
 		responseBody, readErr := ioutil.ReadAll(errorStatusResp.Body)
 		if readErr != nil {
