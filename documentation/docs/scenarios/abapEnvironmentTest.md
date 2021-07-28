@@ -43,7 +43,7 @@ During the pipeline configuration, you will specify the service plan, which will
 
 ## Configuration
 
-Please refer to the [configuration page](../pipelines/abapEnvironment/configuration.md) 
+Please refer to the [configuration page](../pipelines/abapEnvironment/configuration.md).
 
 ## Example
 
