@@ -16,7 +16,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func abapEnvironmentPullGitRepo(options abapEnvironmentPullGitRepoOptions, telemetryData *telemetry.CustomData) {
+func abapEnvironmentPullGitRepo(options abapEnvironmentPullGitRepoOptions, _ *telemetry.CustomData) {
 
 	// for command execution use Command
 	c := command.Command{}
@@ -31,13 +31,13 @@ func abapEnvironmentPullGitRepo(options abapEnvironmentPullGitRepoOptions, telem
 	client := piperhttp.Client{}
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runAbapEnvironmentPullGitRepo(&options, telemetryData, &autils, &client)
+	err := runAbapEnvironmentPullGitRepo(&options, &autils, &client)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender) (err error) {
+func runAbapEnvironmentPullGitRepo(options *abapEnvironmentPullGitRepoOptions, com abaputils.Communication, client piperhttp.Sender) (err error) {
 
 	subOptions := convertPullConfig(options)
 
@@ -129,9 +129,6 @@ func triggerPull(repo abaputils.Repository, pullConnectionDetails abaputils.Conn
 		return uriConnectionDetails, err
 	}
 	defer resp.Body.Close()
-
-	// workaround until golang version 1.16 is used
-	time.Sleep(100 * time.Millisecond)
 
 	log.Entry().WithField("StatusCode", resp.Status).WithField("ABAP Endpoint", pullConnectionDetails.URL).Debug("Authentication on the ABAP system successful")
 	uriConnectionDetails.XCsrfToken = resp.Header.Get("X-Csrf-Token")
