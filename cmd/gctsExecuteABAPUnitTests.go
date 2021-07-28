@@ -195,7 +195,8 @@ func executeATCCheck(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.S
 
 		initialTime := time.Now().Unix()
 		for {
-
+			log.Entry().
+				Info("Start Check ATC Status")
 			ATCStatus, err = checkATCStatus(config, client, runId)
 
 			if err != nil {
@@ -204,6 +205,8 @@ func executeATCCheck(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.S
 
 			currentTime := time.Now().Unix()
 			timeDuration := currentTime - initialTime
+			log.Entry().
+				Info("Time duration", timeDuration)
 			log.Entry().
 				Info("ATC Status", ATCStatus.Status)
 			if ATCStatus.Status == "Completed" || ATCStatus.Status == "Not Created" || ATCStatus.Status == "" || timeDuration > maxTimeOut {
