@@ -58,6 +58,9 @@ func gctsExecuteABAPUnitTests(config gctsExecuteABAPUnitTestsOptions, telemetryD
 
 		changedObjects, getObjectsErr = getLocalChangedPackages(&config, httpClient)
 
+		log.Entry().
+			Info("changedObjects", changedObjects)
+
 	} else if config.Scope == "REMOTE_CHANGED_PACKAGES" {
 
 		changedObjects, getObjectsErr = getRemoteChangedPackages(&config, httpClient)
