@@ -110,7 +110,7 @@ func runIntegrationArtifactGetMplStatus(
 			mplStatus := jsonResponse.Path("d.results.0.Status").Data().(string)
 			commonPipelineEnvironment.custom.iFlowMplStatus = mplStatus
 
-			//if error, then return immediately with error details
+			//if error, then return immediately with the error details
 			if mplStatus == "FAILED" {
 				mplID := jsonResponse.Path("d.results.0.MessageGuid").Data().(string)
 				resp, err := getIntegrationArtifactMPLError(commonPipelineEnvironment, mplID, httpClient, serviceKey.OAuth.Host)
