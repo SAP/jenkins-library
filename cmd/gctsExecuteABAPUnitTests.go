@@ -48,7 +48,7 @@ func gctsExecuteABAPUnitTests(config gctsExecuteABAPUnitTestsOptions, telemetryD
 		changedObjects, getObjectsErr = getLocalChangedObjects(&config, httpClient)
 
 		log.Entry().
-			WithField("changedObjects", changedObjects)
+			Info("changedObjects", changedObjects)
 
 	} else if config.Scope == "REMOTE_CHANGED_OBJECTS" {
 
@@ -77,7 +77,8 @@ func gctsExecuteABAPUnitTests(config gctsExecuteABAPUnitTestsOptions, telemetryD
 	}
 
 	if config.UnitTest != "FALSE" {
-
+		log.Entry().
+			Info("Execute Unit Test")
 		executeUnitTestError := executeUnitTest(&config, httpClient, changedObjects)
 		if executeUnitTestError != nil {
 			log.Entry().WithError(executeUnitTestError).Fatal("execute unit test failed")
@@ -87,6 +88,8 @@ func gctsExecuteABAPUnitTests(config gctsExecuteABAPUnitTestsOptions, telemetryD
 
 	if config.AtcCheck != "FALSE" {
 
+		log.Entry().
+			Info("Execute ATC")
 		executeATCCheckError := executeATCCheck(&config, httpClient, changedObjects)
 		if executeATCCheckError != nil {
 			log.Entry().WithError(executeATCCheckError).Fatal("execute ATC Check failed")
@@ -103,6 +106,10 @@ func gctsExecuteABAPUnitTests(config gctsExecuteABAPUnitTestsOptions, telemetryD
 func executeUnitTest(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, objects []objectstruct) error {
 
 	var maxTimeOut int64
+	var UnitTestResults Checkstyle
+	var File unitTestFile
+	var UnitError unitTestError
+	const UnitTestFileName = "UnitTestResults"
 	const defaultMaxTimeOut = 10000
 
 	if config.MaxTimeOut != 0 {
@@ -133,10 +140,27 @@ func executeUnitTest(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.S
 		testResults, err := getTestResults(config, client, runId)
 
 		if testResults.Failures != "0" || testResults.Errors != "0" {
+
+			UnitError.Source = testResults.Testsuite.Testcase.Name
+			UnitError.Severity = testResults.Testsuite.Testcase.Failure.Type
+			UnitError.Message = testResults.Testsuite.Testcase.Failure.Text
+			File.Name = testResults.Testsuite.Testcase.Classname
+			File.Error = append(File.Error, UnitError)
+			UnitTestResults.File = append(UnitTestResults.File, File)
+			body, _ := xml.MarshalIndent(UnitTestResults, "", " ")
+
+			err = ioutil.WriteFile(UnitTestFileName, body, 0644)
+
 			return errors.Wrap(err, "execution of unit tests failed")
 
-		}
+		} else {
+			UnitError.Source = testResults.Testsuite.Testcase.Name
+			File.Name = testResults.Testsuite.Testcase.Classname
+			body, _ := xml.MarshalIndent(UnitTestResults, "", " ")
 
+			err = ioutil.WriteFile(UnitTestFileName, body, 0644)
+
+		}
 	} else {
 		// execute old API
 		err = executeTestOldRelease(config, client, objects)
