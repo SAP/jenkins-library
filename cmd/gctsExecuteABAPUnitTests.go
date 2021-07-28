@@ -186,7 +186,8 @@ func executeATCCheck(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.S
 	} else {
 		maxTimeOut = defaultMaxTimeOut
 	}
-
+	log.Entry().
+		Info("Start ATC Run")
 	runId, err := startATCRun(config, client, objects)
 	if err == nil {
 
@@ -212,6 +213,8 @@ func executeATCCheck(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.S
 			location := ATCStatus.Link[0].Key
 			locationSlice := strings.Split(location, "/")
 			ATCId = locationSlice[len(locationSlice)-1]
+			log.Entry().
+				Info("Start ATC Result")
 			err := getATCResult(config, client, ATCId)
 			if err != nil {
 				return errors.Wrap(err, "execution of unit tests failed")
@@ -743,7 +746,7 @@ func getATCResult(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Send
 	if err != nil {
 		return fmt.Errorf("handling ATC result failed: %w", err)
 	}
-
+	err = ioutil.WriteFile(atcResultFileName, body, 0644)
 	return nil
 
 }
