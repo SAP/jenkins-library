@@ -31,14 +31,27 @@ def call(Map parameters = [:], body) {
     def measurementName = parameters.get('measurementName', 'test_duration')
 
     //start measurement
-    def start = System.currentTimeMillis()
+    long start = System.currentTimeMillis()
 
-    body()
+    // execute the body, catch the potential exception
+    echo "--- Begin durationMeasure for ${measurementName} ---"
+    Throwable caught = null
+    try {
+        body()
+        echo "body() for '${measurementName}' successfully executed"
+    } catch(Throwable t) {
+        echo "body() for '${measurementName}' executed throwing ${t}"
+        caught = t
+    }
 
-    //record measurement
-    def duration = System.currentTimeMillis() - start
-
+    // calculate and store the duration
+    long duration = System.currentTimeMillis() - start
+    echo "--- End durationMeasure for ${measurementName} (${duration} ms) ---"
     InfluxData.addField('pipeline_data', measurementName, duration)
 
+    // re-throw the caught Throwable if present
+    if (caught != null) {
+        throw caught
+    }
     return duration
 }
