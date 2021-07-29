@@ -72,7 +72,8 @@ type Vulnerabilities struct {
 }
 
 type Vulnerability struct {
-	Name                         string `json:"versionName,omitempty"`
+	Name                         string `json:"componentName,omitempty"`
+	Version                      string `json:"componentVersionName,omitempty"`
 	VulnerabilityWithRemediation `json:"vulnerabilityWithRemediation,omitempty"`
 }
 
@@ -218,7 +219,7 @@ func (b *Client) GetComponents(projectName, versionName string) (*Components, er
 	err = json.Unmarshal(respBody, &components)
 
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to retrieve component details for project version '%v:%v'", projectName, projectVersion)
+		return nil, errors.Wrapf(err, "failed to retrieve component details for project version '%v:%v'", projectName, versionName)
 	} else if components.TotalCount == 0 {
 		return nil, fmt.Errorf("No Components found for project version '%v:%v'", projectName, versionName)
 	}
@@ -252,13 +253,13 @@ func (b *Client) GetVulnerabilities(projectName, versionName string) (*Vulnerabi
 	vulnerabilities := Vulnerabilities{}
 	err = json.Unmarshal(respBody, &vulnerabilities)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to retrieve Vulnerability details for project version '%v:%v'", projectName, projectVersion)
+		return nil, errors.Wrapf(err, "failed to retrieve Vulnerability details for project version '%v:%v'", projectName, versionName)
 	}
 
 	return &vulnerabilities, nil
 }
 
-func (b *Client) GetPolicyViolations(projectName, versionName string) (*PolicyStatus, error) {
+func (b *Client) GetPolicyStatus(projectName, versionName string) (*PolicyStatus, error) {
 	projectVersion, err := b.GetProjectVersion(projectName, versionName)
 	if err != nil {
 		return nil, err
@@ -275,7 +276,7 @@ func (b *Client) GetPolicyViolations(projectName, versionName string) (*PolicySt
 		}
 	}
 
-	respBody, err := b.sendRequest("GET", policyStatusPath, map[string]string{"offset": "0", "limit": "999"}, nil, headers)
+	respBody, err := b.sendRequest("GET", policyStatusPath, map[string]string{}, nil, headers)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to get Policy Violation status for project version '%v:%v'", projectName, versionName)
 	}
@@ -283,7 +284,7 @@ func (b *Client) GetPolicyViolations(projectName, versionName string) (*PolicySt
 	policyStatus := PolicyStatus{}
 	err = json.Unmarshal(respBody, &policyStatus)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to retrieve Policy violation details for project version '%v:%v'", projectName, projectVersion)
+		return nil, errors.Wrapf(err, "failed to retrieve Policy violation details for project version '%v:%v'", projectName, versionName)
 	}
 
 	return &policyStatus, nil

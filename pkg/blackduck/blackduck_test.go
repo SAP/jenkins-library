@@ -62,6 +62,31 @@ const (
 			}
 		]
 	}`
+	projectVersionContent = `{
+		"totalCount": 1,
+		"items": [
+			{
+				"versionName": "1.0",
+				"_meta": {
+					"href": "https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions/a6c94786-0ee6-414f-9054-90d549c69c36",
+					"links": [
+						{
+							"rel": "components",
+							"href": "https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions/a6c94786-0ee6-414f-9054-90d549c69c36/components"
+						},
+						{
+							"rel": "vulnerable-components",
+							"href": "https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions/a6c94786-0ee6-414f-9054-90d549c69c36/vunlerable-bom-components"
+						},
+						{
+							"rel": "policy-status",
+							"href": "https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions/a6c94786-0ee6-414f-9054-90d549c69c36/policy-status"
+						}
+					]
+				}
+			}
+		]
+	}`
 )
 
 func TestGetProject(t *testing.T) {
@@ -131,20 +156,9 @@ func TestGetProjectVersion(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		myTestClient := httpMockClient{
 			responseBodyForURL: map[string]string{
-				"https://my.blackduck.system/api/tokens/authenticate":             authContent,
-				"https://my.blackduck.system/api/projects?q=name%3ASHC-PiperTest": projectContent,
-				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions": `{
-					"totalCount": 1,
-					"items": [
-						{
-							"versionName": "1.0",
-							"_meta": {
-								"href": "https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions/a6c94786-0ee6-414f-9054-90d549c69c36",
-								"links": []
-							}
-						}
-					]
-				}`,
+				"https://my.blackduck.system/api/tokens/authenticate":                                    authContent,
+				"https://my.blackduck.system/api/projects?q=name%3ASHC-PiperTest":                        projectContent,
+				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions": projectVersionContent,
 			},
 			header: map[string]http.Header{},
 		}
@@ -217,6 +231,184 @@ func TestGetProjectVersion(t *testing.T) {
 		bdClient := NewClient("myTestToken", "https://my.blackduck.system", &myTestClient)
 		_, err := bdClient.GetProjectVersion("SHC-PiperTest", "1.0")
 		assert.Contains(t, fmt.Sprint(err), "failed to retrieve details for project version 'SHC-PiperTest:1.0'")
+	})
+}
+
+func TestGetVulnerabilities(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		myTestClient := httpMockClient{
+			responseBodyForURL: map[string]string{
+				"https://my.blackduck.system/api/tokens/authenticate":                                    authContent,
+				"https://my.blackduck.system/api/projects?q=name%3ASHC-PiperTest":                        projectContent,
+				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions": projectVersionContent,
+				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions/a6c94786-0ee6-414f-9054-90d549c69c36/vunlerable-bom-components?limit=999&offset=0": `{
+					"totalCount": 1,
+					"items": [
+						{
+							"componentName": "Spring Framework",
+							"componentVersionName": "5.3.2",
+							"vulnerabilityWithRemediation" : {
+								"vulnerabilityName" : "BDSA-2019-2021",
+								"baseScore" : 1.0,
+      							"overallScore" : 1.0,
+								"severity" : "HIGH",
+								"remediationStatus" : "IGNORED",
+								"description" : "description"
+							}
+						}
+					]
+				}`,
+			},
+			header: map[string]http.Header{},
+		}
+		bdClient := NewClient("token", "https://my.blackduck.system", &myTestClient)
+		vulns, err := bdClient.GetVulnerabilities("SHC-PiperTest", "1.0")
+		assert.NoError(t, err)
+		assert.GreaterOrEqual(t, vulns.TotalCount, 1)
+	})
+
+	t.Run("Success - 0 vulns", func(t *testing.T) {
+		myTestClient := httpMockClient{
+			responseBodyForURL: map[string]string{
+				"https://my.blackduck.system/api/tokens/authenticate":                                    authContent,
+				"https://my.blackduck.system/api/projects?q=name%3ASHC-PiperTest":                        projectContent,
+				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions": projectVersionContent,
+				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions/a6c94786-0ee6-414f-9054-90d549c69c36/vunlerable-bom-components?limit=999&offset=0": `{"totalCount":0,"items":[]}`,
+			},
+			header: map[string]http.Header{},
+		}
+		bdClient := NewClient("token", "https://my.blackduck.system", &myTestClient)
+		vulns, err := bdClient.GetVulnerabilities("SHC-PiperTest", "1.0")
+		assert.NoError(t, err)
+		assert.Equal(t, vulns.TotalCount, 0)
+	})
+
+	t.Run("Failure - unmarshalling", func(t *testing.T) {
+		myTestClient := httpMockClient{
+			responseBodyForURL: map[string]string{
+				"https://my.blackduck.system/api/tokens/authenticate":                                    authContent,
+				"https://my.blackduck.system/api/projects?q=name%3ASHC-PiperTest":                        projectContent,
+				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions": projectVersionContent,
+				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions/a6c94786-0ee6-414f-9054-90d549c69c36/vunlerable-bom-components?limit=999&offset=0": "",
+			},
+			header: map[string]http.Header{},
+		}
+		bdClient := NewClient("token", "https://my.blackduck.system", &myTestClient)
+		_, err := bdClient.GetVulnerabilities("SHC-PiperTest", "1.0")
+		assert.Contains(t, fmt.Sprint(err), "failed to retrieve Vulnerability details for project version 'SHC-PiperTest:1.0'")
+	})
+}
+
+func TestGetComponents(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		myTestClient := httpMockClient{
+			responseBodyForURL: map[string]string{
+				"https://my.blackduck.system/api/tokens/authenticate":                                    authContent,
+				"https://my.blackduck.system/api/projects?q=name%3ASHC-PiperTest":                        projectContent,
+				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions": projectVersionContent,
+				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions/a6c94786-0ee6-414f-9054-90d549c69c36/components?limit=999&offset=0": `{
+					"totalCount": 2,
+					"items" : [
+						{
+							"componentName": "Spring Framework",
+							"componentVersionName": "5.3.9"
+						}, {
+							"componentName": "Apache Tomcat",
+							"componentVersionName": "9.0.52"
+						}
+					]
+				}`,
+			},
+			header: map[string]http.Header{},
+		}
+		bdClient := NewClient("token", "https://my.blackduck.system", &myTestClient)
+		components, err := bdClient.GetComponents("SHC-PiperTest", "1.0")
+		assert.NoError(t, err)
+		assert.GreaterOrEqual(t, components.TotalCount, 2)
+	})
+
+	t.Run("Failure - 0 components", func(t *testing.T) {
+		myTestClient := httpMockClient{
+			responseBodyForURL: map[string]string{
+				"https://my.blackduck.system/api/tokens/authenticate":                                    authContent,
+				"https://my.blackduck.system/api/projects?q=name%3ASHC-PiperTest":                        projectContent,
+				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions": projectVersionContent,
+				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions/a6c94786-0ee6-414f-9054-90d549c69c36/components?limit=999&offset=0": `{
+					"totalCount": 0,
+					"items" : []}`,
+			},
+			header: map[string]http.Header{},
+		}
+		bdClient := NewClient("token", "https://my.blackduck.system", &myTestClient)
+		components, err := bdClient.GetComponents("SHC-PiperTest", "1.0")
+		assert.Contains(t, fmt.Sprint(err), "No Components found for project version 'SHC-PiperTest:1.0'")
+		assert.Nilf(t, components, "Expected Components to be nil")
+	})
+
+	t.Run("Failure - unmarshalling", func(t *testing.T) {
+		myTestClient := httpMockClient{
+			responseBodyForURL: map[string]string{
+				"https://my.blackduck.system/api/tokens/authenticate":                                                                                                       authContent,
+				"https://my.blackduck.system/api/projects?q=name%3ASHC-PiperTest":                                                                                           projectContent,
+				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions":                                                                    projectVersionContent,
+				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions/a6c94786-0ee6-414f-9054-90d549c69c36/components?limit=999&offset=0": "",
+			},
+			header: map[string]http.Header{},
+		}
+		bdClient := NewClient("token", "https://my.blackduck.system", &myTestClient)
+		components, err := bdClient.GetComponents("SHC-PiperTest", "1.0")
+		assert.Contains(t, fmt.Sprint(err), "failed to retrieve component details for project version 'SHC-PiperTest:1.0'")
+		assert.Nilf(t, components, "Expected Components to be nil")
+	})
+}
+
+func TestGetPolicyStatus(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		myTestClient := httpMockClient{
+			responseBodyForURL: map[string]string{
+				"https://my.blackduck.system/api/tokens/authenticate":                                    authContent,
+				"https://my.blackduck.system/api/projects?q=name%3ASHC-PiperTest":                        projectContent,
+				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions": projectVersionContent,
+				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions/a6c94786-0ee6-414f-9054-90d549c69c36/policy-status": `{
+					"overallStatus": "IN_VIOLATION",
+					"componentVersionPolicyViolationDetails": {
+						"name": "IN_VIOLATION",
+						"severityLevels": [
+						  {	"name": "BLOCKER", "value": 16 },
+						  { "name": "CRITICAL", "value": 1 },
+						  { "name": "MAJOR", "value": 0 },
+						  { "name": "MINOR", "value": 0 },
+						  { "name": "TRIVIAL", "value": 0 },
+						  { "name": "UNSPECIFIED", "value": 0 },
+						  { "name": "OK", "value": 0}
+						]
+					  }
+				}`,
+			},
+			header: map[string]http.Header{},
+		}
+		bdClient := NewClient("token", "https://my.blackduck.system", &myTestClient)
+		policyStatus, err := bdClient.GetPolicyStatus("SHC-PiperTest", "1.0")
+		assert.NoError(t, err)
+		assert.Equal(t, policyStatus.OverallStatus, "IN_VIOLATION")
+		assert.Equal(t, len(policyStatus.PolicyVersionDetails.SeverityLevels), 7)
+		assert.Equal(t, policyStatus.PolicyVersionDetails.Name, "IN_VIOLATION")
+	})
+
+	t.Run("Failure - unmarshalling", func(t *testing.T) {
+		myTestClient := httpMockClient{
+			responseBodyForURL: map[string]string{
+				"https://my.blackduck.system/api/tokens/authenticate":                                                                                       authContent,
+				"https://my.blackduck.system/api/projects?q=name%3ASHC-PiperTest":                                                                           projectContent,
+				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions":                                                    projectVersionContent,
+				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions/a6c94786-0ee6-414f-9054-90d549c69c36/policy-status": "",
+			},
+			header: map[string]http.Header{},
+		}
+		bdClient := NewClient("token", "https://my.blackduck.system", &myTestClient)
+		policyStatus, err := bdClient.GetPolicyStatus("SHC-PiperTest", "1.0")
+		assert.Contains(t, fmt.Sprint(err), "failed to retrieve Policy violation details for project version 'SHC-PiperTest:1.0'")
+		assert.Nilf(t, policyStatus, "Expected Components to be nil")
 	})
 }
 
