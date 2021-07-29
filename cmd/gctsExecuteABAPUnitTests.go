@@ -109,9 +109,7 @@ func gctsExecuteABAPUnitTests(config gctsExecuteABAPUnitTestsOptions, telemetryD
 func executeUnitTest(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, objects []objectstruct) error {
 
 	var maxTimeOut int64
-	var UnitTestResults Checkstyle
-	var File unitTestFile
-	var UnitError unitTestError
+
 	const UnitTestFileName = "UnitTestResults"
 	const defaultMaxTimeOut = 10000
 
@@ -121,6 +119,8 @@ func executeUnitTest(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.S
 		maxTimeOut = defaultMaxTimeOut
 	}
 
+	log.Entry().
+		Info("Execute Test Run")
 	runId, err := executeTestRun(config, client, objects)
 	if err == nil {
 		initialTime := time.Now().Unix()
@@ -139,29 +139,16 @@ func executeUnitTest(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.S
 
 			}
 		}
-
+		log.Entry().
+			Info("Get Unit Test Result")
 		testResults, err := getTestResults(config, client, runId)
+
+		log.Entry().
+			Info("Test Result", testResults)
 
 		if testResults.Failures != "0" || testResults.Errors != "0" {
 
-			UnitError.Source = testResults.Testsuite.Testcase.Name
-			UnitError.Severity = testResults.Testsuite.Testcase.Failure.Type
-			UnitError.Message = testResults.Testsuite.Testcase.Failure.Text
-			File.Name = testResults.Testsuite.Testcase.Classname
-			File.Error = append(File.Error, UnitError)
-			UnitTestResults.File = append(UnitTestResults.File, File)
-			body, _ := xml.MarshalIndent(UnitTestResults, "", " ")
-
-			err = ioutil.WriteFile(UnitTestFileName, body, 0644)
-
 			return errors.Wrap(err, "execution of unit tests failed")
-
-		} else {
-			UnitError.Source = testResults.Testsuite.Testcase.Name
-			File.Name = testResults.Testsuite.Testcase.Classname
-			body, _ := xml.MarshalIndent(UnitTestResults, "", " ")
-
-			err = ioutil.WriteFile(UnitTestFileName, body, 0644)
 
 		}
 	} else {
@@ -921,6 +908,7 @@ func getTestResults(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Se
 	UnitError.Severity = response.Testsuite.Testcase.Failure.Type
 	UnitError.Message = response.Testsuite.Testcase.Failure.Text
 	File.Name = response.Testsuite.Testcase.Classname
+	UnitTestResults.Version = "1.0"
 	File.Error = append(File.Error, UnitError)
 	UnitTestResults.File = append(UnitTestResults.File, File)
 
