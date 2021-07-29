@@ -134,6 +134,9 @@ func executeUnitTest(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.S
 
 			currentTime := time.Now().Unix()
 			timeDuration := currentTime - initialTime
+			log.Entry().
+				Info("Status", statusResponse.Progress.Status)
+
 			if statusResponse.Progress.Status == "FINISHED" || timeDuration > maxTimeOut {
 				break
 
@@ -141,6 +144,7 @@ func executeUnitTest(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.S
 		}
 		log.Entry().
 			Info("Get Unit Test Result")
+
 		testResults, err := getTestResults(config, client, runId)
 
 		log.Entry().
@@ -905,7 +909,7 @@ func getTestResults(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Se
 	}
 
 	UnitError.Source = response.Testsuite.Testcase.Name
-	UnitError.Severity = response.Testsuite.Testcase.Failure.Type
+	UnitError.Severity = "error"
 	UnitError.Message = response.Testsuite.Testcase.Failure.Text
 	File.Name = response.Testsuite.Testcase.Classname
 	UnitTestResults.Version = "1.0"
