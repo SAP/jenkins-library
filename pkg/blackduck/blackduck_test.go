@@ -220,16 +220,6 @@ func TestGetProjectVersion(t *testing.T) {
 	})
 }
 
-func TestSendRequestIntegration(t *testing.T) {
-	token := "ZjNiZTYxOWYtYjIyYi00YzZkLTk3YTAtYzZjYjU0ZTkxZmY0OmEyMjEzZGQzLTdlMWQtNDkyNy1hZTkzLThjZTQyNjdkYjBhNA=="
-	bdClient := NewClient(token, "https://sap.blackducksoftware.com", &piperhttp.Client{})
-
-	res, err := bdClient.GetProjectVersion("SHC-PiperTest", "1.0")
-
-	assert.NoError(t, err)
-	t.Log(res)
-}
-
 func TestAuthenticate(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		myTestClient := httpMockClient{
