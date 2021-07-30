@@ -28,7 +28,7 @@ The version string consists of three numbers separated by a dot - `1.2.0`. The n
 - The second number denotes the Support Package Stack level. A Support Package stack consists of Support Package deliveries of the contained software component versions. It is not possible to change the software component version bundle in such a delivery.
 - The third number denotes the Patch level. A Patch delivery contains Patch deliveries of the contained software component versions.
 
-**Note:** Changing the version string of the add-on product does not necessarily imply that new delivery packages are being created. In case software component versions are used that were already part of a previsous add-on product/version, the existing delivery packages are reused for the new add-on product version.
+**Note:** Changing the version string of the add-on product does not necessarily imply that new delivery packages are being created. In case software component versions are used that were already part of a previous add-on product/version, the existing delivery packages are reused for the new add-on product version.
 
 ### Software Component Version
 
