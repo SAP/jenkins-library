@@ -11,14 +11,6 @@ type integrationArtifactUnDeployMockUtils struct {
 	*mock.FilesMock
 }
 
-func newIntegrationArtifactUnDeployTestsUtils() integrationArtifactUnDeployMockUtils {
-	utils := integrationArtifactUnDeployMockUtils{
-		ExecMockRunner: &mock.ExecMockRunner{},
-		FilesMock:      &mock.FilesMock{},
-	}
-	return utils
-}
-
 func TestRunIntegrationArtifactUnDeploy(t *testing.T) {
 	t.Parallel()
 

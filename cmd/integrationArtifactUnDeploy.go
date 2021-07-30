@@ -31,16 +31,6 @@ type integrationArtifactUnDeployUtilsBundle struct {
 	// integrationArtifactUnDeployUtilsBundle and forward to the implementation of the dependency.
 }
 
-func newIntegrationArtifactUnDeployUtils() integrationArtifactUnDeployUtils {
-	utils := integrationArtifactUnDeployUtilsBundle{
-		Command: &command.Command{},
-	}
-	// Reroute command output to logging framework
-	utils.Stdout(log.Writer())
-	utils.Stderr(log.Writer())
-	return &utils
-}
-
 func integrationArtifactUnDeploy(config integrationArtifactUnDeployOptions, telemetryData *telemetry.CustomData) {
 	// Utils can be used wherever the command.ExecRunner interface is expected.
 	// It can also be used for example as a mavenExecRunner.
