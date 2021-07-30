@@ -25,7 +25,7 @@ func (errReadCloser) Close() error {
 	return nil
 }
 
-func customDefaultsOpenFileMock(name string) (io.ReadCloser, error) {
+func customDefaultsOpenFileMock(name string, tokens map[string]string) (io.ReadCloser, error) {
 	return ioutil.NopCloser(strings.NewReader("general:\n  p0: p0_custom_default\nstages:\n  stage1:\n    p1: p1_custom_default")), nil
 }
 
@@ -750,5 +750,54 @@ func TestStepConfig_mixInHookConfig(t *testing.T) {
 				t.Errorf("mixInHookConfig() = %v, want %v", s.HookConfig, tt.want)
 			}
 		})
+	}
+}
+
+func TestMixInStepDefaults(t *testing.T) {
+	tt := []struct {
+		name       string
+		stepConfig *StepConfig
+		stepParams []StepParameters
+		expected   map[string]interface{}
+	}{
+		{name: "empty", stepConfig: &StepConfig{}, stepParams: []StepParameters{}, expected: map[string]interface{}{}},
+		{name: "no condition", stepConfig: &StepConfig{}, stepParams: []StepParameters{{Name: "noCondition", Default: "noCondition_default"}}, expected: map[string]interface{}{"noCondition": "noCondition_default"}},
+		{
+			name:       "with multiple conditions",
+			stepConfig: &StepConfig{},
+			stepParams: []StepParameters{
+				{Name: "dependentParam1", Default: "dependentParam1_value"},
+				{Name: "dependentParam2", Default: "dependentParam2_value"},
+				{
+					Name:    "withConditionParameter",
+					Default: "withCondition_default_a",
+					Conditions: []Condition{
+						{ConditionRef: "strings-equal", Params: []Param{{Name: "dependentParam1", Value: "dependentParam1_value1"}}},
+						{ConditionRef: "strings-equal", Params: []Param{{Name: "dependentParam2", Value: "dependentParam2_value1"}}},
+					},
+				},
+				{
+					Name:    "withConditionParameter",
+					Default: "withCondition_default_b",
+					Conditions: []Condition{
+						{ConditionRef: "strings-equal", Params: []Param{{Name: "dependentParam1", Value: "dependentParam1_value2"}}},
+						{ConditionRef: "strings-equal", Params: []Param{{Name: "dependentParam2", Value: "dependentParam2_value2"}}},
+					},
+				},
+			},
+			expected: map[string]interface{}{
+				"dependentParam1":        "dependentParam1_value",
+				"dependentParam2":        "dependentParam2_value",
+				"dependentParam1_value1": map[string]interface{}{"withConditionParameter": "withCondition_default_a"},
+				"dependentParam2_value1": map[string]interface{}{"withConditionParameter": "withCondition_default_a"},
+				"dependentParam1_value2": map[string]interface{}{"withConditionParameter": "withCondition_default_b"},
+				"dependentParam2_value2": map[string]interface{}{"withConditionParameter": "withCondition_default_b"},
+			},
+		},
+	}
+
+	for _, test := range tt {
+		test.stepConfig.mixInStepDefaults(test.stepParams)
+		assert.Equal(t, test.expected, test.stepConfig.Config, test.name)
 	}
 }

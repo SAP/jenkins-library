@@ -21,7 +21,7 @@ type configCommandOptions struct {
 	stepMetadata   string //metadata to be considered, can be filePath or ENV containing JSON in format 'ENV:MY_ENV_VAR'
 	stepName       string
 	contextConfig  bool
-	openFile       func(s string) (io.ReadCloser, error)
+	openFile       func(s string, t map[string]string) (io.ReadCloser, error)
 }
 
 var configOptions configCommandOptions
@@ -38,6 +38,7 @@ func ConfigCommand() *cobra.Command {
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 			initStageName(false)
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 		},
 		Run: func(cmd *cobra.Command, _ []string) {
 			err := generateConfig()
@@ -57,15 +58,9 @@ func generateConfig() error {
 	var myConfig config.Config
 	var stepConfig config.StepConfig
 
-	var metadata config.StepData
-	metadataFile, err := configOptions.openFile(configOptions.stepMetadata)
+	metadata, err := resolveMetadata()
 	if err != nil {
-		return errors.Wrap(err, "metadata: open failed")
-	}
-
-	err = metadata.ReadPipelineStepData(metadataFile)
-	if err != nil {
-		return errors.Wrap(err, "metadata: read failed")
+		return errors.Wrapf(err, "failed to resolve metadata")
 	}
 
 	// prepare output resource directories:
@@ -78,7 +73,7 @@ func generateConfig() error {
 
 	projectConfigFile := getProjectConfigFile(GeneralConfig.CustomConfig)
 
-	customConfig, err := configOptions.openFile(projectConfigFile)
+	customConfig, err := configOptions.openFile(projectConfigFile, GeneralConfig.GitHubAccessTokens)
 	if err != nil {
 		if !os.IsNotExist(err) {
 			return errors.Wrapf(err, "config: open configuration file '%v' failed", projectConfigFile)
@@ -92,7 +87,7 @@ func generateConfig() error {
 	}
 
 	for _, f := range GeneralConfig.DefaultConfig {
-		fc, err := configOptions.openFile(f)
+		fc, err := configOptions.openFile(f, GeneralConfig.GitHubAccessTokens)
 		// only create error for non-default values
 		if err != nil && f != ".pipeline/defaults.yaml" {
 			return errors.Wrapf(err, "config: getting defaults failed: '%v'", f)
@@ -133,9 +128,8 @@ func addConfigFlags(cmd *cobra.Command) {
 
 	cmd.Flags().StringVar(&configOptions.parametersJSON, "parametersJSON", os.Getenv("PIPER_parametersJSON"), "Parameters to be considered in JSON format")
 	cmd.Flags().StringVar(&configOptions.stepMetadata, "stepMetadata", "", "Step metadata, passed as path to yaml")
+	cmd.Flags().StringVar(&configOptions.stepName, "stepName", "", "Step name, used to get step metadata if yaml path is not set")
 	cmd.Flags().BoolVar(&configOptions.contextConfig, "contextConfig", false, "Defines if step context configuration should be loaded instead of step config")
-
-	_ = cmd.MarkFlagRequired("stepMetadata")
 
 }
 
@@ -195,4 +189,31 @@ func prepareOutputEnvironment(outputResources []config.StepResources, envRootPat
 			os.MkdirAll(dir, 0777)
 		}
 	}
+}
+
+func resolveMetadata() (config.StepData, error) {
+	var metadata config.StepData
+	if configOptions.stepMetadata != "" {
+		metadataFile, err := configOptions.openFile(configOptions.stepMetadata, GeneralConfig.GitHubAccessTokens)
+		if err != nil {
+			return metadata, errors.Wrap(err, "open failed")
+		}
+
+		err = metadata.ReadPipelineStepData(metadataFile)
+		if err != nil {
+			return metadata, errors.Wrap(err, "read failed")
+		}
+	} else {
+		if configOptions.stepName != "" {
+			metadataMap := GetAllStepMetadata()
+			var ok bool
+			metadata, ok = metadataMap[configOptions.stepName]
+			if !ok {
+				return metadata, errors.Errorf("could not retrieve by stepName %v", configOptions.stepName)
+			}
+		} else {
+			return metadata, errors.Errorf("either one of stepMetadata or stepName parameter has to be passed")
+		}
+	}
+	return metadata, nil
 }

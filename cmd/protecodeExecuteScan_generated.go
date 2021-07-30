@@ -110,6 +110,8 @@ func ProtecodeExecuteScanCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
@@ -204,6 +206,10 @@ func protecodeExecuteScanMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "protecodeCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing username and password to authenticate to the Protecode system.", Type: "jenkins"},
+					{Name: "dockerConfigJsonCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)). You can create it like explained in the Docker Success Center in the article about [how to generate a new auth in the config.json file](https://success.docker.com/article/generate-new-auth-in-config-json-file).", Type: "jenkins", Aliases: []config.Alias{{Name: "dockerCredentialsId", Deprecated: true}}},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "excludeCVEs",
@@ -212,6 +218,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "protecodeExcludeCVEs"}},
+						Default:     ``,
 					},
 					{
 						Name:        "failOnSevereVulnerabilities",
@@ -220,6 +227,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "protecodeFailOnSevereVulnerabilities"}},
+						Default:     true,
 					},
 					{
 						Name: "scanImage",
@@ -233,6 +241,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "dockerImage"}},
+						Default:   os.Getenv("PIPER_scanImage"),
 					},
 					{
 						Name: "dockerRegistryUrl",
@@ -246,6 +255,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_dockerRegistryUrl"),
 					},
 					{
 						Name: "dockerConfigJSON",
@@ -265,6 +275,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_dockerConfigJSON"),
 					},
 					{
 						Name:        "cleanupMode",
@@ -273,6 +284,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `binary`,
 					},
 					{
 						Name:        "filePath",
@@ -281,6 +293,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_filePath"),
 					},
 					{
 						Name:        "includeLayers",
@@ -289,6 +302,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name:        "timeoutMinutes",
@@ -297,6 +311,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "protecodeTimeoutMinutes"}},
+						Default:     `60`,
 					},
 					{
 						Name:        "serverUrl",
@@ -305,6 +320,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "protecodeServerUrl"}},
+						Default:     os.Getenv("PIPER_serverUrl"),
 					},
 					{
 						Name:        "reportFileName",
@@ -313,6 +329,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `protecode_report.pdf`,
 					},
 					{
 						Name:        "fetchUrl",
@@ -321,6 +338,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_fetchUrl"),
 					},
 					{
 						Name:        "group",
@@ -329,6 +347,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "protecodeGroup"}},
+						Default:     os.Getenv("PIPER_group"),
 					},
 					{
 						Name:        "verifyOnly",
@@ -337,6 +356,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "reuseExisting"}},
+						Default:     false,
 					},
 					{
 						Name: "username",
@@ -357,6 +377,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{{Name: "user"}},
+						Default:   os.Getenv("PIPER_username"),
 					},
 					{
 						Name: "password",
@@ -377,6 +398,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_password"),
 					},
 					{
 						Name: "version",
@@ -390,6 +412,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "artifactVersion"}},
+						Default:   os.Getenv("PIPER_version"),
 					},
 					{
 						Name:        "pullRequestName",
@@ -398,6 +421,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_pullRequestName"),
 					},
 				},
 			},

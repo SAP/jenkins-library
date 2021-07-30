@@ -55,6 +55,8 @@ Please provide either of the following options:
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
@@ -144,6 +146,9 @@ func cloudFoundryCreateServiceMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "cfCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing user and password to authenticate to the Cloud Foundry API.", Type: "jenkins", Aliases: []config.Alias{{Name: "cloudFoundry/credentialsId", Deprecated: false}}},
+				},
 				Resources: []config.StepResources{
 					{Name: "deployDescriptor", Type: "stash"},
 				},
@@ -155,6 +160,7 @@ func cloudFoundryCreateServiceMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/apiEndpoint"}},
+						Default:     `https://api.cf.eu10.hana.ondemand.com`,
 					},
 					{
 						Name: "username",
@@ -175,6 +181,7 @@ func cloudFoundryCreateServiceMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_username"),
 					},
 					{
 						Name: "password",
@@ -195,6 +202,7 @@ func cloudFoundryCreateServiceMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_password"),
 					},
 					{
 						Name:        "cfOrg",
@@ -203,6 +211,7 @@ func cloudFoundryCreateServiceMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/org"}},
+						Default:     os.Getenv("PIPER_cfOrg"),
 					},
 					{
 						Name:        "cfSpace",
@@ -211,6 +220,7 @@ func cloudFoundryCreateServiceMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/space"}},
+						Default:     os.Getenv("PIPER_cfSpace"),
 					},
 					{
 						Name:        "cfService",
@@ -219,6 +229,7 @@ func cloudFoundryCreateServiceMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/service"}},
+						Default:     os.Getenv("PIPER_cfService"),
 					},
 					{
 						Name:        "cfServicePlan",
@@ -227,6 +238,7 @@ func cloudFoundryCreateServiceMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/servicePlan"}},
+						Default:     os.Getenv("PIPER_cfServicePlan"),
 					},
 					{
 						Name:        "cfServiceInstanceName",
@@ -235,6 +247,7 @@ func cloudFoundryCreateServiceMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceInstanceName"}},
+						Default:     os.Getenv("PIPER_cfServiceInstanceName"),
 					},
 					{
 						Name:        "cfServiceBroker",
@@ -243,6 +256,7 @@ func cloudFoundryCreateServiceMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceBroker"}},
+						Default:     os.Getenv("PIPER_cfServiceBroker"),
 					},
 					{
 						Name:        "cfCreateServiceConfig",
@@ -251,6 +265,7 @@ func cloudFoundryCreateServiceMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/createServiceConfig"}},
+						Default:     os.Getenv("PIPER_cfCreateServiceConfig"),
 					},
 					{
 						Name:        "cfServiceTags",
@@ -259,6 +274,7 @@ func cloudFoundryCreateServiceMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceTags"}},
+						Default:     os.Getenv("PIPER_cfServiceTags"),
 					},
 					{
 						Name:        "serviceManifest",
@@ -267,6 +283,7 @@ func cloudFoundryCreateServiceMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceManifest"}, {Name: "cfServiceManifest"}},
+						Default:     `service-manifest.yml`,
 					},
 					{
 						Name:        "manifestVariables",
@@ -275,6 +292,7 @@ func cloudFoundryCreateServiceMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/manifestVariables"}, {Name: "cfManifestVariables"}},
+						Default:     []string{},
 					},
 					{
 						Name:        "manifestVariablesFiles",
@@ -283,6 +301,7 @@ func cloudFoundryCreateServiceMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/manifestVariablesFiles"}, {Name: "cfManifestVariablesFiles"}},
+						Default:     []string{},
 					},
 				},
 			},

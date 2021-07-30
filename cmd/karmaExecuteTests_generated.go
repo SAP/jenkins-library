@@ -48,6 +48,8 @@ In the Docker network, the containers can be referenced by the values provided i
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
@@ -122,6 +124,9 @@ func karmaExecuteTestsMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "seleniumHubCredentialsId", Description: "Defines the id of the user/password credentials to be used to connect to a Selenium Hub. The credentials are provided in the environment variables `PIPER_SELENIUM_HUB_USER` and `PIPER_SELENIUM_HUB_PASSWORD`.", Type: "jenkins"},
+				},
 				Resources: []config.StepResources{
 					{Name: "buildDescriptor", Type: "stash"},
 					{Name: "tests", Type: "stash"},
@@ -134,6 +139,7 @@ func karmaExecuteTestsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     `npm install --quiet`,
 					},
 					{
 						Name:        "modules",
@@ -142,6 +148,7 @@ func karmaExecuteTestsMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     []string{`.`},
 					},
 					{
 						Name:        "runCommand",
@@ -150,6 +157,7 @@ func karmaExecuteTestsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     `npm run karma`,
 					},
 				},
 			},

@@ -48,6 +48,8 @@ It can for example be used for GitOps scenarios or for scenarios where you want 
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
@@ -137,6 +139,9 @@ func githubCreatePullRequestMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "githubTokenCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "assignees",
@@ -145,6 +150,7 @@ func githubCreatePullRequestMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 					{
 						Name:        "base",
@@ -153,6 +159,7 @@ func githubCreatePullRequestMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_base"),
 					},
 					{
 						Name:        "body",
@@ -161,6 +168,7 @@ func githubCreatePullRequestMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_body"),
 					},
 					{
 						Name:        "apiUrl",
@@ -169,6 +177,7 @@ func githubCreatePullRequestMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "githubApiUrl"}},
+						Default:     `https://api.github.com`,
 					},
 					{
 						Name:        "head",
@@ -177,6 +186,7 @@ func githubCreatePullRequestMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_head"),
 					},
 					{
 						Name: "owner",
@@ -190,6 +200,7 @@ func githubCreatePullRequestMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{{Name: "githubOrg"}},
+						Default:   os.Getenv("PIPER_owner"),
 					},
 					{
 						Name: "repository",
@@ -203,6 +214,7 @@ func githubCreatePullRequestMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{{Name: "githubRepo"}},
+						Default:   os.Getenv("PIPER_repository"),
 					},
 					{
 						Name:        "serverUrl",
@@ -211,6 +223,7 @@ func githubCreatePullRequestMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "githubServerUrl"}},
+						Default:     `https://github.com`,
 					},
 					{
 						Name:        "title",
@@ -219,6 +232,7 @@ func githubCreatePullRequestMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_title"),
 					},
 					{
 						Name: "token",
@@ -238,6 +252,7 @@ func githubCreatePullRequestMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{{Name: "githubToken"}, {Name: "access_token"}},
+						Default:   os.Getenv("PIPER_token"),
 					},
 					{
 						Name:        "labels",
@@ -246,6 +261,7 @@ func githubCreatePullRequestMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 				},
 			},

@@ -2,9 +2,6 @@
 
 !!! caution "Current limitations"
 
-      - [2102 only] TABU entries are currently not reflected in the object list during add-on build. With ABAP Environment release 2105 this will be supported.
-      - [2102 only] Using the short commit id in the add-on descriptor file does not work currently. Retrieve the long commit id instead by navigating to the branch in the Manage Software Components app, and selecting the commit in the list of commits.
-        This issue will be resolved with ABAP Environment release 2105.
       - gCTS-related restrictions apply, please refer to [gCTS: restrictions in supported object types](https://launchpad.support.sap.com/#/notes/2888887)
 
 ## Introduction
@@ -15,13 +12,17 @@ The development on SAP BTP, ABAP environment systems is done within [“software
 
 Of course, this tackles only the upstream part of the SaaS solution lifecycle. Once the add-on is published, it can be consumed as a [multitenant application in ABAP environment](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/195031ff8f484b51af16fe392ec2ae6e.html).
 
+A comprehensive guidance on how to develop and operate SaaS applications using add-ons, can be found [here](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/e3c38ebaefc44523b679e7a0c375bc86.html).
+
 ## The Add-on Product
 
 The installation and maintenance of ABAP software is done / controlled via add-on product versions. An **add-on product version** is a „bundle" of software component versions made available at the same time for implementing a well-defined scope of functionality. It is the technical / delivery view on a software portfolio.
 
 ### Add-on Product Version
 
-An add-on product version is defined by a name and a version string. The name of an add-on product is a string with a maximum of 30 characters and consists of the [namespace](https://launchpad.support.sap.com/#/notes/84282) and a freely chooseble part - `/NAMESPC/PRODUCTX`. The version string consists of three numbers separated by a dot - `1.2.0`. The numbers in the version string have a hierarchic relationship:
+An add-on product version is defined by a name and a version string. The name of an add-on product is a string with a maximum of 30 characters and consists of the [namespace](https://launchpad.support.sap.com/#/notes/84282) and a freely chooseble part - `/NAMESPC/PRODUCTX`. The add-on product name should only include uppercase characters.
+
+The version string consists of three numbers separated by a dot - `1.2.0`. The numbers in the version string have a hierarchic relationship:
 
 - The first number denotes the release. Release deliveries contain the complete scope of functionality. It is possible to change the software component version bundle in a new release.
 - The second number denotes the Support Package Stack level. A Support Package stack consists of Support Package deliveries of the contained software component versions. It is not possible to change the software component version bundle in such a delivery.
@@ -54,6 +55,10 @@ As explained above, the shipment of a software takes place via add-on product ve
   - Software component release
   - Delivery Package, which delivers the versions
 
+In stage *Build* a target vector for the particular add-on product version is published in test scope. This makes it possible to perform a add-on test installation in stage *Integration Tests*. At this point the new add-on product version is not available for add-on updates and can only be installed during system provisioning by providing the `addon_product_version` parameter explicitly.
+
+In stage *Publish* the target vector is then published in production scope, so that the new version will become available for addon update and installation during system provisioning without providing a particular `addon_product_version`.
+
 ## Building the Add-on Product
 
 The build process of an add-on product is orchestrated by a Jenkins Pipeline, the “ABAP environment pipeline” provided in this project. To run this pipeline, it only needs to be configured – which will be explained in the sections “Prerequisites” and “Configuration”.
@@ -75,7 +80,7 @@ The assembly system should be of [service type abap](https://help.sap.com/viewer
 
 #### Add-on Assembly Kit as a Service (=AAKaaS)
 
-The Add-on Assembly Kit as a Service is responsible for registering and publishing the add-on product. It is accessible via APIs with a technical communication user.
+The Add-on Assembly Kit as a Service is responsible for registering and publishing the add-on product. On a high level it is a service offered in the SAP Service & Support systems (thus access is granted via Technical Communication User) that, similar to the Software Delivery Assembler (SDA, transaction SSDA), packs the delivery into an importable package format.
 
 ### Deployment Tools
 
@@ -83,7 +88,7 @@ With these SAP tools the assembled add-on deliveries are deployed to ABAP system
 
 #### Installation Test System
 
-In order to verify that the delivery packages included in the add-on product version being built are installable, a target vector is published in "test" scope. In the *Integration Tests* stage an ABAP system of service plan `saas_oem` is created. This ABAP system makes it possible to install a specific add-on product version into an ABAP system that is provisioned. The installation test system should be be provisioned with parameter `is_development_allowed = false` to prevent local changes.
+In order to verify that the delivery packages included in the add-on product version being built are installable, a target vector is published in "test" scope. In the *Integration Tests* stage an ABAP system of [service plan `saas_oem`](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/1697387c02e74e66a55cf21a05678167.html) is created. This  makes it possible to install a specific add-on product version into an ABAP system that is provisioned. The installation test system should be be provisioned with the parameter `is_development_allowed = false` to prevent local changes.
 
 ### Prerequisites
 
@@ -99,7 +104,7 @@ The pipeline configuration is done in a git repository (for example on GitHub). 
 
 #### Add-on Assembly Kit as a Service (=AAKaaS)
 
-The communication with the AAKaaS needs a technical communication user. The creation and activation of such a user is described in [SAP note 2174416](https://launchpad.support.sap.com/#/notes/2174416). Make sure that this technical communication user is assigned to the customer number under which the “SAP CP ABAP ENVIRONMENT” tenants are licensed and for which the development namespace was reserved. The user and password need to be stored in the Jenkins Credentials Store.
+The communication with the AAKaaS needs a technical communication user. The creation and activation of such a user is described in [SAP note 2174416](https://launchpad.support.sap.com/#/notes/2174416). Make sure that this technical communication user is assigned to the customer number under which the SAP BTP, ABAP Environment instances are licensed and for which the development namespace was reserved. The user and password need to be stored in the Jenkins Credentials Store.
 
 #### Cloud Foundry Access
 
@@ -112,7 +117,14 @@ Later, during the pipeline configuration, you will specify the Service Plan, whi
 
 #### Register Add-on Product for a Global Account
 
-The add-on product needs to be registered with SAP in order to be installable in the desired global account. More details will follow soon.
+The registration of a new add-on product is a manual step. Your add-on product should only be installed in ABAP systems within your global production account. Therefore, the add-on product name and global production account need to be registered with SAP. This process is described in [Build](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/3bf575a3dc5043f895f8bd411d2a86a1.html#loio25049720bde447e395b3df0bc05e5a50) in section *Register add-on product/global production account*.
+
+- As an add-on admin, create an incident using component BC-CP-ABA, and provide the following information:
+Add-on product name = `addonProduct` in `addon.yml` file, e.g. /NAMESPACE/NAME
+
+- Global production account ID = *Account ID* in section *Global Account Info* on the overview page of your global account, e.g. `151b5fdc-58c1-4a55-95e1-467df2134c5f` (Feature Set A) or *Global Account Info* on the *Usage Analytics* page of your global account (Feature Set B).
+
+This step can be triggered by you or by SAP partner management (governance process to be negotiated). As a response to the service request, SAP creates a configuration for the requested add-on product so that the add-on product can be installed in the global account.
 
 #### Project "Piper" Library Version to SAP BTP, ABAP Environment Dependency
 
@@ -156,10 +168,17 @@ repositories:
     branch: v1.2.0
     version: 1.2.0
     commitID: 7d4516e9
+    languages:
+      - DE
+      - EN
   - name: /NAMESPC/COMPONENTB
     branch: v2.0.0
     version: 2.0.0
     commitID: 9f102ffb
+    languages:
+      - DE
+      - EN
+      - FR
 ```
 
 Explanation of the keys:
@@ -172,6 +191,8 @@ The section “repositories” contains one or multiple software component versi
 - `name`: the technical name of the software component
 - `branch`: this is the release branch from the git repository
 - `version`: this is the technical software component version `<software component version>.<support package level>.<patch level>`
+- `commitID`: this is the commitID from the git repository
+- `languages`: specify the languages to be delivered according to ISO-639. For all deliveries of an Add-on Product Version, the languages should not change. If languages should be added, a new Add-on Product Version must be created.
 
 ##### Versioning Rules
 

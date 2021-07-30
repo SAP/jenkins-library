@@ -44,6 +44,8 @@ func VaultRotateSecretIdCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
@@ -134,6 +136,7 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `jenkins`,
 					},
 					{
 						Name: "jenkinsUrl",
@@ -148,6 +151,7 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "url"}},
+						Default:   os.Getenv("PIPER_jenkinsUrl"),
 					},
 					{
 						Name:        "jenkinsCredentialDomain",
@@ -156,6 +160,7 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `_`,
 					},
 					{
 						Name: "jenkinsUsername",
@@ -170,6 +175,7 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "userId"}},
+						Default:   os.Getenv("PIPER_jenkinsUsername"),
 					},
 					{
 						Name: "jenkinsToken",
@@ -184,6 +190,7 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "token"}},
+						Default:   os.Getenv("PIPER_jenkinsToken"),
 					},
 					{
 						Name:        "vaultAppRoleSecretTokenCredentialsId",
@@ -192,6 +199,7 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_vaultAppRoleSecretTokenCredentialsId"),
 					},
 					{
 						Name:        "vaultServerUrl",
@@ -200,6 +208,7 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_vaultServerUrl"),
 					},
 					{
 						Name:        "vaultNamespace",
@@ -208,6 +217,7 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_vaultNamespace"),
 					},
 					{
 						Name:        "daysBeforeExpiry",
@@ -216,6 +226,7 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     15,
 					},
 				},
 			},

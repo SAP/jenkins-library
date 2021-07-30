@@ -11,6 +11,7 @@ import (
 	"syscall"
 
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/pkg/errors"
 )
 
@@ -250,12 +251,12 @@ func (c *Command) startCmd(cmd *exec.Cmd) (*execution, error) {
 	}
 
 	go func() {
-		_, execution.errCopyStdout = io.Copy(c.stdout, srcOut)
+		_, execution.errCopyStdout = piperutils.CopyData(c.stdout, srcOut)
 		execution.wg.Done()
 	}()
 
 	go func() {
-		_, execution.errCopyStderr = io.Copy(c.stderr, srcErr)
+		_, execution.errCopyStderr = piperutils.CopyData(c.stderr, srcErr)
 		execution.wg.Done()
 	}()
 

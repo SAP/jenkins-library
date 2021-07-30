@@ -39,6 +39,8 @@ This step can, e.g., be used if there is a json schema which needs to be patched
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
@@ -121,6 +123,7 @@ func jsonApplyPatchMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_input"),
 					},
 					{
 						Name:        "patch",
@@ -129,6 +132,7 @@ func jsonApplyPatchMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_patch"),
 					},
 					{
 						Name:        "output",
@@ -137,6 +141,7 @@ func jsonApplyPatchMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_output"),
 					},
 				},
 			},

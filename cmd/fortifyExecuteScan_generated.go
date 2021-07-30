@@ -19,6 +19,7 @@ import (
 type fortifyExecuteScanOptions struct {
 	AdditionalScanParameters        []string `json:"additionalScanParameters,omitempty"`
 	AuthToken                       string   `json:"authToken,omitempty"`
+	BuildDescriptorExcludeList      []string `json:"buildDescriptorExcludeList,omitempty"`
 	CustomScanVersion               string   `json:"customScanVersion,omitempty"`
 	GithubToken                     string   `json:"githubToken,omitempty"`
 	AutoCreate                      bool     `json:"autoCreate,omitempty"`
@@ -153,11 +154,21 @@ func FortifyExecuteScanCommand() *cobra.Command {
 		Long: `This step executes a Fortify scan on the specified project to perform static code analysis and check the source code for security flaws.
 
 The Fortify step triggers a scan locally on your Jenkins within a docker container so finally you have to supply a docker image with a Fortify SCA
-and Java plus Maven or alternatively Python installed into it for being able to perform any scans.`,
+and Java plus Maven or alternatively Python installed into it for being able to perform any scans.
+!!! hint "Scanning MTA projects"
+    Build type ` + "`" + `maven` + "`" + ` requires a so called aggregator pom which includes all modules to be scanned. If used in a mta-project which includes non-java submodules as maven dependency (e.g. node via frontend-maven-plugin), exclude those by specifying java path explicitly, e.g. ` + "`" + `java/**/src/main/java/**/*` + "`" + `.
+
+Besides triggering a scan the step verifies the results after they have been uploaded and processed by the Fortify SSC. By default the following KPIs are enforced:
+* All issues must be audited from the Corporate Security Requirements folder.
+* All issues must be audited from the Audit All folder.
+* At least one issue per category must be audited from the Spot Checks of Each Category folder.
+* Nothing needs to be audited from the Optional folder.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
+
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
@@ -219,6 +230,7 @@ and Java plus Maven or alternatively Python installed into it for being able to 
 func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteScanOptions) {
 	cmd.Flags().StringSliceVar(&stepConfig.AdditionalScanParameters, "additionalScanParameters", []string{}, "List of additional scan parameters to be used for Fortify sourceanalyzer command execution.")
 	cmd.Flags().StringVar(&stepConfig.AuthToken, "authToken", os.Getenv("PIPER_authToken"), "The FortifyToken to use for authentication")
+	cmd.Flags().StringSliceVar(&stepConfig.BuildDescriptorExcludeList, "buildDescriptorExcludeList", []string{`unit-tests/pom.xml`, `integration-tests/pom.xml`}, "List of build descriptors and therefore modules to exclude from the scan and assessment activities.")
 	cmd.Flags().StringVar(&stepConfig.CustomScanVersion, "customScanVersion", os.Getenv("PIPER_customScanVersion"), "Custom version of the Fortify project used as source.")
 	cmd.Flags().StringVar(&stepConfig.GithubToken, "githubToken", os.Getenv("PIPER_githubToken"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line")
 	cmd.Flags().BoolVar(&stepConfig.AutoCreate, "autoCreate", false, "Whether Fortify project and project version shall be implicitly auto created in case they cannot be found in the backend")
@@ -243,8 +255,8 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().IntVar(&stepConfig.PollingMinutes, "pollingMinutes", 30, "The number of minutes for which an uploaded FPR artifact''s status is being polled to finish queuing/processing, if exceeded polling will be stopped and an error will be thrown")
 	cmd.Flags().BoolVar(&stepConfig.QuickScan, "quickScan", false, "Whether a quick scan should be performed, please consult the related Fortify documentation on JAM on the impact of this setting")
 	cmd.Flags().StringVar(&stepConfig.Translate, "translate", os.Getenv("PIPER_translate"), "Options for translate phase of Fortify. Most likely, you do not need to set this parameter. See src, exclude. If `'src'` and `'exclude'` are set they are automatically used. Technical details: It has to be a JSON string of list of maps with required key `'src'`, and optional keys `'exclude'`, `'libDirs'`, `'aspnetcore'`, and `'dotNetCoreVersion'`")
-	cmd.Flags().StringSliceVar(&stepConfig.Src, "src", []string{}, "A list of source directories to scan. Wildcards can be used, e.g., `'src/main/java/**/*'`. If `'translate'` is set, this will ignored. The default value for `buildTool: 'maven'` is `['**/*.xml', '**/*.html', '**/*.jsp', '**/*.js', '**/src/main/resources/**/*', '**/src/main/java/**/*']`, for `buildTool: 'pip'` it is `['./**/*']`.")
-	cmd.Flags().StringSliceVar(&stepConfig.Exclude, "exclude", []string{}, "A list of directories/files to be excluded from the scan. Wildcards can be used, e.g., `'**/Test.java'`. If `translate` is set, this will ignored.")
+	cmd.Flags().StringSliceVar(&stepConfig.Src, "src", []string{}, "A list of source directories to scan. Wildcards can be used, e.g., `'src/main/java/**/*'`. If `'translate'` is set, this will ignored. The default value for `buildTool: 'maven'` is `['**/*.xml', '**/*.html', '**/*.jsp', '**/*.js', '**/src/main/resources/**/*', '**/src/main/java/**/*', '**/target/main/java/**/*', '**/target/main/resources/**/*', '**/target/generated-sources/**/*']`, for `buildTool: 'pip'` it is `['./**/*']`.")
+	cmd.Flags().StringSliceVar(&stepConfig.Exclude, "exclude", []string{}, "A list of directories/files to be excluded from the scan. Wildcards can be used, e.g., `'**/Test.java'`. If `translate` is set, this will ignored. The default value for `buildTool: 'maven'` is `['**/src/test/**/*']`, for `buildTool: 'pip'` it is `['./**/tests/**/*', './**/setup.py']`.")
 	cmd.Flags().StringVar(&stepConfig.APIEndpoint, "apiEndpoint", `/api/v1`, "Fortify SSC endpoint used for uploading the scan results and checking the audit state")
 	cmd.Flags().StringVar(&stepConfig.ReportType, "reportType", `PDF`, "The type of report to be generated")
 	cmd.Flags().StringSliceVar(&stepConfig.PythonAdditionalPath, "pythonAdditionalPath", []string{`./lib`, `.`}, "A list of additional paths which can be used in `buildTool: 'pip'` for customization purposes")
@@ -285,6 +297,10 @@ func fortifyExecuteScanMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "fortifyCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing token to authenticate to Fortify SSC.", Type: "jenkins"},
+					{Name: "githubTokenCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.", Type: "jenkins"},
+				},
 				Resources: []config.StepResources{
 					{Name: "commonPipelineEnvironment"},
 					{Name: "buildDescriptor", Type: "stash"},
@@ -300,6 +316,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 					{
 						Name: "authToken",
@@ -319,6 +336,16 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_authToken"),
+					},
+					{
+						Name:        "buildDescriptorExcludeList",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{`unit-tests/pom.xml`, `integration-tests/pom.xml`},
 					},
 					{
 						Name:        "customScanVersion",
@@ -327,6 +354,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_customScanVersion"),
 					},
 					{
 						Name: "githubToken",
@@ -346,6 +374,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "access_token"}},
+						Default:   os.Getenv("PIPER_githubToken"),
 					},
 					{
 						Name:        "autoCreate",
@@ -354,6 +383,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name:        "modulePath",
@@ -362,6 +392,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `./`,
 					},
 					{
 						Name:        "pythonRequirementsFile",
@@ -370,6 +401,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_pythonRequirementsFile"),
 					},
 					{
 						Name:        "autodetectClasspath",
@@ -378,6 +410,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
 						Name:        "mustAuditIssueGroups",
@@ -386,6 +419,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `Corporate Security Requirements, Audit All`,
 					},
 					{
 						Name:        "spotAuditIssueGroups",
@@ -394,6 +428,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `Spot Checks of Each Category`,
 					},
 					{
 						Name:        "pythonRequirementsInstallSuffix",
@@ -402,6 +437,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_pythonRequirementsInstallSuffix"),
 					},
 					{
 						Name:        "pythonVersion",
@@ -410,6 +446,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `python3`,
 					},
 					{
 						Name:        "uploadResults",
@@ -418,6 +455,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
 						Name: "version",
@@ -431,6 +469,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "fortifyProjectVersion"}},
+						Default:   os.Getenv("PIPER_version"),
 					},
 					{
 						Name:        "buildDescriptorFile",
@@ -439,6 +478,8 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `./pom.xml`,
+						Conditions:  []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "maven"}}}},
 					},
 					{
 						Name:        "buildDescriptorFile",
@@ -447,6 +488,8 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `./setup.py`,
+						Conditions:  []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "buildTool", Value: "pip"}}}},
 					},
 					{
 						Name: "commitId",
@@ -460,6 +503,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_commitId"),
 					},
 					{
 						Name: "commitMessage",
@@ -473,6 +517,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_commitMessage"),
 					},
 					{
 						Name:        "githubApiUrl",
@@ -481,6 +526,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `https://api.github.com`,
 					},
 					{
 						Name: "owner",
@@ -494,6 +540,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "githubOrg"}},
+						Default:   os.Getenv("PIPER_owner"),
 					},
 					{
 						Name: "repository",
@@ -507,6 +554,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{{Name: "githubRepo"}},
+						Default:   os.Getenv("PIPER_repository"),
 					},
 					{
 						Name:        "memory",
@@ -515,6 +563,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `-Xmx4G -Xms512M`,
 					},
 					{
 						Name:        "updateRulePack",
@@ -523,6 +572,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
 						Name:        "reportDownloadEndpoint",
@@ -531,6 +581,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "fortifyReportDownloadEndpoint"}},
+						Default:     `/transfer/reportDownload.html`,
 					},
 					{
 						Name:        "pollingMinutes",
@@ -539,6 +590,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     30,
 					},
 					{
 						Name:        "quickScan",
@@ -547,6 +599,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name:        "translate",
@@ -555,6 +608,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_translate"),
 					},
 					{
 						Name:        "src",
@@ -563,6 +617,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 					{
 						Name:        "exclude",
@@ -571,6 +626,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 					{
 						Name:        "apiEndpoint",
@@ -579,6 +635,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "fortifyApiEndpoint"}},
+						Default:     `/api/v1`,
 					},
 					{
 						Name:        "reportType",
@@ -587,6 +644,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `PDF`,
 					},
 					{
 						Name:        "pythonAdditionalPath",
@@ -595,6 +653,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     []string{`./lib`, `.`},
 					},
 					{
 						Name:        "artifactUrl",
@@ -603,6 +662,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_artifactUrl"),
 					},
 					{
 						Name:        "considerSuspicious",
@@ -611,6 +671,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
 						Name:        "fprUploadEndpoint",
@@ -619,6 +680,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "fortifyFprUploadEndpoint"}},
+						Default:     `/upload/resultFileUpload.html`,
 					},
 					{
 						Name:        "projectName",
@@ -627,6 +689,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "fortifyProjectName"}},
+						Default:     `{{list .GroupID .ArtifactID | join "-" | trimAll "-"}}`,
 					},
 					{
 						Name:        "reporting",
@@ -635,6 +698,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name:        "serverUrl",
@@ -643,6 +707,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "fortifyServerUrl"}, {Name: "sscUrl"}},
+						Default:     os.Getenv("PIPER_serverUrl"),
 					},
 					{
 						Name:        "pullRequestMessageRegexGroup",
@@ -651,6 +716,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     1,
 					},
 					{
 						Name:        "deltaMinutes",
@@ -659,6 +725,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     5,
 					},
 					{
 						Name:        "spotCheckMinimum",
@@ -667,6 +734,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     1,
 					},
 					{
 						Name:        "fprDownloadEndpoint",
@@ -675,6 +743,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "fortifyFprDownloadEndpoint"}},
+						Default:     `/download/currentStateFprDownload.html`,
 					},
 					{
 						Name:        "versioningModel",
@@ -683,6 +752,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "defaultVersioningModel"}},
+						Default:     `major`,
 					},
 					{
 						Name:        "pythonInstallCommand",
@@ -691,6 +761,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `{{.Pip}} install --user .`,
 					},
 					{
 						Name:        "reportTemplateId",
@@ -699,6 +770,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     18,
 					},
 					{
 						Name:        "filterSetTitle",
@@ -707,6 +779,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `SAP`,
 					},
 					{
 						Name:        "pullRequestName",
@@ -715,6 +788,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_pullRequestName"),
 					},
 					{
 						Name:        "pullRequestMessageRegex",
@@ -723,6 +797,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `.*Merge pull request #(\\d+) from.*`,
 					},
 					{
 						Name:        "buildTool",
@@ -731,6 +806,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `maven`,
 					},
 					{
 						Name:        "projectSettingsFile",
@@ -739,6 +815,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile"}},
+						Default:     os.Getenv("PIPER_projectSettingsFile"),
 					},
 					{
 						Name:        "globalSettingsFile",
@@ -747,6 +824,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile"}},
+						Default:     os.Getenv("PIPER_globalSettingsFile"),
 					},
 					{
 						Name:        "m2Path",
@@ -755,6 +833,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
+						Default:     os.Getenv("PIPER_m2Path"),
 					},
 					{
 						Name:        "verifyOnly",
@@ -763,6 +842,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name:        "installArtifacts",
@@ -771,6 +851,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 				},
 			},

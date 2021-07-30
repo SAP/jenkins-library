@@ -51,6 +51,8 @@ Please provide either of the following options:
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
@@ -134,6 +136,9 @@ func abapEnvironmentCloneGitRepoMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "abapCredentialsId", Description: "Jenkins credentials ID containing user and password to authenticate to the Cloud Platform ABAP Environment system or the Cloud Foundry API", Type: "jenkins", Aliases: []config.Alias{{Name: "cfCredentialsId", Deprecated: false}, {Name: "credentialsId", Deprecated: false}}},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name: "username",
@@ -148,6 +153,7 @@ func abapEnvironmentCloneGitRepoMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_username"),
 					},
 					{
 						Name: "password",
@@ -162,6 +168,7 @@ func abapEnvironmentCloneGitRepoMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_password"),
 					},
 					{
 						Name:        "repositories",
@@ -170,6 +177,7 @@ func abapEnvironmentCloneGitRepoMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_repositories"),
 					},
 					{
 						Name:        "repositoryName",
@@ -178,6 +186,7 @@ func abapEnvironmentCloneGitRepoMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_repositoryName"),
 					},
 					{
 						Name:        "branchName",
@@ -186,6 +195,7 @@ func abapEnvironmentCloneGitRepoMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_branchName"),
 					},
 					{
 						Name:        "host",
@@ -194,6 +204,7 @@ func abapEnvironmentCloneGitRepoMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_host"),
 					},
 					{
 						Name:        "cfApiEndpoint",
@@ -202,6 +213,7 @@ func abapEnvironmentCloneGitRepoMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/apiEndpoint"}},
+						Default:     os.Getenv("PIPER_cfApiEndpoint"),
 					},
 					{
 						Name:        "cfOrg",
@@ -210,6 +222,7 @@ func abapEnvironmentCloneGitRepoMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/org"}},
+						Default:     os.Getenv("PIPER_cfOrg"),
 					},
 					{
 						Name:        "cfSpace",
@@ -218,6 +231,7 @@ func abapEnvironmentCloneGitRepoMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/space"}},
+						Default:     os.Getenv("PIPER_cfSpace"),
 					},
 					{
 						Name:        "cfServiceInstance",
@@ -226,6 +240,7 @@ func abapEnvironmentCloneGitRepoMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceInstance"}},
+						Default:     os.Getenv("PIPER_cfServiceInstance"),
 					},
 					{
 						Name:        "cfServiceKeyName",
@@ -234,6 +249,7 @@ func abapEnvironmentCloneGitRepoMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceKey"}, {Name: "cloudFoundry/serviceKeyName"}, {Name: "cfServiceKey"}},
+						Default:     os.Getenv("PIPER_cfServiceKeyName"),
 					},
 				},
 			},

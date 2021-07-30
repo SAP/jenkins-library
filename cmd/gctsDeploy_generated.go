@@ -50,6 +50,8 @@ repository and then deploys it into the ABAP system.`,
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
@@ -139,6 +141,9 @@ func gctsDeployMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "abapCredentialsId", Description: "Jenkins credentials ID containing username and password for authentication to the ABAP system on which you want to deploy a commit", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name: "username",
@@ -153,6 +158,7 @@ func gctsDeployMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_username"),
 					},
 					{
 						Name: "password",
@@ -167,6 +173,7 @@ func gctsDeployMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_password"),
 					},
 					{
 						Name:        "repository",
@@ -175,6 +182,7 @@ func gctsDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_repository"),
 					},
 					{
 						Name:        "host",
@@ -183,6 +191,7 @@ func gctsDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_host"),
 					},
 					{
 						Name:        "client",
@@ -191,6 +200,7 @@ func gctsDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_client"),
 					},
 					{
 						Name:        "commit",
@@ -199,6 +209,7 @@ func gctsDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_commit"),
 					},
 					{
 						Name:        "remoteRepositoryURL",
@@ -207,6 +218,7 @@ func gctsDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_remoteRepositoryURL"),
 					},
 					{
 						Name:        "role",
@@ -215,6 +227,7 @@ func gctsDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_role"),
 					},
 					{
 						Name:        "vSID",
@@ -223,6 +236,7 @@ func gctsDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_vSID"),
 					},
 					{
 						Name:        "type",
@@ -231,6 +245,7 @@ func gctsDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `GIT`,
 					},
 					{
 						Name:        "branch",
@@ -239,6 +254,7 @@ func gctsDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_branch"),
 					},
 					{
 						Name:        "scope",
@@ -247,6 +263,7 @@ func gctsDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_scope"),
 					},
 					{
 						Name:        "rollback",
@@ -255,6 +272,7 @@ func gctsDeployMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name:        "configuration",

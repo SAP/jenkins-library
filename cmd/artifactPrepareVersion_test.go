@@ -25,6 +25,8 @@ type artifactVersioningMock struct {
 	setVersionError  string
 	initCalled       bool
 	versioningScheme string
+	coordinates      versioning.Coordinates
+	coordinatesError error
 }
 
 func (a *artifactVersioningMock) VersioningScheme() string {
@@ -47,7 +49,10 @@ func (a *artifactVersioningMock) SetVersion(version string) error {
 }
 
 func (a *artifactVersioningMock) GetCoordinates() (versioning.Coordinates, error) {
-	return versioning.Coordinates{}, fmt.Errorf("not implemented")
+	if a.coordinatesError != nil {
+		return versioning.Coordinates{}, a.coordinatesError
+	}
+	return a.coordinates, nil
 }
 
 type gitRepositoryMock struct {
@@ -303,6 +308,36 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 		assert.Equal(t, repo.revisionHash.String(), cpe.git.commitID)
 	})
 
+	t.Run("success case - coordinates", func(t *testing.T) {
+		config := artifactPrepareVersionOptions{
+			BuildTool:        "maven",
+			VersioningType:   "library",
+			FetchCoordinates: true,
+		}
+
+		cpe := artifactPrepareVersionCommonPipelineEnvironment{}
+
+		versioningMock := artifactVersioningMock{
+			originalVersion:  "1.2.3",
+			versioningScheme: "maven",
+			coordinates:      versioning.Coordinates{GroupID: "my.testGroup", ArtifactID: "testArtifact", Packaging: "testPackaging"},
+		}
+
+		worktree := gitWorktreeMock{
+			commitHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{2, 3, 4}),
+		}
+		repo := gitRepositoryMock{
+			revisionHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3}),
+		}
+
+		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, &cpe, &versioningMock, nil, &repo, func(r gitRepository) (gitWorktree, error) { return &worktree, nil })
+
+		assert.NoError(t, err)
+		assert.Equal(t, "testArtifact", cpe.artifactID)
+		assert.Equal(t, "my.testGroup", cpe.groupID)
+		assert.Equal(t, "testPackaging", cpe.packaging)
+	})
+
 	t.Run("error - failed to retrieve version", func(t *testing.T) {
 		config := artifactPrepareVersionOptions{}
 
@@ -411,6 +446,33 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 
 		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, &artifactPrepareVersionCommonPipelineEnvironment{}, &versioningMock, nil, &repo, func(r gitRepository) (gitWorktree, error) { return &worktree, nil })
 		assert.Contains(t, fmt.Sprint(err), "failed to push changes for version '1.2.3")
+	})
+
+	t.Run("error - failed to get coordinates", func(t *testing.T) {
+		config := artifactPrepareVersionOptions{
+			BuildTool:        "maven",
+			VersioningType:   "library",
+			FetchCoordinates: true,
+		}
+
+		cpe := artifactPrepareVersionCommonPipelineEnvironment{}
+
+		versioningMock := artifactVersioningMock{
+			originalVersion:  "1.2.3",
+			versioningScheme: "maven",
+			coordinatesError: fmt.Errorf("coordinatesError"),
+		}
+
+		worktree := gitWorktreeMock{
+			commitHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{2, 3, 4}),
+		}
+		repo := gitRepositoryMock{
+			revisionHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3}),
+		}
+
+		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, &cpe, &versioningMock, nil, &repo, func(r gitRepository) (gitWorktree, error) { return &worktree, nil })
+
+		assert.EqualError(t, err, "failed to get coordinates: coordinatesError")
 	})
 }
 

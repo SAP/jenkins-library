@@ -17,6 +17,7 @@ import (
 type mavenExecuteIntegrationOptions struct {
 	Retry                       int    `json:"retry,omitempty"`
 	ForkCount                   string `json:"forkCount,omitempty"`
+	Goal                        string `json:"goal,omitempty"`
 	InstallArtifacts            bool   `json:"installArtifacts,omitempty"`
 	ProjectSettingsFile         string `json:"projectSettingsFile,omitempty"`
 	GlobalSettingsFile          string `json:"globalSettingsFile,omitempty"`
@@ -42,6 +43,8 @@ the integration tests via the Jacoco Maven-plugin.`,
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
+
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
@@ -100,6 +103,7 @@ the integration tests via the Jacoco Maven-plugin.`,
 func addMavenExecuteIntegrationFlags(cmd *cobra.Command, stepConfig *mavenExecuteIntegrationOptions) {
 	cmd.Flags().IntVar(&stepConfig.Retry, "retry", 1, "The number of times that integration tests will be retried before failing the step. Note: This will consume more time for the step execution.")
 	cmd.Flags().StringVar(&stepConfig.ForkCount, "forkCount", `1C`, "The number of JVM processes that are spawned to run the tests in parallel in case of using a maven based project structure. For more details visit the Surefire documentation at https://maven.apache.org/surefire/maven-surefire-plugin/test-mojo.html#forkCount.")
+	cmd.Flags().StringVar(&stepConfig.Goal, "goal", `test`, "The name of the Maven goal to execute.")
 	cmd.Flags().BoolVar(&stepConfig.InstallArtifacts, "installArtifacts", true, "If enabled, it will install all artifacts to the local maven repository to make them available before running the tests. This is required if the integration test module has dependencies to other modules in the repository and they were not installed before.")
 	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Path to the mvn settings file that should be used as project settings file.")
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Path to the mvn settings file that should be used as global settings file.")
@@ -126,6 +130,7 @@ func mavenExecuteIntegrationMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     1,
 					},
 					{
 						Name:        "forkCount",
@@ -134,6 +139,16 @@ func mavenExecuteIntegrationMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `1C`,
+					},
+					{
+						Name:        "goal",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `test`,
 					},
 					{
 						Name:        "installArtifacts",
@@ -142,6 +157,7 @@ func mavenExecuteIntegrationMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
 						Name:        "projectSettingsFile",
@@ -150,6 +166,7 @@ func mavenExecuteIntegrationMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile"}},
+						Default:     os.Getenv("PIPER_projectSettingsFile"),
 					},
 					{
 						Name:        "globalSettingsFile",
@@ -158,6 +175,7 @@ func mavenExecuteIntegrationMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile"}},
+						Default:     os.Getenv("PIPER_globalSettingsFile"),
 					},
 					{
 						Name:        "m2Path",
@@ -166,6 +184,7 @@ func mavenExecuteIntegrationMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
+						Default:     os.Getenv("PIPER_m2Path"),
 					},
 					{
 						Name:        "logSuccessfulMavenTransfers",
@@ -174,6 +193,7 @@ func mavenExecuteIntegrationMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/logSuccessfulMavenTransfers"}},
+						Default:     false,
 					},
 				},
 			},

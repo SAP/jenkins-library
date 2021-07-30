@@ -35,11 +35,15 @@ func AbapAddonAssemblyKitPublishTargetVectorCommand() *cobra.Command {
 		Use:   STEP_NAME,
 		Short: "This step triggers the publication of the Target Vector according to the specified scope.",
 		Long: `This step reads the Target Vector ID from the addonDescriptor in the commonPipelineEnvironment and triggers the publication of the Target Vector.
-With targetVectorScope "T" the Target Vector will be published to the test environment and with targetVectorScope "P" it will be published to the productive environment.`,
+With targetVectorScope "T" the Target Vector will be published to the test environment and with targetVectorScope "P" it will be published to the productive environment.
+<br />
+For Terminology refer to the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
+
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
@@ -120,6 +124,9 @@ func abapAddonAssemblyKitPublishTargetVectorMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "abapAddonAssemblyKitCredentialsId", Description: "Credential stored in Jenkins for the Addon Assembly Kit as a Service (AAKaaS) system", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "abapAddonAssemblyKitEndpoint",
@@ -128,6 +135,7 @@ func abapAddonAssemblyKitPublishTargetVectorMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     `https://apps.support.sap.com`,
 					},
 					{
 						Name:        "username",
@@ -136,6 +144,7 @@ func abapAddonAssemblyKitPublishTargetVectorMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_username"),
 					},
 					{
 						Name:        "password",
@@ -144,6 +153,7 @@ func abapAddonAssemblyKitPublishTargetVectorMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_password"),
 					},
 					{
 						Name:        "targetVectorScope",
@@ -152,6 +162,7 @@ func abapAddonAssemblyKitPublishTargetVectorMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_targetVectorScope"),
 					},
 					{
 						Name: "addonDescriptor",
@@ -165,6 +176,7 @@ func abapAddonAssemblyKitPublishTargetVectorMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_addonDescriptor"),
 					},
 				},
 			},

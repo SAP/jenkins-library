@@ -38,6 +38,8 @@ either use ESLint configurations present in the project or use the provided gene
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
@@ -116,6 +118,7 @@ func npmExecuteLintMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name:        "defaultNpmRegistry",
@@ -124,11 +127,12 @@ func npmExecuteLintMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "npm/defaultNpmRegistry"}},
+						Default:     os.Getenv("PIPER_defaultNpmRegistry"),
 					},
 				},
 			},
 			Containers: []config.Container{
-				{Name: "node", Image: "node:12-buster"},
+				{Name: "node", Image: "node:lts-stretch"},
 			},
 		},
 	}
