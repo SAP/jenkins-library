@@ -24,6 +24,7 @@ type integrationArtifactGetMplStatusOptions struct {
 type integrationArtifactGetMplStatusCommonPipelineEnvironment struct {
 	custom struct {
 		iFlowMplStatus string
+		iFlowMplError  string
 	}
 }
 
@@ -34,6 +35,7 @@ func (p *integrationArtifactGetMplStatusCommonPipelineEnvironment) persist(path,
 		value    interface{}
 	}{
 		{category: "custom", name: "iFlowMplStatus", value: p.custom.iFlowMplStatus},
+		{category: "custom", name: "iFlowMplError", value: p.custom.iFlowMplError},
 	}
 
 	errCount := 0
@@ -181,6 +183,7 @@ func integrationArtifactGetMplStatusMetadata() config.StepData {
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
 							{"Name": "custom/iFlowMplStatus"},
+							{"Name": "custom/iFlowMplError"},
 						},
 					},
 				},

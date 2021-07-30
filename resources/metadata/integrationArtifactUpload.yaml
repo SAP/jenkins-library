@@ -46,7 +46,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        mandatory: true
+        mandatory: false
       - name: filePath
         type: string
         description: Specifies integration artifact relative file path.
