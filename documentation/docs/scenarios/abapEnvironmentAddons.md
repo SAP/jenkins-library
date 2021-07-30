@@ -221,7 +221,8 @@ Make sure to check the general option "Do not allow concurrent builds" in order 
 
 ### Example
 
-Please have a look at the configuration example in this [GitHub repository](https://github.com/SAP-samples/abap-platform-ci-cd-samples/tree/addon-build).
+Please have a look at the configuration example to [build and publish add-on products using a transient assembly system](https://github.com/SAP-samples/abap-platform-ci-cd-samples/tree/addon-build).
+As an alternative you can refer to the [example using a permanent assembly system](https://github.com/SAP-samples/abap-platform-ci-cd-samples/tree/addon-build-static).
 
 ## Troubleshooting
 
