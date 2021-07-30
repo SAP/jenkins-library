@@ -37,3 +37,4 @@ spec:
         type: piperEnvironment
         params:
           - name: custom/iFlowMplStatus
+          - name: custom/iFlowMplError
