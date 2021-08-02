@@ -11,6 +11,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
+	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
@@ -102,6 +103,7 @@ func CloudFoundryDeployCommand() *cobra.Command {
 	var stepConfig cloudFoundryDeployOptions
 	var startTime time.Time
 	var influx cloudFoundryDeployInflux
+	var logCollector *log.CollectorHook
 
 	var createCloudFoundryDeployCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -111,6 +113,8 @@ func CloudFoundryDeployCommand() *cobra.Command {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
+
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
@@ -131,6 +135,11 @@ func CloudFoundryDeployCommand() *cobra.Command {
 				log.RegisterHook(&sentryHook)
 			}
 
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
+				log.RegisterHook(logCollector)
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -142,10 +151,20 @@ func CloudFoundryDeployCommand() *cobra.Command {
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
+				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunk.Send(&telemetryData, logCollector)
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunk.Initialize(GeneralConfig.CorrelationID,
+					GeneralConfig.HookConfig.SplunkConfig.Dsn,
+					GeneralConfig.HookConfig.SplunkConfig.Token,
+					GeneralConfig.HookConfig.SplunkConfig.Index,
+					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+			}
 			cloudFoundryDeploy(stepConfig, &telemetryData, &influx)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -202,6 +221,10 @@ func cloudFoundryDeployMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "cfCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing user and password to authenticate to the Cloud Foundry API.", Type: "jenkins", Aliases: []config.Alias{{Name: "cloudFoundry/credentialsId", Deprecated: false}}},
+					{Name: "dockerCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing user and password to authenticate to the Docker registry.", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "apiEndpoint",
@@ -210,6 +233,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "cfApiEndpoint"}, {Name: "cloudFoundry/apiEndpoint"}},
+						Default:     `https://api.cf.eu10.hana.ondemand.com`,
 					},
 					{
 						Name:        "appName",
@@ -218,6 +242,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cfAppName"}, {Name: "cloudFoundry/appName"}},
+						Default:     os.Getenv("PIPER_appName"),
 					},
 					{
 						Name: "artifactVersion",
@@ -231,6 +256,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_artifactVersion"),
 					},
 					{
 						Name:        "cfHome",
@@ -239,6 +265,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_cfHome"),
 					},
 					{
 						Name:        "cfNativeDeployParameters",
@@ -247,6 +274,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_cfNativeDeployParameters"),
 					},
 					{
 						Name:        "cfPluginHome",
@@ -255,6 +283,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_cfPluginHome"),
 					},
 					{
 						Name:        "deployDockerImage",
@@ -263,6 +292,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_deployDockerImage"),
 					},
 					{
 						Name:        "deployTool",
@@ -271,6 +301,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_deployTool"),
 					},
 					{
 						Name: "buildTool",
@@ -284,6 +315,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_buildTool"),
 					},
 					{
 						Name:        "deployType",
@@ -292,6 +324,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `standard`,
 					},
 					{
 						Name: "dockerPassword",
@@ -306,6 +339,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_dockerPassword"),
 					},
 					{
 						Name: "dockerUsername",
@@ -320,6 +354,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_dockerUsername"),
 					},
 					{
 						Name:        "keepOldInstance",
@@ -328,6 +363,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name:        "loginParameters",
@@ -336,6 +372,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_loginParameters"),
 					},
 					{
 						Name:        "manifest",
@@ -344,6 +381,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cfManifest"}, {Name: "cloudFoundry/manifest"}},
+						Default:     os.Getenv("PIPER_manifest"),
 					},
 					{
 						Name:        "manifestVariables",
@@ -352,6 +390,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cfManifestVariables"}, {Name: "cloudFoundry/manifestVariables"}},
+						Default:     []string{},
 					},
 					{
 						Name:        "manifestVariablesFiles",
@@ -360,6 +399,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cfManifestVariablesFiles"}, {Name: "cloudFoundry/manifestVariablesFiles"}},
+						Default:     []string{`manifest-variables.yml`},
 					},
 					{
 						Name:        "mtaDeployParameters",
@@ -368,6 +408,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `-f`,
 					},
 					{
 						Name:        "mtaExtensionDescriptor",
@@ -376,6 +417,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/mtaExtensionDescriptor"}},
+						Default:     os.Getenv("PIPER_mtaExtensionDescriptor"),
 					},
 					{
 						Name:        "mtaExtensionCredentials",
@@ -397,6 +439,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_mtaPath"),
 					},
 					{
 						Name:        "org",
@@ -405,6 +448,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "cfOrg"}, {Name: "cloudFoundry/org"}},
+						Default:     os.Getenv("PIPER_org"),
 					},
 					{
 						Name: "password",
@@ -425,6 +469,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_password"),
 					},
 					{
 						Name:        "smokeTestScript",
@@ -433,6 +478,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `blueGreenCheckScript.sh`,
 					},
 					{
 						Name:        "smokeTestStatusCode",
@@ -441,6 +487,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     200,
 					},
 					{
 						Name:        "space",
@@ -449,6 +496,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "cfSpace"}, {Name: "cloudFoundry/space"}},
+						Default:     os.Getenv("PIPER_space"),
 					},
 					{
 						Name: "username",
@@ -469,6 +517,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_username"),
 					},
 				},
 			},

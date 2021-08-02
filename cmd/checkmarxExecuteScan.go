@@ -21,6 +21,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/toolrecord"
 	"github.com/bmatcuk/doublestar"
 	"github.com/pkg/errors"
 )
@@ -291,6 +292,20 @@ func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx
 		return errors.Wrap(err, "failed to get detailed results")
 	}
 	reports = append(reports, piperutils.Path{Target: xmlReportName})
+
+	// create toolrecord
+	toolRecordFileName, err := createToolRecordCx(utils.GetWorkspace(), config, results)
+	if err != nil {
+		// do not fail until the framework is well established
+		log.Entry().Warning("TR_CHECKMARX: Failed to create toolrecord file ...", err)
+	} else {
+		reports = append(reports, piperutils.Path{Target: toolRecordFileName})
+	}
+
+	scanReport := checkmarx.CreateCustomReport(results)
+	paths, err := checkmarx.WriteCustomReports(scanReport, fmt.Sprint(results["ProjectName"]), fmt.Sprint(results["ProjectID"]))
+	reports = append(reports, paths...)
+
 	links := []piperutils.Path{{Target: results["DeepLink"].(string), Name: "Checkmarx Web UI"}}
 	piperutils.PersistReportsAndLinks("checkmarxExecuteScan", utils.GetWorkspace(), reports, links)
 
@@ -757,4 +772,31 @@ func isFileNotMatchingPattern(patterns []string, path string, info os.FileInfo, 
 		}
 	}
 	return true, nil
+}
+
+func createToolRecordCx(workspace string, config checkmarxExecuteScanOptions, results map[string]interface{}) (string, error) {
+	record := toolrecord.New(workspace, "checkmarx", config.ServerURL)
+	// Todo TeamId - see run_scan()
+	// record.AddKeyData("team", XXX, resultMap["Team"], "")
+	// Project
+	err := record.AddKeyData("project",
+		results["ProjectId"].(string),
+		results["ProjectName"].(string),
+		"")
+	if err != nil {
+		return "", err
+	}
+	// Scan
+	err = record.AddKeyData("scanid",
+		results["ScanId"].(string),
+		results["ScanId"].(string),
+		results["DeepLink"].(string))
+	if err != nil {
+		return "", err
+	}
+	err = record.Persist()
+	if err != nil {
+		return "", err
+	}
+	return record.GetFileName(), nil
 }

@@ -50,6 +50,8 @@ class NexusUploadTest extends BasePiperTest {
         )
 
         helper.registerAllowedMethod('fileExists', [String.class], {return true})
+        helper.registerAllowedMethod("writePipelineEnv", [Map.class], {m -> return })
+        helper.registerAllowedMethod("readPipelineEnv", [Map.class], {m -> return })
         helper.registerAllowedMethod('findFiles', [Map.class], {return null})
     }
 

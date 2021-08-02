@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/http"
+	"net/url"
 	"os"
 	"reflect"
 	"strings"
 
-	"github.com/SAP/jenkins-library/pkg/http"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 
 	"github.com/ghodss/yaml"
@@ -23,17 +25,18 @@ type Config struct {
 	General          map[string]interface{}            `json:"general"`
 	Stages           map[string]map[string]interface{} `json:"stages"`
 	Steps            map[string]map[string]interface{} `json:"steps"`
-	Hooks            *json.RawMessage                  `json:"hooks,omitempty"`
+	Hooks            map[string]interface{}            `json:"hooks,omitempty"`
 	defaults         PipelineDefaults
 	initialized      bool
-	openFile         func(s string) (io.ReadCloser, error)
+	accessTokens     map[string]string
+	openFile         func(s string, t map[string]string) (io.ReadCloser, error)
 	vaultCredentials VaultCredentials
 }
 
 // StepConfig defines the structure for merged step configuration
 type StepConfig struct {
 	Config     map[string]interface{}
-	HookConfig *json.RawMessage
+	HookConfig map[string]interface{}
 }
 
 // ReadConfig loads config and returns its content
@@ -147,7 +150,7 @@ func (c *Config) InitializeConfig(configuration io.ReadCloser, defaults []io.Rea
 			c.openFile = OpenPiperFile
 		}
 		for _, f := range c.CustomDefaults {
-			fc, err := c.openFile(f)
+			fc, err := c.openFile(f, c.accessTokens)
 			if err != nil {
 				return errors.Wrapf(err, "getting default '%v' failed", f)
 			}
@@ -189,11 +192,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		stepConfig.mixIn(def.Steps[stepName], filters.Steps)
 		stepConfig.mixIn(def.Stages[stageName], filters.Steps)
 		stepConfig.mixinVaultConfig(def.General, def.Steps[stepName], def.Stages[stageName])
-
-		// process hook configuration - this is only supported via defaults
-		if stepConfig.HookConfig == nil {
-			stepConfig.HookConfig = def.Hooks
-		}
+		stepConfig.mixInHookConfig(def.Hooks)
 	}
 
 	// read config & merge - general -> steps -> stages
@@ -252,14 +251,19 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	// finally do the condition evaluation post processing
 	for _, p := range parameters {
 		if len(p.Conditions) > 0 {
-			cp := p.Conditions[0].Params[0]
-			dependentValue := stepConfig.Config[cp.Name]
-			if cmp.Equal(dependentValue, cp.Value) && stepConfig.Config[p.Name] == nil {
-				subMap, ok := stepConfig.Config[dependentValue.(string)].(map[string]interface{})
-				if ok && subMap[p.Name] != nil {
-					stepConfig.Config[p.Name] = subMap[p.Name]
-				} else {
-					stepConfig.Config[p.Name] = p.Default
+			for _, cond := range p.Conditions {
+				for _, param := range cond.Params {
+					// retrieve configuration value of condition parameter
+					dependentValue := stepConfig.Config[param.Name]
+					// check if configuration of condition parameter matches the value
+					// so far string-equals condition is assumed here
+					// if so and if no config applied yet, then try to apply the value
+					if cmp.Equal(dependentValue, param.Value) && stepConfig.Config[p.Name] == nil {
+						subMap, ok := stepConfig.Config[dependentValue.(string)].(map[string]interface{})
+						if ok && subMap[p.Name] != nil {
+							stepConfig.Config[p.Name] = subMap[p.Name]
+						}
+					}
 				}
 			}
 		}
@@ -310,14 +314,31 @@ func GetJSON(data interface{}) (string, error) {
 }
 
 // OpenPiperFile provides functionality to retrieve configuration via file or http
-func OpenPiperFile(name string) (io.ReadCloser, error) {
+func OpenPiperFile(name string, accessTokens map[string]string) (io.ReadCloser, error) {
 	if !strings.HasPrefix(name, "http://") && !strings.HasPrefix(name, "https://") {
 		return os.Open(name)
 	}
 
-	// support http(s) urls next to file path - url cannot be protected
-	client := http.Client{}
-	response, err := client.SendRequest("GET", name, nil, nil, nil)
+	return httpReadFile(name, accessTokens)
+}
+
+func httpReadFile(name string, accessTokens map[string]string) (io.ReadCloser, error) {
+
+	u, err := url.Parse(name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read url: %w", err)
+	}
+
+	// support http(s) urls next to file path
+	client := piperhttp.Client{}
+
+	var header http.Header
+	if len(accessTokens[u.Host]) > 0 {
+		client.SetOptions(piperhttp.ClientOptions{Token: fmt.Sprintf("token %v", accessTokens[u.Host])})
+		header = map[string][]string{"Accept": {"application/vnd.github.v3.raw"}}
+	}
+
+	response, err := client.SendRequest("GET", name, nil, header, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -343,14 +364,34 @@ func (s *StepConfig) mixIn(mergeData map[string]interface{}, filter []string) {
 	s.Config = merge(s.Config, filterMap(mergeData, filter))
 }
 
+func (s *StepConfig) mixInHookConfig(mergeData map[string]interface{}) {
+
+	if s.HookConfig == nil {
+		s.HookConfig = map[string]interface{}{}
+	}
+
+	s.HookConfig = merge(s.HookConfig, mergeData)
+}
+
 func (s *StepConfig) mixInStepDefaults(stepParams []StepParameters) {
 	if s.Config == nil {
 		s.Config = map[string]interface{}{}
 	}
 
+	// conditional defaults need to be written to a sub map
+	// in order to prevent a "last one wins" situation
+	// this is then considered at the end of GetStepConfig once the complete configuration is known
 	for _, p := range stepParams {
 		if p.Default != nil {
-			s.Config[p.Name] = p.Default
+			if len(p.Conditions) == 0 {
+				s.Config[p.Name] = p.Default
+			} else {
+				for _, cond := range p.Conditions {
+					for _, param := range cond.Params {
+						s.Config[param.Value] = map[string]interface{}{p.Name: p.Default}
+					}
+				}
+			}
 		}
 	}
 }

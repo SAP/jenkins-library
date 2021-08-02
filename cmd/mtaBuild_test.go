@@ -65,7 +65,7 @@ func TestMarBuild(t *testing.T) {
 	t.Run("Provide default npm registry", func(t *testing.T) {
 
 		utilsMock := newMtaBuildTestUtilsBundle()
-		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF", DefaultNpmRegistry: "https://example.org/npm", MtarName: "myName"}
+		options := mtaBuildOptions{ApplicationName: "myApp", Platform: "CF", DefaultNpmRegistry: "https://example.org/npm", MtarName: "myName", Source: "./", Target: "./"}
 
 		utilsMock.AddFile("package.json", []byte("{\"name\": \"myName\", \"version\": \"1.2.3\"}"))
 
@@ -94,7 +94,7 @@ func TestMarBuild(t *testing.T) {
 
 		utilsMock := newMtaBuildTestUtilsBundle()
 
-		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF", MtarName: "myName"}
+		options := mtaBuildOptions{ApplicationName: "myApp", Platform: "CF", MtarName: "myName", Source: "./", Target: "./"}
 
 		utilsMock.AddFile("package.json", []byte("{\"name\": \"myName\", \"version\": \"1.2.3\"}"))
 
@@ -131,7 +131,7 @@ func TestMarBuild(t *testing.T) {
 
 		utilsMock := newMtaBuildTestUtilsBundle()
 
-		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF"}
+		options := mtaBuildOptions{ApplicationName: "myApp"}
 
 		utilsMock.AddFile("package.json", []byte("{\"name\": \"myName\", \"version\": \"1.2.3\"}"))
 		utilsMock.AddFile("mta.yaml", []byte("already there"))
@@ -145,7 +145,7 @@ func TestMarBuild(t *testing.T) {
 
 		utilsMock := newMtaBuildTestUtilsBundle()
 
-		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF"}
+		options := mtaBuildOptions{ApplicationName: "myApp"}
 
 		utilsMock.AddFile("package.json", []byte("{\"name\": \"myName\", \"version\": \"1.2.3\"}"))
 		utilsMock.AddFile("mta.yaml", []byte("already there with-${timestamp}"))
@@ -155,74 +155,13 @@ func TestMarBuild(t *testing.T) {
 		assert.True(t, utilsMock.HasWrittenFile("mta.yaml"))
 	})
 
-	t.Run("Test mta build classic toolset", func(t *testing.T) {
-
-		utilsMock := newMtaBuildTestUtilsBundle()
-
-		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF", MtarName: "myName.mtar"}
-
-		cpe.mtarFilePath = ""
-
-		utilsMock.AddFile("package.json", []byte("{\"name\": \"myName\", \"version\": \"1.2.3\"}"))
-
-		err := runMtaBuild(options, &cpe, utilsMock)
-
-		assert.Nil(t, err)
-
-		if assert.Len(t, utilsMock.Calls, 1) {
-			assert.Equal(t, "java", utilsMock.Calls[0].Exec)
-			assert.Equal(t, []string{"-jar", "mta.jar", "--mtar", "myName.mtar", "--build-target=CF", "build"}, utilsMock.Calls[0].Params)
-		}
-
-		assert.Equal(t, "myName.mtar", cpe.mtarFilePath)
-	})
-
-	t.Run("Test mta build classic toolset, mtarName from already existing mta.yaml", func(t *testing.T) {
-
-		utilsMock := newMtaBuildTestUtilsBundle()
-
-		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF"}
-
-		cpe.mtarFilePath = ""
-
-		utilsMock.AddFile("package.json", []byte("{\"name\": \"myName\", \"version\": \"1.2.3\"}"))
-		utilsMock.AddFile("mta.yaml", []byte("ID: \"myNameFromMtar\""))
-
-		err := runMtaBuild(options, &cpe, utilsMock)
-
-		assert.Nil(t, err)
-
-		if assert.Len(t, utilsMock.Calls, 1) {
-			assert.Equal(t, "java", utilsMock.Calls[0].Exec)
-			assert.Equal(t, []string{"-jar", "mta.jar", "--mtar", "myNameFromMtar.mtar", "--build-target=CF", "build"}, utilsMock.Calls[0].Params)
-		}
-	})
-
-	t.Run("Test mta build classic toolset with configured mta jar", func(t *testing.T) {
-
-		utilsMock := newMtaBuildTestUtilsBundle()
-
-		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "classic", BuildTarget: "CF", MtaJarLocation: "/opt/sap/mta/lib/mta.jar", MtarName: "myName.mtar"}
-
-		utilsMock.AddFile("package.json", []byte("{\"name\": \"myName\", \"version\": \"1.2.3\"}"))
-
-		err := runMtaBuild(options, &cpe, utilsMock)
-
-		assert.Nil(t, err)
-
-		if assert.Len(t, utilsMock.Calls, 1) {
-			assert.Equal(t, "java", utilsMock.Calls[0].Exec)
-			assert.Equal(t, []string{"-jar", "/opt/sap/mta/lib/mta.jar", "--mtar", "myName.mtar", "--build-target=CF", "build"}, utilsMock.Calls[0].Params)
-		}
-	})
-
 	t.Run("Mta build mbt toolset", func(t *testing.T) {
 
 		utilsMock := newMtaBuildTestUtilsBundle()
 
 		cpe.mtarFilePath = ""
 
-		options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "cloudMbt", Platform: "CF", MtarName: "myName.mtar"}
+		options := mtaBuildOptions{ApplicationName: "myApp", Platform: "CF", MtarName: "myName.mtar", Source: "./", Target: "./"}
 
 		utilsMock.AddFile("package.json", []byte("{\"name\": \"myName\", \"version\": \"1.2.3\"}"))
 
@@ -232,9 +171,32 @@ func TestMarBuild(t *testing.T) {
 
 		if assert.Len(t, utilsMock.Calls, 1) {
 			assert.Equal(t, "mbt", utilsMock.Calls[0].Exec)
-			assert.Equal(t, []string{"build", "--mtar", "myName.mtar", "--platform", "CF", "--target", "./"}, utilsMock.Calls[0].Params)
+			assert.Equal(t, []string{"build", "--mtar", "myName.mtar", "--platform", "CF", "--source", "./", "--target", "./"}, utilsMock.Calls[0].Params)
 		}
 		assert.Equal(t, "myName.mtar", cpe.mtarFilePath)
+	})
+
+	t.Run("Source and target related tests", func(t *testing.T) {
+		t.Run("Mta build mbt toolset with custom source and target paths", func(t *testing.T) {
+
+			utilsMock := newMtaBuildTestUtilsBundle()
+
+			cpe.mtarFilePath = ""
+
+			options := mtaBuildOptions{ApplicationName: "myApp", Platform: "CF", MtarName: "myName.mtar", Source: "mySourcePath/", Target: "myTargetPath/"}
+
+			utilsMock.AddFile("package.json", []byte("{\"name\": \"myName\", \"version\": \"1.2.3\"}"))
+
+			err := runMtaBuild(options, &cpe, utilsMock)
+
+			assert.Nil(t, err)
+
+			if assert.Len(t, utilsMock.Calls, 1) {
+				assert.Equal(t, "mbt", utilsMock.Calls[0].Exec)
+				assert.Equal(t, []string{"build", "--mtar", "myName.mtar", "--platform", "CF", "--source", "mySourcePath/", "--target", "myTargetPath/"}, utilsMock.Calls[0].Params)
+			}
+			assert.Equal(t, "myName.mtar", cpe.mtarFilePath)
+		})
 	})
 
 	t.Run("M2Path related tests", func(t *testing.T) {
@@ -244,7 +206,7 @@ func TestMarBuild(t *testing.T) {
 			utilsMock.CurrentDir = "root_folder/workspace"
 			cpe.mtarFilePath = ""
 
-			options := mtaBuildOptions{ApplicationName: "myApp", MtaBuildTool: "cloudMbt", Platform: "CF", MtarName: "myName.mtar", M2Path: ".pipeline/local_repo"}
+			options := mtaBuildOptions{ApplicationName: "myApp", Platform: "CF", MtarName: "myName.mtar", Source: "./", Target: "./", M2Path: ".pipeline/local_repo"}
 
 			utilsMock.AddFile("mta.yaml", []byte("ID: \"myNameFromMtar\""))
 
@@ -262,7 +224,7 @@ func TestMarBuild(t *testing.T) {
 			utilsMock := newMtaBuildTestUtilsBundle()
 			utilsMock.AddFile("mta.yaml", []byte("ID: \"myNameFromMtar\""))
 
-			options := mtaBuildOptions{ApplicationName: "myApp", GlobalSettingsFile: "/opt/maven/settings.xml", MtaBuildTool: "cloudMbt", Platform: "CF", MtarName: "myName"}
+			options := mtaBuildOptions{ApplicationName: "myApp", GlobalSettingsFile: "/opt/maven/settings.xml", Platform: "CF", MtarName: "myName", Source: "./", Target: "./"}
 
 			err := runMtaBuild(options, &cpe, utilsMock)
 
@@ -277,7 +239,7 @@ func TestMarBuild(t *testing.T) {
 			utilsMock := newMtaBuildTestUtilsBundle()
 			utilsMock.AddFile("mta.yaml", []byte("ID: \"myNameFromMtar\""))
 
-			options := mtaBuildOptions{ApplicationName: "myApp", ProjectSettingsFile: "/my/project/settings.xml", MtaBuildTool: "cloudMbt", Platform: "CF", MtarName: "myName"}
+			options := mtaBuildOptions{ApplicationName: "myApp", ProjectSettingsFile: "/my/project/settings.xml", Platform: "CF", MtarName: "myName", Source: "./", Target: "./"}
 
 			err := runMtaBuild(options, &cpe, utilsMock)
 

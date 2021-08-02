@@ -8,6 +8,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/pkg/errors"
 )
 
 func newTestScan(config *ScanOptions) *Scan {
@@ -67,6 +68,9 @@ func (m *ScanUtilsMock) InstallAllNPMDependencies(_ *ScanOptions, packageJSONs [
 
 // DownloadFile mimics http.Downloader and records the downloaded file.
 func (m *ScanUtilsMock) DownloadFile(url, filename string, _ http.Header, _ []*http.Cookie) error {
+	if url == "errorCopyFile" {
+		return errors.New("unable to copy content from url to file")
+	}
 	if m.DownloadError[url] != nil {
 		return m.DownloadError[url]
 	}

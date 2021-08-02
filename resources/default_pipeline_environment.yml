@@ -514,6 +514,8 @@ steps:
       verbose: false
   transportRequestRelease:
       verbose: false
+  transportRequestUploadRFC:
+    credentialsId: 'RFC_CREDENTIALS_ID'
   writeTemporaryCredentials:
     credentialsDirectories:
       - './'

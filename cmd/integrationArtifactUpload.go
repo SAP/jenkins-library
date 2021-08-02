@@ -64,11 +64,17 @@ func integrationArtifactUpload(config integrationArtifactUploadOptions, telemetr
 }
 
 func runIntegrationArtifactUpload(config *integrationArtifactUploadOptions, telemetryData *telemetry.CustomData, fileUtils piperutils.FileUtils, httpClient piperhttp.Sender) error {
+
+	serviceKey, err := cpi.ReadCpiServiceKey(config.APIServiceKey)
+	if err != nil {
+		return err
+	}
+
 	clientOptions := piperhttp.ClientOptions{}
 	header := make(http.Header)
 	header.Add("Accept", "application/json")
-	iFlowStatusServiceURL := fmt.Sprintf("%s/api/v1/IntegrationDesigntimeArtifacts(Id='%s',Version='%s')", config.Host, config.IntegrationFlowID, config.IntegrationFlowVersion)
-	tokenParameters := cpi.TokenParameters{TokenURL: config.OAuthTokenProviderURL, Username: config.Username, Password: config.Password, Client: httpClient}
+	iFlowStatusServiceURL := fmt.Sprintf("%s/api/v1/IntegrationDesigntimeArtifacts(Id='%s',Version='%s')", serviceKey.OAuth.Host, config.IntegrationFlowID, "Active")
+	tokenParameters := cpi.TokenParameters{TokenURL: serviceKey.OAuth.OAuthTokenProviderURL, Username: serviceKey.OAuth.ClientID, Password: serviceKey.OAuth.ClientSecret, Client: httpClient}
 	token, err := cpi.CommonUtils.GetBearerToken(tokenParameters)
 	if err != nil {
 		return errors.Wrap(err, "failed to fetch Bearer Token")
@@ -84,9 +90,9 @@ func runIntegrationArtifactUpload(config *integrationArtifactUploadOptions, tele
 		defer iFlowStatusResp.Body.Close()
 	}
 	if iFlowStatusResp.StatusCode == 200 {
-		return UpdateIntegrationArtifact(config, httpClient, fileUtils)
+		return UpdateIntegrationArtifact(config, httpClient, fileUtils, serviceKey.OAuth.Host)
 	} else if httpErr != nil && iFlowStatusResp.StatusCode == 404 {
-		return UploadIntegrationArtifact(config, httpClient, fileUtils)
+		return UploadIntegrationArtifact(config, httpClient, fileUtils, serviceKey.OAuth.Host)
 	}
 
 	if iFlowStatusResp == nil {
@@ -105,9 +111,9 @@ func runIntegrationArtifactUpload(config *integrationArtifactUploadOptions, tele
 }
 
 //UploadIntegrationArtifact - Upload new integration artifact
-func UploadIntegrationArtifact(config *integrationArtifactUploadOptions, httpClient piperhttp.Sender, fileUtils piperutils.FileUtils) error {
+func UploadIntegrationArtifact(config *integrationArtifactUploadOptions, httpClient piperhttp.Sender, fileUtils piperutils.FileUtils, apiHost string) error {
 	httpMethod := "POST"
-	uploadIflowStatusURL := fmt.Sprintf("%s/api/v1/IntegrationDesigntimeArtifacts", config.Host)
+	uploadIflowStatusURL := fmt.Sprintf("%s/api/v1/IntegrationDesigntimeArtifacts", apiHost)
 	header := make(http.Header)
 	header.Add("content-type", "application/json")
 	payload, jsonError := GetJSONPayloadAsByteArray(config, "create", fileUtils)
@@ -143,11 +149,11 @@ func UploadIntegrationArtifact(config *integrationArtifactUploadOptions, httpCli
 }
 
 //UpdateIntegrationArtifact - Update existing integration artifact
-func UpdateIntegrationArtifact(config *integrationArtifactUploadOptions, httpClient piperhttp.Sender, fileUtils piperutils.FileUtils) error {
-	httpMethod := "POST"
+func UpdateIntegrationArtifact(config *integrationArtifactUploadOptions, httpClient piperhttp.Sender, fileUtils piperutils.FileUtils, apiHost string) error {
+	httpMethod := "PUT"
 	header := make(http.Header)
 	header.Add("content-type", "application/json")
-	updateIflowStatusURL := fmt.Sprintf("%s/api/v1/IntegrationDesigntimeArtifactSaveAsVersion?Id='%s'&SaveAsVersion='%s'", config.Host, config.IntegrationFlowID, config.IntegrationFlowVersion)
+	updateIflowStatusURL := fmt.Sprintf("%s/api/v1/IntegrationDesigntimeArtifacts(Id='%s',Version='%s')", apiHost, config.IntegrationFlowID, "Active")
 	payload, jsonError := GetJSONPayloadAsByteArray(config, "update", fileUtils)
 	if jsonError != nil {
 		return errors.Wrapf(jsonError, "Failed to get json payload for file %v, failed with error", config.FilePath)
@@ -187,11 +193,12 @@ func GetJSONPayloadAsByteArray(config *integrationArtifactUploadOptions, mode st
 	}
 	jsonObj := gabs.New()
 	if mode == "create" {
-		jsonObj.Set(config.IntegrationFlowID, "Name")
+		jsonObj.Set(config.IntegrationFlowName, "Name")
 		jsonObj.Set(config.IntegrationFlowID, "Id")
 		jsonObj.Set(config.PackageID, "PackageId")
 		jsonObj.Set(b64.StdEncoding.EncodeToString(fileContent), "ArtifactContent")
 	} else if mode == "update" {
+		jsonObj.Set(config.IntegrationFlowName, "Name")
 		jsonObj.Set(b64.StdEncoding.EncodeToString(fileContent), "ArtifactContent")
 	} else {
 		return nil, fmt.Errorf("Unkown node: '%s'", mode)
