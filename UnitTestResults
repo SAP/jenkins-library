@@ -1,5 +1,1 @@
-<checkstyle version="">
- <unitTestFile name="">
-  <unitTestError message="" source="" line="" severity=""></unitTestError>
- </unitTestFile>
-</checkstyle>
+<checkstyle version="1.0"><unitTestFile name="scts_test_badi_2.clas:cl_test_badi_2---ltcl_test_badi_2"><unitTestError message="Different values&#xA;  Expected [Hello Worl] Actual [Hello World]&#xA;Test &#39;LTCL_TEST_BADI_2-&gt;FIRST_TEST_METHOD&#39; in Main Program &#39;CL_TEST_BADI_2================CP&#39;&#xA;Stack: &#xA;Include: &lt;CL_TEST_BADI_2================CCAU&gt; Line: &lt;28&gt; (FIRST_TEST_METHOD)&#xA;" source="second_test_method" line="" severity="error"></unitTestError></unitTestFile></checkstyle>

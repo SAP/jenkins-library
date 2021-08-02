@@ -110,7 +110,6 @@ func executeUnitTest(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.S
 
 	var maxTimeOut int64
 
-	const UnitTestFileName = "UnitTestResults"
 	const defaultMaxTimeOut = 10000
 
 	if config.MaxTimeOut != 0 {
@@ -918,7 +917,7 @@ func getTestResults(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Se
 
 	const UnitTestFileName = "UnitTestResults"
 
-	body, _ := xml.MarshalIndent(UnitTestResults, "", " ")
+	body, _ := xml.Marshal(UnitTestResults)
 
 	err := ioutil.WriteFile(UnitTestFileName, body, 0644)
 
