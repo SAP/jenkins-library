@@ -12,7 +12,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-
 func integrationArtifactUnDeploy(config integrationArtifactUnDeployOptions, telemetryData *telemetry.CustomData) {
 	// Utils can be used wherever the command.ExecRunner interface is expected.
 	// It can also be used for example as a mavenExecRunner.
