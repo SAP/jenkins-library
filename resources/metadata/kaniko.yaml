@@ -129,4 +129,4 @@ spec:
         - name: -u
           value: "0"
         - name: --entrypoint
-          value: "''"
+          value: ''
