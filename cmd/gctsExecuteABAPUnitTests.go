@@ -878,8 +878,8 @@ func getTestResults(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Se
 
 	var response Testsuites
 	var UnitTestResults Checkstyle
-	var File unitTestFile
-	var UnitError unitTestError
+	var File file
+	var UnitError unitError
 
 	url := config.Host +
 		"/sap/bc/adt/api/abapunit/results/" + runId + "?sap-client=" + config.Client
@@ -1714,7 +1714,7 @@ type ATCFiles struct {
 	Files   []File   `xml:"file"`
 }
 
-type unitTestError struct {
+type unitError struct {
 	Text     string `xml:",chardata"`
 	Message  string `xml:"message,attr"`
 	Source   string `xml:"source,attr"`
@@ -1722,15 +1722,15 @@ type unitTestError struct {
 	Severity string `xml:"severity,attr"`
 }
 
-type unitTestFile struct {
-	Text  string          `xml:",chardata"`
-	Name  string          `xml:"name,attr"`
-	Error []unitTestError `xml:"unitTestError"`
+type file struct {
+	Text  string      `xml:",chardata"`
+	Name  string      `xml:"name,attr"`
+	Error []unitError `xml:"error"`
 }
 
 type Checkstyle struct {
-	XMLName xml.Name       `xml:"checkstyle"`
-	Text    string         `xml:",chardata"`
-	Version string         `xml:"version,attr"`
-	File    []unitTestFile `xml:"unitTestFile"`
+	XMLName xml.Name `xml:"checkstyle"`
+	Text    string   `xml:",chardata"`
+	Version string   `xml:"version,attr"`
+	File    []file   `xml:"file"`
 }
