@@ -437,7 +437,7 @@ func OptionsAsStringSlice(options []Option) []string {
 		if len(v.Value) != 0 {
 			e = append(e, fmt.Sprintf("%v %v", v.Name, v.Value))
 		} else {
-			e = append(e, fmt.Sprintf("%v=''", v.Name))
+			e = append(e, fmt.Sprintf("%v=", v.Name))
 		}
 
 	}
