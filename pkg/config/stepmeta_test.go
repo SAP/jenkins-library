@@ -557,7 +557,7 @@ func TestGetContextDefaults(t *testing.T) {
 		var d PipelineDefaults
 		d.ReadPipelineDefaults([]io.ReadCloser{cd})
 
-		assert.Equal(t, []interface{}{"entrypoint=''"}, d.Defaults[0].Steps["testStep"]["dockerOptions"])
+		assert.Equal(t, []interface{}{"entrypoint="}, d.Defaults[0].Steps["testStep"]["dockerOptions"])
 	})
 
 	t.Run("Negative case", func(t *testing.T) {
@@ -730,7 +730,7 @@ func TestOptionsAsStringSlice(t *testing.T) {
 		{options: []Option{}, expected: []string{}},
 		{options: []Option{{Name: "name1", Value: "value1"}}, expected: []string{"name1 value1"}},
 		{options: []Option{{Name: "name1", Value: "value1"}, {Name: "name2", Value: "value2"}}, expected: []string{"name1 value1", "name2 value2"}},
-		{options: []Option{{Name: "empty", Value: ""}}, expected: []string{"empty=''"}},
+		{options: []Option{{Name: "empty", Value: ""}}, expected: []string{"empty="}},
 	}
 
 	for _, test := range tt {
