@@ -98,6 +98,7 @@ nav:
         - githubCreatePullRequest: steps/githubCreatePullRequest.md
         - githubPublishRelease: steps/githubPublishRelease.md
         - githubSetCommitStatus: steps/githubSetCommitStatus.md
+        - gitopsUpdateDeployment: steps/gitopsUpdateDeployment.md
         - hadolintExecute: steps/hadolintExecute.md
         - handlePipelineStepErrors: steps/handlePipelineStepErrors.md
         - healthExecuteCheck: steps/healthExecuteCheck.md
