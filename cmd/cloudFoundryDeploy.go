@@ -4,14 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/cloudfoundry"
-	"github.com/SAP/jenkins-library/pkg/command"
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/SAP/jenkins-library/pkg/yaml"
-	"github.com/elliotchance/orderedmap"
-	"github.com/pkg/errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -21,6 +13,15 @@ import (
 	"strings"
 	"time"
 	"unicode"
+
+	"github.com/SAP/jenkins-library/pkg/cloudfoundry"
+	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/yaml"
+	"github.com/elliotchance/orderedmap"
+	"github.com/pkg/errors"
 )
 
 type cfFileUtil interface {
@@ -80,7 +81,7 @@ func cloudFoundryDeploy(config cloudFoundryDeployOptions, telemetryData *telemet
 }
 
 func runCloudFoundryDeploy(config *cloudFoundryDeployOptions, telemetryData *telemetry.CustomData, influxData *cloudFoundryDeployInflux, command command.ExecRunner) error {
-
+	fmt.Println("RUN CLOUDFOUNDRY DEPLOY")
 	log.Entry().Infof("General parameters: deployTool='%s', deployType='%s', cfApiEndpoint='%s', cfOrg='%s', cfSpace='%s'",
 		config.DeployTool, config.DeployType, config.APIEndpoint, config.Org, config.Space)
 
@@ -369,6 +370,8 @@ func getManifest(name string) (cloudfoundry.Manifest, error) {
 }
 
 func getAppName(config *cloudFoundryDeployOptions) (string, error) {
+
+	fmt.Println("getAppName function call")
 
 	if len(config.AppName) > 0 {
 		return config.AppName, nil
@@ -851,6 +854,21 @@ func cfDeploy(
 			Password:      config.Password,
 			CfLoginOpts:   strings.Fields(config.LoginParameters),
 		})
+	}
+
+	log.Entry().Info("Get APP URL")
+	var getURL bytes.Buffer
+	command.Stdout(&getURL)
+	//command.Stdout(&getURL)
+	if err == nil {
+		err = command.RunExecutable("cf", "apps")
+		log.Entry().Infof("XXXXXXX: %v", err)
+	}
+	if len(getURL.String()) == 0 {
+		log.Entry().Info("GETURL EMPTY")
+		return nil
+	} else {
+		log.Entry().Info("GETURL NOT EMPTY: getURL.String() ")
 	}
 
 	if err == nil {
