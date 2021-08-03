@@ -860,15 +860,24 @@ func cfDeploy(
 	var getURL bytes.Buffer
 	command.Stdout(&getURL)
 	//command.Stdout(&getURL)
+	appCommand := "apps"
+	gettURLCommand := "grep -Po 'cloudci-cicdtest.*"
+	cfGetUrlParams := []string{
+		appCommand,
+		getURLCommand,
+	}
+
 	if err == nil {
-		err = command.RunExecutable("cf", "apps")
-		log.Entry().Infof("XXXXXXX: %v", err)
+		err = command.RunExecutable("cf", cfGetUrlParams...)
+		log.Entry().Infof("XXXXXXX: %v", err)    //nil
+		log.Entry().Infof("XXXXXXX: %s", getURL) //
+		log.Entry().Infof("XXXXXXX: %v", getURL)
 	}
 	if len(getURL.String()) == 0 {
 		log.Entry().Info("GETURL EMPTY")
 		return nil
 	} else {
-		log.Entry().Info("GETURL NOT EMPTY: getURL.String() ")
+		log.Entry().Info("GETURL NOT EMPTY: ")
 	}
 
 	if err == nil {
