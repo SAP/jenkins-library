@@ -8,13 +8,16 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
+	bd "github.com/SAP/jenkins-library/pkg/blackduck"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/maven"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/reporting"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/toolrecord"
 	"github.com/SAP/jenkins-library/pkg/versioning"
@@ -67,9 +70,10 @@ func newDetectUtils() detectUtils {
 	return &utils
 }
 
-func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData) {
+func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData, influx *detectExecuteScanInflux) {
+	influx.step_data.fields.detect = false
 	utils := newDetectUtils()
-	err := runDetect(config, utils)
+	err := runDetect(config, utils, influx)
 
 	if err != nil {
 		log.Entry().
@@ -77,6 +81,7 @@ func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData)
 			Fatal("failed to execute detect scan")
 	}
 
+	influx.step_data.fields.detect = true
 	// create Toolrecord file
 	toolRecordFileName, err := createToolRecordDetect("./", config)
 	if err != nil {
@@ -85,7 +90,7 @@ func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData)
 	}
 }
 
-func runDetect(config detectExecuteScanOptions, utils detectUtils) error {
+func runDetect(config detectExecuteScanOptions, utils detectUtils, influx *detectExecuteScanInflux) error {
 	// detect execution details, see https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/88440888/Sample+Synopsys+Detect+Scan+Configuration+Scenarios+for+Black+Duck
 	err := getDetectScript(config, utils)
 	if err != nil {
@@ -127,6 +132,7 @@ func runDetect(config detectExecuteScanOptions, utils detectUtils) error {
 	utils.SetEnv(envs)
 
 	err = utils.RunShell("/bin/bash", script)
+	postScanChecksAndReporting(config, influx)
 	if err == nil && piperutils.ContainsString(config.FailOn, "BLOCKER") {
 		violations := struct {
 			PolicyViolations int      `json:"policyViolations"`
@@ -163,12 +169,7 @@ func getDetectScript(config detectExecuteScanOptions, utils detectUtils) error {
 }
 
 func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectUtils) ([]string, error) {
-	detectVersionName := config.CustomScanVersion
-	if len(detectVersionName) > 0 {
-		log.Entry().Infof("Using custom version: %v", detectVersionName)
-	} else {
-		detectVersionName = versioning.ApplyVersioningModel(config.VersioningModel, config.Version)
-	}
+	detectVersionName := getVersionName(config)
 	//Split on spaces, the scanPropeties, so that each property is available as a single string
 	//instead of all properties being part of a single string
 	config.ScanProperties = piperutils.SplitAndTrim(config.ScanProperties, " ")
@@ -257,6 +258,134 @@ func addDetectArgs(args []string, config detectExecuteScanOptions, utils detectU
 	}
 
 	return args, nil
+}
+
+func getVersionName(config detectExecuteScanOptions) string {
+	detectVersionName := config.CustomScanVersion
+	if len(detectVersionName) > 0 {
+		log.Entry().Infof("Using custom version: %v", detectVersionName)
+	} else {
+		detectVersionName = versioning.ApplyVersioningModel(config.VersioningModel, config.Version)
+	}
+	return detectVersionName
+}
+
+func postScanChecksAndReporting(config detectExecuteScanOptions, influx *detectExecuteScanInflux) error {
+	vulns, _, err := getVulnsAndComponents(config, influx)
+	if err != nil {
+		return err
+	}
+	createVulnerabilityReport(config, vulns, influx)
+	return nil
+}
+
+func getVulnsAndComponents(config detectExecuteScanOptions, influx *detectExecuteScanInflux) (*bd.Vulnerabilities, *bd.Components, error) {
+	detectVersionName := getVersionName(config)
+	bdClient := bd.NewClient(config.Token, config.ServerURL, &piperhttp.Client{})
+	vulns, err := bdClient.GetVulnerabilities(config.ProjectName, detectVersionName)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	majorVulns := 0
+	activeVulns := 0
+	for _, vuln := range vulns.Items {
+		if isActiveVulnerability(vuln) {
+			activeVulns++
+			if isMajorVulnerability(vuln) {
+				majorVulns++
+			}
+		}
+	}
+	influx.detect_data.fields.vulnerabilities = activeVulns
+	influx.detect_data.fields.major_vulnerabilities = majorVulns
+	influx.detect_data.fields.minor_vulnerabilities = activeVulns - majorVulns
+
+	components, err := bdClient.GetComponents(config.ProjectName, detectVersionName)
+	if err != nil {
+		return vulns, nil, err
+	}
+	influx.detect_data.fields.components = components.TotalCount
+
+	return vulns, components, nil
+}
+
+func createVulnerabilityReport(config detectExecuteScanOptions, vulns *bd.Vulnerabilities, influx *detectExecuteScanInflux) reporting.ScanReport {
+	scanReport := reporting.ScanReport{
+		Title: "BlackDuck Security Vulnerability Report",
+		Subheaders: []reporting.Subheader{
+			{Description: "BlackDuck Project Name ", Details: config.ProjectName},
+			{Description: "BlackDuck Project Version ", Details: getVersionName(config)},
+		},
+		Overview: []reporting.OverviewRow{
+			{Description: "Total number of vulnerabilities ", Details: fmt.Sprint(influx.detect_data.fields.vulnerabilities)},
+			{Description: "Total number of Critical/High vulnerabilties ", Details: fmt.Sprint(influx.detect_data.fields.major_vulnerabilities)},
+		},
+		SuccessfulScan: influx.detect_data.fields.major_vulnerabilities == 0,
+		ReportTime:     time.Now(),
+	}
+
+	detailTable := reporting.ScanDetailTable{
+		NoRowsMessage: "No publicly known vulnerabilities detected",
+		Headers: []string{
+			"Vulnerability Name",
+			"Severity",
+			"Overall Score",
+			"Base Score",
+			"Component Name",
+			"Component Version",
+			"Description",
+			"Status",
+		},
+		WithCounter:   true,
+		CounterHeader: "Entry#",
+	}
+
+	for _, vuln := range vulns.Items {
+		row := reporting.ScanRow{}
+		row.AddColumn(vuln.VulnerabilityWithRemediation.VulnerabilityName, 0)
+		row.AddColumn(vuln.VulnerabilityWithRemediation.Severity, 0)
+
+		var scoreStyle reporting.ColumnStyle = reporting.Yellow
+		if isMajorVulnerability(vuln) {
+			scoreStyle = reporting.Red
+		}
+		row.AddColumn(vuln.VulnerabilityWithRemediation.OverallScore, scoreStyle)
+		row.AddColumn(vuln.VulnerabilityWithRemediation.BaseScore, 0)
+		row.AddColumn(vuln.Name, 0)
+		row.AddColumn(vuln.Version, 0)
+		row.AddColumn(vuln.VulnerabilityWithRemediation.Description, 0)
+		row.AddColumn(vuln.VulnerabilityWithRemediation.RemediationStatus, 0)
+
+		detailTable.Rows = append(detailTable.Rows, row)
+	}
+
+	scanReport.DetailTable = detailTable
+	return scanReport
+}
+
+func isActiveVulnerability(v bd.Vulnerability) bool {
+	switch v.VulnerabilityWithRemediation.RemediationStatus {
+	case "NEW":
+		return true
+	case "REMEDIATION_REQUIRED":
+		return true
+	case "NEEDS_REVIEW":
+		return true
+	default:
+		return false
+	}
+}
+
+func isMajorVulnerability(v bd.Vulnerability) bool {
+	switch v.VulnerabilityWithRemediation.Severity {
+	case "CRITICAL":
+		return true
+	case "HIGH":
+		return true
+	default:
+		return false
+	}
 }
 
 // create toolrecord file for detect
