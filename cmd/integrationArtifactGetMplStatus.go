@@ -111,7 +111,7 @@ func runIntegrationArtifactGetMplStatus(
 		}
 		if jsonResponse.Exists("d", "results", "0") {
 			mplStatus := jsonResponse.Path("d.results.0.Status").Data().(string)
-			commonPipelineEnvironment.custom.iFlowMplStatus = mplStatus
+			commonPipelineEnvironment.custom.integrationFlowMplStatus = mplStatus
 
 			//if error, then return immediately with the error details
 			if mplStatus == "FAILED" {
@@ -160,7 +160,7 @@ func getIntegrationArtifactMPLError(commonPipelineEnvironment *integrationArtifa
 			return "", errors.Wrapf(readErr, "HTTP response body could not be read, response status code: %v", errorStatusResp.StatusCode)
 		}
 		mplErrorDetails := string(responseBody)
-		commonPipelineEnvironment.custom.iFlowMplError = mplErrorDetails
+		commonPipelineEnvironment.custom.integrationFlowMplError = mplErrorDetails
 		return mplErrorDetails, nil
 	}
 	if httpErr != nil {
