@@ -22,7 +22,7 @@ Example for the use in a YAML configuration file (such as `.pipeline/config.yaml
 steps:
   <...>
   integrationArtifactTriggerIntegrationTest:
-    iFlowCredentialsId: 'MY_IFLOW_SERVICE_KEY'
+    integrationFlowServiceKeyCredentialsId: 'MY_INTEGRATION_FLOW_SERVICE_KEY'
     integrationFlowId: 'INTEGRATION_FLOW_ID'
     contentType: 'text/plain'
     messageBodyPath: 'myIntegrationsTest/testBody'
