@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"testing"
 	"path/filepath"
+	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
