@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-
 func TestRunIntegrationArtifactResource(t *testing.T) {
 	t.Parallel()
 
