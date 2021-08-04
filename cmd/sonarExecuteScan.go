@@ -356,7 +356,8 @@ func loadSonarScanner(url string, client piperhttp.Downloader) error {
 }
 
 func loadCertificates(certificateList []string, client piperhttp.Downloader, runner command.ExecRunner) error {
-	trustStoreFile := filepath.Join(getWorkingDir(), ".certificates", "cacerts")
+	trustStorePath := filepath.Join(getWorkingDir(), ".certificates")
+	trustStoreFile := filepath.Join(trustStorePath, "cacerts")
 
 	if exists, _ := fileUtilsExists(trustStoreFile); exists {
 		// use local existing trust store
@@ -371,6 +372,7 @@ func loadCertificates(certificateList []string, client piperhttp.Downloader, run
 			"-keystore", trustStoreFile,
 		}
 		tmpFolder := getTempDir()
+		os.MkdirAll(trustStorePath, 0600)
 		defer os.RemoveAll(tmpFolder) // clean up
 
 		for _, certificate := range certificateList {
