@@ -8,18 +8,6 @@ import (
 	"testing"
 )
 
-type integrationArtifactResourceMockUtils struct {
-	*mock.ExecMockRunner
-	*mock.FilesMock
-}
-
-func newIntegrationArtifactResourceTestsUtils() integrationArtifactResourceMockUtils {
-	utils := integrationArtifactResourceMockUtils{
-		ExecMockRunner: &mock.ExecMockRunner{},
-		FilesMock:      &mock.FilesMock{},
-	}
-	return utils
-}
 
 func TestRunIntegrationArtifactResource(t *testing.T) {
 	t.Parallel()
