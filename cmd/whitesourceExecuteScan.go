@@ -12,6 +12,7 @@ import (
 	"time"
 
 	piperDocker "github.com/SAP/jenkins-library/pkg/docker"
+	"github.com/SAP/jenkins-library/pkg/gcs"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	ws "github.com/SAP/jenkins-library/pkg/whitesource"
 
@@ -123,14 +124,24 @@ func whitesourceExecuteScan(config ScanOptions, _ *telemetry.CustomData, commonP
 	scan := newWhitesourceScan(&config)
 	sys := ws.NewSystem(config.ServiceURL, config.OrgToken, config.UserToken, time.Duration(config.Timeout)*time.Second)
 	influx.step_data.fields.whitesource = false
-	err := runWhitesourceExecuteScan(&config, scan, utils, sys, commonPipelineEnvironment, influx)
+	var gcsClient gcs.ClientInterface
+	if GeneralConfig.UploadReportsToGCS {
+		if GeneralConfig.CorrelationID == "" {
+			log.Entry().WithError(errors.New("CorrelationID is used as GCS bucketID and mustn't be empty")).Fatal("Execution failed")
+		}
+		var err error
+		if gcsClient, err = gcs.NewClient(GeneralConfig.GCPJsonKeyFilePath); err != nil {
+			log.Entry().WithError(err).Fatal("Execution failed")
+		}
+	}
+	err := runWhitesourceExecuteScan(&config, scan, utils, sys, commonPipelineEnvironment, influx, gcsClient)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 	influx.step_data.fields.whitesource = true
 }
 
-func runWhitesourceExecuteScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment, influx *whitesourceExecuteScanInflux) error {
+func runWhitesourceExecuteScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment, influx *whitesourceExecuteScanInflux, gcsClient gcs.ClientInterface) error {
 	if err := resolveAggregateProjectName(config, scan, sys); err != nil {
 		return errors.Wrapf(err, "failed to resolve and aggregate project name")
 	}
@@ -147,21 +158,21 @@ func runWhitesourceExecuteScan(config *ScanOptions, scan *ws.Scan, utils whiteso
 		// Note that this is not guaranteed that all projects are from the same scan.
 		// For example, if a module was removed from the source code, the project may still
 		// exist in the WhiteSource system.
-		if err := aggregateVersionWideLibraries(config, utils, sys); err != nil {
+		if err := aggregateVersionWideLibraries(config, utils, sys, gcsClient); err != nil {
 			return errors.Wrapf(err, "failed to aggregate version wide libraries")
 		}
-		if err := aggregateVersionWideVulnerabilities(config, utils, sys); err != nil {
+		if err := aggregateVersionWideVulnerabilities(config, utils, sys, gcsClient); err != nil {
 			return errors.Wrapf(err, "failed to aggregate version wide vulnerabilities")
 		}
 	} else {
-		if err := runWhitesourceScan(config, scan, utils, sys, commonPipelineEnvironment, influx); err != nil {
+		if err := runWhitesourceScan(config, scan, utils, sys, commonPipelineEnvironment, influx, gcsClient); err != nil {
 			return errors.Wrapf(err, "failed to execute WhiteSource scan")
 		}
 	}
 	return nil
 }
 
-func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment, influx *whitesourceExecuteScanInflux) error {
+func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUtils, sys whitesource, commonPipelineEnvironment *whitesourceExecuteScanCommonPipelineEnvironment, influx *whitesourceExecuteScanInflux, gcsClient gcs.ClientInterface) error {
 	// Download Docker image for container scan
 	// ToDo: move it to improve testability
 	if config.BuildTool == "docker" {
@@ -203,7 +214,7 @@ func runWhitesourceScan(config *ScanOptions, scan *ws.Scan, utils whitesourceUti
 	log.Entry().Info("-----------------------------------------------------")
 
 	paths, err := checkAndReportScanResults(config, scan, utils, sys, influx)
-	piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", paths, nil)
+	piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", paths, nil, gcsClient, GeneralConfig.CorrelationID)
 	persistScannedProjects(config, scan, commonPipelineEnvironment)
 	if err != nil {
 		return errors.Wrapf(err, "failed to check and report scan results")
@@ -752,7 +763,7 @@ func reportSha(config *ScanOptions, scan *ws.Scan) string {
 	return fmt.Sprintf("%x", sha1.Sum(reportShaData))
 }
 
-func aggregateVersionWideLibraries(config *ScanOptions, utils whitesourceUtils, sys whitesource) error {
+func aggregateVersionWideLibraries(config *ScanOptions, utils whitesourceUtils, sys whitesource, gcsClient gcs.ClientInterface) error {
 	log.Entry().Infof("Aggregating list of libraries used for all projects with version: %s", config.Version)
 
 	projects, err := sys.GetProjectsMetaInfo(config.ProductToken)
@@ -773,13 +784,13 @@ func aggregateVersionWideLibraries(config *ScanOptions, utils whitesourceUtils, 
 			versionWideLibraries[projectName] = libs
 		}
 	}
-	if err := newLibraryCSVReport(versionWideLibraries, config, utils); err != nil {
+	if err := newLibraryCSVReport(versionWideLibraries, config, utils, gcsClient); err != nil {
 		return errors.Wrapf(err, "failed toget new libary CSV report")
 	}
 	return nil
 }
 
-func aggregateVersionWideVulnerabilities(config *ScanOptions, utils whitesourceUtils, sys whitesource) error {
+func aggregateVersionWideVulnerabilities(config *ScanOptions, utils whitesourceUtils, sys whitesource, gcsClient gcs.ClientInterface) error {
 	log.Entry().Infof("Aggregating list of vulnerabilities for all projects with version: %s", config.Version)
 
 	projects, err := sys.GetProjectsMetaInfo(config.ProductToken)
@@ -806,7 +817,7 @@ func aggregateVersionWideVulnerabilities(config *ScanOptions, utils whitesourceU
 	if err := utils.FileWrite(reportPath, []byte(projectNames), 0666); err != nil {
 		return errors.Wrapf(err, "failed to write report: %s", reportPath)
 	}
-	if err := newVulnerabilityExcelReport(versionWideAlerts, config, utils); err != nil {
+	if err := newVulnerabilityExcelReport(versionWideAlerts, config, utils, gcsClient); err != nil {
 		return errors.Wrapf(err, "failed to create new vulnerability excel report")
 	}
 	return nil
@@ -815,7 +826,7 @@ func aggregateVersionWideVulnerabilities(config *ScanOptions, utils whitesourceU
 const wsReportTimeStampLayout = "20060102-150405"
 
 // outputs an slice of alerts to an excel file
-func newVulnerabilityExcelReport(alerts []ws.Alert, config *ScanOptions, utils whitesourceUtils) error {
+func newVulnerabilityExcelReport(alerts []ws.Alert, config *ScanOptions, utils whitesourceUtils, gcsClient gcs.ClientInterface) error {
 	file := excelize.NewFile()
 	streamWriter, err := file.NewStreamWriter("Sheet1")
 	if err != nil {
@@ -846,7 +857,7 @@ func newVulnerabilityExcelReport(alerts []ws.Alert, config *ScanOptions, utils w
 		return err
 	}
 	filePath := piperutils.Path{Name: "aggregated-vulnerabilities", Target: fileName}
-	piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", []piperutils.Path{filePath}, nil)
+	piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", []piperutils.Path{filePath}, nil, gcsClient, GeneralConfig.CorrelationID)
 	return nil
 }
 
@@ -887,7 +898,7 @@ func fillVulnerabilityExcelReport(alerts []ws.Alert, streamWriter *excelize.Stre
 }
 
 // outputs an slice of libraries to an excel file based on projects with version == config.Version
-func newLibraryCSVReport(libraries map[string][]ws.Library, config *ScanOptions, utils whitesourceUtils) error {
+func newLibraryCSVReport(libraries map[string][]ws.Library, config *ScanOptions, utils whitesourceUtils, gcsClient gcs.ClientInterface) error {
 	output := "Library Name, Project Name\n"
 	for projectName, libraries := range libraries {
 		log.Entry().Infof("Writing %v libraries for project %s to excel report..", len(libraries), projectName)
@@ -908,7 +919,7 @@ func newLibraryCSVReport(libraries map[string][]ws.Library, config *ScanOptions,
 		return errors.Wrapf(err, "failed to write file: %s", fileName)
 	}
 	filePath := piperutils.Path{Name: "aggregated-libraries", Target: fileName}
-	piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", []piperutils.Path{filePath}, nil)
+	piperutils.PersistReportsAndLinks("whitesourceExecuteScan", "", []piperutils.Path{filePath}, nil, gcsClient, GeneralConfig.CorrelationID)
 	return nil
 }
 

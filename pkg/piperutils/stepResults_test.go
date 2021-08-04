@@ -20,7 +20,7 @@ func TestPersistReportAndLinks(t *testing.T) {
 
 		reports := []Path{{Target: "testFile1.json", Mandatory: true}, {Target: "testFile2.json"}}
 		links := []Path{{Target: "https://1234568.com/test", Name: "Weblink"}}
-		PersistReportsAndLinks("checkmarxExecuteScan", workspace, reports, links)
+		PersistReportsAndLinks("checkmarxExecuteScan", workspace, reports, links, nil, "piper")
 
 		reportsJSONPath := filepath.Join(workspace, "checkmarxExecuteScan_reports.json")
 		assert.FileExists(t, reportsJSONPath)
@@ -69,7 +69,7 @@ func TestPersistReportAndLinks(t *testing.T) {
 		require.Empty(t, links)
 
 		// test
-		PersistReportsAndLinks("sonarExecuteScan", workspace, reports, links)
+		PersistReportsAndLinks("sonarExecuteScan", workspace, reports, links, nil, "piper")
 		// assert
 		for _, reportFile := range []string{reportsJSONPath, linksJSONPath} {
 			assert.FileExists(t, reportFile)

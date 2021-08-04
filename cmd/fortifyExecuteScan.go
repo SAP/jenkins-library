@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/gcs"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 
 	"github.com/bmatcuk/doublestar"
@@ -79,10 +80,20 @@ func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemet
 	auditStatus := map[string]string{}
 	sys := fortify.NewSystemInstance(config.ServerURL, config.APIEndpoint, config.AuthToken, time.Minute*15)
 	utils := newFortifyUtilsBundle()
+	var gcsClient gcs.ClientInterface
+	if GeneralConfig.UploadReportsToGCS {
+		if GeneralConfig.CorrelationID == "" {
+			log.Entry().WithError(errors.New("CorrelationID is used as GCS bucketID and mustn't be empty")).Fatal("Execution failed")
+		}
+		var err error
+		if gcsClient, err = gcs.NewClient(GeneralConfig.GCPJsonKeyFilePath); err != nil {
+			log.Entry().WithError(err).Fatal("Execution failed")
+		}
+	}
 
 	influx.step_data.fields.fortify = false
 	reports, err := runFortifyScan(config, sys, utils, telemetryData, influx, auditStatus)
-	piperutils.PersistReportsAndLinks("fortifyExecuteScan", config.ModulePath, reports, nil)
+	piperutils.PersistReportsAndLinks("fortifyExecuteScan", config.ModulePath, reports, nil, gcsClient, GeneralConfig.CorrelationID)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Fortify scan and check failed")
 	}

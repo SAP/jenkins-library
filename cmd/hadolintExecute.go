@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/gcs"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
@@ -58,12 +59,23 @@ func hadolintExecute(config hadolintExecuteOptions, _ *telemetry.CustomData) {
 		hadolintRunner:         &runner,
 	}
 
-	if err := runHadolint(config, utils); err != nil {
+	var gcsClient gcs.ClientInterface
+	if GeneralConfig.UploadReportsToGCS {
+		if GeneralConfig.CorrelationID == "" {
+			log.Entry().WithError(errors.New("CorrelationID is used as GCS bucketID and mustn't be empty")).Fatal("Execution failed")
+		}
+		var err error
+		if gcsClient, err = gcs.NewClient(GeneralConfig.GCPJsonKeyFilePath); err != nil {
+			log.Entry().WithError(err).Fatal("Execution failed")
+		}
+	}
+
+	if err := runHadolint(config, utils, gcsClient); err != nil {
 		log.Entry().WithError(err).Fatal("Execution failed")
 	}
 }
 
-func runHadolint(config hadolintExecuteOptions, utils hadolintUtils) error {
+func runHadolint(config hadolintExecuteOptions, utils hadolintUtils, gcsClient gcs.ClientInterface) error {
 	var outputBuffer bytes.Buffer
 	var errorBuffer bytes.Buffer
 	utils.Stdout(&outputBuffer)
@@ -107,7 +119,7 @@ func runHadolint(config hadolintExecuteOptions, utils hadolintUtils) error {
 	}
 	//TODO: mock away in tests
 	// persist report information
-	piperutils.PersistReportsAndLinks("hadolintExecute", "./", []piperutils.Path{{Target: config.ReportFile}}, []piperutils.Path{})
+	piperutils.PersistReportsAndLinks("hadolintExecute", "./", []piperutils.Path{{Target: config.ReportFile}}, []piperutils.Path{}, gcsClient, GeneralConfig.CorrelationID)
 	return nil
 }
 

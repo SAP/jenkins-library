@@ -18,6 +18,7 @@ import (
 	"github.com/GoogleContainerTools/container-diff/pkg/util"
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperDocker "github.com/SAP/jenkins-library/pkg/docker"
+	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	StepResults "github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/protecode"
@@ -44,13 +45,23 @@ func protecodeExecuteScan(config protecodeExecuteScanOptions, telemetryData *tel
 
 	dClient := createDockerClient(&config)
 	influx.step_data.fields.protecode = false
-	if err := runProtecodeScan(&config, influx, dClient); err != nil {
+	var gcsClient gcs.ClientInterface
+	if GeneralConfig.UploadReportsToGCS {
+		if GeneralConfig.CorrelationID == "" {
+			log.Entry().WithError(errors.New("CorrelationID is used as GCS bucketID and mustn't be empty")).Fatal("Execution failed")
+		}
+		var err error
+		if gcsClient, err = gcs.NewClient(GeneralConfig.GCPJsonKeyFilePath); err != nil {
+			log.Entry().WithError(err).Fatal("Execution failed")
+		}
+	}
+	if err := runProtecodeScan(&config, influx, dClient, gcsClient); err != nil {
 		log.Entry().WithError(err).Fatal("Failed to execute protecode scan.")
 	}
 	influx.step_data.fields.protecode = true
 }
 
-func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExecuteScanInflux, dClient piperDocker.Download) error {
+func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExecuteScanInflux, dClient piperDocker.Download, gcsClient gcs.ClientInterface) error {
 	correctDockerConfigEnvVar(config)
 	var fileName, filePath string
 	var err error
@@ -79,7 +90,7 @@ func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExec
 	}
 
 	log.Entry().Debug("Execute protecode scan")
-	if err := executeProtecodeScan(influx, client, config, fileName, writeReportToFile); err != nil {
+	if err := executeProtecodeScan(influx, client, config, fileName, writeReportToFile, gcsClient); err != nil {
 		return err
 	}
 
@@ -151,7 +162,7 @@ func getDockerImage(dClient piperDocker.Download, config *protecodeExecuteScanOp
 	return fileName, resultFilePath, nil
 }
 
-func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.Protecode, config *protecodeExecuteScanOptions, fileName string, writeReportToFile func(resp io.ReadCloser, reportFileName string) error) error {
+func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.Protecode, config *protecodeExecuteScanOptions, fileName string, writeReportToFile func(resp io.ReadCloser, reportFileName string) error, gcsClient gcs.ClientInterface) error {
 	productID := -1
 	if config.VerifyOnly {
 		//load existing product by filename
@@ -241,7 +252,7 @@ func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.P
 		reports = append(reports, StepResults.Path{Target: toolRecordFileName})
 	}
 
-	StepResults.PersistReportsAndLinks("protecodeExecuteScan", "", reports, links)
+	StepResults.PersistReportsAndLinks("protecodeExecuteScan", "", reports, links, gcsClient, GeneralConfig.CorrelationID)
 
 	if config.FailOnSevereVulnerabilities && protecode.HasSevereVulnerabilities(result.Result, config.ExcludeCVEs) {
 		log.SetErrorCategory(log.ErrorCompliance)

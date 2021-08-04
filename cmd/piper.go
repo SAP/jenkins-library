@@ -41,6 +41,8 @@ type GeneralConfigOptions struct {
 	VaultNamespace       string
 	VaultPath            string
 	HookConfig           HookConfiguration
+	UploadReportsToGCS   bool
+	GCPJsonKeyFilePath   string // file path to Google Cloud Platform JSON key file. Mandatory if UploadReportsToGCS is true
 }
 
 // HookConfiguration contains the configuration for supported hooks, so far Sentry and Splunk are supported.
@@ -187,6 +189,8 @@ func addRootFlags(rootCmd *cobra.Command) {
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.VaultServerURL, "vaultServerUrl", "", "The vault server which should be used to fetch credentials")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.VaultNamespace, "vaultNamespace", "", "The vault namespace which should be used to fetch credentials")
 	rootCmd.PersistentFlags().StringVar(&GeneralConfig.VaultPath, "vaultPath", "", "The path which should be used to fetch credentials")
+	rootCmd.PersistentFlags().BoolVar(&GeneralConfig.UploadReportsToGCS, "uploadReportsToGCS", false, "Enables uploading reports to Google Cloud Storage bucket")
+	rootCmd.PersistentFlags().StringVar(&GeneralConfig.GCPJsonKeyFilePath, "gcpJsonKeyFilePath", "", "File path to Google Cloud Platform JSON key file. Mandatory if UploadReportsToGCS is true")
 
 }
 

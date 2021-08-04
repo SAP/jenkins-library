@@ -81,7 +81,7 @@ func TestRunWhitesourceExecuteScan(t *testing.T) {
 		cpe := whitesourceExecuteScanCommonPipelineEnvironment{}
 		influx := whitesourceExecuteScanInflux{}
 		// test
-		err := runWhitesourceExecuteScan(&config, scan, utilsMock, systemMock, &cpe, &influx)
+		err := runWhitesourceExecuteScan(&config, scan, utilsMock, systemMock, &cpe, &influx, nil)
 		// assert
 		assert.EqualError(t, err, "failed to resolve and aggregate project name: failed to get project by token: no project with token 'no-such-project-token' found in Whitesource")
 		assert.Equal(t, "", config.ProjectName)
@@ -108,7 +108,7 @@ func TestRunWhitesourceExecuteScan(t *testing.T) {
 		cpe := whitesourceExecuteScanCommonPipelineEnvironment{}
 		influx := whitesourceExecuteScanInflux{}
 		// test
-		err := runWhitesourceExecuteScan(&config, scan, utilsMock, systemMock, &cpe, &influx)
+		err := runWhitesourceExecuteScan(&config, scan, utilsMock, systemMock, &cpe, &influx, nil)
 		// assert
 		assert.NoError(t, err)
 		// Retrieved project name is stored in scan.AggregateProjectName, but not in config.ProjectName
@@ -771,7 +771,7 @@ func TestAggregateVersionWideLibraries(t *testing.T) {
 		utils := newWhitesourceUtilsMock()
 		system := ws.NewSystemMock("2010-05-30 00:15:00 +0100")
 		// test
-		err := aggregateVersionWideLibraries(config, utils, system)
+		err := aggregateVersionWideLibraries(config, utils, system, nil)
 		// assert
 		resource := filepath.Join(ws.ReportsDirectory, "libraries-20100510-001542.csv")
 		if assert.NoError(t, err) && assert.True(t, utils.HasWrittenFile(resource)) {
@@ -794,7 +794,7 @@ func TestAggregateVersionWideVulnerabilities(t *testing.T) {
 		utils := newWhitesourceUtilsMock()
 		system := ws.NewSystemMock("2010-05-30 00:15:00 +0100")
 		// test
-		err := aggregateVersionWideVulnerabilities(config, utils, system)
+		err := aggregateVersionWideVulnerabilities(config, utils, system, nil)
 		// assert
 		resource := filepath.Join(ws.ReportsDirectory, "project-names-aggregated.txt")
 		assert.NoError(t, err)

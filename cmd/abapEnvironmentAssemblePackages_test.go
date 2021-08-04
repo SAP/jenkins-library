@@ -90,7 +90,7 @@ func TestStep(t *testing.T) {
 			PollIntervalsInMilliseconds: 1,
 		}
 
-		err := runAbapEnvironmentAssemblePackages(config, nil, autils, &client, cpe)
+		err := runAbapEnvironmentAssemblePackages(config, nil, autils, &client, cpe, nil)
 		assert.NoError(t, err)
 	})
 	t.Run("abapEnvironmentAssemblePackages: build", func(t *testing.T) {
@@ -101,7 +101,7 @@ func TestStep(t *testing.T) {
 			PollIntervalsInMilliseconds: 1,
 		}
 
-		err := runAbapEnvironmentAssemblePackages(config, nil, autils, &client, cpe)
+		err := runAbapEnvironmentAssemblePackages(config, nil, autils, &client, cpe, nil)
 		assert.NoError(t, err)
 		assert.Contains(t, cpe.abap.addonDescriptor, `SAPK-001AAINITAPC1.SAR`)
 	})
