@@ -8,7 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
-	
+
 	"github.com/Jeffail/gabs/v2"
 	"github.com/SAP/jenkins-library/pkg/cpi"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
