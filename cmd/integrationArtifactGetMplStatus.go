@@ -106,6 +106,9 @@ func runIntegrationArtifactGetMplStatus(
 		if parsingErr != nil {
 			return errors.Wrapf(parsingErr, "HTTP response body could not be parsed as JSON: %v", string(bodyText))
 		}
+		if jsonResponse == nil {
+			return errors.Errorf("Empty json response: %v", string(bodyText))
+		}
 		if jsonResponse.Exists("d", "results", "0") {
 			mplStatus := jsonResponse.Path("d.results.0.Status").Data().(string)
 			commonPipelineEnvironment.custom.integrationFlowMplStatus = mplStatus

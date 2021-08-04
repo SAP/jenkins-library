@@ -133,6 +133,7 @@ func callIFlowURL(config *integrationArtifactTriggerIntegrationTestOptions, tele
 		return errors.Wrap(err, "failed to fetch Bearer Token")
 	}
 	clientOptions.Token = fmt.Sprintf("Bearer %s", token)
+	clientOptions.MaxRetries = -1
 	httpIFlowClient.SetOptions(clientOptions)
 	iFlowResp, httpErr := httpIFlowClient.SendRequest(httpMethod, serviceEndpointUrl, bytes.NewBuffer(fileBody), header, nil)
 
