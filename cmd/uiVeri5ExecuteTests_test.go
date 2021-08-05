@@ -20,13 +20,13 @@ func TestRunUIVeri5(t *testing.T) {
 		e := mock.ShellMockRunner{}
 		runUIVeri5(opts, &e)
 
-		assert.Equal(t, e.Env[0], "NPM_CONFIG_PREFIX=~/.npm-global", "NPM_CONFIG_PREFIX not set as expected")
+		assert.Equal(t, "NPM_CONFIG_PREFIX=~/.npm-global", e.Env[0], "NPM_CONFIG_PREFIX not set as expected")
 		assert.Contains(t, e.Env[1], "PATH", "PATH not in env list")
-		assert.Equal(t, e.Env[2], "TARGET_SERVER_URL=http://path/to/deployment", "TARGET_SERVER_URL not set as expected")
+		assert.Equal(t, "TARGET_SERVER_URL=http://path/to/deployment", e.Env[2], "TARGET_SERVER_URL not set as expected")
 
-		assert.Equal(t, e.Calls[0], "npm install ui5/uiveri5", "install command/params incorrect")
+		assert.Equal(t, "npm install ui5/uiveri5", e.Calls[0], "install command/params incorrect")
 
-		assert.Equal(t, e.Calls[1], "uiveri5 conf.js", "run command/params incorrect")
+		assert.Equal(t, "uiveri5 conf.js", e.Calls[1], "run command/params incorrect")
 
 	})
 
