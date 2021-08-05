@@ -16,7 +16,42 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        mandatory: true
+      - name: containerImageName
+        aliases:
+          - name: dockerImageName
+        type: string
+        description: Name of the container which will be built - will be used instead of parameter `containerImage`
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: containerImageTag
+        aliases:
+          - name: artifactVersion
+        type: string
+        description: Tag of the container which will be built - will be used instead of parameter `containerImage`
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: artifactVersion
+      - name: containerRegistryUrl
+        aliases:
+          - name: dockerRegistryUrl
+        type: string
+        description: http(s) url of the Container registry where the image should be pushed to - will be used instead of parameter `containerImage`
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/registryUrl
       - name: path
         type: string
         description: The path should either point to your sources or an artifact build before.
@@ -46,6 +81,7 @@ spec:
       - name: commonPipelineEnvironment
         type: piperEnvironment
         params:
-          - name: container/containerImage
+          - name: container/registryUrl
+          - name: container/imageNameTag
   containers:
     - image: "paketobuildpacks/builder:full"

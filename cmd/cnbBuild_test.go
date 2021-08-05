@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
@@ -28,9 +29,12 @@ func TestRunCnbBuild(t *testing.T) {
 
 	t.Run("success case", func(t *testing.T) {
 		t.Parallel()
+		registy := "some-registry"
 		config := cnbBuildOptions{
-			ContainerImage:   "my-image",
-			DockerConfigJSON: "/path/to/config.json",
+			ContainerImageName:   "my-image",
+			ContainerImageTag:    "0.0.1",
+			ContainerRegistryURL: fmt.Sprintf("https://%s", registy),
+			DockerConfigJSON:     "/path/to/config.json",
 		}
 
 		utils := newCnbBuildTestsUtils()
@@ -44,7 +48,7 @@ func TestRunCnbBuild(t *testing.T) {
 		assert.Equal(t, "/cnb/lifecycle/detector", runner.Calls[0].Exec)
 		assert.Equal(t, "/cnb/lifecycle/builder", runner.Calls[1].Exec)
 		assert.Equal(t, "/cnb/lifecycle/exporter", runner.Calls[2].Exec)
-		assert.Equal(t, []string{config.ContainerImage}, runner.Calls[2].Params)
+		assert.Equal(t, []string{fmt.Sprintf("%s/%s:%s", registy, config.ContainerImageName, config.ContainerImageTag), fmt.Sprintf("%s/%s:latest", registy, config.ContainerImageName)}, runner.Calls[2].Params)
 	})
 
 	t.Run("error case: Invalid DockerConfigJSON file", func(t *testing.T) {

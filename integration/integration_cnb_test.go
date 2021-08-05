@@ -19,6 +19,6 @@ func TestNpmProject(t *testing.T) {
 
 	container.assertHasOutput(t, "running command: /cnb/lifecycle/detector")
 	container.assertHasOutput(t, "Paketo NPM Start Buildpack")
-	container.assertHasOutput(t, "Saving not-found...")
+	container.assertHasOutput(t, "Saving not-found")
 	container.assertHasOutput(t, "failed to write image to the following tags: [not-found:")
 }

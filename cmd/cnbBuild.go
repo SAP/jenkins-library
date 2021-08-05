@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/docker"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -134,6 +135,35 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		}
 	}
 
+	var containerImage string
+	var containerImageTag string
+
+	if len(config.ContainerRegistryURL) > 0 && len(config.ContainerImageName) > 0 && len(config.ContainerImageTag) > 0 {
+		containerRegistry, err := docker.ContainerRegistryFromURL(config.ContainerRegistryURL)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return errors.Wrapf(err, "failed to read registry url %s", config.ContainerRegistryURL)
+		}
+		containerImage = fmt.Sprintf("%s/%s", containerRegistry, config.ContainerImageName)
+		containerImageTag = strings.ReplaceAll(config.ContainerImageTag, "+", "-")
+		commonPipelineEnvironment.container.registryURL = config.ContainerRegistryURL
+		commonPipelineEnvironment.container.imageNameTag = containerImage
+	} else if len(config.ContainerImage) > 0 {
+		containerRegistry, err := docker.ContainerRegistryFromImage(config.ContainerImage)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return errors.Wrapf(err, "invalid registry part in image %s", config.ContainerImage)
+		}
+		containerImage = config.ContainerImage
+		// errors are already caught with previous call to docker.ContainerRegistryFromImage
+		containerImageTag, _ := docker.ContainerImageNameTagFromImage(config.ContainerImage)
+		commonPipelineEnvironment.container.registryURL = fmt.Sprintf("https://%s", containerRegistry)
+		commonPipelineEnvironment.container.imageNameTag = containerImageTag
+	} else {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return errors.New("either containerImage or containerImageName and containerImageTag must be present")
+	}
+
 	err = utils.RunExecutable("/cnb/lifecycle/detector")
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
@@ -147,7 +177,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 	}
 
 	utils.AppendEnv([]string{fmt.Sprintf("CNB_REGISTRY_AUTH=%s", string(cnbRegistryAuth))})
-	err = utils.RunExecutable("/cnb/lifecycle/exporter", config.ContainerImage)
+	err = utils.RunExecutable("/cnb/lifecycle/exporter", fmt.Sprintf("%s:%s", containerImage, containerImageTag), fmt.Sprintf("%s:latest", containerImage))
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
 		return errors.Wrap(err, "execution of '/cnb/lifecycle/exporter' failed")

@@ -17,14 +17,18 @@ import (
 )
 
 type cnbBuildOptions struct {
-	ContainerImage   string `json:"containerImage,omitempty"`
-	Path             string `json:"path,omitempty"`
-	DockerConfigJSON string `json:"dockerConfigJSON,omitempty"`
+	ContainerImage       string `json:"containerImage,omitempty"`
+	ContainerImageName   string `json:"containerImageName,omitempty"`
+	ContainerImageTag    string `json:"containerImageTag,omitempty"`
+	ContainerRegistryURL string `json:"containerRegistryUrl,omitempty"`
+	Path                 string `json:"path,omitempty"`
+	DockerConfigJSON     string `json:"dockerConfigJSON,omitempty"`
 }
 
 type cnbBuildCommonPipelineEnvironment struct {
 	container struct {
-		containerImage string
+		registryURL  string
+		imageNameTag string
 	}
 }
 
@@ -34,7 +38,8 @@ func (p *cnbBuildCommonPipelineEnvironment) persist(path, resourceName string) {
 		name     string
 		value    interface{}
 	}{
-		{category: "container", name: "containerImage", value: p.container.containerImage},
+		{category: "container", name: "registryUrl", value: p.container.registryURL},
+		{category: "container", name: "imageNameTag", value: p.container.imageNameTag},
 	}
 
 	errCount := 0
@@ -129,10 +134,12 @@ func CnbBuildCommand() *cobra.Command {
 
 func addCnbBuildFlags(cmd *cobra.Command, stepConfig *cnbBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.ContainerImage, "containerImage", os.Getenv("PIPER_containerImage"), "Defines the full name of the Docker image to be created including registry, image name and tag like `my.docker.registry/path/myImageName:myTag`. If left empty, image will not be pushed.")
+	cmd.Flags().StringVar(&stepConfig.ContainerImageName, "containerImageName", os.Getenv("PIPER_containerImageName"), "Name of the container which will be built - will be used instead of parameter `containerImage`")
+	cmd.Flags().StringVar(&stepConfig.ContainerImageTag, "containerImageTag", os.Getenv("PIPER_containerImageTag"), "Tag of the container which will be built - will be used instead of parameter `containerImage`")
+	cmd.Flags().StringVar(&stepConfig.ContainerRegistryURL, "containerRegistryUrl", os.Getenv("PIPER_containerRegistryUrl"), "http(s) url of the Container registry where the image should be pushed to - will be used instead of parameter `containerImage`")
 	cmd.Flags().StringVar(&stepConfig.Path, "path", os.Getenv("PIPER_path"), "The path should either point to your sources or an artifact build before.")
 	cmd.Flags().StringVar(&stepConfig.DockerConfigJSON, "dockerConfigJSON", os.Getenv("PIPER_dockerConfigJSON"), "Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).")
 
-	cmd.MarkFlagRequired("containerImage")
 	cmd.MarkFlagRequired("dockerConfigJSON")
 }
 
@@ -155,9 +162,46 @@ func cnbBuildMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_containerImage"),
+					},
+					{
+						Name:        "containerImageName",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "dockerImageName"}},
+						Default:     os.Getenv("PIPER_containerImageName"),
+					},
+					{
+						Name: "containerImageTag",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "artifactVersion",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "artifactVersion"}},
+						Default:   os.Getenv("PIPER_containerImageTag"),
+					},
+					{
+						Name: "containerRegistryUrl",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/registryUrl",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{{Name: "dockerRegistryUrl"}},
+						Default:   os.Getenv("PIPER_containerRegistryUrl"),
 					},
 					{
 						Name:        "path",
@@ -204,7 +248,8 @@ func cnbBuildMetadata() config.StepData {
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
-							{"Name": "container/containerImage"},
+							{"Name": "container/registryUrl"},
+							{"Name": "container/imageNameTag"},
 						},
 					},
 				},
