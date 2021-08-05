@@ -929,7 +929,7 @@ func getTestResults(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Se
 
 	FileName := objectName + "." + objectType + "." + "testclasses.abap"
 
-	File.Name = "/src/objects/" + strings.ToUpper(objectType) + "/" + strings.ToUpper(objectName) + "/" + FileName
+	File.Name = "/var/jenkins_home/workspace/yFirstPipeline_YI3K648942_ASANIR/src/objects/" + strings.ToUpper(objectType) + "/" + strings.ToUpper(objectName) + "/" + FileName
 	UnitTestResults.Version = "1.0"
 	File.Error = append(File.Error, UnitError)
 	UnitTestResults.File = append(UnitTestResults.File, File)
