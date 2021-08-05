@@ -17,16 +17,16 @@ func TestRunUIVeri5(t *testing.T) {
 			TestServerURL:  "http://path/to/deployment",
 		}
 
-		e := mock.ExecMockRunner{}
+		e := mock.ShellMockRunner{}
 		runUIVeri5(opts, &e)
 
 		assert.Equal(t, e.Env[0], "NPM_CONFIG_PREFIX=~/.npm-global", "NPM_CONFIG_PREFIX not set as expected")
 		assert.Contains(t, e.Env[1], "PATH", "PATH not in env list")
 		assert.Equal(t, e.Env[2], "TARGET_SERVER_URL=http://path/to/deployment", "TARGET_SERVER_URL not set as expected")
 
-		assert.Equal(t, e.Calls[0], mock.ExecCall{Exec: "npm", Params: []string{"install", "ui5/uiveri5"}}, "install command/params incorrect")
+		assert.Equal(t, e.Calls[0], "npm install ui5/uiveri5", "install command/params incorrect")
 
-		assert.Equal(t, e.Calls[1], mock.ExecCall{Exec: "uiveri5", Params: []string{"conf.js"}}, "run command/params incorrect")
+		assert.Equal(t, e.Calls[1], "uiveri5 conf.js", "run command/params incorrect")
 
 	})
 
@@ -35,7 +35,7 @@ func TestRunUIVeri5(t *testing.T) {
 
 		opts := &uiVeri5ExecuteTestsOptions{InstallCommand: "fail install test", RunCommand: "uiveri5"}
 
-		e := mock.ExecMockRunner{ShouldFailOnCommand: map[string]error{"fail install test": errors.New("error case")}}
+		e := mock.ShellMockRunner{ShouldFailOnCommand: map[string]error{"fail install test": errors.New("error case")}}
 		err := runUIVeri5(opts, &e)
 		assert.EqualErrorf(t, err, wantError, "expected comman to exit with error")
 	})
@@ -45,7 +45,7 @@ func TestRunUIVeri5(t *testing.T) {
 
 		opts := &uiVeri5ExecuteTestsOptions{InstallCommand: "npm install ui5/uiveri5", RunCommand: "fail uiveri5", RunOptions: []string{"testParam"}}
 
-		e := mock.ExecMockRunner{ShouldFailOnCommand: map[string]error{"fail uiveri5": errors.New("error case")}}
+		e := mock.ShellMockRunner{ShouldFailOnCommand: map[string]error{"fail uiveri5": errors.New("error case")}}
 		err := runUIVeri5(opts, &e)
 		assert.EqualErrorf(t, err, wantError, "expected comman to exit with error")
 	})
