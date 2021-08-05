@@ -290,7 +290,7 @@ func TestCfDeployment(t *testing.T) {
 		}()
 
 		_now = func() time.Time {
-			// There was the big eclise in Karlsruhe
+			// There was the big eclipse in Karlsruhe
 			return time.Date(1999, time.August, 11, 12, 32, 0, 0, time.UTC)
 		}
 
@@ -298,6 +298,7 @@ func TestCfDeployment(t *testing.T) {
 
 		config.DeployTool = "cf_native"
 		config.ArtifactVersion = "0.1.2"
+		config.CommitHash = "123456"
 
 		influxData := cloudFoundryDeployInflux{}
 
@@ -310,6 +311,7 @@ func TestCfDeployment(t *testing.T) {
 			expected.deployment_data.fields.artifactURL = "n/a"
 			expected.deployment_data.fields.deployTime = "AUG 11 1999 12:32:00"
 			expected.deployment_data.fields.jobTrigger = "n/a"
+			expected.deployment_data.fields.commitHash = "123456"
 
 			expected.deployment_data.tags.artifactVersion = "0.1.2"
 			expected.deployment_data.tags.deployUser = "me"
