@@ -28,11 +28,13 @@ The version string consists of three numbers separated by a dot - `1.2.0`. The n
 - The second number denotes the Support Package Stack level. A Support Package stack consists of Support Package deliveries of the contained software component versions. It is not possible to change the software component version bundle in such a delivery.
 - The third number denotes the Patch level. A Patch delivery contains Patch deliveries of the contained software component versions.
 
+**Note:** Changing the version string of the add-on product does not necessarily imply that new delivery packages are being created. In case software component versions are used that were already part of a previous add-on product/version, the existing delivery packages are reused for the new add-on product version.
+
+### Software Component Version
+
 !!! note "Development on SAP BTP, ABAP environment"
     As you may know, the development in the SAP BTP, ABAP environment is done within [software component](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/58480f43e0b64de782196922bc5f1ca0.html). A software component is self-contained, and a reduced set of [objects and features of the ABAP programming language](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/c99ba0d28a1a4747b8f47eda06c6b4f1.html) can be used.
     The software component and development objects must be created in a namespace, so that clashes between software of different vendors and SAP are avoided. Therefore, a namespace must be reserved before the development can start. [SAP note 105132](https://launchpad.support.sap.com/#/notes/105132) describes the namespace reservation process. The namespace must be reserved for the same customer number under which the “SAP BTP, ABAP ENVIRONMENT” tenants are licensed.
-
-### Software Component Version
 
 A **software component version** is a technically distinguishable unit of software and is installed and patched as a whole. It consists of ABAP development packages and contained objects. Software component versions are delivered via delivery packages. But software component versions are not individual shipment entities. They can only be delivered to customers as part of an [add-on product version](#add-on-product-version).
 A software component version is defined by a name and a version string. The name of a software component is string with a maximum of 30 characters and consists of the [namespace](https://launchpad.support.sap.com/#/notes/84282) and a freely chooseble part - `/NAMESPC/COMPONENTA`. The version consists of three numbers separated by a dot - 1.2.0. The numbers in the version string have a hierarchic relationship:
@@ -41,7 +43,9 @@ A software component version is defined by a name and a version string. The name
 - The second number denotes the Support Package level. Support Package deliveries contain a larger collection of corrections and may contains smaller functional enhancements. They are delivered with delivery packages of type [“Component Support Package”](https://help.sap.com/viewer/9043aa5d2f834ad385e1cdfdadc06b6f/5.0.4.7/en-US/6082f55473568c77e10000000a174cb4.html).
 - The third number denotes the Patch level. Patch deliveries shall only contain small corrections. They are shipped with delivery packages of type “Correction Package”.
 
-**Note:** The needed type of delivery does not need to be chosen manually; it is automatically determined by the delivery tools.
+The needed type of delivery does not need to be chosen manually; it is automatically determined by the delivery tools.
+
+**Note:** Only by changing the **version string** of of a software component, the build of a new delivery package with the latest changes is created.
 
 ### Target Vector
 
