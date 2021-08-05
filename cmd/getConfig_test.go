@@ -50,7 +50,7 @@ func TestConfigCommand(t *testing.T) {
 	})
 
 	t.Run("Optional flags", func(t *testing.T) {
-		exp := []string{"contextConfig", "output", "parametersJSON", "stepMetadata", "stepName"}
+		exp := []string{"contextConfig", "output", "parametersJSON", "stageConfig", "stageConfigAcceptedParams", "stepMetadata", "stepName"}
 		assert.Equal(t, exp, gotOpt, "optional flags incorrect")
 	})
 
