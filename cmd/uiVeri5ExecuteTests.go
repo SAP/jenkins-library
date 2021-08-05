@@ -24,7 +24,7 @@ func uiVeri5ExecuteTests(config uiVeri5ExecuteTestsOptions, telemetryData *telem
 	}
 }
 
-func runUIVeri5(config *uiVeri5ExecuteTestsOptions, command command.ExecRunner) error {
+func runUIVeri5(config *uiVeri5ExecuteTestsOptions, command command.ShellRunner) error {
 	envs := []string{"NPM_CONFIG_PREFIX=~/.npm-global"}
 	path := "PATH=" + os.Getenv("PATH") + ":~/.npm-global/bin"
 	envs = append(envs, path)
@@ -33,8 +33,7 @@ func runUIVeri5(config *uiVeri5ExecuteTestsOptions, command command.ExecRunner) 
 	}
 	command.SetEnv(envs)
 
-	installCommandTokens := strings.Split(config.InstallCommand, " ")
-	if err := command.RunExecutable(installCommandTokens[0], installCommandTokens[1:]...); err != nil {
+	if err := command.RunShell("/bin/bash", config.InstallCommand); err != nil {
 		log.SetErrorCategory(log.ErrorCustom)
 		return errors.Wrapf(err, "failed to execute install command: %v", config.InstallCommand)
 	}
@@ -43,7 +42,7 @@ func runUIVeri5(config *uiVeri5ExecuteTestsOptions, command command.ExecRunner) 
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.Errorf("parameter testOptions no longer supported, please use runOptions parameter instead.")
 	}
-	if err := command.RunExecutable(config.RunCommand, config.RunOptions...); err != nil {
+	if err := command.RunShell("/bin/bash", strings.Join(append([]string{config.RunCommand}, config.RunOptions...), " ")); err != nil {
 		log.SetErrorCategory(log.ErrorTest)
 		return errors.Wrapf(err, "failed to execute run command: %v %v", config.RunCommand, strings.Join(config.RunOptions, " "))
 	}
