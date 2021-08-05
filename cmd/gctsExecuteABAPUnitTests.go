@@ -929,7 +929,7 @@ func getTestResults(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Se
 
 	//File.Name = objectName + "." + objectType + "." + "testclasses.abap"
 
-	File.Name = "/src/objects/" + strings.ToUpper(objectName) + "/" + File.Name
+	File.Name = "src/objects/" + strings.ToUpper(objectName) + "/" + File.Name
 	UnitTestResults.Version = "1.0"
 	File.Error = append(File.Error, UnitError)
 	UnitTestResults.File = append(UnitTestResults.File, File)
