@@ -926,10 +926,12 @@ func getTestResults(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Se
 	preobjectType := re4.FindString(response.Testsuite.Testcase.Classname)
 	objectType := preobjectType[1 : len(preobjectType)-1]
 	objectName := preobjectName[1 : len(preobjectName)-1]
+
 	File.Name = objectName + "." + objectType + "." + "testclasses.abap"
 	UnitTestResults.Version = "1.0"
 	File.Error = append(File.Error, UnitError)
 	UnitTestResults.File = append(UnitTestResults.File, File)
+	UnitTestResults.Folder = "src/objects/" + strings.ToUpper(objectName) + "/" + File.Name
 
 	const UnitTestFileName = "UnitTestResults"
 
@@ -1749,4 +1751,5 @@ type Checkstyle struct {
 	Text    string   `xml:",chardata"`
 	Version string   `xml:"version,attr"`
 	File    []file   `xml:"file"`
+	Folder  string   `xml:"folder"`
 }
