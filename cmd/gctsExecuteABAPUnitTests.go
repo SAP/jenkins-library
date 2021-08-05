@@ -917,19 +917,19 @@ func getTestResults(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Se
 	re := regexp.MustCompile(`Line: <\d*>`)
 	re2 := regexp.MustCompile(`\d+`)
 	re3 := regexp.MustCompile(`:[a-zA-Z0-9_]*-`)
-	//	re4 := regexp.MustCompile(`.[a-zA-Z]*:`)
+	re4 := regexp.MustCompile(`.[a-zA-Z]*:`)
 	linestring := re.FindString(UnitError.Message)
 	linenumber := re2.FindString(linestring)
 	UnitError.Line = linenumber
 
 	preobjectName := re3.FindString(response.Testsuite.Testcase.Classname)
-	//	preobjectType := re4.FindString(response.Testsuite.Testcase.Classname)
-	//	objectType := preobjectType[1 : len(preobjectType)-1]
+	preobjectType := re4.FindString(response.Testsuite.Testcase.Classname)
+	objectType := preobjectType[1 : len(preobjectType)-1]
 	objectName := preobjectName[1 : len(preobjectName)-1]
 
 	//File.Name = objectName + "." + objectType + "." + "testclasses.abap"
 
-	File.Name = "src/objects/" + strings.ToUpper(objectName) + "/" + File.Name
+	File.Name = "/src/objects/" + strings.ToUpper(objectType) + "/" + strings.ToUpper(objectName) + "/" + File.Name
 	UnitTestResults.Version = "1.0"
 	File.Error = append(File.Error, UnitError)
 	UnitTestResults.File = append(UnitTestResults.File, File)
