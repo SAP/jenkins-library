@@ -36,4 +36,4 @@ spec:
       - name: commonPipelineEnvironment
         type: piperEnvironment
         params:
-          - name: custom/iFlowServiceEndpoint
+          - name: custom/integrationFlowServiceEndpoint
