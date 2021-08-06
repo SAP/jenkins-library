@@ -33,12 +33,16 @@ spec:
         mandatory: true
       - name: operation
         type: string
-        description: Specifies the operation for managing resource of the Integration Flow artifact
+        description: Specifies the operation(create/update/delete) for resource file of the Integration Flow artifact
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
         mandatory: true
+        possibleValues:
+          - create
+          - update
+          - delete
       - name: resourcePath
         type: string
         description: Specifies integration artifact resource file relative path.

@@ -99,7 +99,7 @@ func IntegrationArtifactResourceCommand() *cobra.Command {
 func addIntegrationArtifactResourceFlags(cmd *cobra.Command, stepConfig *integrationArtifactResourceOptions) {
 	cmd.Flags().StringVar(&stepConfig.APIServiceKey, "apiServiceKey", os.Getenv("PIPER_apiServiceKey"), "Service key JSON string to access the Process Integration Runtime service instance of plan 'api'")
 	cmd.Flags().StringVar(&stepConfig.IntegrationFlowID, "integrationFlowId", os.Getenv("PIPER_integrationFlowId"), "Specifies the ID of the Integration Flow artifact")
-	cmd.Flags().StringVar(&stepConfig.Operation, "operation", os.Getenv("PIPER_operation"), "Specifies the operation for managing resource of the Integration Flow artifact")
+	cmd.Flags().StringVar(&stepConfig.Operation, "operation", os.Getenv("PIPER_operation"), "Specifies the operation(create/update/delete) for resource file of the Integration Flow artifact")
 	cmd.Flags().StringVar(&stepConfig.ResourcePath, "resourcePath", os.Getenv("PIPER_resourcePath"), "Specifies integration artifact resource file relative path.")
 
 	cmd.MarkFlagRequired("apiServiceKey")

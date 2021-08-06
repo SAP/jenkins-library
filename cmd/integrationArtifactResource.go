@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
+	"strings"
 
 	"github.com/Jeffail/gabs/v2"
 	"github.com/SAP/jenkins-library/pkg/cpi"
@@ -52,7 +53,7 @@ func runIntegrationArtifactResource(config *integrationArtifactResourceOptions, 
 	}
 	clientOptions.Token = fmt.Sprintf("Bearer %s", token)
 	httpClient.SetOptions(clientOptions)
-	mode := config.Operation
+	mode := strings.ToLower(strings.TrimSpace(config.Operation))
 	switch mode {
 	case "create":
 		return UploadIntegrationArtifactResource(config, httpClient, fileUtils, serviceKey.OAuth.Host)
@@ -78,29 +79,9 @@ func UploadIntegrationArtifactResource(config *integrationArtifactResourceOption
 
 	uploadIflowStatusResp, httpErr := httpClient.SendRequest(httpMethod, uploadIflowStatusURL, payload, header, nil)
 
-	if uploadIflowStatusResp != nil && uploadIflowStatusResp.Body != nil {
-		defer uploadIflowStatusResp.Body.Close()
-	}
-
-	if uploadIflowStatusResp == nil {
-		return errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
-	}
-
-	if uploadIflowStatusResp.StatusCode == http.StatusCreated {
-		log.Entry().
-			WithField("IntegrationFlowID", config.IntegrationFlowID).
-			Info("Successfully uploaded a resource file in integration flow artefact in CPI designtime")
-		return nil
-	}
-	if httpErr != nil {
-		responseBody, readErr := ioutil.ReadAll(uploadIflowStatusResp.Body)
-		if readErr != nil {
-			return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", uploadIflowStatusResp.StatusCode)
-		}
-		log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", responseBody, uploadIflowStatusResp.StatusCode)
-		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error: %v", httpMethod, uploadIflowStatusURL, string(responseBody))
-	}
-	return errors.Errorf("Failed to upload resource file in Integration Flow artefact, Response Status code: %v", uploadIflowStatusResp.StatusCode)
+	successMessage := "Successfully create a new resource file in the integration flow artefact"
+	failureMessage := "Failed to create a new resource file in the Integration Flow artefact"
+	return HttpResponseHandler(uploadIflowStatusResp, httpErr, config.IntegrationFlowID, uploadIflowStatusURL, http.StatusCreated, successMessage, failureMessage, httpMethod)
 }
 
 //UpdateIntegrationArtifactResource - Update integration artifact resource file
@@ -120,29 +101,9 @@ func UpdateIntegrationArtifactResource(config *integrationArtifactResourceOption
 	}
 	updateIflowStatusResp, httpErr := httpClient.SendRequest(httpMethod, updateIflowStatusURL, payload, header, nil)
 
-	if updateIflowStatusResp != nil && updateIflowStatusResp.Body != nil {
-		defer updateIflowStatusResp.Body.Close()
-	}
-
-	if updateIflowStatusResp == nil {
-		return errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
-	}
-
-	if updateIflowStatusResp.StatusCode == http.StatusOK {
-		log.Entry().
-			WithField("IntegrationFlowID", config.IntegrationFlowID).
-			Info("Successfully updated resource file of the integration flow artefact")
-		return nil
-	}
-	if httpErr != nil {
-		responseBody, readErr := ioutil.ReadAll(updateIflowStatusResp.Body)
-		if readErr != nil {
-			return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", updateIflowStatusResp.StatusCode)
-		}
-		log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", responseBody, updateIflowStatusResp.StatusCode)
-		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error: %v", httpMethod, updateIflowStatusURL, string(responseBody))
-	}
-	return errors.Errorf("Failed to update rsource file of the Integration Flow artefact, Response Status code: %v", updateIflowStatusResp.StatusCode)
+	successMessage := "Successfully updated resource file of the integration flow artefact"
+	failureMessage := "Failed to update rsource file of the Integration Flow artefact"
+	return HttpResponseHandler(updateIflowStatusResp, httpErr, config.IntegrationFlowID, updateIflowStatusURL, http.StatusOK, successMessage, failureMessage, httpMethod)
 }
 
 //DeleteIntegrationArtifactResource - Delete integration artifact resource file
@@ -158,29 +119,9 @@ func DeleteIntegrationArtifactResource(config *integrationArtifactResourceOption
 	deleteIflowResourceStatusURL := fmt.Sprintf("%s/api/v1/IntegrationDesigntimeArtifacts(Id='%s',Version='%s')/$links/Resources(Name='%s',ResourceType='%s')", apiHost, config.IntegrationFlowID, "Active", fileName, fileExt)
 	deleteIflowResourceStatusResp, httpErr := httpClient.SendRequest(httpMethod, deleteIflowResourceStatusURL, nil, header, nil)
 
-	if deleteIflowResourceStatusResp != nil && deleteIflowResourceStatusResp.Body != nil {
-		defer deleteIflowResourceStatusResp.Body.Close()
-	}
-
-	if deleteIflowResourceStatusResp == nil {
-		return errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
-	}
-
-	if deleteIflowResourceStatusResp.StatusCode == http.StatusOK {
-		log.Entry().
-			WithField("IntegrationFlowID", config.IntegrationFlowID).
-			Info("Successfully updated integration flow artefact in CPI designtime")
-		return nil
-	}
-	if httpErr != nil {
-		responseBody, readErr := ioutil.ReadAll(deleteIflowResourceStatusResp.Body)
-		if readErr != nil {
-			return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", deleteIflowResourceStatusResp.StatusCode)
-		}
-		log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", responseBody, deleteIflowResourceStatusResp.StatusCode)
-		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error: %v", httpMethod, deleteIflowResourceStatusURL, string(responseBody))
-	}
-	return errors.Errorf("Failed to update Integration Flow artefact, Response Status code: %v", deleteIflowResourceStatusResp.StatusCode)
+	successMessage := "Successfully deleted a resource file in the integration flow artefact"
+	failureMessage := "Failed to delete a resource file in the Integration Flow artefact"
+	return HttpResponseHandler(deleteIflowResourceStatusResp, httpErr, config.IntegrationFlowID, deleteIflowResourceStatusURL, http.StatusOK, successMessage, failureMessage, httpMethod)
 }
 
 //GetJSONPayload -return http payload as byte array
@@ -215,9 +156,7 @@ func GetResourceFileExtension(filename string) string {
 	switch fileExtension {
 	case ".xsl":
 		return "xslt"
-	case ".gsh":
-		return "groovy"
-	case ".groovy":
+	case ".gsh", ".groovy":
 		return "groovy"
 	case ".js":
 		return "js"
@@ -226,4 +165,33 @@ func GetResourceFileExtension(filename string) string {
 	default:
 		return ""
 	}
+}
+
+//HttpResponseHandler - handle http response object
+func HttpResponseHandler(resp *http.Response, httpErr error, integrationFlowID string, resourceStatusURL string, httpStatusCode int,
+	successMessage string, failureMessage string, httpMethod string) error {
+
+	if resp != nil && resp.Body != nil {
+		defer resp.Body.Close()
+	}
+
+	if resp == nil {
+		return errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
+	}
+
+	if resp.StatusCode == httpStatusCode {
+		log.Entry().
+			WithField("IntegrationFlowID", integrationFlowID).
+			Info(successMessage)
+		return nil
+	}
+	if httpErr != nil {
+		responseBody, readErr := ioutil.ReadAll(resp.Body)
+		if readErr != nil {
+			return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", resp.StatusCode)
+		}
+		log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", responseBody, resp.StatusCode)
+		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error: %v", httpMethod, resourceStatusURL, string(responseBody))
+	}
+	return errors.Errorf(failureMessage+", Response Status code: %v", resp.StatusCode)
 }
