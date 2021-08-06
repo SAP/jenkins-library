@@ -193,5 +193,5 @@ func HttpResponseHandler(resp *http.Response, httpErr error, integrationFlowID s
 		log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", responseBody, resp.StatusCode)
 		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error: %v", httpMethod, resourceStatusURL, string(responseBody))
 	}
-	return errors.Errorf(failureMessage+", Response Status code: %v", resp.StatusCode)
+	return errors.Errorf("%s, Response Status code: %v", failureMessage, resp.StatusCode)
 }
