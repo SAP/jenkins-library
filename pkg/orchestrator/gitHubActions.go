@@ -1,11 +1,17 @@
 package orchestrator
 
 import (
+	"github.com/SAP/jenkins-library/pkg/log"
 	"os"
 	"strings"
 )
 
 type GitHubActionsConfigProvider struct{}
+
+func (a *GitHubActionsConfigProvider) GetLog() ([]byte, error) {
+	log.Entry().Infof("GetLog() for GitHub Actions not yet implemented.")
+	return nil, nil
+}
 
 func (g *GitHubActionsConfigProvider) GetBranch() string {
 	return strings.TrimPrefix(os.Getenv("GITHUB_REF"), "refs/heads/")
