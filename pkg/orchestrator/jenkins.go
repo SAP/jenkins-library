@@ -29,7 +29,7 @@ func (j *JenkinsConfigProvider) getJenkinsHome() string {
 }
 
 func (j *JenkinsConfigProvider) GetBuildNumber() string {
-	return os.Getenv("JOB_NAME")
+	return os.Getenv("BUILD_NUMBER")
 }
 
 func (j *JenkinsConfigProvider) GetBranch() string {
