@@ -71,7 +71,7 @@ func newDetectUtils() detectUtils {
 }
 
 func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData, influx *detectExecuteScanInflux) {
-	influx.step_data.fields.detect = false
+	influx.detect_data.fields.detect = false
 	utils := newDetectUtils()
 	err := runDetect(config, utils, influx)
 
@@ -81,7 +81,7 @@ func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData,
 			Fatal("failed to execute detect scan")
 	}
 
-	influx.step_data.fields.detect = true
+	influx.detect_data.fields.detect = true
 	// create Toolrecord file
 	toolRecordFileName, err := createToolRecordDetect("./", config)
 	if err != nil {
@@ -275,7 +275,12 @@ func postScanChecksAndReporting(config detectExecuteScanOptions, influx *detectE
 	if err != nil {
 		return err
 	}
-	createVulnerabilityReport(config, vulns, influx)
+	scanReport := createVulnerabilityReport(config, vulns, influx)
+	paths, err := writeVulnerabilityReports(scanReport, config)
+	piperutils.PersistReportsAndLinks("detectExecuteScan", "", paths, nil)
+	if err !=nil {
+		retrun errors.Wrapf(err, "failed to check and report scan results")
+	}
 	return nil
 }
 
@@ -362,6 +367,36 @@ func createVulnerabilityReport(config detectExecuteScanOptions, vulns *bd.Vulner
 
 	scanReport.DetailTable = detailTable
 	return scanReport
+}
+
+func writeVulnerabilityReports(scanReport reporting.ScanReport, config detectExecuteScanOptions) ([]piperutils.Path, error) {
+	reportPaths := []piperutils.Path{}
+
+	htmlReport, _ := scanReport.ToHTML()
+	htmlReportPath := filepath.Join("blackduck", "piper_detect_vulnerability_report.html")
+	if err := utils.FileWrite(htmlReportPath, htmlReport, 0666); err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return reportPaths, errors.Wrapf(err, "failed to write html report")
+	}
+	reportPaths = append(reportPaths, piperutils.Path{Name: "BlackDuck Vulnerability Report", Target: htmlReportPath})
+
+	jsonReport, _ := scanReport.ToJSON()
+	if exists, _ := utils.DirExists(reporting.StepReportDirectory); !exists {
+		err := utils.MkdirAll(reporting.StepReportDirectory, 0777)
+		if err != nil {
+			return reportPaths, errors.Wrap(err, "failed to create reporting directory")
+		}
+	}
+	if err := utils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("detectExecuteScan_oss_%v.json", reportSha(config))), jsonReport, 0666); err != nil {
+		return reportPaths, errors.Wrapf(err, "failed to write json report")
+	}
+
+	return reportPaths, nil
+}
+
+func reportSha(config detectExecuteScanOptions) string {
+	reportShaData := []byte(config.ProjectName + "," + getVersionName(config))
+	return fmt.Sprintf("%x", sha1.Sum(reportShaData))
 }
 
 func isActiveVulnerability(v bd.Vulnerability) bool {
