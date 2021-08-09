@@ -25,7 +25,7 @@ func (j *JenkinsConfigProvider) GetJobName() string {
 }
 
 func (j *JenkinsConfigProvider) getJenkinsHome() string {
-	return os.Getenv("JOB_NAME")
+	return os.Getenv("JENKINS_HOME")
 }
 
 func (j *JenkinsConfigProvider) GetBuildNumber() string {
