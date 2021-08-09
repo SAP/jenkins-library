@@ -2,6 +2,7 @@ package orchestrator
 
 import (
 	"os"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -42,4 +43,27 @@ func TestJenkins(t *testing.T) {
 		assert.Equal(t, "main", c.Base)
 		assert.Equal(t, "42", c.Key)
 	})
+}
+
+func TestJenkinsConfigProvider_GetLog(t *testing.T) {
+	tests := []struct {
+		name    string
+		want    []byte
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			j := &JenkinsConfigProvider{}
+			got, err := j.GetLog()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetLog() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GetLog() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

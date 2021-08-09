@@ -1,11 +1,17 @@
 package orchestrator
 
 import (
+	"github.com/SAP/jenkins-library/pkg/log"
 	"os"
 	"strings"
 )
 
 type AzureDevOpsConfigProvider struct{}
+
+func (a *AzureDevOpsConfigProvider) GetLog() ([]byte, error) {
+	log.Entry().Infof("GetLog() for Azure not yet implemented.")
+	return nil, nil
+}
 
 func (a *AzureDevOpsConfigProvider) GetBranch() string {
 	tmp := os.Getenv("BUILD_SOURCEBRANCH")

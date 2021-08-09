@@ -21,6 +21,7 @@ type OrchestratorSpecificConfigProviding interface {
 	GetPullRequestConfig() PullRequestConfig
 	GetRepoUrl() string
 	IsPullRequest() bool
+	GetLog() ([]byte, error)
 }
 
 type PullRequestConfig struct {
