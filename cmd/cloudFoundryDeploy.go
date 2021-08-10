@@ -861,7 +861,7 @@ func cfDeploy(
 	command.Stdout(&getURL)
 	//command.Stdout(&getURL)
 	appCommand := "apps"
-	gettURLCommand := "grep -Po 'cloudci-cicdtest.*"
+	getURLCommand := "grep -Po 'cloudci-cicdtest.*"
 	cfGetUrlParams := []string{
 		appCommand,
 		getURLCommand,
