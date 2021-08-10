@@ -543,7 +543,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "commonPipelineEnvironment",
-								Param: "isOptimizedAndScheduled",
+								Param: "custom/isOptimizedAndScheduled",
 							},
 						},
 						Scope:     []string{"PARAMETERS"},
