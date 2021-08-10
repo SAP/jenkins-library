@@ -53,6 +53,10 @@ type detectUtilsBundle struct {
 	*piperhttp.Client
 }
 
+type blackduckSystem struct {
+	Client bd.Client
+}
+
 func newDetectUtils() detectUtils {
 	utils := detectUtilsBundle{
 		Command: &command.Command{
@@ -71,6 +75,13 @@ func newDetectUtils() detectUtils {
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
 	return &utils
+}
+
+func newBlackduckSystem(config detectExecuteScanOptions) *blackduckSystem {
+	sys := blackduckSystem{
+		Client: bd.NewClient(config.Token, config.ServerURL, &piperhttp.Client{}),
+	}
+	return &sys
 }
 
 func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData, influx *detectExecuteScanInflux) {
@@ -135,7 +146,7 @@ func runDetect(config detectExecuteScanOptions, utils detectUtils, influx *detec
 	utils.SetEnv(envs)
 
 	err = utils.RunShell("/bin/bash", script)
-	reportingErr := postScanChecksAndReporting(config, influx, utils)
+	reportingErr := postScanChecksAndReporting(config, influx, utils, newBlackduckSystem(config))
 	if reportingErr != nil {
 		log.Entry().Warnf("Failed to generate reports: %v", reportingErr)
 	}
@@ -276,8 +287,8 @@ func getVersionName(config detectExecuteScanOptions) string {
 	return detectVersionName
 }
 
-func postScanChecksAndReporting(config detectExecuteScanOptions, influx *detectExecuteScanInflux, utils detectUtils) error {
-	vulns, _, err := getVulnsAndComponents(config, influx)
+func postScanChecksAndReporting(config detectExecuteScanOptions, influx *detectExecuteScanInflux, utils detectUtils, sys *blackduckSystem) error {
+	vulns, _, err := getVulnsAndComponents(config, influx, sys)
 	if err != nil {
 		return err
 	}
@@ -290,10 +301,9 @@ func postScanChecksAndReporting(config detectExecuteScanOptions, influx *detectE
 	return nil
 }
 
-func getVulnsAndComponents(config detectExecuteScanOptions, influx *detectExecuteScanInflux) (*bd.Vulnerabilities, *bd.Components, error) {
+func getVulnsAndComponents(config detectExecuteScanOptions, influx *detectExecuteScanInflux, sys *blackduckSystem) (*bd.Vulnerabilities, *bd.Components, error) {
 	detectVersionName := getVersionName(config)
-	bdClient := bd.NewClient(config.Token, config.ServerURL, &piperhttp.Client{})
-	vulns, err := bdClient.GetVulnerabilities(config.ProjectName, detectVersionName)
+	vulns, err := sys.Client.GetVulnerabilities(config.ProjectName, detectVersionName)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -312,7 +322,7 @@ func getVulnsAndComponents(config detectExecuteScanOptions, influx *detectExecut
 	influx.detect_data.fields.major_vulnerabilities = majorVulns
 	influx.detect_data.fields.minor_vulnerabilities = activeVulns - majorVulns
 
-	components, err := bdClient.GetComponents(config.ProjectName, detectVersionName)
+	components, err := sys.Client.GetComponents(config.ProjectName, detectVersionName)
 	if err != nil {
 		return vulns, nil, err
 	}
