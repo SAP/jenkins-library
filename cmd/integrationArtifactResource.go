@@ -80,7 +80,7 @@ func UploadIntegrationArtifactResource(config *integrationArtifactResourceOption
 	uploadIflowStatusResp, httpErr := httpClient.SendRequest(httpMethod, uploadIflowStatusURL, payload, header, nil)
 
 	successMessage := "Successfully create a new resource file in the integration flow artefact"
-	failureMessage := "Failed to create a new resource file in the Integration Flow artefact"
+	failureMessage := "Failed to create a new resource file in the integration flow artefact"
 	return HttpResponseHandler(uploadIflowStatusResp, httpErr, config.IntegrationFlowID, uploadIflowStatusURL, http.StatusCreated, successMessage, failureMessage, httpMethod)
 }
 
@@ -102,7 +102,7 @@ func UpdateIntegrationArtifactResource(config *integrationArtifactResourceOption
 	updateIflowStatusResp, httpErr := httpClient.SendRequest(httpMethod, updateIflowStatusURL, payload, header, nil)
 
 	successMessage := "Successfully updated resource file of the integration flow artefact"
-	failureMessage := "Failed to update rsource file of the Integration Flow artefact"
+	failureMessage := "Failed to update rsource file of the integration flow artefact"
 	return HttpResponseHandler(updateIflowStatusResp, httpErr, config.IntegrationFlowID, updateIflowStatusURL, http.StatusOK, successMessage, failureMessage, httpMethod)
 }
 
@@ -120,7 +120,7 @@ func DeleteIntegrationArtifactResource(config *integrationArtifactResourceOption
 	deleteIflowResourceStatusResp, httpErr := httpClient.SendRequest(httpMethod, deleteIflowResourceStatusURL, nil, header, nil)
 
 	successMessage := "Successfully deleted a resource file in the integration flow artefact"
-	failureMessage := "Failed to delete a resource file in the Integration Flow artefact"
+	failureMessage := "Failed to delete a resource file in the integration flow artefact"
 	return HttpResponseHandler(deleteIflowResourceStatusResp, httpErr, config.IntegrationFlowID, deleteIflowResourceStatusURL, http.StatusOK, successMessage, failureMessage, httpMethod)
 }
 
