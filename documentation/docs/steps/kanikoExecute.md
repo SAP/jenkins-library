@@ -27,3 +27,9 @@ kanikoExecute script:this
 ## ${docGenParameters}
 
 ## ${docGenConfiguration}
+
+
+
+## N.B. :
+
+For the usecase involving Google Container Registry and possibly others, do not mix up service account JSON downloaded directly from Google etc as this is an incorrect format, and needs to be modified before it can be used with Kaniko and Jenkins credentials store step.
