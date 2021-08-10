@@ -55,7 +55,7 @@ func TestRunDetect(t *testing.T) {
 		t.Parallel()
 		utilsMock := newDetectTestUtilsBundle()
 		utilsMock.AddFile("detect.sh", []byte(""))
-		err := runDetect(detectExecuteScanOptions{}, utilsMock)
+		err := runDetect(detectExecuteScanOptions{}, utilsMock, &detectExecuteScanInflux{})
 
 		assert.Equal(t, utilsMock.downloadedFiles["https://detect.synopsys.com/detect.sh"], "detect.sh")
 		assert.True(t, utilsMock.HasRemovedFile("detect.sh"))
@@ -71,7 +71,7 @@ func TestRunDetect(t *testing.T) {
 		utilsMock := newDetectTestUtilsBundle()
 		utilsMock.AddFile("detect.sh", []byte(""))
 		utilsMock.AddFile("my_BlackDuck_RiskReport.pdf", []byte(""))
-		err := runDetect(detectExecuteScanOptions{FailOn: []string{"BLOCKER"}}, utilsMock)
+		err := runDetect(detectExecuteScanOptions{FailOn: []string{"BLOCKER"}}, utilsMock, &detectExecuteScanInflux{})
 
 		assert.Equal(t, utilsMock.downloadedFiles["https://detect.synopsys.com/detect.sh"], "detect.sh")
 		assert.True(t, utilsMock.HasRemovedFile("detect.sh"))
@@ -91,7 +91,7 @@ func TestRunDetect(t *testing.T) {
 		utilsMock := newDetectTestUtilsBundle()
 		utilsMock.ShouldFailOnCommand = map[string]error{"./detect.sh --blackduck.url= --blackduck.api.token= \"--detect.project.name=''\" \"--detect.project.version.name=''\" \"--detect.code.location.name=''\" --detect.source.path='.'": fmt.Errorf("Test Error")}
 		utilsMock.AddFile("detect.sh", []byte(""))
-		err := runDetect(detectExecuteScanOptions{}, utilsMock)
+		err := runDetect(detectExecuteScanOptions{}, utilsMock, &detectExecuteScanInflux{})
 		assert.EqualError(t, err, "Test Error")
 		assert.True(t, utilsMock.HasRemovedFile("detect.sh"))
 	})
@@ -105,7 +105,7 @@ func TestRunDetect(t *testing.T) {
 			M2Path:              ".pipeline/local_repo",
 			ProjectSettingsFile: "project-settings.xml",
 			GlobalSettingsFile:  "global-settings.xml",
-		}, utilsMock)
+		}, utilsMock, &detectExecuteScanInflux{})
 
 		assert.NoError(t, err)
 		assert.Equal(t, ".", utilsMock.Dir, "Wrong execution directory used")

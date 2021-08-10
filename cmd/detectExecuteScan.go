@@ -13,6 +13,7 @@ import (
 	bd "github.com/SAP/jenkins-library/pkg/blackduck"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/maven"
+	"github.com/pkg/errors"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -28,6 +29,7 @@ type detectUtils interface {
 	FileExists(filename string) (bool, error)
 	FileRemove(filename string) error
 	Copy(src, dest string) (int64, error)
+	DirExists(dest string) (bool, error)
 	FileRead(path string) ([]byte, error)
 	FileWrite(path string, content []byte, perm os.FileMode) error
 	MkdirAll(path string, perm os.FileMode) error
@@ -71,7 +73,7 @@ func newDetectUtils() detectUtils {
 }
 
 func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData, influx *detectExecuteScanInflux) {
-	influx.detect_data.fields.detect = false
+	influx.step_data.fields.detect = false
 	utils := newDetectUtils()
 	err := runDetect(config, utils, influx)
 
@@ -81,7 +83,7 @@ func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData,
 			Fatal("failed to execute detect scan")
 	}
 
-	influx.detect_data.fields.detect = true
+	influx.step_data.fields.detect = true
 	// create Toolrecord file
 	toolRecordFileName, err := createToolRecordDetect("./", config)
 	if err != nil {
@@ -132,7 +134,7 @@ func runDetect(config detectExecuteScanOptions, utils detectUtils, influx *detec
 	utils.SetEnv(envs)
 
 	err = utils.RunShell("/bin/bash", script)
-	postScanChecksAndReporting(config, influx)
+	postScanChecksAndReporting(config, influx, utils)
 	if err == nil && piperutils.ContainsString(config.FailOn, "BLOCKER") {
 		violations := struct {
 			PolicyViolations int      `json:"policyViolations"`
@@ -270,16 +272,16 @@ func getVersionName(config detectExecuteScanOptions) string {
 	return detectVersionName
 }
 
-func postScanChecksAndReporting(config detectExecuteScanOptions, influx *detectExecuteScanInflux) error {
+func postScanChecksAndReporting(config detectExecuteScanOptions, influx *detectExecuteScanInflux, utils detectUtils) error {
 	vulns, _, err := getVulnsAndComponents(config, influx)
 	if err != nil {
 		return err
 	}
 	scanReport := createVulnerabilityReport(config, vulns, influx)
-	paths, err := writeVulnerabilityReports(scanReport, config)
+	paths, err := writeVulnerabilityReports(scanReport, config, utils)
 	piperutils.PersistReportsAndLinks("detectExecuteScan", "", paths, nil)
-	if err !=nil {
-		retrun errors.Wrapf(err, "failed to check and report scan results")
+	if err != nil {
+		return errors.Wrapf(err, "failed to check and report scan results")
 	}
 	return nil
 }
@@ -369,7 +371,7 @@ func createVulnerabilityReport(config detectExecuteScanOptions, vulns *bd.Vulner
 	return scanReport
 }
 
-func writeVulnerabilityReports(scanReport reporting.ScanReport, config detectExecuteScanOptions) ([]piperutils.Path, error) {
+func writeVulnerabilityReports(scanReport reporting.ScanReport, config detectExecuteScanOptions, utils detectUtils) ([]piperutils.Path, error) {
 	reportPaths := []piperutils.Path{}
 
 	htmlReport, _ := scanReport.ToHTML()
@@ -387,16 +389,11 @@ func writeVulnerabilityReports(scanReport reporting.ScanReport, config detectExe
 			return reportPaths, errors.Wrap(err, "failed to create reporting directory")
 		}
 	}
-	if err := utils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("detectExecuteScan_oss_%v.json", reportSha(config))), jsonReport, 0666); err != nil {
+	if err := utils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("detectExecuteScan_oss_%v.json", fmt.Sprintf("%v", time.Now()))), jsonReport, 0666); err != nil {
 		return reportPaths, errors.Wrapf(err, "failed to write json report")
 	}
 
 	return reportPaths, nil
-}
-
-func reportSha(config detectExecuteScanOptions) string {
-	reportShaData := []byte(config.ProjectName + "," + getVersionName(config))
-	return fmt.Sprintf("%x", sha1.Sum(reportShaData))
 }
 
 func isActiveVulnerability(v bd.Vulnerability) bool {
