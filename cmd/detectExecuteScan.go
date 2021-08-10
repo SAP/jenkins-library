@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -134,7 +135,10 @@ func runDetect(config detectExecuteScanOptions, utils detectUtils, influx *detec
 	utils.SetEnv(envs)
 
 	err = utils.RunShell("/bin/bash", script)
-	postScanChecksAndReporting(config, influx, utils)
+	reportingErr := postScanChecksAndReporting(config, influx, utils)
+	if reportingErr != nil {
+		log.Entry().Warnf("Failed to generate reports: %v", reportingErr)
+	}
 	if err == nil && piperutils.ContainsString(config.FailOn, "BLOCKER") {
 		violations := struct {
 			PolicyViolations int      `json:"policyViolations"`
@@ -348,7 +352,12 @@ func createVulnerabilityReport(config detectExecuteScanOptions, vulns *bd.Vulner
 		CounterHeader: "Entry#",
 	}
 
-	for _, vuln := range vulns.Items {
+	vulnItems := vulns.Items
+	sort.Slice(vulnItems, func(i, j int) bool {
+		return vulnItems[i].OverallScore > vulnItems[j].OverallScore
+	})
+
+	for _, vuln := range vulnItems {
 		row := reporting.ScanRow{}
 		row.AddColumn(vuln.VulnerabilityWithRemediation.VulnerabilityName, 0)
 		row.AddColumn(vuln.VulnerabilityWithRemediation.Severity, 0)
@@ -356,6 +365,9 @@ func createVulnerabilityReport(config detectExecuteScanOptions, vulns *bd.Vulner
 		var scoreStyle reporting.ColumnStyle = reporting.Yellow
 		if isMajorVulnerability(vuln) {
 			scoreStyle = reporting.Red
+		}
+		if !isActiveVulnerability(vuln) {
+			scoreStyle = reporting.Grey
 		}
 		row.AddColumn(vuln.VulnerabilityWithRemediation.OverallScore, scoreStyle)
 		row.AddColumn(vuln.VulnerabilityWithRemediation.BaseScore, 0)
@@ -375,7 +387,7 @@ func writeVulnerabilityReports(scanReport reporting.ScanReport, config detectExe
 	reportPaths := []piperutils.Path{}
 
 	htmlReport, _ := scanReport.ToHTML()
-	htmlReportPath := filepath.Join("blackduck", "piper_detect_vulnerability_report.html")
+	htmlReportPath := "piper_detect_vulnerability_report.html"
 	if err := utils.FileWrite(htmlReportPath, htmlReport, 0666); err != nil {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return reportPaths, errors.Wrapf(err, "failed to write html report")
