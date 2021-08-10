@@ -86,6 +86,17 @@ def unstash(name, msg = "Unstash failed:") {
         unstashedContent += name
     } catch (e) {
         echo "$msg $name (${e.getMessage()})"
+        if (e.getMessage().contains("JNLP4-connect")) {
+            sleep(3000) // Wait 3 seconds in case it has been a network hiccup
+            try {
+                echo "[Retry JNLP4-connect issue] Unstashing content: ${name}"
+                steps.unstash name
+                unstashedContent += name
+            } catch (errRetry) {
+                msg = "[Retry JNLP4-connect issue] Unstashing failed:"
+                echo "$msg $name (${errRetry.getMessage()})"
+            }
+        }
     }
     return unstashedContent
 }
