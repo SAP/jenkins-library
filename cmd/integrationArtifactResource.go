@@ -90,6 +90,7 @@ func UploadIntegrationArtifactResource(config *integrationArtifactResourceOption
 
 	successMessage := "Successfully create a new resource file in the integration flow artefact"
 	failureMessage := "Failed to create a new resource file in the integration flow artefact"
+	
 	integrationArtifactResourceData := IntegrationArtifactResourceData{
 		Method:       httpMethod,
 		URL:          uploadIflowStatusURL,
@@ -98,6 +99,7 @@ func UploadIntegrationArtifactResource(config *integrationArtifactResourceOption
 		FlrMessage:   failureMessage,
 		StatusCode:   http.StatusCreated,
 	}
+
 	return HttpResponseHandler(uploadIflowStatusResp, httpErr, &integrationArtifactResourceData)
 }
 
@@ -120,6 +122,7 @@ func UpdateIntegrationArtifactResource(config *integrationArtifactResourceOption
 
 	successMessage := "Successfully updated resource file of the integration flow artefact"
 	failureMessage := "Failed to update rsource file of the integration flow artefact"
+	
 	integrationArtifactResourceData := IntegrationArtifactResourceData{
 		Method:       httpMethod,
 		URL:          updateIflowStatusURL,
@@ -128,6 +131,7 @@ func UpdateIntegrationArtifactResource(config *integrationArtifactResourceOption
 		FlrMessage:   failureMessage,
 		StatusCode:   http.StatusOK,
 	}
+
 	return HttpResponseHandler(updateIflowStatusResp, httpErr, &integrationArtifactResourceData)
 }
 
@@ -146,6 +150,7 @@ func DeleteIntegrationArtifactResource(config *integrationArtifactResourceOption
 
 	successMessage := "Successfully deleted a resource file in the integration flow artefact"
 	failureMessage := "Failed to delete a resource file in the integration flow artefact"
+	
 	integrationArtifactResourceData := IntegrationArtifactResourceData{
 		Method:       httpMethod,
 		URL:          deleteIflowResourceStatusURL,
@@ -154,6 +159,7 @@ func DeleteIntegrationArtifactResource(config *integrationArtifactResourceOption
 		FlrMessage:   failureMessage,
 		StatusCode:   http.StatusOK,
 	}
+	
 	return HttpResponseHandler(deleteIflowResourceStatusResp, httpErr, &integrationArtifactResourceData)
 }
 
