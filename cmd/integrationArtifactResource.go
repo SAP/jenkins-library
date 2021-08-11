@@ -38,12 +38,12 @@ func integrationArtifactResource(config integrationArtifactResourceOptions, tele
 }
 
 type IntegrationArtifactResourceData struct {
-	Method       string
-	URL          string
-	IFlowID      string
-	ScsMessage   string
-	FlrMessage   string
-	StatusCode   int
+	Method     string
+	URL        string
+	IFlowID    string
+	ScsMessage string
+	FlrMessage string
+	StatusCode int
 }
 
 func runIntegrationArtifactResource(config *integrationArtifactResourceOptions, telemetryData *telemetry.CustomData, fileUtils piperutils.FileUtils, httpClient piperhttp.Sender) error {
@@ -90,7 +90,6 @@ func UploadIntegrationArtifactResource(config *integrationArtifactResourceOption
 
 	successMessage := "Successfully create a new resource file in the integration flow artefact"
 	failureMessage := "Failed to create a new resource file in the integration flow artefact"
-	
 	integrationArtifactResourceData := IntegrationArtifactResourceData{
 		Method:     httpMethod,
 		URL:        uploadIflowStatusURL,
@@ -122,7 +121,6 @@ func UpdateIntegrationArtifactResource(config *integrationArtifactResourceOption
 
 	successMessage := "Successfully updated resource file of the integration flow artefact"
 	failureMessage := "Failed to update rsource file of the integration flow artefact"
-	
 	integrationArtifactResourceData := IntegrationArtifactResourceData{
 		Method:     httpMethod,
 		URL:        updateIflowStatusURL,
@@ -150,7 +148,6 @@ func DeleteIntegrationArtifactResource(config *integrationArtifactResourceOption
 
 	successMessage := "Successfully deleted a resource file in the integration flow artefact"
 	failureMessage := "Failed to delete a resource file in the integration flow artefact"
-	
 	integrationArtifactResourceData := IntegrationArtifactResourceData{
 		Method:     httpMethod,
 		URL:        deleteIflowResourceStatusURL,
