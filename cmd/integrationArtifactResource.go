@@ -37,6 +37,15 @@ func integrationArtifactResource(config integrationArtifactResourceOptions, tele
 	}
 }
 
+type IntegrationArtifactResourceData struct {
+	Method       string
+	URL          string
+	IFlowID      string
+	ScsMessage   string
+	FlrMessage   string
+	StatusCode   int
+}
+
 func runIntegrationArtifactResource(config *integrationArtifactResourceOptions, telemetryData *telemetry.CustomData, fileUtils piperutils.FileUtils, httpClient piperhttp.Sender) error {
 	serviceKey, err := cpi.ReadCpiServiceKey(config.APIServiceKey)
 	if err != nil {
@@ -81,7 +90,15 @@ func UploadIntegrationArtifactResource(config *integrationArtifactResourceOption
 
 	successMessage := "Successfully create a new resource file in the integration flow artefact"
 	failureMessage := "Failed to create a new resource file in the integration flow artefact"
-	return HttpResponseHandler(uploadIflowStatusResp, httpErr, config.IntegrationFlowID, uploadIflowStatusURL, http.StatusCreated, successMessage, failureMessage, httpMethod)
+	integrationArtifactResourceData := IntegrationArtifactResourceData{
+		Method:       httpMethod,
+		URL:          uploadIflowStatusURL,
+		IFlowID:      config.IntegrationFlowID,
+		ScsMessage:   successMessage,
+		FlrMessage:   failureMessage,
+		StatusCode:   http.StatusCreated,
+	}
+	return HttpResponseHandler(uploadIflowStatusResp, httpErr, &integrationArtifactResourceData)
 }
 
 //UpdateIntegrationArtifactResource - Update integration artifact resource file
@@ -103,7 +120,15 @@ func UpdateIntegrationArtifactResource(config *integrationArtifactResourceOption
 
 	successMessage := "Successfully updated resource file of the integration flow artefact"
 	failureMessage := "Failed to update rsource file of the integration flow artefact"
-	return HttpResponseHandler(updateIflowStatusResp, httpErr, config.IntegrationFlowID, updateIflowStatusURL, http.StatusOK, successMessage, failureMessage, httpMethod)
+	integrationArtifactResourceData := IntegrationArtifactResourceData{
+		Method:       httpMethod,
+		URL:          updateIflowStatusURL,
+		IFlowID:      config.IntegrationFlowID,
+		ScsMessage:   successMessage,
+		FlrMessage:   failureMessage,
+		StatusCode:   http.StatusOK,
+	}
+	return HttpResponseHandler(updateIflowStatusResp, httpErr, &integrationArtifactResourceData)
 }
 
 //DeleteIntegrationArtifactResource - Delete integration artifact resource file
@@ -121,7 +146,15 @@ func DeleteIntegrationArtifactResource(config *integrationArtifactResourceOption
 
 	successMessage := "Successfully deleted a resource file in the integration flow artefact"
 	failureMessage := "Failed to delete a resource file in the integration flow artefact"
-	return HttpResponseHandler(deleteIflowResourceStatusResp, httpErr, config.IntegrationFlowID, deleteIflowResourceStatusURL, http.StatusOK, successMessage, failureMessage, httpMethod)
+	integrationArtifactResourceData := IntegrationArtifactResourceData{
+		Method:       httpMethod,
+		URL:          deleteIflowResourceStatusURL,
+		IFlowID:      config.IntegrationFlowID,
+		ScsMessage:   successMessage,
+		FlrMessage:   failureMessage,
+		StatusCode:   http.StatusOK,
+	}
+	return HttpResponseHandler(deleteIflowResourceStatusResp, httpErr, &integrationArtifactResourceData)
 }
 
 //GetJSONPayload -return http payload as byte array
@@ -168,8 +201,7 @@ func GetResourceFileExtension(filename string) string {
 }
 
 //HttpResponseHandler - handle http response object
-func HttpResponseHandler(resp *http.Response, httpErr error, integrationFlowID string, resourceStatusURL string, httpStatusCode int,
-	successMessage string, failureMessage string, httpMethod string) error {
+func HttpResponseHandler(resp *http.Response, httpErr error, integrationArtifactResourceData *IntegrationArtifactResourceData) error {
 
 	if resp != nil && resp.Body != nil {
 		defer resp.Body.Close()
@@ -179,10 +211,10 @@ func HttpResponseHandler(resp *http.Response, httpErr error, integrationFlowID s
 		return errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
 	}
 
-	if resp.StatusCode == httpStatusCode {
+	if resp.StatusCode == integrationArtifactResourceData.StatusCode {
 		log.Entry().
-			WithField("IntegrationFlowID", integrationFlowID).
-			Info(successMessage)
+			WithField("IntegrationFlowID", integrationArtifactResourceData.IFlowID).
+			Info(integrationArtifactResourceData.ScsMessage)
 		return nil
 	}
 	if httpErr != nil {
@@ -191,7 +223,7 @@ func HttpResponseHandler(resp *http.Response, httpErr error, integrationFlowID s
 			return errors.Wrapf(readErr, "HTTP response body could not be read, Response status code: %v", resp.StatusCode)
 		}
 		log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", responseBody, resp.StatusCode)
-		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error: %v", httpMethod, resourceStatusURL, string(responseBody))
+		return errors.Wrapf(httpErr, "HTTP %v request to %v failed with error: %v", integrationArtifactResourceData.Method, integrationArtifactResourceData.URL, string(responseBody))
 	}
-	return errors.Errorf("%s, Response Status code: %v", failureMessage, resp.StatusCode)
+	return errors.Errorf("%s, Response Status code: %v", integrationArtifactResourceData.FlrMessage, resp.StatusCode)
 }
