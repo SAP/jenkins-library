@@ -10,6 +10,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
 	"google.golang.org/api/iterator"
+	"google.golang.org/api/option"
 )
 
 // GCSClientInterface is an interface to mock GCSClient
@@ -17,38 +18,66 @@ type ClientInterface interface {
 	UploadFile(bucketID string, sourcePath string, targetPath string) error
 	DownloadFile(bucketID string, sourcePath string, targetPath string) error
 	ListFiles(bucketID string) ([]string, error)
+	Close() error
 }
 
 // GCSClient provides functions to interact with google cloud storage API
 type gcsClient struct {
-	context context.Context
-	client  storage.Client
+	envVars    []EnvVar
+	context    context.Context
+	client     storage.Client
+	openFile   func(name string) (io.ReadCloser, error)
+	createFile func(name string) (io.WriteCloser, error)
+}
+
+// EnvVar defines an  environment variable incl. information about a potential modification to the variable
+type EnvVar struct {
+	Name     string
+	Value    string
+	Modified bool
 }
 
 // Init intitializes the google cloud storage client
-func NewClient(gcpJsonKeyFilePath string) (*gcsClient, error) {
-	if gcpJsonKeyFilePath != "" {
-		setenvIfEmpty("GOOGLE_APPLICATION_CREDENTIALS", gcpJsonKeyFilePath)
-	} else {
-		return nil, errors.New("GCP JSON Key file Path must not be empty")
+func NewClient(envVars []EnvVar, openFile func(name string) (io.ReadCloser, error), createFile func(name string) (io.WriteCloser, error),
+	opts ...option.ClientOption) (*gcsClient, error) {
+	ctx := context.Background()
+	gcsClient := gcsClient{
+		context:    ctx,
+		envVars:    envVars,
+		openFile:   openFile,
+		createFile: createFile,
 	}
-	context := context.Background()
-	client, err := storage.NewClient(context)
+	gcsClient.prepareEnv()
+	client, err := storage.NewClient(ctx, opts...)
 	if err != nil {
 		return nil, errors.Wrapf(err, "bucket connection failed: %v", err)
 	}
-	gcsClient := gcsClient{
-		context: context,
-		client:  *client,
-	}
+	gcsClient.client = *client
 	return &gcsClient, nil
+}
+
+// prepareEnv sets required environment variables in case they are not set yet
+func (g *gcsClient) prepareEnv() {
+	for key, env := range g.envVars {
+		g.envVars[key].Modified = setenvIfEmpty(env.Name, env.Value)
+	}
+}
+
+// cleanupEnv removes environment variables set by PrepareEnv
+func (g *gcsClient) cleanupEnv() error {
+	for _, env := range g.envVars {
+		if err := removeEnvIfPreviouslySet(env.Name, env.Modified); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // UploadFile uploads a file into a google cloud storage bucket
 func (g *gcsClient) UploadFile(bucketID string, sourcePath string, targetPath string) error {
 	target := g.client.Bucket(bucketID).Object(targetPath).NewWriter(g.context)
 	log.Entry().Debugf("uploading %v to %v\n", sourcePath, targetPath)
-	sourceFile, err := os.Open(sourcePath)
+	sourceFile, err := g.openFile(sourcePath)
 	if err != nil {
 		return errors.Wrapf(err, "could not open source file: %v", err)
 	}
@@ -79,14 +108,11 @@ func (g *gcsClient) DownloadFile(bucketID string, sourcePath string, targetPath 
 		return errors.Wrapf(err, "could not open source file from a google cloud storage bucket: %v", err)
 	}
 
-	if err = os.MkdirAll(filepath.Dir(targetPath), os.ModePerm); err != nil {
-		return errors.Wrapf(err, "could not create target path: %v", err)
-	}
-
-	targetWriter, err := os.Create(targetPath)
+	targetWriter, err := g.createFile(targetPath)
 	if err != nil {
 		return errors.Wrapf(err, "could not create target file: %v", err)
 	}
+	defer targetWriter.Close()
 
 	if err := g.copy(gcsReader, targetWriter); err != nil {
 		return errors.Wrapf(err, "download failed: %v", err)
@@ -114,8 +140,40 @@ func (g *gcsClient) ListFiles(bucketID string) ([]string, error) {
 	return fileNames, nil
 }
 
-func setenvIfEmpty(env, val string) {
+func (g *gcsClient) Close() error {
+	if err := g.client.Close(); err != nil {
+		return err
+	}
+	if err := g.cleanupEnv(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func setenvIfEmpty(env, val string) bool {
 	if len(os.Getenv(env)) == 0 {
 		os.Setenv(env, val)
+		return true
 	}
+	return false
+}
+
+func removeEnvIfPreviouslySet(env string, previouslySet bool) error {
+	if previouslySet {
+		if err := os.Setenv(env, ""); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func OpenFileFromFS(name string) (io.ReadCloser, error) {
+	return os.Open(name)
+}
+
+func CreateFileOnFS(name string) (io.WriteCloser, error) {
+	if err := os.MkdirAll(filepath.Dir(name), os.ModePerm); err != nil {
+		return nil, err
+	}
+	return os.Create(name)
 }

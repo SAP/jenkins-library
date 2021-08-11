@@ -69,10 +69,21 @@ func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telem
 		if GeneralConfig.CorrelationID == "" {
 			log.Entry().WithError(errors.New("CorrelationID is used as GCS bucketID and mustn't be empty")).Fatal("Execution failed")
 		}
+		gcpJsonKeyFilePath := GeneralConfig.GCPJsonKeyFilePath
+		if gcpJsonKeyFilePath == "" {
+			log.Entry().WithError(errors.New("GCP JSON Key file Path must not be empty")).Fatal("Execution failed")
+		}
 		var err error
-		if gcsClient, err = gcs.NewClient(GeneralConfig.GCPJsonKeyFilePath); err != nil {
+		envVars := []gcs.EnvVar{
+			{
+				Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+				Value: gcpJsonKeyFilePath,
+			},
+		}
+		if gcsClient, err = gcs.NewClient(envVars, gcs.OpenFileFromFS, gcs.CreateFileOnFS); err != nil {
 			log.Entry().WithError(err).Fatal("Execution failed")
 		}
+		defer gcsClient.Close()
 	}
 	if err == nil {
 		err = handleATCresults(resp, details, &client, options.AtcResultsFileName, options.GenerateHTML, gcsClient)

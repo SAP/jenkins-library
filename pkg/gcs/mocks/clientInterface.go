@@ -9,6 +9,20 @@ type ClientInterface struct {
 	mock.Mock
 }
 
+// Close provides a mock function with given fields:
+func (_m *ClientInterface) Close() error {
+	ret := _m.Called()
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func() error); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // DownloadFile provides a mock function with given fields: bucketID, sourcePath, targetPath
 func (_m *ClientInterface) DownloadFile(bucketID string, sourcePath string, targetPath string) error {
 	ret := _m.Called(bucketID, sourcePath, targetPath)
