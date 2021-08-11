@@ -159,7 +159,7 @@ func DeleteIntegrationArtifactResource(config *integrationArtifactResourceOption
 		FlrMessage:   failureMessage,
 		StatusCode:   http.StatusOK,
 	}
-	
+
 	return HttpResponseHandler(deleteIflowResourceStatusResp, httpErr, &integrationArtifactResourceData)
 }
 
