@@ -71,7 +71,7 @@ exports.config = {
 };
 ```
 
-While default values for `baseUrl`, `user` and `pass` are read from the environment, they can also be overwritten when calling the CLI.
+While default values for `baseUrl`, `user` and `pass` are read from the environment, they can also be overridden when calling the CLI.
 
 In a custom Pipeline, this is very simple: Just wrap the call to `uiVeri5ExecuteTests` in `withCredentials` (`TARGET_SERVER_URL` is read from `config.yml`):
 
