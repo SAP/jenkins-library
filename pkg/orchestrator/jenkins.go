@@ -4,10 +4,17 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
 	"io/ioutil"
-	"os"
 )
 
 type JenkinsConfigProvider struct{}
+
+func (a *JenkinsConfigProvider) OrchestratorVersion() string {
+	return getEnv("JENKINS_VERSION", "n/a")
+}
+
+func (a *JenkinsConfigProvider) OrchestratorType() string {
+	return "Jenkins"
+}
 
 func (j *JenkinsConfigProvider) GetLog() ([]byte, error) {
 	filePath := j.getJenkinsHome() + "/jobs/" + j.GetJobName() + "/builds/" + j.GetBuildNumber() + "/log"
@@ -21,38 +28,38 @@ func (j *JenkinsConfigProvider) GetLog() ([]byte, error) {
 }
 
 func (j *JenkinsConfigProvider) GetJobName() string {
-	return os.Getenv("JOB_NAME")
+	return getEnv("JOB_NAME", "n/a")
 }
 
 func (j *JenkinsConfigProvider) getJenkinsHome() string {
-	return os.Getenv("JENKINS_HOME")
+	return getEnv("JENKINS_HOME", "n/a")
 }
 
 func (j *JenkinsConfigProvider) GetBuildNumber() string {
-	return os.Getenv("BUILD_NUMBER")
+	return getEnv("BUILD_NUMBER", "n/a")
 }
 
 func (j *JenkinsConfigProvider) GetBranch() string {
-	return os.Getenv("GIT_BRANCH")
+	return getEnv("GIT_BRANCH", "n/a")
 }
 
 func (j *JenkinsConfigProvider) GetBuildUrl() string {
-	return os.Getenv("BUILD_URL")
+	return getEnv("BUILD_URL", "n/a")
 }
 
 func (j *JenkinsConfigProvider) GetCommit() string {
-	return os.Getenv("GIT_COMMIT")
+	return getEnv("GIT_COMMIT", "n/a")
 }
 
 func (j *JenkinsConfigProvider) GetRepoUrl() string {
-	return os.Getenv("GIT_URL")
+	return getEnv("GIT_URL", "n/a")
 }
 
 func (j *JenkinsConfigProvider) GetPullRequestConfig() PullRequestConfig {
 	return PullRequestConfig{
-		Branch: os.Getenv("CHANGE_BRANCH"),
-		Base:   os.Getenv("CHANGE_TARGET"),
-		Key:    os.Getenv("CHANGE_ID"),
+		Branch: getEnv("CHANGE_BRANCH", "n/a"),
+		Base:   getEnv("CHANGE_TARGET", "n/a"),
+		Key:    getEnv("CHANGE_ID", "n/a"),
 	}
 }
 
