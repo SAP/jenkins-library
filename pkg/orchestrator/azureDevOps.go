@@ -8,13 +8,21 @@ import (
 
 type AzureDevOpsConfigProvider struct{}
 
+func (a *AzureDevOpsConfigProvider) OrchestratorVersion() string {
+	return "123"
+}
+
+func (a *AzureDevOpsConfigProvider) OrchestratorType() string {
+	return "Azure"
+}
+
 func (a *AzureDevOpsConfigProvider) GetLog() ([]byte, error) {
 	log.Entry().Infof("GetLog() for Azure not yet implemented.")
 	return nil, nil
 }
 
 func (a *AzureDevOpsConfigProvider) GetBranch() string {
-	tmp := os.Getenv("BUILD_SOURCEBRANCH")
+	tmp := getEnv("BUILD_SOURCEBRANCH", "n/a")
 	return strings.TrimPrefix(tmp, "refs/heads/")
 }
 
@@ -23,15 +31,15 @@ func (a *AzureDevOpsConfigProvider) GetBuildUrl() string {
 }
 
 func (a *AzureDevOpsConfigProvider) GetCommit() string {
-	return os.Getenv("BUILD_SOURCEVERSION")
+	return getEnv("BUILD_SOURCEVERSION", "n/a")
 }
 
 func (a *AzureDevOpsConfigProvider) GetRepoUrl() string {
-	return os.Getenv("BUILD_REPOSITORY_URI")
+	return getEnv("BUILD_REPOSITORY_URI", "n/a")
 }
 
 func (a *AzureDevOpsConfigProvider) GetPullRequestConfig() PullRequestConfig {
-	prKey := os.Getenv("SYSTEM_PULLREQUEST_PULLREQUESTID")
+	prKey := getEnv("SYSTEM_PULLREQUEST_PULLREQUESTID", "n/a")
 
 	// This variable is populated for pull requests which have a different pull request ID and pull request number.
 	// In this case the pull request ID will contain an internal numeric ID and the pull request number will be provided
@@ -49,7 +57,7 @@ func (a *AzureDevOpsConfigProvider) GetPullRequestConfig() PullRequestConfig {
 }
 
 func (a *AzureDevOpsConfigProvider) IsPullRequest() bool {
-	return os.Getenv("BUILD_REASON") == "PullRequest"
+	return getEnv("BUILD_REASON", "n/a") == "PullRequest"
 }
 
 func isAzure() bool {

@@ -14,7 +14,11 @@ const (
 	Jenkins
 )
 
+// Orchestrator Specific error logs
+
 type OrchestratorSpecificConfigProviding interface {
+	OrchestratorType() string
+	OrchestratorVersion() string
 	GetBranch() string
 	GetBuildUrl() string
 	GetCommit() string
@@ -81,4 +85,12 @@ func truthy(key string) bool {
 	}
 
 	return true
+}
+
+// Wrapper function to read env variable and set default value
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
 }

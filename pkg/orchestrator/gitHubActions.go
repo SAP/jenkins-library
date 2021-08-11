@@ -8,32 +8,40 @@ import (
 
 type GitHubActionsConfigProvider struct{}
 
+func (a *GitHubActionsConfigProvider) OrchestratorVersion() string {
+	return "n/a"
+}
+
+func (a *GitHubActionsConfigProvider) OrchestratorType() string {
+	return "GitHub"
+}
+
 func (a *GitHubActionsConfigProvider) GetLog() ([]byte, error) {
 	log.Entry().Infof("GetLog() for GitHub Actions not yet implemented.")
 	return nil, nil
 }
 
 func (g *GitHubActionsConfigProvider) GetBranch() string {
-	return strings.TrimPrefix(os.Getenv("GITHUB_REF"), "refs/heads/")
+	return strings.TrimPrefix(getEnv("GITHUB_REF", "n/a"), "refs/heads/")
 }
 
 func (g *GitHubActionsConfigProvider) GetBuildUrl() string {
-	return g.GetRepoUrl() + "/actions/runs/" + os.Getenv("GITHUB_RUN_ID")
+	return g.GetRepoUrl() + "/actions/runs/" + getEnv("GITHUB_RUN_ID", "n/a")
 }
 
 func (g *GitHubActionsConfigProvider) GetCommit() string {
-	return os.Getenv("GITHUB_SHA")
+	return getEnv("GITHUB_SHA", "n/a")
 }
 
 func (g *GitHubActionsConfigProvider) GetRepoUrl() string {
-	return os.Getenv("GITHUB_SERVER_URL") + os.Getenv("GITHUB_REPOSITORY")
+	return getEnv("GITHUB_SERVER_URL", "n/a") + getEnv("GITHUB_REPOSITORY", "n/a")
 }
 
 func (g *GitHubActionsConfigProvider) GetPullRequestConfig() PullRequestConfig {
 	return PullRequestConfig{
-		Branch: os.Getenv("GITHUB_HEAD_REF"),
-		Base:   os.Getenv("GITHUB_BASE_REF"),
-		Key:    os.Getenv("GITHUB_EVENT_PULL_REQUEST_NUMBER"),
+		Branch: getEnv("GITHUB_HEAD_REF", "n/a"),
+		Base:   getEnv("GITHUB_BASE_REF", "n/a"),
+		Key:    getEnv("GITHUB_EVENT_PULL_REQUEST_NUMBER", "n/a"),
 	}
 }
 
