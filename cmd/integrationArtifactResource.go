@@ -92,12 +92,12 @@ func UploadIntegrationArtifactResource(config *integrationArtifactResourceOption
 	failureMessage := "Failed to create a new resource file in the integration flow artefact"
 	
 	integrationArtifactResourceData := IntegrationArtifactResourceData{
-		Method:       httpMethod,
-		URL:          uploadIflowStatusURL,
-		IFlowID:      config.IntegrationFlowID,
-		ScsMessage:   successMessage,
-		FlrMessage:   failureMessage,
-		StatusCode:   http.StatusCreated,
+		Method:     httpMethod,
+		URL:        uploadIflowStatusURL,
+		IFlowID:    config.IntegrationFlowID,
+		ScsMessage: successMessage,
+		FlrMessage: failureMessage,
+		StatusCode: http.StatusCreated,
 	}
 
 	return HttpResponseHandler(uploadIflowStatusResp, httpErr, &integrationArtifactResourceData)
@@ -124,12 +124,12 @@ func UpdateIntegrationArtifactResource(config *integrationArtifactResourceOption
 	failureMessage := "Failed to update rsource file of the integration flow artefact"
 	
 	integrationArtifactResourceData := IntegrationArtifactResourceData{
-		Method:       httpMethod,
-		URL:          updateIflowStatusURL,
-		IFlowID:      config.IntegrationFlowID,
-		ScsMessage:   successMessage,
-		FlrMessage:   failureMessage,
-		StatusCode:   http.StatusOK,
+		Method:     httpMethod,
+		URL:        updateIflowStatusURL,
+		IFlowID:    config.IntegrationFlowID,
+		ScsMessage: successMessage,
+		FlrMessage: failureMessage,
+		StatusCode: http.StatusOK,
 	}
 
 	return HttpResponseHandler(updateIflowStatusResp, httpErr, &integrationArtifactResourceData)
@@ -152,12 +152,12 @@ func DeleteIntegrationArtifactResource(config *integrationArtifactResourceOption
 	failureMessage := "Failed to delete a resource file in the integration flow artefact"
 	
 	integrationArtifactResourceData := IntegrationArtifactResourceData{
-		Method:       httpMethod,
-		URL:          deleteIflowResourceStatusURL,
-		IFlowID:      config.IntegrationFlowID,
-		ScsMessage:   successMessage,
-		FlrMessage:   failureMessage,
-		StatusCode:   http.StatusOK,
+		Method:     httpMethod,
+		URL:        deleteIflowResourceStatusURL,
+		IFlowID:    config.IntegrationFlowID,
+		ScsMessage: successMessage,
+		FlrMessage: failureMessage,
+		StatusCode: http.StatusOK,
 	}
 
 	return HttpResponseHandler(deleteIflowResourceStatusResp, httpErr, &integrationArtifactResourceData)
