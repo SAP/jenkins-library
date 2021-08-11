@@ -85,9 +85,9 @@ withCredentials([usernamePassword(
 }
 ```
 
-**Please note:** It is not recommended to overwrite any secrets with the runOptions, because they may be seen in the Jenkins pipeline run console output. During the `withCredentials` call, the credentials are already written to the environment and can be accessed by the test if the variable names match the `conf.js` environment variables.
+**Please note:** It is not recommended to override any secrets with the runOptions, because they may be seen in the Jenkins pipeline run console output. During the `withCredentials` call, the credentials are written to the environment and can be accessed by the test code.
 
-The following example shows the recommended way to handle the `user` and `pass` for a uiVeri5ExecuteTests call that needs authentication. (The overwriting of the baseURL in this example was removed to focus on the `user` and `pass`. It is still possible to change the baseURL.)
+The following example shows the recommended way to handle the username and password for a uiVeri5ExecuteTests call that needs authentication. The `passwordVariable` and `usernameVariable` need to match the environment variables in the test code.
 
 ```groovy
 withCredentials([usernamePassword(
