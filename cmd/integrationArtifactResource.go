@@ -19,6 +19,15 @@ import (
 	"github.com/pkg/errors"
 )
 
+type integrationArtifactResourceData struct {
+	Method     string
+	URL        string
+	IFlowID    string
+	ScsMessage string
+	FlrMessage string
+	StatusCode int
+}
+
 func integrationArtifactResource(config integrationArtifactResourceOptions, telemetryData *telemetry.CustomData) {
 	// Utils can be used wherever the command.ExecRunner interface is expected.
 	// It can also be used for example as a mavenExecRunner.
@@ -35,15 +44,6 @@ func integrationArtifactResource(config integrationArtifactResourceOptions, tele
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
-}
-
-type IntegrationArtifactResourceData struct {
-	Method     string
-	URL        string
-	IFlowID    string
-	ScsMessage string
-	FlrMessage string
-	StatusCode int
 }
 
 func runIntegrationArtifactResource(config *integrationArtifactResourceOptions, telemetryData *telemetry.CustomData, fileUtils piperutils.FileUtils, httpClient piperhttp.Sender) error {
@@ -90,7 +90,7 @@ func UploadIntegrationArtifactResource(config *integrationArtifactResourceOption
 
 	successMessage := "Successfully create a new resource file in the integration flow artefact"
 	failureMessage := "Failed to create a new resource file in the integration flow artefact"
-	integrationArtifactResourceData := IntegrationArtifactResourceData{
+	integrationArtifactResourceData := integrationArtifactResourceData{
 		Method:     httpMethod,
 		URL:        uploadIflowStatusURL,
 		IFlowID:    config.IntegrationFlowID,
@@ -121,7 +121,7 @@ func UpdateIntegrationArtifactResource(config *integrationArtifactResourceOption
 
 	successMessage := "Successfully updated resource file of the integration flow artefact"
 	failureMessage := "Failed to update rsource file of the integration flow artefact"
-	integrationArtifactResourceData := IntegrationArtifactResourceData{
+	integrationArtifactResourceData := integrationArtifactResourceData{
 		Method:     httpMethod,
 		URL:        updateIflowStatusURL,
 		IFlowID:    config.IntegrationFlowID,
@@ -148,7 +148,7 @@ func DeleteIntegrationArtifactResource(config *integrationArtifactResourceOption
 
 	successMessage := "Successfully deleted a resource file in the integration flow artefact"
 	failureMessage := "Failed to delete a resource file in the integration flow artefact"
-	integrationArtifactResourceData := IntegrationArtifactResourceData{
+	integrationArtifactResourceData := integrationArtifactResourceData{
 		Method:     httpMethod,
 		URL:        deleteIflowResourceStatusURL,
 		IFlowID:    config.IntegrationFlowID,
@@ -204,7 +204,7 @@ func GetResourceFileExtension(filename string) string {
 }
 
 //HttpResponseHandler - handle http response object
-func HttpResponseHandler(resp *http.Response, httpErr error, integrationArtifactResourceData *IntegrationArtifactResourceData) error {
+func HttpResponseHandler(resp *http.Response, httpErr error, integrationArtifactResourceData *integrationArtifactResourceData) error {
 
 	if resp != nil && resp.Body != nil {
 		defer resp.Body.Close()
