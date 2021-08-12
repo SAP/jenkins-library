@@ -150,6 +150,7 @@ func Execute() {
 	rootCmd.AddCommand(IntegrationArtifactUploadCommand())
 	rootCmd.AddCommand(IntegrationArtifactTriggerIntegrationTestCommand())
 	rootCmd.AddCommand(IntegrationArtifactUnDeployCommand())
+	rootCmd.AddCommand(IntegrationArtifactResourceCommand())
 	rootCmd.AddCommand(TerraformExecuteCommand())
 	rootCmd.AddCommand(ContainerExecuteStructureTestsCommand())
 	rootCmd.AddCommand(GaugeExecuteTestsCommand())
