@@ -41,6 +41,7 @@ type GeneralConfigOptions struct {
 	VaultNamespace       string
 	VaultPath            string
 	HookConfig           HookConfiguration
+	MetaDataResolver     func() map[string]config.StepData
 }
 
 // HookConfiguration contains the configuration for supported hooks, so far Sentry and Splunk are supported.
