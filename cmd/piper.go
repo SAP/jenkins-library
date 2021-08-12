@@ -41,6 +41,7 @@ type GeneralConfigOptions struct {
 	VaultNamespace       string
 	VaultPath            string
 	HookConfig           HookConfiguration
+	MetaDataResolver     func() map[string]config.StepData
 }
 
 // HookConfiguration contains the configuration for supported hooks, so far Sentry and Splunk are supported.
@@ -76,6 +77,8 @@ var GeneralConfig GeneralConfigOptions
 
 // Execute is the starting point of the piper command line tool
 func Execute() {
+
+	GeneralConfig.MetaDataResolver = GetAllStepMetadata
 
 	rootCmd.AddCommand(ArtifactPrepareVersionCommand())
 	rootCmd.AddCommand(ConfigCommand())

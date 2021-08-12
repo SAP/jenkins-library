@@ -314,6 +314,7 @@ func TestPrepareOutputEnvironment(t *testing.T) {
 
 func TestResolveMetadata(t *testing.T) {
 
+	GeneralConfig.MetaDataResolver = GetAllStepMetadata
 	t.Run("Succes - stepName", func(t *testing.T) {
 		configOptions.stepName = "githubCreateIssue"
 		stepData, err := resolveMetadata()
