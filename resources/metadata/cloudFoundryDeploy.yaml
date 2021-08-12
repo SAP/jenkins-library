@@ -388,3 +388,9 @@ spec:
               - name: cfApiEndpoint
               - name: cfOrg
               - name: cfSpace
+                outputs:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: cfGetAppUrl
+

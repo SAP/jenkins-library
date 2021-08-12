@@ -36,6 +36,10 @@ type cfFileUtil interface {
 	Stat(path string) (os.FileInfo, error)
 }
 
+type cfGetAppUrlCommonPipelineEnvironment struct {
+	cfGetAppUrl string
+}
+
 var _now = time.Now
 var _cfLogin = cfLogin
 var _cfLogout = cfLogout
@@ -858,21 +862,20 @@ func cfDeploy(
 
 	log.Entry().Info("Get APP URL")
 	var getURL bytes.Buffer
+	var commonPipelineEnvironment cfGetAppUrlCommonPipelineEnvironment
 	command.Stdout(&getURL)
-	//command.Stdout(&getURL)
 	appCommand := "apps"
-	getURLCommand := "grep -Po 'cloudci-cicdtest.*"
-	cfGetUrlParams := []string{
-		appCommand,
-		getURLCommand,
-	}
 
 	if err == nil {
-		err = command.RunExecutable("cf", cfGetUrlParams...)
-		log.Entry().Infof("XXXXXXX: %v", err)    //nil
-		log.Entry().Infof("XXXXXXX: %s", getURL) //
-		log.Entry().Infof("XXXXXXX: %v", getURL)
+		err = command.RunExecutable("cf", appCommand)
+		cfGetUrl := getURL.String()
+		re := regexp.MustCompile("[^ ]+.com")
+        result := re.FindAllString(cfGetUrl, -1)
+        fmt.Println(result)
+		commonPipelineEnvironment.cfGetAppUrl = result[0]+"/nsHTML5Module/index.html"
+		fmt.Println("TEST URL:" + commonPipelineEnvironment.cfGetAppUrl)
 	}
+
 	if len(getURL.String()) == 0 {
 		log.Entry().Info("GETURL EMPTY")
 		return nil
