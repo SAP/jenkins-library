@@ -240,7 +240,10 @@ func resolveMetadata() (config.StepData, error) {
 		}
 	} else {
 		if configOptions.stepName != "" {
-			metadataMap := GetAllStepMetadata()
+			if GeneralConfig.MetaDataResolver == nil {
+				GeneralConfig.MetaDataResolver = GetAllStepMetadata
+			}
+			metadataMap := GeneralConfig.MetaDataResolver()
 			var ok bool
 			metadata, ok = metadataMap[configOptions.stepName]
 			if !ok {
