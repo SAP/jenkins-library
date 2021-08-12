@@ -104,7 +104,7 @@ You will be able to use this step for example for regular jobs to report into yo
 
 func addGithubCreateIssueFlags(cmd *cobra.Command, stepConfig *githubCreateIssueOptions) {
 	cmd.Flags().StringVar(&stepConfig.APIURL, "apiUrl", `https://api.github.com`, "Set the GitHub API url.")
-	cmd.Flags().StringSliceVar(&stepConfig.Assignees, "assignees", []string{}, "Defines the assignees for the Issue.")
+	cmd.Flags().StringSliceVar(&stepConfig.Assignees, "assignees", []string{``}, "Defines the assignees for the Issue.")
 	cmd.Flags().StringVar(&stepConfig.Body, "body", os.Getenv("PIPER_body"), "Defines the content of the issue, e.g. using markdown syntax.")
 	cmd.Flags().StringVar(&stepConfig.BodyFilePath, "bodyFilePath", os.Getenv("PIPER_bodyFilePath"), "Defines the path to a file containing the markdown content for the issue. This can be used instead of [`body`](#body)")
 	cmd.Flags().StringVar(&stepConfig.Owner, "owner", os.Getenv("PIPER_owner"), "Name of the GitHub organization.")
@@ -149,7 +149,7 @@ func githubCreateIssueMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     []string{},
+						Default:     []string{``},
 					},
 					{
 						Name:        "body",
