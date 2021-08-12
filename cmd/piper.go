@@ -78,8 +78,6 @@ var GeneralConfig GeneralConfigOptions
 // Execute is the starting point of the piper command line tool
 func Execute() {
 
-	GeneralConfig.MetaDataResolver = GetAllStepMetadata
-
 	rootCmd.AddCommand(ArtifactPrepareVersionCommand())
 	rootCmd.AddCommand(ConfigCommand())
 	rootCmd.AddCommand(ContainerSaveImageCommand())
