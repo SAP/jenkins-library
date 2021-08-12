@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	"github.com/sirupsen/logrus"
@@ -38,6 +39,7 @@ func (f *FatalHook) Fire(entry *logrus.Entry) error {
 	fileName := "errorDetails.json"
 	if details["stepName"] != nil {
 		fileName = fmt.Sprintf("%v_%v", fmt.Sprint(details["stepName"]), fileName)
+		// ToDo: If step is called x times and it fails multiple times the error is overwritten
 	}
 	filePath := filepath.Join(f.Path, fileName)
 
@@ -50,4 +52,57 @@ func (f *FatalHook) Fire(entry *logrus.Entry) error {
 	}
 
 	return nil
+}
+
+type ErrorDetails struct {
+	Message       string
+	Error         string
+	Category      string
+	Result        string
+	CorrelationId string
+}
+
+func GetErrorsJson() ([]ErrorDetails, error) {
+	fileName := "errorDetails.json"
+	path, err := os.Getwd()
+	if err != nil {
+		fmt.Errorf("can not get current working dir")
+		return []ErrorDetails{}, err
+	}
+
+	matches, err := filepath.Glob(path + "/*" + fileName)
+	if err != nil {
+		Entry().Debugf("could not find any *errorDetails.json files")
+	}
+
+	errorDetails := []ErrorDetails{}
+
+	if len(matches) != 0 {
+		Entry().Debugf("Found %v files", matches)
+
+		for _, v := range matches {
+			errorDetail, err := readErrorJson(v)
+			if err != nil {
+				Entry().Debugf("could not read error details for file %v", v)
+			}
+			errorDetails = append(errorDetails, errorDetail)
+
+		}
+	}
+
+	return errorDetails, nil
+}
+
+func readErrorJson(filePath string) (ErrorDetails, error) {
+	//filePath := filepath.Join(path, fileName)
+
+	errorDetails := ErrorDetails{}
+	jsonFile, err := ioutil.ReadFile(filePath)
+
+	err = json.Unmarshal(jsonFile, &errorDetails)
+	if err != nil {
+		fmt.Errorf("could not unmarshal error details")
+		return ErrorDetails{}, err
+	}
+	return errorDetails, nil
 }

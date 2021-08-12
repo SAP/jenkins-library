@@ -18,11 +18,12 @@ func (a *JenkinsConfigProvider) OrchestratorType() string {
 
 func (j *JenkinsConfigProvider) GetLog() ([]byte, error) {
 	filePath := j.getJenkinsHome() + "/jobs/" + j.GetJobName() + "/builds/" + j.GetBuildNumber() + "/log"
-	log.Entry().Debugf("Reading Jenkins-Logfile from: %v", filePath)
+
 	logFile, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not read Jenkins-Logfile from %s", filePath)
 	}
+	log.Entry().Debugf("Successful read Jenkins-Logfile from: %v", filePath)
 	//logFileContent := new File("${JENKINS_HOME}/jobs/${JOB_NAME}/builds/${BUILD_NUMBER}/log").collect {it}
 	return logFile, nil
 }

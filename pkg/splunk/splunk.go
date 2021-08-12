@@ -154,6 +154,84 @@ type Details struct {
 	Event      Event  `json:"event,omitempty"`      // throw any useful key/val pairs here}
 }
 
+func SendPipelineStatus(customTelemetryData *telemetry.CustomData, logFile []byte) error {
+	// Sends telemetry and or additionally logging data to Splunk
+	telemetryData := prepareTelemetry(*customTelemetryData)
+
+	messagesLen := len(string(logFile))
+	reader := bytes.NewReader(logFile)
+
+	for i := 0; i < messagesLen; i += SplunkClient.postMessagesBatchSize {
+		upperBound := i + SplunkClient.postMessagesBatchSize
+		if upperBound > messagesLen {
+			upperBound = messagesLen
+		}
+		err := PostLogFile(telemetryData, reader[i:upperBound])
+		if err != nil {
+			return errors.Wrap(err, "error while sending logs")
+		}
+	}
+}
+
+type LogFileEvents struct {
+	Messages  []log.Message  `json:"messages,omitempty"`  // messages
+	Telemetry MonitoringData `json:"telemetry,omitempty"` // telemetryData
+}
+type DetailsLog struct {
+	Host       string        `json:"host"`                 // hostname
+	Source     string        `json:"source,omitempty"`     // optional description of the source of the event; typically the app's name
+	SourceType string        `json:"sourcetype,omitempty"` // optional name of a Splunk parsing configuration; this is usually inferred by Splunk
+	Index      string        `json:"index,omitempty"`      // optional name of the Splunk index to store the event in; not required if the token has a default index set in Splunk
+	Event      LogFileEvents `json:"event,omitempty"`      // throw any useful key/val pairs here}
+}
+
+func postLogFile(telemetryData MonitoringData, messages []LogFileEvents) error {
+
+	event := LogFileEvents{
+		Messages:  messages,
+		Telemetry: telemetryData,
+	}
+	details := DetailsLog{
+		Host:       SplunkClient.correlationID,
+		SourceType: "_json",
+		Index:      SplunkClient.splunkIndex,
+		Event:      event,
+	}
+
+	payload, err := json.Marshal(details)
+	if err != nil {
+		return errors.Wrap(err, "error while marshalling Splunk message details")
+	}
+
+	resp, err := SplunkClient.splunkClient.SendRequest(http.MethodPost, SplunkClient.splunkDsn, bytes.NewBuffer(payload), nil, nil)
+
+	if resp != nil {
+		if resp.StatusCode != http.StatusOK {
+			// log it to stdout
+			rdr := io.LimitReader(resp.Body, 1000)
+			body, errRead := ioutil.ReadAll(rdr)
+			log.Entry().Infof("%v: Splunk logging failed - %v", resp.Status, string(body))
+			if errRead != nil {
+				return errors.Wrap(errRead, "Error reading response body from Splunk.")
+			}
+			return errors.Wrapf(err, "%v: Splunk logging failed - %v", resp.Status, string(body))
+		}
+	}
+
+	if err != nil {
+		return errors.Wrap(err, "error sending the requests to Splunk")
+	}
+
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			errors.Wrap(err, "closing response body failed")
+		}
+	}()
+
+	return nil
+}
+
 func tryPostMessages(telemetryData MonitoringData, messages []log.Message) error {
 
 	event := Event{
