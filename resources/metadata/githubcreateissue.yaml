@@ -31,6 +31,7 @@ spec:
           - STAGES
           - STEPS
         type: "[]string"
+        default: []
         mandatory: false
       - name: body
         description: Defines the content of the issue, e.g. using markdown syntax.
