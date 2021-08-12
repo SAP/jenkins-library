@@ -62,8 +62,9 @@ type Components struct {
 }
 
 type Component struct {
-	Name    string `json:"componentName,omitempty"`
-	Version string `json:"componentVersionName,omitempty"`
+	Name     string `json:"componentName,omitempty"`
+	Version  string `json:"componentVersionName,omitempty"`
+	Metadata `json:"_meta,omitempty"`
 }
 
 type Vulnerabilities struct {
@@ -193,6 +194,26 @@ func (b *Client) GetProjectVersion(projectName, projectVersion string) (*Project
 	return nil, fmt.Errorf("failed to get project version '%v'", projectVersion)
 }
 
+func (b *Client) GetProjectVersionLink(projectName, versionName string) (string, error) {
+	project, err := b.GetProject(projectName)
+	if err != nil {
+		return "", err
+	}
+
+	headers := http.Header{}
+	headers.Add("Accept", HEADER_PROJECT_DETAILS_V4)
+
+	var versionPath string
+	for _, link := range project.Links {
+		if link.Rel == "versions" {
+			versionPath = link.Href
+			break
+		}
+	}
+
+	return versionPath, nil
+}
+
 func (b *Client) GetComponents(projectName, versionName string) (*Components, error) {
 	projectVersion, err := b.GetProjectVersion(projectName, versionName)
 	if err != nil {
@@ -227,6 +248,20 @@ func (b *Client) GetComponents(projectName, versionName string) (*Components, er
 	//Just return the components, the details of the components are not necessary
 	return &components, nil
 }
+
+// func (b *Client) GetComponentPolicyStatus(component Component) (ComponentPolicyStatus, error) {
+// 	var policyStatusUrl string
+// 	for _, link := range component.Links {
+// 		if link.Rel == "policy-status" {
+// 			policyStatusUrl = urlPath(link.Href)
+// 		}
+// 	}
+
+// 	headers := http.Header{}
+// 	headers.Add("Accept", HEADER_BOM_V6)
+
+// 	respBody, err := b.sendRequest("GET", policyStatusUrl, map[string]string{}, nil, headers)
+// }
 
 func (b *Client) GetVulnerabilities(projectName, versionName string) (*Vulnerabilities, error) {
 	projectVersion, err := b.GetProjectVersion(projectName, versionName)
