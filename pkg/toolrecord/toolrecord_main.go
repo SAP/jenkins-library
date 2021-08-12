@@ -132,7 +132,10 @@ func (tr *Toolrecord) Persist() error {
 	tr.DisplayName = displayName
 	tr.DisplayURL = displayURL
 
-	file, _ := json.Marshal(tr)
+	file, err := json.Marshal(tr)
+	if err != nil {
+		return fmt.Errorf("TR_PERSIST: %v", err)
+	}
 	err = ioutil.WriteFile(tr.GetFileName(), file, 0644)
 	if err != nil {
 		return fmt.Errorf("TR_PERSIST: %v", err)
