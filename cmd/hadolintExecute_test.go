@@ -28,7 +28,7 @@ func TestRunHadolintExecute(t *testing.T) {
 			HadolintPiperFileUtils: fileMock,
 			HadolintClient:         clientMock,
 			hadolintRunner:         runnerMock,
-		}, nil)
+		})
 		// assert
 		assert.NoError(t, err)
 		if assert.Len(t, runnerMock.Calls, 1) {
@@ -68,7 +68,7 @@ func TestRunHadolintExecute(t *testing.T) {
 			HadolintPiperFileUtils: fileMock,
 			HadolintClient:         clientMock,
 			hadolintRunner:         runnerMock,
-		}, nil)
+		})
 		// assert
 		assert.NoError(t, err)
 		if assert.Len(t, runnerMock.Calls, 1) {

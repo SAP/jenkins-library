@@ -149,13 +149,13 @@ func TestRunProtecodeScan(t *testing.T) {
 
 	t.Run("With tar as scan image", func(t *testing.T) {
 		config := protecodeExecuteScanOptions{ServerURL: server.URL, TimeoutMinutes: "1", VerifyOnly: false, CleanupMode: "none", Group: "13", FetchURL: "/api/fetch/", ExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt"}
-		err = runProtecodeScan(&config, &influx, dClient, nil)
+		err = runProtecodeScan(&config, &influx, dClient)
 		assert.NoError(t, err)
 	})
 
 	t.Run("Without tar as scan image", func(t *testing.T) {
 		config := protecodeExecuteScanOptions{ServerURL: server.URL, ScanImage: "t", TimeoutMinutes: "1", VerifyOnly: false, CleanupMode: "none", Group: "13", ExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt"}
-		err = runProtecodeScan(&config, &influx, dClient, nil)
+		err = runProtecodeScan(&config, &influx, dClient)
 		assert.NoError(t, err)
 	})
 
@@ -338,7 +338,7 @@ func TestExecuteProtecodeScan(t *testing.T) {
 		config := protecodeExecuteScanOptions{VerifyOnly: c.reuse, CleanupMode: c.clean, Group: c.group, FetchURL: c.fetchURL, TimeoutMinutes: "3", ExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt"}
 		influxData := &protecodeExecuteScanInflux{}
 		// test
-		executeProtecodeScan(influxData, pc, &config, "dummy", writeReportToFileMock, nil)
+		executeProtecodeScan(influxData, pc, &config, "dummy", writeReportToFileMock)
 		// assert
 		assert.Equal(t, 1125, influxData.protecode_data.fields.historical_vulnerabilities)
 		assert.Equal(t, 0, influxData.protecode_data.fields.triaged_vulnerabilities)

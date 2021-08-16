@@ -104,6 +104,9 @@ Regardless of the option you chose, please make sure to provide the configuratio
 			abapEnvironmentRunATCCheck(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
+			if GeneralConfig.GCSClient != nil {
+				GeneralConfig.GCSClient.Close()
+			}
 		},
 	}
 

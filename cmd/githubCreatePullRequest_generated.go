@@ -98,6 +98,9 @@ It can for example be used for GitOps scenarios or for scenarios where you want 
 			githubCreatePullRequest(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
+			if GeneralConfig.GCSClient != nil {
+				GeneralConfig.GCSClient.Close()
+			}
 		},
 	}
 

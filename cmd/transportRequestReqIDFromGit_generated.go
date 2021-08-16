@@ -120,6 +120,9 @@ It is primarily made for the transport request upload steps to provide the trans
 			transportRequestReqIDFromGit(stepConfig, &telemetryData, &commonPipelineEnvironment)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
+			if GeneralConfig.GCSClient != nil {
+				GeneralConfig.GCSClient.Close()
+			}
 		},
 	}
 

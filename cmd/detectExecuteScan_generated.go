@@ -111,6 +111,9 @@ Please configure your BlackDuck server Url using the serverUrl parameter and the
 			detectExecuteScan(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
+			if GeneralConfig.GCSClient != nil {
+				GeneralConfig.GCSClient.Close()
+			}
 		},
 	}
 

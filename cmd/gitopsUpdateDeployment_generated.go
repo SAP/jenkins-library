@@ -105,6 +105,9 @@ For helm the whole template is generated into a file and uploaded into the repos
 			gitopsUpdateDeployment(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
+			if GeneralConfig.GCSClient != nil {
+				GeneralConfig.GCSClient.Close()
+			}
 		},
 	}
 

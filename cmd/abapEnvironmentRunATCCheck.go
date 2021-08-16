@@ -15,7 +15,6 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/command"
-	"github.com/SAP/jenkins-library/pkg/gcs"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
@@ -64,29 +63,8 @@ func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telem
 	if err == nil {
 		resp, err = triggerATCrun(options, details, &client)
 	}
-	var gcsClient gcs.ClientInterface
-	if GeneralConfig.UploadReportsToGCS {
-		if GeneralConfig.CorrelationID == "" {
-			log.Entry().WithError(errors.New("CorrelationID is used as GCS bucketID and mustn't be empty")).Fatal("Execution failed")
-		}
-		gcpJsonKeyFilePath := GeneralConfig.GCPJsonKeyFilePath
-		if gcpJsonKeyFilePath == "" {
-			log.Entry().WithError(errors.New("GCP JSON Key file Path must not be empty")).Fatal("Execution failed")
-		}
-		var err error
-		envVars := []gcs.EnvVar{
-			{
-				Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-				Value: gcpJsonKeyFilePath,
-			},
-		}
-		if gcsClient, err = gcs.NewClient(envVars, gcs.OpenFileFromFS, gcs.CreateFileOnFS); err != nil {
-			log.Entry().WithError(err).Fatal("Execution failed")
-		}
-		defer gcsClient.Close()
-	}
 	if err == nil {
-		err = handleATCresults(resp, details, &client, options.AtcResultsFileName, options.GenerateHTML, gcsClient)
+		err = handleATCresults(resp, details, &client, options.AtcResultsFileName, options.GenerateHTML)
 	}
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
@@ -95,7 +73,7 @@ func abapEnvironmentRunATCCheck(options abapEnvironmentRunATCCheckOptions, telem
 	log.Entry().Info("ATC run completed successfully. If there are any results from the respective run they will be listed in the logs above as well as being saved in the output .xml file")
 }
 
-func handleATCresults(resp *http.Response, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, atcResultFileName string, generateHTML bool, gcsClient gcs.ClientInterface) error {
+func handleATCresults(resp *http.Response, details abaputils.ConnectionDetailsHTTP, client piperhttp.Sender, atcResultFileName string, generateHTML bool) error {
 	var err error
 	var abapEndpoint string
 	abapEndpoint = details.URL
@@ -113,7 +91,7 @@ func handleATCresults(resp *http.Response, details abaputils.ConnectionDetailsHT
 	}
 	if err == nil {
 		defer resp.Body.Close()
-		err = parseATCResult(body, atcResultFileName, generateHTML, gcsClient)
+		err = parseATCResult(body, atcResultFileName, generateHTML)
 	}
 	if err != nil {
 		return fmt.Errorf("Handling ATC result failed: %w", err)
@@ -196,7 +174,7 @@ func buildATCCheckBody(ATCConfig ATCconfig) (checkVariantString string, packageS
 	return checkVariantString, packageString, softwareComponentString, nil
 }
 
-func parseATCResult(body []byte, atcResultFileName string, generateHTML bool, gcsClient gcs.ClientInterface) (err error) {
+func parseATCResult(body []byte, atcResultFileName string, generateHTML bool) (err error) {
 	if len(body) == 0 {
 		return fmt.Errorf("Parsing ATC result failed: %w", errors.New("Body is empty, can't parse empty body"))
 	}
@@ -233,7 +211,7 @@ func parseATCResult(body []byte, atcResultFileName string, generateHTML bool, gc
 				reports = append(reports, piperutils.Path{Target: atcResultFileName, Name: "ATC Results HTML file", Mandatory: true})
 			}
 		}
-		piperutils.PersistReportsAndLinks("abapEnvironmentRunATCCheck", "", reports, nil, gcsClient, GeneralConfig.CorrelationID)
+		piperutils.PersistReportsAndLinks("abapEnvironmentRunATCCheck", "", reports, nil, GeneralConfig.GCSClient, GeneralConfig.CorrelationID)
 	}
 	if err != nil {
 		return fmt.Errorf("Writing results failed: %w", err)

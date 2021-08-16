@@ -129,6 +129,9 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 			kubernetesDeploy(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
+			if GeneralConfig.GCSClient != nil {
+				GeneralConfig.GCSClient.Close()
+			}
 		},
 	}
 

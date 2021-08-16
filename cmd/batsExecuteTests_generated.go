@@ -126,6 +126,9 @@ func BatsExecuteTestsCommand() *cobra.Command {
 			batsExecuteTests(stepConfig, &telemetryData, &influx)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
+			if GeneralConfig.GCSClient != nil {
+				GeneralConfig.GCSClient.Close()
+			}
 		},
 	}
 

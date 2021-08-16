@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/gcs"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/pkg/errors"
@@ -43,6 +44,7 @@ type GeneralConfigOptions struct {
 	HookConfig           HookConfiguration
 	UploadReportsToGCS   bool
 	GCPJsonKeyFilePath   string // file path to Google Cloud Platform JSON key file. Mandatory if UploadReportsToGCS is true
+	GCSClient            gcs.ClientInterface
 }
 
 // HookConfiguration contains the configuration for supported hooks, so far Sentry and Splunk are supported.
@@ -342,14 +344,14 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 			}
 		}
 		stepConfig, err = myConfig.GetStepConfig(flagValues, GeneralConfig.ParametersJSON, customConfig, defaultConfig, GeneralConfig.IgnoreCustomDefaults, filters, metadata.Spec.Inputs.Parameters, metadata.Spec.Inputs.Secrets, resourceParams, GeneralConfig.StageName, stepName, metadata.Metadata.Aliases)
+		if err != nil {
+			return errors.Wrap(err, "retrieving step configuration failed")
+		}
 		if verbose, ok := stepConfig.Config["verbose"].(bool); ok && verbose {
 			log.SetVerbose(verbose)
 			GeneralConfig.Verbose = verbose
 		} else if !ok && stepConfig.Config["verbose"] != nil {
 			log.Entry().Warnf("invalid value for parameter verbose: '%v'", stepConfig.Config["verbose"])
-		}
-		if err != nil {
-			return errors.Wrap(err, "retrieving step configuration failed")
 		}
 	}
 
@@ -365,7 +367,33 @@ func PrepareConfig(cmd *cobra.Command, metadata *config.StepData, stepName strin
 
 	retrieveHookConfig(stepConfig.HookConfig, &GeneralConfig.HookConfig)
 
+	initializeGCSClient()
+
 	return nil
+}
+
+func initializeGCSClient() {
+	var gcsClient gcs.ClientInterface
+	if GeneralConfig.UploadReportsToGCS {
+		if GeneralConfig.CorrelationID == "" {
+			log.Entry().WithError(errors.New("CorrelationID is used as GCS bucketID and mustn't be empty")).Fatal("Execution failed")
+		}
+		gcpJsonKeyFilePath := GeneralConfig.GCPJsonKeyFilePath
+		if gcpJsonKeyFilePath == "" {
+			log.Entry().WithError(errors.New("GCP JSON Key file Path must not be empty")).Fatal("Execution failed")
+		}
+		var err error
+		envVars := []gcs.EnvVar{
+			{
+				Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+				Value: gcpJsonKeyFilePath,
+			},
+		}
+		if gcsClient, err = gcs.NewClient(envVars, gcs.OpenFileFromFS, gcs.CreateFileOnFS); err != nil {
+			log.Entry().WithError(err).Fatal("Execution failed")
+		}
+		GeneralConfig.GCSClient = gcsClient
+	}
 }
 
 func retrieveHookConfig(source map[string]interface{}, target *HookConfiguration) {

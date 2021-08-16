@@ -130,6 +130,9 @@ Platform ABAP Environment system and saves the corresponding [SAR archive](https
 			abapEnvironmentAssemblePackages(stepConfig, &telemetryData, &commonPipelineEnvironment)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
+			if GeneralConfig.GCSClient != nil {
+				GeneralConfig.GCSClient.Close()
+			}
 		},
 	}
 

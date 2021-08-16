@@ -88,6 +88,9 @@ This step can, e.g., be used if there is a json schema which needs to be patched
 			jsonApplyPatch(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
+			if GeneralConfig.GCSClient != nil {
+				GeneralConfig.GCSClient.Close()
+			}
 		},
 	}
 

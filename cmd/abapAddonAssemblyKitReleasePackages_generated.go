@@ -123,6 +123,9 @@ For Terminology refer to the [Scenario Description](https://www.project-piper.io
 			abapAddonAssemblyKitReleasePackages(stepConfig, &telemetryData, &commonPipelineEnvironment)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
+			if GeneralConfig.GCSClient != nil {
+				GeneralConfig.GCSClient.Close()
+			}
 		},
 	}
 

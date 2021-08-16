@@ -103,6 +103,9 @@ It can for example be used to create additional check indicators for a pull requ
 			githubSetCommitStatus(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
+			if GeneralConfig.GCSClient != nil {
+				GeneralConfig.GCSClient.Close()
+			}
 		},
 	}
 

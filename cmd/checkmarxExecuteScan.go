@@ -17,7 +17,6 @@ import (
 	"encoding/xml"
 
 	"github.com/SAP/jenkins-library/pkg/checkmarx"
-	"github.com/SAP/jenkins-library/pkg/gcs"
 	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
@@ -105,28 +104,7 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, influx *c
 		}
 	}
 
-	var gcsClient gcs.ClientInterface
-	if GeneralConfig.UploadReportsToGCS {
-		if GeneralConfig.CorrelationID == "" {
-			log.Entry().WithError(errors.New("CorrelationID is used as GCS bucketID and mustn't be empty")).Fatal("Execution failed")
-		}
-		gcpJsonKeyFilePath := GeneralConfig.GCPJsonKeyFilePath
-		if gcpJsonKeyFilePath == "" {
-			log.Entry().WithError(errors.New("GCP JSON Key file Path must not be empty")).Fatal("Execution failed")
-		}
-		var err error
-		envVars := []gcs.EnvVar{
-			{
-				Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-				Value: gcpJsonKeyFilePath,
-			},
-		}
-		if gcsClient, err = gcs.NewClient(envVars, gcs.OpenFileFromFS, gcs.CreateFileOnFS); err != nil {
-			log.Entry().WithError(err).Fatal("Execution failed")
-		}
-		defer gcsClient.Close()
-	}
-	err = uploadAndScan(config, sys, project, influx, utils, gcsClient)
+	err = uploadAndScan(config, sys, project, influx, utils)
 	if err != nil {
 		return errors.Wrap(err, "failed to run scan and upload result")
 	}
@@ -235,13 +213,13 @@ func zipWorkspaceFiles(filterPattern string, utils checkmarxExecuteScanUtils) (*
 	return zipFile, nil
 }
 
-func uploadAndScan(config checkmarxExecuteScanOptions, sys checkmarx.System, project checkmarx.Project, influx *checkmarxExecuteScanInflux, utils checkmarxExecuteScanUtils, gcsClient gcs.ClientInterface) error {
+func uploadAndScan(config checkmarxExecuteScanOptions, sys checkmarx.System, project checkmarx.Project, influx *checkmarxExecuteScanInflux, utils checkmarxExecuteScanUtils) error {
 	previousScans, err := sys.GetScans(project.ID)
 	if err != nil && config.VerifyOnly {
 		log.Entry().Warnf("Cannot load scans for project %v, verification only mode aborted", project.Name)
 	}
 	if len(previousScans) > 0 && config.VerifyOnly {
-		err := verifyCxProjectCompliance(config, sys, previousScans[0].ID, influx, utils, gcsClient)
+		err := verifyCxProjectCompliance(config, sys, previousScans[0].ID, influx, utils)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorCompliance)
 			return errors.Wrapf(err, "project %v not compliant", project.Name)
@@ -273,12 +251,12 @@ func uploadAndScan(config checkmarxExecuteScanOptions, sys checkmarx.System, pro
 			incremental = false
 		}
 
-		return triggerScan(config, sys, project, incremental, influx, utils, gcsClient)
+		return triggerScan(config, sys, project, incremental, influx, utils)
 	}
 	return nil
 }
 
-func triggerScan(config checkmarxExecuteScanOptions, sys checkmarx.System, project checkmarx.Project, incremental bool, influx *checkmarxExecuteScanInflux, utils checkmarxExecuteScanUtils, gcsClient gcs.ClientInterface) error {
+func triggerScan(config checkmarxExecuteScanOptions, sys checkmarx.System, project checkmarx.Project, incremental bool, influx *checkmarxExecuteScanInflux, utils checkmarxExecuteScanUtils) error {
 	scan, err := sys.ScanProject(project.ID, incremental, true, !config.AvoidDuplicateProjectScans)
 	if err != nil {
 		return errors.Wrapf(err, "cannot scan project %v", project.Name)
@@ -291,10 +269,10 @@ func triggerScan(config checkmarxExecuteScanOptions, sys checkmarx.System, proje
 	}
 
 	log.Entry().Debugln("Scan finished")
-	return verifyCxProjectCompliance(config, sys, scan.ID, influx, utils, gcsClient)
+	return verifyCxProjectCompliance(config, sys, scan.ID, influx, utils)
 }
 
-func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx.System, scanID int, influx *checkmarxExecuteScanInflux, utils checkmarxExecuteScanUtils, gcsClient gcs.ClientInterface) error {
+func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx.System, scanID int, influx *checkmarxExecuteScanInflux, utils checkmarxExecuteScanUtils) error {
 	var reports []piperutils.Path
 	if config.GeneratePdfReport {
 		pdfReportName := createReportName(utils.GetWorkspace(), "CxSASTReport_%v.pdf")
@@ -329,7 +307,7 @@ func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx
 	reports = append(reports, paths...)
 
 	links := []piperutils.Path{{Target: results["DeepLink"].(string), Name: "Checkmarx Web UI"}}
-	piperutils.PersistReportsAndLinks("checkmarxExecuteScan", utils.GetWorkspace(), reports, links, gcsClient, GeneralConfig.CorrelationID)
+	piperutils.PersistReportsAndLinks("checkmarxExecuteScan", utils.GetWorkspace(), reports, links, GeneralConfig.GCSClient, GeneralConfig.CorrelationID)
 
 	reportToInflux(results, influx)
 

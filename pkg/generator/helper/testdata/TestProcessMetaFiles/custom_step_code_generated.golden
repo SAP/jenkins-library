@@ -169,6 +169,9 @@ func TestStepCommand() *cobra.Command {
 			testStep(stepConfig, &telemetryData, &commonPipelineEnvironment, &influxTest)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
+			if GeneralConfig.GCSClient != nil {
+				GeneralConfig.GCSClient.Close()
+			}
 		},
 	}
 

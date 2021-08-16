@@ -104,6 +104,9 @@ For PMD the failure priority and the max allowed violations are configurable via
 			mavenExecuteStaticCodeChecks(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
+			if GeneralConfig.GCSClient != nil {
+				GeneralConfig.GCSClient.Close()
+			}
 		},
 	}
 

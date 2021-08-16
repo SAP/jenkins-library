@@ -9,7 +9,6 @@ import (
 	abapbuild "github.com/SAP/jenkins-library/pkg/abap/build"
 	"github.com/SAP/jenkins-library/pkg/abaputils"
 	"github.com/SAP/jenkins-library/pkg/command"
-	"github.com/SAP/jenkins-library/pkg/gcs"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
@@ -33,36 +32,14 @@ func abapEnvironmentAssemblePackages(config abapEnvironmentAssemblePackagesOptio
 		Exec: &c,
 	}
 
-	var gcsClient gcs.ClientInterface
-	if GeneralConfig.UploadReportsToGCS {
-		if GeneralConfig.CorrelationID == "" {
-			log.Entry().WithError(errors.New("CorrelationID is used as GCS bucketID and mustn't be empty")).Fatal("Execution failed")
-		}
-		gcpJsonKeyFilePath := GeneralConfig.GCPJsonKeyFilePath
-		if gcpJsonKeyFilePath == "" {
-			log.Entry().WithError(errors.New("GCP JSON Key file Path must not be empty")).Fatal("Execution failed")
-		}
-		var err error
-		envVars := []gcs.EnvVar{
-			{
-				Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-				Value: gcpJsonKeyFilePath,
-			},
-		}
-		if gcsClient, err = gcs.NewClient(envVars, gcs.OpenFileFromFS, gcs.CreateFileOnFS); err != nil {
-			log.Entry().WithError(err).Fatal("Execution failed")
-		}
-		defer gcsClient.Close()
-	}
-
 	client := piperhttp.Client{}
-	err := runAbapEnvironmentAssemblePackages(&config, telemetryData, &autils, &client, cpe, gcsClient)
+	err := runAbapEnvironmentAssemblePackages(&config, telemetryData, &autils, &client, cpe)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client abapbuild.HTTPSendLoader, cpe *abapEnvironmentAssemblePackagesCommonPipelineEnvironment, gcsClient gcs.ClientInterface) error {
+func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client abapbuild.HTTPSendLoader, cpe *abapEnvironmentAssemblePackagesCommonPipelineEnvironment) error {
 	conn := new(abapbuild.Connector)
 	var connConfig abapbuild.ConnectorConfiguration
 	connConfig.CfAPIEndpoint = config.CfAPIEndpoint
@@ -112,7 +89,7 @@ func runAbapEnvironmentAssemblePackages(config *abapEnvironmentAssemblePackagesO
 	}
 
 	log.Entry().Infof("Publsihing %v files", len(filesToPublish))
-	piperutils.PersistReportsAndLinks("abapEnvironmentAssemblePackages", "", filesToPublish, nil, gcsClient, GeneralConfig.CorrelationID)
+	piperutils.PersistReportsAndLinks("abapEnvironmentAssemblePackages", "", filesToPublish, nil, GeneralConfig.GCSClient, GeneralConfig.CorrelationID)
 
 	var reposBackToCPE []abaputils.Repository
 	for _, b := range builds {
