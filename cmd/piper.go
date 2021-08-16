@@ -41,6 +41,7 @@ type GeneralConfigOptions struct {
 	VaultNamespace       string
 	VaultPath            string
 	HookConfig           HookConfiguration
+	MetaDataResolver     func() map[string]config.StepData
 }
 
 // HookConfiguration contains the configuration for supported hooks, so far Sentry and Splunk are supported.
@@ -149,6 +150,8 @@ func Execute() {
 	rootCmd.AddCommand(AbapEnvironmentAssembleConfirmCommand())
 	rootCmd.AddCommand(IntegrationArtifactUploadCommand())
 	rootCmd.AddCommand(IntegrationArtifactTriggerIntegrationTestCommand())
+	rootCmd.AddCommand(IntegrationArtifactUnDeployCommand())
+	rootCmd.AddCommand(IntegrationArtifactResourceCommand())
 	rootCmd.AddCommand(TerraformExecuteCommand())
 	rootCmd.AddCommand(ContainerExecuteStructureTestsCommand())
 	rootCmd.AddCommand(GaugeExecuteTestsCommand())

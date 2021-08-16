@@ -98,6 +98,7 @@ nav:
         - githubCreatePullRequest: steps/githubCreatePullRequest.md
         - githubPublishRelease: steps/githubPublishRelease.md
         - githubSetCommitStatus: steps/githubSetCommitStatus.md
+        - gitopsUpdateDeployment: steps/gitopsUpdateDeployment.md
         - hadolintExecute: steps/hadolintExecute.md
         - handlePipelineStepErrors: steps/handlePipelineStepErrors.md
         - healthExecuteCheck: steps/healthExecuteCheck.md
@@ -106,6 +107,8 @@ nav:
         - integrationArtifactDownload: steps/integrationArtifactDownload.md
         - integrationArtifactGetMplStatus: steps/integrationArtifactGetMplStatus.md
         - integrationArtifactGetServiceEndpoint: steps/integrationArtifactGetServiceEndpoint.md
+        - integrationArtifactResource: steps/integrationArtifactResource.md
+        - integrationArtifactUnDeploy: steps/integrationArtifactUnDeploy.md
         - integrationArtifactUpdateConfiguration: steps/integrationArtifactUpdateConfiguration.md
         - integrationArtifactUpload: steps/integrationArtifactUpload.md
         - jenkinsMaterializeLog: steps/jenkinsMaterializeLog.md
