@@ -247,7 +247,9 @@ func uploadAndScan(config checkmarxExecuteScanOptions, sys checkmarx.System, pro
 			return errors.Wrapf(err, "invalid configuration value for fullScanCycle %v, must be a positive int", config.FullScanCycle)
 		}
 
-		if incremental && config.FullScansScheduled && fullScanCycle > 0 && (getNumCoherentIncrementalScans(previousScans)+1)%fullScanCycle == 0 {
+		if config.IsOptimizedAndScheduled {
+			incremental = false
+		} else if incremental && config.FullScansScheduled && fullScanCycle > 0 && (getNumCoherentIncrementalScans(previousScans)+1)%fullScanCycle == 0 {
 			incremental = false
 		}
 
