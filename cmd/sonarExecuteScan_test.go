@@ -112,7 +112,7 @@ func TestRunSonar(t *testing.T) {
 	mockRunner := mock.ExecMockRunner{}
 	mockDownloadClient := mockDownloader{shouldFail: false}
 	apiClient := &piperHttp.Client{}
-	apiClient.SetOptions(piperHttp.ClientOptions{UseDefaultTransport: true})
+	apiClient.SetOptions(piperHttp.ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
 	// mock SonarQube API calls
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()

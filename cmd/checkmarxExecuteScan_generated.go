@@ -11,6 +11,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
+	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
@@ -39,6 +40,7 @@ type checkmarxExecuteScanOptions struct {
 	VulnerabilityThresholdMedium  int    `json:"vulnerabilityThresholdMedium,omitempty"`
 	VulnerabilityThresholdResult  string `json:"vulnerabilityThresholdResult,omitempty"`
 	VulnerabilityThresholdUnit    string `json:"vulnerabilityThresholdUnit,omitempty"`
+	IsOptimizedAndScheduled       bool   `json:"isOptimizedAndScheduled,omitempty"`
 }
 
 type checkmarxExecuteScanInflux struct {
@@ -176,6 +178,7 @@ func CheckmarxExecuteScanCommand() *cobra.Command {
 	var stepConfig checkmarxExecuteScanOptions
 	var startTime time.Time
 	var influx checkmarxExecuteScanInflux
+	var logCollector *log.CollectorHook
 
 	var createCheckmarxExecuteScanCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -196,6 +199,8 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
@@ -213,6 +218,11 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 				log.RegisterHook(&sentryHook)
 			}
 
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
+				log.RegisterHook(logCollector)
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -224,10 +234,20 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
+				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunk.Send(&telemetryData, logCollector)
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunk.Initialize(GeneralConfig.CorrelationID,
+					GeneralConfig.HookConfig.SplunkConfig.Dsn,
+					GeneralConfig.HookConfig.SplunkConfig.Token,
+					GeneralConfig.HookConfig.SplunkConfig.Index,
+					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+			}
 			checkmarxExecuteScan(stepConfig, &telemetryData, &influx)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -262,6 +282,7 @@ func addCheckmarxExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxExecu
 	cmd.Flags().IntVar(&stepConfig.VulnerabilityThresholdMedium, "vulnerabilityThresholdMedium", 100, "The specific threshold for medium severity findings")
 	cmd.Flags().StringVar(&stepConfig.VulnerabilityThresholdResult, "vulnerabilityThresholdResult", `FAILURE`, "The result of the build in case thresholds are enabled and exceeded")
 	cmd.Flags().StringVar(&stepConfig.VulnerabilityThresholdUnit, "vulnerabilityThresholdUnit", `percentage`, "The unit for the threshold to apply.")
+	cmd.Flags().BoolVar(&stepConfig.IsOptimizedAndScheduled, "isOptimizedAndScheduled", false, "Whether the pipeline runs in optimized mode and the current execution is a scheduled one")
 
 	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("projectName")
@@ -279,6 +300,9 @@ func checkmarxExecuteScanMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "checkmarxCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing username and password to communicate with the Checkmarx backend.", Type: "jenkins"},
+				},
 				Resources: []config.StepResources{
 					{Name: "checkmarx", Type: "stash"},
 				},
@@ -290,6 +314,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
 						Name:        "filterPattern",
@@ -298,6 +323,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `!**/node_modules/**, !**/.xmake/**, !**/*_test.go, !**/vendor/**/*.go, **/*.html, **/*.xml, **/*.go, **/*.py, **/*.js, **/*.scala, **/*.ts`,
 					},
 					{
 						Name:        "fullScanCycle",
@@ -306,6 +332,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `5`,
 					},
 					{
 						Name:        "fullScansScheduled",
@@ -314,6 +341,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
 						Name:        "generatePdfReport",
@@ -322,6 +350,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
 						Name:        "incremental",
@@ -330,6 +359,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
 						Name:        "maxRetries",
@@ -338,6 +368,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     3,
 					},
 					{
 						Name: "password",
@@ -358,6 +389,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_password"),
 					},
 					{
 						Name:        "preset",
@@ -366,6 +398,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_preset"),
 					},
 					{
 						Name:        "projectName",
@@ -374,6 +407,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "checkmarxProject"}, {Name: "checkMarxProjectName"}},
+						Default:     os.Getenv("PIPER_projectName"),
 					},
 					{
 						Name:        "pullRequestName",
@@ -382,6 +416,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_pullRequestName"),
 					},
 					{
 						Name:        "serverUrl",
@@ -390,6 +425,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "checkmarxServerUrl"}},
+						Default:     os.Getenv("PIPER_serverUrl"),
 					},
 					{
 						Name:        "sourceEncoding",
@@ -398,6 +434,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `1`,
 					},
 					{
 						Name:        "teamId",
@@ -406,6 +443,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "checkmarxGroupId"}, {Name: "groupId"}},
+						Default:     os.Getenv("PIPER_teamId"),
 					},
 					{
 						Name:        "teamName",
@@ -414,6 +452,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_teamName"),
 					},
 					{
 						Name: "username",
@@ -434,6 +473,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_username"),
 					},
 					{
 						Name:        "verifyOnly",
@@ -442,6 +482,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name:        "vulnerabilityThresholdEnabled",
@@ -450,6 +491,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
 						Name:        "vulnerabilityThresholdHigh",
@@ -458,6 +500,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     100,
 					},
 					{
 						Name:        "vulnerabilityThresholdLow",
@@ -466,6 +509,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     10,
 					},
 					{
 						Name:        "vulnerabilityThresholdMedium",
@@ -474,6 +518,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     100,
 					},
 					{
 						Name:        "vulnerabilityThresholdResult",
@@ -482,6 +527,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `FAILURE`,
 					},
 					{
 						Name:        "vulnerabilityThresholdUnit",
@@ -490,6 +536,21 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `percentage`,
+					},
+					{
+						Name: "isOptimizedAndScheduled",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/isOptimizedAndScheduled",
+							},
+						},
+						Scope:     []string{"PARAMETERS"},
+						Type:      "bool",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   false,
 					},
 				},
 			},

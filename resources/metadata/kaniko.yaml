@@ -91,8 +91,6 @@ spec:
         description: Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).
         scope:
           - PARAMETERS
-          - STAGES
-          - STEPS
         secret: true
         resourceRef:
           - name: commonPipelineEnvironment
@@ -122,7 +120,8 @@ spec:
           - name: container/registryUrl
           - name: container/imageNameTag
   containers:
-    - image: gcr.io/kaniko-project/executor:debug
+    # https://github.com/GoogleContainerTools/kaniko/issues/1586
+    - image: gcr.io/kaniko-project/executor:v1.3.0-debug
       command:
         - /busybox/tail -f /dev/null
       shell: /busybox/sh
@@ -130,4 +129,4 @@ spec:
         - name: -u
           value: "0"
         - name: --entrypoint
-          value: "''"
+          value: ''

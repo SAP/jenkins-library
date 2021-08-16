@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -217,6 +218,8 @@ func (f *fortifyMock) GetProjectIssuesByIDAndFilterSetGroupedBySelector(id int64
 		}, nil
 	}
 	if issueFilterSelectorSet != nil && issueFilterSelectorSet.FilterBySet != nil && len(issueFilterSelectorSet.FilterBySet) > 0 && issueFilterSelectorSet.FilterBySet[0].GUID == "3" {
+		groupName := "Suspicious"
+		groupName2 := "Exploitable"
 		group := "3"
 		total := int32(4)
 		audited := int32(0)
@@ -224,8 +227,8 @@ func (f *fortifyMock) GetProjectIssuesByIDAndFilterSetGroupedBySelector(id int64
 		total2 := int32(5)
 		audited2 := int32(0)
 		return []*models.ProjectVersionIssueGroup{
-			{ID: &group, TotalCount: &total, AuditedCount: &audited},
-			{ID: &group2, TotalCount: &total2, AuditedCount: &audited2},
+			{ID: &group, CleanName: &groupName, TotalCount: &total, AuditedCount: &audited},
+			{ID: &group2, CleanName: &groupName2, TotalCount: &total2, AuditedCount: &audited2},
 		}, nil
 	}
 	group := "Audit All"
@@ -238,9 +241,9 @@ func (f *fortifyMock) GetProjectIssuesByIDAndFilterSetGroupedBySelector(id int64
 	total3 := int32(5)
 	audited3 := int32(4)
 	return []*models.ProjectVersionIssueGroup{
-		{ID: &group, TotalCount: &total, AuditedCount: &audited},
-		{ID: &group2, TotalCount: &total2, AuditedCount: &audited2},
-		{ID: &group3, TotalCount: &total3, AuditedCount: &audited3},
+		{ID: &group, CleanName: &group, TotalCount: &total, AuditedCount: &audited},
+		{ID: &group2, CleanName: &group2, TotalCount: &total2, AuditedCount: &audited2},
+		{ID: &group3, CleanName: &group3, TotalCount: &total3, AuditedCount: &audited3},
 	}, nil
 }
 func (f *fortifyMock) ReduceIssueFilterSelectorSet(issueFilterSelectorSet *models.IssueFilterSelectorSet, names []string, options []string) *models.IssueFilterSelectorSet {
@@ -334,7 +337,13 @@ func (er *execRunnerMock) RunExecutable(e string, p ...string) error {
 	classpathPip := "/usr/lib/python35.zip;/usr/lib/python3.5;/usr/lib/python3.5/plat-x86_64-linux-gnu;/usr/lib/python3.5/lib-dynload;/home/piper/.local/lib/python3.5/site-packages;/usr/local/lib/python3.5/dist-packages;/usr/lib/python3/dist-packages;./lib"
 	classpathMaven := "some.jar;someother.jar"
 	if e == "python2" {
-		er.currentExecution().outWriter.Write([]byte(classpathPip))
+		if p[1] == "invalid" {
+			return errors.New("Invalid command")
+		}
+		_, err := er.currentExecution().outWriter.Write([]byte(classpathPip))
+		if err != nil {
+			return err
+		}
 	} else if e == "mvn" {
 		path := strings.ReplaceAll(p[2], "-Dmdep.outputFile=", "")
 		err := ioutil.WriteFile(path, []byte(classpathMaven), 0644)
@@ -432,8 +441,9 @@ func TestAnalyseSuspiciousExploitable(t *testing.T) {
 			},
 		},
 	}
-	issues := analyseSuspiciousExploitable(config, &ff, &projectVersion, &models.FilterSet{}, &selectorSet, &influx, auditStatus)
+	issues, groups := analyseSuspiciousExploitable(config, &ff, &projectVersion, &models.FilterSet{}, &selectorSet, &influx, auditStatus)
 	assert.Equal(t, 9, issues)
+	assert.Equal(t, 2, len(groups))
 
 	assert.Equal(t, 4, influx.fortify_data.fields.suspicious)
 	assert.Equal(t, 5, influx.fortify_data.fields.exploitable)
@@ -481,9 +491,10 @@ func TestAnalyseUnauditedIssues(t *testing.T) {
 			},
 		},
 	}
-	issues, err := analyseUnauditedIssues(config, &ff, &projectVersion, &models.FilterSet{}, &selectorSet, &influx, auditStatus)
+	issues, groups, err := analyseUnauditedIssues(config, &ff, &projectVersion, &models.FilterSet{}, &selectorSet, &influx, auditStatus)
 	assert.NoError(t, err)
 	assert.Equal(t, 13, issues)
+	assert.Equal(t, 3, len(groups))
 
 	assert.Equal(t, 15, influx.fortify_data.fields.auditAllTotal)
 	assert.Equal(t, 12, influx.fortify_data.fields.auditAllAudited)
@@ -521,10 +532,10 @@ func TestTriggerFortifyScan(t *testing.T) {
 		assert.Equal(t, 3, utils.numExecutions)
 
 		assert.Equal(t, "mvn", utils.executions[0].executable)
-		assert.Equal(t, []string{"--file", "./pom.xml", "-Dmdep.outputFile=fortify-execute-scan-cp.txt", "-DincludeScope=compile", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "dependency:build-classpath"}, utils.executions[0].parameters)
+		assert.Equal(t, []string{"--file", "./pom.xml", "-Dmdep.outputFile=fortify-execute-scan-cp.txt", "-Dfortify", "-DincludeScope=compile", "-DskipTests", "-Dmaven.javadoc.skip=true", "--fail-at-end", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "dependency:build-classpath", "package"}, utils.executions[0].parameters)
 
 		assert.Equal(t, "sourceanalyzer", utils.executions[1].executable)
-		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-Xmx4G", "-Xms2G", "-cp", "some.jar;someother.jar", "**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "src/main/resources/**/*", "src/main/java/**/*"}, utils.executions[1].parameters)
+		assert.True(t, reflect.DeepEqual([]string{"-verbose", "-64", "-b", "test", "-Xmx4G", "-Xms2G", "-cp", "some.jar;someother.jar", "-exclude", "**/src/test/**/*", "**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "src/main/resources/**/*", "src/main/java/**/*"}, utils.executions[1].parameters) || reflect.DeepEqual([]string{"-verbose", "-64", "-b", "test", "-Xmx4G", "-Xms2G", "-cp", "some.jar;someother.jar", "-exclude", "**/src/test/**/*", "**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "src/main/resources/**/*", "src/main/java/**/*"}, utils.executions[1].parameters))
 
 		assert.Equal(t, "sourceanalyzer", utils.executions[2].executable)
 		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-scan", "-Xmx4G", "-Xms2G", "-Dtest=property", "-build-label", "testLabel", "-build-project", "my.group-myartifact", "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr"}, utils.executions[2].parameters)
@@ -816,6 +827,25 @@ func TestAutoresolveClasspath(t *testing.T) {
 		assert.Equal(t, "/usr/lib/python35.zip;/usr/lib/python3.5;/usr/lib/python3.5/plat-x86_64-linux-gnu;/usr/lib/python3.5/lib-dynload;/home/piper/.local/lib/python3.5/site-packages;/usr/local/lib/python3.5/dist-packages;/usr/lib/python3/dist-packages;./lib", result, "Expected different result")
 	})
 
+	t.Run("error pip file", func(t *testing.T) {
+		utils := newFortifyTestUtilsBundle()
+
+		_, err := autoresolvePipClasspath("python2", []string{"-c", "import sys;p=sys.path;p.remove('');print(';'.join(p))"}, "../.", &utils)
+		assert.Error(t, err)
+	})
+
+	t.Run("error pip command", func(t *testing.T) {
+		utils := newFortifyTestUtilsBundle()
+		dir, err := ioutil.TempDir("", "classpath")
+		assert.NoError(t, err, "Unexpected error detected")
+		defer os.RemoveAll(dir)
+		file := filepath.Join(dir, "cp.txt")
+
+		_, err = autoresolvePipClasspath("python2", []string{"-c", "invalid"}, file, &utils)
+		assert.Error(t, err)
+		assert.Equal(t, "failed to run classpath autodetection command python2 with parameters [-c invalid]: Invalid command", err.Error())
+	})
+
 	t.Run("success maven", func(t *testing.T) {
 		utils := newFortifyTestUtilsBundle()
 		dir, err := ioutil.TempDir("", "classpath")
@@ -823,9 +853,10 @@ func TestAutoresolveClasspath(t *testing.T) {
 		defer os.RemoveAll(dir)
 		file := filepath.Join(dir, "cp.txt")
 
-		result := autoresolveMavenClasspath(fortifyExecuteScanOptions{BuildDescriptorFile: "pom.xml"}, file, &utils)
+		result, err := autoresolveMavenClasspath(fortifyExecuteScanOptions{BuildDescriptorFile: "pom.xml"}, file, &utils)
+		assert.NoError(t, err)
 		assert.Equal(t, "mvn", utils.executions[0].executable, "Expected different executable")
-		assert.Equal(t, []string{"--file", "pom.xml", fmt.Sprintf("-Dmdep.outputFile=%v", file), "-DincludeScope=compile", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "dependency:build-classpath"}, utils.executions[0].parameters, "Expected different parameters")
+		assert.Equal(t, []string{"--file", "pom.xml", fmt.Sprintf("-Dmdep.outputFile=%v", file), "-Dfortify", "-DincludeScope=compile", "-DskipTests", "-Dmaven.javadoc.skip=true", "--fail-at-end", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "dependency:build-classpath", "package"}, utils.executions[0].parameters, "Expected different parameters")
 		assert.Equal(t, "some.jar;someother.jar", result, "Expected different result")
 	})
 }
@@ -835,14 +866,14 @@ func TestPopulateMavenTranslate(t *testing.T) {
 		config := fortifyExecuteScanOptions{Src: []string{"./**/*"}}
 		translate, err := populateMavenTranslate(&config, "")
 		assert.NoError(t, err)
-		assert.Equal(t, `[{"classpath":"","src":"./**/*"}]`, translate)
+		assert.Equal(t, `[{"classpath":"","exclude":"**/src/test/**/*","src":"./**/*"}]`, translate)
 	})
 
 	t.Run("exclude without translate", func(t *testing.T) {
 		config := fortifyExecuteScanOptions{Exclude: []string{"./**/*"}}
 		translate, err := populateMavenTranslate(&config, "")
 		assert.NoError(t, err)
-		assert.Equal(t, `[{"classpath":"","exclude":"./**/*","src":"**/*.xml:**/*.html:**/*.jsp:**/*.js:**/src/main/resources/**/*:**/src/main/java/**/*"}]`, translate)
+		assert.Equal(t, `[{"classpath":"","exclude":"./**/*","src":"**/*.xml:**/*.html:**/*.jsp:**/*.js:**/src/main/resources/**/*:**/src/main/java/**/*:**/target/main/java/**/*:**/target/main/resources/**/*:**/target/generated-sources/**/*"}]`, translate)
 	})
 
 	t.Run("with translate", func(t *testing.T) {

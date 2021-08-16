@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -24,7 +25,7 @@ func (errReadCloser) Close() error {
 	return nil
 }
 
-func customDefaultsOpenFileMock(name string) (io.ReadCloser, error) {
+func customDefaultsOpenFileMock(name string, tokens map[string]string) (io.ReadCloser, error) {
 	return ioutil.NopCloser(strings.NewReader("general:\n  p0: p0_custom_default\nstages:\n  stage1:\n    p1: p1_custom_default")), nil
 }
 
@@ -361,6 +362,115 @@ func TestGetStepConfigWithJSON(t *testing.T) {
 	})
 }
 
+func TestGetStageConfig(t *testing.T) {
+
+	testConfig := `general:
+  p1: p1_general
+  px1: px1_general
+stages:
+  stage1:
+    p2: p2_stage
+    px2: px2_stage
+`
+	defaults1 := `general:
+  p0: p0_general_default
+  px0: px0_general_default
+`
+	paramJSON := `{"p3":"p3_param"}`
+
+	t.Run("Success case - with filters", func(t *testing.T) {
+
+		acceptedParams := []string{"p0", "p1", "p2", "p3"}
+
+		var c Config
+		defaults := []io.ReadCloser{ioutil.NopCloser(strings.NewReader(defaults1))}
+
+		myConfig := ioutil.NopCloser(strings.NewReader(testConfig))
+
+		dir, err := ioutil.TempDir("", "")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+
+		// clean up tmp dir
+		defer os.RemoveAll(dir)
+
+		stepConfig, err := c.GetStageConfig(paramJSON, myConfig, defaults, false, acceptedParams, "stage1")
+
+		assert.Equal(t, nil, err, "error occurred but none expected")
+
+		t.Run("Config", func(t *testing.T) {
+			expected := map[string]string{
+				"p0": "p0_general_default",
+				"p1": "p1_general",
+				"p2": "p2_stage",
+				"p3": "p3_param",
+			}
+
+			for k, v := range expected {
+				t.Run(k, func(t *testing.T) {
+					if stepConfig.Config[k] != v {
+						t.Errorf("got: %v, expected: %v", stepConfig.Config[k], v)
+					}
+				})
+			}
+		})
+
+		t.Run("Config not expected", func(t *testing.T) {
+			notExpectedKeys := []string{"px0", "px1", "px2"}
+			for _, p := range notExpectedKeys {
+				t.Run(p, func(t *testing.T) {
+					if stepConfig.Config[p] != nil {
+						t.Errorf("unexpected: %v", p)
+					}
+				})
+			}
+		})
+	})
+
+	t.Run("Success case - no filters", func(t *testing.T) {
+
+		acceptedParams := []string{}
+
+		var c Config
+		defaults := []io.ReadCloser{ioutil.NopCloser(strings.NewReader(defaults1))}
+
+		myConfig := ioutil.NopCloser(strings.NewReader(testConfig))
+
+		dir, err := ioutil.TempDir("", "")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+
+		// clean up tmp dir
+		defer os.RemoveAll(dir)
+
+		stepConfig, err := c.GetStageConfig(paramJSON, myConfig, defaults, false, acceptedParams, "stage1")
+
+		assert.Equal(t, nil, err, "error occurred but none expected")
+
+		t.Run("Config", func(t *testing.T) {
+			expected := map[string]string{
+				"p0":  "p0_general_default",
+				"px0": "px0_general_default",
+				"p1":  "p1_general",
+				"px1": "px1_general",
+				"p2":  "p2_stage",
+				"px2": "px2_stage",
+				"p3":  "p3_param",
+			}
+
+			for k, v := range expected {
+				t.Run(k, func(t *testing.T) {
+					if stepConfig.Config[k] != v {
+						t.Errorf("got: %v, expected: %v", stepConfig.Config[k], v)
+					}
+				})
+			}
+		})
+	})
+}
+
 func TestApplyAliasConfig(t *testing.T) {
 	p := []StepParameters{
 		{
@@ -650,5 +760,153 @@ func TestMerge(t *testing.T) {
 			stepConfig.mixIn(row.MergeData, row.Filter)
 			assert.Equal(t, row.ExpectedOutput, stepConfig.Config, "Mixin  was incorrect")
 		})
+	}
+}
+
+func TestStepConfig_mixInHookConfig(t *testing.T) {
+	type fields struct {
+		Config     map[string]interface{}
+		HookConfig map[string]interface{}
+	}
+	type args struct {
+		mergeData map[string]interface{}
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   map[string]interface{}
+	}{
+		{name: "Splunk only",
+			fields: fields{
+				Config:     nil,
+				HookConfig: nil,
+			},
+			args: args{mergeData: map[string]interface{}{
+				"splunk": map[string]interface{}{
+					"dsn":      "dsn",
+					"token":    "token",
+					"sendLogs": "false",
+				},
+			}},
+			want: map[string]interface{}{
+				"splunk": map[string]interface{}{
+					"dsn":      "dsn",
+					"token":    "token",
+					"sendLogs": "false",
+				},
+			},
+		},
+		{name: "Sentry only",
+			fields: fields{
+				Config:     nil,
+				HookConfig: nil,
+			},
+			args: args{mergeData: map[string]interface{}{
+				"sentry": map[string]interface{}{
+					"dsn": "sentrydsn",
+				},
+			}},
+			want: map[string]interface{}{
+				"sentry": map[string]interface{}{
+					"dsn": "sentrydsn",
+				},
+			},
+		},
+		{name: "Splunk and Sentry",
+			fields: fields{
+				Config:     nil,
+				HookConfig: nil,
+			},
+			args: args{mergeData: map[string]interface{}{
+				"splunk": map[string]interface{}{
+					"dsn":      "dsn",
+					"token":    "token",
+					"sendLogs": "false",
+				},
+				"sentry": map[string]interface{}{
+					"dsn": "sentrydsn",
+				},
+			}},
+			want: map[string]interface{}{
+				"splunk": map[string]interface{}{
+					"dsn":      "dsn",
+					"token":    "token",
+					"sendLogs": "false",
+				},
+				"sentry": map[string]interface{}{
+					"dsn": "sentrydsn",
+				},
+			},
+		},
+		{name: "No Hook",
+			fields: fields{
+				Config:     nil,
+				HookConfig: nil,
+			},
+			args: args{mergeData: nil},
+			want: map[string]interface{}{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &StepConfig{
+				Config:     tt.fields.Config,
+				HookConfig: tt.fields.HookConfig,
+			}
+			s.mixInHookConfig(tt.args.mergeData)
+			if !reflect.DeepEqual(s.HookConfig, tt.want) {
+				t.Errorf("mixInHookConfig() = %v, want %v", s.HookConfig, tt.want)
+			}
+		})
+	}
+}
+
+func TestMixInStepDefaults(t *testing.T) {
+	tt := []struct {
+		name       string
+		stepConfig *StepConfig
+		stepParams []StepParameters
+		expected   map[string]interface{}
+	}{
+		{name: "empty", stepConfig: &StepConfig{}, stepParams: []StepParameters{}, expected: map[string]interface{}{}},
+		{name: "no condition", stepConfig: &StepConfig{}, stepParams: []StepParameters{{Name: "noCondition", Default: "noCondition_default"}}, expected: map[string]interface{}{"noCondition": "noCondition_default"}},
+		{
+			name:       "with multiple conditions",
+			stepConfig: &StepConfig{},
+			stepParams: []StepParameters{
+				{Name: "dependentParam1", Default: "dependentParam1_value"},
+				{Name: "dependentParam2", Default: "dependentParam2_value"},
+				{
+					Name:    "withConditionParameter",
+					Default: "withCondition_default_a",
+					Conditions: []Condition{
+						{ConditionRef: "strings-equal", Params: []Param{{Name: "dependentParam1", Value: "dependentParam1_value1"}}},
+						{ConditionRef: "strings-equal", Params: []Param{{Name: "dependentParam2", Value: "dependentParam2_value1"}}},
+					},
+				},
+				{
+					Name:    "withConditionParameter",
+					Default: "withCondition_default_b",
+					Conditions: []Condition{
+						{ConditionRef: "strings-equal", Params: []Param{{Name: "dependentParam1", Value: "dependentParam1_value2"}}},
+						{ConditionRef: "strings-equal", Params: []Param{{Name: "dependentParam2", Value: "dependentParam2_value2"}}},
+					},
+				},
+			},
+			expected: map[string]interface{}{
+				"dependentParam1":        "dependentParam1_value",
+				"dependentParam2":        "dependentParam2_value",
+				"dependentParam1_value1": map[string]interface{}{"withConditionParameter": "withCondition_default_a"},
+				"dependentParam2_value1": map[string]interface{}{"withConditionParameter": "withCondition_default_a"},
+				"dependentParam1_value2": map[string]interface{}{"withConditionParameter": "withCondition_default_b"},
+				"dependentParam2_value2": map[string]interface{}{"withConditionParameter": "withCondition_default_b"},
+			},
+		},
+	}
+
+	for _, test := range tt {
+		test.stepConfig.mixInStepDefaults(test.stepParams)
+		assert.Equal(t, test.expected, test.stepConfig.Config, test.name)
 	}
 }

@@ -7,41 +7,27 @@ metadata:
 spec:
   inputs:
     secrets:
-      - name: cpiCredentialsId
-        description: Jenkins credentials ID containing username and password for authentication to the SAP Cloud Platform Integration API's
+      - name: cpiApiServiceKeyCredentialsId
+        description: Jenkins secret text credential ID containing the service key to the Process Integration Runtime service instance of plan 'api'
         type: jenkins
     params:
-      - name: username
+      - name: apiServiceKey
         type: string
-        description: User to authenticate to the SAP Cloud Platform Integration Service
+        description: Service key JSON string to access the Process Integration Runtime service instance of plan 'api'
         scope:
           - PARAMETERS
-          - STAGES
-          - STEPS
         mandatory: true
         secret: true
         resourceRef:
-          - name: cpiCredentialsId
+          - name: cpiApiServiceKeyCredentialsId
             type: secret
-            param: username
-      - name: password
-        type: string
-        description: Password to authenticate to the SAP Cloud Platform Integration Service
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        mandatory: true
-        secret: true
-        resourceRef:
-          - name: cpiCredentialsId
-            type: secret
-            param: password
+            param: apiServiceKey
       - name: integrationFlowId
         type: string
         description: Specifies the ID of the Integration Flow artifact
         scope:
           - PARAMETERS
+          - GENERAL
           - STAGES
           - STEPS
         mandatory: true
@@ -50,30 +36,7 @@ spec:
         description: Specifies the version of the Integration Flow artifact
         scope:
           - PARAMETERS
-          - STAGES
-          - STEPS
-        mandatory: true
-      - name: platform
-        type: string
-        description: Specifies the running platform of the SAP Cloud platform integraion service
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        mandatory: false
-      - name: host
-        type: string
-        description: Specifies the protocol and host address, including the port. Please provide in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        mandatory: true
-      - name: oAuthTokenProviderUrl
-        type: string
-        description: Specifies the oAuth Provider protocol and host address, including the port. Please provide in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.
-        scope:
-          - PARAMETERS
+          - GENERAL
           - STAGES
           - STEPS
         mandatory: true

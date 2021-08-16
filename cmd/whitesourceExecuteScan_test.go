@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
 	"github.com/SAP/jenkins-library/pkg/versioning"
@@ -82,7 +83,7 @@ func TestRunWhitesourceExecuteScan(t *testing.T) {
 		// test
 		err := runWhitesourceExecuteScan(&config, scan, utilsMock, systemMock, &cpe, &influx)
 		// assert
-		assert.EqualError(t, err, "no project with token 'no-such-project-token' found in Whitesource")
+		assert.EqualError(t, err, "failed to resolve and aggregate project name: failed to get project by token: no project with token 'no-such-project-token' found in Whitesource")
 		assert.Equal(t, "", config.ProjectName)
 		assert.Equal(t, "", scan.AggregateProjectName)
 	})
@@ -329,7 +330,7 @@ func TestResolveProjectIdentifiers(t *testing.T) {
 		// test
 		err := resolveProjectIdentifiers(&config, scan, utilsMock, systemMock)
 		// assert
-		assert.EqualError(t, err, "no product with name 'does-not-exist' found in Whitesource")
+		assert.EqualError(t, err, "error resolving product token: failed to get product by name: no product with name 'does-not-exist' found in Whitesource")
 	})
 	t.Run("product not found, created from pipeline", func(t *testing.T) {
 		// init
@@ -777,6 +778,7 @@ func TestAggregateVersionWideLibraries(t *testing.T) {
 			contents, _ := utils.FileRead(resource)
 			asString := string(contents)
 			assert.Equal(t, "Library Name, Project Name\nmock-library, mock-project\n", asString)
+			assert.NotEmpty(t, piperenv.GetParameter("", "whitesourceExecuteScan_reports.json"))
 		}
 	})
 }
@@ -805,6 +807,7 @@ func TestAggregateVersionWideVulnerabilities(t *testing.T) {
 		sheetContents, err := utils.FileRead(reportSheet)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, sheetContents)
+		assert.NotEmpty(t, piperenv.GetParameter("", "whitesourceExecuteScan_reports.json"))
 	})
 }
 

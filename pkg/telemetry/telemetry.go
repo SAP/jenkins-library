@@ -32,7 +32,7 @@ var client piperhttp.Sender
 func Initialize(telemetryDisabled bool, stepName string) {
 	disabled = telemetryDisabled
 
-	// skip if telemetry is dieabled
+	// skip if telemetry is disabled
 	if disabled {
 		log.Entry().Info("Telemetry reporting deactivated")
 		return
@@ -42,7 +42,7 @@ func Initialize(telemetryDisabled bool, stepName string) {
 		client = &piperhttp.Client{}
 	}
 
-	client.SetOptions(piperhttp.ClientOptions{MaxRequestDuration: 5 * time.Second})
+	client.SetOptions(piperhttp.ClientOptions{MaxRequestDuration: 5 * time.Second, MaxRetries: -1})
 
 	if len(LibraryRepository) == 0 {
 		LibraryRepository = "https://github.com/n/a"
@@ -86,15 +86,19 @@ const baseURL = "https://webanalytics.cfapps.eu10.hana.ondemand.com"
 // SWA endpoint
 const endpoint = "/tracker/log"
 
-// Send ...
-func Send(customData *CustomData) {
-	data := Data{
+func GetData(customData *CustomData) Data {
+	return Data{
 		BaseData:     baseData,
 		BaseMetaData: baseMetaData,
 		CustomData:   *customData,
 	}
+}
 
-	// skip if telemetry is dieabled
+// Send ...
+func Send(customData *CustomData) {
+	data := GetData(customData)
+
+	// skip if telemetry is disabled
 	if disabled {
 		return
 	}

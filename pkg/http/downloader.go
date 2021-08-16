@@ -1,11 +1,13 @@
 package http
 
 import (
-	"github.com/pkg/errors"
-	"io"
 	"net/http"
 	"os"
 	"path/filepath"
+
+	"github.com/pkg/errors"
+
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 //Downloader ...
@@ -38,7 +40,7 @@ func (c *Client) DownloadRequest(method, url, filename string, header http.Heade
 	}
 	defer fileHandler.Close()
 
-	_, err = io.Copy(fileHandler, response.Body)
+	_, err = piperutils.CopyData(fileHandler, response.Body)
 	if err != nil {
 		return errors.Wrapf(err, "unable to copy content from url to file %v", filename)
 	}
