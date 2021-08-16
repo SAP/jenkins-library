@@ -138,6 +138,7 @@ func triggerATCrun(config abapEnvironmentRunATCCheckOptions, details abaputils.C
 
 func buildATCCheckBody(ATCConfig ATCconfig) (checkVariantString string, packageString string, softwareComponentString string, err error) {
 	if len(ATCConfig.Objects.Package) == 0 && len(ATCConfig.Objects.SoftwareComponent) == 0 {
+		log.SetErrorCategory(log.ErrorConfiguration)
 		return "", "", "", fmt.Errorf("Error while parsing ATC run config. Please provide the packages and/or the software components to be checked! %w", errors.New("No Package or Software Component specified. Please provide either one or both of them"))
 	}
 
@@ -229,6 +230,7 @@ func runATC(requestType string, details abaputils.ConnectionDetailsHTTP, body []
 
 	req, err := client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
 	if err != nil {
+		log.SetErrorCategory(log.ErrorService)
 		return req, fmt.Errorf("Triggering ATC run failed: %w", err)
 	}
 	defer req.Body.Close()
@@ -246,6 +248,7 @@ func fetchXcsrfToken(requestType string, details abaputils.ConnectionDetailsHTTP
 	header["Accept"] = []string{"application/vnd.sap.atc.run.v1+xml"}
 	req, err := client.SendRequest(requestType, details.URL, bytes.NewBuffer(body), header, nil)
 	if err != nil {
+		log.SetErrorCategory(log.ErrorInfrastructure)
 		return "", fmt.Errorf("Fetching Xcsrf-Token failed: %w", err)
 	}
 	defer req.Body.Close()

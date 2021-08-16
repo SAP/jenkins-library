@@ -5,64 +5,35 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
 
-type integrationArtifactGetServiceEndpointOptions struct {
+type integrationArtifactResourceOptions struct {
 	APIServiceKey     string `json:"apiServiceKey,omitempty"`
 	IntegrationFlowID string `json:"integrationFlowId,omitempty"`
+	Operation         string `json:"operation,omitempty"`
+	ResourcePath      string `json:"resourcePath,omitempty"`
 }
 
-type integrationArtifactGetServiceEndpointCommonPipelineEnvironment struct {
-	custom struct {
-		integrationFlowServiceEndpoint string
-	}
-}
+// IntegrationArtifactResourceCommand Add, Delete or Update an resource file of integration flow designtime artifact
+func IntegrationArtifactResourceCommand() *cobra.Command {
+	const STEP_NAME = "integrationArtifactResource"
 
-func (p *integrationArtifactGetServiceEndpointCommonPipelineEnvironment) persist(path, resourceName string) {
-	content := []struct {
-		category string
-		name     string
-		value    interface{}
-	}{
-		{category: "custom", name: "integrationFlowServiceEndpoint", value: p.custom.integrationFlowServiceEndpoint},
-	}
-
-	errCount := 0
-	for _, param := range content {
-		err := piperenv.SetResourceParameter(path, resourceName, filepath.Join(param.category, param.name), param.value)
-		if err != nil {
-			log.Entry().WithError(err).Error("Error persisting piper environment.")
-			errCount++
-		}
-	}
-	if errCount > 0 {
-		log.Entry().Fatal("failed to persist Piper environment")
-	}
-}
-
-// IntegrationArtifactGetServiceEndpointCommand Get an deployed CPI intgeration flow service endpoint
-func IntegrationArtifactGetServiceEndpointCommand() *cobra.Command {
-	const STEP_NAME = "integrationArtifactGetServiceEndpoint"
-
-	metadata := integrationArtifactGetServiceEndpointMetadata()
-	var stepConfig integrationArtifactGetServiceEndpointOptions
+	metadata := integrationArtifactResourceMetadata()
+	var stepConfig integrationArtifactResourceOptions
 	var startTime time.Time
-	var commonPipelineEnvironment integrationArtifactGetServiceEndpointCommonPipelineEnvironment
 	var logCollector *log.CollectorHook
 
-	var createIntegrationArtifactGetServiceEndpointCmd = &cobra.Command{
+	var createIntegrationArtifactResourceCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Get an deployed CPI intgeration flow service endpoint",
-		Long:  `With this step you can obtain information about the service endpoints exposed by SAP Cloud Platform Integration on a tenant using OData API. Learn more about the SAP Cloud Integration remote API for getting service endpoint of deployed integration artifact [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/d1679a80543f46509a7329243b595bdb.html).`,
+		Short: "Add, Delete or Update an resource file of integration flow designtime artifact",
+		Long:  `With this step you can either add, delete or update a resource of integration flow designtime artifact using the OData API. Learn more about the SAP Cloud Integration remote API for managing an resource of integration flow artifact [here](https://help.sap.com/viewer/368c481cd6954bdfa5d0435479fd4eaf/Cloud/en-US/d1679a80543f46509a7329243b595bdb.html).`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -98,7 +69,6 @@ func IntegrationArtifactGetServiceEndpointCommand() *cobra.Command {
 			telemetryData.ErrorCode = "1"
 			handler := func() {
 				config.RemoveVaultSecretFiles()
-				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
@@ -116,7 +86,7 @@ func IntegrationArtifactGetServiceEndpointCommand() *cobra.Command {
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			integrationArtifactGetServiceEndpoint(stepConfig, &telemetryData, &commonPipelineEnvironment)
+			integrationArtifactResource(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 			if GeneralConfig.GCSClient != nil {
@@ -125,25 +95,29 @@ func IntegrationArtifactGetServiceEndpointCommand() *cobra.Command {
 		},
 	}
 
-	addIntegrationArtifactGetServiceEndpointFlags(createIntegrationArtifactGetServiceEndpointCmd, &stepConfig)
-	return createIntegrationArtifactGetServiceEndpointCmd
+	addIntegrationArtifactResourceFlags(createIntegrationArtifactResourceCmd, &stepConfig)
+	return createIntegrationArtifactResourceCmd
 }
 
-func addIntegrationArtifactGetServiceEndpointFlags(cmd *cobra.Command, stepConfig *integrationArtifactGetServiceEndpointOptions) {
+func addIntegrationArtifactResourceFlags(cmd *cobra.Command, stepConfig *integrationArtifactResourceOptions) {
 	cmd.Flags().StringVar(&stepConfig.APIServiceKey, "apiServiceKey", os.Getenv("PIPER_apiServiceKey"), "Service key JSON string to access the Process Integration Runtime service instance of plan 'api'")
 	cmd.Flags().StringVar(&stepConfig.IntegrationFlowID, "integrationFlowId", os.Getenv("PIPER_integrationFlowId"), "Specifies the ID of the Integration Flow artifact")
+	cmd.Flags().StringVar(&stepConfig.Operation, "operation", os.Getenv("PIPER_operation"), "Specifies the operation(create/update/delete) for resource file of the Integration Flow artifact")
+	cmd.Flags().StringVar(&stepConfig.ResourcePath, "resourcePath", os.Getenv("PIPER_resourcePath"), "Specifies integration artifact resource file relative path.")
 
 	cmd.MarkFlagRequired("apiServiceKey")
 	cmd.MarkFlagRequired("integrationFlowId")
+	cmd.MarkFlagRequired("operation")
+	cmd.MarkFlagRequired("resourcePath")
 }
 
 // retrieve step metadata
-func integrationArtifactGetServiceEndpointMetadata() config.StepData {
+func integrationArtifactResourceMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:        "integrationArtifactGetServiceEndpoint",
+			Name:        "integrationArtifactResource",
 			Aliases:     []config.Alias{},
-			Description: "Get an deployed CPI intgeration flow service endpoint",
+			Description: "Add, Delete or Update an resource file of integration flow designtime artifact",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
@@ -175,16 +149,23 @@ func integrationArtifactGetServiceEndpointMetadata() config.StepData {
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_integrationFlowId"),
 					},
-				},
-			},
-			Outputs: config.StepOutputs{
-				Resources: []config.StepResources{
 					{
-						Name: "commonPipelineEnvironment",
-						Type: "piperEnvironment",
-						Parameters: []map[string]interface{}{
-							{"Name": "custom/integrationFlowServiceEndpoint"},
-						},
+						Name:        "operation",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_operation"),
+					},
+					{
+						Name:        "resourcePath",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_resourcePath"),
 					},
 				},
 			},

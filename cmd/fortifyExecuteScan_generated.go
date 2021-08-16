@@ -85,6 +85,7 @@ type fortifyExecuteScanInflux struct {
 		fields struct {
 			projectName       string
 			projectVersion    string
+			projectVersionID  int64
 			violations        int
 			corporateTotal    int
 			corporateAudited  int
@@ -112,6 +113,7 @@ func (i *fortifyExecuteScanInflux) persist(path, resourceName string) {
 		{valType: config.InfluxField, measurement: "step_data", name: "fortify", value: i.step_data.fields.fortify},
 		{valType: config.InfluxField, measurement: "fortify_data", name: "projectName", value: i.fortify_data.fields.projectName},
 		{valType: config.InfluxField, measurement: "fortify_data", name: "projectVersion", value: i.fortify_data.fields.projectVersion},
+		{valType: config.InfluxField, measurement: "fortify_data", name: "projectVersionId", value: i.fortify_data.fields.projectVersionID},
 		{valType: config.InfluxField, measurement: "fortify_data", name: "violations", value: i.fortify_data.fields.violations},
 		{valType: config.InfluxField, measurement: "fortify_data", name: "corporateTotal", value: i.fortify_data.fields.corporateTotal},
 		{valType: config.InfluxField, measurement: "fortify_data", name: "corporateAudited", value: i.fortify_data.fields.corporateAudited},
@@ -868,7 +870,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type: "influx",
 						Parameters: []map[string]interface{}{
 							{"Name": "step_data"}, {"fields": []map[string]string{{"name": "fortify"}}},
-							{"Name": "fortify_data"}, {"fields": []map[string]string{{"name": "projectName"}, {"name": "projectVersion"}, {"name": "violations"}, {"name": "corporateTotal"}, {"name": "corporateAudited"}, {"name": "auditAllTotal"}, {"name": "auditAllAudited"}, {"name": "spotChecksTotal"}, {"name": "spotChecksAudited"}, {"name": "spotChecksGap"}, {"name": "suspicious"}, {"name": "exploitable"}, {"name": "suppressed"}}},
+							{"Name": "fortify_data"}, {"fields": []map[string]string{{"name": "projectName"}, {"name": "projectVersion"}, {"name": "projectVersionId"}, {"name": "violations"}, {"name": "corporateTotal"}, {"name": "corporateAudited"}, {"name": "auditAllTotal"}, {"name": "auditAllAudited"}, {"name": "spotChecksTotal"}, {"name": "spotChecksAudited"}, {"name": "spotChecksGap"}, {"name": "suspicious"}, {"name": "exploitable"}, {"name": "suppressed"}}},
 						},
 					},
 				},

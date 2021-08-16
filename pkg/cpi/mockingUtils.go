@@ -52,6 +52,13 @@ func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, 
 		return TriggerIntegrationTestMockResponse(testType)
 	case "IntegrationArtifactGetMplStatusError":
 		return GetIntegrationArtifactDeployErrorStatusMockResponseBody()
+	case "IntegrationArtifactResourceCreate":
+		if testType == "Negative" {
+			return GetRespBodyHTTPStatusServiceErrorResponse()
+		}
+		return GetRespBodyHTTPStatusCreated()
+	case "IntegrationArtifactResourceUpdate", "IntegrationArtifactResourceDelete":
+		return GetRespBodyHTTPStatusOK()
 	default:
 		res := http.Response{
 			StatusCode: 404,

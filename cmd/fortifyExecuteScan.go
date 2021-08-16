@@ -279,14 +279,15 @@ func verifyFFProjectCompliance(config fortifyExecuteScanOptions, sys fortify.Sys
 	if err != nil {
 		return errors.Wrap(err, "failed to analyze unaudited issues"), reports
 	}
-	numberOfSuspiciousExplotable, issueGroupsSuspiciousExploitable := analyseSuspiciousExploitable(config, sys, projectVersion, filterSet, issueFilterSelectorSet, influx, auditStatus)
-	numberOfViolations += numberOfSuspiciousExplotable
+	numberOfSuspiciousExploitable, issueGroupsSuspiciousExploitable := analyseSuspiciousExploitable(config, sys, projectVersion, filterSet, issueFilterSelectorSet, influx, auditStatus)
+	numberOfViolations += numberOfSuspiciousExploitable
 	issueGroups = append(issueGroups, issueGroupsSuspiciousExploitable...)
 
 	log.Entry().Infof("Counted %v violations, details: %v", numberOfViolations, auditStatus)
 
 	influx.fortify_data.fields.projectName = *project.Name
 	influx.fortify_data.fields.projectVersion = *projectVersion.Name
+	influx.fortify_data.fields.projectVersionID = projectVersion.ID
 	influx.fortify_data.fields.violations = numberOfViolations
 
 	scanReport := fortify.CreateCustomReport(prepareReportData(influx), issueGroups)
