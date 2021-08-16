@@ -41,7 +41,7 @@ func TestUploadRFC(t *testing.T) {
 		err := upload.Perform(&exec)
 
 		if assert.NoError(t, err) {
-			assert.Equal(t, exec.Calls, []mock.ExecCall{mock.ExecCall{Exec: "cts", Params: []string{"uploadToABAP:123456"}}})
+			assert.Equal(t, exec.Calls, []mock.ExecCall{{Exec: "cts", Params: []string{"uploadToABAP:123456"}}})
 			assert.Subset(t, []string{
 				"ABAP_DEVELOPMENT_SERVER=https://example.org/rfc",
 				"ABAP_DEVELOPMENT_USER=me",
@@ -73,7 +73,7 @@ func TestUploadRFC(t *testing.T) {
 
 		if assert.Error(t, err) {
 			// Don't want to rely on the order, hence not checking for the full string ...
-			assert.Contains(t, err.Error(), "Cannot perform artifact upload. The following parameters are not available")
+			assert.Contains(t, err.Error(), "cannot perform artifact upload. The following parameters are not available")
 			assert.Contains(t, err.Error(), "Connection.Endpoint")
 			assert.Contains(t, err.Error(), "Application.AbapPackage")
 		}
