@@ -2,19 +2,22 @@ metadata:
   name: gctsDeploy
   description: Deploys a Git Repository to a local Repository and then to an ABAP System
   longDescription: |
-    The steps deploys a git repository to an ABAP System. If a repository does not exists in the system, it creates and clones it to the local
-    repository and then deploys it into the ABAP system.
+    This step deploys a remote Git repository to a local repository on an ABAP system and imports the content in the ABAP database.
+    If the repository does not yet exist in the system, this step also creates it.
+    If the repository already exists on the ABAP system, this step executes the remaining actions of the step, depending on the parameters provided for the step.
+    These actions include, for example, deploy a specific commit to the ABAP system, or deploy the current commit of a specific branch.
+    You can use this step for gCTS as of SAP S/4HANA 2020.
 
 spec:
   inputs:
     secrets:
       - name: abapCredentialsId
-        description: Jenkins credentials ID containing username and password for authentication to the ABAP system on which you want to deploy a commit
+        description: ID taken from the Jenkins credentials store containing the user name and password of the user that authenticates to the ABAP system.
         type: jenkins
     params:
       - name: username
         type: string
-        description: User to authenticate to the ABAP system
+        description: User that authenticates to the Abap system. **Note** - Don't provide this parameter directly. Either set it in the environment, or in the Jenkins credentials store, and provide the ID as value of the `abapCredentialsId` parameter.
         scope:
           - PARAMETERS
           - STAGES
@@ -27,7 +30,7 @@ spec:
             param: username
       - name: password
         type: string
-        description: Password to authenticate to the ABAP system
+        description: Password of the ABAP user that authenticates to the ABAP system. **Note** - Don´t provide this parameter directly. Either set it in the environment, or in the Jenkins credentials store, and provide the ID as value of the `abapCredentialsId` parameter.
         scope:
           - PARAMETERS
           - STAGES
@@ -48,7 +51,7 @@ spec:
         mandatory: true
       - name: host
         type: string
-        description: Specifies the protocol and host address, including the port. Please provide in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.
+        description: Protocol and host of the ABAP system, including the port. Please provide in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.
         scope:
           - PARAMETERS
           - STAGES
@@ -56,7 +59,7 @@ spec:
         mandatory: true
       - name: client
         type: string
-        description: Specifies the client of the ABAP system to be addressed
+        description: Client of the ABAP system to which you want to deploy the repository
         scope:
           - PARAMETERS
           - STAGES
@@ -64,14 +67,14 @@ spec:
         mandatory: true
       - name: commit
         type: string
-        description: Specifies the commit to be deployed
+        description: ID of a specific commit, if you want to deploy the content of the specified commit.
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
       - name: remoteRepositoryURL
         type: string
-        description: URL of the corresponding remote repository
+        description: URL of the remote repository
         mandatory: true
         scope:
           - PARAMETERS
@@ -79,7 +82,7 @@ spec:
           - STEPS
       - name: role
         type: string
-        description: Role of the local repository. Choose between 'TARGET' and 'SOURCE'. Local repositories with a TARGET role will NOT be able to be the source of code changes
+        description: Role of the local repository. Possible values - 'SOURCE' (for repositories on development systems - Default) and 'TARGET' (for repositories on target systems). Local repositories with a TARGET role cannot be the source of code changes.
         scope:
           - PARAMETERS
           - STAGES
@@ -89,7 +92,7 @@ spec:
           - TARGET
       - name: vSID
         type: string
-        description: Virtual SID of the local repository. The vSID corresponds to the transport route that delivers content to the remote Git repository
+        description: Virtual SID of the local repository. The vSID corresponds to the transport route that delivers content to the remote Git repository. For more information, see [Background Information - vSID](https://help.sap.com/viewer/4a368c163b08418890a406d413933ba7/latest/en-US/8edc17edfc374908bd8a1615ea5ab7b7.html) on SAP Help Portal.
         scope:
           - PARAMETERS
           - STAGES
@@ -106,28 +109,28 @@ spec:
           - GIT
       - name: branch
         type: string
-        description: Name of the branch to which the deploy has to be done to.
+        description: Name of a branch, if you want to deploy the content of a specific branch to the ABAP system.
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
       - name: scope
         type: string
-        description: The scope of the gcts deploy api call
+        description: Scope of objects to be deployed. Possible values are CRNTCOMMIT (current commit - Default) and LASTACTION (last repository action). The default option deploys all objects that existed in the repository when the commit was created. LASTACTION only deploys the object difference of the last action in the repository.
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
       - name: rollback
         type: bool
-        description: The rollback flag for a failure during the deploy step. A true value would mean gCTS would roll back to the last clean state
+        description: Indication whether you want to roll back to the last working state of the repository, if any of the step actions *switch branch* or *pull commit* fail.
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
       - name: configuration
         type: "map[string]interface{}"
-        description: "Defines the configuration values for the repository. This map needs to be created as `configKeyName`:`configKeyValue`"
+        description: "Configuration parameters for the repository. Provide the parameters as a key-value pair map in the following format: `<configuration parameter>`:`<Value>`. For a list of available configuration parameters, see [Configuration Parameters for Repositories](https://help.sap.com/viewer/4a368c163b08418890a406d413933ba7/latest/en-US/99e471efcbee4a0faec82f9dd15897e1.html)."
         scope:
           - PARAMETERS
           - STAGES
