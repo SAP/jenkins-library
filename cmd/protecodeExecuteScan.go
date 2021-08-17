@@ -145,14 +145,37 @@ func getDockerImage(dClient piperDocker.Download, config *protecodeExecuteScanOp
 
 func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.Protecode, config *protecodeExecuteScanOptions, fileName string, writeReportToFile func(resp io.ReadCloser, reportFileName string) error) error {
 
-	log.Entry().Debugf("[DEBUG] ===> Load existing product Group:%v Reuse:%v and Filenam:%v", config.Group, config.ReuseExisting, fileName)
+	log.Entry().Debugf("[DEBUG] ===> Load existing product Group:%v, VerifyOnly:%v, Filename:%v, replaceProductId:%v", config.Group, config.VerifyOnly, fileName, config.ReplaceProductID)
 
-	// Get existing product id by filename
-	productID := client.LoadExistingProduct(config.Group, fileName)
+	productID := -1
 
+	// If replaceProductId is not provided then switch to automatic existing product detection
+	if config.ReplaceProductID > 0 {
+
+		log.Entry().Infof("replaceProductID has been provided (%v) and checking ...", config.ReplaceProductID)
+		log.Entry().Debugf("[DEBUG] ===> ReplaceProductID has been provided and required to verify it: %v", config.ReplaceProductID)
+
+		// Validate provided product id, if not valid id then throw an error
+		if client.VerifyProductID(config.ReplaceProductID) {
+			log.Entry().Infof("replaceProductID has been checked and it's valid")
+			log.Entry().Debugf("[DEBUG] ===> ReplaceProductID exists")
+			productID = config.ReplaceProductID
+		} else {
+			log.Entry().Debugf("[DEBUG] ===> ReplaceProductID doesn't exist")
+			return fmt.Errorf("ERROR -> the product id is not valid '%d'", config.ReplaceProductID)
+		}
+
+	} else {
+		// Get existing product id by filename
+		log.Entry().Infof("replaceProductID is not provided and automatic search starts from group: %v ... ", config.Group)
+		log.Entry().Debugf("[DEBUG] ===> ReplaceProductID hasn't provided and automatic search starts... ")
+		productID = client.LoadExistingProduct(config.Group, fileName)
+	}
+
+	log.Entry().Infof("Automatic search completed and found following product id: %v", productID)
 	log.Entry().Debugf("[DEBUG] ===> Returned productID: %v", productID)
 
-	// check if no existing is found or reuse existing is false
+	// check if no existing is found
 	productID = uploadScanOrDeclareFetch(*config, productID, client, fileName)
 
 	log.Entry().Debugf("[DEBUG] ===> After 'uploadScanOrDeclareFetch' returned productID: %v", productID)
@@ -272,30 +295,34 @@ func createDockerClient(config *protecodeExecuteScanOptions) piperDocker.Downloa
 }
 
 func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productID int, client protecode.Protecode, fileName string) int {
-	//check if the LoadExistingProduct) before returns an valid product id, than scip this
-	//if !hasExisting(productID, config.ReuseExisting) {
+	//check if the LoadExistingProduct) before returns an valid product id, than skip this
+	//if !hasExisting(productID, config.VerifyOnly) {
 
 	log.Entry().Debugf("[DEBUG] ===> In uploadScanOrDeclareFetch: %v", productID)
 
 	// check if product doesn't exist then create a new one.
 	if productID <= 0 {
+		log.Entry().Infof("New product creation started ... ")
 		log.Entry().Debugf("[DEBUG] ===> New product creation started: %v", productID)
 		productID = uploadFile(config, productID, client, fileName, false)
 
+		log.Entry().Infof("New product has been successfully created: %v", productID)
 		log.Entry().Debugf("[DEBUG] ===> After uploading [productID < 0] file returned productID: %v", productID)
 		return productID
 
-		// In case product already exists and "reuseExisting" is false then we replace binary without creating a new product.
-	} else if (productID > 0) && !config.ReuseExisting {
+		// In case product already exists and "VerifyOnly (reuseExisting)" is false then we replace binary without creating a new product.
+	} else if (productID > 0) && !config.VerifyOnly {
+		log.Entry().Infof("Product already exists and 'VerifyOnly (reuseExisting)' is false then product (%v) binary and scan result will be replaced without creating a new product.", productID)
 		log.Entry().Debugf("[DEBUG] ===> Replace binary entry point started %v", productID)
 		productID = uploadFile(config, productID, client, fileName, true)
 
-		log.Entry().Debugf("[DEBUG] ===> After uploading file [(productID > 0) && !config.ReuseExisting] returned productID: %v", productID)
+		log.Entry().Debugf("[DEBUG] ===> After uploading file [(productID > 0) && !config.VerifyOnly] returned productID: %v", productID)
 		return productID
 
 		// If product already exists and "reuseExisting" option is enabled then return the latest similar scan result.
 	} else {
-		log.Entry().Debugf("[DEBUG] ===> reuseExisting option is enabled and returned productID: %v", productID)
+		log.Entry().Infof("VerifyOnly (reuseExisting) option is enabled and returned productID: %v", productID)
+		log.Entry().Debugf("[DEBUG] ===> VerifyOnly (reuseExisting) option is enabled and returned productID: %v", productID)
 		return productID
 	}
 
@@ -337,8 +364,8 @@ func fileExists(filename string) bool {
 	return !info.IsDir()
 }
 
-func hasExisting(productID int, reuseExisting bool) bool {
-	if (productID > 0) || reuseExisting {
+func hasExisting(productID int, verifyOnly bool) bool {
+	if (productID > 0) || verifyOnly {
 		return true
 	}
 	return false

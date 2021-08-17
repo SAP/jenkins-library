@@ -151,14 +151,18 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: reuseExisting
+      - name: verifyOnly
+        aliases:
+          - name: reuseExisting
+            deprecated: true
         type: bool
-        description: Whether to reuse an existing product instead of creating a new one
+        description: Whether the step shall only apply verification checks or whether it does a full scan and check cycle
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: replace
+        default: false
+      - name: replaceProductId
         type: int
         description: Specify product_id which application binary will be replaced and rescanned and product id remains unchanged. By using this parameter, Protecode avoids creating multiple same products. Note this will affect results and feeds.
         scope:

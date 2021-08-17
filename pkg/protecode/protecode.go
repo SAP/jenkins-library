@@ -167,15 +167,18 @@ func (pc *Protecode) mapResponse(r io.ReadCloser, response interface{}) {
 	}
 }
 
-func (pc *Protecode) sendAPIRequest(method string, url string, headers map[string][]string) (*io.ReadCloser, error, int) {
+func (pc *Protecode) sendAPIRequest(method string, url string, headers map[string][]string) (*io.ReadCloser, int, error) {
 
 	r, err := pc.client.SendRequest(method, url, nil, headers, nil)
 	if err != nil {
-		return nil, err, r.StatusCode
+		if r != nil {
+			return nil, r.StatusCode, err
+		}
+		return nil, 400, err
 	}
 
 	//return &r.Body, nil
-	return &r.Body, nil, r.StatusCode
+	return &r.Body, r.StatusCode, nil
 }
 
 // ParseResultForInflux parses the result from the scan into the internal format
@@ -283,7 +286,7 @@ func (pc *Protecode) LoadReport(reportFileName string, productID int) *io.ReadCl
 		"Outputfile":    {reportFileName},
 	}
 
-	readCloser, err, _ := pc.sendAPIRequest(http.MethodGet, protecodeURL, headers)
+	readCloser, _, err := pc.sendAPIRequest(http.MethodGet, protecodeURL, headers)
 	if err != nil {
 		pc.logger.WithError(err).Fatalf("It is not possible to load report %v", protecodeURL)
 	}
@@ -353,7 +356,7 @@ func (pc *Protecode) DeclareFetchURL(cleanupMode, group, fetchURL string, produc
 	//headers := map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}, "Url": {fetchURL}, "Content-Type": {"application/json"}}
 
 	protecodeURL := fmt.Sprintf("%v/api/fetch/", pc.serverURL)
-	r, err, statusCode := pc.sendAPIRequest(http.MethodPost, protecodeURL, headers)
+	r, statusCode, err := pc.sendAPIRequest(http.MethodPost, protecodeURL, headers)
 	if err != nil {
 		pc.logger.WithError(err).Fatalf("Error during declare fetch url: %v", protecodeURL)
 	}
@@ -433,7 +436,7 @@ func (pc *Protecode) pullResult(productID int) (ResultData, error) {
 	headers := map[string][]string{
 		"acceptType": {"application/json"},
 	}
-	r, err, _ := pc.sendAPIRequest(http.MethodGet, protecodeURL, headers)
+	r, _, err := pc.sendAPIRequest(http.MethodGet, protecodeURL, headers)
 
 	if err != nil {
 		return *new(ResultData), err
@@ -442,6 +445,25 @@ func (pc *Protecode) pullResult(productID int) (ResultData, error) {
 	pc.mapResponse(*r, result)
 
 	return *result, nil
+
+}
+
+// verify provided product id
+func (pc *Protecode) VerifyProductID(ProductID int) bool {
+
+	pc.logger.Debugf("[DEBUG] ===> Verification of product id started ..... : %v", ProductID)
+	pc.logger.Infof("Verification of product id (%v) started ... ", ProductID)
+
+	// TODO: Optimise product id verification
+	_, err := pc.pullResult(ProductID)
+
+	// If response has an error then we assume this product id doesn't exist or user has no access
+	if err != nil {
+		return false
+	}
+
+	// Otherwise product exists
+	return true
 
 }
 
@@ -454,15 +476,16 @@ func (pc *Protecode) LoadExistingProduct(group string, fileName string) int {
 		"acceptType": {"application/json"},
 	}
 
-	pc.logger.Infof("[DEBUG] ===> LoadExistingProduct searching a product (%v) with URL: %v", fileName, protecodeURL)
+	pc.logger.Debugf("[DEBUG] ===> LoadExistingProduct searching a product (%v) with URL: %v", fileName, protecodeURL)
+	// pc.logger.Infof("[DEBUG] ===> LoadExistingProduct searching a product (%v) with URL: %v", fileName, protecodeURL)
 
 	response := pc.loadExisting(protecodeURL, headers)
 
-	pc.logger.Infof("[DEBUG] ===> LoadExistingProduct response obj: %v", response)
+	// pc.logger.Debugf("[DEBUG] ===> LoadExistingProduct response obj: %v", response)
 
 	if len(response.Products) > 0 {
 
-		pc.logger.Infof("[DEBUG] ===> LoadExistingProduct: response.Product obj: %v", response.Products)
+		// pc.logger.Debugf("[DEBUG] ===> LoadExistingProduct: response.Product obj: %v", response.Products)
 
 		// Highest product id means the latest scan for this particular product, therefore we take a product id with the highest number
 		for i := 0; i < len(response.Products); i++ {
@@ -485,9 +508,9 @@ func (pc *Protecode) LoadExistingProduct(group string, fileName string) int {
 
 	//productID = response.Products[0].ProductID
 
-	pc.logger.Infof("Re-use existing Protecode scan - group: %v, productID: %v", group, productID)
+	pc.logger.Debugf("[DEBUG] ===> Re-use existing Protecode scan - group: %v, productID: %v", group, productID)
 
-	pc.logger.Infof("[DEBUG] ===> LoadExistingProduct before return productID: %v", productID)
+	pc.logger.Infof("Automatic product id detection completed: %v", productID)
 	return productID
 }
 
@@ -495,7 +518,7 @@ func (pc *Protecode) LoadExistingProduct(group string, fileName string) int {
 
 func (pc *Protecode) loadExisting(protecodeURL string, headers map[string][]string) *ProductData {
 
-	r, err, _ := pc.sendAPIRequest(http.MethodGet, protecodeURL, headers)
+	r, _, err := pc.sendAPIRequest(http.MethodGet, protecodeURL, headers)
 	if err != nil {
 		pc.logger.WithError(err).Fatalf("Error during load existing product: %v", protecodeURL)
 	}
