@@ -17,7 +17,7 @@ spec:
     params:
       - name: username
         type: string
-        description: User that authenticates to the Abap system. **Note** - Don't provide this parameter directly. Either set it in the environment, or in the Jenkins credentials store, and provide the ID as value of the `abapCredentialsId` parameter.
+        description: User that authenticates to the ABAP system. **Note** - Don't provide this parameter directly. Either set it in the environment, or in the Jenkins credentials store, and provide the ID as value of the `abapCredentialsId` parameter.
         scope:
           - PARAMETERS
           - STAGES
@@ -82,7 +82,7 @@ spec:
           - STEPS
       - name: role
         type: string
-        description: Role of the local repository. Possible values - 'SOURCE' (for repositories on development systems - Default) and 'TARGET' (for repositories on target systems). Local repositories with a TARGET role cannot be the source of code changes.
+        description: Role of the local repository. Possible values are 'SOURCE' (for repositories on development systems - Default) and 'TARGET' (for repositories on target systems). Local repositories with a TARGET role cannot be the source of code changes.
         scope:
           - PARAMETERS
           - STAGES
