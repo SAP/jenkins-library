@@ -250,14 +250,14 @@ func (c *Client) initialize() *http.Client {
 		doLogResponseBodyOnDebug: c.doLogResponseBodyOnDebug,
 	}
 
-	if (len(c.trustedCerts)) > 0 {
+	if (len(c.trustedCerts)) > 0 && !c.useDefaultTransport && !c.transportSkipVerification {
 		log.Entry().Info("adding certs for tls to trust")
 		err := c.configureTLSToTrustCertificates(transport)
 		if err != nil {
 			log.Entry().Infof("adding certs for tls config failed : v%, continuing with the existing tsl config", err)
 		}
 	} else {
-		log.Entry().Info("no trusted certs found continuing with existing tls config")
+		log.Entry().Info("no trusted certs found / using default transport / insecure skip set to true / : continuing with existing tls config")
 	}
 
 	var httpClient *http.Client
@@ -437,7 +437,7 @@ func (c *Client) handleResponse(response *http.Response, url string) (*http.Resp
 		c.logger.WithField("HTTP Error", "500 (Internal Server Error)").Error("Unknown error occurred.")
 	}
 
-	return response, fmt.Errorf("Request to %v returned with response %v", response.Request.URL, response.Status)
+	return response, fmt.Errorf("request to %v returned with response %v", response.Request.URL, response.Status)
 }
 
 func (c *Client) applyDefaults() {
