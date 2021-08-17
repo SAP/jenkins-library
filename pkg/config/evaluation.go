@@ -28,34 +28,40 @@ func (r *RunConfig) evaluateConditions(config *Config, filters map[string]StepFi
 			if err != nil {
 				return err
 			}
-			for conditionName, condition := range stepCondition {
-				var err error
-				switch conditionName {
-				case configCondition:
-					if stepActive, err = checkConfig(condition, stepConfig, stepName); err != nil {
-						return errors.Wrapf(err, "error: check config condition failed")
+
+			if active, ok := stepConfig.Config[stepName].(bool); ok {
+				// respect explicit activation/de-activation if available
+				stepActive = active
+			} else {
+				for conditionName, condition := range stepCondition {
+					var err error
+					switch conditionName {
+					case configCondition:
+						if stepActive, err = checkConfig(condition, stepConfig, stepName); err != nil {
+							return errors.Wrapf(err, "error: check config condition failed")
+						}
+					case configKeysCondition:
+						if stepActive, err = checkConfigKeys(condition, stepConfig, stepName); err != nil {
+							return errors.Wrapf(err, "error: check configKeys condition failed")
+						}
+					case filePatternFromConfigCondition:
+						if stepActive, err = checkForFilesWithPatternFromConfig(condition, stepConfig, stepName, glob); err != nil {
+							return errors.Wrapf(err, "error: check filePatternFromConfig condition failed")
+						}
+					case filePatternCondition:
+						if stepActive, err = checkForFilesWithPattern(condition, stepConfig, stepName, glob); err != nil {
+							return errors.Wrapf(err, "error: check filePattern condition failed")
+						}
+					case npmScriptsCondition:
+						if stepActive, err = checkForNpmScriptsInPackages(condition, stepConfig, stepName, glob, r.OpenFile); err != nil {
+							return errors.Wrapf(err, "error: check npmScripts condition failed")
+						}
+					default:
+						return errors.Errorf("unknown condition %s", conditionName)
 					}
-				case configKeysCondition:
-					if stepActive, err = checkConfigKeys(condition, stepConfig, stepName); err != nil {
-						return errors.Wrapf(err, "error: check configKeys condition failed")
+					if stepActive {
+						break
 					}
-				case filePatternFromConfigCondition:
-					if stepActive, err = checkForFilesWithPatternFromConfig(condition, stepConfig, stepName, glob); err != nil {
-						return errors.Wrapf(err, "error: check filePatternFromConfig condition failed")
-					}
-				case filePatternCondition:
-					if stepActive, err = checkForFilesWithPattern(condition, stepConfig, stepName, glob); err != nil {
-						return errors.Wrapf(err, "error: check filePattern condition failed")
-					}
-				case npmScriptsCondition:
-					if stepActive, err = checkForNpmScriptsInPackages(condition, stepConfig, stepName, glob, r.OpenFile); err != nil {
-						return errors.Wrapf(err, "error: check npmScripts condition failed")
-					}
-				default:
-					return errors.Errorf("unknown condition %s", conditionName)
-				}
-				if stepActive {
-					break
 				}
 			}
 			runStep[stepName] = stepActive
