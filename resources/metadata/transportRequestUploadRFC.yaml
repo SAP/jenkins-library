@@ -1,0 +1,157 @@
+metadata:
+  name: transportRequestUploadRFC
+  aliases:
+    - name: transportRequestUploadFile
+  description: This step uploads a UI5 application as ZIP file to the ABAP system via RFC connections.
+  longDescription: |
+    This step uploads a UI5 application as ZIP file to the ABAP system via RFC connections.
+spec:
+  inputs:
+    secrets:
+      - name: uploadCredentialsId
+        description: Jenkins 'Username with password' credentials ID containing user and password to authenticate against the ABAP system
+        type: jenkins
+        aliases:
+          - name: changeManagement/credentialsId
+    params:
+      - name: endpoint
+        type: string
+        mandatory: true
+        description: "Service endpoint, Application server URL"
+        aliases:
+          - name: changeManagement/endpoint
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: instance
+        type: string
+        aliases:
+          - name: changeManagement/instance
+          - name: changeManagement/rfc/developmentInstance
+        description: "AS ABAP instance number"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: username
+        type: string
+        mandatory: true
+        description: "Service user for uploading to the ABAP system via RFC"
+        secret: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        resourceRef:
+          - name: uploadCredentialsId
+            type: secret
+            param: username
+      - name: password
+        type: string
+        mandatory: true
+        description: "Service user password for uploading to the ABAP system via RFC"
+        secret: true
+        scope:
+          - PARAMETERS
+        resourceRef:
+          - name: uploadCredentialsId
+            type: secret
+            param: password
+      - name: client
+        type: string
+        aliases:
+          - name: changeManagement/client
+          - name: changeManagement/rfc/developmentClient
+        description: "AS ABAP client number"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: applicationName
+        type: string
+        mandatory: true
+        description: "Name of the UI5 application"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: applicationDescription
+        type: string
+        mandatory: false
+        description: "Description of the UI5 application"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: abapPackage
+        type: string
+        mandatory: true
+        description: "ABAP package name of the UI5 application"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: applicationUrl
+        type: string
+        mandatory: true
+        description: "URL of the UI5 application package to upload to the ABAP system via RFC"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: codePage
+        type: string
+        default: "UTF-8"
+        description: "Code page"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: acceptUnixStyleLineEndings
+        type: bool
+        default: true
+        description: "If unix style line endings should be accepted"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: failUploadOnWarning
+        type: bool
+        default: true
+        aliases:
+          - name: failOnWarning
+        description: "If the upload should fail in case the log contains warnings"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: transportRequestId
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/transportRequestId
+        type: string
+        mandatory: true
+        description: "ID of the transport request to which the UI5 application is uploaded"
+        scope:
+          - PARAMETERS
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: custom/transportRequestId
+  containers:
+    - name: rfcclient
+      image: rfc-client

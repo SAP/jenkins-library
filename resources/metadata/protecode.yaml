@@ -136,7 +136,8 @@ spec:
         default: protecode_report.pdf
       - name: fetchUrl
         type: string
-        description: The URL to fetch the file to scan with Protecode which must be accessible via public HTTP GET request
+        description: The URL to fetch the file or image to scan with Protecode.
+        longDescription: The URL to fetch the file or image to scan with Protecode. The URL must be accessible via public HTTP GET request. To fetch a docker image the URL needs a 'docker-registry-' prefix.
         scope:
           - PARAMETERS
           - STAGES
@@ -169,6 +170,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+        default: false
       - name: username
         aliases:
           - name: user
@@ -208,7 +210,10 @@ spec:
               - $(vaultPath)/protecode
               - $(vaultBasePath)/$(vaultPipelineName)/protecode
               - $(vaultBasePath)/GROUP-SECRETS/protecode
-      - name: artifactVersion
+      - name: version
+        aliases:
+          - name: artifactVersion
+            deprecated: true
         type: string
         description: The version of the artifact to allow identification in protecode backend
         resourceRef:
@@ -230,11 +235,21 @@ spec:
       - name: influx
         type: influx
         params:
+          - name: step_data
+            fields:
+              - name: protecode
+                type: bool
           - name: protecode_data
             fields:
-              - name: historical_vulnerabilities
-              - name: triaged_vulnerabilities
               - name: excluded_vulnerabilities
-              - name: minor_vulnerabilities
+                type: int
+              - name: historical_vulnerabilities
+                type: int
               - name: major_vulnerabilities
+                type: int
+              - name: minor_vulnerabilities
+                type: int
+              - name: triaged_vulnerabilities
+                type: int
               - name: vulnerabilities
+                type: int

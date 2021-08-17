@@ -9,6 +9,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -21,6 +22,7 @@ import (
 	StepResults "github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/protecode"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/toolrecord"
 )
 
 const (
@@ -41,9 +43,11 @@ func protecodeExecuteScan(config protecodeExecuteScanOptions, telemetryData *tel
 	c.Stderr(log.Writer())
 
 	dClient := createDockerClient(&config)
+	influx.step_data.fields.protecode = false
 	if err := runProtecodeScan(&config, influx, dClient); err != nil {
 		log.Entry().WithError(err).Fatal("Failed to execute protecode scan.")
 	}
+	influx.step_data.fields.protecode = true
 }
 
 func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExecuteScanInflux, dClient piperDocker.Download) error {
@@ -53,7 +57,7 @@ func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExec
 	//create client for sending api request
 	log.Entry().Debug("Create protecode client")
 	client := createClient(config)
-	if len(config.FetchURL) <= 0 {
+	if len(config.FetchURL) == 0 && len(config.FilePath) == 0 {
 		log.Entry().Debugf("Get docker image: %v, %v, %v, %v", config.ScanImage, config.DockerRegistryURL, config.FilePath, config.IncludeLayers)
 		fileName, filePath, err = getDockerImage(dClient, config)
 		if err != nil {
@@ -63,7 +67,17 @@ func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExec
 			(*config).FilePath = filePath
 			log.Entry().Debugf("Filepath for upload image: %v", config.FilePath)
 		}
-	} else {
+	} else if len(config.FilePath) > 0 {
+		parts := strings.Split(config.FilePath, "/")
+		pathFragment := strings.Join(parts[:len(parts)-1], "/")
+		if len(pathFragment) > 0 {
+			(*config).FilePath = pathFragment
+		} else {
+			(*config).FilePath = "./"
+		}
+		fileName = parts[len(parts)-1]
+    
+  } else if len(config.FetchURL) > 0 {
 		// Get filename from a fetch URL
 		fileName = filepath.Base(config.FetchURL)
 		log.Entry().Debugf("[DEBUG] ===> Filepath from fetch URL: %v", fileName)
@@ -83,7 +97,6 @@ func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExec
 	return nil
 }
 
-// reused by cmd/sonarExecuteScan.go
 // TODO: extract to version utils
 func handleArtifactVersion(artifactVersion string) string {
 	matches, _ := regexp.MatchString("([\\d\\.]){1,}-[\\d]{14}([\\Wa-z\\d]{41})?", artifactVersion)
@@ -180,6 +193,7 @@ func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.P
 
 	log.Entry().Debugf("[DEBUG] ===> After 'uploadScanOrDeclareFetch' returned productID: %v", productID)
 
+
 	if productID <= 0 {
 		return fmt.Errorf("the product id is not valid '%d'", productID)
 	}
@@ -235,10 +249,31 @@ func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.P
 		{Target: scanResultFile, Mandatory: true},
 	}
 	// write links JSON
+	webuiURL := fmt.Sprintf(webReportPath, config.ServerURL, productID)
 	links := []StepResults.Path{
-		{Name: "Protecode WebUI", Target: fmt.Sprintf(webReportPath, config.ServerURL, productID)},
+		{Name: "Protecode WebUI", Target: webuiURL},
 		{Name: "Protecode Report", Target: path.Join("artifact", config.ReportFileName), Scope: "job"},
 	}
+
+	// write custom report
+	scanReport := protecode.CreateCustomReport(fileName, productID, parsedResult, vulns)
+	paths, err := protecode.WriteCustomReports(scanReport, fileName, fmt.Sprint(productID))
+	if err != nil {
+		// do not fail - consider failing later on
+		log.Entry().Warning("failed to create custom HTML/MarkDown file ...", err)
+	} else {
+		reports = append(reports, paths...)
+	}
+
+	// create toolrecord file
+	toolRecordFileName, err := createToolRecordProtecode("./", config, productID, webuiURL)
+	if err != nil {
+		// do not fail until the framework is well established
+		log.Entry().Warning("TR_PROTECODE: Failed to create toolrecord file ...", err)
+	} else {
+		reports = append(reports, StepResults.Path{Target: toolRecordFileName})
+	}
+
 	StepResults.PersistReportsAndLinks("protecodeExecuteScan", "", reports, links)
 
 	if config.FailOnSevereVulnerabilities && protecode.HasSevereVulnerabilities(result.Result, config.ExcludeCVEs) {
@@ -249,12 +284,12 @@ func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.P
 }
 
 func setInfluxData(influx *protecodeExecuteScanInflux, result map[string]int) {
-	influx.protecode_data.fields.historical_vulnerabilities = fmt.Sprintf("%v", result["historical_vulnerabilities"])
-	influx.protecode_data.fields.triaged_vulnerabilities = fmt.Sprintf("%v", result["triaged_vulnerabilities"])
-	influx.protecode_data.fields.excluded_vulnerabilities = fmt.Sprintf("%v", result["excluded_vulnerabilities"])
-	influx.protecode_data.fields.minor_vulnerabilities = fmt.Sprintf("%v", result["minor_vulnerabilities"])
-	influx.protecode_data.fields.major_vulnerabilities = fmt.Sprintf("%v", result["major_vulnerabilities"])
-	influx.protecode_data.fields.vulnerabilities = fmt.Sprintf("%v", result["vulnerabilities"])
+	influx.protecode_data.fields.historical_vulnerabilities = result["historical_vulnerabilities"]
+	influx.protecode_data.fields.triaged_vulnerabilities = result["triaged_vulnerabilities"]
+	influx.protecode_data.fields.excluded_vulnerabilities = result["excluded_vulnerabilities"]
+	influx.protecode_data.fields.minor_vulnerabilities = result["minor_vulnerabilities"]
+	influx.protecode_data.fields.major_vulnerabilities = result["major_vulnerabilities"]
+	influx.protecode_data.fields.vulnerabilities = result["vulnerabilities"]
 }
 
 func createClient(config *protecodeExecuteScanOptions) protecode.Protecode {
@@ -325,7 +360,6 @@ func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productID int,
 		log.Entry().Debugf("[DEBUG] ===> VerifyOnly (reuseExisting) option is enabled and returned productID: %v", productID)
 		return productID
 	}
-
 }
 
 func uploadFile(config protecodeExecuteScanOptions, productID int, client protecode.Protecode, fileName string, replaceBinary bool) int {
@@ -353,7 +387,7 @@ func uploadFile(config protecodeExecuteScanOptions, productID int, client protec
 		productID = resultData.Result.ProductID
 		log.Entry().Debugf("[DEBUG] ===> uploadFile return FINAL product id: %v", productID)
 	}
-	return productID
+  return productID
 }
 
 func fileExists(filename string) bool {
@@ -363,6 +397,7 @@ func fileExists(filename string) bool {
 	}
 	return !info.IsDir()
 }
+
 
 func hasExisting(productID int, verifyOnly bool) bool {
 	if (productID > 0) || verifyOnly {
@@ -397,16 +432,42 @@ func correctDockerConfigEnvVar(config *protecodeExecuteScanOptions) {
 
 func getTarName(config *protecodeExecuteScanOptions) string {
 	// remove original version
-	fileName := strings.TrimSuffix(config.ScanImage, ":"+config.ArtifactVersion)
+	fileName := strings.TrimSuffix(config.ScanImage, ":"+config.Version)
 	// remove sha digest if exists
 	sha256 := "@sha256"
 	if index := strings.Index(fileName, sha256); index > -1 {
 		fileName = fileName[:index]
 	}
 	// append trimmed version
-	if version := handleArtifactVersion(config.ArtifactVersion); len(version) > 0 {
+	if version := handleArtifactVersion(config.Version); len(version) > 0 {
 		fileName = fileName + "_" + version
 	}
 	fileName = strings.ReplaceAll(fileName, "/", "_")
 	return fileName + ".tar"
+}
+
+// create toolrecord file for protecode
+// todo: check if group and product names can be retrieved
+func createToolRecordProtecode(workspace string, config *protecodeExecuteScanOptions, productID int, webuiURL string) (string, error) {
+	record := toolrecord.New(workspace, "protecode", config.ServerURL)
+	groupURL := config.ServerURL + "/#/groups/" + config.Group
+	err := record.AddKeyData("group",
+		config.Group,
+		config.Group, // todo figure out display name
+		groupURL)
+	if err != nil {
+		return "", err
+	}
+	err = record.AddKeyData("product",
+		strconv.Itoa(productID),
+		strconv.Itoa(productID), // todo figure out display name
+		webuiURL)
+	if err != nil {
+		return "", err
+	}
+	err = record.Persist()
+	if err != nil {
+		return "", err
+	}
+	return record.GetFileName(), nil
 }

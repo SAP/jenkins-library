@@ -2,11 +2,11 @@ package whitesource
 
 import (
 	"fmt"
-	"path/filepath"
-	"testing"
-
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/stretchr/testify/assert"
+	"path/filepath"
+	"strings"
+	"testing"
 )
 
 func TestExecuteUAScan(t *testing.T) {
@@ -24,7 +24,6 @@ func TestExecuteUAScan(t *testing.T) {
 		err := scan.ExecuteUAScan(&config, utilsMock)
 		assert.NoError(t, err)
 		assert.Equal(t, "maven", config.BuildTool)
-		assert.Contains(t, utilsMock.Calls[1].Params, config.ProductName)
 		assert.Contains(t, utilsMock.Calls[1].Params, ".")
 	})
 
@@ -42,7 +41,6 @@ func TestExecuteUAScan(t *testing.T) {
 		err := scan.ExecuteUAScan(&config, utilsMock)
 		assert.NoError(t, err)
 		assert.Equal(t, "mta", config.BuildTool)
-		assert.Contains(t, utilsMock.Calls[1].Params, config.ProductName)
 		assert.Contains(t, utilsMock.Calls[1].Params, ".")
 	})
 
@@ -70,10 +68,24 @@ func TestExecuteUAScan(t *testing.T) {
 			ProductName: "test-product",
 		}
 		utilsMock := NewScanUtilsMock()
+		utilsMock.AddFile(filepath.Join("sub", "pom.xml"), []byte("dummy"))
 		scan := newTestScan(&config)
 
 		err := scan.ExecuteUAScan(&config, utilsMock)
-		assert.EqualError(t, err, "mta project does not contain an aggregator pom.xml in the root - this is mandatory")
+		assert.EqualError(t, err, "mta project with java modules does not contain an aggregator pom.xml in the root - this is mandatory")
+	})
+
+	t.Run("error - no pom.xml & only npm", func(t *testing.T) {
+		config := ScanOptions{
+			BuildTool:   "mta",
+			ProjectName: "test-project",
+			ProductName: "test-product",
+		}
+		utilsMock := NewScanUtilsMock()
+		scan := newTestScan(&config)
+
+		err := scan.ExecuteUAScan(&config, utilsMock)
+		assert.NoError(t, err)
 	})
 
 	t.Run("error - npm no name", func(t *testing.T) {
@@ -113,22 +125,13 @@ func TestExecuteUAScanInPath(t *testing.T) {
 		err := scan.ExecuteUAScanInPath(&config, utilsMock, "")
 		assert.NoError(t, err)
 		assert.Equal(t, "java", utilsMock.Calls[1].Exec)
-		assert.Equal(t, 18, len(utilsMock.Calls[1].Params))
+		assert.Equal(t, 8, len(utilsMock.Calls[1].Params))
 		assert.Contains(t, utilsMock.Calls[1].Params, "-jar")
 		assert.Contains(t, utilsMock.Calls[1].Params, "-d")
 		assert.Contains(t, utilsMock.Calls[1].Params, ".")
 		assert.Contains(t, utilsMock.Calls[1].Params, "-c")
+		assert.Contains(t, utilsMock.Calls[1].Params, "unified-agent.jar")
 		// name of config file not tested since it is dynamic. This is acceptable here since we test also the size
-		assert.Contains(t, utilsMock.Calls[1].Params, "-apiKey")
-		assert.Contains(t, utilsMock.Calls[1].Params, config.OrgToken)
-		assert.Contains(t, utilsMock.Calls[1].Params, "-userKey")
-		assert.Contains(t, utilsMock.Calls[1].Params, config.UserToken)
-		assert.Contains(t, utilsMock.Calls[1].Params, "-project")
-		assert.Contains(t, utilsMock.Calls[1].Params, config.ProjectName)
-		assert.Contains(t, utilsMock.Calls[1].Params, "-product")
-		assert.Contains(t, utilsMock.Calls[1].Params, config.ProductName)
-		assert.Contains(t, utilsMock.Calls[1].Params, "-productVersion")
-		assert.Contains(t, utilsMock.Calls[1].Params, config.ProductVersion)
 		assert.Contains(t, utilsMock.Calls[1].Params, "-wss.url")
 		assert.Contains(t, utilsMock.Calls[1].Params, config.AgentURL)
 	})
@@ -287,6 +290,17 @@ func TestDownloadAgent(t *testing.T) {
 		err := downloadAgent(&config, utilsMock)
 		assert.Contains(t, fmt.Sprint(err), "failed to download unified agent from URL")
 	})
+	t.Run("error - download with retry", func(t *testing.T) {
+		config := ScanOptions{
+			AgentDownloadURL: "errorCopyFile", // Misusing this ScanOptions to tell DownloadFile Mock to raise an error
+			AgentFileName:    "unified-agent.jar",
+		}
+		utilsMock := NewScanUtilsMock()
+		utilsMock.DownloadError = map[string]error{"https://download.ua.org/agent.jar": fmt.Errorf("unable to copy content from url to file")}
+
+		err := downloadAgent(&config, utilsMock)
+		assert.Contains(t, fmt.Sprint(err), "unable to copy content from url to file")
+	})
 }
 
 func TestDownloadJre(t *testing.T) {
@@ -346,6 +360,18 @@ func TestDownloadJre(t *testing.T) {
 		assert.Contains(t, fmt.Sprint(err), "failed to download jre from URL")
 	})
 
+	t.Run("error - download with retry", func(t *testing.T) {
+		config := ScanOptions{
+			JreDownloadURL: "errorCopyFile",
+		}
+		utilsMock := NewScanUtilsMock()
+		utilsMock.ShouldFailOnCommand = map[string]error{"java": fmt.Errorf("failed to run java")}
+		//utilsMock.DownloadError = map[string]error{"https://download.jre.org/jvm.jar": fmt.Errorf("failed to download file")}
+
+		_, err := downloadJre(&config, utilsMock)
+		assert.Contains(t, fmt.Sprint(err), "unable to copy content from url to file")
+	})
+
 	t.Run("error - tar execution", func(t *testing.T) {
 		config := ScanOptions{
 			JreDownloadURL: "https://download.jre.org/jvm.jar",
@@ -391,5 +417,59 @@ func TestRemoveJre(t *testing.T) {
 
 		err := removeJre("./jvm/bin/java", utilsMock)
 		assert.Contains(t, fmt.Sprint(err), "failed to remove downloaded")
+	})
+}
+
+func TestScanLog(t *testing.T) {
+	t.Parallel()
+
+	t.Run("default case", func(t *testing.T) {
+
+		scan := &Scan{scannedProjects: map[string]Project{}}
+
+		log := `[ - Inventory update results for Piper
+		[ - No new projects found.
+		[ - Updated projects:
+		[ - # TestProject - 1
+		[ - # TestProject-srv - 1
+		[ - Project name: TestProject - 1, URL: https://saas.whitesourcesoftware.com/Wss/WSS.html#!project;id=1
+		[ - Project name: TestProject-srv - 1, URL: https://saas.whitesourcesoftware.com/Wss/WSS.html#!project;id=2
+		[ - Support Token: token
+		[ - Process finished with exit code SUCCESS (Inventory update results for Piper
+		`
+		scanLog(strings.NewReader(log), scan)
+
+		assert.Equal(t, 2, len(scan.scannedProjects))
+		assert.Contains(t, scan.scannedProjects, "TestProject - 1")
+		assert.Contains(t, scan.scannedProjects, "TestProject-srv - 1")
+	})
+
+	t.Run("accept already existing project", func(t *testing.T) {
+
+		scan := &Scan{scannedProjects: map[string]Project{"TestProject - 1": {Name: "TestProject - 1", Token: "testToken"}}}
+
+		log := `
+		[ - Project name: TestProject - 1, URL: https://saas.whitesourcesoftware.com/Wss/WSS.html#!project;id=1
+		[ - Project name: TestProject-srv - 1, URL: https://saas.whitesourcesoftware.com/Wss/WSS.html#!project;id=2
+		`
+		scanLog(strings.NewReader(log), scan)
+
+		assert.Equal(t, 2, len(scan.scannedProjects))
+		assert.Equal(t, "testToken", scan.scannedProjects["TestProject - 1"].Token)
+	})
+
+	t.Run("ignore duplicates in log", func(t *testing.T) {
+
+		scan := &Scan{scannedProjects: map[string]Project{}}
+
+		log := `
+		[ - Project name: TestProject - 1, URL: https://saas.whitesourcesoftware.com/Wss/WSS.html#!project;id=1
+		[ - Project name: TestProject-srv - 1, URL: https://saas.whitesourcesoftware.com/Wss/WSS.html#!project;id=2
+		[ - Project name: TestProject - 1, URL: https://saas.whitesourcesoftware.com/Wss/WSS.html#!project;id=1
+		[ - Project name: TestProject-srv - 1, URL: https://saas.whitesourcesoftware.com/Wss/WSS.html#!project;id=2
+		`
+		scanLog(strings.NewReader(log), scan)
+
+		assert.Equal(t, 2, len(scan.scannedProjects))
 	})
 }

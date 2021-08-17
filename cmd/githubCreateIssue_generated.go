@@ -9,17 +9,19 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
 
 type githubCreateIssueOptions struct {
-	APIURL     string `json:"apiUrl,omitempty"`
-	Body       string `json:"body,omitempty"`
-	Owner      string `json:"owner,omitempty"`
-	Repository string `json:"repository,omitempty"`
-	Title      string `json:"title,omitempty"`
-	Token      string `json:"token,omitempty"`
+	APIURL       string `json:"apiUrl,omitempty"`
+	Body         string `json:"body,omitempty"`
+	BodyFilePath string `json:"bodyFilePath,omitempty"`
+	Owner        string `json:"owner,omitempty"`
+	Repository   string `json:"repository,omitempty"`
+	Title        string `json:"title,omitempty"`
+	Token        string `json:"token,omitempty"`
 }
 
 // GithubCreateIssueCommand Create a new GitHub issue.
@@ -29,6 +31,7 @@ func GithubCreateIssueCommand() *cobra.Command {
 	metadata := githubCreateIssueMetadata()
 	var stepConfig githubCreateIssueOptions
 	var startTime time.Time
+	var logCollector *log.CollectorHook
 
 	var createGithubCreateIssueCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -40,6 +43,8 @@ You will be able to use this step for example for regular jobs to report into yo
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
+
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
@@ -57,6 +62,11 @@ You will be able to use this step for example for regular jobs to report into yo
 				log.RegisterHook(&sentryHook)
 			}
 
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
+				log.RegisterHook(logCollector)
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -67,10 +77,20 @@ You will be able to use this step for example for regular jobs to report into yo
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
+				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunk.Send(&telemetryData, logCollector)
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunk.Initialize(GeneralConfig.CorrelationID,
+					GeneralConfig.HookConfig.SplunkConfig.Dsn,
+					GeneralConfig.HookConfig.SplunkConfig.Token,
+					GeneralConfig.HookConfig.SplunkConfig.Index,
+					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+			}
 			githubCreateIssue(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -84,13 +104,13 @@ You will be able to use this step for example for regular jobs to report into yo
 func addGithubCreateIssueFlags(cmd *cobra.Command, stepConfig *githubCreateIssueOptions) {
 	cmd.Flags().StringVar(&stepConfig.APIURL, "apiUrl", `https://api.github.com`, "Set the GitHub API url.")
 	cmd.Flags().StringVar(&stepConfig.Body, "body", os.Getenv("PIPER_body"), "Defines the content of the issue, e.g. using markdown syntax.")
+	cmd.Flags().StringVar(&stepConfig.BodyFilePath, "bodyFilePath", os.Getenv("PIPER_bodyFilePath"), "Defines the path to a file containing the markdown content for the issue. This can be used instead of [`body`](#body)")
 	cmd.Flags().StringVar(&stepConfig.Owner, "owner", os.Getenv("PIPER_owner"), "Name of the GitHub organization.")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Name of the GitHub repository.")
 	cmd.Flags().StringVar(&stepConfig.Title, "title", os.Getenv("PIPER_title"), "Defines the title for the Issue.")
 	cmd.Flags().StringVar(&stepConfig.Token, "token", os.Getenv("PIPER_token"), "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line.")
 
 	cmd.MarkFlagRequired("apiUrl")
-	cmd.MarkFlagRequired("body")
 	cmd.MarkFlagRequired("owner")
 	cmd.MarkFlagRequired("repository")
 	cmd.MarkFlagRequired("title")
@@ -107,6 +127,9 @@ func githubCreateIssueMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "githubTokenCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "apiUrl",
@@ -115,14 +138,25 @@ func githubCreateIssueMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "githubApiUrl"}},
+						Default:     `https://api.github.com`,
 					},
 					{
 						Name:        "body",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_body"),
+					},
+					{
+						Name:        "bodyFilePath",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_bodyFilePath"),
 					},
 					{
 						Name: "owner",
@@ -136,6 +170,7 @@ func githubCreateIssueMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{{Name: "githubOrg"}},
+						Default:   os.Getenv("PIPER_owner"),
 					},
 					{
 						Name: "repository",
@@ -149,6 +184,7 @@ func githubCreateIssueMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{{Name: "githubRepo"}},
+						Default:   os.Getenv("PIPER_repository"),
 					},
 					{
 						Name:        "title",
@@ -157,6 +193,7 @@ func githubCreateIssueMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_title"),
 					},
 					{
 						Name: "token",
@@ -176,6 +213,7 @@ func githubCreateIssueMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{{Name: "githubToken"}, {Name: "access_token"}},
+						Default:   os.Getenv("PIPER_token"),
 					},
 				},
 			},

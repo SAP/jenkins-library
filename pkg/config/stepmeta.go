@@ -232,10 +232,7 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 		//ToDo: add condition param.Value and param.Name to filter as for Containers
 	}
 
-	if m.HasReference("vaultSecret") {
-		contextFilters = append(contextFilters, []string{"vaultAppRoleTokenCredentialsId",
-			"vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}...)
-	}
+	contextFilters = addVaultContextParametersFilter(m, contextFilters)
 
 	if len(contextFilters) > 0 {
 		filters.All = append(filters.All, contextFilters...)
@@ -247,6 +244,12 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 
 	}
 	return filters
+}
+
+func addVaultContextParametersFilter(m *StepData, contextFilters []string) []string {
+	contextFilters = append(contextFilters, []string{"vaultAppRoleTokenCredentialsId",
+		"vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}...)
+	return contextFilters
 }
 
 // GetContextDefaults retrieves context defaults like container image, name, env vars, resources, ...
@@ -356,7 +359,9 @@ func (m *StepData) GetResourceParameters(path, name string) map[string]interface
 	for _, param := range m.Spec.Inputs.Parameters {
 		for _, res := range param.ResourceRef {
 			if res.Name == name {
-				resourceParams[param.Name] = getParameterValue(path, res, param)
+				if val := getParameterValue(path, res, param); val != nil {
+					resourceParams[param.Name] = val
+				}
 			}
 		}
 	}
@@ -429,7 +434,12 @@ func EnvVarsAsMap(envVars []EnvVar) map[string]string {
 func OptionsAsStringSlice(options []Option) []string {
 	e := []string{}
 	for _, v := range options {
-		e = append(e, fmt.Sprintf("%v %v", v.Name, v.Value))
+		if len(v.Value) != 0 {
+			e = append(e, fmt.Sprintf("%v %v", v.Name, v.Value))
+		} else {
+			e = append(e, fmt.Sprintf("%v=", v.Name))
+		}
+
 	}
 	return e
 }

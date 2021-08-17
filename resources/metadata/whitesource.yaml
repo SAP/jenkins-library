@@ -79,7 +79,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: ["unit-tests/pom.xml","integration-tests/pom.xml"]
+        default: ["unit-tests/pom.xml", "integration-tests/pom.xml"]
       - name: buildDescriptorFile
         type: string
         description: "Explicit path to the build descriptor file."
@@ -120,9 +120,9 @@ spec:
         type: string
         description: Custom version of the WhiteSource project used as source.
         longDescription: |-
-          Defines a custom version for the WhiteSource scan which deviates from the typical versioning pattern using [`version`](#version) and [`versioningModel`](#versioningModel)
+          Defines a custom version for the WhiteSource scan which deviates from the typical versioning pattern using [`version`](#version) and [`versioningModel`](#versioningModel).
           It allows to set non-numeric versions as well and supersedes the value of [`version`](#version) which is calculated automatically.
-          The parameter is also used by other scan steps (e.g. BlackDuck Detect) and thus allows a common custom version across scan tools.
+          The parameter is also used by other scan steps (e.g. Detect, Fortify, Sonar) and thus allows a common custom version across scan tools.
         scope:
           - GENERAL
           - PARAMETERS
@@ -130,13 +130,20 @@ spec:
           - STEPS
       - name: cvssSeverityLimit
         type: string
-        description: "Limit of tolerable CVSS v3 score upon assessment and in consequence fails the build,
-          defaults to  `-1`."
+        description: "Limit of tolerable CVSS v3 score upon assessment and in consequence fails the build."
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
         default: "-1"
+      - name: scanPath
+        type: string
+        description: "Directory where to start WhiteSource scan."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: "."
       - name: emailAddressesOfInitialProductAdmins
         type: "[]string"
         description: "The list of email addresses to assign as product admins for newly created WhiteSource products."
@@ -203,15 +210,6 @@ spec:
         resourceRef:
           - name: orgAdminUserTokenCredentialsId
             type: secret
-      - name: parallelLimit
-        type: string
-        description: '[NOT IMPLEMENTED] Limit of parallel jobs being run at once in case of `scanType:
-          ''mta''` based scenarios, defaults to `15`.'
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        default: 15
       - name: productName
         aliases:
           - name: whitesourceProductName
@@ -294,6 +292,9 @@ spec:
       - name: scanImage
         type: string
         description: "For `buildTool: docker`: Defines the docker image which should be scanned."
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/imageNameTag
         scope:
           - PARAMETERS
           - STAGES
@@ -309,23 +310,13 @@ spec:
       - name: scanImageRegistryUrl
         type: string
         description: "For `buildTool: docker`: Defines the registry where the scanImage is located."
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/registryUrl
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: scanType
-        type: string
-        description: "Type of development stack used to implement the solution.
-          For scan types other than `mta`, `maven`, and `npm`,
-          the WhiteSource Unified Agent is downloaded and used to perform the scan.
-          If the parameter is not provided, it is derived from the parameter `buildTool`,
-          which is usually configured in the general section of the pipeline config file."
-        scope:
-          - GENERAL
-          - PARAMETERS
-          - STAGES
-          - STEPS
-        possibleValues: ["golang", "gradle", "maven", "mta", "npm", "pip", "yarn"]
       - name: securityVulnerabilities
         type: bool
         description: "Whether security compliance is considered and reported as part of the assessment."
@@ -469,6 +460,23 @@ spec:
         params:
           - name: custom/whitesourceProjectNames
             type: "[]string"
+      - name: influx
+        type: influx
+        params:
+          - name: step_data
+            fields:
+              - name: whitesource
+                type: bool
+          - name: whitesource_data
+            fields:
+              - name: vulnerabilities
+                type: int
+              - name: major_vulnerabilities
+                type: int
+              - name: minor_vulnerabilities
+                type: int
+              - name: policy_violations
+                type: int
   containers:
     - image: buildpack-deps:stretch-curl
       workingDir: /tmp
@@ -480,17 +488,13 @@ spec:
               value: dub
             - name: buildTool
               value: docker
-    - image: devxci/mbtci:1.0.14
+    - image: devxci/mbtci:1.1.1
       workingDir: /home/mta
-      env: [ ]
+      env: []
       conditions:
         - conditionRef: strings-equal
           params:
             - name: buildTool
-              value: mta
-        - conditionRef: strings-equal
-          params:
-            - name: scanType
               value: mta
     - image: golang:1
       workingDir: /go
@@ -516,10 +520,6 @@ spec:
           params:
             - name: buildTool
               value: maven
-        - conditionRef: strings-equal
-          params:
-            - name: scanType
-              value: maven
     - image: node:lts-stretch
       workingDir: /home/node
       env: []
@@ -527,10 +527,6 @@ spec:
         - conditionRef: strings-equal
           params:
             - name: buildTool
-              value: npm
-        - conditionRef: strings-equal
-          params:
-            - name: scanType
               value: npm
     - image: python:3.6-stretch
       workingDir: /tmp
@@ -540,3 +536,11 @@ spec:
           params:
             - name: buildTool
               value: pip
+    - image: node:lts-stretch
+      workingDir: /home/node
+      env: []
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: buildTool
+              value: yarn

@@ -66,8 +66,12 @@ func runIntegrationArtifactDownload(config *integrationArtifactDownloadOptions, 
 	clientOptions := piperhttp.ClientOptions{}
 	header := make(http.Header)
 	header.Add("Accept", "application/zip")
-	downloadArtifactURL := fmt.Sprintf("%s/api/v1/IntegrationDesigntimeArtifacts(Id='%s',Version='%s')/$value", config.Host, config.IntegrationFlowID, config.IntegrationFlowVersion)
-	tokenParameters := cpi.TokenParameters{TokenURL: config.OAuthTokenProviderURL, Username: config.Username, Password: config.Password, Client: httpClient}
+	serviceKey, err := cpi.ReadCpiServiceKey(config.APIServiceKey)
+	if err != nil {
+		return err
+	}
+	downloadArtifactURL := fmt.Sprintf("%s/api/v1/IntegrationDesigntimeArtifacts(Id='%s',Version='%s')/$value", serviceKey.OAuth.Host, config.IntegrationFlowID, config.IntegrationFlowVersion)
+	tokenParameters := cpi.TokenParameters{TokenURL: serviceKey.OAuth.OAuthTokenProviderURL, Username: serviceKey.OAuth.ClientID, Password: serviceKey.OAuth.ClientSecret, Client: httpClient}
 	token, err := cpi.CommonUtils.GetBearerToken(tokenParameters)
 	if err != nil {
 		return errors.Wrap(err, "failed to fetch Bearer Token")
@@ -95,7 +99,7 @@ func runIntegrationArtifactDownload(config *integrationArtifactDownloadOptions, 
 
 	if downloadResp.StatusCode == 200 {
 		workspaceRelativePath := config.DownloadPath
-		err = os.MkdirAll(workspaceRelativePath, 755)
+		err = os.MkdirAll(workspaceRelativePath, 0755)
 		if err != nil {
 			return errors.Wrapf(err, "Failed to create workspace directory")
 		}

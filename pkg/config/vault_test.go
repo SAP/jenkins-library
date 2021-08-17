@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/SAP/jenkins-library/pkg/config/mocks"
@@ -216,4 +217,105 @@ func stepParam(name string, refType string, refPaths ...string) StepParameters {
 func addAlias(param *StepParameters, aliasName string) {
 	alias := Alias{Name: aliasName}
 	param.Aliases = append(param.Aliases, alias)
+}
+
+func TestResolveVaultTestCredentials(t *testing.T) {
+	t.Parallel()
+	t.Run("Default credential prefix", func(t *testing.T) {
+		t.Parallel()
+		// init
+		vaultMock := &mocks.VaultMock{}
+		envPrefix := "PIPER_TESTCREDENTIAL_"
+		stepConfig := StepConfig{Config: map[string]interface{}{
+			"vaultPath":               "team1",
+			"vaultTestCredentialPath": "appCredentials",
+			"vaultTestCredentialKeys": []interface{}{"appUser", "appUserPw"},
+		}}
+
+		defer os.Unsetenv("PIPER_TESTCREDENTIAL_APPUSER")
+		defer os.Unsetenv("PIPER_TESTCREDENTIAL_APPUSERPW")
+
+		// mock
+		vaultData := map[string]string{"appUser": "test-user", "appUserPw": "password1234"}
+		vaultMock.On("GetKvSecret", "team1/appCredentials").Return(vaultData, nil)
+
+		// test
+		resolveVaultTestCredentials(&stepConfig, vaultMock)
+
+		// assert
+		for k, v := range vaultData {
+			env := envPrefix + strings.ToUpper(k)
+			assert.NotEmpty(t, os.Getenv(env))
+			assert.Equal(t, os.Getenv(env), v)
+		}
+	})
+
+	t.Run("Custom credential prefix", func(t *testing.T) {
+		t.Parallel()
+		// init
+		vaultMock := &mocks.VaultMock{}
+		envPrefix := "CUSTOM_CREDENTIAL_"
+		stepConfig := StepConfig{Config: map[string]interface{}{
+			"vaultPath":                    "team1",
+			"vaultTestCredentialPath":      "appCredentials",
+			"vaultTestCredentialKeys":      []interface{}{"appUser", "appUserPw"},
+			"vaultTestCredentialEnvPrefix": envPrefix,
+		}}
+
+		defer os.Unsetenv("CUSTOM_CREDENTIAL_APPUSER")
+		defer os.Unsetenv("CUSTOM_CREDENTIAL_APPUSERPW")
+
+		// mock
+		vaultData := map[string]string{"appUser": "test-user", "appUserPw": "password1234"}
+		vaultMock.On("GetKvSecret", "team1/appCredentials").Return(vaultData, nil)
+
+		// test
+		resolveVaultTestCredentials(&stepConfig, vaultMock)
+
+		// assert
+		for k, v := range vaultData {
+			env := envPrefix + strings.ToUpper(k)
+			assert.NotEmpty(t, os.Getenv(env))
+			assert.Equal(t, os.Getenv(env), v)
+		}
+	})
+}
+
+func Test_convertEnvVar(t *testing.T) {
+	type args struct {
+		s string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "empty string",
+			args: args{""},
+			want: "",
+		},
+		{
+			name: "alphanumerical string",
+			args: args{"myApp1"},
+			want: "MYAPP1",
+		},
+		{
+			name: "string with hyphen",
+			args: args{"my_App-1"},
+			want: "MY_APP_1",
+		},
+		{
+			name: "string with special characters",
+			args: args{"my_App?-(1]"},
+			want: "MY_APP_1",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := convertEnvVar(tt.args.s); got != tt.want {
+				t.Errorf("convertEnvironment() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

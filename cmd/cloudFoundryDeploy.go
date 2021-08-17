@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 	"io"
 	"os"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
@@ -181,6 +182,7 @@ func prepareInflux(success bool, config *cloudFoundryDeployOptions, influxData *
 
 	// n/a (literally) is also reported in groovy
 	influxData.deployment_data.fields.artifactURL = "n/a"
+	influxData.deployment_data.fields.commitHash = config.CommitHash
 
 	influxData.deployment_data.fields.deployTime = strings.ToUpper(_now().Format("Jan 02 2006 15:04:05"))
 
@@ -436,11 +438,12 @@ func handleSmokeTestScript(smokeTestScript string) ([]string, error) {
 			return []string{}, fmt.Errorf("failed to make smoke-test script executable: %w", err)
 		}
 		pwd, err := fileUtils.Getwd()
+
 		if err != nil {
 			return []string{}, fmt.Errorf("failed to get current working directory for execution of smoke-test script: %w", err)
 		}
 
-		return []string{"--smoke-test", fmt.Sprintf("%s/%s", pwd, smokeTestScript)}, nil
+		return []string{"--smoke-test", fmt.Sprintf("%s", filepath.Join(pwd, smokeTestScript))}, nil
 	}
 	return []string{}, nil
 }

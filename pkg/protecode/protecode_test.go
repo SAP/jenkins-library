@@ -15,8 +15,6 @@ import (
 	"strings"
 	"time"
 
-	piperHttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -34,7 +32,7 @@ func TestMapResponse(t *testing.T) {
 		{`{"results": {"status": "B", "id": 209396, "product_id": 209396, "report_url": "https://protecode.c.eu-de-2.cloud.sap/products/209396/"}}`, new(ResultData), &ResultData{Result: Result{ProductID: 209396, Status: statusBusy, ReportURL: "https://protecode.c.eu-de-2.cloud.sap/products/209396/"}}},
 		{`{"products": [{"product_id": 1}]}`, new(ProductData), &ProductData{Products: []Product{{ProductID: 1}}}},
 	}
-	pc := Protecode{}
+	pc := makeProtecode(Options{})
 	for _, c := range cases {
 
 		r := ioutil.NopCloser(bytes.NewReader([]byte(c.give)))
@@ -63,7 +61,7 @@ func TestParseResultSuccess(t *testing.T) {
 			},
 		},
 	}
-	pc := Protecode{}
+	pc := makeProtecode(Options{})
 	m, vulns := pc.ParseResultForInflux(result, "Excluded CVES: Cve4,")
 	t.Run("Parse Protecode Results", func(t *testing.T) {
 		assert.Equal(t, 1, m["historical_vulnerabilities"])
@@ -84,7 +82,7 @@ func TestParseResultViolations(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed reading %v", violations)
 	}
-	pc := Protecode{}
+	pc := makeProtecode(Options{})
 
 	resultData := new(ResultData)
 	pc.mapResponse(ioutil.NopCloser(strings.NewReader(string(byteContent))), resultData)
@@ -110,7 +108,7 @@ func TestParseResultNoViolations(t *testing.T) {
 		t.Fatalf("failed reading %v", noViolations)
 	}
 
-	pc := Protecode{}
+	pc := makeProtecode(Options{})
 	resultData := new(ResultData)
 	pc.mapResponse(ioutil.NopCloser(strings.NewReader(string(byteContent))), resultData)
 
@@ -135,7 +133,7 @@ func TestParseResultTriaged(t *testing.T) {
 		t.Fatalf("failed reading %v", triaged)
 	}
 
-	pc := Protecode{}
+	pc := makeProtecode(Options{})
 	resultData := new(ResultData)
 	pc.mapResponse(ioutil.NopCloser(strings.NewReader(string(byteContent))), resultData)
 
@@ -158,7 +156,7 @@ func TestLoadExistingProductSuccess(t *testing.T) {
 
 		response := ProductData{
 			Products: []Product{
-				{ProductID: 1},
+				{ProductID: 1, FileName: "file_1.zip"},
 			},
 		}
 
@@ -169,17 +167,13 @@ func TestLoadExistingProductSuccess(t *testing.T) {
 	// Close the server when test finishes
 	defer server.Close()
 
-	client := &piperHttp.Client{}
-	client.SetOptions(piperHttp.ClientOptions{})
-
 	cases := []struct {
 		pc             Protecode
 		protecodeGroup string
 		fileName       string
 		want           int
 	}{
-		{Protecode{serverURL: server.URL, client: client, logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/protecode")}, "group", "file_1.zip", 1},
-		{Protecode{serverURL: server.URL, client: client}, "group32", "file_1.zip", -1},
+		{makeProtecode(Options{ServerURL: server.URL}), "group", "file_1.zip", 1},
 	}
 	for _, c := range cases {
 
@@ -195,15 +189,24 @@ func TestPollForResultSuccess(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		requestURI = req.RequestURI
 		productID := 111
+
+		// 2021-04-20 d :
+		// Added case '333' to test proper handling of case where Component list is empty.
 		if strings.Contains(requestURI, "222") {
 			productID = 222
+		} else if strings.Contains(requestURI, "333") {
+			productID = 333
 		}
 
-		response = ResultData{Result: Result{ProductID: productID, ReportURL: requestURI, Status: "D", Components: []Component{
-			{Vulns: []Vulnerability{
-				{Triage: []Triage{{ID: 1}}}},
-			}},
-		}}
+		var cmpnts []Component
+		if productID != 333 {
+			cmpnts = []Component{
+				{Vulns: []Vulnerability{
+					{Triage: []Triage{{ID: 1}}}},
+				}}
+		}
+
+		response = ResultData{Result: Result{ProductID: productID, ReportURL: requestURI, Status: "D", Components: cmpnts}}
 
 		var b bytes.Buffer
 		json.NewEncoder(&b).Encode(&response)
@@ -225,13 +228,12 @@ func TestPollForResultSuccess(t *testing.T) {
 				{Triage: []Triage{{ID: 1}}}},
 			}},
 		}}},
+		{333, ResultData{Result: Result{ProductID: 333, ReportURL: "/api/product/333/", Status: "D"}}},
 	}
 	// Close the server when test finishes
 	defer server.Close()
 
-	client := &piperHttp.Client{}
-	client.SetOptions(piperHttp.ClientOptions{})
-	pc := Protecode{serverURL: server.URL, client: client, duration: (time.Minute * 1), logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/protecode")}
+	pc := makeProtecode(Options{ServerURL: server.URL, Duration: (time.Minute * 1)})
 
 	for _, c := range cases {
 		got := pc.PollForResult(c.productID, "1")
@@ -265,16 +267,13 @@ func TestPullResultSuccess(t *testing.T) {
 	// Close the server when test finishes
 	defer server.Close()
 
-	client := &piperHttp.Client{}
-	client.SetOptions(piperHttp.ClientOptions{})
-
 	cases := []struct {
 		pc        Protecode
 		productID int
 		want      ResultData
 	}{
-		{Protecode{serverURL: server.URL, client: client}, 111, ResultData{Result: Result{ProductID: 111, ReportURL: "/api/product/111/"}}},
-		{Protecode{serverURL: server.URL, client: client}, 222, ResultData{Result: Result{ProductID: 222, ReportURL: "/api/product/222/"}}},
+		{makeProtecode(Options{ServerURL: server.URL}), 111, ResultData{Result: Result{ProductID: 111, ReportURL: "/api/product/111/"}}},
+		{makeProtecode(Options{ServerURL: server.URL}), 222, ResultData{Result: Result{ProductID: 222, ReportURL: "/api/product/222/"}}},
 	}
 	for _, c := range cases {
 
@@ -307,10 +306,7 @@ func TestDeclareFetchURLSuccess(t *testing.T) {
 	}))
 	// Close the server when test finishes
 	defer server.Close()
-
-	pc := Protecode{}
-	po := Options{ServerURL: server.URL}
-	pc.SetOptions(po)
+	pc := makeProtecode(Options{ServerURL: server.URL})
 
 	cases := []struct {
 		cleanupMode    string
@@ -387,10 +383,7 @@ func TestUploadScanFileSuccess(t *testing.T) {
 	}))
 	// Close the server when test finishes
 	defer server.Close()
-
-	pc := Protecode{}
-	po := Options{ServerURL: server.URL}
-	pc.SetOptions(po)
+	pc := makeProtecode(Options{ServerURL: server.URL})
 
 	testFile, err := ioutil.TempFile("", "testFileUpload")
 	if err != nil {
@@ -461,10 +454,7 @@ func TestLoadReportSuccess(t *testing.T) {
 	// Close the server when test finishes
 	defer server.Close()
 
-	client := &piperHttp.Client{}
-	client.SetOptions(piperHttp.ClientOptions{})
-
-	pc := Protecode{serverURL: server.URL, client: client}
+	pc := makeProtecode(Options{ServerURL: server.URL})
 
 	cases := []struct {
 		productID      int
@@ -504,7 +494,7 @@ func TestDeleteScanSuccess(t *testing.T) {
 	// Close the server when test finishes
 	defer server.Close()
 
-	pc := Protecode{}
+	pc := makeProtecode(Options{})
 	po := Options{ServerURL: server.URL}
 	pc.SetOptions(po)
 

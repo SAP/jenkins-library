@@ -21,6 +21,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// ReportsDirectory defines the subfolder for the Checkmarx reports which are generated
+const ReportsDirectory = "checkmarx"
+
 // AuthToken - Structure to store OAuth2 token
 type AuthToken struct {
 	TokenType   string `json:"token_type"`
@@ -146,8 +149,8 @@ type DetailedResult struct {
 	ScanStart                string   `xml:"ScanStart,attr"`
 	Preset                   string   `xml:"Preset,attr"`
 	ScanTime                 string   `xml:"ScanTime,attr"`
-	LinesOfCodeScanned       string   `xml:"LinesOfCodeScanned,attr"`
-	FilesScanned             string   `xml:"FilesScanned,attr"`
+	LinesOfCodeScanned       int      `xml:"LinesOfCodeScanned,attr"`
+	FilesScanned             int      `xml:"FilesScanned,attr"`
 	ReportCreationTime       string   `xml:"ReportCreationTime,attr"`
 	Team                     string   `xml:"Team,attr"`
 	CheckmarxVersion         string   `xml:"CheckmarxVersion,attr"`

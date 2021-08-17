@@ -39,24 +39,53 @@ class ContainerPushToRegistryTest extends BasePiperTest {
         )
         .around(stepRule)
 
-    def dockerMockArgs = [:]
+    def dockerMock = new DockerMock('test')
+
     class DockerMock {
+
+        LinkedList<DockerRegistry> registries
+        String image
+
         DockerMock(name){
-            dockerMockArgs.name = name
+            this.image = name
+            this.registries = [] as LinkedList
         }
         def withRegistry(paramRegistry, paramCredentials, paramClosure){
-            dockerMockArgs.paramRegistry = paramRegistry
-            dockerMockArgs.paramCredentials = paramCredentials
+            this.registries.add(new DockerRegistry(paramRegistry, paramCredentials, paramCredentials? false : true))
             return paramClosure()
         }
         def withRegistry(paramRegistry, paramClosure){
-            dockerMockArgs.paramRegistryAnonymous = paramRegistry.toString()
-            return paramClosure()
+            return withRegistry(paramRegistry, null, paramClosure)
         }
 
         def image(name) {
-            dockerMockArgs.name = name
+            this.image = name
             return new ContainerImageMock()
+        }
+
+        protected DockerRegistry getSourceRegistry() {
+            if (registries.size() == 1) {
+                return null;
+            }
+            return registries.first
+        }
+        protected DockerRegistry getTargetRegistry() {
+            if (registries.size() == 1) {
+                return registries.first
+            }
+            return registries.last
+        }
+    }
+
+    class DockerRegistry {
+        final boolean isAnonymous
+        final String credentials
+        final String url
+
+        DockerRegistry(url, credentials, isAnonymous) {
+            this.url = url
+            this.credentials = credentials
+            this.isAnonymous = isAnonymous
         }
     }
 
@@ -78,7 +107,7 @@ class ContainerPushToRegistryTest extends BasePiperTest {
 
     @Before
     void init() {
-        binding.setVariable('docker', new DockerMock('test'))
+        binding.setVariable('docker', dockerMock)
         Utils.metaClass.echo = { def m -> }
     }
 
@@ -106,9 +135,9 @@ class ContainerPushToRegistryTest extends BasePiperTest {
             dockerImage: 'testImage:tag',
         )
 
-        assertThat(dockerMockArgs.paramRegistry, is('https://testRegistry'))
-        assertThat(dockerMockArgs.paramCredentials, is('testCredentialsId'))
-        assertThat(dockerMockArgs.name, is('testImage:tag'))
+        assertThat(dockerMock.targetRegistry.url, is('https://testRegistry'))
+        assertThat(dockerMock.targetRegistry.credentials, is('testCredentialsId'))
+        assertThat(dockerMock.image, is('testImage:tag'))
         assertThat(dockerMockPushes, hasItem('default'))
         assertThat(dockerMockPushes, not(hasItem('latest')))
     }
@@ -124,15 +153,56 @@ class ContainerPushToRegistryTest extends BasePiperTest {
             tagLatest: true
         )
 
-        assertThat(dockerMockArgs.paramRegistry, is('https://testRegistry'))
-        assertThat(dockerMockArgs.paramCredentials, is('testCredentialsId'))
-        assertThat(dockerMockArgs.paramRegistryAnonymous, is(null))
-        assertThat(dockerMockArgs.name, is('test'))
+        assertThat(dockerMock.targetRegistry.url, is('https://testRegistry'))
+        assertThat(dockerMock.targetRegistry.credentials, is('testCredentialsId'))
+        assertThat(dockerMock.sourceRegistry, is (null))
+        assertThat(dockerMock.image, is('test'))
         assertThat(dockerMockPushes, hasItem('default'))
         assertThat(dockerMockPushes, hasItem('latest'))
     }
 
+    @Test
+    void testBuildImagePushArtifactVersion() throws Exception {
+        nullScript.commonPipelineEnvironment.setArtifactVersion('1.0.0')
+        def dockerBuildImage = new ContainerImageMock()
+        stepRule.step.containerPushToRegistry(
+            script: nullScript,
+            dockerRegistryUrl: 'https://testRegistry',
+            dockerCredentialsId: 'testCredentialsId',
+            dockerBuildImage: dockerBuildImage,
+            tagArtifactVersion: true
+        )
 
+        assertThat(dockerMock.targetRegistry.url, is('https://testRegistry'))
+        assertThat(dockerMock.targetRegistry.credentials, is('testCredentialsId'))
+        assertThat(dockerMock.sourceRegistry, is (null))
+        assertThat(dockerMock.image, is('test'))
+        assertThat(dockerMockPushes, hasItem('default'))
+        assertThat(dockerMockPushes, not(hasItem('latest')))
+        assertThat(dockerMockPushes, hasItem('1.0.0'))
+    }
+
+    @Test
+    void testBuildImagePushLatestAndArtifactVersion() throws Exception {
+        nullScript.commonPipelineEnvironment.setArtifactVersion('1.0.0')
+        def dockerBuildImage = new ContainerImageMock()
+        stepRule.step.containerPushToRegistry(
+            script: nullScript,
+            dockerRegistryUrl: 'https://testRegistry',
+            dockerCredentialsId: 'testCredentialsId',
+            dockerBuildImage: dockerBuildImage,
+            tagArtifactVersion: true,
+            tagLatest: true
+        )
+
+        assertThat(dockerMock.targetRegistry.url, is('https://testRegistry'))
+        assertThat(dockerMock.targetRegistry.credentials, is('testCredentialsId'))
+        assertThat(dockerMock.sourceRegistry, is (null))
+        assertThat(dockerMock.image, is('test'))
+        assertThat(dockerMockPushes, hasItem('default'))
+        assertThat(dockerMockPushes, hasItem('latest'))
+        assertThat(dockerMockPushes, hasItem('1.0.0'))
+    }
 
     @Test
     void testFromEnv() {
@@ -145,8 +215,12 @@ class ContainerPushToRegistryTest extends BasePiperTest {
             dockerCredentialsId: 'testCredentialsId',
         )
 
-        assertThat(dockerMockArgs.paramRegistryAnonymous, is('https://testRegistry:55555'))
-        assertThat(dockerMockArgs.name, is('path/testImage:tag'))
+        assertThat(dockerMock.sourceRegistry.url, is('https://testRegistry:55555'))
+        assertThat(dockerMock.sourceRegistry.isAnonymous, is(true))
+        assertThat(dockerMock.targetRegistry.url, is('https://testRegistry'))
+        assertThat(dockerMock.targetRegistry.credentials, is('testCredentialsId'))
+        assertThat(dockerMock.targetRegistry.isAnonymous, is(false))
+        assertThat(dockerMock.image, is('path/testImage:tag'))
         assertThat(shellCallRule.shell, hasItem('docker tag testRegistry:55555/path/testImage:tag path/testImage:tag'))
         assertThat(dockerMockPull, is(true))
     }
@@ -161,8 +235,9 @@ class ContainerPushToRegistryTest extends BasePiperTest {
             sourceRegistryUrl: 'http://testSourceRegistry'
         )
 
-        assertThat(dockerMockArgs.paramRegistryAnonymous, is('http://testSourceRegistry'))
-        assertThat(dockerMockArgs.name, is('testSourceName:testSourceTag'))
+        assertThat(dockerMock.sourceRegistry.url, is('http://testSourceRegistry'))
+        assertThat(dockerMock.image, is('testSourceName:testSourceTag'))
+        assertThat(dockerMock.sourceRegistry.isAnonymous, is(true))
         assertThat(shellCallRule.shell, hasItem('docker tag testSourceRegistry/testSourceName:testSourceTag testSourceName:testSourceTag'))
         assertThat(dockerMockPull, is(true))
     }
@@ -178,8 +253,30 @@ class ContainerPushToRegistryTest extends BasePiperTest {
             sourceRegistryUrl: 'http://testSourceRegistry'
         )
 
-        assertThat(dockerMockArgs.paramRegistryAnonymous, is('http://testSourceRegistry'))
-        assertThat(dockerMockArgs.name, is('testSourceName:testSourceTag'))
+        assertThat(dockerMock.sourceRegistry.url, is('http://testSourceRegistry'))
+        assertThat(dockerMock.sourceRegistry.isAnonymous, is(true))
+        assertThat(dockerMock.image, is('testSourceName:testSourceTag'))
+        assertThat(shellCallRule.shell, hasItem('docker tag testSourceRegistry/testSourceName:testSourceTag testImage:tag'))
+        assertThat(dockerMockPull, is(true))
+    }
+
+    @Test
+    void testWithAuthenticatedSourceAndTarget() {
+        stepRule.step.containerPushToRegistry(
+            script: nullScript,
+            dockerCredentialsId: 'testCredentialsId',
+            dockerImage: 'testImage:tag',
+            dockerRegistryUrl: 'https://testRegistry',
+            sourceCredentialsId: 'testSourceCredentialsId',
+            sourceImage: 'testSourceName:testSourceTag',
+            sourceRegistryUrl: 'http://testSourceRegistry'
+        )
+
+        assertThat(dockerMock.sourceRegistry.url, is('http://testSourceRegistry'))
+        assertThat(dockerMock.sourceRegistry.credentials, is('testSourceCredentialsId'))
+        assertThat(dockerMock.targetRegistry.url, is('https://testRegistry'))
+        assertThat(dockerMock.targetRegistry.credentials, is('testCredentialsId'))
+        assertThat(dockerMock.image, is('testSourceName:testSourceTag'))
         assertThat(shellCallRule.shell, hasItem('docker tag testSourceRegistry/testSourceName:testSourceTag testImage:tag'))
         assertThat(dockerMockPull, is(true))
     }
@@ -220,6 +317,48 @@ class ContainerPushToRegistryTest extends BasePiperTest {
 
         assertThat(shellCallRule.shell, hasItem('skopeo copy --src-tls-verify=false --dest-tls-verify=false --dest-creds=\'registryUser\':\'********\' docker://my.source.registry:44444/sourceImage:sourceTag docker://my.registry:55555/testImage:tag'))
         assertThat(shellCallRule.shell, hasItem('skopeo copy --src-tls-verify=false --dest-tls-verify=false --dest-creds=\'registryUser\':\'********\' docker://my.source.registry:44444/sourceImage:sourceTag docker://my.registry:55555/testImage:latest'))
+    }
+
+    @Test
+    void testKubernetesMoveTagArtifactVersion() {
+        nullScript.commonPipelineEnvironment.setArtifactVersion('1.0.0')
+        binding.setVariable('docker', null)
+        shellCallRule.setReturnValue('docker ps -q > /dev/null', 1)
+
+        stepRule.step.containerPushToRegistry(
+            script: nullScript,
+            dockerCredentialsId: 'testCredentialsId',
+            dockerImage: 'testImage:tag',
+            dockerRegistryUrl: 'https://my.registry:55555',
+            sourceImage: 'sourceImage:sourceTag',
+            sourceRegistryUrl: 'https://my.source.registry:44444',
+            tagArtifactVersion: true
+        )
+
+        assertThat(shellCallRule.shell, hasItem('skopeo copy --src-tls-verify=false --dest-tls-verify=false --dest-creds=\'registryUser\':\'********\' docker://my.source.registry:44444/sourceImage:sourceTag docker://my.registry:55555/testImage:tag'))
+        assertThat(shellCallRule.shell, hasItem('skopeo copy --src-tls-verify=false --dest-tls-verify=false --dest-creds=\'registryUser\':\'********\' docker://my.source.registry:44444/sourceImage:sourceTag docker://my.registry:55555/testImage:1.0.0'))
+    }
+
+    @Test
+    void testKubernetesMoveTagLatestAndArtifactVersion() {
+        nullScript.commonPipelineEnvironment.setArtifactVersion('1.0.0')
+        binding.setVariable('docker', null)
+        shellCallRule.setReturnValue('docker ps -q > /dev/null', 1)
+
+        stepRule.step.containerPushToRegistry(
+            script: nullScript,
+            dockerCredentialsId: 'testCredentialsId',
+            dockerImage: 'testImage:tag',
+            dockerRegistryUrl: 'https://my.registry:55555',
+            sourceImage: 'sourceImage:sourceTag',
+            sourceRegistryUrl: 'https://my.source.registry:44444',
+            tagLatest: true,
+            tagArtifactVersion: true
+        )
+
+        assertThat(shellCallRule.shell, hasItem('skopeo copy --src-tls-verify=false --dest-tls-verify=false --dest-creds=\'registryUser\':\'********\' docker://my.source.registry:44444/sourceImage:sourceTag docker://my.registry:55555/testImage:tag'))
+        assertThat(shellCallRule.shell, hasItem('skopeo copy --src-tls-verify=false --dest-tls-verify=false --dest-creds=\'registryUser\':\'********\' docker://my.source.registry:44444/sourceImage:sourceTag docker://my.registry:55555/testImage:latest'))
+        assertThat(shellCallRule.shell, hasItem('skopeo copy --src-tls-verify=false --dest-tls-verify=false --dest-creds=\'registryUser\':\'********\' docker://my.source.registry:44444/sourceImage:sourceTag docker://my.registry:55555/testImage:1.0.0'))
     }
 
     @Test

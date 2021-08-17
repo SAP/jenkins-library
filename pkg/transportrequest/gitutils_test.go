@@ -198,7 +198,32 @@ func TestRetrieveLabelStraightForward(t *testing.T) {
 				}
 			}
 		})
+		t.Run("default label with default reg ex", func(t *testing.T) {
+			commitIter := &commitIteratorMock{
+				commits: []object.Commit{
+					object.Commit{
+						Hash:    plumbing.NewHash("3434343434343434343434343434343434343434"),
+						Message: "TransportRequest: 12345678",
+					},
+				},
+			}
+			labels, err := FindLabelsInCommits(commitIter, "TransportRequest\\s?:")
+			if assert.NoError(t, err) {
+				assert.Equal(t, "12345678", labels[0])
+			}
+		})
 	})
+}
+
+func TestFinishLabel(t *testing.T) {
+	t.Parallel()
+	t.Run("default label old", func(t *testing.T) {
+		assert.Equal(t, `(?m)^\s*TransportRequest\s?:\s*(\S*)\s*$`, finishLabel("TransportRequest\\s?:"))
+	})
+	t.Run("default label new", func(t *testing.T) {
+		assert.Equal(t, `(?m)^\s*TransportRequest\s*:\s*(\S*)\s*$`, finishLabel("TransportRequest"))
+	})
+
 }
 
 func TestFindIDInRange(t *testing.T) {

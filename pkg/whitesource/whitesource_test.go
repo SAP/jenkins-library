@@ -236,13 +236,23 @@ func TestGetProjectTokens(t *testing.T) {
 
 	sys := System{serverURL: "https://my.test.server", httpClient: &myTestClient, orgToken: "test_org_token", userToken: "test_user_token"}
 
-	projectTokens, err := sys.GetProjectTokens("test_product_token", []string{"Test Project1", "Test Project2"})
-	assert.NoError(t, err)
-	assert.Equal(t, []string{"test_project_token1", "test_project_token2"}, projectTokens)
+	t.Run("success case", func(t *testing.T) {
+		projectTokens, err := sys.GetProjectTokens("test_product_token", []string{"Test Project1", "Test Project2"})
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"test_project_token1", "test_project_token2"}, projectTokens)
+	})
 
-	projectTokens, err = sys.GetProjectTokens("test_product_token", []string{"Test Project3"})
-	assert.NoError(t, err)
-	assert.Equal(t, []string{}, projectTokens)
+	t.Run("no tokens found", func(t *testing.T) {
+		projectTokens, err := sys.GetProjectTokens("test_product_token", []string{"Test Project3"})
+		assert.Contains(t, fmt.Sprint(err), "no project token(s) found for provided projects")
+		assert.Equal(t, []string{}, projectTokens)
+	})
+
+	t.Run("not all tokens found", func(t *testing.T) {
+		projectTokens, err := sys.GetProjectTokens("test_product_token", []string{"Test Project1", "Test Project3"})
+		assert.Contains(t, fmt.Sprint(err), "not all project token(s) found for provided projects")
+		assert.Equal(t, []string{"test_project_token1"}, projectTokens)
+	})
 }
 
 func TestGetProductName(t *testing.T) {
