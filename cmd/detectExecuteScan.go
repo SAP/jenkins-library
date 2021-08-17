@@ -150,31 +150,6 @@ func runDetect(config detectExecuteScanOptions, utils detectUtils, influx *detec
 	if reportingErr != nil {
 		log.Entry().Warnf("Failed to generate reports: %v", reportingErr)
 	}
-	if err == nil && piperutils.ContainsString(config.FailOn, "BLOCKER") {
-		violations := struct {
-			PolicyViolations int      `json:"policyViolations"`
-			Reports          []string `json:"reports"`
-		}{
-			PolicyViolations: 0,
-			Reports:          []string{},
-		}
-
-		if files, err := utils.Glob("**/*BlackDuck_RiskReport.pdf"); err == nil && len(files) > 0 {
-			// there should only be one RiskReport thus only taking the first one
-			_, reportFile := filepath.Split(files[0])
-			violations.Reports = append(violations.Reports, reportFile)
-		}
-
-		violationContent, err := json.Marshal(violations)
-		if err != nil {
-			return fmt.Errorf("failed to marshal policy violation data: %w", err)
-		}
-
-		err = utils.FileWrite("blackduck-ip.json", violationContent, 0666)
-		if err != nil {
-			return fmt.Errorf("failed to write policy violation report: %w", err)
-		}
-	}
 	return err
 }
 
@@ -303,6 +278,10 @@ func postScanChecksAndReporting(config detectExecuteScanOptions, influx *detectE
 	piperutils.PersistReportsAndLinks("detectExecuteScan", "", paths, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to check and report scan results")
+	}
+	policyJsonErr := writeIpPolicyJson(config, utils, paths, sys)
+	if policyJsonErr != nil {
+		return errors.Wrapf(policyJsonErr, "failed to write IP policy violations json file")
 	}
 	return nil
 }
@@ -499,6 +478,63 @@ func writePolicyStatusReports(scanReport reporting.ScanReport, config detectExec
 	}
 
 	return reportPaths, nil
+}
+
+func writeIpPolicyJson(config detectExecuteScanOptions, utils detectUtils, paths []piperutils.Path, sys *blackduckSystem) error {
+	components, err := sys.Client.GetComponentsWithLicensePolicyRule(config.ProjectName, getVersionName(config))
+	if err != nil {
+		errors.Wrapf(err, "failed to get License Policy Violations")
+		return err
+	}
+
+	violationCount := getActivePolicyViolations(components)
+	violations := struct {
+		PolicyViolations int      `json:"policyViolations"`
+		Reports          []string `json:"reports"`
+	}{
+		PolicyViolations: violationCount,
+		Reports:          []string{},
+	}
+
+	for _, path := range paths {
+		violations.Reports = append(violations.Reports, path.Target)
+	}
+	if files, err := utils.Glob("**/*BlackDuck_RiskReport.pdf"); err == nil && len(files) > 0 {
+		// there should only be one RiskReport thus only taking the first one
+		_, reportFile := filepath.Split(files[0])
+		violations.Reports = append(violations.Reports, reportFile)
+	}
+
+	violationContent, err := json.Marshal(violations)
+	if err != nil {
+		return fmt.Errorf("failed to marshal policy violation data: %w", err)
+	}
+
+	err = utils.FileWrite("blackduck-ip.json", violationContent, 0666)
+	if err != nil {
+		return fmt.Errorf("failed to write policy violation report: %w", err)
+	}
+	return nil
+}
+
+func getActivePolicyViolations(components *bd.Components) int {
+	if components.TotalCount == 0 {
+		return 0
+	}
+	activeViolations := 0
+	for _, component := range components.Items {
+		if isActivePolicyViolation(component.PolicyStatus) {
+			activeViolations++
+		}
+	}
+	return activeViolations
+}
+
+func isActivePolicyViolation(status string) bool {
+	if status == "IN_VIOLATION" {
+		return true
+	}
+	return false
 }
 
 func isActiveVulnerability(v bd.Vulnerability) bool {

@@ -62,9 +62,10 @@ type Components struct {
 }
 
 type Component struct {
-	Name     string `json:"componentName,omitempty"`
-	Version  string `json:"componentVersionName,omitempty"`
-	Metadata `json:"_meta,omitempty"`
+	Name         string `json:"componentName,omitempty"`
+	Version      string `json:"componentVersionName,omitempty"`
+	PolicyStatus string `json:"policyStatus,omitempty"`
+	Metadata     `json:"_meta,omitempty"`
 }
 
 type Vulnerabilities struct {
@@ -243,6 +244,38 @@ func (b *Client) GetComponents(projectName, versionName string) (*Components, er
 		return nil, errors.Wrapf(err, "failed to retrieve component details for project version '%v:%v'", projectName, versionName)
 	} else if components.TotalCount == 0 {
 		return nil, fmt.Errorf("No Components found for project version '%v:%v'", projectName, versionName)
+	}
+
+	//Just return the components, the details of the components are not necessary
+	return &components, nil
+}
+func (b *Client) GetComponentsWithLicensePolicyRule(projectName, versionName string) (*Components, error) {
+	projectVersion, err := b.GetProjectVersion(projectName, versionName)
+	if err != nil {
+		return nil, err
+	}
+
+	headers := http.Header{}
+	headers.Add("Accept", HEADER_BOM_V6)
+
+	var componentsPath string
+	for _, link := range projectVersion.Links {
+		if link.Rel == "components" {
+			componentsPath = urlPath(link.Href)
+			break
+		}
+	}
+
+	respBody, err := b.sendRequest("GET", componentsPath, map[string]string{"offset": "0", "limit": "999", "filter": "policyCategory:license"}, nil, headers)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to get components list for project version '%v:%v'", projectName, versionName)
+	}
+
+	components := Components{}
+	err = json.Unmarshal(respBody, &components)
+
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to retrieve component details for project version '%v:%v'", projectName, versionName)
 	}
 
 	//Just return the components, the details of the components are not necessary
