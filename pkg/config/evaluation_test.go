@@ -501,6 +501,32 @@ stages:
 			},
 			wantErr: true,
 		},
+		{
+			name: "test explicit activation / de-activation of step",
+			customConfig: &Config{
+				Stages: map[string]map[string]interface{}{
+					"testStage1": {
+						"firstStep":    true,
+						"fisecondStep": false,
+					},
+				},
+			},
+			stageConfig: ioutil.NopCloser(strings.NewReader(`
+stages:
+  testStage1:
+    stepConditions:
+      firstStep:
+        config: testGeneral
+      secondStep:
+        config: testStage
+`)),
+			runStepsExpected: map[string]map[string]bool{
+				"testStage1": {
+					"firstStep":  true,
+					"secondStep": false,
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
