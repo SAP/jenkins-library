@@ -372,7 +372,7 @@ func loadCertificates(certificateList []string, client piperhttp.Downloader, run
 			"-keystore", trustStoreFile,
 		}
 		tmpFolder := getTempDir()
-		os.MkdirAll(trustStorePath, 0700)
+		os.MkdirAll(trustStorePath, 0777)
 		defer os.RemoveAll(tmpFolder) // clean up
 
 		for _, certificate := range certificateList {
