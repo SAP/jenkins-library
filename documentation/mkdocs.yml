@@ -75,6 +75,7 @@ nav:
         - cloudFoundryCreateServiceKey: steps/cloudFoundryCreateServiceKey.md
         - cloudFoundryDeleteService: steps/cloudFoundryDeleteService.md
         - cloudFoundryDeploy: steps/cloudFoundryDeploy.md
+        - cnbBuild: steps/cnbBuild.md
         - commonPipelineEnvironment: steps/commonPipelineEnvironment.md
         - containerExecuteStructureTests: steps/containerExecuteStructureTests.md
         - containerPushToRegistry: steps/containerPushToRegistry.md
