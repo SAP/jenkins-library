@@ -146,3 +146,9 @@ func (tr *Toolrecord) Persist() error {
 	}
 	return nil
 }
+
+// Override the default generation for DisplayName & DisplayURL
+func (tr *Toolrecord) SetOverallDisplayData(newName, newURL string) {
+	tr.DisplayName = newName
+	tr.DisplayURL = newURL
+}
