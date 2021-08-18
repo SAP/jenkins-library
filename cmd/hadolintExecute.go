@@ -76,6 +76,13 @@ func runHadolint(config hadolintExecuteOptions, utils hadolintUtils) error {
 			TransportTimeout: 20 * time.Second,
 			TrustedCerts:     config.CustomTLSCertificateLinks,
 		}
+		if len(config.CustomTLSCertificateLinks) > 0 {
+			clientOptions = piperhttp.ClientOptions{
+				TransportTimeout: 20 * time.Second,
+				TrustedCerts:     config.CustomTLSCertificateLinks,
+			}
+		}
+
 		if len(config.ConfigurationUsername) > 0 {
 			clientOptions.Username = config.ConfigurationUsername
 			clientOptions.Password = config.ConfigurationPassword
