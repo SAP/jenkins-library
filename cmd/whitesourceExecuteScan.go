@@ -926,9 +926,6 @@ func persistScannedProjects(config *ScanOptions, scan *ws.Scan, commonPipelineEn
 
 // create toolrecord file for whitesource
 //
-// Limitation: as the toolrecord file is designed to point to one scan result this generate a pointer
-// to the product only, and not to the scanned projects
-//
 func createToolRecordWhitesource(workspace string, config *whitesourceExecuteScanOptions, scan *ws.Scan) (string, error) {
 	record := toolrecord.New(workspace, "whitesource", config.ServiceURL)
 	productURL := config.ServiceURL + "/Wss/WSS.html#!product;token=" + config.ProductToken
@@ -939,8 +936,24 @@ func createToolRecordWhitesource(workspace string, config *whitesourceExecuteSca
 	if err != nil {
 		return "", err
 	}
-	record.AddContext("scannedProjects", scan.ScannedProjectNames)
-	record.AddContext("configuredProject", config.ProjectName+" - "+config.Version)
+	for _, project := range scan.ScannedProjects() {
+		name := project.Name
+		token := project.Token
+		projectURL := ""
+		if token != "" {
+			projectURL = config.ServiceURL + "/Wss/WSS.html#!project;token=" + token
+		} else {
+			// token is empty, provide a dummy to have an indication
+			token = "unknown"
+		}
+		err = record.AddKeyData("project",
+			token,
+			name,
+			projectURL)
+		if err != nil {
+			return "", err
+		}
+	}
 	err = record.Persist()
 	if err != nil {
 		return "", err
