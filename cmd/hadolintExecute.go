@@ -73,14 +73,12 @@ func runHadolint(config hadolintExecuteOptions, utils hadolintUtils) error {
 	// load config file from URL
 	if !hasConfigurationFile(config.ConfigurationFile, utils) && len(config.ConfigurationURL) > 0 {
 		clientOptions := piperhttp.ClientOptions{
-			TransportTimeout: 20 * time.Second,
-			TrustedCerts:     config.CustomTLSCertificateLinks,
+			TransportTimeout:          20 * time.Second,
+			TransportSkipVerification: true,
 		}
 		if len(config.CustomTLSCertificateLinks) > 0 {
-			clientOptions = piperhttp.ClientOptions{
-				TransportTimeout: 20 * time.Second,
-				TrustedCerts:     config.CustomTLSCertificateLinks,
-			}
+			clientOptions.TransportSkipVerification = false
+			clientOptions.TrustedCerts = config.CustomTLSCertificateLinks
 		}
 
 		if len(config.ConfigurationUsername) > 0 {
