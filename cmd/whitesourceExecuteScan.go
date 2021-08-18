@@ -936,7 +936,9 @@ func createToolRecordWhitesource(workspace string, config *whitesourceExecuteSca
 	if err != nil {
 		return "", err
 	}
-	for _, project := range scan.ScannedProjects() {
+	max_idx := 0
+	for idx, project := range scan.ScannedProjects() {
+		max_idx = idx
 		name := project.Name
 		token := project.Token
 		projectURL := ""
@@ -953,6 +955,11 @@ func createToolRecordWhitesource(workspace string, config *whitesourceExecuteSca
 		if err != nil {
 			return "", err
 		}
+	}
+	// set overall display data to product if there
+	// is more than one project
+	if max_idx > 1 {
+		record.SetOverallDisplayData(config.ProductName, productURL)
 	}
 	err = record.Persist()
 	if err != nil {
