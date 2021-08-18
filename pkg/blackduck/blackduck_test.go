@@ -479,6 +479,23 @@ func TestGetPolicyStatus(t *testing.T) {
 	})
 }
 
+func TestGetProjectVersionLink(t *testing.T) {
+	t.Run("Success Case", func(t *testing.T) {
+		myTestClient := httpMockClient{
+			responseBodyForURL: map[string]string{
+				"https://my.blackduck.system/api/tokens/authenticate":                                    authContent,
+				"https://my.blackduck.system/api/projects?q=name%3ASHC-PiperTest":                        projectContent,
+				"https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions": projectVersionContent,
+			},
+			header: map[string]http.Header{},
+		}
+		bdClient := NewClient("token", "https://my.blackduck.system", &myTestClient)
+		link, err := bdClient.GetProjectVersionLink("SHC-PiperTest", "1.0")
+		assert.NoError(t, err)
+		assert.Equal(t, link, "https://my.blackduck.system/api/projects/5ca86e11-1983-4e7b-97d4-eb1a0aeffbbf/versions/a6c94786-0ee6-414f-9054-90d549c69c36")
+	})
+}
+
 func TestAuthenticate(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		myTestClient := httpMockClient{

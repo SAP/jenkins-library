@@ -196,23 +196,14 @@ func (b *Client) GetProjectVersion(projectName, projectVersion string) (*Project
 }
 
 func (b *Client) GetProjectVersionLink(projectName, versionName string) (string, error) {
-	project, err := b.GetProject(projectName)
+	projectVersion, err := b.GetProjectVersion(projectName, versionName)
 	if err != nil {
 		return "", err
 	}
-
-	headers := http.Header{}
-	headers.Add("Accept", HEADER_PROJECT_DETAILS_V4)
-
-	var versionPath string
-	for _, link := range project.Links {
-		if link.Rel == "versions" {
-			versionPath = link.Href
-			break
-		}
+	if projectVersion != nil {
+		return projectVersion.Href, nil
 	}
-
-	return versionPath, nil
+	return "", nil
 }
 
 func (b *Client) GetComponents(projectName, versionName string) (*Components, error) {
