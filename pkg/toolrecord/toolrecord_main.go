@@ -136,6 +136,10 @@ func (tr *Toolrecord) Persist() error {
 	if err != nil {
 		return fmt.Errorf("TR_PERSIST: %v", err)
 	}
+	// no json generated ?
+	if len(file) == 0 {
+		return fmt.Errorf("TR_PERSIST: empty json content")
+	}
 	err = ioutil.WriteFile(tr.GetFileName(), file, 0644)
 	if err != nil {
 		return fmt.Errorf("TR_PERSIST: %v", err)
