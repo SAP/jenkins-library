@@ -18,7 +18,7 @@ type Path struct {
 }
 
 // PersistReportsAndLinks stores the report paths and links in JSON format in the workspace for processing outside
-func PersistReportsAndLinks(stepName, workspace string, reports, links []Path, gcsClient gcs.ClientInterface, gcsBucketID string) {
+func PersistReportsAndLinks(stepName, workspace string, reports, links []Path, gcsClient gcs.ClientInterface) {
 	if reports == nil {
 		reports = []Path{}
 	}
@@ -51,7 +51,7 @@ func PersistReportsAndLinks(stepName, workspace string, reports, links []Path, g
 	// upload reports to Google Cloud Storage
 	if gcsClient != nil {
 		for _, report := range reports {
-			if err := gcsClient.UploadFile(gcsBucketID, report.Target, report.Target); err != nil {
+			if err := gcsClient.UploadFile(report.Target); err != nil {
 				log.Entry().Fatalln("Failed to upload report to GCS")
 			}
 		}

@@ -89,9 +89,6 @@ func UiVeri5ExecuteTestsCommand() *cobra.Command {
 			uiVeri5ExecuteTests(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
-			if GeneralConfig.GCSClient != nil {
-				GeneralConfig.GCSClient.Close()
-			}
 		},
 	}
 

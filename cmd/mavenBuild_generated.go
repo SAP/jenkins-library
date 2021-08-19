@@ -103,9 +103,6 @@ supports ci friendly versioning by flattening the pom before installing.`,
 			mavenBuild(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
-			if GeneralConfig.GCSClient != nil {
-				GeneralConfig.GCSClient.Close()
-			}
 		},
 	}
 

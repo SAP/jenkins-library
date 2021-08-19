@@ -44,6 +44,10 @@ type sonarExecuteScanOptions struct {
 	LegacyPRHandling          bool     `json:"legacyPRHandling,omitempty"`
 	GithubAPIURL              string   `json:"githubApiUrl,omitempty"`
 	M2Path                    string   `json:"m2Path,omitempty"`
+	UploadReportsToGCS        bool     `json:"uploadReportsToGCS,omitempty"`
+	GcpJSONKeyFilePath        string   `json:"gcpJsonKeyFilePath,omitempty"`
+	GcsTargetFolder           string   `json:"gcsTargetFolder,omitempty"`
+	GcsBucketID               string   `json:"gcsBucketId,omitempty"`
 }
 
 type sonarExecuteScanInflux struct {
@@ -127,6 +131,7 @@ func SonarExecuteScanCommand() *cobra.Command {
 			}
 			log.RegisterSecret(stepConfig.Token)
 			log.RegisterSecret(stepConfig.GithubToken)
+			log.RegisterSecret(stepConfig.GcpJSONKeyFilePath)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -166,9 +171,6 @@ func SonarExecuteScanCommand() *cobra.Command {
 			sonarExecuteScan(stepConfig, &telemetryData, &influx)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
-			if GeneralConfig.GCSClient != nil {
-				GeneralConfig.GCSClient.Close()
-			}
 		},
 	}
 
@@ -204,7 +206,12 @@ func addSonarExecuteScanFlags(cmd *cobra.Command, stepConfig *sonarExecuteScanOp
 	cmd.Flags().BoolVar(&stepConfig.LegacyPRHandling, "legacyPRHandling", false, "Pull-Request only: Activates the pull-request handling using the [GitHub Plugin](https://docs.sonarqube.org/display/PLUG/GitHub+Plugin). DEPRECATED: only supported in SonarQube < 7.2")
 	cmd.Flags().StringVar(&stepConfig.GithubAPIURL, "githubApiUrl", `https://api.github.com`, "Pull-Request only: The URL to the Github API. See [GitHub plugin docs](https://docs.sonarqube.org/display/PLUG/GitHub+Plugin#GitHubPlugin-Usage) DEPRECATED: only supported in SonarQube < 7.2")
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
+	cmd.Flags().BoolVar(&stepConfig.UploadReportsToGCS, "uploadReportsToGCS", false, "Enables uploading reports to Google Cloud Storage bucket.")
+	cmd.Flags().StringVar(&stepConfig.GcpJSONKeyFilePath, "gcpJsonKeyFilePath", os.Getenv("PIPER_gcpJsonKeyFilePath"), "File path to Google Cloud Platform JSON key file.")
+	cmd.Flags().StringVar(&stepConfig.GcsTargetFolder, "gcsTargetFolder", os.Getenv("PIPER_gcsTargetFolder"), "Target folder in the GCS. If the value is empty, the source path is used.")
+	cmd.Flags().StringVar(&stepConfig.GcsBucketID, "gcsBucketId", os.Getenv("PIPER_gcsBucketId"), "Bucket name for Google Cloud Storage.")
 
+	cmd.MarkFlagRequired("gcsBucketId")
 }
 
 // retrieve step metadata
@@ -220,6 +227,7 @@ func sonarExecuteScanMetadata() config.StepData {
 				Secrets: []config.StepSecrets{
 					{Name: "sonarTokenCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing the token used to authenticate with the Sonar Server.", Type: "jenkins"},
 					{Name: "githubTokenCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing the token used to authenticate with the Github Server.", Type: "jenkins"},
+					{Name: "gcpFileCredentialsId", Description: "Jenkins 'File' credentials ID containing the key file to authenticate to the Google Cloud Platform.", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{
@@ -501,6 +509,59 @@ func sonarExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
 						Default:     os.Getenv("PIPER_m2Path"),
+					},
+					{
+						Name:        "uploadReportsToGCS",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name: "gcpJsonKeyFilePath",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name: "gcpFileCredentialsId",
+								Type: "secret",
+							},
+
+							{
+								Name:  "",
+								Paths: []string{"$(vaultPath)/gcp", "$(vaultBasePath)/$(vaultPipelineName)/gcp", "$(vaultBasePath)/GROUP-SECRETS/gcp"},
+								Type:  "vaultSecretFile",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_gcpJsonKeyFilePath"),
+					},
+					{
+						Name:        "gcsTargetFolder",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_gcsTargetFolder"),
+					},
+					{
+						Name: "gcsBucketId",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "",
+								Paths: []string{"$(vaultPath)/gcp", "$(vaultBasePath)/$(vaultPipelineName)/gcp", "$(vaultBasePath)/GROUP-SECRETS/gcp"},
+								Type:  "vaultSecret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_gcsBucketId"),
 					},
 				},
 			},

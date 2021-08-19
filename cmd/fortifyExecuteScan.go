@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/SAP/jenkins-library/pkg/gcs"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 
 	"github.com/bmatcuk/doublestar"
@@ -80,9 +81,22 @@ func fortifyExecuteScan(config fortifyExecuteScanOptions, telemetryData *telemet
 	sys := fortify.NewSystemInstance(config.ServerURL, config.APIEndpoint, config.AuthToken, time.Minute*15)
 	utils := newFortifyUtilsBundle()
 
+	var gcsClient gcs.ClientInterface
+	if config.UploadReportsToGCS {
+		gcpJsonKeyFilePath := config.GcpJSONKeyFilePath
+		if gcpJsonKeyFilePath == "" {
+			log.Entry().WithError(errors.New("GCP JSON Key file Path must not be empty")).Fatal("Execution failed")
+		}
+		var err error
+		envVars := []gcs.EnvVar{{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath}}
+		if gcsClient, err = gcs.NewClient(envVars, gcs.OpenFileFromFS, gcs.CreateFileOnFS, config.GcsBucketID, config.GcsTargetFolder); err != nil {
+			log.Entry().WithError(err).Fatal("Execution failed")
+		}
+	}
+
 	influx.step_data.fields.fortify = false
 	reports, err := runFortifyScan(config, sys, utils, telemetryData, influx, auditStatus)
-	piperutils.PersistReportsAndLinks("fortifyExecuteScan", config.ModulePath, reports, nil, GeneralConfig.GCSClient, GeneralConfig.CorrelationID)
+	piperutils.PersistReportsAndLinks("fortifyExecuteScan", config.ModulePath, reports, nil, gcsClient)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Fortify scan and check failed")
 	}

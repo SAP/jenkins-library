@@ -90,9 +90,6 @@ func IntegrationArtifactUpdateConfigurationCommand() *cobra.Command {
 			integrationArtifactUpdateConfiguration(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
-			if GeneralConfig.GCSClient != nil {
-				GeneralConfig.GCSClient.Close()
-			}
 		},
 	}
 

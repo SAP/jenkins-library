@@ -94,9 +94,6 @@ You will be able to use this step for example for regular jobs to report into yo
 			githubCreateIssue(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
-			if GeneralConfig.GCSClient != nil {
-				GeneralConfig.GCSClient.Close()
-			}
 		},
 	}
 

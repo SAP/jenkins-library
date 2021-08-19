@@ -96,9 +96,6 @@ gctsRollback will rollback to the previously active commit in the local reposito
 			gctsRollback(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
-			if GeneralConfig.GCSClient != nil {
-				GeneralConfig.GCSClient.Close()
-			}
 		},
 	}
 

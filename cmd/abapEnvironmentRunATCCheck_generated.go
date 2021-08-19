@@ -26,6 +26,10 @@ type abapEnvironmentRunATCCheckOptions struct {
 	Host               string `json:"host,omitempty"`
 	AtcResultsFileName string `json:"atcResultsFileName,omitempty"`
 	GenerateHTML       bool   `json:"generateHTML,omitempty"`
+	UploadReportsToGCS bool   `json:"uploadReportsToGCS,omitempty"`
+	GcpJSONKeyFilePath string `json:"gcpJsonKeyFilePath,omitempty"`
+	GcsTargetFolder    string `json:"gcsTargetFolder,omitempty"`
+	GcsBucketID        string `json:"gcsBucketId,omitempty"`
 }
 
 // AbapEnvironmentRunATCCheckCommand Runs an ATC Check
@@ -66,6 +70,7 @@ Regardless of the option you chose, please make sure to provide the configuratio
 			}
 			log.RegisterSecret(stepConfig.Username)
 			log.RegisterSecret(stepConfig.Password)
+			log.RegisterSecret(stepConfig.GcpJSONKeyFilePath)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -104,9 +109,6 @@ Regardless of the option you chose, please make sure to provide the configuratio
 			abapEnvironmentRunATCCheck(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
-			if GeneralConfig.GCSClient != nil {
-				GeneralConfig.GCSClient.Close()
-			}
 		},
 	}
 
@@ -126,10 +128,15 @@ func addAbapEnvironmentRunATCCheckFlags(cmd *cobra.Command, stepConfig *abapEnvi
 	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP Cloud Platform ABAP Environment system")
 	cmd.Flags().StringVar(&stepConfig.AtcResultsFileName, "atcResultsFileName", `ATCResults.xml`, "Specifies output file name for the results from the ATC run. This file name will also be used for generating the HTML file")
 	cmd.Flags().BoolVar(&stepConfig.GenerateHTML, "generateHTML", false, "Specifies whether the ATC results should also be generated as an HTML document")
+	cmd.Flags().BoolVar(&stepConfig.UploadReportsToGCS, "uploadReportsToGCS", false, "Enables uploading reports to Google Cloud Storage bucket.")
+	cmd.Flags().StringVar(&stepConfig.GcpJSONKeyFilePath, "gcpJsonKeyFilePath", os.Getenv("PIPER_gcpJsonKeyFilePath"), "File path to Google Cloud Platform JSON key file.")
+	cmd.Flags().StringVar(&stepConfig.GcsTargetFolder, "gcsTargetFolder", os.Getenv("PIPER_gcsTargetFolder"), "Target folder in the GCS. If the value is empty, the source path is used.")
+	cmd.Flags().StringVar(&stepConfig.GcsBucketID, "gcsBucketId", os.Getenv("PIPER_gcsBucketId"), "Bucket name for Google Cloud Storage.")
 
 	cmd.MarkFlagRequired("atcConfig")
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
+	cmd.MarkFlagRequired("gcsBucketId")
 }
 
 // retrieve step metadata
@@ -256,6 +263,59 @@ func abapEnvironmentRunATCCheckMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     false,
+					},
+					{
+						Name:        "uploadReportsToGCS",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name: "gcpJsonKeyFilePath",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name: "gcpFileCredentialsId",
+								Type: "secret",
+							},
+
+							{
+								Name:  "",
+								Paths: []string{"$(vaultPath)/gcp", "$(vaultBasePath)/$(vaultPipelineName)/gcp", "$(vaultBasePath)/GROUP-SECRETS/gcp"},
+								Type:  "vaultSecretFile",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_gcpJsonKeyFilePath"),
+					},
+					{
+						Name:        "gcsTargetFolder",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_gcsTargetFolder"),
+					},
+					{
+						Name: "gcsBucketId",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "",
+								Paths: []string{"$(vaultPath)/gcp", "$(vaultBasePath)/$(vaultPipelineName)/gcp", "$(vaultBasePath)/GROUP-SECRETS/gcp"},
+								Type:  "vaultSecret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_gcsBucketId"),
 					},
 				},
 			},

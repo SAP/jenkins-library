@@ -116,9 +116,6 @@ If an image for mavenExecute is configured, and npm packages are to be published
 			nexusUpload(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
-			if GeneralConfig.GCSClient != nil {
-				GeneralConfig.GCSClient.Close()
-			}
 		},
 	}
 

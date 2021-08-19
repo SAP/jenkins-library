@@ -95,9 +95,6 @@ It can for example be used to verify if certain status checks are mandatory. Thi
 			githubCheckBranchProtection(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
-			if GeneralConfig.GCSClient != nil {
-				GeneralConfig.GCSClient.Close()
-			}
 		},
 	}
 

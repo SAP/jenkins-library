@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"cloud.google.com/go/storage"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -15,19 +16,21 @@ import (
 
 // GCSClientInterface is an interface to mock GCSClient
 type ClientInterface interface {
-	UploadFile(bucketID string, sourcePath string, targetPath string) error
-	DownloadFile(bucketID string, sourcePath string, targetPath string) error
-	ListFiles(bucketID string) ([]string, error)
+	UploadFile(sourcePath string) error
+	DownloadFile(sourcePath string) error
+	ListFiles() ([]string, error)
 	Close() error
 }
 
 // GCSClient provides functions to interact with google cloud storage API
 type gcsClient struct {
-	envVars    []EnvVar
-	context    context.Context
-	client     storage.Client
-	openFile   func(name string) (io.ReadCloser, error)
-	createFile func(name string) (io.WriteCloser, error)
+	envVars      []EnvVar
+	context      context.Context
+	client       storage.Client
+	openFile     func(name string) (io.ReadCloser, error)
+	createFile   func(name string) (io.WriteCloser, error)
+	bucketID     string
+	targetFolder string
 }
 
 // EnvVar defines an  environment variable incl. information about a potential modification to the variable
@@ -39,13 +42,18 @@ type EnvVar struct {
 
 // Init intitializes the google cloud storage client
 func NewClient(envVars []EnvVar, openFile func(name string) (io.ReadCloser, error), createFile func(name string) (io.WriteCloser, error),
-	opts ...option.ClientOption) (*gcsClient, error) {
+	bucketID string, targetFolder string, opts ...option.ClientOption) (*gcsClient, error) {
+	if bucketID == "" {
+		return nil, errors.New("bucketID mustn't be empty")
+	}
 	ctx := context.Background()
 	gcsClient := gcsClient{
-		context:    ctx,
-		envVars:    envVars,
-		openFile:   openFile,
-		createFile: createFile,
+		context:      ctx,
+		envVars:      envVars,
+		openFile:     openFile,
+		createFile:   createFile,
+		bucketID:     bucketID,
+		targetFolder: targetFolder,
 	}
 	gcsClient.prepareEnv()
 	client, err := storage.NewClient(ctx, opts...)
@@ -74,8 +82,9 @@ func (g *gcsClient) cleanupEnv() error {
 }
 
 // UploadFile uploads a file into a google cloud storage bucket
-func (g *gcsClient) UploadFile(bucketID string, sourcePath string, targetPath string) error {
-	target := g.client.Bucket(bucketID).Object(targetPath).NewWriter(g.context)
+func (g *gcsClient) UploadFile(sourcePath string) error {
+	targetPath := strings.Trim(g.targetFolder, "/") + "/" + strings.TrimPrefix(sourcePath, "/")
+	target := g.client.Bucket(g.bucketID).Object(targetPath).NewWriter(g.context)
 	log.Entry().Debugf("uploading %v to %v\n", sourcePath, targetPath)
 	sourceFile, err := g.openFile(sourcePath)
 	if err != nil {
@@ -101,9 +110,10 @@ func (g *gcsClient) copy(source io.Reader, target io.Writer) error {
 }
 
 // DownloadFile downloads a file from a google cloud storage bucket
-func (g *gcsClient) DownloadFile(bucketID string, sourcePath string, targetPath string) error {
+func (g *gcsClient) DownloadFile(sourcePath string) error {
+	targetPath := strings.TrimPrefix(sourcePath, "/")
 	log.Entry().Debugf("downloading %v to %v\n", sourcePath, targetPath)
-	gcsReader, err := g.client.Bucket(bucketID).Object(sourcePath).NewReader(g.context)
+	gcsReader, err := g.client.Bucket(g.bucketID).Object(sourcePath).NewReader(g.context)
 	if err != nil {
 		return errors.Wrapf(err, "could not open source file from a google cloud storage bucket: %v", err)
 	}
@@ -124,9 +134,9 @@ func (g *gcsClient) DownloadFile(bucketID string, sourcePath string, targetPath 
 }
 
 // ListFiles lists all files in certain cumulus bucket
-func (g *gcsClient) ListFiles(bucketID string) ([]string, error) {
+func (g *gcsClient) ListFiles() ([]string, error) {
 	fileNames := []string{}
-	it := g.client.Bucket(bucketID).Objects(g.context, nil)
+	it := g.client.Bucket(g.bucketID).Objects(g.context, nil)
 	for {
 		attrs, err := it.Next()
 		if err == iterator.Done {

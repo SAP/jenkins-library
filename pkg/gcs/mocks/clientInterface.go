@@ -23,13 +23,13 @@ func (_m *ClientInterface) Close() error {
 	return r0
 }
 
-// DownloadFile provides a mock function with given fields: bucketID, sourcePath, targetPath
-func (_m *ClientInterface) DownloadFile(bucketID string, sourcePath string, targetPath string) error {
-	ret := _m.Called(bucketID, sourcePath, targetPath)
+// DownloadFile provides a mock function with given fields: sourcePath
+func (_m *ClientInterface) DownloadFile(sourcePath string) error {
+	ret := _m.Called(sourcePath)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string, string, string) error); ok {
-		r0 = rf(bucketID, sourcePath, targetPath)
+	if rf, ok := ret.Get(0).(func(string) error); ok {
+		r0 = rf(sourcePath)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -37,13 +37,13 @@ func (_m *ClientInterface) DownloadFile(bucketID string, sourcePath string, targ
 	return r0
 }
 
-// ListFiles provides a mock function with given fields: bucketID
-func (_m *ClientInterface) ListFiles(bucketID string) ([]string, error) {
-	ret := _m.Called(bucketID)
+// ListFiles provides a mock function with given fields:
+func (_m *ClientInterface) ListFiles() ([]string, error) {
+	ret := _m.Called()
 
 	var r0 []string
-	if rf, ok := ret.Get(0).(func(string) []string); ok {
-		r0 = rf(bucketID)
+	if rf, ok := ret.Get(0).(func() []string); ok {
+		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]string)
@@ -51,8 +51,8 @@ func (_m *ClientInterface) ListFiles(bucketID string) ([]string, error) {
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(bucketID)
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -60,13 +60,13 @@ func (_m *ClientInterface) ListFiles(bucketID string) ([]string, error) {
 	return r0, r1
 }
 
-// UploadFile provides a mock function with given fields: bucketID, sourcePath, targetPath
-func (_m *ClientInterface) UploadFile(bucketID string, sourcePath string, targetPath string) error {
-	ret := _m.Called(bucketID, sourcePath, targetPath)
+// UploadFile provides a mock function with given fields: sourcePath
+func (_m *ClientInterface) UploadFile(sourcePath string) error {
+	ret := _m.Called(sourcePath)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string, string, string) error); ok {
-		r0 = rf(bucketID, sourcePath, targetPath)
+	if rf, ok := ret.Get(0).(func(string) error); ok {
+		r0 = rf(sourcePath)
 	} else {
 		r0 = ret.Error(0)
 	}

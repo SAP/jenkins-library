@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/gcs"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/orchestrator"
@@ -94,8 +95,21 @@ func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, i
 		options:     []string{},
 	}
 
+	var gcsClient gcs.ClientInterface
+	if config.UploadReportsToGCS {
+		gcpJsonKeyFilePath := config.GcpJSONKeyFilePath
+		if gcpJsonKeyFilePath == "" {
+			log.Entry().WithError(errors.New("GCP JSON Key file Path must not be empty")).Fatal("Execution failed")
+		}
+		var err error
+		envVars := []gcs.EnvVar{{Name: "GOOGLE_APPLICATION_CREDENTIALS", Value: gcpJsonKeyFilePath}}
+		if gcsClient, err = gcs.NewClient(envVars, gcs.OpenFileFromFS, gcs.CreateFileOnFS, config.GcsBucketID, config.GcsTargetFolder); err != nil {
+			log.Entry().WithError(err).Fatal("Execution failed")
+		}
+	}
+
 	influx.step_data.fields.sonar = false
-	if err := runSonar(config, downloadClient, &runner, apiClient, influx); err != nil {
+	if err := runSonar(config, downloadClient, &runner, apiClient, influx, gcsClient); err != nil {
 		if log.GetErrorCategory() == log.ErrorUndefined && runner.GetExitCode() == 2 {
 			// see https://github.com/SonarSource/sonar-scanner-cli/blob/adb67d645c3bcb9b46f29dea06ba082ebec9ba7a/src/main/java/org/sonarsource/scanner/cli/Exit.java#L25
 			log.SetErrorCategory(log.ErrorConfiguration)
@@ -105,7 +119,7 @@ func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, i
 	influx.step_data.fields.sonar = true
 }
 
-func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runner command.ExecRunner, apiClient SonarUtils.Sender, influx *sonarExecuteScanInflux) error {
+func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runner command.ExecRunner, apiClient SonarUtils.Sender, influx *sonarExecuteScanInflux, gcsClient gcs.ClientInterface) error {
 	// Set config based on orchestrator-specific environment variables
 	detectParametersFromCI(&config)
 
@@ -198,7 +212,7 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 		},
 	}
 
-	StepResults.PersistReportsAndLinks("sonarExecuteScan", sonar.workingDir, nil, links, GeneralConfig.GCSClient, GeneralConfig.CorrelationID)
+	StepResults.PersistReportsAndLinks("sonarExecuteScan", sonar.workingDir, nil, links, gcsClient)
 
 	if len(config.Token) == 0 {
 		log.Entry().Warn("no measurements are fetched due to missing credentials")

@@ -771,7 +771,7 @@ func TestAggregateVersionWideLibraries(t *testing.T) {
 		utils := newWhitesourceUtilsMock()
 		system := ws.NewSystemMock("2010-05-30 00:15:00 +0100")
 		// test
-		err := aggregateVersionWideLibraries(config, utils, system)
+		err := aggregateVersionWideLibraries(config, utils, system, nil)
 		// assert
 		resource := filepath.Join(ws.ReportsDirectory, "libraries-20100510-001542.csv")
 		if assert.NoError(t, err) && assert.True(t, utils.HasWrittenFile(resource)) {
@@ -794,7 +794,7 @@ func TestAggregateVersionWideVulnerabilities(t *testing.T) {
 		utils := newWhitesourceUtilsMock()
 		system := ws.NewSystemMock("2010-05-30 00:15:00 +0100")
 		// test
-		err := aggregateVersionWideVulnerabilities(config, utils, system)
+		err := aggregateVersionWideVulnerabilities(config, utils, system, nil)
 		// assert
 		resource := filepath.Join(ws.ReportsDirectory, "project-names-aggregated.txt")
 		assert.NoError(t, err)

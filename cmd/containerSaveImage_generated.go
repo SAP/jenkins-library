@@ -90,9 +90,6 @@ It can be used no matter if a Docker daemon is available or not. It will also wo
 			containerSaveImage(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
-			if GeneralConfig.GCSClient != nil {
-				GeneralConfig.GCSClient.Close()
-			}
 		},
 	}
 

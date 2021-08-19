@@ -94,9 +94,6 @@ This comes in very handy when you want to make developers aware of certain thing
 			githubCommentIssue(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
-			if GeneralConfig.GCSClient != nil {
-				GeneralConfig.GCSClient.Close()
-			}
 		},
 	}
 

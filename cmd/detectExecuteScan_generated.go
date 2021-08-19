@@ -41,6 +41,10 @@ type detectExecuteScanOptions struct {
 	DetectTools                []string `json:"detectTools,omitempty"`
 	ScanOnChanges              bool     `json:"scanOnChanges,omitempty"`
 	CustomEnvironmentVariables []string `json:"customEnvironmentVariables,omitempty"`
+	UploadReportsToGCS         bool     `json:"uploadReportsToGCS,omitempty"`
+	GcpJSONKeyFilePath         string   `json:"gcpJsonKeyFilePath,omitempty"`
+	GcsTargetFolder            string   `json:"gcsTargetFolder,omitempty"`
+	GcsBucketID                string   `json:"gcsBucketId,omitempty"`
 }
 
 type detectExecuteScanInflux struct {
@@ -125,6 +129,7 @@ Please configure your BlackDuck server Url using the serverUrl parameter and the
 				return err
 			}
 			log.RegisterSecret(stepConfig.Token)
+			log.RegisterSecret(stepConfig.GcpJSONKeyFilePath)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -164,9 +169,6 @@ Please configure your BlackDuck server Url using the serverUrl parameter and the
 			detectExecuteScan(stepConfig, &telemetryData, &influx)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
-			if GeneralConfig.GCSClient != nil {
-				GeneralConfig.GCSClient.Close()
-			}
 		},
 	}
 
@@ -199,10 +201,15 @@ func addDetectExecuteScanFlags(cmd *cobra.Command, stepConfig *detectExecuteScan
 	cmd.Flags().StringSliceVar(&stepConfig.DetectTools, "detectTools", []string{}, "The type of BlackDuck scanners to include while running the BlackDuck scan. By default All scanners are included. For the complete list of possible values, Please refer [Synopsys detect documentation](https://synopsys.atlassian.net/wiki/spaces/INTDOCS/pages/631407160/Configuring+Detect+General+Properties#Detect-tools-included)")
 	cmd.Flags().BoolVar(&stepConfig.ScanOnChanges, "scanOnChanges", false, "This flag determines if the scan is submitted to the server. If set to true, then the scan request is submitted to the server only when changes are detected in the Open Source Bill of Materials If the flag is set to false, then the scan request is submitted to server regardless of any changes. For more details please refer to the [documentation](https://github.com/blackducksoftware/detect_rescan/blob/master/README.md)")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomEnvironmentVariables, "customEnvironmentVariables", []string{}, "A list of environment variables which can be set to prepare the environment to run a BlackDuck scan.")
+	cmd.Flags().BoolVar(&stepConfig.UploadReportsToGCS, "uploadReportsToGCS", false, "Enables uploading reports to Google Cloud Storage bucket.")
+	cmd.Flags().StringVar(&stepConfig.GcpJSONKeyFilePath, "gcpJsonKeyFilePath", os.Getenv("PIPER_gcpJsonKeyFilePath"), "File path to Google Cloud Platform JSON key file.")
+	cmd.Flags().StringVar(&stepConfig.GcsTargetFolder, "gcsTargetFolder", os.Getenv("PIPER_gcsTargetFolder"), "Target folder in the GCS. If the value is empty, the source path is used.")
+	cmd.Flags().StringVar(&stepConfig.GcsBucketID, "gcsBucketId", os.Getenv("PIPER_gcsBucketId"), "Bucket name for Google Cloud Storage.")
 
 	cmd.MarkFlagRequired("token")
 	cmd.MarkFlagRequired("projectName")
 	cmd.MarkFlagRequired("serverUrl")
+	cmd.MarkFlagRequired("gcsBucketId")
 }
 
 // retrieve step metadata
@@ -454,6 +461,59 @@ func detectExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     []string{},
+					},
+					{
+						Name:        "uploadReportsToGCS",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name: "gcpJsonKeyFilePath",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name: "gcpFileCredentialsId",
+								Type: "secret",
+							},
+
+							{
+								Name:  "",
+								Paths: []string{"$(vaultPath)/gcp", "$(vaultBasePath)/$(vaultPipelineName)/gcp", "$(vaultBasePath)/GROUP-SECRETS/gcp"},
+								Type:  "vaultSecretFile",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_gcpJsonKeyFilePath"),
+					},
+					{
+						Name:        "gcsTargetFolder",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_gcsTargetFolder"),
+					},
+					{
+						Name: "gcsBucketId",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "",
+								Paths: []string{"$(vaultPath)/gcp", "$(vaultBasePath)/$(vaultPipelineName)/gcp", "$(vaultBasePath)/GROUP-SECRETS/gcp"},
+								Type:  "vaultSecret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_gcsBucketId"),
 					},
 				},
 			},
