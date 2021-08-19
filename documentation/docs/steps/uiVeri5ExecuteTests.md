@@ -62,9 +62,9 @@ exports.config = {
         'sapcloud-form': {
             user: '\${params.user}',
             pass: '\${params.pass}',
-            userFieldSelector: 'input[name="username"]',
-            passFieldSelector: 'input[name="password"]',
-            logonButtonSelector: 'input[type="submit"]',
+            userFieldSelector: 'input[id="j_username"]',
+            passFieldSelector: 'input[id="j_password"]',
+            logonButtonSelector: 'button[type="submit"]',
             redirectUrl: /cp.portal\/site/
         }
     }
@@ -73,7 +73,7 @@ exports.config = {
 
 While default values for `baseUrl`, `user` and `pass` are read from the environment, they can also be overridden when calling the CLI.
 
-In a custom Pipeline, this is very simple: Just wrap the call to `uiVeri5ExecuteTests` in `withCredentials` (`TARGET_SERVER_URL` is read from `config.yml`):
+In a custom Pipeline, this is very simple: Just wrap the call to `uiVeri5ExecuteTests` in `withCredentials`:
 
 ```groovy
 withCredentials([usernamePassword(
@@ -81,9 +81,25 @@ withCredentials([usernamePassword(
     passwordVariable: 'password',
     usernameVariable: 'username'
 )]) {
-    uiVeri5ExecuteTests script: this, runOptions: ["./uiveri5/conf.js", "--params.user=\${username}", "--params.pass=\${password}"]
+    uiVeri5ExecuteTests script: this, runOptions: ["--baseURL=NEW_BASE_URL", "--params.user=${username}", "--params.pass=${password}", "--seleniumAddress=http://localhost:4444/wd/hub", "./uiveri5/conf.js"]
 }
 ```
+
+**Please note:** It is not recommended to override any secrets with the runOptions, because they may be seen in the Jenkins pipeline run console output. During the `withCredentials` call, the credentials are written to the environment and can be accessed by the test code.
+
+The following example shows the recommended way to handle the username and password for a uiVeri5ExecuteTests call that needs authentication. The `passwordVariable` and `usernameVariable` need to match the environment variables in the test code.
+
+```groovy
+withCredentials([usernamePassword(
+    credentialsId: 'MY_ACCEPTANCE_CREDENTIALS',
+    passwordVariable: 'TEST_PASS',
+    usernameVariable: 'TEST_USER'
+)]) {
+    uiVeri5ExecuteTests script: this, runOptions: ["--seleniumAddress=http://localhost:4444/wd/hub", "./uiveri5/conf.js"]
+}
+```
+
+There is also the option to use [vault for test credentials](https://www.project-piper.io/infrastructure/vault/#using-vault-for-test-credentials).
 
 In a Pipeline Template, a [Stage Exit](../extensibility/#1-extend-individual-stages) can be used to fetch the credentials and store them in the environment. As the environment is passed down to uiVeri5ExecuteTests, the variables will be present there. This is an example for the stage exit `.pipeline/extensions/Acceptance.groovy` where the `credentialsId` is read from the `config.yml`:
 
