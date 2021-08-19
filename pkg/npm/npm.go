@@ -360,7 +360,8 @@ func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
 	if len(packageJSONFiles) > 0 {
 		path := filepath.Dir(packageJSONFiles[0])
 		createBOMConfig := []string{
-			"--schema", "1.2", // Target schema version
+			// https://github.com/CycloneDX/cyclonedx-node-module does not contain schema parameter hence bom creation fails
+			//"--schema", "1.2", // Target schema version
 			"--include-license-text", "false",
 			"--include-dev", "false", // Include devDependencies
 			"--output", "bom.xml",
