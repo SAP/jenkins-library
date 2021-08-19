@@ -81,7 +81,7 @@ withCredentials([usernamePassword(
     passwordVariable: 'password',
     usernameVariable: 'username'
 )]) {
-    uiVeri5ExecuteTests script: this, runOptions: ["--baseURL=NEW_BASE_URL", "--params.user=\${username}", "--params.pass=\${password}", "--seleniumAddress=http://localhost:4444/wd/hub", "./uiveri5/conf.js"]
+    uiVeri5ExecuteTests script: this, runOptions: ["--baseURL=NEW_BASE_URL", "--params.user=${username}", "--params.pass=${password}", "--seleniumAddress=http://localhost:4444/wd/hub", "./uiveri5/conf.js"]
 }
 ```
 
