@@ -2,6 +2,8 @@ package http
 
 import (
 	"bytes"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/xml"
 	"errors"
@@ -393,6 +395,28 @@ func TestTransportSkipVerification(t *testing.T) {
 			assert.NoError(t, err)
 		}
 	}
+}
+
+func TestTransportWithCertifacteAdded(t *testing.T) {
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		io.WriteString(w, "Hello")
+	}))
+	defer server.Close()
+
+	certs := x509.NewCertPool()
+	for _, c := range server.TLS.Certificates {
+		roots, err := x509.ParseCertificates(c.Certificate[len(c.Certificate)-1])
+		if err != nil {
+			println("error parsing server's root cert: %v", err)
+		}
+		for _, root := range roots {
+			certs.AddCert(root)
+		}
+	}
+	client := http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{RootCAs: certs, InsecureSkipVerify: false}}}
+	_, err := client.Get(server.URL)
+	// assert
+	assert.NoError(t, err)
 }
 
 func TestMaxRetries(t *testing.T) {
