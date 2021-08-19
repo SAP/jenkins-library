@@ -10,6 +10,9 @@ spec:
       - name: configurationCredentialsId
         type: jenkins
         description: Jenkins 'Username with password' credentials ID containing username/password for access to your remote configuration file.
+      - name: gcpFileCredentialsId
+        description: "Jenkins 'File' credentials ID containing the key file to authenticate to the Google Cloud Platform."
+        type: jenkins
     params:
       - name: configurationUrl
         type: string

@@ -224,6 +224,7 @@ func detectExecuteScanMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
 					{Name: "detectTokenCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing the API token used to authenticate with the Synopsis Detect (formerly BlackDuck) Server.", Type: "jenkins", Aliases: []config.Alias{{Name: "apiTokenCredentialsId", Deprecated: false}}},
+					{Name: "gcpFileCredentialsId", Description: "Jenkins 'File' credentials ID containing the key file to authenticate to the Google Cloud Platform.", Type: "jenkins"},
 				},
 				Resources: []config.StepResources{
 					{Name: "buildDescriptor", Type: "stash"},

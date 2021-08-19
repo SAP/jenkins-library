@@ -273,7 +273,7 @@ spec:
           - PARAMETERS
         aliases:
           - name: maven/m2Path
-      
+
       # parameters for Google Cloud Platform settings. Need for uploading reports to GCS
       - name: uploadReportsToGCS
         type: bool

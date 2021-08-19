@@ -295,6 +295,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 				Secrets: []config.StepSecrets{
 					{Name: "userTokenCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing Whitesource user token.", Type: "jenkins", Aliases: []config.Alias{{Name: "whitesourceUserTokenCredentialsId", Deprecated: false}, {Name: "whitesource/userTokenCredentialsId", Deprecated: true}}},
 					{Name: "orgAdminUserTokenCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing Whitesource org admin token.", Type: "jenkins", Aliases: []config.Alias{{Name: "whitesourceOrgAdminUserTokenCredentialsId", Deprecated: false}, {Name: "whitesource/orgAdminUserTokenCredentialsId", Deprecated: true}}},
+					{Name: "gcpFileCredentialsId", Description: "Jenkins 'File' credentials ID containing the key file to authenticate to the Google Cloud Platform.", Type: "jenkins"},
 				},
 				Resources: []config.StepResources{
 					{Name: "buildDescriptor", Type: "stash"},

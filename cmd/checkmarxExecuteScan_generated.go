@@ -312,6 +312,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
 					{Name: "checkmarxCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing username and password to communicate with the Checkmarx backend.", Type: "jenkins"},
+					{Name: "gcpFileCredentialsId", Description: "Jenkins 'File' credentials ID containing the key file to authenticate to the Google Cloud Platform.", Type: "jenkins"},
 				},
 				Resources: []config.StepResources{
 					{Name: "checkmarx", Type: "stash"},

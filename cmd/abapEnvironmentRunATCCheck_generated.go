@@ -151,6 +151,7 @@ func abapEnvironmentRunATCCheckMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
 					{Name: "abapCredentialsId", Description: "Jenkins credentials ID containing user and password to authenticate to the Cloud Platform ABAP Environment system or the Cloud Foundry API", Type: "jenkins", Aliases: []config.Alias{{Name: "cfCredentialsId", Deprecated: false}}},
+					{Name: "gcpFileCredentialsId", Description: "Jenkins 'File' credentials ID containing the key file to authenticate to the Google Cloud Platform.", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{

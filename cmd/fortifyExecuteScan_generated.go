@@ -312,6 +312,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 				Secrets: []config.StepSecrets{
 					{Name: "fortifyCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing token to authenticate to Fortify SSC.", Type: "jenkins"},
 					{Name: "githubTokenCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.", Type: "jenkins"},
+					{Name: "gcpFileCredentialsId", Description: "Jenkins 'File' credentials ID containing the key file to authenticate to the Google Cloud Platform.", Type: "jenkins"},
 				},
 				Resources: []config.StepResources{
 					{Name: "commonPipelineEnvironment"},

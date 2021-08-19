@@ -18,6 +18,9 @@ spec:
           - name: cfCredentialsId
         description: Jenkins credentials ID containing user and password to authenticate to the Cloud Platform ABAP Environment system or the Cloud Foundry API
         type: jenkins
+      - name: gcpFileCredentialsId
+        description: "Jenkins 'File' credentials ID containing the key file to authenticate to the Google Cloud Platform."
+        type: jenkins
     params:
       - name: atcConfig
         type: string

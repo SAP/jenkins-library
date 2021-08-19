@@ -134,6 +134,7 @@ func hadolintExecuteMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
 					{Name: "configurationCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing username/password for access to your remote configuration file.", Type: "jenkins"},
+					{Name: "gcpFileCredentialsId", Description: "Jenkins 'File' credentials ID containing the key file to authenticate to the Google Cloud Platform.", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{

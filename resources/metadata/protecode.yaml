@@ -18,6 +18,9 @@ spec:
         aliases:
           - name: dockerCredentialsId
             deprecated: true
+      - name: gcpFileCredentialsId
+        description: "Jenkins 'File' credentials ID containing the key file to authenticate to the Google Cloud Platform."
+        type: jenkins
     params:
       - name: excludeCVEs
         aliases:

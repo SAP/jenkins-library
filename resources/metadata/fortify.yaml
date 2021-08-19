@@ -24,6 +24,9 @@ spec:
       - name: githubTokenCredentialsId
         description: Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.
         type: jenkins
+      - name: gcpFileCredentialsId
+        description: "Jenkins 'File' credentials ID containing the key file to authenticate to the Google Cloud Platform."
+        type: jenkins
     resources:
       - name: commonPipelineEnvironment
         resourceSpec:
