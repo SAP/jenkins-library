@@ -73,6 +73,13 @@ spec:
           - STAGES
           - STEPS
         default: hadolint.xml
+      - name: customTlsCertificateLinks
+        type: "[]string"
+        description: "List of download links to custom TLS certificates. This is required to ensure trusted connections between Piper and the system where the configuration file is to be downloaded from."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   containers:
     - name: hadolint
       image: hadolint/hadolint:latest-debian
