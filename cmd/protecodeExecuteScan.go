@@ -76,8 +76,8 @@ func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExec
 			(*config).FilePath = "./"
 		}
 		fileName = parts[len(parts)-1]
-    
-  } else if len(config.FetchURL) > 0 {
+
+	} else if len(config.FetchURL) > 0 {
 		// Get filename from a fetch URL
 		fileName = filepath.Base(config.FetchURL)
 		log.Entry().Debugf("[DEBUG] ===> Filepath from fetch URL: %v", fileName)
@@ -192,7 +192,6 @@ func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.P
 	productID = uploadScanOrDeclareFetch(*config, productID, client, fileName)
 
 	log.Entry().Debugf("[DEBUG] ===> After 'uploadScanOrDeclareFetch' returned productID: %v", productID)
-
 
 	if productID <= 0 {
 		return fmt.Errorf("the product id is not valid '%d'", productID)
@@ -387,7 +386,7 @@ func uploadFile(config protecodeExecuteScanOptions, productID int, client protec
 		productID = resultData.Result.ProductID
 		log.Entry().Debugf("[DEBUG] ===> uploadFile return FINAL product id: %v", productID)
 	}
-  return productID
+	return productID
 }
 
 func fileExists(filename string) bool {
@@ -397,7 +396,6 @@ func fileExists(filename string) bool {
 	}
 	return !info.IsDir()
 }
-
 
 func hasExisting(productID int, verifyOnly bool) bool {
 	if (productID > 0) || verifyOnly {
