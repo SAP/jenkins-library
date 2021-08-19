@@ -290,7 +290,7 @@ func TestDownloadAgent(t *testing.T) {
 		err := downloadAgent(&config, utilsMock)
 		assert.Contains(t, fmt.Sprint(err), "failed to download unified agent from URL")
 	})
-	t.Run("error - download with retry", func(t *testing.T) {
+	t.Run("error - download with retry unable to copy content from file", func(t *testing.T) {
 		config := ScanOptions{
 			AgentDownloadURL: "errorCopyFile", // Misusing this ScanOptions to tell DownloadFile Mock to raise an error
 			AgentFileName:    "unified-agent.jar",
@@ -300,6 +300,17 @@ func TestDownloadAgent(t *testing.T) {
 
 		err := downloadAgent(&config, utilsMock)
 		assert.Contains(t, fmt.Sprint(err), "unable to copy content from url to file")
+	})
+	t.Run("error - download with retry not found 404", func(t *testing.T) {
+		config := ScanOptions{
+			AgentDownloadURL: "error404NotFound", // Misusing this ScanOptions to tell DownloadFile Mock to raise an error
+			AgentFileName:    "unified-agent.jar",
+		}
+		utilsMock := NewScanUtilsMock()
+		utilsMock.DownloadError = map[string]error{"https://download.ua.org/agent.jar": fmt.Errorf("returned with response 404 Not Found")}
+
+		err := downloadAgent(&config, utilsMock)
+		assert.Contains(t, fmt.Sprint(err), "returned with response 404 Not Found")
 	})
 }
 
