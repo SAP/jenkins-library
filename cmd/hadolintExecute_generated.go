@@ -15,16 +15,17 @@ import (
 )
 
 type hadolintExecuteOptions struct {
-	ConfigurationURL      string `json:"configurationUrl,omitempty"`
-	ConfigurationUsername string `json:"configurationUsername,omitempty"`
-	ConfigurationPassword string `json:"configurationPassword,omitempty"`
-	DockerFile            string `json:"dockerFile,omitempty"`
-	ConfigurationFile     string `json:"configurationFile,omitempty"`
-	ReportFile            string `json:"reportFile,omitempty"`
-	UploadReportsToGCS    bool   `json:"uploadReportsToGCS,omitempty"`
-	GcpJSONKeyFilePath    string `json:"gcpJsonKeyFilePath,omitempty"`
-	GcsTargetFolder       string `json:"gcsTargetFolder,omitempty"`
-	GcsBucketID           string `json:"gcsBucketId,omitempty"`
+	ConfigurationURL          string   `json:"configurationUrl,omitempty"`
+	ConfigurationUsername     string   `json:"configurationUsername,omitempty"`
+	ConfigurationPassword     string   `json:"configurationPassword,omitempty"`
+	DockerFile                string   `json:"dockerFile,omitempty"`
+	ConfigurationFile         string   `json:"configurationFile,omitempty"`
+	ReportFile                string   `json:"reportFile,omitempty"`
+	CustomTLSCertificateLinks []string `json:"customTlsCertificateLinks,omitempty"`
+	UploadReportsToGCS        bool     `json:"uploadReportsToGCS,omitempty"`
+	GcpJSONKeyFilePath        string   `json:"gcpJsonKeyFilePath,omitempty"`
+	GcsTargetFolder           string   `json:"gcsTargetFolder,omitempty"`
+	GcsBucketID               string   `json:"gcsBucketId,omitempty"`
 }
 
 // HadolintExecuteCommand Executes the Haskell Dockerfile Linter which is a smarter Dockerfile linter that helps you build [best practice](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/) Docker images.
@@ -112,6 +113,7 @@ func addHadolintExecuteFlags(cmd *cobra.Command, stepConfig *hadolintExecuteOpti
 	cmd.Flags().StringVar(&stepConfig.DockerFile, "dockerFile", `./Dockerfile`, "Dockerfile to be used for the assessment.")
 	cmd.Flags().StringVar(&stepConfig.ConfigurationFile, "configurationFile", `.hadolint.yaml`, "Name of the configuration file used locally within the step. If a file with this name is detected as part of your repo downloading the central configuration via `configurationUrl` will be skipped. If you change the file's name make sure your stashing configuration also reflects this.")
 	cmd.Flags().StringVar(&stepConfig.ReportFile, "reportFile", `hadolint.xml`, "Name of the result file used locally within the step.")
+	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List of download links to custom TLS certificates. This is required to ensure trusted connections between Piper and the system where the configuration file is to be downloaded from.")
 	cmd.Flags().BoolVar(&stepConfig.UploadReportsToGCS, "uploadReportsToGCS", false, "Enables uploading reports to Google Cloud Storage bucket.")
 	cmd.Flags().StringVar(&stepConfig.GcpJSONKeyFilePath, "gcpJsonKeyFilePath", os.Getenv("PIPER_gcpJsonKeyFilePath"), "File path to Google Cloud Platform JSON key file.")
 	cmd.Flags().StringVar(&stepConfig.GcsTargetFolder, "gcsTargetFolder", os.Getenv("PIPER_gcsTargetFolder"), "Target folder in the GCS. If the value is empty, the source path is used.")
@@ -201,9 +203,18 @@ func hadolintExecuteMetadata() config.StepData {
 						Default:     `hadolint.xml`,
 					},
 					{
-						Name:        "uploadReportsToGCS",
+						Name:        "customTlsCertificateLinks",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
+					},
+					{
+						Name:        "uploadReportsToGCS",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPSs"},
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},

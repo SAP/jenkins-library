@@ -73,6 +73,13 @@ spec:
           - STAGES
           - STEPS
         default: hadolint.xml
+      - name: customTlsCertificateLinks
+        type: "[]string"
+        description: "List of download links to custom TLS certificates. This is required to ensure trusted connections between Piper and the system where the configuration file is to be downloaded from."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
 
       # parameters for Google Cloud Platform settings. Need for uploading reports to GCS
       - name: uploadReportsToGCS
@@ -81,7 +88,7 @@ spec:
         scope:
           - PARAMETERS
           - STAGES
-          - STEPS
+          - STEPSs
       - name: gcpJsonKeyFilePath
         type: string
         description: "File path to Google Cloud Platform JSON key file."

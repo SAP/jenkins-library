@@ -90,6 +90,11 @@ func runHadolint(config hadolintExecuteOptions, utils hadolintUtils, gcsClient g
 			TransportTimeout:          20 * time.Second,
 			TransportSkipVerification: true,
 		}
+		if len(config.CustomTLSCertificateLinks) > 0 {
+			clientOptions.TransportSkipVerification = false
+			clientOptions.TrustedCerts = config.CustomTLSCertificateLinks
+		}
+
 		if len(config.ConfigurationUsername) > 0 {
 			clientOptions.Username = config.ConfigurationUsername
 			clientOptions.Password = config.ConfigurationPassword
