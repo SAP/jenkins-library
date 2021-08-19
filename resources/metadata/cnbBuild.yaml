@@ -9,18 +9,11 @@ spec:
         description: Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)). You can create it like explained in the Docker Success Center in the article about [how to generate a new auth in the config.json file](https://success.docker.com/article/generate-new-auth-in-config-json-file).
         type: jenkins
     params:
-      - name: containerImage
-        type: string
-        description: Defines the full name of the Docker image to be created including registry, image name and tag like `my.docker.registry/path/myImageName:myTag`. If left empty, image will not be pushed.
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
       - name: containerImageName
         aliases:
           - name: dockerImageName
         type: string
-        description: Name of the container which will be built - will be used instead of parameter `containerImage`
+        description: Name of the container which will be built
         scope:
           - GENERAL
           - PARAMETERS
@@ -30,7 +23,7 @@ spec:
         aliases:
           - name: artifactVersion
         type: string
-        description: Tag of the container which will be built - will be used instead of parameter `containerImage`
+        description: Tag of the container which will be built
         scope:
           - GENERAL
           - PARAMETERS
@@ -39,11 +32,11 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: artifactVersion
-      - name: containerRegistryUrl
+      - name: containerRegistry
         aliases:
-          - name: dockerRegistryUrl
+          - name: dockerRegistry
         type: string
-        description: http(s) url of the Container registry where the image should be pushed to - will be used instead of parameter `containerImage`
+        description: Container registry where the image should be pushed to
         scope:
           - GENERAL
           - PARAMETERS
@@ -51,7 +44,7 @@ spec:
           - STEPS
         resourceRef:
           - name: commonPipelineEnvironment
-            param: container/registryUrl
+            param: container/registry
       - name: path
         type: string
         description: The path should either point to your sources or an artifact build before.
@@ -81,7 +74,7 @@ spec:
       - name: commonPipelineEnvironment
         type: piperEnvironment
         params:
-          - name: container/registryUrl
+          - name: container/registry
           - name: container/imageNameTag
   containers:
     - image: "paketobuildpacks/builder:full"
