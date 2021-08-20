@@ -139,25 +139,25 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 	var containerImage string
 	var containerImageTag string
 
-	if len(config.ContainerRegistry) > 0 && len(config.ContainerImageName) > 0 && len(config.ContainerImageTag) > 0 {
+	if len(config.ContainerRegistryURL) > 0 && len(config.ContainerImageName) > 0 && len(config.ContainerImageTag) > 0 {
 		var containerRegistry string
-		if matched, _ := regexp.MatchString("^(http|https)://.*", config.ContainerRegistry); matched {
-			containerRegistry, err = docker.ContainerRegistryFromURL(config.ContainerRegistry)
+		if matched, _ := regexp.MatchString("^(http|https)://.*", config.ContainerRegistryURL); matched {
+			containerRegistry, err = docker.ContainerRegistryFromURL(config.ContainerRegistryURL)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
-				return errors.Wrapf(err, "failed to read registry url %s", config.ContainerRegistry)
+				return errors.Wrapf(err, "failed to read containerRegistryUrl %s", config.ContainerRegistryURL)
 			}
 		} else {
-			containerRegistry = config.ContainerRegistry
+			containerRegistry = config.ContainerRegistryURL
 		}
 
 		containerImage = fmt.Sprintf("%s/%s", containerRegistry, config.ContainerImageName)
 		containerImageTag = strings.ReplaceAll(config.ContainerImageTag, "+", "-")
-		commonPipelineEnvironment.container.registry = config.ContainerRegistry
+		commonPipelineEnvironment.container.registryURL = config.ContainerRegistryURL
 		commonPipelineEnvironment.container.imageNameTag = containerImage
 	} else {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.New("containerRegistry, containerImageName and containerImageTag must be present")
+		return errors.New("containerRegistryUrl, containerImageName and containerImageTag must be present")
 	}
 
 	err = utils.RunExecutable("/cnb/lifecycle/detector")

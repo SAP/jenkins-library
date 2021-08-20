@@ -31,10 +31,10 @@ func TestRunCnbBuild(t *testing.T) {
 		t.Parallel()
 		registry := "some-registry"
 		config := cnbBuildOptions{
-			ContainerImageName: "my-image",
-			ContainerImageTag:  "0.0.1",
-			ContainerRegistry:  fmt.Sprintf("https://%s", registry),
-			DockerConfigJSON:   "/path/to/config.json",
+			ContainerImageName:   "my-image",
+			ContainerImageTag:    "0.0.1",
+			ContainerRegistryURL: fmt.Sprintf("https://%s", registry),
+			DockerConfigJSON:     "/path/to/config.json",
 		}
 
 		utils := newCnbBuildTestsUtils()
@@ -55,10 +55,10 @@ func TestRunCnbBuild(t *testing.T) {
 		t.Parallel()
 		registry := "some-registry"
 		config := cnbBuildOptions{
-			ContainerImageName: "my-image",
-			ContainerImageTag:  "0.0.1",
-			ContainerRegistry:  registry,
-			DockerConfigJSON:   "/path/to/config.json",
+			ContainerImageName:   "my-image",
+			ContainerImageTag:    "0.0.1",
+			ContainerRegistryURL: registry,
+			DockerConfigJSON:     "/path/to/config.json",
 		}
 
 		utils := newCnbBuildTestsUtils()

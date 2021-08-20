@@ -15,7 +15,7 @@ func TestNpmProject(t *testing.T) {
 		TestDir: []string{"testdata", "TestMtaIntegration", "npm"},
 	})
 
-	container.whenRunningPiperCommand("cnbBuild", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistry", "test")
+	container.whenRunningPiperCommand("cnbBuild", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", "test")
 
 	container.assertHasOutput(t, "running command: /cnb/lifecycle/detector")
 	container.assertHasOutput(t, "Paketo NPM Start Buildpack")

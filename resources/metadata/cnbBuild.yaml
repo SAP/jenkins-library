@@ -32,9 +32,9 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: artifactVersion
-      - name: containerRegistry
+      - name: containerRegistryUrl
         aliases:
-          - name: dockerRegistry
+          - name: dockerRegistryUrl
         type: string
         description: Container registry where the image should be pushed to
         scope:
@@ -44,7 +44,7 @@ spec:
           - STEPS
         resourceRef:
           - name: commonPipelineEnvironment
-            param: container/registry
+            param: container/registryUrl
       - name: path
         type: string
         description: The path should either point to your sources or an artifact build before.
@@ -74,7 +74,7 @@ spec:
       - name: commonPipelineEnvironment
         type: piperEnvironment
         params:
-          - name: container/registry
+          - name: container/registryUrl
           - name: container/imageNameTag
   containers:
     - image: "paketobuildpacks/builder:full"
