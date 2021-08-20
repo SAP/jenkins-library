@@ -45,6 +45,24 @@ func TestAzure(t *testing.T) {
 		assert.Equal(t, "42", c.Key)
 	})
 
+	t.Run("PR - Branch Policy", func(t *testing.T) {
+		defer resetEnv(os.Environ())
+		os.Clearenv()
+		os.Setenv("SYSTEM_PULLREQUEST_SOURCEBRANCH", "feat/test-azure")
+		os.Setenv("SYSTEM_PULLREQUEST_TARGETBRANCH", "main")
+		os.Setenv("SYSTEM_PULLREQUEST_PULLREQUESTID", "123456789")
+		os.Setenv("SYSTEM_PULLREQUEST_PULLREQUESTNUMBER", "42")
+		os.Setenv("BUILD_REASON", "PullRequest")
+
+		p := AzureDevOpsConfigProvider{}
+		c := p.GetPullRequestConfig()
+
+		assert.True(t, p.IsPullRequest())
+		assert.Equal(t, "feat/test-azure", c.Branch)
+		assert.Equal(t, "main", c.Base)
+		assert.Equal(t, "42", c.Key)
+	})
+
 	t.Run("Azure DevOps - false", func(t *testing.T) {
 		defer resetEnv(os.Environ())
 		os.Clearenv()

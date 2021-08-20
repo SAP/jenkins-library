@@ -23,7 +23,7 @@ type integrationArtifactGetServiceEndpointOptions struct {
 
 type integrationArtifactGetServiceEndpointCommonPipelineEnvironment struct {
 	custom struct {
-		iFlowServiceEndpoint string
+		integrationFlowServiceEndpoint string
 	}
 }
 
@@ -33,7 +33,7 @@ func (p *integrationArtifactGetServiceEndpointCommonPipelineEnvironment) persist
 		name     string
 		value    interface{}
 	}{
-		{category: "custom", name: "iFlowServiceEndpoint", value: p.custom.iFlowServiceEndpoint},
+		{category: "custom", name: "integrationFlowServiceEndpoint", value: p.custom.integrationFlowServiceEndpoint},
 	}
 
 	errCount := 0
@@ -180,7 +180,7 @@ func integrationArtifactGetServiceEndpointMetadata() config.StepData {
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
-							{"Name": "custom/iFlowServiceEndpoint"},
+							{"Name": "custom/integrationFlowServiceEndpoint"},
 						},
 					},
 				},

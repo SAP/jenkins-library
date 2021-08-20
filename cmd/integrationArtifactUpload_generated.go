@@ -107,7 +107,6 @@ func addIntegrationArtifactUploadFlags(cmd *cobra.Command, stepConfig *integrati
 	cmd.MarkFlagRequired("apiServiceKey")
 	cmd.MarkFlagRequired("integrationFlowId")
 	cmd.MarkFlagRequired("integrationFlowName")
-	cmd.MarkFlagRequired("packageId")
 	cmd.MarkFlagRequired("filePath")
 }
 
@@ -163,7 +162,7 @@ func integrationArtifactUploadMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
-						Mandatory:   true,
+						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_packageId"),
 					},

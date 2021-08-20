@@ -48,7 +48,7 @@ class commonPipelineEnvironment implements Serializable {
     // Useful for making sure that the piper binary uses the same file when called from Jenkins.
     String configurationFile = ''
 
-    String mtarFilePath = ""
+    String mtarFilePath = null
 
     String abapAddonDescriptor
 

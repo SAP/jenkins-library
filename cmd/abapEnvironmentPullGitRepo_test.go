@@ -43,7 +43,7 @@ func TestPullStep(t *testing.T) {
 			StatusCode: 200,
 		}
 
-		err := runAbapEnvironmentPullGitRepo(&config, nil, &autils, client)
+		err := runAbapEnvironmentPullGitRepo(&config, &autils, client)
 		assert.NoError(t, err, "Did not expect error")
 	})
 
@@ -67,7 +67,7 @@ func TestPullStep(t *testing.T) {
 		}
 
 		config := abapEnvironmentPullGitRepoOptions{}
-		err := runAbapEnvironmentPullGitRepo(&config, nil, &autils, client)
+		err := runAbapEnvironmentPullGitRepo(&config, &autils, client)
 		assert.Equal(t, expectedErrorMessage, err.Error(), "Different error message expected")
 	})
 
@@ -121,7 +121,7 @@ repositories:
 			Password:          "testPassword",
 			Repositories:      "repositoriesTest.yml",
 		}
-		err = runAbapEnvironmentPullGitRepo(&config, nil, &autils, client)
+		err = runAbapEnvironmentPullGitRepo(&config, &autils, client)
 		assert.NoError(t, err)
 	})
 
@@ -177,7 +177,7 @@ repositories:
 			StatusCode: 200,
 		}
 
-		err := runAbapEnvironmentPullGitRepo(&config, nil, &autils, client)
+		err := runAbapEnvironmentPullGitRepo(&config, &autils, client)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "Something failed during the pull of the repositories: Pull of '/DMO/REPO_A', commit 'ABCD1234' failed on the ABAP System", err.Error(), "Expected different error message")
 		}
@@ -236,7 +236,7 @@ repositories:
 			StatusCode: 200,
 		}
 
-		err := runAbapEnvironmentPullGitRepo(&config, nil, &autils, client)
+		err := runAbapEnvironmentPullGitRepo(&config, &autils, client)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "Something failed during the pull of the repositories: Pull of '/DMO/REPO_A' failed on the ABAP System", err.Error(), "Expected different error message")
 		}
@@ -286,7 +286,7 @@ repositories:
 			Password:          "testPassword",
 			Repositories:      "repositoriesTest.yml",
 		}
-		err = runAbapEnvironmentPullGitRepo(&config, nil, &autils, client)
+		err = runAbapEnvironmentPullGitRepo(&config, &autils, client)
 		assert.EqualError(t, err, expectedErrorMessage)
 	})
 
@@ -339,7 +339,7 @@ repositories:
 			Password:          "testPassword",
 			Repositories:      "repositoriesTest.yml",
 		}
-		err = runAbapEnvironmentPullGitRepo(&config, nil, &autils, client)
+		err = runAbapEnvironmentPullGitRepo(&config, &autils, client)
 		assert.EqualError(t, err, expectedErrorMessage)
 	})
 }

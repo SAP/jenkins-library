@@ -17,6 +17,7 @@ import (
 const (
 	HEADER_PROJECT_DETAILS_V4 = "application/vnd.blackducksoftware.project-detail-4+json"
 	HEADER_USER_V4            = "application/vnd.blackducksoftware.user-4+json"
+	HEADER_BOM_V6             = "application/vnd.blackducksoftware.bill-of-materials-6+json"
 )
 
 // Projects defines the response to a BlackDuck project API request
@@ -53,6 +54,51 @@ type ProjectVersions struct {
 type ProjectVersion struct {
 	Name     string `json:"versionName,omitempty"`
 	Metadata `json:"_meta,omitempty"`
+}
+
+type Components struct {
+	TotalCount int         `json:"totalCount,omitempty"`
+	Items      []Component `json:"items,omitempty"`
+}
+
+type Component struct {
+	Name    string `json:"componentName,omitempty"`
+	Version string `json:"componentVersionName,omitempty"`
+}
+
+type Vulnerabilities struct {
+	TotalCount int             `json:"totalCount,omitempty"`
+	Items      []Vulnerability `json:"items,omitempty"`
+}
+
+type Vulnerability struct {
+	Name                         string `json:"componentName,omitempty"`
+	Version                      string `json:"componentVersionName,omitempty"`
+	VulnerabilityWithRemediation `json:"vulnerabilityWithRemediation,omitempty"`
+}
+
+type VulnerabilityWithRemediation struct {
+	VulnerabilityName string  `json:"vulnerabilityName,omitempty"`
+	BaseScore         float32 `json:"baseScore,omitempty"`
+	Severity          string  `json:"severity,omitempty"`
+	RemediationStatus string  `json:"remediationStatus,omitempty"`
+	Description       string  `json:"description,omitempty"`
+	OverallScore      float32 `json:"overallScore,omitempty"`
+}
+
+type PolicyStatus struct {
+	OverallStatus        string `json:"overallStatus,omitempty"`
+	PolicyVersionDetails `json:"componentVersionPolicyViolationDetails,omitempty"`
+}
+
+type PolicyVersionDetails struct {
+	Name           string           `json:"name,omitempty"`
+	SeverityLevels []SeverityLevels `json:"severityLevels,omitEmpty"`
+}
+
+type SeverityLevels struct {
+	Name  string `json:"name,omitempty"`
+	Value int    `json:"value,omitempty"`
 }
 
 // Client defines a BlackDuck client
@@ -106,7 +152,7 @@ func (b *Client) GetProject(projectName string) (*Project, error) {
 	return nil, fmt.Errorf("project '%v' not found", projectName)
 }
 
-// GetProjectVersion returns a project with a given name
+// GetProjectVersion returns a project version with a given name
 func (b *Client) GetProjectVersion(projectName, projectVersion string) (*ProjectVersion, error) {
 	project, err := b.GetProject(projectName)
 	if err != nil {
@@ -145,6 +191,103 @@ func (b *Client) GetProjectVersion(projectName, projectVersion string) (*Project
 	}
 
 	return nil, fmt.Errorf("failed to get project version '%v'", projectVersion)
+}
+
+func (b *Client) GetComponents(projectName, versionName string) (*Components, error) {
+	projectVersion, err := b.GetProjectVersion(projectName, versionName)
+	if err != nil {
+		return nil, err
+	}
+
+	headers := http.Header{}
+	headers.Add("Accept", HEADER_BOM_V6)
+
+	var componentsPath string
+	for _, link := range projectVersion.Links {
+		if link.Rel == "components" {
+			componentsPath = urlPath(link.Href)
+			break
+		}
+	}
+
+	respBody, err := b.sendRequest("GET", componentsPath, map[string]string{"offset": "0", "limit": "999"}, nil, headers)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to get components list for project version '%v:%v'", projectName, versionName)
+	}
+
+	components := Components{}
+	err = json.Unmarshal(respBody, &components)
+
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to retrieve component details for project version '%v:%v'", projectName, versionName)
+	} else if components.TotalCount == 0 {
+		return nil, fmt.Errorf("No Components found for project version '%v:%v'", projectName, versionName)
+	}
+
+	//Just return the components, the details of the components are not necessary
+	return &components, nil
+}
+
+func (b *Client) GetVulnerabilities(projectName, versionName string) (*Vulnerabilities, error) {
+	projectVersion, err := b.GetProjectVersion(projectName, versionName)
+	if err != nil {
+		return nil, err
+	}
+
+	headers := http.Header{}
+	headers.Add("Accept", HEADER_BOM_V6)
+
+	var vulnerableComponentsPath string
+	for _, link := range projectVersion.Links {
+		if link.Rel == "vulnerable-components" {
+			vulnerableComponentsPath = urlPath(link.Href)
+			break
+		}
+	}
+
+	respBody, err := b.sendRequest("GET", vulnerableComponentsPath, map[string]string{"offset": "0", "limit": "999"}, nil, headers)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to get Vulnerabilties for project version '%v:%v'", projectName, versionName)
+	}
+
+	vulnerabilities := Vulnerabilities{}
+	err = json.Unmarshal(respBody, &vulnerabilities)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to retrieve Vulnerability details for project version '%v:%v'", projectName, versionName)
+	}
+
+	return &vulnerabilities, nil
+}
+
+func (b *Client) GetPolicyStatus(projectName, versionName string) (*PolicyStatus, error) {
+	projectVersion, err := b.GetProjectVersion(projectName, versionName)
+	if err != nil {
+		return nil, err
+	}
+
+	headers := http.Header{}
+	headers.Add("Accept", HEADER_BOM_V6)
+
+	var policyStatusPath string
+	for _, link := range projectVersion.Links {
+		if link.Rel == "policy-status" {
+			policyStatusPath = urlPath(link.Href)
+			break
+		}
+	}
+
+	respBody, err := b.sendRequest("GET", policyStatusPath, map[string]string{}, nil, headers)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to get Policy Violation status for project version '%v:%v'", projectName, versionName)
+	}
+
+	policyStatus := PolicyStatus{}
+	err = json.Unmarshal(respBody, &policyStatus)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to retrieve Policy violation details for project version '%v:%v'", projectName, versionName)
+	}
+
+	return &policyStatus, nil
 }
 
 func (b *Client) authenticate() error {

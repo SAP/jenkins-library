@@ -35,10 +35,10 @@ func TestRunIntegrationArtifactTriggerIntegrationTest(t *testing.T) {
 			}
 		}`
 		config := integrationArtifactTriggerIntegrationTestOptions{
-			IFlowServiceKey:   iFlowServiceKey,
-			IntegrationFlowID: "CPI_IFlow_Call_using_Cert",
-			MessageBodyPath:   "/file.txt",
-			ContentType:       "",
+			IntegrationFlowServiceKey: iFlowServiceKey,
+			IntegrationFlowID:         "CPI_IFlow_Call_using_Cert",
+			MessageBodyPath:           "/file.txt",
+			ContentType:               "",
 		}
 
 		utils := newIntegrationArtifactTriggerIntegrationTestTestsUtils()
@@ -63,10 +63,10 @@ func TestRunIntegrationArtifactTriggerIntegrationTest(t *testing.T) {
 			}
 		}`
 		config := integrationArtifactTriggerIntegrationTestOptions{
-			IFlowServiceKey:   iFlowServiceKey,
-			IntegrationFlowID: "CPI_IFlow_Call_using_Cert",
-			MessageBodyPath:   "test.txt",
-			ContentType:       "txt",
+			IntegrationFlowServiceKey: iFlowServiceKey,
+			IntegrationFlowID:         "CPI_IFlow_Call_using_Cert",
+			MessageBodyPath:           "test.txt",
+			ContentType:               "txt",
 		}
 
 		utils := newIntegrationArtifactTriggerIntegrationTestTestsUtils()
@@ -94,10 +94,10 @@ func TestRunIntegrationArtifactTriggerIntegrationTest(t *testing.T) {
 			}
 		}`
 		config := integrationArtifactTriggerIntegrationTestOptions{
-			IFlowServiceKey:   iFlowServiceKey,
-			IntegrationFlowID: "CPI_IFlow_Call_using_Cert",
-			MessageBodyPath:   filepath.Join(dir, "test.txt"),
-			ContentType:       "txt",
+			IntegrationFlowServiceKey: iFlowServiceKey,
+			IntegrationFlowID:         "CPI_IFlow_Call_using_Cert",
+			MessageBodyPath:           filepath.Join(dir, "test.txt"),
+			ContentType:               "txt",
 		}
 
 		utils := newIntegrationArtifactTriggerIntegrationTestTestsUtils()
@@ -125,10 +125,10 @@ func TestRunIntegrationArtifactTriggerIntegrationTest(t *testing.T) {
 			}
 		}`
 		config := integrationArtifactTriggerIntegrationTestOptions{
-			IFlowServiceKey:   iFlowServiceKey,
-			IntegrationFlowID: "CPI_IFlow_Call_using_Cert",
-			MessageBodyPath:   "",
-			ContentType:       "txt",
+			IntegrationFlowServiceKey: iFlowServiceKey,
+			IntegrationFlowID:         "CPI_IFlow_Call_using_Cert",
+			MessageBodyPath:           "",
+			ContentType:               "txt",
 		}
 
 		utils := newIntegrationArtifactTriggerIntegrationTestTestsUtils()
@@ -160,10 +160,10 @@ func TestRunIntegrationArtifactTriggerIntegrationTest(t *testing.T) {
 			}
 		}`
 		config := integrationArtifactTriggerIntegrationTestOptions{
-			IFlowServiceKey:   iFlowServiceKey,
-			IntegrationFlowID: "CPI_IFlow_Call_using_Cert",
-			MessageBodyPath:   filepath.Join(dir, "test.txt"),
-			ContentType:       "txt",
+			IntegrationFlowServiceKey: iFlowServiceKey,
+			IntegrationFlowID:         "CPI_IFlow_Call_using_Cert",
+			MessageBodyPath:           filepath.Join(dir, "test.txt"),
+			ContentType:               "txt",
 		}
 
 		utils := newIntegrationArtifactTriggerIntegrationTestTestsUtils()
