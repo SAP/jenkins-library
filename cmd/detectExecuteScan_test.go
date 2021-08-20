@@ -573,11 +573,11 @@ func TestExitCodeMapping(t *testing.T) {
 	}
 
 	for _, c := range cases {
-
 		response := exitCodeMapping(c.exitCode)
 		assert.Contains(t, response, c.expected)
+	}
 }
-  
+
 func TestPostScanChecksAndReporting(t *testing.T) {
 	t.Parallel()
 	t.Run("Reporting after scan", func(t *testing.T) {
