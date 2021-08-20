@@ -431,3 +431,24 @@ func TestAddDetectArgs(t *testing.T) {
 		})
 	}
 }
+
+// Testing exit code mapping method
+func TestExitCodeMapping(t *testing.T) {
+
+	cases := []struct {
+		exitCode int
+		expected string
+	}{
+		{0, "SUCCESS"},
+		{1, "FAILURE_BLACKDUCK_CONNECTIVITY"},
+		{-1, "Not known exit code key"},
+		{8, "Not known exit code key"},
+		{100, "FAILURE_UNKNOWN_ERROR"},
+	}
+
+	for _, c := range cases {
+
+		response := exitCodeMapping(c.exitCode)
+		assert.Contains(t, response, c.expected)
+	}
+}

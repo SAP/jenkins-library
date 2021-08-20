@@ -7,10 +7,12 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/maven"
+	"github.com/pkg/errors"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -31,6 +33,7 @@ type detectUtils interface {
 	Chmod(path string, mode os.FileMode) error
 	Glob(pattern string) (matches []string, err error)
 
+	GetExitCode() int
 	Stdout(out io.Writer)
 	Stderr(err io.Writer)
 	SetDir(dir string)
@@ -56,6 +59,21 @@ func newDetectUtils() detectUtils {
 				},
 				log.ErrorConfiguration.String(): {
 					"FAILURE_CONFIGURATION - Detect was unable to start due to issues with it's configuration.",
+					"FAILURE_DETECTOR - Detect had one or more detector failures while extracting dependencies. Check that all projects build and your environment is configured correctly.",
+					"FAILURE_SCAN - Detect was unable to run the signature scanner against your source. Check your configuration.",
+				},
+				log.ErrorInfrastructure.String(): {
+					"FAILURE_PROXY_CONNECTIVITY - Detect was unable to use the configured proxy. Check your configuration and connection.",
+					"FAILURE_BLACKDUCK_CONNECTIVITY - Detect was unable to connect to Black Duck. Check your configuration and connection.",
+					"FAILURE_POLARIS_CONNECTIVITY - Detect was unable to connect to Polaris. Check your configuration and connection.",
+				},
+				log.ErrorService.String(): {
+					"FAILURE_TIMEOUT - Detect could not wait for actions to be completed on Black Duck. Check your Black Duck server or increase your timeout.",
+					"FAILURE_DETECTOR_REQUIRED - Detect did not run all of the required detectors. Fix detector issues or disable required detectors.",
+					"FAILURE_BLACKDUCK_VERSION_NOT_SUPPORTED - Detect attempted an operation that was not supported by your version of Black Duck. Ensure your Black Duck is compatible with this version of detect.",
+					"FAILURE_BLACKDUCK_FEATURE_ERROR - Detect encountered an error while attempting an operation on Black Duck. Ensure your Black Duck is compatible with this version of detect.",
+					"FAILURE_GENERAL_ERROR - Detect encountered a known error, details of the error are provided.",
+					"FAILURE_UNKNOWN_ERROR - Detect encountered an unknown error.",
 				},
 			},
 		},
@@ -151,8 +169,77 @@ func runDetect(config detectExecuteScanOptions, utils detectUtils) error {
 		if err != nil {
 			return fmt.Errorf("failed to write policy violation report: %w", err)
 		}
+	} else if err != nil {
+		// Setting error category based on exit code
+		mapErrorCategory(utils.GetExitCode())
+
+		// Error code mapping with more human readable text
+		// log.Entry().Errorf("[ERROR ERRORF] => %v", exitCodeMapping(utils.GetExitCode()))
+		return errors.Wrapf(err, exitCodeMapping(utils.GetExitCode()))
 	}
+
 	return err
+}
+
+// Get proper error category
+func mapErrorCategory(exitCodeKey int) {
+	switch exitCodeKey {
+	case 1:
+		log.SetErrorCategory(log.ErrorInfrastructure)
+	case 2:
+		log.SetErrorCategory(log.ErrorService)
+	case 3:
+		log.SetErrorCategory(log.ErrorCompliance)
+	case 4:
+		log.SetErrorCategory(log.ErrorInfrastructure)
+	case 5:
+		log.SetErrorCategory(log.ErrorConfiguration)
+	case 6:
+		log.SetErrorCategory(log.ErrorConfiguration)
+	case 7:
+		log.SetErrorCategory(log.ErrorConfiguration)
+	case 9:
+		log.SetErrorCategory(log.ErrorService)
+	case 10:
+		log.SetErrorCategory(log.ErrorService)
+	case 11:
+		log.SetErrorCategory(log.ErrorService)
+	case 12:
+		log.SetErrorCategory(log.ErrorInfrastructure)
+	case 99:
+		log.SetErrorCategory(log.ErrorService)
+	case 100:
+		log.SetErrorCategory(log.ErrorUndefined)
+	default:
+		log.SetErrorCategory(log.ErrorUndefined)
+	}
+}
+
+// Exit codes/error code mapping
+func exitCodeMapping(exitCodeKey int) string {
+
+	exitCodes := map[int]string{
+		0:   "SUCCESS => Detect exited successfully.",
+		1:   "FAILURE_BLACKDUCK_CONNECTIVITY => Detect was unable to connect to Black Duck. Check your configuration and connection.",
+		2:   "FAILURE_TIMEOUT => Detect could not wait for actions to be completed on Black Duck. Check your Black Duck server or increase your timeout.",
+		3:   "FAILURE_POLICY_VIOLATION => Detect found policy violations.",
+		4:   "FAILURE_PROXY_CONNECTIVITY => Detect was unable to use the configured proxy. Check your configuration and connection.",
+		5:   "FAILURE_DETECTOR => Detect had one or more detector failures while extracting dependencies. Check that all projects build and your environment is configured correctly.",
+		6:   "FAILURE_SCAN => Detect was unable to run the signature scanner against your source. Check your configuration.",
+		7:   "FAILURE_CONFIGURATION => Detect was unable to start because of a configuration issue. Check and fix your configuration.",
+		9:   "FAILURE_DETECTOR_REQUIRED => Detect did not run all of the required detectors. Fix detector issues or disable required detectors.",
+		10:  "FAILURE_BLACKDUCK_VERSION_NOT_SUPPORTED => Detect attempted an operation that was not supported by your version of Black Duck. Ensure your Black Duck is compatible with this version of detect.",
+		11:  "FAILURE_BLACKDUCK_FEATURE_ERROR => Detect encountered an error while attempting an operation on Black Duck. Ensure your Black Duck is compatible with this version of detect.",
+		12:  "FAILURE_POLARIS_CONNECTIVITY => Detect was unable to connect to Polaris. Check your configuration and connection.",
+		99:  "FAILURE_GENERAL_ERROR => Detect encountered a known error, details of the error are provided.",
+		100: "FAILURE_UNKNOWN_ERROR => Detect encountered an unknown error.",
+	}
+
+	if _, isKeyExists := exitCodes[exitCodeKey]; isKeyExists {
+		return exitCodes[exitCodeKey]
+	}
+
+	return "[" + strconv.Itoa(exitCodeKey) + "]: Not known exit code key"
 }
 
 func getDetectScript(config detectExecuteScanOptions, utils detectUtils) error {
