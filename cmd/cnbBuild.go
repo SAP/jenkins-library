@@ -17,6 +17,12 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	detectorPath = "/cnb/lifecycle/detector"
+	builderPath  = "/cnb/lifecycle/builder"
+	exporterPath = "/cnb/lifecycle/exporter"
+)
+
 type cnbBuildUtils interface {
 	command.ExecRunner
 
@@ -65,8 +71,29 @@ func isDir(path string) (bool, error) {
 	return info.IsDir(), nil
 }
 
+func isBuilder(utils cnbBuildUtils) (bool, error) {
+	for _, path := range []string{detectorPath, builderPath, exporterPath} {
+		exists, err := utils.FileExists(path)
+		if err != nil || !exists {
+			return exists, err
+		}
+	}
+	return true, nil
+}
+
 func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, utils cnbBuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment) error {
 	var err error
+
+	exists, err := isBuilder(utils)
+
+	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return errors.Wrapf(err, "failed to check if dockerImage is a valid builder")
+	}
+	if !exists {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return errors.New("the provided dockerImage is not a valid builder")
+	}
 
 	dockerConfig := &configfile.ConfigFile{}
 	dockerConfigJSON := []byte(`{"auths":{}}`)
@@ -160,23 +187,23 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		return errors.New("containerRegistryUrl, containerImageName and containerImageTag must be present")
 	}
 
-	err = utils.RunExecutable("/cnb/lifecycle/detector")
+	err = utils.RunExecutable(detectorPath)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrap(err, "execution of '/cnb/lifecycle/detector' failed")
+		return errors.Wrap(err, fmt.Sprintf("execution of '%s' failed", detectorPath))
 	}
 
-	err = utils.RunExecutable("/cnb/lifecycle/builder")
+	err = utils.RunExecutable(builderPath)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrap(err, "execution of '/cnb/lifecycle/builder' failed")
+		return errors.Wrap(err, fmt.Sprintf("execution of '%s' failed", builderPath))
 	}
 
 	utils.AppendEnv([]string{fmt.Sprintf("CNB_REGISTRY_AUTH=%s", string(cnbRegistryAuth))})
-	err = utils.RunExecutable("/cnb/lifecycle/exporter", fmt.Sprintf("%s:%s", containerImage, containerImageTag), fmt.Sprintf("%s:latest", containerImage))
+	err = utils.RunExecutable(exporterPath, fmt.Sprintf("%s:%s", containerImage, containerImageTag), fmt.Sprintf("%s:latest", containerImage))
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrap(err, "execution of '/cnb/lifecycle/exporter' failed")
+		return errors.Wrap(err, fmt.Sprintf("execution of '%s' failed", exporterPath))
 	}
 
 	return nil
