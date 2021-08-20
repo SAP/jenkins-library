@@ -14,6 +14,8 @@ Of course, this tackles only the upstream part of the SaaS solution lifecycle. O
 
 A comprehensive guidance on how to develop and operate SaaS applications using add-ons, can be found [here](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/e3c38ebaefc44523b679e7a0c375bc86.html).
 
+Note: This scenarios makes use the the pipeline stages Integration Tests, Confirm and Post and thus requires [interactive input](https://www.jenkins.io/doc/pipeline/steps/pipeline-input-step/#input-wait-for-interactive-input) for completion.
+
 ## The Add-on Product
 
 The installation and maintenance of ABAP software is done / controlled via add-on product versions. An **add-on product version** is a „bundle" of software component versions made available at the same time for implementing a well-defined scope of functionality. It is the technical / delivery view on a software portfolio.
