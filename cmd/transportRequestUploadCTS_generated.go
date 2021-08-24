@@ -59,7 +59,7 @@ func (p *transportRequestUploadCTSCommonPipelineEnvironment) persist(path, resou
 	}
 }
 
-// TransportRequestUploadCTSCommand Uploads a UI5 application to the SAPUI5 ABAP repository.
+// TransportRequestUploadCTSCommand This step uploads an UI5 application to the SAPUI5 ABAP repository.
 func TransportRequestUploadCTSCommand() *cobra.Command {
 	const STEP_NAME = "transportRequestUploadCTS"
 
@@ -71,8 +71,8 @@ func TransportRequestUploadCTSCommand() *cobra.Command {
 
 	var createTransportRequestUploadCTSCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Uploads a UI5 application to the SAPUI5 ABAP repository.",
-		Long: `This step uploads a UI5 application from your project folder to the SAPUI5 ABAP repository of the SAPUI5 ABAP back-end infrastructure using the SAPUI5 Repository OData service.
+		Short: "This step uploads an UI5 application to the SAPUI5 ABAP repository.",
+		Long: `This step uploads an UI5 application from your project folder to the SAPUI5 ABAP repository of the SAPUI5 ABAP back-end infrastructure using the SAPUI5 Repository OData service.
 It processes the results of the ` + "`" + `ui5 build` + "`" + ` command of the SAPUI5 toolset.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
@@ -165,7 +165,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "transportRequestUploadCTS",
 			Aliases:     []config.Alias{{Name: "transportRequestUploadFile", Deprecated: false}},
-			Description: "Uploads a UI5 application to the SAPUI5 ABAP repository.",
+			Description: "This step uploads an UI5 application to the SAPUI5 ABAP repository.",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{

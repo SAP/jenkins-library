@@ -2,9 +2,9 @@ metadata:
   name: transportRequestUploadCTS
   aliases:
     - name: transportRequestUploadFile
-  description: Uploads a UI5 application to the SAPUI5 ABAP repository.
+  description: This step uploads an UI5 application to the SAPUI5 ABAP repository.
   longDescription: |
-    This step uploads a UI5 application from your project folder to the SAPUI5 ABAP repository of the SAPUI5 ABAP back-end infrastructure using the SAPUI5 Repository OData service.
+    This step uploads an UI5 application from your project folder to the SAPUI5 ABAP repository of the SAPUI5 ABAP back-end infrastructure using the SAPUI5 Repository OData service.
     It processes the results of the `ui5 build` command of the SAPUI5 toolset.
 spec:
   inputs:

@@ -5,87 +5,89 @@
 ## Prerequisites
 
 * You have installed the SAP component SAP_UI 7.53 or higher on your ABAP system.
-* You have enabled the OData Service to Load Data to the [SAPUI5 ABAP Repository](https://sapui5.hana.ondemand.com/#/topic/a883327a82ef4cc792f3c1e7b7a48de8.html)
-* You have the [S_DEVELOP authorization](https://sapui5.hana.ondemand.com/#/topic/a883327a82ef4cc792f3c1e7b7a48de8.html) for operations on a SAPUI5 ABAP repository.
-* You have created a transport request on the ABAP system, which is the target container of the SAPUI5 application to upload.
+* You have enabled the OData Service to load data to the [SAPUI5 ABAP repository](https://sapui5.hana.ondemand.com/#/topic/a883327a82ef4cc792f3c1e7b7a48de8.html).
+* You have the [S_DEVELOP authorization](https://sapui5.hana.ondemand.com/#/topic/a883327a82ef4cc792f3c1e7b7a48de8.html) to perform operations in your SAPUI5 ABAP repository.
+* You have created a transport request on the ABAP system, which is the target container of the SAPUI5 application for your upload.
 
-## Upload Client Setup
+## Setting Up an Upload Client
 
-The step `transportRequestUploadCTS` uses the [Node.js](https://nodejs.org)-based [SAP Fiori tools](https://help.sap.com/viewer/product/SAP_FIORI_tools/Latest/en-US) to upload your SAPUI5 application to the UI5 repository service of your ABAP back-end infrastructure. It performs a deployment running the [Fiori deploy command](https://www.npmjs.com/package/@sap/ux-ui5-tooling#fiori-deploy---performs-the-deployment-of-the-application-into-an-abap-system) on a Docker image.
-By default, a plain [Node.js Docker image](https://hub.docker.com/_/node) is pulled and equipped with the SAPUI5 toolset during runtime of the pipeline.
-Alternatively, you can provide your own, fully equipped Docker image. This speeds-up the upload process, but obligates to maintain and provision the image on a Docker registry.
+The step `transportRequestUploadCTS` uses the [Node.js](https://nodejs.org)-based [SAP Fiori tools](https://help.sap.com/viewer/product/SAP_FIORI_tools/Latest/en-US) to upload your SAPUI5 application to the UI5 repository service of your ABAP back-end infrastructure. It performs the deployment command [Fiori deploy](https://www.npmjs.com/package/@sap/ux-ui5-tooling#fiori-deploy---performs-the-deployment-of-the-application-into-an-abap-system) on a Docker image.
 
-### Fully Equipped Docker image
+By default, a plain [node.js Docker image](https://hub.docker.com/_/node) is pulled and equipped with the SAPUI5 toolset during runtime of the pipeline.
+Alternatively, you can provide your own, fully equipped Docker image. This speeds up the upload process, but requires you to maintain and provision the image on a Docker registry.
 
-To create an own Docker image with the [SAP Fiori tools](https://help.sap.com/viewer/product/SAP_FIORI_tools/Latest/en-US) installed, proceed as follows:
+### Creating a Fully Equipped Docker Image
 
-1. Create a Node-based Docker image with the SAP Fiori tools installed:
+To create an own Docker image with the [SAP Fiori tools](https://help.sap.com/viewer/product/SAP_FIORI_tools/Latest/en-US), proceed as follows:
 
-   ```Dockerfile
-   FROM node
-   USER root
-   RUN npm install -global @ui5/cli @sap/ux-ui5-tooling @ui5/logger @ui5/fs
-   USER node
+1. Create a node.js based Docker image with the SAP Fiori tools installed:
+
+    ```Dockerfile
+    FROM node
+    USER root
+    RUN npm install -global @ui5/cli @sap/ux-ui5-tooling @ui5/logger @ui5/fs
+    USER node
    ```
 
    ```/bin/bash
    docker build -t my/fiori-node .
    ```
 
-1. Push your image to your private [Docker Hub registry](https://hub.docker.com/).
+1. Push your image to your private [Docker Hub registry](https://hub.docker.com/):
 
-   ```/bin/bash
-   docker push my/fiori-node  
-   ```
+    ```/bin/bash
+    docker push my/fiori-node  
+    ```
 
-1. Add the following to your config.yml file:
+1. Add the following content to your `config.yml` file:
 
-```yaml
-steps:
-  transportRequestUploadCTS:
-    dockerImage: 'my/fiori-node'
-    deployToolDependencies: []
-```
+    ```yaml
+    steps:
+      transportRequestUploadCTS:
+        dockerImage: 'my/fiori-node'
+        deployToolDependencies: []
+    ```
 
-## Building the SAPUI5 Application
+## Building an SAPUI5 Application
 
-Build your SAPUI5 application with the build command of the SAPUI5 toolset and use the step [npmExecuteScripts](npmExecuteScripts.md) to run the build command, proceeding as follows:
+Build your SAPUI5 application with the build command of the SAPUI5 toolset and use the step [npmExecuteScripts](npmExecuteScripts.md) to run the build command. Proceed as follows to do so:
 
-1. Configure the step in the `package.json` file of your project
+1. Configure the steps in the `package.json` file of your project as follows:
 
-   ```json
-   {
-      ...
-      "scripts": {
-         "start": "ui5 serve",
-         "test": "npm run lint",
-         "build": "ui5 build --clean-dest",
-         ...
-      },
-      "dependencies": {},
-      "devDependencies": {
-         "@ui5/cli": "^2.11.2",
-         ...
-      }
-   }
-   ```
+    ```json
+    {
+       ...
+       "scripts": {
+          "start": "ui5 serve",
+          "test": "npm run lint",
+          "build": "ui5 build --clean-dest",
+          ...
+       },
+       "dependencies": {},
+       "devDependencies": {
+          "@ui5/cli": "^2.11.2",
+          ...
+       }
+    }
+    ```
 
-1. Setup the execution step in the pipeline
+1. Configure the execution step in the pipeline as follows:
 
-   ```groovy
-   stage('Build') {
-      npmExecuteScripts(script: this, runScripts: ['build'])
-   }
-   ```
+    ```groovy
+    stage('Build') {
+       npmExecuteScripts(script: this, runScripts: ['build'])
+    }
+    ```
 
-**Note:** Do not use the `mtaBuild` step. The `mta` is dedicated to the SAP Cloud Platform. It does neither create the expected `dist` folder nor the compliant content.
+**Note:** Do not use the `mtaBuild` step. The The MTA Build Tool `mta` is dedicated to the SAP Cloud Platform. It does neither create the expected `dist` folder nor the compliant content.
 
-## Uploading the SAPUI5 Application
+## Uploading an SAPUI5 Application
 
-The Fiori toolset uses the [ODATA service](https://ui5.sap.com/#/topic/a883327a82ef4cc792f3c1e7b7a48de8) to upload your UI5 application to the SAPUI5 ABAP Repository.
+The Fiori toolset uses the [ODATA service](https://ui5.sap.com/#/topic/a883327a82ef4cc792f3c1e7b7a48de8) to upload your UI5 application to the SAPUI5 ABAP repository.
+
 The access is controlled by Basic Authentication (user/password based authentication).
 
-**Note:** Do not upload to SAP BTP. The SAP Business Technology Platform does not support Basic Authentication.
+**Note:** Do not upload your application to SAP BTP. The SAP Business Technology Platform does not support `Basic Authentication`.
 
 **Note:** Use an HTTPS endpoint to ensure the encryption of your credentials.
 
@@ -95,13 +97,13 @@ The target of the upload is a transport request, identified by an identifier (ID
 
 The step `transportRequestUploadCTS` allows you to set the ID by parameter.
 
-Alternatively, you can pass the ID through the `commonPipelineEnvironment`.
+Alternatively, you can pass the ID through the parameter `commonPipelineEnvironment`.
 For example, by performing a step that generates the ID or obtains it differently.
-See [transportRequestReqIDFromGit](transportRequestReqIDFromGit.md).
+For more information, see [transportRequestReqIDFromGit](transportRequestReqIDFromGit.md).
 
 ### Adding a Parameter
 
-A parameterized pipeline allows you to specify the ID with the launch of the build instead of entering it statically into the pipeline.
+A parameterized pipeline allows you to specify the ID with the launch of each build instead of entering it statically into the pipeline.
 
 ```groovy
 transportRequestUploadCTS(
@@ -131,7 +133,7 @@ transportRequestUploadCTS(
 
 Use the step [transportRequestReqIDFromGit](transportRequestReqIDFromGit.md) to obtain the  `transportRequestId` value from your Git commit messages.
 
-This step extracts the ID from the commit messages of your project repository and enters it into the `commonPipelineEnvironment`, in turn, the upload step `transportRequestUploadCTS` picks it up from there.
+This step extracts the ID from the commit messages of your project repository and enters it into the `commonPipelineEnvironment`. In turn, the upload step `transportRequestUploadCTS` picks it up from there.
 
 ```groovy
 transportRequestReqIDFromGit( script: this )
