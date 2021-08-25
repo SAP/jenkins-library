@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -882,6 +883,7 @@ func getTestResults(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Se
 	var UnitTestResults Checkstyle
 	var File file
 	var UnitError unitError
+	var FileName string
 
 	url := config.Host +
 		"/sap/bc/adt/api/abapunit/results/" + runId + "?sap-client=" + config.Client
@@ -909,30 +911,89 @@ func getTestResults(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Se
 		log.Entry().Warning(parsingErr)
 	}
 
-	UnitError.Source = response.Testsuite.Testcase.Name
-	UnitError.Severity = "error"
+	failures, falirerr := strconv.Atoi(response.Testsuite.Failures)
+	if falirerr != nil {
+		log.Entry().Warning(falirerr)
+	}
 
-	UnitError.Message = html.UnescapeString(response.Testsuite.Testcase.Failure.Text)
+	tests, testerr := strconv.Atoi(response.Testsuite.Tests)
+	if testerr != nil {
+		log.Entry().Warning(falirerr)
+	}
 
-	re := regexp.MustCompile(`Line: <\d*>`)
-	re2 := regexp.MustCompile(`\d+`)
-	re3 := regexp.MustCompile(`:[a-zA-Z0-9_]*-`)
-	re4 := regexp.MustCompile(`.[a-zA-Z]*:`)
-	linestring := re.FindString(UnitError.Message)
-	linenumber := re2.FindString(linestring)
-	UnitError.Line = linenumber
+	layout, layouterr := getRepositoryLayout(config, client)
+	if layouterr != nil {
+		return response, fmt.Errorf("getting repository layout failed: %w", layouterr)
+	}
 
-	preobjectName := re3.FindString(response.Testsuite.Testcase.Classname)
-	preobjectType := re4.FindString(response.Testsuite.Testcase.Classname)
-	objectType := preobjectType[1 : len(preobjectType)-1]
-	objectName := preobjectName[1 : len(preobjectName)-1]
+	if failures != 0 {
 
-	FileName := objectName + "." + objectType + "." + "testclasses.abap"
+		for i := 0; i < failures; i++ {
 
-	File.Name = "/var/jenkins_home/workspace/yFirstPipeline_YI3K648942_ASANIR/src/objects/" + strings.ToUpper(objectType) + "/" + strings.ToUpper(objectName) + "/" + FileName
+			UnitError.Source = response.Testsuite.Testcase[i].Name
+			UnitError.Severity = "error"
+
+			UnitError.Message = html.UnescapeString(response.Testsuite.Testcase[i].Failure.Text)
+
+			regexLine := regexp.MustCompile(`Line: <\d*>`)
+			//	re2 := regexp.MustCompile(`\d+`)
+
+			linestring := regexLine.FindString(UnitError.Message)
+			UnitError.Line = linestring[7 : len(linestring)-1]
+			File.Error = append(File.Error, UnitError)
+			regexObjectName := regexp.MustCompile(`:[a-zA-Z0-9_]*-`)
+			regexObjectType := regexp.MustCompile(`.[a-zA-Z]*:`)
+			preobjectName := regexObjectName.FindString(response.Testsuite.Testcase[i].Classname)
+			preobjectType := regexObjectType.FindString(response.Testsuite.Testcase[i].Classname)
+			objectType := preobjectType[1 : len(preobjectType)-1]
+			objectName := preobjectName[1 : len(preobjectName)-1]
+			if layout.Layout.FormatVersion >= 5 {
+
+				FileName = objectName + "." + objectType + "." + "testclasses.abap"
+			} else {
+
+				FileName = "CINC " + objectName + "============CCAU.abap"
+
+			}
+
+			File.Name = "/var/jenkins_home/workspace/yFirstPipeline_YI3K648942_ASANIR/src/objects/" + strings.ToUpper(objectType) + "/" + strings.ToUpper(objectName) + "/" + FileName
+			UnitTestResults.File = append(UnitTestResults.File, File)
+
+		}
+	} else {
+		if tests != 0 {
+
+			for i := 0; i < tests; i++ {
+
+				UnitError.Source = response.Testsuite.Testcase[i].Name
+				UnitError.Severity = "low"
+				File.Error = append(File.Error, UnitError)
+				regexObjectName := regexp.MustCompile(`:[a-zA-Z0-9_]*-`)
+				regexObjectType := regexp.MustCompile(`.[a-zA-Z]*:`)
+				preobjectName := regexObjectName.FindString(response.Testsuite.Testcase[i].Classname)
+				preobjectType := regexObjectType.FindString(response.Testsuite.Testcase[i].Classname)
+				objectType := preobjectType[1 : len(preobjectType)-1]
+				objectName := preobjectName[1 : len(preobjectName)-1]
+				if layout.Layout.FormatVersion >= 5 {
+
+					FileName = objectName + "." + objectType + "." + "testclasses.abap"
+				} else {
+
+					FileName = "CINC " + objectName + "============CCAU.abap"
+
+				}
+
+				File.Name = "/var/jenkins_home/workspace/yFirstPipeline_YI3K648942_ASANIR/src/objects/" + strings.ToUpper(objectType) + "/" + strings.ToUpper(objectName) + "/" + FileName
+				UnitTestResults.File = append(UnitTestResults.File, File)
+
+			}
+
+		}
+	}
+
+	//UnitError.Line = re2.FindString(linestring)
+
 	UnitTestResults.Version = "1.0"
-	File.Error = append(File.Error, UnitError)
-	UnitTestResults.File = append(UnitTestResults.File, File)
 
 	const UnitTestFileName = "UnitTestResults"
 
@@ -1212,6 +1273,35 @@ func getRepositoryObjects(config *gctsExecuteABAPUnitTestsOptions, client piperh
 	}
 
 	return repoObjectsResponse.Objects, nil
+}
+
+func getRepositoryLayout(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender) (repositoryLayout, error) {
+
+	var repoLayoutResponse repositoryLayout
+	url := config.Host +
+		"/sap/bc/cts_abapvcs/repository/" + config.Repository +
+		"/layout?sap-client=" + config.Client
+
+	resp, httpErr := client.SendRequest("GET", url, nil, nil, nil)
+
+	defer func() {
+		if resp != nil && resp.Body != nil {
+			resp.Body.Close()
+		}
+	}()
+
+	if httpErr != nil {
+		return repositoryLayout{}, errors.Wrap(httpErr, "could not get repository layout")
+	} else if resp == nil {
+		return repositoryLayout{}, errors.New("could not get repository layout: did not retrieve a HTTP response")
+	}
+
+	parsingErr := piperhttp.ParseHTTPResponseBodyJSON(resp, &repoLayoutResponse)
+	if parsingErr != nil {
+		return repositoryLayout{}, errors.Errorf("%v", parsingErr)
+	}
+
+	return repoLayoutResponse, nil
 }
 
 func getRepositoryHistory(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender) (getRepoHistoryResponseBody, error) {
@@ -1682,6 +1772,24 @@ type objectStructResponseBody struct {
 	ErrorLogs []gctsLogs     `json:"errorLog"`
 }
 
+type layout struct {
+	FormatVersion   int    `json:"formatVersion"`
+	Format          string `json:"format"`
+	ObjectStorage   string `json:"objectStorage"`
+	MetaInformation string `json:"metaInformation"`
+	TableContent    string `json:"tableContent"`
+	Subdirectory    string `json:"subdirectory"`
+	ReadableSource  string `json:"readableSource"`
+	KeepClient      string `json:"keepClient"`
+}
+
+type repositoryLayout struct {
+	Layout    layout     `json:"layout"`
+	Log       []gctsLogs `json:"log"`
+	Exception string     `json:"exception"`
+	ErrorLogs []gctsLogs `json:"errorLog"`
+}
+
 type repositoryResponseBody struct {
 	Result    result        `json:"result"`
 	Exception gctsException `json:"exception"`
@@ -1713,7 +1821,7 @@ type Testsuites struct {
 		Timestamp string `xml:"timestamp,attr"`
 		Time      string `xml:"time,attr"`
 		Hostname  string `xml:"hostname,attr"`
-		Testcase  struct {
+		Testcase  []struct {
 			Text      string `xml:",chardata"`
 			Classname string `xml:"classname,attr"`
 			Name      string `xml:"name,attr"`
