@@ -4,7 +4,7 @@
 
 ## Prerequisites
 
-* You have installed the SAP component SAP_UI 7.53 or higher on your ABAP system.
+* You have installed the [SAP component SAP_UI 7.53](https://help.sap.com/viewer/6f3c61a7a5b94447b80e72f722b0aad7/202009.002/en-US/35828457ed26452db8d51c840813f1bb.html) or higher on your ABAP system.
 * You have enabled the OData Service to load data to the [SAPUI5 ABAP repository](https://sapui5.hana.ondemand.com/#/topic/a883327a82ef4cc792f3c1e7b7a48de8.html).
 * You have the [S_DEVELOP authorization](https://sapui5.hana.ondemand.com/#/topic/a883327a82ef4cc792f3c1e7b7a48de8.html) to perform operations in your SAPUI5 ABAP repository.
 * You have created a transport request on the ABAP system, which is the target container of the SAPUI5 application for your upload.
@@ -27,11 +27,11 @@ To create an own Docker image with the [SAP Fiori tools](https://help.sap.com/vi
     USER root
     RUN npm install -global @ui5/cli @sap/ux-ui5-tooling @ui5/logger @ui5/fs
     USER node
-   ```
+    ```
 
-   ```/bin/bash
-   docker build -t my/fiori-node .
-   ```
+    ```/bin/bash
+    docker build -t my/fiori-node .
+    ```
 
 1. Push your image to your private [Docker Hub registry](https://hub.docker.com/):
 
@@ -83,9 +83,7 @@ Build your SAPUI5 application with the build command of the SAPUI5 toolset and u
 
 ## Uploading an SAPUI5 Application
 
-The Fiori toolset uses the [ODATA service](https://ui5.sap.com/#/topic/a883327a82ef4cc792f3c1e7b7a48de8) to upload your UI5 application to the SAPUI5 ABAP repository.
-
-The access is controlled by Basic Authentication (user/password based authentication).
+The Fiori toolset uses the [ODATA service](https://ui5.sap.com/#/topic/a883327a82ef4cc792f3c1e7b7a48de8) to upload your UI5 application to the SAPUI5 ABAP repository. It controls access by [Basic Authentication](https://help.sap.com/viewer/e815bb97839a4d83be6c4fca48ee5777/202009.002/en-US/43960f4a527b58c1e10000000a422035.html?q=basic%20authentication) (user/password based authentication).
 
 **Note:** Do not upload your application to SAP BTP. The SAP Business Technology Platform does not support `Basic Authentication`.
 
