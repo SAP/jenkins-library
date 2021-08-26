@@ -32,11 +32,13 @@ kanikoExecute script:this
 
 To create a valid `.docker/config.json` file you first need to base64 encode your username and password.
 This can be done using the following command:
+
 ```shell
 echo -n '<username>:<password>' | base64
 ```
 
 Then create a file called config.json containing the following:
+
 ```json
 {
   "auths": {
