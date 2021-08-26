@@ -17,6 +17,7 @@ type ReportData struct {
 	BranchName     string `json:"branchName,omitempty"`
 	Organization   string `json:"organization,omitempty"`
 	NumberOfIssues Issues `json:"numberOfIssues"`
+	Coverage       string `json:"coverage"`
 }
 
 // Issues ...

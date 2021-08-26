@@ -231,6 +231,9 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 	if err != nil {
 		return err
 	}
+
+	compSvc := SonarUtils.NewMeasuresComponentService(taskReport.ServerURL, config.Token, taskReport.ProjectKey, config.Organization, apiClient)
+
 	log.Entry().Debugf("Influx values: %v", influx.sonarqube_data.fields)
 	err = SonarUtils.WriteReport(SonarUtils.ReportData{
 		ServerURL:    taskReport.ServerURL,
@@ -246,6 +249,7 @@ func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runne
 			Minor:    influx.sonarqube_data.fields.minor_issues,
 			Info:     influx.sonarqube_data.fields.info_issues,
 		},
+		Coverage: compSvc.GetCoverage(),
 	}, sonar.workingDir, ioutil.WriteFile)
 	if err != nil {
 		return err
