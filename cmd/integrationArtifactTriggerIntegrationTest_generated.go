@@ -15,11 +15,11 @@ import (
 )
 
 type integrationArtifactTriggerIntegrationTestOptions struct {
-	IFlowServiceKey         string `json:"iFlowServiceKey,omitempty"`
-	IntegrationFlowID       string `json:"integrationFlowId,omitempty"`
-	IFlowServiceEndpointURL string `json:"iFlowServiceEndpointUrl,omitempty"`
-	ContentType             string `json:"contentType,omitempty"`
-	MessageBodyPath         string `json:"messageBodyPath,omitempty"`
+	IntegrationFlowServiceKey         string `json:"integrationFlowServiceKey,omitempty"`
+	IntegrationFlowID                 string `json:"integrationFlowId,omitempty"`
+	IntegrationFlowServiceEndpointURL string `json:"integrationFlowServiceEndpointUrl,omitempty"`
+	ContentType                       string `json:"contentType,omitempty"`
+	MessageBodyPath                   string `json:"messageBodyPath,omitempty"`
 }
 
 // IntegrationArtifactTriggerIntegrationTestCommand Test the service endpoint of your iFlow
@@ -51,7 +51,7 @@ func IntegrationArtifactTriggerIntegrationTestCommand() *cobra.Command {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
-			log.RegisterSecret(stepConfig.IFlowServiceKey)
+			log.RegisterSecret(stepConfig.IntegrationFlowServiceKey)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -98,15 +98,15 @@ func IntegrationArtifactTriggerIntegrationTestCommand() *cobra.Command {
 }
 
 func addIntegrationArtifactTriggerIntegrationTestFlags(cmd *cobra.Command, stepConfig *integrationArtifactTriggerIntegrationTestOptions) {
-	cmd.Flags().StringVar(&stepConfig.IFlowServiceKey, "iFlowServiceKey", os.Getenv("PIPER_iFlowServiceKey"), "Service key JSON string to access the Process Integration Runtime service instance of plan 'integration-flow'")
+	cmd.Flags().StringVar(&stepConfig.IntegrationFlowServiceKey, "integrationFlowServiceKey", os.Getenv("PIPER_integrationFlowServiceKey"), "Service key JSON string to access the Process Integration Runtime service instance of plan 'integration-flow'")
 	cmd.Flags().StringVar(&stepConfig.IntegrationFlowID, "integrationFlowId", os.Getenv("PIPER_integrationFlowId"), "Specifies the ID of the Integration Flow artifact")
-	cmd.Flags().StringVar(&stepConfig.IFlowServiceEndpointURL, "iFlowServiceEndpointUrl", os.Getenv("PIPER_iFlowServiceEndpointUrl"), "Specifies the URL endpoint of the iFlow. Please provide in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.")
+	cmd.Flags().StringVar(&stepConfig.IntegrationFlowServiceEndpointURL, "integrationFlowServiceEndpointUrl", os.Getenv("PIPER_integrationFlowServiceEndpointUrl"), "Specifies the URL endpoint of the iFlow. Please provide in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.")
 	cmd.Flags().StringVar(&stepConfig.ContentType, "contentType", os.Getenv("PIPER_contentType"), "Specifies the content type of the file defined in messageBodyPath e.g. application/json")
 	cmd.Flags().StringVar(&stepConfig.MessageBodyPath, "messageBodyPath", os.Getenv("PIPER_messageBodyPath"), "Speficfies the relative file path to the message body.")
 
-	cmd.MarkFlagRequired("iFlowServiceKey")
+	cmd.MarkFlagRequired("integrationFlowServiceKey")
 	cmd.MarkFlagRequired("integrationFlowId")
-	cmd.MarkFlagRequired("iFlowServiceEndpointUrl")
+	cmd.MarkFlagRequired("integrationFlowServiceEndpointUrl")
 }
 
 // retrieve step metadata
@@ -120,15 +120,15 @@ func integrationArtifactTriggerIntegrationTestMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "iFlowServiceKeyCredentialsId", Description: "Jenkins secret text credential ID containing the service key to the Process Integration Runtime service instance of plan 'integration-flow'", Type: "jenkins"},
+					{Name: "integrationFlowServiceKeyCredentialsId", Description: "Jenkins secret text credential ID containing the service key to the Process Integration Runtime service instance of plan 'integration-flow'", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{
-						Name: "iFlowServiceKey",
+						Name: "integrationFlowServiceKey",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "iFlowServiceKeyCredentialsId",
-								Param: "iFlowServiceKey",
+								Name:  "integrationFlowServiceKeyCredentialsId",
+								Param: "integrationFlowServiceKey",
 								Type:  "secret",
 							},
 						},
@@ -136,7 +136,7 @@ func integrationArtifactTriggerIntegrationTestMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_iFlowServiceKey"),
+						Default:   os.Getenv("PIPER_integrationFlowServiceKey"),
 					},
 					{
 						Name:        "integrationFlowId",
@@ -148,18 +148,18 @@ func integrationArtifactTriggerIntegrationTestMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_integrationFlowId"),
 					},
 					{
-						Name: "iFlowServiceEndpointUrl",
+						Name: "integrationFlowServiceEndpointUrl",
 						ResourceRef: []config.ResourceReference{
 							{
 								Name:  "commonPipelineEnvironment",
-								Param: "custom/iFlowServiceEndpoint",
+								Param: "custom/integrationFlowServiceEndpoint",
 							},
 						},
 						Scope:     []string{"PARAMETERS"},
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_iFlowServiceEndpointUrl"),
+						Default:   os.Getenv("PIPER_integrationFlowServiceEndpointUrl"),
 					},
 					{
 						Name:        "contentType",

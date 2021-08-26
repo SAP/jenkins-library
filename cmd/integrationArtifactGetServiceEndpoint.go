@@ -106,7 +106,7 @@ func runIntegrationArtifactGetServiceEndpoint(config *integrationArtifactGetServ
 			if iflowID == config.IntegrationFlowID {
 				entryPoints := child.S("EntryPoints")
 				finalEndpoint := entryPoints.Path("results.0.Url").Data().(string)
-				commonPipelineEnvironment.custom.iFlowServiceEndpoint = finalEndpoint
+				commonPipelineEnvironment.custom.integrationFlowServiceEndpoint = finalEndpoint
 				return nil
 			}
 		}
