@@ -16,7 +16,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func abapEnvironmentCloneGitRepo(config abapEnvironmentCloneGitRepoOptions, telemetryData *telemetry.CustomData) {
+func abapEnvironmentCloneGitRepo(config abapEnvironmentCloneGitRepoOptions, _ *telemetry.CustomData) {
 
 	c := command.Command{}
 
@@ -30,13 +30,13 @@ func abapEnvironmentCloneGitRepo(config abapEnvironmentCloneGitRepoOptions, tele
 	client := piperhttp.Client{}
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runAbapEnvironmentCloneGitRepo(&config, telemetryData, &autils, &client)
+	err := runAbapEnvironmentCloneGitRepo(&config, &autils, &client)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender) error {
+func runAbapEnvironmentCloneGitRepo(config *abapEnvironmentCloneGitRepoOptions, com abaputils.Communication, client piperhttp.Sender) error {
 	// Mapping for options
 	subOptions := convertCloneConfig(config)
 
@@ -112,9 +112,6 @@ func triggerClone(repo abaputils.Repository, cloneConnectionDetails abaputils.Co
 		return uriConnectionDetails, err
 	}
 	defer resp.Body.Close()
-
-	// workaround until golang version 1.16 is used
-	time.Sleep(100 * time.Millisecond)
 
 	log.Entry().WithField("StatusCode", resp.Status).WithField("ABAP Endpoint", cloneConnectionDetails.URL).Debug("Authentication on the ABAP system successful")
 	uriConnectionDetails.XCsrfToken = resp.Header.Get("X-Csrf-Token")
