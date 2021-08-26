@@ -22,6 +22,7 @@ func PollEntity(repositoryName string, connectionDetails ConnectionDetailsHTTP, 
 	for {
 		var resp, err = GetHTTPResponse("GET", connectionDetails, nil, client)
 		if err != nil {
+			log.SetErrorCategory(log.ErrorInfrastructure)
 			err = HandleHTTPError(resp, err, "Could not pull the Repository / Software Component "+repositoryName, connectionDetails)
 			return "", err
 		}
@@ -37,6 +38,7 @@ func PollEntity(repositoryName string, connectionDetails ConnectionDetailsHTTP, 
 
 		if reflect.DeepEqual(PullEntity{}, body) {
 			log.Entry().WithField("StatusCode", resp.Status).WithField("repositoryName", repositoryName).Error("Could not pull the Repository / Software Component")
+			log.SetErrorCategory(log.ErrorInfrastructure)
 			var err = errors.New("Request to ABAP System not successful")
 			return "", err
 		}
@@ -45,6 +47,7 @@ func PollEntity(repositoryName string, connectionDetails ConnectionDetailsHTTP, 
 		log.Entry().WithField("StatusCode", resp.Status).Info("Pull Status: " + body.StatusDescription)
 		if body.Status != "R" {
 			if body.Status == "E" {
+				log.SetErrorCategory(log.ErrorUndefined)
 				PrintLogs(body, true)
 			} else {
 				PrintLogs(body, false)
@@ -109,18 +112,22 @@ func PrintLogs(entity PullEntity, errorOnSystem bool) {
 func GetRepositories(config *RepositoriesConfig) ([]Repository, error) {
 	var repositories = make([]Repository, 0)
 	if reflect.DeepEqual(RepositoriesConfig{}, config) {
+		log.SetErrorCategory(log.ErrorConfiguration)
 		return repositories, fmt.Errorf("Failed to read repository configuration: %w", errors.New("Eror in configuration, most likely you have entered empty or wrong configuration values. Please make sure that you have correctly specified them. For more information please read the User documentation"))
 	}
 	if config.RepositoryName == "" && config.BranchName == "" && config.Repositories == "" && len(config.RepositoryNames) == 0 {
+		log.SetErrorCategory(log.ErrorConfiguration)
 		return repositories, fmt.Errorf("Failed to read repository configuration: %w", errors.New("You have not specified any repository configuration. Please make sure that you have correctly specified it. For more information please read the User documentation"))
 	}
 	if config.Repositories != "" {
 		descriptor, err := ReadAddonDescriptor(config.Repositories)
 		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
 			return repositories, err
 		}
 		err = CheckAddonDescriptorForRepositories(descriptor)
 		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
 			return repositories, fmt.Errorf("Error in config file %v, %w", config.Repositories, err)
 		}
 		repositories = descriptor.Repositories

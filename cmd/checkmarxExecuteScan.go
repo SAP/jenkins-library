@@ -247,7 +247,9 @@ func uploadAndScan(config checkmarxExecuteScanOptions, sys checkmarx.System, pro
 			return errors.Wrapf(err, "invalid configuration value for fullScanCycle %v, must be a positive int", config.FullScanCycle)
 		}
 
-		if incremental && config.FullScansScheduled && fullScanCycle > 0 && (getNumCoherentIncrementalScans(previousScans)+1)%fullScanCycle == 0 {
+		if config.IsOptimizedAndScheduled {
+			incremental = false
+		} else if incremental && config.FullScansScheduled && fullScanCycle > 0 && (getNumCoherentIncrementalScans(previousScans)+1)%fullScanCycle == 0 {
 			incremental = false
 		}
 
@@ -301,6 +303,10 @@ func verifyCxProjectCompliance(config checkmarxExecuteScanOptions, sys checkmarx
 	} else {
 		reports = append(reports, piperutils.Path{Target: toolRecordFileName})
 	}
+
+	scanReport := checkmarx.CreateCustomReport(results)
+	paths, err := checkmarx.WriteCustomReports(scanReport, fmt.Sprint(results["ProjectName"]), fmt.Sprint(results["ProjectID"]))
+	reports = append(reports, paths...)
 
 	links := []piperutils.Path{{Target: results["DeepLink"].(string), Name: "Checkmarx Web UI"}}
 	piperutils.PersistReportsAndLinks("checkmarxExecuteScan", utils.GetWorkspace(), reports, links)
