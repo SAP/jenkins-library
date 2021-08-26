@@ -29,6 +29,7 @@ kanikoExecute script:this
 ## ${docGenConfiguration}
 
 ## Creating a Docker `config.json` file
+
 To create a valid `.docker/config.json` file you first need to base64 encode your username and password.
 This can be done using the following command:
 ```shell
