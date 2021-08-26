@@ -180,9 +180,9 @@ func downloadAgent(config *ScanOptions, utils Utils) error {
 		if err != nil {
 			// we check if the copy error occurs and retry the download
 			// if the copy error did not happen, we rerun the whole download mechanism once
-			if strings.Contains(err.Error(), "unable to copy content from url to file") {
+			if strings.Contains(err.Error(), "unable to copy content from url to file") || strings.Contains(err.Error(), "returned with response 404 Not Found") {
 				// retry the download once again
-				log.Entry().Warnf("Previous Download failed due to %v", err)
+				log.Entry().Warnf("[Retry] Previous download failed due to %v", err)
 				err = nil // reset error to nil
 				err = utils.DownloadFile(config.AgentDownloadURL, agentFile, nil, nil)
 			}

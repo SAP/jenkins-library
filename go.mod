@@ -12,6 +12,7 @@ require (
 	github.com/asaskevich/govalidator v0.0.0-20200907205600-7a23bdc65eef // indirect
 	github.com/bmatcuk/doublestar v1.3.2
 	github.com/bndr/gojenkins v1.1.1-0.20210520222939-90ed82bfdff6
+	github.com/docker/cli v0.0.0-20191017083524-a8ff7f821017
 	github.com/elliotchance/orderedmap v1.3.0
 	github.com/evanphx/json-patch v4.9.0+incompatible
 	github.com/getsentry/sentry-go v0.7.0
