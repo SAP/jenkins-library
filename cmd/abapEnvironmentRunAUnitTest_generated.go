@@ -27,7 +27,7 @@ type abapEnvironmentRunAUnitTestOptions struct {
 	AUnitResultsFileName string `json:"aUnitResultsFileName,omitempty"`
 }
 
-// AbapEnvironmentRunAUnitTestCommand Runs an ATC Check
+// AbapEnvironmentRunAUnitTestCommand Runs an AUnit Test
 func AbapEnvironmentRunAUnitTestCommand() *cobra.Command {
 	const STEP_NAME = "abapEnvironmentRunAUnitTest"
 
@@ -38,19 +38,14 @@ func AbapEnvironmentRunAUnitTestCommand() *cobra.Command {
 
 	var createAbapEnvironmentRunAUnitTestCmd = &cobra.Command{
 		Use:   STEP_NAME,
-		Short: "Runs an ATC Check",
-		Long: `This step is for triggering an [AUnit] LINKS NEED TO BE UPDATED(https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/d8cec788fc104ff9ad9c3757b4dd13d4.html) test run on an SAP Cloud Platform ABAP Environment system.
-Please provide either of the following options:
-
-* The host and credentials the Cloud Platform ABAP Environment system itself. The credentials must be configured for the Communication Scenario [SAP_COM_0510](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html).
-* The Cloud Foundry parameters (API endpoint, organization, space), credentials, the service instance for the ABAP service and the service key for the Communication Scenario SAP_COM_0510.
-* Only provide one of those options with the respective credentials. If all values are provided, the direct communication (via host) has priority.
-
-Regardless of the option you chose, please make sure to provide the configuration for Software Components and Packages that you want to be checked analog to the examples listed on this page.`,
+		Short: "Runs an AUnit Test",
+		Long:  `This step is for triggering an [AUnit] test run on an SAP Cloud Platform ABAP Environment system`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
+
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
@@ -131,7 +126,7 @@ func abapEnvironmentRunAUnitTestMetadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:        "abapEnvironmentRunAUnitTest",
 			Aliases:     []config.Alias{},
-			Description: "Runs an ATC Check",
+			Description: "Runs an AUnit Test",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
