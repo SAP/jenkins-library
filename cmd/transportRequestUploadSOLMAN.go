@@ -9,11 +9,8 @@ import (
 )
 
 type transportRequestUploadSOLMANUtils interface {
-	command.ExecRunner
-
+	solman.Exec
 	FileExists(filename string) (bool, error)
-
-	GetExitCode() int
 
 	// Add more methods here, or embed additional interfaces, or remove/replace as required.
 	// The transportRequestUploadSOLMANUtils interface should be descriptive of your runtime dependencies,
@@ -42,7 +39,9 @@ func newTransportRequestUploadSOLMANUtils() transportRequestUploadSOLMANUtils {
 	return &utils
 }
 
-func transportRequestUploadSOLMAN(config transportRequestUploadSOLMANOptions, telemetryData *telemetry.CustomData) {
+func transportRequestUploadSOLMAN(config transportRequestUploadSOLMANOptions,
+	telemetryData *telemetry.CustomData,
+	commonPipelineEnvironment *transportRequestUploadSOLMANCommonPipelineEnvironment) {
 	// Utils can be used wherever the command.ExecRunner interface is expected.
 	// It can also be used for example as a mavenExecRunner.
 	utils := newTransportRequestUploadSOLMANUtils()
@@ -53,23 +52,33 @@ func transportRequestUploadSOLMAN(config transportRequestUploadSOLMANOptions, te
 
 	// Error situations should be bubbled up until they reach the line below which will then stop execution
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
-	err := runTransportRequestUploadSOLMAN(&config, &solman.UploadAction{}, telemetryData, utils)
+	err := runTransportRequestUploadSOLMAN(&config, &solman.UploadAction{}, telemetryData, utils, commonPipelineEnvironment)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runTransportRequestUploadSOLMAN(config *transportRequestUploadSOLMANOptions, action solman.Action, telemetryData *telemetry.CustomData, utils transportRequestUploadSOLMANUtils) error {
+func runTransportRequestUploadSOLMAN(config *transportRequestUploadSOLMANOptions,
+	action solman.Action,
+	telemetryData *telemetry.CustomData,
+	utils transportRequestUploadSOLMANUtils,
+	commonPipelineEnvironment *transportRequestUploadSOLMANCommonPipelineEnvironment) error {
+
 	action.WithConnection(solman.Connection{
 		Endpoint: config.Endpoint,
 		User:     config.Username,
 		Password: config.Password,
 	})
-	action.WithChangeDocumentID(config.ChangeDocumentID)
+
 	action.WithTransportRequestID(config.TransportRequestID)
+	action.WithChangeDocumentID(config.ChangeDocumentID)
 	action.WithApplicationID(config.ApplicationID)
 	action.WithFile(config.FilePath)
 	action.WithCMOpts(config.CmClientOpts)
+
+	commonPipelineEnvironment.custom.transportRequestID = config.TransportRequestID
+	commonPipelineEnvironment.custom.changeDocumentID = config.ChangeDocumentID
+
 	err := action.Perform(utils, utils)
 
 	if err == nil {

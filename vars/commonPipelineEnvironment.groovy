@@ -13,6 +13,11 @@ class commonPipelineEnvironment implements Serializable {
     def artifactVersion
     def originalArtifactVersion
 
+    // stores additional artifact coordinates
+    def artifactId
+    def groupId
+    def packaging
+
     //stores the build tools if it inferred automatically, e.g. in the SAP Cloud SDK pipeline
     String buildTool
 
@@ -43,7 +48,7 @@ class commonPipelineEnvironment implements Serializable {
     // Useful for making sure that the piper binary uses the same file when called from Jenkins.
     String configurationFile = ''
 
-    String mtarFilePath = ""
+    String mtarFilePath = null
 
     String abapAddonDescriptor
 
@@ -68,6 +73,10 @@ class commonPipelineEnvironment implements Serializable {
         appContainerProperties = [:]
         artifactVersion = null
         originalArtifactVersion = null
+
+        artifactId = null
+        groupId = null
+        packaging = null
 
         buildTool = null
 
@@ -180,6 +189,9 @@ class commonPipelineEnvironment implements Serializable {
 
     def files = [
         [filename: '.pipeline/commonPipelineEnvironment/artifactVersion', property: 'artifactVersion'],
+        [filename: '.pipeline/commonPipelineEnvironment/artifactId', property: 'artifactId'],
+        [filename: '.pipeline/commonPipelineEnvironment/groupId', property: 'groupId'],
+        [filename: '.pipeline/commonPipelineEnvironment/packaging', property: 'packaging'],
         [filename: '.pipeline/commonPipelineEnvironment/buildTool', property: 'buildTool'],
         [filename: '.pipeline/commonPipelineEnvironment/originalArtifactVersion', property: 'originalArtifactVersion'],
         [filename: '.pipeline/commonPipelineEnvironment/github/owner', property: 'githubOrg'],
@@ -191,86 +203,51 @@ class commonPipelineEnvironment implements Serializable {
         [filename: '.pipeline/commonPipelineEnvironment/abap/addonDescriptor', property: 'abapAddonDescriptor'],
     ]
 
-    void writeToDisk(script) {
-        files.each({f  ->
-            writeValueToFile(script, f.filename, this[f.property])
+    Map getCPEMap(script) {
+        def cpeMap = [:]
+        files.each({f ->
+            createMapEntry(script, cpeMap, f.filename, this[f.property])
         })
 
         containerProperties.each({key, value ->
-            writeValueToFile(script, ".pipeline/commonPipelineEnvironment/container/${key}", value)
+            def filename = ".pipeline/commonPipelineEnvironment/container/${key}"
+            createMapEntry(script, cpeMap, filename, value)
         })
 
         valueMap.each({key, value ->
-            writeValueToFile(script, ".pipeline/commonPipelineEnvironment/custom/${key}", value)
+            def filename = ".pipeline/commonPipelineEnvironment/custom/${key}"
+            createMapEntry(script, cpeMap, filename, value)
         })
+        return cpeMap
     }
 
-    void writeValueToFile(script, String filename, value){
-        if (value){
-            if (!(value in CharSequence)) filename += '.json'
-            if (script.fileExists(filename)) return
-            if (!(value in CharSequence)) value = groovy.json.JsonOutput.toJson(value)
-            script.writeFile file: filename, text: value
+    void createMapEntry(script, Map resMap, String filename, value) {
+        // net.sf.json.JSONNull can come in through readPipelineEnv via readJSON()
+        // leaving them in will create a StackOverflowError further down in writePipelineEnv()
+        // thus removing them from the map for now
+        if (value != null && !(value instanceof net.sf.json.JSONNull)) {
+            // prefix is assumed by step if nothing else is specified
+            def prefix = ~/^.pipeline\/commonPipelineEnvironment\//
+            filename -= prefix
+            resMap[filename] = value
         }
     }
 
-    void readFromDisk(script) {
-        files.each({f  ->
-            if (script.fileExists(f.filename)) {
-                this[f.property] = script.readFile(f.filename)
-            }
-        })
+    def setCPEMap(script, Map cpeMap) {
+        if (cpeMap == null) return
+        def prefix = ~/^.pipeline\/commonPipelineEnvironment\//
+        files.each({f ->
+                        def key = f.filename - prefix
+                        if (cpeMap.containsKey(key)) this[f.property] = cpeMap[key]
+                   })
 
-        def customValues = script.findFiles(glob: '.pipeline/commonPipelineEnvironment/custom/*')
-        customValues.each({f ->
-            def fileContent = script.readFile(f.getPath())
-            def fileName = f.getName()
-            def param = fileName.split('/')[fileName.split('\\/').size()-1]
-            if (param.endsWith(".json")){
-                param = param.replace(".json","")
-                valueMap[param] = getJSONValue(script, fileContent)
-            }else{
-                valueMap[param] = fileContent
-            }
-        })
-
-        def containerValues = script.findFiles(glob: '.pipeline/commonPipelineEnvironment/container/*')
-        containerValues.each({f ->
-            def fileContent = script.readFile(f.getPath())
-            def fileName = f.getName()
-            def param = fileName.split('/')[fileName.split('\\/').size()-1]
-            if (param.endsWith(".json")){
-                param = param.replace(".json","")
-                containerProperties[param] = getJSONValue(script, fileContent)
-            }else{
-                containerProperties[param] = fileContent
-            }
-        })
+        cpeMap.each {
+            if (it.key.startsWith("custom/")) valueMap[it.key - ~/^custom\//] = it.value
+            if (it.key.startsWith("container/")) containerProperties[it.key - ~/^container\//] = it.value
+        }
     }
 
     List getCustomDefaults() {
         DefaultValueCache.getInstance().getCustomDefaults()
-    }
-
-    def getJSONValue(Script script, String text) {
-        try {
-            return script.readJSON(text: text)
-        } catch (net.sf.json.JSONException ex) {
-            // JSON reader cannot handle simple objects like bool, numbers, ...
-            // as such readJSON cannot read what writeJSON created in such cases
-            if (text in ['true', 'false']) {
-                return text.toBoolean()
-            }
-            if (text ==~ /[\d]+/) {
-                return text.toInteger()
-            }
-            if (text.contains('.')) {
-                return text.toFloat()
-            }
-            // no handling of strings since we expect strings in a non-json file
-            // see handling of *.json above
-
-            throw err
-        }
     }
 }

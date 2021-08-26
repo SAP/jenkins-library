@@ -8,7 +8,7 @@ void call(parameters) {
 
             stage('Init') {
                 steps {
-                    abapEnvironmentPipelineStageInit script: parameters.script, customDefaults: ['com.sap.piper/pipeline/abapStageOrdinals.yml'].plus(parameters.customDefaults ?: [])
+                    abapEnvironmentPipelineStageInit script: parameters.script, customDefaults: ['com.sap.piper/pipeline/abapEnvironmentPipelineStageDefaults.yml'].plus(parameters.customDefaults ?: [])
                 }
             }
 

@@ -1,6 +1,6 @@
 # Prepare System
 
-In this stage, the ABAP Environment system is created. This is done with the `abapEnvironmentCreateSystem` step. After the system creation, the Communication Arrangement [SAP_COM_0510](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html) (SAP BTP ABAP Environment - Software Component Test Integration) is created using the step `cloudFoundryCreateServiceKey`. With the creation of the Communication Arrangement, a User and Password is created on the ABAP Environment system for the APIs that are used in the following stages.
+In this stage, the SAP BTP, ABAP environment system is created. This is done with the `abapEnvironmentCreateSystem` step. After the system creation, the Communication Arrangement [SAP_COM_0510](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html) (SAP BTP, ABAP Environment - Software Component Test Integration) is created using the step `cloudFoundryCreateServiceKey`. With the creation of the Communication Arrangement, a User and Password is created on the SAP BTP, ABAP environment system for the APIs that are used in the following stages.
 
 ## Steps
 

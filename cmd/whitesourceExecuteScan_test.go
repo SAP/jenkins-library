@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/reporting"
 	"github.com/SAP/jenkins-library/pkg/versioning"
@@ -66,7 +67,6 @@ func TestRunWhitesourceExecuteScan(t *testing.T) {
 	t.Run("fails for invalid configured project token", func(t *testing.T) {
 		// init
 		config := ScanOptions{
-			ScanType:            "unified-agent",
 			BuildDescriptorFile: "my-mta.yml",
 			VersioningModel:     "major",
 			ProductName:         "mock-product",
@@ -83,7 +83,7 @@ func TestRunWhitesourceExecuteScan(t *testing.T) {
 		// test
 		err := runWhitesourceExecuteScan(&config, scan, utilsMock, systemMock, &cpe, &influx)
 		// assert
-		assert.EqualError(t, err, "no project with token 'no-such-project-token' found in Whitesource")
+		assert.EqualError(t, err, "failed to resolve and aggregate project name: failed to get project by token: no project with token 'no-such-project-token' found in Whitesource")
 		assert.Equal(t, "", config.ProjectName)
 		assert.Equal(t, "", scan.AggregateProjectName)
 	})
@@ -98,7 +98,6 @@ func TestRunWhitesourceExecuteScan(t *testing.T) {
 			AgentFileName:             "ua.jar",
 			ProductName:               "mock-product",
 			ProjectToken:              "mock-project-token",
-			ScanType:                  "unified-agent",
 		}
 		utilsMock := newWhitesourceUtilsMock()
 		utilsMock.AddFile("wss-generated-file.config", []byte("key=value"))
@@ -331,7 +330,7 @@ func TestResolveProjectIdentifiers(t *testing.T) {
 		// test
 		err := resolveProjectIdentifiers(&config, scan, utilsMock, systemMock)
 		// assert
-		assert.EqualError(t, err, "no product with name 'does-not-exist' found in Whitesource")
+		assert.EqualError(t, err, "error resolving product token: failed to get product by name: no product with name 'does-not-exist' found in Whitesource")
 	})
 	t.Run("product not found, created from pipeline", func(t *testing.T) {
 		// init
@@ -359,7 +358,7 @@ func TestCheckPolicyViolations(t *testing.T) {
 	t.Parallel()
 
 	t.Run("success - no violations", func(t *testing.T) {
-		config := ScanOptions{}
+		config := ScanOptions{ProductName: "mock-product", Version: "1"}
 		scan := newWhitesourceScan(&config)
 		scan.AppendScannedProject("testProject1")
 		systemMock := ws.NewSystemMock("ignored")
@@ -379,6 +378,10 @@ func TestCheckPolicyViolations(t *testing.T) {
 		content := string(fileContent)
 		assert.Contains(t, content, `"policyViolations":0`)
 		assert.Contains(t, content, `"reports":["report1.pdf","report2.pdf"]`)
+
+		exists, err := utilsMock.FileExists(filepath.Join(reporting.StepReportDirectory, "whitesourceExecuteScan_ip_2d3120020f3f46393a54575a7f6f5675ad536721.json"))
+		assert.True(t, exists)
+
 	})
 
 	t.Run("success - no reports", func(t *testing.T) {
@@ -451,6 +454,23 @@ func TestCheckPolicyViolations(t *testing.T) {
 
 		_, err := checkPolicyViolations(&config, scan, systemMock, utilsMock, reportPaths, &influx)
 		assert.Contains(t, fmt.Sprint(err), "failed to write policy violation report:")
+	})
+
+	t.Run("failed to write json report", func(t *testing.T) {
+		config := ScanOptions{ProductName: "mock-product", Version: "1"}
+		scan := newWhitesourceScan(&config)
+		scan.AppendScannedProject("testProject1")
+		systemMock := ws.NewSystemMock("ignored")
+		systemMock.Alerts = []ws.Alert{}
+		utilsMock := newWhitesourceUtilsMock()
+		utilsMock.FileWriteErrors = map[string]error{
+			filepath.Join(reporting.StepReportDirectory, "whitesourceExecuteScan_ip_2d3120020f3f46393a54575a7f6f5675ad536721.json"): fmt.Errorf("write error"),
+		}
+		reportPaths := []piperutils.Path{}
+		influx := whitesourceExecuteScanInflux{}
+
+		_, err := checkPolicyViolations(&config, scan, systemMock, utilsMock, reportPaths, &influx)
+		assert.Contains(t, fmt.Sprint(err), "failed to write json report")
 	})
 }
 
@@ -667,10 +687,17 @@ func TestCreateCustomVulnerabilityReport(t *testing.T) {
 func TestWriteCustomVulnerabilityReports(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
+		config := &ScanOptions{
+			ProductName: "mock-product",
+		}
+		scan := &ws.Scan{ProductVersion: "1"}
+		scan.AppendScannedProject("project1")
+		scan.AppendScannedProject("project2")
+
 		scanReport := reporting.ScanReport{}
 		utilsMock := newWhitesourceUtilsMock()
 
-		reportPaths, err := writeCustomVulnerabilityReports(scanReport, utilsMock)
+		reportPaths, err := writeCustomVulnerabilityReports(config, scan, scanReport, utilsMock)
 
 		assert.NoError(t, err)
 		assert.Equal(t, 1, len(reportPaths))
@@ -679,31 +706,40 @@ func TestWriteCustomVulnerabilityReports(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, exists)
 
-		exists, err = utilsMock.FileExists(filepath.Join(reporting.MarkdownReportDirectory, "whitesourceExecuteScan_20100510001542.md"))
+		exists, err = utilsMock.FileExists(filepath.Join(reporting.StepReportDirectory, "whitesourceExecuteScan_oss_27322f16a39c10c852ba6639538140a03e08e93f.json"))
 		assert.NoError(t, err)
 		assert.True(t, exists)
 	})
 
 	t.Run("failed to write HTML report", func(t *testing.T) {
+		config := &ScanOptions{
+			ProductName: "mock-product",
+		}
+		scan := &ws.Scan{ProductVersion: "1"}
 		scanReport := reporting.ScanReport{}
 		utilsMock := newWhitesourceUtilsMock()
 		utilsMock.FileWriteErrors = map[string]error{
 			filepath.Join(ws.ReportsDirectory, "piper_whitesource_vulnerability_report.html"): fmt.Errorf("write error"),
 		}
 
-		_, err := writeCustomVulnerabilityReports(scanReport, utilsMock)
+		_, err := writeCustomVulnerabilityReports(config, scan, scanReport, utilsMock)
 		assert.Contains(t, fmt.Sprint(err), "failed to write html report")
 	})
 
-	t.Run("failed to write markdown report", func(t *testing.T) {
+	t.Run("failed to write json report", func(t *testing.T) {
+		config := &ScanOptions{
+			ProductName: "mock-product",
+		}
+		scan := &ws.Scan{ProductVersion: "1"}
+		scan.AppendScannedProject("project1")
 		scanReport := reporting.ScanReport{}
 		utilsMock := newWhitesourceUtilsMock()
 		utilsMock.FileWriteErrors = map[string]error{
-			filepath.Join(reporting.MarkdownReportDirectory, "whitesourceExecuteScan_20100510001542.md"): fmt.Errorf("write error"),
+			filepath.Join(reporting.StepReportDirectory, "whitesourceExecuteScan_oss_e860d3a7cc8ca3261f065773404ba43e9a0b9d5b.json"): fmt.Errorf("write error"),
 		}
 
-		_, err := writeCustomVulnerabilityReports(scanReport, utilsMock)
-		assert.Contains(t, fmt.Sprint(err), "failed to write markdown report")
+		_, err := writeCustomVulnerabilityReports(config, scan, scanReport, utilsMock)
+		assert.Contains(t, fmt.Sprint(err), "failed to write json report")
 	})
 
 }
@@ -742,6 +778,7 @@ func TestAggregateVersionWideLibraries(t *testing.T) {
 			contents, _ := utils.FileRead(resource)
 			asString := string(contents)
 			assert.Equal(t, "Library Name, Project Name\nmock-library, mock-project\n", asString)
+			assert.NotEmpty(t, piperenv.GetParameter("", "whitesourceExecuteScan_reports.json"))
 		}
 	})
 }
@@ -770,6 +807,7 @@ func TestAggregateVersionWideVulnerabilities(t *testing.T) {
 		sheetContents, err := utils.FileRead(reportSheet)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, sheetContents)
+		assert.NotEmpty(t, piperenv.GetParameter("", "whitesourceExecuteScan_reports.json"))
 	})
 }
 

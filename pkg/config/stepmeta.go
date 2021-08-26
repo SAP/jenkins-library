@@ -247,10 +247,8 @@ func (m *StepData) GetContextParameterFilters() StepFilters {
 }
 
 func addVaultContextParametersFilter(m *StepData, contextFilters []string) []string {
-	if m.HasReference("vaultSecret") || m.HasReference("vaultSecretFile") {
-		contextFilters = append(contextFilters, []string{"vaultAppRoleTokenCredentialsId",
-			"vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}...)
-	}
+	contextFilters = append(contextFilters, []string{"vaultAppRoleTokenCredentialsId",
+		"vaultAppRoleSecretTokenCredentialsId", "vaultTokenCredentialsId"}...)
 	return contextFilters
 }
 
@@ -436,7 +434,12 @@ func EnvVarsAsMap(envVars []EnvVar) map[string]string {
 func OptionsAsStringSlice(options []Option) []string {
 	e := []string{}
 	for _, v := range options {
-		e = append(e, fmt.Sprintf("%v %v", v.Name, v.Value))
+		if len(v.Value) != 0 {
+			e = append(e, fmt.Sprintf("%v %v", v.Name, v.Value))
+		} else {
+			e = append(e, fmt.Sprintf("%v=", v.Name))
+		}
+
 	}
 	return e
 }

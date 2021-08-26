@@ -8,6 +8,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/pkg/errors"
 )
 
 // ReportOptions defines options for downloading reports after scanning.
@@ -47,13 +48,13 @@ func (s *Scan) DownloadReports(options ReportOptions, utils scanUtils, sys white
 func downloadVulnerabilityReport(options ReportOptions, project Project, utils scanUtils, sys whitesource) (*piperutils.Path, error) {
 	reportBytes, err := sys.GetProjectVulnerabilityReport(project.Token, options.VulnerabilityReportFormat)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "unable to download vulnerability report from url")
 	}
 
 	rptFileName := fmt.Sprintf("%s-vulnerability-report.%s", strings.ReplaceAll(project.Name, "/", "_"), options.VulnerabilityReportFormat)
 	rptFileName = filepath.Join(options.ReportDirectory, rptFileName)
 	if err := utils.FileWrite(rptFileName, reportBytes, 0644); err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "unable to copy content from url to file %v", rptFileName)
 	}
 
 	log.Entry().Infof("Successfully downloaded vulnerability report to %s", rptFileName)
@@ -64,13 +65,13 @@ func downloadVulnerabilityReport(options ReportOptions, project Project, utils s
 func downloadRiskReport(options ReportOptions, project Project, utils scanUtils, sys whitesource) (*piperutils.Path, error) {
 	reportBytes, err := sys.GetProjectRiskReport(project.Token)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "unable to download risk report from url")
 	}
 
 	rptFileName := fmt.Sprintf("%s-risk-report.pdf", strings.ReplaceAll(project.Name, "/", "_"))
 	rptFileName = filepath.Join(options.ReportDirectory, rptFileName)
 	if err := utils.FileWrite(rptFileName, reportBytes, 0644); err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "unable to copy content from url to file %v", rptFileName)
 	}
 
 	log.Entry().Infof("Successfully downloaded risk report to %s", rptFileName)

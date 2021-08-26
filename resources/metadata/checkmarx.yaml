@@ -239,11 +239,23 @@ spec:
           - STAGES
           - STEPS
         default: percentage
+      - name: isOptimizedAndScheduled
+        type: bool
+        description: Whether the pipeline runs in optimized mode and the current execution is a scheduled one
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/isOptimizedAndScheduled
+        scope:
+          - PARAMETERS
   outputs:
     resources:
       - name: influx
         type: influx
         params:
+          - name: step_data
+            fields:
+              - name: checkmarx
+                type: bool
           - name: checkmarx_data
             fields:
               - name: high_issues

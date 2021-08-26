@@ -152,13 +152,17 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: reuseExisting
+      - name: verifyOnly
+        aliases:
+          - name: reuseExisting
+            deprecated: true
         type: bool
-        description: Whether to reuse an existing product instead of creating a new one
+        description: Whether the step shall only apply verification checks or whether it does a full scan and check cycle
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
+        default: false
       - name: username
         aliases:
           - name: user
@@ -198,7 +202,10 @@ spec:
               - $(vaultPath)/protecode
               - $(vaultBasePath)/$(vaultPipelineName)/protecode
               - $(vaultBasePath)/GROUP-SECRETS/protecode
-      - name: artifactVersion
+      - name: version
+        aliases:
+          - name: artifactVersion
+            deprecated: true
         type: string
         description: The version of the artifact to allow identification in protecode backend
         resourceRef:
@@ -220,6 +227,10 @@ spec:
       - name: influx
         type: influx
         params:
+          - name: step_data
+            fields:
+              - name: protecode
+                type: bool
           - name: protecode_data
             fields:
               - name: excluded_vulnerabilities

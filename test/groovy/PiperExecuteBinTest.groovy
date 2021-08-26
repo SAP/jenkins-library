@@ -53,6 +53,8 @@ class PiperExecuteBinTest extends BasePiperTest {
             return closure()
         })
 
+        helper.registerAllowedMethod("writePipelineEnv", [Map.class], {m -> return })
+        helper.registerAllowedMethod("readPipelineEnv", [Map.class], {m -> return })
         helper.registerAllowedMethod('fileExists', [Map.class], {m ->
             if (m.file == 'noDetailsStep_errorDetails.json') {
                 return false
@@ -406,6 +408,6 @@ class PiperExecuteBinTest extends BasePiperTest {
             []
         )
 
-        assertThat(dockerExecuteRule.dockerParams.stashContent, is(["buildDescriptor", "pipelineConfigAndTests", "piper-bin"]))
+        assertThat(dockerExecuteRule.dockerParams.stashContent, is(["buildDescriptor", "pipelineConfigAndTests", "piper-bin", "pipelineStepReports"]))
     }
 }

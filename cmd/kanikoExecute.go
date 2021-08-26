@@ -57,9 +57,13 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 		return errors.Wrap(err, "failed to initialize Kaniko container")
 	}
 
-	err := certificateUpdate(config.CustomTLSCertificateLinks, httpClient, fileUtils)
-	if err != nil {
-		return errors.Wrap(err, "failed to update certificates")
+	if len(config.CustomTLSCertificateLinks) > 0 {
+		err := certificateUpdate(config.CustomTLSCertificateLinks, httpClient, fileUtils)
+		if err != nil {
+			return errors.Wrap(err, "failed to update certificates")
+		}
+	} else {
+		log.Entry().Info("skipping updation of certificates")
 	}
 
 	if !piperutils.ContainsString(config.BuildOptions, "--destination") {
@@ -67,6 +71,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 		if len(config.ContainerRegistryURL) > 0 && len(config.ContainerImageName) > 0 && len(config.ContainerImageTag) > 0 {
 			containerRegistry, err := docker.ContainerRegistryFromURL(config.ContainerRegistryURL)
 			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
 				return errors.Wrapf(err, "failed to read registry url %v", config.ContainerRegistryURL)
 			}
 			containerImageTag := fmt.Sprintf("%v:%v", config.ContainerImageName, strings.ReplaceAll(config.ContainerImageTag, "+", "-"))
@@ -76,6 +81,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 		} else if len(config.ContainerImage) > 0 {
 			containerRegistry, err := docker.ContainerRegistryFromImage(config.ContainerImage)
 			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
 				return errors.Wrapf(err, "invalid registry part in image %v", config.ContainerImage)
 			}
 			// errors are already caught with previous call to docker.ContainerRegistryFromImage
@@ -89,6 +95,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 
 	dockerConfig := []byte(`{"auths":{}}`)
 	if len(config.DockerConfigJSON) > 0 {
+		var err error
 		dockerConfig, err = fileUtils.FileRead(config.DockerConfigJSON)
 		if err != nil {
 			return errors.Wrapf(err, "failed to read file '%v'", config.DockerConfigJSON)
@@ -108,6 +115,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 
 	err = execRunner.RunExecutable("/kaniko/executor", kanikoOpts...)
 	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
 		return errors.Wrap(err, "execution of '/kaniko/executor' failed")
 	}
 	return nil

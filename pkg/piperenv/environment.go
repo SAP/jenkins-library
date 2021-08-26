@@ -35,6 +35,7 @@ func SetResourceParameter(path, resourceName, paramName string, value interface{
 // GetResourceParameter reads a resource parameter from the environment stored in the file system
 func GetResourceParameter(path, resourceName, paramName string) string {
 	//TODO: align JSON un/marshalling, currently done in pkg/congif/stepmeta.go#getParameterValue
+
 	paramPath := filepath.Join(path, resourceName, paramName)
 	return readFromDisk(paramPath)
 }
