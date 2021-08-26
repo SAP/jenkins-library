@@ -8,7 +8,24 @@
 1. Look up your Group ID using REST API via `curl -u <username> "https://<protecode host>/api/groups/"`.
 
 If the image is on a protected registry you can provide a Docker `config.json` file containing the credential information for the registry.
-You can create it like explained in the Docker Success Center in the article about [how to generate a new auth in the config.json file](https://success.docker.com/article/generate-new-auth-in-config-json-file).
+You can either use `docker login` and copy your local `~/.docker/config.json` file or you can create the file manually using the follwing script.
+
+```
+#!/bin/bash
+auth=$(echo -n "$USER:$PASSWORD" | base64 -w0)
+cat <<EOF > config.json
+{
+    "auths": {
+        "$REGISTRY": {
+            "auth": "$auth"
+        }
+    }
+}
+EOF
+```
+
+Attention: If you reference the file in --dockerConfigJSON or upload the file to the Jenkins credential store, the file has to be named `config.json`.
+
 
 ## ${docGenParameters}
 
