@@ -26,7 +26,6 @@ EOF
 
 Attention: If you reference the file in --dockerConfigJSON or upload the file to the Jenkins credential store, the file has to be named `config.json`.
 
-
 ## ${docGenParameters}
 
 ### Details
