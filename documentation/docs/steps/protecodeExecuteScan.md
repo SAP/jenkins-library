@@ -24,7 +24,7 @@ cat <<EOF > config.json
 EOF
 ```
 
-`REGISTRY` is the URL of the protected registry (Example: https://index.docker.io/v1).
+`REGISTRY` is the URL of the protected registry (Example: `https://index.docker.io/v1`).
 
 Attention: If you reference the file in --dockerConfigJSON or upload the file to the Jenkins credential store, the file has to be named `config.json`.
 
