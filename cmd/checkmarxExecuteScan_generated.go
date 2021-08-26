@@ -11,6 +11,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
+	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
@@ -39,39 +40,49 @@ type checkmarxExecuteScanOptions struct {
 	VulnerabilityThresholdMedium  int    `json:"vulnerabilityThresholdMedium,omitempty"`
 	VulnerabilityThresholdResult  string `json:"vulnerabilityThresholdResult,omitempty"`
 	VulnerabilityThresholdUnit    string `json:"vulnerabilityThresholdUnit,omitempty"`
+	IsOptimizedAndScheduled       bool   `json:"isOptimizedAndScheduled,omitempty"`
 }
 
 type checkmarxExecuteScanInflux struct {
+	step_data struct {
+		fields struct {
+			checkmarx bool
+		}
+		tags struct {
+		}
+	}
 	checkmarx_data struct {
 		fields struct {
-			high_issues                          string
-			high_not_false_positive              string
-			high_not_exploitable                 string
-			high_confirmed                       string
-			high_urgent                          string
-			high_proposed_not_exploitable        string
-			high_to_verify                       string
-			medium_issues                        string
-			medium_not_false_positive            string
-			medium_not_exploitable               string
-			medium_confirmed                     string
-			medium_urgent                        string
-			medium_proposed_not_exploitable      string
-			medium_to_verify                     string
-			low_issues                           string
-			low_not_false_positive               string
-			low_not_exploitable                  string
-			low_confirmed                        string
-			low_urgent                           string
-			low_proposed_not_exploitable         string
-			low_to_verify                        string
-			information_issues                   string
-			information_not_false_positive       string
-			information_not_exploitable          string
-			information_confirmed                string
-			information_urgent                   string
-			information_proposed_not_exploitable string
-			information_to_verify                string
+			high_issues                          int
+			high_not_false_postive               int
+			high_not_exploitable                 int
+			high_confirmed                       int
+			high_urgent                          int
+			high_proposed_not_exploitable        int
+			high_to_verify                       int
+			medium_issues                        int
+			medium_not_false_postive             int
+			medium_not_exploitable               int
+			medium_confirmed                     int
+			medium_urgent                        int
+			medium_proposed_not_exploitable      int
+			medium_to_verify                     int
+			low_issues                           int
+			low_not_false_postive                int
+			low_not_exploitable                  int
+			low_confirmed                        int
+			low_urgent                           int
+			low_proposed_not_exploitable         int
+			low_to_verify                        int
+			information_issues                   int
+			information_not_false_postive        int
+			information_not_exploitable          int
+			information_confirmed                int
+			information_urgent                   int
+			information_proposed_not_exploitable int
+			information_to_verify                int
+			lines_of_code_scanned                int
+			files_scanned                        int
 			initiator_name                       string
 			owner                                string
 			scan_id                              string
@@ -81,8 +92,6 @@ type checkmarxExecuteScanInflux struct {
 			team_full_path_on_report_date        string
 			scan_start                           string
 			scan_time                            string
-			lines_of_code_scanned                string
-			files_scanned                        string
 			checkmarx_version                    string
 			scan_type                            string
 			preset                               string
@@ -101,34 +110,37 @@ func (i *checkmarxExecuteScanInflux) persist(path, resourceName string) {
 		name        string
 		value       interface{}
 	}{
+		{valType: config.InfluxField, measurement: "step_data", name: "checkmarx", value: i.step_data.fields.checkmarx},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "high_issues", value: i.checkmarx_data.fields.high_issues},
-		{valType: config.InfluxField, measurement: "checkmarx_data", name: "high_not_false_positive", value: i.checkmarx_data.fields.high_not_false_positive},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "high_not_false_postive", value: i.checkmarx_data.fields.high_not_false_postive},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "high_not_exploitable", value: i.checkmarx_data.fields.high_not_exploitable},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "high_confirmed", value: i.checkmarx_data.fields.high_confirmed},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "high_urgent", value: i.checkmarx_data.fields.high_urgent},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "high_proposed_not_exploitable", value: i.checkmarx_data.fields.high_proposed_not_exploitable},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "high_to_verify", value: i.checkmarx_data.fields.high_to_verify},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "medium_issues", value: i.checkmarx_data.fields.medium_issues},
-		{valType: config.InfluxField, measurement: "checkmarx_data", name: "medium_not_false_positive", value: i.checkmarx_data.fields.medium_not_false_positive},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "medium_not_false_postive", value: i.checkmarx_data.fields.medium_not_false_postive},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "medium_not_exploitable", value: i.checkmarx_data.fields.medium_not_exploitable},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "medium_confirmed", value: i.checkmarx_data.fields.medium_confirmed},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "medium_urgent", value: i.checkmarx_data.fields.medium_urgent},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "medium_proposed_not_exploitable", value: i.checkmarx_data.fields.medium_proposed_not_exploitable},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "medium_to_verify", value: i.checkmarx_data.fields.medium_to_verify},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "low_issues", value: i.checkmarx_data.fields.low_issues},
-		{valType: config.InfluxField, measurement: "checkmarx_data", name: "low_not_false_positive", value: i.checkmarx_data.fields.low_not_false_positive},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "low_not_false_postive", value: i.checkmarx_data.fields.low_not_false_postive},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "low_not_exploitable", value: i.checkmarx_data.fields.low_not_exploitable},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "low_confirmed", value: i.checkmarx_data.fields.low_confirmed},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "low_urgent", value: i.checkmarx_data.fields.low_urgent},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "low_proposed_not_exploitable", value: i.checkmarx_data.fields.low_proposed_not_exploitable},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "low_to_verify", value: i.checkmarx_data.fields.low_to_verify},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "information_issues", value: i.checkmarx_data.fields.information_issues},
-		{valType: config.InfluxField, measurement: "checkmarx_data", name: "information_not_false_positive", value: i.checkmarx_data.fields.information_not_false_positive},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "information_not_false_postive", value: i.checkmarx_data.fields.information_not_false_postive},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "information_not_exploitable", value: i.checkmarx_data.fields.information_not_exploitable},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "information_confirmed", value: i.checkmarx_data.fields.information_confirmed},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "information_urgent", value: i.checkmarx_data.fields.information_urgent},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "information_proposed_not_exploitable", value: i.checkmarx_data.fields.information_proposed_not_exploitable},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "information_to_verify", value: i.checkmarx_data.fields.information_to_verify},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "lines_of_code_scanned", value: i.checkmarx_data.fields.lines_of_code_scanned},
+		{valType: config.InfluxField, measurement: "checkmarx_data", name: "files_scanned", value: i.checkmarx_data.fields.files_scanned},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "initiator_name", value: i.checkmarx_data.fields.initiator_name},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "owner", value: i.checkmarx_data.fields.owner},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "scan_id", value: i.checkmarx_data.fields.scan_id},
@@ -138,8 +150,6 @@ func (i *checkmarxExecuteScanInflux) persist(path, resourceName string) {
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "team_full_path_on_report_date", value: i.checkmarx_data.fields.team_full_path_on_report_date},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "scan_start", value: i.checkmarx_data.fields.scan_start},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "scan_time", value: i.checkmarx_data.fields.scan_time},
-		{valType: config.InfluxField, measurement: "checkmarx_data", name: "lines_of_code_scanned", value: i.checkmarx_data.fields.lines_of_code_scanned},
-		{valType: config.InfluxField, measurement: "checkmarx_data", name: "files_scanned", value: i.checkmarx_data.fields.files_scanned},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "checkmarx_version", value: i.checkmarx_data.fields.checkmarx_version},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "scan_type", value: i.checkmarx_data.fields.scan_type},
 		{valType: config.InfluxField, measurement: "checkmarx_data", name: "preset", value: i.checkmarx_data.fields.preset},
@@ -168,6 +178,7 @@ func CheckmarxExecuteScanCommand() *cobra.Command {
 	var stepConfig checkmarxExecuteScanOptions
 	var startTime time.Time
 	var influx checkmarxExecuteScanInflux
+	var logCollector *log.CollectorHook
 
 	var createCheckmarxExecuteScanCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -188,6 +199,8 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
@@ -205,6 +218,11 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 				log.RegisterHook(&sentryHook)
 			}
 
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
+				log.RegisterHook(logCollector)
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -216,10 +234,20 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
+				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunk.Send(&telemetryData, logCollector)
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunk.Initialize(GeneralConfig.CorrelationID,
+					GeneralConfig.HookConfig.SplunkConfig.Dsn,
+					GeneralConfig.HookConfig.SplunkConfig.Token,
+					GeneralConfig.HookConfig.SplunkConfig.Index,
+					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+			}
 			checkmarxExecuteScan(stepConfig, &telemetryData, &influx)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -254,6 +282,7 @@ func addCheckmarxExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxExecu
 	cmd.Flags().IntVar(&stepConfig.VulnerabilityThresholdMedium, "vulnerabilityThresholdMedium", 100, "The specific threshold for medium severity findings")
 	cmd.Flags().StringVar(&stepConfig.VulnerabilityThresholdResult, "vulnerabilityThresholdResult", `FAILURE`, "The result of the build in case thresholds are enabled and exceeded")
 	cmd.Flags().StringVar(&stepConfig.VulnerabilityThresholdUnit, "vulnerabilityThresholdUnit", `percentage`, "The unit for the threshold to apply.")
+	cmd.Flags().BoolVar(&stepConfig.IsOptimizedAndScheduled, "isOptimizedAndScheduled", false, "Whether the pipeline runs in optimized mode and the current execution is a scheduled one")
 
 	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("projectName")
@@ -271,6 +300,12 @@ func checkmarxExecuteScanMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "checkmarxCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing username and password to communicate with the Checkmarx backend.", Type: "jenkins"},
+				},
+				Resources: []config.StepResources{
+					{Name: "checkmarx", Type: "stash"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "avoidDuplicateProjectScans",
@@ -279,6 +314,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
 						Name:        "filterPattern",
@@ -287,6 +323,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `!**/node_modules/**, !**/.xmake/**, !**/*_test.go, !**/vendor/**/*.go, **/*.html, **/*.xml, **/*.go, **/*.py, **/*.js, **/*.scala, **/*.ts`,
 					},
 					{
 						Name:        "fullScanCycle",
@@ -295,6 +332,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `5`,
 					},
 					{
 						Name:        "fullScansScheduled",
@@ -303,6 +341,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
 						Name:        "generatePdfReport",
@@ -311,6 +350,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
 						Name:        "incremental",
@@ -319,6 +359,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
 						Name:        "maxRetries",
@@ -327,6 +368,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     3,
 					},
 					{
 						Name: "password",
@@ -347,6 +389,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_password"),
 					},
 					{
 						Name:        "preset",
@@ -355,6 +398,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_preset"),
 					},
 					{
 						Name:        "projectName",
@@ -363,6 +407,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "checkmarxProject"}, {Name: "checkMarxProjectName"}},
+						Default:     os.Getenv("PIPER_projectName"),
 					},
 					{
 						Name:        "pullRequestName",
@@ -371,6 +416,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_pullRequestName"),
 					},
 					{
 						Name:        "serverUrl",
@@ -379,6 +425,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "checkmarxServerUrl"}},
+						Default:     os.Getenv("PIPER_serverUrl"),
 					},
 					{
 						Name:        "sourceEncoding",
@@ -387,6 +434,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `1`,
 					},
 					{
 						Name:        "teamId",
@@ -395,6 +443,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "checkmarxGroupId"}, {Name: "groupId"}},
+						Default:     os.Getenv("PIPER_teamId"),
 					},
 					{
 						Name:        "teamName",
@@ -403,6 +452,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_teamName"),
 					},
 					{
 						Name: "username",
@@ -423,6 +473,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_username"),
 					},
 					{
 						Name:        "verifyOnly",
@@ -431,6 +482,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name:        "vulnerabilityThresholdEnabled",
@@ -439,6 +491,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
 						Name:        "vulnerabilityThresholdHigh",
@@ -447,6 +500,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     100,
 					},
 					{
 						Name:        "vulnerabilityThresholdLow",
@@ -455,6 +509,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     10,
 					},
 					{
 						Name:        "vulnerabilityThresholdMedium",
@@ -463,6 +518,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     100,
 					},
 					{
 						Name:        "vulnerabilityThresholdResult",
@@ -471,6 +527,7 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `FAILURE`,
 					},
 					{
 						Name:        "vulnerabilityThresholdUnit",
@@ -479,6 +536,21 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `percentage`,
+					},
+					{
+						Name: "isOptimizedAndScheduled",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/isOptimizedAndScheduled",
+							},
+						},
+						Scope:     []string{"PARAMETERS"},
+						Type:      "bool",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   false,
 					},
 				},
 			},
@@ -488,7 +560,8 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Name: "influx",
 						Type: "influx",
 						Parameters: []map[string]interface{}{
-							{"Name": "checkmarx_data"}, {"fields": []map[string]string{{"name": "high_issues"}, {"name": "high_not_false_positive"}, {"name": "high_not_exploitable"}, {"name": "high_confirmed"}, {"name": "high_urgent"}, {"name": "high_proposed_not_exploitable"}, {"name": "high_to_verify"}, {"name": "medium_issues"}, {"name": "medium_not_false_positive"}, {"name": "medium_not_exploitable"}, {"name": "medium_confirmed"}, {"name": "medium_urgent"}, {"name": "medium_proposed_not_exploitable"}, {"name": "medium_to_verify"}, {"name": "low_issues"}, {"name": "low_not_false_positive"}, {"name": "low_not_exploitable"}, {"name": "low_confirmed"}, {"name": "low_urgent"}, {"name": "low_proposed_not_exploitable"}, {"name": "low_to_verify"}, {"name": "information_issues"}, {"name": "information_not_false_positive"}, {"name": "information_not_exploitable"}, {"name": "information_confirmed"}, {"name": "information_urgent"}, {"name": "information_proposed_not_exploitable"}, {"name": "information_to_verify"}, {"name": "initiator_name"}, {"name": "owner"}, {"name": "scan_id"}, {"name": "project_id"}, {"name": "projectName"}, {"name": "team"}, {"name": "team_full_path_on_report_date"}, {"name": "scan_start"}, {"name": "scan_time"}, {"name": "lines_of_code_scanned"}, {"name": "files_scanned"}, {"name": "checkmarx_version"}, {"name": "scan_type"}, {"name": "preset"}, {"name": "deep_link"}, {"name": "report_creation_time"}}},
+							{"Name": "step_data"}, {"fields": []map[string]string{{"name": "checkmarx"}}},
+							{"Name": "checkmarx_data"}, {"fields": []map[string]string{{"name": "high_issues"}, {"name": "high_not_false_postive"}, {"name": "high_not_exploitable"}, {"name": "high_confirmed"}, {"name": "high_urgent"}, {"name": "high_proposed_not_exploitable"}, {"name": "high_to_verify"}, {"name": "medium_issues"}, {"name": "medium_not_false_postive"}, {"name": "medium_not_exploitable"}, {"name": "medium_confirmed"}, {"name": "medium_urgent"}, {"name": "medium_proposed_not_exploitable"}, {"name": "medium_to_verify"}, {"name": "low_issues"}, {"name": "low_not_false_postive"}, {"name": "low_not_exploitable"}, {"name": "low_confirmed"}, {"name": "low_urgent"}, {"name": "low_proposed_not_exploitable"}, {"name": "low_to_verify"}, {"name": "information_issues"}, {"name": "information_not_false_postive"}, {"name": "information_not_exploitable"}, {"name": "information_confirmed"}, {"name": "information_urgent"}, {"name": "information_proposed_not_exploitable"}, {"name": "information_to_verify"}, {"name": "lines_of_code_scanned"}, {"name": "files_scanned"}, {"name": "initiator_name"}, {"name": "owner"}, {"name": "scan_id"}, {"name": "project_id"}, {"name": "projectName"}, {"name": "team"}, {"name": "team_full_path_on_report_date"}, {"name": "scan_start"}, {"name": "scan_time"}, {"name": "checkmarx_version"}, {"name": "scan_type"}, {"name": "preset"}, {"name": "deep_link"}, {"name": "report_creation_time"}}},
 						},
 					},
 				},

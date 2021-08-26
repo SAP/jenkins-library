@@ -4,22 +4,10 @@
 
 ## Prerequisites
 
-* The credentials to access the AAKaaS (e.g. S-User) must be stored in the Jenkins Credential Store
-* The step needs an addon.yml containing information about the Product Version and corresponding Software Component Versions/Repositories. The addon.yml should look like this:
+* The credentials to access the AAKaaS (Technical Communication User) must be stored in the Jenkins Credential Store
+* The step needs an addon.yml containing information about the Product Version and corresponding Software Component Versions/Repositories
 
-```yaml
-addonProduct: /DMO/myAddonProduct
-addonVersion: 3.1.4
-addonUniqueID: myAddonId
-customerID: $ID
-repositories:
-    - name: /DMO/REPO_A
-      tag: v-1.0.1-build-0001
-      version: 1.0.1
-    - name: /DMO/REPO_B
-      tag: rel-2.1.1-build-0001
-      version: 2.1.1
-```
+A detailed description of all prerequisites of the scenario and how to configure them can be found in the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).
 
 ## ${docGenParameters}
 
@@ -37,12 +25,13 @@ The recommended way to configure your pipeline is via the config.yml file. In th
 abapAddonAssemblyKitCheckPV script: this
 ```
 
-The config.yml should look like this:
+If the step is to be configured individually the config.yml should look like this:
 
 ```yaml
 steps:
-  abapAddonAssemblyKitCheckPV:
+  abapAddonAssemblyKitCheckCVs:
     abapAddonAssemblyKitCredentialsId: 'abapAddonAssemblyKitCredentialsId',
-    abapAddonAssemblyKitEndpoint: 'https://myabapAddonAssemblyKitEndpoint.com',
     addonDescriptorFileName: 'addon.yml'
 ```
+
+More convenient ways of configuration (e.g. on stage level) are described in the respective scenario/pipeline documentation.

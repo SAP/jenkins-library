@@ -32,7 +32,7 @@ For this, you need to know the technical identifiers for stage names.
 The centrally maintained pipeline checks if such a file exists and if it does, executes it.
 A parameter of type `Map` that contains the following keys is passed to the extension:
 
-* `script`: Defines the global script environment of the `Jenkinsfile` run. This makes sure that the correct configuration environment can be passed to project "Piper" steps and allows access to the `commonPipelineEnvironment`, for example.
+* `script`: Defines the global script environment of the `Jenkinsfile` run. This makes sure that the correct configuration environment can be passed to project "Piper" steps and allows access to the `commonPipelineEnvironment`, for example. When calling a piper step in an extension, the script object has to be passed using `script: params.script`.
 * `originalStage`: Allows you to execute the "original" stage at any place in your script. If omitting a call to `originalStage()`, only your code is executed.
 * `stageName`: Name of the current stage
 * `config`: Configuration of the stage and general config (including all defaults)

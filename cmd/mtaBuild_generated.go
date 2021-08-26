@@ -11,18 +11,18 @@ import (
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
+	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
 
 type mtaBuildOptions struct {
-	BuildTarget         string `json:"buildTarget,omitempty"`
-	MtaBuildTool        string `json:"mtaBuildTool,omitempty"`
 	MtarName            string `json:"mtarName,omitempty"`
-	MtaJarLocation      string `json:"mtaJarLocation,omitempty"`
 	Extensions          string `json:"extensions,omitempty"`
 	Platform            string `json:"platform,omitempty"`
 	ApplicationName     string `json:"applicationName,omitempty"`
+	Source              string `json:"source,omitempty"`
+	Target              string `json:"target,omitempty"`
 	DefaultNpmRegistry  string `json:"defaultNpmRegistry,omitempty"`
 	ProjectSettingsFile string `json:"projectSettingsFile,omitempty"`
 	GlobalSettingsFile  string `json:"globalSettingsFile,omitempty"`
@@ -64,6 +64,7 @@ func MtaBuildCommand() *cobra.Command {
 	var stepConfig mtaBuildOptions
 	var startTime time.Time
 	var commonPipelineEnvironment mtaBuildCommonPipelineEnvironment
+	var logCollector *log.CollectorHook
 
 	var createMtaBuildCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -73,6 +74,8 @@ func MtaBuildCommand() *cobra.Command {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
+
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
@@ -89,6 +92,11 @@ func MtaBuildCommand() *cobra.Command {
 				log.RegisterHook(&sentryHook)
 			}
 
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
+				log.RegisterHook(logCollector)
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -100,10 +108,20 @@ func MtaBuildCommand() *cobra.Command {
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
+				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunk.Send(&telemetryData, logCollector)
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunk.Initialize(GeneralConfig.CorrelationID,
+					GeneralConfig.HookConfig.SplunkConfig.Dsn,
+					GeneralConfig.HookConfig.SplunkConfig.Token,
+					GeneralConfig.HookConfig.SplunkConfig.Index,
+					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+			}
 			mtaBuild(stepConfig, &telemetryData, &commonPipelineEnvironment)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -115,13 +133,12 @@ func MtaBuildCommand() *cobra.Command {
 }
 
 func addMtaBuildFlags(cmd *cobra.Command, stepConfig *mtaBuildOptions) {
-	cmd.Flags().StringVar(&stepConfig.BuildTarget, "buildTarget", `NEO`, "mtaBuildTool 'classic' only: The target platform to which the mtar can be deployed. Valid values: 'CF', 'NEO', 'XSA'.")
-	cmd.Flags().StringVar(&stepConfig.MtaBuildTool, "mtaBuildTool", `cloudMbt`, "Tool to use when building the MTA. Valid values: 'classic', 'cloudMbt'.")
 	cmd.Flags().StringVar(&stepConfig.MtarName, "mtarName", os.Getenv("PIPER_mtarName"), "The name of the generated mtar file including its extension.")
-	cmd.Flags().StringVar(&stepConfig.MtaJarLocation, "mtaJarLocation", `/opt/sap/mta/lib/mta.jar`, "mtaBuildTool 'classic' only: The location of the SAP Multitarget Application Archive Builder jar file, including file name and extension. If you run on Docker, this must match the location of the jar file in the container as well.")
 	cmd.Flags().StringVar(&stepConfig.Extensions, "extensions", os.Getenv("PIPER_extensions"), "The path to the extension descriptor file.")
-	cmd.Flags().StringVar(&stepConfig.Platform, "platform", `CF`, "mtaBuildTool 'cloudMbt' only: The target platform to which the mtar can be deployed.")
+	cmd.Flags().StringVar(&stepConfig.Platform, "platform", `CF`, "The target platform to which the mtar can be deployed.")
 	cmd.Flags().StringVar(&stepConfig.ApplicationName, "applicationName", os.Getenv("PIPER_applicationName"), "The name of the application which is being built. If the parameter has been provided and no `mta.yaml` exists, the `mta.yaml` will be automatically generated using this parameter and the information (`name` and `version`) from 'package.json` before the actual build starts.")
+	cmd.Flags().StringVar(&stepConfig.Source, "source", `./`, "The path to the MTA project.")
+	cmd.Flags().StringVar(&stepConfig.Target, "target", `./`, "The folder for the generated `MTAR` file. If the parameter has been provided, the `MTAR` file is saved in the root of the folder provided by the argument.")
 	cmd.Flags().StringVar(&stepConfig.DefaultNpmRegistry, "defaultNpmRegistry", os.Getenv("PIPER_defaultNpmRegistry"), "Url to the npm registry that should be used for installing npm dependencies.")
 	cmd.Flags().StringVar(&stepConfig.ProjectSettingsFile, "projectSettingsFile", os.Getenv("PIPER_projectSettingsFile"), "Path or url to the mvn settings file that should be used as project settings file.")
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Path or url to the mvn settings file that should be used as global settings file")
@@ -142,36 +159,13 @@ func mtaBuildMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Parameters: []config.StepParameters{
 					{
-						Name:        "buildTarget",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "mtaBuildTool",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-					},
-					{
 						Name:        "mtarName",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-					},
-					{
-						Name:        "mtaJarLocation",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_mtarName"),
 					},
 					{
 						Name:        "extensions",
@@ -180,6 +174,7 @@ func mtaBuildMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "extension"}},
+						Default:     os.Getenv("PIPER_extensions"),
 					},
 					{
 						Name:        "platform",
@@ -188,6 +183,7 @@ func mtaBuildMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `CF`,
 					},
 					{
 						Name:        "applicationName",
@@ -196,6 +192,25 @@ func mtaBuildMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_applicationName"),
+					},
+					{
+						Name:        "source",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `./`,
+					},
+					{
+						Name:        "target",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     `./`,
 					},
 					{
 						Name:        "defaultNpmRegistry",
@@ -204,6 +219,7 @@ func mtaBuildMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "npm/defaultNpmRegistry"}},
+						Default:     os.Getenv("PIPER_defaultNpmRegistry"),
 					},
 					{
 						Name:        "projectSettingsFile",
@@ -212,6 +228,7 @@ func mtaBuildMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile"}},
+						Default:     os.Getenv("PIPER_projectSettingsFile"),
 					},
 					{
 						Name:        "globalSettingsFile",
@@ -220,6 +237,7 @@ func mtaBuildMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile"}},
+						Default:     os.Getenv("PIPER_globalSettingsFile"),
 					},
 					{
 						Name:        "m2Path",
@@ -228,6 +246,7 @@ func mtaBuildMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
+						Default:     os.Getenv("PIPER_m2Path"),
 					},
 					{
 						Name:        "installArtifacts",
@@ -236,12 +255,12 @@ func mtaBuildMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 				},
 			},
 			Containers: []config.Container{
-				{Image: "devxci/mbtci:1.0.16.1", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "mtaBuildTool", Value: "cloudMbt"}}}}},
-				{Image: "ppiper/mta-archive-builder:v1", Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "mtaBuildTool", Value: "classic"}}}}},
+				{Image: "devxci/mbtci:1.1.1"},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

@@ -1,0 +1,32 @@
+metadata:
+  name: pipelineCreateScanSummary
+  description: Collect scan result information anc create a summary report
+  longDescription: |
+    This step allows you to create a summary report of your scan results.
+
+    It is for example used to create a markdown file which can be used to create a GitHub issue.
+spec:
+  inputs:
+    params:
+      - name: failedOnly
+        description: Defines if only failed scans should be included into the summary.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: bool
+      - name: outputFilePath
+        description: Defines the filepath to the target file which will be created by the step.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string
+        default: scanSummary.md
+      - name: pipelineLink
+        description: Link to the pipeline (e.g. Jenkins job url) for reference in the scan summary.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        type: string

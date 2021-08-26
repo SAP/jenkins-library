@@ -9,6 +9,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/yaml"
 	"github.com/stretchr/testify/assert"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 )
@@ -263,6 +264,7 @@ func TestCfDeployment(t *testing.T) {
 
 				withLoginAndLogout(t, func(t *testing.T) {
 					assert.Equal(t, []mock.ExecCall{
+						{Exec: "cf", Params: []string{"version"}},
 						{Exec: "cf", Params: []string{"plugins"}},
 						{Exec: "cf", Params: []string{"push", "-f", "manifest.yml"}},
 					}, s.Calls)
@@ -288,7 +290,7 @@ func TestCfDeployment(t *testing.T) {
 		}()
 
 		_now = func() time.Time {
-			// There was the big eclise in Karlsruhe
+			// There was the big eclipse in Karlsruhe
 			return time.Date(1999, time.August, 11, 12, 32, 0, 0, time.UTC)
 		}
 
@@ -296,6 +298,7 @@ func TestCfDeployment(t *testing.T) {
 
 		config.DeployTool = "cf_native"
 		config.ArtifactVersion = "0.1.2"
+		config.CommitHash = "123456"
 
 		influxData := cloudFoundryDeployInflux{}
 
@@ -308,6 +311,7 @@ func TestCfDeployment(t *testing.T) {
 			expected.deployment_data.fields.artifactURL = "n/a"
 			expected.deployment_data.fields.deployTime = "AUG 11 1999 12:32:00"
 			expected.deployment_data.fields.jobTrigger = "n/a"
+			expected.deployment_data.fields.commitHash = "123456"
 
 			expected.deployment_data.tags.artifactVersion = "0.1.2"
 			expected.deployment_data.tags.deployUser = "me"
@@ -341,6 +345,7 @@ func TestCfDeployment(t *testing.T) {
 
 			withLoginAndLogout(t, func(t *testing.T) {
 				assert.Equal(t, []mock.ExecCall{
+					{Exec: "cf", Params: []string{"version"}},
 					{Exec: "cf", Params: []string{"plugins"}},
 					{Exec: "cf", Params: []string{"push",
 						"testAppName",
@@ -380,6 +385,7 @@ func TestCfDeployment(t *testing.T) {
 				withLoginAndLogout(t, func(t *testing.T) {
 
 					assert.Equal(t, []mock.ExecCall{
+						{Exec: "cf", Params: []string{"version"}},
 						{Exec: "cf", Params: []string{"plugins"}},
 						{Exec: "cf", Params: []string{"push",
 							"testAppName",
@@ -427,6 +433,7 @@ func TestCfDeployment(t *testing.T) {
 				withLoginAndLogout(t, func(t *testing.T) {
 
 					assert.Equal(t, []mock.ExecCall{
+						{Exec: "cf", Params: []string{"version"}},
 						{Exec: "cf", Params: []string{"plugins"}},
 						{Exec: "cf", Params: []string{
 							"blue-green-deploy",
@@ -469,6 +476,7 @@ func TestCfDeployment(t *testing.T) {
 				withLoginAndLogout(t, func(t *testing.T) {
 
 					assert.Equal(t, []mock.ExecCall{
+						{Exec: "cf", Params: []string{"version"}},
 						{Exec: "cf", Params: []string{"plugins"}},
 						{Exec: "cf", Params: []string{
 							"push",
@@ -528,6 +536,7 @@ func TestCfDeployment(t *testing.T) {
 				withLoginAndLogout(t, func(t *testing.T) {
 
 					assert.Equal(t, []mock.ExecCall{
+						{Exec: "cf", Params: []string{"version"}},
 						{Exec: "cf", Params: []string{"plugins"}},
 						{Exec: "cf", Params: []string{
 							"blue-green-deploy",
@@ -609,6 +618,7 @@ func TestCfDeployment(t *testing.T) {
 				withLoginAndLogout(t, func(t *testing.T) {
 
 					assert.Equal(t, []mock.ExecCall{
+						{Exec: "cf", Params: []string{"version"}},
 						{Exec: "cf", Params: []string{"plugins"}},
 						{Exec: "cf", Params: []string{
 							"push",
@@ -635,7 +645,7 @@ func TestCfDeployment(t *testing.T) {
 
 		s := mock.ExecMockRunner{}
 
-		s.ShouldFailOnCommand = map[string]error{"cf.*": fmt.Errorf("cf deploy failed")}
+		s.ShouldFailOnCommand = map[string]error{"cf.*deploy.*": fmt.Errorf("cf deploy failed")}
 		err := runCloudFoundryDeploy(&config, nil, nil, &s)
 
 		if assert.EqualError(t, err, "cf deploy failed") {
@@ -679,7 +689,10 @@ func TestCfDeployment(t *testing.T) {
 			t.Run("check shell calls", func(t *testing.T) {
 
 				// no calls to the cf client in this case
-				assert.Empty(t, s.Calls)
+				assert.Equal(t,
+					[]mock.ExecCall{
+						{Exec: "cf", Params: []string{"version"}},
+					}, s.Calls)
 				// no logout
 				assert.False(t, logoutCalled)
 			})
@@ -711,6 +724,7 @@ func TestCfDeployment(t *testing.T) {
 				withLoginAndLogout(t, func(t *testing.T) {
 
 					assert.Equal(t, []mock.ExecCall{
+						{Exec: "cf", Params: []string{"version"}},
 						{Exec: "cf", Params: []string{"plugins"}},
 						{Exec: "cf", Params: []string{
 							"push",
@@ -795,6 +809,7 @@ func TestCfDeployment(t *testing.T) {
 				withLoginAndLogout(t, func(t *testing.T) {
 
 					assert.Equal(t, []mock.ExecCall{
+						{Exec: "cf", Params: []string{"version"}},
 						{Exec: "cf", Params: []string{"plugins"}},
 						{Exec: "cf", Params: []string{
 							"bg-deploy",
@@ -865,6 +880,7 @@ func TestCfDeployment(t *testing.T) {
 					// Revisit: we don't verify a log message in case of a non existing vars file
 
 					assert.Equal(t, []mock.ExecCall{
+						{Exec: "cf", Params: []string{"version"}},
 						{Exec: "cf", Params: []string{"plugins"}},
 						{Exec: "cf", Params: []string{
 							"push",
@@ -945,6 +961,7 @@ func TestCfDeployment(t *testing.T) {
 					// Revisit: we don't verify a log message in case of a non existing vars file
 
 					assert.Equal(t, []mock.ExecCall{
+						{Exec: "cf", Params: []string{"version"}},
 						{Exec: "cf", Params: []string{"plugins"}},
 						{Exec: "cf", Params: []string{
 							"push",
@@ -995,6 +1012,7 @@ func TestCfDeployment(t *testing.T) {
 				withLoginAndLogout(t, func(t *testing.T) {
 
 					assert.Equal(t, s.Calls, []mock.ExecCall{
+						{Exec: "cf", Params: []string{"version"}},
 						{Exec: "cf", Params: []string{"plugins"}},
 						{Exec: "cf", Params: []string{"deploy", "xyz.mtar", "-f"}}})
 
@@ -1110,7 +1128,7 @@ func TestSmokeTestScriptHandling(t *testing.T) {
 
 			assert.Equal(t, []string{
 				"--smoke-test",
-				"/home/me/mySmokeTestScript.sh",
+				filepath.FromSlash("/home/me/mySmokeTestScript.sh"),
 			}, parts)
 		}
 	})
@@ -1146,7 +1164,7 @@ func TestSmokeTestScriptHandling(t *testing.T) {
 
 			assert.Equal(t, []string{
 				"--smoke-test",
-				"/home/me/blueGreenCheckScript.sh",
+				filepath.FromSlash("/home/me/blueGreenCheckScript.sh"),
 			}, parts)
 		}
 	})

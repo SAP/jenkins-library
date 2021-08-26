@@ -1,0 +1,7 @@
+logs
+Dockerfile
+reports
+.gauge
+README.md
+gauge_bin
+.gitignore

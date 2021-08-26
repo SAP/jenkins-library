@@ -2,8 +2,11 @@ package http
 
 import (
 	"bytes"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -14,11 +17,85 @@ import (
 	"testing"
 	"time"
 
-	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/jarcoal/httpmock"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+
+	"github.com/SAP/jenkins-library/pkg/log"
 )
+
+func TestSend(t *testing.T) {
+	testURL := "https://example.org"
+
+	request, err := http.NewRequest(http.MethodGet, testURL, nil)
+	require.NoError(t, err)
+
+	t.Run("success", func(t *testing.T) {
+		// given
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
+		httpmock.RegisterResponder(http.MethodGet, testURL, httpmock.NewStringResponder(200, `OK`))
+		client := Client{}
+		client.SetOptions(ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
+		// when
+		response, err := client.Send(request)
+		// then
+		assert.NoError(t, err)
+		assert.NotNil(t, response)
+	})
+	t.Run("failure", func(t *testing.T) {
+		// given
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
+		httpmock.RegisterResponder(http.MethodGet, testURL, httpmock.NewErrorResponder(errors.New("failure")))
+		client := Client{}
+		client.SetOptions(ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
+		// when
+		response, err := client.Send(request)
+		// then
+		assert.Error(t, err)
+		assert.Nil(t, response)
+	})
+}
+
+func TestDefaultTransport(t *testing.T) {
+	const testURL string = "https://localhost/api"
+
+	t.Run("with default transport", func(t *testing.T) {
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
+		httpmock.RegisterResponder(http.MethodGet, testURL, httpmock.NewStringResponder(200, `OK`))
+
+		client := Client{}
+		client.SetOptions(ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
+		// test
+		response, err := client.SendRequest("GET", testURL, nil, nil, nil)
+		// assert
+		assert.NoError(t, err)
+		// assert.NotEmpty(t, count)
+		assert.Equal(t, 1, httpmock.GetTotalCallCount(), "unexpected number of requests")
+		content, err := ioutil.ReadAll(response.Body)
+		defer response.Body.Close()
+		require.NoError(t, err, "unexpected error while reading response body")
+		assert.Equal(t, "OK", string(content), "unexpected response content")
+	})
+	t.Run("with custom transport", func(t *testing.T) {
+		httpmock.Activate()
+		defer httpmock.DeactivateAndReset()
+		httpmock.RegisterResponder(http.MethodGet, testURL, httpmock.NewStringResponder(200, `OK`))
+
+		client := Client{}
+		// test
+		_, err := client.SendRequest("GET", testURL, nil, nil, nil)
+		// assert
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "connection")
+		assert.Contains(t, err.Error(), "refused")
+		assert.Equal(t, 0, httpmock.GetTotalCallCount(), "unexpected number of requests")
+	})
+}
 
 func TestSendRequest(t *testing.T) {
 	var passedHeaders = map[string][]string{}
@@ -100,7 +177,7 @@ func TestSendRequest(t *testing.T) {
 
 func TestSetOptions(t *testing.T) {
 	c := Client{}
-	opts := ClientOptions{TransportTimeout: 10, MaxRequestDuration: 5, Username: "TestUser", Password: "TestPassword", Token: "TestToken", Logger: log.Entry().WithField("package", "github.com/SAP/jenkins-library/pkg/http")}
+	opts := ClientOptions{MaxRetries: -1, TransportTimeout: 10, MaxRequestDuration: 5, Username: "TestUser", Password: "TestPassword", Token: "TestToken", Logger: log.Entry().WithField("package", "github.com/SAP/jenkins-library/pkg/http")}
 	c.SetOptions(opts)
 
 	assert.Equal(t, opts.TransportTimeout, c.transportTimeout)
@@ -182,12 +259,12 @@ func TestUploadRequest(t *testing.T) {
 		cookies       []*http.Cookie
 		expected      string
 	}{
-		{clientOptions: ClientOptions{}, method: "PUT", expected: "OK"},
-		{clientOptions: ClientOptions{}, method: "POST", expected: "OK"},
-		{clientOptions: ClientOptions{}, method: "POST", header: map[string][]string{"Testheader": {"Test1", "Test2"}}, expected: "OK"},
-		{clientOptions: ClientOptions{}, cookies: []*http.Cookie{{Name: "TestCookie1", Value: "TestValue1"}, {Name: "TestCookie2", Value: "TestValue2"}}, method: "POST", expected: "OK"},
-		{clientOptions: ClientOptions{Username: "TestUser", Password: "TestPwd"}, method: "POST", expected: "OK"},
-		{clientOptions: ClientOptions{Username: "UserOnly", Password: ""}, method: "POST", expected: "OK"},
+		{clientOptions: ClientOptions{MaxRetries: -1}, method: "PUT", expected: "OK"},
+		{clientOptions: ClientOptions{MaxRetries: -1}, method: "POST", expected: "OK"},
+		{clientOptions: ClientOptions{MaxRetries: -1}, method: "POST", header: map[string][]string{"Testheader": {"Test1", "Test2"}}, expected: "OK"},
+		{clientOptions: ClientOptions{MaxRetries: -1}, cookies: []*http.Cookie{{Name: "TestCookie1", Value: "TestValue1"}, {Name: "TestCookie2", Value: "TestValue2"}}, method: "POST", expected: "OK"},
+		{clientOptions: ClientOptions{MaxRetries: -1, Username: "TestUser", Password: "TestPwd"}, method: "POST", expected: "OK"},
+		{clientOptions: ClientOptions{MaxRetries: -1, Username: "UserOnly", Password: ""}, method: "POST", expected: "OK"},
 	}
 
 	client := Client{logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")}
@@ -320,6 +397,28 @@ func TestTransportSkipVerification(t *testing.T) {
 	}
 }
 
+func TestTransportWithCertifacteAdded(t *testing.T) {
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		io.WriteString(w, "Hello")
+	}))
+	defer server.Close()
+
+	certs := x509.NewCertPool()
+	for _, c := range server.TLS.Certificates {
+		roots, err := x509.ParseCertificates(c.Certificate[len(c.Certificate)-1])
+		if err != nil {
+			println("error parsing server's root cert: %v", err)
+		}
+		for _, root := range roots {
+			certs.AddCert(root)
+		}
+	}
+	client := http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{RootCAs: certs, InsecureSkipVerify: false}}}
+	_, err := client.Get(server.URL)
+	// assert
+	assert.NoError(t, err)
+}
+
 func TestMaxRetries(t *testing.T) {
 	testCases := []struct {
 		client       Client
@@ -327,12 +426,14 @@ func TestMaxRetries(t *testing.T) {
 		method       string
 		responseCode int
 		errorText    string
+		timeout      bool
 	}{
+		{client: Client{maxRetries: 1, useDefaultTransport: true, transportSkipVerification: true, transportTimeout: 1 * time.Microsecond}, responseCode: 666, timeout: true, countedCalls: 2, method: http.MethodPost, errorText: "timeout awaiting response headers"},
 		{client: Client{maxRetries: 0}, countedCalls: 1, method: http.MethodGet, responseCode: 500, errorText: "Internal Server Error"},
 		{client: Client{maxRetries: 2}, countedCalls: 3, method: http.MethodGet, responseCode: 500, errorText: "Internal Server Error"},
 		{client: Client{maxRetries: 3}, countedCalls: 4, method: http.MethodPost, responseCode: 503, errorText: "Service Unavailable"},
-		{client: Client{maxRetries: 3}, countedCalls: 4, method: http.MethodPut, responseCode: 506, errorText: "Variant Also Negotiates"},
-		{client: Client{maxRetries: 3}, countedCalls: 4, method: http.MethodHead, responseCode: 502, errorText: "Bad Gateway"},
+		{client: Client{maxRetries: 1}, countedCalls: 2, method: http.MethodPut, responseCode: 506, errorText: "Variant Also Negotiates"},
+		{client: Client{maxRetries: 1}, countedCalls: 2, method: http.MethodHead, responseCode: 502, errorText: "Bad Gateway"},
 		{client: Client{maxRetries: 3}, countedCalls: 1, method: http.MethodHead, responseCode: 404, errorText: "Not Found"},
 		{client: Client{maxRetries: 3}, countedCalls: 1, method: http.MethodHead, responseCode: 401, errorText: "Authentication Error"},
 		{client: Client{maxRetries: 3}, countedCalls: 1, method: http.MethodHead, responseCode: 403, errorText: "Authorization Error"},
@@ -343,6 +444,9 @@ func TestMaxRetries(t *testing.T) {
 		count := 0
 		svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			count++
+			if testCase.timeout && count == 0 {
+				time.Sleep(3 * time.Microsecond)
+			}
 			w.WriteHeader(testCase.responseCode)
 		}))
 		defer svr.Close()

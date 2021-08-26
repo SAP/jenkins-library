@@ -5,7 +5,7 @@ import groovy.transform.Field
 
 void call(Map parameters = [:]) {
     List credentials = [
-        [type: 'usernamePassword', id: 'cpiCredentialsId', env: ['PIPER_username', 'PIPER_password']]
+        [type: 'token', id: 'cpiApiServiceKeyCredentialsId', env: ['PIPER_apiServiceKey']]
     ]
     piperExecuteBin(parameters, STEP_NAME, METADATA_FILE, credentials)
 }

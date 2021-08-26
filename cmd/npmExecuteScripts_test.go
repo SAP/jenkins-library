@@ -1,10 +1,11 @@
 package cmd
 
 import (
+	"testing"
+
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/SAP/jenkins-library/pkg/npm"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 // NpmMockUtilsBundle for mocking
@@ -117,5 +118,20 @@ func TestNpmExecuteScripts(t *testing.T) {
 				assert.Equal(t, mock.ExecCall{Exec: "npm", Params: []string{"run", "ci-build"}}, utils.execRunner.Calls[3])
 			}
 		}
+	})
+
+	t.Run("Call with createBOM", func(t *testing.T) {
+		config := npmExecuteScriptsOptions{CreateBOM: true, RunScripts: []string{"ci-build", "ci-test"}}
+
+		options := npm.ExecutorOptions{DefaultNpmRegistry: config.DefaultNpmRegistry}
+
+		utils := newNpmMockUtilsBundle()
+		utils.AddFile("package.json", []byte("{\"name\": \"Test\" }"))
+		utils.AddFile("src/package.json", []byte("{\"name\": \"Test\" }"))
+
+		npmExecutor := npm.Execute{Utils: &utils, Options: options}
+		err := runNpmExecuteScripts(&npmExecutor, &config)
+
+		assert.NoError(t, err)
 	})
 }
