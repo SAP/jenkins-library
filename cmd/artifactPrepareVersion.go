@@ -3,8 +3,6 @@ package cmd
 import (
 	"bytes"
 	"fmt"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"io"
 	netHttp "net/http"
 	"os"
@@ -12,7 +10,11 @@ import (
 	"text/template"
 	"time"
 
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
+
 	"github.com/SAP/jenkins-library/pkg/command"
+	gitUtils "github.com/SAP/jenkins-library/pkg/git"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/versioning"
@@ -57,6 +59,8 @@ type artifactPrepareVersionUtils interface {
 	FileExists(filename string) (bool, error)
 	Copy(src, dest string) (int64, error)
 	MkdirAll(path string, perm os.FileMode) error
+	FileWrite(path string, content []byte, perm os.FileMode) error
+	FileRead(path string) ([]byte, error)
 }
 
 type artifactPrepareVersionUtilsBundle struct {
@@ -141,6 +145,7 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 	}
 	gitCommitID := gitCommit.String()
 
+	commonPipelineEnvironment.git.headCommitID = gitCommitID
 	newVersion := version
 
 	if versioningType == "cloud" || versioningType == "cloud_noTag" {
@@ -186,6 +191,9 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 			// commit changes and push to repository (including new version tag)
 			gitCommitID, err = pushChanges(config, newVersion, repository, worktree, now)
 			if err != nil {
+				if strings.Contains(fmt.Sprint(err), "reference already exists") {
+					log.SetErrorCategory(log.ErrorCustom)
+				}
 				return errors.Wrapf(err, "failed to push changes for version '%v'", newVersion)
 			}
 		}
@@ -193,17 +201,28 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 
 	log.Entry().Infof("New version: '%v'", newVersion)
 
-	commonPipelineEnvironment.git.commitID = gitCommitID
+	commonPipelineEnvironment.git.commitID = gitCommitID // this commitID changes and is not necessarily the HEAD commitID
 	commonPipelineEnvironment.artifactVersion = newVersion
 	commonPipelineEnvironment.originalArtifactVersion = version
 	commonPipelineEnvironment.git.commitMessage = gitCommitMessage
+
+	// we may replace GetVersion() above with GetCoordinates() at some point ...
+	if config.FetchCoordinates {
+		coordinates, err := artifact.GetCoordinates()
+		if err != nil {
+			return fmt.Errorf("failed to get coordinates: %w", err)
+		}
+		commonPipelineEnvironment.artifactID = coordinates.ArtifactID
+		commonPipelineEnvironment.groupID = coordinates.GroupID
+		commonPipelineEnvironment.packaging = coordinates.Packaging
+	}
 
 	return nil
 }
 
 func openGit() (gitRepository, error) {
 	workdir, _ := os.Getwd()
-	return git.PlainOpen(workdir)
+	return gitUtils.PlainOpen(workdir)
 }
 
 func getGitCommitID(repository gitRepository) (plumbing.Hash, string, error) {

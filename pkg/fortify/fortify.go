@@ -2,6 +2,7 @@ package fortify
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -35,6 +36,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
+
+// ReportsDirectory defines the subfolder for the Fortify reports which are generated
+const ReportsDirectory = "fortify"
 
 // System is the interface abstraction of a specific SystemInstance
 type System interface {
@@ -84,11 +88,12 @@ func NewSystemInstance(serverURL, apiEndpoint, authToken string, timeout time.Du
 	dateTimeFormat := models.Iso8601MilliDateTime{}
 	format.Add("datetime", &dateTimeFormat, models.IsDateTime)
 	clientInstance := ff.NewHTTPClientWithConfig(format, createTransportConfig(serverURL, apiEndpoint))
+	encodedAuthToken := base64EndodePlainToken(authToken)
 	httpClientInstance := &piperHttp.Client{}
-	httpClientOptions := piperHttp.ClientOptions{Token: "FortifyToken " + authToken, TransportTimeout: timeout}
+	httpClientOptions := piperHttp.ClientOptions{Token: "FortifyToken " + encodedAuthToken, TransportTimeout: timeout}
 	httpClientInstance.SetOptions(httpClientOptions)
 
-	return NewSystemInstanceForClient(clientInstance, httpClientInstance, serverURL, authToken, timeout)
+	return NewSystemInstanceForClient(clientInstance, httpClientInstance, serverURL, encodedAuthToken, timeout)
 }
 
 func createTransportConfig(serverURL, apiEndpoint string) *ff.TransportConfig {
@@ -127,6 +132,14 @@ func splitHostAndEndpoint(urlWithoutScheme string) (host, endpoint string) {
 	return
 }
 
+func base64EndodePlainToken(authToken string) (encodedAuthToken string) {
+	isEncoded := strings.Index(authToken, "-") < 0
+	if isEncoded {
+		return authToken
+	}
+	return base64.StdEncoding.EncodeToString([]byte(authToken))
+}
+
 // NewSystemInstanceForClient - creates a new SystemInstance
 func NewSystemInstanceForClient(clientInstance *ff.Fortify, httpClientInstance *piperHttp.Client, serverURL, authToken string, requestTimeout time.Duration) *SystemInstance {
 	return &SystemInstance{
@@ -148,7 +161,7 @@ func (sys *SystemInstance) AuthenticateRequest(req runtime.ClientRequest, format
 // GetProjectByName returns the project identified by the name provided
 // autoCreate and projectVersion parameters only used if autoCreate=true
 func (sys *SystemInstance) GetProjectByName(projectName string, autoCreate bool, projectVersionName string) (*models.Project, error) {
-	nameParam := fmt.Sprintf("name=%v", projectName)
+	nameParam := fmt.Sprintf(`name:"%v"`, projectName)
 	params := &project_controller.ListProjectParams{Q: &nameParam}
 	params.WithTimeout(sys.timeout)
 	result, err := sys.client.ProjectController.ListProject(params, sys)

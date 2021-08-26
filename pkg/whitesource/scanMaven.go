@@ -66,6 +66,7 @@ func (s *Scan) generateMavenWhitesourceDefines(config *ScanOptions) []string {
 		"-Dorg.whitesource.product=" + config.ProductName,
 		"-Dorg.whitesource.checkPolicies=true",
 		"-Dorg.whitesource.failOnError=true",
+		"-Dorg.whitesource.forceUpdate=true",
 	}
 
 	// Aggregate all modules into one WhiteSource project, if user specified the 'projectName' parameter.

@@ -1,0 +1,115 @@
+metadata:
+  name: transportRequestUploadSOLMAN
+  aliases:
+    - name: transportRequestUploadFile
+  description: "Uploads a specified file into a given transport via Solution Manager"
+  longDescription: |
+    Uploads the specified file into the given transport request via Solution Manager.
+    The mandatory change document ID points to the associate change document item.
+    The application ID specifies how the file needs to be handled on server side.
+spec:
+  inputs:
+    secrets:
+      - name: uploadCredentialsId
+        description: Jenkins 'Username with password' credentials ID containing user and password to authenticate against the ABAP backend
+        type: jenkins
+        aliases:
+          - name: changeManagement/credentialsId
+    params:
+      - name: endpoint
+        type: string
+        mandatory: true
+        description: "Service endpoint"
+        aliases:
+          - name: changeManagement/endpoint
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: username
+        type: string
+        mandatory: true
+        description: "Service user for uploading to the Solution Manager"
+        secret: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        resourceRef:
+          - name: uploadCredentialsId
+            type: secret
+            param: username
+      - name: password
+        type: string
+        mandatory: true
+        description: "Service user password for uploading to the Solution Manager"
+        secret: true
+        scope:
+          - PARAMETERS
+        resourceRef:
+          - name: uploadCredentialsId
+            type: secret
+            param: password
+      - name: applicationId
+        type: string
+        mandatory: true
+        description: "Id of the application. Specifies how the file needs to be handled on server side"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: changeDocumentId
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/changeDocumentId
+        type: string
+        mandatory: true
+        description: "ID of the change document to which the file is uploaded"
+        scope:
+          - PARAMETERS
+      - name: transportRequestId
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/transportRequestId
+        type: string
+        mandatory: true
+        description: "ID of the transport request to which the file is uploaded"
+        scope:
+          - PARAMETERS
+      - name: filePath
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: mtarFilePath
+        type: string
+        mandatory: true
+        description: "Name/Path of the file which should be uploaded"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: cmClientOpts
+        aliases:
+          - name: clientOpts
+          - name: changeManagement/clientOpts
+        type: "[]string"
+        mandatory: true
+        description: "Additional options handed over to the cm client"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: custom/changeDocumentId
+          - name: custom/transportRequestId
+  containers:
+    - name: cmclient
+      image: ppiper/cm-client

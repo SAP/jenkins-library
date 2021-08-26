@@ -1,0 +1,48 @@
+metadata:
+  name: transportRequestReqIDFromGit
+  description: "Retrieves the transport request ID from Git repository"
+  longDescription: |
+    This step scans the commit messages of the Git repository for a pattern to retrieve the transport request ID.
+    It is primarily made for the transport request upload steps to provide the transport request ID by Git means.
+spec:
+  inputs:
+    params:
+      - name: gitFrom
+        aliases:
+          - name: changeManagement/git/from
+        type: "string"
+        description: "GIT starting point for retrieving the transport request ID"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        default: "origin/master"
+      - name: gitTo
+        aliases:
+          - name: changeManagement/git/to
+        type: "string"
+        description: "GIT ending point for retrieving the transport request ID"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        default: "HEAD"
+      - name: transportRequestLabel
+        aliases:
+          - name: changeManagement/transportRequestLabel
+        type: "string"
+        description: "Pattern used for identifying lines holding the transport request ID. The GIT commit log messages are scanned for this label"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        default: "TransportRequest"
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: custom/transportRequestId

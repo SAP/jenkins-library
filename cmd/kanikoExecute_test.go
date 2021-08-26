@@ -82,6 +82,10 @@ func (f *kanikoFileMock) Glob(pattern string) (matches []string, err error) {
 	return nil, fmt.Errorf("not implemented. func is only present in order to fullfil the interface contract. Needs to be ajusted in case it gets used.")
 }
 
+func (f *kanikoFileMock) Chdir(pattern string) error {
+	return nil
+}
+
 func TestRunKanikoExecute(t *testing.T) {
 
 	commonPipelineEnvironment := kanikoExecuteCommonPipelineEnvironment{}
@@ -158,6 +162,31 @@ func TestRunKanikoExecute(t *testing.T) {
 		cwd, _ := os.Getwd()
 		assert.Equal(t, []string{"--dockerfile", "Dockerfile", "--context", cwd, "--skip-tls-verify-pull", "--destination", "my.registry.com:50000/myImage:1.2.3-a-x"}, runner.Calls[1].Params)
 
+	})
+
+	t.Run("no error case - when cert update skipped", func(t *testing.T) {
+		config := &kanikoExecuteOptions{
+			BuildOptions:                []string{"--skip-tls-verify-pull"},
+			ContainerImageName:          "myImage",
+			ContainerImageTag:           "1.2.3-a+x",
+			ContainerRegistryURL:        "https://my.registry.com:50000",
+			ContainerPreparationCommand: "rm -f /kaniko/.docker/config.json",
+			CustomTLSCertificateLinks:   []string{},
+			DockerfilePath:              "Dockerfile",
+			DockerConfigJSON:            "path/to/docker/config.json",
+		}
+
+		runner := &mock.ExecMockRunner{}
+
+		certClient := &kanikoMockClient{}
+		fileUtils := &kanikoFileMock{
+			fileWriteContent: map[string]string{},
+			fileReadErr:      map[string]error{"/kaniko/ssl/certs/ca-certificates.crt": fmt.Errorf("read error")},
+		}
+
+		err := runKanikoExecute(config, &telemetry.CustomData{}, &commonPipelineEnvironment, runner, certClient, fileUtils)
+
+		assert.NoErrorf(t, err, "failed to update certificates: failed to load file '/kaniko/ssl/certs/ca-certificates.crt': read error")
 	})
 
 	t.Run("success case - no push, no docker config.json", func(t *testing.T) {
@@ -249,7 +278,16 @@ func TestRunKanikoExecute(t *testing.T) {
 	})
 
 	t.Run("error case - cert update failed", func(t *testing.T) {
-		config := &kanikoExecuteOptions{}
+		config := &kanikoExecuteOptions{
+			BuildOptions:                []string{"--skip-tls-verify-pull"},
+			ContainerImageName:          "myImage",
+			ContainerImageTag:           "1.2.3-a+x",
+			ContainerRegistryURL:        "https://my.registry.com:50000",
+			ContainerPreparationCommand: "rm -f /kaniko/.docker/config.json",
+			CustomTLSCertificateLinks:   []string{"https://test.url/cert.crt"},
+			DockerfilePath:              "Dockerfile",
+			DockerConfigJSON:            "path/to/docker/config.json",
+		}
 
 		runner := &mock.ExecMockRunner{}
 

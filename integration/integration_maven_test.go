@@ -18,7 +18,7 @@ func TestMavenBuildCloudSdkSpringProject(t *testing.T) {
 
 	err := container.whenRunningPiperCommand("mavenBuild", "")
 	if err != nil {
-		t.Fatalf("Calling piper command filed %s", err)
+		t.Fatalf("Calling piper command failed %s", err)
 	}
 
 	container.assertHasOutput(t, "BUILD SUCCESS")
@@ -27,7 +27,7 @@ func TestMavenBuildCloudSdkSpringProject(t *testing.T) {
 
 	err = container.whenRunningPiperCommand("mavenExecuteIntegration", "")
 	if err != nil {
-		t.Fatalf("Calling piper command filed %s", err)
+		t.Fatalf("Calling piper command failed %s", err)
 	}
 
 	container.assertHasOutput(t, "INFO mydemo.HelloWorldControllerTest - Starting HelloWorldControllerTest")
@@ -47,7 +47,7 @@ func TestMavenBuildCloudSdkTomeeProject(t *testing.T) {
 
 	err := container.whenRunningPiperCommand("mavenBuild", "")
 	if err != nil {
-		t.Fatalf("Calling piper command filed %s", err)
+		t.Fatalf("Calling piper command failed %s", err)
 	}
 
 	container.assertHasOutput(t, "BUILD SUCCESS")
@@ -57,7 +57,7 @@ func TestMavenBuildCloudSdkTomeeProject(t *testing.T) {
 
 	err = container.whenRunningPiperCommand("mavenExecuteIntegration", "")
 	if err != nil {
-		t.Fatalf("Calling piper command filed %s", err)
+		t.Fatalf("Calling piper command failed %s", err)
 	}
 
 	container.assertHasOutput(t, "(prepare-agent) @ cloud-sdk-tomee-archetype-integration-tests")

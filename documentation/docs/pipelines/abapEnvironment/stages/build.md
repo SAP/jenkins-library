@@ -1,6 +1,6 @@
 # Build
 
-This stage is responsible for building an ABAP Add-on for the SAP BTP ABAP Environment. The build process of the add-on is done on a Steampunk system (using [SAP_COM_0582](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/26b8df5435c649aa8ea7b3688ad5bb0a.html)) with the help of the ABAP Add-on Assembly Kit as a Service (AAKaaS). After executing this stage successfully, the add-on is ready to be tested. For more details, please refer to the [scenario description](../../../scenarios/abapEnvironmentAddons.md)).
+This stage is responsible for building an ABAP add-on for the SAP BTP, ABAP environment. The build process of the add-on is done on a Steampunk system (using [SAP_COM_0582](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/26b8df5435c649aa8ea7b3688ad5bb0a.html)) with the help of the SAP Add-On Assembly Kit as a Service (AAKaaS). After executing this stage successfully, the add-on is ready to be tested. For more details, please refer to the [scenario description](../../../scenarios/abapEnvironmentAddons.md)).
 
 ## Steps
 
@@ -10,6 +10,7 @@ The following steps are executed in this stage:
 - [abapAddonAssemblyKitReserveNextPackages](../../../steps/abapAddonAssemblyKitReserveNextPackages.md)
 - [abapEnvironmentAssemblePackages](../../../steps/abapEnvironmentAssemblePackages.md)
 - [abapAddonAssemblyKitRegisterPackages](../../../steps/abapAddonAssemblyKitRegisterPackages.md)
+- [abapEnvironmentAssembleConfirm](../../../steps/abapEnvironmentAssembleConfirm.md)
 - [abapAddonAssemblyKitReleasePackages](../../../steps/abapAddonAssemblyKitReleasePackages.md)
 - [abapAddonAssemblyKitCreateTargetVector](../../../steps/abapAddonAssemblyKitCreateTargetVector.md)
 - [abapAddonAssemblyKitPublishTargetVector](../../../steps/abapAddonAssemblyKitPublishTargetVector.md)
@@ -44,14 +45,23 @@ stages:
 
 ### addon.yml
 
-```yaml
+!!! caution "Use Long Commit ID for the commitID fields"
+    Please use the long commit ID in the commit ID field currently if you are using the short commit ID the build process will fail.
+    Go into the Manage Software Components app, navigate to the branch, select the commit in the list of commits, field "Long Commit ID" becomes available.
+
+```YAML
 ---
-addonProduct: /DMO/PRODUCT1
-addonVersion: 1.0.0
+addonProduct: /NAMESPC/PRODUCTX
+addonVersion: 1.2.0
 repositories:
-  - name: /DMO/SWC
-    branch: v1.0.0
-    version: 1.0.0
+  - name: /NAMESPC/COMPONENTA
+    branch: v1.2.0
+    version: 1.2.0
+    commitID: 7d4516e9
+  - name: /NAMESPC/COMPONENTB
+    branch: v2.0.0
+    version: 2.0.0
+    commitID: 9f102ffb
 ```
 
 ### sap_com_0582.json

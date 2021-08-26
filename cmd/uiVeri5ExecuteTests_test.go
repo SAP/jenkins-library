@@ -41,7 +41,7 @@ func TestRunUIVeri5(t *testing.T) {
 	})
 
 	t.Run("error case run command", func(t *testing.T) {
-		wantError := "failed to execute run command: fail uiveri5 [testParam]: error case"
+		wantError := "failed to execute run command: fail uiveri5 testParam: error case"
 
 		opts := &uiVeri5ExecuteTestsOptions{InstallCommand: "npm install ui5/uiveri5", RunCommand: "fail uiveri5", RunOptions: []string{"testParam"}}
 
