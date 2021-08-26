@@ -1,0 +1,133 @@
+metadata:
+  name: abapEnvironmentRunAUnitTest
+  description: Runs an ATC Check
+  longDescription: |
+    This step is for triggering an [AUnit] LINKS NEED TO BE UPDATED(https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/d8cec788fc104ff9ad9c3757b4dd13d4.html) test run on an SAP Cloud Platform ABAP Environment system.
+    Please provide either of the following options:
+
+    * The host and credentials the Cloud Platform ABAP Environment system itself. The credentials must be configured for the Communication Scenario [SAP_COM_0510](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/b04a9ae412894725a2fc539bfb1ca055.html).
+    * The Cloud Foundry parameters (API endpoint, organization, space), credentials, the service instance for the ABAP service and the service key for the Communication Scenario SAP_COM_0510.
+    * Only provide one of those options with the respective credentials. If all values are provided, the direct communication (via host) has priority.
+
+    Regardless of the option you chose, please make sure to provide the configuration for Software Components and Packages that you want to be checked analog to the examples listed on this page.
+spec:
+  inputs:
+    secrets:
+      - name: abapCredentialsId
+        aliases:
+          - name: cfCredentialsId
+        description: Jenkins credentials ID containing user and password to authenticate to the Cloud Platform ABAP Environment system or the Cloud Foundry API
+        type: jenkins
+    params:
+      - name: aUnitConfig
+        type: string
+        description: Path to a YAML configuration file for Packages and/or Software Components to be checked during the AUnit test run
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+      - name: cfApiEndpoint
+        type: string
+        description: Cloud Foundry API endpoint
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: false
+        aliases:
+          - name: cloudFoundry/apiEndpoint
+      - name: cfOrg
+        type: string
+        description: CF org
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: false
+        aliases:
+          - name: cloudFoundry/org
+      - name: cfServiceInstance
+        type: string
+        description: Parameter of ServiceInstance Name to delete CloudFoundry Service
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: false
+        aliases:
+          - name: cloudFoundry/serviceInstance
+      - name: cfServiceKeyName
+        type: string
+        description: Parameter of CloudFoundry Service Key to be created
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: false
+        aliases:
+          - name: cloudFoundry/serviceKey
+          - name: cloudFoundry/serviceKeyName
+          - name: cfServiceKey
+      - name: cfSpace
+        type: string
+        description: CF Space
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: false
+        aliases:
+          - name: cloudFoundry/space
+      - name: username
+        type: string
+        description: User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+        secret: true
+        resourceRef:
+          - name: abapCredentialsId
+            type: secret
+            param: username
+      - name: password
+        type: string
+        description: Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
+        secret: true
+        resourceRef:
+          - name: abapCredentialsId
+            type: secret
+            param: password
+      - name: host
+        type: string
+        description: Specifies the host address of the SAP Cloud Platform ABAP Environment system
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: false
+      - name: aUnitResultsFileName
+        type: string
+        description: Specifies output file name for the results from the AUnit run.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+        default: "AUnitResults.xml"
+  containers:
+    - name: cf
+      image: ppiper/cf-cli:7
