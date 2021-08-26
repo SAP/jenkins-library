@@ -8,7 +8,7 @@
 1. Look up your Group ID using REST API via `curl -u <username> "https://<protecode host>/api/groups/"`.
 
 If the image is on a protected registry you can provide a Docker `config.json` file containing the credential information for the registry.
-You can either use `docker login` (see the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/) for details) and copy your local `~/.docker/config.json` file or you can create the file manually using the follwing script.
+You can either use `docker login` (see the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/) for details) or you can create the file manually using the follwing script.
 
 ```
 #!/bin/bash
