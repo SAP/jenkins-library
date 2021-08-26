@@ -13,6 +13,7 @@ spec:
         aliases:
           - name: dockerImageName
         type: string
+        mandatory: true
         description: Name of the container which will be built
         scope:
           - GENERAL
@@ -23,6 +24,7 @@ spec:
         aliases:
           - name: artifactVersion
         type: string
+        mandatory: true
         description: Tag of the container which will be built
         scope:
           - GENERAL
@@ -36,6 +38,7 @@ spec:
         aliases:
           - name: dockerRegistryUrl
         type: string
+        mandatory: true
         description: Container registry where the image should be pushed to
         scope:
           - GENERAL
