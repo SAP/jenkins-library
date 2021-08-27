@@ -215,10 +215,11 @@ func TestRunDetect(t *testing.T) {
 	t.Run("failure case", func(t *testing.T) {
 		t.Parallel()
 		utilsMock := newDetectTestUtilsBundle()
-		utilsMock.ShouldFailOnCommand = map[string]error{"./detect.sh --blackduck.url= --blackduck.api.token= \"--detect.project.name=''\" \"--detect.project.version.name=''\" \"--detect.code.location.name=''\" --detect.source.path='.'": fmt.Errorf("Test Error")}
+		utilsMock.ShouldFailOnCommand = map[string]error{"./detect.sh --blackduck.url= --blackduck.api.token= \"--detect.project.name=''\" \"--detect.project.version.name=''\" \"--detect.code.location.name=''\" --detect.source.path='.'": fmt.Errorf("")}
+		utilsMock.ExitCode = 3
 		utilsMock.AddFile("detect.sh", []byte(""))
 		err := runDetect(detectExecuteScanOptions{}, utilsMock, &detectExecuteScanInflux{})
-		assert.EqualError(t, err, "Test Error")
+		assert.Contains(t, err.Error(), "FAILURE_POLICY_VIOLATION => Detect found policy violations.")
 		assert.True(t, utilsMock.HasRemovedFile("detect.sh"))
 	})
 

@@ -88,7 +88,6 @@ const (
 			}
 		]
 	}`
-
 )
 
 func TestGetProject(t *testing.T) {

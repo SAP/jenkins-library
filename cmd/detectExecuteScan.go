@@ -241,7 +241,6 @@ func mapErrorCategory(exitCodeKey int) {
 func exitCodeMapping(exitCodeKey int) string {
 
 	exitCodes := map[int]string{
-		0:   "SUCCESS => Detect exited successfully.",
 		1:   "FAILURE_BLACKDUCK_CONNECTIVITY => Detect was unable to connect to Black Duck. Check your configuration and connection.",
 		2:   "FAILURE_TIMEOUT => Detect could not wait for actions to be completed on Black Duck. Check your Black Duck server or increase your timeout.",
 		3:   "FAILURE_POLICY_VIOLATION => Detect found policy violations.",
