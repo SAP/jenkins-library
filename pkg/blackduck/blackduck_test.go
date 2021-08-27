@@ -62,7 +62,6 @@ const (
 			}
 		]
 	}`
-
 	projectVersionContent = `{
 		"totalCount": 1,
 		"items": [
@@ -411,7 +410,6 @@ func TestGetPolicyStatus(t *testing.T) {
 		assert.Contains(t, fmt.Sprint(err), "failed to retrieve Policy violation details for project version 'SHC-PiperTest:1.0'")
 		assert.Nilf(t, policyStatus, "Expected Components to be nil")
 	})
-
 }
 
 func TestAuthenticate(t *testing.T) {
