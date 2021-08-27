@@ -514,12 +514,17 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     @Test
     public void trUploadFile_SOLMAN_failsIfDocidIsMissing_Test() {
       
-        ChangeManagement cm = new ChangeManagement(nullScript) {
-            String getChangeDocumentId( String from, String to, String pattern, String format ) {
-                 throw new ChangeManagementException('Cannot retrieve changeId from git commits.')
+        def calledWithParameters = null
+    
+        helper.registerAllowedMethod( 'piperExecuteBin', [Map, String, String, List],
+            {
+                params, stepName, metaData, creds -> 
+                    if(stepName.equals("transportRequestDocIDFromGit")) {
+                        calledWithParameters = params
+                    }
             }
-        }
-
+        )
+        
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage("Change document id not provided (parameter: 'changeDocumentId' provided to the step call or via commit history).")
 
@@ -532,20 +537,26 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                 endpoint: 'https://example.org/cm',
                 clientOpts: '--client opts'
             ],
-            credentialsId: 'CM', 
-            cmUtils: cm
+            credentialsId: 'CM'
         )
+        
+        assert calledWithParameters != null
     }
     
     @Test
     public void trUploadFile_SOLMAN_failsIfTridIsMissing_Test() {
 
-        ChangeManagement cm = new ChangeManagement(nullScript) {
-            String getTransportRequestId( String from, String to, String pattern, String format ) {
-              throw new ChangeManagementException('Cannot retrieve transport request id from git commits.')
-            }
-        }
+        def calledWithParameters = null
     
+        helper.registerAllowedMethod( 'piperExecuteBin', [Map, String, String, List],
+            {
+                params, stepName, metaData, creds -> 
+                    if(stepName.equals("transportRequestReqIDFromGit")) {
+                        calledWithParameters = params
+                    }
+            }
+        )
+        
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage("Transport request id not provided (parameter: 'transportRequestId' provided to the step call or via commit history).")
 
@@ -558,9 +569,10 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                 endpoint: 'https://example.org/cm',
                 clientOpts: '--client opts'
             ],
-            credentialsId: 'CM', 
-            cmUtils: cm
+            credentialsId: 'CM'
         )
+
+        assert calledWithParameters != null
     }
     
     @Test
