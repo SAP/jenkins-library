@@ -393,7 +393,7 @@ func parseAUnitResult(body []byte, aunitResultFileName string) (err error) {
 				log.Entry().Infof("%s, %s: %s found by %s", failure.Type, failure.Message, failure.Message, s.Classname)
 			}
 
-			for _, skipped := range s.Failure {
+			for _, skipped := range s.Skipped {
 				log.Entry().Infof("The following test has been skipped: %s: %s", skipped.Message, skipped.Text)
 			}
 		}
