@@ -28,7 +28,7 @@ func findPackageDescriptors(npmExecutor npm.Executor, config *npmExecuteScriptsO
 func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOptions) error {
 	packageJSONFiles, err := findPackageDescriptors(npmExecutor, config)
 
-        if err != nil {
+	if err != nil {
 		return err
 	}
 
