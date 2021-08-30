@@ -17,41 +17,41 @@ func npmExecuteScripts(config npmExecuteScriptsOptions, telemetryData *telemetry
 	}
 }
 
-func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOptions) error {
-	if config.Install {
-		packageJSONFiles, err := npmExecutor.FindPackageJSONFilesWithExcludes(config.BuildDescriptorExcludeList)
-		if err != nil {
-			return err
-		}
+func findPackageDescriptors(npmExecutor npm.Executor, config *npmExecuteScriptsOptions) ([]string, error) {
+	if len(config.BuildDescriptorList) > 0 {
+		return config.BuildDescriptorList, nil
+	} else {
+		return npmExecutor.FindPackageJSONFilesWithExcludes(config.BuildDescriptorExcludeList)
+	}
+}
 
+func runNpmExecuteScripts(npmExecutor npm.Executor, config *npmExecuteScriptsOptions) error {
+	packageJSONFiles, err := findPackageDescriptors(npmExecutor, config)
+
+        if err != nil {
+		return err
+	}
+
+	if config.Install {
 		err = npmExecutor.InstallAllDependencies(packageJSONFiles)
+
 		if err != nil {
 			return err
 		}
 	}
 
 	if config.CreateBOM {
-		packageJSONFiles, err := npmExecutor.FindPackageJSONFilesWithExcludes(config.BuildDescriptorExcludeList)
-		if err != nil {
-			return err
-		}
-
-		if err := npmExecutor.CreateBOM(packageJSONFiles); err != nil {
+		if err = npmExecutor.CreateBOM(packageJSONFiles); err != nil {
 			return err
 		}
 	}
 
-	err := npmExecutor.RunScriptsInAllPackages(config.RunScripts, nil, config.ScriptOptions, config.VirtualFrameBuffer, config.BuildDescriptorExcludeList, config.BuildDescriptorList)
+	err = npmExecutor.RunScriptsInAllPackages(config.RunScripts, nil, config.ScriptOptions, config.VirtualFrameBuffer, config.BuildDescriptorExcludeList, config.BuildDescriptorList)
 	if err != nil {
 		return err
 	}
 
 	if config.Publish {
-		packageJSONFiles, err := npmExecutor.FindPackageJSONFilesWithExcludes(config.BuildDescriptorExcludeList)
-		if err != nil {
-			return err
-		}
-
 		err = npmExecutor.PublishAllPackages(packageJSONFiles, config.RepositoryURL, config.RepositoryUsername, config.RepositoryPassword)
 		if err != nil {
 			return err
