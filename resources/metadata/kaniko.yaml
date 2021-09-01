@@ -7,7 +7,6 @@ spec:
     secrets:
       - name: dockerConfigJsonCredentialsId
         description: Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)). You can create it like explained in [Prerequisites](https://www.project-piper.io/steps/protecodeExecuteScan/#prerequisites).
-
         type: jenkins
     params:
       - name: buildOptions
