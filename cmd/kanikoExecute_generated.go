@@ -161,7 +161,7 @@ func kanikoExecuteMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "dockerConfigJsonCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)). You can create it like explained in [Prerequisites](https://www.project-piper.io/steps/protecodeExecuteScan/#prerequisites).", Type: "jenkins"},
+					{Name: "dockerConfigJsonCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)). You can create it like explained in the [protocodeExecuteScan Prerequisites section](https://www.project-piper.io/steps/protecodeExecuteScan/#prerequisites).", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{
