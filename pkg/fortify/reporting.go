@@ -70,10 +70,10 @@ func CreateCustomReport(data FortifyReportData, issueGroups []*models.ProjectVer
 
 		detailTable.Rows = append(detailTable.Rows, row)
 	}
-	scanReport.DetailTable = detailTable
 
+	scanReport.DetailTable = detailTable
 	scanReport.SuccessfulScan = data.Violations == 0
-	
+
 	return scanReport
 }
 
