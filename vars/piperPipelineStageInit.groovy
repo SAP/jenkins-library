@@ -87,7 +87,7 @@ import static com.sap.piper.Prerequisites.checkScript
     /**
     * Optional if you skip the checkout. Than you need to unstash your sources to get the configuration.
     */
-    'initStashName'
+    'initStashName',
     /**
      * Optional path to the pipeline configuration file defining project specific settings.
      */
