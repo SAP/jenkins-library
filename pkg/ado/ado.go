@@ -2,11 +2,11 @@ package ado
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/microsoft/azure-devops-go-api/azuredevops"
 	"github.com/microsoft/azure-devops-go-api/azuredevops/build"
+	"github.com/pkg/errors"
 )
 
 const azureUrl = "https://dev.azure.com"
@@ -32,7 +32,7 @@ type Variable struct {
 //UpdateVariables updates variables in build definition or creates them if they are missing
 func (bc *BuildClientImpl) UpdateVariables(variables []Variable) error {
 	if len(variables) == 0 {
-		return errors.New("error: variables must not be empty")
+		return errors.New("error: slice variables must not be empty")
 	}
 	getDefinitionArgs := build.GetDefinitionArgs{
 		Project:      &bc.project,
@@ -42,12 +42,12 @@ func (bc *BuildClientImpl) UpdateVariables(variables []Variable) error {
 	// Get a build definition
 	buildDefinition, err := bc.buildClient.GetDefinition(bc.ctx, getDefinitionArgs)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "error: get definition failed")
 	}
 
-	buildDefinitionVars := *buildDefinition.Variables
-	if buildDefinition.Variables == nil {
-		buildDefinitionVars = map[string]build.BuildDefinitionVariable{}
+	buildDefinitionVars := map[string]build.BuildDefinitionVariable{}
+	if buildDefinition.Variables != nil {
+		buildDefinitionVars = *buildDefinition.Variables
 	}
 
 	for _, variable := range variables {
@@ -68,7 +68,7 @@ func (bc *BuildClientImpl) UpdateVariables(variables []Variable) error {
 
 	_, err = bc.buildClient.UpdateDefinition(bc.ctx, updateDefinitionArgs)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "error: update definition failed")
 	}
 
 	return nil
@@ -76,8 +76,14 @@ func (bc *BuildClientImpl) UpdateVariables(variables []Variable) error {
 
 //NewBuildClient Create a client to interact with the Build area
 func NewBuildClient(organization string, personalAccessToken string, project string, pipelineID int) (BuildClient, error) {
-	if err := validateArgs(organization, personalAccessToken, project); err != nil {
-		return nil, err
+	if organization == "" {
+		return nil, errors.New("error: organization must not be empty")
+	}
+	if personalAccessToken == "" {
+		return nil, errors.New("error: personal access token must not be empty")
+	}
+	if project == "" {
+		return nil, errors.New("error: project must not be empty")
 	}
 
 	organizationUrl := fmt.Sprintf("%s/%s", azureUrl, organization)
@@ -100,17 +106,4 @@ func NewBuildClient(organization string, personalAccessToken string, project str
 	}
 
 	return buildClientImpl, nil
-}
-
-func validateArgs(org string, pat string, project string) error {
-	if org == "" {
-		return errors.New("error: organization must not be empty")
-	}
-	if pat == "" {
-		return errors.New("error: personal access token must not be empty")
-	}
-	if project == "" {
-		return errors.New("error: project must not be empty")
-	}
-	return nil
 }

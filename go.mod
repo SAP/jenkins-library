@@ -27,6 +27,7 @@ require (
 	github.com/google/go-containerregistry v0.1.3
 	github.com/google/go-github/v32 v32.1.0
 	github.com/google/uuid v1.1.2
+	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/hashicorp/go-retryablehttp v0.6.7
 	github.com/hashicorp/vault v1.7.2
 	github.com/hashicorp/vault/api v1.1.0
