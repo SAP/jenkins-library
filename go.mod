@@ -38,6 +38,7 @@ require (
 	github.com/magicsong/color-glog v0.0.1 // indirect
 	github.com/magicsong/sonargo v0.0.1
 	github.com/mailru/easyjson v0.7.6 // indirect
+	github.com/microsoft/azure-devops-go-api/azuredevops v1.0.0-b5
 	github.com/motemen/go-nuts v0.0.0-20200601065735-3df31f16cb2f
 	github.com/piper-validation/fortify-client-go v0.0.0-20210114140201-1261216783c6
 	github.com/pkg/errors v0.9.1
