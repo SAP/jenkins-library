@@ -276,4 +276,32 @@ class PiperPipelineStageInitTest extends BasePiperTest {
         )
     }
 
+    @Test
+    void "Try to skip checkout without stashContent parameter throws error"() {
+        thrown.expectMessage('[piperPipelineStageInit] needs stashes if you skip checkout')
+
+        jsr.step.piperPipelineStageInit(
+            script: nullScript,
+            juStabUtils: utils,
+            buildTool: 'maven',
+            stashSettings: 'com.sap.piper/pipeline/stashSettings.yml',
+            skipCheckout: true,
+            scmInfo: ["dummyScmKey":"dummyScmKey"]
+        )
+    }
+
+    @Test
+    void "Try to skip checkout with empty stashContent parameter throws error"() {
+        thrown.expectMessage('[piperPipelineStageInit] needs stashes if you skip checkout')
+
+        jsr.step.piperPipelineStageInit(
+            script: nullScript,
+            juStabUtils: utils,
+            buildTool: 'maven',
+            stashSettings: 'com.sap.piper/pipeline/stashSettings.yml',
+            skipCheckout: true,
+            stashContent: [],
+            scmInfo: ["dummyScmKey":"dummyScmKey"]
+        )
+    }
 }
