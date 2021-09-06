@@ -142,7 +142,7 @@ void call(Map parameters = [:]) {
         }
         else {
             def stashContent = parameters.stashContent
-            if(stashContent == null || stashContent.size() == 0) { 
+            if(stashContent == null || stashContent.size() == 0) {
                 error "[${STEP_NAME}] needs stashes if you skip checkout"
             }
             utils.unstashAll(stashContent)
