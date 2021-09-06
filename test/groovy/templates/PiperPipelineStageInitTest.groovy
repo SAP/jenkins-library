@@ -237,6 +237,7 @@ class PiperPipelineStageInitTest extends BasePiperTest {
             buildTool: 'maven',
             stashSettings: 'com.sap.piper/pipeline/stashSettings.yml',
             skipCheckout: true,
+            stashContent: ['mystash'],
             scmInfo: ["dummyScmKey":"dummyScmKey"]
         )
 
@@ -270,6 +271,7 @@ class PiperPipelineStageInitTest extends BasePiperTest {
             juStabUtils: utils,
             buildTool: 'maven',
             stashSettings: 'com.sap.piper/pipeline/stashSettings.yml',
+            stashContent: ['mystash']
             skipCheckout: true
         )
     }
