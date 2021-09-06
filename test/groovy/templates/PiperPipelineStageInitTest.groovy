@@ -271,7 +271,7 @@ class PiperPipelineStageInitTest extends BasePiperTest {
             juStabUtils: utils,
             buildTool: 'maven',
             stashSettings: 'com.sap.piper/pipeline/stashSettings.yml',
-            stashContent: ['mystash']
+            stashContent: ['mystash'],
             skipCheckout: true
         )
     }
