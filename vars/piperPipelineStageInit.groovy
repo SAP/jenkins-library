@@ -85,7 +85,7 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'skipCheckout',
     /**
-    * Optional if you skip the checkout. Than you need to unstash your workspace to get the e.g. configuration.
+    * Optional if you skip the checkout. Then you need to unstash your workspace to get the e.g. configuration.
     */
     'stashContent',
     /**
@@ -143,7 +143,7 @@ void call(Map parameters = [:]) {
         else {
             def stashContent = parameters.stashContent
             if(stashContent.size() == 0) { 
-                error "[${STEP_NAME}] Need stashes if you skip checkout"
+                error "[${STEP_NAME}] needs stashes if you skip checkout"
             }
             utils.unstashAll(stashContent)
         }
