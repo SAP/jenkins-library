@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/SAP/jenkins-library/pkg/cnbutils"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/docker"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -18,9 +19,11 @@ import (
 )
 
 const (
-	detectorPath = "/cnb/lifecycle/detector"
-	builderPath  = "/cnb/lifecycle/builder"
-	exporterPath = "/cnb/lifecycle/exporter"
+	orderPath      = "/cnb/order.toml"
+	buildpacksPath = "/cnb/buildpacks"
+	detectorPath   = "/cnb/lifecycle/detector"
+	builderPath    = "/cnb/lifecycle/builder"
+	exporterPath   = "/cnb/lifecycle/exporter"
 )
 
 type cnbBuildUtils interface {
@@ -33,17 +36,34 @@ type cnbBuildUtils interface {
 	Getwd() (string, error)
 	Glob(pattern string) (matches []string, err error)
 	Copy(src, dest string) (int64, error)
+	SetCustomBuildpacks(bpacks []string) error
 }
 
 type cnbBuildUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
+	dockerClient docker.Client
+}
+
+func (cutils cnbBuildUtilsBundle) SetCustomBuildpacks(bpacks []string) error {
+	newOrder, err := cnbutils.DownloadBuildpacks(buildpacksPath, bpacks, cutils.dockerClient)
+	if err != nil {
+		return err
+	}
+
+	err = newOrder.Save(orderPath)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func newCnbBuildUtils() cnbBuildUtils {
 	utils := cnbBuildUtilsBundle{
-		Command: &command.Command{},
-		Files:   &piperutils.Files{},
+		Command:      &command.Command{},
+		Files:        &piperutils.Files{},
+		dockerClient: docker.Client{},
 	}
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
@@ -160,6 +180,14 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 
 		} else {
 			log.Entry().Debugf("Filtered out '%s'", sourceFile)
+		}
+	}
+
+	if config.Buildpacks != nil {
+		err = utils.SetCustomBuildpacks(config.Buildpacks)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorBuild)
+			return errors.Wrapf(err, "Setting custom buildpacks: %v", config.Buildpacks)
 		}
 	}
 

@@ -14,6 +14,10 @@ type cnbBuildMockUtils struct {
 	*mock.FilesMock
 }
 
+func (cmutils cnbBuildMockUtils) SetCustomBuildpacks(bpacks []string) error {
+	return nil
+}
+
 func newCnbBuildTestsUtils() cnbBuildMockUtils {
 	utils := cnbBuildMockUtils{
 		ExecMockRunner: &mock.ExecMockRunner{},
