@@ -227,10 +227,11 @@ func TestRunDetect(t *testing.T) {
 	t.Run("failure case", func(t *testing.T) {
 		t.Parallel()
 		utilsMock := newDetectTestUtilsBundle()
-		utilsMock.ShouldFailOnCommand = map[string]error{"./detect.sh --blackduck.url= --blackduck.api.token= \"--detect.project.name=''\" \"--detect.project.version.name=''\" \"--detect.code.location.name=''\" --detect.source.path='.'": fmt.Errorf("Test Error")}
+		utilsMock.ShouldFailOnCommand = map[string]error{"./detect.sh --blackduck.url= --blackduck.api.token= \"--detect.project.name=''\" \"--detect.project.version.name=''\" \"--detect.code.location.name=''\" --detect.source.path='.'": fmt.Errorf("")}
+		utilsMock.ExitCode = 3
 		utilsMock.AddFile("detect.sh", []byte(""))
 		err := runDetect(detectExecuteScanOptions{}, utilsMock, &detectExecuteScanInflux{})
-		assert.EqualError(t, err, "Test Error")
+		assert.Contains(t, err.Error(), "FAILURE_POLICY_VIOLATION => Detect found policy violations.")
 		assert.True(t, utilsMock.HasRemovedFile("detect.sh"))
 	})
 
@@ -567,6 +568,25 @@ func TestAddDetectArgs(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, v.expected, got)
 		})
+	}
+}
+
+// Testing exit code mapping method
+func TestExitCodeMapping(t *testing.T) {
+
+	cases := []struct {
+		exitCode int
+		expected string
+	}{
+		{1, "FAILURE_BLACKDUCK_CONNECTIVITY"},
+		{-1, "Not known exit code key"},
+		{8, "Not known exit code key"},
+		{100, "FAILURE_UNKNOWN_ERROR"},
+	}
+
+	for _, c := range cases {
+		response := exitCodeMapping(c.exitCode)
+		assert.Contains(t, response, c.expected)
 	}
 }
 
