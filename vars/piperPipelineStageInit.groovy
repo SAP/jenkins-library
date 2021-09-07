@@ -85,7 +85,7 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'skipCheckout',
     /**
-    * Optional if you skip the checkout. Then you need to unstash your workspace to get the e.g. configuration.
+    * Mandatory if you skip the checkout. Then you need to unstash your workspace to get the e.g. configuration.
     */
     'stashContent',
     /**
