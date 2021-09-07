@@ -40,6 +40,8 @@ func GctsExecuteABAPUnitTestsCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
@@ -120,6 +122,9 @@ func gctsExecuteABAPUnitTestsMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "abapCredentialsId", Description: "Jenkins credentials ID containing username and password for authentication to the ABAP system on which you want to perform the unit tests", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name: "username",
@@ -134,6 +139,7 @@ func gctsExecuteABAPUnitTestsMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_username"),
 					},
 					{
 						Name: "password",
@@ -148,6 +154,7 @@ func gctsExecuteABAPUnitTestsMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_password"),
 					},
 					{
 						Name:        "repository",
@@ -156,6 +163,7 @@ func gctsExecuteABAPUnitTestsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_repository"),
 					},
 					{
 						Name:        "host",
@@ -164,6 +172,7 @@ func gctsExecuteABAPUnitTestsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_host"),
 					},
 					{
 						Name:        "client",
@@ -172,6 +181,7 @@ func gctsExecuteABAPUnitTestsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_client"),
 					},
 				},
 			},

@@ -6,7 +6,7 @@ spec:
   inputs:
     secrets:
       - name: dockerConfigJsonCredentialsId
-        description: Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)). You can create it like explained in the Docker Success Center in the article about [how to generate a new auth in the config.json file](https://success.docker.com/article/generate-new-auth-in-config-json-file).
+        description: Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)). You can create it like explained in the [protocodeExecuteScan Prerequisites section](https://www.project-piper.io/steps/protecodeExecuteScan/#prerequisites).
         type: jenkins
     params:
       - name: buildOptions
@@ -120,7 +120,8 @@ spec:
           - name: container/registryUrl
           - name: container/imageNameTag
   containers:
-    - image: gcr.io/kaniko-project/executor:debug
+    # https://github.com/GoogleContainerTools/kaniko/issues/1586
+    - image: gcr.io/kaniko-project/executor:v1.3.0-debug
       command:
         - /busybox/tail -f /dev/null
       shell: /busybox/sh
@@ -128,4 +129,4 @@ spec:
         - name: -u
           value: "0"
         - name: --entrypoint
-          value: "''"
+          value: ''

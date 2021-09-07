@@ -75,6 +75,8 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
@@ -174,6 +176,12 @@ func kubernetesDeployMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "kubeConfigFileCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing kubeconfig file. Details can be found in the [Kubernetes documentation](https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/).", Type: "jenkins", Aliases: []config.Alias{{Name: "kubeCredentialsId", Deprecated: true}}},
+					{Name: "kubeTokenCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing token to authenticate to Kubernetes. This is an alternative way to using a kubeconfig file. Details can be found in the [Kubernetes documentation](https://kubernetes.io/docs/reference/access-authn-authz/authentication/).", Type: "jenkins", Aliases: []config.Alias{{Name: "k8sTokenCredentialsId", Deprecated: true}}},
+					{Name: "dockerCredentialsId", Type: "jenkins"},
+					{Name: "dockerConfigJsonCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)).", Type: "jenkins"},
+				},
 				Resources: []config.StepResources{
 					{Name: "deployDescriptor", Type: "stash"},
 				},
@@ -185,6 +193,7 @@ func kubernetesDeployMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "helmDeploymentParameters"}},
+						Default:     []string{},
 					},
 					{
 						Name:        "apiServer",
@@ -193,6 +202,7 @@ func kubernetesDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "k8sAPIServer"}},
+						Default:     os.Getenv("PIPER_apiServer"),
 					},
 					{
 						Name:        "appTemplate",
@@ -201,6 +211,7 @@ func kubernetesDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "k8sAppTemplate"}},
+						Default:     os.Getenv("PIPER_appTemplate"),
 					},
 					{
 						Name:        "chartPath",
@@ -209,6 +220,7 @@ func kubernetesDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "helmChartPath"}},
+						Default:     os.Getenv("PIPER_chartPath"),
 					},
 					{
 						Name: "containerRegistryPassword",
@@ -223,6 +235,7 @@ func kubernetesDeployMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_containerRegistryPassword"),
 					},
 					{
 						Name: "containerRegistryUrl",
@@ -236,6 +249,7 @@ func kubernetesDeployMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{{Name: "dockerRegistryUrl"}},
+						Default:   os.Getenv("PIPER_containerRegistryUrl"),
 					},
 					{
 						Name: "containerRegistryUser",
@@ -250,6 +264,7 @@ func kubernetesDeployMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_containerRegistryUser"),
 					},
 					{
 						Name:        "containerRegistrySecret",
@@ -258,6 +273,7 @@ func kubernetesDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `regsecret`,
 					},
 					{
 						Name:        "createDockerRegistrySecret",
@@ -266,6 +282,7 @@ func kubernetesDeployMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name:        "deploymentName",
@@ -274,6 +291,7 @@ func kubernetesDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "helmDeploymentName"}},
+						Default:     os.Getenv("PIPER_deploymentName"),
 					},
 					{
 						Name:        "deployTool",
@@ -282,6 +300,7 @@ func kubernetesDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     `kubectl`,
 					},
 					{
 						Name:        "forceUpdates",
@@ -290,6 +309,7 @@ func kubernetesDeployMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
 						Name:        "helmDeployWaitSeconds",
@@ -298,6 +318,7 @@ func kubernetesDeployMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     300,
 					},
 					{
 						Name:        "helmValues",
@@ -306,6 +327,7 @@ func kubernetesDeployMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 					{
 						Name: "image",
@@ -319,6 +341,7 @@ func kubernetesDeployMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{{Name: "deployImage"}},
+						Default:   os.Getenv("PIPER_image"),
 					},
 					{
 						Name:        "ingressHosts",
@@ -327,6 +350,7 @@ func kubernetesDeployMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 					{
 						Name:        "keepFailedDeployments",
@@ -335,6 +359,7 @@ func kubernetesDeployMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name: "kubeConfig",
@@ -354,6 +379,7 @@ func kubernetesDeployMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_kubeConfig"),
 					},
 					{
 						Name:        "kubeContext",
@@ -362,6 +388,7 @@ func kubernetesDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_kubeContext"),
 					},
 					{
 						Name: "kubeToken",
@@ -375,6 +402,7 @@ func kubernetesDeployMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_kubeToken"),
 					},
 					{
 						Name:        "namespace",
@@ -383,6 +411,7 @@ func kubernetesDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "helmDeploymentNamespace"}, {Name: "k8sDeploymentNamespace"}},
+						Default:     `default`,
 					},
 					{
 						Name:        "tillerNamespace",
@@ -391,6 +420,7 @@ func kubernetesDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "helmTillerNamespace"}},
+						Default:     os.Getenv("PIPER_tillerNamespace"),
 					},
 					{
 						Name: "dockerConfigJSON",
@@ -415,13 +445,14 @@ func kubernetesDeployMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_dockerConfigJSON"),
 					},
 				},
 			},
 			Containers: []config.Container{
 				{Image: "dtzar/helm-kubectl:3.4.1", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "deployTool", Value: "helm3"}}}}},
-				{Image: "dtzar/helm-kubectl:2.12.1", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "deployTool", Value: "helm"}}}}},
-				{Image: "dtzar/helm-kubectl:2.12.1", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "deployTool", Value: "kubectl"}}}}},
+				{Image: "dtzar/helm-kubectl:2.17.0", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "deployTool", Value: "helm"}}}}},
+				{Image: "dtzar/helm-kubectl:2.17.0", WorkingDir: "/config", Options: []config.Option{{Name: "-u", Value: "0"}}, Conditions: []config.Condition{{ConditionRef: "strings-equal", Params: []config.Param{{Name: "deployTool", Value: "kubectl"}}}}},
 			},
 		},
 	}

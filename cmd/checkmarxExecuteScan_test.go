@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/bmatcuk/doublestar"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -13,6 +12,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/bmatcuk/doublestar"
 
 	"github.com/SAP/jenkins-library/pkg/checkmarx"
 	"github.com/stretchr/testify/assert"
@@ -569,6 +570,34 @@ func TestRunScan_nonNumeralPreset(t *testing.T) {
 
 	err = runScan(options, sys, &influx, utilsMock)
 	assert.NoError(t, err, "error occurred but none expected")
+}
+
+func TestRunOptimizedScan(t *testing.T) {
+	t.Parallel()
+
+	sys := &systemMockForExistingProject{response: []byte(`<?xml version="1.0" encoding="utf-8"?><CxXMLResults />`)}
+	options := checkmarxExecuteScanOptions{IsOptimizedAndScheduled: true, ProjectName: "TestExisting", VulnerabilityThresholdUnit: "absolute", FullScanCycle: "1", Incremental: true, FullScansScheduled: true, Preset: "10048", TeamID: "16", VulnerabilityThresholdEnabled: true, GeneratePdfReport: true}
+	workspace, err := ioutil.TempDir("", "workspace1")
+	if err != nil {
+		t.Fatal("Failed to create temporary workspace directory")
+	}
+	// clean up tmp dir
+	defer os.RemoveAll(workspace)
+	err = ioutil.WriteFile(filepath.Join(workspace, "abcd.go"), []byte("abcd.go"), 0700)
+	assert.NoError(t, err)
+	options.FilterPattern = "**/abcd.go"
+
+	influx := checkmarxExecuteScanInflux{}
+
+	utilsMock := newCheckmarxExecuteScanUtilsMock()
+	utilsMock.workspace = workspace
+
+	err = runScan(options, sys, &influx, utilsMock)
+	assert.NoError(t, err, "error occurred but none expected")
+	assert.Equal(t, false, sys.isIncremental, "isIncremental has wrong value")
+	assert.Equal(t, true, sys.isPublic, "isPublic has wrong value")
+	assert.Equal(t, true, sys.forceScan, "forceScan has wrong value")
+	assert.Equal(t, true, sys.scanProjectCalled, "ScanProject was not invoked")
 }
 
 func TestSetPresetForProjectWithIDProvided(t *testing.T) {

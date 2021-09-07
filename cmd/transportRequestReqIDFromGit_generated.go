@@ -64,11 +64,13 @@ func TransportRequestReqIDFromGitCommand() *cobra.Command {
 		Use:   STEP_NAME,
 		Short: "Retrieves the transport request ID from Git repository",
 		Long: `This step scans the commit messages of the Git repository for a pattern to retrieve the transport request ID.
-It is primarily made for the transportRequestUploadSOLMAN step to provide the transport reques ID by Git means.`,
+It is primarily made for the transport request upload steps to provide the transport request ID by Git means.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
+
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
@@ -150,6 +152,7 @@ func transportRequestReqIDFromGitMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "changeManagement/git/from"}},
+						Default:     `origin/master`,
 					},
 					{
 						Name:        "gitTo",
@@ -158,6 +161,7 @@ func transportRequestReqIDFromGitMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "changeManagement/git/to"}},
+						Default:     `HEAD`,
 					},
 					{
 						Name:        "transportRequestLabel",
@@ -166,6 +170,7 @@ func transportRequestReqIDFromGitMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "changeManagement/transportRequestLabel"}},
+						Default:     `TransportRequest`,
 					},
 				},
 			},

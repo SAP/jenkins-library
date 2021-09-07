@@ -52,6 +52,18 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: artifactVersion
+      - name: commitHash
+        type: string
+        description: "The commit hash, used for influx reporting"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: false
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: git/headCommitId
       - name: cfHome
         type: string
         description: "The cf home folder used by the cf cli. If not provided the default assumed by the cf cli is used."
@@ -380,6 +392,7 @@ spec:
             fields:
               - name: artifactUrl
               - name: deployTime
+              - name: commitHash
               - name: jobTrigger
             tags:
               - name: artifactVersion

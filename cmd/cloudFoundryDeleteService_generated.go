@@ -42,6 +42,8 @@ func CloudFoundryDeleteServiceCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
@@ -125,6 +127,9 @@ func cloudFoundryDeleteServiceMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "cfCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing user and password to authenticate to the Cloud Foundry API.", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "cfApiEndpoint",
@@ -133,6 +138,7 @@ func cloudFoundryDeleteServiceMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/apiEndpoint"}},
+						Default:     os.Getenv("PIPER_cfApiEndpoint"),
 					},
 					{
 						Name: "username",
@@ -153,6 +159,7 @@ func cloudFoundryDeleteServiceMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_username"),
 					},
 					{
 						Name: "password",
@@ -173,6 +180,7 @@ func cloudFoundryDeleteServiceMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_password"),
 					},
 					{
 						Name:        "cfOrg",
@@ -181,6 +189,7 @@ func cloudFoundryDeleteServiceMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/org"}},
+						Default:     os.Getenv("PIPER_cfOrg"),
 					},
 					{
 						Name:        "cfSpace",
@@ -189,6 +198,7 @@ func cloudFoundryDeleteServiceMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/space"}},
+						Default:     os.Getenv("PIPER_cfSpace"),
 					},
 					{
 						Name:        "cfServiceInstance",
@@ -197,6 +207,7 @@ func cloudFoundryDeleteServiceMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceInstance"}},
+						Default:     os.Getenv("PIPER_cfServiceInstance"),
 					},
 					{
 						Name:        "cfDeleteServiceKeys",
@@ -205,6 +216,7 @@ func cloudFoundryDeleteServiceMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/cfDeleteServiceKeys"}},
+						Default:     false,
 					},
 				},
 			},

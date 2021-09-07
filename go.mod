@@ -12,6 +12,7 @@ require (
 	github.com/asaskevich/govalidator v0.0.0-20200907205600-7a23bdc65eef // indirect
 	github.com/bmatcuk/doublestar v1.3.2
 	github.com/bndr/gojenkins v1.1.1-0.20210520222939-90ed82bfdff6
+	github.com/docker/cli v0.0.0-20191017083524-a8ff7f821017
 	github.com/elliotchance/orderedmap v1.3.0
 	github.com/evanphx/json-patch v4.9.0+incompatible
 	github.com/getsentry/sentry-go v0.7.0
@@ -31,6 +32,7 @@ require (
 	github.com/hashicorp/vault/api v1.1.0
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/imdario/mergo v0.3.11 // indirect
+	github.com/influxdata/influxdb-client-go/v2 v2.4.0
 	github.com/jarcoal/httpmock v1.0.8
 	github.com/magiconair/properties v1.8.4
 	github.com/magicsong/color-glog v0.0.1 // indirect

@@ -65,6 +65,8 @@ If an image for mavenExecute is configured, and npm packages are to be published
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
@@ -147,6 +149,9 @@ func nexusUploadMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "nexusCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing the technical username/password credential for accessing the nexus endpoint.", Type: "jenkins", Aliases: []config.Alias{{Name: "nexus/credentialsId", Deprecated: false}}},
+				},
 				Resources: []config.StepResources{
 					{Name: "buildDescriptor", Type: "stash"},
 					{Name: "buildResult", Type: "stash"},
@@ -159,6 +164,7 @@ func nexusUploadMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "nexus/version"}},
+						Default:     `nexus3`,
 					},
 					{
 						Name: "format",
@@ -172,6 +178,7 @@ func nexusUploadMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_format"),
 					},
 					{
 						Name: "url",
@@ -185,6 +192,7 @@ func nexusUploadMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{{Name: "nexus/url"}},
+						Default:   os.Getenv("PIPER_url"),
 					},
 					{
 						Name:        "mavenRepository",
@@ -193,6 +201,7 @@ func nexusUploadMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "nexus/mavenRepository"}, {Name: "nexus/repository"}},
+						Default:     os.Getenv("PIPER_mavenRepository"),
 					},
 					{
 						Name:        "npmRepository",
@@ -201,6 +210,7 @@ func nexusUploadMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "nexus/npmRepository"}},
+						Default:     os.Getenv("PIPER_npmRepository"),
 					},
 					{
 						Name:        "groupId",
@@ -209,6 +219,7 @@ func nexusUploadMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "nexus/groupId"}},
+						Default:     os.Getenv("PIPER_groupId"),
 					},
 					{
 						Name:        "artifactId",
@@ -217,6 +228,7 @@ func nexusUploadMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_artifactId"),
 					},
 					{
 						Name:        "globalSettingsFile",
@@ -225,6 +237,7 @@ func nexusUploadMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile"}},
+						Default:     os.Getenv("PIPER_globalSettingsFile"),
 					},
 					{
 						Name:        "m2Path",
@@ -233,6 +246,7 @@ func nexusUploadMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
+						Default:     os.Getenv("PIPER_m2Path"),
 					},
 					{
 						Name: "username",
@@ -252,6 +266,7 @@ func nexusUploadMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_username"),
 					},
 					{
 						Name: "password",
@@ -271,6 +286,7 @@ func nexusUploadMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_password"),
 					},
 				},
 			},

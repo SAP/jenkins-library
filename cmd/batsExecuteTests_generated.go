@@ -76,6 +76,8 @@ func BatsExecuteTestsCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
@@ -161,6 +163,7 @@ func batsExecuteTestsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `junit`,
 					},
 					{
 						Name:        "repository",
@@ -169,6 +172,7 @@ func batsExecuteTestsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `https://github.com/bats-core/bats-core.git`,
 					},
 					{
 						Name:        "testPackage",
@@ -177,6 +181,7 @@ func batsExecuteTestsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `piper-bats`,
 					},
 					{
 						Name:        "testPath",
@@ -185,6 +190,7 @@ func batsExecuteTestsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `src/test`,
 					},
 					{
 						Name:        "envVars",
@@ -193,6 +199,7 @@ func batsExecuteTestsMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 				},
 			},

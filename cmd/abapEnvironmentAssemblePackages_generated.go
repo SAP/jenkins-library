@@ -78,6 +78,8 @@ Platform ABAP Environment system and saves the corresponding [SAR archive](https
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
@@ -165,6 +167,9 @@ func abapEnvironmentAssemblePackagesMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "abapCredentialsId", Description: "Jenkins credentials ID containing user and password to authenticate to the Cloud Platform ABAP Environment system or the Cloud Foundry API", Type: "jenkins", Aliases: []config.Alias{{Name: "cfCredentialsId", Deprecated: false}, {Name: "credentialsId", Deprecated: false}}},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "cfApiEndpoint",
@@ -173,6 +178,7 @@ func abapEnvironmentAssemblePackagesMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/apiEndpoint"}},
+						Default:     os.Getenv("PIPER_cfApiEndpoint"),
 					},
 					{
 						Name:        "cfOrg",
@@ -181,6 +187,7 @@ func abapEnvironmentAssemblePackagesMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/org"}},
+						Default:     os.Getenv("PIPER_cfOrg"),
 					},
 					{
 						Name:        "cfSpace",
@@ -189,6 +196,7 @@ func abapEnvironmentAssemblePackagesMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/space"}},
+						Default:     os.Getenv("PIPER_cfSpace"),
 					},
 					{
 						Name:        "cfServiceInstance",
@@ -197,6 +205,7 @@ func abapEnvironmentAssemblePackagesMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceInstance"}},
+						Default:     os.Getenv("PIPER_cfServiceInstance"),
 					},
 					{
 						Name:        "cfServiceKeyName",
@@ -205,6 +214,7 @@ func abapEnvironmentAssemblePackagesMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceKey"}, {Name: "cloudFoundry/serviceKeyName"}, {Name: "cfServiceKey"}},
+						Default:     os.Getenv("PIPER_cfServiceKeyName"),
 					},
 					{
 						Name:        "host",
@@ -213,6 +223,7 @@ func abapEnvironmentAssemblePackagesMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_host"),
 					},
 					{
 						Name:        "username",
@@ -221,6 +232,7 @@ func abapEnvironmentAssemblePackagesMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_username"),
 					},
 					{
 						Name:        "password",
@@ -229,6 +241,7 @@ func abapEnvironmentAssemblePackagesMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_password"),
 					},
 					{
 						Name: "addonDescriptor",
@@ -242,6 +255,7 @@ func abapEnvironmentAssemblePackagesMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_addonDescriptor"),
 					},
 					{
 						Name:        "maxRuntimeInMinutes",
@@ -250,6 +264,7 @@ func abapEnvironmentAssemblePackagesMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     360,
 					},
 					{
 						Name:        "pollIntervalsInMilliseconds",
@@ -258,6 +273,7 @@ func abapEnvironmentAssemblePackagesMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     60000,
 					},
 				},
 			},

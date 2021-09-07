@@ -43,12 +43,17 @@ func GctsDeployCommand() *cobra.Command {
 	var createGctsDeployCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Deploys a Git Repository to a local Repository and then to an ABAP System",
-		Long: `The steps deploys a git repository to an ABAP System. If a repository does not exists in the system, it creates and clones it to the local
-repository and then deploys it into the ABAP system.`,
+		Long: `This step deploys a remote Git repository to a local repository on an ABAP system and imports the content in the ABAP database.
+If the repository does not yet exist in the system, this step also creates it.
+If the repository already exists on the ABAP system, this step executes the remaining actions of the step, depending on the parameters provided for the step.
+These actions include, for example, deploy a specific commit to the ABAP system, or deploy the current commit of a specific branch.
+You can use this step for gCTS as of SAP S/4HANA 2020.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
+
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
@@ -107,19 +112,19 @@ repository and then deploys it into the ABAP system.`,
 }
 
 func addGctsDeployFlags(cmd *cobra.Command, stepConfig *gctsDeployOptions) {
-	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User to authenticate to the ABAP system")
-	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password to authenticate to the ABAP system")
+	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User that authenticates to the ABAP system. **Note** - Don't provide this parameter directly. Either set it in the environment, or in the Jenkins credentials store, and provide the ID as value of the `abapCredentialsId` parameter.")
+	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password of the ABAP user that authenticates to the ABAP system. **Note** - Don´t provide this parameter directly. Either set it in the environment, or in the Jenkins credentials store, and provide the ID as value of the `abapCredentialsId` parameter.")
 	cmd.Flags().StringVar(&stepConfig.Repository, "repository", os.Getenv("PIPER_repository"), "Specifies the name (ID) of the local repsitory on the ABAP system")
-	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the protocol and host address, including the port. Please provide in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.")
-	cmd.Flags().StringVar(&stepConfig.Client, "client", os.Getenv("PIPER_client"), "Specifies the client of the ABAP system to be addressed")
-	cmd.Flags().StringVar(&stepConfig.Commit, "commit", os.Getenv("PIPER_commit"), "Specifies the commit to be deployed")
-	cmd.Flags().StringVar(&stepConfig.RemoteRepositoryURL, "remoteRepositoryURL", os.Getenv("PIPER_remoteRepositoryURL"), "URL of the corresponding remote repository")
-	cmd.Flags().StringVar(&stepConfig.Role, "role", os.Getenv("PIPER_role"), "Role of the local repository. Choose between 'TARGET' and 'SOURCE'. Local repositories with a TARGET role will NOT be able to be the source of code changes")
-	cmd.Flags().StringVar(&stepConfig.VSID, "vSID", os.Getenv("PIPER_vSID"), "Virtual SID of the local repository. The vSID corresponds to the transport route that delivers content to the remote Git repository")
+	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Protocol and host of the ABAP system, including the port. Please provide in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.")
+	cmd.Flags().StringVar(&stepConfig.Client, "client", os.Getenv("PIPER_client"), "Client of the ABAP system to which you want to deploy the repository")
+	cmd.Flags().StringVar(&stepConfig.Commit, "commit", os.Getenv("PIPER_commit"), "ID of a specific commit, if you want to deploy the content of the specified commit.")
+	cmd.Flags().StringVar(&stepConfig.RemoteRepositoryURL, "remoteRepositoryURL", os.Getenv("PIPER_remoteRepositoryURL"), "URL of the remote repository")
+	cmd.Flags().StringVar(&stepConfig.Role, "role", os.Getenv("PIPER_role"), "Role of the local repository. Possible values are 'SOURCE' (for repositories on development systems - Default) and 'TARGET' (for repositories on target systems). Local repositories with a TARGET role cannot be the source of code changes.")
+	cmd.Flags().StringVar(&stepConfig.VSID, "vSID", os.Getenv("PIPER_vSID"), "Virtual SID of the local repository. The vSID corresponds to the transport route that delivers content to the remote Git repository. For more information, see [Background Information - vSID](https://help.sap.com/viewer/4a368c163b08418890a406d413933ba7/latest/en-US/8edc17edfc374908bd8a1615ea5ab7b7.html) on SAP Help Portal.")
 	cmd.Flags().StringVar(&stepConfig.Type, "type", `GIT`, "Type of the used source code management tool")
-	cmd.Flags().StringVar(&stepConfig.Branch, "branch", os.Getenv("PIPER_branch"), "Name of the branch to which the deploy has to be done to.")
-	cmd.Flags().StringVar(&stepConfig.Scope, "scope", os.Getenv("PIPER_scope"), "The scope of the gcts deploy api call")
-	cmd.Flags().BoolVar(&stepConfig.Rollback, "rollback", false, "The rollback flag for a failure during the deploy step. A true value would mean gCTS would roll back to the last clean state")
+	cmd.Flags().StringVar(&stepConfig.Branch, "branch", os.Getenv("PIPER_branch"), "Name of a branch, if you want to deploy the content of a specific branch to the ABAP system.")
+	cmd.Flags().StringVar(&stepConfig.Scope, "scope", os.Getenv("PIPER_scope"), "Scope of objects to be deployed. Possible values are CRNTCOMMIT (current commit - Default) and LASTACTION (last repository action). The default option deploys all objects that existed in the repository when the commit was created. LASTACTION only deploys the object difference of the last action in the repository.")
+	cmd.Flags().BoolVar(&stepConfig.Rollback, "rollback", false, "Indication whether you want to roll back to the last working state of the repository, if any of the step actions *switch branch* or *pull commit* fail.")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
@@ -139,6 +144,9 @@ func gctsDeployMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "abapCredentialsId", Description: "ID taken from the Jenkins credentials store containing the user name and password of the user that authenticates to the ABAP system.", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name: "username",
@@ -153,6 +161,7 @@ func gctsDeployMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_username"),
 					},
 					{
 						Name: "password",
@@ -167,6 +176,7 @@ func gctsDeployMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_password"),
 					},
 					{
 						Name:        "repository",
@@ -175,6 +185,7 @@ func gctsDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_repository"),
 					},
 					{
 						Name:        "host",
@@ -183,6 +194,7 @@ func gctsDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_host"),
 					},
 					{
 						Name:        "client",
@@ -191,6 +203,7 @@ func gctsDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_client"),
 					},
 					{
 						Name:        "commit",
@@ -199,6 +212,7 @@ func gctsDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_commit"),
 					},
 					{
 						Name:        "remoteRepositoryURL",
@@ -207,6 +221,7 @@ func gctsDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_remoteRepositoryURL"),
 					},
 					{
 						Name:        "role",
@@ -215,6 +230,7 @@ func gctsDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_role"),
 					},
 					{
 						Name:        "vSID",
@@ -223,6 +239,7 @@ func gctsDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_vSID"),
 					},
 					{
 						Name:        "type",
@@ -231,6 +248,7 @@ func gctsDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `GIT`,
 					},
 					{
 						Name:        "branch",
@@ -239,6 +257,7 @@ func gctsDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_branch"),
 					},
 					{
 						Name:        "scope",
@@ -247,6 +266,7 @@ func gctsDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_scope"),
 					},
 					{
 						Name:        "rollback",
@@ -255,6 +275,7 @@ func gctsDeployMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name:        "configuration",

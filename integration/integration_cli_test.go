@@ -55,7 +55,7 @@ cd /test
 	}
 
 	reqSel := testcontainers.ContainerRequest{
-		Image:          "selenium/standalone-chrome",
+		Image:          "selenium/standalone-chrome:3.141.59-20210713",
 		Networks:       []string{networkName},
 		NetworkAliases: map[string][]string{networkName: {"selenium"}},
 	}

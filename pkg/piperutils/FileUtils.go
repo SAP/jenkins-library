@@ -4,7 +4,6 @@ import (
 	"archive/zip"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -23,6 +22,7 @@ type FileUtils interface {
 	MkdirAll(path string, perm os.FileMode) error
 	Chmod(path string, mode os.FileMode) error
 	Glob(pattern string) (matches []string, err error)
+	Chdir(path string) error
 }
 
 // Files ...
@@ -91,7 +91,7 @@ func (f Files) Copy(src, dst string) (int64, error) {
 		return 0, err
 	}
 	defer func() { _ = destination.Close() }()
-	nBytes, err := io.Copy(destination, source)
+	nBytes, err := CopyData(destination, source)
 	return nBytes, err
 }
 
@@ -170,7 +170,7 @@ func Unzip(src, dest string) ([]string, error) {
 			return filenames, err
 		}
 
-		_, err = io.Copy(outFile, rc)
+		_, err = CopyData(outFile, rc)
 
 		// Close the file without defer to close before next iteration of loop
 		_ = outFile.Close()

@@ -48,7 +48,7 @@ class commonPipelineEnvironment implements Serializable {
     // Useful for making sure that the piper binary uses the same file when called from Jenkins.
     String configurationFile = ''
 
-    String mtarFilePath = ""
+    String mtarFilePath = null
 
     String abapAddonDescriptor
 
@@ -222,15 +222,14 @@ class commonPipelineEnvironment implements Serializable {
     }
 
     void createMapEntry(script, Map resMap, String filename, value) {
-        try{
-            if (value) {
-                // prefix is assumed by step if nothing else is specified
-                def prefix = ~/^.pipeline\/commonPipelineEnvironment\//
-                filename -= prefix
-                resMap[filename] = value
-            }
-        }catch(StackOverflowError error) {
-            script.echo("failed to write file: " + filename)
+        // net.sf.json.JSONNull can come in through readPipelineEnv via readJSON()
+        // leaving them in will create a StackOverflowError further down in writePipelineEnv()
+        // thus removing them from the map for now
+        if (value != null && !(value instanceof net.sf.json.JSONNull)) {
+            // prefix is assumed by step if nothing else is specified
+            def prefix = ~/^.pipeline\/commonPipelineEnvironment\//
+            filename -= prefix
+            resMap[filename] = value
         }
     }
 

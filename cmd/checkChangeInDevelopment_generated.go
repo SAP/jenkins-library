@@ -41,6 +41,8 @@ func CheckChangeInDevelopmentCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
@@ -129,6 +131,7 @@ func checkChangeInDevelopmentMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "changeManagement/endpoint"}},
+						Default:     os.Getenv("PIPER_endpoint"),
 					},
 					{
 						Name:        "username",
@@ -137,6 +140,7 @@ func checkChangeInDevelopmentMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_username"),
 					},
 					{
 						Name:        "password",
@@ -145,6 +149,7 @@ func checkChangeInDevelopmentMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_password"),
 					},
 					{
 						Name:        "changeDocumentId",
@@ -153,6 +158,7 @@ func checkChangeInDevelopmentMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_changeDocumentId"),
 					},
 					{
 						Name:        "failIfStatusIsNotInDevelopment",
@@ -161,6 +167,7 @@ func checkChangeInDevelopmentMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     true,
 					},
 					{
 						Name:        "clientOpts",
@@ -169,6 +176,7 @@ func checkChangeInDevelopmentMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 				},
 			},

@@ -1,0 +1,83 @@
+metadata:
+  name: cnbBuild
+  description: Executes a Cloud Native Buildpacks build for creating a Docker container.
+  longDescription: Executes a Cloud Native Buildpacks build for creating a Docker container.
+spec:
+  inputs:
+    secrets:
+      - name: dockerConfigJsonCredentialsId
+        description: Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)). You can create it like explained in the Docker Success Center in the article about [how to generate a new auth in the config.json file](https://success.docker.com/article/generate-new-auth-in-config-json-file).
+        type: jenkins
+    params:
+      - name: containerImageName
+        aliases:
+          - name: dockerImageName
+        type: string
+        mandatory: true
+        description: Name of the container which will be built
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: containerImageTag
+        aliases:
+          - name: artifactVersion
+        type: string
+        mandatory: true
+        description: Tag of the container which will be built
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: artifactVersion
+      - name: containerRegistryUrl
+        aliases:
+          - name: dockerRegistryUrl
+        type: string
+        mandatory: true
+        description: Container registry where the image should be pushed to
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/registryUrl
+      - name: path
+        type: string
+        description: The path should either point to your sources or an artifact build before.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: dockerConfigJSON
+        type: string
+        description: Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).
+        scope:
+          - PARAMETERS
+        secret: true
+        mandatory: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/dockerConfigJSON
+          - name: dockerConfigJsonCredentialsId
+            type: secret
+          - type: vaultSecretFile
+            paths:
+              - $(vaultPath)/docker-config
+              - $(vaultBasePath)/$(vaultPipelineName)/docker-config
+              - $(vaultBasePath)/GROUP-SECRETS/docker-config
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: container/registryUrl
+          - name: container/imageNameTag
+  containers:
+    - image: "paketobuildpacks/builder:full"

@@ -1,7 +1,0 @@
-# Test case configuration
-referenceAppRepo:
-  url: "https://github.com/piper-validation/cloud-s4-sdk-book"
-  branch: "consumer-test-neo"
-deployCredentialEnv:
-  username: "CX_INFRA_IT_CF_USERNAME"
-  password: "CX_INFRA_IT_CF_PASSWORD"

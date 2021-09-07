@@ -44,6 +44,8 @@ func MavenExecuteCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
@@ -130,6 +132,7 @@ func mavenExecuteMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_pomPath"),
 					},
 					{
 						Name:        "goals",
@@ -138,6 +141,7 @@ func mavenExecuteMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 					{
 						Name:        "defines",
@@ -146,6 +150,7 @@ func mavenExecuteMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 					{
 						Name:        "flags",
@@ -154,6 +159,7 @@ func mavenExecuteMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 					{
 						Name:        "returnStdout",
@@ -162,6 +168,7 @@ func mavenExecuteMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name:        "projectSettingsFile",
@@ -170,6 +177,7 @@ func mavenExecuteMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile"}},
+						Default:     os.Getenv("PIPER_projectSettingsFile"),
 					},
 					{
 						Name:        "globalSettingsFile",
@@ -178,6 +186,7 @@ func mavenExecuteMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile"}},
+						Default:     os.Getenv("PIPER_globalSettingsFile"),
 					},
 					{
 						Name:        "m2Path",
@@ -186,6 +195,7 @@ func mavenExecuteMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
+						Default:     os.Getenv("PIPER_m2Path"),
 					},
 					{
 						Name:        "logSuccessfulMavenTransfers",
@@ -194,6 +204,7 @@ func mavenExecuteMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/logSuccessfulMavenTransfers"}},
+						Default:     false,
 					},
 				},
 			},

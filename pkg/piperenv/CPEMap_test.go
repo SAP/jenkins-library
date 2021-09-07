@@ -1,8 +1,9 @@
 package piperenv
 
 import (
+	"encoding/json"
 	"fmt"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"os"
 	"path"
@@ -20,12 +21,12 @@ func Test_writeMapToDisk(t *testing.T) {
 	}
 
 	tmpDir, err := ioutil.TempDir(os.TempDir(), "test-data-*")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	t.Cleanup(func() {
 		os.RemoveAll(tmpDir)
 	})
 	err = testMap.WriteToDisk(tmpDir)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	testData := []struct {
 		Path          string
@@ -49,8 +50,8 @@ func Test_writeMapToDisk(t *testing.T) {
 		t.Run(fmt.Sprintf("check path %s", testCase.Path), func(t *testing.T) {
 			tPath := path.Join(tmpDir, testCase.Path)
 			bytes, err := ioutil.ReadFile(tPath)
-			assert.NoError(t, err)
-			assert.Equal(t, testCase.ExpectedValue, string(bytes))
+			require.NoError(t, err)
+			require.Equal(t, testCase.ExpectedValue, string(bytes))
 		})
 	}
 }
@@ -58,29 +59,57 @@ func Test_writeMapToDisk(t *testing.T) {
 func TestCPEMap_LoadFromDisk(t *testing.T) {
 	t.Parallel()
 	tmpDir, err := ioutil.TempDir(os.TempDir(), "test-data-*")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	t.Cleanup(func() {
 		os.RemoveAll(tmpDir)
 	})
 
 	err = ioutil.WriteFile(path.Join(tmpDir, "Foo"), []byte("Bar"), 0644)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = ioutil.WriteFile(path.Join(tmpDir, "Hello"), []byte("World"), 0644)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	subPath := path.Join(tmpDir, "Batman")
 	err = os.Mkdir(subPath, 0744)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = ioutil.WriteFile(path.Join(subPath, "Bruce"), []byte("Wayne"), 0644)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = ioutil.WriteFile(path.Join(subPath, "Test.json"), []byte("54"), 0644)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	cpe := CPEMap{}
 	err = cpe.LoadFromDisk(tmpDir)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.Equal(t, "Bar", cpe["Foo"])
-	assert.Equal(t, "World", cpe["Hello"])
-	assert.Equal(t, "Wayne", cpe["Batman/Bruce"])
-	assert.Equal(t, float64(54), cpe["Batman/Test"])
+	require.Equal(t, "Bar", cpe["Foo"])
+	require.Equal(t, "World", cpe["Hello"])
+	require.Equal(t, "Wayne", cpe["Batman/Bruce"])
+	require.Equal(t, json.Number("54"), cpe["Batman/Test"])
+}
+
+func TestNumbersArePassedCorrectly(t *testing.T) {
+	t.Parallel()
+	tmpDir, err := ioutil.TempDir(os.TempDir(), "test-data-*")
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		os.RemoveAll(tmpDir)
+	})
+
+	const jsonNumber = "5.5000"
+	err = ioutil.WriteFile(path.Join(tmpDir, "test.json"), []byte(jsonNumber), 0644)
+	require.NoError(t, err)
+
+	cpeMap := CPEMap{}
+	err = cpeMap.LoadFromDisk(tmpDir)
+	require.NoError(t, err)
+
+	rawJSON, err := json.Marshal(cpeMap["test"])
+	require.NoError(t, err)
+	require.Equal(t, jsonNumber, string(rawJSON))
+}
+
+func TestCommonPipelineEnvDirNotPresent(t *testing.T) {
+	cpe := CPEMap{}
+	err := cpe.LoadFromDisk("/path/does/not/exist")
+	require.NoError(t, err)
+	require.Len(t, cpe, 0)
 }

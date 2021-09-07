@@ -75,6 +75,8 @@ func MtaBuildCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
@@ -163,6 +165,7 @@ func mtaBuildMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_mtarName"),
 					},
 					{
 						Name:        "extensions",
@@ -171,6 +174,7 @@ func mtaBuildMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "extension"}},
+						Default:     os.Getenv("PIPER_extensions"),
 					},
 					{
 						Name:        "platform",
@@ -179,6 +183,7 @@ func mtaBuildMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `CF`,
 					},
 					{
 						Name:        "applicationName",
@@ -187,6 +192,7 @@ func mtaBuildMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_applicationName"),
 					},
 					{
 						Name:        "source",
@@ -195,6 +201,7 @@ func mtaBuildMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `./`,
 					},
 					{
 						Name:        "target",
@@ -203,6 +210,7 @@ func mtaBuildMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `./`,
 					},
 					{
 						Name:        "defaultNpmRegistry",
@@ -211,6 +219,7 @@ func mtaBuildMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "npm/defaultNpmRegistry"}},
+						Default:     os.Getenv("PIPER_defaultNpmRegistry"),
 					},
 					{
 						Name:        "projectSettingsFile",
@@ -219,6 +228,7 @@ func mtaBuildMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile"}},
+						Default:     os.Getenv("PIPER_projectSettingsFile"),
 					},
 					{
 						Name:        "globalSettingsFile",
@@ -227,6 +237,7 @@ func mtaBuildMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile"}},
+						Default:     os.Getenv("PIPER_globalSettingsFile"),
 					},
 					{
 						Name:        "m2Path",
@@ -235,6 +246,7 @@ func mtaBuildMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
+						Default:     os.Getenv("PIPER_m2Path"),
 					},
 					{
 						Name:        "installArtifacts",
@@ -243,6 +255,7 @@ func mtaBuildMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 				},
 			},

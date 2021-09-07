@@ -40,6 +40,8 @@ func UiVeri5ExecuteTestsCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
@@ -128,6 +130,7 @@ func uiVeri5ExecuteTestsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     `npm install @ui5/uiveri5 --global --quiet`,
 					},
 					{
 						Name:        "runCommand",
@@ -136,6 +139,7 @@ func uiVeri5ExecuteTestsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     `/home/node/.npm-global/bin/uiveri5`,
 					},
 					{
 						Name:        "runOptions",
@@ -144,6 +148,7 @@ func uiVeri5ExecuteTestsMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     []string{`--seleniumAddress=http://localhost:4444/wd/hub`},
 					},
 					{
 						Name:        "testOptions",
@@ -152,6 +157,7 @@ func uiVeri5ExecuteTestsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_testOptions"),
 					},
 					{
 						Name:        "testServerUrl",
@@ -160,6 +166,7 @@ func uiVeri5ExecuteTestsMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_testServerUrl"),
 					},
 				},
 			},

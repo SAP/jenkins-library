@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -26,9 +27,12 @@ func mavenBuild(config mavenBuildOptions, telemetryData *telemetry.CustomData) {
 }
 
 func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomData, utils maven.Utils) error {
-	downloadClient := &piperhttp.Client{}
 
 	var flags = []string{"-update-snapshots", "--batch-mode"}
+
+	if len(config.Profiles) > 0 {
+		flags = append(flags, "--activate-profiles", strings.Join(config.Profiles, ","))
+	}
 
 	exists, _ := utils.FileExists("integration-tests/pom.xml")
 	if exists {
@@ -84,9 +88,6 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 		if config.Publish && !config.Verify {
 			log.Entry().Infof("publish detected, running mvn deploy")
 
-			runner := &command.Command{}
-			fileUtils := &piperutils.Files{}
-
 			if (len(config.AltDeploymentRepositoryID) > 0) && (len(config.AltDeploymentRepositoryPassword) > 0) && (len(config.AltDeploymentRepositoryUser) > 0) {
 				projectSettingsFilePath, err := createOrUpdateProjectSettingsXML(config.ProjectSettingsFile, config.AltDeploymentRepositoryID, config.AltDeploymentRepositoryUser, config.AltDeploymentRepositoryPassword, utils)
 				if err != nil {
@@ -100,10 +101,16 @@ func runMavenBuild(config *mavenBuildOptions, telemetryData *telemetry.CustomDat
 				deployFlags = append(deployFlags, "-DaltDeploymentRepository="+config.AltDeploymentRepositoryID+"::default::"+config.AltDeploymentRepositoryURL)
 			}
 
-			if err := loadRemoteRepoCertificates(config.CustomTLSCertificateLinks, downloadClient, &deployFlags, runner, fileUtils); err != nil {
-				log.SetErrorCategory(log.ErrorInfrastructure)
-				return err
+			downloadClient := &piperhttp.Client{}
+			runner := &command.Command{}
+			fileUtils := &piperutils.Files{}
+			if len(config.CustomTLSCertificateLinks) > 0 {
+				if err := loadRemoteRepoCertificates(config.CustomTLSCertificateLinks, downloadClient, &deployFlags, runner, fileUtils, config.JavaCaCertFilePath); err != nil {
+					log.SetErrorCategory(log.ErrorInfrastructure)
+					return err
+				}
 			}
+
 			mavenOptions.Flags = deployFlags
 			mavenOptions.Goals = []string{"deploy"}
 			mavenOptions.Defines = []string{}
@@ -132,12 +139,36 @@ func createOrUpdateProjectSettingsXML(projectSettingsFile string, altDeploymentR
 	}
 }
 
-func loadRemoteRepoCertificates(certificateList []string, client piperhttp.Downloader, flags *[]string, runner command.ExecRunner, fileUtils piperutils.FileUtils) error {
-	trustStore := filepath.Join(getWorkingDirForTrustStore(), ".pipeline", "keystore.jks")
+func loadRemoteRepoCertificates(certificateList []string, client piperhttp.Downloader, flags *[]string, runner command.ExecRunner, fileUtils piperutils.FileUtils, javaCaCertFilePath string) error {
+	existingJavaCaCerts := filepath.Join(os.Getenv("JAVA_HOME"), "jre", "lib", "security", "cacerts")
+
+	if len(javaCaCertFilePath) > 0 {
+		existingJavaCaCerts = javaCaCertFilePath
+	}
+
+	exists, err := fileUtils.FileExists(existingJavaCaCerts)
+
+	if err != nil {
+		return errors.Wrap(err, "Could not find the existing java cacerts")
+	}
+
+	if !exists {
+		return errors.Wrap(err, "Could not find the existing java cacerts")
+	}
+
+	trustStore := filepath.Join(getWorkingDirForTrustStore(), ".pipeline", "mavenCaCerts")
+
+	log.Entry().Infof("copying java cacerts : %s to new cacerts : %s", existingJavaCaCerts, trustStore)
+	_, fileUtilserr := fileUtils.Copy(existingJavaCaCerts, trustStore)
+
+	if fileUtilserr != nil {
+		return errors.Wrap(err, "Could not copy existing cacerts into new cacerts location ")
+	}
+
 	log.Entry().Infof("using trust store %s", trustStore)
 
 	if exists, _ := fileUtils.FileExists(trustStore); exists {
-		maven_opts := "-Djavax.net.ssl.trustStore=" + trustStore + " -Djavax.net.ssl.trustStorePassword=changeit"
+		maven_opts := "-Djavax.net.ssl.trustStore=.pipeline/mavenCaCerts -Djavax.net.ssl.trustStorePassword=changeit"
 		err := os.Setenv("MAVEN_OPTS", maven_opts)
 		if err != nil {
 			return errors.Wrap(err, "Could not create MAVEN_OPTS environment variable ")
@@ -171,13 +202,7 @@ func loadRemoteRepoCertificates(certificateList []string, client piperhttp.Downl
 				return errors.Wrap(err, "Adding certificate to keystore failed")
 			}
 		}
-
-		maven_opts := "-Djavax.net.ssl.trustStore=.pipeline/keystore.jks -Djavax.net.ssl.trustStorePassword=changeit"
-		err := os.Setenv("MAVEN_OPTS", maven_opts)
-		if err != nil {
-			return errors.Wrap(err, "Could not create MAVEN_OPTS environment variable ")
-		}
-		log.Entry().WithField("trust store", trustStore).Info("Using local trust store")
+		log.Entry().Infof("custom tls certificates successfully added to the trust store %s", trustStore)
 	} else {
 		log.Entry().Debug("Download of TLS certificates skipped")
 	}

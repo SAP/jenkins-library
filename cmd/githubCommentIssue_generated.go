@@ -44,6 +44,8 @@ This comes in very handy when you want to make developers aware of certain thing
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
@@ -125,6 +127,9 @@ func githubCommentIssueMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "githubTokenCredentialsId", Description: "Jenkins 'Secret text' credentials ID containing token to authenticate to GitHub.", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "apiUrl",
@@ -133,6 +138,7 @@ func githubCommentIssueMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "githubApiUrl"}},
+						Default:     `https://api.github.com`,
 					},
 					{
 						Name:        "body",
@@ -141,6 +147,7 @@ func githubCommentIssueMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_body"),
 					},
 					{
 						Name:        "number",
@@ -149,6 +156,7 @@ func githubCommentIssueMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
+						Default:     0,
 					},
 					{
 						Name: "owner",
@@ -162,6 +170,7 @@ func githubCommentIssueMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{{Name: "githubOrg"}},
+						Default:   os.Getenv("PIPER_owner"),
 					},
 					{
 						Name: "repository",
@@ -175,6 +184,7 @@ func githubCommentIssueMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{{Name: "githubRepo"}},
+						Default:   os.Getenv("PIPER_repository"),
 					},
 					{
 						Name: "token",
@@ -194,6 +204,7 @@ func githubCommentIssueMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{{Name: "githubToken"}, {Name: "access_token"}},
+						Default:   os.Getenv("PIPER_token"),
 					},
 				},
 			},
