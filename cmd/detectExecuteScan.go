@@ -150,31 +150,6 @@ func runDetect(config detectExecuteScanOptions, utils detectUtils, influx *detec
 	if reportingErr != nil {
 		log.Entry().Warnf("Failed to generate reports: %v", reportingErr)
 	}
-	if err == nil && piperutils.ContainsString(config.FailOn, "BLOCKER") {
-		violations := struct {
-			PolicyViolations int      `json:"policyViolations"`
-			Reports          []string `json:"reports"`
-		}{
-			PolicyViolations: 0,
-			Reports:          []string{},
-		}
-
-		if files, err := utils.Glob("**/*BlackDuck_RiskReport.pdf"); err == nil && len(files) > 0 {
-			// there should only be one RiskReport thus only taking the first one
-			_, reportFile := filepath.Split(files[0])
-			violations.Reports = append(violations.Reports, reportFile)
-		}
-
-		violationContent, err := json.Marshal(violations)
-		if err != nil {
-			return fmt.Errorf("failed to marshal policy violation data: %w", err)
-		}
-
-		err = utils.FileWrite("blackduck-ip.json", violationContent, 0666)
-		if err != nil {
-			return fmt.Errorf("failed to write policy violation report: %w", err)
-		}
-	}
 	return err
 }
 
@@ -292,11 +267,21 @@ func postScanChecksAndReporting(config detectExecuteScanOptions, influx *detectE
 	if err != nil {
 		return err
 	}
-	scanReport := createVulnerabilityReport(config, vulns, influx)
+	scanReport := createVulnerabilityReport(config, vulns, influx, sys)
 	paths, err := writeVulnerabilityReports(scanReport, config, utils)
+
+	policyStatus, err := getPolicyStatus(config, influx, sys)
+	policyReport := createPolicyStatusReport(config, policyStatus, influx, sys)
+	policyReportPaths, err := writePolicyStatusReports(policyReport, config, utils)
+
+	paths = append(paths, policyReportPaths...)
 	piperutils.PersistReportsAndLinks("detectExecuteScan", "", paths, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to check and report scan results")
+	}
+	policyJsonErr := writeIpPolicyJson(config, utils, paths, sys)
+	if policyJsonErr != nil {
+		return errors.Wrapf(policyJsonErr, "failed to write IP policy violations json file")
 	}
 	return nil
 }
@@ -331,12 +316,14 @@ func getVulnsAndComponents(config detectExecuteScanOptions, influx *detectExecut
 	return vulns, components, nil
 }
 
-func createVulnerabilityReport(config detectExecuteScanOptions, vulns *bd.Vulnerabilities, influx *detectExecuteScanInflux) reporting.ScanReport {
+func createVulnerabilityReport(config detectExecuteScanOptions, vulns *bd.Vulnerabilities, influx *detectExecuteScanInflux, sys *blackduckSystem) reporting.ScanReport {
+	versionName := getVersionName(config)
+	versionUrl, _ := sys.Client.GetProjectVersionLink(config.ProjectName, versionName)
 	scanReport := reporting.ScanReport{
 		Title: "BlackDuck Security Vulnerability Report",
 		Subheaders: []reporting.Subheader{
 			{Description: "BlackDuck Project Name ", Details: config.ProjectName},
-			{Description: "BlackDuck Project Version ", Details: getVersionName(config)},
+			{Description: "BlackDuck Project Version ", Details: fmt.Sprintf("<a href='%v'>%v</a>", versionUrl, versionName)},
 		},
 		Overview: []reporting.OverviewRow{
 			{Description: "Total number of vulnerabilities ", Details: fmt.Sprint(influx.detect_data.fields.vulnerabilities)},
@@ -416,6 +403,138 @@ func writeVulnerabilityReports(scanReport reporting.ScanReport, config detectExe
 	}
 
 	return reportPaths, nil
+}
+
+func getPolicyStatus(config detectExecuteScanOptions, influx *detectExecuteScanInflux, sys *blackduckSystem) (*bd.PolicyStatus, error) {
+	policyStatus, err := sys.Client.GetPolicyStatus(config.ProjectName, getVersionName(config))
+	if err != nil {
+		return nil, err
+	}
+
+	totalViolations := 0
+	for _, level := range policyStatus.SeverityLevels {
+		totalViolations += level.Value
+	}
+	influx.detect_data.fields.policy_violations = totalViolations
+
+	return policyStatus, nil
+}
+
+func createPolicyStatusReport(config detectExecuteScanOptions, policyStatus *bd.PolicyStatus, influx *detectExecuteScanInflux, sys *blackduckSystem) reporting.ScanReport {
+	versionName := getVersionName(config)
+	versionUrl, _ := sys.Client.GetProjectVersionLink(config.ProjectName, versionName)
+	policyReport := reporting.ScanReport{
+		Title: "BlackDuck Policy Violations Report",
+		Subheaders: []reporting.Subheader{
+			{Description: "BlackDuck project name ", Details: config.ProjectName},
+			{Description: "BlackDuck project version name", Details: fmt.Sprintf("<a href='%v'>%v</a>", versionUrl, versionName)},
+		},
+		Overview: []reporting.OverviewRow{
+			{Description: "Overall Policy Violation Status", Details: policyStatus.OverallStatus},
+			{Description: "Total Number of Policy Vioaltions", Details: fmt.Sprint(influx.detect_data.fields.policy_violations)},
+		},
+		SuccessfulScan: influx.detect_data.fields.policy_violations > 0,
+		ReportTime:     time.Now(),
+	}
+
+	detailTable := reporting.ScanDetailTable{
+		Headers: []string{
+			"Policy Severity Level", "Number of Components in Violation",
+		},
+		WithCounter: false,
+	}
+
+	for _, level := range policyStatus.SeverityLevels {
+		row := reporting.ScanRow{}
+		row.AddColumn(level.Name, 0)
+		row.AddColumn(level.Value, 0)
+		detailTable.Rows = append(detailTable.Rows, row)
+	}
+	policyReport.DetailTable = detailTable
+
+	return policyReport
+}
+
+func writePolicyStatusReports(scanReport reporting.ScanReport, config detectExecuteScanOptions, utils detectUtils) ([]piperutils.Path, error) {
+	reportPaths := []piperutils.Path{}
+
+	htmlReport, _ := scanReport.ToHTML()
+	htmlReportPath := "piper_detect_policy_violation_report.html"
+	if err := utils.FileWrite(htmlReportPath, htmlReport, 0666); err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return reportPaths, errors.Wrapf(err, "failed to write html report")
+	}
+	reportPaths = append(reportPaths, piperutils.Path{Name: "BlackDuck Policy Violation Report", Target: htmlReportPath})
+
+	jsonReport, _ := scanReport.ToJSON()
+	if exists, _ := utils.DirExists(reporting.StepReportDirectory); !exists {
+		err := utils.MkdirAll(reporting.StepReportDirectory, 0777)
+		if err != nil {
+			return reportPaths, errors.Wrap(err, "failed to create reporting directory")
+		}
+	}
+	if err := utils.FileWrite(filepath.Join(reporting.StepReportDirectory, fmt.Sprintf("detectExecuteScan_policy_%v.json", fmt.Sprintf("%v", time.Now()))), jsonReport, 0666); err != nil {
+		return reportPaths, errors.Wrapf(err, "failed to write json report")
+	}
+
+	return reportPaths, nil
+}
+
+func writeIpPolicyJson(config detectExecuteScanOptions, utils detectUtils, paths []piperutils.Path, sys *blackduckSystem) error {
+	components, err := sys.Client.GetComponentsWithLicensePolicyRule(config.ProjectName, getVersionName(config))
+	if err != nil {
+		errors.Wrapf(err, "failed to get License Policy Violations")
+		return err
+	}
+
+	violationCount := getActivePolicyViolations(components)
+	violations := struct {
+		PolicyViolations int      `json:"policyViolations"`
+		Reports          []string `json:"reports"`
+	}{
+		PolicyViolations: violationCount,
+		Reports:          []string{},
+	}
+
+	for _, path := range paths {
+		violations.Reports = append(violations.Reports, path.Target)
+	}
+	if files, err := utils.Glob("**/*BlackDuck_RiskReport.pdf"); err == nil && len(files) > 0 {
+		// there should only be one RiskReport thus only taking the first one
+		_, reportFile := filepath.Split(files[0])
+		violations.Reports = append(violations.Reports, reportFile)
+	}
+
+	violationContent, err := json.Marshal(violations)
+	if err != nil {
+		return fmt.Errorf("failed to marshal policy violation data: %w", err)
+	}
+
+	err = utils.FileWrite("blackduck-ip.json", violationContent, 0666)
+	if err != nil {
+		return fmt.Errorf("failed to write policy violation report: %w", err)
+	}
+	return nil
+}
+
+func getActivePolicyViolations(components *bd.Components) int {
+	if components.TotalCount == 0 {
+		return 0
+	}
+	activeViolations := 0
+	for _, component := range components.Items {
+		if isActivePolicyViolation(component.PolicyStatus) {
+			activeViolations++
+		}
+	}
+	return activeViolations
+}
+
+func isActivePolicyViolation(status string) bool {
+	if status == "IN_VIOLATION" {
+		return true
+	}
+	return false
 }
 
 func isActiveVulnerability(v bd.Vulnerability) bool {
