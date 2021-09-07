@@ -210,7 +210,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
 					{Name: "protecodeCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing username and password to authenticate to the Protecode system.", Type: "jenkins"},
-					{Name: "dockerConfigJsonCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)). You can create it like explained in the Docker Success Center in the article about [how to generate a new auth in the config.json file](https://success.docker.com/article/generate-new-auth-in-config-json-file).", Type: "jenkins", Aliases: []config.Alias{{Name: "dockerCredentialsId", Deprecated: true}}},
+					{Name: "dockerConfigJsonCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)). You can create it like explained in [Prerequisites](https://www.project-piper.io/steps/protecodeExecuteScan/#prerequisites).", Type: "jenkins", Aliases: []config.Alias{{Name: "dockerCredentialsId", Deprecated: true}}},
 				},
 				Parameters: []config.StepParameters{
 					{
