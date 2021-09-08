@@ -117,7 +117,7 @@ func writeVaultSecretIDToStore(config *vaultRotateSecretIdOptions, secretID stri
 	case "ado":
 		adoBuildClient, err := ado.NewBuildClient(config.AdoOrganization, config.AdoPersonalAccessToken, config.AdoProject, config.AdoPipelineID)
 		if err != nil {
-			log.Entry().Warn("Could not write secret ID back to jenkins")
+			log.Entry().Warn("Could not write secret ID back to Azure DevOps")
 			return err
 		}
 		variables := []ado.Variable{
@@ -128,7 +128,7 @@ func writeVaultSecretIDToStore(config *vaultRotateSecretIdOptions, secretID stri
 			},
 		}
 		if err := adoBuildClient.UpdateVariables(variables); err != nil {
-			log.Entry().Warn("Could not write secret ID back to jenkins")
+			log.Entry().Warn("Could not write secret ID back to Azure DevOps")
 			return err
 		}
 	default:
