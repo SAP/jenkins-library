@@ -19,11 +19,15 @@ import (
 )
 
 const (
-	orderPath      = "/cnb/order.toml"
+	planPath     = "/tmp/plan.toml"
+	detectorPath = "/cnb/lifecycle/detector"
+	builderPath  = "/cnb/lifecycle/builder"
+	exporterPath = "/cnb/lifecycle/exporter"
+)
+
+var (
 	buildpacksPath = "/cnb/buildpacks"
-	detectorPath   = "/cnb/lifecycle/detector"
-	builderPath    = "/cnb/lifecycle/builder"
-	exporterPath   = "/cnb/lifecycle/exporter"
+	orderPath      = "/cnb/order.toml"
 )
 
 type cnbBuildUtils interface {
@@ -46,7 +50,9 @@ type cnbBuildUtilsBundle struct {
 }
 
 func (cutils cnbBuildUtilsBundle) SetCustomBuildpacks(bpacks []string) error {
-	newOrder, err := cnbutils.DownloadBuildpacks(buildpacksPath, bpacks, cutils.dockerClient)
+	buildpacksPath = "/tmp/buildpacks"
+	orderPath = "/tmp/buildpacks/order.toml"
+	newOrder, err := cnbutils.DownloadBuildpacks(buildpacksPath, bpacks, cutils.dockerClient, cutils.Files)
 	if err != nil {
 		return err
 	}
@@ -183,7 +189,8 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		}
 	}
 
-	if config.Buildpacks != nil {
+	if config.Buildpacks != nil && len(config.Buildpacks) != 0 {
+		log.Entry().Infof("Setting custom buildpacks: '%v'", config.Buildpacks)
 		err = utils.SetCustomBuildpacks(config.Buildpacks)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorBuild)
@@ -215,13 +222,13 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		return errors.New("containerRegistryUrl, containerImageName and containerImageTag must be present")
 	}
 
-	err = utils.RunExecutable(detectorPath)
+	err = utils.RunExecutable(detectorPath, "-buildpacks", buildpacksPath, "-order", orderPath, "-plan", planPath)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
 		return errors.Wrap(err, fmt.Sprintf("execution of '%s' failed", detectorPath))
 	}
 
-	err = utils.RunExecutable(builderPath)
+	err = utils.RunExecutable(builderPath, "-buildpacks", buildpacksPath, "-plan", planPath)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
 		return errors.Wrap(err, fmt.Sprintf("execution of '%s' failed", builderPath))

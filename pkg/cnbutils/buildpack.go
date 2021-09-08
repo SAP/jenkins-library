@@ -4,13 +4,12 @@ package cnbutils
 import (
 	"encoding/json"
 	"fmt"
-	"io"
-	"io/ioutil"
-	"os"
 	"path/filepath"
-	"syscall"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/docker"
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 type BuildPackMetadata struct {
@@ -28,32 +27,32 @@ type License struct {
 	URI  string `json:"uri"`
 }
 
-func DownloadBuildpacks(path string, bpacks []string, dClient docker.Client) (Order, error) {
+func DownloadBuildpacks(path string, bpacks []string, dClient docker.Client, fileutils *piperutils.Files) (Order, error) {
 	var order Order
 	for _, bpack := range bpacks {
 		var bpackMeta BuildPackMetadata
-
-		tempDir, err := ioutil.TempDir("", bpack)
+		tempDir, err := fileutils.TempDir("", filepath.Base(bpack))
 		if err != nil {
-			return Order{}, err
+			return Order{}, fmt.Errorf("failed to create temp directory, error: %s", err.Error())
 		}
-		defer os.RemoveAll(tempDir)
+		defer fileutils.RemoveAll(tempDir)
 
+		log.Entry().Infof("Downloading buildpack '%s' to %s", bpack, tempDir)
 		img, err := dClient.DownloadImageToPath(bpack, tempDir)
 		if err != nil {
-			return Order{}, err
+			return Order{}, fmt.Errorf("failed download buildpack image '%s', error: %s", bpack, err.Error())
 		}
 
 		imgConf, err := img.Image.ConfigFile()
 		if err != nil {
-			return Order{}, err
+			return Order{}, fmt.Errorf("failed to read '%s' image config, error: %s", bpack, err.Error())
 		}
 
 		err = json.Unmarshal([]byte(imgConf.Config.Labels["io.buildpacks.buildpackage.metadata"]), &bpackMeta)
 		if err != nil {
-			return Order{}, err
+			return Order{}, fmt.Errorf("failed unmarshal '%s' image label, error: %s", bpack, err.Error())
 		}
-
+		log.Entry().Debugf("Buildpack metadata: '%v'", bpackMeta)
 		order.Order = append(order.Order, OrderEntry{
 			Group: []BuildpackRef{{
 				ID:       bpackMeta.ID,
@@ -62,108 +61,48 @@ func DownloadBuildpacks(path string, bpacks []string, dClient docker.Client) (Or
 			}},
 		})
 
-		err = copyBuildPack(fmt.Sprintf("%s/cnb/buildpacks", tempDir), path)
+		err = copyBuildPack(filepath.Join(tempDir, "cnb/buildpacks"), path, fileutils)
 		if err != nil {
 			return Order{}, err
 		}
 	}
 
+	order.Futils = fileutils
+
 	return order, nil
 }
 
-func copyBuildPack(src, dst string) error {
-	buildpacks, err := os.ReadDir(src)
+func copyBuildPack(src, dst string, futils *piperutils.Files) error {
+	buildpacks, err := futils.Glob(filepath.Join(src, "*"))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to read directory: %s, error: %s", src, err.Error())
 	}
+
 	for _, buildpack := range buildpacks {
-		versions, _ := os.ReadDir(filepath.Join(src, buildpack.Name()))
-		for _, version := range versions {
-			srcVersionPath := filepath.Join(src, buildpack.Name(), version.Name())
-			destVersionPath := filepath.Join(dst, buildpack.Name(), version.Name())
-
-			if exists(destVersionPath) {
-				os.RemoveAll(destVersionPath)
-			}
-			if err := os.MkdirAll(destVersionPath, 0755); err != nil {
-				return fmt.Errorf("failed to create directory: '%s', error: '%s'", destVersionPath, err.Error())
-			}
-
-			err = copyDirectory(srcVersionPath, destVersionPath)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-func copyDirectory(scrDir, dest string) error {
-	entries, err := ioutil.ReadDir(scrDir)
-	if err != nil {
-		return err
-	}
-	for _, entry := range entries {
-		sourcePath := filepath.Join(scrDir, entry.Name())
-		destPath := filepath.Join(dest, entry.Name())
-
-		fileInfo, err := os.Stat(sourcePath)
+		versions, err := futils.Glob(filepath.Join(buildpack, "*"))
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to read directory: %s, error: %s", buildpack, err.Error())
 		}
+		for _, srcVersionPath := range versions {
+			destVersionPath := filepath.Join(dst, strings.ReplaceAll(srcVersionPath, src, ""))
 
-		stat, ok := fileInfo.Sys().(*syscall.Stat_t)
-		if !ok {
-			return fmt.Errorf("failed to get raw syscall.Stat_t data for '%s'", sourcePath)
-		}
+			exists, err := futils.DirExists(destVersionPath)
+			if err != nil {
+				return fmt.Errorf("failed to check if directory exists: '%s', error: '%s'", destVersionPath, err.Error())
+			}
+			if exists {
+				futils.RemoveAll(destVersionPath)
+			}
 
-		switch fileInfo.Mode() & os.ModeType {
-		case os.ModeDir:
-			if err := os.MkdirAll(destPath, 0755); err != nil {
-				return fmt.Errorf("failed to create directory: '%s', error: '%s'", destPath, err.Error())
+			if err := futils.MkdirAll(filepath.Dir(destVersionPath), 0755); err != nil {
+				return fmt.Errorf("failed to create directory: '%s', error: '%s'", filepath.Dir(destVersionPath), err.Error())
 			}
-			if err := copyDirectory(sourcePath, destPath); err != nil {
-				return err
-			}
-		default:
-			if err := copy(sourcePath, destPath); err != nil {
-				return err
-			}
-		}
 
-		if err := os.Lchown(destPath, int(stat.Uid), int(stat.Gid)); err != nil {
-			return err
+			err = futils.FileRename(srcVersionPath, destVersionPath)
+			if err != nil {
+				return fmt.Errorf("failed to move '%s' to '%s', error: %s", srcVersionPath, destVersionPath, err.Error())
+			}
 		}
 	}
 	return nil
-}
-
-func copy(srcFile, dstFile string) error {
-	out, err := os.Create(dstFile)
-	if err != nil {
-		return err
-	}
-
-	defer out.Close()
-
-	in, err := os.Open(srcFile)
-	if err != nil {
-		return err
-	}
-	defer in.Close()
-
-	_, err = io.Copy(out, in)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func exists(filePath string) bool {
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		return false
-	}
-
-	return true
 }
