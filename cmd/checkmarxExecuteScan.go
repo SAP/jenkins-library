@@ -106,7 +106,7 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, influx *c
 
 	err = uploadAndScan(config, sys, project, influx, utils)
 	if err != nil {
-		return errors.Wrap(err, "failed to run scan and upload result")
+		return errors.Wrap(err, "scan, upload, and result validation returned an error")
 	}
 	return nil
 }
@@ -247,7 +247,9 @@ func uploadAndScan(config checkmarxExecuteScanOptions, sys checkmarx.System, pro
 			return errors.Wrapf(err, "invalid configuration value for fullScanCycle %v, must be a positive int", config.FullScanCycle)
 		}
 
-		if incremental && config.FullScansScheduled && fullScanCycle > 0 && (getNumCoherentIncrementalScans(previousScans)+1)%fullScanCycle == 0 {
+		if config.IsOptimizedAndScheduled {
+			incremental = false
+		} else if incremental && config.FullScansScheduled && fullScanCycle > 0 && (getNumCoherentIncrementalScans(previousScans)+1)%fullScanCycle == 0 {
 			incremental = false
 		}
 

@@ -7,11 +7,11 @@ metadata:
 spec:
   inputs:
     secrets:
-      - name: iFlowServiceKeyCredentialsId
+      - name: integrationFlowServiceKeyCredentialsId
         description: Jenkins secret text credential ID containing the service key to the Process Integration Runtime service instance of plan 'integration-flow'
         type: jenkins
     params:
-      - name: iFlowServiceKey
+      - name: integrationFlowServiceKey
         type: string
         description: Service key JSON string to access the Process Integration Runtime service instance of plan 'integration-flow'
         scope:
@@ -19,9 +19,9 @@ spec:
         mandatory: true
         secret: true
         resourceRef:
-          - name: iFlowServiceKeyCredentialsId
+          - name: integrationFlowServiceKeyCredentialsId
             type: secret
-            param: iFlowServiceKey
+            param: integrationFlowServiceKey
       - name: integrationFlowId
         type: string
         description: Specifies the ID of the Integration Flow artifact
@@ -31,10 +31,10 @@ spec:
           - STEPS
           - GENERAL
         mandatory: true
-      - name: iFlowServiceEndpointUrl
+      - name: integrationFlowServiceEndpointUrl
         resourceRef:
           - name: commonPipelineEnvironment
-            param: custom/iFlowServiceEndpoint
+            param: custom/integrationFlowServiceEndpoint
         type: string
         description: Specifies the URL endpoint of the iFlow. Please provide in the format `<protocol>://<host>:<port>`. Supported protocols are `http` and `https`.
         scope:
