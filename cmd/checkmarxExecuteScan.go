@@ -106,7 +106,7 @@ func runScan(config checkmarxExecuteScanOptions, sys checkmarx.System, influx *c
 
 	err = uploadAndScan(config, sys, project, influx, utils)
 	if err != nil {
-		return errors.Wrap(err, "failed to run scan and upload result")
+		return errors.Wrap(err, "scan, upload, and result validation returned an error")
 	}
 	return nil
 }
