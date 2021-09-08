@@ -119,6 +119,75 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
+      - name: altDeploymentRepositoryPassword
+        type: string
+        description: Password for the alternative deployment repository to which mtar artifacts will be publised
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/repositoryPassword
+          - name: altDeploymentRepositoryPasswordId
+            type: secret
+          - type: vaultSecretFile
+            paths:
+              - $(vaultPath)/alt-deployment-repository-passowrd
+              - $(vaultBasePath)/$(vaultPipelineName)/alt-deployment-repository-passowrd
+              - $(vaultBasePath)/GROUP-SECRETS/alt-deployment-repository-passowrd
+      - name: altDeploymentRepositoryUser
+        type: string
+        description: User for the alternative deployment repository to which which mtar artifacts will be publised
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/repositoryUsername
+      - name: altDeploymentRepositoryUrl
+        type: string
+        description: Url for the alternative deployment repository to which mtar artifacts will be publised
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/repositoryUrl
+      - name: altDeploymentRepositoryID
+        type: string
+        description: Id for the alternative deployment repository to which mtar artifacts will be publised
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/repositoryId
+      - name: customTlsCertificateLinks
+        type: "[]string"
+        description: "List of download links to custom TLS certificates. This is required to ensure trusted connections to instances with repositories (like nexus) when publish flag is set to true."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: publish
+        type: bool
+        description: pushed mtar artifact to altDeploymentRepositoryUrl/altDeploymentRepositoryID when set to true
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        default: false
+        aliases:
+          - name: mta/publish
   outputs:
     resources:
       - name: commonPipelineEnvironment

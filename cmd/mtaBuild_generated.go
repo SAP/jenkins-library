@@ -17,17 +17,23 @@ import (
 )
 
 type mtaBuildOptions struct {
-	MtarName            string `json:"mtarName,omitempty"`
-	Extensions          string `json:"extensions,omitempty"`
-	Platform            string `json:"platform,omitempty"`
-	ApplicationName     string `json:"applicationName,omitempty"`
-	Source              string `json:"source,omitempty"`
-	Target              string `json:"target,omitempty"`
-	DefaultNpmRegistry  string `json:"defaultNpmRegistry,omitempty"`
-	ProjectSettingsFile string `json:"projectSettingsFile,omitempty"`
-	GlobalSettingsFile  string `json:"globalSettingsFile,omitempty"`
-	M2Path              string `json:"m2Path,omitempty"`
-	InstallArtifacts    bool   `json:"installArtifacts,omitempty"`
+	MtarName                        string   `json:"mtarName,omitempty"`
+	Extensions                      string   `json:"extensions,omitempty"`
+	Platform                        string   `json:"platform,omitempty"`
+	ApplicationName                 string   `json:"applicationName,omitempty"`
+	Source                          string   `json:"source,omitempty"`
+	Target                          string   `json:"target,omitempty"`
+	DefaultNpmRegistry              string   `json:"defaultNpmRegistry,omitempty"`
+	ProjectSettingsFile             string   `json:"projectSettingsFile,omitempty"`
+	GlobalSettingsFile              string   `json:"globalSettingsFile,omitempty"`
+	M2Path                          string   `json:"m2Path,omitempty"`
+	InstallArtifacts                bool     `json:"installArtifacts,omitempty"`
+	AltDeploymentRepositoryPassword string   `json:"altDeploymentRepositoryPassword,omitempty"`
+	AltDeploymentRepositoryUser     string   `json:"altDeploymentRepositoryUser,omitempty"`
+	AltDeploymentRepositoryURL      string   `json:"altDeploymentRepositoryUrl,omitempty"`
+	AltDeploymentRepositoryID       string   `json:"altDeploymentRepositoryID,omitempty"`
+	CustomTLSCertificateLinks       []string `json:"customTlsCertificateLinks,omitempty"`
+	Publish                         bool     `json:"publish,omitempty"`
 }
 
 type mtaBuildCommonPipelineEnvironment struct {
@@ -86,6 +92,7 @@ func MtaBuildCommand() *cobra.Command {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+			log.RegisterSecret(stepConfig.AltDeploymentRepositoryPassword)
 
 			if len(GeneralConfig.HookConfig.SentryConfig.Dsn) > 0 {
 				sentryHook := log.NewSentryHook(GeneralConfig.HookConfig.SentryConfig.Dsn, GeneralConfig.CorrelationID)
@@ -144,6 +151,12 @@ func addMtaBuildFlags(cmd *cobra.Command, stepConfig *mtaBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.GlobalSettingsFile, "globalSettingsFile", os.Getenv("PIPER_globalSettingsFile"), "Path or url to the mvn settings file that should be used as global settings file")
 	cmd.Flags().StringVar(&stepConfig.M2Path, "m2Path", os.Getenv("PIPER_m2Path"), "Path to the location of the local repository that should be used.")
 	cmd.Flags().BoolVar(&stepConfig.InstallArtifacts, "installArtifacts", false, "If enabled, for npm packages this step will install all dependencies including dev dependencies. For maven it will install all artifacts to the local maven repository. Note: This happens _after_ mta build was done. The default mta build tool does not install dev-dependencies as part of the process. If you require dev-dependencies for building the mta, you will need to use a [custom builder](https://sap.github.io/cloud-mta-build-tool/configuration/#configuring-the-custom-builder)")
+	cmd.Flags().StringVar(&stepConfig.AltDeploymentRepositoryPassword, "altDeploymentRepositoryPassword", os.Getenv("PIPER_altDeploymentRepositoryPassword"), "Password for the alternative deployment repository to which mtar artifacts will be publised")
+	cmd.Flags().StringVar(&stepConfig.AltDeploymentRepositoryUser, "altDeploymentRepositoryUser", os.Getenv("PIPER_altDeploymentRepositoryUser"), "User for the alternative deployment repository to which which mtar artifacts will be publised")
+	cmd.Flags().StringVar(&stepConfig.AltDeploymentRepositoryURL, "altDeploymentRepositoryUrl", os.Getenv("PIPER_altDeploymentRepositoryUrl"), "Url for the alternative deployment repository to which mtar artifacts will be publised")
+	cmd.Flags().StringVar(&stepConfig.AltDeploymentRepositoryID, "altDeploymentRepositoryID", os.Getenv("PIPER_altDeploymentRepositoryID"), "Id for the alternative deployment repository to which mtar artifacts will be publised")
+	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List of download links to custom TLS certificates. This is required to ensure trusted connections to instances with repositories (like nexus) when publish flag is set to true.")
+	cmd.Flags().BoolVar(&stepConfig.Publish, "publish", false, "pushed mtar artifact to altDeploymentRepositoryUrl/altDeploymentRepositoryID when set to true")
 
 }
 
@@ -255,6 +268,91 @@ func mtaBuildMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     false,
+					},
+					{
+						Name: "altDeploymentRepositoryPassword",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/repositoryPassword",
+							},
+
+							{
+								Name: "altDeploymentRepositoryPasswordId",
+								Type: "secret",
+							},
+
+							{
+								Name:  "",
+								Paths: []string{"$(vaultPath)/alt-deployment-repository-passowrd", "$(vaultBasePath)/$(vaultPipelineName)/alt-deployment-repository-passowrd", "$(vaultBasePath)/GROUP-SECRETS/alt-deployment-repository-passowrd"},
+								Type:  "vaultSecretFile",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_altDeploymentRepositoryPassword"),
+					},
+					{
+						Name: "altDeploymentRepositoryUser",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/repositoryUsername",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_altDeploymentRepositoryUser"),
+					},
+					{
+						Name: "altDeploymentRepositoryUrl",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/repositoryUrl",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_altDeploymentRepositoryUrl"),
+					},
+					{
+						Name: "altDeploymentRepositoryID",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/repositoryId",
+							},
+						},
+						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_altDeploymentRepositoryID"),
+					},
+					{
+						Name:        "customTlsCertificateLinks",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
+					},
+					{
+						Name:        "publish",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "bool",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "mta/publish"}},
 						Default:     false,
 					},
 				},
