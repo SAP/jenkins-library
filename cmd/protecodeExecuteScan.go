@@ -166,12 +166,12 @@ func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.P
 	if config.ReplaceProductID > 0 {
 
 		log.Entry().Infof("replaceProductID has been provided (%v) and checking ...", config.ReplaceProductID)
-		log.Entry().Debugf("[DEBUG] ===> ReplaceProductID has been provided and required to verify it: %v", config.ReplaceProductID)
+		// log.Entry().Debugf("[DEBUG] ===> ReplaceProductID has been provided and required to verify it: %v", config.ReplaceProductID)
 
 		// Validate provided product id, if not valid id then throw an error
 		if client.VerifyProductID(config.ReplaceProductID) {
 			log.Entry().Infof("replaceProductID has been checked and it's valid")
-			log.Entry().Debugf("[DEBUG] ===> ReplaceProductID exists")
+			// log.Entry().Debugf("[DEBUG] ===> ReplaceProductID exists")
 			productID = config.ReplaceProductID
 		} else {
 			log.Entry().Debugf("[DEBUG] ===> ReplaceProductID doesn't exist")
@@ -181,12 +181,12 @@ func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.P
 	} else {
 		// Get existing product id by filename
 		log.Entry().Infof("replaceProductID is not provided and automatic search starts from group: %v ... ", config.Group)
-		log.Entry().Debugf("[DEBUG] ===> ReplaceProductID hasn't provided and automatic search starts... ")
+		// log.Entry().Debugf("[DEBUG] ===> ReplaceProductID hasn't provided and automatic search starts... ")
 		productID = client.LoadExistingProduct(config.Group, fileName)
 	}
 
 	log.Entry().Infof("Automatic search completed and found following product id: %v", productID)
-	log.Entry().Debugf("[DEBUG] ===> Returned productID: %v", productID)
+	// log.Entry().Debugf("[DEBUG] ===> Returned productID: %v", productID)
 
 	// check if no existing is found
 	productID = uploadScanOrDeclareFetch(*config, productID, client, fileName)
@@ -337,26 +337,26 @@ func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productID int,
 	// check if product doesn't exist then create a new one.
 	if productID <= 0 {
 		log.Entry().Infof("New product creation started ... ")
-		log.Entry().Debugf("[DEBUG] ===> New product creation started: %v", productID)
+		// log.Entry().Debugf("[DEBUG] ===> New product creation started: %v", productID)
 		productID = uploadFile(config, productID, client, fileName, false)
 
 		log.Entry().Infof("New product has been successfully created: %v", productID)
-		log.Entry().Debugf("[DEBUG] ===> After uploading [productID < 0] file returned productID: %v", productID)
+		// log.Entry().Debugf("[DEBUG] ===> After uploading [productID < 0] file returned productID: %v", productID)
 		return productID
 
 		// In case product already exists and "VerifyOnly (reuseExisting)" is false then we replace binary without creating a new product.
 	} else if (productID > 0) && !config.VerifyOnly {
 		log.Entry().Infof("Product already exists and 'VerifyOnly (reuseExisting)' is false then product (%v) binary and scan result will be replaced without creating a new product.", productID)
-		log.Entry().Debugf("[DEBUG] ===> Replace binary entry point started %v", productID)
+		// log.Entry().Debugf("[DEBUG] ===> Replace binary entry point started %v", productID)
 		productID = uploadFile(config, productID, client, fileName, true)
 
-		log.Entry().Debugf("[DEBUG] ===> After uploading file [(productID > 0) && !config.VerifyOnly] returned productID: %v", productID)
+		// log.Entry().Debugf("[DEBUG] ===> After uploading file [(productID > 0) && !config.VerifyOnly] returned productID: %v", productID)
 		return productID
 
 		// If product already exists and "reuseExisting" option is enabled then return the latest similar scan result.
 	} else {
 		log.Entry().Infof("VerifyOnly (reuseExisting) option is enabled and returned productID: %v", productID)
-		log.Entry().Debugf("[DEBUG] ===> VerifyOnly (reuseExisting) option is enabled and returned productID: %v", productID)
+		// log.Entry().Debugf("[DEBUG] ===> VerifyOnly (reuseExisting) option is enabled and returned productID: %v", productID)
 		return productID
 	}
 }
