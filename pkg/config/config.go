@@ -303,6 +303,18 @@ func GetStepConfigWithJSON(flagValues map[string]interface{}, stepConfigJSON str
 	return stepConfig
 }
 
+func (c *Config) GetStageConfig(paramJSON string, configuration io.ReadCloser, defaults []io.ReadCloser, ignoreCustomDefaults bool, acceptedParams []string, stageName string) (StepConfig, error) {
+
+	filters := StepFilters{
+		General:    acceptedParams,
+		Steps:      []string{},
+		Stages:     acceptedParams,
+		Parameters: acceptedParams,
+		Env:        []string{},
+	}
+	return c.GetStepConfig(map[string]interface{}{}, paramJSON, configuration, defaults, ignoreCustomDefaults, filters, []StepParameters{}, []StepSecrets{}, map[string]interface{}{}, stageName, "", []Alias{})
+}
+
 // GetJSON returns JSON representation of an object
 func GetJSON(data interface{}) (string, error) {
 

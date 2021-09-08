@@ -16,7 +16,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func abapEnvironmentCheckoutBranch(options abapEnvironmentCheckoutBranchOptions, telemetryData *telemetry.CustomData) {
+func abapEnvironmentCheckoutBranch(options abapEnvironmentCheckoutBranchOptions, _ *telemetry.CustomData) {
 
 	// for command execution use Command
 	c := command.Command{}
@@ -31,13 +31,13 @@ func abapEnvironmentCheckoutBranch(options abapEnvironmentCheckoutBranchOptions,
 	client := piperhttp.Client{}
 
 	// error situations should stop execution through log.Entry().Fatal() call which leads to an os.Exit(1) in the end
-	err := runAbapEnvironmentCheckoutBranch(&options, telemetryData, &autils, &client)
+	err := runAbapEnvironmentCheckoutBranch(&options, &autils, &client)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runAbapEnvironmentCheckoutBranch(options *abapEnvironmentCheckoutBranchOptions, telemetryData *telemetry.CustomData, com abaputils.Communication, client piperhttp.Sender) (err error) {
+func runAbapEnvironmentCheckoutBranch(options *abapEnvironmentCheckoutBranchOptions, com abaputils.Communication, client piperhttp.Sender) (err error) {
 
 	// Mapping for options
 	subOptions := convertCheckoutConfig(options)
@@ -107,9 +107,6 @@ func triggerCheckout(repositoryName string, branchName string, checkoutConnectio
 		return uriConnectionDetails, err
 	}
 	defer resp.Body.Close()
-
-	// workaround until golang version 1.16 is used
-	time.Sleep(100 * time.Millisecond)
 
 	log.Entry().WithField("StatusCode", resp.Status).WithField("ABAP Endpoint", checkoutConnectionDetails.URL).Debug("Authentication on the ABAP system was successful")
 	uriConnectionDetails.XCsrfToken = resp.Header.Get("X-Csrf-Token")

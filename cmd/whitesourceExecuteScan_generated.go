@@ -542,13 +542,18 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Default:     true,
 					},
 					{
-						Name:        "scanImage",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_scanImage"),
+						Name: "scanImage",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/imageNameTag",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_scanImage"),
 					},
 					{
 						Name:        "scanImageIncludeLayers",
@@ -560,13 +565,18 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Default:     true,
 					},
 					{
-						Name:        "scanImageRegistryUrl",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_scanImageRegistryUrl"),
+						Name: "scanImageRegistryUrl",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "container/registryUrl",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_scanImageRegistryUrl"),
 					},
 					{
 						Name:        "securityVulnerabilities",
