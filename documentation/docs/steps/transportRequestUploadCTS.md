@@ -79,13 +79,13 @@ Build your SAPUI5 application with the build command of the SAPUI5 toolset and u
     }
     ```
 
-**Note:** Do not use the `mtaBuild` step. The The MTA Build Tool `mta` is dedicated to the SAP Cloud Platform. It does neither create the expected `dist` folder nor the compliant content.
+**Note:** Do not use the `mtaBuild` step. The MTA Build Tool `mta` is dedicated to the SAP Business Technology Platform. It does neither create the expected `dist` folder nor the compliant content.
 
 ## Uploading an SAPUI5 Application
 
 The Fiori toolset uses the [ODATA service](https://ui5.sap.com/#/topic/a883327a82ef4cc792f3c1e7b7a48de8) to upload your UI5 application to the SAPUI5 ABAP repository. It controls access by [Basic Authentication](https://help.sap.com/viewer/e815bb97839a4d83be6c4fca48ee5777/202009.002/en-US/43960f4a527b58c1e10000000a422035.html?q=basic%20authentication) (user/password based authentication).
 
-**Note:** Do not upload your application to SAP BTP. The SAP Business Technology Platform does not support `Basic Authentication`.
+**Note:** Do not upload your application to SAP Business Technology Platform. The SAP BTP does not support `Basic Authentication`.
 
 **Note:** Use an HTTPS endpoint to ensure the encryption of your credentials.
 
