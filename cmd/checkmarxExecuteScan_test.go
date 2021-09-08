@@ -662,7 +662,7 @@ func TestVerifyOnly_errorOnWriteFileDoesNotBlock(t *testing.T) {
 	utilsMock.errorOnWriteFile = true
 
 	err = runScan(options, sys, &influx, utilsMock)
-	assert.EqualError(t, err, "failed to run scan and upload result: project TestExisting not compliant: failed to get detailed results: failed to write file: error on WriteFile")
+	assert.EqualError(t, err, "scan, upload, and result validation returned an error: project TestExisting not compliant: failed to get detailed results: failed to write file: error on WriteFile")
 }
 
 func TestRunScanWOtherCycle(t *testing.T) {
@@ -711,7 +711,7 @@ func TestRunScanErrorInZip(t *testing.T) {
 	utilsMock.errorOnFileInfoHeader = true
 
 	err = runScan(options, sys, &influx, utilsMock)
-	assert.EqualError(t, err, "failed to run scan and upload result: failed to zip workspace files: failed to compact folder: error on FileInfoHeader")
+	assert.EqualError(t, err, "scan, upload, and result validation returned an error: failed to zip workspace files: failed to compact folder: error on FileInfoHeader")
 }
 
 func TestRunScanForPullRequest(t *testing.T) {

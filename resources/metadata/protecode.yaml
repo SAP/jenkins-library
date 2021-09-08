@@ -13,7 +13,7 @@ spec:
         description: Jenkins 'Username with password' credentials ID containing username and password to authenticate to the Protecode system.
         type: jenkins
       - name: dockerConfigJsonCredentialsId
-        description: Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)). You can create it like explained in the Docker Success Center in the article about [how to generate a new auth in the config.json file](https://success.docker.com/article/generate-new-auth-in-config-json-file).
+        description: Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)). You can create it like explained in [Prerequisites](https://www.project-piper.io/steps/protecodeExecuteScan/#prerequisites).
         type: jenkins
         aliases:
           - name: dockerCredentialsId

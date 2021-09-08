@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	webReportPath  = "%s/product/%v/"
+	webReportPath  = "%s/#/product/%v/"
 	scanResultFile = "protecodescan_vulns.json"
 	stepResultFile = "protecodeExecuteScan.json"
 )
