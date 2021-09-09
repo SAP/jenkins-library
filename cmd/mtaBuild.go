@@ -241,7 +241,7 @@ func runMtaBuild(config mtaBuildOptions,
 		if (len(config.AltDeploymentRepositoryPassword) > 0) && (len(config.AltDeploymentRepositoryUser) > 0) &&
 			(len(config.AltDeploymentRepositoryURL) > 0) {
 			downloadClient := &piperhttp.Client{}
-			credentialsEncoded := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", config.AltDeploymentRepositoryUser, config.AltDeploymentRepositoryPassword)))
+			credentialsEncoded := "Basic " + base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", config.AltDeploymentRepositoryUser, config.AltDeploymentRepositoryPassword)))
 			headers := http.Header{}
 			headers.Add("Authorization", credentialsEncoded)
 			_, httpErr := downloadClient.UploadFile(config.AltDeploymentRepositoryURL, mtarName, mtarName, headers, nil)
