@@ -238,6 +238,7 @@ func runMtaBuild(config mtaBuildOptions,
 	}
 
 	if config.Publish {
+		log.Entry().Infof("publish detected")
 		if (len(config.AltDeploymentRepositoryPassword) > 0) && (len(config.AltDeploymentRepositoryUser) > 0) &&
 			(len(config.AltDeploymentRepositoryURL) > 0) {
 			if (len(config.MtarGroup) > 0) && (len(config.MtarVersion) > 0) {
@@ -262,6 +263,8 @@ func runMtaBuild(config mtaBuildOptions,
 		} else {
 			return errors.Wrap(nil, "altDeploymentRepositoryUser, altDeploymentRepositoryPassword and altDeploymentRepositoryURL not found , must be present")
 		}
+	} else {
+		log.Entry().Infof("no publish detected, skipping upload of mtar artifact")
 	}
 	return err
 }
