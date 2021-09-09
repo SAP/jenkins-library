@@ -19,6 +19,14 @@ type ServersType struct {
 	ServerType []Server `xml:"server,omitempty"`
 }
 
+type ActiveProfileType struct {
+	AcitveProfileType string `xml:"activeProfile,omitempty"`
+}
+
+type ActiveProfilesType struct {
+	ActiveProfilesType []ActiveProfileType `xml:"activeProfiles,omitempty"`
+}
+
 type Settings struct {
 	XMLName xml.Name `xml:"http://maven.apache.org/SETTINGS/1.0.0 settings"`
 	Text    string   `xml:",chardata"`
@@ -125,8 +133,9 @@ type Settings struct {
 			} `xml:"pluginRepositories,omitempty"`
 		} `xml:"profile,omitempty"`
 	} `xml:"profiles,omitempty"`
-	ActiveProfiles struct {
+	/* ActiveProfiles struct {
 		Text          string   `xml:",chardata"`
 		ActiveProfile []string `xml:"activeProfile,omitempty"`
-	} `xml:"activeProfiles,omitempty"`
+	} `xml:"activeProfiles,omitempty"` */
+	ActiveProfiles ActiveProfilesType `xml:"activeProfiles,omitempty"`
 }

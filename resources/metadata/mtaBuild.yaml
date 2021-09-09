@@ -181,13 +181,6 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/repositoryUrl
-      - name: customTlsCertificateLinks
-        type: "[]string"
-        description: "List of download links to custom TLS certificates. This is required to ensure trusted connections to instances with repositories (like nexus) when publish flag is set to true."
-        scope:
-          - PARAMETERS
-          - STAGES
-          - STEPS
       - name: publish
         type: bool
         description: pushed mtar artifact to altDeploymentRepositoryUrl/altDeploymentRepositoryID when set to true
@@ -198,6 +191,14 @@ spec:
         default: false
         aliases:
           - name: mta/publish
+      - name: profiles
+        type: "[]string"
+        description: Defines list of maven build profiles to be used. profiles will overwrite existing values in the global settings xml 
+        scope:
+          - PARAMETERS
+          - GENERAL
+          - STAGES
+          - STEPS
   outputs:
     resources:
       - name: commonPipelineEnvironment

@@ -212,10 +212,8 @@ func runMtaBuild(config mtaBuildOptions,
 		if err != nil {
 			return err
 		}
-		utils.AppendEnv([]string{"MAVEN_OPTS=-Dmaven.repo.local=" + absolutePath + " -P !snapshot.build,!milestone.build,release.build"})
+		utils.AppendEnv([]string{"MAVEN_OPTS=-Dmaven.repo.local=" + absolutePath})
 	}
-
-	utils.AppendEnv([]string{"MAVEN_OPTS= -P !snapshot.build,!milestone.build,release.build"})
 
 	log.Entry().Infof("Executing mta build call: \"%s\"", strings.Join(call, " "))
 
@@ -277,6 +275,22 @@ func runMtaBuild(config mtaBuildOptions,
 		log.Entry().Infof("no publish detected, skipping upload of mtar artifact")
 	}
 	return err
+}
+
+func handleGlobalSettingsXMLUpdate(config mtaBuildOptions, utils mtaBuildUtils) error {
+
+	if len(config.GlobalSettingsFile) == 0 {
+		log.Entry().Infof("no global settings file found, skipping profile updation")
+		return nil
+
+	} else {
+		if len(config.Profiles) > 0 {
+			return maven.UpdateActiveProfileInSettingsXML(config.Profiles[0], utils)
+		}
+
+	}
+
+	return nil
 }
 
 func installMavenArtifacts(utils mtaBuildUtils, config mtaBuildOptions) error {
