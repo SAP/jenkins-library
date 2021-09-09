@@ -176,7 +176,7 @@ func UpdateActiveProfileInSettingsXML(newActiveProfile string, utils SettingsDow
 
 		xmlstring := []byte(xml.Header + settingsXmlString)
 
-		fmt.Println(xmlstring)
+		fmt.Println(xml.Header + settingsXmlString)
 		err = utils.FileWrite(".pipeline/mavenProjectSettings.xml", xmlstring, 0777)
 
 		err = utils.FileWrite(settingsFile, xmlstring, 0777)
