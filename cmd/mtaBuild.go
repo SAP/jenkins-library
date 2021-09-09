@@ -250,9 +250,13 @@ func runMtaBuild(config mtaBuildOptions,
 
 				config.MtarGroup = strings.ReplaceAll(config.MtarGroup, ".", "/")
 
+				mtarArtifactName := mtarName
+
+				mtarArtifactName = strings.ReplaceAll(mtarArtifactName, ".mtar", "")
+
 				mtarName = strings.ReplaceAll(mtarName, ".mtar", "")
 
-				config.AltDeploymentRepositoryURL += config.MtarGroup + "/" + mtarName + "/" + config.MtarVersion + "/" + fmt.Sprintf("%v-%v.%v", mtarName, config.MtarVersion, "mtar")
+				config.AltDeploymentRepositoryURL += config.MtarGroup + "/" + mtarArtifactName + "/" + config.MtarVersion + "/" + fmt.Sprintf("%v-%v.%v", mtarArtifactName, config.MtarVersion, "mtar")
 
 				log.Entry().Infof("pushing mtar artifact to repository : %s", config.AltDeploymentRepositoryURL)
 
