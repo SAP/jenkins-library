@@ -142,7 +142,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         thrown.expect(AbortException)
         thrown.expectMessage("Exception message")
 
-        helper.registe rAllowedMethod( 'piperExecuteBin', [Map, String, String, List], { 
+        helper.registerAllowedMethod( 'piperExecuteBin', [Map, String, String, List], { 
                 throw new AbortException('Exception message')
             }
         )
