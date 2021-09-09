@@ -113,12 +113,6 @@ func detectExecuteScan(config detectExecuteScanOptions, _ *telemetry.CustomData,
 	}
 
 	influx.step_data.fields.detect = true
-	// create Toolrecord file
-	toolRecordFileName, err := createToolRecordDetect("./", config)
-	if err != nil {
-		// do not fail until the framework is well established
-		log.Entry().Warning("TR_DETECT: Failed to create toolrecord file "+toolRecordFileName, err)
-	}
 }
 
 func runDetect(config detectExecuteScanOptions, utils detectUtils, influx *detectExecuteScanInflux) error {
@@ -392,6 +386,12 @@ func postScanChecksAndReporting(config detectExecuteScanOptions, influx *detectE
 	policyJsonErr := writeIpPolicyJson(config, utils, paths, sys)
 	if policyJsonErr != nil {
 		return errors.Wrapf(policyJsonErr, "failed to write IP policy violations json file")
+	}
+	// create Toolrecord file
+	toolRecordFileName, err := createToolRecordDetect("./", config, sys)
+	if err != nil {
+		// do not fail until the framework is well established
+		log.Entry().Warning("TR_DETECT: Failed to create toolrecord file "+toolRecordFileName, err)
 	}
 	return nil
 }
@@ -671,18 +671,28 @@ func isMajorVulnerability(v bd.Vulnerability) bool {
 	}
 }
 
-// create toolrecord file for detect
-//
-//
-func createToolRecordDetect(workspace string, config detectExecuteScanOptions) (string, error) {
+// create toolrecord file for detectExecute
+func createToolRecordDetect(workspace string, config detectExecuteScanOptions, sys *blackduckSystem) (string, error) {
 	record := toolrecord.New(workspace, "detectExecute", config.ServerURL)
-
-	projectId := ""  // todo needs more research; according to synopsis documentation
-	productURL := "" // relevant ids can be found in the logfile
-	err := record.AddKeyData("project",
+	project, err := sys.Client.GetProject(config.ProjectName)
+	if err != nil {
+		return "", fmt.Errorf("TR_DETECT: GetProject failed %v", err)
+	}
+	metadata := project.Metadata
+	projectURL := metadata.Href
+	if projectURL == "" {
+		return "", fmt.Errorf("TR_DETECT: no project URL")
+	}
+	// project UUID comes as last part of the URL
+	parts := strings.Split(projectURL, "/")
+	projectId := parts[len(parts)-1]
+	if projectId == "" {
+		return "", fmt.Errorf("TR_DETECT: no project id in %v", projectURL)
+	}
+	err = record.AddKeyData("project",
 		projectId,
 		config.ProjectName,
-		productURL)
+		projectURL)
 	if err != nil {
 		return "", err
 	}
