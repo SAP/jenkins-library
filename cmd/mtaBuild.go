@@ -151,6 +151,11 @@ func runMtaBuild(config mtaBuildOptions,
 		return err
 	}
 
+	err = updateGlobalSettingsProfile(config, utils)
+	if err != nil {
+		return err
+	}
+
 	err = utils.SetNpmRegistries(config.DefaultNpmRegistry)
 
 	mtaYamlFile := "mta.yaml"
@@ -277,7 +282,7 @@ func runMtaBuild(config mtaBuildOptions,
 	return err
 }
 
-func handleGlobalSettingsXMLUpdate(config mtaBuildOptions, utils mtaBuildUtils) error {
+func updateGlobalSettingsProfile(config mtaBuildOptions, utils mtaBuildUtils) error {
 
 	if len(config.GlobalSettingsFile) == 0 {
 		log.Entry().Infof("no global settings file found, skipping profile updation")
