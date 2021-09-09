@@ -69,30 +69,30 @@ type Settings struct {
 	Profiles struct {
 		Text    string `xml:",chardata"`
 		Profile []struct {
-			Text       string `xml:",chardata"`
-			ID         string `xml:"id,omitempty"`
-			Activation struct {
-				Text            string `xml:",chardata"`
-				ActiveByDefault string `xml:"activeByDefault,omitempty"`
-				Jdk             string `xml:"jdk,omitempty"`
-				Os              struct {
-					Text    string `xml:",chardata"`
-					Name    string `xml:"name,omitempty"`
-					Family  string `xml:"family,omitempty"`
-					Arch    string `xml:"arch,omitempty"`
-					Version string `xml:"version,omitempty"`
-				} `xml:"os,omitempty"`
-				Property struct {
-					Text  string `xml:",chardata"`
-					Name  string `xml:"name,omitempty"`
-					Value string `xml:"value,omitempty"`
-				} `xml:"property,omitempty"`
-				File struct {
-					Text    string `xml:",chardata"`
-					Exists  string `xml:"exists,omitempty"`
-					Missing string `xml:"missing,omitempty"`
-				} `xml:"file,omitempty"`
-			} `xml:"activation,omitempty"`
+			Text string `xml:",chardata"`
+			ID   string `xml:"id,omitempty"`
+			// Activation struct {
+			// 	Text            string `xml:",chardata"`
+			// 	ActiveByDefault string `xml:"activeByDefault,omitempty"`
+			// 	Jdk             string `xml:"jdk,omitempty"`
+			// 	Os              struct {
+			// 		Text    string `xml:",chardata"`
+			// 		Name    string `xml:"name,omitempty"`
+			// 		Family  string `xml:"family,omitempty"`
+			// 		Arch    string `xml:"arch,omitempty"`
+			// 		Version string `xml:"version,omitempty"`
+			// 	} `xml:"os,omitempty"`
+			// 	Property struct {
+			// 		Text  string `xml:",chardata"`
+			// 		Name  string `xml:"name,omitempty"`
+			// 		Value string `xml:"value,omitempty"`
+			// 	} `xml:"property,omitempty"`
+			// 	File struct {
+			// 		Text    string `xml:",chardata"`
+			// 		Exists  string `xml:"exists,omitempty"`
+			// 		Missing string `xml:"missing,omitempty"`
+			// 	} `xml:"file,omitempty"`
+			// } `xml:"activation,omitempty"`
 			Repositories struct {
 				Text       string `xml:",chardata"`
 				Repository []struct {
