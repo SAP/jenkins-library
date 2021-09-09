@@ -258,7 +258,6 @@ func runMtaBuild(config mtaBuildOptions,
 
 				config.AltDeploymentRepositoryURL += config.MtarGroup + "/" + mtarArtifactName + "/" + config.MtarVersion + "/" + fmt.Sprintf("%v-%v.%v", mtarArtifactName, config.MtarVersion, "mtar")
 
-				config.AltDeploymentRepositoryURL += "com/sap/test/test/12.8/test-12.8.mtar"
 				log.Entry().Infof("pushing mtar artifact to repository : %s", config.AltDeploymentRepositoryURL)
 
 				_, httpErr := downloadClient.UploadRequest(http.MethodPut, config.AltDeploymentRepositoryURL, mtarName, mtarName, headers, nil)
