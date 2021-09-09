@@ -105,10 +105,10 @@ func UpdateActiveProfileInSettingsXML(newActiveProfile string, utils SettingsDow
 		// activeProfile := ActiveProfileType{
 		// 	AcitveProfileType: newActiveProfile,
 		// }
-		projectSettings.Xsi = "http://www.w3.org/2001/XMLSchema-instance"
-		projectSettings.SchemaLocation = "http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd"
+		//projectSettings.Xsi = "http://www.w3.org/2001/XMLSchema-instance"
+		//projectSettings.SchemaLocation = "http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd"
 
-		projectSettings.ActiveProfiles.ActiveProfile = nil
+		//projectSettings.ActiveProfiles.ActiveProfile = nil
 		projectSettings.ActiveProfiles.ActiveProfile = append(projectSettings.ActiveProfiles.ActiveProfile, newActiveProfile)
 
 		settingsXml, err := xml.MarshalIndent(projectSettings, "", "    ")
