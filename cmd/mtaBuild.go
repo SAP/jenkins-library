@@ -215,7 +215,7 @@ func runMtaBuild(config mtaBuildOptions,
 		utils.AppendEnv([]string{"MAVEN_OPTS=-Dmaven.repo.local=" + absolutePath + " -P !snapshot.build,!milestone.build,release.build"})
 	}
 
-	utils.AppendEnv([]string{"MAVEN_OPTS= --activate-profiles !snapshot.build,!milestone.build,release.build"})
+	utils.AppendEnv([]string{"MAVEN_OPTS= -P !snapshot.build,!milestone.build,release.build"})
 
 	log.Entry().Infof("Executing mta build call: \"%s\"", strings.Join(call, " "))
 
