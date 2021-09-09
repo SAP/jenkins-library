@@ -24,15 +24,11 @@ const (
 	exporterPath = "/cnb/lifecycle/exporter"
 )
 
-var (
-	buildpacksPath = "/cnb/buildpacks"
-	orderPath      = "/cnb/order.toml"
-)
-
 type cnbBuildUtils interface {
 	command.ExecRunner
 	piperutils.FileUtils
 	docker.Download
+	RemoveAll(string) error
 	Getwd() (string, error)
 	GetDockerClient() docker.Download
 	GetFileUtils() cnbutils.CnbFileUtils
@@ -52,20 +48,20 @@ func (cnbutils *cnbBuildUtilsBundle) GetFileUtils() cnbutils.CnbFileUtils {
 	return cnbutils.Files
 }
 
-func setCustomBuildpacks(bpacks []string, dClient docker.Download, futils cnbutils.CnbFileUtils) error {
-	buildpacksPath = "/tmp/buildpacks"
-	orderPath = "/tmp/buildpacks/order.toml"
+func setCustomBuildpacks(bpacks []string, dClient docker.Download, futils cnbutils.CnbFileUtils) (string, string, error) {
+	buildpacksPath := "/tmp/buildpacks"
+	orderPath := "/tmp/buildpacks/order.toml"
 	newOrder, err := cnbutils.DownloadBuildpacks(buildpacksPath, bpacks, dClient, futils)
 	if err != nil {
-		return err
+		return "", "", err
 	}
 
 	err = newOrder.Save(orderPath)
 	if err != nil {
-		return err
+		return "", "", err
 	}
 
-	return nil
+	return buildpacksPath, orderPath, nil
 }
 
 func newCnbBuildUtils() cnbBuildUtils {
@@ -192,11 +188,14 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		}
 	}
 
+	var buildpacksPath = "/cnb/buildpacks"
+	var orderPath = "/cnb/order.toml"
+
 	if config.Buildpacks != nil && len(config.Buildpacks) != 0 {
 		log.Entry().Infof("Setting custom buildpacks: '%v'", config.Buildpacks)
-		err = setCustomBuildpacks(config.Buildpacks, utils.GetDockerClient(), utils.GetFileUtils())
-		defer os.RemoveAll(buildpacksPath)
-		defer os.RemoveAll(orderPath)
+		buildpacksPath, orderPath, err = setCustomBuildpacks(config.Buildpacks, utils.GetDockerClient(), utils.GetFileUtils())
+		defer utils.RemoveAll(buildpacksPath)
+		defer utils.RemoveAll(orderPath)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorBuild)
 			return errors.Wrapf(err, "Setting custom buildpacks: %v", config.Buildpacks)
