@@ -2,8 +2,10 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"path"
 	"strings"
@@ -19,6 +21,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/ghodss/yaml"
+	"github.com/pkg/errors"
 )
 
 const templateMtaYml = `_schema-version: "3.1"
@@ -231,6 +234,23 @@ func runMtaBuild(config mtaBuildOptions,
 		err = utils.InstallAllDependencies(config.DefaultNpmRegistry)
 		if err != nil {
 			return err
+		}
+	}
+
+	if config.Publish {
+		if (len(config.AltDeploymentRepositoryPassword) > 0) && (len(config.AltDeploymentRepositoryUser) > 0) &&
+			(len(config.AltDeploymentRepositoryURL) > 0) {
+			downloadClient := &piperhttp.Client{}
+			credentialsEncoded := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", config.AltDeploymentRepositoryUser, config.AltDeploymentRepositoryPassword)))
+			headers := http.Header{}
+			headers.Add("Authorization", credentialsEncoded)
+			_, httpErr := downloadClient.UploadFile(config.AltDeploymentRepositoryURL, mtarName, mtarName, headers, nil)
+			if httpErr != nil {
+				return errors.Wrap(err, "failed to upload mtar to repository")
+			}
+
+		} else {
+			return errors.New("altDeploymentRepositoryUser, altDeploymentRepositoryPassword, altDeploymentRepositoryURL and altDeploymentRepositoryID must be present")
 		}
 	}
 	return err

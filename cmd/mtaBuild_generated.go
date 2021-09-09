@@ -31,7 +31,6 @@ type mtaBuildOptions struct {
 	AltDeploymentRepositoryPassword string   `json:"altDeploymentRepositoryPassword,omitempty"`
 	AltDeploymentRepositoryUser     string   `json:"altDeploymentRepositoryUser,omitempty"`
 	AltDeploymentRepositoryURL      string   `json:"altDeploymentRepositoryUrl,omitempty"`
-	AltDeploymentRepositoryID       string   `json:"altDeploymentRepositoryID,omitempty"`
 	CustomTLSCertificateLinks       []string `json:"customTlsCertificateLinks,omitempty"`
 	Publish                         bool     `json:"publish,omitempty"`
 }
@@ -154,7 +153,6 @@ func addMtaBuildFlags(cmd *cobra.Command, stepConfig *mtaBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.AltDeploymentRepositoryPassword, "altDeploymentRepositoryPassword", os.Getenv("PIPER_altDeploymentRepositoryPassword"), "Password for the alternative deployment repository to which mtar artifacts will be publised")
 	cmd.Flags().StringVar(&stepConfig.AltDeploymentRepositoryUser, "altDeploymentRepositoryUser", os.Getenv("PIPER_altDeploymentRepositoryUser"), "User for the alternative deployment repository to which which mtar artifacts will be publised")
 	cmd.Flags().StringVar(&stepConfig.AltDeploymentRepositoryURL, "altDeploymentRepositoryUrl", os.Getenv("PIPER_altDeploymentRepositoryUrl"), "Url for the alternative deployment repository to which mtar artifacts will be publised")
-	cmd.Flags().StringVar(&stepConfig.AltDeploymentRepositoryID, "altDeploymentRepositoryID", os.Getenv("PIPER_altDeploymentRepositoryID"), "Id for the alternative deployment repository to which mtar artifacts will be publised")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List of download links to custom TLS certificates. This is required to ensure trusted connections to instances with repositories (like nexus) when publish flag is set to true.")
 	cmd.Flags().BoolVar(&stepConfig.Publish, "publish", false, "pushed mtar artifact to altDeploymentRepositoryUrl/altDeploymentRepositoryID when set to true")
 
@@ -322,20 +320,6 @@ func mtaBuildMetadata() config.StepData {
 						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_altDeploymentRepositoryUrl"),
-					},
-					{
-						Name: "altDeploymentRepositoryID",
-						ResourceRef: []config.ResourceReference{
-							{
-								Name:  "commonPipelineEnvironment",
-								Param: "custom/repositoryId",
-							},
-						},
-						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
-						Type:      "string",
-						Mandatory: false,
-						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_altDeploymentRepositoryID"),
 					},
 					{
 						Name:        "customTlsCertificateLinks",
