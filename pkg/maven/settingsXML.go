@@ -30,7 +30,8 @@ type ServersType struct {
 type Settings struct {
 	XMLName xml.Name `xml:"http://maven.apache.org/SETTINGS/1.0.0 settings"`
 	Text    string   `xml:",chardata"`
-	//Xmlns           xml.Attr `xml:"xmlns,attr"`
+	// Xmlns           xml.Attr `xml:"xmlns,attr"`
+	Xmlns           string `xml:"xmlns,attr"`
 	Xsi             string `xml:"xmlns:xsi,attr"`
 	SchemaLocation  string `xml:"xsi:schemaLocation,attr"`
 	LocalRepository string `xml:"localRepository,omitempty"`
