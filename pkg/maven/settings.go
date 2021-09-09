@@ -1,8 +1,10 @@
 package maven
 
 import (
+	"bytes"
 	"encoding/xml"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -86,50 +88,105 @@ func DownloadAndCopySettingsFiles(globalSettingsFile string, projectSettingsFile
 }
 
 func UpdateActiveProfileInSettingsXML(newActiveProfile string, utils SettingsDownloadUtils) error {
+	type activeProfiles struct {
+		activeProfile string `xml:"activeProfile"`
+	}
+
 	settingsFile, err := getGlobalSettingsFileDest()
 	if err != nil {
 		return err
 	}
-	var projectSettings Settings
-	settingsXMLContent, err := utils.FileRead(settingsFile)
-	if err != nil {
-		return fmt.Errorf("failed to read file '%v': %w", settingsFile, err)
-	}
-	err = xml.Unmarshal([]byte(settingsXMLContent), &projectSettings)
-	if err != nil {
-		return fmt.Errorf("failed to unmarshal settings xml file '%v': %w", settingsFile, err)
-	}
-	if len(projectSettings.ActiveProfiles.ActiveProfile) == 0 {
-		return fmt.Errorf("no active profile found to replace in settings xml '%v': %w", settingsFile, err)
-	} else {
-		// activeProfile := ActiveProfileType{
-		// 	AcitveProfileType: newActiveProfile,
-		// }
-		//projectSettings.Xsi = "http://www.w3.org/2001/XMLSchema-instance"
-		//projectSettings.SchemaLocation = "http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd"
+	settingsXMLContent, err := os.Open(settingsFile)
+	var buf bytes.Buffer
+	decoder := xml.NewDecoder(settingsXMLContent)
+	encoder := xml.NewEncoder(&buf)
 
-		//projectSettings.ActiveProfiles.ActiveProfile = nil
-		projectSettings.ActiveProfiles.ActiveProfile = append(projectSettings.ActiveProfiles.ActiveProfile, newActiveProfile)
-
-		settingsXml, err := xml.MarshalIndent(projectSettings, "", "    ")
-		if err != nil {
-			return fmt.Errorf("failed to marshal maven project settings xml: %w", err)
+	for {
+		token, err := decoder.Token()
+		if err == io.EOF {
+			break
 		}
-		settingsXmlString := string(settingsXml)
-		Replacer := strings.NewReplacer("&#xA;", "", "&#x9;", "")
-		settingsXmlString = Replacer.Replace(settingsXmlString)
-
-		xmlstring := []byte(xml.Header + settingsXmlString)
-
-		err = utils.FileWrite(".pipeline/mavenProjectSettings.xml", xmlstring, 0777)
-
-		err = utils.FileWrite(settingsFile, xmlstring, 0777)
 		if err != nil {
-			return fmt.Errorf("failed to write maven Settings xml: %w", err)
+
+			break
 		}
-		log.Entry().Infof("Successfully updated <acitveProfile> details in maven project settings file : '%s'", settingsFile)
+
+		switch v := token.(type) {
+		case xml.StartElement:
+			if v.Name.Local == "activeProfile" {
+				var profile activeProfiles
+				if err = decoder.DecodeElement(&profile, &v); err != nil {
+					log.Entry().Debugf("error decoding active profile element : %w", err)
+				}
+				// modify the version value and encode the element back
+				profile.activeProfile = newActiveProfile
+				if err = encoder.EncodeElement(profile, v); err != nil {
+					log.Entry().Debugf("error encoding active profile element : %w", err)
+				}
+				continue
+			}
+
+			if err := encoder.EncodeToken(xml.CopyToken(token)); err != nil {
+				log.Entry().Debugf("error encoding token : %w", err)
+			}
+		}
 
 	}
+
+	// must call flush, otherwise some elements will be missing
+	if err := encoder.Flush(); err != nil {
+		log.Entry().Debugf("error flushing elements : %w", err)
+	}
+
+	err = utils.FileWrite(settingsFile, []byte(buf.String()), 0777)
+	if err != nil {
+		return err
+	}
+
+	err = utils.FileWrite(".pipeline/mavenProjectSettings.xml", []byte(buf.String()), 0777)
+
+	// fmt.Println(buf.String())
+
+	// var projectSettings Settings
+	// settingsXMLContent, err := utils.FileRead(settingsFile)
+	// if err != nil {
+	// 	return fmt.Errorf("failed to read file '%v': %w", settingsFile, err)
+	// }
+	// err = xml.Unmarshal([]byte(settingsXMLContent), &projectSettings)
+	// if err != nil {
+	// 	return fmt.Errorf("failed to unmarshal settings xml file '%v': %w", settingsFile, err)
+	// }
+	// if len(projectSettings.ActiveProfiles.ActiveProfile) == 0 {
+	// 	return fmt.Errorf("no active profile found to replace in settings xml '%v': %w", settingsFile, err)
+	// } else {
+	// 	// activeProfile := ActiveProfileType{
+	// 	// 	AcitveProfileType: newActiveProfile,
+	// 	// }
+	// 	//projectSettings.Xsi = "http://www.w3.org/2001/XMLSchema-instance"
+	// 	//projectSettings.SchemaLocation = "http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd"
+
+	// 	//projectSettings.ActiveProfiles.ActiveProfile = nil
+	// 	projectSettings.ActiveProfiles.ActiveProfile = append(projectSettings.ActiveProfiles.ActiveProfile, newActiveProfile)
+
+	// 	settingsXml, err := xml.MarshalIndent(projectSettings, "", "    ")
+	// 	if err != nil {
+	// 		return fmt.Errorf("failed to marshal maven project settings xml: %w", err)
+	// 	}
+	// 	settingsXmlString := string(settingsXml)
+	// 	Replacer := strings.NewReplacer("&#xA;", "", "&#x9;", "")
+	// 	settingsXmlString = Replacer.Replace(settingsXmlString)
+
+	// 	xmlstring := []byte(xml.Header + settingsXmlString)
+
+	// 	err = utils.FileWrite(".pipeline/mavenProjectSettings.xml", xmlstring, 0777)
+
+	// 	err = utils.FileWrite(settingsFile, xmlstring, 0777)
+	// 	if err != nil {
+	// 		return fmt.Errorf("failed to write maven Settings xml: %w", err)
+	// 	}
+	// 	log.Entry().Infof("Successfully updated <acitveProfile> details in maven project settings file : '%s'", settingsFile)
+
+	// }
 	return nil
 }
 

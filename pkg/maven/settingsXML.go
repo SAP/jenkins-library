@@ -19,23 +19,23 @@ type ServersType struct {
 	ServerType []Server `xml:"server,omitempty"`
 }
 
-type ActiveProfileType struct {
-	AcitveProfileType string `xml:"activeProfile,omitempty"`
-}
+// type ActiveProfileType struct {
+// 	AcitveProfileType string `xml:"activeProfile,omitempty"`
+// }
 
-type ActiveProfilesType struct {
-	ActiveProfilesType []ActiveProfileType `xml:"activeProfiles,omitempty"`
-}
+// type ActiveProfilesType struct {
+// 	ActiveProfilesType []ActiveProfileType `xml:"activeProfiles,omitempty"`
+// }
 
 type Settings struct {
-	XMLName         xml.Name `xml:"http://maven.apache.org/SETTINGS/1.0.0 settings"`
-	Text            string   `xml:",chardata"`
-	Xmlns           xml.Attr `xml:"xmlns,attr"`
-	Xsi             string   `xml:"xmlns:xsi,attr"`
-	SchemaLocation  string   `xml:"xsi:schemaLocation,attr"`
-	LocalRepository string   `xml:"localRepository,omitempty"`
-	InteractiveMode string   `xml:"interactiveMode,omitempty"`
-	Offline         string   `xml:"offline,omitempty"`
+	XMLName xml.Name `xml:"http://maven.apache.org/SETTINGS/1.0.0 settings"`
+	Text    string   `xml:",chardata"`
+	//Xmlns           xml.Attr `xml:"xmlns,attr"`
+	Xsi             string `xml:"xmlns:xsi,attr"`
+	SchemaLocation  string `xml:"xsi:schemaLocation,attr"`
+	LocalRepository string `xml:"localRepository,omitempty"`
+	InteractiveMode string `xml:"interactiveMode,omitempty"`
+	Offline         string `xml:"offline,omitempty"`
 	PluginGroups    struct {
 		Text        string `xml:",chardata"`
 		PluginGroup string `xml:"pluginGroup,omitempty"`
@@ -137,5 +137,4 @@ type Settings struct {
 		Text          string   `xml:",chardata"`
 		ActiveProfile []string `xml:"activeProfile,omitempty"`
 	} `xml:"activeProfiles,omitempty"`
-	/* ActiveProfiles ActiveProfilesType `xml:"activeProfiles,omitempty"` */
 }
