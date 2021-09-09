@@ -244,7 +244,7 @@ func runMtaBuild(config mtaBuildOptions,
 			credentialsEncoded := "Basic " + base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", config.AltDeploymentRepositoryUser, config.AltDeploymentRepositoryPassword)))
 			headers := http.Header{}
 			headers.Add("Authorization", credentialsEncoded)
-			config.AltDeploymentRepositoryURL += "com/sap/test/test/12.7/mta-sample1-12.7.mtar"
+			config.AltDeploymentRepositoryURL += "com/sap/test/test/12.7/test-12.7.mtar"
 			_, httpErr := downloadClient.UploadRequest(http.MethodPut, config.AltDeploymentRepositoryURL, mtarName, "PiperTest", headers, nil)
 			if httpErr != nil {
 				return errors.Wrap(err, "failed to upload mtar to repository")
