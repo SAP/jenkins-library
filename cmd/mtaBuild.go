@@ -241,7 +241,7 @@ func runMtaBuild(config mtaBuildOptions,
 		log.Entry().Infof("publish detected")
 		if (len(config.AltDeploymentRepositoryPassword) > 0) && (len(config.AltDeploymentRepositoryUser) > 0) &&
 			(len(config.AltDeploymentRepositoryURL) > 0) {
-			if (len(config.MtarGroup) > 0) && (len(config.MtarVersion) > 0) {
+			if (len(config.MtarGroup) > 0) && (len(config.Version) > 0) {
 				downloadClient := &piperhttp.Client{}
 
 				credentialsEncoded := "Basic " + base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", config.AltDeploymentRepositoryUser, config.AltDeploymentRepositoryPassword)))
@@ -256,7 +256,7 @@ func runMtaBuild(config mtaBuildOptions,
 
 				//mtarName = strings.ReplaceAll(mtarName, ".mtar", "")
 
-				config.AltDeploymentRepositoryURL += config.MtarGroup + "/" + mtarArtifactName + "/" + config.MtarVersion + "/" + fmt.Sprintf("%v-%v.%v", mtarArtifactName, config.MtarVersion, "mtar")
+				config.AltDeploymentRepositoryURL += config.MtarGroup + "/" + mtarArtifactName + "/" + config.Version + "/" + fmt.Sprintf("%v-%v.%v", mtarArtifactName, config.Version, "mtar")
 
 				log.Entry().Infof("pushing mtar artifact to repository : %s", config.AltDeploymentRepositoryURL)
 
@@ -265,7 +265,7 @@ func runMtaBuild(config mtaBuildOptions,
 					return errors.Wrap(err, "failed to upload mtar to repository")
 				}
 			} else {
-				return errors.New("mtarGroup, mtarVersion not found and must be present")
+				return errors.New("mtarGroup, version not found and must be present")
 
 			}
 

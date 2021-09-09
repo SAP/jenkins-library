@@ -24,7 +24,7 @@ spec:
           - STEPS
         mandatory: false
         default:
-      - name: mtarVersion
+      - name: version
         aliases:
           - name: artifactVersion
         type: string
