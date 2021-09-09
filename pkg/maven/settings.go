@@ -99,14 +99,14 @@ func UpdateActiveProfileInSettingsXML(newActiveProfile string, utils SettingsDow
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal settings xml file '%v': %w", settingsFile, err)
 	}
-	if len(projectSettings.ActiveProfiles.ActiveProfilesType) == 0 {
+	if len(projectSettings.ActiveProfiles.ActiveProfile) == 0 {
 		return fmt.Errorf("no active profile found to replace in settings xml '%v': %w", settingsFile, err)
 	} else {
-		activeProfile := ActiveProfileType{
-			AcitveProfileType: newActiveProfile,
-		}
-		projectSettings.ActiveProfiles.ActiveProfilesType = nil
-		projectSettings.ActiveProfiles.ActiveProfilesType = append(projectSettings.ActiveProfiles.ActiveProfilesType, activeProfile)
+		// activeProfile := ActiveProfileType{
+		// 	AcitveProfileType: newActiveProfile,
+		// }
+		projectSettings.ActiveProfiles.ActiveProfile = nil
+		projectSettings.ActiveProfiles.ActiveProfile = append(projectSettings.ActiveProfiles.ActiveProfile, newActiveProfile)
 
 		settingsXml, err := xml.MarshalIndent(projectSettings, "", "    ")
 		if err != nil {
