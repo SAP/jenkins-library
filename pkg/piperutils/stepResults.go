@@ -52,8 +52,9 @@ func PersistReportsAndLinks(stepName, workspace string, reports, links []Path, g
 	if gcsClient != nil {
 		for _, report := range reports {
 			if err := gcsClient.UploadFile(report.Target); err != nil {
-				log.Entry().Fatalln("Failed to upload report to GCS")
+				log.Entry().Fatalf("Failed to upload report to GCS: %v", err)
 			}
+			log.Entry().Infof("Report %s was uploaded to GCS", report.Target)
 		}
 	}
 }

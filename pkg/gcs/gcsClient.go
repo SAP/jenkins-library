@@ -83,7 +83,12 @@ func (g *gcsClient) cleanupEnv() error {
 
 // UploadFile uploads a file into a google cloud storage bucket
 func (g *gcsClient) UploadFile(sourcePath string) error {
-	targetPath := strings.Trim(g.targetFolder, "/") + "/" + strings.TrimPrefix(sourcePath, "/")
+	sourcePath = strings.TrimPrefix(sourcePath, "/")
+	targetPath := sourcePath
+	targetFolder := strings.Trim(g.targetFolder, "/")
+	if targetFolder != "" {
+		targetPath = targetFolder + "/" + sourcePath
+	}
 	target := g.client.Bucket(g.bucketID).Object(targetPath).NewWriter(g.context)
 	log.Entry().Debugf("uploading %v to %v\n", sourcePath, targetPath)
 	sourceFile, err := g.openFile(sourcePath)
