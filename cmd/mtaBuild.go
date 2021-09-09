@@ -252,6 +252,8 @@ func runMtaBuild(config mtaBuildOptions,
 
 				config.AltDeploymentRepositoryURL += config.MtarGroup + "/" + mtarName + "/" + config.MtarVersion + "/" + fmt.Sprintf("%v-%v.%v", config.MtarName, config.MtarVersion, "mtar")
 
+				log.Entry().Infof("pushing mtar artifact to repository : %s", config.AltDeploymentRepositoryURL)
+
 				_, httpErr := downloadClient.UploadRequest(http.MethodPut, config.AltDeploymentRepositoryURL, mtarName, mtarName, headers, nil)
 				if httpErr != nil {
 					return errors.Wrap(err, "failed to upload mtar to repository")
