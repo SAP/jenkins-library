@@ -151,10 +151,10 @@ func runMtaBuild(config mtaBuildOptions,
 		return err
 	}
 
-	// err = updateGlobalSettingsProfile(config, utils)
-	// if err != nil {
-	// 	return err
-	// }
+	err = updateGlobalSettingsProfile(config, utils)
+	if err != nil {
+		return err
+	}
 
 	err = utils.SetNpmRegistries(config.DefaultNpmRegistry)
 

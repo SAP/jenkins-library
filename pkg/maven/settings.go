@@ -145,7 +145,7 @@ func UpdateActiveProfileInSettingsXML(newActiveProfile string, utils SettingsDow
 
 	// fmt.Println(buf.String())
 
-	var projectSettings Settings
+	var projectSettings *Settings
 	settingsXMLContent, err := utils.FileRead(settingsFile)
 	if err != nil {
 		return fmt.Errorf("failed to read file '%v': %w", settingsFile, err)
