@@ -172,7 +172,7 @@ func UpdateActiveProfileInSettingsXML(newActiveProfile string, utils SettingsDow
 			return fmt.Errorf("failed to marshal maven project settings xml: %w", err)
 		}
 		settingsXmlString := string(settingsXml)
-		Replacer := strings.NewReplacer("&#xA;", "", "&#x9;", "")
+		Replacer := strings.NewReplacer("&#xA;", "", "&#x9;", "", "*", "", ",", "", "!", "")
 		settingsXmlString = Replacer.Replace(settingsXmlString)
 
 		xmlstring := []byte(xml.Header + settingsXmlString)
