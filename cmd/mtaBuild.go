@@ -240,18 +240,27 @@ func runMtaBuild(config mtaBuildOptions,
 	if config.Publish {
 		if (len(config.AltDeploymentRepositoryPassword) > 0) && (len(config.AltDeploymentRepositoryUser) > 0) &&
 			(len(config.AltDeploymentRepositoryURL) > 0) {
-			downloadClient := &piperhttp.Client{}
-			credentialsEncoded := "Basic " + base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", config.AltDeploymentRepositoryUser, config.AltDeploymentRepositoryPassword)))
-			headers := http.Header{}
-			headers.Add("Authorization", credentialsEncoded)
-			config.AltDeploymentRepositoryURL += "com/sap/test/test/12.7/test-12.7.mtar"
-			_, httpErr := downloadClient.UploadRequest(http.MethodPut, config.AltDeploymentRepositoryURL, mtarName, "PiperTest", headers, nil)
-			if httpErr != nil {
-				return errors.Wrap(err, "failed to upload mtar to repository")
+			if (len(config.MtarGroup) > 0) && (len(config.MtarVersion) > 0) {
+				downloadClient := &piperhttp.Client{}
+
+				credentialsEncoded := "Basic " + base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", config.AltDeploymentRepositoryUser, config.AltDeploymentRepositoryPassword)))
+				headers := http.Header{}
+				headers.Add("Authorization", credentialsEncoded)
+
+				config.MtarGroup = strings.ReplaceAll(config.MtarGroup, ".", "/")
+
+				config.AltDeploymentRepositoryURL += config.MtarGroup + "/" + mtarName + "/" + config.MtarVersion + "/" + fmt.Sprintf("%v-%v.%v", config.MtarName, config.MtarVersion, "mtar")
+
+				_, httpErr := downloadClient.UploadRequest(http.MethodPut, config.AltDeploymentRepositoryURL, mtarName, mtarName, headers, nil)
+				if httpErr != nil {
+					return errors.Wrap(err, "failed to upload mtar to repository")
+				}
+			} else {
+				return errors.New("mtarGroup, mtarVersion not found and must be present")
 			}
 
 		} else {
-			return errors.New("altDeploymentRepositoryUser, altDeploymentRepositoryPassword, altDeploymentRepositoryURL and altDeploymentRepositoryID must be present")
+			return errors.New("altDeploymentRepositoryUser, altDeploymentRepositoryPassword and altDeploymentRepositoryURL not found , must be present")
 		}
 	}
 	return err

@@ -15,6 +15,27 @@ spec:
           - STEPS
         mandatory: false
         default:
+      - name: mtarGroup
+        type: string
+        description: "The group to which the mtar artifact will be uploaded. Required when publish is True."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: false
+        default:
+      - name: mtarVersion
+        aliases:
+          - name: artifactVersion
+        type: string
+        description: Version of the mtar artifact
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: artifactVersion
       - name: extensions
         type: string
         description: "The path to the extension descriptor file."
