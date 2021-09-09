@@ -256,11 +256,11 @@ func runMtaBuild(config mtaBuildOptions,
 					return errors.Wrap(err, "failed to upload mtar to repository")
 				}
 			} else {
-				return errors.New("mtarGroup, mtarVersion not found and must be present")
+				return errors.Wrap(nil, "mtarGroup, mtarVersion not found and must be present")
 			}
 
 		} else {
-			return errors.New("altDeploymentRepositoryUser, altDeploymentRepositoryPassword and altDeploymentRepositoryURL not found , must be present")
+			return errors.Wrap(nil, "altDeploymentRepositoryUser, altDeploymentRepositoryPassword and altDeploymentRepositoryURL not found , must be present")
 		}
 	}
 	return err
