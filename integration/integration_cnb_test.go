@@ -26,7 +26,7 @@ func TestNpmProject(t *testing.T) {
 func TestNpmCustomBuildpacksProject(t *testing.T) {
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
-		Image:   "paketobuildpacks/builder:full",
+		Image:   "paketobuildpacks/builder:buildpackless-full",
 		User:    "cnb",
 		TestDir: []string{"testdata", "TestMtaIntegration", "npm"},
 	})

@@ -19,7 +19,6 @@ import (
 )
 
 const (
-	planPath     = "/tmp/plan.toml"
 	detectorPath = "/cnb/lifecycle/detector"
 	builderPath  = "/cnb/lifecycle/builder"
 	exporterPath = "/cnb/lifecycle/exporter"
@@ -32,27 +31,31 @@ var (
 
 type cnbBuildUtils interface {
 	command.ExecRunner
-
-	FileExists(filename string) (bool, error)
-	FileRead(path string) ([]byte, error)
-	FileWrite(path string, content []byte, perm os.FileMode) error
-	MkdirAll(path string, perm os.FileMode) error
+	piperutils.FileUtils
+	docker.Download
 	Getwd() (string, error)
-	Glob(pattern string) (matches []string, err error)
-	Copy(src, dest string) (int64, error)
-	SetCustomBuildpacks(bpacks []string) error
+	GetDockerClient() docker.Download
+	GetFileUtils() cnbutils.CnbFileUtils
 }
 
 type cnbBuildUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
-	dockerClient docker.Client
+	*docker.Client
 }
 
-func (cutils cnbBuildUtilsBundle) SetCustomBuildpacks(bpacks []string) error {
+func (cnbutils *cnbBuildUtilsBundle) GetDockerClient() docker.Download {
+	return cnbutils.Client
+}
+
+func (cnbutils *cnbBuildUtilsBundle) GetFileUtils() cnbutils.CnbFileUtils {
+	return cnbutils.Files
+}
+
+func setCustomBuildpacks(bpacks []string, dClient docker.Download, futils cnbutils.CnbFileUtils) error {
 	buildpacksPath = "/tmp/buildpacks"
 	orderPath = "/tmp/buildpacks/order.toml"
-	newOrder, err := cnbutils.DownloadBuildpacks(buildpacksPath, bpacks, cutils.dockerClient, cutils.Files)
+	newOrder, err := cnbutils.DownloadBuildpacks(buildpacksPath, bpacks, dClient, futils)
 	if err != nil {
 		return err
 	}
@@ -67,9 +70,9 @@ func (cutils cnbBuildUtilsBundle) SetCustomBuildpacks(bpacks []string) error {
 
 func newCnbBuildUtils() cnbBuildUtils {
 	utils := cnbBuildUtilsBundle{
-		Command:      &command.Command{},
-		Files:        &piperutils.Files{},
-		dockerClient: docker.Client{},
+		Command: &command.Command{},
+		Files:   &piperutils.Files{},
+		Client:  &docker.Client{},
 	}
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
@@ -191,7 +194,9 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 
 	if config.Buildpacks != nil && len(config.Buildpacks) != 0 {
 		log.Entry().Infof("Setting custom buildpacks: '%v'", config.Buildpacks)
-		err = utils.SetCustomBuildpacks(config.Buildpacks)
+		err = setCustomBuildpacks(config.Buildpacks, utils.GetDockerClient(), utils.GetFileUtils())
+		defer os.RemoveAll(buildpacksPath)
+		defer os.RemoveAll(orderPath)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorBuild)
 			return errors.Wrapf(err, "Setting custom buildpacks: %v", config.Buildpacks)
@@ -222,13 +227,13 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		return errors.New("containerRegistryUrl, containerImageName and containerImageTag must be present")
 	}
 
-	err = utils.RunExecutable(detectorPath, "-buildpacks", buildpacksPath, "-order", orderPath, "-plan", planPath)
+	err = utils.RunExecutable(detectorPath, "-buildpacks", buildpacksPath, "-order", orderPath)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
 		return errors.Wrap(err, fmt.Sprintf("execution of '%s' failed", detectorPath))
 	}
 
-	err = utils.RunExecutable(builderPath, "-buildpacks", buildpacksPath, "-plan", planPath)
+	err = utils.RunExecutable(builderPath, "-buildpacks", buildpacksPath)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
 		return errors.Wrap(err, fmt.Sprintf("execution of '%s' failed", builderPath))

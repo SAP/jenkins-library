@@ -9,25 +9,9 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/docker"
 	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
-type BuildPackMetadata struct {
-	ID          string    `json:"id,omitempty"`
-	Name        string    `json:"name,omitempty"`
-	Version     string    `json:"version,omitempty"`
-	Description string    `json:"description,omitempty"`
-	Homepage    string    `json:"homepage,omitempty"`
-	Keywords    []string  `json:"keywords,omitempty"`
-	Licenses    []License `json:"licenses,omitempty"`
-}
-
-type License struct {
-	Type string `json:"type"`
-	URI  string `json:"uri"`
-}
-
-func DownloadBuildpacks(path string, bpacks []string, dClient docker.Client, fileutils *piperutils.Files) (Order, error) {
+func DownloadBuildpacks(path string, bpacks []string, dClient docker.Download, fileutils CnbFileUtils) (Order, error) {
 	var order Order
 	for _, bpack := range bpacks {
 		var bpackMeta BuildPackMetadata
@@ -72,7 +56,7 @@ func DownloadBuildpacks(path string, bpacks []string, dClient docker.Client, fil
 	return order, nil
 }
 
-func copyBuildPack(src, dst string, futils *piperutils.Files) error {
+func copyBuildPack(src, dst string, futils CnbFileUtils) error {
 	buildpacks, err := futils.Glob(filepath.Join(src, "*"))
 	if err != nil {
 		return fmt.Errorf("failed to read directory: %s, error: %s", src, err.Error())
@@ -86,7 +70,7 @@ func copyBuildPack(src, dst string, futils *piperutils.Files) error {
 		for _, srcVersionPath := range versions {
 			destVersionPath := filepath.Join(dst, strings.ReplaceAll(srcVersionPath, src, ""))
 
-			exists, err := futils.DirExists(destVersionPath)
+			exists, err := futils.FileExists(destVersionPath)
 			if err != nil {
 				return fmt.Errorf("failed to check if directory exists: '%s', error: '%s'", destVersionPath, err.Error())
 			}
