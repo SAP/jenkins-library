@@ -92,7 +92,7 @@ void call(Map parameters = [:]) {
                     echo "[${STEP_NAME}] No Docker daemon available, thus switching to Kaniko build"
                 }
                 if (config.buildTool == 'kaniko'){
-                    kanikoExecute script: script, containerImageNameAndTag: containerImageNameAndTag
+                    kanikoExecute script: script
                 }else{
                     ConfigurationHelper.newInstance(this, config)
                                     .withMandatoryProperty('dockerImageName')
