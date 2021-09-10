@@ -262,6 +262,8 @@ func runMtaBuild(config mtaBuildOptions,
 
 				config.AltDeploymentRepositoryURL += config.MtarGroup + "/" + mtarArtifactName + "/" + config.Version + "/" + fmt.Sprintf("%v-%v.%v", mtarArtifactName, config.Version, "mtar")
 
+				commonPipelineEnvironment.custom.mtarPublishedURL = config.AltDeploymentRepositoryURL
+
 				log.Entry().Infof("pushing mtar artifact to repository : %s", config.AltDeploymentRepositoryURL)
 
 				_, httpErr := downloadClient.UploadRequest(http.MethodPut, config.AltDeploymentRepositoryURL, mtarName, mtarName, headers, nil)
@@ -290,7 +292,7 @@ func updateGlobalSettingsProfile(config mtaBuildOptions, utils mtaBuildUtils) er
 
 	} else {
 		if len(config.Profiles) > 0 {
-			return maven.UpdateActiveProfileInSettingsXML(config.Profiles[0], utils)
+			return maven.UpdateActiveProfileInSettingsXML(config.Profiles, utils)
 		}
 
 	}

@@ -205,5 +205,6 @@ spec:
         type: piperEnvironment
         params:
           - name: mtarFilePath
+          - name: custom/mtarPublishedUrl
   containers:
     - image: devxci/mbtci:1.1.1

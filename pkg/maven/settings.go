@@ -85,65 +85,12 @@ func DownloadAndCopySettingsFiles(globalSettingsFile string, projectSettingsFile
 	return nil
 }
 
-func UpdateActiveProfileInSettingsXML(newActiveProfile string, utils SettingsDownloadUtils) error {
-	// type activeProfiles struct {
-	// 	activeProfile string `xml:"activeProfile"`
-	// }
+func UpdateActiveProfileInSettingsXML(newActiveProfiles []string, utils SettingsDownloadUtils) error {
 
 	settingsFile, err := getGlobalSettingsFileDest()
 	if err != nil {
 		return err
 	}
-	// settingsXMLContent, err := os.Open(settingsFile)
-	// var buf bytes.Buffer
-	// decoder := xml.NewDecoder(settingsXMLContent)
-	// encoder := xml.NewEncoder(&buf)
-
-	// for {
-	// 	token, err := decoder.Token()
-	// 	if err == io.EOF {
-	// 		break
-	// 	}
-	// 	if err != nil {
-
-	// 		break
-	// 	}
-
-	// 	switch v := token.(type) {
-	// 	case xml.StartElement:
-	// 		if v.Name.Local == "activeProfile" {
-	// 			var profile activeProfiles
-	// 			if err = decoder.DecodeElement(&profile, &v); err != nil {
-	// 				log.Entry().Debugf("error decoding active profile element : %w", err)
-	// 			}
-	// 			// modify the version value and encode the element back
-	// 			profile.activeProfile = newActiveProfile
-	// 			if err = encoder.EncodeElement(profile, v); err != nil {
-	// 				log.Entry().Debugf("error encoding active profile element : %w", err)
-	// 			}
-	// 			continue
-	// 		}
-
-	// 		if err := encoder.EncodeToken(xml.CopyToken(token)); err != nil {
-	// 			log.Entry().Debugf("error encoding token : %w", err)
-	// 		}
-	// 	}
-
-	// }
-
-	// // must call flush, otherwise some elements will be missing
-	// if err := encoder.Flush(); err != nil {
-	// 	log.Entry().Debugf("error flushing elements : %w", err)
-	// }
-
-	// err = utils.FileWrite(settingsFile, []byte(buf.String()), 0777)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// err = utils.FileWrite(".pipeline/mavenProjectSettings.xml", []byte(buf.String()), 0777)
-
-	// fmt.Println(buf.String())
 
 	var projectSettings *Settings
 	settingsXMLContent, err := utils.FileRead(settingsFile)
@@ -157,15 +104,13 @@ func UpdateActiveProfileInSettingsXML(newActiveProfile string, utils SettingsDow
 	if len(projectSettings.ActiveProfiles.ActiveProfile) == 0 {
 		return fmt.Errorf("no active profile found to replace in settings xml '%v': %w", settingsFile, err)
 	} else {
-		// activeProfile := ActiveProfileType{
-		// 	AcitveProfileType: newActiveProfile,
-		// }
+
 		projectSettings.Xsi = "http://www.w3.org/2001/XMLSchema-instance"
 		projectSettings.SchemaLocation = "http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd"
-		//projectSettings.Xmlns = "http://maven.apache.org/SETTINGS/1.0.0"
 
 		projectSettings.ActiveProfiles.ActiveProfile = nil
-		projectSettings.ActiveProfiles.ActiveProfile = append(projectSettings.ActiveProfiles.ActiveProfile, newActiveProfile)
+
+		projectSettings.ActiveProfiles.ActiveProfile = append(projectSettings.ActiveProfiles.ActiveProfile, newActiveProfiles...)
 
 		settingsXml, err := xml.MarshalIndent(projectSettings, "", "    ")
 		if err != nil {
@@ -176,9 +121,6 @@ func UpdateActiveProfileInSettingsXML(newActiveProfile string, utils SettingsDow
 		settingsXmlString = Replacer.Replace(settingsXmlString)
 
 		xmlstring := []byte(xml.Header + settingsXmlString)
-
-		fmt.Println(xml.Header + settingsXmlString)
-		err = utils.FileWrite(".pipeline/mavenProjectSettings.xml", xmlstring, 0777)
 
 		err = utils.FileWrite(settingsFile, xmlstring, 0777)
 		if err != nil {
