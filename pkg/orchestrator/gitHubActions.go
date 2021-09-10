@@ -21,6 +21,11 @@ func (a *GitHubActionsConfigProvider) GetLog() ([]byte, error) {
 	return nil, nil
 }
 
+func (a *GitHubActionsConfigProvider) GetPipelineStartTime() string {
+	log.Entry().Infof("GetPipelineStartTime() for GitHub Actions not yet implemented.")
+	return "n/a"
+}
+
 func (g *GitHubActionsConfigProvider) GetBranch() string {
 	return strings.TrimPrefix(getEnv("GITHUB_REF", "n/a"), "refs/heads/")
 }

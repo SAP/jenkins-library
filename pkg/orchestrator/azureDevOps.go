@@ -1,8 +1,12 @@
 package orchestrator
 
 import (
+	"fmt"
+	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"io/ioutil"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -17,8 +21,62 @@ func (a *AzureDevOpsConfigProvider) OrchestratorType() string {
 }
 
 func (a *AzureDevOpsConfigProvider) GetLog() ([]byte, error) {
-	log.Entry().Infof("GetLog() for Azure not yet implemented.")
-	return nil, nil
+
+	URL := a.GetSystemCollectionURI() + a.GetTeamProjectId() + "/_apis/build/builds/" + a.GetBuildId() + "/logs"
+	//URL = "https://dev.azure.com/hyperspace-pipelines/8d6e7755-9b5a-4036-a67e-33b95cda3a3f/_apis/build/builds/7804/logs"
+
+	client := &piperHttp.Client{}
+	options := piperHttp.ClientOptions{
+		// We do not need a username, but the http package does only create the base64 encoded
+		// string if the username is larger than 0. So we misuse the username for the PAT.
+		Username: "fbntcoh4ttplq6xa4uqjpwaqckmdmnvvu3gebpuah7zmycskygla",
+		Password: "",
+	}
+	client.SetOptions(options)
+	response, err := client.GetRequest(URL, nil, nil)
+	if err != nil {
+		fmt.Println(err)
+	}
+	var responseInterface map[string]interface{}
+	err = piperHttp.ParseHTTPResponseBodyJSON(response, &responseInterface)
+	if err != nil {
+		fmt.Println(err)
+	}
+	// check if response interface is empty or non-existent
+	logCount := int(responseInterface["count"].(float64))
+
+	logs := []byte{}
+
+	for i := 1; i <= logCount; i++ {
+		counter := strconv.Itoa(i)
+		logURL := URL + "/" + counter
+		fmt.Println("logURL: ", logURL)
+		log.Entry().Debugf("Getting log no.: %d  from %v", i, logURL)
+		response, err := client.GetRequest(logURL, nil, nil)
+		if err != nil {
+			fmt.Println(err)
+		}
+		content, err := ioutil.ReadAll(response.Body)
+		logs = append(logs, content...)
+	}
+
+	return logs, nil
+}
+
+func (a *AzureDevOpsConfigProvider) GetPipelineStartTime() string {
+	return getEnv("SYSTEM_PIPELINESTARTTIME", "n/a")
+}
+
+func (a *AzureDevOpsConfigProvider) GetSystemCollectionURI() string {
+	return getEnv("SYSTEM_COLLECTIONURI", "n/a")
+}
+
+func (a *AzureDevOpsConfigProvider) GetTeamProjectId() string {
+	return getEnv("SYSTEM_TEAMPROJECTID", "n/a")
+}
+
+func (a *AzureDevOpsConfigProvider) GetBuildId() string {
+	return getEnv("BUILD_BUILDID", "n/a")
 }
 
 func (a *AzureDevOpsConfigProvider) GetBranch() string {

@@ -28,6 +28,11 @@ func (j *JenkinsConfigProvider) GetLog() ([]byte, error) {
 	return logFile, nil
 }
 
+func (a *JenkinsConfigProvider) GetPipelineStartTime() string {
+	log.Entry().Infof("GetPipelineStartTime() for Jenkins not yet implemented.")
+	return "n/a"
+}
+
 func (j *JenkinsConfigProvider) GetJobName() string {
 	return getEnv("JOB_NAME", "n/a")
 }

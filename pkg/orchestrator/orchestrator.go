@@ -26,6 +26,7 @@ type OrchestratorSpecificConfigProviding interface {
 	GetRepoUrl() string
 	IsPullRequest() bool
 	GetLog() ([]byte, error)
+	GetPipelineStartTime() string
 }
 
 type PullRequestConfig struct {
