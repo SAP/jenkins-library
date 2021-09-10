@@ -123,6 +123,7 @@ func UpdateActiveProfileInSettingsXML(newActiveProfiles []string, utils Settings
 		xmlstring := []byte(xml.Header + settingsXmlString)
 
 		err = utils.FileWrite(settingsFile, xmlstring, 0777)
+		err = utils.FileWrite(".pipeline/newgbSettings.xml", xmlstring, 0777)
 		if err != nil {
 			return fmt.Errorf("failed to write maven Settings xml: %w", err)
 		}
