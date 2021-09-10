@@ -257,19 +257,18 @@ void call(Map parameters = [:]) {
 
                         echo "[INFO] Uploading application '${configuration.applicationName}' to transport request '${configuration.transportRequestId}'."
 
-                        cm.uploadFileToTransportRequestCTS(
-                            configuration.changeManagement.cts?.nodeDocker ?: [:],
-                            configuration.transportRequestId,
-                            configuration.changeManagement.endpoint,
-                            configuration.changeManagement.client,
-                            configuration.applicationName,
-                            configuration.applicationDescription,
-                            configuration.abapPackage,
-                            configuration.changeManagement.cts.osDeployUser,
-                            configuration.changeManagement.cts.deployToolDependencies,
-                            configuration.changeManagement.cts.npmInstallOpts,
-                            configuration.changeManagement.cts.deployConfigFile,
-                            configuration.changeManagement.credentialsId)
+                        transportRequestUploadCTS(script: script,
+                            transportRequestId: configuration.transportRequestId,
+                            endpoint: configuration.changeManagement.endpoint,
+                            client: configuration.changeManagement.client,
+                            applicationName: configuration.applicationName,
+                            description: configuration.applicationDescription,
+                            abapPackage: configuration.abapPackage,
+                            osDeployUser: configuration.changeManagement.cts.osDeployUser,
+                            deployToolDependencies: configuration.changeManagement.cts.deployToolDependencies,
+                            npmInstallOpts: configuration.changeManagement.cts.npmInstallOpts,
+                            deployConfigFile: configuration.changeManagement.cts.deployConfigFile,
+                            uploadCredentialsId: configuration.changeManagement.credentialsId)
 
                         echo "[INFO] Application '${configuration.applicationName}' has been successfully uploaded to transport request '${configuration.transportRequestId}'."
 

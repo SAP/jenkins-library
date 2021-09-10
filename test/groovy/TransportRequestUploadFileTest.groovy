@@ -1,5 +1,8 @@
+import static org.hamcrest.Matchers.*
 import static org.hamcrest.Matchers.allOf
 import static org.hamcrest.Matchers.containsString
+import static org.hamcrest.Matchers.hasEntry
+import static org.junit.Assert.assertThat
 
 import java.util.List
 import java.util.Map
@@ -164,38 +167,21 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     @Test
     public void uploadFileToTransportRequestCTSSuccessTest() {
 
-        loggingRule.expect("[INFO] Uploading application 'myApp' to transport request '002'.")
-        loggingRule.expect("[INFO] Application 'myApp' has been successfully uploaded to transport request '002'.")
+//        loggingRule.expect("[INFO] Uploading application 'myApp' to transport request '002'.")
+ //       loggingRule.expect("[INFO] Application 'myApp' has been successfully uploaded to transport request '002'.")
 
-        ChangeManagement cm = new ChangeManagement(nullScript) {
-            void uploadFileToTransportRequestCTS(
-                                              Map docker,
-                                              String transportRequestId,
-                                              String endpoint,
-                                              String client,
-                                              String appName,
-                                              String appDescription,
-                                              String abapPackage,
-                                              String osDeployUser,
-                                              def deployToolsDependencies,
-                                              def npmInstallArgs,
-                                              String deployConfigFile,
-                                              String credentialsId) {
+        def calledWithParameters,
+            calledWithStepName,
+            calledWithMetadata,
+            calledWithCredentials
 
-                cmUtilReceivedParams.docker = docker
-                cmUtilReceivedParams.transportRequestId = transportRequestId
-                cmUtilReceivedParams.endpoint = endpoint
-                cmUtilReceivedParams.client = client
-                cmUtilReceivedParams.appName = appName
-                cmUtilReceivedParams.appDescription = appDescription
-                cmUtilReceivedParams.abapPackage = abapPackage
-                cmUtilReceivedParams.osDeployUser = osDeployUser
-                cmUtilReceivedParams.deployToolDependencies = deployToolsDependencies
-                cmUtilReceivedParams.npmInstallOpts = npmInstallArgs
-                cmUtilReceivedParams.deployConfigFile = deployConfigFile
-                cmUtilReceivedParams.credentialsId = credentialsId
-            }
-        }
+        helper.registerAllowedMethod( 'piperExecuteBin', [Map, String, String, List], {
+            params, stepName, metaData, creds ->
+                calledWithParameters = params
+                calledWithStepName = stepName
+                calledWithMetadata = metaData
+                calledWithCredentials = creds
+            })
 
         stepRule.step.transportRequestUploadFile(script: nullScript,
                       changeManagement: [
@@ -211,28 +197,20 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                       applicationDescription: 'the description',
                       abapPackage: 'myPackage',
                       transportRequestId: '002',
-                      cmUtils: cm)
+                      credentialsId: 'CM')
 
-        assert cmUtilReceivedParams ==
-            [
-                docker: [
-                    image: 'node',
-                    options:[],
-                    envVars:[:],
-                    pullImage:true
-                ],
-                transportRequestId: '002',
-                endpoint: 'https://example.org/cm',
-                client: '001',
-                appName: 'myApp',
-                appDescription: 'the description',
-                abapPackage: 'myPackage',
-                osDeployUser: 'node2',
-                deployToolDependencies: ['@ui5/cli', '@sap/ux-ui5-tooling', '@ui5/logger', '@ui5/fs', '@dummy/foo'],
-                npmInstallOpts: ['--verbose'],
-                deployConfigFile: 'ui5-deploy.yaml',
-                credentialsId: 'CM',
-            ]
+        assertThat(calledWithStepName, is('transportRequestUploadCTS'))
+        assertThat(calledWithParameters.transportRequestId, is('002'))
+        assertThat(calledWithParameters.endpoint, is('https://example.org/cm'))
+        assertThat(calledWithParameters.client, is('001'))
+        assertThat(calledWithParameters.applicationName, is('myApp'))
+        assertThat(calledWithParameters.description, is('the description'))
+        assertThat(calledWithParameters.abapPackage, is('myPackage'))
+        assertThat(calledWithParameters.osDeployUser, is('node2'))
+        assertThat(calledWithParameters.deployToolDependencies, is(['@ui5/cli', '@sap/ux-ui5-tooling', '@ui5/logger', '@ui5/fs', '@dummy/foo']))
+        assertThat(calledWithParameters.npmInstallOpts, is(['--verbose']))
+        assertThat(calledWithParameters.deployConfigFile, is('ui5-deploy.yaml'))
+        assertThat(calledWithParameters.uploadCredentialsId, is('CM'))
     }
 
     @Test
