@@ -398,6 +398,9 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     @Test
     public void uploadFileToTransportRequestSOLMANSuccessTest() {
 
+        loggingRule.expect("[INFO] Uploading file '/path' to transport request '002' of change document '001'.")
+        loggingRule.expect("[INFO] File '/path' has been successfully uploaded to transport request '002' of change document '001'.")
+        
         def calledWithParameters,
             calledWithStepName,
             calledWithMetadata,
