@@ -146,7 +146,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                 throw new AbortException('Exception message')
             }
         )
-    
+
         stepRule.step.transportRequestUploadFile(script: nullScript,
                       changeDocumentId: '001',
                       transportRequestId: '001',
@@ -491,7 +491,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                 calledWithCredentials = creds
             }
         )
-        
+
         stepRule.step.transportRequestUploadFile(script: nullScript,
                       changeDocumentId: '001',
                       transportRequestId: '002',
