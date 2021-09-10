@@ -1,5 +1,8 @@
+import static org.hamcrest.Matchers.*
 import static org.hamcrest.Matchers.allOf
 import static org.hamcrest.Matchers.containsString
+import static org.hamcrest.Matchers.hasEntry
+import static org.junit.Assert.assertThat
 
 import java.util.List
 import java.util.Map
@@ -257,6 +260,20 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     @Test
     public void uploadFileToTransportRequestRFCSuccessTest() {
 
+        def calledWithParameters,
+            calledWithStepName,
+            calledWithMetadata,
+            calledWithCredentials
+
+        helper.registerAllowedMethod( 'piperExecuteBin', [Map, String, String, List], {
+            params, stepName, metaData, creds ->
+                calledWithParameters = params
+                calledWithStepName = stepName
+                calledWithMetadata = metaData
+                calledWithCredentials = creds
+            }
+        )
+        
         def cmUtilsReceivedParams
 
         nullScript.commonPipelineEnvironment.configuration =
@@ -267,42 +284,6 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                 ]
             ]
         ]
-
-        def cm = new ChangeManagement(nullScript) {
-
-            void uploadFileToTransportRequestRFC(
-                Map docker,
-                String transportRequestId,
-                String applicationId,
-                String applicationURL,
-                String endpoint,
-                String credentialsId,
-                String developmentInstance,
-                String developmentClient,
-                String applicationDescription,
-                String abapPackage,
-                String codePage,
-                boolean acceptUnixStyleLineEndings,
-                boolean failUploadOnWarning,
-                boolean verbose) {
-
-                cmUtilsReceivedParams = [
-                    docker: docker,
-                    transportRequestId: transportRequestId,
-                    applicationName: applicationId,
-                    applicationURL: applicationURL,
-                    endpoint: endpoint,
-                    credentialsId: credentialsId,
-                    developmentInstance: developmentInstance,
-                    developmentClient: developmentClient,
-                    applicationDescription: applicationDescription,
-                    abapPackage: abapPackage,
-                    codePage: codePage,
-                    acceptUnixStyleLineEndings: acceptUnixStyleLineEndings,
-                    failUploadOnWarning: failUploadOnWarning,
-                ]
-            }
-        }
 
         stepRule.step.transportRequestUploadFile(script: nullScript,
                  applicationUrl: 'http://example.org/blobstore/xyz.zip',
@@ -319,29 +300,22 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                  applicationName: '42',
                  applicationDescription: 'Lorem ipsum',
                  abapPackage: 'XYZ',
-                 cmUtils: cm,)
+                 credentialsId: 'CM'
+        )
 
-        assert cmUtilsReceivedParams ==
-            [
-                docker: [
-                    image: 'rfc',
-                    options: [],
-                    envVars: [:],
-                    pullImage: true
-                ],
-                transportRequestId: '123456',
-                applicationName: '42',
-                applicationURL: 'http://example.org/blobstore/xyz.zip',
-                endpoint: 'https://example.org/rfc',
-                credentialsId: 'CM',
-                developmentInstance: '001',
-                developmentClient: '002',
-                applicationDescription: 'Lorem ipsum',
-                abapPackage:'XYZ',
-                codePage: 'UTF-9',
-                acceptUnixStyleLineEndings: true,
-                failUploadOnWarning: true,
-            ]
+        assertThat(calledWithStepName, is('transportRequestUploadRFC'))
+        assertThat(calledWithParameters.applicationName, is('42'))
+        assertThat(calledWithParameters.applicationUrl, is('http://example.org/blobstore/xyz.zip'))
+        assertThat(calledWithParameters.endpoint, is('https://example.org/rfc'))
+        assertThat(calledWithParameters.uploadCredentialsId, is('CM'))
+        assertThat(calledWithParameters.instance, is('001'))
+        assertThat(calledWithParameters.client, is('002'))
+        assertThat(calledWithParameters.applicationDescription, is('Lorem ipsum'))
+        assertThat(calledWithParameters.abapPackage, is('XYZ'))
+        assertThat(calledWithParameters.codePage, is('UTF-9'))
+        assertThat(calledWithParameters.acceptUnixStyleLineEndings, is(true))
+        assertThat(calledWithParameters.failUploadOnWarning, is(true))
+        assertThat(calledWithParameters.transportRequestId, is('123456'))
     }
 
     @Test
@@ -350,26 +324,10 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         thrown.expect(AbortException)
         thrown.expectMessage('upload failed')
 
-        def cm = new ChangeManagement(nullScript) {
-
-            void uploadFileToTransportRequestRFC(
-                Map docker,
-                String transportRequestId,
-                String applicationId,
-                String applicationURL,
-                String endpoint,
-                String credentialsId,
-                String developmentInstance,
-                String developmentClient,
-                String applicationDescription,
-                String abapPackage,
-                String codePage,
-                boolean acceptUnixStyleLineEndings,
-                boolean failOnUploadWarning,
-                boolean verbose) {
-                throw new ChangeManagementException('upload failed')
+        helper.registerAllowedMethod( 'piperExecuteBin', [Map, String, String, List], { 
+                throw new AbortException('upload failed')
             }
-        }
+        )
 
         stepRule.step.transportRequestUploadFile(script: nullScript,
                  applicationUrl: 'http://example.org/blobstore/xyz.zip',
@@ -392,7 +350,8 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                  applicationName: '42',
                  applicationDescription: 'Lorem ipsum',
                  abapPackage: 'XYZ',
-                 cmUtils: cm,)
+                 credentialsId: 'CM'
+        )
     }
 
     @Test
