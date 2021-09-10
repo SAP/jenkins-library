@@ -100,7 +100,7 @@ void call(Map parameters = [:]) {
 
                     def dockerImageNameAndTag = "${config.dockerImageName}:${config.dockerImageTag}"
                     def dockerBuildImage = docker.build(dockerImageNameAndTag, "${config.containerBuildOptions ?: ''} .")
-                                        //only push if registry is defined
+                    //only push if registry is defined
                     if (config.dockerRegistryUrl) {
                         containerPushToRegistry script: script, dockerBuildImage: dockerBuildImage, dockerRegistryUrl: config.dockerRegistryUrl
                     }
