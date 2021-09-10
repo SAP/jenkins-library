@@ -24,34 +24,16 @@ const (
 	exporterPath = "/cnb/lifecycle/exporter"
 )
 
-type cnbBuildUtils interface {
-	command.ExecRunner
-	piperutils.FileUtils
-	docker.Download
-	RemoveAll(string) error
-	Getwd() (string, error)
-	GetDockerClient() docker.Download
-	GetFileUtils() cnbutils.CnbFileUtils
-}
-
 type cnbBuildUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
 	*docker.Client
 }
 
-func (cnbutils *cnbBuildUtilsBundle) GetDockerClient() docker.Download {
-	return cnbutils.Client
-}
-
-func (cnbutils *cnbBuildUtilsBundle) GetFileUtils() cnbutils.CnbFileUtils {
-	return cnbutils.Files
-}
-
-func setCustomBuildpacks(bpacks []string, dClient docker.Download, futils cnbutils.CnbFileUtils) (string, string, error) {
+func setCustomBuildpacks(bpacks []string, utils cnbutils.BuildUtils) (string, string, error) {
 	buildpacksPath := "/tmp/buildpacks"
 	orderPath := "/tmp/buildpacks/order.toml"
-	newOrder, err := cnbutils.DownloadBuildpacks(buildpacksPath, bpacks, dClient, futils)
+	newOrder, err := cnbutils.DownloadBuildpacks(buildpacksPath, bpacks, utils)
 	if err != nil {
 		return "", "", err
 	}
@@ -64,7 +46,7 @@ func setCustomBuildpacks(bpacks []string, dClient docker.Download, futils cnbuti
 	return buildpacksPath, orderPath, nil
 }
 
-func newCnbBuildUtils() cnbBuildUtils {
+func newCnbBuildUtils() cnbutils.BuildUtils {
 	utils := cnbBuildUtilsBundle{
 		Command: &command.Command{},
 		Files:   &piperutils.Files{},
@@ -96,7 +78,7 @@ func isDir(path string) (bool, error) {
 	return info.IsDir(), nil
 }
 
-func isBuilder(utils cnbBuildUtils) (bool, error) {
+func isBuilder(utils cnbutils.BuildUtils) (bool, error) {
 	for _, path := range []string{detectorPath, builderPath, exporterPath} {
 		exists, err := utils.FileExists(path)
 		if err != nil || !exists {
@@ -106,7 +88,7 @@ func isBuilder(utils cnbBuildUtils) (bool, error) {
 	return true, nil
 }
 
-func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, utils cnbBuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment) error {
+func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, utils cnbutils.BuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment) error {
 	var err error
 
 	exists, err := isBuilder(utils)
@@ -193,7 +175,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 
 	if config.Buildpacks != nil && len(config.Buildpacks) != 0 {
 		log.Entry().Infof("Setting custom buildpacks: '%v'", config.Buildpacks)
-		buildpacksPath, orderPath, err = setCustomBuildpacks(config.Buildpacks, utils.GetDockerClient(), utils.GetFileUtils())
+		buildpacksPath, orderPath, err = setCustomBuildpacks(config.Buildpacks, utils)
 		defer utils.RemoveAll(buildpacksPath)
 		defer utils.RemoveAll(orderPath)
 		if err != nil {

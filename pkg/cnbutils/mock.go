@@ -3,43 +3,28 @@
 package cnbutils
 
 import (
-	"fmt"
 	"io"
 
 	pkgutil "github.com/GoogleContainerTools/container-diff/pkg/util"
 	"github.com/SAP/jenkins-library/pkg/docker"
 	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	fakeImage "github.com/google/go-containerregistry/pkg/v1/fake"
 )
 
-type CnbFileMockUtils struct {
-	*mock.FilesMock
-}
-
-func (cnf *CnbFileMockUtils) RemoveAll(path string) error {
-	return cnf.FileRemove(path)
-}
-
-func (cnf *CnbFileMockUtils) TempDir(path, pattern string) (string, error) {
-	if pattern != "" {
-		return fmt.Sprintf("/tmp/%s-dir", pattern), nil
-	}
-	return "/tmp/dir", nil
-}
-
-type CnbBuildMockUtils struct {
+type MockUtils struct {
 	*mock.ExecMockRunner
-	*CnbFileMockUtils
+	*mock.FilesMock
 	*DockerMock
 }
 
-func (c *CnbBuildMockUtils) GetDockerClient() docker.Download {
+func (c *MockUtils) GetDockerClient() docker.Download {
 	return c.DockerMock
 }
 
-func (c *CnbBuildMockUtils) GetFileUtils() CnbFileUtils {
-	return c.CnbFileMockUtils
+func (c *MockUtils) GetFileUtils() piperutils.FileUtils {
+	return c.FilesMock
 }
 
 type DockerMock struct{}

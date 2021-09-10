@@ -10,18 +10,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func newCnbBuildTestsUtils() cnbutils.CnbBuildMockUtils {
-	utils := cnbutils.CnbBuildMockUtils{
+func newCnbBuildTestsUtils() cnbutils.MockUtils {
+	utils := cnbutils.MockUtils{
 		ExecMockRunner: &mock.ExecMockRunner{},
-		CnbFileMockUtils: &cnbutils.CnbFileMockUtils{
-			FilesMock: &mock.FilesMock{},
-		},
-		DockerMock: &cnbutils.DockerMock{},
+		FilesMock:      &mock.FilesMock{},
+		DockerMock:     &cnbutils.DockerMock{},
 	}
 	return utils
 }
 
-func addBuilderFiles(utils *cnbutils.CnbBuildMockUtils) {
+func addBuilderFiles(utils *cnbutils.MockUtils) {
 	for _, path := range []string{detectorPath, builderPath, exporterPath} {
 		utils.FilesMock.AddFile(path, []byte(`xyz`))
 	}

@@ -7,25 +7,28 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var mockUtils = MockUtils{
+	ExecMockRunner: &mock.ExecMockRunner{},
+	FilesMock:      &mock.FilesMock{},
+	DockerMock:     &DockerMock{},
+}
+
 func TestBuildpackDownload(t *testing.T) {
 	t.Run("successfully downloads a buildpack", func(t *testing.T) {
-		fileMock := &CnbFileMockUtils{
-			FilesMock: &mock.FilesMock{},
-		}
-		fileMock.AddDir("/tmp/test-dir")
-		_, err := DownloadBuildpacks("/test", []string{"test"}, &DockerMock{}, fileMock)
+		mockUtils.AddDir("/tmp/testtest")
+		_, err := DownloadBuildpacks("/test", []string{"test"}, mockUtils)
 
 		assert.NoError(t, err)
-		assert.True(t, fileMock.HasRemovedFile("/tmp/test-dir"))
+		assert.True(t, mockUtils.HasRemovedFile("/tmp/testtest"))
 	})
 }
 
 func TestBuildpackCopy(t *testing.T) {
 	t.Run("successfully downloads a buildpack", func(t *testing.T) {
 
-		err := copyBuildPack("/src", "/dst", &CnbFileMockUtils{
-			FilesMock: &mock.FilesMock{},
-		})
+		mockUtils.AddDir("/src/buildpack/0.0.1")
+		mockUtils.AddDir("/dst")
+		err := copyBuildPack("/src", "/dst", mockUtils)
 
 		assert.NoError(t, err)
 	})

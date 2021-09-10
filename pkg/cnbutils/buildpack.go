@@ -7,22 +7,36 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/SAP/jenkins-library/pkg/docker"
 	"github.com/SAP/jenkins-library/pkg/log"
 )
 
-func DownloadBuildpacks(path string, bpacks []string, dClient docker.Download, fileutils CnbFileUtils) (Order, error) {
+type BuildPackMetadata struct {
+	ID          string    `json:"id,omitempty"`
+	Name        string    `json:"name,omitempty"`
+	Version     string    `json:"version,omitempty"`
+	Description string    `json:"description,omitempty"`
+	Homepage    string    `json:"homepage,omitempty"`
+	Keywords    []string  `json:"keywords,omitempty"`
+	Licenses    []License `json:"licenses,omitempty"`
+}
+
+type License struct {
+	Type string `json:"type"`
+	URI  string `json:"uri"`
+}
+
+func DownloadBuildpacks(path string, bpacks []string, utils BuildUtils) (Order, error) {
 	var order Order
 	for _, bpack := range bpacks {
 		var bpackMeta BuildPackMetadata
-		tempDir, err := fileutils.TempDir("", filepath.Base(bpack))
+		tempDir, err := utils.TempDir("", filepath.Base(bpack))
 		if err != nil {
 			return Order{}, fmt.Errorf("failed to create temp directory, error: %s", err.Error())
 		}
-		defer fileutils.RemoveAll(tempDir)
+		defer utils.RemoveAll(tempDir)
 
 		log.Entry().Infof("Downloading buildpack '%s' to %s", bpack, tempDir)
-		img, err := dClient.DownloadImageToPath(bpack, tempDir)
+		img, err := utils.DownloadImageToPath(bpack, tempDir)
 		if err != nil {
 			return Order{}, fmt.Errorf("failed download buildpack image '%s', error: %s", bpack, err.Error())
 		}
@@ -45,44 +59,44 @@ func DownloadBuildpacks(path string, bpacks []string, dClient docker.Download, f
 			}},
 		})
 
-		err = copyBuildPack(filepath.Join(tempDir, "cnb/buildpacks"), path, fileutils)
+		err = copyBuildPack(filepath.Join(tempDir, "cnb/buildpacks"), path, utils)
 		if err != nil {
 			return Order{}, err
 		}
 	}
 
-	order.Futils = fileutils
+	order.Utils = utils
 
 	return order, nil
 }
 
-func copyBuildPack(src, dst string, futils CnbFileUtils) error {
-	buildpacks, err := futils.Glob(filepath.Join(src, "*"))
+func copyBuildPack(src, dst string, utils BuildUtils) error {
+	buildpacks, err := utils.Glob(filepath.Join(src, "*"))
 	if err != nil {
 		return fmt.Errorf("failed to read directory: %s, error: %s", src, err.Error())
 	}
 
 	for _, buildpack := range buildpacks {
-		versions, err := futils.Glob(filepath.Join(buildpack, "*"))
+		versions, err := utils.Glob(filepath.Join(buildpack, "*"))
 		if err != nil {
 			return fmt.Errorf("failed to read directory: %s, error: %s", buildpack, err.Error())
 		}
 		for _, srcVersionPath := range versions {
 			destVersionPath := filepath.Join(dst, strings.ReplaceAll(srcVersionPath, src, ""))
 
-			exists, err := futils.FileExists(destVersionPath)
+			exists, err := utils.FileExists(destVersionPath)
 			if err != nil {
 				return fmt.Errorf("failed to check if directory exists: '%s', error: '%s'", destVersionPath, err.Error())
 			}
 			if exists {
-				futils.RemoveAll(destVersionPath)
+				utils.RemoveAll(destVersionPath)
 			}
 
-			if err := futils.MkdirAll(filepath.Dir(destVersionPath), 0755); err != nil {
+			if err := utils.MkdirAll(filepath.Dir(destVersionPath), 0755); err != nil {
 				return fmt.Errorf("failed to create directory: '%s', error: '%s'", filepath.Dir(destVersionPath), err.Error())
 			}
 
-			err = futils.FileRename(srcVersionPath, destVersionPath)
+			err = utils.FileRename(srcVersionPath, destVersionPath)
 			if err != nil {
 				return fmt.Errorf("failed to move '%s' to '%s', error: %s", srcVersionPath, destVersionPath, err.Error())
 			}
