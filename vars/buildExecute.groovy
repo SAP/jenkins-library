@@ -104,8 +104,8 @@ void call(Map parameters = [:]) {
                     if (config.dockerRegistryUrl) {
                         containerPushToRegistry script: script, dockerBuildImage: dockerBuildImage, dockerRegistryUrl: config.dockerRegistryUrl
                     }
+                    script.commonPipelineEnvironment.setValue('containerImage', dockerImageNameAndTag)
                 }
-                script.commonPipelineEnvironment.setValue('containerImage', dockerImageNameAndTag)
                 break
             default:
                 if (config.dockerImage && config.dockerCommand) {
