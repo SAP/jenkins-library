@@ -29,7 +29,7 @@ func (a *AzureDevOpsConfigProvider) GetLog() ([]byte, error) {
 	options := piperHttp.ClientOptions{
 		// We do not need a username, but the http package does only create the base64 encoded
 		// string if the username is larger than 0. So we misuse the username for the PAT.
-		Username: "fbntcoh4ttplq6xa4uqjpwaqckmdmnvvu3gebpuah7zmycskygla",
+		Username: "REVOKED AND DELETED",
 		Password: "",
 	}
 	client.SetOptions(options)
