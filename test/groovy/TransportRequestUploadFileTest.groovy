@@ -167,8 +167,8 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     @Test
     public void uploadFileToTransportRequestCTSSuccessTest() {
 
-//        loggingRule.expect("[INFO] Uploading application 'myApp' to transport request '002'.")
- //       loggingRule.expect("[INFO] Application 'myApp' has been successfully uploaded to transport request '002'.")
+        loggingRule.expect("[INFO] Uploading application 'myApp' to transport request '002'.")
+        loggingRule.expect("[INFO] Application 'myApp' has been successfully uploaded to transport request '002'.")
 
         def calledWithParameters,
             calledWithStepName,
