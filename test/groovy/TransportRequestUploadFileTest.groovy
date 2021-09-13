@@ -1,10 +1,6 @@
-import static org.hamcrest.Matchers.allOf
-import static org.hamcrest.Matchers.containsString
+import static org.hamcrest.Matchers.*
+import static org.junit.Assert.assertThat
 
-import java.util.List
-import java.util.Map
-
-import org.hamcrest.Matchers
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -12,21 +8,17 @@ import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
-import com.sap.piper.JenkinsUtils
 import com.sap.piper.Utils
-import com.sap.piper.cm.BackendType
 import com.sap.piper.cm.ChangeManagement
 import com.sap.piper.cm.ChangeManagementException
 
+import hudson.AbortException
 import util.BasePiperTest
 import util.JenkinsCredentialsRule
-import util.JenkinsStepRule
 import util.JenkinsLoggingRule
 import util.JenkinsReadYamlRule
-import util.JenkinsDockerExecuteRule
+import util.JenkinsStepRule
 import util.Rules
-
-import hudson.AbortException
 
 public class TransportRequestUploadFileTest extends BasePiperTest {
 
@@ -136,29 +128,26 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     @Test
     public void uploadFileToTransportRequestSOLMANFailureTest() {
 
-        ChangeManagement cm = new ChangeManagement(nullScript) {
-            void uploadFileToTransportRequestSOLMAN(
-                                              Map docker,
-                                              String changeId,
-                                              String transportRequestId,
-                                              String applicationId,
-                                              String filePath,
-                                              String endpoint,
-                                              String credentialsId,
-                                              String cmclientOpts) {
-                throw new ChangeManagementException('Exception message')
-            }
-        }
-
         thrown.expect(AbortException)
         thrown.expectMessage("Exception message")
+
+        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], { 
+                throw new AbortException('Exception message')
+            }
+        )
 
         stepRule.step.transportRequestUploadFile(script: nullScript,
                       changeDocumentId: '001',
                       transportRequestId: '001',
                       applicationId: 'app',
                       filePath: '/path',
-                      cmUtils: cm)
+                      changeManagement: [
+                          type: 'SOLMAN',
+                          endpoint: 'https://example.org/cm',
+                          clientOpts: '--client opts'
+                      ],
+                      credentialsId: 'CM'
+                  )
     }
 
     @Test
@@ -398,90 +387,81 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     @Test
     public void uploadFileToTransportRequestSOLMANSuccessTest() {
 
-        // Here we test only the case where the transportRequestId is
-        // provided via parameters. The other cases are tested by
-        // corresponding tests for StepHelpers#getTransportRequestId(./.)
-
         loggingRule.expect("[INFO] Uploading file '/path' to transport request '002' of change document '001'.")
         loggingRule.expect("[INFO] File '/path' has been successfully uploaded to transport request '002' of change document '001'.")
+        
+        def calledWithParameters,
+            calledWithStepName,
+            calledWithMetadata,
+            calledWithCredentials
 
-        ChangeManagement cm = new ChangeManagement(nullScript) {
-            void uploadFileToTransportRequestSOLMAN(
-                                              Map docker,
-                                              String changeId,
-                                              String transportRequestId,
-                                              String applicationId,
-                                              String filePath,
-                                              String endpoint,
-                                              String credentialsId,
-                                              String cmclientOpts) {
-
-                cmUtilReceivedParams.docker = docker
-                cmUtilReceivedParams.changeId = changeId
-                cmUtilReceivedParams.transportRequestId = transportRequestId
-                cmUtilReceivedParams.applicationId = applicationId
-                cmUtilReceivedParams.filePath = filePath
-                cmUtilReceivedParams.endpoint = endpoint
-                cmUtilReceivedParams.credentialsId = credentialsId
-                cmUtilReceivedParams.cmclientOpts = cmclientOpts
+        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
+            params, stepName, metaData, creds ->
+                calledWithParameters = params
+                calledWithStepName = stepName
+                calledWithMetadata = metaData
+                calledWithCredentials = creds
             }
-        }
+        )
 
         stepRule.step.transportRequestUploadFile(script: nullScript,
                       changeDocumentId: '001',
                       transportRequestId: '002',
                       applicationId: 'app',
                       filePath: '/path',
-                      cmUtils: cm)
+                      changeManagement: [
+                          type: 'SOLMAN',
+                          endpoint: 'https://example.org/cm',
+                          clientOpts: '--client opts'
+                      ],
+                      credentialsId: 'CM'
+        )
 
-        assert cmUtilReceivedParams ==
-            [
-                docker: [
-                    image: 'ppiper/cm-client',
-                    pullImage: true,
-                    envVars: [:],
-                    options: [],
-                ],
-                changeId: '001',
-                transportRequestId: '002',
-                applicationId: 'app',
-                filePath: '/path',
-                endpoint: 'https://example.org/cm',
-                credentialsId: 'CM',
-                cmclientOpts: ''
-            ]
+        assertThat(calledWithStepName, is('transportRequestUploadSOLMAN'))
+        assertThat(calledWithParameters.changeDocumentId, is('001'))
+        assertThat(calledWithParameters.transportRequestId, is('002'))
+        assertThat(calledWithParameters.applicationId, is('app'))
+        assertThat(calledWithParameters.filePath, is('/path'))
+        assertThat(calledWithParameters.endpoint, is('https://example.org/cm'))
+        assertThat(calledWithParameters.cmClientOpts, is('--client opts'))
+        assertThat(calledWithParameters.uploadCredentialsId, is('CM'))
     }
 
     @Test
     public void uploadFileToTransportRequestSOLMANSuccessApplicationIdFromConfigurationTest() {
 
+        def calledWithParameters,
+            calledWithStepName,
+            calledWithMetadata,
+            calledWithCredentials
+
+        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
+            params, stepName, metaData, creds ->
+                calledWithParameters = params
+                calledWithStepName = stepName
+                calledWithMetadata = metaData
+                calledWithCredentials = creds
+            }
+        )
+        
         nullScript.commonPipelineEnvironment.configuration.put(['steps',
                                                                    [transportRequestUploadFile:
                                                                        [applicationId: 'AppIdfromConfig']]])
-
-        ChangeManagement cm = new ChangeManagement(nullScript) {
-            void uploadFileToTransportRequestSOLMAN(
-                                              Map docker,
-                                              String changeId,
-                                              String transportRequestId,
-                                              String applicationId,
-                                              String filePath,
-                                              String endpoint,
-                                              String credentialsId,
-                                              String cmclientOpts) {
-
-                cmUtilReceivedParams.applicationId = applicationId
-            }
-        }
 
         stepRule.step.transportRequestUploadFile(
                       script: nullScript,
                       changeDocumentId: '001',
                       transportRequestId: '002',
                       filePath: '/path',
-                      cmUtils: cm)
+                      changeManagement: [
+                          type: 'SOLMAN',
+                          endpoint: 'https://example.org/cm',
+                          clientOpts: '--client opts'
+                      ],
+                      credentialsId: 'CM'
+        )
 
-        assert cmUtilReceivedParams.applicationId == 'AppIdfromConfig'
+        assertThat(calledWithParameters.applicationId, is('AppIdfromConfig'))
     }
 
     @Test
@@ -490,29 +470,34 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         // this one is not used when file path is provided via signature
         nullScript.commonPipelineEnvironment.setMtarFilePath('/path2')
 
-        ChangeManagement cm = new ChangeManagement(nullScript) {
-            void uploadFileToTransportRequestSOLMAN(
-                                              Map docker,
-                                              String changeId,
-                                              String transportRequestId,
-                                              String applicationId,
-                                              String filePath,
-                                              String endpoint,
-                                              String credentialsId,
-                                              String cmclientOpts) {
+        def calledWithParameters,
+            calledWithStepName,
+            calledWithMetadata,
+            calledWithCredentials
 
-                cmUtilReceivedParams.filePath = filePath
+        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
+            params, stepName, metaData, creds ->
+                calledWithParameters = params
+                calledWithStepName = stepName
+                calledWithMetadata = metaData
+                calledWithCredentials = creds
             }
-        }
+        )
 
         stepRule.step.transportRequestUploadFile(script: nullScript,
                       changeDocumentId: '001',
                       transportRequestId: '002',
                       applicationId: 'app',
-                      filePath: '/path',
-                      cmUtils: cm)
+                      filePath: '/pathByParam',
+                      changeManagement: [
+                          type: 'SOLMAN',
+                          endpoint: 'https://example.org/cm',
+                          clientOpts: '--client opts'
+                      ],
+                      credentialsId: 'CM'
+        )
 
-        assert cmUtilReceivedParams.filePath == '/path'
+        assertThat(calledWithParameters.filePath, is('/pathByParam'))
     }
 
     @Test
@@ -521,56 +506,33 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         // this one is used since there is nothing in the signature
         nullScript.commonPipelineEnvironment.setMtarFilePath('/path2')
 
-        ChangeManagement cm = new ChangeManagement(nullScript) {
-            void uploadFileToTransportRequestSOLMAN(
-                                              Map docker,
-                                              String changeId,
-                                              String transportRequestId,
-                                              String applicationId,
-                                              String filePath,
-                                              String endpoint,
-                                              String credentialsId,
-                                              String cmclientOpts) {
+        def calledWithParameters,
+            calledWithStepName,
+            calledWithMetadata,
+            calledWithCredentials
 
-                cmUtilReceivedParams.filePath = filePath
+        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
+            params, stepName, metaData, creds ->
+                calledWithParameters = params
+                calledWithStepName = stepName
+                calledWithMetadata = metaData
+                calledWithCredentials = creds
             }
-        }
+        )
 
         stepRule.step.transportRequestUploadFile(script: nullScript,
                       changeDocumentId: '001',
                       transportRequestId: '002',
                       applicationId: 'app',
-                      cmUtils: cm)
+                      changeManagement: [
+                          type: 'SOLMAN',
+                          endpoint: 'https://example.org/cm',
+                          clientOpts: '--client opts'
+                      ],
+                      credentialsId: 'CM'
+        )
 
-        assert cmUtilReceivedParams.filePath == '/path2'
-    }
-
-    @Test
-    public void uploadFileToTransportRequestSOLMANUploadFailureTest() {
-
-        thrown.expect(AbortException)
-        thrown.expectMessage('Upload failure.')
-
-        ChangeManagement cm = new ChangeManagement(nullScript) {
-            void uploadFileToTransportRequestSOLMAN(
-                                              Map docker,
-                                              String changeId,
-                                              String transportRequestId,
-                                              String applicationId,
-                                              String filePath,
-                                              String endpoint,
-                                              String credentialsId,
-                                              String cmclientOpts) {
-                throw new ChangeManagementException('Upload failure.')
-            }
-        }
-
-        stepRule.step.transportRequestUploadFile(script: nullScript,
-                      changeDocumentId: '001',
-                      transportRequestId: '001',
-                      applicationId: 'app',
-                      filePath: '/path',
-                      cmUtils: cm)
+        assertThat(calledWithParameters.filePath, is('/path2'))
     }
 
     @Test
