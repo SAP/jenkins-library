@@ -85,6 +85,10 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'skipCheckout',
     /**
+    * Mandatory if you skip the checkout. Then you need to unstash your workspace to get the e.g. configuration.
+    */
+    'stashContent',
+    /**
      * Optional path to the pipeline configuration file defining project specific settings.
      */
     'configFile',
@@ -135,6 +139,13 @@ void call(Map parameters = [:]) {
         }
         if (!skipCheckout) {
             scmInfo = checkout(parameters.checkoutMap ?: scm)
+        }
+        else {
+            def stashContent = parameters.stashContent
+            if(stashContent == null || stashContent.size() == 0) {
+                error "[${STEP_NAME}] needs stashes if you skip checkout"
+            }
+            utils.unstashAll(stashContent)
         }
 
         setupCommonPipelineEnvironment(script: script, customDefaults: parameters.customDefaults, scmInfo: scmInfo,

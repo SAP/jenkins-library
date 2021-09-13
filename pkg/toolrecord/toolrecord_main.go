@@ -112,7 +112,30 @@ func (tr *Toolrecord) Persist() error {
 	if err != nil {
 		return fmt.Errorf("TR_PERSIST: %v", err)
 	}
-	// convenience aggregation
+
+	// set default display data if required
+	if tr.DisplayName == "" {
+		tr.GenerateDefaultDisplayData()
+	}
+
+	file, err := json.Marshal(tr)
+	if err != nil {
+		return fmt.Errorf("TR_PERSIST: %v", err)
+	}
+	// no json generated ?
+	if len(file) == 0 {
+		return fmt.Errorf("TR_PERSIST: empty json content")
+	}
+	err = ioutil.WriteFile(tr.GetFileName(), file, 0644)
+	if err != nil {
+		return fmt.Errorf("TR_PERSIST: %v", err)
+	}
+	return nil
+}
+
+// default aggregation for overall displayName and URL
+// can be overriden by calling SetOverallDisplayData
+func (tr *Toolrecord) GenerateDefaultDisplayData() {
 	displayName := ""
 	displayURL := ""
 	for _, keyset := range tr.Keys {
@@ -131,11 +154,10 @@ func (tr *Toolrecord) Persist() error {
 	}
 	tr.DisplayName = displayName
 	tr.DisplayURL = displayURL
+}
 
-	file, _ := json.Marshal(tr)
-	err = ioutil.WriteFile(tr.GetFileName(), file, 0644)
-	if err != nil {
-		return fmt.Errorf("TR_PERSIST: %v", err)
-	}
-	return nil
+// Override the default generation for DisplayName & DisplayURL
+func (tr *Toolrecord) SetOverallDisplayData(newName, newURL string) {
+	tr.DisplayName = newName
+	tr.DisplayURL = newURL
 }

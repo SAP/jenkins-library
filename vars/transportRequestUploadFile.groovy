@@ -239,15 +239,14 @@ void call(Map parameters = [:]) {
                         echo "[INFO] Uploading file '${configuration.filePath}' to transport request '${configuration.transportRequestId}'" +
                             " of change document '${configuration.changeDocumentId}'."
 
-                        cm.uploadFileToTransportRequestSOLMAN(
-                            configuration.changeManagement.solman?.docker ?: [:],
-                            configuration.changeDocumentId,
-                            configuration.transportRequestId,
-                            configuration.applicationId,
-                            configuration.filePath,
-                            configuration.changeManagement.endpoint,
-                            configuration.changeManagement.credentialsId,
-                            configuration.changeManagement.clientOpts)
+                        transportRequestUploadSOLMAN(script: script,
+                            cmClientOpts: configuration.changeManagement.clientOpts,
+                            filePath: configuration.filePath,
+                            uploadCredentialsId: configuration.changeManagement.credentialsId,
+                            endpoint: configuration.changeManagement.endpoint,
+                            applicationId: configuration.applicationId,
+                            changeDocumentId: configuration.changeDocumentId,
+                            transportRequestId: configuration.transportRequestId)
 
                         echo "[INFO] File '${configuration.filePath}' has been successfully uploaded to transport request '${configuration.transportRequestId}'" +
                             " of change document '${configuration.changeDocumentId}'."
