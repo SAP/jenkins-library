@@ -181,37 +181,43 @@ func UpdateProjectSettingsXML(projectSettingsFile string, altDeploymentRepositor
 
 func CreateNewProjectSettingsXMLWithActiveProfile(activeProfile []string, utils SettingsDownloadUtils) error {
 
-	// destination, err := getProjectSettingsFileDest()
-	destination := ".pipeline/mavenProjectSettings.xml"
-	parent := filepath.Dir(destination)
+	destination, err := getProjectSettingsFileDest()
+	// destination := ".pipeline/mavenProjectSettings.xml"
+	// parent := filepath.Dir(destination)
 
-	parentFolderExists, err := utils.FileExists(parent)
+	// parentFolderExists, err := utils.FileExists(parent)
 
-	if err != nil {
-		return err
-	}
+	// if err != nil {
+	// 	return err
+	// }
 
-	if !parentFolderExists {
-		if err = utils.MkdirAll(parent, 0775); err != nil {
-			return err
-		}
-	}
-	if err != nil {
-		return err
-	}
+	// if !parentFolderExists {
+	// 	if err = utils.MkdirAll(parent, 0775); err != nil {
+	// 		return err
+	// 	}
+	// }
+	// if err != nil {
+	// 	return err
+	// }
 
-	settingsXML := Settings{
-		XMLName:        xml.Name{Local: "settings"},
-		Xsi:            "http://www.w3.org/2001/XMLSchema-instance",
-		SchemaLocation: "http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd",
-		ActiveProfiles: ActiveProfilesType{
-			[]ActiveProfileType{
-				{
-					Profile: activeProfile[0],
-				},
-			},
-		},
-	}
+	// settingsXML := Settings{
+	// 	XMLName:        xml.Name{Local: "settings"},
+	// 	Xsi:            "http://www.w3.org/2001/XMLSchema-instance",
+	// 	SchemaLocation: "http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd",
+	// 	ActiveProfiles: ActiveProfilesType{
+	// 		[]ActiveProfileType{
+	// 			{
+	// 				Profile: activeProfile[0],
+	// 			},
+	// 		},
+	// 	},
+	// }
+
+	settingsXML := `"<settings xmlns=\"http://maven.apache.org/SETTINGS/1.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd\">"
+	<activeProfiles>
+	<activeProfile>release.build</activeProfile>
+	</activeProfiles>
+	</settings>"`
 
 	xmlstring, err := xml.MarshalIndent(settingsXML, "", "    ")
 	if err != nil {
