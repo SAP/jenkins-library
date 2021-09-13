@@ -292,7 +292,7 @@ func updateGlobalSettingsProfile(config mtaBuildOptions, utils mtaBuildUtils) er
 
 	} else {
 		if len(config.Profiles) > 0 {
-			return maven.UpdateActiveProfileInSettingsXML(config.Profiles, utils)
+			return maven.CreateNewProjectSettingsXMLWithActiveProfile(config.Profiles, utils)
 		}
 
 	}
