@@ -928,7 +928,8 @@ func persistScannedProjects(config *ScanOptions, scan *ws.Scan, commonPipelineEn
 //
 func createToolRecordWhitesource(workspace string, config *whitesourceExecuteScanOptions, scan *ws.Scan) (string, error) {
 	record := toolrecord.New(workspace, "whitesource", config.ServiceURL)
-	productURL := config.ServiceURL + "/Wss/WSS.html#!product;token=" + config.ProductToken
+	wsUiRoot := "https://saas.whitesourcesoftware.com"
+	productURL := wsUiRoot + "/Wss/WSS.html#!product;token=" + config.ProductToken
 	err := record.AddKeyData("product",
 		config.ProductToken,
 		config.ProductName,
@@ -943,7 +944,7 @@ func createToolRecordWhitesource(workspace string, config *whitesourceExecuteSca
 		token := project.Token
 		projectURL := ""
 		if token != "" {
-			projectURL = config.ServiceURL + "/Wss/WSS.html#!project;token=" + token
+			projectURL = wsUiRoot + "/Wss/WSS.html#!project;token=" + token
 		} else {
 			// token is empty, provide a dummy to have an indication
 			token = "unknown"
