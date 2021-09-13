@@ -217,7 +217,7 @@ func CreateNewProjectSettingsXMLWithActiveProfile(activeProfile []string, utils 
 	<activeProfiles>
 	<activeProfile>release.build</activeProfile>
 	</activeProfiles>
-	</settings>"`
+	</settings>`
 
 	// xmlstring, err := xml.MarshalIndent(settingsXML, "", "    ")
 	if err != nil {
