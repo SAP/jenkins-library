@@ -182,6 +182,19 @@ func UpdateProjectSettingsXML(projectSettingsFile string, altDeploymentRepositor
 func CreateNewProjectSettingsXMLWithActiveProfile(activeProfile []string, utils SettingsDownloadUtils) error {
 
 	destination, err := getProjectSettingsFileDest()
+	parent := filepath.Dir(destination)
+
+	parentFolderExists, err := utils.FileExists(parent)
+
+	if err != nil {
+		return err
+	}
+
+	if !parentFolderExists {
+		if err = utils.MkdirAll(parent, 0775); err != nil {
+			return err
+		}
+	}
 	if err != nil {
 		return err
 	}
