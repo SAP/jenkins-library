@@ -219,13 +219,13 @@ func CreateNewProjectSettingsXMLWithActiveProfile(activeProfile []string, utils 
 	</activeProfiles>
 	</settings>"`
 
-	xmlstring, err := xml.MarshalIndent(settingsXML, "", "    ")
+	// xmlstring, err := xml.MarshalIndent(settingsXML, "", "    ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal Settings.xml: %w", err)
 	}
 
-	xmlstring = []byte(xml.Header + string(xmlstring))
-
+	// xmlstring = []byte(xml.Header + string(xmlstring))
+	xmlstring := []byte(xml.Header + settingsXML)
 	err = utils.FileWrite(destination, xmlstring, 0777)
 	if err != nil {
 		return fmt.Errorf("failed to write maven Project Settings xml: %w", err)
