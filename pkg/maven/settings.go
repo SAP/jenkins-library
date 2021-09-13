@@ -182,7 +182,7 @@ func UpdateProjectSettingsXML(projectSettingsFile string, altDeploymentRepositor
 func CreateNewProjectSettingsXMLWithActiveProfile(activeProfile []string, utils SettingsDownloadUtils) error {
 
 	// destination, err := getProjectSettingsFileDest()
-	destination := ".pipeline/mavenProjectSettings"
+	destination := ".pipeline/mavenProjectSettings.xml"
 	parent := filepath.Dir(destination)
 
 	parentFolderExists, err := utils.FileExists(parent)
