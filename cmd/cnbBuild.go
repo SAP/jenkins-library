@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"regexp"
 	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/command"
@@ -131,7 +132,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 			}
 
 		} else {
-			log.Entry().Debugf("Filterd out '%s'", sourceFile)
+			log.Entry().Debugf("Filtered out '%s'", sourceFile)
 		}
 	}
 
@@ -139,29 +140,24 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 	var containerImageTag string
 
 	if len(config.ContainerRegistryURL) > 0 && len(config.ContainerImageName) > 0 && len(config.ContainerImageTag) > 0 {
-		containerRegistry, err := docker.ContainerRegistryFromURL(config.ContainerRegistryURL)
-		if err != nil {
-			log.SetErrorCategory(log.ErrorConfiguration)
-			return errors.Wrapf(err, "failed to read registry url %s", config.ContainerRegistryURL)
+		var containerRegistry string
+		if matched, _ := regexp.MatchString("^(http|https)://.*", config.ContainerRegistryURL); matched {
+			containerRegistry, err = docker.ContainerRegistryFromURL(config.ContainerRegistryURL)
+			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return errors.Wrapf(err, "failed to read containerRegistryUrl %s", config.ContainerRegistryURL)
+			}
+		} else {
+			containerRegistry = config.ContainerRegistryURL
 		}
+
 		containerImage = fmt.Sprintf("%s/%s", containerRegistry, config.ContainerImageName)
 		containerImageTag = strings.ReplaceAll(config.ContainerImageTag, "+", "-")
 		commonPipelineEnvironment.container.registryURL = config.ContainerRegistryURL
 		commonPipelineEnvironment.container.imageNameTag = containerImage
-	} else if len(config.ContainerImage) > 0 {
-		containerRegistry, err := docker.ContainerRegistryFromImage(config.ContainerImage)
-		if err != nil {
-			log.SetErrorCategory(log.ErrorConfiguration)
-			return errors.Wrapf(err, "invalid registry part in image %s", config.ContainerImage)
-		}
-		containerImage = config.ContainerImage
-		// errors are already caught with previous call to docker.ContainerRegistryFromImage
-		containerImageTag, _ := docker.ContainerImageNameTagFromImage(config.ContainerImage)
-		commonPipelineEnvironment.container.registryURL = fmt.Sprintf("https://%s", containerRegistry)
-		commonPipelineEnvironment.container.imageNameTag = containerImageTag
 	} else {
 		log.SetErrorCategory(log.ErrorConfiguration)
-		return errors.New("either containerImage or containerImageName and containerImageTag must be present")
+		return errors.New("containerRegistryUrl, containerImageName and containerImageTag must be present")
 	}
 
 	err = utils.RunExecutable("/cnb/lifecycle/detector")
