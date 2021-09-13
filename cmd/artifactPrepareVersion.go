@@ -207,14 +207,17 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 	commonPipelineEnvironment.git.commitMessage = gitCommitMessage
 
 	// we may replace GetVersion() above with GetCoordinates() at some point ...
-	// if config.FetchCoordinates {
 	coordinates, err := artifact.GetCoordinates()
-	if err != nil {
+	if err != nil && !config.FetchCoordinates {
+		log.Entry().Warnf("fetchCoordinates is false and failed get artifact Coordinates")
+	} else if err != nil && config.FetchCoordinates {
 		return fmt.Errorf("failed to get coordinates: %w", err)
+	} else {
+		commonPipelineEnvironment.artifactID = coordinates.ArtifactID
+		commonPipelineEnvironment.groupID = coordinates.GroupID
+		commonPipelineEnvironment.packaging = coordinates.Packaging
 	}
-	commonPipelineEnvironment.artifactID = coordinates.ArtifactID
-	commonPipelineEnvironment.groupID = coordinates.GroupID
-	commonPipelineEnvironment.packaging = coordinates.Packaging
+
 	// }
 
 	return nil
