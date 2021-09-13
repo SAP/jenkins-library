@@ -1,13 +1,6 @@
 import static org.hamcrest.Matchers.*
-import static org.hamcrest.Matchers.allOf
-import static org.hamcrest.Matchers.containsString
-import static org.hamcrest.Matchers.hasEntry
 import static org.junit.Assert.assertThat
 
-import java.util.List
-import java.util.Map
-
-import org.hamcrest.Matchers
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -15,21 +8,17 @@ import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
-import com.sap.piper.JenkinsUtils
 import com.sap.piper.Utils
-import com.sap.piper.cm.BackendType
 import com.sap.piper.cm.ChangeManagement
 import com.sap.piper.cm.ChangeManagementException
 
+import hudson.AbortException
 import util.BasePiperTest
 import util.JenkinsCredentialsRule
-import util.JenkinsStepRule
 import util.JenkinsLoggingRule
 import util.JenkinsReadYamlRule
-import util.JenkinsDockerExecuteRule
+import util.JenkinsStepRule
 import util.Rules
-
-import hudson.AbortException
 
 public class TransportRequestUploadFileTest extends BasePiperTest {
 
@@ -265,7 +254,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
             calledWithMetadata,
             calledWithCredentials
 
-        helper.registerAllowedMethod( 'piperExecuteBin', [Map, String, String, List], {
+        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
             params, stepName, metaData, creds ->
                 calledWithParameters = params
                 calledWithStepName = stepName
@@ -273,7 +262,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                 calledWithCredentials = creds
             }
         )
-        
+
         nullScript.commonPipelineEnvironment.configuration =
         [general:
             [changeManagement:
@@ -322,7 +311,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         thrown.expect(AbortException)
         thrown.expectMessage('upload failed')
 
-        helper.registerAllowedMethod( 'piperExecuteBin', [Map, String, String, List], { 
+        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
                 throw new AbortException('upload failed')
             }
         )

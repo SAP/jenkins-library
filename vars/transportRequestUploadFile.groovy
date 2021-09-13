@@ -292,7 +292,7 @@ void call(Map parameters = [:]) {
                             failUploadOnWarning: configuration.failOnWarning,
                             verbose: configuration.verbose
                         )
-                        
+
                         echo "[INFO] File 'configuration.applicationUrl' has been successfully uploaded to transport request '${configuration.transportRequestId}'."
 
                         break
