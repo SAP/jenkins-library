@@ -131,7 +131,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         thrown.expect(AbortException)
         thrown.expectMessage("Exception message")
 
-        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], { 
+        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
                 throw new AbortException('Exception message')
             }
         )
@@ -161,7 +161,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
             calledWithMetadata,
             calledWithCredentials
 
-        helper.registerAllowedMethod( 'piperExecuteBin', [Map, String, String, List], {
+        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
             params, stepName, metaData, creds ->
                 calledWithParameters = params
                 calledWithStepName = stepName
@@ -318,7 +318,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
 
         loggingRule.expect("[INFO] Uploading file '/path' to transport request '002' of change document '001'.")
         loggingRule.expect("[INFO] File '/path' has been successfully uploaded to transport request '002' of change document '001'.")
-        
+
         def calledWithParameters,
             calledWithStepName,
             calledWithMetadata,
@@ -372,7 +372,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                 calledWithCredentials = creds
             }
         )
-        
+
         nullScript.commonPipelineEnvironment.configuration.put(['steps',
                                                                    [transportRequestUploadFile:
                                                                        [applicationId: 'AppIdfromConfig']]])
