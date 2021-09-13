@@ -286,6 +286,7 @@ spec:
           - name: git/commitId
           - name: git/headCommitId
           - name: git/commitMessage
+          - name: versioningType
   containers:
     - image: maven:3.6-jdk-8
       conditions:
