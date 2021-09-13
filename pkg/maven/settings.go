@@ -183,19 +183,19 @@ func CreateNewProjectSettingsXMLWithActiveProfile(activeProfile []string, utils 
 
 	destination, err := getProjectSettingsFileDest()
 	// destination := ".pipeline/mavenProjectSettings.xml"
-	// parent := filepath.Dir(destination)
+	parent := filepath.Dir(destination)
 
-	// parentFolderExists, err := utils.FileExists(parent)
+	parentFolderExists, err := utils.FileExists(parent)
 
-	// if err != nil {
-	// 	return err
-	// }
+	if err != nil {
+		return err
+	}
 
-	// if !parentFolderExists {
-	// 	if err = utils.MkdirAll(parent, 0775); err != nil {
-	// 		return err
-	// 	}
-	// }
+	if !parentFolderExists {
+		if err = utils.MkdirAll(parent, 0775); err != nil {
+			return err
+		}
+	}
 	// if err != nil {
 	// 	return err
 	// }
