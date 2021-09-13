@@ -616,6 +616,8 @@ spec:
             fields:
               - name: projectName
               - name: projectVersion
+              - name: projectVersionId
+                type: int64
               - name: violations
                 type: int
               - name: corporateTotal

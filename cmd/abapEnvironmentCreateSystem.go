@@ -50,6 +50,7 @@ func runAbapEnvironmentCreateSystem(config *abapEnvironmentCreateSystemOptions, 
 	log.Entry().Debugf("Path: %s", path)
 	err = ioutil.WriteFile(path, manifestYAML, 0644)
 	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
 		return fmt.Errorf("%s: %w", "Could not generate manifest file for the cloud foundry cli", err)
 	}
 
@@ -74,6 +75,7 @@ func generateManifestYAML(config *abapEnvironmentCreateSystemOptions) ([]byte, e
 	if config.AddonDescriptorFileName != "" && config.IncludeAddon {
 		descriptor, err := abaputils.ReadAddonDescriptor(config.AddonDescriptorFileName)
 		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
 			return nil, fmt.Errorf("Cloud not read addonProduct and addonVersion from %s: %w", config.AddonDescriptorFileName, err)
 		}
 		addonProduct = descriptor.AddonProduct
@@ -97,6 +99,7 @@ func generateManifestYAML(config *abapEnvironmentCreateSystemOptions) ([]byte, e
 	serviceParametersString := string(serviceParameters)
 	log.Entry().Debugf("Service Parameters: %s", serviceParametersString)
 	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
 		return nil, fmt.Errorf("Could not generate parameter string for the cloud foundry cli: %w", err)
 	}
 

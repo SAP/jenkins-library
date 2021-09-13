@@ -55,8 +55,12 @@ func (c *Client) GetImageSource() (string, error) {
 	if len(c.registryURL) > 0 && len(c.localPath) <= 0 {
 		registry := c.registryURL
 
-		url, _ := url.Parse(c.registryURL)
-		//remove protocoll from registryURL to get registry
+		url, err := url.Parse(c.registryURL)
+		if err != nil {
+			return "", fmt.Errorf("failed to parse registryURL %v: %w", c.registryURL, err)
+		}
+
+		//remove protocol from registryURL to get registry
 		if len(url.Scheme) > 0 {
 			registry = strings.Replace(c.registryURL, fmt.Sprintf("%v://", url.Scheme), "", 1)
 		}
