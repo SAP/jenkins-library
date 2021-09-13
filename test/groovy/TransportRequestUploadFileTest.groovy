@@ -274,8 +274,6 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
             }
         )
         
-        def cmUtilsReceivedParams
-
         nullScript.commonPipelineEnvironment.configuration =
         [general:
             [changeManagement:
