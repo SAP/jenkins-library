@@ -181,21 +181,21 @@ func UpdateProjectSettingsXML(projectSettingsFile string, altDeploymentRepositor
 
 func CreateNewProjectSettingsXMLWithActiveProfile(activeProfile []string, utils SettingsDownloadUtils) error {
 
-	destination, err := getProjectSettingsFileDest()
-	// destination := ".pipeline/mavenProjectSettings.xml"
-	parent := filepath.Dir(destination)
+	// destination, err := getProjectSettingsFileDest()
+	destination := ".pipeline/mavenProjectSettings.xml"
+	// parent := filepath.Dir(destination)
 
-	parentFolderExists, err := utils.FileExists(parent)
+	// parentFolderExists, err := utils.FileExists(parent)
 
-	if err != nil {
-		return err
-	}
+	// if err != nil {
+	// 	return err
+	// }
 
-	if !parentFolderExists {
-		if err = utils.MkdirAll(parent, 0775); err != nil {
-			return err
-		}
-	}
+	// if !parentFolderExists {
+	// 	if err = utils.MkdirAll(parent, 0775); err != nil {
+	// 		return err
+	// 	}
+	// }
 	// if err != nil {
 	// 	return err
 	// }
@@ -220,13 +220,13 @@ func CreateNewProjectSettingsXMLWithActiveProfile(activeProfile []string, utils 
 	</settings>`
 
 	// xmlstring, err := xml.MarshalIndent(settingsXML, "", "    ")
-	if err != nil {
-		return fmt.Errorf("failed to marshal Settings.xml: %w", err)
-	}
+	// if err != nil {
+	// 	return fmt.Errorf("failed to marshal Settings.xml: %w", err)
+	// }
 
 	// xmlstring = []byte(xml.Header + string(xmlstring))
 	xmlstring := []byte(xml.Header + settingsXML)
-	err = utils.FileWrite(destination, xmlstring, 0777)
+	err := utils.FileWrite(destination, xmlstring, 0777)
 	if err != nil {
 		return fmt.Errorf("failed to write maven Project Settings xml: %w", err)
 	}
