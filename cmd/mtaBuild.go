@@ -151,7 +151,7 @@ func runMtaBuild(config mtaBuildOptions,
 		return err
 	}
 
-	err = updateGlobalSettingsProfile(config, utils)
+	err = handleActiveProfileUpdate(config, utils)
 	if err != nil {
 		return err
 	}
@@ -284,19 +284,10 @@ func runMtaBuild(config mtaBuildOptions,
 	return err
 }
 
-func updateGlobalSettingsProfile(config mtaBuildOptions, utils mtaBuildUtils) error {
-
-	if len(config.GlobalSettingsFile) == 0 {
-		log.Entry().Infof("no global settings file found, skipping profile updation")
-		return nil
-
-	} else {
-		if len(config.Profiles) > 0 {
-			return maven.CreateNewProjectSettingsXMLWithActiveProfile(config.Profiles, utils)
-		}
-
+func handleActiveProfileUpdate(config mtaBuildOptions, utils mtaBuildUtils) error {
+	if len(config.Profiles) > 0 {
+		return maven.CreateNewProjectSettingsXMLWithActiveProfile(config.Profiles, utils)
 	}
-
 	return nil
 }
 
