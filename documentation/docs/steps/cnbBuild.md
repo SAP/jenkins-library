@@ -37,3 +37,16 @@ cnbBuild(
     containerImageRegistryUrl: 'gcr.io'
 )
 ```
+
+## Example 3: User provided buildpacks
+
+```groovy
+cnbBuild(
+    script: script,
+    dockerConfigJsonCredentialsId: 'DOCKER_REGISTRY_CREDS',
+    containerImageName: 'images/example',
+    containerImageTag: 'v0.0.1',
+    containerImageRegistryUrl: 'gcr.io',
+    buildpacks: ['gcr.io/paketo-buildpacks/nodejs', 'paketo-community/build-plan']
+)
+```
