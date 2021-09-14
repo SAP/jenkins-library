@@ -22,6 +22,12 @@ func newCnbBuildTestsUtils() cnbBuildMockUtils {
 	return utils
 }
 
+func addBuilderFiles(utils *cnbBuildMockUtils) {
+	for _, path := range []string{detectorPath, builderPath, exporterPath} {
+		utils.FilesMock.AddFile(path, []byte(`xyz`))
+	}
+}
+
 func TestRunCnbBuild(t *testing.T) {
 	t.Parallel()
 
@@ -39,6 +45,7 @@ func TestRunCnbBuild(t *testing.T) {
 
 		utils := newCnbBuildTestsUtils()
 		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
+		addBuilderFiles(&utils)
 
 		err := runCnbBuild(&config, &telemetry.CustomData{}, utils, &commonPipelineEnvironment)
 
@@ -63,6 +70,7 @@ func TestRunCnbBuild(t *testing.T) {
 
 		utils := newCnbBuildTestsUtils()
 		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
+		addBuilderFiles(&utils)
 
 		err := runCnbBuild(&config, &telemetry.CustomData{}, utils, &commonPipelineEnvironment)
 
@@ -84,6 +92,7 @@ func TestRunCnbBuild(t *testing.T) {
 
 		utils := newCnbBuildTestsUtils()
 		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":"dXNlcjpwYXNz"}}`))
+		addBuilderFiles(&utils)
 
 		err := runCnbBuild(&config, nil, utils, &commonPipelineEnvironment)
 		assert.EqualError(t, err, "failed to parse DockerConfigJSON file '/path/to/config.json': json: cannot unmarshal string into Go struct field ConfigFile.auths of type types.AuthConfig")
@@ -97,7 +106,19 @@ func TestRunCnbBuild(t *testing.T) {
 		}
 
 		utils := newCnbBuildTestsUtils()
+		addBuilderFiles(&utils)
+
 		err := runCnbBuild(&config, nil, utils, &commonPipelineEnvironment)
 		assert.EqualError(t, err, "failed to read DockerConfigJSON file 'not-there': could not read 'not-there'")
+	})
+
+	t.Run("error case: dockerImage is not a valid builder", func(t *testing.T) {
+		t.Parallel()
+		config := cnbBuildOptions{}
+
+		utils := newCnbBuildTestsUtils()
+
+		err := runCnbBuild(&config, nil, utils, &commonPipelineEnvironment)
+		assert.EqualError(t, err, "the provided dockerImage is not a valid builder")
 	})
 }
