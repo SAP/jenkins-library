@@ -24,7 +24,7 @@ type ActiveProfileType struct {
 }
 
 type ActiveProfilesType struct {
-	ActiveProfilesType []ActiveProfileType `xml:"activeProfiles,omitempty"`
+	ActiveProfileType []ActiveProfileType `xml:"activeProfiles,omitempty"`
 }
 
 type Settings struct {
