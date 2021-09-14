@@ -135,6 +135,7 @@ import static com.sap.piper.cm.StepHelpers.getBackendTypeAndLogInfoIfCMIntegrati
         'abapPackage',
         /** The code page of your ABAP system. E.g. UTF-8. */
         'codePage', //RFC
+        /** If unix style line endings should be accepted. Only for `RFC`.*/
         'acceptUnixStyleLineEndings', // RFC
         /** @see transportRequestCreate */
         'verbose', // RFC
