@@ -39,7 +39,14 @@ func AbapEnvironmentRunAUnitTestCommand() *cobra.Command {
 	var createAbapEnvironmentRunAUnitTestCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Runs an AUnit Test",
-		Long:  `This step is for triggering an [AUnit] test run on an SAP Cloud Platform ABAP Environment system`,
+		Long: `This step is for triggering an [AUnit](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/cdd19e3a5c49458291ec65d8d86e2b9a.html) test run on an SAP Cloud Platform ABAP Environment system.
+Please provide either of the following options:
+
+* The host and credentials the Cloud Platform ABAP Environment system itself. The credentials must be configured for the Communication Scenario SAP_COM_0735.
+* The Cloud Foundry parameters (API endpoint, organization, space), credentials, the service instance for the ABAP service and the service key for the Communication Scenario SAP_COM_0735.
+* Only provide one of those options with the respective credentials. If all values are provided, the direct communication (via host) has priority.
+
+Regardless of the option you chose, please make sure to provide the Object Set containing the Objects that you want to be checked analog to the examples listed on this page.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -104,14 +111,14 @@ func AbapEnvironmentRunAUnitTestCommand() *cobra.Command {
 }
 
 func addAbapEnvironmentRunAUnitTestFlags(cmd *cobra.Command, stepConfig *abapEnvironmentRunAUnitTestOptions) {
-	cmd.Flags().StringVar(&stepConfig.AUnitConfig, "aUnitConfig", os.Getenv("PIPER_aUnitConfig"), "Path to a YAML configuration file for Packages and/or Software Components to be checked during the AUnit test run")
+	cmd.Flags().StringVar(&stepConfig.AUnitConfig, "aUnitConfig", os.Getenv("PIPER_aUnitConfig"), "Path to a YAML configuration file for the Object Set to be checked during the AUnit test run")
 	cmd.Flags().StringVar(&stepConfig.CfAPIEndpoint, "cfApiEndpoint", os.Getenv("PIPER_cfApiEndpoint"), "Cloud Foundry API endpoint")
 	cmd.Flags().StringVar(&stepConfig.CfOrg, "cfOrg", os.Getenv("PIPER_cfOrg"), "CF org")
 	cmd.Flags().StringVar(&stepConfig.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Parameter of ServiceInstance Name to delete CloudFoundry Service")
 	cmd.Flags().StringVar(&stepConfig.CfServiceKeyName, "cfServiceKeyName", os.Getenv("PIPER_cfServiceKeyName"), "Parameter of CloudFoundry Service Key to be created")
 	cmd.Flags().StringVar(&stepConfig.CfSpace, "cfSpace", os.Getenv("PIPER_cfSpace"), "CF Space")
-	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510")
-	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0510")
+	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0735")
+	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0735")
 	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP Cloud Platform ABAP Environment system")
 	cmd.Flags().StringVar(&stepConfig.AUnitResultsFileName, "aUnitResultsFileName", `AUnitResults.xml`, "Specifies output file name for the results from the AUnit run.")
 
