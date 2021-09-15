@@ -2,9 +2,10 @@ metadata:
   name: transportRequestUploadCTS
   aliases:
     - name: transportRequestUploadFile
-  description: Uploads a UI5 application from your project folder to the ABAP system via CTS connections.
+  description: This step uploads an UI5 application to the SAPUI5 ABAP repository.
   longDescription: |
-    This step uploads a UI5 application from your project folder to the ABAP system via CTS connections.
+    This step uploads an UI5 application from your project folder to the SAPUI5 ABAP repository of the SAPUI5 ABAP back-end infrastructure using the SAPUI5 Repository OData service.
+    It processes the results of the `ui5 build` command of the SAPUI5 toolset.
 spec:
   inputs:
     secrets:
@@ -16,7 +17,7 @@ spec:
     params:
       - name: description
         type: string
-        description: "The description of the application. The desription is only taken into account for a new upload. In case of an update the description will not be updated."
+        description: "The description of the application. The description is only taken into account for a new upload. In case of an update the description will not be updated."
         default: "Deployed with Piper based on SAP Fiori tools"
         scope:
           - PARAMETERS
@@ -25,7 +26,7 @@ spec:
           - GENERAL
       - name: endpoint
         type: string
-        description: "The ODATA service endpoint"
+        description: "The ODATA service endpoint: https://<host>:<port>"
         aliases:
           - name: changeManagement/endpoint
           - name: changeManagement/cts/endpoint
@@ -48,7 +49,7 @@ spec:
       - name: username
         type: string
         mandatory: true
-        description: "Service user for uploading to the ABAP system via CTS"
+        description: "Service user for uploading to the SAPUI5 ABAP repository"
         secret: true
         scope:
           - PARAMETERS
@@ -58,7 +59,7 @@ spec:
       - name: password
         type: string
         mandatory: true
-        description: "Service user password for uploading to the ABAP system via CTS"
+        description: "Service user password for uploading to the SAPUI5 ABAP repository"
         secret: true
         scope:
           - PARAMETERS
