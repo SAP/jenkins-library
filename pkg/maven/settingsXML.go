@@ -19,12 +19,10 @@ type ServersType struct {
 	ServerType []Server `xml:"server,omitempty"`
 }
 
-type ActiveProfileType struct {
-	Profile string `xml:"activeProfile,omitempty"`
-}
-
 type ActiveProfilesType struct {
-	ActiveProfileType []ActiveProfileType `xml:"activeProfiles,omitempty"`
+	XMLName       xml.Name `xml:"activeProfiles"`
+	Text          string   `xml:",chardata"`
+	ActiveProfile []string `xml:"activeProfile"`
 }
 
 type Settings struct {

@@ -101,20 +101,16 @@ func UpdateActiveProfileInSettingsXML(newActiveProfiles []string, utils Settings
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal settings xml file '%v': %w", settingsFile, err)
 	}
-	if len(projectSettings.ActiveProfiles.ActiveProfileType) == 0 {
+	if len(projectSettings.ActiveProfiles.ActiveProfile) == 0 {
 		return fmt.Errorf("no active profile found to replace in settings xml '%v': %w", settingsFile, err)
 	} else {
 
 		projectSettings.Xsi = "http://www.w3.org/2001/XMLSchema-instance"
 		projectSettings.SchemaLocation = "http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd"
 
-		projectSettings.ActiveProfiles.ActiveProfileType = nil
+		projectSettings.ActiveProfiles.ActiveProfile = []string{}
 
-		profiles := ActiveProfileType{
-			Profile: "release.build",
-		}
-
-		projectSettings.ActiveProfiles.ActiveProfileType = append(projectSettings.ActiveProfiles.ActiveProfileType, profiles)
+		projectSettings.ActiveProfiles.ActiveProfile = append(projectSettings.ActiveProfiles.ActiveProfile, newActiveProfiles[0])
 
 		settingsXml, err := xml.MarshalIndent(projectSettings, "", "    ")
 		if err != nil {
