@@ -286,7 +286,7 @@ func runMtaBuild(config mtaBuildOptions,
 
 func handleActiveProfileUpdate(config mtaBuildOptions, utils mtaBuildUtils) error {
 	if len(config.Profiles) > 0 {
-		return maven.CreateNewProjectSettingsXMLWithActiveProfile(config.Profiles, utils)
+		return maven.UpdateActiveProfileInSettingsXML(config.Profiles, utils)
 	}
 	return nil
 }
