@@ -162,7 +162,7 @@ func addMtaBuildFlags(cmd *cobra.Command, stepConfig *mtaBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.AltDeploymentRepositoryUser, "altDeploymentRepositoryUser", os.Getenv("PIPER_altDeploymentRepositoryUser"), "User for the alternative deployment repository to which which mtar artifacts will be publised")
 	cmd.Flags().StringVar(&stepConfig.AltDeploymentRepositoryURL, "altDeploymentRepositoryUrl", os.Getenv("PIPER_altDeploymentRepositoryUrl"), "Url for the alternative deployment repository to which mtar artifacts will be publised")
 	cmd.Flags().BoolVar(&stepConfig.Publish, "publish", false, "pushed mtar artifact to altDeploymentRepositoryUrl/altDeploymentRepositoryID when set to true")
-	cmd.Flags().StringSliceVar(&stepConfig.Profiles, "profiles", []string{}, "Defines list of maven build profiles to be used. profiles will overwrite existing values in the global settings xml")
+	cmd.Flags().StringSliceVar(&stepConfig.Profiles, "profiles", []string{}, "Defines list of maven build profiles to be used. profiles will overwrite existing values in the global settings xml at $M2_HOME/conf/settings.xml")
 
 }
 
