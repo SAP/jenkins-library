@@ -136,7 +136,7 @@ objectset:
   - type: unionSet
     set:
       - type: flatObjectSet
-        object:          
+        object:
         - name: my_class
           type: CLAS
         - name: my_interface
