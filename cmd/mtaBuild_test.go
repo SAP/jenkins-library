@@ -249,4 +249,32 @@ func TestMarBuild(t *testing.T) {
 			assert.Equal(t, "", utilsMock.globalSettingsFile)
 		})
 	})
+
+	t.Run("publish related tests", func(t *testing.T) {
+
+		t.Run("error when no repository url", func(t *testing.T) {
+
+			utilsMock := newMtaBuildTestUtilsBundle()
+			utilsMock.AddFile("mta.yaml", []byte("ID: \"myNameFromMtar\""))
+
+			options := mtaBuildOptions{ApplicationName: "myApp", GlobalSettingsFile: "/opt/maven/settings.xml", Platform: "CF", MtarName: "myName", Source: "./", Target: "./", Publish: true}
+
+			err := runMtaBuild(options, &cpe, utilsMock)
+
+			assert.Equal(t, "altDeploymentRepositoryUser, altDeploymentRepositoryPassword and altDeploymentRepositoryURL not found , must be present", err.Error())
+		})
+
+		t.Run("error when no mtar group", func(t *testing.T) {
+
+			utilsMock := newMtaBuildTestUtilsBundle()
+			utilsMock.AddFile("mta.yaml", []byte("ID: \"myNameFromMtar\""))
+
+			options := mtaBuildOptions{ApplicationName: "myApp", GlobalSettingsFile: "/opt/maven/settings.xml", Platform: "CF", MtarName: "myName", Source: "./", Target: "./", Publish: true,
+				AltDeploymentRepositoryURL: "dummy", AltDeploymentRepositoryPassword: "dummy", AltDeploymentRepositoryUser: "dummy"}
+
+			err := runMtaBuild(options, &cpe, utilsMock)
+
+			assert.Equal(t, "mtarGroup, version not found and must be present", err.Error())
+		})
+	})
 }
