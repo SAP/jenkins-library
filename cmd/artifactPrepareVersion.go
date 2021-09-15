@@ -218,8 +218,6 @@ func runArtifactPrepareVersion(config *artifactPrepareVersionOptions, telemetryD
 		commonPipelineEnvironment.packaging = coordinates.Packaging
 	}
 
-	// }
-
 	return nil
 }
 
