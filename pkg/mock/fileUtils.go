@@ -237,6 +237,11 @@ func (f *FilesMock) FileWrite(path string, content []byte, mode os.FileMode) err
 	return nil
 }
 
+// RemoveAll is a proxy for FileRemove
+func (f *FilesMock) RemoveAll(path string) error {
+	return f.FileRemove(path)
+}
+
 // FileRemove deletes the association of the given path with any content and records the removal of the file.
 // If the path has not been registered before, it returns an error.
 func (f *FilesMock) FileRemove(path string) error {
@@ -308,6 +313,21 @@ func (f *FilesMock) FileRename(oldPath, newPath string) error {
 	delete(f.files, oldAbsPath)
 	f.files[newAbsPath] = props
 	return nil
+}
+
+// TempDir create a temp-styled directory in the in-memory, so that this path is established to exist.
+func (f *FilesMock) TempDir(_, pattern string) (string, error) {
+	tmpDir := "/tmp/test"
+
+	if pattern != "" {
+		tmpDir = fmt.Sprintf("/tmp/%stest", pattern)
+	}
+
+	err := f.MkdirAll(tmpDir, 0755)
+	if err != nil {
+		return "", err
+	}
+	return tmpDir, nil
 }
 
 // MkdirAll creates a directory in the in-memory file system, so that this path is established to exist.
