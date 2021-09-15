@@ -13,7 +13,7 @@ import (
 type AzureDevOpsConfigProvider struct{}
 
 func (a *AzureDevOpsConfigProvider) OrchestratorVersion() string {
-	return "123"
+	return getEnv("AGENT_VERSION", "n/a")
 }
 
 func (a *AzureDevOpsConfigProvider) OrchestratorType() string {
@@ -22,20 +22,27 @@ func (a *AzureDevOpsConfigProvider) OrchestratorType() string {
 
 func (a *AzureDevOpsConfigProvider) GetLog() ([]byte, error) {
 
+	// Questions:
+	// How to handle tokens for users?
+	// How to get step specific logs, not only whole log?
+
 	URL := a.GetSystemCollectionURI() + a.GetTeamProjectId() + "/_apis/build/builds/" + a.GetBuildId() + "/logs"
-	//URL = "https://dev.azure.com/hyperspace-pipelines/8d6e7755-9b5a-4036-a67e-33b95cda3a3f/_apis/build/builds/7804/logs"
 
 	client := &piperHttp.Client{}
 	options := piperHttp.ClientOptions{
-		// We do not need a username, but the http package does only create the base64 encoded
-		// string if the username is larger than 0. So we misuse the username for the PAT.
-		Username: "REVOKED AND DELETED",
-		Password: "",
+		Username: "",
+		Password: os.Getenv("PIPER_AZURE_PAT"),
 	}
+
 	client.SetOptions(options)
 	response, err := client.GetRequest(URL, nil, nil)
+	logs := []byte{}
 	if err != nil {
 		fmt.Println(err)
+	}
+	if response.StatusCode != 200 {
+		log.Entry().Errorf("Could not get log information from AzureDevOps. Returning with empty log.")
+		return logs, nil
 	}
 	var responseInterface map[string]interface{}
 	err = piperHttp.ParseHTTPResponseBodyJSON(response, &responseInterface)
@@ -44,8 +51,6 @@ func (a *AzureDevOpsConfigProvider) GetLog() ([]byte, error) {
 	}
 	// check if response interface is empty or non-existent
 	logCount := int(responseInterface["count"].(float64))
-
-	logs := []byte{}
 
 	for i := 1; i <= logCount; i++ {
 		counter := strconv.Itoa(i)

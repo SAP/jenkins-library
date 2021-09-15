@@ -17,6 +17,14 @@ func (a *JenkinsConfigProvider) OrchestratorType() string {
 }
 
 func (j *JenkinsConfigProvider) GetLog() ([]byte, error) {
+	// Questions:
+	// How to get the data from jenkins?
+	// (a) Getting it from local file systems, difficulties with mounted volumes on Google Cloud
+	// (b) Getting data via API ->
+	//	* Problem of authentication, do we have credentials available in vault?
+	//	* ...
+	// How to get step specific data? As it is shown in Blue Ocean?
+
 	filePath := j.getJenkinsHome() + "/jobs/" + j.GetJobName() + "/builds/" + j.GetBuildNumber() + "/log"
 
 	logFile, err := ioutil.ReadFile(filePath)
