@@ -93,7 +93,7 @@ func UpdateActiveProfileInSettingsXML(newActiveProfiles []string, utils Settings
 
 	settingsXMLContent, err := utils.FileRead(settingsFile)
 	if err != nil {
-		log.Entry().Warnf("error reading global settings xml file at %v , continuing without active profile update", settingsFile)
+		return fmt.Errorf("error reading global settings xml file at %v , continuing without active profile update", settingsFile)
 	}
 
 	var projectSettings Settings
