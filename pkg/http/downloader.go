@@ -52,9 +52,7 @@ func (c *Client) GetRequest(url string, header http.Header, cookies []*http.Cook
 	// Downloads content from URL and returns the data instead of writing it to file
 	response, err := c.SendRequest("GET", url, nil, header, cookies)
 	if err != nil {
-		return &http.Response{}, errors.Wrapf(err, "HTTP %v request to %v failed with error", url)
+		return &http.Response{}, errors.Wrapf(err, "HTTP request to %v failed with error", url)
 	}
-	//defer response.Body.Close()
-
 	return response, nil
 }
