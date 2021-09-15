@@ -31,7 +31,7 @@ func (a *AzureDevOpsConfigProvider) GetLog() ([]byte, error) {
 	client := &piperHttp.Client{}
 	options := piperHttp.ClientOptions{
 		Username: "",
-		Password: os.Getenv("PIPER_AZURE_PAT"),
+		Password: getEnv("PIPER_AZURE_PAT", "N/A"),
 	}
 
 	client.SetOptions(options)

@@ -2,6 +2,7 @@ package orchestrator
 
 import (
 	"errors"
+	"github.com/SAP/jenkins-library/pkg/log"
 	"os"
 )
 
@@ -93,5 +94,6 @@ func getEnv(key, fallback string) string {
 	if value, ok := os.LookupEnv(key); ok {
 		return value
 	}
+	log.Entry().Warnf("Could not read env variable %v using fallback value %v", key, fallback)
 	return fallback
 }
