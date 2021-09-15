@@ -193,7 +193,7 @@ spec:
           - name: mta/publish
       - name: profiles
         type: "[]string"
-        description: Defines list of maven build profiles to be used. profiles will overwrite existing values in the global settings xml 
+        description: Defines list of maven build profiles to be used. profiles will overwrite existing values in the global settings xml at $M2_HOME/conf/settings.xml
         scope:
           - PARAMETERS
           - GENERAL

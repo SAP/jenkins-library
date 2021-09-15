@@ -132,9 +132,5 @@ type Settings struct {
 			} `xml:"pluginRepositories,omitempty"`
 		} `xml:"profile,omitempty"`
 	} `xml:"profiles,omitempty"`
-	// ActiveProfiles struct {
-	// 	Text          string   `xml:",chardata"`
-	// 	ActiveProfile []string `xml:"activeProfile,omitempty"`
-	// } `xml:"activeProfiles,omitempty"`
 	ActiveProfiles ActiveProfilesType `xml:"activeProfiles,omitempty"`
 }

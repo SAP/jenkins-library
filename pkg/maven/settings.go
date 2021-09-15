@@ -86,46 +86,46 @@ func DownloadAndCopySettingsFiles(globalSettingsFile string, projectSettingsFile
 }
 
 func UpdateActiveProfileInSettingsXML(newActiveProfiles []string, utils SettingsDownloadUtils) error {
-
 	settingsFile, err := getGlobalSettingsFileDest()
 	if err != nil {
 		return err
 	}
 
-	var projectSettings Settings
 	settingsXMLContent, err := utils.FileRead(settingsFile)
 	if err != nil {
-		return fmt.Errorf("failed to read file '%v': %w", settingsFile, err)
+		log.Entry().Warnf("error reading global settings xml file at %v , continuing without active profile update", settingsFile)
 	}
+
+	var projectSettings Settings
 	err = xml.Unmarshal([]byte(settingsXMLContent), &projectSettings)
+
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal settings xml file '%v': %w", settingsFile, err)
 	}
-	if len(projectSettings.ActiveProfiles.ActiveProfile) == 0 {
-		return fmt.Errorf("no active profile found to replace in settings xml '%v': %w", settingsFile, err)
-	} else {
 
+	if len(projectSettings.ActiveProfiles.ActiveProfile) == 0 {
+		log.Entry().Warnf("no active profile found to replace in settings xml %v , continuing without file edit", settingsFile)
+	} else {
 		projectSettings.Xsi = "http://www.w3.org/2001/XMLSchema-instance"
 		projectSettings.SchemaLocation = "http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd"
 
 		projectSettings.ActiveProfiles.ActiveProfile = []string{}
-
-		projectSettings.ActiveProfiles.ActiveProfile = append(projectSettings.ActiveProfiles.ActiveProfile, newActiveProfiles[0])
+		projectSettings.ActiveProfiles.ActiveProfile = append(projectSettings.ActiveProfiles.ActiveProfile, newActiveProfiles...)
 
 		settingsXml, err := xml.MarshalIndent(projectSettings, "", "    ")
 		if err != nil {
 			return fmt.Errorf("failed to marshal maven project settings xml: %w", err)
 		}
+
 		settingsXmlString := string(settingsXml)
 		Replacer := strings.NewReplacer("&#xA;", "", "&#x9;", "")
 		settingsXmlString = Replacer.Replace(settingsXmlString)
-
 		xmlstring := []byte(xml.Header + settingsXmlString)
 
 		err = utils.FileWrite(settingsFile, xmlstring, 0777)
-		err = utils.FileWrite(".pipeline/newgbSettings.xml", xmlstring, 0777)
+
 		if err != nil {
-			return fmt.Errorf("failed to write maven Settings xml: %w", err)
+			return fmt.Errorf("failed to write maven Settings during <activeProfile> update xml: %w", err)
 		}
 		log.Entry().Infof("Successfully updated <acitveProfile> details in maven settings file : '%s'", settingsFile)
 
@@ -177,62 +177,6 @@ func UpdateProjectSettingsXML(projectSettingsFile string, altDeploymentRepositor
 	}
 	return projectSettingsFileDestination, nil
 
-}
-
-func CreateNewProjectSettingsXMLWithActiveProfile(activeProfile []string, utils SettingsDownloadUtils) error {
-
-	destination, err := getProjectSettingsFileDest()
-	// destination := ".pipeline/mavenProjectSettings.xml"
-	parent := filepath.Dir(destination)
-
-	parentFolderExists, err := utils.FileExists(parent)
-
-	if err != nil {
-		return err
-	}
-
-	if !parentFolderExists {
-		if err = utils.MkdirAll(parent, 0775); err != nil {
-			return err
-		}
-	}
-	// if err != nil {
-	// 	return err
-	// }
-
-	// settingsXML := Settings{
-	// 	XMLName:        xml.Name{Local: "settings"},
-	// 	Xsi:            "http://www.w3.org/2001/XMLSchema-instance",
-	// 	SchemaLocation: "http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd",
-	// 	ActiveProfiles: ActiveProfilesType{
-	// 		[]ActiveProfileType{
-	// 			{
-	// 				Profile: activeProfile[0],
-	// 			},
-	// 		},
-	// 	},
-	// }
-
-	settingsXML := `<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
-	<activeProfiles>
-	<activeProfile>release.build</activeProfile>
-	</activeProfiles>
-	</settings>`
-
-	// xmlstring, err := xml.MarshalIndent(settingsXML, "", "    ")
-	// if err != nil {
-	// 	return fmt.Errorf("failed to marshal Settings.xml: %w", err)
-	// }
-
-	// xmlstring = []byte(xml.Header + string(xmlstring))
-	xmlstring := []byte(xml.Header + settingsXML)
-	err = utils.FileWrite(destination, xmlstring, 0777)
-	if err != nil {
-		return fmt.Errorf("failed to write maven Project Settings xml: %w", err)
-	}
-
-	log.Entry().Infof("Successfully created maven project settings with <activeProfile> details at %v", destination)
-	return nil
 }
 
 func addServerTagtoProjectSettingsXML(projectSettingsFile string, altDeploymentRepositoryID string, altDeploymentRepositoryUser string, altDeploymentRepositoryPassword string, utils SettingsDownloadUtils) error {
@@ -359,7 +303,7 @@ func getGlobalSettingsFileDest() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return m2Home + "/conf/settings.xml", nil
+	return filepath.Join(m2Home, "conf", "settings.xml"), nil
 }
 
 func getProjectSettingsFileDest() (string, error) {
@@ -367,7 +311,7 @@ func getProjectSettingsFileDest() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return home + "/.m2/settings.xml", nil
+	return filepath.Join(home, ".m2", "settings.xml"), nil
 }
 
 func getEnvironmentVariable(name string) (string, error) {
