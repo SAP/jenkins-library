@@ -2,10 +2,10 @@ metadata:
   name: abapEnvironmentRunAUnitTest
   description: Runs an AUnit Test
   longDescription: |
-    This step is for triggering an [AUnit](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/cdd19e3a5c49458291ec65d8d86e2b9a.html) test run on an SAP Cloud Platform ABAP Environment system.
+    This step is for triggering an [AUnit](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/cdd19e3a5c49458291ec65d8d86e2b9a.html) test run on an SAP BTP ABAP Environment system.
     Please provide either of the following options:
 
-    * The host and credentials the Cloud Platform ABAP Environment system itself. The credentials must be configured for the Communication Scenario SAP_COM_0735.
+    * The host and credentials of the BTP ABAP Environment system itself. The credentials must be configured for the Communication Scenario SAP_COM_0735.
     * The Cloud Foundry parameters (API endpoint, organization, space), credentials, the service instance for the ABAP service and the service key for the Communication Scenario SAP_COM_0735.
     * Only provide one of those options with the respective credentials. If all values are provided, the direct communication (via host) has priority.
 
@@ -16,7 +16,7 @@ spec:
       - name: abapCredentialsId
         aliases:
           - name: cfCredentialsId
-        description: Jenkins credentials ID containing user and password to authenticate to the Cloud Platform ABAP Environment system or the Cloud Foundry API
+        description: Jenkins credentials ID containing user and password to authenticate to the BTP ABAP Environment system or the Cloud Foundry API
         type: jenkins
     params:
       - name: aUnitConfig
@@ -112,7 +112,7 @@ spec:
             param: password
       - name: host
         type: string
-        description: Specifies the host address of the SAP Cloud Platform ABAP Environment system
+        description: Specifies the host address of the SAP BTP ABAP Environment system
         scope:
           - PARAMETERS
           - STAGES

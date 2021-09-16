@@ -39,10 +39,10 @@ func AbapEnvironmentRunAUnitTestCommand() *cobra.Command {
 	var createAbapEnvironmentRunAUnitTestCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Runs an AUnit Test",
-		Long: `This step is for triggering an [AUnit](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/cdd19e3a5c49458291ec65d8d86e2b9a.html) test run on an SAP Cloud Platform ABAP Environment system.
+		Long: `This step is for triggering an [AUnit](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/cdd19e3a5c49458291ec65d8d86e2b9a.html) test run on an SAP BTP ABAP Environment system.
 Please provide either of the following options:
 
-* The host and credentials the Cloud Platform ABAP Environment system itself. The credentials must be configured for the Communication Scenario SAP_COM_0735.
+* The host and credentials of the BTP ABAP Environment system itself. The credentials must be configured for the Communication Scenario SAP_COM_0735.
 * The Cloud Foundry parameters (API endpoint, organization, space), credentials, the service instance for the ABAP service and the service key for the Communication Scenario SAP_COM_0735.
 * Only provide one of those options with the respective credentials. If all values are provided, the direct communication (via host) has priority.
 
@@ -119,7 +119,7 @@ func addAbapEnvironmentRunAUnitTestFlags(cmd *cobra.Command, stepConfig *abapEnv
 	cmd.Flags().StringVar(&stepConfig.CfSpace, "cfSpace", os.Getenv("PIPER_cfSpace"), "CF Space")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0735")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0735")
-	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP Cloud Platform ABAP Environment system")
+	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP BTP ABAP Environment system")
 	cmd.Flags().StringVar(&stepConfig.AUnitResultsFileName, "aUnitResultsFileName", `AUnitResults.xml`, "Specifies output file name for the results from the AUnit run.")
 
 	cmd.MarkFlagRequired("aUnitConfig")
@@ -138,7 +138,7 @@ func abapEnvironmentRunAUnitTestMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "abapCredentialsId", Description: "Jenkins credentials ID containing user and password to authenticate to the Cloud Platform ABAP Environment system or the Cloud Foundry API", Type: "jenkins", Aliases: []config.Alias{{Name: "cfCredentialsId", Deprecated: false}}},
+					{Name: "abapCredentialsId", Description: "Jenkins credentials ID containing user and password to authenticate to the BTP ABAP Environment system or the Cloud Foundry API", Type: "jenkins", Aliases: []config.Alias{{Name: "cfCredentialsId", Deprecated: false}}},
 				},
 				Parameters: []config.StepParameters{
 					{
