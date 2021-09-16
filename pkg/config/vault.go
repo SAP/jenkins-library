@@ -14,19 +14,19 @@ import (
 )
 
 const (
-	vaultRootPaths               = "vaultRootPaths"
-	vaultTestCredentialPath      = "vaultTestCredentialPath"
-	vaultTestCredentialKeys      = "vaultTestCredentialKeys"
-	vaultTestCredentialEnvPrefix = "PIPER_TESTCREDENTIAL_"
-	vaultAppRoleID               = "vaultAppRoleID"
-	vaultAppRoleSecretID         = "vaultAppRoleSecreId"
-	vaultServerUrl               = "vaultServerUrl"
-	vaultNamespace               = "vaultNamespace"
-	vaultBasePath                = "vaultBasePath"
-	vaultPipelineName            = "vaultPipelineName"
-	vaultPath                    = "vaultPath"
-	skipVault                    = "skipVault"
-	vaultDisableOverwrite        = "vaultDisableOverwrite"
+	vaultRootPaths                      = "vaultRootPaths"
+	vaultTestCredentialPath             = "vaultTestCredentialPath"
+	vaultTestCredentialKeys             = "vaultTestCredentialKeys"
+	vaultTestCredentialEnvPrefixDefault = "PIPER_TESTCREDENTIAL_"
+	vaultAppRoleID                      = "vaultAppRoleID"
+	vaultAppRoleSecretID                = "vaultAppRoleSecretId"
+	vaultServerUrl                      = "vaultServerUrl"
+	vaultNamespace                      = "vaultNamespace"
+	vaultBasePath                       = "vaultBasePath"
+	vaultPipelineName                   = "vaultPipelineName"
+	vaultPath                           = "vaultPath"
+	skipVault                           = "skipVault"
+	vaultDisableOverwrite               = "vaultDisableOverwrite"
 )
 
 var (
@@ -174,8 +174,8 @@ func resolveVaultTestCredentials(config *StepConfig, client vaultClient) {
 	lookupPath[1] = "$(vaultBasePath)/$(vaultPipelineName)/" + credPath
 	lookupPath[2] = "$(vaultBasePath)/GROUP-SECRETS/" + credPath
 
-	for _, path := range lookupPath {
-		vaultPath, ok := interpolation.ResolveString(path, config.Config)
+	for _, p := range lookupPath {
+		vaultPath, ok := interpolation.ResolveString(p, config.Config)
 		if !ok {
 			continue
 		}
@@ -202,7 +202,7 @@ func populateTestCredentialsAsEnvs(config *StepConfig, secret map[string]string,
 
 	vaultTestCredentialEnvPrefix, ok := config.Config["vaultTestCredentialEnvPrefix"].(string)
 	if !ok || len(vaultTestCredentialEnvPrefix) == 0 {
-		vaultTestCredentialEnvPrefix = vaultTestCredentialEnvPrefix_Default
+		vaultTestCredentialEnvPrefix = vaultTestCredentialEnvPrefixDefault
 	}
 	for secretKey, secretValue := range secret {
 		for _, key := range keys {
@@ -319,16 +319,4 @@ func getSecretReferencePaths(reference *ResourceReference, config map[string]int
 		retPaths = append(retPaths, fullPath)
 	}
 	return retPaths
-}
-
-func toStringSlice(interfaceSlice []interface{}) []string {
-	retSlice := make([]string, 0, len(interfaceSlice))
-	for _, vRaw := range interfaceSlice {
-		if v, ok := vRaw.(string); ok {
-			retSlice = append(retSlice, v)
-			continue
-		}
-		log.Entry().Warnf("'%s' needs to be of type string or an array of strings but got %T (%[2]v)", vaultPath, vRaw)
-	}
-	return retSlice
 }
