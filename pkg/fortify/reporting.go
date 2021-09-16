@@ -40,13 +40,13 @@ func CreateCustomReport(data FortifyReportData, issueGroups []*models.ProjectVer
 			{Description: "Fortify project version", Details: data.ProjectVersion},
 		},
 		Overview: []reporting.OverviewRow{
-			{Description: "Total number of compliance violations", Details: fmt.Sprint(data.Violations)},
-			{Description: "Total number of issues suppressed", Details: fmt.Sprint(data.Suppressed)},
+			{Description: "Number of compliance violations", Details: fmt.Sprint(data.Violations)},
+			{Description: "Number of issues suppressed", Details: fmt.Sprint(data.Suppressed)},
 			{Description: "Unaudited corporate issues", Details: fmt.Sprint(data.CorporateTotal - data.CorporateAudited)},
 			{Description: "Unaudited audit all issues", Details: fmt.Sprint(data.AuditAllTotal - data.AuditAllAudited)},
 			{Description: "Unaudited spot check issues", Details: fmt.Sprint(data.SpotChecksTotal - data.SpotChecksAudited)},
-			{Description: "Total number of issues", Details: fmt.Sprint(data.Suspicious)},
-			{Description: "Total number of exploitable issues", Details: fmt.Sprint(data.Exploitable)},
+			{Description: "Number of suspicious issues", Details: fmt.Sprint(data.Suspicious)},
+			{Description: "Number of exploitable issues", Details: fmt.Sprint(data.Exploitable)},
 		},
 		ReportTime: time.Now(),
 	}
@@ -70,7 +70,9 @@ func CreateCustomReport(data FortifyReportData, issueGroups []*models.ProjectVer
 
 		detailTable.Rows = append(detailTable.Rows, row)
 	}
+
 	scanReport.DetailTable = detailTable
+	scanReport.SuccessfulScan = data.Violations == 0
 
 	return scanReport
 }

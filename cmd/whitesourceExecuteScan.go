@@ -250,7 +250,7 @@ func checkAndReportScanResults(config *ScanOptions, scan *ws.Scan, utils whiteso
 
 	// create toolrecord file
 	// tbd - how to handle verifyOnly
-	toolRecordFileName, err := createToolRecordWhitesource("./", config)
+	toolRecordFileName, err := createToolRecordWhitesource("./", config, scan)
 	if err != nil {
 		// do not fail until the framework is well established
 		log.Entry().Warning("TR_WHITESOURCE: Failed to create toolrecord file ...", err)
@@ -926,18 +926,41 @@ func persistScannedProjects(config *ScanOptions, scan *ws.Scan, commonPipelineEn
 
 // create toolrecord file for whitesource
 //
-// Limitation: as the toolrecord file is designed to point to one scan result this generate a pointer
-// to the product only, and not to the scanned projects
-//
-func createToolRecordWhitesource(workspace string, config *whitesourceExecuteScanOptions) (string, error) {
+func createToolRecordWhitesource(workspace string, config *whitesourceExecuteScanOptions, scan *ws.Scan) (string, error) {
 	record := toolrecord.New(workspace, "whitesource", config.ServiceURL)
-	productURL := config.ServiceURL + "/Wss/WSS.html#!product;token=" + config.ProductToken
+	wsUiRoot := "https://saas.whitesourcesoftware.com"
+	productURL := wsUiRoot + "/Wss/WSS.html#!product;token=" + config.ProductToken
 	err := record.AddKeyData("product",
 		config.ProductToken,
 		config.ProductName,
 		productURL)
 	if err != nil {
 		return "", err
+	}
+	max_idx := 0
+	for idx, project := range scan.ScannedProjects() {
+		max_idx = idx
+		name := project.Name
+		token := project.Token
+		projectURL := ""
+		if token != "" {
+			projectURL = wsUiRoot + "/Wss/WSS.html#!project;token=" + token
+		} else {
+			// token is empty, provide a dummy to have an indication
+			token = "unknown"
+		}
+		err = record.AddKeyData("project",
+			token,
+			name,
+			projectURL)
+		if err != nil {
+			return "", err
+		}
+	}
+	// set overall display data to product if there
+	// is more than one project
+	if max_idx > 1 {
+		record.SetOverallDisplayData(config.ProductName, productURL)
 	}
 	err = record.Persist()
 	if err != nil {

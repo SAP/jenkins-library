@@ -42,7 +42,7 @@ func TestCheckoutBranchStep(t *testing.T) {
 			StatusCode: 200,
 		}
 
-		err := runAbapEnvironmentCheckoutBranch(&config, nil, &autils, client)
+		err := runAbapEnvironmentCheckoutBranch(&config, &autils, client)
 		assert.NoError(t, err, "Did not expect error")
 	})
 	t.Run("Run Step Failure - empty config", func(t *testing.T) {
@@ -67,7 +67,7 @@ func TestCheckoutBranchStep(t *testing.T) {
 			StatusCode: 200,
 		}
 
-		err := runAbapEnvironmentCheckoutBranch(&config, nil, &autils, client)
+		err := runAbapEnvironmentCheckoutBranch(&config, &autils, client)
 		assert.EqualError(t, err, expectedErrorMessage)
 	})
 	t.Run("Run Step Failure - wrong status", func(t *testing.T) {
@@ -102,7 +102,7 @@ func TestCheckoutBranchStep(t *testing.T) {
 			StatusCode: 200,
 		}
 
-		err := runAbapEnvironmentCheckoutBranch(&config, nil, &autils, client)
+		err := runAbapEnvironmentCheckoutBranch(&config, &autils, client)
 		assert.EqualError(t, err, expectedErrorMessage)
 	})
 	t.Run("Success case: checkout Branches from file config", func(t *testing.T) {
@@ -154,7 +154,7 @@ repositories:
 			Password:          "testPassword",
 			Repositories:      "repositoriesTest.yml",
 		}
-		err = runAbapEnvironmentCheckoutBranch(&config, nil, &autils, client)
+		err = runAbapEnvironmentCheckoutBranch(&config, &autils, client)
 		assert.NoError(t, err)
 	})
 	t.Run("Failure case: checkout Branches from empty file config", func(t *testing.T) {
@@ -201,7 +201,7 @@ repositories:
 			Password:          "testPassword",
 			Repositories:      "repositoriesTest.yml",
 		}
-		err = runAbapEnvironmentCheckoutBranch(&config, nil, &autils, client)
+		err = runAbapEnvironmentCheckoutBranch(&config, &autils, client)
 		assert.EqualError(t, err, expectedErrorMessage)
 	})
 	t.Run("Failure case: checkout Branches from wrong file config", func(t *testing.T) {
@@ -253,7 +253,7 @@ repositories:
 			Password:          "testPassword",
 			Repositories:      "repositoriesTest.yml",
 		}
-		err = runAbapEnvironmentCheckoutBranch(&config, nil, &autils, client)
+		err = runAbapEnvironmentCheckoutBranch(&config, &autils, client)
 		assert.EqualError(t, err, expectedErrorMessage)
 	})
 }

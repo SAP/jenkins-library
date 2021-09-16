@@ -15,12 +15,13 @@ import (
 )
 
 type hadolintExecuteOptions struct {
-	ConfigurationURL      string `json:"configurationUrl,omitempty"`
-	ConfigurationUsername string `json:"configurationUsername,omitempty"`
-	ConfigurationPassword string `json:"configurationPassword,omitempty"`
-	DockerFile            string `json:"dockerFile,omitempty"`
-	ConfigurationFile     string `json:"configurationFile,omitempty"`
-	ReportFile            string `json:"reportFile,omitempty"`
+	ConfigurationURL          string   `json:"configurationUrl,omitempty"`
+	ConfigurationUsername     string   `json:"configurationUsername,omitempty"`
+	ConfigurationPassword     string   `json:"configurationPassword,omitempty"`
+	DockerFile                string   `json:"dockerFile,omitempty"`
+	ConfigurationFile         string   `json:"configurationFile,omitempty"`
+	ReportFile                string   `json:"reportFile,omitempty"`
+	CustomTLSCertificateLinks []string `json:"customTlsCertificateLinks,omitempty"`
 }
 
 // HadolintExecuteCommand Executes the Haskell Dockerfile Linter which is a smarter Dockerfile linter that helps you build [best practice](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/) Docker images.
@@ -41,6 +42,8 @@ The linter is parsing the Dockerfile into an abstract syntax tree (AST) and perf
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
+
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
@@ -105,6 +108,7 @@ func addHadolintExecuteFlags(cmd *cobra.Command, stepConfig *hadolintExecuteOpti
 	cmd.Flags().StringVar(&stepConfig.DockerFile, "dockerFile", `./Dockerfile`, "Dockerfile to be used for the assessment.")
 	cmd.Flags().StringVar(&stepConfig.ConfigurationFile, "configurationFile", `.hadolint.yaml`, "Name of the configuration file used locally within the step. If a file with this name is detected as part of your repo downloading the central configuration via `configurationUrl` will be skipped. If you change the file's name make sure your stashing configuration also reflects this.")
 	cmd.Flags().StringVar(&stepConfig.ReportFile, "reportFile", `hadolint.xml`, "Name of the result file used locally within the step.")
+	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List of download links to custom TLS certificates. This is required to ensure trusted connections between Piper and the system where the configuration file is to be downloaded from.")
 
 }
 
@@ -187,6 +191,15 @@ func hadolintExecuteMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     `hadolint.xml`,
+					},
+					{
+						Name:        "customTlsCertificateLinks",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
 					},
 				},
 			},

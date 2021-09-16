@@ -239,15 +239,14 @@ void call(Map parameters = [:]) {
                         echo "[INFO] Uploading file '${configuration.filePath}' to transport request '${configuration.transportRequestId}'" +
                             " of change document '${configuration.changeDocumentId}'."
 
-                        cm.uploadFileToTransportRequestSOLMAN(
-                            configuration.changeManagement.solman?.docker ?: [:],
-                            configuration.changeDocumentId,
-                            configuration.transportRequestId,
-                            configuration.applicationId,
-                            configuration.filePath,
-                            configuration.changeManagement.endpoint,
-                            configuration.changeManagement.credentialsId,
-                            configuration.changeManagement.clientOpts)
+                        transportRequestUploadSOLMAN(script: script,
+                            cmClientOpts: configuration.changeManagement.clientOpts,
+                            filePath: configuration.filePath,
+                            uploadCredentialsId: configuration.changeManagement.credentialsId,
+                            endpoint: configuration.changeManagement.endpoint,
+                            applicationId: configuration.applicationId,
+                            changeDocumentId: configuration.changeDocumentId,
+                            transportRequestId: configuration.transportRequestId)
 
                         echo "[INFO] File '${configuration.filePath}' has been successfully uploaded to transport request '${configuration.transportRequestId}'" +
                             " of change document '${configuration.changeDocumentId}'."
@@ -257,19 +256,18 @@ void call(Map parameters = [:]) {
 
                         echo "[INFO] Uploading application '${configuration.applicationName}' to transport request '${configuration.transportRequestId}'."
 
-                        cm.uploadFileToTransportRequestCTS(
-                            configuration.changeManagement.cts?.nodeDocker ?: [:],
-                            configuration.transportRequestId,
-                            configuration.changeManagement.endpoint,
-                            configuration.changeManagement.client,
-                            configuration.applicationName,
-                            configuration.applicationDescription,
-                            configuration.abapPackage,
-                            configuration.changeManagement.cts.osDeployUser,
-                            configuration.changeManagement.cts.deployToolDependencies,
-                            configuration.changeManagement.cts.npmInstallOpts,
-                            configuration.changeManagement.cts.deployConfigFile,
-                            configuration.changeManagement.credentialsId)
+                        transportRequestUploadCTS(script: script,
+                            transportRequestId: configuration.transportRequestId,
+                            endpoint: configuration.changeManagement.endpoint,
+                            client: configuration.changeManagement.client,
+                            applicationName: configuration.applicationName,
+                            description: configuration.applicationDescription,
+                            abapPackage: configuration.abapPackage,
+                            osDeployUser: configuration.changeManagement.cts.osDeployUser,
+                            deployToolDependencies: configuration.changeManagement.cts.deployToolDependencies,
+                            npmInstallOpts: configuration.changeManagement.cts.npmInstallOpts,
+                            deployConfigFile: configuration.changeManagement.cts.deployConfigFile,
+                            uploadCredentialsId: configuration.changeManagement.credentialsId)
 
                         echo "[INFO] Application '${configuration.applicationName}' has been successfully uploaded to transport request '${configuration.transportRequestId}'."
 
@@ -277,22 +275,20 @@ void call(Map parameters = [:]) {
                     case BackendType.RFC:
 
                         echo "[INFO] Uploading file '${configuration.applicationUrl}' to transport request '${configuration.transportRequestId}'."
-
-                        cm.uploadFileToTransportRequestRFC(
-                            configuration.changeManagement.rfc.docker ?: [:],
-                            configuration.transportRequestId,
-                            configuration.applicationName,
-                            configuration.applicationUrl,
-                            configuration.changeManagement.endpoint,
-                            configuration.changeManagement.credentialsId,
-                            configuration.changeManagement.rfc.developmentInstance,
-                            configuration.changeManagement.rfc.developmentClient,
-                            configuration.applicationDescription,
-                            configuration.abapPackage,
-                            configuration.codePage,
-                            configuration.acceptUnixStyleLineEndings,
-                            configuration.failOnWarning,
-                            configuration.verbose
+                        transportRequestUploadRFC(script: script,
+                            transportRequestId: configuration.transportRequestId,
+                            applicationName: configuration.applicationName,
+                            applicationUrl: configuration.applicationUrl,
+                            endpoint: configuration.changeManagement.endpoint,
+                            uploadCredentialsId: configuration.changeManagement.credentialsId,
+                            instance: configuration.changeManagement.rfc.developmentInstance,
+                            client: configuration.changeManagement.rfc.developmentClient,
+                            applicationDescription: configuration.applicationDescription,
+                            abapPackage: configuration.abapPackage,
+                            codePage: configuration.codePage,
+                            acceptUnixStyleLineEndings: configuration.acceptUnixStyleLineEndings,
+                            failUploadOnWarning: configuration.failOnWarning,
+                            verbose: configuration.verbose
                         )
 
                         echo "[INFO] File 'configuration.applicationUrl' has been successfully uploaded to transport request '${configuration.transportRequestId}'."

@@ -74,8 +74,8 @@ func runIntegrationArtifactGetMplStatus(
 	httpClient.SetOptions(clientOptions)
 	header := make(http.Header)
 	header.Add("Accept", "application/json")
-	mplStatusEncodedURL := fmt.Sprintf("%s/api/v1/MessageProcessingLogs?$filter=IntegrationArtifact/Id"+url.QueryEscape(" eq ")+"'%s'&$orderby="+
-		url.QueryEscape("LogEnd desc")+"&$top=1", serviceKey.OAuth.Host, config.IntegrationFlowID)
+	mplStatusEncodedURL := fmt.Sprintf("%s/api/v1/MessageProcessingLogs?$filter=IntegrationArtifact/Id"+url.QueryEscape(" eq ")+"'%s'"+
+		url.QueryEscape(" and Status ne ")+"'DISCARDED'"+"&$orderby="+url.QueryEscape("LogEnd desc")+"&$top=1", serviceKey.OAuth.Host, config.IntegrationFlowID)
 	tokenParameters := cpi.TokenParameters{TokenURL: serviceKey.OAuth.OAuthTokenProviderURL, Username: serviceKey.OAuth.ClientID, Password: serviceKey.OAuth.ClientSecret, Client: httpClient}
 	token, err := cpi.CommonUtils.GetBearerToken(tokenParameters)
 	if err != nil {
@@ -106,8 +106,23 @@ func runIntegrationArtifactGetMplStatus(
 		if parsingErr != nil {
 			return errors.Wrapf(parsingErr, "HTTP response body could not be parsed as JSON: %v", string(bodyText))
 		}
-		mplStatus := jsonResponse.Path("d.results.0.Status").Data().(string)
-		commonPipelineEnvironment.custom.iFlowMplStatus = mplStatus
+		if jsonResponse == nil {
+			return errors.Errorf("Empty json response: %v", string(bodyText))
+		}
+		if jsonResponse.Exists("d", "results", "0") {
+			mplStatus := jsonResponse.Path("d.results.0.Status").Data().(string)
+			commonPipelineEnvironment.custom.integrationFlowMplStatus = mplStatus
+
+			//if error, then return immediately with the error details
+			if mplStatus == "FAILED" {
+				mplID := jsonResponse.Path("d.results.0.MessageGuid").Data().(string)
+				resp, err := getIntegrationArtifactMPLError(commonPipelineEnvironment, mplID, httpClient, serviceKey.OAuth.Host)
+				if err != nil {
+					return err
+				}
+				return errors.New(resp)
+			}
+		}
 		return nil
 	}
 	responseBody, readErr := ioutil.ReadAll(mplStatusResp.Body)
@@ -118,4 +133,38 @@ func runIntegrationArtifactGetMplStatus(
 
 	log.Entry().Errorf("a HTTP error occurred! Response body: %v, Response status code: %v", responseBody, mplStatusResp.StatusCode)
 	return errors.Errorf("Unable to get integration flow MPL status, Response Status code: %v", mplStatusResp.StatusCode)
+}
+
+//getIntegrationArtifactMPLError - Get integration artifact MPL error details
+func getIntegrationArtifactMPLError(commonPipelineEnvironment *integrationArtifactGetMplStatusCommonPipelineEnvironment, mplID string, httpClient piperhttp.Sender, apiHost string) (string, error) {
+	httpMethod := "GET"
+	header := make(http.Header)
+	header.Add("content-type", "application/json")
+	errorStatusURL := fmt.Sprintf("%s/api/v1/MessageProcessingLogs('%s')/ErrorInformation/$value", apiHost, mplID)
+	errorStatusResp, httpErr := httpClient.SendRequest(httpMethod, errorStatusURL, nil, header, nil)
+
+	if errorStatusResp != nil && errorStatusResp.Body != nil {
+		defer errorStatusResp.Body.Close()
+	}
+
+	if errorStatusResp == nil {
+		return "", errors.Errorf("did not retrieve a HTTP response: %v", httpErr)
+	}
+
+	if errorStatusResp.StatusCode == http.StatusOK {
+		log.Entry().
+			WithField("MPLID", mplID).
+			Info("Successfully retrieved Integration Flow artefact message processing error")
+		responseBody, readErr := ioutil.ReadAll(errorStatusResp.Body)
+		if readErr != nil {
+			return "", errors.Wrapf(readErr, "HTTP response body could not be read, response status code: %v", errorStatusResp.StatusCode)
+		}
+		mplErrorDetails := string(responseBody)
+		commonPipelineEnvironment.custom.integrationFlowMplError = mplErrorDetails
+		return mplErrorDetails, nil
+	}
+	if httpErr != nil {
+		return getHTTPErrorMessage(httpErr, errorStatusResp, httpMethod, errorStatusURL)
+	}
+	return "", errors.Errorf("failed to get Integration Flow artefact message processing error, response Status code: %v", errorStatusResp.StatusCode)
 }

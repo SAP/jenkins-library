@@ -451,7 +451,12 @@ func EnvVarsAsMap(envVars []EnvVar) map[string]string {
 func OptionsAsStringSlice(options []Option) []string {
 	e := []string{}
 	for _, v := range options {
-		e = append(e, fmt.Sprintf("%v %v", v.Name, v.Value))
+		if len(v.Value) != 0 {
+			e = append(e, fmt.Sprintf("%v %v", v.Name, v.Value))
+		} else {
+			e = append(e, fmt.Sprintf("%v=", v.Name))
+		}
+
 	}
 	return e
 }

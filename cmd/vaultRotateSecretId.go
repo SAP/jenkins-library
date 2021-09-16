@@ -2,11 +2,13 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/hashicorp/vault/api"
 
+	"github.com/SAP/jenkins-library/pkg/ado"
 	"github.com/SAP/jenkins-library/pkg/jenkins"
 	"github.com/SAP/jenkins-library/pkg/vault"
 
@@ -93,6 +95,7 @@ func runVaultRotateSecretID(utils vaultRotateSecretIDUtils) error {
 
 	if err = utils.UpdateSecretInStore(config, newSecretID); err != nil {
 		log.Entry().WithError(err).Warnf("Could not write secret back to secret store %s", config.SecretStore)
+		return err
 	}
 	log.Entry().Infof("Secret has been successfully updated in secret store %s", config.SecretStore)
 	return nil
@@ -111,6 +114,25 @@ func writeVaultSecretIDToStore(config *vaultRotateSecretIdOptions, secretID stri
 		credManager := jenkins.NewCredentialsManager(instance)
 		credential := jenkins.StringCredentials{ID: config.VaultAppRoleSecretTokenCredentialsID, Secret: secretID}
 		return jenkins.UpdateCredential(ctx, credManager, config.JenkinsCredentialDomain, credential)
+	case "ado":
+		adoBuildClient, err := ado.NewBuildClient(config.AdoOrganization, config.AdoPersonalAccessToken, config.AdoProject, config.AdoPipelineID)
+		if err != nil {
+			log.Entry().Warn("Could not write secret ID back to Azure DevOps")
+			return err
+		}
+		variables := []ado.Variable{
+			{
+				Name:     config.VaultAppRoleSecretTokenCredentialsID,
+				Value:    secretID,
+				IsSecret: true,
+			},
+		}
+		if err := adoBuildClient.UpdateVariables(variables); err != nil {
+			log.Entry().Warn("Could not write secret ID back to Azure DevOps")
+			return err
+		}
+	default:
+		return fmt.Errorf("error: invalid secret store: %s", config.SecretStore)
 	}
 	return nil
 }

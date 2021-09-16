@@ -23,7 +23,8 @@ type integrationArtifactGetMplStatusOptions struct {
 
 type integrationArtifactGetMplStatusCommonPipelineEnvironment struct {
 	custom struct {
-		iFlowMplStatus string
+		integrationFlowMplStatus string
+		integrationFlowMplError  string
 	}
 }
 
@@ -33,7 +34,8 @@ func (p *integrationArtifactGetMplStatusCommonPipelineEnvironment) persist(path,
 		name     string
 		value    interface{}
 	}{
-		{category: "custom", name: "iFlowMplStatus", value: p.custom.iFlowMplStatus},
+		{category: "custom", name: "integrationFlowMplStatus", value: p.custom.integrationFlowMplStatus},
+		{category: "custom", name: "integrationFlowMplError", value: p.custom.integrationFlowMplError},
 	}
 
 	errCount := 0
@@ -67,6 +69,8 @@ func IntegrationArtifactGetMplStatusCommand() *cobra.Command {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
+
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
@@ -178,7 +182,8 @@ func integrationArtifactGetMplStatusMetadata() config.StepData {
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
-							{"Name": "custom/iFlowMplStatus"},
+							{"Name": "custom/integrationFlowMplStatus"},
+							{"Name": "custom/integrationFlowMplError"},
 						},
 					},
 				},
