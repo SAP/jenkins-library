@@ -9,7 +9,7 @@ metadata:
     * The Cloud Foundry parameters (API endpoint, organization, space), credentials, the service instance for the ABAP service and the service key for the Communication Scenario SAP_COM_0735.
     * Only provide one of those options with the respective credentials. If all values are provided, the direct communication (via host) has priority.
 
-    Regardless of the option you chose, please make sure to provide the Object Set containing the Objects that you want to be checked analog to the examples listed on this page.
+    Regardless of the option you chose, please make sure to provide the object set containing the objects that you want to be checked analog to the examples listed on this page.
 spec:
   inputs:
     secrets:
@@ -21,7 +21,7 @@ spec:
     params:
       - name: aUnitConfig
         type: string
-        description: Path to a YAML configuration file for the Object Set to be checked during the AUnit test run
+        description: Path to a YAML configuration file for the object set to be checked during the AUnit test run
         scope:
           - PARAMETERS
           - STAGES
@@ -40,7 +40,7 @@ spec:
           - name: cloudFoundry/apiEndpoint
       - name: cfOrg
         type: string
-        description: CF org
+        description: Cloud Foundry org
         scope:
           - PARAMETERS
           - STAGES
@@ -51,7 +51,7 @@ spec:
           - name: cloudFoundry/org
       - name: cfServiceInstance
         type: string
-        description: Parameter of ServiceInstance Name to delete CloudFoundry Service
+        description: Parameter of ServiceInstance Name to delete Cloud Foundry Service
         scope:
           - PARAMETERS
           - STAGES
@@ -62,7 +62,7 @@ spec:
           - name: cloudFoundry/serviceInstance
       - name: cfServiceKeyName
         type: string
-        description: Parameter of CloudFoundry Service Key to be created
+        description: Parameter of Cloud Foundry Service Key to be created
         scope:
           - PARAMETERS
           - STAGES
@@ -75,7 +75,7 @@ spec:
           - name: cfServiceKey
       - name: cfSpace
         type: string
-        description: CF Space
+        description: Cloud Foundry Space
         scope:
           - PARAMETERS
           - STAGES
@@ -103,7 +103,7 @@ spec:
         scope:
           - PARAMETERS
           - STAGES
-          - STEPS
+          - STEPS2
         mandatory: true
         secret: true
         resourceRef:

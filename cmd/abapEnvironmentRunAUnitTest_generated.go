@@ -46,7 +46,7 @@ Please provide either of the following options:
 * The Cloud Foundry parameters (API endpoint, organization, space), credentials, the service instance for the ABAP service and the service key for the Communication Scenario SAP_COM_0735.
 * Only provide one of those options with the respective credentials. If all values are provided, the direct communication (via host) has priority.
 
-Regardless of the option you chose, please make sure to provide the Object Set containing the Objects that you want to be checked analog to the examples listed on this page.`,
+Regardless of the option you chose, please make sure to provide the object set containing the objects that you want to be checked analog to the examples listed on this page.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
@@ -111,12 +111,12 @@ Regardless of the option you chose, please make sure to provide the Object Set c
 }
 
 func addAbapEnvironmentRunAUnitTestFlags(cmd *cobra.Command, stepConfig *abapEnvironmentRunAUnitTestOptions) {
-	cmd.Flags().StringVar(&stepConfig.AUnitConfig, "aUnitConfig", os.Getenv("PIPER_aUnitConfig"), "Path to a YAML configuration file for the Object Set to be checked during the AUnit test run")
+	cmd.Flags().StringVar(&stepConfig.AUnitConfig, "aUnitConfig", os.Getenv("PIPER_aUnitConfig"), "Path to a YAML configuration file for the object set to be checked during the AUnit test run")
 	cmd.Flags().StringVar(&stepConfig.CfAPIEndpoint, "cfApiEndpoint", os.Getenv("PIPER_cfApiEndpoint"), "Cloud Foundry API endpoint")
-	cmd.Flags().StringVar(&stepConfig.CfOrg, "cfOrg", os.Getenv("PIPER_cfOrg"), "CF org")
-	cmd.Flags().StringVar(&stepConfig.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Parameter of ServiceInstance Name to delete CloudFoundry Service")
-	cmd.Flags().StringVar(&stepConfig.CfServiceKeyName, "cfServiceKeyName", os.Getenv("PIPER_cfServiceKeyName"), "Parameter of CloudFoundry Service Key to be created")
-	cmd.Flags().StringVar(&stepConfig.CfSpace, "cfSpace", os.Getenv("PIPER_cfSpace"), "CF Space")
+	cmd.Flags().StringVar(&stepConfig.CfOrg, "cfOrg", os.Getenv("PIPER_cfOrg"), "Cloud Foundry org")
+	cmd.Flags().StringVar(&stepConfig.CfServiceInstance, "cfServiceInstance", os.Getenv("PIPER_cfServiceInstance"), "Parameter of ServiceInstance Name to delete Cloud Foundry Service")
+	cmd.Flags().StringVar(&stepConfig.CfServiceKeyName, "cfServiceKeyName", os.Getenv("PIPER_cfServiceKeyName"), "Parameter of Cloud Foundry Service Key to be created")
+	cmd.Flags().StringVar(&stepConfig.CfSpace, "cfSpace", os.Getenv("PIPER_cfSpace"), "Cloud Foundry Space")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0735")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for either the Cloud Foundry API or the Communication Arrangement for SAP_COM_0735")
 	cmd.Flags().StringVar(&stepConfig.Host, "host", os.Getenv("PIPER_host"), "Specifies the host address of the SAP BTP ABAP Environment system")
@@ -219,7 +219,7 @@ func abapEnvironmentRunAUnitTestMetadata() config.StepData {
 								Type:  "secret",
 							},
 						},
-						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS2"},
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
