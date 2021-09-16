@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/SAP/jenkins-library/pkg/cnbutils"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/docker"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -17,27 +18,39 @@ import (
 	"github.com/pkg/errors"
 )
 
-type cnbBuildUtils interface {
-	command.ExecRunner
-
-	FileExists(filename string) (bool, error)
-	FileRead(path string) ([]byte, error)
-	FileWrite(path string, content []byte, perm os.FileMode) error
-	MkdirAll(path string, perm os.FileMode) error
-	Getwd() (string, error)
-	Glob(pattern string) (matches []string, err error)
-	Copy(src, dest string) (int64, error)
-}
+const (
+	detectorPath = "/cnb/lifecycle/detector"
+	builderPath  = "/cnb/lifecycle/builder"
+	exporterPath = "/cnb/lifecycle/exporter"
+)
 
 type cnbBuildUtilsBundle struct {
 	*command.Command
 	*piperutils.Files
+	*docker.Client
 }
 
-func newCnbBuildUtils() cnbBuildUtils {
+func setCustomBuildpacks(bpacks []string, utils cnbutils.BuildUtils) (string, string, error) {
+	buildpacksPath := "/tmp/buildpacks"
+	orderPath := "/tmp/buildpacks/order.toml"
+	newOrder, err := cnbutils.DownloadBuildpacks(buildpacksPath, bpacks, utils)
+	if err != nil {
+		return "", "", err
+	}
+
+	err = newOrder.Save(orderPath)
+	if err != nil {
+		return "", "", err
+	}
+
+	return buildpacksPath, orderPath, nil
+}
+
+func newCnbBuildUtils() cnbutils.BuildUtils {
 	utils := cnbBuildUtilsBundle{
 		Command: &command.Command{},
 		Files:   &piperutils.Files{},
+		Client:  &docker.Client{},
 	}
 	utils.Stdout(log.Writer())
 	utils.Stderr(log.Writer())
@@ -65,8 +78,29 @@ func isDir(path string) (bool, error) {
 	return info.IsDir(), nil
 }
 
-func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, utils cnbBuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment) error {
+func isBuilder(utils cnbutils.BuildUtils) (bool, error) {
+	for _, path := range []string{detectorPath, builderPath, exporterPath} {
+		exists, err := utils.FileExists(path)
+		if err != nil || !exists {
+			return exists, err
+		}
+	}
+	return true, nil
+}
+
+func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, utils cnbutils.BuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment) error {
 	var err error
+
+	exists, err := isBuilder(utils)
+
+	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return errors.Wrapf(err, "failed to check if dockerImage is a valid builder")
+	}
+	if !exists {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return errors.New("the provided dockerImage is not a valid builder")
+	}
 
 	dockerConfig := &configfile.ConfigFile{}
 	dockerConfigJSON := []byte(`{"auths":{}}`)
@@ -136,6 +170,20 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		}
 	}
 
+	var buildpacksPath = "/cnb/buildpacks"
+	var orderPath = "/cnb/order.toml"
+
+	if config.Buildpacks != nil && len(config.Buildpacks) != 0 {
+		log.Entry().Infof("Setting custom buildpacks: '%v'", config.Buildpacks)
+		buildpacksPath, orderPath, err = setCustomBuildpacks(config.Buildpacks, utils)
+		defer utils.RemoveAll(buildpacksPath)
+		defer utils.RemoveAll(orderPath)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorBuild)
+			return errors.Wrapf(err, "Setting custom buildpacks: %v", config.Buildpacks)
+		}
+	}
+
 	var containerImage string
 	var containerImageTag string
 
@@ -160,23 +208,23 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		return errors.New("containerRegistryUrl, containerImageName and containerImageTag must be present")
 	}
 
-	err = utils.RunExecutable("/cnb/lifecycle/detector")
+	err = utils.RunExecutable(detectorPath, "-buildpacks", buildpacksPath, "-order", orderPath)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrap(err, "execution of '/cnb/lifecycle/detector' failed")
+		return errors.Wrap(err, fmt.Sprintf("execution of '%s' failed", detectorPath))
 	}
 
-	err = utils.RunExecutable("/cnb/lifecycle/builder")
+	err = utils.RunExecutable(builderPath, "-buildpacks", buildpacksPath)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrap(err, "execution of '/cnb/lifecycle/builder' failed")
+		return errors.Wrap(err, fmt.Sprintf("execution of '%s' failed", builderPath))
 	}
 
 	utils.AppendEnv([]string{fmt.Sprintf("CNB_REGISTRY_AUTH=%s", string(cnbRegistryAuth))})
-	err = utils.RunExecutable("/cnb/lifecycle/exporter", fmt.Sprintf("%s:%s", containerImage, containerImageTag), fmt.Sprintf("%s:latest", containerImage))
+	err = utils.RunExecutable(exporterPath, fmt.Sprintf("%s:%s", containerImage, containerImageTag), fmt.Sprintf("%s:latest", containerImage))
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrap(err, "execution of '/cnb/lifecycle/exporter' failed")
+		return errors.Wrap(err, fmt.Sprintf("execution of '%s' failed", exporterPath))
 	}
 
 	return nil

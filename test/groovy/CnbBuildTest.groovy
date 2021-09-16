@@ -43,10 +43,11 @@ public class CnbBuildTest extends BasePiperTest {
             }
         )
 
-        stepRule.step.cnbBuild(script: nullScript, containerImageName: 'foo', containerImageTag: 'bar', containerRegistryUrl: 'test', dockerConfigJsonCredentialsId: 'DOCKER_CREDENTIALS')
+        stepRule.step.cnbBuild(script: nullScript, buildpacks: ['test1', 'test2'], containerImageName: 'foo', containerImageTag: 'bar', containerRegistryUrl: 'test', dockerConfigJsonCredentialsId: 'DOCKER_CREDENTIALS')
 
-        assertThat(calledWithParameters.size(), is(5))
+        assertThat(calledWithParameters.size(), is(6))
         assertThat(calledWithParameters.script, is(nullScript))
+        assertThat(calledWithParameters.buildpacks, is(['test1', 'test2']))
         assertThat(calledWithParameters.containerImageName, is('foo'))
         assertThat(calledWithParameters.containerImageTag, is('bar'))
         assertThat(calledWithParameters.containerRegistryUrl, is('test'))
