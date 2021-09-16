@@ -474,6 +474,33 @@ func TestRunArtifactPrepareVersion(t *testing.T) {
 
 		assert.EqualError(t, err, "failed to get coordinates: coordinatesError")
 	})
+
+	t.Run("warning - failed to get coordinates", func(t *testing.T) {
+		config := artifactPrepareVersionOptions{
+			BuildTool:        "maven",
+			VersioningType:   "library",
+			FetchCoordinates: false,
+		}
+
+		cpe := artifactPrepareVersionCommonPipelineEnvironment{}
+
+		versioningMock := artifactVersioningMock{
+			originalVersion:  "1.2.3",
+			versioningScheme: "maven",
+			coordinatesError: fmt.Errorf("coordinatesError"),
+		}
+
+		worktree := gitWorktreeMock{
+			commitHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{2, 3, 4}),
+		}
+		repo := gitRepositoryMock{
+			revisionHash: plumbing.ComputeHash(plumbing.CommitObject, []byte{1, 2, 3}),
+		}
+
+		err := runArtifactPrepareVersion(&config, &telemetry.CustomData{}, &cpe, &versioningMock, nil, &repo, func(r gitRepository) (gitWorktree, error) { return &worktree, nil })
+
+		assert.NoError(t, err)
+	})
 }
 
 func TestVersioningTemplate(t *testing.T) {
