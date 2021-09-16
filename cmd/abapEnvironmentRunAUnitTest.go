@@ -129,9 +129,9 @@ func triggerAUnitrun(config abapEnvironmentRunAUnitTestOptions, details abaputil
 	//Trigger AUnit run
 	var resp *http.Response
 	var bodyString = `<?xml version="1.0" encoding="UTF-8"?>` + metadataString + optionsString + objectSetString + `</aunit:run>`
-	log.Entry().Debugf("Request Body: %s", bodyString)
 	var body = []byte(bodyString)
 	if err == nil {
+		log.Entry().Debugf("Request Body: %s", bodyString)
 		details.URL = abapEndpoint + "/sap/bc/adt/api/abapunit/runs"
 		resp, err = runAUnit("POST", details, body, client)
 	}
@@ -299,9 +299,6 @@ func fetchAUnitXcsrfToken(requestType string, details abaputils.ConnectionDetail
 	}
 	defer req.Body.Close()
 
-	// workaround until golang version 1.16 is used
-	time.Sleep(1 * time.Second)
-
 	token := req.Header.Get("X-Csrf-Token")
 	return token, err
 }
@@ -390,11 +387,11 @@ func parseAUnitResult(body []byte, aunitResultFileName string) (err error) {
 		for _, s := range parsedXML.Testsuite.Testcase {
 			//Log Info for testcase
 			for _, failure := range s.Failure {
-				log.Entry().Infof("%s, %s: %s found by %s", failure.Type, failure.Message, failure.Message, s.Classname)
+				log.Entry().Debugf("%s, %s: %s found by %s", failure.Type, failure.Message, failure.Message, s.Classname)
 			}
 
 			for _, skipped := range s.Skipped {
-				log.Entry().Infof("The following test has been skipped: %s: %s", skipped.Message, skipped.Text)
+				log.Entry().Debugf("The following test has been skipped: %s: %s", skipped.Message, skipped.Text)
 			}
 		}
 		//Persist findings afterwards
