@@ -20,7 +20,7 @@ type checkChangeInDevelopmentOptions struct {
 	Password                       string   `json:"password,omitempty"`
 	ChangeDocumentID               string   `json:"changeDocumentId,omitempty"`
 	FailIfStatusIsNotInDevelopment bool     `json:"failIfStatusIsNotInDevelopment,omitempty"`
-	ClientOpts                     []string `json:"clientOpts,omitempty"`
+	CmClientOpts                   []string `json:"cmClientOpts,omitempty"`
 }
 
 // CheckChangeInDevelopmentCommand Checks if a certain change is in status 'in development'
@@ -101,11 +101,11 @@ func CheckChangeInDevelopmentCommand() *cobra.Command {
 
 func addCheckChangeInDevelopmentFlags(cmd *cobra.Command, stepConfig *checkChangeInDevelopmentOptions) {
 	cmd.Flags().StringVar(&stepConfig.Endpoint, "endpoint", os.Getenv("PIPER_endpoint"), "The service endpoint")
-	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "The user")
-	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "The password")
-	cmd.Flags().StringVar(&stepConfig.ChangeDocumentID, "changeDocumentId", os.Getenv("PIPER_changeDocumentId"), "The change document which should be checked for the status")
+	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "Service user to authenticate against the ABAP backend")
+	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Service user password to authenticate against the ABAP backend")
+	cmd.Flags().StringVar(&stepConfig.ChangeDocumentID, "changeDocumentId", os.Getenv("PIPER_changeDocumentId"), "ID of the change document to be checked for the status")
 	cmd.Flags().BoolVar(&stepConfig.FailIfStatusIsNotInDevelopment, "failIfStatusIsNotInDevelopment", true, "lets the build fail in case the change is not in status 'in developent'. Otherwise a warning is emitted to the log")
-	cmd.Flags().StringSliceVar(&stepConfig.ClientOpts, "clientOpts", []string{}, "additional options passed to cm client, e.g. for troubleshooting")
+	cmd.Flags().StringSliceVar(&stepConfig.CmClientOpts, "cmClientOpts", []string{}, "additional options passed to cm client, e.g. for troubleshooting")
 
 	cmd.MarkFlagRequired("endpoint")
 	cmd.MarkFlagRequired("username")
@@ -123,6 +123,9 @@ func checkChangeInDevelopmentMetadata() config.StepData {
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "credentialsId", Description: "Jenkins 'Username with password' credentials ID containing user and password to authenticate against the ABAP backend", Type: "jenkins", Aliases: []config.Alias{{Name: "changeManagement/credentialsId", Deprecated: false}}},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "endpoint",
@@ -134,31 +137,48 @@ func checkChangeInDevelopmentMetadata() config.StepData {
 						Default:     os.Getenv("PIPER_endpoint"),
 					},
 					{
-						Name:        "username",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_username"),
+						Name: "username",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "credentialsId",
+								Param: "username",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_username"),
 					},
 					{
-						Name:        "password",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "GENERAL"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_password"),
+						Name: "password",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "credentialsId",
+								Param: "password",
+								Type:  "secret",
+							},
+						},
+						Scope:     []string{"PARAMETERS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_password"),
 					},
 					{
-						Name:        "changeDocumentId",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   true,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_changeDocumentId"),
+						Name: "changeDocumentId",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/changeDocumentId",
+							},
+						},
+						Scope:     []string{"PARAMETERS"},
+						Type:      "string",
+						Mandatory: true,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_changeDocumentId"),
 					},
 					{
 						Name:        "failIfStatusIsNotInDevelopment",
@@ -170,15 +190,18 @@ func checkChangeInDevelopmentMetadata() config.StepData {
 						Default:     true,
 					},
 					{
-						Name:        "clientOpts",
+						Name:        "cmClientOpts",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "clientOpts"}, {Name: "changeManagement/clientOpts"}},
 						Default:     []string{},
 					},
 				},
+			},
+			Containers: []config.Container{
+				{Name: "cmclient", Image: "ppiper/cm-client"},
 			},
 		},
 	}

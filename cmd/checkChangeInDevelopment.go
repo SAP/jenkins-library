@@ -77,8 +77,8 @@ func runCheckChangeInDevelopment(config *checkChangeInDevelopmentOptions, teleme
 
 func isChangeInDevelopment(config *checkChangeInDevelopmentOptions, utils checkChangeInDevelopmentUtils) (bool, error) {
 
-	if len(config.ClientOpts) > 0 {
-		utils.AppendEnv([]string{fmt.Sprintf("CMCLIENT_OPTS=%s", strings.Join(config.ClientOpts, " "))})
+	if len(config.CmClientOpts) > 0 {
+		utils.AppendEnv([]string{fmt.Sprintf("CMCLIENT_OPTS=%s", strings.Join(config.CmClientOpts, " "))})
 	}
 
 	err := utils.RunExecutable("cmclient",
