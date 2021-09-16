@@ -165,41 +165,23 @@ func runDetect(config detectExecuteScanOptions, utils detectUtils, influx *detec
 	err = utils.RunShell("/bin/bash", script)
 	reportingErr := postScanChecksAndReporting(config, influx, utils, newBlackduckSystem(config))
 	if reportingErr != nil {
-		log.Entry().Warnf("Failed to generate reports: %v", reportingErr)
+		if strings.Contains(reportingErr.Error(), "License Policy Violations found") {
+			log.Entry().Errorf("License Policy Violations found")
+			log.SetErrorCategory(log.ErrorCompliance)
+			if err == nil {
+				err = errors.New("License Policy Violations found")
+			}
+		} else {
+			log.Entry().Warnf("Failed to generate reports: %v", reportingErr)
+		}
 	}
-	if err == nil && piperutils.ContainsString(config.FailOn, "BLOCKER") {
-		violations := struct {
-			PolicyViolations int      `json:"policyViolations"`
-			Reports          []string `json:"reports"`
-		}{
-			PolicyViolations: 0,
-			Reports:          []string{},
-		}
-
-		if files, err := utils.Glob("**/*BlackDuck_RiskReport.pdf"); err == nil && len(files) > 0 {
-			// there should only be one RiskReport thus only taking the first one
-			_, reportFile := filepath.Split(files[0])
-			violations.Reports = append(violations.Reports, reportFile)
-		}
-
-		violationContent, err := json.Marshal(violations)
-		if err != nil {
-			return fmt.Errorf("failed to marshal policy violation data: %w", err)
-		}
-
-		err = utils.FileWrite("blackduck-ip.json", violationContent, 0666)
-		if err != nil {
-			return fmt.Errorf("failed to write policy violation report: %w", err)
-		}
-	} else if err != nil {
+	if err != nil {
 		// Setting error category based on exit code
 		mapErrorCategory(utils.GetExitCode())
 
 		// Error code mapping with more human readable text
-		// log.Entry().Errorf("[ERROR ERRORF] => %v", exitCodeMapping(utils.GetExitCode()))
-		return errors.Wrapf(err, exitCodeMapping(utils.GetExitCode()))
+		err = errors.Wrapf(err, exitCodeMapping(utils.GetExitCode()))
 	}
-
 	return err
 }
 
@@ -241,6 +223,7 @@ func mapErrorCategory(exitCodeKey int) {
 func exitCodeMapping(exitCodeKey int) string {
 
 	exitCodes := map[int]string{
+		0:   "Detect Scan completed successfully",
 		1:   "FAILURE_BLACKDUCK_CONNECTIVITY => Detect was unable to connect to Black Duck. Check your configuration and connection.",
 		2:   "FAILURE_TIMEOUT => Detect could not wait for actions to be completed on Black Duck. Check your Black Duck server or increase your timeout.",
 		3:   "FAILURE_POLICY_VIOLATION => Detect found policy violations.",
@@ -389,9 +372,12 @@ func postScanChecksAndReporting(config detectExecuteScanOptions, influx *detectE
 	if err != nil {
 		return errors.Wrapf(err, "failed to check and report scan results")
 	}
-	policyJsonErr := writeIpPolicyJson(config, utils, paths, sys)
+	policyJsonErr, violationCount := writeIpPolicyJson(config, utils, paths, sys)
 	if policyJsonErr != nil {
 		return errors.Wrapf(policyJsonErr, "failed to write IP policy violations json file")
+	}
+	if violationCount > 0 {
+		return errors.Errorf("License Policy Violations found")
 	}
 	return nil
 }
@@ -590,11 +576,11 @@ func writePolicyStatusReports(scanReport reporting.ScanReport, config detectExec
 	return reportPaths, nil
 }
 
-func writeIpPolicyJson(config detectExecuteScanOptions, utils detectUtils, paths []piperutils.Path, sys *blackduckSystem) error {
+func writeIpPolicyJson(config detectExecuteScanOptions, utils detectUtils, paths []piperutils.Path, sys *blackduckSystem) (error, int) {
 	components, err := sys.Client.GetComponentsWithLicensePolicyRule(config.ProjectName, getVersionName(config))
 	if err != nil {
 		errors.Wrapf(err, "failed to get License Policy Violations")
-		return err
+		return err, 0
 	}
 
 	violationCount := getActivePolicyViolations(components)
@@ -617,14 +603,14 @@ func writeIpPolicyJson(config detectExecuteScanOptions, utils detectUtils, paths
 
 	violationContent, err := json.Marshal(violations)
 	if err != nil {
-		return fmt.Errorf("failed to marshal policy violation data: %w", err)
+		return fmt.Errorf("failed to marshal policy violation data: %w", err), violationCount
 	}
 
 	err = utils.FileWrite("blackduck-ip.json", violationContent, 0666)
 	if err != nil {
-		return fmt.Errorf("failed to write policy violation report: %w", err)
+		return fmt.Errorf("failed to write policy violation report: %w", err), violationCount
 	}
-	return nil
+	return nil, violationCount
 }
 
 func getActivePolicyViolations(components *bd.Components) int {
