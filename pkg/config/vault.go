@@ -305,6 +305,7 @@ func lookupPath(client vaultClient, path string, param *StepParameters) *string 
 			return &field
 		}
 	}
+
 	return nil
 }
 
