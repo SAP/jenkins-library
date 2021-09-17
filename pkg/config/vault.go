@@ -14,20 +14,19 @@ import (
 )
 
 const (
-	vaultRootPaths               = "vaultRootPaths"
-	vaultTestCredentialPath      = "vaultTestCredentialPath"
-	vaultTestCredentialKeys      = "vaultTestCredentialKeys"
-	vaultTestCredentialEnvPrefix = "PIPER_TESTCREDENTIAL_"
-	vaultAppRoleID               = "vaultAppRoleID"
-	vaultAppRoleSecretID         = "vaultAppRoleSecreId"
-	vaultServerUrl               = "vaultServerUrl"
-	vaultNamespace               = "vaultNamespace"
-	vaultBasePath                = "vaultBasePath"
-	vaultPipelineName            = "vaultPipelineName"
-	vaultPath                    = "vaultPath"
-	skipVault                    = "skipVault"
-	vaultDisableOverwrite        = "vaultDisableOverwrite"
-	vaultTestCredentialEnvPrefix_Default = "PIPER_TESTCREDENTIAL_"
+	vaultRootPaths                      = "vaultRootPaths"
+	vaultTestCredentialPath             = "vaultTestCredentialPath"
+	vaultTestCredentialKeys             = "vaultTestCredentialKeys"
+	vaultAppRoleID                      = "vaultAppRoleID"
+	vaultAppRoleSecretID                = "vaultAppRoleSecreId"
+	vaultServerUrl                      = "vaultServerUrl"
+	vaultNamespace                      = "vaultNamespace"
+	vaultBasePath                       = "vaultBasePath"
+	vaultPipelineName                   = "vaultPipelineName"
+	vaultPath                           = "vaultPath"
+	skipVault                           = "skipVault"
+	vaultDisableOverwrite               = "vaultDisableOverwrite"
+	vaultTestCredentialEnvPrefixDefault = "PIPER_TESTCREDENTIAL_"
 )
 
 var (
@@ -203,7 +202,7 @@ func populateTestCredentialsAsEnvs(config *StepConfig, secret map[string]string,
 
 	vaultTestCredentialEnvPrefix, ok := config.Config["vaultTestCredentialEnvPrefix"].(string)
 	if !ok || len(vaultTestCredentialEnvPrefix) == 0 {
-		vaultTestCredentialEnvPrefix = vaultTestCredentialEnvPrefix_Default
+		vaultTestCredentialEnvPrefix = vaultTestCredentialEnvPrefixDefault
 	}
 	for secretKey, secretValue := range secret {
 		for _, key := range keys {

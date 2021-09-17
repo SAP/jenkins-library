@@ -250,9 +250,8 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Name: "adoPersonalAccessToken",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/jenkins", "$(vaultBasePath)/$(vaultPipelineName)/jenkins", "$(vaultBasePath)/GROUP-SECRETS/jenkins"},
-								Type:  "vaultSecret",
+								Name: "",
+								Type: "vaultSecret",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
