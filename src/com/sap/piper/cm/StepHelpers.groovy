@@ -4,7 +4,7 @@ import com.cloudbees.groovy.cps.NonCPS
 
 public class StepHelpers {
 
-    @Deprecated // use go impl instead
+    @Deprecated // use go implementation instead
     public static def getTransportRequestId(ChangeManagement cm, def script, Map configuration) {
 
         def transportRequestId = configuration.transportRequestId
@@ -44,7 +44,7 @@ public class StepHelpers {
         transportRequestId
     }
 
-    @Deprecated // use go impl instead
+    @Deprecated // use go implementation instead
     public static getChangeDocumentId(ChangeManagement cm, def script, Map configuration) {
         def changeDocumentId = configuration.changeDocumentId
 
@@ -82,7 +82,7 @@ public class StepHelpers {
 
         return changeDocumentId
     }
-    
+
     public static def getTransportRequestId(def script, Map configuration) {
 
         def transportRequestId = configuration.transportRequestId
@@ -105,7 +105,7 @@ public class StepHelpers {
             "from: ${configuration.changeManagement.git.from}, " +
             "to: ${configuration.changeManagement.git.to}]." +
             "transportRequestLabel: '${configuration.changeManagement.transportRequestLabel}']."
-            
+
         script.transportRequestReqIDFromGit(script: this,
             gitFrom: configuration.changeManagement.git.from,
             gitTo: configuration.changeManagement.git.to,
@@ -115,7 +115,7 @@ public class StepHelpers {
         transportRequestId = script.commonPipelineEnvironment.getValue('transportRequestId')
         if(transportRequestId != null) {
             script.echo "[INFO] transportRequestId '${transportRequestId}' retrieved from commit history"
-        } 
+        }
         else{
             script.echo "[WARN] Cannot retrieve transportRequestId from commit history [" +
                 "from: ${configuration.changeManagement.git.from}, " +
@@ -155,7 +155,7 @@ public class StepHelpers {
         )
 
         changeDocumentId = script.commonPipelineEnvironment.getValue('changeDocumentId')
-        
+
         if(changeDocumentId == null) {
             script.echo "[WARN] Cannot retrieve changeDocumentId from commit history [" +
                 "from: ${configuration.changeManagement.git.from}, " +

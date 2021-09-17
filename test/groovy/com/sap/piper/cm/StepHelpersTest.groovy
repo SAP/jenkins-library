@@ -194,7 +194,7 @@ class StepHelpersTest extends BasePiperTest {
     public void changeDocumentIdNotProvidedTest() {
 
         loggingRule.expect('[WARN] Cannot retrieve changeDocumentId from commit history')
-        
+
         def cm = new ChangeManagement(nullScript) {
             String getChangeDocumentId(
                     String from,
@@ -210,17 +210,17 @@ class StepHelpersTest extends BasePiperTest {
 
         assert changeDocumentId == null
     }
-    
+
     @Test
     public void reqidViaConfigTest() {
 
         nullScript.commonPipelineEnvironment.setValue('transportRequestId', 'unused')
-        
+
         def calledWithParameters = null
-    
+
         helper.registerAllowedMethod( 'piperExecuteBin', [Map, String, String, List],
             {
-                params, stepName, metaData, creds -> 
+                params, stepName, metaData, creds ->
                     if(stepName.equals("transportRequestReqIDFromGit")) {
                         calledWithParameters = params
                     }
@@ -232,17 +232,17 @@ class StepHelpersTest extends BasePiperTest {
         assert transportRequestId == '100'
         assert calledWithParameters == null
     }
-    
+
     @Test
     public void reqidViaCommonPipelineEnvironmentTest() {
 
         nullScript.commonPipelineEnvironment.setValue('transportRequestId', '200')
-        
+
         def calledWithParameters = null
-    
+
         helper.registerAllowedMethod( 'piperExecuteBin', [Map, String, String, List],
             {
-                params, stepName, metaData, creds -> 
+                params, stepName, metaData, creds ->
                     if(stepName.equals("transportRequestReqIDFromGit")) {
                         calledWithParameters = params
                     }
@@ -259,10 +259,10 @@ class StepHelpersTest extends BasePiperTest {
     public void reqidViaCommitHistoryTest() {
 
         def calledWithParameters = null
-    
+
         helper.registerAllowedMethod( 'piperExecuteBin', [Map, String, String, List],
             {
-                params, stepName, metaData, creds -> 
+                params, stepName, metaData, creds ->
                     if(stepName.equals("transportRequestReqIDFromGit")) {
                         nullScript.commonPipelineEnvironment.setValue('transportRequestId', '300')
                     }
@@ -271,6 +271,7 @@ class StepHelpersTest extends BasePiperTest {
 
         def transportRequestId = StepHelpers.getTransportRequestId(nullScript, params)
 
+        assert transportRequestId == '300'
         assert nullScript.commonPipelineEnvironment.getValue('transportRequestId') == '300'
     }
 
@@ -278,10 +279,10 @@ class StepHelpersTest extends BasePiperTest {
     public void reqidNotProvidedTest() {
 
         def calledWithParameters = null
-    
+
         helper.registerAllowedMethod( 'piperExecuteBin', [Map, String, String, List],
             {
-                params, stepName, metaData, creds -> 
+                params, stepName, metaData, creds ->
                     if(stepName.equals("transportRequestReqIDFromGit")) {
                         calledWithParameters = params
                     }
@@ -301,9 +302,9 @@ class StepHelpersTest extends BasePiperTest {
     public void docidViaConfigTest() {
 
         nullScript.commonPipelineEnvironment.setValue('changeDocumentId', 'unused')
-        
+
         def calledWithParameters = null
-    
+
         helper.registerAllowedMethod( 'piperExecuteBin', [Map, String, String, List],
             {
                 params, stepName, metaData, creds ->
@@ -323,12 +324,12 @@ class StepHelpersTest extends BasePiperTest {
     public void docidViaCommonPipelineEnvironmentTest() {
 
         nullScript.commonPipelineEnvironment.setValue('changeDocumentId', '200')
-        
+
         def calledWithParameters = null
-    
+
         helper.registerAllowedMethod( 'piperExecuteBin', [Map, String, String, List],
             {
-                params, stepName, metaData, creds -> 
+                params, stepName, metaData, creds ->
                     if(stepName.equals("transportRequestDocIDFromGit")) {
                         calledWithParameters = params
                     }
@@ -345,10 +346,10 @@ class StepHelpersTest extends BasePiperTest {
     public void docidViaCommitHistoryTest() {
 
         def calledWithParameters = null
-    
+
         helper.registerAllowedMethod( 'piperExecuteBin', [Map, String, String, List],
             {
-                params, stepName, metaData, creds -> 
+                params, stepName, metaData, creds ->
                     if(stepName.equals("transportRequestDocIDFromGit")) {
                         nullScript.commonPipelineEnvironment.setValue('changeDocumentId', '300')
                     }
@@ -357,6 +358,7 @@ class StepHelpersTest extends BasePiperTest {
 
         def changeDocumentId = StepHelpers.getChangeDocumentId(nullScript, params)
 
+        assert changeDocumentId == '300'
         assert nullScript.commonPipelineEnvironment.getValue('changeDocumentId') == '300'
     }
 
@@ -364,10 +366,10 @@ class StepHelpersTest extends BasePiperTest {
     public void docidNotProvidedTest() {
 
         def calledWithParameters = null
-    
+
         helper.registerAllowedMethod( 'piperExecuteBin', [Map, String, String, List],
             {
-                params, stepName, metaData, creds -> 
+                params, stepName, metaData, creds ->
                     if(stepName.equals("transportRequestDocIDFromGit")) {
                         calledWithParameters = params
                     }
