@@ -37,6 +37,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// ReportsDirectory defines the subfolder for the Fortify reports which are generated
+const ReportsDirectory = "fortify"
+
 // System is the interface abstraction of a specific SystemInstance
 type System interface {
 	GetProjectByName(name string, autoCreate bool, projectVersion string) (*models.Project, error)

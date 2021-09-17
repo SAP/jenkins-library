@@ -68,7 +68,7 @@ spec:
       - name: sonarScannerDownloadUrl
         type: string
         description: "URL to the sonar-scanner-cli archive."
-        default: "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.5.0.2216-linux.zip"
+        default: "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.6.2.2472-linux.zip"
         scope:
           - PARAMETERS
           - STAGES
@@ -148,15 +148,15 @@ spec:
       # Parameters for non-PR scans
       - name: branchName
         type: string
-        description: "Non-Pull-Request only: Name of the SonarQube branch that should be used to report findings to."
+        description: "Non-Pull-Request only: Name of the SonarQube branch that should be used to report findings to. Automatically inferred from environment variables on supported orchestrators if `inferBranchName` is set to true."
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
       - name: inferBranchName
         type: bool
-        description: "Jenkins only: Whether to infer the `branchName` parameter automatically based on the
-          `BRANCH_NAME` environment variable in non-productive runs of the pipeline."
+        description: "Whether to infer the `branchName` parameter automatically based on the
+          orchestrator-specific environment variable in runs of the pipeline."
         scope:
           - PARAMETERS
           - STAGES
@@ -164,17 +164,17 @@ spec:
       # Parameters for PR-Handling
       - name: changeId
         type: string
-        description: "Pull-Request only: The id of the pull-request."
+        description: "Pull-Request only: The id of the pull-request. Automatically inferred from environment variables on supported orchestrators."
         scope:
           - PARAMETERS
       - name: changeBranch
         type: string
-        description: "Pull-Request only: The name of the pull-request branch."
+        description: "Pull-Request only: The name of the pull-request branch. Automatically inferred from environment variables on supported orchestrators."
         scope:
           - PARAMETERS
       - name: changeTarget
         type: string
-        description: "Pull-Request only: The name of the base branch."
+        description: "Pull-Request only: The name of the base branch. Automatically inferred from environment variables on supported orchestrators."
         scope:
           - PARAMETERS
       - name: pullRequestProvider
@@ -294,4 +294,4 @@ spec:
                 type: int
   containers:
     - name: sonar
-      image: sonarsource/sonar-scanner-cli:4.5
+      image: sonarsource/sonar-scanner-cli:4.6

@@ -16,6 +16,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	FileUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 	SliceUtils "github.com/SAP/jenkins-library/pkg/piperutils"
 	StepResults "github.com/SAP/jenkins-library/pkg/piperutils"
@@ -105,6 +106,9 @@ func sonarExecuteScan(config sonarExecuteScanOptions, _ *telemetry.CustomData, i
 }
 
 func runSonar(config sonarExecuteScanOptions, client piperhttp.Downloader, runner command.ExecRunner, apiClient SonarUtils.Sender, influx *sonarExecuteScanInflux) error {
+	// Set config based on orchestrator-specific environment variables
+	detectParametersFromCI(&config)
+
 	if len(config.ServerURL) > 0 {
 		sonar.addEnvironment("SONAR_HOST_URL=" + config.ServerURL)
 	}
@@ -352,16 +356,14 @@ func loadSonarScanner(url string, client piperhttp.Downloader) error {
 }
 
 func loadCertificates(certificateList []string, client piperhttp.Downloader, runner command.ExecRunner) error {
-	trustStoreFile := filepath.Join(getWorkingDir(), ".certificates", "cacerts")
+	trustStorePath := filepath.Join(getWorkingDir(), ".certificates")
+	trustStoreFile := filepath.Join(trustStorePath, "cacerts")
 
 	if exists, _ := fileUtilsExists(trustStoreFile); exists {
 		// use local existing trust store
 		sonar.addEnvironment("SONAR_SCANNER_OPTS=-Djavax.net.ssl.trustStore=" + trustStoreFile + " -Djavax.net.ssl.trustStorePassword=changeit")
 		log.Entry().WithField("trust store", trustStoreFile).Info("Using local trust store")
-	} else
-	//TODO: certificate loading is deactivated due to the missing JAVA keytool
-	// see https://github.com/SAP/jenkins-library/issues/1072
-	if os.Getenv("PIPER_SONAR_LOAD_CERTIFICATES") == "true" && len(certificateList) > 0 {
+	} else if len(certificateList) > 0 {
 		// use local created trust store with downloaded certificates
 		keytoolOptions := []string{
 			"-import",
@@ -370,6 +372,7 @@ func loadCertificates(certificateList []string, client piperhttp.Downloader, run
 			"-keystore", trustStoreFile,
 		}
 		tmpFolder := getTempDir()
+		os.MkdirAll(trustStorePath, 0777)
 		defer os.RemoveAll(tmpFolder) // clean up
 
 		for _, certificate := range certificateList {
@@ -410,4 +413,35 @@ func getTempDir() string {
 		log.Entry().WithError(err).WithField("path", tmpFolder).Debug("Creating temp directory failed")
 	}
 	return tmpFolder
+}
+
+// Fetches parameters from environment variables and updates the options accordingly (only if not already set)
+func detectParametersFromCI(options *sonarExecuteScanOptions) {
+	provider, err := orchestrator.NewOrchestratorSpecificConfigProvider()
+	if err != nil {
+		log.Entry().WithError(err).Warning("Cannot infer config from CI environment")
+		return
+	}
+
+	if provider.IsPullRequest() {
+		config := provider.GetPullRequestConfig()
+		if len(options.ChangeBranch) == 0 {
+			log.Entry().Info("Inferring parameter changeBranch from environment: " + config.Branch)
+			options.ChangeBranch = config.Branch
+		}
+		if len(options.ChangeTarget) == 0 {
+			log.Entry().Info("Inferring parameter changeTarget from environment: " + config.Base)
+			options.ChangeTarget = config.Base
+		}
+		if len(options.ChangeID) == 0 {
+			log.Entry().Info("Inferring parameter changeId from environment: " + config.Key)
+			options.ChangeID = config.Key
+		}
+	} else {
+		branch := provider.GetBranch()
+		if options.InferBranchName && len(options.BranchName) == 0 {
+			log.Entry().Info("Inferring parameter branchName from environment: " + branch)
+			options.BranchName = branch
+		}
+	}
 }

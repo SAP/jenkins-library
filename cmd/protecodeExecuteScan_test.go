@@ -154,7 +154,7 @@ func TestRunProtecodeScan(t *testing.T) {
 	})
 
 	t.Run("Without tar as scan image", func(t *testing.T) {
-		config := protecodeExecuteScanOptions{ServerURL: server.URL, ScanImage: "t", FilePath: path, TimeoutMinutes: "1", VerifyOnly: false, CleanupMode: "none", Group: "13", ExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt"}
+		config := protecodeExecuteScanOptions{ServerURL: server.URL, ScanImage: "t", TimeoutMinutes: "1", VerifyOnly: false, CleanupMode: "none", Group: "13", ExcludeCVEs: "CVE-2018-1, CVE-2017-1000382", ReportFileName: "./cache/report-file.txt"}
 		err = runProtecodeScan(&config, &influx, dClient)
 		assert.NoError(t, err)
 	})
@@ -256,17 +256,25 @@ func TestUploadScanOrDeclareFetch(t *testing.T) {
 		fetchURL string
 		filePath string
 		prName   string
+		prID     int
 		want     int
 	}{
-		{false, "test", "group1", "/api/fetch/", "", "", 4711},
-		{false, "test", "group1", "", path, "", 4711},
-		{false, "test", "group1", "", path, "PR_4711", 4711},
+		{false, "test", "group1", "/api/fetch/", "", "", -1, 4711},
+		{true, "test", "group1", "/api/fetch/", "", "", -1, 4711},
+		{false, "test", "group1", "/api/fetch/", "", "", 4711, 4711},
+		{false, "test", "group1", "/api/fetch/", "", "", 0, 4711},
+
+		{false, "test", "group1", "", path, "", -1, 4711},
+		{true, "test", "group1", "", path, "", -1, 4711},
+		{false, "test", "group1", "", path, "PR_4711", 4711, 4711},
+		{false, "test", "group1", "", path, "", 0, 4711},
 	}
 
 	for _, c := range cases {
 		// test
 		config := protecodeExecuteScanOptions{VerifyOnly: c.reuse, CleanupMode: c.clean, Group: c.group, FetchURL: c.fetchURL, FilePath: c.filePath}
-		got := uploadScanOrDeclareFetch(config, 0, pc, fileName)
+		// got := uploadScanOrDeclareFetch(config, 0, pc, fileName)
+		got := uploadScanOrDeclareFetch(config, c.prID, pc, fileName)
 		// assert
 		assert.Equal(t, c.want, got)
 	}

@@ -6,6 +6,7 @@ import groovy.transform.Field
 void call(Map parameters = [:]) {
     List credentials = [
         [type: 'file', id: 'kubeConfigFileCredentialsId', env: ['PIPER_kubeConfig']],
+        [type: 'file', id: 'dockerConfigJsonCredentialsId', env: ['PIPER_dockerConfigJSON']],
         [type: 'token', id: 'kubeTokenCredentialsId', env: ['PIPER_kubeToken']],
         [type: 'usernamePassword', id: 'dockerCredentialsId', env: ['PIPER_containerRegistryUser', 'PIPER_containerRegistryPassword']],
     ]

@@ -37,18 +37,11 @@ func (c *kanikoMockClient) SendRequest(method, url string, body io.Reader, heade
 }
 
 type kanikoFileMock struct {
+	*mock.FilesMock
 	fileReadContent  map[string]string
 	fileReadErr      map[string]error
 	fileWriteContent map[string]string
 	fileWriteErr     map[string]error
-}
-
-func (f *kanikoFileMock) FileExists(path string) (bool, error) {
-	return true, nil
-}
-
-func (f *kanikoFileMock) Copy(src, dest string) (int64, error) {
-	return 0, nil
 }
 
 func (f *kanikoFileMock) FileRead(path string) ([]byte, error) {
@@ -64,22 +57,6 @@ func (f *kanikoFileMock) FileWrite(path string, content []byte, perm os.FileMode
 	}
 	f.fileWriteContent[path] = string(content)
 	return nil
-}
-
-func (f *kanikoFileMock) MkdirAll(path string, perm os.FileMode) error {
-	return nil
-}
-
-func (f *kanikoFileMock) Chmod(path string, mode os.FileMode) error {
-	return fmt.Errorf("not implemented. func is only present in order to fullfil the interface contract. Needs to be ajusted in case it gets used.")
-}
-
-func (f *kanikoFileMock) Abs(path string) (string, error) {
-	return "", fmt.Errorf("not implemented. func is only present in order to fullfil the interface contract. Needs to be ajusted in case it gets used.")
-}
-
-func (f *kanikoFileMock) Glob(pattern string) (matches []string, err error) {
-	return nil, fmt.Errorf("not implemented. func is only present in order to fullfil the interface contract. Needs to be ajusted in case it gets used.")
 }
 
 func TestRunKanikoExecute(t *testing.T) {
