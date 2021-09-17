@@ -332,8 +332,7 @@ Map addDockerParams(Script script, Map parameters, Map docker) {
             parameters.dockerEnvVars = docker.envVars
         }
         if(docker.pullImage != null) {
-//            parameters.put('dockerPullImage',Boolean(false)) // = false; //docker.pullImage
-            parameters.put('dockerPullImage',false) // = false; //docker.pullImage
+            parameters.put('dockerPullImage', docker.pullImage)
         }
     }
     return parameters
