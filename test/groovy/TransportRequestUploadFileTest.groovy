@@ -1,13 +1,6 @@
 import static org.hamcrest.Matchers.*
-import static org.hamcrest.Matchers.allOf
-import static org.hamcrest.Matchers.containsString
-import static org.hamcrest.Matchers.hasEntry
 import static org.junit.Assert.assertThat
 
-import java.util.List
-import java.util.Map
-
-import org.hamcrest.Matchers
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -15,21 +8,17 @@ import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 
-import com.sap.piper.JenkinsUtils
 import com.sap.piper.Utils
-import com.sap.piper.cm.BackendType
 import com.sap.piper.cm.ChangeManagement
 import com.sap.piper.cm.ChangeManagementException
 
+import hudson.AbortException
 import util.BasePiperTest
 import util.JenkinsCredentialsRule
-import util.JenkinsStepRule
 import util.JenkinsLoggingRule
 import util.JenkinsReadYamlRule
-import util.JenkinsDockerExecuteRule
+import util.JenkinsStepRule
 import util.Rules
-
-import hudson.AbortException
 
 public class TransportRequestUploadFileTest extends BasePiperTest {
 
@@ -156,7 +145,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         thrown.expect(AbortException)
         thrown.expectMessage("Exception message")
 
-        helper.registerAllowedMethod( 'piperExecuteBin', [Map, String, String, List], { 
+        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
                 throw new AbortException('Exception message')
             }
         )
@@ -181,35 +170,18 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         loggingRule.expect("[INFO] Uploading application 'myApp' to transport request '002'.")
         loggingRule.expect("[INFO] Application 'myApp' has been successfully uploaded to transport request '002'.")
 
-        ChangeManagement cm = new ChangeManagement(nullScript) {
-            void uploadFileToTransportRequestCTS(
-                                              Map docker,
-                                              String transportRequestId,
-                                              String endpoint,
-                                              String client,
-                                              String appName,
-                                              String appDescription,
-                                              String abapPackage,
-                                              String osDeployUser,
-                                              def deployToolsDependencies,
-                                              def npmInstallArgs,
-                                              String deployConfigFile,
-                                              String credentialsId) {
+        def calledWithParameters,
+            calledWithStepName,
+            calledWithMetadata,
+            calledWithCredentials
 
-                cmUtilReceivedParams.docker = docker
-                cmUtilReceivedParams.transportRequestId = transportRequestId
-                cmUtilReceivedParams.endpoint = endpoint
-                cmUtilReceivedParams.client = client
-                cmUtilReceivedParams.appName = appName
-                cmUtilReceivedParams.appDescription = appDescription
-                cmUtilReceivedParams.abapPackage = abapPackage
-                cmUtilReceivedParams.osDeployUser = osDeployUser
-                cmUtilReceivedParams.deployToolDependencies = deployToolsDependencies
-                cmUtilReceivedParams.npmInstallOpts = npmInstallArgs
-                cmUtilReceivedParams.deployConfigFile = deployConfigFile
-                cmUtilReceivedParams.credentialsId = credentialsId
-            }
-        }
+        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
+            params, stepName, metaData, creds ->
+                calledWithParameters = params
+                calledWithStepName = stepName
+                calledWithMetadata = metaData
+                calledWithCredentials = creds
+            })
 
         stepRule.step.transportRequestUploadFile(script: nullScript,
                       changeManagement: [
@@ -225,28 +197,20 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                       applicationDescription: 'the description',
                       abapPackage: 'myPackage',
                       transportRequestId: '002',
-                      cmUtils: cm)
+                      credentialsId: 'CM')
 
-        assert cmUtilReceivedParams ==
-            [
-                docker: [
-                    image: 'node',
-                    options:[],
-                    envVars:[:],
-                    pullImage:true
-                ],
-                transportRequestId: '002',
-                endpoint: 'https://example.org/cm',
-                client: '001',
-                appName: 'myApp',
-                appDescription: 'the description',
-                abapPackage: 'myPackage',
-                osDeployUser: 'node2',
-                deployToolDependencies: ['@ui5/cli', '@sap/ux-ui5-tooling', '@ui5/logger', '@ui5/fs', '@dummy/foo'],
-                npmInstallOpts: ['--verbose'],
-                deployConfigFile: 'ui5-deploy.yaml',
-                credentialsId: 'CM',
-            ]
+        assertThat(calledWithStepName, is('transportRequestUploadCTS'))
+        assertThat(calledWithParameters.transportRequestId, is('002'))
+        assertThat(calledWithParameters.endpoint, is('https://example.org/cm'))
+        assertThat(calledWithParameters.client, is('001'))
+        assertThat(calledWithParameters.applicationName, is('myApp'))
+        assertThat(calledWithParameters.description, is('the description'))
+        assertThat(calledWithParameters.abapPackage, is('myPackage'))
+        assertThat(calledWithParameters.osDeployUser, is('node2'))
+        assertThat(calledWithParameters.deployToolDependencies, is(['@ui5/cli', '@sap/ux-ui5-tooling', '@ui5/logger', '@ui5/fs', '@dummy/foo']))
+        assertThat(calledWithParameters.npmInstallOpts, is(['--verbose']))
+        assertThat(calledWithParameters.deployConfigFile, is('ui5-deploy.yaml'))
+        assertThat(calledWithParameters.uploadCredentialsId, is('CM'))
     }
 
     @Test
@@ -271,7 +235,19 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     @Test
     public void uploadFileToTransportRequestRFCSuccessTest() {
 
-        def cmUtilsReceivedParams
+        def calledWithParameters,
+            calledWithStepName,
+            calledWithMetadata,
+            calledWithCredentials
+
+        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
+            params, stepName, metaData, creds ->
+                calledWithParameters = params
+                calledWithStepName = stepName
+                calledWithMetadata = metaData
+                calledWithCredentials = creds
+            }
+        )
 
         nullScript.commonPipelineEnvironment.configuration =
         [general:
@@ -281,42 +257,6 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                 ]
             ]
         ]
-
-        def cm = new ChangeManagement(nullScript) {
-
-            void uploadFileToTransportRequestRFC(
-                Map docker,
-                String transportRequestId,
-                String applicationId,
-                String applicationURL,
-                String endpoint,
-                String credentialsId,
-                String developmentInstance,
-                String developmentClient,
-                String applicationDescription,
-                String abapPackage,
-                String codePage,
-                boolean acceptUnixStyleLineEndings,
-                boolean failUploadOnWarning,
-                boolean verbose) {
-
-                cmUtilsReceivedParams = [
-                    docker: docker,
-                    transportRequestId: transportRequestId,
-                    applicationName: applicationId,
-                    applicationURL: applicationURL,
-                    endpoint: endpoint,
-                    credentialsId: credentialsId,
-                    developmentInstance: developmentInstance,
-                    developmentClient: developmentClient,
-                    applicationDescription: applicationDescription,
-                    abapPackage: abapPackage,
-                    codePage: codePage,
-                    acceptUnixStyleLineEndings: acceptUnixStyleLineEndings,
-                    failUploadOnWarning: failUploadOnWarning,
-                ]
-            }
-        }
 
         stepRule.step.transportRequestUploadFile(script: nullScript,
                  applicationUrl: 'http://example.org/blobstore/xyz.zip',
@@ -333,29 +273,22 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                  applicationName: '42',
                  applicationDescription: 'Lorem ipsum',
                  abapPackage: 'XYZ',
-                 cmUtils: cm,)
+                 credentialsId: 'CM'
+        )
 
-        assert cmUtilsReceivedParams ==
-            [
-                docker: [
-                    image: 'rfc',
-                    options: [],
-                    envVars: [:],
-                    pullImage: true
-                ],
-                transportRequestId: '123456',
-                applicationName: '42',
-                applicationURL: 'http://example.org/blobstore/xyz.zip',
-                endpoint: 'https://example.org/rfc',
-                credentialsId: 'CM',
-                developmentInstance: '001',
-                developmentClient: '002',
-                applicationDescription: 'Lorem ipsum',
-                abapPackage:'XYZ',
-                codePage: 'UTF-9',
-                acceptUnixStyleLineEndings: true,
-                failUploadOnWarning: true,
-            ]
+        assertThat(calledWithStepName, is('transportRequestUploadRFC'))
+        assertThat(calledWithParameters.applicationName, is('42'))
+        assertThat(calledWithParameters.applicationUrl, is('http://example.org/blobstore/xyz.zip'))
+        assertThat(calledWithParameters.endpoint, is('https://example.org/rfc'))
+        assertThat(calledWithParameters.uploadCredentialsId, is('CM'))
+        assertThat(calledWithParameters.instance, is('001'))
+        assertThat(calledWithParameters.client, is('002'))
+        assertThat(calledWithParameters.applicationDescription, is('Lorem ipsum'))
+        assertThat(calledWithParameters.abapPackage, is('XYZ'))
+        assertThat(calledWithParameters.codePage, is('UTF-9'))
+        assertThat(calledWithParameters.acceptUnixStyleLineEndings, is(true))
+        assertThat(calledWithParameters.failUploadOnWarning, is(true))
+        assertThat(calledWithParameters.transportRequestId, is('123456'))
     }
 
     @Test
@@ -364,26 +297,10 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         thrown.expect(AbortException)
         thrown.expectMessage('upload failed')
 
-        def cm = new ChangeManagement(nullScript) {
-
-            void uploadFileToTransportRequestRFC(
-                Map docker,
-                String transportRequestId,
-                String applicationId,
-                String applicationURL,
-                String endpoint,
-                String credentialsId,
-                String developmentInstance,
-                String developmentClient,
-                String applicationDescription,
-                String abapPackage,
-                String codePage,
-                boolean acceptUnixStyleLineEndings,
-                boolean failOnUploadWarning,
-                boolean verbose) {
-                throw new ChangeManagementException('upload failed')
+        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
+                throw new AbortException('upload failed')
             }
-        }
+        )
 
         stepRule.step.transportRequestUploadFile(script: nullScript,
                  applicationUrl: 'http://example.org/blobstore/xyz.zip',
@@ -406,18 +323,22 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                  applicationName: '42',
                  applicationDescription: 'Lorem ipsum',
                  abapPackage: 'XYZ',
-                 cmUtils: cm,)
+                 credentialsId: 'CM'
+        )
     }
 
     @Test
     public void uploadFileToTransportRequestSOLMANSuccessTest() {
+
+        loggingRule.expect("[INFO] Uploading file '/path' to transport request '002' of change document '001'.")
+        loggingRule.expect("[INFO] File '/path' has been successfully uploaded to transport request '002' of change document '001'.")
 
         def calledWithParameters,
             calledWithStepName,
             calledWithMetadata,
             calledWithCredentials
 
-        helper.registerAllowedMethod( 'piperExecuteBin', [Map, String, String, List], {
+        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
             params, stepName, metaData, creds ->
                 calledWithParameters = params
                 calledWithStepName = stepName
@@ -457,7 +378,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
             calledWithMetadata,
             calledWithCredentials
 
-        helper.registerAllowedMethod( 'piperExecuteBin', [Map, String, String, List], {
+        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
             params, stepName, metaData, creds ->
                 calledWithParameters = params
                 calledWithStepName = stepName
@@ -465,7 +386,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                 calledWithCredentials = creds
             }
         )
-        
+
         nullScript.commonPipelineEnvironment.configuration.put(['steps',
                                                                    [transportRequestUploadFile:
                                                                        [applicationId: 'AppIdfromConfig']]])
@@ -497,7 +418,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
             calledWithMetadata,
             calledWithCredentials
 
-        helper.registerAllowedMethod( 'piperExecuteBin', [Map, String, String, List], {
+        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
             params, stepName, metaData, creds ->
                 calledWithParameters = params
                 calledWithStepName = stepName
@@ -533,7 +454,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
             calledWithMetadata,
             calledWithCredentials
 
-        helper.registerAllowedMethod( 'piperExecuteBin', [Map, String, String, List], {
+        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
             params, stepName, metaData, creds ->
                 calledWithParameters = params
                 calledWithStepName = stepName
@@ -541,7 +462,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                 calledWithCredentials = creds
             }
         )
-        
+
         stepRule.step.transportRequestUploadFile(script: nullScript,
                       changeDocumentId: '001',
                       transportRequestId: '002',
