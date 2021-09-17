@@ -226,7 +226,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                               osDeployUser: 'node2',
                               deployToolDependencies: ['@ui5/cli', '@sap/ux-ui5-tooling', '@ui5/logger', '@ui5/fs', '@dummy/foo'],
                               npmInstallOpts: ['--verbose'],
-                              docker: [
+                              nodeDocker: [
                                    image: 'ctsImage',
                                    options: ['-o1', 'opt1', '-o2', 'opt2'],
                                    envVars: [env1: 'env1', env2: 'env2'],
