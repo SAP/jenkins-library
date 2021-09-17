@@ -27,11 +27,11 @@ Depending on the modules in your MTA, additional configuration files are require
 
 This scenario combines various different steps to create a complete pipeline.
 
-In this scenario, we want to show how to build an application based on SAPUI5 or SAP Fiori by using the MTA concept and how to attach the build result to a transport request inside an ABAP system. This document comprises the [mtaBuild](../../../steps/mtaBuild/) and the [transportRequestUploadFile](../../../steps/transportRequestUploadFile/) steps.
+In this scenario, we want to show how to build an application based on SAPUI5 or SAP Fiori by using the MTA concept and how to attach the build result to a transport request inside an ABAP system. This document comprises the [mtaBuild](../../../steps/mtaBuild/) step and the [transportRequestUploadRFC](../../../steps/transportRequestUploadRFC/) respectively the [transportRequestUploadCTS](../../../steps/transportRequestUploadCTS/) step.
 
 In case of an RFC based upload the binary is not streamed to the ABAP endpoint. Instead an URL pointing to the binary needs to be provided. Hence the binary must be published first so that it can be accessed via HTTP. This can happen by uploading the binary to a blob store or by archiving the artifact on Jenkins. The corresponding URL needs to be provided when the artifact is attached to the transport request.
 
-The transport request can be created on the fly (see [transportRequestCreate](../../../steps/transportRequestCreate/)) or we can use an already existing transport request. In case we use an already existing transport request Id the transport request Id needs to be provided in the git commit history (see example below) or the transport request Id needs to be provided inside the job (e.g. as a job parameter).
+The transport request can be created on the fly (see [transportRequestCreate](../../../steps/transportRequestCreate/)) or we can use an already existing transport request. In case we use an already existing transport request Id the transport request Id needs to be provided in the git commit history (see  [transportRequestReqIDFromGit](../../../steps/transportRequestReqIDFromGit/)) or the transport request Id needs to be provided inside the job (e.g. as a job parameter).
 
 The transport request can be closed by the pipeline job (see [transportRequestRelease](../../../steps/transportRequestRelease/)).
 
@@ -99,7 +99,7 @@ pipeline {
         // This attaches the deployable to a transport request
         stage('attach') {
             steps {
-                transportRequestUploadFile script: this,
+                transportRequestUploadRFC script: this,
                                            transportRequestId: '<TRANSPORT_REQUEST_ID>', // This can be omitted if present inside a Git commit message
                                            applicationUrl: '<THE_URL_TO_THE_DEPLOYABLE_ACCORDING_TO_PUBLISH_STAGE>'
             }
@@ -113,27 +113,17 @@ pipeline {
 This is a basic configuration example, which is also located in the sources of the project.
 
 ```yaml
-general:
-  changeManagement:
-    type: 'RFC'
-    endpoint: 'the RFC endpoint' # e.g. example.com'
-    credentialsId: 'RFC' # The ID under which the credentials are provided on Jenkins defaults to 'CM'
-    rfc:
-      developmentInstance: '01' # needs to be adjusted
-      developmentClient: '001' # needs to be adjusted
-      docker:
-        image: '<imageId>' # the image needs to be built on user side. The corresponding ID needs to be provided here.
-        options: []
-        envVars: {}
-        pullImage: true|false # true if the image is provided by a company-specific Docker registry
-
 steps:
-    transportRequestUploadFile:
-        codePage: <the code page>, # e.g. 'Cp1252'
-        acceptUnixStyleLineEndings: true|false
-        applicationName: '/your/application/name'
-        applicationDescription: 'Application description'
-        abapPackage: '/abap/package'
+  transportRequestUploadRFC:
+    changeManagement:
+      endpoint: 'https://your.rfc.endpoint.com/' # e.g. example.com'
+      credentialsId: 'RFC' # The ID under which the credentials are provided on Jenkins defaults to 'CM'
+      instance: '01' # needs to be adjusted
+      client: '001' # needs to be adjusted
+    abapPackage: 'YOURPACK'
+    applicationName: 'YOURAPP'
+    applicationDescription: 'Your application description'
+    dockerImage: 'my/rfc-client'
 ```
 
 ### Upload via ODATA
@@ -161,17 +151,23 @@ pipeline {
 
         stage('build') {
             steps {
-                // It depends on your project, what needs to be done here. Maybe it's sufficient to zip the sources
-                mtaBuild script: this
+                // It depends on your project, what needs to be done here.
+                // Use the SAPUI5 toolset to build your SAPUI5 application 
+                // and run the build command of the npmExecuteScripts step. 
+                npmExecuteScripts(script: this, runScripts: ['build'])
             }
         }
-
-        // This attaches the deployable to a transport request,
-        // if you have a prior call to mtaBuild, this step sets the deployable
+        // Get the transport request id from your git commit message.
+        stage('request') {
+            steps {
+                transportRequestReqIDFromGit( script: this )
+            }
+        }
+        // This attaches the deployable to a transport request.
+        // Note: ODATA/CTS does not support the mtaBuild tool.
         stage('attach') {
             steps {
-                transportRequestUploadFile script: this,
-                                           transportRequestId: '<TRANSPORT_REQUEST_ID>' // This can be omitted if present inside a Git commit message
+                transportRequestUploadCTS script: this)
             }
         }
     }
@@ -183,17 +179,22 @@ pipeline {
 This is a basic configuration example, which is also located in the sources of the project.
 
 ```yaml
-general:
-  changeManagement:
-    type: 'CTS'
-    endpoint: 'the ODATA endpoint' # e.g. 'http://example.org/sap/opu/odata/SAP/SCTS_CLOUD_API_ODATA_SRV/'
-    credentialsId: 'CTS' # The ID under which the credentials are provided on Jenkins defaults to 'CM'
-    clientOpts: '' # additional java options, e.g. '-Djavax.net.ssl.trustStore=/path/to/truststore.jks'
+steps:
+  transportRequestUploadCTS:
+    changeManagement:
+      endpoint: 'http://your.odata.endpoint/'
+      credentialsId: 'CTS' # The ID under which the credentials are provided on Jenkins defaults to 'CM'
+      clientOpts: '' # additional java options, e.g. '-Djavax.net.ssl.trustStore=/path/to/truststore.jks'
+      client: '001'
+    abapPackage: 'YOURPACK'
+    applicationName: 'YOURAPP'
+    applicationDescription: 'Your description'
 ```
 
 ## Parameters
 
 For the detailed description of the relevant parameters, see:
 
-* [mtaBuild](https://sap.github.io/jenkins-library/steps/mtaBuild/)
-* [transportRequestUploadFile](https://sap.github.io/jenkins-library/steps/transportRequestUploadFile/)
+* [transportRequestUploadCTS](../../../steps/transportRequestUploadCTS/)
+* [transportRequestReqIDFromGit](../../../steps/transportRequestReqIDFromGit/)
+* [npmExecuteScripts](../../../steps/npmExecuteScripts/)
