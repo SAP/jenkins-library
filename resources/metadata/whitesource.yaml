@@ -292,6 +292,9 @@ spec:
       - name: scanImage
         type: string
         description: "For `buildTool: docker`: Defines the docker image which should be scanned."
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/imageNameTag
         scope:
           - PARAMETERS
           - STAGES
@@ -307,6 +310,9 @@ spec:
       - name: scanImageRegistryUrl
         type: string
         description: "For `buildTool: docker`: Defines the registry where the scanImage is located."
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/registryUrl
         scope:
           - PARAMETERS
           - STAGES

@@ -67,10 +67,10 @@ func integrationArtifactTriggerIntegrationTest(config integrationArtifactTrigger
 func runIntegrationArtifactTriggerIntegrationTest(config *integrationArtifactTriggerIntegrationTestOptions, telemetryData *telemetry.CustomData, utils integrationArtifactTriggerIntegrationTestUtils, httpClient piperhttp.Sender) error {
 	var commonPipelineEnvironment integrationArtifactGetServiceEndpointCommonPipelineEnvironment
 	var serviceEndpointUrl string
-	if len(config.IFlowServiceEndpointURL) > 0 {
-		serviceEndpointUrl = config.IFlowServiceEndpointURL
+	if len(config.IntegrationFlowServiceEndpointURL) > 0 {
+		serviceEndpointUrl = config.IntegrationFlowServiceEndpointURL
 	} else {
-		serviceEndpointUrl = commonPipelineEnvironment.custom.iFlowServiceEndpoint
+		serviceEndpointUrl = commonPipelineEnvironment.custom.integrationFlowServiceEndpoint
 		if len(serviceEndpointUrl) == 0 {
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return fmt.Errorf("IFlowServiceEndpointURL not set")
@@ -122,7 +122,7 @@ func callIFlowURL(config *integrationArtifactTriggerIntegrationTestOptions, tele
 		httpMethod = "GET"
 	}
 
-	serviceKey, err := cpi.ReadCpiServiceKey(config.IFlowServiceKey)
+	serviceKey, err := cpi.ReadCpiServiceKey(config.IntegrationFlowServiceKey)
 	if err != nil {
 		return err
 	}
@@ -133,6 +133,7 @@ func callIFlowURL(config *integrationArtifactTriggerIntegrationTestOptions, tele
 		return errors.Wrap(err, "failed to fetch Bearer Token")
 	}
 	clientOptions.Token = fmt.Sprintf("Bearer %s", token)
+	clientOptions.MaxRetries = -1
 	httpIFlowClient.SetOptions(clientOptions)
 	iFlowResp, httpErr := httpIFlowClient.SendRequest(httpMethod, serviceEndpointUrl, bytes.NewBuffer(fileBody), header, nil)
 

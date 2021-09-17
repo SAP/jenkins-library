@@ -182,6 +182,7 @@ func prepareInflux(success bool, config *cloudFoundryDeployOptions, influxData *
 
 	// n/a (literally) is also reported in groovy
 	influxData.deployment_data.fields.artifactURL = "n/a"
+	influxData.deployment_data.fields.commitHash = config.CommitHash
 
 	influxData.deployment_data.fields.deployTime = strings.ToUpper(_now().Format("Jan 02 2006 15:04:05"))
 

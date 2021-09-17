@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/http"
+	"net/url"
 	"os"
 	"reflect"
 	"strings"
 
-	"github.com/SAP/jenkins-library/pkg/http"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 
 	"github.com/ghodss/yaml"
@@ -26,7 +28,8 @@ type Config struct {
 	Hooks            map[string]interface{}            `json:"hooks,omitempty"`
 	defaults         PipelineDefaults
 	initialized      bool
-	openFile         func(s string) (io.ReadCloser, error)
+	accessTokens     map[string]string
+	openFile         func(s string, t map[string]string) (io.ReadCloser, error)
 	vaultCredentials VaultCredentials
 }
 
@@ -147,7 +150,7 @@ func (c *Config) InitializeConfig(configuration io.ReadCloser, defaults []io.Rea
 			c.openFile = OpenPiperFile
 		}
 		for _, f := range c.CustomDefaults {
-			fc, err := c.openFile(f)
+			fc, err := c.openFile(f, c.accessTokens)
 			if err != nil {
 				return errors.Wrapf(err, "getting default '%v' failed", f)
 			}
@@ -300,6 +303,18 @@ func GetStepConfigWithJSON(flagValues map[string]interface{}, stepConfigJSON str
 	return stepConfig
 }
 
+func (c *Config) GetStageConfig(paramJSON string, configuration io.ReadCloser, defaults []io.ReadCloser, ignoreCustomDefaults bool, acceptedParams []string, stageName string) (StepConfig, error) {
+
+	filters := StepFilters{
+		General:    acceptedParams,
+		Steps:      []string{},
+		Stages:     acceptedParams,
+		Parameters: acceptedParams,
+		Env:        []string{},
+	}
+	return c.GetStepConfig(map[string]interface{}{}, paramJSON, configuration, defaults, ignoreCustomDefaults, filters, []StepParameters{}, []StepSecrets{}, map[string]interface{}{}, stageName, "", []Alias{})
+}
+
 // GetJSON returns JSON representation of an object
 func GetJSON(data interface{}) (string, error) {
 
@@ -311,14 +326,31 @@ func GetJSON(data interface{}) (string, error) {
 }
 
 // OpenPiperFile provides functionality to retrieve configuration via file or http
-func OpenPiperFile(name string) (io.ReadCloser, error) {
+func OpenPiperFile(name string, accessTokens map[string]string) (io.ReadCloser, error) {
 	if !strings.HasPrefix(name, "http://") && !strings.HasPrefix(name, "https://") {
 		return os.Open(name)
 	}
 
-	// support http(s) urls next to file path - url cannot be protected
-	client := http.Client{}
-	response, err := client.SendRequest("GET", name, nil, nil, nil)
+	return httpReadFile(name, accessTokens)
+}
+
+func httpReadFile(name string, accessTokens map[string]string) (io.ReadCloser, error) {
+
+	u, err := url.Parse(name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read url: %w", err)
+	}
+
+	// support http(s) urls next to file path
+	client := piperhttp.Client{}
+
+	var header http.Header
+	if len(accessTokens[u.Host]) > 0 {
+		client.SetOptions(piperhttp.ClientOptions{Token: fmt.Sprintf("token %v", accessTokens[u.Host])})
+		header = map[string][]string{"Accept": {"application/vnd.github.v3.raw"}}
+	}
+
+	response, err := client.SendRequest("GET", name, nil, header, nil)
 	if err != nil {
 		return nil, err
 	}

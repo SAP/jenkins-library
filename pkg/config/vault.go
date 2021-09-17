@@ -27,6 +27,7 @@ const (
 	vaultPath                    = "vaultPath"
 	skipVault                    = "skipVault"
 	vaultDisableOverwrite        = "vaultDisableOverwrite"
+	vaultTestCredentialEnvPrefix_Default = "PIPER_TESTCREDENTIAL_"
 )
 
 var (
@@ -189,7 +190,7 @@ func resolveVaultTestCredentials(config *StepConfig, client vaultClient) {
 			continue
 		}
 		secretsResolved := false
-		secretsResolved = populateTestCredentialsAsEnvs(secret, keys)
+		secretsResolved = populateTestCredentialsAsEnvs(config, secret, keys)
 		if secretsResolved {
 			// prevent overwriting resolved secrets
 			// only allows vault test credentials on one / the same vault path
@@ -198,7 +199,12 @@ func resolveVaultTestCredentials(config *StepConfig, client vaultClient) {
 	}
 }
 
-func populateTestCredentialsAsEnvs(secret map[string]string, keys []string) (matched bool) {
+func populateTestCredentialsAsEnvs(config *StepConfig, secret map[string]string, keys []string) (matched bool) {
+
+	vaultTestCredentialEnvPrefix, ok := config.Config["vaultTestCredentialEnvPrefix"].(string)
+	if !ok || len(vaultTestCredentialEnvPrefix) == 0 {
+		vaultTestCredentialEnvPrefix = vaultTestCredentialEnvPrefix_Default
+	}
 	for secretKey, secretValue := range secret {
 		for _, key := range keys {
 			if secretKey == key {
