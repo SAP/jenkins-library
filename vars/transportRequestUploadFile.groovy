@@ -241,7 +241,7 @@ void call(Map parameters = [:]) {
 
                         Map paramsUpload = [
                             script: script,
-                            cmClientOpts: configuration.changeManagement.clientOpts,
+                            cmClientOpts: configuration.changeManagement.clientOpts?: [:],
                             filePath: configuration.filePath,
                             uploadCredentialsId: configuration.changeManagement.credentialsId,
                             endpoint: configuration.changeManagement.endpoint,
