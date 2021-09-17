@@ -277,7 +277,7 @@ void call(Map parameters = [:]) {
                             uploadCredentialsId: configuration.changeManagement.credentialsId
                             ]
 
-                        paramsUpload = addDockerParams(script, paramsUpload, configuration.changeManagement.cts?.docker)
+                        paramsUpload = addDockerParams(script, paramsUpload, configuration.changeManagement.cts?.nodeDocker)
 
                         transportRequestUploadCTS(paramsUpload)
 
