@@ -58,7 +58,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 	}
 
 	if len(config.CustomTLSCertificateLinks) > 0 {
-		err := certificateUpdate(config.CustomTLSCertificateLinks, httpClient, fileUtils)
+		err := certificateUpdate(config.CustomTLSCertificateLinks, httpClient, fileUtils, "/kaniko/ssl/certs/ca-certificates.crt")
 		if err != nil {
 			return errors.Wrap(err, "failed to update certificates")
 		}
@@ -121,8 +121,7 @@ func runKanikoExecute(config *kanikoExecuteOptions, telemetryData *telemetry.Cus
 	return nil
 }
 
-func certificateUpdate(certLinks []string, httpClient piperhttp.Sender, fileUtils piperutils.FileUtils) error {
-	caCertsFile := "/kaniko/ssl/certs/ca-certificates.crt"
+func certificateUpdate(certLinks []string, httpClient piperhttp.Sender, fileUtils piperutils.FileUtils, caCertsFile string) error {
 	caCerts, err := fileUtils.FileRead(caCertsFile)
 	if err != nil {
 		return errors.Wrapf(err, "failed to load file '%v'", caCertsFile)

@@ -44,7 +44,11 @@ func TestRunCnbBuild(t *testing.T) {
 		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
 		addBuilderFiles(&utils)
 
-		err := runCnbBuild(&config, &telemetry.CustomData{}, &utils, &commonPipelineEnvironment)
+		httpClient := &kanikoMockClient{
+			responseBody: "testCert",
+		}
+
+		err := runCnbBuild(&config, &telemetry.CustomData{}, &utils, &commonPipelineEnvironment, httpClient)
 
 		assert.NoError(t, err)
 		runner := utils.ExecMockRunner
@@ -71,7 +75,11 @@ func TestRunCnbBuild(t *testing.T) {
 		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
 		addBuilderFiles(&utils)
 
-		err := runCnbBuild(&config, &telemetry.CustomData{}, &utils, &commonPipelineEnvironment)
+		httpClient := &kanikoMockClient{
+			responseBody: "testCert",
+		}
+
+		err := runCnbBuild(&config, &telemetry.CustomData{}, &utils, &commonPipelineEnvironment, httpClient)
 
 		assert.NoError(t, err)
 		runner := utils.ExecMockRunner
@@ -100,7 +108,11 @@ func TestRunCnbBuild(t *testing.T) {
 		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
 		addBuilderFiles(&utils)
 
-		err := runCnbBuild(&config, &telemetry.CustomData{}, &utils, &commonPipelineEnvironment)
+		httpClient := &kanikoMockClient{
+			responseBody: "testCert",
+		}
+
+		err := runCnbBuild(&config, &telemetry.CustomData{}, &utils, &commonPipelineEnvironment, httpClient)
 
 		assert.NoError(t, err)
 		runner := utils.ExecMockRunner
@@ -124,7 +136,11 @@ func TestRunCnbBuild(t *testing.T) {
 		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":"dXNlcjpwYXNz"}}`))
 		addBuilderFiles(&utils)
 
-		err := runCnbBuild(&config, nil, &utils, &commonPipelineEnvironment)
+		httpClient := &kanikoMockClient{
+			responseBody: "testCert",
+		}
+
+		err := runCnbBuild(&config, nil, &utils, &commonPipelineEnvironment, httpClient)
 		assert.EqualError(t, err, "failed to parse DockerConfigJSON file '/path/to/config.json': json: cannot unmarshal string into Go struct field ConfigFile.auths of type types.AuthConfig")
 	})
 
@@ -138,7 +154,11 @@ func TestRunCnbBuild(t *testing.T) {
 		utils := newCnbBuildTestsUtils()
 		addBuilderFiles(&utils)
 
-		err := runCnbBuild(&config, nil, &utils, &commonPipelineEnvironment)
+		httpClient := &kanikoMockClient{
+			responseBody: "testCert",
+		}
+
+		err := runCnbBuild(&config, nil, &utils, &commonPipelineEnvironment, httpClient)
 		assert.EqualError(t, err, "failed to read DockerConfigJSON file 'not-there/config.json': could not read 'not-there/config.json'")
 	})
 
@@ -152,7 +172,11 @@ func TestRunCnbBuild(t *testing.T) {
 		utils := newCnbBuildTestsUtils()
 		addBuilderFiles(&utils)
 
-		err := runCnbBuild(&config, nil, &utils, &commonPipelineEnvironment)
+		httpClient := &kanikoMockClient{
+			responseBody: "testCert",
+		}
+
+		err := runCnbBuild(&config, nil, &utils, &commonPipelineEnvironment, httpClient)
 		assert.EqualError(t, err, "failed to rename DockerConfigJSON file 'not-there': renaming file 'not-there' is not supported, since it does not exist, or is not a leaf-entry")
 	})
 
@@ -162,7 +186,11 @@ func TestRunCnbBuild(t *testing.T) {
 
 		utils := newCnbBuildTestsUtils()
 
-		err := runCnbBuild(&config, nil, &utils, &commonPipelineEnvironment)
+		httpClient := &kanikoMockClient{
+			responseBody: "testCert",
+		}
+
+		err := runCnbBuild(&config, nil, &utils, &commonPipelineEnvironment, httpClient)
 		assert.EqualError(t, err, "the provided dockerImage is not a valid builder")
 	})
 }

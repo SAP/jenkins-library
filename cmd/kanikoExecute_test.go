@@ -320,12 +320,13 @@ func TestCertificateUpdate(t *testing.T) {
 		certClient := &kanikoMockClient{
 			responseBody: "testCert",
 		}
+		caCertsFile := "/kaniko/ssl/certs/ca-certificates.crt"
 		fileUtils := &kanikoFileMock{
-			fileReadContent:  map[string]string{"/kaniko/ssl/certs/ca-certificates.crt": "initial cert\n"},
+			fileReadContent:  map[string]string{caCertsFile: "initial cert\n"},
 			fileWriteContent: map[string]string{},
 		}
 
-		err := certificateUpdate(certLinks, certClient, fileUtils)
+		err := certificateUpdate(certLinks, certClient, fileUtils, caCertsFile)
 
 		assert.NoError(t, err)
 		assert.Equal(t, certLinks, certClient.urlsCalled)
@@ -336,11 +337,12 @@ func TestCertificateUpdate(t *testing.T) {
 		certClient := &kanikoMockClient{
 			responseBody: "testCert",
 		}
+		caCertsFile := "/kaniko/ssl/certs/ca-certificates.crt"
 		fileUtils := &kanikoFileMock{
-			fileReadErr: map[string]error{"/kaniko/ssl/certs/ca-certificates.crt": fmt.Errorf("read error")},
+			fileReadErr: map[string]error{caCertsFile: fmt.Errorf("read error")},
 		}
 
-		err := certificateUpdate(certLinks, certClient, fileUtils)
+		err := certificateUpdate(certLinks, certClient, fileUtils, caCertsFile)
 		assert.EqualError(t, err, "failed to load file '/kaniko/ssl/certs/ca-certificates.crt': read error")
 	})
 
@@ -348,12 +350,13 @@ func TestCertificateUpdate(t *testing.T) {
 		certClient := &kanikoMockClient{
 			responseBody: "testCert",
 		}
+		caCertsFile := "/kaniko/ssl/certs/ca-certificates.crt"
 		fileUtils := &kanikoFileMock{
-			fileReadContent: map[string]string{"/kaniko/ssl/certs/ca-certificates.crt": "initial cert\n"},
-			fileWriteErr:    map[string]error{"/kaniko/ssl/certs/ca-certificates.crt": fmt.Errorf("write error")},
+			fileReadContent: map[string]string{caCertsFile: "initial cert\n"},
+			fileWriteErr:    map[string]error{caCertsFile: fmt.Errorf("write error")},
 		}
 
-		err := certificateUpdate(certLinks, certClient, fileUtils)
+		err := certificateUpdate(certLinks, certClient, fileUtils, caCertsFile)
 		assert.EqualError(t, err, "failed to update file '/kaniko/ssl/certs/ca-certificates.crt': write error")
 	})
 
@@ -362,12 +365,13 @@ func TestCertificateUpdate(t *testing.T) {
 			responseBody: "testCert",
 			errorMessage: "http error",
 		}
+		caCertsFile := "/kaniko/ssl/certs/ca-certificates.crt"
 		fileUtils := &kanikoFileMock{
-			fileReadContent:  map[string]string{"/kaniko/ssl/certs/ca-certificates.crt": "initial cert\n"},
+			fileReadContent:  map[string]string{caCertsFile: "initial cert\n"},
 			fileWriteContent: map[string]string{},
 		}
 
-		err := certificateUpdate(certLinks, certClient, fileUtils)
+		err := certificateUpdate(certLinks, certClient, fileUtils, caCertsFile)
 		assert.EqualError(t, err, "failed to load certificate from url: http error")
 	})
 

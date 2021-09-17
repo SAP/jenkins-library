@@ -13,6 +13,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/cnbutils"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/docker"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
@@ -62,7 +63,9 @@ func newCnbBuildUtils() cnbutils.BuildUtils {
 func cnbBuild(config cnbBuildOptions, telemetryData *telemetry.CustomData, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment) {
 	utils := newCnbBuildUtils()
 
-	err := runCnbBuild(&config, telemetryData, utils, commonPipelineEnvironment)
+	client := &piperhttp.Client{}
+
+	err := runCnbBuild(&config, telemetryData, utils, commonPipelineEnvironment, client)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
@@ -170,7 +173,7 @@ func prepareDockerConfig(source string, utils cnbutils.BuildUtils) (string, erro
 	return source, nil
 }
 
-func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, utils cnbutils.BuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment) error {
+func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, utils cnbutils.BuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment, httpClient piperhttp.Sender) error {
 	var err error
 
 	exists, err := isBuilder(utils)
@@ -295,6 +298,15 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 	} else {
 		log.SetErrorCategory(log.ErrorConfiguration)
 		return errors.New("containerRegistryUrl, containerImageName and containerImageTag must be present")
+	}
+
+	if len(config.CustomTLSCertificateLinks) > 0 {
+		err := certificateUpdate(config.CustomTLSCertificateLinks, httpClient, utils, "/etc/ssl/certs/ca-certificates.crt")
+		if err != nil {
+			return errors.Wrap(err, "failed to update certificates")
+		}
+	} else {
+		log.Entry().Info("skipping updation of certificates")
 	}
 
 	err = utils.RunExecutable(detectorPath, "-buildpacks", buildpacksPath, "-order", orderPath, "-platform", platformPath)
