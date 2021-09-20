@@ -373,6 +373,12 @@ func postScanChecksAndReporting(config detectExecuteScanOptions, influx *detectE
 	if violationCount > 0 {
 		return errors.Errorf("License Policy Violations found")
 	}
+	// create Toolrecord file
+	toolRecordFileName, err := createToolRecordDetect("./", config, sys)
+	if err != nil {
+		// do not fail until the framework is well established
+		log.Entry().Warning("TR_DETECT: Failed to create toolrecord file "+toolRecordFileName, err)
+	}
 	return nil
 }
 
