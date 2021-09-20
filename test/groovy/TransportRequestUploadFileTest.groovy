@@ -205,17 +205,11 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         loggingRule.expect("[INFO] Uploading application 'myApp' to transport request '002'.")
         loggingRule.expect("[INFO] Application 'myApp' has been successfully uploaded to transport request '002'.")
 
-        def calledWithParameters,
-            calledWithStepName,
-            calledWithMetadata,
-            calledWithCredentials
+        def calledWithParameters
 
         helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
             params, stepName, metaData, creds ->
                 calledWithParameters = params
-                calledWithStepName = stepName
-                calledWithMetadata = metaData
-                calledWithCredentials = creds
             })
 
         stepRule.step.transportRequestUploadFile(script: nullScript,
@@ -363,17 +357,11 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     @Test
     public void uploadFileToTransportRequestRFCDockerParams() {
 
-        def calledWithParameters,
-            calledWithStepName,
-            calledWithMetadata,
-            calledWithCredentials
+        def calledWithParameters
 
         helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
             params, stepName, metaData, creds ->
                 calledWithParameters = params
-                calledWithStepName = stepName
-                calledWithMetadata = metaData
-                calledWithCredentials = creds
             }
         )
 
@@ -565,17 +553,11 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         // this one is used since there is nothing in the signature
         nullScript.commonPipelineEnvironment.setMtarFilePath('/path2')
 
-        def calledWithParameters,
-            calledWithStepName,
-            calledWithMetadata,
-            calledWithCredentials
+        def calledWithParameters
 
         helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
             params, stepName, metaData, creds ->
                 calledWithParameters = params
-                calledWithStepName = stepName
-                calledWithMetadata = metaData
-                calledWithCredentials = creds
             }
         )
 
