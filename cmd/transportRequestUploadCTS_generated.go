@@ -179,7 +179,7 @@ func transportRequestUploadCTSMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{},
+						Aliases:     []config.Alias{{Name: "applicationDescription"}},
 						Default:     `Deployed with Piper based on SAP Fiori tools`,
 					},
 					{

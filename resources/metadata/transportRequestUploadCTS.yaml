@@ -18,6 +18,8 @@ spec:
       - name: description
         type: string
         description: "The description of the application. The description is only taken into account for a new upload. In case of an update the description will not be updated."
+        aliases:
+          - name: applicationDescription
         default: "Deployed with Piper based on SAP Fiori tools"
         scope:
           - PARAMETERS
