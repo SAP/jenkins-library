@@ -84,8 +84,7 @@ To trigger the AUnit run an AUnit config file `aUnitConfig.yml` will be needed. 
 The following section contains an example of an `aUnitConfig.yml` file.
 This file must be stored in the same Git folder where the `Jenkinsfile` is stored to run the pipeline. This repository containing the `Jenkinsfile` must be taken as a SCM in the Jenkins pipeline to run the pipeline.
 
-You can specify an object set containing the objects that should be checked. These can be for example packages, classes or transport requests containing test classes that can be executed. Please check the official [documentation]() for more information.
-This must be in the same format as below example for a `aUnitConfig.yml` file.
+You can specify an object set containing the objects that should be checked. These can be for example packages, classes or transport requests containing test classes that can be executed. This must be in the same format as below example for a `aUnitConfig.yml` file.
 Note that if you specify a package inside a packageSet to be checked for each package that has to be checked you can configure if you want the subpackages to be included in checks or not.
 
 See below example for an `aUnitConfig.yml` file containing a package to be checked:
