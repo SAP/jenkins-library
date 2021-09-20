@@ -1,5 +1,5 @@
 metadata:
-  name: checkChangeInDevelopment
+  name: isChangeInDevelopment
   description: "Checks if a certain change is in status 'in development'"
   longDescription: |
     "Checks if a certain change is in status 'in development'"
