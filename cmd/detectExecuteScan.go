@@ -157,7 +157,8 @@ func runDetect(config detectExecuteScanOptions, utils detectUtils, influx *detec
 	utils.SetEnv(envs)
 
 	err = utils.RunShell("/bin/bash", script)
-	reportingErr := postScanChecksAndReporting(config, influx, utils, newBlackduckSystem(config))
+	blackduckSystem := newBlackduckSystem(config)
+	reportingErr := postScanChecksAndReporting(config, influx, utils, blackduckSystem)
 	if reportingErr != nil {
 		if strings.Contains(reportingErr.Error(), "License Policy Violations found") {
 			log.Entry().Errorf("License Policy Violations found")
@@ -175,6 +176,12 @@ func runDetect(config detectExecuteScanOptions, utils detectUtils, influx *detec
 
 		// Error code mapping with more human readable text
 		err = errors.Wrapf(err, exitCodeMapping(utils.GetExitCode()))
+	}
+	// create Toolrecord file
+	toolRecordFileName, toolRecordErr := createToolRecordDetect("./", config, blackduckSystem)
+	if toolRecordErr != nil {
+		// do not fail until the framework is well established
+		log.Entry().Warning("TR_DETECT: Failed to create toolrecord file "+toolRecordFileName, err)
 	}
 	return err
 }
@@ -372,12 +379,6 @@ func postScanChecksAndReporting(config detectExecuteScanOptions, influx *detectE
 	}
 	if violationCount > 0 {
 		return errors.Errorf("License Policy Violations found")
-	}
-	// create Toolrecord file
-	toolRecordFileName, err := createToolRecordDetect("./", config, sys)
-	if err != nil {
-		// do not fail until the framework is well established
-		log.Entry().Warning("TR_DETECT: Failed to create toolrecord file "+toolRecordFileName, err)
 	}
 	return nil
 }
