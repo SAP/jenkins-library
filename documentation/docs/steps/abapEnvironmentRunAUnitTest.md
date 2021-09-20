@@ -41,7 +41,7 @@ To trigger the AUnit test run an AUnit config file `aUnitConfig.yml` will be nee
 The following example triggers an AUnit test run via reading the Service Key of an ABAP instance in Cloud Foundry.
 
 You can store the credentials in Jenkins and use the cfCredentialsId parameter to authenticate to Cloud Foundry.
-The username and password to authenticate to ABAP system will then be read from the Cloud Foundry Service key that is bound to the ABAP instance.
+The username and password to authenticate to ABAP system will then be read from the Cloud Foundry Service Key that is bound to the ABAP instance.
 
 This can be done accordingly:
 
