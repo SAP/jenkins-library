@@ -48,6 +48,13 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: container/registryUrl
+      - name: buildpacks
+        type: "[]string"
+        description: List of custom buildpacks to use in the form of '<hostname>/<repo>[:<tag>]'.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: path
         type: string
         description: The path should either point to your sources or an artifact build before.
