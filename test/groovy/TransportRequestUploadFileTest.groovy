@@ -200,6 +200,47 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     }
 
     @Test
+    public void uploadFileToTransportRequestCTSDockerParams() {
+
+        loggingRule.expect("[INFO] Uploading application 'myApp' to transport request '002'.")
+        loggingRule.expect("[INFO] Application 'myApp' has been successfully uploaded to transport request '002'.")
+
+        def calledWithParameters
+
+        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
+            params, stepName, metaData, creds ->
+                calledWithParameters = params
+            })
+
+        stepRule.step.transportRequestUploadFile(script: nullScript,
+                      changeManagement: [
+                          type: 'CTS',
+                          client: '001',
+                          cts: [
+                              osDeployUser: 'node2',
+                              deployToolDependencies: ['@ui5/cli', '@sap/ux-ui5-tooling', '@ui5/logger', '@ui5/fs', '@dummy/foo'],
+                              npmInstallOpts: ['--verbose'],
+                              nodeDocker: [
+                                   image: 'ctsImage',
+                                   options: ['-o1', 'opt1', '-o2', 'opt2'],
+                                   envVars: [env1: 'env1', env2: 'env2'],
+                                   pullImage: false,
+                              ],
+                          ]
+                      ],
+                      applicationName: 'myApp',
+                      applicationDescription: 'the description',
+                      abapPackage: 'myPackage',
+                      transportRequestId: '002',
+                      credentialsId: 'CM')
+
+        assertThat(calledWithParameters.dockerImage, is('ctsImage'))
+        assertThat(calledWithParameters.dockerOptions, is(['-o1', 'opt1', '-o2', 'opt2']))
+        assertThat(calledWithParameters.dockerEnvVars, is([env1: 'env1', env2: 'env2']))
+        assertThat(calledWithParameters.dockerPullImage, is(false))
+    }
+
+    @Test
     public void uploadFileToTransportRequestRFCSanityChecksTest() {
 
         thrown.expect(IllegalArgumentException)
@@ -311,6 +352,48 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                  abapPackage: 'XYZ',
                  credentialsId: 'CM'
         )
+    }
+
+    @Test
+    public void uploadFileToTransportRequestRFCDockerParams() {
+
+        def calledWithParameters
+
+        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
+            params, stepName, metaData, creds ->
+                calledWithParameters = params
+            }
+        )
+
+        stepRule.step.transportRequestUploadFile(script: nullScript,
+                 applicationUrl: 'http://example.org/blobstore/xyz.zip',
+                 codePage: 'UTF-9',
+                 acceptUnixStyleLineEndings: true,
+                 transportRequestId: '123456',
+                 changeManagement: [
+                     type: 'RFC',
+                     endpoint: 'https://example.org/cm',
+                     rfc: [
+                         developmentClient: '002',
+                         developmentInstance: '001',
+                         docker: [
+                              image: 'rfcImage',
+                              options: ['-o1', 'opt1', '-o2', 'opt2'],
+                              envVars: [env1: 'env1', env2: 'env2'],
+                              pullImage: false,
+                         ],
+                     ]
+                 ],
+                 applicationName: '42',
+                 applicationDescription: 'Lorem ipsum',
+                 abapPackage: 'XYZ',
+                 credentialsId: 'CM'
+        )
+
+        assertThat(calledWithParameters.dockerImage, is('rfcImage'))
+        assertThat(calledWithParameters.dockerOptions, is(['-o1', 'opt1', '-o2', 'opt2']))
+        assertThat(calledWithParameters.dockerEnvVars, is([env1: 'env1', env2: 'env2']))
+        assertThat(calledWithParameters.dockerPullImage, is(false))
     }
 
     @Test
@@ -462,6 +545,47 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         )
 
         assertThat(calledWithParameters.filePath, is('/path2'))
+    }
+
+    @Test
+    public void uploadFileToTransportRequestSOLMANDockerParams() {
+
+        // this one is used since there is nothing in the signature
+        nullScript.commonPipelineEnvironment.setMtarFilePath('/path2')
+
+        def calledWithParameters
+
+        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
+            params, stepName, metaData, creds ->
+                calledWithParameters = params
+            }
+        )
+
+        stepRule.step.transportRequestUploadFile(script: nullScript,
+                      changeDocumentId: '001',
+                      transportRequestId: '002',
+                      applicationId: 'app',
+                      filePath: '/pathByParam',
+                      changeManagement: [
+                          type: 'SOLMAN',
+                          endpoint: 'https://example.org/cm',
+                          clientOpts: '--client opts',
+                          solman: [
+                              docker: [
+                                  image: 'solmanImage',
+                                  options: ['-o1', 'opt1', '-o2', 'opt2'],
+                                  envVars: [env1: 'env1', env2: 'env2'],
+                                  pullImage: false,
+                              ],
+                          ],
+                      ],
+                      credentialsId: 'CM'
+        )
+
+        assertThat(calledWithParameters.dockerImage, is('solmanImage'))
+        assertThat(calledWithParameters.dockerOptions, is(['-o1', 'opt1', '-o2', 'opt2']))
+        assertThat(calledWithParameters.dockerEnvVars, is([env1: 'env1', env2: 'env2']))
+        assertThat(calledWithParameters.dockerPullImage, is(false))
     }
 
     @Test
