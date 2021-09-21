@@ -13,23 +13,24 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
 type xsDeployOptions struct {
-	DeployOpts            string `json:"deployOpts,omitempty"`
-	OperationIDLogPattern string `json:"operationIdLogPattern,omitempty"`
-	MtaPath               string `json:"mtaPath,omitempty"`
-	Action                string `json:"action,omitempty"`
-	Mode                  string `json:"mode,omitempty"`
-	OperationID           string `json:"operationId,omitempty"`
-	APIURL                string `json:"apiUrl,omitempty"`
-	Username              string `json:"username,omitempty"`
-	Password              string `json:"password,omitempty"`
-	Org                   string `json:"org,omitempty"`
-	Space                 string `json:"space,omitempty"`
-	LoginOpts             string `json:"loginOpts,omitempty"`
-	XsSessionFile         string `json:"xsSessionFile,omitempty"`
+	DeployOpts            string `json:"deployOpts,omitempty" validate:""`
+	OperationIDLogPattern string `json:"operationIdLogPattern,omitempty" validate:""`
+	MtaPath               string `json:"mtaPath,omitempty" validate:""`
+	Action                string `json:"action,omitempty" validate:"oneof=NONE Resume Abort Retry"`
+	Mode                  string `json:"mode,omitempty" validate:"oneof=NONE DEPLOY BG_DEPLOY"`
+	OperationID           string `json:"operationId,omitempty" validate:""`
+	APIURL                string `json:"apiUrl,omitempty" validate:""`
+	Username              string `json:"username,omitempty" validate:""`
+	Password              string `json:"password,omitempty" validate:""`
+	Org                   string `json:"org,omitempty" validate:""`
+	Space                 string `json:"space,omitempty" validate:""`
+	LoginOpts             string `json:"loginOpts,omitempty" validate:""`
+	XsSessionFile         string `json:"xsSessionFile,omitempty" validate:""`
 }
 
 type xsDeployCommonPipelineEnvironment struct {
@@ -77,13 +78,21 @@ func XsDeployCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				return err
+			}
+
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err

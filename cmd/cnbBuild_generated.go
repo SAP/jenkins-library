@@ -13,16 +13,17 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
 type cnbBuildOptions struct {
-	ContainerImageName   string   `json:"containerImageName,omitempty"`
-	ContainerImageTag    string   `json:"containerImageTag,omitempty"`
-	ContainerRegistryURL string   `json:"containerRegistryUrl,omitempty"`
-	Buildpacks           []string `json:"buildpacks,omitempty"`
-	Path                 string   `json:"path,omitempty"`
-	DockerConfigJSON     string   `json:"dockerConfigJSON,omitempty"`
+	ContainerImageName   string   `json:"containerImageName,omitempty" validate:""`
+	ContainerImageTag    string   `json:"containerImageTag,omitempty" validate:""`
+	ContainerRegistryURL string   `json:"containerRegistryUrl,omitempty" validate:""`
+	Buildpacks           []string `json:"buildpacks,omitempty" validate:""`
+	Path                 string   `json:"path,omitempty" validate:""`
+	DockerConfigJSON     string   `json:"dockerConfigJSON,omitempty" validate:""`
 }
 
 type cnbBuildCommonPipelineEnvironment struct {
@@ -74,13 +75,21 @@ func CnbBuildCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				return err
+			}
+
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err

@@ -13,12 +13,13 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
 type integrationArtifactGetServiceEndpointOptions struct {
-	APIServiceKey     string `json:"apiServiceKey,omitempty"`
-	IntegrationFlowID string `json:"integrationFlowId,omitempty"`
+	APIServiceKey     string `json:"apiServiceKey,omitempty" validate:""`
+	IntegrationFlowID string `json:"integrationFlowId,omitempty" validate:""`
 }
 
 type integrationArtifactGetServiceEndpointCommonPipelineEnvironment struct {
@@ -68,13 +69,21 @@ func IntegrationArtifactGetServiceEndpointCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				return err
+			}
+
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err

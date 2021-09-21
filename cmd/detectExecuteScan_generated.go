@@ -13,34 +13,35 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
 type detectExecuteScanOptions struct {
-	Token                      string   `json:"token,omitempty"`
-	CodeLocation               string   `json:"codeLocation,omitempty"`
-	ProjectName                string   `json:"projectName,omitempty"`
-	Scanners                   []string `json:"scanners,omitempty"`
-	ScanPaths                  []string `json:"scanPaths,omitempty"`
-	DependencyPath             string   `json:"dependencyPath,omitempty"`
-	Unmap                      bool     `json:"unmap,omitempty"`
-	ScanProperties             []string `json:"scanProperties,omitempty"`
-	ServerURL                  string   `json:"serverUrl,omitempty"`
-	Groups                     []string `json:"groups,omitempty"`
-	FailOn                     []string `json:"failOn,omitempty"`
-	VersioningModel            string   `json:"versioningModel,omitempty"`
-	Version                    string   `json:"version,omitempty"`
-	CustomScanVersion          string   `json:"customScanVersion,omitempty"`
-	ProjectSettingsFile        string   `json:"projectSettingsFile,omitempty"`
-	GlobalSettingsFile         string   `json:"globalSettingsFile,omitempty"`
-	M2Path                     string   `json:"m2Path,omitempty"`
-	InstallArtifacts           bool     `json:"installArtifacts,omitempty"`
-	IncludedPackageManagers    []string `json:"includedPackageManagers,omitempty"`
-	ExcludedPackageManagers    []string `json:"excludedPackageManagers,omitempty"`
-	MavenExcludedScopes        []string `json:"mavenExcludedScopes,omitempty"`
-	DetectTools                []string `json:"detectTools,omitempty"`
-	ScanOnChanges              bool     `json:"scanOnChanges,omitempty"`
-	CustomEnvironmentVariables []string `json:"customEnvironmentVariables,omitempty"`
+	Token                      string   `json:"token,omitempty" validate:""`
+	CodeLocation               string   `json:"codeLocation,omitempty" validate:""`
+	ProjectName                string   `json:"projectName,omitempty" validate:""`
+	Scanners                   []string `json:"scanners,omitempty" validate:"oneof=signature source"`
+	ScanPaths                  []string `json:"scanPaths,omitempty" validate:""`
+	DependencyPath             string   `json:"dependencyPath,omitempty" validate:""`
+	Unmap                      bool     `json:"unmap,omitempty" validate:""`
+	ScanProperties             []string `json:"scanProperties,omitempty" validate:""`
+	ServerURL                  string   `json:"serverUrl,omitempty" validate:""`
+	Groups                     []string `json:"groups,omitempty" validate:""`
+	FailOn                     []string `json:"failOn,omitempty" validate:"oneof=ALL BLOCKER CRITICAL MAJOR MINOR NONE"`
+	VersioningModel            string   `json:"versioningModel,omitempty" validate:"oneof=major major-minor semantic full"`
+	Version                    string   `json:"version,omitempty" validate:""`
+	CustomScanVersion          string   `json:"customScanVersion,omitempty" validate:""`
+	ProjectSettingsFile        string   `json:"projectSettingsFile,omitempty" validate:""`
+	GlobalSettingsFile         string   `json:"globalSettingsFile,omitempty" validate:""`
+	M2Path                     string   `json:"m2Path,omitempty" validate:""`
+	InstallArtifacts           bool     `json:"installArtifacts,omitempty" validate:""`
+	IncludedPackageManagers    []string `json:"includedPackageManagers,omitempty" validate:""`
+	ExcludedPackageManagers    []string `json:"excludedPackageManagers,omitempty" validate:""`
+	MavenExcludedScopes        []string `json:"mavenExcludedScopes,omitempty" validate:""`
+	DetectTools                []string `json:"detectTools,omitempty" validate:""`
+	ScanOnChanges              bool     `json:"scanOnChanges,omitempty" validate:""`
+	CustomEnvironmentVariables []string `json:"customEnvironmentVariables,omitempty" validate:""`
 }
 
 type detectExecuteScanInflux struct {
@@ -113,13 +114,21 @@ Please configure your BlackDuck server Url using the serverUrl parameter and the
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				return err
+			}
+
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err

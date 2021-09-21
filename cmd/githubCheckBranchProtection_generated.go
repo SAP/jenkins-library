@@ -11,18 +11,19 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
 type githubCheckBranchProtectionOptions struct {
-	APIURL                       string   `json:"apiUrl,omitempty"`
-	Branch                       string   `json:"branch,omitempty"`
-	Owner                        string   `json:"owner,omitempty"`
-	Repository                   string   `json:"repository,omitempty"`
-	RequiredChecks               []string `json:"requiredChecks,omitempty"`
-	RequireEnforceAdmins         bool     `json:"requireEnforceAdmins,omitempty"`
-	RequiredApprovingReviewCount int      `json:"requiredApprovingReviewCount,omitempty"`
-	Token                        string   `json:"token,omitempty"`
+	APIURL                       string   `json:"apiUrl,omitempty" validate:""`
+	Branch                       string   `json:"branch,omitempty" validate:""`
+	Owner                        string   `json:"owner,omitempty" validate:""`
+	Repository                   string   `json:"repository,omitempty" validate:""`
+	RequiredChecks               []string `json:"requiredChecks,omitempty" validate:""`
+	RequireEnforceAdmins         bool     `json:"requireEnforceAdmins,omitempty" validate:""`
+	RequiredApprovingReviewCount int      `json:"requiredApprovingReviewCount,omitempty" validate:""`
+	Token                        string   `json:"token,omitempty" validate:""`
 }
 
 // GithubCheckBranchProtectionCommand Check branch protection of a GitHub branch
@@ -45,13 +46,21 @@ It can for example be used to verify if certain status checks are mandatory. Thi
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				return err
+			}
+
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err

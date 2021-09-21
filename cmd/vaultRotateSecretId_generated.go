@@ -11,23 +11,24 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
 type vaultRotateSecretIdOptions struct {
-	SecretStore                          string `json:"secretStore,omitempty"`
-	JenkinsURL                           string `json:"jenkinsUrl,omitempty"`
-	JenkinsCredentialDomain              string `json:"jenkinsCredentialDomain,omitempty"`
-	JenkinsUsername                      string `json:"jenkinsUsername,omitempty"`
-	JenkinsToken                         string `json:"jenkinsToken,omitempty"`
-	VaultAppRoleSecretTokenCredentialsID string `json:"vaultAppRoleSecretTokenCredentialsId,omitempty"`
-	VaultServerURL                       string `json:"vaultServerUrl,omitempty"`
-	VaultNamespace                       string `json:"vaultNamespace,omitempty"`
-	DaysBeforeExpiry                     int    `json:"daysBeforeExpiry,omitempty"`
-	AdoOrganization                      string `json:"adoOrganization,omitempty"`
-	AdoPersonalAccessToken               string `json:"adoPersonalAccessToken,omitempty"`
-	AdoProject                           string `json:"adoProject,omitempty"`
-	AdoPipelineID                        int    `json:"adoPipelineId,omitempty"`
+	SecretStore                          string `json:"secretStore,omitempty" validate:"oneof=jenkins ado"`
+	JenkinsURL                           string `json:"jenkinsUrl,omitempty" validate:""`
+	JenkinsCredentialDomain              string `json:"jenkinsCredentialDomain,omitempty" validate:""`
+	JenkinsUsername                      string `json:"jenkinsUsername,omitempty" validate:""`
+	JenkinsToken                         string `json:"jenkinsToken,omitempty" validate:""`
+	VaultAppRoleSecretTokenCredentialsID string `json:"vaultAppRoleSecretTokenCredentialsId,omitempty" validate:""`
+	VaultServerURL                       string `json:"vaultServerUrl,omitempty" validate:""`
+	VaultNamespace                       string `json:"vaultNamespace,omitempty" validate:""`
+	DaysBeforeExpiry                     int    `json:"daysBeforeExpiry,omitempty" validate:""`
+	AdoOrganization                      string `json:"adoOrganization,omitempty" validate:""`
+	AdoPersonalAccessToken               string `json:"adoPersonalAccessToken,omitempty" validate:""`
+	AdoProject                           string `json:"adoProject,omitempty" validate:""`
+	AdoPipelineID                        int    `json:"adoPipelineId,omitempty" validate:""`
 }
 
 // VaultRotateSecretIdCommand Rotate vault AppRole Secret ID
@@ -48,13 +49,21 @@ func VaultRotateSecretIdCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				return err
+			}
+
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err

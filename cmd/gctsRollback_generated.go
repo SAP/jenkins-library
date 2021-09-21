@@ -11,17 +11,18 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
 type gctsRollbackOptions struct {
-	Username                  string `json:"username,omitempty"`
-	Password                  string `json:"password,omitempty"`
-	Repository                string `json:"repository,omitempty"`
-	Host                      string `json:"host,omitempty"`
-	Client                    string `json:"client,omitempty"`
-	Commit                    string `json:"commit,omitempty"`
-	GithubPersonalAccessToken string `json:"githubPersonalAccessToken,omitempty"`
+	Username                  string `json:"username,omitempty" validate:""`
+	Password                  string `json:"password,omitempty" validate:""`
+	Repository                string `json:"repository,omitempty" validate:""`
+	Host                      string `json:"host,omitempty" validate:""`
+	Client                    string `json:"client,omitempty" validate:""`
+	Commit                    string `json:"commit,omitempty" validate:""`
+	GithubPersonalAccessToken string `json:"githubPersonalAccessToken,omitempty" validate:""`
 }
 
 // GctsRollbackCommand Perfoms roll back of one (default) or several commit(s)
@@ -44,13 +45,21 @@ gctsRollback will rollback to the previously active commit in the local reposito
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				return err
+			}
+
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err

@@ -61,6 +61,7 @@ import (
 	{{ end -}}
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/splunk"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
@@ -68,7 +69,7 @@ type {{ .StepName }}Options struct {
 	{{- $names := list ""}}
 	{{- range $key, $value := uniqueName .StepParameters }}
 	{{ if ne (has $value.Name $names) true -}}
-	{{ $names | last }}{{ $value.Name | golangName }} {{ $value.Type }} ` + "`json:\"{{$value.Name}},omitempty\"`" + `
+	{{ $names | last }}{{ $value.Name | golangName }} {{ $value.Type }} ` + "`json:\"{{$value.Name}},omitempty\"" + " validate:\"{{if $value.PossibleValues}}oneof={{range $i,$a := $value.PossibleValues}}{{if gt $i 0 }} {{end}}{{.}}{{end}}{{end}}\"" + "`" + `
 	{{- else -}}
 	{{- $names = append $names $value.Name }} {{ end -}}
 	{{ end }}
@@ -98,13 +99,21 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.Verbose)
 
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				return err
+			}
+
 			{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.GitHubAccessTokens = {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}ResolveAccessTokens({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err

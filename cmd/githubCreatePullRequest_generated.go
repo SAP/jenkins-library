@@ -11,21 +11,22 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
 type githubCreatePullRequestOptions struct {
-	Assignees  []string `json:"assignees,omitempty"`
-	Base       string   `json:"base,omitempty"`
-	Body       string   `json:"body,omitempty"`
-	APIURL     string   `json:"apiUrl,omitempty"`
-	Head       string   `json:"head,omitempty"`
-	Owner      string   `json:"owner,omitempty"`
-	Repository string   `json:"repository,omitempty"`
-	ServerURL  string   `json:"serverUrl,omitempty"`
-	Title      string   `json:"title,omitempty"`
-	Token      string   `json:"token,omitempty"`
-	Labels     []string `json:"labels,omitempty"`
+	Assignees  []string `json:"assignees,omitempty" validate:""`
+	Base       string   `json:"base,omitempty" validate:""`
+	Body       string   `json:"body,omitempty" validate:""`
+	APIURL     string   `json:"apiUrl,omitempty" validate:""`
+	Head       string   `json:"head,omitempty" validate:""`
+	Owner      string   `json:"owner,omitempty" validate:""`
+	Repository string   `json:"repository,omitempty" validate:""`
+	ServerURL  string   `json:"serverUrl,omitempty" validate:""`
+	Title      string   `json:"title,omitempty" validate:""`
+	Token      string   `json:"token,omitempty" validate:""`
+	Labels     []string `json:"labels,omitempty" validate:""`
 }
 
 // GithubCreatePullRequestCommand Create a pull request on GitHub
@@ -48,13 +49,21 @@ It can for example be used for GitOps scenarios or for scenarios where you want 
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				return err
+			}
+
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err

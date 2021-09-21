@@ -11,21 +11,22 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
 type nexusUploadOptions struct {
-	Version            string `json:"version,omitempty"`
-	Format             string `json:"format,omitempty"`
-	Url                string `json:"url,omitempty"`
-	MavenRepository    string `json:"mavenRepository,omitempty"`
-	NpmRepository      string `json:"npmRepository,omitempty"`
-	GroupID            string `json:"groupId,omitempty"`
-	ArtifactID         string `json:"artifactId,omitempty"`
-	GlobalSettingsFile string `json:"globalSettingsFile,omitempty"`
-	M2Path             string `json:"m2Path,omitempty"`
-	Username           string `json:"username,omitempty"`
-	Password           string `json:"password,omitempty"`
+	Version            string `json:"version,omitempty" validate:"oneof=nexus2 nexus3"`
+	Format             string `json:"format,omitempty" validate:"oneof=maven npm"`
+	Url                string `json:"url,omitempty" validate:""`
+	MavenRepository    string `json:"mavenRepository,omitempty" validate:""`
+	NpmRepository      string `json:"npmRepository,omitempty" validate:""`
+	GroupID            string `json:"groupId,omitempty" validate:""`
+	ArtifactID         string `json:"artifactId,omitempty" validate:""`
+	GlobalSettingsFile string `json:"globalSettingsFile,omitempty" validate:""`
+	M2Path             string `json:"m2Path,omitempty" validate:""`
+	Username           string `json:"username,omitempty" validate:""`
+	Password           string `json:"password,omitempty" validate:""`
 }
 
 // NexusUploadCommand Upload artifacts to Nexus Repository Manager
@@ -65,13 +66,21 @@ If an image for mavenExecute is configured, and npm packages are to be published
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				return err
+			}
+
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err

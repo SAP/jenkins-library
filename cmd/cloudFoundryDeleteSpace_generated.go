@@ -11,15 +11,16 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
 type cloudFoundryDeleteSpaceOptions struct {
-	CfAPIEndpoint string `json:"cfApiEndpoint,omitempty"`
-	Username      string `json:"username,omitempty"`
-	Password      string `json:"password,omitempty"`
-	CfOrg         string `json:"cfOrg,omitempty"`
-	CfSpace       string `json:"cfSpace,omitempty"`
+	CfAPIEndpoint string `json:"cfApiEndpoint,omitempty" validate:""`
+	Username      string `json:"username,omitempty" validate:""`
+	Password      string `json:"password,omitempty" validate:""`
+	CfOrg         string `json:"cfOrg,omitempty" validate:""`
+	CfSpace       string `json:"cfSpace,omitempty" validate:""`
 }
 
 // CloudFoundryDeleteSpaceCommand Deletes a space in Cloud Foundry
@@ -42,13 +43,21 @@ Mandatory:
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				return err
+			}
+
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err

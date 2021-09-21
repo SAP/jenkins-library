@@ -11,23 +11,24 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
 type gitopsUpdateDeploymentOptions struct {
-	BranchName            string   `json:"branchName,omitempty"`
-	CommitMessage         string   `json:"commitMessage,omitempty"`
-	ServerURL             string   `json:"serverUrl,omitempty"`
-	Username              string   `json:"username,omitempty"`
-	Password              string   `json:"password,omitempty"`
-	FilePath              string   `json:"filePath,omitempty"`
-	ContainerName         string   `json:"containerName,omitempty"`
-	ContainerRegistryURL  string   `json:"containerRegistryUrl,omitempty"`
-	ContainerImageNameTag string   `json:"containerImageNameTag,omitempty"`
-	ChartPath             string   `json:"chartPath,omitempty"`
-	HelmValues            []string `json:"helmValues,omitempty"`
-	DeploymentName        string   `json:"deploymentName,omitempty"`
-	Tool                  string   `json:"tool,omitempty"`
+	BranchName            string   `json:"branchName,omitempty" validate:""`
+	CommitMessage         string   `json:"commitMessage,omitempty" validate:""`
+	ServerURL             string   `json:"serverUrl,omitempty" validate:""`
+	Username              string   `json:"username,omitempty" validate:""`
+	Password              string   `json:"password,omitempty" validate:""`
+	FilePath              string   `json:"filePath,omitempty" validate:""`
+	ContainerName         string   `json:"containerName,omitempty" validate:""`
+	ContainerRegistryURL  string   `json:"containerRegistryUrl,omitempty" validate:""`
+	ContainerImageNameTag string   `json:"containerImageNameTag,omitempty" validate:""`
+	ChartPath             string   `json:"chartPath,omitempty" validate:""`
+	HelmValues            []string `json:"helmValues,omitempty" validate:""`
+	DeploymentName        string   `json:"deploymentName,omitempty" validate:""`
+	Tool                  string   `json:"tool,omitempty" validate:"oneof=kubectl helm"`
 }
 
 // GitopsUpdateDeploymentCommand Updates Kubernetes Deployment Manifest in an Infrastructure Git Repository
@@ -54,13 +55,21 @@ For helm the whole template is generated into a file and uploaded into the repos
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				return err
+			}
+
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err

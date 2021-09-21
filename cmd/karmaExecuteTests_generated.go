@@ -11,13 +11,14 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
 type karmaExecuteTestsOptions struct {
-	InstallCommand string   `json:"installCommand,omitempty"`
-	Modules        []string `json:"modules,omitempty"`
-	RunCommand     string   `json:"runCommand,omitempty"`
+	InstallCommand string   `json:"installCommand,omitempty" validate:""`
+	Modules        []string `json:"modules,omitempty" validate:""`
+	RunCommand     string   `json:"runCommand,omitempty" validate:""`
 }
 
 // KarmaExecuteTestsCommand Executes the Karma test runner
@@ -48,13 +49,21 @@ In the Docker network, the containers can be referenced by the values provided i
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				return err
+			}
+
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err

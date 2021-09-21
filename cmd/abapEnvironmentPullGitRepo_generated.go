@@ -11,21 +11,22 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
 type abapEnvironmentPullGitRepoOptions struct {
-	Username          string   `json:"username,omitempty"`
-	Password          string   `json:"password,omitempty"`
-	RepositoryNames   []string `json:"repositoryNames,omitempty"`
-	Repositories      string   `json:"repositories,omitempty"`
-	Host              string   `json:"host,omitempty"`
-	CfAPIEndpoint     string   `json:"cfApiEndpoint,omitempty"`
-	CfOrg             string   `json:"cfOrg,omitempty"`
-	CfSpace           string   `json:"cfSpace,omitempty"`
-	CfServiceInstance string   `json:"cfServiceInstance,omitempty"`
-	CfServiceKeyName  string   `json:"cfServiceKeyName,omitempty"`
-	IgnoreCommit      bool     `json:"ignoreCommit,omitempty"`
+	Username          string   `json:"username,omitempty" validate:""`
+	Password          string   `json:"password,omitempty" validate:""`
+	RepositoryNames   []string `json:"repositoryNames,omitempty" validate:""`
+	Repositories      string   `json:"repositories,omitempty" validate:""`
+	Host              string   `json:"host,omitempty" validate:""`
+	CfAPIEndpoint     string   `json:"cfApiEndpoint,omitempty" validate:""`
+	CfOrg             string   `json:"cfOrg,omitempty" validate:""`
+	CfSpace           string   `json:"cfSpace,omitempty" validate:""`
+	CfServiceInstance string   `json:"cfServiceInstance,omitempty" validate:""`
+	CfServiceKeyName  string   `json:"cfServiceKeyName,omitempty" validate:""`
+	IgnoreCommit      bool     `json:"ignoreCommit,omitempty" validate:""`
 }
 
 // AbapEnvironmentPullGitRepoCommand Pulls a git repository to a SAP Cloud Platform ABAP Environment system
@@ -51,13 +52,21 @@ Please provide either of the following options:
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				return err
+			}
+
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err

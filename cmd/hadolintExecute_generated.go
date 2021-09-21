@@ -11,17 +11,18 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
 type hadolintExecuteOptions struct {
-	ConfigurationURL          string   `json:"configurationUrl,omitempty"`
-	ConfigurationUsername     string   `json:"configurationUsername,omitempty"`
-	ConfigurationPassword     string   `json:"configurationPassword,omitempty"`
-	DockerFile                string   `json:"dockerFile,omitempty"`
-	ConfigurationFile         string   `json:"configurationFile,omitempty"`
-	ReportFile                string   `json:"reportFile,omitempty"`
-	CustomTLSCertificateLinks []string `json:"customTlsCertificateLinks,omitempty"`
+	ConfigurationURL          string   `json:"configurationUrl,omitempty" validate:""`
+	ConfigurationUsername     string   `json:"configurationUsername,omitempty" validate:""`
+	ConfigurationPassword     string   `json:"configurationPassword,omitempty" validate:""`
+	DockerFile                string   `json:"dockerFile,omitempty" validate:""`
+	ConfigurationFile         string   `json:"configurationFile,omitempty" validate:""`
+	ReportFile                string   `json:"reportFile,omitempty" validate:""`
+	CustomTLSCertificateLinks []string `json:"customTlsCertificateLinks,omitempty" validate:""`
 }
 
 // HadolintExecuteCommand Executes the Haskell Dockerfile Linter which is a smarter Dockerfile linter that helps you build [best practice](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/) Docker images.
@@ -43,13 +44,21 @@ The linter is parsing the Dockerfile into an abstract syntax tree (AST) and perf
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				return err
+			}
+
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err

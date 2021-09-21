@@ -11,15 +11,16 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
 type uiVeri5ExecuteTestsOptions struct {
-	InstallCommand string   `json:"installCommand,omitempty"`
-	RunCommand     string   `json:"runCommand,omitempty"`
-	RunOptions     []string `json:"runOptions,omitempty"`
-	TestOptions    string   `json:"testOptions,omitempty"`
-	TestServerURL  string   `json:"testServerUrl,omitempty"`
+	InstallCommand string   `json:"installCommand,omitempty" validate:""`
+	RunCommand     string   `json:"runCommand,omitempty" validate:""`
+	RunOptions     []string `json:"runOptions,omitempty" validate:""`
+	TestOptions    string   `json:"testOptions,omitempty" validate:""`
+	TestServerURL  string   `json:"testServerUrl,omitempty" validate:""`
 }
 
 // UiVeri5ExecuteTestsCommand Executes UI5 e2e tests using uiVeri5
@@ -40,13 +41,21 @@ func UiVeri5ExecuteTestsCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				return err
+			}
+
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err

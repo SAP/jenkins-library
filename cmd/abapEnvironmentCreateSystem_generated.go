@@ -11,27 +11,28 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
 type abapEnvironmentCreateSystemOptions struct {
-	CfAPIEndpoint                  string `json:"cfApiEndpoint,omitempty"`
-	Username                       string `json:"username,omitempty"`
-	Password                       string `json:"password,omitempty"`
-	CfOrg                          string `json:"cfOrg,omitempty"`
-	CfSpace                        string `json:"cfSpace,omitempty"`
-	CfService                      string `json:"cfService,omitempty"`
-	CfServicePlan                  string `json:"cfServicePlan,omitempty"`
-	CfServiceInstance              string `json:"cfServiceInstance,omitempty"`
-	ServiceManifest                string `json:"serviceManifest,omitempty"`
-	AbapSystemAdminEmail           string `json:"abapSystemAdminEmail,omitempty"`
-	AbapSystemDescription          string `json:"abapSystemDescription,omitempty"`
-	AbapSystemIsDevelopmentAllowed bool   `json:"abapSystemIsDevelopmentAllowed,omitempty"`
-	AbapSystemID                   string `json:"abapSystemID,omitempty"`
-	AbapSystemSizeOfPersistence    int    `json:"abapSystemSizeOfPersistence,omitempty"`
-	AbapSystemSizeOfRuntime        int    `json:"abapSystemSizeOfRuntime,omitempty"`
-	AddonDescriptorFileName        string `json:"addonDescriptorFileName,omitempty"`
-	IncludeAddon                   bool   `json:"includeAddon,omitempty"`
+	CfAPIEndpoint                  string `json:"cfApiEndpoint,omitempty" validate:""`
+	Username                       string `json:"username,omitempty" validate:""`
+	Password                       string `json:"password,omitempty" validate:""`
+	CfOrg                          string `json:"cfOrg,omitempty" validate:""`
+	CfSpace                        string `json:"cfSpace,omitempty" validate:""`
+	CfService                      string `json:"cfService,omitempty" validate:""`
+	CfServicePlan                  string `json:"cfServicePlan,omitempty" validate:""`
+	CfServiceInstance              string `json:"cfServiceInstance,omitempty" validate:""`
+	ServiceManifest                string `json:"serviceManifest,omitempty" validate:""`
+	AbapSystemAdminEmail           string `json:"abapSystemAdminEmail,omitempty" validate:""`
+	AbapSystemDescription          string `json:"abapSystemDescription,omitempty" validate:""`
+	AbapSystemIsDevelopmentAllowed bool   `json:"abapSystemIsDevelopmentAllowed,omitempty" validate:""`
+	AbapSystemID                   string `json:"abapSystemID,omitempty" validate:""`
+	AbapSystemSizeOfPersistence    int    `json:"abapSystemSizeOfPersistence,omitempty" validate:""`
+	AbapSystemSizeOfRuntime        int    `json:"abapSystemSizeOfRuntime,omitempty" validate:""`
+	AddonDescriptorFileName        string `json:"addonDescriptorFileName,omitempty" validate:""`
+	IncludeAddon                   bool   `json:"includeAddon,omitempty" validate:""`
 }
 
 // AbapEnvironmentCreateSystemCommand Creates a SAP Cloud Platform ABAP Environment system (aka Steampunk system)
@@ -52,13 +53,21 @@ func AbapEnvironmentCreateSystemCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				return err
+			}
+
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err

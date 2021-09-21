@@ -13,64 +13,65 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
 type fortifyExecuteScanOptions struct {
-	AdditionalScanParameters        []string `json:"additionalScanParameters,omitempty"`
-	AuthToken                       string   `json:"authToken,omitempty"`
-	BuildDescriptorExcludeList      []string `json:"buildDescriptorExcludeList,omitempty"`
-	CustomScanVersion               string   `json:"customScanVersion,omitempty"`
-	GithubToken                     string   `json:"githubToken,omitempty"`
-	AutoCreate                      bool     `json:"autoCreate,omitempty"`
-	ModulePath                      string   `json:"modulePath,omitempty"`
-	PythonRequirementsFile          string   `json:"pythonRequirementsFile,omitempty"`
-	AutodetectClasspath             bool     `json:"autodetectClasspath,omitempty"`
-	MustAuditIssueGroups            string   `json:"mustAuditIssueGroups,omitempty"`
-	SpotAuditIssueGroups            string   `json:"spotAuditIssueGroups,omitempty"`
-	PythonRequirementsInstallSuffix string   `json:"pythonRequirementsInstallSuffix,omitempty"`
-	PythonVersion                   string   `json:"pythonVersion,omitempty"`
-	UploadResults                   bool     `json:"uploadResults,omitempty"`
-	Version                         string   `json:"version,omitempty"`
-	BuildDescriptorFile             string   `json:"buildDescriptorFile,omitempty"`
-	CommitID                        string   `json:"commitId,omitempty"`
-	CommitMessage                   string   `json:"commitMessage,omitempty"`
-	GithubAPIURL                    string   `json:"githubApiUrl,omitempty"`
-	Owner                           string   `json:"owner,omitempty"`
-	Repository                      string   `json:"repository,omitempty"`
-	Memory                          string   `json:"memory,omitempty"`
-	UpdateRulePack                  bool     `json:"updateRulePack,omitempty"`
-	ReportDownloadEndpoint          string   `json:"reportDownloadEndpoint,omitempty"`
-	PollingMinutes                  int      `json:"pollingMinutes,omitempty"`
-	QuickScan                       bool     `json:"quickScan,omitempty"`
-	Translate                       string   `json:"translate,omitempty"`
-	Src                             []string `json:"src,omitempty"`
-	Exclude                         []string `json:"exclude,omitempty"`
-	APIEndpoint                     string   `json:"apiEndpoint,omitempty"`
-	ReportType                      string   `json:"reportType,omitempty"`
-	PythonAdditionalPath            []string `json:"pythonAdditionalPath,omitempty"`
-	ArtifactURL                     string   `json:"artifactUrl,omitempty"`
-	ConsiderSuspicious              bool     `json:"considerSuspicious,omitempty"`
-	FprUploadEndpoint               string   `json:"fprUploadEndpoint,omitempty"`
-	ProjectName                     string   `json:"projectName,omitempty"`
-	Reporting                       bool     `json:"reporting,omitempty"`
-	ServerURL                       string   `json:"serverUrl,omitempty"`
-	PullRequestMessageRegexGroup    int      `json:"pullRequestMessageRegexGroup,omitempty"`
-	DeltaMinutes                    int      `json:"deltaMinutes,omitempty"`
-	SpotCheckMinimum                int      `json:"spotCheckMinimum,omitempty"`
-	FprDownloadEndpoint             string   `json:"fprDownloadEndpoint,omitempty"`
-	VersioningModel                 string   `json:"versioningModel,omitempty"`
-	PythonInstallCommand            string   `json:"pythonInstallCommand,omitempty"`
-	ReportTemplateID                int      `json:"reportTemplateId,omitempty"`
-	FilterSetTitle                  string   `json:"filterSetTitle,omitempty"`
-	PullRequestName                 string   `json:"pullRequestName,omitempty"`
-	PullRequestMessageRegex         string   `json:"pullRequestMessageRegex,omitempty"`
-	BuildTool                       string   `json:"buildTool,omitempty"`
-	ProjectSettingsFile             string   `json:"projectSettingsFile,omitempty"`
-	GlobalSettingsFile              string   `json:"globalSettingsFile,omitempty"`
-	M2Path                          string   `json:"m2Path,omitempty"`
-	VerifyOnly                      bool     `json:"verifyOnly,omitempty"`
-	InstallArtifacts                bool     `json:"installArtifacts,omitempty"`
+	AdditionalScanParameters        []string `json:"additionalScanParameters,omitempty" validate:""`
+	AuthToken                       string   `json:"authToken,omitempty" validate:""`
+	BuildDescriptorExcludeList      []string `json:"buildDescriptorExcludeList,omitempty" validate:""`
+	CustomScanVersion               string   `json:"customScanVersion,omitempty" validate:""`
+	GithubToken                     string   `json:"githubToken,omitempty" validate:""`
+	AutoCreate                      bool     `json:"autoCreate,omitempty" validate:""`
+	ModulePath                      string   `json:"modulePath,omitempty" validate:""`
+	PythonRequirementsFile          string   `json:"pythonRequirementsFile,omitempty" validate:""`
+	AutodetectClasspath             bool     `json:"autodetectClasspath,omitempty" validate:""`
+	MustAuditIssueGroups            string   `json:"mustAuditIssueGroups,omitempty" validate:""`
+	SpotAuditIssueGroups            string   `json:"spotAuditIssueGroups,omitempty" validate:""`
+	PythonRequirementsInstallSuffix string   `json:"pythonRequirementsInstallSuffix,omitempty" validate:""`
+	PythonVersion                   string   `json:"pythonVersion,omitempty" validate:""`
+	UploadResults                   bool     `json:"uploadResults,omitempty" validate:""`
+	Version                         string   `json:"version,omitempty" validate:""`
+	BuildDescriptorFile             string   `json:"buildDescriptorFile,omitempty" validate:""`
+	CommitID                        string   `json:"commitId,omitempty" validate:""`
+	CommitMessage                   string   `json:"commitMessage,omitempty" validate:""`
+	GithubAPIURL                    string   `json:"githubApiUrl,omitempty" validate:""`
+	Owner                           string   `json:"owner,omitempty" validate:""`
+	Repository                      string   `json:"repository,omitempty" validate:""`
+	Memory                          string   `json:"memory,omitempty" validate:""`
+	UpdateRulePack                  bool     `json:"updateRulePack,omitempty" validate:""`
+	ReportDownloadEndpoint          string   `json:"reportDownloadEndpoint,omitempty" validate:""`
+	PollingMinutes                  int      `json:"pollingMinutes,omitempty" validate:""`
+	QuickScan                       bool     `json:"quickScan,omitempty" validate:""`
+	Translate                       string   `json:"translate,omitempty" validate:""`
+	Src                             []string `json:"src,omitempty" validate:""`
+	Exclude                         []string `json:"exclude,omitempty" validate:""`
+	APIEndpoint                     string   `json:"apiEndpoint,omitempty" validate:""`
+	ReportType                      string   `json:"reportType,omitempty" validate:""`
+	PythonAdditionalPath            []string `json:"pythonAdditionalPath,omitempty" validate:""`
+	ArtifactURL                     string   `json:"artifactUrl,omitempty" validate:""`
+	ConsiderSuspicious              bool     `json:"considerSuspicious,omitempty" validate:""`
+	FprUploadEndpoint               string   `json:"fprUploadEndpoint,omitempty" validate:""`
+	ProjectName                     string   `json:"projectName,omitempty" validate:""`
+	Reporting                       bool     `json:"reporting,omitempty" validate:""`
+	ServerURL                       string   `json:"serverUrl,omitempty" validate:""`
+	PullRequestMessageRegexGroup    int      `json:"pullRequestMessageRegexGroup,omitempty" validate:""`
+	DeltaMinutes                    int      `json:"deltaMinutes,omitempty" validate:""`
+	SpotCheckMinimum                int      `json:"spotCheckMinimum,omitempty" validate:""`
+	FprDownloadEndpoint             string   `json:"fprDownloadEndpoint,omitempty" validate:""`
+	VersioningModel                 string   `json:"versioningModel,omitempty" validate:"oneof=major major-minor semantic full"`
+	PythonInstallCommand            string   `json:"pythonInstallCommand,omitempty" validate:""`
+	ReportTemplateID                int      `json:"reportTemplateId,omitempty" validate:""`
+	FilterSetTitle                  string   `json:"filterSetTitle,omitempty" validate:""`
+	PullRequestName                 string   `json:"pullRequestName,omitempty" validate:""`
+	PullRequestMessageRegex         string   `json:"pullRequestMessageRegex,omitempty" validate:""`
+	BuildTool                       string   `json:"buildTool,omitempty" validate:""`
+	ProjectSettingsFile             string   `json:"projectSettingsFile,omitempty" validate:""`
+	GlobalSettingsFile              string   `json:"globalSettingsFile,omitempty" validate:""`
+	M2Path                          string   `json:"m2Path,omitempty" validate:""`
+	VerifyOnly                      bool     `json:"verifyOnly,omitempty" validate:""`
+	InstallArtifacts                bool     `json:"installArtifacts,omitempty" validate:""`
 }
 
 type fortifyExecuteScanInflux struct {
@@ -170,13 +171,21 @@ Besides triggering a scan the step verifies the results after they have been upl
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				return err
+			}
+
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err

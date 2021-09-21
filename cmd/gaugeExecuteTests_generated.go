@@ -13,14 +13,15 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
 type gaugeExecuteTestsOptions struct {
-	InstallCommand string `json:"installCommand,omitempty"`
-	LanguageRunner string `json:"languageRunner,omitempty"`
-	RunCommand     string `json:"runCommand,omitempty"`
-	TestOptions    string `json:"testOptions,omitempty"`
+	InstallCommand string `json:"installCommand,omitempty" validate:""`
+	LanguageRunner string `json:"languageRunner,omitempty" validate:""`
+	RunCommand     string `json:"runCommand,omitempty" validate:""`
+	TestOptions    string `json:"testOptions,omitempty" validate:""`
 }
 
 type gaugeExecuteTestsInflux struct {
@@ -85,13 +86,21 @@ You can use the [sample projects](https://github.com/getgauge/gauge-mvn-archetyp
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				return err
+			}
+
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err

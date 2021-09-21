@@ -13,13 +13,14 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
 type transportRequestDocIDFromGitOptions struct {
-	GitFrom             string `json:"gitFrom,omitempty"`
-	GitTo               string `json:"gitTo,omitempty"`
-	ChangeDocumentLabel string `json:"changeDocumentLabel,omitempty"`
+	GitFrom             string `json:"gitFrom,omitempty" validate:""`
+	GitTo               string `json:"gitTo,omitempty" validate:""`
+	ChangeDocumentLabel string `json:"changeDocumentLabel,omitempty" validate:""`
 }
 
 type transportRequestDocIDFromGitCommonPipelineEnvironment struct {
@@ -70,13 +71,21 @@ It is primarily made for the transportRequestUploadSOLMAN step to provide the ch
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				return err
+			}
+
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err

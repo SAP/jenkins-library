@@ -11,15 +11,16 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
 type containerExecuteStructureTestsOptions struct {
-	PullImage          bool   `json:"pullImage,omitempty"`
-	TestConfiguration  string `json:"testConfiguration,omitempty"`
-	TestDriver         string `json:"testDriver,omitempty"`
-	TestImage          string `json:"testImage,omitempty"`
-	TestReportFilePath string `json:"testReportFilePath,omitempty"`
+	PullImage          bool   `json:"pullImage,omitempty" validate:""`
+	TestConfiguration  string `json:"testConfiguration,omitempty" validate:""`
+	TestDriver         string `json:"testDriver,omitempty" validate:""`
+	TestImage          string `json:"testImage,omitempty" validate:""`
+	TestReportFilePath string `json:"testReportFilePath,omitempty" validate:""`
 }
 
 // ContainerExecuteStructureTestsCommand In this step [Container Structure Tests](https://github.com/GoogleContainerTools/container-structure-test) are executed.
@@ -44,13 +45,21 @@ func ContainerExecuteStructureTestsCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				return err
+			}
+
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err

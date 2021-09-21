@@ -13,38 +13,39 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
 type cloudFoundryDeployOptions struct {
-	APIEndpoint              string                 `json:"apiEndpoint,omitempty"`
-	AppName                  string                 `json:"appName,omitempty"`
-	ArtifactVersion          string                 `json:"artifactVersion,omitempty"`
-	CommitHash               string                 `json:"commitHash,omitempty"`
-	CfHome                   string                 `json:"cfHome,omitempty"`
-	CfNativeDeployParameters string                 `json:"cfNativeDeployParameters,omitempty"`
-	CfPluginHome             string                 `json:"cfPluginHome,omitempty"`
-	DeployDockerImage        string                 `json:"deployDockerImage,omitempty"`
-	DeployTool               string                 `json:"deployTool,omitempty"`
-	BuildTool                string                 `json:"buildTool,omitempty"`
-	DeployType               string                 `json:"deployType,omitempty"`
-	DockerPassword           string                 `json:"dockerPassword,omitempty"`
-	DockerUsername           string                 `json:"dockerUsername,omitempty"`
-	KeepOldInstance          bool                   `json:"keepOldInstance,omitempty"`
-	LoginParameters          string                 `json:"loginParameters,omitempty"`
-	Manifest                 string                 `json:"manifest,omitempty"`
-	ManifestVariables        []string               `json:"manifestVariables,omitempty"`
-	ManifestVariablesFiles   []string               `json:"manifestVariablesFiles,omitempty"`
-	MtaDeployParameters      string                 `json:"mtaDeployParameters,omitempty"`
-	MtaExtensionDescriptor   string                 `json:"mtaExtensionDescriptor,omitempty"`
-	MtaExtensionCredentials  map[string]interface{} `json:"mtaExtensionCredentials,omitempty"`
-	MtaPath                  string                 `json:"mtaPath,omitempty"`
-	Org                      string                 `json:"org,omitempty"`
-	Password                 string                 `json:"password,omitempty"`
-	SmokeTestScript          string                 `json:"smokeTestScript,omitempty"`
-	SmokeTestStatusCode      int                    `json:"smokeTestStatusCode,omitempty"`
-	Space                    string                 `json:"space,omitempty"`
-	Username                 string                 `json:"username,omitempty"`
+	APIEndpoint              string                 `json:"apiEndpoint,omitempty" validate:""`
+	AppName                  string                 `json:"appName,omitempty" validate:""`
+	ArtifactVersion          string                 `json:"artifactVersion,omitempty" validate:""`
+	CommitHash               string                 `json:"commitHash,omitempty" validate:""`
+	CfHome                   string                 `json:"cfHome,omitempty" validate:""`
+	CfNativeDeployParameters string                 `json:"cfNativeDeployParameters,omitempty" validate:""`
+	CfPluginHome             string                 `json:"cfPluginHome,omitempty" validate:""`
+	DeployDockerImage        string                 `json:"deployDockerImage,omitempty" validate:""`
+	DeployTool               string                 `json:"deployTool,omitempty" validate:""`
+	BuildTool                string                 `json:"buildTool,omitempty" validate:""`
+	DeployType               string                 `json:"deployType,omitempty" validate:""`
+	DockerPassword           string                 `json:"dockerPassword,omitempty" validate:""`
+	DockerUsername           string                 `json:"dockerUsername,omitempty" validate:""`
+	KeepOldInstance          bool                   `json:"keepOldInstance,omitempty" validate:""`
+	LoginParameters          string                 `json:"loginParameters,omitempty" validate:""`
+	Manifest                 string                 `json:"manifest,omitempty" validate:""`
+	ManifestVariables        []string               `json:"manifestVariables,omitempty" validate:""`
+	ManifestVariablesFiles   []string               `json:"manifestVariablesFiles,omitempty" validate:""`
+	MtaDeployParameters      string                 `json:"mtaDeployParameters,omitempty" validate:""`
+	MtaExtensionDescriptor   string                 `json:"mtaExtensionDescriptor,omitempty" validate:""`
+	MtaExtensionCredentials  map[string]interface{} `json:"mtaExtensionCredentials,omitempty" validate:""`
+	MtaPath                  string                 `json:"mtaPath,omitempty" validate:""`
+	Org                      string                 `json:"org,omitempty" validate:""`
+	Password                 string                 `json:"password,omitempty" validate:""`
+	SmokeTestScript          string                 `json:"smokeTestScript,omitempty" validate:""`
+	SmokeTestStatusCode      int                    `json:"smokeTestStatusCode,omitempty" validate:""`
+	Space                    string                 `json:"space,omitempty" validate:""`
+	Username                 string                 `json:"username,omitempty" validate:""`
 }
 
 type cloudFoundryDeployInflux struct {
@@ -117,13 +118,21 @@ func CloudFoundryDeployCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				return err
+			}
+
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err

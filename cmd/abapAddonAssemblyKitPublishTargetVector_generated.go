@@ -11,15 +11,16 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
 type abapAddonAssemblyKitPublishTargetVectorOptions struct {
-	AbapAddonAssemblyKitEndpoint string `json:"abapAddonAssemblyKitEndpoint,omitempty"`
-	Username                     string `json:"username,omitempty"`
-	Password                     string `json:"password,omitempty"`
-	TargetVectorScope            string `json:"targetVectorScope,omitempty"`
-	AddonDescriptor              string `json:"addonDescriptor,omitempty"`
+	AbapAddonAssemblyKitEndpoint string `json:"abapAddonAssemblyKitEndpoint,omitempty" validate:""`
+	Username                     string `json:"username,omitempty" validate:""`
+	Password                     string `json:"password,omitempty" validate:""`
+	TargetVectorScope            string `json:"targetVectorScope,omitempty" validate:"oneof=T P"`
+	AddonDescriptor              string `json:"addonDescriptor,omitempty" validate:""`
 }
 
 // AbapAddonAssemblyKitPublishTargetVectorCommand This step triggers the publication of the Target Vector according to the specified scope.
@@ -43,13 +44,21 @@ For Terminology refer to the [Scenario Description](https://www.project-piper.io
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				return err
+			}
+
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err

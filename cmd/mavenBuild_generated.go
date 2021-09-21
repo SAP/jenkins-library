@@ -11,26 +11,27 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
 type mavenBuildOptions struct {
-	PomPath                         string   `json:"pomPath,omitempty"`
-	Profiles                        []string `json:"profiles,omitempty"`
-	Flatten                         bool     `json:"flatten,omitempty"`
-	Verify                          bool     `json:"verify,omitempty"`
-	ProjectSettingsFile             string   `json:"projectSettingsFile,omitempty"`
-	GlobalSettingsFile              string   `json:"globalSettingsFile,omitempty"`
-	M2Path                          string   `json:"m2Path,omitempty"`
-	LogSuccessfulMavenTransfers     bool     `json:"logSuccessfulMavenTransfers,omitempty"`
-	CreateBOM                       bool     `json:"createBOM,omitempty"`
-	AltDeploymentRepositoryPassword string   `json:"altDeploymentRepositoryPassword,omitempty"`
-	AltDeploymentRepositoryUser     string   `json:"altDeploymentRepositoryUser,omitempty"`
-	AltDeploymentRepositoryURL      string   `json:"altDeploymentRepositoryUrl,omitempty"`
-	AltDeploymentRepositoryID       string   `json:"altDeploymentRepositoryID,omitempty"`
-	CustomTLSCertificateLinks       []string `json:"customTlsCertificateLinks,omitempty"`
-	Publish                         bool     `json:"publish,omitempty"`
-	JavaCaCertFilePath              string   `json:"javaCaCertFilePath,omitempty"`
+	PomPath                         string   `json:"pomPath,omitempty" validate:""`
+	Profiles                        []string `json:"profiles,omitempty" validate:""`
+	Flatten                         bool     `json:"flatten,omitempty" validate:""`
+	Verify                          bool     `json:"verify,omitempty" validate:""`
+	ProjectSettingsFile             string   `json:"projectSettingsFile,omitempty" validate:""`
+	GlobalSettingsFile              string   `json:"globalSettingsFile,omitempty" validate:""`
+	M2Path                          string   `json:"m2Path,omitempty" validate:""`
+	LogSuccessfulMavenTransfers     bool     `json:"logSuccessfulMavenTransfers,omitempty" validate:""`
+	CreateBOM                       bool     `json:"createBOM,omitempty" validate:""`
+	AltDeploymentRepositoryPassword string   `json:"altDeploymentRepositoryPassword,omitempty" validate:""`
+	AltDeploymentRepositoryUser     string   `json:"altDeploymentRepositoryUser,omitempty" validate:""`
+	AltDeploymentRepositoryURL      string   `json:"altDeploymentRepositoryUrl,omitempty" validate:""`
+	AltDeploymentRepositoryID       string   `json:"altDeploymentRepositoryID,omitempty" validate:""`
+	CustomTLSCertificateLinks       []string `json:"customTlsCertificateLinks,omitempty" validate:""`
+	Publish                         bool     `json:"publish,omitempty" validate:""`
+	JavaCaCertFilePath              string   `json:"javaCaCertFilePath,omitempty" validate:""`
 }
 
 // MavenBuildCommand This step will install the maven project into the local maven repository.
@@ -53,13 +54,21 @@ supports ci friendly versioning by flattening the pom before installing.`,
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				return err
+			}
+
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err

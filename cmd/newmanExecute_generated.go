@@ -13,18 +13,19 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
 type newmanExecuteOptions struct {
-	NewmanCollection     string   `json:"newmanCollection,omitempty"`
-	NewmanRunCommand     string   `json:"newmanRunCommand,omitempty"`
-	RunOptions           []string `json:"runOptions,omitempty"`
-	NewmanInstallCommand string   `json:"newmanInstallCommand,omitempty"`
-	NewmanEnvironment    string   `json:"newmanEnvironment,omitempty"`
-	NewmanGlobals        string   `json:"newmanGlobals,omitempty"`
-	FailOnError          bool     `json:"failOnError,omitempty"`
-	CfAppsWithSecrets    []string `json:"cfAppsWithSecrets,omitempty"`
+	NewmanCollection     string   `json:"newmanCollection,omitempty" validate:""`
+	NewmanRunCommand     string   `json:"newmanRunCommand,omitempty" validate:""`
+	RunOptions           []string `json:"runOptions,omitempty" validate:""`
+	NewmanInstallCommand string   `json:"newmanInstallCommand,omitempty" validate:""`
+	NewmanEnvironment    string   `json:"newmanEnvironment,omitempty" validate:""`
+	NewmanGlobals        string   `json:"newmanGlobals,omitempty" validate:""`
+	FailOnError          bool     `json:"failOnError,omitempty" validate:""`
+	CfAppsWithSecrets    []string `json:"cfAppsWithSecrets,omitempty" validate:""`
 }
 
 type newmanExecuteInflux struct {
@@ -79,13 +80,21 @@ func NewmanExecuteCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				return err
+			}
+
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err

@@ -11,17 +11,18 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
 type githubCreateIssueOptions struct {
-	APIURL       string `json:"apiUrl,omitempty"`
-	Body         string `json:"body,omitempty"`
-	BodyFilePath string `json:"bodyFilePath,omitempty"`
-	Owner        string `json:"owner,omitempty"`
-	Repository   string `json:"repository,omitempty"`
-	Title        string `json:"title,omitempty"`
-	Token        string `json:"token,omitempty"`
+	APIURL       string `json:"apiUrl,omitempty" validate:""`
+	Body         string `json:"body,omitempty" validate:""`
+	BodyFilePath string `json:"bodyFilePath,omitempty" validate:""`
+	Owner        string `json:"owner,omitempty" validate:""`
+	Repository   string `json:"repository,omitempty" validate:""`
+	Title        string `json:"title,omitempty" validate:""`
+	Token        string `json:"token,omitempty" validate:""`
 }
 
 // GithubCreateIssueCommand Create a new GitHub issue.
@@ -44,13 +45,21 @@ You will be able to use this step for example for regular jobs to report into yo
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				return err
+			}
+
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			err := PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
+			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
