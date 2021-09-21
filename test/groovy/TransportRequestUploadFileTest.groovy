@@ -131,7 +131,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         thrown.expect(AbortException)
         thrown.expectMessage("Exception message")
 
-        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], { 
+        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
                 throw new AbortException('Exception message')
             }
         )
@@ -156,35 +156,18 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         loggingRule.expect("[INFO] Uploading application 'myApp' to transport request '002'.")
         loggingRule.expect("[INFO] Application 'myApp' has been successfully uploaded to transport request '002'.")
 
-        ChangeManagement cm = new ChangeManagement(nullScript) {
-            void uploadFileToTransportRequestCTS(
-                                              Map docker,
-                                              String transportRequestId,
-                                              String endpoint,
-                                              String client,
-                                              String appName,
-                                              String appDescription,
-                                              String abapPackage,
-                                              String osDeployUser,
-                                              def deployToolsDependencies,
-                                              def npmInstallArgs,
-                                              String deployConfigFile,
-                                              String credentialsId) {
+        def calledWithParameters,
+            calledWithStepName,
+            calledWithMetadata,
+            calledWithCredentials
 
-                cmUtilReceivedParams.docker = docker
-                cmUtilReceivedParams.transportRequestId = transportRequestId
-                cmUtilReceivedParams.endpoint = endpoint
-                cmUtilReceivedParams.client = client
-                cmUtilReceivedParams.appName = appName
-                cmUtilReceivedParams.appDescription = appDescription
-                cmUtilReceivedParams.abapPackage = abapPackage
-                cmUtilReceivedParams.osDeployUser = osDeployUser
-                cmUtilReceivedParams.deployToolDependencies = deployToolsDependencies
-                cmUtilReceivedParams.npmInstallOpts = npmInstallArgs
-                cmUtilReceivedParams.deployConfigFile = deployConfigFile
-                cmUtilReceivedParams.credentialsId = credentialsId
-            }
-        }
+        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
+            params, stepName, metaData, creds ->
+                calledWithParameters = params
+                calledWithStepName = stepName
+                calledWithMetadata = metaData
+                calledWithCredentials = creds
+            })
 
         stepRule.step.transportRequestUploadFile(script: nullScript,
                       changeManagement: [
@@ -200,28 +183,61 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                       applicationDescription: 'the description',
                       abapPackage: 'myPackage',
                       transportRequestId: '002',
-                      cmUtils: cm)
+                      credentialsId: 'CM')
 
-        assert cmUtilReceivedParams ==
-            [
-                docker: [
-                    image: 'node',
-                    options:[],
-                    envVars:[:],
-                    pullImage:true
-                ],
-                transportRequestId: '002',
-                endpoint: 'https://example.org/cm',
-                client: '001',
-                appName: 'myApp',
-                appDescription: 'the description',
-                abapPackage: 'myPackage',
-                osDeployUser: 'node2',
-                deployToolDependencies: ['@ui5/cli', '@sap/ux-ui5-tooling', '@ui5/logger', '@ui5/fs', '@dummy/foo'],
-                npmInstallOpts: ['--verbose'],
-                deployConfigFile: 'ui5-deploy.yaml',
-                credentialsId: 'CM',
-            ]
+        assertThat(calledWithStepName, is('transportRequestUploadCTS'))
+        assertThat(calledWithParameters.transportRequestId, is('002'))
+        assertThat(calledWithParameters.endpoint, is('https://example.org/cm'))
+        assertThat(calledWithParameters.client, is('001'))
+        assertThat(calledWithParameters.applicationName, is('myApp'))
+        assertThat(calledWithParameters.description, is('the description'))
+        assertThat(calledWithParameters.abapPackage, is('myPackage'))
+        assertThat(calledWithParameters.osDeployUser, is('node2'))
+        assertThat(calledWithParameters.deployToolDependencies, is(['@ui5/cli', '@sap/ux-ui5-tooling', '@ui5/logger', '@ui5/fs', '@dummy/foo']))
+        assertThat(calledWithParameters.npmInstallOpts, is(['--verbose']))
+        assertThat(calledWithParameters.deployConfigFile, is('ui5-deploy.yaml'))
+        assertThat(calledWithParameters.uploadCredentialsId, is('CM'))
+    }
+
+    @Test
+    public void uploadFileToTransportRequestCTSDockerParams() {
+
+        loggingRule.expect("[INFO] Uploading application 'myApp' to transport request '002'.")
+        loggingRule.expect("[INFO] Application 'myApp' has been successfully uploaded to transport request '002'.")
+
+        def calledWithParameters
+
+        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
+            params, stepName, metaData, creds ->
+                calledWithParameters = params
+            })
+
+        stepRule.step.transportRequestUploadFile(script: nullScript,
+                      changeManagement: [
+                          type: 'CTS',
+                          client: '001',
+                          cts: [
+                              osDeployUser: 'node2',
+                              deployToolDependencies: ['@ui5/cli', '@sap/ux-ui5-tooling', '@ui5/logger', '@ui5/fs', '@dummy/foo'],
+                              npmInstallOpts: ['--verbose'],
+                              nodeDocker: [
+                                   image: 'ctsImage',
+                                   options: ['-o1', 'opt1', '-o2', 'opt2'],
+                                   envVars: [env1: 'env1', env2: 'env2'],
+                                   pullImage: false,
+                              ],
+                          ]
+                      ],
+                      applicationName: 'myApp',
+                      applicationDescription: 'the description',
+                      abapPackage: 'myPackage',
+                      transportRequestId: '002',
+                      credentialsId: 'CM')
+
+        assertThat(calledWithParameters.dockerImage, is('ctsImage'))
+        assertThat(calledWithParameters.dockerOptions, is(['-o1', 'opt1', '-o2', 'opt2']))
+        assertThat(calledWithParameters.dockerEnvVars, is([env1: 'env1', env2: 'env2']))
+        assertThat(calledWithParameters.dockerPullImage, is(false))
     }
 
     @Test
@@ -339,11 +355,53 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     }
 
     @Test
+    public void uploadFileToTransportRequestRFCDockerParams() {
+
+        def calledWithParameters
+
+        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
+            params, stepName, metaData, creds ->
+                calledWithParameters = params
+            }
+        )
+
+        stepRule.step.transportRequestUploadFile(script: nullScript,
+                 applicationUrl: 'http://example.org/blobstore/xyz.zip',
+                 codePage: 'UTF-9',
+                 acceptUnixStyleLineEndings: true,
+                 transportRequestId: '123456',
+                 changeManagement: [
+                     type: 'RFC',
+                     endpoint: 'https://example.org/cm',
+                     rfc: [
+                         developmentClient: '002',
+                         developmentInstance: '001',
+                         docker: [
+                              image: 'rfcImage',
+                              options: ['-o1', 'opt1', '-o2', 'opt2'],
+                              envVars: [env1: 'env1', env2: 'env2'],
+                              pullImage: false,
+                         ],
+                     ]
+                 ],
+                 applicationName: '42',
+                 applicationDescription: 'Lorem ipsum',
+                 abapPackage: 'XYZ',
+                 credentialsId: 'CM'
+        )
+
+        assertThat(calledWithParameters.dockerImage, is('rfcImage'))
+        assertThat(calledWithParameters.dockerOptions, is(['-o1', 'opt1', '-o2', 'opt2']))
+        assertThat(calledWithParameters.dockerEnvVars, is([env1: 'env1', env2: 'env2']))
+        assertThat(calledWithParameters.dockerPullImage, is(false))
+    }
+
+    @Test
     public void uploadFileToTransportRequestSOLMANSuccessTest() {
 
         loggingRule.expect("[INFO] Uploading file '/path' to transport request '002' of change document '001'.")
         loggingRule.expect("[INFO] File '/path' has been successfully uploaded to transport request '002' of change document '001'.")
-        
+
         def calledWithParameters,
             calledWithStepName,
             calledWithMetadata,
@@ -397,7 +455,7 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
                 calledWithCredentials = creds
             }
         )
-        
+
         nullScript.commonPipelineEnvironment.configuration.put(['steps',
                                                                    [transportRequestUploadFile:
                                                                        [applicationId: 'AppIdfromConfig']]])
@@ -487,6 +545,47 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
         )
 
         assertThat(calledWithParameters.filePath, is('/path2'))
+    }
+
+    @Test
+    public void uploadFileToTransportRequestSOLMANDockerParams() {
+
+        // this one is used since there is nothing in the signature
+        nullScript.commonPipelineEnvironment.setMtarFilePath('/path2')
+
+        def calledWithParameters
+
+        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
+            params, stepName, metaData, creds ->
+                calledWithParameters = params
+            }
+        )
+
+        stepRule.step.transportRequestUploadFile(script: nullScript,
+                      changeDocumentId: '001',
+                      transportRequestId: '002',
+                      applicationId: 'app',
+                      filePath: '/pathByParam',
+                      changeManagement: [
+                          type: 'SOLMAN',
+                          endpoint: 'https://example.org/cm',
+                          clientOpts: '--client opts',
+                          solman: [
+                              docker: [
+                                  image: 'solmanImage',
+                                  options: ['-o1', 'opt1', '-o2', 'opt2'],
+                                  envVars: [env1: 'env1', env2: 'env2'],
+                                  pullImage: false,
+                              ],
+                          ],
+                      ],
+                      credentialsId: 'CM'
+        )
+
+        assertThat(calledWithParameters.dockerImage, is('solmanImage'))
+        assertThat(calledWithParameters.dockerOptions, is(['-o1', 'opt1', '-o2', 'opt2']))
+        assertThat(calledWithParameters.dockerEnvVars, is([env1: 'env1', env2: 'env2']))
+        assertThat(calledWithParameters.dockerPullImage, is(false))
     }
 
     @Test
