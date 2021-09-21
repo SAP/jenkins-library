@@ -2,6 +2,7 @@ package generator
 
 import (
 	"fmt"
+	"path"
 	"sort"
 	"strings"
 
@@ -271,8 +272,8 @@ func addVaultResourceDetails(resource config.ResourceReference, resourceDetails 
 	if resource.Type == "vaultSecret" {
 		resourceDetails += "<br/>Vault paths: <br />"
 		resourceDetails += "<ul>"
-		for _, path := range resource.Paths[0:1] {
-			resourceDetails += fmt.Sprintf("<li>`%s`</li>", path)
+		for _, rootPath := range config.VaultRootPaths {
+			resourceDetails += fmt.Sprintf("<li>`%s`</li>", path.Join(rootPath, resource.Default))
 		}
 		resourceDetails += "</ul>"
 	}

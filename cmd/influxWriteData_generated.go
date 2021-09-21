@@ -143,9 +143,9 @@ func influxWriteDataMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/influxdb", "$(vaultBasePath)/$(vaultPipelineName)/influxdb", "$(vaultBasePath)/GROUP-SECRETS/influxdb"},
-								Type:  "vaultSecret",
+								Name:    "influxVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "influxdb",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
