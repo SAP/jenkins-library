@@ -1,6 +1,7 @@
 package orchestrator
 
 import (
+	piperHttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
 	"io/ioutil"
@@ -24,15 +25,32 @@ func (j *JenkinsConfigProvider) GetLog() ([]byte, error) {
 	//	* Problem of authentication, do we have credentials available in vault?
 	//	* ...
 	// How to get step specific data? As it is shown in Blue Ocean?
+	
+	URL := j.GetBuildUrl() + "consoleText"
 
-	filePath := j.getJenkinsHome() + "/jobs/" + j.GetJobName() + "/builds/" + j.GetBuildNumber() + "/log"
-
-	logFile, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Could not read Jenkins-Logfile from %s", filePath)
+	client := &piperHttp.Client{}
+	options := piperHttp.ClientOptions{
+		Username: getEnv("PIPER_jenkinsUser", "N/A"),
+		Password: getEnv("PIPER_jenkinsToken", "N/A"),
 	}
-	log.Entry().Debugf("Successful read Jenkins-Logfile from: %v", filePath)
-	//logFileContent := new File("${JENKINS_HOME}/jobs/${JOB_NAME}/builds/${BUILD_NUMBER}/log").collect {it}
+
+	client.SetOptions(options)
+	response, err := client.GetRequest(URL, nil, nil)
+	if err != nil {
+		return []byte{}, errors.Wrapf(err, "Could not read Jenkins logfile. %v", err)
+	}
+	if response.StatusCode != 200 {
+		log.Entry().Errorf("Could not get log information from Jenkins. Returning with empty log.")
+		return []byte{}, nil
+	}
+	defer response.Body.Close()
+
+	logFile, err := ioutil.ReadAll(response.Body)
+
+	if err != nil {
+		return []byte{}, errors.Wrapf(err, "could not read Jenkins logfile from request. %v", err)
+	}
+
 	return logFile, nil
 }
 
