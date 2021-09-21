@@ -35,10 +35,8 @@ spec:
             type: secret
             param: username
           - type: vaultSecret
-            paths:
-              - $(vaultPath)/cloudfoundry-$(org)-$(space)
-              - $(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(org)-$(space)
-              - $(vaultBasePath)/GROUP-SECRETS/cloudfoundry-$(org)-$(space)
+            default: cloudfoundry-$(org)-$(space)
+            name: cloudfoundryVaultSecretName
       - name: password
         type: string
         description: User Password for CF User
@@ -53,10 +51,8 @@ spec:
             type: secret
             param: password
           - type: vaultSecret
-            paths:
-              - $(vaultPath)/cloudfoundry-$(org)-$(space)
-              - $(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(org)-$(space)
-              - $(vaultBasePath)/GROUP-SECRETS/cloudfoundry-$(org)-$(space)
+            default: cloudfoundry-$(org)-$(space)
+            name: cloudfoundryVaultSecretName
       - name: cfOrg
         type: string
         description: CF org
