@@ -222,7 +222,7 @@ func convertAtcToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client pipe
 
 	var atcResults Checkstyle
 	var atcFile file
-	var FileName, targetDir, subObject string
+	var fileName, targetDir, subObject string
 	var unitErr unitError
 	var readableSourceFormat bool
 	var linepointer int
@@ -265,9 +265,9 @@ func convertAtcToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client pipe
 
 					if readableSourceFormat {
 
-						FileName = strings.ToLower(objectName) + "." + strings.ToLower(objectType) + "." + "abap"
+						fileName = strings.ToLower(objectName) + "." + strings.ToLower(objectType) + "." + "abap"
 					} else {
-						FileName = "REPS " + objectName + "====IU.abap"
+						fileName = "REPS " + objectName + "====IU.abap"
 					}
 
 				} else if strings.Contains(atcworklist.Location, "functions") && strings.Contains(atcworklist.Location, "includes") {
@@ -275,10 +275,10 @@ func convertAtcToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client pipe
 					fugrInclude := regexLine.FindString(atcworklist.Location)
 					subObject = fugrInclude[len(`includes/`):]
 					if readableSourceFormat {
-						FileName = strings.ToLower(subObject) + ".reps.abap"
+						fileName = strings.ToLower(subObject) + ".reps.abap"
 					} else {
 
-						FileName = "REPS " + subObject + ".abap"
+						fileName = "REPS " + subObject + ".abap"
 					}
 
 				} else if strings.Contains(atcworklist.Location, "functions") && strings.Contains(atcworklist.Location, "fmodules") {
@@ -286,10 +286,10 @@ func convertAtcToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client pipe
 					funcModule := regexLine.FindString(atcworklist.Location)
 					subObject = funcModule[len(`fmodules/`):]
 					if readableSourceFormat {
-						FileName = strings.ToLower(subObject) + ".func.abap"
+						fileName = strings.ToLower(subObject) + ".func.abap"
 					} else {
 
-						FileName = "FUNC " + subObject + ".abap"
+						fileName = "FUNC " + subObject + ".abap"
 					}
 
 				} else if strings.Contains(atcworklist.Location, "classes") && strings.Contains(atcworklist.Location, "includes") {
@@ -298,9 +298,9 @@ func convertAtcToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client pipe
 
 						if readableSourceFormat {
 
-							FileName = strings.ToLower(objectName) + "." + strings.ToLower(objectType) + "." + "definitions.abap"
+							fileName = strings.ToLower(objectName) + "." + strings.ToLower(objectType) + "." + "definitions.abap"
 						} else {
-							FileName = "CINC " + objectName + "=======CCDEF.abap"
+							fileName = "CINC " + objectName + "=======CCDEF.abap"
 						}
 
 					}
@@ -308,30 +308,30 @@ func convertAtcToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client pipe
 
 						if readableSourceFormat {
 
-							FileName = strings.ToLower(objectName) + "." + strings.ToLower(objectType) + "." + "implementations.abap"
+							fileName = strings.ToLower(objectName) + "." + strings.ToLower(objectType) + "." + "implementations.abap"
 						} else {
 
-							FileName = "CINC " + objectName + "=======CCIMP.abap"
+							fileName = "CINC " + objectName + "=======CCIMP.abap"
 						}
 					}
 					if strings.Contains(atcworklist.Location, "macros") {
 
 						if readableSourceFormat {
 
-							FileName = strings.ToLower(objectName) + "." + strings.ToLower(objectType) + "." + "macros.abap"
+							fileName = strings.ToLower(objectName) + "." + strings.ToLower(objectType) + "." + "macros.abap"
 						} else {
 
-							FileName = "CINC " + objectName + "=======CCMAC.abap"
+							fileName = "CINC " + objectName + "=======CCMAC.abap"
 						}
 					}
 
 					if strings.Contains(atcworklist.Location, "testclasses") {
 						if readableSourceFormat {
 
-							FileName = strings.ToLower(objectName) + "." + strings.ToLower(objectType) + "." + "testclasses.abap"
+							fileName = strings.ToLower(objectName) + "." + strings.ToLower(objectType) + "." + "testclasses.abap"
 						} else {
 
-							FileName = "CINC " + objectName + "=======CCAU.abap"
+							fileName = "CINC " + objectName + "=======CCAU.abap"
 						}
 					}
 
@@ -342,9 +342,10 @@ func convertAtcToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client pipe
 						if strings.Contains(atcworklist.Location, "CLAS%2FOSO") {
 
 							if readableSourceFormat {
-
-								FileName = strings.ToLower(objectName) + "." + strings.ToLower(objectType) + ".global.abap"
-								rawfilecontent, err := ioutil.ReadFile(FileName)
+								//make it compatible for jenkins
+								fileName = strings.ToLower(objectName) + "." + strings.ToLower(objectType) + ".global.abap"
+								filePath := config.JenkinsWorkspace + "/" + targetDir + "/objects/" + strings.ToUpper(objectType) + "/" + strings.ToUpper(objectName) + "/" + fileName
+								rawfilecontent, err := ioutil.ReadFile(filePath)
 								if err != nil {
 									fmt.Println("File reading error", err)
 									return
@@ -373,7 +374,7 @@ func convertAtcToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client pipe
 								}
 
 							} else {
-								FileName = "CPRO " + objectName + ".abap"
+								fileName = "CPRO " + objectName + ".abap"
 							}
 
 						}
@@ -385,8 +386,9 @@ func convertAtcToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client pipe
 
 							if readableSourceFormat {
 
-								FileName = strings.ToLower(objectName) + "." + strings.ToLower(objectType) + ".global.abap"
-								rawfilecontent, err := ioutil.ReadFile(FileName)
+								fileName = strings.ToLower(objectName) + "." + strings.ToLower(objectType) + ".global.abap"
+								filePath := config.JenkinsWorkspace + "/" + targetDir + "/objects/" + strings.ToUpper(objectType) + "/" + strings.ToUpper(objectName) + "/" + fileName
+								rawfilecontent, err := ioutil.ReadFile(filePath)
 								if err != nil {
 									fmt.Println("File reading error", err)
 									return
@@ -414,7 +416,7 @@ func convertAtcToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client pipe
 
 							} else {
 
-								FileName = "METH " + subObject + ".abap"
+								fileName = "METH " + subObject + ".abap"
 
 							}
 
@@ -423,8 +425,9 @@ func convertAtcToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client pipe
 
 							if readableSourceFormat {
 
-								FileName = strings.ToLower(objectName) + "." + strings.ToLower(objectType) + ".global.abap"
-								rawfilecontent, err := ioutil.ReadFile(FileName)
+								fileName = strings.ToLower(objectName) + "." + strings.ToLower(objectType) + ".global.abap"
+								filePath := config.JenkinsWorkspace + "/" + targetDir + "/objects/" + strings.ToUpper(objectType) + "/" + strings.ToUpper(objectName) + "/" + fileName
+								rawfilecontent, err := ioutil.ReadFile(filePath)
 								if err != nil {
 									fmt.Println("File reading error", err)
 									return
@@ -452,18 +455,18 @@ func convertAtcToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client pipe
 
 							} else {
 
-								FileName = "CPRI " + objectName + ".abap"
+								fileName = "CPRI " + objectName + ".abap"
 							}
 						}
 
 					} else {
 						if readableSourceFormat {
 
-							FileName = strings.ToLower(objectName) + "." + strings.ToLower(objectType) + ".global.abap"
+							fileName = strings.ToLower(objectName) + "." + strings.ToLower(objectType) + ".global.abap"
 
 						} else {
 
-							FileName = "CPUB " + objectName + ".abap"
+							fileName = "CPUB " + objectName + ".abap"
 						}
 					}
 
@@ -500,12 +503,12 @@ func convertAtcToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client pipe
 			unitErr = unitError{}
 		}
 
-		if atcFile.Error != nil && FileName != "" {
+		if atcFile.Error != nil && fileName != "" {
 
-			atcFile.Name = config.JenkinsWorkspace + "/" + targetDir + "/objects/" + strings.ToUpper(objectType) + "/" + strings.ToUpper(objectName) + "/" + FileName
+			atcFile.Name = config.JenkinsWorkspace + "/" + targetDir + "/objects/" + strings.ToUpper(objectType) + "/" + strings.ToUpper(objectName) + "/" + fileName
 			atcResults.File = append(atcResults.File, atcFile)
 			atcFile = file{}
-			FileName = ""
+			fileName = ""
 		}
 
 	}
