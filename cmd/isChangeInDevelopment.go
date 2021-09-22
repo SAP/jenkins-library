@@ -38,7 +38,9 @@ func newIsChangeInDevelopmentUtils() isChangeInDevelopmentUtils {
 	return &utils
 }
 
-func isChangeInDevelopment(config isChangeInDevelopmentOptions, telemetryData *telemetry.CustomData) {
+func isChangeInDevelopment(config isChangeInDevelopmentOptions,
+	telemetryData *telemetry.CustomData,
+	commonPipelineEnvironment *isChangeInDevelopmentCommonPipelineEnvironment) {
 	// Utils can be used wherever the command.ExecRunner interface is expected.
 	// It can also be used for example as a mavenExecRunner.
 	utils := newIsChangeInDevelopmentUtils()
@@ -49,13 +51,16 @@ func isChangeInDevelopment(config isChangeInDevelopmentOptions, telemetryData *t
 
 	// Error situations should be bubbled up until they reach the line below which will then stop execution
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
-	err := runIsChangeInDevelopment(&config, telemetryData, utils)
+	err := runIsChangeInDevelopment(&config, telemetryData, utils, commonPipelineEnvironment)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runIsChangeInDevelopment(config *isChangeInDevelopmentOptions, telemetryData *telemetry.CustomData, utils isChangeInDevelopmentUtils) error {
+func runIsChangeInDevelopment(config *isChangeInDevelopmentOptions,
+	telemetryData *telemetry.CustomData,
+	utils isChangeInDevelopmentUtils,
+	commonPipelineEnvironment *isChangeInDevelopmentCommonPipelineEnvironment) error {
 
 	log.Entry().Infof("Checking change status for change '%s'", config.ChangeDocumentID)
 
@@ -63,6 +68,8 @@ func runIsChangeInDevelopment(config *isChangeInDevelopmentOptions, telemetryDat
 	if err != nil {
 		return err
 	}
+
+	commonPipelineEnvironment.custom.isChangeInDevelopment = isInDevelopment
 
 	if isInDevelopment {
 		log.Entry().Infof("Change '%s' is in status 'in development'.", config.ChangeDocumentID)
