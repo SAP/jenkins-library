@@ -195,7 +195,8 @@ class AbapEnvironmentPipelineTest extends BasePiperTest {
         assertThat(stepsCalled, hasItems(
             'abapEnvironmentPipelineStageInit',
             'abapEnvironmentPipelineStageCloneRepositories',
-            'abapEnvironmentPipelineStageRunTests',
+            'abapEnvironmentPipelineStageRunATC',
+            'abapEnvironmentPipelineStageRunAUnit',
             'abapEnvironmentPipelineStagePost'
         ))
         assertThat(stepsCalled, not(hasItem('abapEnvironmentPipelineStagePrepareSystem')))
@@ -215,7 +216,8 @@ class AbapEnvironmentPipelineTest extends BasePiperTest {
             'abapEnvironmentPipelineStagePost'
         ))
         assertThat(stepsCalled, not(hasItem('abapEnvironmentPipelineStageCloneRepositories')))
-        assertThat(stepsCalled, not(hasItem('abapEnvironmentPipelineStageRunTests')))
+        assertThat(stepsCalled, not(hasItem('abapEnvironmentPipelineStageATC')))
+        assertThat(stepsCalled, not(hasItem('abapEnvironmentPipelineStageAUnit')))
     }
 
     @Test
@@ -235,7 +237,8 @@ class AbapEnvironmentPipelineTest extends BasePiperTest {
             'abapEnvironmentPipelineStageInit',
             'abapEnvironmentPipelineStagePrepareSystem',
             'abapEnvironmentPipelineStageCloneRepositories',
-            'abapEnvironmentPipelineStageRunTests',
+            'abapEnvironmentPipelineStageATC',
+            'abapEnvironmentPipelineStageAUnit',
             'abapEnvironmentPipelineStagePost',
             'abapEnvironmentPipelineStageBuild',
             'abapEnvironmentPipelineStageInitialChecks',
