@@ -3,8 +3,8 @@ import groovy.transform.Field
 import static com.sap.piper.Prerequisites.checkScript
 import com.sap.piper.DownloadCacheUtils
 
-@Field String STEP_NAME = 'checkChangeInDevelopment'
-@Field String METADATA_FILE = 'metadata/checkChangeInDevelopment.yaml'
+@Field String STEP_NAME = getClass().getName()
+@Field String METADATA_FILE = 'metadata/isChangeInDevelopment.yaml'
 
 void call(Map parameters = [:]) {
     final script = checkScript(this, parameters) ?: this
