@@ -17,6 +17,7 @@ The pipeline starts with the stage "Prepare System". This stage, however, is opt
 This stage is responsible for cloning (or pulling) the defined software components (repositories) to the system.
 
 ### Run Tests
+
 This stage will trigger the execution of the `ATC` and `AUnit` stages in parallel. Please find more information on the respective stages below.
 
 ### ATC
