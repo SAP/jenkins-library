@@ -13,7 +13,7 @@ import util.Rules
 import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
 
-class abapEnvironmentPipelineStageIntegrationTestsTest extends BasePiperTest {
+class abapEnvironmentPipelineStageRunTests extends BasePiperTest {
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
 
     @Rule
