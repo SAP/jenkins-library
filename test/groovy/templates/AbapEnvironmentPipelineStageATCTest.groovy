@@ -13,7 +13,7 @@ import util.Rules
 import static org.hamcrest.Matchers.*
 import static org.junit.Assert.assertThat
 
-class abapEnvironmentPipelineStageRunTestsTest extends BasePiperTest {
+class abapEnvironmentPipelineStageATCTest extends BasePiperTest {
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
 
     @Rule
@@ -26,17 +26,16 @@ class abapEnvironmentPipelineStageRunTestsTest extends BasePiperTest {
 
     @Before
     void init()  {
-        binding.variables.env.STAGE_NAME = 'Run Tests'
+        binding.variables.env.STAGE_NAME = 'ATC'
 
         helper.registerAllowedMethod('piperStageWrapper', [Map.class, Closure.class], {m, body ->
-            assertThat(m.stageName, is('Run Tests'))
+            assertThat(m.stageName, is('ATC'))
             return body()
         })
         helper.registerAllowedMethod('input', [Map], {m ->
             stepsCalled.add('input')
             return null
         })
-        helper.registerAllowedMethod('abapEnvironmentRunAUnitTest', [Map.class], {m -> stepsCalled.add('abapEnvironmentRunAUnitTest')})
         helper.registerAllowedMethod('abapEnvironmentRunATCCheck', [Map.class], {m -> stepsCalled.add('abapEnvironmentRunATCCheck')})
     }
 
@@ -44,12 +43,11 @@ class abapEnvironmentPipelineStageRunTestsTest extends BasePiperTest {
     void testAbapEnvironmentRunTests() {
 
         nullScript.commonPipelineEnvironment.configuration.runStage = [
-            'Run Tests': true
+            'ATC': true
         ]
         jsr.step.abapEnvironmentPipelineStageRunTests(script: nullScript)
 
         assertThat(stepsCalled, hasItems('input'))
-        assertThat(stepsCalled, hasItems('abapEnvironmentRunAUnitTest'))
         assertThat(stepsCalled, hasItems('abapEnvironmentRunATCCheck'))
     }
 }
