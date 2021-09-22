@@ -515,10 +515,10 @@ func convertAtcToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client pipe
 
 	atcBody, _ := xml.Marshal(atcResults)
 
-	writeErr := ioutil.WriteFile("AtcTestResults", atcBody, 0644)
+	writeErr := ioutil.WriteFile("ATCResults", atcBody, 0644)
 
 	if writeErr != nil {
-		log.Entry().Error("file %w could not be created", "AtcTestResults")
+		log.Entry().Error("file %w could not be created", "ATCResults")
 		return fmt.Errorf("handling atc results failed: %w", writeErr)
 	}
 	log.Entry().Info("conversion of ATC check results to CheckStyle has finished.")
