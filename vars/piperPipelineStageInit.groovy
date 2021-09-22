@@ -56,6 +56,10 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'stashSettings',
     /**
+    * Defines the file containing the stash settings to be performed before and after each stage.
+    */
+    'customStashSettings',
+    /**
      * Whether verbose output should be produced.
      * @possibleValues `true`, `false`
      */
@@ -105,7 +109,7 @@ import static com.sap.piper.Prerequisites.checkScript
      * take precedence over `customDefaults`.
      */
     'customDefaultsFromFiles'
-])
+ ])
 
 /**
  * This stage initializes the pipeline run and prepares further execution.
@@ -179,7 +183,7 @@ void call(Map parameters = [:]) {
             ContainerMap.instance.initFromResource(script, config.containerMapResource, buildTool)
         }
 
-        initStashConfiguration(script, config.stashSettings, config.verbose ?: false)
+        initStashConfiguration(script, config.stashSettings, config.customStashSettings, config.verbose ?: false)
 
         if (config.verbose) {
             echo "piper-lib-os  configuration: ${script.commonPipelineEnvironment.configuration}"
@@ -268,8 +272,13 @@ private String checkBuildTool(config) {
     return buildTool
 }
 
-private void initStashConfiguration (script, stashSettings, verbose) {
-    Map stashConfiguration = readYaml(text: libraryResource(stashSettings))
+private void initStashConfiguration (script, stashSettings, customStashSettings, verbose) {
+    Map stashConfiguration = null
+    if (customStashSettings){
+        stashConfiguration = readYaml(file: customStashSettings)
+    }else{
+        stashConfiguration = readYaml(text: libraryResource(stashSettings))
+    }
     if (verbose) echo "Stash config: ${stashConfiguration}"
     script.commonPipelineEnvironment.configuration.stageStashes = stashConfiguration
 }
