@@ -854,7 +854,7 @@ func runUnitTests(config *gctsExecuteABAPUnitTestsOptions, httpClient piperhttp.
 }
 
 func getXcsrfToken(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender) (*http.Header, error) {
-
+	log.Entry().Info("getting Xcsrf Token")
 	url := config.Host +
 		"/sap/bc/adt/core/discovery?sap-client=" + config.Client
 
