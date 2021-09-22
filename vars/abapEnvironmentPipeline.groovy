@@ -33,10 +33,20 @@ void call(parameters) {
                 }
             }
 
-            stage('ATC') {
-                when {expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}}
-                steps {
-                    abapEnvironmentPipelineStageATC script: parameters.script
+            stage('Run Tests') {
+                when {expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}} {
+                    parallel {
+                        stage('ATC check') {
+                            steps {
+                                abapEnvironmentPipelineStageATC script: parameters.script
+                            }
+                        }
+                        stage('AUnit test') {
+                            steps {
+                                abapEnvonmentPipelineStageAUnit script: parameters.script
+                            }
+                        }
+                    }
                 }
             }
 
