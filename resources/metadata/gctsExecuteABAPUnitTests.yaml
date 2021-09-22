@@ -96,17 +96,27 @@ spec:
           - STAGES
           - STEPS
       - name: unitTest
-        type: string
+        type: bool
+        default: true
         description: Specifies whether to execute Unit Tests
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
       - name: atcCheck
-        type: string
+        type: bool
+        default: true
         description: Specifies whether to execute ATC Check
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: jenkinsWorkspace
+        type: string
+        description: The absolute path of the directory assigned to the build as workspace
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        mandatory: true
  

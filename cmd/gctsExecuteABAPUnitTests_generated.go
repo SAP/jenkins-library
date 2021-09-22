@@ -14,17 +14,18 @@ import (
 )
 
 type gctsExecuteABAPUnitTestsOptions struct {
-	Username     string `json:"username,omitempty"`
-	Password     string `json:"password,omitempty"`
-	Repository   string `json:"repository,omitempty"`
-	Host         string `json:"host,omitempty"`
-	Client       string `json:"client,omitempty"`
-	Scope        string `json:"scope,omitempty"`
-	CommitID     string `json:"commitId,omitempty"`
-	MaxTimeOut   int    `json:"maxTimeOut,omitempty"`
-	CheckVariant string `json:"checkVariant,omitempty"`
-	UnitTest     string `json:"unitTest,omitempty"`
-	AtcCheck     string `json:"atcCheck,omitempty"`
+	Username         string `json:"username,omitempty"`
+	Password         string `json:"password,omitempty"`
+	Repository       string `json:"repository,omitempty"`
+	Host             string `json:"host,omitempty"`
+	Client           string `json:"client,omitempty"`
+	Scope            string `json:"scope,omitempty"`
+	CommitID         string `json:"commitId,omitempty"`
+	MaxTimeOut       int    `json:"maxTimeOut,omitempty"`
+	CheckVariant     string `json:"checkVariant,omitempty"`
+	UnitTest         bool   `json:"unitTest,omitempty"`
+	AtcCheck         bool   `json:"atcCheck,omitempty"`
+	JenkinsWorkspace string `json:"jenkinsWorkspace,omitempty"`
 }
 
 // GctsExecuteABAPUnitTestsCommand Runs ABAP unit tests for all packages of the specified repository
@@ -95,8 +96,9 @@ func addGctsExecuteABAPUnitTestsFlags(cmd *cobra.Command, stepConfig *gctsExecut
 	cmd.Flags().StringVar(&stepConfig.CommitID, "commitId", os.Getenv("PIPER_commitId"), "The commit that triggered the pipeline")
 	cmd.Flags().IntVar(&stepConfig.MaxTimeOut, "maxTimeOut", 0, "Maximum waiting time for results of the execution of ABAP Unit Tests")
 	cmd.Flags().StringVar(&stepConfig.CheckVariant, "checkVariant", os.Getenv("PIPER_checkVariant"), "Check Variant for ATC Checks")
-	cmd.Flags().StringVar(&stepConfig.UnitTest, "unitTest", os.Getenv("PIPER_unitTest"), "Specifies whether to execute Unit Tests")
-	cmd.Flags().StringVar(&stepConfig.AtcCheck, "atcCheck", os.Getenv("PIPER_atcCheck"), "Specifies whether to execute ATC Check")
+	cmd.Flags().BoolVar(&stepConfig.UnitTest, "unitTest", true, "Specifies whether to execute Unit Tests")
+	cmd.Flags().BoolVar(&stepConfig.AtcCheck, "atcCheck", true, "Specifies whether to execute ATC Check")
+	cmd.Flags().StringVar(&stepConfig.JenkinsWorkspace, "jenkinsWorkspace", os.Getenv("PIPER_jenkinsWorkspace"), "The absolute path of the directory assigned to the build as workspace")
 
 	cmd.MarkFlagRequired("username")
 	cmd.MarkFlagRequired("password")
@@ -105,6 +107,7 @@ func addGctsExecuteABAPUnitTestsFlags(cmd *cobra.Command, stepConfig *gctsExecut
 	cmd.MarkFlagRequired("client")
 	cmd.MarkFlagRequired("scope")
 	cmd.MarkFlagRequired("commitId")
+	cmd.MarkFlagRequired("jenkinsWorkspace")
 }
 
 // retrieve step metadata
@@ -206,7 +209,7 @@ func gctsExecuteABAPUnitTestsMetadata() config.StepData {
 						Name:        "unitTest",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
+						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 					},
@@ -214,8 +217,16 @@ func gctsExecuteABAPUnitTestsMetadata() config.StepData {
 						Name:        "atcCheck",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
+						Type:        "bool",
 						Mandatory:   false,
+						Aliases:     []config.Alias{},
+					},
+					{
+						Name:        "jenkinsWorkspace",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
 						Aliases:     []config.Alias{},
 					},
 				},
