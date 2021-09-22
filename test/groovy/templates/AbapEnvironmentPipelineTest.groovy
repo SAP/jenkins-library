@@ -202,7 +202,7 @@ class AbapEnvironmentPipelineTest extends BasePiperTest {
     }
 
     @Test
-    void testAbapEnvironmentPipelineNoCloneNoATC() {
+    void testAbapEnvironmentPipelineNoCloneNoRunTests() {
 
         nullScript.commonPipelineEnvironment.configuration.runStage = [
             'Prepare System': true,
