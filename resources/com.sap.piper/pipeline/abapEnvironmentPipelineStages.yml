@@ -3,7 +3,7 @@ stages:
   Initial Checks: {}
   Prepare System: {}
   Clone Repositories: {}
-  ATC: {}
+  Run Tests: {}
   Build: {}
   Integration Tests: {}
   Confirm: {}

@@ -16,7 +16,7 @@ stages:
   'Clone Repositories':
     ordinal: 30
 
-  ATC:
+  'Run Tests':
     ordinal: 40
 
   Build:
