@@ -19,7 +19,7 @@ Init:
   - source
   stashes: []
 
-ATC:
+'Run Tests':
   unstash:
   - source
   stashes: []

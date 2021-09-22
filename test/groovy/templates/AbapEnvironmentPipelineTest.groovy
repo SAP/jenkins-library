@@ -151,8 +151,12 @@ class AbapEnvironmentPipelineTest extends BasePiperTest {
             stepsCalled.add('abapEnvironmentPipelineStageCloneRepositories')
         })
 
-        helper.registerAllowedMethod('abapEnvironmentPipelineStageRunTests', [Map.class], {m ->
-            stepsCalled.add('abapEnvironmentPipelineStageRunTests')
+        helper.registerAllowedMethod('abapEnvironmentPipelineStageRunAUnit', [Map.class], {m ->
+            stepsCalled.add('abapEnvironmentPipelineStageRunAUnit')
+        })
+
+        helper.registerAllowedMethod('abapEnvironmentPipelineStageRunATC', [Map.class], {m ->
+            stepsCalled.add('abapEnvironmentPipelineStageRunATC')
         })
 
         helper.registerAllowedMethod('abapEnvironmentPipelineStagePost', [Map.class], {m ->
