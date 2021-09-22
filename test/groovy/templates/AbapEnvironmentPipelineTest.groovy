@@ -151,8 +151,8 @@ class AbapEnvironmentPipelineTest extends BasePiperTest {
             stepsCalled.add('abapEnvironmentPipelineStageCloneRepositories')
         })
 
-        helper.registerAllowedMethod('abapEnvironmentPipelineStageATC', [Map.class], {m ->
-            stepsCalled.add('abapEnvironmentPipelineStageATC')
+        helper.registerAllowedMethod('abapEnvironmentPipelineStageRunTests', [Map.class], {m ->
+            stepsCalled.add('abapEnvironmentPipelineStageRunTests')
         })
 
         helper.registerAllowedMethod('abapEnvironmentPipelineStagePost', [Map.class], {m ->
@@ -188,14 +188,14 @@ class AbapEnvironmentPipelineTest extends BasePiperTest {
 
         nullScript.commonPipelineEnvironment.configuration.runStage = [
             'Clone Repositories': true,
-            'ATC': true,
+            'Run Tests': true,
         ]
         jsr.step.abapEnvironmentPipeline(script: nullScript)
 
         assertThat(stepsCalled, hasItems(
             'abapEnvironmentPipelineStageInit',
             'abapEnvironmentPipelineStageCloneRepositories',
-            'abapEnvironmentPipelineStageATC',
+            'abapEnvironmentPipelineStageRunTests',
             'abapEnvironmentPipelineStagePost'
         ))
         assertThat(stepsCalled, not(hasItem('abapEnvironmentPipelineStagePrepareSystem')))
@@ -215,7 +215,7 @@ class AbapEnvironmentPipelineTest extends BasePiperTest {
             'abapEnvironmentPipelineStagePost'
         ))
         assertThat(stepsCalled, not(hasItem('abapEnvironmentPipelineStageCloneRepositories')))
-        assertThat(stepsCalled, not(hasItem('abapEnvironmentPipelineStageATC')))
+        assertThat(stepsCalled, not(hasItem('abapEnvironmentPipelineStageRunTests')))
     }
 
     @Test
@@ -224,7 +224,7 @@ class AbapEnvironmentPipelineTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.configuration.runStage = [
             'Prepare System': true,
             'Clone Repositories': true,
-            'ATC': true,
+            'Run Tests': true,
             'Build': true,
             'Integration Tests': true,
             'Publish': true
@@ -235,7 +235,7 @@ class AbapEnvironmentPipelineTest extends BasePiperTest {
             'abapEnvironmentPipelineStageInit',
             'abapEnvironmentPipelineStagePrepareSystem',
             'abapEnvironmentPipelineStageCloneRepositories',
-            'abapEnvironmentPipelineStageATC',
+            'abapEnvironmentPipelineStageRunTests',
             'abapEnvironmentPipelineStagePost',
             'abapEnvironmentPipelineStageBuild',
             'abapEnvironmentPipelineStageInitialChecks',
