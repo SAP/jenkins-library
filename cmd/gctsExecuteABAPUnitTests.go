@@ -1014,7 +1014,7 @@ func convertUnitTestToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client
 		}
 		if repositoryLayout.Layout.ReadableSource == "true" || repositoryLayout.Layout.ReadableSource == "only" || repositoryLayout.Layout.ReadableSource == "all" {
 
-			FileName = objectName + "." + objectType + "." + "testclasses.abap"
+			FileName = strings.ToLower(objectName) + "." + strings.ToLower(objectType) + "." + "testclasses.abap"
 
 		} else {
 
