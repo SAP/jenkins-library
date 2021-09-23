@@ -19,11 +19,6 @@ Init:
   - source
   stashes: []
 
-'Run Tests':
-  unstash:
-  - source
-  stashes: []
-
 'ATC':
   unstash:
   - source

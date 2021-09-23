@@ -16,22 +16,19 @@ stages:
   'Clone Repositories':
     ordinal: 30
 
-  'Run Tests':
+  'ATC':
     ordinal: 40
 
-  'ATC':
+  'AUnit':
     ordinal: 50
 
-  'AUnit':
-    ordinal: 60
-
   Build:
-    ordinal: 70
+    ordinal: 60
     cfServiceKeyName: 'sap_com_0582'
     cfServiceKeyConfig: '{"scenario_id":"SAP_COM_0582","type":"basic"}'
 
   'Integration Tests':
-    ordinal: 80
+    ordinal: 70
     cfService: 'abap'
     cfServicePlan: 'saas_oem'
     abapSystemIsDevelopmentAllowed: 'false'
@@ -41,12 +38,12 @@ stages:
     includeAddon: 'true'
 
   Confirm:
-    ordinal: 90
+    ordinal: 80
 
   Publish:
-    ordinal: 100
+    ordinal: 90
     targetVectorScope: 'P'
 
   Post:
-    ordinal: 110
+    ordinal: 100
     cfDeleteServiceKeys: true

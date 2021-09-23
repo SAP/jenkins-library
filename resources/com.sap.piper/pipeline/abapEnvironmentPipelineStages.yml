@@ -5,7 +5,6 @@ stages:
   AUnit: {}
   ATC: {}
   Clone Repositories: {}
-  Run Tests: {}
   Build: {}
   Integration Tests: {}
   Confirm: {}

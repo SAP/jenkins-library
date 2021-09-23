@@ -41,14 +41,13 @@ void call(parameters) {
                                 abapEnvironmentPipelineStageATC script: parameters.script
                             }
                         }
-                        stage('AUnit test') {
+                        stage('AUnit') {
                             when {expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}}
                             steps {
                                 abapEnvonmentPipelineStageAUnit script: parameters.script
                             }
                         }
                     }
-                }
             }
 
             stage('Build') {
