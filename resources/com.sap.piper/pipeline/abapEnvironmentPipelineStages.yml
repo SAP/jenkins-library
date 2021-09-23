@@ -2,6 +2,8 @@ stages:
   Init: {}
   Initial Checks: {}
   Prepare System: {}
+  AUnit: {}
+  ATC: {}
   Clone Repositories: {}
   Run Tests: {}
   Build: {}
