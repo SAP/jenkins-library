@@ -275,7 +275,7 @@ func convertAtcToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client pipe
 					fugrInclude := regexLine.FindString(atcworklist.Location)
 					subObject = fugrInclude[len(`includes/`):]
 					if readableSourceFormat {
-						fileName = strings.ToLower(subObject) + ".reps.abap"
+						fileName = strings.ToLower(objectName) + "." + strings.ToLower(objectType) + "." + strings.ToLower(subObject) + ".reps.abap"
 					} else {
 
 						fileName = "REPS " + subObject + ".abap"
