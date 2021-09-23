@@ -261,7 +261,7 @@ func TestMarBuild(t *testing.T) {
 
 			err := runMtaBuild(options, &cpe, utilsMock)
 
-			assert.Equal(t, "altDeploymentRepositoryUser, altDeploymentRepositoryPassword and altDeploymentRepositoryURL not found , must be present", err.Error())
+			assert.Equal(t, "mtaDeploymentRepositoryUser, mtaDeploymentRepositoryPassword and mtaDeploymentRepositoryURL not found , must be present", err.Error())
 		})
 
 		t.Run("error when no mtar group", func(t *testing.T) {
