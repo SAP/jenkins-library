@@ -206,6 +206,8 @@ class AbapEnvironmentPipelineTest extends BasePiperTest {
             'ATC': true,
             'AUnit': true,
         ]
+        nullScript.commonPipelineEnvironment.configuration = [
+            general: [parallelExecution: true]]
         jsr.step.abapEnvironmentPipeline(script: nullScript)
 
         assertThat(stepsCalled, hasItems(
