@@ -139,8 +139,10 @@ class AbapEnvironmentPipelineTest extends BasePiperTest {
 
         helper.registerAllowedMethod('input', [Map], {m -> return null})
 
+        /*parallel tests */
         //def closureRun = null /* Check if closureRun is needed */
-        helper.registerAllowedMethod('parallel', [Map.class, Map.class], {m, n -> return null})
+        helper.registerAllowedMethod('parallel', [Closure], {c -> c()})
+        //helper.registerAllowedMethod('parallel', [Map.class, Map.class], {m, n -> return null})
 
         helper.registerAllowedMethod('abapEnvironmentPipelineStageInit', [Map.class], {m ->
             stepsCalled.add('abapEnvironmentPipelineStageInit')
