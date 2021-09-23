@@ -193,6 +193,8 @@ class AbapEnvironmentPipelineTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.configuration.runStage = [
             'Clone Repositories': true,
             'Run Tests': true,
+            'ATC': true,
+            'AUnit': true,
         ]
         jsr.step.abapEnvironmentPipeline(script: nullScript)
 
