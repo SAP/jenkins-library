@@ -19,13 +19,19 @@ stages:
   'Run Tests':
     ordinal: 40
 
-  Build:
+  'ATC':
     ordinal: 50
+
+  'AUnit':
+    ordinal: 60
+
+  Build:
+    ordinal: 70
     cfServiceKeyName: 'sap_com_0582'
     cfServiceKeyConfig: '{"scenario_id":"SAP_COM_0582","type":"basic"}'
 
   'Integration Tests':
-    ordinal: 60
+    ordinal: 80
     cfService: 'abap'
     cfServicePlan: 'saas_oem'
     abapSystemIsDevelopmentAllowed: 'false'
@@ -35,12 +41,12 @@ stages:
     includeAddon: 'true'
 
   Confirm:
-    ordinal: 70
+    ordinal: 90
 
   Publish:
-    ordinal: 80
+    ordinal: 100
     targetVectorScope: 'P'
 
   Post:
-    ordinal: 90
+    ordinal: 110
     cfDeleteServiceKeys: true
