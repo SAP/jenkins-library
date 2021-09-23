@@ -33,7 +33,7 @@ void call(parameters) {
                 }
             }
 
-            stage('Run Tests') {
+            stage('Test') {
                     parallel {
                         stage('ATC') {
                             when {expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}}
