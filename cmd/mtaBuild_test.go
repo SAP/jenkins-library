@@ -270,7 +270,7 @@ func TestMarBuild(t *testing.T) {
 			utilsMock.AddFile("mta.yaml", []byte("ID: \"myNameFromMtar\""))
 
 			options := mtaBuildOptions{ApplicationName: "myApp", GlobalSettingsFile: "/opt/maven/settings.xml", Platform: "CF", MtarName: "myName", Source: "./", Target: "./", Publish: true,
-				AltDeploymentRepositoryURL: "dummy", AltDeploymentRepositoryPassword: "dummy", AltDeploymentRepositoryUser: "dummy"}
+				MtaDeploymentRepositoryURL: "dummy", MtaDeploymentRepositoryPassword: "dummy", MtaDeploymentRepositoryUser: "dummy"}
 
 			err := runMtaBuild(options, &cpe, utilsMock)
 

@@ -244,12 +244,12 @@ func runMtaBuild(config mtaBuildOptions,
 
 	if config.Publish {
 		log.Entry().Infof("publish detected")
-		if (len(config.AltDeploymentRepositoryPassword) > 0) && (len(config.AltDeploymentRepositoryUser) > 0) &&
-			(len(config.AltDeploymentRepositoryURL) > 0) {
+		if (len(config.MtaDeploymentRepositoryPassword) > 0) && (len(config.MtaDeploymentRepositoryUser) > 0) &&
+			(len(config.MtaDeploymentRepositoryURL) > 0) {
 			if (len(config.MtarGroup) > 0) && (len(config.Version) > 0) {
 				downloadClient := &piperhttp.Client{}
 
-				credentialsEncoded := "Basic " + base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", config.AltDeploymentRepositoryUser, config.AltDeploymentRepositoryPassword)))
+				credentialsEncoded := "Basic " + base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", config.MtaDeploymentRepositoryUser, config.MtaDeploymentRepositoryPassword)))
 				headers := http.Header{}
 				headers.Add("Authorization", credentialsEncoded)
 
@@ -260,13 +260,13 @@ func runMtaBuild(config mtaBuildOptions,
 				mtarArtifactName = strings.ReplaceAll(mtarArtifactName, ".mtar", "")
 				mtarArtifactName = strings.ReplaceAll(mtarArtifactName, ".", "/")
 
-				config.AltDeploymentRepositoryURL += config.MtarGroup + "/" + mtarArtifactName + "/" + config.Version + "/" + fmt.Sprintf("%v-%v.%v", mtarArtifactName, config.Version, "mtar")
+				config.MtaDeploymentRepositoryURL += config.MtarGroup + "/" + mtarArtifactName + "/" + config.Version + "/" + fmt.Sprintf("%v-%v.%v", mtarArtifactName, config.Version, "mtar")
 
-				commonPipelineEnvironment.custom.mtarPublishedURL = config.AltDeploymentRepositoryURL
+				commonPipelineEnvironment.custom.mtarPublishedURL = config.MtaDeploymentRepositoryURL
 
-				log.Entry().Infof("pushing mtar artifact to repository : %s", config.AltDeploymentRepositoryURL)
+				log.Entry().Infof("pushing mtar artifact to repository : %s", config.MtaDeploymentRepositoryURL)
 
-				_, httpErr := downloadClient.UploadRequest(http.MethodPut, config.AltDeploymentRepositoryURL, mtarName, mtarName, headers, nil)
+				_, httpErr := downloadClient.UploadRequest(http.MethodPut, config.MtaDeploymentRepositoryURL, mtarName, mtarName, headers, nil)
 				if httpErr != nil {
 					return errors.Wrap(err, "failed to upload mtar to repository")
 				}

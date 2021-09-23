@@ -140,7 +140,7 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
-      - name: altDeploymentRepositoryPassword
+      - name: mtaDeploymentRepositoryPassword
         type: string
         description: Password for the alternative deployment repository to which mtar artifacts will be publised
         scope:
@@ -152,14 +152,12 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/repositoryPassword
-          - name: altDeploymentRepositoryPasswordId
+          - name: mtaDeploymentRepositoryPasswordId
             type: secret
           - type: vaultSecretFile
-            paths:
-              - $(vaultPath)/alt-deployment-repository-passowrd
-              - $(vaultBasePath)/$(vaultPipelineName)/alt-deployment-repository-passowrd
-              - $(vaultBasePath)/GROUP-SECRETS/alt-deployment-repository-passowrd
-      - name: altDeploymentRepositoryUser
+            name: mtaDeploymentRepositoryPasswordFileVaultSecretName
+            default: mta-deployment-repository-passowrd
+      - name: mtaDeploymentRepositoryUser
         type: string
         description: User for the alternative deployment repository to which which mtar artifacts will be publised
         scope:
@@ -170,7 +168,7 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: custom/repositoryUsername
-      - name: altDeploymentRepositoryUrl
+      - name: mtaDeploymentRepositoryUrl
         type: string
         description: Url for the alternative deployment repository to which mtar artifacts will be publised
         scope:
