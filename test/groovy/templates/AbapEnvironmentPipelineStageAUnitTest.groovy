@@ -32,10 +32,6 @@ class abapEnvironmentPipelineStageAUnitTest extends BasePiperTest {
             assertThat(m.stageName, is('AUnit'))
             return body()
         })
-        helper.registerAllowedMethod('input', [Map], {m ->
-            stepsCalled.add('input')
-            return null
-        })
         helper.registerAllowedMethod('abapEnvironmentRunAUnitTest', [Map.class], {m -> stepsCalled.add('abapEnvironmentRunAUnitTest')})
     }
 
@@ -47,7 +43,6 @@ class abapEnvironmentPipelineStageAUnitTest extends BasePiperTest {
         ]
         jsr.step.abapEnvironmentPipelineStageAUnit(script: nullScript)
 
-        assertThat(stepsCalled, hasItems('input'))
         assertThat(stepsCalled, hasItems('abapEnvironmentRunAUnitTest'))
     }
 }

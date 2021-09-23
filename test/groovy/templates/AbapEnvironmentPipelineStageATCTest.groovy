@@ -32,10 +32,6 @@ class abapEnvironmentPipelineStageATCTest extends BasePiperTest {
             assertThat(m.stageName, is('ATC'))
             return body()
         })
-        helper.registerAllowedMethod('input', [Map], {m ->
-            stepsCalled.add('input')
-            return null
-        })
         helper.registerAllowedMethod('abapEnvironmentRunATCCheck', [Map.class], {m -> stepsCalled.add('abapEnvironmentRunATCCheck')})
     }
 
@@ -47,7 +43,6 @@ class abapEnvironmentPipelineStageATCTest extends BasePiperTest {
         ]
         jsr.step.abapEnvironmentPipelineStageATC(script: nullScript)
 
-        assertThat(stepsCalled, hasItems('input'))
         assertThat(stepsCalled, hasItems('abapEnvironmentRunATCCheck'))
     }
 }
