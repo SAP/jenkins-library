@@ -276,7 +276,7 @@ func runMtaBuild(config mtaBuildOptions,
 			}
 
 		} else {
-			return errors.New("altDeploymentRepositoryUser, altDeploymentRepositoryPassword and altDeploymentRepositoryURL not found , must be present")
+			return errors.New("mtaDeploymentRepositoryUser, mtaDeploymentRepositoryPassword and mtaDeploymentRepositoryURL not found , must be present")
 		}
 	} else {
 		log.Entry().Infof("no publish detected, skipping upload of mtar artifact")
