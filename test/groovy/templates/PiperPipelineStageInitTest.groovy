@@ -8,8 +8,6 @@ import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 import util.*
 
-import static org.hamcrest.CoreMatchers.is
-import static org.hamcrest.Matchers.array
 import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.hasItems
 import static org.hamcrest.Matchers.hasKey
