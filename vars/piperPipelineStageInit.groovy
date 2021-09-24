@@ -56,7 +56,7 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'stashSettings',
     /**
-    * Defines the file containing the stash settings to be performed before and after each stage.
+    * Works as the stashSettings parameter, but allows the use of a stash settings file that is not available as a library resource.
     */
     'customStashSettings',
     /**
