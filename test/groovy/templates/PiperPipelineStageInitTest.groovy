@@ -8,6 +8,8 @@ import org.junit.rules.ExpectedException
 import org.junit.rules.RuleChain
 import util.*
 
+import static org.hamcrest.CoreMatchers.is
+import static org.hamcrest.Matchers.array
 import static org.hamcrest.Matchers.hasItem
 import static org.hamcrest.Matchers.hasItems
 import static org.hamcrest.Matchers.hasKey
@@ -20,15 +22,18 @@ import static org.junit.Assert.assertTrue
 class PiperPipelineStageInitTest extends BasePiperTest {
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+    private JenkinsReadYamlRule jryr = new JenkinsReadYamlRule(this)
     private ExpectedException thrown = new ExpectedException()
+    private JenkinsFileExistsRule fileExistsRule = new JenkinsFileExistsRule(this, [])
 
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
-        .around(new JenkinsReadYamlRule(this))
+        .around(jryr)
         .around(thrown)
         .around(jlr)
         .around(jsr)
+        .around(fileExistsRule)
 
     private List stepsCalled = []
     private Map  stepParams = [:]
@@ -126,6 +131,24 @@ class PiperPipelineStageInitTest extends BasePiperTest {
         assertThat(stepsCalled, hasItems('checkout', 'setupCommonPipelineEnvironment', 'piperInitRunStageConfiguration', 'artifactPrepareVersion', 'pipelineStashFilesBeforeBuild'))
         assertThat(stepsCalled, not(hasItems('slackSendNotification')))
 
+    }
+
+    @Test
+    void testCustomStashSettings() {
+        jryr.registerYaml('customStashSettings.yml',"unstash: source")
+        fileExistsRule.registerExistingFile('customStashSettings.yml')
+
+        jsr.step.piperPipelineStageInit(
+            script: nullScript,
+            juStabUtils: utils,
+            buildTool: 'maven',
+            customStashSettings: 'customStashSettings.yml',
+            stashSettings: 'com.sap.piper/pipeline/stashSettings.yml'
+        )
+
+        assertThat(stepsCalled, hasItems('checkout', 'setupCommonPipelineEnvironment', 'piperInitRunStageConfiguration', 'artifactPrepareVersion', 'pipelineStashFilesBeforeBuild'))
+        assertThat(stepsCalled, not(hasItems('slackSendNotification')))
+        assertThat(nullScript.commonPipelineEnvironment.configuration.stageStashes.unstash.toString(), is("source"))
     }
 
     @Test
