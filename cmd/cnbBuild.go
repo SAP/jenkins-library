@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"archive/zip"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -88,6 +89,70 @@ func isBuilder(utils cnbutils.BuildUtils) (bool, error) {
 	return true, nil
 }
 
+func isZip(path string) bool {
+	r, err := zip.OpenReader(path)
+
+	switch {
+	case err == nil:
+		r.Close()
+		return true
+	case err == zip.ErrFormat:
+		return false
+	default:
+		return false
+	}
+}
+
+func copyProject(source, target string, utils cnbutils.BuildUtils) error {
+	sourceFiles, _ := utils.Glob(path.Join(source, "**"))
+	for _, sourceFile := range sourceFiles {
+		if !isIgnored(sourceFile) {
+			target := path.Join(target, strings.ReplaceAll(sourceFile, source, ""))
+			dir, err := isDir(sourceFile)
+			if err != nil {
+				log.SetErrorCategory(log.ErrorBuild)
+				return errors.Wrapf(err, "Checking file info '%s' failed", target)
+			}
+
+			if dir {
+				err = utils.MkdirAll(target, os.ModePerm)
+				if err != nil {
+					log.SetErrorCategory(log.ErrorBuild)
+					return errors.Wrapf(err, "Creating directory '%s' failed", target)
+				}
+			} else {
+				log.Entry().Debugf("Copying '%s' to '%s'", sourceFile, target)
+				_, err = utils.Copy(sourceFile, target)
+				if err != nil {
+					log.SetErrorCategory(log.ErrorBuild)
+					return errors.Wrapf(err, "Copying '%s' to '%s' failed", sourceFile, target)
+				}
+			}
+
+		} else {
+			log.Entry().Debugf("Filtered out '%s'", sourceFile)
+		}
+	}
+	return nil
+}
+
+func copyFile(source, target string, utils cnbutils.BuildUtils) error {
+
+	if isZip(source) {
+		log.Entry().Infof("Extracting archive '%s' to '%s'", source, target)
+		_, err := piperutils.Unzip(source, target)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorBuild)
+			return errors.Wrapf(err, "Extracting archive '%s' to '%s' failed", source, target)
+		}
+	} else {
+		log.SetErrorCategory(log.ErrorBuild)
+		return errors.New("application path must be a directory or zip")
+	}
+
+	return nil
+}
+
 func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, utils cnbutils.BuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment) error {
 	var err error
 
@@ -140,33 +205,23 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		source = config.Path
 	}
 
-	sourceFiles, _ := utils.Glob(path.Join(source, "**"))
-	for _, sourceFile := range sourceFiles {
-		if !isIgnored(sourceFile) {
-			target := path.Join(target, strings.ReplaceAll(sourceFile, source, ""))
-			dir, err := isDir(sourceFile)
-			if err != nil {
-				log.SetErrorCategory(log.ErrorBuild)
-				return errors.Wrapf(err, "Checking file info '%s' failed", target)
-			}
+	dir, err := isDir(source)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorBuild)
+		return errors.Wrapf(err, "Checking file info '%s' failed", target)
+	}
 
-			if dir {
-				err = utils.MkdirAll(target, os.ModePerm)
-				if err != nil {
-					log.SetErrorCategory(log.ErrorBuild)
-					return errors.Wrapf(err, "Creating directory '%s' failed", target)
-				}
-			} else {
-				log.Entry().Debugf("Copying '%s' to '%s'", sourceFile, target)
-				_, err = utils.Copy(sourceFile, target)
-				if err != nil {
-					log.SetErrorCategory(log.ErrorBuild)
-					return errors.Wrapf(err, "Copying '%s' to '%s' failed", sourceFile, target)
-				}
-			}
-
-		} else {
-			log.Entry().Debugf("Filtered out '%s'", sourceFile)
+	if dir {
+		err = copyProject(source, target, utils)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorBuild)
+			return errors.Wrapf(err, "Copying  '%s' into '%s' failed", source, target)
+		}
+	} else {
+		err = copyFile(source, target, utils)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorBuild)
+			return errors.Wrapf(err, "Copying  '%s' into '%s' failed", source, target)
 		}
 	}
 
@@ -211,20 +266,20 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 	err = utils.RunExecutable(detectorPath, "-buildpacks", buildpacksPath, "-order", orderPath)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrap(err, fmt.Sprintf("execution of '%s' failed", detectorPath))
+		return errors.Wrapf(err, "execution of '%s' failed", detectorPath)
 	}
 
 	err = utils.RunExecutable(builderPath, "-buildpacks", buildpacksPath)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrap(err, fmt.Sprintf("execution of '%s' failed", builderPath))
+		return errors.Wrapf(err, "execution of '%s' failed", builderPath)
 	}
 
 	utils.AppendEnv([]string{fmt.Sprintf("CNB_REGISTRY_AUTH=%s", string(cnbRegistryAuth))})
 	err = utils.RunExecutable(exporterPath, fmt.Sprintf("%s:%s", containerImage, containerImageTag), fmt.Sprintf("%s:latest", containerImage))
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
-		return errors.Wrap(err, fmt.Sprintf("execution of '%s' failed", exporterPath))
+		return errors.Wrapf(err, "execution of '%s' failed", exporterPath)
 	}
 
 	return nil
