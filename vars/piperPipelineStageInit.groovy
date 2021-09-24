@@ -109,7 +109,7 @@ import static com.sap.piper.Prerequisites.checkScript
      * take precedence over `customDefaults`.
      */
     'customDefaultsFromFiles'
- ])
+])
 
 /**
  * This stage initializes the pipeline run and prepares further execution.
