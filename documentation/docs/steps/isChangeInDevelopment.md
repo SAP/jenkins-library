@@ -19,7 +19,24 @@ The step `isChangeInDevelopment` returns a boolean value by setting the custom k
 
 If the change document is in status `in development` the key's value is set to `true`.
 
-If the change document is _**not**_ in status `in development` the key's value is set to `false`. Furthermore, `AbortException` is thrown and the pipeline fails. You can omit the exception by setting the configuration parameter `failIfStatusIsNotInDevelopment` to `false`.
+If the change document is _**not**_ in status `in development` the key's value is set to `false`. Furthermore, `AbortException` is thrown and the pipeline fails.
+
+```groovy
+// pipeline script
+  isChangeInDevelopment( script: this, failIfStatusIsNotInDevelopment: false )
+  ...
+```
+
+You can omit the exception by setting the configuration parameter `failIfStatusIsNotInDevelopment` to `false`.
+
+```groovy
+// pipeline script
+  isChangeInDevelopment( script: this, failIfStatusIsNotInDevelopment: false )
+
+  if(commonPipelineEnvironment.getValue( 'isChangeInDevelopment)' ) {
+    ...
+  }
+```
 
 ## ${docGenParameters}
 
@@ -55,6 +72,6 @@ steps:
       isChangeInDevelopment( script: this )
 
       transportRequestReqIDFromGit( script: this )
-      transportRequestUploadSOLMAN( script: this)
+      transportRequestUploadSOLMAN( script: this )
    }
 ```
