@@ -24,7 +24,6 @@ class PiperPipelineStageInitTest extends BasePiperTest {
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
     private JenkinsReadYamlRule jryr = new JenkinsReadYamlRule(this)
     private ExpectedException thrown = new ExpectedException()
-    private JenkinsFileExistsRule fileExistsRule = new JenkinsFileExistsRule(this, [])
 
     @Rule
     public RuleChain rules = Rules
@@ -33,7 +32,6 @@ class PiperPipelineStageInitTest extends BasePiperTest {
         .around(thrown)
         .around(jlr)
         .around(jsr)
-        .around(fileExistsRule)
 
     private List stepsCalled = []
     private Map  stepParams = [:]
@@ -136,7 +134,6 @@ class PiperPipelineStageInitTest extends BasePiperTest {
     @Test
     void testCustomStashSettings() {
         jryr.registerYaml('customStashSettings.yml',"Init: \n  unstash: source")
-        fileExistsRule.registerExistingFile('customStashSettings.yml')
 
         jsr.step.piperPipelineStageInit(
             script: nullScript,
