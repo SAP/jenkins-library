@@ -189,6 +189,10 @@ func runDetect(config detectExecuteScanOptions, utils detectUtils, influx *detec
 // Get proper error category
 func mapErrorCategory(exitCodeKey int) {
 	switch exitCodeKey {
+	case 0:
+		//In case detect exits successfully, we rely on the function 'postScanChecksAndReporting' to determine the error category
+		//hence this method doesnt need to set an error category or go to 'default' case
+		break
 	case 1:
 		log.SetErrorCategory(log.ErrorInfrastructure)
 	case 2:
