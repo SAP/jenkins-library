@@ -130,12 +130,12 @@ class PiperPipelineStageInitTest extends BasePiperTest {
 
         assertThat(stepsCalled, hasItems('checkout', 'setupCommonPipelineEnvironment', 'piperInitRunStageConfiguration', 'artifactPrepareVersion', 'pipelineStashFilesBeforeBuild'))
         assertThat(stepsCalled, not(hasItems('slackSendNotification')))
-
+        assertThat(nullScript.commonPipelineEnvironment.configuration.stageStashes.Init.unstash, is([]))
     }
 
     @Test
     void testCustomStashSettings() {
-        jryr.registerYaml('customStashSettings.yml',"unstash: source")
+        jryr.registerYaml('customStashSettings.yml',"Init: \n  unstash: source")
         fileExistsRule.registerExistingFile('customStashSettings.yml')
 
         jsr.step.piperPipelineStageInit(
@@ -148,7 +148,7 @@ class PiperPipelineStageInitTest extends BasePiperTest {
 
         assertThat(stepsCalled, hasItems('checkout', 'setupCommonPipelineEnvironment', 'piperInitRunStageConfiguration', 'artifactPrepareVersion', 'pipelineStashFilesBeforeBuild'))
         assertThat(stepsCalled, not(hasItems('slackSendNotification')))
-        assertThat(nullScript.commonPipelineEnvironment.configuration.stageStashes.unstash.toString(), is("source"))
+        assertThat(nullScript.commonPipelineEnvironment.configuration.stageStashes.Init.unstash, is("source"))
     }
 
     @Test
