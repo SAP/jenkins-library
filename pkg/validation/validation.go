@@ -7,8 +7,8 @@ import (
 
 	"github.com/go-playground/locales/en"
 	ut "github.com/go-playground/universal-translator"
-	valid "gopkg.in/go-playground/validator.v9"
-	en_translations "gopkg.in/go-playground/validator.v9/translations/en"
+	valid "github.com/go-playground/validator/v10"
+	en_translations "github.com/go-playground/validator/v10/translations/en"
 )
 
 type validation struct {
@@ -56,9 +56,19 @@ func registerTranslations(validator *valid.Validate, translator ut.Translator) e
 	}
 
 	err := validator.RegisterTranslation("oneof", translator, func(ut ut.Translator) error {
-		return ut.Add("oneof", "{0} must use the folowing values: {1}. ", true)
+		return ut.Add("oneof", "The {0} must use the folowing values: {1}. ", true)
 	}, func(ut ut.Translator, fe valid.FieldError) string {
 		t, _ := ut.T("oneof", fe.Field(), fe.Param())
+		return t
+	})
+	if err != nil {
+		return err
+	}
+	err = validator.RegisterTranslation("required_if", translator, func(ut ut.Translator) error {
+		return ut.Add("required_if", "The {0} is required as long as the {1} is {2}. ", true)
+	}, func(ut ut.Translator, fe valid.FieldError) string {
+		params := strings.Split(fe.Param(), " ")
+		t, _ := ut.T("required_if", fe.Field(), params[0], params[1])
 		return t
 	})
 	if err != nil {
