@@ -25,6 +25,23 @@ func TestNpmProject(t *testing.T) {
 	container.assertHasOutput(t, "failed to write image to the following tags: [test/not-found:0.0.1")
 }
 
+func TestZipPath(t *testing.T) {
+	t.Parallel()
+	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
+		Image:   "paketobuildpacks/builder:full",
+		User:    "cnb",
+		TestDir: []string{"testdata", "TestCnbIntegration", "zip"},
+	})
+
+	container.runScriptInsideContainer("touch not_a_zip")
+	container.whenRunningPiperCommand("cnbBuild", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", "test", "--path", "go.zip")
+
+	container.assertHasOutput(t, "running command: /cnb/lifecycle/detector")
+	container.assertHasOutput(t, "Installing Go")
+	container.assertHasOutput(t, "Paketo Go Build Buildpack")
+	container.assertHasOutput(t, "Saving test/not-found:0.0.1")
+}
+
 func TestNonZipPath(t *testing.T) {
 	t.Parallel()
 	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
