@@ -20,6 +20,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+var aTC, aUnit bool
+
 func gctsExecuteABAPUnitTests(config gctsExecuteABAPUnitTestsOptions, telemetryData *telemetry.CustomData) error {
 
 	// for http calls import  piperhttp "github.com/SAP/jenkins-library/pkg/http"
@@ -29,7 +31,7 @@ func gctsExecuteABAPUnitTests(config gctsExecuteABAPUnitTestsOptions, telemetryD
 
 	var changedObjects []objectstruct
 	var getObjectsErr, unitTestErr error
-
+	var aUnit bool
 	const localChangedObj = "LOCAL_CHANGED_OBJECTS"
 	const localChangedPckg = "LOCAL_CHANGED_PACKAGES"
 	const remoteChangedObj = "REMOTE_CHANGED_OBJECTS"
@@ -99,6 +101,16 @@ func gctsExecuteABAPUnitTests(config gctsExecuteABAPUnitTestsOptions, telemetryD
 
 	}
 
+	if aUnit {
+
+		log.Entry().Fatal("unit test have failed")
+
+	}
+
+	if aTC {
+
+		log.Entry().Fatal("atc checks have failed")
+	}
 	return unitTestErr
 
 }
@@ -491,6 +503,7 @@ func convertAtcToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client pipe
 
 				if priority < 3 {
 					unitErr.Severity = "error"
+					aTC = true
 
 				} else {
 
@@ -678,7 +691,7 @@ func executeATCV1(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Send
 	return nil
 }
 
-func executeUnitTestV1(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, objects []objectstruct) (error error) {
+func executeUnitTestV1(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, objects []objectstruct) error {
 
 	log.Entry().Info("execution of unit test has started...")
 
@@ -941,7 +954,6 @@ func convertUnitTestToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client
 	log.Entry().Info("conversion of unit test result to checkstyle started...")
 
 	var targetDir, FileName string
-
 	var unitTestResults Checkstyle
 	var unitFile file
 	var unitErr unitError
@@ -971,6 +983,7 @@ func convertUnitTestToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client
 
 		//syntax error use case
 		if program.Alerts.Alert.HasSyntaxErrors == "true" {
+			aUnit = true
 			unitErr.Severity = "error"
 			unitErr.Message = html.UnescapeString(program.Alerts.Alert.Title + " " + program.Alerts.Alert.Details.Detail.AttrText)
 			linestring := regexLine.FindString(program.Alerts.Alert.Stack.StackEntry.URI)
@@ -988,6 +1001,7 @@ func convertUnitTestToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client
 				if len(testMethod.Alerts.Alert) > 0 {
 					for _, testalert := range testMethod.Alerts.Alert {
 						unitErr.Severity = "error"
+						aUnit = true
 						for _, detail := range testalert.Details.Detail {
 							unitErr.Message = unitErr.Message + " " + detail.AttrText
 							for _, subdetail := range detail.Details.Detail {
@@ -1037,7 +1051,9 @@ func convertUnitTestToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client
 		return fmt.Errorf("handling unit test results failed: %w", writeErr)
 	}
 	log.Entry().Info("conversion of unit test result to checkstyle has finished.")
+
 	return nil
+
 }
 
 func startATCRun(config *gctsExecuteABAPUnitTestsOptions, client piperhttp.Sender, objects []objectstruct) (runId string, error error) {
