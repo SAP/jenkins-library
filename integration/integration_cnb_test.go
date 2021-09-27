@@ -33,7 +33,6 @@ func TestZipPath(t *testing.T) {
 		TestDir: []string{"testdata", "TestCnbIntegration", "zip"},
 	})
 
-	container.runScriptInsideContainer("touch not_a_zip")
 	container.whenRunningPiperCommand("cnbBuild", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", "test", "--path", "go.zip")
 
 	container.assertHasOutput(t, "running command: /cnb/lifecycle/detector")
@@ -50,10 +49,9 @@ func TestNonZipPath(t *testing.T) {
 		TestDir: []string{"testdata", "TestMtaIntegration", "npm"},
 	})
 
-	container.runScriptInsideContainer("touch not_a_zip")
-	container.whenRunningPiperCommand("cnbBuild", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", "test", "--path", "not_a_zip")
+	container.whenRunningPiperCommand("cnbBuild", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", "test", "--path", "mta.yaml")
 
-	container.assertHasOutput(t, "step execution failed - Copying  'not_a_zip' into '/workspace' failed: application path must be a directory or zip")
+	container.assertHasOutput(t, "Copying  'mta.yaml' into '/workspace' failed: application path must be a directory or zip")
 }
 
 func TestNpmCustomBuildpacksFullProject(t *testing.T) {
