@@ -84,6 +84,8 @@ spec:
         mandatoryIf:
         - name: param1
           value: value1
+        - name: param2
+          value: value2
 `
 	var r string
 	switch name {

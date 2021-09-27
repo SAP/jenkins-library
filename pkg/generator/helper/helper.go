@@ -2,6 +2,7 @@ package helper
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -485,6 +486,14 @@ func ProcessMetaFiles(metadataFiles []string, targetDir string, stepHelperData S
 		stepName := stepData.Metadata.Name
 		fmt.Printf("Step name: %v\n", stepName)
 		allSteps.Steps = append(allSteps.Steps, stepName)
+
+		for _, parameter := range stepData.Spec.Inputs.Parameters {
+			for _, mandatoryIfCase := range parameter.MandatoryIf {
+				if mandatoryIfCase.Name == "" || mandatoryIfCase.Value == "" {
+					return errors.New("invalid mandatoryIf option")
+				}
+			}
+		}
 
 		osImport := false
 		osImport, err = setDefaultParameters(&stepData)

@@ -22,7 +22,7 @@ type testStepOptions struct {
 	Param0 string `json:"param0,omitempty"`
 	Param1 string `json:"param1,omitempty" validate:"oneof=value1 value2 value3"`
 	Param2 string `json:"param2,omitempty" validate:"required_if=Param1 value1"`
-	Param3 string `json:"param3,omitempty" validate:"oneof=value1 value2 value3,required_if=Param1 value1"`
+	Param3 string `json:"param3,omitempty" validate:"oneof=value1 value2 value3,required_if=Param1 value1 Param2 value2"`
 }
 
 
