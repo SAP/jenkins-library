@@ -56,7 +56,7 @@ func registerTranslations(validator *valid.Validate, translator ut.Translator) e
 	}
 
 	err := validator.RegisterTranslation("oneof", translator, func(ut ut.Translator) error {
-		return ut.Add("oneof", "The {0} must use the folowing values: {1}. ", true)
+		return ut.Add("oneof", "The {0} must use the following values: {1}. ", true)
 	}, func(ut ut.Translator, fe valid.FieldError) string {
 		t, _ := ut.T("oneof", fe.Field(), fe.Param())
 		return t
