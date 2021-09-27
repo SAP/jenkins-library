@@ -161,9 +161,9 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Name: "jenkinsUrl",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/jenkins", "$(vaultBasePath)/$(vaultPipelineName)/jenkins", "$(vaultBasePath)/GROUP-SECRETS/jenkins"},
-								Type:  "vaultSecret",
+								Name:    "jenkinsVaultSecret",
+								Type:    "vaultSecret",
+								Default: "jenkins",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -185,9 +185,9 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Name: "jenkinsUsername",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/jenkins", "$(vaultBasePath)/$(vaultPipelineName)/jenkins", "$(vaultBasePath)/GROUP-SECRETS/jenkins"},
-								Type:  "vaultSecret",
+								Name:    "jenkinsVaultSecret",
+								Type:    "vaultSecret",
+								Default: "jenkins",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -200,9 +200,9 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Name: "jenkinsToken",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/jenkins", "$(vaultBasePath)/$(vaultPipelineName)/jenkins", "$(vaultBasePath)/GROUP-SECRETS/jenkins"},
-								Type:  "vaultSecret",
+								Name:    "jenkinsVaultSecret",
+								Type:    "vaultSecret",
+								Default: "jenkins",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -260,9 +260,8 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Name: "adoPersonalAccessToken",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/jenkins", "$(vaultBasePath)/$(vaultPipelineName)/jenkins", "$(vaultBasePath)/GROUP-SECRETS/jenkins"},
-								Type:  "vaultSecret",
+								Name: "",
+								Type: "vaultSecret",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},

@@ -2,8 +2,10 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"path"
 	"strings"
@@ -19,6 +21,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/ghodss/yaml"
+	"github.com/pkg/errors"
 )
 
 const templateMtaYml = `_schema-version: "3.1"
@@ -148,6 +151,11 @@ func runMtaBuild(config mtaBuildOptions,
 		return err
 	}
 
+	err = handleActiveProfileUpdate(config, utils)
+	if err != nil {
+		return err
+	}
+
 	err = utils.SetNpmRegistries(config.DefaultNpmRegistry)
 
 	mtaYamlFile := "mta.yaml"
@@ -233,7 +241,54 @@ func runMtaBuild(config mtaBuildOptions,
 			return err
 		}
 	}
+
+	if config.Publish {
+		log.Entry().Infof("publish detected")
+		if (len(config.MtaDeploymentRepositoryPassword) > 0) && (len(config.MtaDeploymentRepositoryUser) > 0) &&
+			(len(config.MtaDeploymentRepositoryURL) > 0) {
+			if (len(config.MtarGroup) > 0) && (len(config.Version) > 0) {
+				downloadClient := &piperhttp.Client{}
+
+				credentialsEncoded := "Basic " + base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", config.MtaDeploymentRepositoryUser, config.MtaDeploymentRepositoryPassword)))
+				headers := http.Header{}
+				headers.Add("Authorization", credentialsEncoded)
+
+				config.MtarGroup = strings.ReplaceAll(config.MtarGroup, ".", "/")
+
+				mtarArtifactName := mtarName
+
+				mtarArtifactName = strings.ReplaceAll(mtarArtifactName, ".mtar", "")
+				mtarArtifactName = strings.ReplaceAll(mtarArtifactName, ".", "/")
+
+				config.MtaDeploymentRepositoryURL += config.MtarGroup + "/" + mtarArtifactName + "/" + config.Version + "/" + fmt.Sprintf("%v-%v.%v", mtarArtifactName, config.Version, "mtar")
+
+				commonPipelineEnvironment.custom.mtarPublishedURL = config.MtaDeploymentRepositoryURL
+
+				log.Entry().Infof("pushing mtar artifact to repository : %s", config.MtaDeploymentRepositoryURL)
+
+				_, httpErr := downloadClient.UploadRequest(http.MethodPut, config.MtaDeploymentRepositoryURL, mtarName, mtarName, headers, nil)
+				if httpErr != nil {
+					return errors.Wrap(err, "failed to upload mtar to repository")
+				}
+			} else {
+				return errors.New("mtarGroup, version not found and must be present")
+
+			}
+
+		} else {
+			return errors.New("mtaDeploymentRepositoryUser, mtaDeploymentRepositoryPassword and mtaDeploymentRepositoryURL not found , must be present")
+		}
+	} else {
+		log.Entry().Infof("no publish detected, skipping upload of mtar artifact")
+	}
 	return err
+}
+
+func handleActiveProfileUpdate(config mtaBuildOptions, utils mtaBuildUtils) error {
+	if len(config.Profiles) > 0 {
+		return maven.UpdateActiveProfileInSettingsXML(config.Profiles, utils)
+	}
+	return nil
 }
 
 func installMavenArtifacts(utils mtaBuildUtils, config mtaBuildOptions) error {

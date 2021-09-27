@@ -278,9 +278,9 @@ func protecodeExecuteScanMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/docker-config", "$(vaultBasePath)/$(vaultPipelineName)/docker-config", "$(vaultBasePath)/GROUP-SECRETS/docker-config"},
-								Type:  "vaultSecretFile",
+								Name:    "dockerConfigFileVaultSecretName",
+								Type:    "vaultSecretFile",
+								Default: "docker-config",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -389,9 +389,9 @@ func protecodeExecuteScanMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/protecode", "$(vaultBasePath)/$(vaultPipelineName)/protecode", "$(vaultBasePath)/GROUP-SECRETS/protecode"},
-								Type:  "vaultSecret",
+								Name:    "protecodeVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "protecode",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -410,9 +410,9 @@ func protecodeExecuteScanMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/protecode", "$(vaultBasePath)/$(vaultPipelineName)/protecode", "$(vaultBasePath)/GROUP-SECRETS/protecode"},
-								Type:  "vaultSecret",
+								Name:    "protecodeVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "protecode",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},

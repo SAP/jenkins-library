@@ -1,4 +1,6 @@
+//go:build integration
 // +build integration
+
 // can be execute with go test -tags=integration ./integration/...
 
 package main
@@ -21,6 +23,35 @@ func TestNpmProject(t *testing.T) {
 	container.assertHasOutput(t, "Paketo NPM Start Buildpack")
 	container.assertHasOutput(t, "Saving test/not-found:0.0.1")
 	container.assertHasOutput(t, "failed to write image to the following tags: [test/not-found:0.0.1")
+}
+
+func TestZipPath(t *testing.T) {
+	t.Parallel()
+	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
+		Image:   "paketobuildpacks/builder:full",
+		User:    "cnb",
+		TestDir: []string{"testdata", "TestCnbIntegration", "zip"},
+	})
+
+	container.whenRunningPiperCommand("cnbBuild", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", "test", "--path", "go.zip")
+
+	container.assertHasOutput(t, "running command: /cnb/lifecycle/detector")
+	container.assertHasOutput(t, "Installing Go")
+	container.assertHasOutput(t, "Paketo Go Build Buildpack")
+	container.assertHasOutput(t, "Saving test/not-found:0.0.1")
+}
+
+func TestNonZipPath(t *testing.T) {
+	t.Parallel()
+	container := givenThisContainer(t, IntegrationTestDockerExecRunnerBundle{
+		Image:   "paketobuildpacks/builder:full",
+		User:    "cnb",
+		TestDir: []string{"testdata", "TestMtaIntegration", "npm"},
+	})
+
+	container.whenRunningPiperCommand("cnbBuild", "--containerImageName", "not-found", "--containerImageTag", "0.0.1", "--containerRegistryUrl", "test", "--path", "mta.yaml")
+
+	container.assertHasOutput(t, "Copying  'mta.yaml' into '/workspace' failed: application path must be a directory or zip")
 }
 
 func TestNpmCustomBuildpacksFullProject(t *testing.T) {

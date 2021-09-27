@@ -378,9 +378,9 @@ func artifactPrepareVersionMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/gitHttpsCredential", "$(vaultBasePath)/$(vaultPipelineName)/gitHttpsCredential", "$(vaultBasePath)/GROUP-SECRETS/gitHttpsCredential"},
-								Type:  "vaultSecret",
+								Name:    "gitHttpsCredentialVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "gitHttpsCredential",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -435,9 +435,9 @@ func artifactPrepareVersionMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/gitHttpsCredential", "$(vaultBasePath)/$(vaultPipelineName)/gitHttpsCredential", "$(vaultBasePath)/GROUP-SECRETS/gitHttpsCredential"},
-								Type:  "vaultSecret",
+								Name:    "gitHttpsCredentialVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "gitHttpsCredential",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},

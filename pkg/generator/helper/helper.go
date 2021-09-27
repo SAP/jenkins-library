@@ -182,11 +182,11 @@ func {{.FlagsFunc}}(cmd *cobra.Command, stepConfig *{{.StepName}}Options) {
 								{{- if .Param }}
 								Param: "{{ .Param }}",
 								{{- end }}
-								{{- if  gt (len .Paths) 0 }}
-								Paths:  []string{{ "{" }}{{ range $_, $path := .Paths }}"{{$path}}",{{ end }}{{"}"}},
-								{{- end }}
 								{{- if .Type }}
 								Type: "{{ .Type }}",
+								{{- if .Default }}
+								Default: "{{ .Default }}",
+								{{- end}}
 								{{- end }}
 							{{ "}" }},
 							{{- nindent 24 ""}}
