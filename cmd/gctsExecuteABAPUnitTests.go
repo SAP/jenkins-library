@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"net/http/cookiejar"
 	"regexp"
@@ -238,6 +239,7 @@ func convertAtcToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client pipe
 	var unitErr unitError
 	var readableSourceFormat bool
 	var linepointer int
+	var splittedfilecontent []string
 
 	repositoryLayout, layouterr := getRepositoryLayout(config, client)
 	if layouterr != nil {
@@ -363,7 +365,23 @@ func convertAtcToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client pipe
 									return
 								}
 								filecontent := string(rawfilecontent)
-								splittedfilecontent := strings.Split(filecontent, "\n")
+								gophers := 10
+								for i := 0; i < len(filecontent); i = i + len(filecontent)/gophers {
+									chunk := int(math.Min(float64(i+len(filecontent)/gophers), float64(len(filecontent))))
+									xFiles := filecontent[i:chunk]
+									splittedfilecontent := strings.Split(xFiles, "\n")
+									for line, linecontent := range splittedfilecontent {
+
+										if strings.Contains(linecontent, "protected section.") {
+											linepointer = line
+											break
+										}
+
+									}
+
+								}
+
+								//splittedfilecontent := strings.Split(filecontent, "\n")
 								for line, linecontent := range splittedfilecontent {
 
 									if strings.Contains(linecontent, "protected section.") {
@@ -406,15 +424,22 @@ func convertAtcToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client pipe
 									return
 								}
 								filecontent := string(rawfilecontent)
-								splittedfilecontent := strings.Split(filecontent, "\n")
-								for line, linecontent := range splittedfilecontent {
+								gophers := 10
+								for i := 0; i < len(filecontent); i = i + len(filecontent)/gophers {
+									chunk := int(math.Min(float64(i+len(filecontent)/gophers), float64(len(filecontent))))
+									xFiles := filecontent[i:chunk]
+									splittedfilecontent := strings.Split(xFiles, "\n")
+									for line, linecontent := range splittedfilecontent {
 
-									if strings.Contains(linecontent, "method"+" "+subObject) {
-										linepointer = line
-										break
+										if strings.Contains(linecontent, "method"+" "+subObject) {
+											linepointer = line
+											break
+										}
+
 									}
 
 								}
+
 								regexLine := regexp.MustCompile(`.start=\d*`)
 								linestring := regexLine.FindString(atcworklist.Location)
 								if linestring != "" {
@@ -445,15 +470,22 @@ func convertAtcToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client pipe
 									return
 								}
 								filecontent := string(rawfilecontent)
-								splittedfilecontent := strings.Split(filecontent, "\n")
-								for line, linecontent := range splittedfilecontent {
+								gophers := 10
+								for i := 0; i < len(filecontent); i = i + len(filecontent)/gophers {
+									chunk := int(math.Min(float64(i+len(filecontent)/gophers), float64(len(filecontent))))
+									xFiles := filecontent[i:chunk]
+									splittedfilecontent := strings.Split(xFiles, "\n")
+									for line, linecontent := range splittedfilecontent {
 
-									if strings.Contains(linecontent, "private section.") {
-										linepointer = line
-										break
+										if strings.Contains(linecontent, "private section.") {
+											linepointer = line
+											break
+										}
+
 									}
 
 								}
+
 								regexLine := regexp.MustCompile(`.start=\d*`)
 								linestring := regexLine.FindString(atcworklist.Location)
 								if linestring != "" {
