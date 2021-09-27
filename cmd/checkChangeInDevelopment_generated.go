@@ -16,12 +16,12 @@ import (
 )
 
 type checkChangeInDevelopmentOptions struct {
-	Endpoint                       string   `json:"endpoint,omitempty" validate:""`
-	Username                       string   `json:"username,omitempty" validate:""`
-	Password                       string   `json:"password,omitempty" validate:""`
-	ChangeDocumentID               string   `json:"changeDocumentId,omitempty" validate:""`
-	FailIfStatusIsNotInDevelopment bool     `json:"failIfStatusIsNotInDevelopment,omitempty" validate:""`
-	ClientOpts                     []string `json:"clientOpts,omitempty" validate:""`
+	Endpoint                       string   `json:"endpoint,omitempty"`
+	Username                       string   `json:"username,omitempty"`
+	Password                       string   `json:"password,omitempty"`
+	ChangeDocumentID               string   `json:"changeDocumentId,omitempty"`
+	FailIfStatusIsNotInDevelopment bool     `json:"failIfStatusIsNotInDevelopment,omitempty"`
+	ClientOpts                     []string `json:"clientOpts,omitempty"`
 }
 
 // CheckChangeInDevelopmentCommand Checks if a certain change is in status 'in development'
@@ -42,19 +42,20 @@ func CheckChangeInDevelopmentCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			validation, err := validation.New()
-			if err != nil {
-				return err
-			}
-			if err := validation.ValidateStruct(stepConfig); err != nil {
-				return err
-			}
-
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
+
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
 
 			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {

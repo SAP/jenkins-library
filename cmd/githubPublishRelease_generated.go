@@ -16,21 +16,21 @@ import (
 )
 
 type githubPublishReleaseOptions struct {
-	AddClosedIssues       bool     `json:"addClosedIssues,omitempty" validate:""`
-	AddDeltaToLastRelease bool     `json:"addDeltaToLastRelease,omitempty" validate:""`
-	APIURL                string   `json:"apiUrl,omitempty" validate:""`
-	AssetPath             string   `json:"assetPath,omitempty" validate:""`
-	Commitish             string   `json:"commitish,omitempty" validate:""`
-	ExcludeLabels         []string `json:"excludeLabels,omitempty" validate:""`
-	Labels                []string `json:"labels,omitempty" validate:""`
-	Owner                 string   `json:"owner,omitempty" validate:""`
-	PreRelease            bool     `json:"preRelease,omitempty" validate:""`
-	ReleaseBodyHeader     string   `json:"releaseBodyHeader,omitempty" validate:""`
-	Repository            string   `json:"repository,omitempty" validate:""`
-	ServerURL             string   `json:"serverUrl,omitempty" validate:""`
-	Token                 string   `json:"token,omitempty" validate:""`
-	UploadURL             string   `json:"uploadUrl,omitempty" validate:""`
-	Version               string   `json:"version,omitempty" validate:""`
+	AddClosedIssues       bool     `json:"addClosedIssues,omitempty"`
+	AddDeltaToLastRelease bool     `json:"addDeltaToLastRelease,omitempty"`
+	APIURL                string   `json:"apiUrl,omitempty"`
+	AssetPath             string   `json:"assetPath,omitempty"`
+	Commitish             string   `json:"commitish,omitempty"`
+	ExcludeLabels         []string `json:"excludeLabels,omitempty"`
+	Labels                []string `json:"labels,omitempty"`
+	Owner                 string   `json:"owner,omitempty"`
+	PreRelease            bool     `json:"preRelease,omitempty"`
+	ReleaseBodyHeader     string   `json:"releaseBodyHeader,omitempty"`
+	Repository            string   `json:"repository,omitempty"`
+	ServerURL             string   `json:"serverUrl,omitempty"`
+	Token                 string   `json:"token,omitempty"`
+	UploadURL             string   `json:"uploadUrl,omitempty"`
+	Version               string   `json:"version,omitempty"`
 }
 
 // GithubPublishReleaseCommand Publish a release in GitHub
@@ -60,19 +60,20 @@ The result looks like
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			validation, err := validation.New()
-			if err != nil {
-				return err
-			}
-			if err := validation.ValidateStruct(stepConfig); err != nil {
-				return err
-			}
-
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
+
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
 
 			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {

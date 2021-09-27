@@ -18,25 +18,25 @@ import (
 )
 
 type protecodeExecuteScanOptions struct {
-	ExcludeCVEs                 string `json:"excludeCVEs,omitempty" validate:""`
-	FailOnSevereVulnerabilities bool   `json:"failOnSevereVulnerabilities,omitempty" validate:""`
-	ScanImage                   string `json:"scanImage,omitempty" validate:""`
-	DockerRegistryURL           string `json:"dockerRegistryUrl,omitempty" validate:""`
-	DockerConfigJSON            string `json:"dockerConfigJSON,omitempty" validate:""`
+	ExcludeCVEs                 string `json:"excludeCVEs,omitempty"`
+	FailOnSevereVulnerabilities bool   `json:"failOnSevereVulnerabilities,omitempty"`
+	ScanImage                   string `json:"scanImage,omitempty"`
+	DockerRegistryURL           string `json:"dockerRegistryUrl,omitempty"`
+	DockerConfigJSON            string `json:"dockerConfigJSON,omitempty"`
 	CleanupMode                 string `json:"cleanupMode,omitempty" validate:"oneof=none binary complete"`
-	FilePath                    string `json:"filePath,omitempty" validate:""`
-	IncludeLayers               bool   `json:"includeLayers,omitempty" validate:""`
-	TimeoutMinutes              string `json:"timeoutMinutes,omitempty" validate:""`
-	ServerURL                   string `json:"serverUrl,omitempty" validate:""`
-	ReportFileName              string `json:"reportFileName,omitempty" validate:""`
-	FetchURL                    string `json:"fetchUrl,omitempty" validate:""`
-	Group                       string `json:"group,omitempty" validate:""`
-	VerifyOnly                  bool   `json:"verifyOnly,omitempty" validate:""`
-	ReplaceProductID            int    `json:"replaceProductId,omitempty" validate:""`
-	Username                    string `json:"username,omitempty" validate:""`
-	Password                    string `json:"password,omitempty" validate:""`
-	Version                     string `json:"version,omitempty" validate:""`
-	PullRequestName             string `json:"pullRequestName,omitempty" validate:""`
+	FilePath                    string `json:"filePath,omitempty"`
+	IncludeLayers               bool   `json:"includeLayers,omitempty"`
+	TimeoutMinutes              string `json:"timeoutMinutes,omitempty"`
+	ServerURL                   string `json:"serverUrl,omitempty"`
+	ReportFileName              string `json:"reportFileName,omitempty"`
+	FetchURL                    string `json:"fetchUrl,omitempty"`
+	Group                       string `json:"group,omitempty"`
+	VerifyOnly                  bool   `json:"verifyOnly,omitempty"`
+	ReplaceProductID            int    `json:"replaceProductId,omitempty"`
+	Username                    string `json:"username,omitempty"`
+	Password                    string `json:"password,omitempty"`
+	Version                     string `json:"version,omitempty"`
+	PullRequestName             string `json:"pullRequestName,omitempty"`
 }
 
 type protecodeExecuteScanInflux struct {
@@ -112,19 +112,20 @@ func ProtecodeExecuteScanCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			validation, err := validation.New()
-			if err != nil {
-				return err
-			}
-			if err := validation.ValidateStruct(stepConfig); err != nil {
-				return err
-			}
-
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
+
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
 
 			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {

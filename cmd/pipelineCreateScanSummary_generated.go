@@ -16,9 +16,9 @@ import (
 )
 
 type pipelineCreateScanSummaryOptions struct {
-	FailedOnly     bool   `json:"failedOnly,omitempty" validate:""`
-	OutputFilePath string `json:"outputFilePath,omitempty" validate:""`
-	PipelineLink   string `json:"pipelineLink,omitempty" validate:""`
+	FailedOnly     bool   `json:"failedOnly,omitempty"`
+	OutputFilePath string `json:"outputFilePath,omitempty"`
+	PipelineLink   string `json:"pipelineLink,omitempty"`
 }
 
 // PipelineCreateScanSummaryCommand Collect scan result information anc create a summary report
@@ -41,19 +41,20 @@ It is for example used to create a markdown file which can be used to create a G
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			validation, err := validation.New()
-			if err != nil {
-				return err
-			}
-			if err := validation.ValidateStruct(stepConfig); err != nil {
-				return err
-			}
-
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
+
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
 
 			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {

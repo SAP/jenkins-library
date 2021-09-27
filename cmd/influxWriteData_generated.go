@@ -16,12 +16,12 @@ import (
 )
 
 type influxWriteDataOptions struct {
-	ServerURL    string `json:"serverUrl,omitempty" validate:""`
-	AuthToken    string `json:"authToken,omitempty" validate:""`
-	Bucket       string `json:"bucket,omitempty" validate:""`
-	Organization string `json:"organization,omitempty" validate:""`
-	DataMap      string `json:"dataMap,omitempty" validate:""`
-	DataMapTags  string `json:"dataMapTags,omitempty" validate:""`
+	ServerURL    string `json:"serverUrl,omitempty"`
+	AuthToken    string `json:"authToken,omitempty"`
+	Bucket       string `json:"bucket,omitempty"`
+	Organization string `json:"organization,omitempty"`
+	DataMap      string `json:"dataMap,omitempty"`
+	DataMapTags  string `json:"dataMapTags,omitempty"`
 }
 
 // InfluxWriteDataCommand Writes metrics to influxdb
@@ -42,19 +42,20 @@ func InfluxWriteDataCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			validation, err := validation.New()
-			if err != nil {
-				return err
-			}
-			if err := validation.ValidateStruct(stepConfig); err != nil {
-				return err
-			}
-
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
+
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
 
 			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {

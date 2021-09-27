@@ -16,14 +16,14 @@ import (
 )
 
 type githubCheckBranchProtectionOptions struct {
-	APIURL                       string   `json:"apiUrl,omitempty" validate:""`
-	Branch                       string   `json:"branch,omitempty" validate:""`
-	Owner                        string   `json:"owner,omitempty" validate:""`
-	Repository                   string   `json:"repository,omitempty" validate:""`
-	RequiredChecks               []string `json:"requiredChecks,omitempty" validate:""`
-	RequireEnforceAdmins         bool     `json:"requireEnforceAdmins,omitempty" validate:""`
-	RequiredApprovingReviewCount int      `json:"requiredApprovingReviewCount,omitempty" validate:""`
-	Token                        string   `json:"token,omitempty" validate:""`
+	APIURL                       string   `json:"apiUrl,omitempty"`
+	Branch                       string   `json:"branch,omitempty"`
+	Owner                        string   `json:"owner,omitempty"`
+	Repository                   string   `json:"repository,omitempty"`
+	RequiredChecks               []string `json:"requiredChecks,omitempty"`
+	RequireEnforceAdmins         bool     `json:"requireEnforceAdmins,omitempty"`
+	RequiredApprovingReviewCount int      `json:"requiredApprovingReviewCount,omitempty"`
+	Token                        string   `json:"token,omitempty"`
 }
 
 // GithubCheckBranchProtectionCommand Check branch protection of a GitHub branch
@@ -46,19 +46,20 @@ It can for example be used to verify if certain status checks are mandatory. Thi
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			validation, err := validation.New()
-			if err != nil {
-				return err
-			}
-			if err := validation.ValidateStruct(stepConfig); err != nil {
-				return err
-			}
-
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
+
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
 
 			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {

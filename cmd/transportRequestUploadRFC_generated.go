@@ -18,19 +18,19 @@ import (
 )
 
 type transportRequestUploadRFCOptions struct {
-	Endpoint                   string `json:"endpoint,omitempty" validate:""`
-	Instance                   string `json:"instance,omitempty" validate:""`
-	Username                   string `json:"username,omitempty" validate:""`
-	Password                   string `json:"password,omitempty" validate:""`
-	Client                     string `json:"client,omitempty" validate:""`
-	ApplicationName            string `json:"applicationName,omitempty" validate:""`
-	ApplicationDescription     string `json:"applicationDescription,omitempty" validate:""`
-	AbapPackage                string `json:"abapPackage,omitempty" validate:""`
-	ApplicationURL             string `json:"applicationUrl,omitempty" validate:""`
-	CodePage                   string `json:"codePage,omitempty" validate:""`
-	AcceptUnixStyleLineEndings bool   `json:"acceptUnixStyleLineEndings,omitempty" validate:""`
-	FailUploadOnWarning        bool   `json:"failUploadOnWarning,omitempty" validate:""`
-	TransportRequestID         string `json:"transportRequestId,omitempty" validate:""`
+	Endpoint                   string `json:"endpoint,omitempty"`
+	Instance                   string `json:"instance,omitempty"`
+	Username                   string `json:"username,omitempty"`
+	Password                   string `json:"password,omitempty"`
+	Client                     string `json:"client,omitempty"`
+	ApplicationName            string `json:"applicationName,omitempty"`
+	ApplicationDescription     string `json:"applicationDescription,omitempty"`
+	AbapPackage                string `json:"abapPackage,omitempty"`
+	ApplicationURL             string `json:"applicationUrl,omitempty"`
+	CodePage                   string `json:"codePage,omitempty"`
+	AcceptUnixStyleLineEndings bool   `json:"acceptUnixStyleLineEndings,omitempty"`
+	FailUploadOnWarning        bool   `json:"failUploadOnWarning,omitempty"`
+	TransportRequestID         string `json:"transportRequestId,omitempty"`
 }
 
 type transportRequestUploadRFCCommonPipelineEnvironment struct {
@@ -80,19 +80,20 @@ func TransportRequestUploadRFCCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			validation, err := validation.New()
-			if err != nil {
-				return err
-			}
-			if err := validation.ValidateStruct(stepConfig); err != nil {
-				return err
-			}
-
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
+
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
 
 			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {

@@ -16,14 +16,14 @@ import (
 )
 
 type cloudFoundryCreateServiceKeyOptions struct {
-	CfAPIEndpoint      string `json:"cfApiEndpoint,omitempty" validate:""`
-	Username           string `json:"username,omitempty" validate:""`
-	Password           string `json:"password,omitempty" validate:""`
-	CfOrg              string `json:"cfOrg,omitempty" validate:""`
-	CfSpace            string `json:"cfSpace,omitempty" validate:""`
-	CfServiceInstance  string `json:"cfServiceInstance,omitempty" validate:""`
-	CfServiceKeyName   string `json:"cfServiceKeyName,omitempty" validate:""`
-	CfServiceKeyConfig string `json:"cfServiceKeyConfig,omitempty" validate:""`
+	CfAPIEndpoint      string `json:"cfApiEndpoint,omitempty"`
+	Username           string `json:"username,omitempty"`
+	Password           string `json:"password,omitempty"`
+	CfOrg              string `json:"cfOrg,omitempty"`
+	CfSpace            string `json:"cfSpace,omitempty"`
+	CfServiceInstance  string `json:"cfServiceInstance,omitempty"`
+	CfServiceKeyName   string `json:"cfServiceKeyName,omitempty"`
+	CfServiceKeyConfig string `json:"cfServiceKeyConfig,omitempty"`
 }
 
 // CloudFoundryCreateServiceKeyCommand cloudFoundryCreateServiceKey
@@ -44,19 +44,20 @@ func CloudFoundryCreateServiceKeyCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			validation, err := validation.New()
-			if err != nil {
-				return err
-			}
-			if err := validation.ValidateStruct(stepConfig); err != nil {
-				return err
-			}
-
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
+
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
 
 			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {

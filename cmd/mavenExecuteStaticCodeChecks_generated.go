@@ -16,19 +16,19 @@ import (
 )
 
 type mavenExecuteStaticCodeChecksOptions struct {
-	SpotBugs                     bool     `json:"spotBugs,omitempty" validate:""`
-	Pmd                          bool     `json:"pmd,omitempty" validate:""`
-	MavenModulesExcludes         []string `json:"mavenModulesExcludes,omitempty" validate:""`
-	SpotBugsExcludeFilterFile    string   `json:"spotBugsExcludeFilterFile,omitempty" validate:""`
-	SpotBugsIncludeFilterFile    string   `json:"spotBugsIncludeFilterFile,omitempty" validate:""`
-	SpotBugsMaxAllowedViolations int      `json:"spotBugsMaxAllowedViolations,omitempty" validate:""`
-	PmdFailurePriority           int      `json:"pmdFailurePriority,omitempty" validate:""`
-	PmdMaxAllowedViolations      int      `json:"pmdMaxAllowedViolations,omitempty" validate:""`
-	ProjectSettingsFile          string   `json:"projectSettingsFile,omitempty" validate:""`
-	GlobalSettingsFile           string   `json:"globalSettingsFile,omitempty" validate:""`
-	M2Path                       string   `json:"m2Path,omitempty" validate:""`
-	LogSuccessfulMavenTransfers  bool     `json:"logSuccessfulMavenTransfers,omitempty" validate:""`
-	InstallArtifacts             bool     `json:"installArtifacts,omitempty" validate:""`
+	SpotBugs                     bool     `json:"spotBugs,omitempty"`
+	Pmd                          bool     `json:"pmd,omitempty"`
+	MavenModulesExcludes         []string `json:"mavenModulesExcludes,omitempty"`
+	SpotBugsExcludeFilterFile    string   `json:"spotBugsExcludeFilterFile,omitempty"`
+	SpotBugsIncludeFilterFile    string   `json:"spotBugsIncludeFilterFile,omitempty"`
+	SpotBugsMaxAllowedViolations int      `json:"spotBugsMaxAllowedViolations,omitempty"`
+	PmdFailurePriority           int      `json:"pmdFailurePriority,omitempty"`
+	PmdMaxAllowedViolations      int      `json:"pmdMaxAllowedViolations,omitempty"`
+	ProjectSettingsFile          string   `json:"projectSettingsFile,omitempty"`
+	GlobalSettingsFile           string   `json:"globalSettingsFile,omitempty"`
+	M2Path                       string   `json:"m2Path,omitempty"`
+	LogSuccessfulMavenTransfers  bool     `json:"logSuccessfulMavenTransfers,omitempty"`
+	InstallArtifacts             bool     `json:"installArtifacts,omitempty"`
 }
 
 // MavenExecuteStaticCodeChecksCommand Execute static code checks for Maven based projects. The plugins SpotBugs and PMD are used.
@@ -56,19 +56,20 @@ For PMD the failure priority and the max allowed violations are configurable via
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			validation, err := validation.New()
-			if err != nil {
-				return err
-			}
-			if err := validation.ValidateStruct(stepConfig); err != nil {
-				return err
-			}
-
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
+
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
 
 			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {

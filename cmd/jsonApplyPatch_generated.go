@@ -16,9 +16,9 @@ import (
 )
 
 type jsonApplyPatchOptions struct {
-	Input  string `json:"input,omitempty" validate:""`
-	Patch  string `json:"patch,omitempty" validate:""`
-	Output string `json:"output,omitempty" validate:""`
+	Input  string `json:"input,omitempty"`
+	Patch  string `json:"patch,omitempty"`
+	Output string `json:"output,omitempty"`
 }
 
 // JsonApplyPatchCommand Patches a json with a patch file
@@ -40,19 +40,20 @@ This step can, e.g., be used if there is a json schema which needs to be patched
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			validation, err := validation.New()
-			if err != nil {
-				return err
-			}
-			if err := validation.ValidateStruct(stepConfig); err != nil {
-				return err
-			}
-
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
+
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
 
 			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {

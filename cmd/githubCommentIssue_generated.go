@@ -16,12 +16,12 @@ import (
 )
 
 type githubCommentIssueOptions struct {
-	APIURL     string `json:"apiUrl,omitempty" validate:""`
-	Body       string `json:"body,omitempty" validate:""`
-	Number     int    `json:"number,omitempty" validate:""`
-	Owner      string `json:"owner,omitempty" validate:""`
-	Repository string `json:"repository,omitempty" validate:""`
-	Token      string `json:"token,omitempty" validate:""`
+	APIURL     string `json:"apiUrl,omitempty"`
+	Body       string `json:"body,omitempty"`
+	Number     int    `json:"number,omitempty"`
+	Owner      string `json:"owner,omitempty"`
+	Repository string `json:"repository,omitempty"`
+	Token      string `json:"token,omitempty"`
 }
 
 // GithubCommentIssueCommand Comment on GitHub issues and pull requests.
@@ -45,19 +45,20 @@ This comes in very handy when you want to make developers aware of certain thing
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			validation, err := validation.New()
-			if err != nil {
-				return err
-			}
-			if err := validation.ValidateStruct(stepConfig); err != nil {
-				return err
-			}
-
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
+
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
 
 			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {

@@ -18,17 +18,17 @@ import (
 )
 
 type mtaBuildOptions struct {
-	MtarName            string `json:"mtarName,omitempty" validate:""`
-	Extensions          string `json:"extensions,omitempty" validate:""`
+	MtarName            string `json:"mtarName,omitempty"`
+	Extensions          string `json:"extensions,omitempty"`
 	Platform            string `json:"platform,omitempty" validate:"oneof=CF NEO XSA"`
-	ApplicationName     string `json:"applicationName,omitempty" validate:""`
-	Source              string `json:"source,omitempty" validate:""`
-	Target              string `json:"target,omitempty" validate:""`
-	DefaultNpmRegistry  string `json:"defaultNpmRegistry,omitempty" validate:""`
-	ProjectSettingsFile string `json:"projectSettingsFile,omitempty" validate:""`
-	GlobalSettingsFile  string `json:"globalSettingsFile,omitempty" validate:""`
-	M2Path              string `json:"m2Path,omitempty" validate:""`
-	InstallArtifacts    bool   `json:"installArtifacts,omitempty" validate:""`
+	ApplicationName     string `json:"applicationName,omitempty"`
+	Source              string `json:"source,omitempty"`
+	Target              string `json:"target,omitempty"`
+	DefaultNpmRegistry  string `json:"defaultNpmRegistry,omitempty"`
+	ProjectSettingsFile string `json:"projectSettingsFile,omitempty"`
+	GlobalSettingsFile  string `json:"globalSettingsFile,omitempty"`
+	M2Path              string `json:"m2Path,omitempty"`
+	InstallArtifacts    bool   `json:"installArtifacts,omitempty"`
 }
 
 type mtaBuildCommonPipelineEnvironment struct {
@@ -76,19 +76,20 @@ func MtaBuildCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			validation, err := validation.New()
-			if err != nil {
-				return err
-			}
-			if err := validation.ValidateStruct(stepConfig); err != nil {
-				return err
-			}
-
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
+
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
 
 			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {

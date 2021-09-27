@@ -16,8 +16,8 @@ import (
 )
 
 type npmExecuteLintOptions struct {
-	FailOnError        bool   `json:"failOnError,omitempty" validate:""`
-	DefaultNpmRegistry string `json:"defaultNpmRegistry,omitempty" validate:""`
+	FailOnError        bool   `json:"failOnError,omitempty"`
+	DefaultNpmRegistry string `json:"defaultNpmRegistry,omitempty"`
 }
 
 // NpmExecuteLintCommand Execute ci-lint script on all npm packages in a project or execute default linting
@@ -39,19 +39,20 @@ either use ESLint configurations present in the project or use the provided gene
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			validation, err := validation.New()
-			if err != nil {
-				return err
-			}
-			if err := validation.ValidateStruct(stepConfig); err != nil {
-				return err
-			}
-
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
+
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
 
 			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {

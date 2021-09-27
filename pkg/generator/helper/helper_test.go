@@ -66,10 +66,24 @@ spec:
         - value3
       - name: param2
         type: string
-        description: param1 description
+        description: param2 description
         scope:
         - PARAMETERS
-        mandatory: true
+        mandatoryIf:
+        - name: param1
+          value: value1
+      - name: param3
+        type: string
+        description: param3 description
+        scope:
+        - PARAMETERS
+        possibleValues:
+        - value1
+        - value2
+        - value3
+        mandatoryIf:
+        - name: param1
+          value: value1
 `
 	var r string
 	switch name {

@@ -18,16 +18,16 @@ import (
 )
 
 type abapEnvironmentAssembleConfirmOptions struct {
-	CfAPIEndpoint       string `json:"cfApiEndpoint,omitempty" validate:""`
-	CfOrg               string `json:"cfOrg,omitempty" validate:""`
-	CfSpace             string `json:"cfSpace,omitempty" validate:""`
-	CfServiceInstance   string `json:"cfServiceInstance,omitempty" validate:""`
-	CfServiceKeyName    string `json:"cfServiceKeyName,omitempty" validate:""`
-	Host                string `json:"host,omitempty" validate:""`
-	Username            string `json:"username,omitempty" validate:""`
-	Password            string `json:"password,omitempty" validate:""`
-	AddonDescriptor     string `json:"addonDescriptor,omitempty" validate:""`
-	MaxRuntimeInMinutes int    `json:"maxRuntimeInMinutes,omitempty" validate:""`
+	CfAPIEndpoint       string `json:"cfApiEndpoint,omitempty"`
+	CfOrg               string `json:"cfOrg,omitempty"`
+	CfSpace             string `json:"cfSpace,omitempty"`
+	CfServiceInstance   string `json:"cfServiceInstance,omitempty"`
+	CfServiceKeyName    string `json:"cfServiceKeyName,omitempty"`
+	Host                string `json:"host,omitempty"`
+	Username            string `json:"username,omitempty"`
+	Password            string `json:"password,omitempty"`
+	AddonDescriptor     string `json:"addonDescriptor,omitempty"`
+	MaxRuntimeInMinutes int    `json:"maxRuntimeInMinutes,omitempty"`
 }
 
 type abapEnvironmentAssembleConfirmCommonPipelineEnvironment struct {
@@ -77,19 +77,20 @@ func AbapEnvironmentAssembleConfirmCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			validation, err := validation.New()
-			if err != nil {
-				return err
-			}
-			if err := validation.ValidateStruct(stepConfig); err != nil {
-				return err
-			}
-
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
+
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
 
 			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {

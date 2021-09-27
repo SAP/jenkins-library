@@ -18,14 +18,14 @@ import (
 )
 
 type transportRequestUploadSOLMANOptions struct {
-	Endpoint           string   `json:"endpoint,omitempty" validate:""`
-	Username           string   `json:"username,omitempty" validate:""`
-	Password           string   `json:"password,omitempty" validate:""`
-	ApplicationID      string   `json:"applicationId,omitempty" validate:""`
-	ChangeDocumentID   string   `json:"changeDocumentId,omitempty" validate:""`
-	TransportRequestID string   `json:"transportRequestId,omitempty" validate:""`
-	FilePath           string   `json:"filePath,omitempty" validate:""`
-	CmClientOpts       []string `json:"cmClientOpts,omitempty" validate:""`
+	Endpoint           string   `json:"endpoint,omitempty"`
+	Username           string   `json:"username,omitempty"`
+	Password           string   `json:"password,omitempty"`
+	ApplicationID      string   `json:"applicationId,omitempty"`
+	ChangeDocumentID   string   `json:"changeDocumentId,omitempty"`
+	TransportRequestID string   `json:"transportRequestId,omitempty"`
+	FilePath           string   `json:"filePath,omitempty"`
+	CmClientOpts       []string `json:"cmClientOpts,omitempty"`
 }
 
 type transportRequestUploadSOLMANCommonPipelineEnvironment struct {
@@ -79,19 +79,20 @@ The application ID specifies how the file needs to be handled on server side.`,
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			validation, err := validation.New()
-			if err != nil {
-				return err
-			}
-			if err := validation.ValidateStruct(stepConfig); err != nil {
-				return err
-			}
-
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
+
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
 
 			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {

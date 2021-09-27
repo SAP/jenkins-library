@@ -19,23 +19,23 @@ import (
 
 type artifactPrepareVersionOptions struct {
 	BuildTool              string `json:"buildTool,omitempty" validate:"oneof=custom docker dub golang maven mta npm pip sbt"`
-	CommitUserName         string `json:"commitUserName,omitempty" validate:""`
-	CustomVersionField     string `json:"customVersionField,omitempty" validate:""`
-	CustomVersionSection   string `json:"customVersionSection,omitempty" validate:""`
+	CommitUserName         string `json:"commitUserName,omitempty"`
+	CustomVersionField     string `json:"customVersionField,omitempty"`
+	CustomVersionSection   string `json:"customVersionSection,omitempty"`
 	CustomVersioningScheme string `json:"customVersioningScheme,omitempty" validate:"oneof=maven pep440 semver2"`
-	DockerVersionSource    string `json:"dockerVersionSource,omitempty" validate:""`
-	FetchCoordinates       bool   `json:"fetchCoordinates,omitempty" validate:""`
-	FilePath               string `json:"filePath,omitempty" validate:""`
-	GlobalSettingsFile     string `json:"globalSettingsFile,omitempty" validate:""`
-	IncludeCommitID        bool   `json:"includeCommitId,omitempty" validate:""`
-	M2Path                 string `json:"m2Path,omitempty" validate:""`
-	Password               string `json:"password,omitempty" validate:""`
-	ProjectSettingsFile    string `json:"projectSettingsFile,omitempty" validate:""`
-	ShortCommitID          bool   `json:"shortCommitId,omitempty" validate:""`
-	TagPrefix              string `json:"tagPrefix,omitempty" validate:""`
-	UnixTimestamp          bool   `json:"unixTimestamp,omitempty" validate:""`
-	Username               string `json:"username,omitempty" validate:""`
-	VersioningTemplate     string `json:"versioningTemplate,omitempty" validate:""`
+	DockerVersionSource    string `json:"dockerVersionSource,omitempty"`
+	FetchCoordinates       bool   `json:"fetchCoordinates,omitempty"`
+	FilePath               string `json:"filePath,omitempty"`
+	GlobalSettingsFile     string `json:"globalSettingsFile,omitempty"`
+	IncludeCommitID        bool   `json:"includeCommitId,omitempty"`
+	M2Path                 string `json:"m2Path,omitempty"`
+	Password               string `json:"password,omitempty"`
+	ProjectSettingsFile    string `json:"projectSettingsFile,omitempty"`
+	ShortCommitID          bool   `json:"shortCommitId,omitempty"`
+	TagPrefix              string `json:"tagPrefix,omitempty"`
+	UnixTimestamp          bool   `json:"unixTimestamp,omitempty"`
+	Username               string `json:"username,omitempty"`
+	VersioningTemplate     string `json:"versioningTemplate,omitempty"`
 	VersioningType         string `json:"versioningType,omitempty" validate:"oneof=cloud cloud_noTag library"`
 }
 
@@ -162,19 +162,20 @@ Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to yo
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			validation, err := validation.New()
-			if err != nil {
-				return err
-			}
-			if err := validation.ValidateStruct(stepConfig); err != nil {
-				return err
-			}
-
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
+
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
 
 			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {

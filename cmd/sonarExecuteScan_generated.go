@@ -18,33 +18,33 @@ import (
 )
 
 type sonarExecuteScanOptions struct {
-	Instance                  string   `json:"instance,omitempty" validate:""`
-	ServerURL                 string   `json:"serverUrl,omitempty" validate:""`
-	Token                     string   `json:"token,omitempty" validate:""`
-	Organization              string   `json:"organization,omitempty" validate:""`
-	CustomTLSCertificateLinks []string `json:"customTlsCertificateLinks,omitempty" validate:""`
-	SonarScannerDownloadURL   string   `json:"sonarScannerDownloadUrl,omitempty" validate:""`
+	Instance                  string   `json:"instance,omitempty"`
+	ServerURL                 string   `json:"serverUrl,omitempty"`
+	Token                     string   `json:"token,omitempty"`
+	Organization              string   `json:"organization,omitempty"`
+	CustomTLSCertificateLinks []string `json:"customTlsCertificateLinks,omitempty"`
+	SonarScannerDownloadURL   string   `json:"sonarScannerDownloadUrl,omitempty"`
 	VersioningModel           string   `json:"versioningModel,omitempty" validate:"oneof=major major-minor semantic full"`
-	Version                   string   `json:"version,omitempty" validate:""`
-	CustomScanVersion         string   `json:"customScanVersion,omitempty" validate:""`
-	ProjectKey                string   `json:"projectKey,omitempty" validate:""`
-	CoverageExclusions        []string `json:"coverageExclusions,omitempty" validate:""`
-	InferJavaBinaries         bool     `json:"inferJavaBinaries,omitempty" validate:""`
-	InferJavaLibraries        bool     `json:"inferJavaLibraries,omitempty" validate:""`
-	Options                   []string `json:"options,omitempty" validate:""`
-	BranchName                string   `json:"branchName,omitempty" validate:""`
-	InferBranchName           bool     `json:"inferBranchName,omitempty" validate:""`
-	ChangeID                  string   `json:"changeId,omitempty" validate:""`
-	ChangeBranch              string   `json:"changeBranch,omitempty" validate:""`
-	ChangeTarget              string   `json:"changeTarget,omitempty" validate:""`
+	Version                   string   `json:"version,omitempty"`
+	CustomScanVersion         string   `json:"customScanVersion,omitempty"`
+	ProjectKey                string   `json:"projectKey,omitempty"`
+	CoverageExclusions        []string `json:"coverageExclusions,omitempty"`
+	InferJavaBinaries         bool     `json:"inferJavaBinaries,omitempty"`
+	InferJavaLibraries        bool     `json:"inferJavaLibraries,omitempty"`
+	Options                   []string `json:"options,omitempty"`
+	BranchName                string   `json:"branchName,omitempty"`
+	InferBranchName           bool     `json:"inferBranchName,omitempty"`
+	ChangeID                  string   `json:"changeId,omitempty"`
+	ChangeBranch              string   `json:"changeBranch,omitempty"`
+	ChangeTarget              string   `json:"changeTarget,omitempty"`
 	PullRequestProvider       string   `json:"pullRequestProvider,omitempty" validate:"oneof=GitHub"`
-	Owner                     string   `json:"owner,omitempty" validate:""`
-	Repository                string   `json:"repository,omitempty" validate:""`
-	GithubToken               string   `json:"githubToken,omitempty" validate:""`
-	DisableInlineComments     bool     `json:"disableInlineComments,omitempty" validate:""`
-	LegacyPRHandling          bool     `json:"legacyPRHandling,omitempty" validate:""`
-	GithubAPIURL              string   `json:"githubApiUrl,omitempty" validate:""`
-	M2Path                    string   `json:"m2Path,omitempty" validate:""`
+	Owner                     string   `json:"owner,omitempty"`
+	Repository                string   `json:"repository,omitempty"`
+	GithubToken               string   `json:"githubToken,omitempty"`
+	DisableInlineComments     bool     `json:"disableInlineComments,omitempty"`
+	LegacyPRHandling          bool     `json:"legacyPRHandling,omitempty"`
+	GithubAPIURL              string   `json:"githubApiUrl,omitempty"`
+	M2Path                    string   `json:"m2Path,omitempty"`
 }
 
 type sonarExecuteScanInflux struct {
@@ -115,19 +115,20 @@ func SonarExecuteScanCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			validation, err := validation.New()
-			if err != nil {
-				return err
-			}
-			if err := validation.ValidateStruct(stepConfig); err != nil {
-				return err
-			}
-
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
+
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
 
 			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {

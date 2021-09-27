@@ -16,13 +16,13 @@ import (
 )
 
 type gctsRollbackOptions struct {
-	Username                  string `json:"username,omitempty" validate:""`
-	Password                  string `json:"password,omitempty" validate:""`
-	Repository                string `json:"repository,omitempty" validate:""`
-	Host                      string `json:"host,omitempty" validate:""`
-	Client                    string `json:"client,omitempty" validate:""`
-	Commit                    string `json:"commit,omitempty" validate:""`
-	GithubPersonalAccessToken string `json:"githubPersonalAccessToken,omitempty" validate:""`
+	Username                  string `json:"username,omitempty"`
+	Password                  string `json:"password,omitempty"`
+	Repository                string `json:"repository,omitempty"`
+	Host                      string `json:"host,omitempty"`
+	Client                    string `json:"client,omitempty"`
+	Commit                    string `json:"commit,omitempty"`
+	GithubPersonalAccessToken string `json:"githubPersonalAccessToken,omitempty"`
 }
 
 // GctsRollbackCommand Perfoms roll back of one (default) or several commit(s)
@@ -45,19 +45,20 @@ gctsRollback will rollback to the previously active commit in the local reposito
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			validation, err := validation.New()
-			if err != nil {
-				return err
-			}
-			if err := validation.ValidateStruct(stepConfig); err != nil {
-				return err
-			}
-
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
+
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
 
 			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {

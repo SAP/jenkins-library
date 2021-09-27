@@ -18,11 +18,11 @@ import (
 )
 
 type abapAddonAssemblyKitCheckPVOptions struct {
-	AbapAddonAssemblyKitEndpoint string `json:"abapAddonAssemblyKitEndpoint,omitempty" validate:""`
-	Username                     string `json:"username,omitempty" validate:""`
-	Password                     string `json:"password,omitempty" validate:""`
-	AddonDescriptorFileName      string `json:"addonDescriptorFileName,omitempty" validate:""`
-	AddonDescriptor              string `json:"addonDescriptor,omitempty" validate:""`
+	AbapAddonAssemblyKitEndpoint string `json:"abapAddonAssemblyKitEndpoint,omitempty"`
+	Username                     string `json:"username,omitempty"`
+	Password                     string `json:"password,omitempty"`
+	AddonDescriptorFileName      string `json:"addonDescriptorFileName,omitempty"`
+	AddonDescriptor              string `json:"addonDescriptor,omitempty"`
 }
 
 type abapAddonAssemblyKitCheckPVCommonPipelineEnvironment struct {
@@ -75,19 +75,20 @@ For Terminology refer to the [Scenario Description](https://www.project-piper.io
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			validation, err := validation.New()
-			if err != nil {
-				return err
-			}
-			if err := validation.ValidateStruct(stepConfig); err != nil {
-				return err
-			}
-
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
+
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
 
 			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {

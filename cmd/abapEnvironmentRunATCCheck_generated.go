@@ -16,17 +16,17 @@ import (
 )
 
 type abapEnvironmentRunATCCheckOptions struct {
-	AtcConfig          string `json:"atcConfig,omitempty" validate:""`
-	CfAPIEndpoint      string `json:"cfApiEndpoint,omitempty" validate:""`
-	CfOrg              string `json:"cfOrg,omitempty" validate:""`
-	CfServiceInstance  string `json:"cfServiceInstance,omitempty" validate:""`
-	CfServiceKeyName   string `json:"cfServiceKeyName,omitempty" validate:""`
-	CfSpace            string `json:"cfSpace,omitempty" validate:""`
-	Username           string `json:"username,omitempty" validate:""`
-	Password           string `json:"password,omitempty" validate:""`
-	Host               string `json:"host,omitempty" validate:""`
-	AtcResultsFileName string `json:"atcResultsFileName,omitempty" validate:""`
-	GenerateHTML       bool   `json:"generateHTML,omitempty" validate:""`
+	AtcConfig          string `json:"atcConfig,omitempty"`
+	CfAPIEndpoint      string `json:"cfApiEndpoint,omitempty"`
+	CfOrg              string `json:"cfOrg,omitempty"`
+	CfServiceInstance  string `json:"cfServiceInstance,omitempty"`
+	CfServiceKeyName   string `json:"cfServiceKeyName,omitempty"`
+	CfSpace            string `json:"cfSpace,omitempty"`
+	Username           string `json:"username,omitempty"`
+	Password           string `json:"password,omitempty"`
+	Host               string `json:"host,omitempty"`
+	AtcResultsFileName string `json:"atcResultsFileName,omitempty"`
+	GenerateHTML       bool   `json:"generateHTML,omitempty"`
 }
 
 // AbapEnvironmentRunATCCheckCommand Runs an ATC Check
@@ -54,19 +54,20 @@ Regardless of the option you chose, please make sure to provide the configuratio
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			validation, err := validation.New()
-			if err != nil {
-				return err
-			}
-			if err := validation.ValidateStruct(stepConfig); err != nil {
-				return err
-			}
-
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
+
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
 
 			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {

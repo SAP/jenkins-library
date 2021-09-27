@@ -19,10 +19,10 @@ import (
 
 type batsExecuteTestsOptions struct {
 	OutputFormat string   `json:"outputFormat,omitempty" validate:"oneof=tap junit"`
-	Repository   string   `json:"repository,omitempty" validate:""`
-	TestPackage  string   `json:"testPackage,omitempty" validate:""`
-	TestPath     string   `json:"testPath,omitempty" validate:""`
-	EnvVars      []string `json:"envVars,omitempty" validate:""`
+	Repository   string   `json:"repository,omitempty"`
+	TestPackage  string   `json:"testPackage,omitempty"`
+	TestPath     string   `json:"testPath,omitempty"`
+	EnvVars      []string `json:"envVars,omitempty"`
 }
 
 type batsExecuteTestsInflux struct {
@@ -77,19 +77,20 @@ func BatsExecuteTestsCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			validation, err := validation.New()
-			if err != nil {
-				return err
-			}
-			if err := validation.ValidateStruct(stepConfig); err != nil {
-				return err
-			}
-
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
+
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
 
 			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {

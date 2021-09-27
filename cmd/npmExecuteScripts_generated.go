@@ -16,18 +16,18 @@ import (
 )
 
 type npmExecuteScriptsOptions struct {
-	Install                    bool     `json:"install,omitempty" validate:""`
-	RunScripts                 []string `json:"runScripts,omitempty" validate:""`
-	DefaultNpmRegistry         string   `json:"defaultNpmRegistry,omitempty" validate:""`
-	VirtualFrameBuffer         bool     `json:"virtualFrameBuffer,omitempty" validate:""`
-	ScriptOptions              []string `json:"scriptOptions,omitempty" validate:""`
-	BuildDescriptorExcludeList []string `json:"buildDescriptorExcludeList,omitempty" validate:""`
-	BuildDescriptorList        []string `json:"buildDescriptorList,omitempty" validate:""`
-	CreateBOM                  bool     `json:"createBOM,omitempty" validate:""`
-	Publish                    bool     `json:"publish,omitempty" validate:""`
-	RepositoryURL              string   `json:"repositoryUrl,omitempty" validate:""`
-	RepositoryPassword         string   `json:"repositoryPassword,omitempty" validate:""`
-	RepositoryUsername         string   `json:"repositoryUsername,omitempty" validate:""`
+	Install                    bool     `json:"install,omitempty"`
+	RunScripts                 []string `json:"runScripts,omitempty"`
+	DefaultNpmRegistry         string   `json:"defaultNpmRegistry,omitempty"`
+	VirtualFrameBuffer         bool     `json:"virtualFrameBuffer,omitempty"`
+	ScriptOptions              []string `json:"scriptOptions,omitempty"`
+	BuildDescriptorExcludeList []string `json:"buildDescriptorExcludeList,omitempty"`
+	BuildDescriptorList        []string `json:"buildDescriptorList,omitempty"`
+	CreateBOM                  bool     `json:"createBOM,omitempty"`
+	Publish                    bool     `json:"publish,omitempty"`
+	RepositoryURL              string   `json:"repositoryUrl,omitempty"`
+	RepositoryPassword         string   `json:"repositoryPassword,omitempty"`
+	RepositoryUsername         string   `json:"repositoryUsername,omitempty"`
 }
 
 // NpmExecuteScriptsCommand Execute npm run scripts on all npm packages in a project
@@ -48,19 +48,20 @@ func NpmExecuteScriptsCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			validation, err := validation.New()
-			if err != nil {
-				return err
-			}
-			if err := validation.ValidateStruct(stepConfig); err != nil {
-				return err
-			}
-
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
+
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
 
 			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {

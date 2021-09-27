@@ -16,11 +16,11 @@ import (
 )
 
 type integrationArtifactUploadOptions struct {
-	APIServiceKey       string `json:"apiServiceKey,omitempty" validate:""`
-	IntegrationFlowID   string `json:"integrationFlowId,omitempty" validate:""`
-	IntegrationFlowName string `json:"integrationFlowName,omitempty" validate:""`
-	PackageID           string `json:"packageId,omitempty" validate:""`
-	FilePath            string `json:"filePath,omitempty" validate:""`
+	APIServiceKey       string `json:"apiServiceKey,omitempty"`
+	IntegrationFlowID   string `json:"integrationFlowId,omitempty"`
+	IntegrationFlowName string `json:"integrationFlowName,omitempty"`
+	PackageID           string `json:"packageId,omitempty"`
+	FilePath            string `json:"filePath,omitempty"`
 }
 
 // IntegrationArtifactUploadCommand Upload or Update an integration flow designtime artifact
@@ -41,19 +41,20 @@ func IntegrationArtifactUploadCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			validation, err := validation.New()
-			if err != nil {
-				return err
-			}
-			if err := validation.ValidateStruct(stepConfig); err != nil {
-				return err
-			}
-
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
+
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
 
 			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {

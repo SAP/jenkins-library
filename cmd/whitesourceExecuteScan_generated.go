@@ -18,47 +18,47 @@ import (
 )
 
 type whitesourceExecuteScanOptions struct {
-	AgentDownloadURL                     string   `json:"agentDownloadUrl,omitempty" validate:""`
-	AgentFileName                        string   `json:"agentFileName,omitempty" validate:""`
-	AgentParameters                      []string `json:"agentParameters,omitempty" validate:""`
-	AgentURL                             string   `json:"agentUrl,omitempty" validate:""`
-	AggregateVersionWideReport           bool     `json:"aggregateVersionWideReport,omitempty" validate:""`
-	BuildDescriptorExcludeList           []string `json:"buildDescriptorExcludeList,omitempty" validate:""`
-	BuildDescriptorFile                  string   `json:"buildDescriptorFile,omitempty" validate:""`
-	BuildTool                            string   `json:"buildTool,omitempty" validate:""`
-	ConfigFilePath                       string   `json:"configFilePath,omitempty" validate:""`
-	CreateProductFromPipeline            bool     `json:"createProductFromPipeline,omitempty" validate:""`
-	CustomScanVersion                    string   `json:"customScanVersion,omitempty" validate:""`
-	CvssSeverityLimit                    string   `json:"cvssSeverityLimit,omitempty" validate:""`
-	ScanPath                             string   `json:"scanPath,omitempty" validate:""`
-	EmailAddressesOfInitialProductAdmins []string `json:"emailAddressesOfInitialProductAdmins,omitempty" validate:""`
-	Excludes                             []string `json:"excludes,omitempty" validate:""`
-	Includes                             []string `json:"includes,omitempty" validate:""`
-	InstallCommand                       string   `json:"installCommand,omitempty" validate:""`
-	JreDownloadURL                       string   `json:"jreDownloadUrl,omitempty" validate:""`
-	LicensingVulnerabilities             bool     `json:"licensingVulnerabilities,omitempty" validate:""`
-	OrgToken                             string   `json:"orgToken,omitempty" validate:""`
-	ProductName                          string   `json:"productName,omitempty" validate:""`
-	ProductToken                         string   `json:"productToken,omitempty" validate:""`
-	Version                              string   `json:"version,omitempty" validate:""`
-	ProjectName                          string   `json:"projectName,omitempty" validate:""`
-	ProjectToken                         string   `json:"projectToken,omitempty" validate:""`
-	Reporting                            bool     `json:"reporting,omitempty" validate:""`
-	ScanImage                            string   `json:"scanImage,omitempty" validate:""`
-	ScanImageIncludeLayers               bool     `json:"scanImageIncludeLayers,omitempty" validate:""`
-	ScanImageRegistryURL                 string   `json:"scanImageRegistryUrl,omitempty" validate:""`
-	SecurityVulnerabilities              bool     `json:"securityVulnerabilities,omitempty" validate:""`
-	ServiceURL                           string   `json:"serviceUrl,omitempty" validate:""`
-	Timeout                              int      `json:"timeout,omitempty" validate:""`
-	UserToken                            string   `json:"userToken,omitempty" validate:""`
-	VersioningModel                      string   `json:"versioningModel,omitempty" validate:""`
+	AgentDownloadURL                     string   `json:"agentDownloadUrl,omitempty"`
+	AgentFileName                        string   `json:"agentFileName,omitempty"`
+	AgentParameters                      []string `json:"agentParameters,omitempty"`
+	AgentURL                             string   `json:"agentUrl,omitempty"`
+	AggregateVersionWideReport           bool     `json:"aggregateVersionWideReport,omitempty"`
+	BuildDescriptorExcludeList           []string `json:"buildDescriptorExcludeList,omitempty"`
+	BuildDescriptorFile                  string   `json:"buildDescriptorFile,omitempty"`
+	BuildTool                            string   `json:"buildTool,omitempty"`
+	ConfigFilePath                       string   `json:"configFilePath,omitempty"`
+	CreateProductFromPipeline            bool     `json:"createProductFromPipeline,omitempty"`
+	CustomScanVersion                    string   `json:"customScanVersion,omitempty"`
+	CvssSeverityLimit                    string   `json:"cvssSeverityLimit,omitempty"`
+	ScanPath                             string   `json:"scanPath,omitempty"`
+	EmailAddressesOfInitialProductAdmins []string `json:"emailAddressesOfInitialProductAdmins,omitempty"`
+	Excludes                             []string `json:"excludes,omitempty"`
+	Includes                             []string `json:"includes,omitempty"`
+	InstallCommand                       string   `json:"installCommand,omitempty"`
+	JreDownloadURL                       string   `json:"jreDownloadUrl,omitempty"`
+	LicensingVulnerabilities             bool     `json:"licensingVulnerabilities,omitempty"`
+	OrgToken                             string   `json:"orgToken,omitempty"`
+	ProductName                          string   `json:"productName,omitempty"`
+	ProductToken                         string   `json:"productToken,omitempty"`
+	Version                              string   `json:"version,omitempty"`
+	ProjectName                          string   `json:"projectName,omitempty"`
+	ProjectToken                         string   `json:"projectToken,omitempty"`
+	Reporting                            bool     `json:"reporting,omitempty"`
+	ScanImage                            string   `json:"scanImage,omitempty"`
+	ScanImageIncludeLayers               bool     `json:"scanImageIncludeLayers,omitempty"`
+	ScanImageRegistryURL                 string   `json:"scanImageRegistryUrl,omitempty"`
+	SecurityVulnerabilities              bool     `json:"securityVulnerabilities,omitempty"`
+	ServiceURL                           string   `json:"serviceUrl,omitempty"`
+	Timeout                              int      `json:"timeout,omitempty"`
+	UserToken                            string   `json:"userToken,omitempty"`
+	VersioningModel                      string   `json:"versioningModel,omitempty"`
 	VulnerabilityReportFormat            string   `json:"vulnerabilityReportFormat,omitempty" validate:"oneof=xlsx json xml"`
-	VulnerabilityReportTitle             string   `json:"vulnerabilityReportTitle,omitempty" validate:""`
-	ProjectSettingsFile                  string   `json:"projectSettingsFile,omitempty" validate:""`
-	GlobalSettingsFile                   string   `json:"globalSettingsFile,omitempty" validate:""`
-	M2Path                               string   `json:"m2Path,omitempty" validate:""`
-	InstallArtifacts                     bool     `json:"installArtifacts,omitempty" validate:""`
-	DefaultNpmRegistry                   string   `json:"defaultNpmRegistry,omitempty" validate:""`
+	VulnerabilityReportTitle             string   `json:"vulnerabilityReportTitle,omitempty"`
+	ProjectSettingsFile                  string   `json:"projectSettingsFile,omitempty"`
+	GlobalSettingsFile                   string   `json:"globalSettingsFile,omitempty"`
+	M2Path                               string   `json:"m2Path,omitempty"`
+	InstallArtifacts                     bool     `json:"installArtifacts,omitempty"`
+	DefaultNpmRegistry                   string   `json:"defaultNpmRegistry,omitempty"`
 }
 
 type whitesourceExecuteScanCommonPipelineEnvironment struct {
@@ -165,19 +165,20 @@ The step uses the so-called WhiteSource Unified Agent. For details please refer 
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			validation, err := validation.New()
-			if err != nil {
-				return err
-			}
-			if err := validation.ValidateStruct(stepConfig); err != nil {
-				return err
-			}
-
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
+
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
 
 			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {

@@ -16,15 +16,15 @@ import (
 )
 
 type githubSetCommitStatusOptions struct {
-	APIURL      string `json:"apiUrl,omitempty" validate:""`
-	CommitID    string `json:"commitId,omitempty" validate:""`
-	Context     string `json:"context,omitempty" validate:""`
-	Description string `json:"description,omitempty" validate:""`
-	Owner       string `json:"owner,omitempty" validate:""`
-	Repository  string `json:"repository,omitempty" validate:""`
+	APIURL      string `json:"apiUrl,omitempty"`
+	CommitID    string `json:"commitId,omitempty"`
+	Context     string `json:"context,omitempty"`
+	Description string `json:"description,omitempty"`
+	Owner       string `json:"owner,omitempty"`
+	Repository  string `json:"repository,omitempty"`
 	Status      string `json:"status,omitempty" validate:"oneof=failure pending success"`
-	TargetURL   string `json:"targetUrl,omitempty" validate:""`
-	Token       string `json:"token,omitempty" validate:""`
+	TargetURL   string `json:"targetUrl,omitempty"`
+	Token       string `json:"token,omitempty"`
 }
 
 // GithubSetCommitStatusCommand Set a status of a certain commit.
@@ -54,19 +54,20 @@ It can for example be used to create additional check indicators for a pull requ
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			validation, err := validation.New()
-			if err != nil {
-				return err
-			}
-			if err := validation.ValidateStruct(stepConfig); err != nil {
-				return err
-			}
-
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
+
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
 
 			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {

@@ -16,20 +16,20 @@ import (
 )
 
 type gctsDeployOptions struct {
-	Username            string                 `json:"username,omitempty" validate:""`
-	Password            string                 `json:"password,omitempty" validate:""`
-	Repository          string                 `json:"repository,omitempty" validate:""`
-	Host                string                 `json:"host,omitempty" validate:""`
-	Client              string                 `json:"client,omitempty" validate:""`
-	Commit              string                 `json:"commit,omitempty" validate:""`
-	RemoteRepositoryURL string                 `json:"remoteRepositoryURL,omitempty" validate:""`
+	Username            string                 `json:"username,omitempty"`
+	Password            string                 `json:"password,omitempty"`
+	Repository          string                 `json:"repository,omitempty"`
+	Host                string                 `json:"host,omitempty"`
+	Client              string                 `json:"client,omitempty"`
+	Commit              string                 `json:"commit,omitempty"`
+	RemoteRepositoryURL string                 `json:"remoteRepositoryURL,omitempty"`
 	Role                string                 `json:"role,omitempty" validate:"oneof=SOURCE TARGET"`
-	VSID                string                 `json:"vSID,omitempty" validate:""`
+	VSID                string                 `json:"vSID,omitempty"`
 	Type                string                 `json:"type,omitempty" validate:"oneof=GIT"`
-	Branch              string                 `json:"branch,omitempty" validate:""`
-	Scope               string                 `json:"scope,omitempty" validate:""`
-	Rollback            bool                   `json:"rollback,omitempty" validate:""`
-	Configuration       map[string]interface{} `json:"configuration,omitempty" validate:""`
+	Branch              string                 `json:"branch,omitempty"`
+	Scope               string                 `json:"scope,omitempty"`
+	Rollback            bool                   `json:"rollback,omitempty"`
+	Configuration       map[string]interface{} `json:"configuration,omitempty"`
 }
 
 // GctsDeployCommand Deploys a Git Repository to a local Repository and then to an ABAP System
@@ -54,19 +54,20 @@ You can use this step for gCTS as of SAP S/4HANA 2020.`,
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			validation, err := validation.New()
-			if err != nil {
-				return err
-			}
-			if err := validation.ValidateStruct(stepConfig); err != nil {
-				return err
-			}
-
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
+
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
 
 			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {

@@ -16,9 +16,9 @@ import (
 )
 
 type terraformExecuteOptions struct {
-	Command          string   `json:"command,omitempty" validate:""`
-	TerraformSecrets string   `json:"terraformSecrets,omitempty" validate:""`
-	AdditionalArgs   []string `json:"additionalArgs,omitempty" validate:""`
+	Command          string   `json:"command,omitempty"`
+	TerraformSecrets string   `json:"terraformSecrets,omitempty"`
+	AdditionalArgs   []string `json:"additionalArgs,omitempty"`
 }
 
 // TerraformExecuteCommand Executes Terraform
@@ -39,19 +39,20 @@ func TerraformExecuteCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			validation, err := validation.New()
-			if err != nil {
-				return err
-			}
-			if err := validation.ValidateStruct(stepConfig); err != nil {
-				return err
-			}
-
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
+
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
 
 			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {

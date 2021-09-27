@@ -65,7 +65,7 @@ func registerTranslations(validator *valid.Validate, translator ut.Translator) e
 		return err
 	}
 	err = validator.RegisterTranslation("required_if", translator, func(ut ut.Translator) error {
-		return ut.Add("required_if", "The {0} is required as long as the {1} is {2}. ", true)
+		return ut.Add("required_if", "The {0} is required since the {1} is {2}. ", true)
 	}, func(ut ut.Translator, fe valid.FieldError) string {
 		params := strings.Split(fe.Param(), " ")
 		t, _ := ut.T("required_if", fe.Field(), params[0], params[1])

@@ -16,29 +16,29 @@ import (
 )
 
 type kubernetesDeployOptions struct {
-	AdditionalParameters       []string `json:"additionalParameters,omitempty" validate:""`
-	APIServer                  string   `json:"apiServer,omitempty" validate:""`
-	AppTemplate                string   `json:"appTemplate,omitempty" validate:""`
-	ChartPath                  string   `json:"chartPath,omitempty" validate:""`
-	ContainerRegistryPassword  string   `json:"containerRegistryPassword,omitempty" validate:""`
-	ContainerRegistryURL       string   `json:"containerRegistryUrl,omitempty" validate:""`
-	ContainerRegistryUser      string   `json:"containerRegistryUser,omitempty" validate:""`
-	ContainerRegistrySecret    string   `json:"containerRegistrySecret,omitempty" validate:""`
-	CreateDockerRegistrySecret bool     `json:"createDockerRegistrySecret,omitempty" validate:""`
-	DeploymentName             string   `json:"deploymentName,omitempty" validate:""`
+	AdditionalParameters       []string `json:"additionalParameters,omitempty"`
+	APIServer                  string   `json:"apiServer,omitempty"`
+	AppTemplate                string   `json:"appTemplate,omitempty"`
+	ChartPath                  string   `json:"chartPath,omitempty"`
+	ContainerRegistryPassword  string   `json:"containerRegistryPassword,omitempty"`
+	ContainerRegistryURL       string   `json:"containerRegistryUrl,omitempty"`
+	ContainerRegistryUser      string   `json:"containerRegistryUser,omitempty"`
+	ContainerRegistrySecret    string   `json:"containerRegistrySecret,omitempty"`
+	CreateDockerRegistrySecret bool     `json:"createDockerRegistrySecret,omitempty"`
+	DeploymentName             string   `json:"deploymentName,omitempty"`
 	DeployTool                 string   `json:"deployTool,omitempty" validate:"oneof=kubectl helm helm3"`
-	ForceUpdates               bool     `json:"forceUpdates,omitempty" validate:""`
-	HelmDeployWaitSeconds      int      `json:"helmDeployWaitSeconds,omitempty" validate:""`
-	HelmValues                 []string `json:"helmValues,omitempty" validate:""`
-	Image                      string   `json:"image,omitempty" validate:""`
-	IngressHosts               []string `json:"ingressHosts,omitempty" validate:""`
-	KeepFailedDeployments      bool     `json:"keepFailedDeployments,omitempty" validate:""`
-	KubeConfig                 string   `json:"kubeConfig,omitempty" validate:""`
-	KubeContext                string   `json:"kubeContext,omitempty" validate:""`
-	KubeToken                  string   `json:"kubeToken,omitempty" validate:""`
-	Namespace                  string   `json:"namespace,omitempty" validate:""`
-	TillerNamespace            string   `json:"tillerNamespace,omitempty" validate:""`
-	DockerConfigJSON           string   `json:"dockerConfigJSON,omitempty" validate:""`
+	ForceUpdates               bool     `json:"forceUpdates,omitempty"`
+	HelmDeployWaitSeconds      int      `json:"helmDeployWaitSeconds,omitempty"`
+	HelmValues                 []string `json:"helmValues,omitempty"`
+	Image                      string   `json:"image,omitempty"`
+	IngressHosts               []string `json:"ingressHosts,omitempty"`
+	KeepFailedDeployments      bool     `json:"keepFailedDeployments,omitempty"`
+	KubeConfig                 string   `json:"kubeConfig,omitempty"`
+	KubeContext                string   `json:"kubeContext,omitempty"`
+	KubeToken                  string   `json:"kubeToken,omitempty"`
+	Namespace                  string   `json:"namespace,omitempty"`
+	TillerNamespace            string   `json:"tillerNamespace,omitempty"`
+	DockerConfigJSON           string   `json:"dockerConfigJSON,omitempty"`
 }
 
 // KubernetesDeployCommand Deployment to Kubernetes test or production namespace within the specified Kubernetes cluster.
@@ -76,19 +76,20 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			validation, err := validation.New()
-			if err != nil {
-				return err
-			}
-			if err := validation.ValidateStruct(stepConfig); err != nil {
-				return err
-			}
-
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
+
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
 
 			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {

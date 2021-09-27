@@ -18,18 +18,18 @@ import (
 )
 
 type transportRequestUploadCTSOptions struct {
-	Description            string   `json:"description,omitempty" validate:""`
-	Endpoint               string   `json:"endpoint,omitempty" validate:""`
-	Client                 string   `json:"client,omitempty" validate:""`
-	Username               string   `json:"username,omitempty" validate:""`
-	Password               string   `json:"password,omitempty" validate:""`
-	ApplicationName        string   `json:"applicationName,omitempty" validate:""`
-	AbapPackage            string   `json:"abapPackage,omitempty" validate:""`
-	OsDeployUser           string   `json:"osDeployUser,omitempty" validate:""`
-	DeployConfigFile       string   `json:"deployConfigFile,omitempty" validate:""`
-	TransportRequestID     string   `json:"transportRequestId,omitempty" validate:""`
-	DeployToolDependencies []string `json:"deployToolDependencies,omitempty" validate:""`
-	NpmInstallOpts         []string `json:"npmInstallOpts,omitempty" validate:""`
+	Description            string   `json:"description,omitempty"`
+	Endpoint               string   `json:"endpoint,omitempty"`
+	Client                 string   `json:"client,omitempty"`
+	Username               string   `json:"username,omitempty"`
+	Password               string   `json:"password,omitempty"`
+	ApplicationName        string   `json:"applicationName,omitempty"`
+	AbapPackage            string   `json:"abapPackage,omitempty"`
+	OsDeployUser           string   `json:"osDeployUser,omitempty"`
+	DeployConfigFile       string   `json:"deployConfigFile,omitempty"`
+	TransportRequestID     string   `json:"transportRequestId,omitempty"`
+	DeployToolDependencies []string `json:"deployToolDependencies,omitempty"`
+	NpmInstallOpts         []string `json:"npmInstallOpts,omitempty"`
 }
 
 type transportRequestUploadCTSCommonPipelineEnvironment struct {
@@ -80,19 +80,20 @@ It processes the results of the ` + "`" + `ui5 build` + "`" + ` command of the S
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			validation, err := validation.New()
-			if err != nil {
-				return err
-			}
-			if err := validation.ValidateStruct(stepConfig); err != nil {
-				return err
-			}
-
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
+
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
 
 			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {

@@ -16,15 +16,15 @@ import (
 )
 
 type mavenExecuteOptions struct {
-	PomPath                     string   `json:"pomPath,omitempty" validate:""`
-	Goals                       []string `json:"goals,omitempty" validate:""`
-	Defines                     []string `json:"defines,omitempty" validate:""`
-	Flags                       []string `json:"flags,omitempty" validate:""`
-	ReturnStdout                bool     `json:"returnStdout,omitempty" validate:""`
-	ProjectSettingsFile         string   `json:"projectSettingsFile,omitempty" validate:""`
-	GlobalSettingsFile          string   `json:"globalSettingsFile,omitempty" validate:""`
-	M2Path                      string   `json:"m2Path,omitempty" validate:""`
-	LogSuccessfulMavenTransfers bool     `json:"logSuccessfulMavenTransfers,omitempty" validate:""`
+	PomPath                     string   `json:"pomPath,omitempty"`
+	Goals                       []string `json:"goals,omitempty"`
+	Defines                     []string `json:"defines,omitempty"`
+	Flags                       []string `json:"flags,omitempty"`
+	ReturnStdout                bool     `json:"returnStdout,omitempty"`
+	ProjectSettingsFile         string   `json:"projectSettingsFile,omitempty"`
+	GlobalSettingsFile          string   `json:"globalSettingsFile,omitempty"`
+	M2Path                      string   `json:"m2Path,omitempty"`
+	LogSuccessfulMavenTransfers bool     `json:"logSuccessfulMavenTransfers,omitempty"`
 }
 
 // MavenExecuteCommand This step allows to run maven commands
@@ -45,19 +45,20 @@ func MavenExecuteCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			validation, err := validation.New()
-			if err != nil {
-				return err
-			}
-			if err := validation.ValidateStruct(stepConfig); err != nil {
-				return err
-			}
-
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
+
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
 
 			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {

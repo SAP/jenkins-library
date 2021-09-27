@@ -18,9 +18,10 @@ import (
 )
 
 type testStepOptions struct {
-	Param0 string `json:"param0,omitempty" validate:""`
+	Param0 string `json:"param0,omitempty"`
 	Param1 string `json:"param1,omitempty" validate:"oneof=value1 value2 value3"`
-	Param2 string `json:"param2,omitempty" validate:""`
+	Param2 string `json:"param2,omitempty" validate:"required_if=Param1 value1"`
+	Param3 string `json:"param3,omitempty" validate:"oneof=value1 value2 value3,required_if=Param1 value1"`
 }
 
 
@@ -118,19 +119,20 @@ func TestStepCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			validation, err := validation.New()
-			if err != nil {
-				return err
-			}
-			if err := validation.ValidateStruct(stepConfig); err != nil {
-				return err
-			}
-
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
+
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
 
 			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
@@ -187,10 +189,10 @@ func TestStepCommand() *cobra.Command {
 func addTestStepFlags(cmd *cobra.Command, stepConfig *testStepOptions) {
 	cmd.Flags().StringVar(&stepConfig.Param0, "param0", `val0`, "param0 description")
 	cmd.Flags().StringVar(&stepConfig.Param1, "param1", os.Getenv("PIPER_param1"), "param1 description")
-	cmd.Flags().StringVar(&stepConfig.Param2, "param2", os.Getenv("PIPER_param2"), "param1 description")
+	cmd.Flags().StringVar(&stepConfig.Param2, "param2", os.Getenv("PIPER_param2"), "param2 description")
+	cmd.Flags().StringVar(&stepConfig.Param3, "param3", os.Getenv("PIPER_param3"), "param3 description")
 
 	cmd.MarkFlagRequired("param0")
-	cmd.MarkFlagRequired("param2")
 }
 
 // retrieve step metadata
@@ -231,9 +233,18 @@ func testStepMetadata() config.StepData {
 						ResourceRef: []config.ResourceReference{},
 						Scope:     []string{"PARAMETERS",},
 						Type:      "string",
-						Mandatory: true,
+						Mandatory: false,
 						Aliases:   []config.Alias{},
 						Default:   os.Getenv("PIPER_param2"),
+					},
+					{
+						Name:      "param3",
+						ResourceRef: []config.ResourceReference{},
+						Scope:     []string{"PARAMETERS",},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_param3"),
 					},
 				},
 			},

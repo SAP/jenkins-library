@@ -41,7 +41,7 @@ func TestValidateStruct(t *testing.T) {
 		err = validation.ValidateStruct(tStruct)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "The Field2 must use the folowing values: value1 value2 value3.")
-		assert.Contains(t, err.Error(), "The Field3 is required as long as the Field1 is 1.")
+		assert.Contains(t, err.Error(), "The Field3 is required since the Field1 is 1.")
 	})
 
 	t.Run("failed case - custom error message", func(t *testing.T) {
@@ -54,6 +54,6 @@ func TestValidateStruct(t *testing.T) {
 		err = validation.ValidateStruct(tStruct)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "The field2 must use the folowing values: value1 value2 value3.")
-		assert.Contains(t, err.Error(), "The field3 is required as long as the Field1 is 1.")
+		assert.Contains(t, err.Error(), "The field3 is required since the Field1 is 1.")
 	})
 }

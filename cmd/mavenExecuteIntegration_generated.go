@@ -16,14 +16,14 @@ import (
 )
 
 type mavenExecuteIntegrationOptions struct {
-	Retry                       int    `json:"retry,omitempty" validate:""`
-	ForkCount                   string `json:"forkCount,omitempty" validate:""`
-	Goal                        string `json:"goal,omitempty" validate:""`
-	InstallArtifacts            bool   `json:"installArtifacts,omitempty" validate:""`
-	ProjectSettingsFile         string `json:"projectSettingsFile,omitempty" validate:""`
-	GlobalSettingsFile          string `json:"globalSettingsFile,omitempty" validate:""`
-	M2Path                      string `json:"m2Path,omitempty" validate:""`
-	LogSuccessfulMavenTransfers bool   `json:"logSuccessfulMavenTransfers,omitempty" validate:""`
+	Retry                       int    `json:"retry,omitempty"`
+	ForkCount                   string `json:"forkCount,omitempty"`
+	Goal                        string `json:"goal,omitempty"`
+	InstallArtifacts            bool   `json:"installArtifacts,omitempty"`
+	ProjectSettingsFile         string `json:"projectSettingsFile,omitempty"`
+	GlobalSettingsFile          string `json:"globalSettingsFile,omitempty"`
+	M2Path                      string `json:"m2Path,omitempty"`
+	LogSuccessfulMavenTransfers bool   `json:"logSuccessfulMavenTransfers,omitempty"`
 }
 
 // MavenExecuteIntegrationCommand This step will execute backend integration tests via the Jacoco Maven-plugin.
@@ -45,19 +45,20 @@ the integration tests via the Jacoco Maven-plugin.`,
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			validation, err := validation.New()
-			if err != nil {
-				return err
-			}
-			if err := validation.ValidateStruct(stepConfig); err != nil {
-				return err
-			}
-
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
+
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
 
 			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {

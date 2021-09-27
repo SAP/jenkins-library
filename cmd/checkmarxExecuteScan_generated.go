@@ -18,30 +18,30 @@ import (
 )
 
 type checkmarxExecuteScanOptions struct {
-	AvoidDuplicateProjectScans    bool   `json:"avoidDuplicateProjectScans,omitempty" validate:""`
-	FilterPattern                 string `json:"filterPattern,omitempty" validate:""`
-	FullScanCycle                 string `json:"fullScanCycle,omitempty" validate:""`
-	FullScansScheduled            bool   `json:"fullScansScheduled,omitempty" validate:""`
-	GeneratePdfReport             bool   `json:"generatePdfReport,omitempty" validate:""`
-	Incremental                   bool   `json:"incremental,omitempty" validate:""`
-	MaxRetries                    int    `json:"maxRetries,omitempty" validate:""`
-	Password                      string `json:"password,omitempty" validate:""`
-	Preset                        string `json:"preset,omitempty" validate:""`
-	ProjectName                   string `json:"projectName,omitempty" validate:""`
-	PullRequestName               string `json:"pullRequestName,omitempty" validate:""`
-	ServerURL                     string `json:"serverUrl,omitempty" validate:""`
-	SourceEncoding                string `json:"sourceEncoding,omitempty" validate:""`
-	TeamID                        string `json:"teamId,omitempty" validate:""`
-	TeamName                      string `json:"teamName,omitempty" validate:""`
-	Username                      string `json:"username,omitempty" validate:""`
-	VerifyOnly                    bool   `json:"verifyOnly,omitempty" validate:""`
-	VulnerabilityThresholdEnabled bool   `json:"vulnerabilityThresholdEnabled,omitempty" validate:""`
-	VulnerabilityThresholdHigh    int    `json:"vulnerabilityThresholdHigh,omitempty" validate:""`
-	VulnerabilityThresholdLow     int    `json:"vulnerabilityThresholdLow,omitempty" validate:""`
-	VulnerabilityThresholdMedium  int    `json:"vulnerabilityThresholdMedium,omitempty" validate:""`
+	AvoidDuplicateProjectScans    bool   `json:"avoidDuplicateProjectScans,omitempty"`
+	FilterPattern                 string `json:"filterPattern,omitempty"`
+	FullScanCycle                 string `json:"fullScanCycle,omitempty"`
+	FullScansScheduled            bool   `json:"fullScansScheduled,omitempty"`
+	GeneratePdfReport             bool   `json:"generatePdfReport,omitempty"`
+	Incremental                   bool   `json:"incremental,omitempty"`
+	MaxRetries                    int    `json:"maxRetries,omitempty"`
+	Password                      string `json:"password,omitempty"`
+	Preset                        string `json:"preset,omitempty"`
+	ProjectName                   string `json:"projectName,omitempty"`
+	PullRequestName               string `json:"pullRequestName,omitempty"`
+	ServerURL                     string `json:"serverUrl,omitempty"`
+	SourceEncoding                string `json:"sourceEncoding,omitempty"`
+	TeamID                        string `json:"teamId,omitempty"`
+	TeamName                      string `json:"teamName,omitempty"`
+	Username                      string `json:"username,omitempty"`
+	VerifyOnly                    bool   `json:"verifyOnly,omitempty"`
+	VulnerabilityThresholdEnabled bool   `json:"vulnerabilityThresholdEnabled,omitempty"`
+	VulnerabilityThresholdHigh    int    `json:"vulnerabilityThresholdHigh,omitempty"`
+	VulnerabilityThresholdLow     int    `json:"vulnerabilityThresholdLow,omitempty"`
+	VulnerabilityThresholdMedium  int    `json:"vulnerabilityThresholdMedium,omitempty"`
 	VulnerabilityThresholdResult  string `json:"vulnerabilityThresholdResult,omitempty" validate:"oneof=FAILURE"`
-	VulnerabilityThresholdUnit    string `json:"vulnerabilityThresholdUnit,omitempty" validate:""`
-	IsOptimizedAndScheduled       bool   `json:"isOptimizedAndScheduled,omitempty" validate:""`
+	VulnerabilityThresholdUnit    string `json:"vulnerabilityThresholdUnit,omitempty"`
+	IsOptimizedAndScheduled       bool   `json:"isOptimizedAndScheduled,omitempty"`
 }
 
 type checkmarxExecuteScanInflux struct {
@@ -200,19 +200,20 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			validation, err := validation.New()
-			if err != nil {
-				return err
-			}
-			if err := validation.ValidateStruct(stepConfig); err != nil {
-				return err
-			}
-
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
+
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
 
 			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {

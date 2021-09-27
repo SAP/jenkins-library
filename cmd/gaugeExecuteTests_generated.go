@@ -18,10 +18,10 @@ import (
 )
 
 type gaugeExecuteTestsOptions struct {
-	InstallCommand string `json:"installCommand,omitempty" validate:""`
-	LanguageRunner string `json:"languageRunner,omitempty" validate:""`
-	RunCommand     string `json:"runCommand,omitempty" validate:""`
-	TestOptions    string `json:"testOptions,omitempty" validate:""`
+	InstallCommand string `json:"installCommand,omitempty"`
+	LanguageRunner string `json:"languageRunner,omitempty"`
+	RunCommand     string `json:"runCommand,omitempty"`
+	TestOptions    string `json:"testOptions,omitempty"`
 }
 
 type gaugeExecuteTestsInflux struct {
@@ -86,19 +86,20 @@ You can use the [sample projects](https://github.com/getgauge/gauge-mvn-archetyp
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			validation, err := validation.New()
-			if err != nil {
-				return err
-			}
-			if err := validation.ValidateStruct(stepConfig); err != nil {
-				return err
-			}
-
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
+
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
 
 			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {

@@ -16,11 +16,11 @@ import (
 )
 
 type integrationArtifactTriggerIntegrationTestOptions struct {
-	IntegrationFlowServiceKey         string `json:"integrationFlowServiceKey,omitempty" validate:""`
-	IntegrationFlowID                 string `json:"integrationFlowId,omitempty" validate:""`
-	IntegrationFlowServiceEndpointURL string `json:"integrationFlowServiceEndpointUrl,omitempty" validate:""`
-	ContentType                       string `json:"contentType,omitempty" validate:""`
-	MessageBodyPath                   string `json:"messageBodyPath,omitempty" validate:""`
+	IntegrationFlowServiceKey         string `json:"integrationFlowServiceKey,omitempty"`
+	IntegrationFlowID                 string `json:"integrationFlowId,omitempty"`
+	IntegrationFlowServiceEndpointURL string `json:"integrationFlowServiceEndpointUrl,omitempty"`
+	ContentType                       string `json:"contentType,omitempty"`
+	MessageBodyPath                   string `json:"messageBodyPath,omitempty"`
 }
 
 // IntegrationArtifactTriggerIntegrationTestCommand Test the service endpoint of your iFlow
@@ -41,19 +41,20 @@ func IntegrationArtifactTriggerIntegrationTestCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			validation, err := validation.New()
-			if err != nil {
-				return err
-			}
-			if err := validation.ValidateStruct(stepConfig); err != nil {
-				return err
-			}
-
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
+
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
 
 			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {

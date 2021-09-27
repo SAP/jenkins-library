@@ -18,9 +18,9 @@ import (
 )
 
 type transportRequestDocIDFromGitOptions struct {
-	GitFrom             string `json:"gitFrom,omitempty" validate:""`
-	GitTo               string `json:"gitTo,omitempty" validate:""`
-	ChangeDocumentLabel string `json:"changeDocumentLabel,omitempty" validate:""`
+	GitFrom             string `json:"gitFrom,omitempty"`
+	GitTo               string `json:"gitTo,omitempty"`
+	ChangeDocumentLabel string `json:"changeDocumentLabel,omitempty"`
 }
 
 type transportRequestDocIDFromGitCommonPipelineEnvironment struct {
@@ -71,19 +71,20 @@ It is primarily made for the transportRequestUploadSOLMAN step to provide the ch
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
-			validation, err := validation.New()
-			if err != nil {
-				return err
-			}
-			if err := validation.ValidateStruct(stepConfig); err != nil {
-				return err
-			}
-
 			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
+
+			validation, err := validation.New()
+			if err != nil {
+				return err
+			}
+			if err := validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
 
 			err = PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
