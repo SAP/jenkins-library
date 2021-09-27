@@ -16,6 +16,10 @@ Following parameters are not supported anymore. Adjust as indicated.
 
 | Unsupported Parameter | Change Notice |
 | ------------- | ------------- |
+| changeManagement/`<type>`/docker/envVars | Use `dockerEnvVars` instead. |
+| changeManagement/`<type>`/docker/image | Use `dockerImage` instead. |
+| changeManagement/`<type>`/docker/options | Use `dockerOptions` instead. |
+| changeManagement/`<type>`/docker/pullImage | Use `dockerPullImage` instead. |
 | changeManagement/git/format | This parameter has been dropped. Make sure that your change document IDs and transport request IDs are part of the Git commit message body. |
 
 ```yaml
