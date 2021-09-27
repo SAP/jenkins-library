@@ -152,8 +152,8 @@ pipeline {
         stage('build') {
             steps {
                 // It depends on your project, what needs to be done here.
-                // Use the SAPUI5 toolset to build your SAPUI5 application 
-                // and run the build command of the npmExecuteScripts step. 
+                // Use the SAPUI5 toolset to build your SAPUI5 application
+                // and run the build command of the npmExecuteScripts step.
                 npmExecuteScripts(script: this, runScripts: ['build'])
             }
         }
