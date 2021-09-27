@@ -69,7 +69,12 @@ type {{ .StepName }}Options struct {
 	{{- $names := list ""}}
 	{{- range $key, $value := uniqueName .StepParameters }}
 	{{ if ne (has $value.Name $names) true -}}
-	{{ $names | last }}{{ $value.Name | golangName }} {{ $value.Type }} ` + "`json:\"{{$value.Name}},omitempty\"{{if or $value.PossibleValues $value.MandatoryIf}} validate:\"{{if $value.PossibleValues}}oneof={{range $i,$a := $value.PossibleValues}}{{if gt $i 0 }} {{end}}{{.}}{{end}}{{end}}{{if and $value.PossibleValues $value.MandatoryIf}},{{end}}{{if $value.MandatoryIf}}required_if={{range $i,$a := $value.MandatoryIf}}{{if gt $i 0 }} {{end}}{{$a.Name | title}} {{$a.Value}}{{end}}{{end}}\"{{ end }}`" + `
+	{{ $names | last }}{{ $value.Name | golangName }} {{ $value.Type }} ` + "`json:\"{{$value.Name}},omitempty\"" +
+	"{{ if or $value.PossibleValues $value.MandatoryIf}} validate:\"" +
+	"{{ if $value.PossibleValues }}oneof={{ range $i,$a := $value.PossibleValues }}{{if gt $i 0 }} {{ end }}{{.}}{{ end }}{{ end }}" +
+	"{{ if and $value.PossibleValues $value.MandatoryIf }},{{ end }}" +
+	"{{ if $value.MandatoryIf }}required_if={{ range $i,$a := $value.MandatoryIf }}{{ if gt $i 0 }} {{ end }}{{ $a.Name | title }} {{ $a.Value }}{{ end }}{{ end }}" +
+	"\"{{ end }}`" + `
 	{{- else -}}
 	{{- $names = append $names $value.Name }} {{ end -}}
 	{{ end }}
