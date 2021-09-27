@@ -133,19 +133,18 @@ void call(parameters = [:]) {
 
         echo "[INFO] Checking if change document '${configuration.changeDocumentId}' is in development."
 
-        try {
+        Map paramsUpload = [
+            script: script,
+            changeDocumentId: configuration.changeDocumentId,
+            endpoint: configuration.changeManagement.endpoint,
+            cmClientOpts: configuration.changeManagement.clientOpts?: [:],
+            credentialsId: configuration.changeManagement.credentialsId,
+            failIfStatusIsNotInDevelopment: configuration.failIfStatusIsNotInDevelopment
+            ]
 
-            isInDevelopment = cm.isChangeInDevelopment(
-                configuration.changeManagement.solman.docker,
-                configuration.changeDocumentId,
-                configuration.changeManagement.endpoint,
-                configuration.changeManagement.credentialsId,
-                configuration.changeManagement.clientOpts)
+        paramsUpload = addDockerParams(script, paramsUpload, configuration.changeManagement.solman?.docker)
 
-        } catch(ChangeManagementException ex) {
-            throw new AbortException(ex.getMessage())
-        }
-
+        isInDevelopment = isChangeInDevelopment(paramsUpload)
 
         if(isInDevelopment) {
             echo "[INFO] Change '${changeId}' is in status 'in development'."
@@ -159,3 +158,22 @@ void call(parameters = [:]) {
         }
     }
 }
+
+Map addDockerParams(Script script, Map parameters, Map docker) {
+
+        if(docker) {
+            if(docker.image) {
+                parameters.dockerImage = docker.image
+            }
+            if(docker.options) {
+                parameters.dockerOptions = docker.options
+            }
+            if(docker.envVars) {
+                parameters.dockerEnvVars = docker.envVars
+            }
+            if(docker.pullImage != null) {
+                parameters.put('dockerPullImage', docker.pullImage)
+            }
+        }
+        return parameters
+    }

@@ -98,7 +98,7 @@ func TestRunIsChangeInDevelopment(t *testing.T) {
 
 		err := runIsChangeInDevelopment(&config, nil, cmd, cpe)
 
-		if assert.EqualError(t, err, "cannot retrieve change status: Invalid credentials") {
+		if assert.EqualError(t, err, "cannot retrieve change status: invalid credentials") {
 			assert.Equal(t, []mock.ExecCall{expectedShellCall}, cmd.Calls)
 		}
 	})
@@ -111,7 +111,7 @@ func TestRunIsChangeInDevelopment(t *testing.T) {
 
 		err := runIsChangeInDevelopment(&config, nil, cmd, cpe)
 
-		if assert.EqualError(t, err, "cannot retrieve change status: Check log for details") {
+		if assert.EqualError(t, err, "cannot retrieve change status: check log for details") {
 			assert.Equal(t, []mock.ExecCall{expectedShellCall}, cmd.Calls)
 		}
 	})

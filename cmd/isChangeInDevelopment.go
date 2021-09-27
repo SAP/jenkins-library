@@ -5,7 +5,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 	"strings"
 )
 
@@ -65,6 +64,7 @@ func runIsChangeInDevelopment(config *isChangeInDevelopmentOptions,
 	log.Entry().Infof("Checking change status for change '%s'", config.ChangeDocumentID)
 
 	isInDevelopment, err := perform(config, utils)
+
 	if err != nil {
 		return err
 	}
@@ -97,19 +97,19 @@ func perform(config *isChangeInDevelopmentOptions, utils isChangeInDevelopmentUt
 		"--change-id", config.ChangeDocumentID,
 		"--return-code")
 
-	if err != nil {
-		return false, errors.Wrap(err, "cannot retrieve change status")
-	}
-
 	exitCode := utils.GetExitCode()
 
-	hint := "Check log for details"
+	hint := "check log for details"
 	if exitCode == 0 {
 		return true, nil
 	} else if exitCode == 3 {
 		return false, nil
 	} else if exitCode == 2 {
-		hint = "Invalid credentials"
+		hint = "invalid credentials"
+	}
+
+	if err != nil {
+		log.Entry().Errorf("cmclient fails: %s", err)
 	}
 
 	return false, fmt.Errorf("cannot retrieve change status: %s", hint)
