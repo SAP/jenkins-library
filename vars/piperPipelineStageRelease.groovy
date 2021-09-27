@@ -19,6 +19,8 @@ import static com.sap.piper.Prerequisites.checkScript
     'healthExecuteCheck',
     /** For Neo use-cases: Performs deployment to Neo landscape. */
     'neoDeploy',
+    /** For Kubernetes use-cases: Performs deployment to Kubernetes landscape. */
+    'kubernetesDeploy',
     /** For TMS use-cases: Performs upload to Transport Management Service node*/
     'tmsUpload',
     /** Publishes release information to GitHub. */
@@ -50,6 +52,7 @@ void call(Map parameters = [:]) {
         .addIfEmpty('healthExecuteCheck', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.healthExecuteCheck)
         .addIfEmpty('tmsUpload', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.tmsUpload)
         .addIfEmpty('neoDeploy', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.neoDeploy)
+        .addIfEmpty('kubernetesDeploy', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.kubernetesDeploy)
         .addIfEmpty('npmExecuteEndToEndTests', script.commonPipelineEnvironment.configuration.runStep?.get(stageName)?.npmExecuteEndToEndTests)
         .use()
 
@@ -73,6 +76,12 @@ void call(Map parameters = [:]) {
             if (config.neoDeploy) {
                 durationMeasure(script: script, measurementName: 'deploy_release_neo_duration') {
                     neoDeploy script: script
+                }
+            }
+
+            if (config.kubernetesDeploy){
+                durationMeasure(script: script, measurementName: 'deploy_release_kubernetes_duration') {
+                    kubernetesDeploy script: script
                 }
             }
         }
