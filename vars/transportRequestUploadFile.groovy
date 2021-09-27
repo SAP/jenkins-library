@@ -211,10 +211,10 @@ void call(Map parameters = [:]) {
         def changeDocumentId = null
 
         if(backendType == BackendType.SOLMAN) {
-            changeDocumentId = getChangeDocumentId(cm, script, configuration)
+            changeDocumentId = getChangeDocumentId(script, configuration)
         }
 
-        def transportRequestId = getTransportRequestId(cm, script, configuration)
+        def transportRequestId = getTransportRequestId(script, configuration)
 
         configHelper
             .mixin([changeDocumentId: changeDocumentId?.trim() ?: null,
