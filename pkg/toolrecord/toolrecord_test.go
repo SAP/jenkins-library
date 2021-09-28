@@ -30,6 +30,12 @@ func TestToolRecord(t *testing.T) {
 			}{"goes", 42},
 		}
 		tr.AddContext("DemoContext", context)
+		context2 := "a string"
+		tr.AddContext("Context2", context2)
+		var context3 [2]string
+		context3[0] = "c3_1"
+		context3[1] = "c3_2"
+		tr.AddContext("Context3", context3)
 		err := tr.Persist()
 		assert.Nil(t, err, "internal error %s")
 		assert.FileExists(t, tr.GetFileName(), "toolrecord not persisted %s")

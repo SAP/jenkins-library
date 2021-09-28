@@ -115,10 +115,8 @@ spec:
           - name: altDeploymentRepositoryPasswordId
             type: secret
           - type: vaultSecretFile
-            paths:
-              - $(vaultPath)/alt-deployment-repository-passowrd
-              - $(vaultBasePath)/$(vaultPipelineName)/alt-deployment-repository-passowrd
-              - $(vaultBasePath)/GROUP-SECRETS/alt-deployment-repository-passowrd
+            name: altDeploymentRepositoryPasswordFileVaultSecretName
+            default: alt-deployment-repository-passowrd
       - name: altDeploymentRepositoryUser
         type: string
         description: User for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This user will be updated in settings.xml . When no settings.xml is provided a new one is created corresponding with <servers> tag
@@ -169,6 +167,15 @@ spec:
         default: false
         aliases:
           - name: maven/publish
+      - name: javaCaCertFilePath
+        type: string
+        description: path to the cacerts file used by Java. When maven publish is set to True and customTlsCertificateLinks (to deploy the artifact to a repository with a self signed cert) are provided to trust the self signed certs, Piper will extend the existing Java cacerts to include the new self signed certs. if not provided Piper will search for the cacerts in $JAVA_HOME/jre/lib/security/cacerts
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        aliases:
+          - name: maven/javaCaCertFilePath
   containers:
     - name: mvn
       image: maven:3.6-jdk-8

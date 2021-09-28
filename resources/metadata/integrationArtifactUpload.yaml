@@ -31,15 +31,6 @@ spec:
           - STAGES
           - STEPS
         mandatory: true
-      - name: integrationFlowVersion
-        type: string
-        description: Specifies the version of the Integration Flow artifact
-        scope:
-          - PARAMETERS
-          - GENERAL
-          - STAGES
-          - STEPS
-        mandatory: true
       - name: integrationFlowName
         type: string
         description: Specifies the Name of the Integration Flow artifact
@@ -55,7 +46,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        mandatory: true
+        mandatory: false
       - name: filePath
         type: string
         description: Specifies integration artifact relative file path.

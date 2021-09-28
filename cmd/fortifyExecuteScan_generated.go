@@ -85,6 +85,7 @@ type fortifyExecuteScanInflux struct {
 		fields struct {
 			projectName       string
 			projectVersion    string
+			projectVersionID  int64
 			violations        int
 			corporateTotal    int
 			corporateAudited  int
@@ -112,6 +113,7 @@ func (i *fortifyExecuteScanInflux) persist(path, resourceName string) {
 		{valType: config.InfluxField, measurement: "step_data", name: "fortify", value: i.step_data.fields.fortify},
 		{valType: config.InfluxField, measurement: "fortify_data", name: "projectName", value: i.fortify_data.fields.projectName},
 		{valType: config.InfluxField, measurement: "fortify_data", name: "projectVersion", value: i.fortify_data.fields.projectVersion},
+		{valType: config.InfluxField, measurement: "fortify_data", name: "projectVersionId", value: i.fortify_data.fields.projectVersionID},
 		{valType: config.InfluxField, measurement: "fortify_data", name: "violations", value: i.fortify_data.fields.violations},
 		{valType: config.InfluxField, measurement: "fortify_data", name: "corporateTotal", value: i.fortify_data.fields.corporateTotal},
 		{valType: config.InfluxField, measurement: "fortify_data", name: "corporateAudited", value: i.fortify_data.fields.corporateAudited},
@@ -156,11 +158,19 @@ func FortifyExecuteScanCommand() *cobra.Command {
 The Fortify step triggers a scan locally on your Jenkins within a docker container so finally you have to supply a docker image with a Fortify SCA
 and Java plus Maven or alternatively Python installed into it for being able to perform any scans.
 !!! hint "Scanning MTA projects"
-    Build type ` + "`" + `maven` + "`" + ` requires a so called aggregator pom which includes all modules to be scanned. If used in a mta-project which includes non-java submodules as maven dependency (e.g. node via frontend-maven-plugin), exclude those by specifying java path explicitly, e.g. ` + "`" + `java/**/src/main/java/**/*` + "`" + `.`,
+    Build type ` + "`" + `maven` + "`" + ` requires a so called aggregator pom which includes all modules to be scanned. If used in a mta-project which includes non-java submodules as maven dependency (e.g. node via frontend-maven-plugin), exclude those by specifying java path explicitly, e.g. ` + "`" + `java/**/src/main/java/**/*` + "`" + `.
+
+Besides triggering a scan the step verifies the results after they have been uploaded and processed by the Fortify SSC. By default the following KPIs are enforced:
+* All issues must be audited from the Corporate Security Requirements folder.
+* All issues must be audited from the Audit All folder.
+* At least one issue per category must be audited from the Spot Checks of Each Category folder.
+* Nothing needs to be audited from the Optional folder.`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
+
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
@@ -248,7 +258,7 @@ func addFortifyExecuteScanFlags(cmd *cobra.Command, stepConfig *fortifyExecuteSc
 	cmd.Flags().BoolVar(&stepConfig.QuickScan, "quickScan", false, "Whether a quick scan should be performed, please consult the related Fortify documentation on JAM on the impact of this setting")
 	cmd.Flags().StringVar(&stepConfig.Translate, "translate", os.Getenv("PIPER_translate"), "Options for translate phase of Fortify. Most likely, you do not need to set this parameter. See src, exclude. If `'src'` and `'exclude'` are set they are automatically used. Technical details: It has to be a JSON string of list of maps with required key `'src'`, and optional keys `'exclude'`, `'libDirs'`, `'aspnetcore'`, and `'dotNetCoreVersion'`")
 	cmd.Flags().StringSliceVar(&stepConfig.Src, "src", []string{}, "A list of source directories to scan. Wildcards can be used, e.g., `'src/main/java/**/*'`. If `'translate'` is set, this will ignored. The default value for `buildTool: 'maven'` is `['**/*.xml', '**/*.html', '**/*.jsp', '**/*.js', '**/src/main/resources/**/*', '**/src/main/java/**/*', '**/target/main/java/**/*', '**/target/main/resources/**/*', '**/target/generated-sources/**/*']`, for `buildTool: 'pip'` it is `['./**/*']`.")
-	cmd.Flags().StringSliceVar(&stepConfig.Exclude, "exclude", []string{}, "A list of directories/files to be excluded from the scan. Wildcards can be used, e.g., `'**/Test.java'`. If `translate` is set, this will ignored. The default value for `buildTool: 'maven'` is `['**/target/**/*', '**/src/test/resources/**/*']`, for `buildTool: 'pip'` it is `['./**/tests/**/*', './**/setup.py']`.")
+	cmd.Flags().StringSliceVar(&stepConfig.Exclude, "exclude", []string{}, "A list of directories/files to be excluded from the scan. Wildcards can be used, e.g., `'**/Test.java'`. If `translate` is set, this will ignored. The default value for `buildTool: 'maven'` is `['**/src/test/**/*']`, for `buildTool: 'pip'` it is `['./**/tests/**/*', './**/setup.py']`.")
 	cmd.Flags().StringVar(&stepConfig.APIEndpoint, "apiEndpoint", `/api/v1`, "Fortify SSC endpoint used for uploading the scan results and checking the audit state")
 	cmd.Flags().StringVar(&stepConfig.ReportType, "reportType", `PDF`, "The type of report to be generated")
 	cmd.Flags().StringSliceVar(&stepConfig.PythonAdditionalPath, "pythonAdditionalPath", []string{`./lib`, `.`}, "A list of additional paths which can be used in `buildTool: 'pip'` for customization purposes")
@@ -319,9 +329,9 @@ func fortifyExecuteScanMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/fortify", "$(vaultBasePath)/$(vaultPipelineName)/fortify", "$(vaultBasePath)/GROUP-SECRETS/fortify"},
-								Type:  "vaultSecret",
+								Name:    "fortifyVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "fortify",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -357,9 +367,9 @@ func fortifyExecuteScanMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/github", "$(vaultBasePath)/$(vaultPipelineName)/github", "$(vaultBasePath)/GROUP-SECRETS/github"},
-								Type:  "vaultSecret",
+								Name:    "githubVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "github",
 							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
@@ -857,7 +867,7 @@ func fortifyExecuteScanMetadata() config.StepData {
 						Type: "influx",
 						Parameters: []map[string]interface{}{
 							{"Name": "step_data"}, {"fields": []map[string]string{{"name": "fortify"}}},
-							{"Name": "fortify_data"}, {"fields": []map[string]string{{"name": "projectName"}, {"name": "projectVersion"}, {"name": "violations"}, {"name": "corporateTotal"}, {"name": "corporateAudited"}, {"name": "auditAllTotal"}, {"name": "auditAllAudited"}, {"name": "spotChecksTotal"}, {"name": "spotChecksAudited"}, {"name": "spotChecksGap"}, {"name": "suspicious"}, {"name": "exploitable"}, {"name": "suppressed"}}},
+							{"Name": "fortify_data"}, {"fields": []map[string]string{{"name": "projectName"}, {"name": "projectVersion"}, {"name": "projectVersionId"}, {"name": "violations"}, {"name": "corporateTotal"}, {"name": "corporateAudited"}, {"name": "auditAllTotal"}, {"name": "auditAllAudited"}, {"name": "spotChecksTotal"}, {"name": "spotChecksAudited"}, {"name": "spotChecksGap"}, {"name": "suspicious"}, {"name": "exploitable"}, {"name": "suppressed"}}},
 						},
 					},
 				},

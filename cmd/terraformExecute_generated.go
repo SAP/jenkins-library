@@ -38,6 +38,8 @@ func TerraformExecuteCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
@@ -123,9 +125,9 @@ func terraformExecuteMetadata() config.StepData {
 						Name: "terraformSecrets",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/terraformExecute", "$(vaultBasePath)/$(vaultPipelineName)/terraformExecute", "$(vaultBasePath)/GROUP-SECRETS/terraformExecute"},
-								Type:  "vaultSecretFile",
+								Name:    "terraformExecuteFileVaultSecret",
+								Type:    "vaultSecretFile",
+								Default: "terraformExecute",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},

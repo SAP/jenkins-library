@@ -43,6 +43,8 @@ func CloudFoundryCreateServiceKeyCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
@@ -151,9 +153,9 @@ func cloudFoundryCreateServiceKeyMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/cloudfoundry-$(org)-$(space)", "$(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(org)-$(space)", "$(vaultBasePath)/GROUP-SECRETS/cloudfoundry-$(org)-$(space)"},
-								Type:  "vaultSecret",
+								Name:    "cloudfoundryVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "cloudfoundry-$(org)-$(space)",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -172,9 +174,9 @@ func cloudFoundryCreateServiceKeyMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/cloudfoundry-$(org)-$(space)", "$(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(org)-$(space)", "$(vaultBasePath)/GROUP-SECRETS/cloudfoundry-$(org)-$(space)"},
-								Type:  "vaultSecret",
+								Name:    "cloudfoundryVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "cloudfoundry-$(org)-$(space)",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},

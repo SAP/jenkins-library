@@ -52,6 +52,8 @@ func AbapEnvironmentCreateSystemCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
@@ -167,9 +169,9 @@ func abapEnvironmentCreateSystemMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/cloudfoundry-$(org)-$(space)", "$(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(org)-$(space)", "$(vaultBasePath)/GROUP-SECRETS/cloudfoundry-$(org)-$(space)"},
-								Type:  "vaultSecret",
+								Name:    "cloudfoundryVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "cloudfoundry-$(org)-$(space)",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -188,9 +190,9 @@ func abapEnvironmentCreateSystemMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/cloudfoundry-$(org)-$(space)", "$(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(org)-$(space)", "$(vaultBasePath)/GROUP-SECRETS/cloudfoundry-$(org)-$(space)"},
-								Type:  "vaultSecret",
+								Name:    "cloudfoundryVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "cloudfoundry-$(org)-$(space)",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},

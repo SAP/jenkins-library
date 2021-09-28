@@ -61,11 +61,11 @@ type StepParameters struct {
 
 // ResourceReference defines the parameters of a resource reference
 type ResourceReference struct {
-	Name    string   `json:"name"`
-	Type    string   `json:"type,omitempty"`
-	Param   string   `json:"param,omitempty"`
-	Paths   []string `json:"paths,omitempty"`
-	Aliases []Alias  `json:"aliases,omitempty"`
+	Name    string  `json:"name"`
+	Type    string  `json:"type,omitempty"`
+	Param   string  `json:"param,omitempty"`
+	Default string  `json:"default,omitempty"`
+	Aliases []Alias `json:"aliases,omitempty"`
 }
 
 // Alias defines a step input parameter alias
@@ -411,6 +411,23 @@ func (m *StepParameters) GetReference(refType string) *ResourceReference {
 	return nil
 }
 
+func getFilterForResourceReferences(params []StepParameters) []string {
+	var filter []string
+	for _, param := range params {
+		reference := param.GetReference("vaultSecret")
+		if reference == nil {
+			reference = param.GetReference("vaultSecretFile")
+		}
+		if reference == nil {
+			return filter
+		}
+		if reference.Name != "" {
+			filter = append(filter, reference.Name)
+		}
+	}
+	return filter
+}
+
 // HasReference checks whether StepData contains a parameter that has Reference with the given type
 func (m *StepData) HasReference(refType string) bool {
 	for _, param := range m.Spec.Inputs.Parameters {
@@ -434,7 +451,12 @@ func EnvVarsAsMap(envVars []EnvVar) map[string]string {
 func OptionsAsStringSlice(options []Option) []string {
 	e := []string{}
 	for _, v := range options {
-		e = append(e, fmt.Sprintf("%v %v", v.Name, v.Value))
+		if len(v.Value) != 0 {
+			e = append(e, fmt.Sprintf("%v %v", v.Name, v.Value))
+		} else {
+			e = append(e, fmt.Sprintf("%v=", v.Name))
+		}
+
 	}
 	return e
 }

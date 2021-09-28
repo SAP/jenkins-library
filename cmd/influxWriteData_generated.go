@@ -41,6 +41,8 @@ func InfluxWriteDataCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
@@ -141,9 +143,9 @@ func influxWriteDataMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/influxdb", "$(vaultBasePath)/$(vaultPipelineName)/influxdb", "$(vaultBasePath)/GROUP-SECRETS/influxdb"},
-								Type:  "vaultSecret",
+								Name:    "influxVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "influxdb",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},

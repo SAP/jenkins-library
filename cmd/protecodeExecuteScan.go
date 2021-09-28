@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	webReportPath  = "%s/products/%v/"
+	webReportPath  = "%s/#/product/%v/"
 	scanResultFile = "protecodescan_vulns.json"
 	stepResultFile = "protecodeExecuteScan.json"
 )
@@ -76,6 +76,11 @@ func runProtecodeScan(config *protecodeExecuteScanOptions, influx *protecodeExec
 			(*config).FilePath = "./"
 		}
 		fileName = parts[len(parts)-1]
+
+	} else if len(config.FetchURL) > 0 {
+		// Get filename from a fetch URL
+		fileName = filepath.Base(config.FetchURL)
+		log.Entry().Debugf("[DEBUG] ===> Filepath from fetch URL: %v", fileName)
 	}
 
 	log.Entry().Debug("Execute protecode scan")
@@ -152,19 +157,46 @@ func getDockerImage(dClient piperDocker.Download, config *protecodeExecuteScanOp
 }
 
 func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.Protecode, config *protecodeExecuteScanOptions, fileName string, writeReportToFile func(resp io.ReadCloser, reportFileName string) error) error {
+
+	log.Entry().Debugf("[DEBUG] ===> Load existing product Group:%v, VerifyOnly:%v, Filename:%v, replaceProductId:%v", config.Group, config.VerifyOnly, fileName, config.ReplaceProductID)
+
 	productID := -1
-	if config.VerifyOnly {
-		//load existing product by filename
-		log.Entry().Debugf("Load existing product Group:%v Reuse:%v", config.Group, config.VerifyOnly)
-		productID = client.LoadExistingProduct(config.Group)
+
+	// If replaceProductId is not provided then switch to automatic existing product detection
+	if config.ReplaceProductID > 0 {
+
+		log.Entry().Infof("replaceProductID has been provided (%v) and checking ...", config.ReplaceProductID)
+		// log.Entry().Debugf("[DEBUG] ===> ReplaceProductID has been provided and required to verify it: %v", config.ReplaceProductID)
+
+		// Validate provided product id, if not valid id then throw an error
+		if client.VerifyProductID(config.ReplaceProductID) {
+			log.Entry().Infof("replaceProductID has been checked and it's valid")
+			// log.Entry().Debugf("[DEBUG] ===> ReplaceProductID exists")
+			productID = config.ReplaceProductID
+		} else {
+			log.Entry().Debugf("[DEBUG] ===> ReplaceProductID doesn't exist")
+			return fmt.Errorf("ERROR -> the product id is not valid '%d'", config.ReplaceProductID)
+		}
+
+	} else {
+		// Get existing product id by filename
+		log.Entry().Infof("replaceProductID is not provided and automatic search starts from group: %v ... ", config.Group)
+		// log.Entry().Debugf("[DEBUG] ===> ReplaceProductID hasn't provided and automatic search starts... ")
+		productID = client.LoadExistingProduct(config.Group, fileName)
 	}
-	if !config.VerifyOnly || productID <= 0 {
-		// check if no existing is found or reuse existing is false
-		productID = uploadScanOrDeclareFetch(*config, client, fileName)
-	}
+
+	log.Entry().Infof("Automatic search completed and found following product id: %v", productID)
+	// log.Entry().Debugf("[DEBUG] ===> Returned productID: %v", productID)
+
+	// check if no existing is found
+	productID = uploadScanOrDeclareFetch(*config, productID, client, fileName)
+
+	log.Entry().Debugf("[DEBUG] ===> After 'uploadScanOrDeclareFetch' returned productID: %v", productID)
+
 	if productID <= 0 {
 		return fmt.Errorf("the product id is not valid '%d'", productID)
 	}
+
 	//pollForResult
 	log.Entry().Debugf("Poll for scan result %v", productID)
 	result := client.PollForResult(productID, config.TimeoutMinutes)
@@ -220,6 +252,16 @@ func executeProtecodeScan(influx *protecodeExecuteScanInflux, client protecode.P
 	links := []StepResults.Path{
 		{Name: "Protecode WebUI", Target: webuiURL},
 		{Name: "Protecode Report", Target: path.Join("artifact", config.ReportFileName), Scope: "job"},
+	}
+
+	// write custom report
+	scanReport := protecode.CreateCustomReport(fileName, productID, parsedResult, vulns)
+	paths, err := protecode.WriteCustomReports(scanReport, fileName, fmt.Sprint(productID))
+	if err != nil {
+		// do not fail - consider failing later on
+		log.Entry().Warning("failed to create custom HTML/MarkDown file ...", err)
+	} else {
+		reports = append(reports, paths...)
 	}
 
 	// create toolrecord file
@@ -286,20 +328,52 @@ func createDockerClient(config *protecodeExecuteScanOptions) piperDocker.Downloa
 	return dClient
 }
 
-func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, client protecode.Protecode, fileName string) int {
+func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, productID int, client protecode.Protecode, fileName string) int {
+	//check if the LoadExistingProduct) before returns an valid product id, than skip this
+	//if !hasExisting(productID, config.VerifyOnly) {
+
+	log.Entry().Debugf("[DEBUG] ===> In uploadScanOrDeclareFetch: %v", productID)
+
+	// check if product doesn't exist then create a new one.
+	if productID <= 0 {
+		log.Entry().Infof("New product creation started ... ")
+		// log.Entry().Debugf("[DEBUG] ===> New product creation started: %v", productID)
+		productID = uploadFile(config, productID, client, fileName, false)
+
+		log.Entry().Infof("New product has been successfully created: %v", productID)
+		// log.Entry().Debugf("[DEBUG] ===> After uploading [productID < 0] file returned productID: %v", productID)
+		return productID
+
+		// In case product already exists and "VerifyOnly (reuseExisting)" is false then we replace binary without creating a new product.
+	} else if (productID > 0) && !config.VerifyOnly {
+		log.Entry().Infof("Product already exists and 'VerifyOnly (reuseExisting)' is false then product (%v) binary and scan result will be replaced without creating a new product.", productID)
+		// log.Entry().Debugf("[DEBUG] ===> Replace binary entry point started %v", productID)
+		productID = uploadFile(config, productID, client, fileName, true)
+
+		// log.Entry().Debugf("[DEBUG] ===> After uploading file [(productID > 0) && !config.VerifyOnly] returned productID: %v", productID)
+		return productID
+
+		// If product already exists and "reuseExisting" option is enabled then return the latest similar scan result.
+	} else {
+		log.Entry().Infof("VerifyOnly (reuseExisting) option is enabled and returned productID: %v", productID)
+		// log.Entry().Debugf("[DEBUG] ===> VerifyOnly (reuseExisting) option is enabled and returned productID: %v", productID)
+		return productID
+	}
+}
+
+func uploadFile(config protecodeExecuteScanOptions, productID int, client protecode.Protecode, fileName string, replaceBinary bool) int {
+
 	if len(config.FetchURL) > 0 {
 		log.Entry().Debugf("Declare fetch url %v", config.FetchURL)
-		resultData := client.DeclareFetchURL(config.CleanupMode, config.Group, config.FetchURL)
-		return resultData.Result.ProductID
+		resultData := client.DeclareFetchURL(config.CleanupMode, config.Group, config.FetchURL, productID, replaceBinary)
+		productID = resultData.Result.ProductID
 	} else {
 		log.Entry().Debugf("Upload file path: %v", config.FilePath)
 		if len(config.FilePath) <= 0 {
-			//TODO: bubble up error
-			log.Entry().Fatalf("There is no file path configured for upload: %v", config.FilePath)
+			log.Entry().Fatalf("There is no file path configured for upload : %v", config.FilePath)
 		}
 		pathToFile := filepath.Join(config.FilePath, fileName)
 		if !(fileExists(pathToFile)) {
-			//TODO: bubble up error
 			log.Entry().Fatalf("There is no file for upload: %v", pathToFile)
 		}
 
@@ -308,9 +382,11 @@ func uploadScanOrDeclareFetch(config protecodeExecuteScanOptions, client proteco
 			combinedFileName = fmt.Sprintf("%v_%v", config.PullRequestName, fileName)
 		}
 
-		resultData := client.UploadScanFile(config.CleanupMode, config.Group, pathToFile, combinedFileName)
-		return resultData.Result.ProductID
+		resultData := client.UploadScanFile(config.CleanupMode, config.Group, pathToFile, combinedFileName, productID, replaceBinary)
+		productID = resultData.Result.ProductID
+		log.Entry().Debugf("[DEBUG] ===> uploadFile return FINAL product id: %v", productID)
 	}
+	return productID
 }
 
 func fileExists(filename string) bool {
@@ -319,6 +395,13 @@ func fileExists(filename string) bool {
 		return false
 	}
 	return !info.IsDir()
+}
+
+func hasExisting(productID int, verifyOnly bool) bool {
+	if (productID > 0) || verifyOnly {
+		return true
+	}
+	return false
 }
 
 var writeReportToFile = func(resp io.ReadCloser, reportFileName string) error {
@@ -365,16 +448,17 @@ func getTarName(config *protecodeExecuteScanOptions) string {
 // todo: check if group and product names can be retrieved
 func createToolRecordProtecode(workspace string, config *protecodeExecuteScanOptions, productID int, webuiURL string) (string, error) {
 	record := toolrecord.New(workspace, "protecode", config.ServerURL)
+	groupURL := config.ServerURL + "/#/groups/" + config.Group
 	err := record.AddKeyData("group",
 		config.Group,
-		config.Group,
-		"")
+		config.Group, // todo figure out display name
+		groupURL)
 	if err != nil {
 		return "", err
 	}
 	err = record.AddKeyData("product",
 		strconv.Itoa(productID),
-		strconv.Itoa(productID),
+		strconv.Itoa(productID), // todo figure out display name
 		webuiURL)
 	if err != nil {
 		return "", err

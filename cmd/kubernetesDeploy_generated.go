@@ -75,6 +75,8 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
@@ -368,9 +370,9 @@ func kubernetesDeployMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/kube-config", "$(vaultBasePath)/$(vaultPipelineName)/kube-config", "$(vaultBasePath)/GROUP-SECRETS/kube-config"},
-								Type:  "vaultSecretFile",
+								Name:    "kubeConfigFileSecretName",
+								Type:    "vaultSecretFile",
+								Default: "kube-config",
 							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
@@ -434,9 +436,8 @@ func kubernetesDeployMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/docker-config", "$(vaultBasePath)/$(vaultPipelineName)/docker-config", "$(vaultBasePath)/GROUP-SECRETS/docker-config"},
-								Type:  "vaultSecretFile",
+								Name: "dockerConfigFileVaultSecretName",
+								Type: "vaultSecretFile",
 							},
 						},
 						Scope:     []string{"PARAMETERS"},
