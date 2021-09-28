@@ -104,8 +104,7 @@ func gctsExecuteABAPUnitTests(config gctsExecuteABAPUnitTestsOptions, telemetryD
 
 	if aUnit || aTC {
 
-		log.Entry().Info("Unit Test or ATC Check have failed. Check Statistic Analysis Warning for more information!")
-		unitTestErr = errors.New("Error")
+		log.Entry().Fatal("Unit Test or ATC Check have failed. Check Statistic Analysis Warning for more information!")
 
 	}
 
