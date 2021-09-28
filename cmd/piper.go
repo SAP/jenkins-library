@@ -12,6 +12,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -184,10 +185,8 @@ func addRootFlags(rootCmd *cobra.Command) {
 
 }
 
-const stageNameEnvKey = "STAGE_NAME"
-
 // initStageName initializes GeneralConfig.StageName from either GeneralConfig.ParametersJSON
-// or the environment variable 'STAGE_NAME', unless it has been provided as command line option.
+// or the environment variable (orchestrator specific), unless it has been provided as command line option.
 // Log output needs to be suppressed via outputToLog by the getConfig step.
 func initStageName(outputToLog bool) {
 	var stageNameSource string
@@ -204,8 +203,10 @@ func initStageName(outputToLog bool) {
 	}
 
 	// Use stageName from ENV as fall-back, for when extracting it from parametersJSON fails below
-	GeneralConfig.StageName = os.Getenv(stageNameEnvKey)
-	stageNameSource = fmt.Sprintf("env variable '%s'", stageNameEnvKey)
+	provider, _ := orchestrator.NewOrchestratorSpecificConfigProvider()
+	GeneralConfig.StageName = provider.GetStageName()
+	// os.Getenv(stageNameEnvKey)
+	stageNameSource = "env variable"
 
 	if len(GeneralConfig.ParametersJSON) == 0 {
 		return
