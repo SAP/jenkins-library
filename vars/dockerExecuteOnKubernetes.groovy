@@ -258,6 +258,14 @@ void call(Map parameters = [:], body) {
             config.containerMap = [(config.get('dockerImage')): config.containerName]
             config.containerCommands = config.containerCommand ? [(config.get('dockerImage')): config.containerCommand] : null
         }
+        files, errf := ioutil.ReadDir(".")
+        if errf != nil {
+            panic(errf)
+        }
+        fmt.Println("Here are the files in DOCKERKUBE 2121212:")
+        for _, f := range files {
+            fmt.Println(f.Name())
+        }
         executeOnPod(config, utils, body, script)
     }
 }
