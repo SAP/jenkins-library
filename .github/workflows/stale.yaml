@@ -7,7 +7,7 @@ jobs:
   stale:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/stale@v3
+    - uses: actions/stale@v4
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         stale-issue-message: 'Thank you for your contribution! This issue is stale because it has been open 60 days with no activity. In order to keep it open, please remove stale label or add a comment within the next 5 days.'
@@ -18,3 +18,4 @@ jobs:
         days-before-close: 10
         stale-issue-label: 'stale'
         stale-pr-label: 'stale'
+        operations-per-run: 60
