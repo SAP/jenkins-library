@@ -244,7 +244,6 @@ func initStageName(outputToLog bool) {
 	// Use stageName from ENV as fall-back, for when extracting it from parametersJSON fails below
 	provider, _ := orchestrator.NewOrchestratorSpecificConfigProvider()
 	GeneralConfig.StageName = provider.GetStageName()
-	// os.Getenv(stageNameEnvKey)
 	stageNameSource = "env variable"
 
 	if len(GeneralConfig.ParametersJSON) == 0 {
