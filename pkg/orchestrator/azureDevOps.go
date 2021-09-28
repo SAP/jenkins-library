@@ -8,7 +8,7 @@ import (
 type AzureDevOpsConfigProvider struct{}
 
 func (a *AzureDevOpsConfigProvider) GetStageName() string {
-	return os.Getenv("SYSTEM_STAGENAME")
+	return os.Getenv("SYSTEM_STAGEDISPLAYNAME")
 }
 
 func (a *AzureDevOpsConfigProvider) GetBranch() string {
