@@ -51,8 +51,8 @@ func TestAdoptStageNameFromParametersJSON(t *testing.T) {
 			// init
 
 			//mock Jenkins env
-			resetValue1 := os.Getenv("JENKINS_HOME")
-			defer func() { _ = os.Setenv("JENKINS_HOME", resetValue1) }()
+			jenkinsHomeResetValue := os.Getenv("JENKINS_HOME")
+			defer func() { os.Setenv("JENKINS_HOME", jenkinsHomeResetValue) }()
 			os.Setenv("JENKINS_HOME", "anything")
 
 			GeneralConfig.StageName = test.stageNameArg
