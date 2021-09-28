@@ -102,7 +102,7 @@ func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, s
 	} else {
 		content, errF := ioutil.ReadFile(config.DockerConfigJSON)
 		if errF != nil {
-			log.Fatal(errF)
+			log.Entry().WithError(err).Fatal(errF)
 		}
 		text := string(content)
 		println("Contents of docker config")
