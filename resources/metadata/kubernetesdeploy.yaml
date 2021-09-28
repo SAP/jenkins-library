@@ -96,6 +96,8 @@ spec:
           - name: dockerCredentialsId
             type: secret
             param: password
+          - name: commonPipelineEnvironment
+            param: custom/repositoryPassword
       - name: containerRegistryUrl
         aliases:
           - name: dockerRegistryUrl
@@ -122,6 +124,8 @@ spec:
           - name: dockerCredentialsId
             type: secret
             param: username
+          - name: commonPipelineEnvironment
+            param: custom/repositoryUsername
       - name: containerRegistrySecret
         description: Name of the container registry secret used for pulling containers from the registry.
         longDescription: |-
@@ -245,8 +249,10 @@ spec:
           - name: kubeConfigFileCredentialsId
             type: secret
           - type: vaultSecretFile
-            name: kubeConfigFileSecretName
-            default: kube-config
+            paths:
+              - $(vaultPath)/kube-config
+              - $(vaultBasePath)/$(vaultPipelineName)/kube-config
+              - $(vaultBasePath)/GROUP-SECRETS/kube-config
       - name: kubeContext
         type: string
         description: Defines the context to use from the \"kubeconfig\" file.
@@ -298,7 +304,10 @@ spec:
           - name: dockerConfigJsonCredentialsId
             type: secret
           - type: vaultSecretFile
-            name: dockerConfigFileVaultSecretName
+            paths:
+              - $(vaultPath)/docker-config
+              - $(vaultBasePath)/$(vaultPipelineName)/docker-config
+              - $(vaultBasePath)/GROUP-SECRETS/docker-config
   containers:
     - image: dtzar/helm-kubectl:3.4.1
       workingDir: /config
