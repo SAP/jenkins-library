@@ -270,10 +270,12 @@ func convertAtcToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client pipe
 
 		for _, atcworklist := range object.Findings.Finding {
 
+			location := html.UnescapeString(atcworklist.Location)
+
 			if len(atcworklist.Atcfinding) > 0 {
 
 				unitErr.Message = html.UnescapeString(atcworklist.CheckTitle + " " + atcworklist.MessageTitle)
-				if strings.Contains(atcworklist.Location, "interfaces") {
+				if strings.Contains(location, "interfaces") {
 
 					if readableSourceFormat {
 
@@ -282,9 +284,9 @@ func convertAtcToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client pipe
 						fileName = "REPS " + objectName + "====IU.abap"
 					}
 
-				} else if strings.Contains(atcworklist.Location, "functions") && strings.Contains(atcworklist.Location, "includes") {
+				} else if strings.Contains(location, "functions") && strings.Contains(location, "includes") {
 					regexLine := regexp.MustCompile(`includes\/\w*`)
-					fugrInclude := regexLine.FindString(atcworklist.Location)
+					fugrInclude := regexLine.FindString(location)
 					subObject = fugrInclude[len(`includes/`):]
 					if readableSourceFormat {
 						fileName = strings.ToLower(objectName) + "." + strings.ToLower(objectType) + "." + strings.ToLower(subObject) + ".reps.abap"
@@ -293,9 +295,9 @@ func convertAtcToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client pipe
 						fileName = "REPS " + subObject + ".abap"
 					}
 
-				} else if strings.Contains(atcworklist.Location, "functions") && strings.Contains(atcworklist.Location, "fmodules") {
+				} else if strings.Contains(location, "functions") && strings.Contains(location, "fmodules") {
 					regexLine := regexp.MustCompile(`fmodules\/\w*`)
-					funcModule := regexLine.FindString(atcworklist.Location)
+					funcModule := regexLine.FindString(location)
 					subObject = funcModule[len(`fmodules/`):]
 					if readableSourceFormat {
 						fileName = strings.ToLower(subObject) + ".func.abap"
@@ -304,9 +306,9 @@ func convertAtcToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client pipe
 						fileName = "FUNC " + subObject + ".abap"
 					}
 
-				} else if strings.Contains(atcworklist.Location, "classes") && strings.Contains(atcworklist.Location, "includes") {
+				} else if strings.Contains(location, "classes") && strings.Contains(location, "includes") {
 
-					if strings.Contains(atcworklist.Location, "definitions") {
+					if strings.Contains(location, "definitions") {
 
 						if readableSourceFormat {
 
@@ -316,7 +318,7 @@ func convertAtcToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client pipe
 						}
 
 					}
-					if strings.Contains(atcworklist.Location, "implementations") {
+					if strings.Contains(location, "implementations") {
 
 						if readableSourceFormat {
 
@@ -326,7 +328,7 @@ func convertAtcToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client pipe
 							fileName = "CINC " + objectName + "=======CCIMP.abap"
 						}
 					}
-					if strings.Contains(atcworklist.Location, "macros") {
+					if strings.Contains(location, "macros") {
 
 						if readableSourceFormat {
 
@@ -337,7 +339,7 @@ func convertAtcToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client pipe
 						}
 					}
 
-					if strings.Contains(atcworklist.Location, "testclasses") {
+					if strings.Contains(location, "testclasses") {
 						if readableSourceFormat {
 
 							fileName = strings.ToLower(objectName) + "." + strings.ToLower(objectType) + "." + "testclasses.abap"
@@ -347,11 +349,11 @@ func convertAtcToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client pipe
 						}
 					}
 
-				} else if strings.Contains(atcworklist.Location, "classes") && strings.Contains(atcworklist.Location, "source") {
+				} else if strings.Contains(location, "classes") && strings.Contains(location, "source") {
 
-					if strings.Contains(atcworklist.Location, "main") && strings.Contains(atcworklist.Location, "type") {
+					if strings.Contains(location, "main") && strings.Contains(location, "type") {
 
-						if strings.Contains(atcworklist.Location, "CLAS%2FOSO") {
+						if strings.Contains(location, "CLAS%2FOSO") {
 
 							if readableSourceFormat {
 								//make it compatible for jenkins
@@ -384,7 +386,7 @@ func convertAtcToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client pipe
 
 								}
 								regexLine := regexp.MustCompile(`.start=\d*`)
-								linestring := regexLine.FindString(atcworklist.Location)
+								linestring := regexLine.FindString(location)
 								if linestring != "" {
 
 									lineint, err := strconv.Atoi(linestring[len(`.start=`):])
@@ -401,10 +403,10 @@ func convertAtcToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client pipe
 							}
 
 						}
-						if strings.Contains(atcworklist.Location, "CLAS%2FOM") {
+						if strings.Contains(location, "CLAS%2FOM") {
 
 							regexMethod := regexp.MustCompile(`.name=[a-zA-Z0-9_-]*;`)
-							method := regexMethod.FindString(html.UnescapeString(atcworklist.Location))
+							method := regexMethod.FindString(location)
 							subObject = method[len(`.name=`) : len(method)-1]
 
 							if readableSourceFormat {
@@ -428,7 +430,7 @@ func convertAtcToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client pipe
 								}
 
 								regexLine := regexp.MustCompile(`.start=\d*`)
-								linestring := regexLine.FindString(atcworklist.Location)
+								linestring := regexLine.FindString(location)
 								if linestring != "" {
 									lineint, err := strconv.Atoi(linestring[len(`.start=`):])
 									if err == nil {
@@ -445,7 +447,7 @@ func convertAtcToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client pipe
 							}
 
 						}
-						if strings.Contains(atcworklist.Location, "CLAS%2FOSI") {
+						if strings.Contains(location, "CLAS%2FOSI") {
 
 							if readableSourceFormat {
 
@@ -469,7 +471,7 @@ func convertAtcToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client pipe
 								}
 
 								regexLine := regexp.MustCompile(`.start=\d*`)
-								linestring := regexLine.FindString(atcworklist.Location)
+								linestring := regexLine.FindString(location)
 								if linestring != "" {
 									lineint, err := strconv.Atoi(linestring[len(`.start=`):])
 									if err == nil {
@@ -501,7 +503,7 @@ func convertAtcToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client pipe
 			if unitErr.Line == "" {
 
 				regexLine := regexp.MustCompile(`.start=\d*`)
-				linestring := regexLine.FindString(atcworklist.Location)
+				linestring := regexLine.FindString(location)
 				if linestring != "" {
 					unitErr.Line = linestring[len(`.start=`):]
 				}
@@ -1032,7 +1034,7 @@ func convertUnitTestToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client
 
 				} else {
 					unitErr.Severity = "info"
-					unitErr.Message = "test passed"
+					unitErr.Message = "unit test was successful"
 					unitErr.Line = ""
 
 				}
