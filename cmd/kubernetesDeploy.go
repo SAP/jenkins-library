@@ -91,6 +91,8 @@ func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, s
 		}
 	}
 
+	println("This is the docker config JSON: 3333333: ")
+	println(config.DockerConfigJSON)
 	var secretsData string
 	if len(config.DockerConfigJSON) == 0 && (len(config.ContainerRegistryUser) == 0 || len(config.ContainerRegistryPassword) == 0) {
 		log.Entry().Info("No container registry credentials or docker config.json file provided or credentials incomplete: skipping secret creation")
