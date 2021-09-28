@@ -57,10 +57,8 @@ spec:
           - name: fortifyCredentialsId
             type: secret
           - type: vaultSecret
-            paths:
-              - $(vaultPath)/fortify
-              - $(vaultBasePath)/$(vaultPipelineName)/fortify
-              - $(vaultBasePath)/GROUP-SECRETS/fortify
+            name: fortifyVaultSecretName
+            default: fortify
       - name: buildDescriptorExcludeList
         type: "[]string"
         description: "List of build descriptors and therefore modules to exclude from the scan and assessment activities."
@@ -97,10 +95,8 @@ spec:
           - name: githubTokenCredentialsId
             type: secret
           - type: vaultSecret
-            paths:
-              - $(vaultPath)/github
-              - $(vaultBasePath)/$(vaultPipelineName)/github
-              - $(vaultBasePath)/GROUP-SECRETS/github
+            default: github
+            name: githubVaultSecretName
       - name: autoCreate
         type: bool
         description:
@@ -616,6 +612,8 @@ spec:
             fields:
               - name: projectName
               - name: projectVersion
+              - name: projectVersionId
+                type: int64
               - name: violations
                 type: int
               - name: corporateTotal

@@ -1,11 +1,12 @@
 package mock
 
 import (
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestFilesMockFileExists(t *testing.T) {
@@ -617,5 +618,27 @@ func TestOpen(t *testing.T) {
 		if assert.NoError(t, err) {
 			assert.Equal(t, []byte("initial-content-hello"), content)
 		}
+	})
+}
+
+func TestFilesMockTempDir(t *testing.T) {
+	t.Parallel()
+	t.Run("creates a temp dir without a pattern", func(t *testing.T) {
+		files := FilesMock{}
+		dir, err := files.TempDir("", "")
+		assert.NoError(t, err)
+		assert.Equal(t, "/tmp/test", dir)
+		ok, err := files.DirExists("/tmp/test")
+		assert.NoError(t, err)
+		assert.True(t, ok)
+	})
+	t.Run("creates a temp dir with a pattern", func(t *testing.T) {
+		files := FilesMock{}
+		dir, err := files.TempDir("", "pattern")
+		assert.NoError(t, err)
+		assert.Equal(t, "/tmp/patterntest", dir)
+		ok, err := files.DirExists("/tmp/patterntest")
+		assert.NoError(t, err)
+		assert.True(t, ok)
 	})
 }

@@ -40,6 +40,7 @@ type checkmarxExecuteScanOptions struct {
 	VulnerabilityThresholdMedium  int    `json:"vulnerabilityThresholdMedium,omitempty"`
 	VulnerabilityThresholdResult  string `json:"vulnerabilityThresholdResult,omitempty"`
 	VulnerabilityThresholdUnit    string `json:"vulnerabilityThresholdUnit,omitempty"`
+	IsOptimizedAndScheduled       bool   `json:"isOptimizedAndScheduled,omitempty"`
 }
 
 type checkmarxExecuteScanInflux struct {
@@ -281,6 +282,7 @@ func addCheckmarxExecuteScanFlags(cmd *cobra.Command, stepConfig *checkmarxExecu
 	cmd.Flags().IntVar(&stepConfig.VulnerabilityThresholdMedium, "vulnerabilityThresholdMedium", 100, "The specific threshold for medium severity findings")
 	cmd.Flags().StringVar(&stepConfig.VulnerabilityThresholdResult, "vulnerabilityThresholdResult", `FAILURE`, "The result of the build in case thresholds are enabled and exceeded")
 	cmd.Flags().StringVar(&stepConfig.VulnerabilityThresholdUnit, "vulnerabilityThresholdUnit", `percentage`, "The unit for the threshold to apply.")
+	cmd.Flags().BoolVar(&stepConfig.IsOptimizedAndScheduled, "isOptimizedAndScheduled", false, "Whether the pipeline runs in optimized mode and the current execution is a scheduled one")
 
 	cmd.MarkFlagRequired("password")
 	cmd.MarkFlagRequired("projectName")
@@ -378,9 +380,9 @@ func checkmarxExecuteScanMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/checkmarx", "$(vaultBasePath)/$(vaultPipelineName)/checkmarx", "$(vaultBasePath)/GROUP-SECRETS/checkmarx"},
-								Type:  "vaultSecret",
+								Name:    "checkmarxVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "checkmarx",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -462,9 +464,9 @@ func checkmarxExecuteScanMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/checkmarx", "$(vaultBasePath)/$(vaultPipelineName)/checkmarx", "$(vaultBasePath)/GROUP-SECRETS/checkmarx"},
-								Type:  "vaultSecret",
+								Name:    "checkmarxVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "checkmarx",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -535,6 +537,20 @@ func checkmarxExecuteScanMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     `percentage`,
+					},
+					{
+						Name: "isOptimizedAndScheduled",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "custom/isOptimizedAndScheduled",
+							},
+						},
+						Scope:     []string{"PARAMETERS"},
+						Type:      "bool",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   false,
 					},
 				},
 			},

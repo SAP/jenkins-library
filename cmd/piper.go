@@ -41,6 +41,7 @@ type GeneralConfigOptions struct {
 	VaultNamespace       string
 	VaultPath            string
 	HookConfig           HookConfiguration
+	MetaDataResolver     func() map[string]config.StepData
 }
 
 // HookConfiguration contains the configuration for supported hooks, so far Sentry and Splunk are supported.
@@ -125,6 +126,7 @@ func Execute() {
 	rootCmd.AddCommand(GctsCloneRepositoryCommand())
 	rootCmd.AddCommand(JsonApplyPatchCommand())
 	rootCmd.AddCommand(KanikoExecuteCommand())
+	rootCmd.AddCommand(CnbBuildCommand())
 	rootCmd.AddCommand(AbapEnvironmentAssemblePackagesCommand())
 	rootCmd.AddCommand(AbapAddonAssemblyKitCheckCVsCommand())
 	rootCmd.AddCommand(AbapAddonAssemblyKitCheckPVCommand())
@@ -150,6 +152,7 @@ func Execute() {
 	rootCmd.AddCommand(IntegrationArtifactUploadCommand())
 	rootCmd.AddCommand(IntegrationArtifactTriggerIntegrationTestCommand())
 	rootCmd.AddCommand(IntegrationArtifactUnDeployCommand())
+	rootCmd.AddCommand(IntegrationArtifactResourceCommand())
 	rootCmd.AddCommand(TerraformExecuteCommand())
 	rootCmd.AddCommand(ContainerExecuteStructureTestsCommand())
 	rootCmd.AddCommand(GaugeExecuteTestsCommand())
@@ -160,6 +163,7 @@ func Execute() {
 	rootCmd.AddCommand(WritePipelineEnv())
 	rootCmd.AddCommand(ReadPipelineEnv())
 	rootCmd.AddCommand(InfluxWriteDataCommand())
+	rootCmd.AddCommand(AbapEnvironmentRunAUnitTestCommand())
 	rootCmd.AddCommand(CheckStepActiveCommand())
 
 	addRootFlags(rootCmd)

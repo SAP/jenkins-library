@@ -117,4 +117,10 @@ The `vaultTestCredentialPath` parameter is the endpoint of your credential path 
 
 The `vaultTestCredentialKeys`parameter is a list of credential IDs. The secret value of the credential will be exposed as an environment variable prefixed by "PIPER_TESTCREDENTIAL_" and transformed to a valid variable name. For a credential ID named `myAppId` the forwarded environment variable to the step will be `PIPER_TESTCREDENTIAL_MYAPPID` containing the secret. Hyphens will be replaced by underscores and other non-alphanumeric characters will be removed.
 
+!!! hint "Using a custom prefix for test credentials"
+    By default the prefix for test credentials is `PIPER_TESTCREDENTIAL_`.
+
+    It is possible to use a custom prefix by setting for example `vaultTestCredentialEnvPrefix: MY_CUSTOM_PREFIX` in your configuration.
+    With this above credential ID named `myAppId` will be populated into an environment variable with the name `MY_CUSTOM_PREFIX_MYAPPID`.
+
 Extended logging for vault secret fetching (e.g. found credentials and environment variable names) can be activated via `verbose: true` configuration.
