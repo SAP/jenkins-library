@@ -49,15 +49,20 @@ func TestAdoptStageNameFromParametersJSON(t *testing.T) {
 	for _, test := range tt {
 		t.Run(test.name, func(t *testing.T) {
 			// init
-			stageNameEnvKey := "STAGE_NAME"
+
+			//mock Jenkins env
+			resetValue1 := os.Getenv("JENKINS_HOME")
+			defer func() { _ = os.Setenv("JENKINS_HOME", resetValue1) }()
+			os.Setenv("JENKINS_HOME", "anything")
+
 			GeneralConfig.StageName = test.stageNameArg
 
-			resetValue := os.Getenv(stageNameEnvKey)
-			defer func() { _ = os.Setenv(stageNameEnvKey, resetValue) }()
+			resetValue := os.Getenv("STAGE_NAME")
+			defer func() { _ = os.Setenv("STAGE_NAME", resetValue) }()
 
-			err := os.Setenv(stageNameEnvKey, test.stageNameEnv)
+			err := os.Setenv("STAGE_NAME", test.stageNameEnv)
 			if err != nil {
-				t.Fatalf("could not set env var %s", stageNameEnvKey)
+				t.Fatalf("could not set env var %s", "STAGE_NAME")
 			}
 
 			if test.stageNameJSON != "" {
