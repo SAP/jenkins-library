@@ -416,7 +416,7 @@ func kubernetesDeployMetadata() config.StepData {
 					{
 						Name:        "tillerNamespace",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "helmTillerNamespace"}},
@@ -440,7 +440,7 @@ func kubernetesDeployMetadata() config.StepData {
 								Type: "vaultSecretFile",
 							},
 						},
-						Scope:     []string{"PARAMETERS"},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
