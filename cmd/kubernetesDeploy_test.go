@@ -93,7 +93,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 		k8sSecretSpec := `{"kind": "Secret","data":{".dockerconfigjson": "ThisIsOurBase64EncodedSecret=="}}`
 		e := mock.ExecMockRunner{
 			StdoutReturn: map[string]string{
-				`kubectl create secret --insecure-skip-tls-verify=true --dry-run=true --output=json generic testSecret --from-file=.dockerconfigjson=/path/to/.docker/config.json --type="kubernetes.io/dockerconfigjson"`: k8sSecretSpec,
+				`kubectl create secret --insecure-skip-tls-verify=true --dry-run=true --output=json generic testSecret --from-file=.dockerconfigjson=/path/to/.docker/config.json --type=kubernetes.io/dockerconfigjson`: k8sSecretSpec,
 			},
 		}
 
@@ -115,7 +115,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"generic",
 			"testSecret",
 			"--from-file=.dockerconfigjson=/path/to/.docker/config.json",
-			`--type="kubernetes.io/dockerconfigjson"`,
+			`--type=kubernetes.io/dockerconfigjson`,
 		}, e.Calls[1].Params, "Wrong secret creation parameters")
 
 		assert.Equal(t, "helm", e.Calls[2].Exec, "Wrong upgrade command")
@@ -569,7 +569,7 @@ spec:
 			"generic",
 			opts.ContainerRegistrySecret,
 			fmt.Sprintf("--from-file=.dockerconfigjson=%v", opts.DockerConfigJSON),
-			`--type="kubernetes.io/dockerconfigjson"`,
+			`--type=kubernetes.io/dockerconfigjson`,
 		}, e.Calls[1].Params, "kubectl parameters incorrect")
 	})
 
