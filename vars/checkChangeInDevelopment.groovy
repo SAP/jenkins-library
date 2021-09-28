@@ -85,9 +85,7 @@ void call(parameters = [:]) {
         def script = checkScript(this, parameters) ?: this
         String stageName = parameters.stageName ?: env.STAGE_NAME
 
-//        GitUtils gitUtils = parameters?.gitUtils ?: new GitUtils()
-
-//        ChangeManagement cm = parameters?.cmUtils ?: new ChangeManagement(script, gitUtils)
+        addPipelineWarning(script, "Deprecation Warning", "The step ${stepName} is deprecated. Follow the documentation for options.")
 
         ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
             .loadStepDefaults([:], stageName)
@@ -160,19 +158,32 @@ void call(parameters = [:]) {
 
 Map addDockerParams(Script script, Map parameters, Map docker) {
 
-        if(docker) {
-            if(docker.image) {
-                parameters.dockerImage = docker.image
-            }
-            if(docker.options) {
-                parameters.dockerOptions = docker.options
-            }
-            if(docker.envVars) {
-                parameters.dockerEnvVars = docker.envVars
-            }
-            if(docker.pullImage != null) {
-                parameters.put('dockerPullImage', docker.pullImage)
-            }
+    if(docker) {
+        if(docker.image) {
+            parameters.dockerImage = docker.image
         }
-        return parameters
+        if(docker.options) {
+            parameters.dockerOptions = docker.options
+        }
+        if(docker.envVars) {
+            parameters.dockerEnvVars = docker.envVars
+        }
+        if(docker.pullImage != null) {
+            parameters.put('dockerPullImage', docker.pullImage)
+        }
     }
+    return parameters
+}
+
+static void addPipelineWarning(Script script, String heading, String message) {
+    script.echo '[WARNING] ' + message
+    script.addBadge(icon: "warning.gif", text: message)
+
+    String html =
+        """
+            <h2>$heading</h2>
+            <p>$message</p>
+            """
+
+    script.createSummary(icon: "warning.gif", text: html)
+}
