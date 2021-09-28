@@ -245,7 +245,6 @@ func initStageName(outputToLog bool) {
 	provider, err := orchestrator.NewOrchestratorSpecificConfigProvider()
 	if err != nil {
 		log.Entry().WithError(err).Warning("Cannot infer stage name from CI environment")
-		return
 	} else {
 		stageNameSource = "env variable"
 		GeneralConfig.StageName = provider.GetStageName()
