@@ -40,7 +40,7 @@ func TestValidateStruct(t *testing.T) {
 		}
 		err = validation.ValidateStruct(tStruct)
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "The Field2 must use the folowing values: value1 value2 value3.")
+		assert.Contains(t, err.Error(), "The Field2 must use the following values: value1 value2 value3.")
 		assert.Contains(t, err.Error(), "The Field3 is required since the Field1 is 1.")
 	})
 
@@ -53,7 +53,7 @@ func TestValidateStruct(t *testing.T) {
 		}
 		err = validation.ValidateStruct(tStruct)
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "The field2 must use the folowing values: value1 value2 value3.")
+		assert.Contains(t, err.Error(), "The field2 must use the following values: value1 value2 value3.")
 		assert.Contains(t, err.Error(), "The field3 is required since the Field1 is 1.")
 	})
 }
