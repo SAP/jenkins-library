@@ -1,8 +1,11 @@
 package cmd
 
 import (
+	"errors"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
+	"net/http"
+	"path/filepath"
 	"testing"
 )
 
@@ -11,7 +14,12 @@ type mavenExecuteIntegrationTestUtilsBundle struct {
 	*mock.FilesMock
 }
 
+func (m mavenExecuteIntegrationTestUtilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+	return errors.New("Test should not download files.")
+}
+
 func TestIntegrationTestModuleDoesNotExist(t *testing.T) {
+	t.Parallel()
 	utils := newMavenIntegrationTestsUtilsBundle()
 	config := mavenExecuteIntegrationOptions{}
 
@@ -21,12 +29,14 @@ func TestIntegrationTestModuleDoesNotExist(t *testing.T) {
 }
 
 func TestHappyPathIntegrationTests(t *testing.T) {
+	t.Parallel()
 	utils := newMavenIntegrationTestsUtilsBundle()
 	utils.FilesMock.AddFile("integration-tests/pom.xml", []byte(`<project> </project>`))
 
 	config := mavenExecuteIntegrationOptions{
 		Retry:     2,
 		ForkCount: "1C",
+		Goal:      "post-integration-test",
 	}
 
 	err := runMavenExecuteIntegration(&config, utils)
@@ -36,19 +46,20 @@ func TestHappyPathIntegrationTests(t *testing.T) {
 
 	expectedParameters1 := []string{
 		"--file",
-		"integration-tests/pom.xml",
+		filepath.Join(".", "integration-tests", "pom.xml"),
 		"-Dsurefire.rerunFailingTestsCount=2",
 		"-Dsurefire.forkCount=1C",
 		"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
 		"--batch-mode",
 		"org.jacoco:jacoco-maven-plugin:prepare-agent",
-		"test",
+		"post-integration-test",
 	}
 
 	assert.Equal(t, mock.ExecCall{Exec: "mvn", Params: expectedParameters1}, utils.ExecMockRunner.Calls[0])
 }
 
 func TestInvalidForkCountParam(t *testing.T) {
+	t.Parallel()
 	// init
 	utils := newMavenIntegrationTestsUtilsBundle()
 	utils.FilesMock.AddFile("integration-tests/pom.xml", []byte(`<project> </project>`))
@@ -113,7 +124,9 @@ func TestValidateForkCount(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
+		testCase := testCase
 		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
 			err := validateForkCount(testCase.testValue)
 			if testCase.expectedError == "" {
 				assert.NoError(t, err)
@@ -124,10 +137,10 @@ func TestValidateForkCount(t *testing.T) {
 	}
 }
 
-func newMavenIntegrationTestsUtilsBundle() mavenExecuteIntegrationTestUtilsBundle {
+func newMavenIntegrationTestsUtilsBundle() *mavenExecuteIntegrationTestUtilsBundle {
 	utilsBundle := mavenExecuteIntegrationTestUtilsBundle{
 		ExecMockRunner: &mock.ExecMockRunner{},
 		FilesMock:      &mock.FilesMock{},
 	}
-	return utilsBundle
+	return &utilsBundle
 }

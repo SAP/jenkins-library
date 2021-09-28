@@ -7,13 +7,16 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/mock"
+
 	"github.com/SAP/jenkins-library/pkg/fortify"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/versioning"
@@ -24,18 +27,37 @@ import (
 	"github.com/piper-validation/fortify-client-go/models"
 )
 
+type fortifyTestUtilsBundle struct {
+	*execRunnerMock
+	*mock.FilesMock
+	getArtifactShouldFail bool
+}
+
+func (f fortifyTestUtilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+	panic("not expected to be called in tests")
+}
+
+func (f fortifyTestUtilsBundle) GetArtifact(buildTool, buildDescriptorFile string, options *versioning.Options) (versioning.Artifact, error) {
+	if f.getArtifactShouldFail {
+		return nil, fmt.Errorf("build tool '%v' not supported", buildTool)
+	}
+	return artifactMock{Coordinates: newCoordinatesMock()}, nil
+}
+
+func newFortifyTestUtilsBundle() fortifyTestUtilsBundle {
+	utilsBundle := fortifyTestUtilsBundle{
+		execRunnerMock: &execRunnerMock{},
+		FilesMock:      &mock.FilesMock{},
+	}
+	return utilsBundle
+}
+
 type artifactMock struct {
-	Coordinates coordinatesMock
+	Coordinates versioning.Coordinates
 }
 
-type coordinatesMock struct {
-	GroupID    string
-	ArtifactID string
-	Version    string
-}
-
-func newCoordinatesMock() coordinatesMock {
-	return coordinatesMock{
+func newCoordinatesMock() versioning.Coordinates {
+	return versioning.Coordinates{
 		GroupID:    "a",
 		ArtifactID: "b",
 		Version:    "1.0.0",
@@ -196,6 +218,8 @@ func (f *fortifyMock) GetProjectIssuesByIDAndFilterSetGroupedBySelector(id int64
 		}, nil
 	}
 	if issueFilterSelectorSet != nil && issueFilterSelectorSet.FilterBySet != nil && len(issueFilterSelectorSet.FilterBySet) > 0 && issueFilterSelectorSet.FilterBySet[0].GUID == "3" {
+		groupName := "Suspicious"
+		groupName2 := "Exploitable"
 		group := "3"
 		total := int32(4)
 		audited := int32(0)
@@ -203,8 +227,8 @@ func (f *fortifyMock) GetProjectIssuesByIDAndFilterSetGroupedBySelector(id int64
 		total2 := int32(5)
 		audited2 := int32(0)
 		return []*models.ProjectVersionIssueGroup{
-			{ID: &group, TotalCount: &total, AuditedCount: &audited},
-			{ID: &group2, TotalCount: &total2, AuditedCount: &audited2},
+			{ID: &group, CleanName: &groupName, TotalCount: &total, AuditedCount: &audited},
+			{ID: &group2, CleanName: &groupName2, TotalCount: &total2, AuditedCount: &audited2},
 		}, nil
 	}
 	group := "Audit All"
@@ -217,9 +241,9 @@ func (f *fortifyMock) GetProjectIssuesByIDAndFilterSetGroupedBySelector(id int64
 	total3 := int32(5)
 	audited3 := int32(4)
 	return []*models.ProjectVersionIssueGroup{
-		{ID: &group, TotalCount: &total, AuditedCount: &audited},
-		{ID: &group2, TotalCount: &total2, AuditedCount: &audited2},
-		{ID: &group3, TotalCount: &total3, AuditedCount: &audited3},
+		{ID: &group, CleanName: &group, TotalCount: &total, AuditedCount: &audited},
+		{ID: &group2, CleanName: &group2, TotalCount: &total2, AuditedCount: &audited2},
+		{ID: &group3, CleanName: &group3, TotalCount: &total3, AuditedCount: &audited3},
 	}, nil
 }
 func (f *fortifyMock) ReduceIssueFilterSelectorSet(issueFilterSelectorSet *models.IssueFilterSelectorSet, names []string, options []string) *models.IssueFilterSelectorSet {
@@ -313,7 +337,13 @@ func (er *execRunnerMock) RunExecutable(e string, p ...string) error {
 	classpathPip := "/usr/lib/python35.zip;/usr/lib/python3.5;/usr/lib/python3.5/plat-x86_64-linux-gnu;/usr/lib/python3.5/lib-dynload;/home/piper/.local/lib/python3.5/site-packages;/usr/local/lib/python3.5/dist-packages;/usr/lib/python3/dist-packages;./lib"
 	classpathMaven := "some.jar;someother.jar"
 	if e == "python2" {
-		er.currentExecution().outWriter.Write([]byte(classpathPip))
+		if p[1] == "invalid" {
+			return errors.New("Invalid command")
+		}
+		_, err := er.currentExecution().outWriter.Write([]byte(classpathPip))
+		if err != nil {
+			return err
+		}
 	} else if e == "mvn" {
 		path := strings.ReplaceAll(p[2], "-Dmdep.outputFile=", "")
 		err := ioutil.WriteFile(path, []byte(classpathMaven), 0644)
@@ -325,27 +355,14 @@ func (er *execRunnerMock) RunExecutable(e string, p ...string) error {
 	return nil
 }
 
-func TestParametersAreValidated(t *testing.T) {
-	type parameterTestData struct {
-		nameOfRun     string
-		config        fortifyExecuteScanOptions
-		expectedError string
-	}
+func TestDetermineArtifact(t *testing.T) {
+	t.Run("Cannot get artifact without build tool", func(t *testing.T) {
+		utilsMock := newFortifyTestUtilsBundle()
+		utilsMock.getArtifactShouldFail = true
 
-	testData := []parameterTestData{
-		{
-			nameOfRun:     "all parameters empty",
-			config:        fortifyExecuteScanOptions{},
-			expectedError: "Unable to get artifact from descriptor : build tool '' not supported",
-		},
-	}
-
-	for _, data := range testData {
-		t.Run(data.nameOfRun, func(t *testing.T) {
-			_, err := determineArtifact(data.config, &command.Command{})
-			assert.EqualError(t, err, data.expectedError)
-		})
-	}
+		_, err := determineArtifact(fortifyExecuteScanOptions{}, utilsMock)
+		assert.EqualError(t, err, "Unable to get artifact from descriptor : build tool '' not supported")
+	})
 }
 
 func TestExecutions(t *testing.T) {
@@ -374,11 +391,10 @@ func TestExecutions(t *testing.T) {
 	for _, data := range testData {
 		t.Run(data.nameOfRun, func(t *testing.T) {
 			ff := fortifyMock{}
-			runner := &execRunnerMock{}
-			artMock := artifactMock{Coordinates: newCoordinatesMock()}
+			utils := newFortifyTestUtilsBundle()
 			influx := fortifyExecuteScanInflux{}
 			auditStatus := map[string]string{}
-			reports, _ := runFortifyScan(data.config, &ff, runner, artMock, nil, &influx, auditStatus)
+			reports, _ := runFortifyScan(data.config, &ff, utils, nil, &influx, auditStatus)
 			if len(data.expectedReports) != data.expectedReportsLength {
 				assert.Fail(t, fmt.Sprintf("Wrong number of reports detected, expected %v, actual %v", data.expectedReportsLength, len(data.expectedReports)))
 			}
@@ -425,8 +441,9 @@ func TestAnalyseSuspiciousExploitable(t *testing.T) {
 			},
 		},
 	}
-	issues := analyseSuspiciousExploitable(config, &ff, &projectVersion, &models.FilterSet{}, &selectorSet, &influx, auditStatus)
+	issues, groups := analyseSuspiciousExploitable(config, &ff, &projectVersion, &models.FilterSet{}, &selectorSet, &influx, auditStatus)
 	assert.Equal(t, 9, issues)
+	assert.Equal(t, 2, len(groups))
 
 	assert.Equal(t, 4, influx.fortify_data.fields.suspicious)
 	assert.Equal(t, 5, influx.fortify_data.fields.exploitable)
@@ -474,8 +491,10 @@ func TestAnalyseUnauditedIssues(t *testing.T) {
 			},
 		},
 	}
-	issues := analyseUnauditedIssues(config, &ff, &projectVersion, &models.FilterSet{}, &selectorSet, &influx, auditStatus)
+	issues, groups, err := analyseUnauditedIssues(config, &ff, &projectVersion, &models.FilterSet{}, &selectorSet, &influx, auditStatus)
+	assert.NoError(t, err)
 	assert.Equal(t, 13, issues)
+	assert.Equal(t, 3, len(groups))
 
 	assert.Equal(t, 15, influx.fortify_data.fields.auditAllTotal)
 	assert.Equal(t, 12, influx.fortify_data.fields.auditAllAudited)
@@ -500,25 +519,26 @@ func TestTriggerFortifyScan(t *testing.T) {
 			_ = os.RemoveAll(dir)
 		}()
 
-		runner := execRunnerMock{}
+		utils := newFortifyTestUtilsBundle()
 		config := fortifyExecuteScanOptions{
-			BuildTool:           "maven",
-			AutodetectClasspath: true,
-			BuildDescriptorFile: "./pom.xml",
-			Memory:              "-Xmx4G -Xms2G",
-			Src:                 []string{"**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "src/main/resources/**/*", "src/main/java/**/*"}}
-		triggerFortifyScan(config, &runner, "test", "testLabel", "my.group-myartifact")
+			BuildTool:                "maven",
+			AutodetectClasspath:      true,
+			BuildDescriptorFile:      "./pom.xml",
+			AdditionalScanParameters: []string{"-Dtest=property"},
+			Memory:                   "-Xmx4G -Xms2G",
+			Src:                      []string{"**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "src/main/resources/**/*", "src/main/java/**/*"}}
+		triggerFortifyScan(config, &utils, "test", "testLabel", "my.group-myartifact")
 
-		assert.Equal(t, 3, runner.numExecutions)
+		assert.Equal(t, 3, utils.numExecutions)
 
-		assert.Equal(t, "mvn", runner.executions[0].executable)
-		assert.Equal(t, []string{"--file", "./pom.xml", "-Dmdep.outputFile=fortify-execute-scan-cp.txt", "-DincludeScope=compile", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "dependency:build-classpath"}, runner.executions[0].parameters)
+		assert.Equal(t, "mvn", utils.executions[0].executable)
+		assert.Equal(t, []string{"--file", "./pom.xml", "-Dmdep.outputFile=fortify-execute-scan-cp.txt", "-Dfortify", "-DincludeScope=compile", "-DskipTests", "-Dmaven.javadoc.skip=true", "--fail-at-end", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "dependency:build-classpath", "package"}, utils.executions[0].parameters)
 
-		assert.Equal(t, "sourceanalyzer", runner.executions[1].executable)
-		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-Xmx4G", "-Xms2G", "-cp", "some.jar;someother.jar", "**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "src/main/resources/**/*", "src/main/java/**/*"}, runner.executions[1].parameters)
+		assert.Equal(t, "sourceanalyzer", utils.executions[1].executable)
+		assert.True(t, reflect.DeepEqual([]string{"-verbose", "-64", "-b", "test", "-Xmx4G", "-Xms2G", "-cp", "some.jar;someother.jar", "-exclude", "**/src/test/**/*", "**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "src/main/resources/**/*", "src/main/java/**/*"}, utils.executions[1].parameters) || reflect.DeepEqual([]string{"-verbose", "-64", "-b", "test", "-Xmx4G", "-Xms2G", "-cp", "some.jar;someother.jar", "-exclude", "**/src/test/**/*", "**/*.xml", "**/*.html", "**/*.jsp", "**/*.js", "src/main/resources/**/*", "src/main/java/**/*"}, utils.executions[1].parameters))
 
-		assert.Equal(t, "sourceanalyzer", runner.executions[2].executable)
-		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-scan", "-Xmx4G", "-Xms2G", "-build-label", "testLabel", "-build-project", "my.group-myartifact", "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr"}, runner.executions[2].parameters)
+		assert.Equal(t, "sourceanalyzer", utils.executions[2].executable)
+		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-scan", "-Xmx4G", "-Xms2G", "-Dtest=property", "-build-label", "testLabel", "-build-project", "my.group-myartifact", "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr"}, utils.executions[2].parameters)
 	})
 
 	t.Run("pip", func(t *testing.T) {
@@ -534,28 +554,52 @@ func TestTriggerFortifyScan(t *testing.T) {
 			_ = os.RemoveAll(dir)
 		}()
 
-		runner := execRunnerMock{}
+		utils := newFortifyTestUtilsBundle()
 		config := fortifyExecuteScanOptions{BuildTool: "pip", PythonVersion: "python2", AutodetectClasspath: true, BuildDescriptorFile: "./setup.py", PythonRequirementsFile: "./requirements.txt", PythonInstallCommand: "pip2 install --user", Memory: "-Xmx4G -Xms2G"}
-		triggerFortifyScan(config, &runner, "test", "testLabel", "")
+		triggerFortifyScan(config, &utils, "test", "testLabel", "")
 
-		assert.Equal(t, 5, runner.numExecutions)
+		assert.Equal(t, 5, utils.numExecutions)
 
-		assert.Equal(t, "python2", runner.executions[0].executable)
+		assert.Equal(t, "python2", utils.executions[0].executable)
 		separator := getSeparator()
 		template := fmt.Sprintf("import sys;p=sys.path;p.remove('');print('%v'.join(p))", separator)
-		assert.Equal(t, []string{"-c", template}, runner.executions[0].parameters)
+		assert.Equal(t, []string{"-c", template}, utils.executions[0].parameters)
 
-		assert.Equal(t, "pip2", runner.executions[1].executable)
-		assert.Equal(t, []string{"install", "--user", "-r", "./requirements.txt", ""}, runner.executions[1].parameters)
+		assert.Equal(t, "pip2", utils.executions[1].executable)
+		assert.Equal(t, []string{"install", "--user", "-r", "./requirements.txt", ""}, utils.executions[1].parameters)
 
-		assert.Equal(t, "pip2", runner.executions[2].executable)
-		assert.Equal(t, []string{"install", "--user"}, runner.executions[2].parameters)
+		assert.Equal(t, "pip2", utils.executions[2].executable)
+		assert.Equal(t, []string{"install", "--user"}, utils.executions[2].parameters)
 
-		assert.Equal(t, "sourceanalyzer", runner.executions[3].executable)
-		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-Xmx4G", "-Xms2G", "-python-path", "/usr/lib/python35.zip;/usr/lib/python3.5;/usr/lib/python3.5/plat-x86_64-linux-gnu;/usr/lib/python3.5/lib-dynload;/home/piper/.local/lib/python3.5/site-packages;/usr/local/lib/python3.5/dist-packages;/usr/lib/python3/dist-packages;./lib", "-exclude", fmt.Sprintf("./**/tests/**/*%s./**/setup.py", separator), "./**/*"}, runner.executions[3].parameters)
+		assert.Equal(t, "sourceanalyzer", utils.executions[3].executable)
+		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-Xmx4G", "-Xms2G", "-python-path", "/usr/lib/python35.zip;/usr/lib/python3.5;/usr/lib/python3.5/plat-x86_64-linux-gnu;/usr/lib/python3.5/lib-dynload;/home/piper/.local/lib/python3.5/site-packages;/usr/local/lib/python3.5/dist-packages;/usr/lib/python3/dist-packages;./lib", "-exclude", fmt.Sprintf("./**/tests/**/*%s./**/setup.py", separator), "./**/*"}, utils.executions[3].parameters)
 
-		assert.Equal(t, "sourceanalyzer", runner.executions[4].executable)
-		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-scan", "-Xmx4G", "-Xms2G", "-build-label", "testLabel", "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr"}, runner.executions[4].parameters)
+		assert.Equal(t, "sourceanalyzer", utils.executions[4].executable)
+		assert.Equal(t, []string{"-verbose", "-64", "-b", "test", "-scan", "-Xmx4G", "-Xms2G", "-build-label", "testLabel", "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr"}, utils.executions[4].parameters)
+	})
+
+	t.Run("invalid buildTool", func(t *testing.T) {
+		dir, err := ioutil.TempDir("", "test trigger fortify scan")
+		if err != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+		defer func() {
+			_ = os.Chdir(oldCWD)
+			_ = os.RemoveAll(dir)
+		}()
+
+		utils := newFortifyTestUtilsBundle()
+		config := fortifyExecuteScanOptions{
+			BuildTool:           "docker",
+			AutodetectClasspath: true,
+		}
+		err = triggerFortifyScan(config, &utils, "test", "testLabel", "my.group-myartifact")
+
+		assert.Error(t, err)
+		assert.Equal(t, "buildTool 'docker' is not supported by this step", err.Error())
 	})
 }
 
@@ -608,7 +652,7 @@ func TestVerifyScanResultsFinishedUploading(t *testing.T) {
 	t.Run("error required auth", func(t *testing.T) {
 		ffMock := fortifyMock{}
 		err := verifyScanResultsFinishedUploadingDefaults(config, &ffMock, 4713)
-		assert.EqualError(t, err, "There are artifacts that require manual approval for Project Version 4713\n/html/ssc/index.jsp#!/version/4713/artifacts?filterSet=")
+		assert.EqualError(t, err, "There are artifacts that require manual approval for Project Version 4713, please visit Fortify SSC and approve them for processing\n/html/ssc/index.jsp#!/version/4713/artifacts?filterSet=")
 	})
 
 	t.Run("error polling timeout", func(t *testing.T) {
@@ -669,13 +713,13 @@ func TestCalculateTimeDifferenceToLastUpload(t *testing.T) {
 }
 
 func TestExecuteTemplatedCommand(t *testing.T) {
-	runner := execRunnerMock{}
+	utils := newFortifyTestUtilsBundle()
 	template := []string{"{{.Executable}}", "-c", "{{.Param}}"}
 	context := map[string]string{"Executable": "test.cmd", "Param": "abcd"}
-	executeTemplatedCommand(&runner, template, context)
+	executeTemplatedCommand(&utils, template, context)
 
-	assert.Equal(t, "test.cmd", runner.executions[0].executable)
-	assert.Equal(t, []string{"-c", "abcd"}, runner.executions[0].parameters)
+	assert.Equal(t, "test.cmd", utils.executions[0].executable)
+	assert.Equal(t, []string{"-c", "abcd"}, utils.executions[0].parameters)
 }
 
 func TestDeterminePullRequestMerge(t *testing.T) {
@@ -717,35 +761,35 @@ func TestDeterminePullRequestMergeGithub(t *testing.T) {
 
 func TestTranslateProject(t *testing.T) {
 	t.Run("python", func(t *testing.T) {
-		execRunner := execRunnerMock{}
+		utils := newFortifyTestUtilsBundle()
 		config := fortifyExecuteScanOptions{BuildTool: "pip", Memory: "-Xmx4G", Translate: `[{"pythonPath":"./some/path","src":"./**/*","exclude":"./tests/**/*"}]`}
-		translateProject(&config, &execRunner, "/commit/7267658798797", "")
-		assert.Equal(t, "sourceanalyzer", execRunner.executions[0].executable, "Expected different executable")
-		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-Xmx4G", "-python-path", "./some/path", "-exclude", "./tests/**/*", "./**/*"}, execRunner.executions[0].parameters, "Expected different parameters")
+		translateProject(&config, &utils, "/commit/7267658798797", "")
+		assert.Equal(t, "sourceanalyzer", utils.executions[0].executable, "Expected different executable")
+		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-Xmx4G", "-python-path", "./some/path", "-exclude", "./tests/**/*", "./**/*"}, utils.executions[0].parameters, "Expected different parameters")
 	})
 
 	t.Run("asp", func(t *testing.T) {
-		execRunner := execRunnerMock{}
+		utils := newFortifyTestUtilsBundle()
 		config := fortifyExecuteScanOptions{BuildTool: "windows", Memory: "-Xmx6G", Translate: `[{"aspnetcore":"true","dotNetCoreVersion":"3.5","exclude":"./tests/**/*","libDirs":"tmp/","src":"./**/*"}]`}
-		translateProject(&config, &execRunner, "/commit/7267658798797", "")
-		assert.Equal(t, "sourceanalyzer", execRunner.executions[0].executable, "Expected different executable")
-		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-Xmx6G", "-aspnetcore", "-dotnet-core-version", "3.5", "-libdirs", "tmp/", "-exclude", "./tests/**/*", "./**/*"}, execRunner.executions[0].parameters, "Expected different parameters")
+		translateProject(&config, &utils, "/commit/7267658798797", "")
+		assert.Equal(t, "sourceanalyzer", utils.executions[0].executable, "Expected different executable")
+		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-Xmx6G", "-aspnetcore", "-dotnet-core-version", "3.5", "-libdirs", "tmp/", "-exclude", "./tests/**/*", "./**/*"}, utils.executions[0].parameters, "Expected different parameters")
 	})
 
 	t.Run("java", func(t *testing.T) {
-		execRunner := execRunnerMock{}
+		utils := newFortifyTestUtilsBundle()
 		config := fortifyExecuteScanOptions{BuildTool: "maven", Memory: "-Xmx2G", Translate: `[{"classpath":"./classes/*.jar","extdirs":"tmp/","jdk":"1.8.0-21","source":"1.8","sourcepath":"src/ext/","src":"./**/*"}]`}
-		translateProject(&config, &execRunner, "/commit/7267658798797", "")
-		assert.Equal(t, "sourceanalyzer", execRunner.executions[0].executable, "Expected different executable")
-		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-Xmx2G", "-cp", "./classes/*.jar", "-extdirs", "tmp/", "-source", "1.8", "-jdk", "1.8.0-21", "-sourcepath", "src/ext/", "./**/*"}, execRunner.executions[0].parameters, "Expected different parameters")
+		translateProject(&config, &utils, "/commit/7267658798797", "")
+		assert.Equal(t, "sourceanalyzer", utils.executions[0].executable, "Expected different executable")
+		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-Xmx2G", "-cp", "./classes/*.jar", "-extdirs", "tmp/", "-source", "1.8", "-jdk", "1.8.0-21", "-sourcepath", "src/ext/", "./**/*"}, utils.executions[0].parameters, "Expected different parameters")
 	})
 
 	t.Run("auto classpath", func(t *testing.T) {
-		execRunner := execRunnerMock{}
+		utils := newFortifyTestUtilsBundle()
 		config := fortifyExecuteScanOptions{BuildTool: "maven", Memory: "-Xmx2G", Translate: `[{"classpath":"./classes/*.jar", "extdirs":"tmp/","jdk":"1.8.0-21","source":"1.8","sourcepath":"src/ext/","src":"./**/*"}]`}
-		translateProject(&config, &execRunner, "/commit/7267658798797", "./WEB-INF/lib/*.jar")
-		assert.Equal(t, "sourceanalyzer", execRunner.executions[0].executable, "Expected different executable")
-		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-Xmx2G", "-cp", "./WEB-INF/lib/*.jar", "-extdirs", "tmp/", "-source", "1.8", "-jdk", "1.8.0-21", "-sourcepath", "src/ext/", "./**/*"}, execRunner.executions[0].parameters, "Expected different parameters")
+		translateProject(&config, &utils, "/commit/7267658798797", "./WEB-INF/lib/*.jar")
+		assert.Equal(t, "sourceanalyzer", utils.executions[0].executable, "Expected different executable")
+		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-Xmx2G", "-cp", "./WEB-INF/lib/*.jar", "-extdirs", "tmp/", "-source", "1.8", "-jdk", "1.8.0-21", "-sourcepath", "src/ext/", "./**/*"}, utils.executions[0].parameters, "Expected different parameters")
 	})
 }
 
@@ -753,45 +797,66 @@ func TestScanProject(t *testing.T) {
 	config := fortifyExecuteScanOptions{Memory: "-Xmx4G"}
 
 	t.Run("normal", func(t *testing.T) {
-		execRunner := execRunnerMock{}
-		scanProject(&config, &execRunner, "/commit/7267658798797", "label", "my.group-myartifact")
-		assert.Equal(t, "sourceanalyzer", execRunner.executions[0].executable, "Expected different executable")
-		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-scan", "-Xmx4G", "-build-label", "label", "-build-project", "my.group-myartifact", "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr"}, execRunner.executions[0].parameters, "Expected different parameters")
+		utils := newFortifyTestUtilsBundle()
+		scanProject(&config, &utils, "/commit/7267658798797", "label", "my.group-myartifact")
+		assert.Equal(t, "sourceanalyzer", utils.executions[0].executable, "Expected different executable")
+		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-scan", "-Xmx4G", "-build-label", "label", "-build-project", "my.group-myartifact", "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr"}, utils.executions[0].parameters, "Expected different parameters")
 	})
 
 	t.Run("quick", func(t *testing.T) {
-		execRunner := execRunnerMock{}
+		utils := newFortifyTestUtilsBundle()
 		config.QuickScan = true
-		scanProject(&config, &execRunner, "/commit/7267658798797", "", "")
-		assert.Equal(t, "sourceanalyzer", execRunner.executions[0].executable, "Expected different executable")
-		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-scan", "-Xmx4G", "-quick", "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr"}, execRunner.executions[0].parameters, "Expected different parameters")
+		scanProject(&config, &utils, "/commit/7267658798797", "", "")
+		assert.Equal(t, "sourceanalyzer", utils.executions[0].executable, "Expected different executable")
+		assert.Equal(t, []string{"-verbose", "-64", "-b", "/commit/7267658798797", "-scan", "-Xmx4G", "-quick", "-logfile", "target/fortify-scan.log", "-f", "target/result.fpr"}, utils.executions[0].parameters, "Expected different parameters")
 	})
 }
 
 func TestAutoresolveClasspath(t *testing.T) {
 	t.Run("success pip", func(t *testing.T) {
-		execRunner := execRunnerMock{}
+		utils := newFortifyTestUtilsBundle()
 		dir, err := ioutil.TempDir("", "classpath")
 		assert.NoError(t, err, "Unexpected error detected")
 		defer os.RemoveAll(dir)
 		file := filepath.Join(dir, "cp.txt")
 
-		result := autoresolvePipClasspath("python2", []string{"-c", "import sys;p=sys.path;p.remove('');print(';'.join(p))"}, file, &execRunner)
-		assert.Equal(t, "python2", execRunner.executions[0].executable, "Expected different executable")
-		assert.Equal(t, []string{"-c", "import sys;p=sys.path;p.remove('');print(';'.join(p))"}, execRunner.executions[0].parameters, "Expected different parameters")
+		result, err := autoresolvePipClasspath("python2", []string{"-c", "import sys;p=sys.path;p.remove('');print(';'.join(p))"}, file, &utils)
+		assert.NoError(t, err)
+		assert.Equal(t, "python2", utils.executions[0].executable, "Expected different executable")
+		assert.Equal(t, []string{"-c", "import sys;p=sys.path;p.remove('');print(';'.join(p))"}, utils.executions[0].parameters, "Expected different parameters")
 		assert.Equal(t, "/usr/lib/python35.zip;/usr/lib/python3.5;/usr/lib/python3.5/plat-x86_64-linux-gnu;/usr/lib/python3.5/lib-dynload;/home/piper/.local/lib/python3.5/site-packages;/usr/local/lib/python3.5/dist-packages;/usr/lib/python3/dist-packages;./lib", result, "Expected different result")
 	})
 
-	t.Run("success maven", func(t *testing.T) {
-		execRunner := execRunnerMock{}
+	t.Run("error pip file", func(t *testing.T) {
+		utils := newFortifyTestUtilsBundle()
+
+		_, err := autoresolvePipClasspath("python2", []string{"-c", "import sys;p=sys.path;p.remove('');print(';'.join(p))"}, "../.", &utils)
+		assert.Error(t, err)
+	})
+
+	t.Run("error pip command", func(t *testing.T) {
+		utils := newFortifyTestUtilsBundle()
 		dir, err := ioutil.TempDir("", "classpath")
 		assert.NoError(t, err, "Unexpected error detected")
 		defer os.RemoveAll(dir)
 		file := filepath.Join(dir, "cp.txt")
 
-		result := autoresolveMavenClasspath(fortifyExecuteScanOptions{BuildDescriptorFile: "pom.xml"}, file, &execRunner)
-		assert.Equal(t, "mvn", execRunner.executions[0].executable, "Expected different executable")
-		assert.Equal(t, []string{"--file", "pom.xml", fmt.Sprintf("-Dmdep.outputFile=%v", file), "-DincludeScope=compile", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "dependency:build-classpath"}, execRunner.executions[0].parameters, "Expected different parameters")
+		_, err = autoresolvePipClasspath("python2", []string{"-c", "invalid"}, file, &utils)
+		assert.Error(t, err)
+		assert.Equal(t, "failed to run classpath autodetection command python2 with parameters [-c invalid]: Invalid command", err.Error())
+	})
+
+	t.Run("success maven", func(t *testing.T) {
+		utils := newFortifyTestUtilsBundle()
+		dir, err := ioutil.TempDir("", "classpath")
+		assert.NoError(t, err, "Unexpected error detected")
+		defer os.RemoveAll(dir)
+		file := filepath.Join(dir, "cp.txt")
+
+		result, err := autoresolveMavenClasspath(fortifyExecuteScanOptions{BuildDescriptorFile: "pom.xml"}, file, &utils)
+		assert.NoError(t, err)
+		assert.Equal(t, "mvn", utils.executions[0].executable, "Expected different executable")
+		assert.Equal(t, []string{"--file", "pom.xml", fmt.Sprintf("-Dmdep.outputFile=%v", file), "-Dfortify", "-DincludeScope=compile", "-DskipTests", "-Dmaven.javadoc.skip=true", "--fail-at-end", "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn", "--batch-mode", "dependency:build-classpath", "package"}, utils.executions[0].parameters, "Expected different parameters")
 		assert.Equal(t, "some.jar;someother.jar", result, "Expected different result")
 	})
 }
@@ -801,14 +866,14 @@ func TestPopulateMavenTranslate(t *testing.T) {
 		config := fortifyExecuteScanOptions{Src: []string{"./**/*"}}
 		translate, err := populateMavenTranslate(&config, "")
 		assert.NoError(t, err)
-		assert.Equal(t, `[{"classpath":"","src":"./**/*"}]`, translate)
+		assert.Equal(t, `[{"classpath":"","exclude":"**/src/test/**/*","src":"./**/*"}]`, translate)
 	})
 
 	t.Run("exclude without translate", func(t *testing.T) {
 		config := fortifyExecuteScanOptions{Exclude: []string{"./**/*"}}
 		translate, err := populateMavenTranslate(&config, "")
 		assert.NoError(t, err)
-		assert.Equal(t, `[{"classpath":"","exclude":"./**/*","src":"**/*.xml:**/*.html:**/*.jsp:**/*.js:**/src/main/resources/**/*:**/src/main/java/**/*"}]`, translate)
+		assert.Equal(t, `[{"classpath":"","exclude":"./**/*","src":"**/*.xml:**/*.html:**/*.jsp:**/*.js:**/src/main/resources/**/*:**/src/main/java/**/*:**/target/main/java/**/*:**/target/main/resources/**/*:**/target/generated-sources/**/*"}]`, translate)
 	})
 
 	t.Run("with translate", func(t *testing.T) {

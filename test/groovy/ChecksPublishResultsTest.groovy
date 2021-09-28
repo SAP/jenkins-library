@@ -9,9 +9,16 @@ import com.sap.piper.Utils
 
 import util.BasePiperTest
 
-import static org.junit.Assert.assertEquals
-import static org.junit.Assert.assertTrue
-
+import static org.hamcrest.Matchers.hasItem
+import static org.hamcrest.Matchers.containsInAnyOrder
+import static org.hamcrest.Matchers.empty
+import static org.hamcrest.Matchers.not
+import static org.hamcrest.Matchers.allOf
+import static org.hamcrest.Matchers.is
+import static org.hamcrest.Matchers.hasKey
+import static org.hamcrest.Matchers.hasSize
+import static org.hamcrest.Matchers.hasEntry
+import static org.junit.Assert.assertThat
 
 import util.Rules
 import util.JenkinsReadYamlRule
@@ -21,6 +28,7 @@ import util.JenkinsStepRule
 class ChecksPublishResultsTest extends BasePiperTest {
     Map publisherStepOptions
     List archiveStepPatterns
+    List invokedReportingTools
 
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
 
@@ -34,9 +42,49 @@ class ChecksPublishResultsTest extends BasePiperTest {
     void init() {
         publisherStepOptions = [:]
         archiveStepPatterns = []
+        invokedReportingTools = []
+
         // add handler for generic step call
-        helper.registerAllowedMethod("step", [Map.class], {
-            parameters -> publisherStepOptions[parameters.$class] = parameters
+        helper.registerAllowedMethod("recordIssues", [Map.class], {
+            parameters ->
+            if(parameters.tools[0] in Map && parameters.tools[0].containsKey('publisher')) {
+              publisherStepOptions[parameters.tools[0].publisher] = parameters;
+            }
+        })
+        helper.registerAllowedMethod("pmdParser", [Map.class], {
+            parameters ->
+                invokedReportingTools << "pmdParser";
+                return parameters.plus([publisher: "PmdPublisher"])
+        })
+        helper.registerAllowedMethod("cpd", [Map.class], {
+            parameters ->
+                invokedReportingTools << "cpd";
+                return parameters.plus([publisher: "DryPublisher"])
+        })
+        helper.registerAllowedMethod("findBugs", [Map.class], {
+            parameters ->
+                invokedReportingTools << "findBugs";
+                return parameters.plus([publisher: "FindBugsPublisher"])
+        })
+        helper.registerAllowedMethod("checkStyle", [Map.class], {
+            parameters ->
+                invokedReportingTools << "checkStyle";
+                return parameters.plus([publisher: "CheckStylePublisher"])
+        })
+        helper.registerAllowedMethod("esLint", [Map.class], {
+            parameters ->
+                invokedReportingTools << "esLint";
+                return parameters.plus([publisher: "ESLintPublisher"])
+        })
+        helper.registerAllowedMethod("pyLint", [Map.class], {
+            parameters ->
+                invokedReportingTools << "pyLint";
+                return parameters.plus([publisher: "PyLintPublisher"])
+        })
+        helper.registerAllowedMethod("taskScanner", [Map.class], {
+            parameters ->
+                invokedReportingTools << "taskScanner";
+                return parameters.plus([publisher: "TaskPublisher"])
         })
         helper.registerAllowedMethod("archiveArtifacts", [Map.class], {
             parameters -> archiveStepPatterns.push(parameters.artifacts)
@@ -51,233 +99,252 @@ class ChecksPublishResultsTest extends BasePiperTest {
 
     @Test
     void testPublishWithDefaultSettings() throws Exception {
+        // test
         stepRule.step.checksPublishResults(script: nullScript)
+        // assert
+        // ensure nothing is published
+        assertThat(publisherStepOptions, not(hasKey('PmdPublisher')))
+        assertThat(publisherStepOptions, not(hasKey('DryPublisher')))
+        assertThat(publisherStepOptions, not(hasKey('FindBugsPublisher')))
+        assertThat(publisherStepOptions, not(hasKey('CheckStylePublisher')))
+        assertThat(publisherStepOptions, not(hasKey('ESLintPublisher')))
+        assertThat(publisherStepOptions, not(hasKey('PyLintPublisher')))
+        assertThat(publisherStepOptions, not(hasKey('TaskPublisher')))
 
-        assertTrue("AnalysisPublisher options not set", publisherStepOptions['AnalysisPublisher'] != null)
-        // ensure nothing else is published
-        assertTrue("WarningsPublisher options not empty", publisherStepOptions['WarningsPublisher'] == null)
-        assertTrue("PmdPublisher options not empty", publisherStepOptions['PmdPublisher'] == null)
-        assertTrue("DryPublisher options not empty", publisherStepOptions['DryPublisher'] == null)
-        assertTrue("FindBugsPublisher options not empty", publisherStepOptions['FindBugsPublisher'] == null)
-        assertTrue("CheckStylePublisher options not empty", publisherStepOptions['CheckStylePublisher'] == null)
+        assertThat(invokedReportingTools, is(empty()))
     }
 
     @Test
     void testPublishForJavaWithDefaultSettings() throws Exception {
+        // test
         stepRule.step.checksPublishResults(script: nullScript, pmd: true, cpd: true, findbugs: true, checkstyle: true)
-
-        assertTrue("AnalysisPublisher options not set", publisherStepOptions['AnalysisPublisher'] != null)
-        assertTrue("PmdPublisher options not set", publisherStepOptions['PmdPublisher'] != null)
-        assertTrue("DryPublisher options not set", publisherStepOptions['DryPublisher'] != null)
-        assertTrue("FindBugsPublisher options not set", publisherStepOptions['FindBugsPublisher'] != null)
-        assertTrue("CheckStylePublisher options not set", publisherStepOptions['CheckStylePublisher'] != null)
+        // assert
+        assertThat(publisherStepOptions, hasKey('PmdPublisher'))
+        assertThat(publisherStepOptions, hasKey('DryPublisher'))
+        assertThat(publisherStepOptions, hasKey('FindBugsPublisher'))
+        assertThat(publisherStepOptions, hasKey('CheckStylePublisher'))
         // ensure default patterns are set
-        assertEquals("PmdPublisher default pattern not set", '**/target/pmd.xml', publisherStepOptions['PmdPublisher']['pattern'])
-        assertEquals("DryPublisher default pattern not set", '**/target/cpd.xml', publisherStepOptions['DryPublisher']['pattern'])
-        assertEquals("FindBugsPublisher default pattern not set", '**/target/findbugsXml.xml, **/target/findbugs.xml', publisherStepOptions['FindBugsPublisher']['pattern'])
-        assertEquals("CheckStylePublisher default pattern not set", '**/target/checkstyle-result.xml', publisherStepOptions['CheckStylePublisher']['pattern'])
+        assertThat(publisherStepOptions['PmdPublisher'], hasKey('tools'))
+        assertThat(publisherStepOptions['PmdPublisher']['tools'], hasItem(hasEntry('pattern', '**/target/pmd.xml')))
+        assertThat(publisherStepOptions['DryPublisher'], hasKey('tools'))
+        assertThat(publisherStepOptions['DryPublisher']['tools'], hasItem(hasEntry('pattern', '**/target/cpd.xml')))
+        assertThat(publisherStepOptions['FindBugsPublisher'], hasKey('tools'))
+        assertThat(publisherStepOptions['FindBugsPublisher']['tools'], hasItem(hasEntry('pattern', '**/target/findbugsXml.xml, **/target/findbugs.xml')))
+        assertThat(publisherStepOptions['CheckStylePublisher'], hasKey('tools'))
+        assertThat(publisherStepOptions['CheckStylePublisher']['tools'], hasItem(hasEntry('pattern', '**/target/checkstyle-result.xml')))
         // ensure nothing else is published
-        assertTrue("WarningsPublisher options not empty", publisherStepOptions['WarningsPublisher'] == null)
+        assertThat(publisherStepOptions, not(hasKey('ESLintPublisher')))
+        assertThat(publisherStepOptions, not(hasKey('PyLintPublisher')))
+        assertThat(publisherStepOptions, not(hasKey('TaskPublisher')))
     }
 
     @Test
     void testPublishForJavaScriptWithDefaultSettings() throws Exception {
+        // test
         stepRule.step.checksPublishResults(script: nullScript, eslint: true)
-
-        assertTrue("AnalysisPublisher options not set", publisherStepOptions['AnalysisPublisher'] != null)
-        assertTrue("WarningsPublisher options not set", publisherStepOptions['WarningsPublisher'] != null)
-        assertTrue("WarningsPublisher parser configuration number not correct", publisherStepOptions['WarningsPublisher']['parserConfigurations'].size() == 1)
+        // assert
+        assertThat(publisherStepOptions, hasKey('ESLintPublisher'))
         // ensure correct parser is set set
-        assertEquals("ESLint parser not correct", 'JSLint', publisherStepOptions['WarningsPublisher']['parserConfigurations'][0]['parserName'])
-        // ensure default patterns are set
-        assertEquals("ESLint default pattern not set", '**/eslint.xml', publisherStepOptions['WarningsPublisher']['parserConfigurations'][0]['pattern'])
+        assertThat(publisherStepOptions['ESLintPublisher'], hasKey('tools'))
+        assertThat(publisherStepOptions['ESLintPublisher']['tools'], hasItem(hasEntry('pattern', '**/eslint.xml')))
         // ensure nothing else is published
-        assertTrue("PmdPublisher options not empty", publisherStepOptions['PmdPublisher'] == null)
-        assertTrue("DryPublisher options not empty", publisherStepOptions['DryPublisher'] == null)
-        assertTrue("FindBugsPublisher options not empty", publisherStepOptions['FindBugsPublisher'] == null)
-        assertTrue("CheckStylePublisher options not empty", publisherStepOptions['CheckStylePublisher'] == null)
+        assertThat(publisherStepOptions, not(hasKey('PmdPublisher')))
+        assertThat(publisherStepOptions, not(hasKey('DryPublisher')))
+        assertThat(publisherStepOptions, not(hasKey('FindBugsPublisher')))
+        assertThat(publisherStepOptions, not(hasKey('CheckStylePublisher')))
+        assertThat(publisherStepOptions, not(hasKey('PyLintPublisher')))
+        assertThat(publisherStepOptions, not(hasKey('TaskPublisher')))
     }
 
     @Test
     void testPublishForPythonWithDefaultSettings() throws Exception {
+        // test
         stepRule.step.checksPublishResults(script: nullScript, pylint: true)
-
-        assertTrue("AnalysisPublisher options not set", publisherStepOptions['AnalysisPublisher'] != null)
-        assertTrue("WarningsPublisher options not set", publisherStepOptions['WarningsPublisher'] != null)
-        assertTrue("WarningsPublisher parser configuration number not correct", publisherStepOptions['WarningsPublisher']['parserConfigurations'].size() == 1)
-        assertEquals('PyLint', publisherStepOptions['WarningsPublisher']['parserConfigurations'][0]['parserName'])
+        // assert
+        assertThat(publisherStepOptions, hasKey('PyLintPublisher'))
         // ensure correct parser is set set
-        assertEquals("PyLint parser not correct", 'PyLint', publisherStepOptions['WarningsPublisher']['parserConfigurations'][0]['parserName'])
-        // ensure default patterns are set
-        assertEquals("PyLint default pattern not set", '**/pylint.log', publisherStepOptions['WarningsPublisher']['parserConfigurations'][0]['pattern'])
+        assertThat(publisherStepOptions['PyLintPublisher'], hasKey('tools'))
+        assertThat(publisherStepOptions['PyLintPublisher']['tools'], hasItem(hasEntry('pattern', '**/pylint.log')))
         // ensure nothing else is published
-        assertTrue("PmdPublisher options not empty", publisherStepOptions['PmdPublisher'] == null)
-        assertTrue("DryPublisher options not empty", publisherStepOptions['DryPublisher'] == null)
-        assertTrue("FindBugsPublisher options not empty", publisherStepOptions['FindBugsPublisher'] == null)
-        assertTrue("CheckStylePublisher options not empty", publisherStepOptions['CheckStylePublisher'] == null)
-    }
-
-    @Test
-    void testPublishNothing() throws Exception {
-        stepRule.step.checksPublishResults(script: nullScript, aggregation: false)
-
-        // ensure nothing is published
-        assertTrue("AnalysisPublisher options not empty", publisherStepOptions['AnalysisPublisher'] == null)
-        assertTrue("WarningsPublisher options not empty", publisherStepOptions['WarningsPublisher'] == null)
-        assertTrue("PmdPublisher options not empty", publisherStepOptions['PmdPublisher'] == null)
-        assertTrue("DryPublisher options not empty", publisherStepOptions['DryPublisher'] == null)
-        assertTrue("FindBugsPublisher options not empty", publisherStepOptions['FindBugsPublisher'] == null)
-        assertTrue("CheckStylePublisher options not empty", publisherStepOptions['CheckStylePublisher'] == null)
+        assertThat(publisherStepOptions, not(hasKey('PmdPublisher')))
+        assertThat(publisherStepOptions, not(hasKey('DryPublisher')))
+        assertThat(publisherStepOptions, not(hasKey('FindBugsPublisher')))
+        assertThat(publisherStepOptions, not(hasKey('CheckStylePublisher')))
+        assertThat(publisherStepOptions, not(hasKey('ESLintPublisher')))
+        assertThat(publisherStepOptions, not(hasKey('TaskPublisher')))
     }
 
     @Test
     void testPublishNothingExplicitFalse() throws Exception {
+        // test
         stepRule.step.checksPublishResults(script: nullScript, pmd: false)
-
-        assertTrue("AnalysisPublisher options not set", publisherStepOptions['AnalysisPublisher'] != null)
-        // ensure nothing else is published
-        assertTrue("PmdPublisher options not empty", publisherStepOptions['PmdPublisher'] == null)
-        assertTrue("DryPublisher options not empty", publisherStepOptions['DryPublisher'] == null)
-        assertTrue("FindBugsPublisher options not empty", publisherStepOptions['FindBugsPublisher'] == null)
-        assertTrue("CheckStylePublisher options not empty", publisherStepOptions['CheckStylePublisher'] == null)
-        assertTrue("WarningsPublisher options not empty", publisherStepOptions['WarningsPublisher'] == null)
+        // assert
+        // ensure pmd is not published
+        assertThat(publisherStepOptions, not(hasKey('PmdPublisher')))
     }
 
     @Test
     void testPublishNothingImplicitTrue() throws Exception {
+        // test
         stepRule.step.checksPublishResults(script: nullScript, pmd: [:])
-
-        // ensure pmd is not published
-        assertTrue("PmdPublisher options not set", publisherStepOptions['PmdPublisher'] != null)
+        // assert
+        // ensure pmd is published
+        assertThat(publisherStepOptions, hasKey('PmdPublisher'))
     }
 
     @Test
     void testPublishNothingExplicitActiveFalse() throws Exception {
+        // test
         stepRule.step.checksPublishResults(script: nullScript, pmd: [active: false])
-
+        // assert
         // ensure pmd is not published
-        assertTrue("PmdPublisher options not empty", publisherStepOptions['PmdPublisher'] == null)
+        assertThat(publisherStepOptions, not(hasKey('PmdPublisher')))
     }
 
     @Test
     void testPublishWithChangedStepDefaultSettings() throws Exception {
+        // init
         // pmd has been set to active: true in step configuration
-        stepRule.step.checksPublishResults(script: [commonPipelineEnvironment: [
-            configuration: [steps: [checksPublishResults: [pmd: [active: true]]]]
-        ]])
-
-        assertTrue("AnalysisPublisher options not set", publisherStepOptions['AnalysisPublisher'] != null)
-        assertTrue("PmdPublisher options not set", publisherStepOptions['PmdPublisher'] != null)
+        nullScript.commonPipelineEnvironment.configuration =
+        [
+            steps: [
+                checksPublishResults: [
+                    pmd: [active: true]
+                ]
+            ]
+        ]
+        // test
+        stepRule.step.checksPublishResults(script: nullScript)
+        // assert
+        assertThat(publisherStepOptions, hasKey('PmdPublisher'))
         // ensure nothing else is published
-        assertTrue("DryPublisher options not empty", publisherStepOptions['DryPublisher'] == null)
-        assertTrue("FindBugsPublisher options not empty", publisherStepOptions['FindBugsPublisher'] == null)
-        assertTrue("CheckStylePublisher options not empty", publisherStepOptions['CheckStylePublisher'] == null)
-        assertTrue("WarningsPublisher options not empty", publisherStepOptions['WarningsPublisher'] == null)
+        assertThat(publisherStepOptions, not(hasKey('DryPublisher')))
+        assertThat(publisherStepOptions, not(hasKey('FindBugsPublisher')))
+        assertThat(publisherStepOptions, not(hasKey('CheckStylePublisher')))
+        assertThat(publisherStepOptions, not(hasKey('ESLintPublisher')))
+        assertThat(publisherStepOptions, not(hasKey('PyLintPublisher')))
+        assertThat(publisherStepOptions, not(hasKey('TaskPublisher')))
     }
 
     @Test
     void testPublishWithCustomPattern() throws Exception {
+        // test
         stepRule.step.checksPublishResults(script: nullScript, eslint: [pattern: 'my-fancy-file.ext'], pmd: [pattern: 'this-is-not-a-patter.xml'])
-
-        assertTrue("AnalysisPublisher options not set", publisherStepOptions['AnalysisPublisher'] != null)
-        assertTrue("PmdPublisher options not set", publisherStepOptions['PmdPublisher'] != null)
-        assertTrue("WarningsPublisher options not set", publisherStepOptions['WarningsPublisher'] != null)
-        assertTrue("WarningsPublisher parser configuration number not correct", publisherStepOptions['WarningsPublisher']['parserConfigurations'].size() == 1)
+        // assert
+        assertThat(publisherStepOptions, hasKey('PmdPublisher'))
+        assertThat(publisherStepOptions, hasKey('ESLintPublisher'))
         // ensure custom patterns are set
-        assertEquals("PmdPublisher custom pattern not set", 'this-is-not-a-patter.xml', publisherStepOptions['PmdPublisher']['pattern'])
-        assertEquals("ESLint custom pattern not set", 'my-fancy-file.ext', publisherStepOptions['WarningsPublisher']['parserConfigurations'][0]['pattern'])
+        assertThat(publisherStepOptions['PmdPublisher'], hasKey('tools'))
+        assertThat(publisherStepOptions['PmdPublisher']['tools'], hasItem(hasEntry('pattern', 'this-is-not-a-patter.xml')))
+        assertThat(publisherStepOptions['ESLintPublisher'], hasKey('tools'))
+        assertThat(publisherStepOptions['ESLintPublisher']['tools'], hasItem(hasEntry('pattern', 'my-fancy-file.ext')))
         // ensure nothing else is published
-        assertTrue("DryPublisher options not empty", publisherStepOptions['DryPublisher'] == null)
-        assertTrue("FindBugsPublisher options not empty", publisherStepOptions['FindBugsPublisher'] == null)
-        assertTrue("CheckStylePublisher options not empty", publisherStepOptions['CheckStylePublisher'] == null)
+        assertThat(publisherStepOptions, not(hasKey('DryPublisher')))
+        assertThat(publisherStepOptions, not(hasKey('FindBugsPublisher')))
+        assertThat(publisherStepOptions, not(hasKey('CheckStylePublisher')))
+        assertThat(publisherStepOptions, not(hasKey('PyLintPublisher')))
+        assertThat(publisherStepOptions, not(hasKey('TaskPublisher')))
     }
 
     @Test
     void testPublishWithArchive() throws Exception {
+        // test
         stepRule.step.checksPublishResults(script: nullScript, archive: true, eslint: true, pmd: true, cpd: true, findbugs: true, checkstyle: true)
-
-        assertTrue("ArchivePatterns number not correct", archiveStepPatterns.size() == 5)
-        assertTrue("ArchivePatterns contains no PMD pattern", archiveStepPatterns.contains('**/target/pmd.xml'))
-        assertTrue("ArchivePatterns contains no CPD pattern", archiveStepPatterns.contains('**/target/cpd.xml'))
-        assertTrue("ArchivePatterns contains no FindBugs pattern", archiveStepPatterns.contains('**/target/findbugsXml.xml, **/target/findbugs.xml'))
-        assertTrue("ArchivePatterns contains no CheckStyle pattern", archiveStepPatterns.contains('**/target/checkstyle-result.xml'))
-        assertTrue("ArchivePatterns contains no ESLint pattern", archiveStepPatterns.contains('**/eslint.xml'))
+        // assert
+        assertThat(archiveStepPatterns, hasSize(5))
+        assertThat(archiveStepPatterns, allOf(
+            hasItem('**/target/pmd.xml'),
+            hasItem('**/target/cpd.xml'),
+            hasItem('**/target/findbugsXml.xml, **/target/findbugs.xml'),
+            hasItem('**/target/checkstyle-result.xml'),
+            hasItem('**/eslint.xml'),
+        ))
     }
 
     @Test
     void testPublishWithPartialArchive() throws Exception {
+        // test
         stepRule.step.checksPublishResults(script: nullScript, archive: true, eslint: [archive: false], pmd: true, cpd: true, findbugs: true, checkstyle: true)
-
-        assertTrue("ArchivePatterns number not correct", archiveStepPatterns.size() == 4)
-        assertTrue("ArchivePatterns contains no PMD pattern", archiveStepPatterns.contains('**/target/pmd.xml'))
-        assertTrue("ArchivePatterns contains no CPD pattern", archiveStepPatterns.contains('**/target/cpd.xml'))
-        assertTrue("ArchivePatterns contains no FindBugs pattern", archiveStepPatterns.contains('**/target/findbugsXml.xml, **/target/findbugs.xml'))
-        assertTrue("ArchivePatterns contains no CheckStyle pattern", archiveStepPatterns.contains('**/target/checkstyle-result.xml'))
-        // ensure no ESLint  pattern is contained
-        assertTrue("ArchivePatterns contains ESLint pattern", !archiveStepPatterns.contains('**/eslint.xml'))
+        // assert
+        assertThat(archiveStepPatterns, hasSize(4))
+        assertThat(archiveStepPatterns, allOf(
+            hasItem('**/target/pmd.xml'),
+            hasItem('**/target/cpd.xml'),
+            hasItem('**/target/findbugsXml.xml, **/target/findbugs.xml'),
+            hasItem('**/target/checkstyle-result.xml'),
+            not(hasItem('**/eslint.xml')),
+        ))
     }
 
     @Test
     void testPublishWithDefaultThresholds() throws Exception {
+        // test
         stepRule.step.checksPublishResults(script: nullScript, pmd: true)
-
-        assertTrue("AnalysisPublisher options not set",
-            publisherStepOptions['AnalysisPublisher'] != null)
-        assertTrue("PmdPublisher options not set",
-            publisherStepOptions['PmdPublisher'] != null)
-        assertEquals("AnalysisPublisher thresholds configuration for failedTotalHigh not correct",
-            '0', publisherStepOptions['AnalysisPublisher']['failedTotalHigh'])
-        assertEquals("PmdPublisher thresholds configuration for failedTotalHigh not correct",
-            '0', publisherStepOptions['PmdPublisher']['failedTotalHigh'])
-        // ensure other values are empty
-        assertEquals("AnalysisPublisher thresholds configuration for failedTotalNormal is set",
-            null, publisherStepOptions['AnalysisPublisher']['failedTotalNormal'])
-        assertEquals("AnalysisPublisher thresholds configuration for failedTotalLow is set",
-            null, publisherStepOptions['AnalysisPublisher']['failedTotalLow'])
-        assertEquals("AnalysisPublisher thresholds configuration for failedTotalAll is set",
-            null, publisherStepOptions['AnalysisPublisher']['failedTotalAll'])
-        assertEquals("AnalysisPublisher thresholds configuration for unstableTotalHigh not correct",
-            null, publisherStepOptions['AnalysisPublisher']['unstableTotalHigh'])
-        assertEquals("AnalysisPublisher thresholds configuration for unstableTotalNormal is set",
-            null, publisherStepOptions['AnalysisPublisher']['unstableTotalNormal'])
-        assertEquals("AnalysisPublisher thresholds configuration for unstableTotalLow is set",
-            null, publisherStepOptions['AnalysisPublisher']['unstableTotalLow'])
-        assertEquals("AnalysisPublisher thresholds configuration for unstableTotalAll is set",
-            null, publisherStepOptions['AnalysisPublisher']['unstableTotalAll'])
-        // ensure nothing else is published
-        assertTrue("DryPublisher options not empty", publisherStepOptions['DryPublisher'] == null)
-        assertTrue("FindBugsPublisher options not empty", publisherStepOptions['FindBugsPublisher'] == null)
-        assertTrue("CheckStylePublisher options not empty", publisherStepOptions['CheckStylePublisher'] == null)
-        assertTrue("WarningsPublisher options not empty", publisherStepOptions['WarningsPublisher'] == null)
+        // assert
+        assertThat(publisherStepOptions, hasKey('PmdPublisher'))
+        assertThat(publisherStepOptions['PmdPublisher'], hasKey('qualityGates'))
+        assertThat(publisherStepOptions['PmdPublisher']['qualityGates'], allOf(
+            hasSize(2),
+            hasItem(allOf(
+                hasEntry('threshold', 1),
+                hasEntry('type', 'TOTAL_ERROR'),
+                hasEntry('unstable', false),
+            )),
+            hasItem(allOf(
+                hasEntry('threshold', 1),
+                hasEntry('type', 'TOTAL_HIGH'),
+                hasEntry('unstable', false),
+            )),
+        ))
     }
 
     @Test
-    void testPublishWithThresholds() throws Exception {
-        stepRule.step.checksPublishResults(script: nullScript, aggregation: [thresholds: [fail: [high: '10']]], pmd: true)
+    void testPublishWithLegacyThresholds() throws Exception {
+        // test
+        stepRule.step.checksPublishResults(script: nullScript, pmd: [thresholds: [fail: [high: '10']]])
+        // assert
+        assertThat(publisherStepOptions, hasKey('PmdPublisher'))
+        assertThat(publisherStepOptions['PmdPublisher'], hasKey('qualityGates'))
+        assertThat(publisherStepOptions['PmdPublisher']['qualityGates'], allOf(
+            //TODO: thresholds are added to existing qualityGates, thus we have 2 defined in the end
+            hasSize(3),
+            hasItem(allOf(
+                hasEntry('threshold', 1),
+                hasEntry('type', 'TOTAL_ERROR'),
+                hasEntry('unstable', false),
+            )),
+            hasItem(allOf(
+                hasEntry('threshold', 1),
+                hasEntry('type', 'TOTAL_HIGH'),
+                hasEntry('unstable', false),
+            )),
+            hasItem(allOf(
+                hasEntry('threshold', 11),
+                hasEntry('type', 'TOTAL_HIGH'),
+                hasEntry('unstable', false),
+            )),
+        ))
+    }
 
-        assertTrue("AnalysisPublisher options not set", publisherStepOptions['AnalysisPublisher'] != null)
-        assertTrue("PmdPublisher options not set", publisherStepOptions['PmdPublisher'] != null)
-        assertEquals("AnalysisPublisher thresholds configuration for failedTotalHigh not correct",
-            '10', publisherStepOptions['AnalysisPublisher']['failedTotalHigh'])
-        // ensure other values are empty
-        assertEquals("AnalysisPublisher thresholds configuration for failedTotalNormal is set",
-            null, publisherStepOptions['AnalysisPublisher']['failedTotalNormal'])
-        assertEquals("AnalysisPublisher thresholds configuration for failedTotalLow is set",
-            null, publisherStepOptions['AnalysisPublisher']['failedTotalLow'])
-        assertEquals("AnalysisPublisher thresholds configuration for failedTotalAll is set",
-            null, publisherStepOptions['AnalysisPublisher']['failedTotalAll'])
-        assertEquals("AnalysisPublisher thresholds configuration for unstableTotalHigh not correct",
-            null, publisherStepOptions['AnalysisPublisher']['unstableTotalHigh'])
-        assertEquals("AnalysisPublisher thresholds configuration for unstableTotalNormal is set",
-            null, publisherStepOptions['AnalysisPublisher']['unstableTotalNormal'])
-        assertEquals("AnalysisPublisher thresholds configuration for unstableTotalLow is set",
-            null, publisherStepOptions['AnalysisPublisher']['unstableTotalLow'])
-        assertEquals("AnalysisPublisher thresholds configuration for unstableTotalAll is set",
-            null, publisherStepOptions['AnalysisPublisher']['unstableTotalAll'])
-        // ensure nothing else is published
-        assertTrue("DryPublisher options not empty", publisherStepOptions['DryPublisher'] == null)
-        assertTrue("FindBugsPublisher options not empty", publisherStepOptions['FindBugsPublisher'] == null)
-        assertTrue("CheckStylePublisher options not empty", publisherStepOptions['CheckStylePublisher'] == null)
-        assertTrue("WarningsPublisher options not empty", publisherStepOptions['WarningsPublisher'] == null)
+    @Test
+    void testPublishWithCustomThresholds() throws Exception {
+        // test
+        stepRule.step.checksPublishResults(script: nullScript, pmd: [active: true, qualityGates: [[threshold: 20, type: 'TOTAL_LOW', unstable: false],[threshold: 10, type: 'TOTAL_NORMAL', unstable: false]]])
+        // assert
+        assertThat(publisherStepOptions, hasKey('PmdPublisher'))
+        assertThat(publisherStepOptions['PmdPublisher'], hasKey('qualityGates'))
+        assertThat(publisherStepOptions['PmdPublisher']['qualityGates'], allOf(
+            hasSize(2),
+            hasItem(allOf(
+                hasEntry('threshold', 10),
+                hasEntry('type', 'TOTAL_NORMAL'),
+                hasEntry('unstable', false),
+            )),
+            hasItem(allOf(
+                hasEntry('threshold', 20),
+                hasEntry('type', 'TOTAL_LOW'),
+                hasEntry('unstable', false),
+            )),
+        ))
     }
 }

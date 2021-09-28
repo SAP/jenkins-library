@@ -432,7 +432,8 @@ public class ChangeManagement implements Serializable {
                     dockerImage: docker.image,
                     dockerOptions: docker.options,
                     dockerEnvVars: dockerEnvVars,
-                    dockerPullImage: docker.pullImage) {
+                    dockerPullImage: docker.pullImage,
+                    dockerVolumeBind: docker.volumeBind ?: [:]) {
 
                     result = script.sh(shArgs)
 

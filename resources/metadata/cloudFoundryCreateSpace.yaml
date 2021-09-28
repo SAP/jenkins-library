@@ -80,5 +80,4 @@ spec:
           - name: cloudFoundry/space
   containers:
     - name: cf
-      image: ppiper/cf-cli
-      imagePullPolicy: Never
+      image: ppiper/cf-cli:6

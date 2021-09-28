@@ -2,7 +2,10 @@ package cmd
 
 import (
 	"fmt"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/pkg/errors"
+	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -22,33 +25,47 @@ import (
 // nexusUploadUtils defines an interface for utility functionality used from external packages,
 // so it can be easily mocked for testing.
 type nexusUploadUtils interface {
+	Stdout(out io.Writer)
+	Stderr(err io.Writer)
+	SetEnv(env []string)
+	RunExecutable(e string, p ...string) error
+
 	FileExists(path string) (bool, error)
 	FileRead(path string) ([]byte, error)
 	FileWrite(path string, content []byte, perm os.FileMode) error
 	FileRemove(path string) error
 	DirExists(path string) (bool, error)
 	Glob(pattern string) (matches []string, err error)
+	Copy(src, dest string) (int64, error)
+	MkdirAll(path string, perm os.FileMode) error
+
+	DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error
 
 	UsesMta() bool
 	UsesMaven() bool
 	UsesNpm() bool
 
 	getEnvParameter(path, name string) string
-	getExecRunner() command.ExecRunner
 	evaluate(options *maven.EvaluateOptions, expression string) (string, error)
 }
 
 type utilsBundle struct {
 	*piperutils.ProjectStructure
 	*piperutils.Files
-	execRunner *command.Command
+	*command.Command
+	*piperhttp.Client
 }
 
 func newUtilsBundle() *utilsBundle {
-	return &utilsBundle{
+	utils := utilsBundle{
 		ProjectStructure: &piperutils.ProjectStructure{},
 		Files:            &piperutils.Files{},
+		Command:          &command.Command{},
+		Client:           &piperhttp.Client{},
 	}
+	utils.Stdout(log.Writer())
+	utils.Stderr(log.Writer())
+	return &utils
 }
 
 func (u *utilsBundle) FileWrite(filePath string, content []byte, perm os.FileMode) error {
@@ -66,17 +83,8 @@ func (u *utilsBundle) getEnvParameter(path, name string) string {
 	return piperenv.GetParameter(path, name)
 }
 
-func (u *utilsBundle) getExecRunner() command.ExecRunner {
-	if u.execRunner == nil {
-		u.execRunner = &command.Command{}
-		u.execRunner.Stdout(log.Writer())
-		u.execRunner.Stderr(log.Writer())
-	}
-	return u.execRunner
-}
-
 func (u *utilsBundle) evaluate(options *maven.EvaluateOptions, expression string) (string, error) {
-	return maven.Evaluate(options, expression, u.getExecRunner())
+	return maven.Evaluate(options, expression, u)
 }
 
 func nexusUpload(options nexusUploadOptions, _ *telemetry.CustomData) {
@@ -92,6 +100,18 @@ func nexusUpload(options nexusUploadOptions, _ *telemetry.CustomData) {
 func runNexusUpload(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions) error {
 	performMavenUpload := len(options.MavenRepository) > 0
 	performNpmUpload := len(options.NpmRepository) > 0
+
+	if !performMavenUpload && !performNpmUpload {
+		if options.Format == "" {
+			return fmt.Errorf("none of the parameters 'mavenRepository' and 'npmRepository' are configured, or 'format' should be set if the 'url' already contains the repository ID")
+		}
+		if options.Format == "maven" {
+			performMavenUpload = true
+		} else if options.Format == "npm" {
+			performNpmUpload = true
+		}
+	}
+
 	err := uploader.SetRepoURL(options.Url, options.Version, options.MavenRepository, options.NpmRepository)
 	if err != nil {
 		return err
@@ -123,16 +143,15 @@ func runNexusUpload(utils nexusUploadUtils, uploader nexus.Uploader, options *ne
 }
 
 func uploadNpmArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *nexusUploadOptions) error {
-	execRunner := utils.getExecRunner()
-	environment := []string{"npm_config_registry=http://" + uploader.GetNpmRepoURL(), "npm_config_email=project-piper@no-reply.com"}
+	environment := []string{"npm_config_registry=" + uploader.GetNexusURLProtocol() + "://" + uploader.GetNpmRepoURL(), "npm_config_email=project-piper@no-reply.com"}
 	if options.Username != "" && options.Password != "" {
 		auth := b64.StdEncoding.EncodeToString([]byte(options.Username + ":" + options.Password))
 		environment = append(environment, "npm_config__auth="+auth)
 	} else {
 		log.Entry().Info("No credentials provided for npm upload, trying to upload anonymously.")
 	}
-	execRunner.SetEnv(environment)
-	err := execRunner.RunExecutable("npm", "publish")
+	utils.SetEnv(environment)
+	err := utils.RunExecutable("npm", "publish")
 	return err
 }
 
@@ -236,7 +255,7 @@ func setupNexusCredentialsSettingsFile(utils nexusUploadUtils, options *nexusUpl
 	}
 
 	log.Entry().Debugf("Writing nexus credentials to environment")
-	utils.getExecRunner().SetEnv([]string{"NEXUS_username=" + options.Username, "NEXUS_password=" + options.Password})
+	utils.SetEnv([]string{"NEXUS_username=" + options.Username, "NEXUS_password=" + options.Password})
 
 	mavenOptions.ProjectSettingsFile = settingsPath
 	mavenOptions.Defines = append(mavenOptions.Defines, "-DrepositoryId="+settingsServerID)
@@ -265,7 +284,7 @@ func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *n
 	}
 
 	var defines []string
-	defines = append(defines, "-Durl=http://"+uploader.GetMavenRepoURL())
+	defines = append(defines, "-Durl="+uploader.GetNexusURLProtocol()+"://"+uploader.GetMavenRepoURL())
 	defines = append(defines, "-DgroupId="+uploader.GetGroupID())
 	defines = append(defines, "-Dversion="+uploader.GetArtifactsVersion())
 	defines = append(defines, "-DartifactId="+uploader.GetArtifactsID())
@@ -299,7 +318,7 @@ func uploadArtifacts(utils nexusUploadUtils, uploader nexus.Uploader, options *n
 		}
 	}
 
-	err = uploadArtifactsBundle(d, generatePOM, mavenOptions, utils.getExecRunner())
+	err = uploadArtifactsBundle(d, generatePOM, mavenOptions, utils)
 	if err != nil {
 		return fmt.Errorf("uploading artifacts for ID '%s' failed: %w", uploader.GetArtifactsID(), err)
 	}
@@ -317,7 +336,7 @@ func appendItemToString(list, item string, first bool) string {
 }
 
 func uploadArtifactsBundle(d artifactDefines, generatePOM bool, mavenOptions maven.ExecuteOptions,
-	execRunner command.ExecRunner) error {
+	utils nexusUploadUtils) error {
 	if d.file == "" {
 		return fmt.Errorf("no file specified")
 	}
@@ -337,7 +356,7 @@ func uploadArtifactsBundle(d artifactDefines, generatePOM bool, mavenOptions mav
 	}
 
 	mavenOptions.Defines = append(mavenOptions.Defines, defines...)
-	_, err := maven.Execute(&mavenOptions, execRunner)
+	_, err := maven.Execute(&mavenOptions, utils)
 	return err
 }
 

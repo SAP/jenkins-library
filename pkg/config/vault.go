@@ -3,6 +3,9 @@ package config
 import (
 	"io/ioutil"
 	"os"
+	"path"
+	"regexp"
+	"strings"
 
 	"github.com/SAP/jenkins-library/pkg/config/interpolation"
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -10,15 +13,44 @@ import (
 	"github.com/hashicorp/vault/api"
 )
 
+const (
+	vaultRootPaths                      = "vaultRootPaths"
+	vaultTestCredentialPath             = "vaultTestCredentialPath"
+	vaultTestCredentialKeys             = "vaultTestCredentialKeys"
+	vaultAppRoleID                      = "vaultAppRoleID"
+	vaultAppRoleSecretID                = "vaultAppRoleSecreId"
+	vaultServerUrl                      = "vaultServerUrl"
+	vaultNamespace                      = "vaultNamespace"
+	vaultBasePath                       = "vaultBasePath"
+	vaultPipelineName                   = "vaultPipelineName"
+	vaultPath                           = "vaultPath"
+	skipVault                           = "skipVault"
+	vaultDisableOverwrite               = "vaultDisableOverwrite"
+	vaultTestCredentialEnvPrefixDefault = "PIPER_TESTCREDENTIAL_"
+)
+
 var (
 	vaultFilter = []string{
-		"vaultAppRoleID",
-		"vaultAppRoleSecreId",
-		"vaultServerUrl",
-		"vaultNamespace",
-		"vaultBasePath",
-		"vaultPipelineName",
-		"vaultPath",
+		vaultRootPaths,
+		vaultAppRoleID,
+		vaultAppRoleSecretID,
+		vaultServerUrl,
+		vaultNamespace,
+		vaultBasePath,
+		vaultPipelineName,
+		vaultPath,
+		skipVault,
+		vaultDisableOverwrite,
+		vaultTestCredentialPath,
+		vaultTestCredentialKeys,
+	}
+
+	// VaultRootPaths are the lookup paths piper tries to use during the vault lookup.
+	// A path is only used if it's variables can be interpolated from the config
+	VaultRootPaths = []string{
+		"$(vaultPath)",
+		"$(vaultBasePath)/$(vaultPipelineName)",
+		"$(vaultBasePath)/GROUP-SECRETS",
 	}
 
 	// VaultSecretFileDirectory holds the directory for the current step run to temporarily store secret files fetched from vault
@@ -29,18 +61,31 @@ var (
 type VaultCredentials struct {
 	AppRoleID       string
 	AppRoleSecretID string
+	VaultToken      string
 }
 
 // vaultClient interface for mocking
 type vaultClient interface {
 	GetKvSecret(string) (map[string]string, error)
+	MustRevokeToken()
+}
+
+func (s *StepConfig) mixinVaultConfig(parameters []StepParameters, configs ...map[string]interface{}) {
+	for _, config := range configs {
+		s.mixIn(config, vaultFilter)
+		// when an empty filter is returned we skip the mixin call since an empty filter will allow everything
+		if referencesFilter := getFilterForResourceReferences(parameters); len(referencesFilter) > 0 {
+			s.mixIn(config, referencesFilter)
+		}
+	}
 }
 
 func getVaultClientFromConfig(config StepConfig, creds VaultCredentials) (vaultClient, error) {
 	address, addressOk := config.Config["vaultServerUrl"].(string)
 	// if vault isn't used it's not an error
-	if !addressOk || creds.AppRoleID == "" || creds.AppRoleSecretID == "" {
-		log.Entry().Info("Skipping fetching secrets from vault since it is not configured")
+
+	if !addressOk || creds.VaultToken == "" && (creds.AppRoleID == "" || creds.AppRoleSecretID == "") {
+		log.Entry().Debug("Skipping fetching secrets from vault since it is not configured")
 		return nil, nil
 	}
 	namespace := ""
@@ -50,21 +95,26 @@ func getVaultClientFromConfig(config StepConfig, creds VaultCredentials) (vaultC
 		log.Entry().Debugf("Using vault namespace %s", namespace)
 	}
 
-	client, err := vault.NewClientWithAppRole(&api.Config{Address: address}, creds.AppRoleID, creds.AppRoleSecretID, namespace)
+	var client vaultClient
+	var err error
+	clientConfig := &vault.Config{Config: &api.Config{Address: address}, Namespace: namespace}
+	if creds.VaultToken != "" {
+		log.Entry().Debugf("Using Vault Token Authentication")
+		client, err = vault.NewClient(clientConfig, creds.VaultToken)
+	} else {
+		log.Entry().Debugf("Using Vaults AppRole Authentication")
+		client, err = vault.NewClientWithAppRole(clientConfig, creds.AppRoleID, creds.AppRoleSecretID)
+	}
 	if err != nil {
 		return nil, err
 	}
 
 	log.Entry().Infof("Fetching secrets from vault at %s", address)
-	return &client, nil
+	return client, nil
 }
 
 func resolveAllVaultReferences(config *StepConfig, client vaultClient, params []StepParameters) {
 	for _, param := range params {
-		// we don't overwrite secrets that have already been set in any way
-		if _, ok := config.Config[param.Name].(string); ok {
-			continue
-		}
 		if ref := param.GetReference("vaultSecret"); ref != nil {
 			resolveVaultReference(ref, config, client, param)
 		}
@@ -75,8 +125,14 @@ func resolveAllVaultReferences(config *StepConfig, client vaultClient, params []
 }
 
 func resolveVaultReference(ref *ResourceReference, config *StepConfig, client vaultClient, param StepParameters) {
+	vaultDisableOverwrite, _ := config.Config["vaultDisableOverwrite"].(bool)
+	if _, ok := config.Config[param.Name].(string); vaultDisableOverwrite && ok {
+		log.Entry().Debugf("Not fetching '%s' from vault since it has already been set", param.Name)
+		return
+	}
+
 	var secretValue *string
-	for _, vaultPath := range ref.Paths {
+	for _, vaultPath := range getSecretReferencePaths(ref, config.Config) {
 		// it should be possible to configure the root path were the secret is stored
 		vaultPath, ok := interpolation.ResolveString(vaultPath, config.Config)
 		if !ok {
@@ -85,7 +141,7 @@ func resolveVaultReference(ref *ResourceReference, config *StepConfig, client va
 
 		secretValue = lookupPath(client, vaultPath, &param)
 		if secretValue != nil {
-			log.Entry().Infof("Resolved param '%s' with vault path '%s'", param.Name, vaultPath)
+			log.Entry().Debugf("Resolved param '%s' with vault path '%s'", param.Name, vaultPath)
 			if ref.Type == "vaultSecret" {
 				config.Config[param.Name] = *secretValue
 			} else if ref.Type == "vaultSecretFile" {
@@ -102,6 +158,94 @@ func resolveVaultReference(ref *ResourceReference, config *StepConfig, client va
 	if secretValue == nil {
 		log.Entry().Warnf("Could not resolve param '%s' from vault", param.Name)
 	}
+}
+
+// resolve test credential keys and expose as environment variables
+func resolveVaultTestCredentials(config *StepConfig, client vaultClient) {
+	credPath, pathOk := config.Config[vaultTestCredentialPath].(string)
+	keys := getTestCredentialKeys(config)
+	if !(pathOk && keys != nil) || credPath == "" || len(keys) == 0 {
+		log.Entry().Debugf("Not fetching test credentials from vault since they are not (properly) configured")
+		return
+	}
+
+	lookupPath := make([]string, 3)
+	lookupPath[0] = "$(vaultPath)/" + credPath
+	lookupPath[1] = "$(vaultBasePath)/$(vaultPipelineName)/" + credPath
+	lookupPath[2] = "$(vaultBasePath)/GROUP-SECRETS/" + credPath
+
+	for _, path := range lookupPath {
+		vaultPath, ok := interpolation.ResolveString(path, config.Config)
+		if !ok {
+			continue
+		}
+
+		secret, err := client.GetKvSecret(vaultPath)
+		if err != nil {
+			log.Entry().WithError(err).Debugf("Couldn't fetch secret at '%s'", vaultPath)
+			continue
+		}
+		if secret == nil {
+			continue
+		}
+		secretsResolved := false
+		secretsResolved = populateTestCredentialsAsEnvs(config, secret, keys)
+		if secretsResolved {
+			// prevent overwriting resolved secrets
+			// only allows vault test credentials on one / the same vault path
+			break
+		}
+	}
+}
+
+func populateTestCredentialsAsEnvs(config *StepConfig, secret map[string]string, keys []string) (matched bool) {
+
+	vaultTestCredentialEnvPrefix, ok := config.Config["vaultTestCredentialEnvPrefix"].(string)
+	if !ok || len(vaultTestCredentialEnvPrefix) == 0 {
+		vaultTestCredentialEnvPrefix = vaultTestCredentialEnvPrefixDefault
+	}
+	for secretKey, secretValue := range secret {
+		for _, key := range keys {
+			if secretKey == key {
+				log.RegisterSecret(secretValue)
+				envVariable := vaultTestCredentialEnvPrefix + convertEnvVar(secretKey)
+				log.Entry().Debugf("Exposing test credential '%v' as '%v'", key, envVariable)
+				os.Setenv(envVariable, secretValue)
+				matched = true
+			}
+		}
+	}
+	return
+}
+
+func getTestCredentialKeys(config *StepConfig) []string {
+	keysRaw, ok := config.Config[vaultTestCredentialKeys].([]interface{})
+	if !ok {
+		log.Entry().Debugf("Not fetching test credentials from vault since they are not (properly) configured")
+		return nil
+	}
+	keys := make([]string, 0, len(keysRaw))
+	for _, keyRaw := range keysRaw {
+		key, ok := keyRaw.(string)
+		if !ok {
+			log.Entry().Warnf("%s is needs to be an array of strings", vaultTestCredentialKeys)
+			return nil
+		}
+		keys = append(keys, key)
+	}
+	return keys
+}
+
+// converts to a valid environment variable string
+func convertEnvVar(s string) string {
+	r := strings.ToUpper(s)
+	r = strings.ReplaceAll(r, "-", "_")
+	reg, err := regexp.Compile("[^a-zA-Z0-9_]*")
+	if err != nil {
+		log.Entry().Debugf("could not compile regex of convertEnvVar: %v", err)
+	}
+	replacedString := reg.ReplaceAllString(r, "")
+	return replacedString
 }
 
 // RemoveVaultSecretFiles removes all secret files that have been created during execution
@@ -133,7 +277,7 @@ func createTemporarySecretFile(namePattern string, content string) (string, erro
 }
 
 func lookupPath(client vaultClient, path string, param *StepParameters) *string {
-	log.Entry().Infof("Trying to resolve vault parameter '%s' at '%s'", param.Name, path)
+	log.Entry().Debugf("Trying to resolve vault parameter '%s' at '%s'", param.Name, path)
 	secret, err := client.GetKvSecret(path)
 	if err != nil {
 		log.Entry().WithError(err).Warnf("Couldn't fetch secret at '%s'", path)
@@ -148,10 +292,11 @@ func lookupPath(client vaultClient, path string, param *StepParameters) *string 
 		log.RegisterSecret(field)
 		return &field
 	}
-
+	log.Entry().Debugf("Secret did not contain a field name '%s'", param.Name)
 	// try parameter aliases
 	for _, alias := range param.Aliases {
-		field := secret[param.Name]
+		log.Entry().Debugf("Trying alias field name '%s'", alias.Name)
+		field := secret[alias.Name]
 		if field != "" {
 			log.RegisterSecret(field)
 			if alias.Deprecated {
@@ -161,4 +306,29 @@ func lookupPath(client vaultClient, path string, param *StepParameters) *string 
 		}
 	}
 	return nil
+}
+
+func getSecretReferencePaths(reference *ResourceReference, config map[string]interface{}) []string {
+	retPaths := make([]string, 0, len(VaultRootPaths))
+	secretName := reference.Default
+	if providedName, ok := config[reference.Name].(string); ok && providedName != "" {
+		secretName = providedName
+	}
+	for _, rootPath := range VaultRootPaths {
+		fullPath := path.Join(rootPath, secretName)
+		retPaths = append(retPaths, fullPath)
+	}
+	return retPaths
+}
+
+func toStringSlice(interfaceSlice []interface{}) []string {
+	retSlice := make([]string, 0, len(interfaceSlice))
+	for _, vRaw := range interfaceSlice {
+		if v, ok := vRaw.(string); ok {
+			retSlice = append(retSlice, v)
+			continue
+		}
+		log.Entry().Warnf("'%s' needs to be of type string or an array of strings but got %T (%[2]v)", vaultPath, vRaw)
+	}
+	return retSlice
 }

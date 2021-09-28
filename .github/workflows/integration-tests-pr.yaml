@@ -80,11 +80,12 @@ jobs:
       - name: build
         env:
           CGO_ENABLED: 0
-      # with `-tags release` we ensure that shared test utilities won't end up in the binary
+        # with `-tags release` we ensure that shared test utilities won't end up in the binary
         run: go build -o piper -tags release
       - name: test
         env:
           PIPER_INTEGRATION_GITHUB_TOKEN: ${{secrets.PIPER_INTEGRATION_GITHUB_TOKEN}}
+          PIPER_INTEGRATION_SONAR_TOKEN: ${{secrets.PIPER_INTEGRATION_SONAR_TOKEN}}
         run: go test -tags=integration -timeout 20m ./integration/...
       - name: update status
         if: success()

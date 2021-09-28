@@ -43,6 +43,7 @@ func (abaputils *AbapUtils) GetAbapCommunicationArrangementInfo(options AbapEnvi
 		// Host, User and Password are directly provided -> check for host schema (double https)
 		match, err := regexp.MatchString(`^(https|HTTPS):\/\/.*`, options.Host)
 		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
 			return connectionDetails, errors.Wrap(err, "Schema validation for host parameter failed. Check for https.")
 		}
 		var hostOdataURL = options.Host + oDataURL
@@ -56,6 +57,7 @@ func (abaputils *AbapUtils) GetAbapCommunicationArrangementInfo(options AbapEnvi
 	} else {
 		if options.CfAPIEndpoint == "" || options.CfOrg == "" || options.CfSpace == "" || options.CfServiceInstance == "" || options.CfServiceKeyName == "" {
 			var err = errors.New("Parameters missing. Please provide EITHER the Host of the ABAP server OR the Cloud Foundry ApiEndpoint, Organization, Space, Service Instance and a corresponding Service Key for the Communication Scenario SAP_COM_0510")
+			log.SetErrorCategory(log.ErrorConfiguration)
 			return connectionDetails, err
 		}
 		// Url, User and Password should be read from a cf service key
@@ -99,7 +101,8 @@ func ReadServiceKeyAbapEnvironment(options AbapEnvironmentOptions, c command.Exe
 	// parse
 	json.Unmarshal([]byte(serviceKeyJSON), &abapServiceKey)
 	if abapServiceKey == (AbapServiceKey{}) {
-		return abapServiceKey, errors.New("Parsing the service key failed")
+		log.SetErrorCategory(log.ErrorInfrastructure)
+		return abapServiceKey, errors.New("Parsing the service key failed. Service key is empty")
 	}
 
 	log.Entry().Info("Service Key read successfully")

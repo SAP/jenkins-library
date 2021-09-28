@@ -119,7 +119,7 @@ class MulticloudDeployTest extends BasePiperTest {
                     deployType: 'blue-green',
                     keepOldInstance: true,
                     cf_native: [
-                        dockerImage: 'ppiper/cf-cli',
+                        dockerImage: 'ppiper/cf-cli:6',
                         dockerWorkspace: '/home/piper'
                     ]
                 ]
@@ -372,5 +372,17 @@ class MulticloudDeployTest extends BasePiperTest {
         assertTrue(executedOnNode)
         assertFalse(executedOnKubernetes)
 
+    }
+
+    @Test
+    void multicloudPreDeploymentHookTest() {
+        def closureRun = null
+
+        stepRule.step.multicloudDeploy([
+            script                      : nullScript,
+            preDeploymentHook           : {closureRun = true},
+        ])
+
+        assertTrue(closureRun)
     }
 }

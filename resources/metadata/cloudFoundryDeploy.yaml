@@ -52,6 +52,18 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: artifactVersion
+      - name: commitHash
+        type: string
+        description: "The commit hash, used for influx reporting"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: false
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: git/headCommitId
       - name: cfHome
         type: string
         description: "The cf home folder used by the cf cli. If not provided the default assumed by the cf cli is used."
@@ -259,6 +271,17 @@ spec:
         mandatory: false
         aliases:
           - name: cloudFoundry/mtaExtensionDescriptor
+      - name: mtaExtensionCredentials
+        type: "map[string]interface{}"
+        description: "Defines a map of credentials that need to be replaced in the `mtaExtensionDescriptor`. This map needs to be created as `value-to-be-replaced`:`id-of-a-credential-in-jenkins`"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+        mandatory: false
+        aliases:
+          - name: cloudFoundry/mtaExtensionCredentials
       - name: mtaPath
         type: string
         description: "Defines the path to *.mtar for deployment with the mtaDeployPlugin"
@@ -298,10 +321,8 @@ spec:
             type: secret
             param: password
           - type: vaultSecret
-            paths:
-              - $(vaultPath)/cloudfoundry-$(cfOrg)-$(cfSpace)
-              - $(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(cfOrg)-$(cfSpace)
-              - $(vaultBasePath)/GROUP-SECRETS/cloudfoundry-$(cfOrg)-$(cfSpace)
+            default: cloudfoundry-$(org)-$(space)
+            name: cloudfoundryVaultSecretName
       - name: smokeTestScript
         type: string
         description:
@@ -353,14 +374,11 @@ spec:
             type: secret
             param: username
           - type: vaultSecret
-            paths:
-              - $(vaultPath)/cloudfoundry-$(cfOrg)-$(cfSpace)
-              - $(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(cfOrg)-$(cfSpace)
-              - $(vaultBasePath)/GROUP-SECRETS/cloudfoundry-$(cfOrg)-$(cfSpace)
+            default: cloudfoundry-$(org)-$(space)
+            name: cloudfoundryVaultSecretName
   containers:
     - name: cfDeploy
-      image: ppiper/cf-cli
-      imagePullPolicy: Always
+      image: ppiper/cf-cli:6
   outputs:
     resources:
       - name: influx
@@ -370,6 +388,7 @@ spec:
             fields:
               - name: artifactUrl
               - name: deployTime
+              - name: commitHash
               - name: jobTrigger
             tags:
               - name: artifactVersion

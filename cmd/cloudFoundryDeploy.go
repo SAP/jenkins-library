@@ -14,18 +14,25 @@ import (
 	"github.com/pkg/errors"
 	"io"
 	"os"
+	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 )
 
 type cfFileUtil interface {
 	FileExists(string) (bool, error)
+	FileRename(string, string) error
+	FileRead(string) ([]byte, error)
 	FileWrite(path string, content []byte, perm os.FileMode) error
 	Getwd() (string, error)
 	Glob(string) ([]string, error)
 	Chmod(string, os.FileMode) error
+	Copy(string, string) (int64, error)
+	Stat(path string) (os.FileInfo, error)
 }
 
 var _now = time.Now
@@ -35,6 +42,7 @@ var _getManifest = getManifest
 var _replaceVariables = yaml.Substitute
 var _getVarsOptions = cloudfoundry.GetVarsOptions
 var _getVarsFileOptions = cloudfoundry.GetVarsFileOptions
+var _environ = os.Environ
 var fileUtils cfFileUtil = piperutils.Files{}
 
 // for simplify mocking. Maybe we find a more elegant way (mock for CFUtils)
@@ -174,6 +182,7 @@ func prepareInflux(success bool, config *cloudFoundryDeployOptions, influxData *
 
 	// n/a (literally) is also reported in groovy
 	influxData.deployment_data.fields.artifactURL = "n/a"
+	influxData.deployment_data.fields.commitHash = config.CommitHash
 
 	influxData.deployment_data.fields.deployTime = strings.ToUpper(_now().Format("Jan 02 2006 15:04:05"))
 
@@ -429,11 +438,12 @@ func handleSmokeTestScript(smokeTestScript string) ([]string, error) {
 			return []string{}, fmt.Errorf("failed to make smoke-test script executable: %w", err)
 		}
 		pwd, err := fileUtils.Getwd()
+
 		if err != nil {
 			return []string{}, fmt.Errorf("failed to get current working directory for execution of smoke-test script: %w", err)
 		}
 
-		return []string{"--smoke-test", fmt.Sprintf("%s/%s", pwd, smokeTestScript)}, nil
+		return []string{"--smoke-test", fmt.Sprintf("%s", filepath.Join(pwd, smokeTestScript))}, nil
 	}
 	return []string{}, nil
 }
@@ -668,21 +678,141 @@ func deployMta(config *cloudFoundryDeployOptions, mtarFilePath string, command c
 		cfDeployParams = append(cfDeployParams, deployParams...)
 	}
 
-	cfDeployParams = append(cfDeployParams, handleMtaExtensionDescriptors(config.MtaExtensionDescriptor)...)
+	extFileParams, extFiles := handleMtaExtensionDescriptors(config.MtaExtensionDescriptor)
 
-	return cfDeploy(config, cfDeployParams, nil, nil, command)
+	for _, extFile := range extFiles {
+		_, err := fileUtils.Copy(extFile, extFile+".original")
+		if err != nil {
+			return fmt.Errorf("Cannot prepare mta extension files: %w", err)
+		}
+		err = handleMtaExtensionCredentials(extFile, config.MtaExtensionCredentials)
+		if err != nil {
+			return fmt.Errorf("Cannot handle credentials inside mta extension files: %w", err)
+		}
+	}
+
+	cfDeployParams = append(cfDeployParams, extFileParams...)
+
+	err := cfDeploy(config, cfDeployParams, nil, nil, command)
+
+	for _, extFile := range extFiles {
+		renameError := fileUtils.FileRename(extFile+".original", extFile)
+		if err == nil && renameError != nil {
+			return renameError
+		}
+	}
+
+	return err
 }
 
-func handleMtaExtensionDescriptors(mtaExtensionDescriptor string) []string {
+func handleMtaExtensionCredentials(extFile string, credentials map[string]interface{}) error {
+
+	log.Entry().Debugf("Inserting credentials into extension file '%s'", extFile)
+
+	b, err := fileUtils.FileRead(extFile)
+	if err != nil {
+		return errors.Wrapf(err, "Cannot handle credentials for mta extension file '%s'", extFile)
+	}
+	content := string(b)
+
+	env, err := toMap(_environ(), "=")
+	if err != nil {
+		errors.Wrap(err, "Cannot handle mta extension credentials.")
+	}
+
+	updated := false
+	missingCredentials := []string{}
+	for name, credentialKey := range credentials {
+		credKey, ok := credentialKey.(string)
+		if !ok {
+			return fmt.Errorf("Cannot handle mta extension credentials: Cannot cast '%v' (type %T) to string", credentialKey, credentialKey)
+		}
+		pattern := "<%= " + name + " %>"
+		if strings.Contains(content, pattern) {
+			cred := env[toEnvVarKey(credKey)]
+			if len(cred) == 0 {
+				missingCredentials = append(missingCredentials, credKey)
+				continue
+			}
+			content = strings.Replace(content, pattern, cred, -1)
+			updated = true
+			log.Entry().Debugf("Mta extension credentials handling: Placeholder '%s' has been replaced by credential denoted by '%s'/'%s' in file '%s'", name, credKey, toEnvVarKey(credKey), extFile)
+		}
+	}
+	if len(missingCredentials) > 0 {
+		missinCredsEnvVarKeyCompatible := []string{}
+		for _, missingKey := range missingCredentials {
+			missinCredsEnvVarKeyCompatible = append(missinCredsEnvVarKeyCompatible, toEnvVarKey(missingKey))
+		}
+		// ensure stable order of the entries. Needed e.g. for the tests.
+		sort.Strings(missingCredentials)
+		sort.Strings(missinCredsEnvVarKeyCompatible)
+		return fmt.Errorf("Cannot handle mta extension credentials: No credentials found for '%s'/'%s'. Are these credentials maintained?", missingCredentials, missinCredsEnvVarKeyCompatible)
+	}
+	if !updated {
+		log.Entry().Debugf("Mta extension credentials handling: Extension file '%s' has not been updated. Seems to contain no credentials.", extFile)
+	} else {
+		fInfo, err := fileUtils.Stat(extFile)
+		fMode := fInfo.Mode()
+		if err != nil {
+			errors.Wrap(err, "Cannot handle mta extension credentials.")
+		}
+		err = fileUtils.FileWrite(extFile, []byte(content), fMode)
+		if err != nil {
+			return errors.Wrap(err, "Cannot handle mta extension credentials.")
+		}
+		log.Entry().Debugf("Mta extension credentials handling: Extension file '%s' has been updated.", extFile)
+	}
+
+	re := regexp.MustCompile(`<%= .* %>`)
+	placeholders := re.FindAll([]byte(content), -1)
+	if len(placeholders) > 0 {
+		log.Entry().Warningf("mta extension credential handling: Unresolved placeholders found after inserting credentials: %s", placeholders)
+	}
+
+	return nil
+}
+
+func toEnvVarKey(key string) string {
+	key = regexp.MustCompile(`[^A-Za-z0-9]`).ReplaceAllString(key, "_")
+	// from here on we have only ascii
+	modifiedKey := ""
+	last := '_'
+	for _, runeVal := range key {
+		if unicode.IsUpper(runeVal) && last != '_' {
+			modifiedKey += "_"
+		}
+		modifiedKey += string(unicode.ToUpper(runeVal))
+		last = runeVal
+	}
+	return modifiedKey
+	// since golang regex does not support negative lookbehinds we have to code it ourselvs
+}
+
+func toMap(keyValue []string, separator string) (map[string]string, error) {
+	result := map[string]string{}
+	for _, entry := range keyValue {
+		kv := strings.Split(entry, separator)
+		if len(kv) < 2 {
+			return map[string]string{}, fmt.Errorf("Cannot convert to map: separator '%s' not found in entry '%s'", separator, entry)
+		}
+		result[kv[0]] = strings.Join(kv[1:], separator)
+	}
+	return result, nil
+}
+
+func handleMtaExtensionDescriptors(mtaExtensionDescriptor string) ([]string, []string) {
 	var result = []string{}
+	var extFiles = []string{}
 	for _, part := range strings.Fields(strings.Trim(mtaExtensionDescriptor, " ")) {
 		if part == "-e" || part == "" {
 			continue
 		}
 		// REVISIT: maybe check if the extension descriptor exists
 		result = append(result, "-e", part)
+		extFiles = append(extFiles, part)
 	}
-	return result
+	return result, extFiles
 }
 
 func cfDeploy(
@@ -711,14 +841,18 @@ func cfDeploy(
 	// TODO set HOME to config.DockerWorkspace
 	command.SetEnv(additionalEnvironment)
 
-	err = _cfLogin(command, cloudfoundry.LoginOptions{
-		CfAPIEndpoint: config.APIEndpoint,
-		CfOrg:         config.Org,
-		CfSpace:       config.Space,
-		Username:      config.Username,
-		Password:      config.Password,
-		CfLoginOpts:   strings.Fields(config.LoginParameters),
-	})
+	err = command.RunExecutable("cf", "version")
+
+	if err == nil {
+		err = _cfLogin(command, cloudfoundry.LoginOptions{
+			CfAPIEndpoint: config.APIEndpoint,
+			CfOrg:         config.Org,
+			CfSpace:       config.Space,
+			Username:      config.Username,
+			Password:      config.Password,
+			CfLoginOpts:   strings.Fields(config.LoginParameters),
+		})
+	}
 
 	if err == nil {
 		loginPerformed = true

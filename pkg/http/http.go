@@ -3,6 +3,8 @@ package http
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
@@ -12,10 +14,15 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/SAP/jenkins-library/pkg/reporting"
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/motemen/go-nuts/roundtime"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -23,15 +30,19 @@ import (
 
 // Client defines an http client object
 type Client struct {
-	maxRequestDuration       time.Duration
-	transportTimeout         time.Duration
-	username                 string
-	password                 string
-	token                    string
-	logger                   *logrus.Entry
-	cookieJar                http.CookieJar
-	doLogRequestBodyOnDebug  bool
-	doLogResponseBodyOnDebug bool
+	maxRequestDuration        time.Duration
+	maxRetries                int
+	transportTimeout          time.Duration
+	transportSkipVerification bool
+	username                  string
+	password                  string
+	token                     string
+	logger                    *logrus.Entry
+	cookieJar                 http.CookieJar
+	doLogRequestBodyOnDebug   bool
+	doLogResponseBodyOnDebug  bool
+	useDefaultTransport       bool
+	trustedCerts              []string
 }
 
 // ClientOptions defines the options to be set on the client
@@ -41,16 +52,20 @@ type ClientOptions struct {
 	// for the request will be enforced. This should only be used if the
 	// length of the request bodies is known.
 	MaxRequestDuration time.Duration
+	MaxRetries         int
 	// TransportTimeout defaults to 3 minutes, if not specified. It is
 	// used for the transport layer and duration of handshakes and such.
-	TransportTimeout         time.Duration
-	Username                 string
-	Password                 string
-	Token                    string
-	Logger                   *logrus.Entry
-	CookieJar                http.CookieJar
-	DoLogRequestBodyOnDebug  bool
-	DoLogResponseBodyOnDebug bool
+	TransportTimeout          time.Duration
+	TransportSkipVerification bool
+	Username                  string
+	Password                  string
+	Token                     string
+	Logger                    *logrus.Entry
+	CookieJar                 http.CookieJar
+	DoLogRequestBodyOnDebug   bool
+	DoLogResponseBodyOnDebug  bool
+	UseDefaultTransport       bool
+	TrustedCerts              []string
 }
 
 // TransportWrapper is a wrapper for central logging capabilities
@@ -121,8 +136,6 @@ func (c *Client) Upload(data UploadRequestData) (*http.Response, error) {
 		return nil, errors.New(fmt.Sprintf("Http method %v is not allowed. Possible values are %v or %v", data.Method, http.MethodPost, http.MethodPut))
 	}
 
-	httpClient := c.initialize()
-
 	bodyBuffer := &bytes.Buffer{}
 	bodyWriter := multipart.NewWriter(bodyBuffer)
 
@@ -140,7 +153,7 @@ func (c *Client) Upload(data UploadRequestData) (*http.Response, error) {
 		return &http.Response{}, errors.Wrapf(err, "error creating form file %v for field %v", data.File, data.FileFieldName)
 	}
 
-	_, err = io.Copy(fileWriter, data.FileContent)
+	_, err = piperutils.CopyData(fileWriter, data.FileContent)
 	if err != nil {
 		return &http.Response{}, errors.Wrapf(err, "unable to copy file content of %v into request body", data.File)
 	}
@@ -158,40 +171,50 @@ func (c *Client) Upload(data UploadRequestData) (*http.Response, error) {
 	request.Header.Add("Content-Type", "multipart/form-data; boundary=\""+boundary+"\"")
 	request.Header.Add("Connection", "Keep-Alive")
 
-	response, err := httpClient.Do(request)
-	if err != nil {
-		return response, errors.Wrapf(err, "HTTP %v request to %v failed with error", data.Method, data.URL)
-	}
-
-	return c.handleResponse(response)
+	return c.Send(request)
 }
 
 // SendRequest sends an http request with a defined method
+//
+// On error, any Response can be ignored and the Response.Body
+// does not need to be closed.
 func (c *Client) SendRequest(method, url string, body io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
-	httpClient := c.initialize()
-
 	request, err := c.createRequest(method, url, body, &header, cookies)
 	if err != nil {
 		return &http.Response{}, errors.Wrapf(err, "error creating %v request to %v", method, url)
 	}
 
+	return c.Send(request)
+}
+
+// Send sends an http request
+func (c *Client) Send(request *http.Request) (*http.Response, error) {
+	httpClient := c.initialize()
 	response, err := httpClient.Do(request)
 	if err != nil {
-		return response, errors.Wrapf(err, "error calling %v", url)
+		return response, errors.Wrapf(err, "HTTP %v request to %v failed", request.Method, request.URL)
 	}
-
-	return c.handleResponse(response)
+	return c.handleResponse(response, request.URL.String())
 }
 
 // SetOptions sets options used for the http client
 func (c *Client) SetOptions(options ClientOptions) {
 	c.doLogRequestBodyOnDebug = options.DoLogRequestBodyOnDebug
 	c.doLogResponseBodyOnDebug = options.DoLogResponseBodyOnDebug
+	c.useDefaultTransport = options.UseDefaultTransport
 	c.transportTimeout = options.TransportTimeout
+	c.transportSkipVerification = options.TransportSkipVerification
 	c.maxRequestDuration = options.MaxRequestDuration
 	c.username = options.Username
 	c.password = options.Password
 	c.token = options.Token
+	if options.MaxRetries < 0 {
+		c.maxRetries = 0
+	} else if options.MaxRetries == 0 {
+		c.maxRetries = 15
+	} else {
+		c.maxRetries = options.MaxRetries
+	}
 
 	if options.Logger != nil {
 		c.logger = options.Logger
@@ -199,6 +222,12 @@ func (c *Client) SetOptions(options ClientOptions) {
 		c.logger = log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")
 	}
 	c.cookieJar = options.CookieJar
+	c.trustedCerts = options.TrustedCerts
+}
+
+// StandardClient returns a stdlib *http.Client which respects the custom settings.
+func (c *Client) StandardClient() *http.Client {
+	return c.initialize()
 }
 
 func (c *Client) initialize() *http.Client {
@@ -213,15 +242,57 @@ func (c *Client) initialize() *http.Client {
 			ResponseHeaderTimeout: c.transportTimeout,
 			ExpectContinueTimeout: c.transportTimeout,
 			TLSHandshakeTimeout:   c.transportTimeout,
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: c.transportSkipVerification,
+			},
 		},
 		doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,
 		doLogResponseBodyOnDebug: c.doLogResponseBodyOnDebug,
 	}
-	var httpClient = &http.Client{
-		Timeout:   c.maxRequestDuration,
-		Transport: transport,
-		Jar:       c.cookieJar,
+
+	if (len(c.trustedCerts)) > 0 && !c.useDefaultTransport && !c.transportSkipVerification {
+		log.Entry().Info("adding certs for tls to trust")
+		err := c.configureTLSToTrustCertificates(transport)
+		if err != nil {
+			log.Entry().Infof("adding certs for tls config failed : v%, continuing with the existing tsl config", err)
+		}
+	} else {
+		log.Entry().Debug("no trusted certs found / using default transport / insecure skip set to true / : continuing with existing tls config")
 	}
+
+	var httpClient *http.Client
+	if c.maxRetries > 0 {
+		retryClient := retryablehttp.NewClient()
+		localLogger := log.Entry()
+		localLogger.Level = logrus.DebugLevel
+		retryClient.Logger = localLogger
+		retryClient.HTTPClient.Timeout = c.maxRequestDuration
+		retryClient.HTTPClient.Jar = c.cookieJar
+		retryClient.RetryMax = c.maxRetries
+		if !c.useDefaultTransport {
+			retryClient.HTTPClient.Transport = transport
+		}
+		retryClient.CheckRetry = func(ctx context.Context, resp *http.Response, err error) (bool, error) {
+			if err != nil && (strings.Contains(err.Error(), "timeout") || strings.Contains(err.Error(), "timed out") || strings.Contains(err.Error(), "connection refused") || strings.Contains(err.Error(), "connection reset")) {
+				// Assuming timeouts, resets, and similar could be retried
+				return true, nil
+			}
+			return retryablehttp.DefaultRetryPolicy(ctx, resp, err)
+		}
+		httpClient = retryClient.StandardClient()
+	} else {
+		httpClient = &http.Client{}
+		httpClient.Timeout = c.maxRequestDuration
+		httpClient.Jar = c.cookieJar
+		if !c.useDefaultTransport {
+			httpClient.Transport = transport
+		}
+	}
+
+	if c.transportSkipVerification {
+		c.logger.Debugf("TLS verification disabled")
+	}
+
 	c.logger.Debugf("Transport timeout: %v, max request duration: %v", c.transportTimeout, c.maxRequestDuration)
 
 	return httpClient
@@ -249,7 +320,7 @@ func (t *TransportWrapper) RoundTrip(req *http.Request) (*http.Response, error) 
 func (t *TransportWrapper) logRequest(req *http.Request) {
 	log.Entry().Debug("--------------------------------")
 	log.Entry().Debugf("--> %v request to %v", req.Method, req.URL)
-	log.Entry().Debugf("headers: %v", req.Header)
+	log.Entry().Debugf("headers: %v", transformHeaders(req.Header))
 	log.Entry().Debugf("cookies: %v", transformCookies(req.Cookies()))
 	if t.doLogRequestBodyOnDebug {
 		log.Entry().Debugf("body: %v", transformBody(req.Body))
@@ -272,6 +343,32 @@ func (t *TransportWrapper) logResponse(resp *http.Response) {
 		log.Entry().Debug("response <nil>")
 	}
 	log.Entry().Debug("--------------------------------")
+}
+
+func transformHeaders(header http.Header) http.Header {
+	var h http.Header = map[string][]string{}
+	for name, value := range header {
+		if name == "Authorization" {
+			for _, v := range value {
+				// The format of the Authorization header value is: <type> <cred>.
+				// We don't register the full string since only the part after
+				// the first token is the secret in the narrower sense (applies at
+				// least for basic auth)
+				log.RegisterSecret(strings.Join(strings.Split(v, " ")[1:], " "))
+			}
+			// Since
+			//   1.) The auth header type itself might serve as a vector for an
+			//       intrusion
+			//   2.) We cannot make assumtions about the structure of the auth
+			//       header value since that depends on the type, e.g. several tokens
+			//       where only some of the tokens define the secret
+			// we hide the full auth header value anyway in order to be on the
+			// save side.
+			value = []string{"<set>"}
+		}
+		h[name] = value
+	}
+	return h
 }
 
 func transformCookies(cookies []*http.Cookie) string {
@@ -311,7 +408,7 @@ func (c *Client) createRequest(method, url string, body io.Reader, header *http.
 		}
 	}
 
-	if len(c.username) > 0 && len(c.password) > 0 {
+	if len(c.username) > 0 {
 		request.SetBasicAuth(c.username, c.password)
 		c.logger.Debug("Using Basic Authentication ****/****")
 	}
@@ -323,7 +420,7 @@ func (c *Client) createRequest(method, url string, body io.Reader, header *http.
 	return request, nil
 }
 
-func (c *Client) handleResponse(response *http.Response) (*http.Response, error) {
+func (c *Client) handleResponse(response *http.Response, url string) (*http.Response, error) {
 	// 2xx codes do not create an error
 	if response.StatusCode >= 200 && response.StatusCode < 300 {
 		return response, nil
@@ -335,12 +432,12 @@ func (c *Client) handleResponse(response *http.Response) (*http.Response, error)
 	case http.StatusForbidden:
 		c.logger.WithField("HTTP Error", "403 (Forbidden)").Error("Permission issue, please check your user permissions!")
 	case http.StatusNotFound:
-		c.logger.WithField("HTTP Error", "404 (Not Found)").Error("Requested resource could not be found")
+		c.logger.WithField("HTTP Error", "404 (Not Found)").Errorf("Requested resource ('%s') could not be found", url)
 	case http.StatusInternalServerError:
 		c.logger.WithField("HTTP Error", "500 (Internal Server Error)").Error("Unknown error occurred.")
 	}
 
-	return response, fmt.Errorf("Request to %v returned with response %v", response.Request.URL, response.Status)
+	return response, fmt.Errorf("request to %v returned with response %v", response.Request.URL, response.Status)
 }
 
 func (c *Client) applyDefaults() {
@@ -350,6 +447,142 @@ func (c *Client) applyDefaults() {
 	if c.logger == nil {
 		c.logger = log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")
 	}
+}
+
+func (c *Client) configureTLSToTrustCertificates(transport *TransportWrapper) error {
+
+	trustStoreDir, err := getWorkingDirForTrustStore()
+	fileUtils := &piperutils.Files{}
+	if err != nil {
+		return errors.Wrap(err, "failed to create trust store directory")
+	}
+	/* insecure := flag.Bool("insecure-ssl", false, "Accept/Ignore all server SSL certificates") */
+
+	for _, certificate := range c.trustedCerts {
+		rootCAs, _ := x509.SystemCertPool()
+
+		if rootCAs == nil {
+			rootCAs = x509.NewCertPool()
+		}
+
+		filename := path.Base(certificate)
+		filename = strings.ReplaceAll(filename, " ", "")
+		target := filepath.Join(trustStoreDir, filename)
+		if exists, _ := fileUtils.FileExists(target); !exists {
+			log.Entry().WithField("source", certificate).WithField("target", target).Info("Downloading TLS certificate")
+			request, err := http.NewRequest("GET", certificate, nil)
+			if err != nil {
+				return err
+			}
+
+			httpClient := &http.Client{}
+			httpClient.Timeout = c.maxRequestDuration
+			httpClient.Jar = c.cookieJar
+			if !c.useDefaultTransport {
+				httpClient.Transport = transport
+			}
+			response, err := httpClient.Do(request)
+			if err != nil {
+				return errors.Wrapf(err, "HTTP %v request to %v failed", request.Method, request.URL)
+			}
+
+			if response.StatusCode >= 200 && response.StatusCode < 300 {
+				defer response.Body.Close()
+				parent := filepath.Dir(target)
+				if len(parent) > 0 {
+					if err = os.MkdirAll(parent, 0775); err != nil {
+						return err
+					}
+				}
+				fileHandler, err := os.Create(target)
+				if err != nil {
+					return errors.Wrapf(err, "unable to create file %v", filename)
+				}
+				defer fileHandler.Close()
+
+				_, err = io.Copy(fileHandler, response.Body)
+				if err != nil {
+					return errors.Wrapf(err, "unable to copy content from url to file %v", filename)
+				}
+
+				// Get the SystemCertPool, continue with an empty pool on error
+				certs, err := ioutil.ReadFile(target)
+				if err != nil {
+					return errors.Wrapf(err, "Failed to read cert file %v", certificate)
+				}
+
+				// Append our cert to the system pool
+				if ok := rootCAs.AppendCertsFromPEM(certs); !ok {
+					log.Entry().Infof("cert not appended to root ca %v", certificate)
+					return fmt.Errorf("cert not appended to root ca %v", certificate)
+				}
+
+				*transport = TransportWrapper{
+					Transport: &http.Transport{
+						DialContext: (&net.Dialer{
+							Timeout: c.transportTimeout,
+						}).DialContext,
+						ResponseHeaderTimeout: c.transportTimeout,
+						ExpectContinueTimeout: c.transportTimeout,
+						TLSHandshakeTimeout:   c.transportTimeout,
+						TLSClientConfig: &tls.Config{
+							InsecureSkipVerify: false,
+							RootCAs:            rootCAs,
+						},
+					},
+					doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,
+					doLogResponseBodyOnDebug: c.doLogResponseBodyOnDebug,
+				}
+
+				log.Entry().Infof("%v appended to root CA successfully", certificate)
+
+			} else {
+				return errors.Wrapf(err, "Download of TLS certificate %v failed with status code %v", certificate, response.StatusCode)
+			}
+		} else {
+			log.Entry().Infof("existing certs found, appending to rootCA")
+			certs, err := ioutil.ReadFile(target)
+			if err != nil {
+				return errors.Wrapf(err, "Failed to read cert file %v", certificate)
+			}
+
+			// Append our cert to the system pool
+			if ok := rootCAs.AppendCertsFromPEM(certs); !ok {
+				log.Entry().Infof("cert not appended to root ca %v", certificate)
+			}
+
+			*transport = TransportWrapper{
+				Transport: &http.Transport{
+					DialContext: (&net.Dialer{
+						Timeout: c.transportTimeout,
+					}).DialContext,
+					ResponseHeaderTimeout: c.transportTimeout,
+					ExpectContinueTimeout: c.transportTimeout,
+					TLSHandshakeTimeout:   c.transportTimeout,
+					TLSClientConfig: &tls.Config{
+						InsecureSkipVerify: false,
+						RootCAs:            rootCAs,
+					},
+				},
+				doLogRequestBodyOnDebug:  c.doLogRequestBodyOnDebug,
+				doLogResponseBodyOnDebug: c.doLogResponseBodyOnDebug,
+			}
+			log.Entry().Infof("%v appended to root CA successfully", certificate)
+		}
+
+	}
+	return nil
+}
+
+func getWorkingDirForTrustStore() (string, error) {
+	fileUtils := &piperutils.Files{}
+	if exists, _ := fileUtils.DirExists(reporting.StepReportDirectory); !exists {
+		err := fileUtils.MkdirAll(".pipeline/trustStore", 0777)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to create trust store directory")
+		}
+	}
+	return ".pipeline/trustStore", nil
 }
 
 // ParseHTTPResponseBodyXML parses a XML http response into a given interface

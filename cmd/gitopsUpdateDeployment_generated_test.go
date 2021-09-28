@@ -7,6 +7,7 @@ import (
 )
 
 func TestGitopsUpdateDeploymentCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := GitopsUpdateDeploymentCommand()
 

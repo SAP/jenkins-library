@@ -2,7 +2,6 @@ import com.cloudbees.groovy.cps.NonCPS
 
 import static com.sap.piper.Prerequisites.checkScript
 
-import com.sap.piper.GitUtils
 import com.sap.piper.GenerateDocumentation
 import com.sap.piper.ConfigurationHelper
 import com.sap.piper.Utils
@@ -39,10 +38,9 @@ import groovy.transform.Field
      * `customDefaults`, but from local or remote files instead of library resources. They are merged with and
      * take precedence over `customDefaults`.*/
     'customDefaultsFromFiles',
-    /**
-      * The projects git repo url. Typically the fetch url.
-      */
-    'gitUrl',
+    /** The map returned from a Jenkins git checkout. Used to set the git information in the
+     * common pipeline environment */
+    'scmInfo'
 ]
 
 /**
@@ -58,8 +56,6 @@ void call(Map parameters = [:]) {
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {
 
         def script = checkScript(this, parameters)
-
-        def gitUtils = parameters.gitUtils ?: new GitUtils()
 
         String configFile = parameters.get('configFile')
         loadConfigurationFromFile(script, configFile)
@@ -96,12 +92,15 @@ void call(Map parameters = [:]) {
 
         piperLoadGlobalExtensions script: script, customDefaults: parameters.customDefaults, customDefaultsFromFiles: customDefaultsFiles
 
-        stash name: 'pipelineConfigAndTests', includes: '.pipeline/**', allowEmpty: true
+        String stashIncludes = '.pipeline/**'
+        if (configFile && !configFile.startsWith('.pipeline/')) {
+            stashIncludes += ", $configFile"
+        }
+        stash name: 'pipelineConfigAndTests', includes: stashIncludes, allowEmpty: true
 
         Map config = ConfigurationHelper.newInstance(this)
             .loadStepDefaults()
             .mixinGeneralConfig(script.commonPipelineEnvironment, GENERAL_CONFIG_KEYS)
-            .mixin(parameters, PARAMETER_KEYS)
             .use()
 
         inferBuildTool(script, config)
@@ -115,13 +114,10 @@ void call(Map parameters = [:]) {
         InfluxData.addField('step_data', 'build_url', env.BUILD_URL)
         InfluxData.addField('pipeline_data', 'build_url', env.BUILD_URL)
 
-        def gitCommitId = gitUtils.getGitCommitIdOrNull()
-        if (gitCommitId) {
-            script.commonPipelineEnvironment.setGitCommitId(gitCommitId)
-        }
-
-        if (config.gitUrl) {
-            setGitUrlsOnCommonPipelineEnvironment(script, config.gitUrl)
+        def scmInfo = parameters.scmInfo
+        if (scmInfo) {
+            setGitUrlsOnCommonPipelineEnvironment(script, scmInfo.GIT_URL)
+            script.commonPipelineEnvironment.setGitCommitId(scmInfo.GIT_COMMIT)
         }
     }
 }
@@ -245,6 +241,8 @@ private void setGitUrlsOnCommonPipelineEnvironment(script, String gitUrl) {
     def gitFolder = 'N/A'
     def gitRepo = 'N/A'
     switch (gitPathParts.size()) {
+        case 0:
+            break
         case 1:
             gitRepo = gitPathParts[0]
             break
@@ -252,7 +250,7 @@ private void setGitUrlsOnCommonPipelineEnvironment(script, String gitUrl) {
             gitFolder = gitPathParts[0]
             gitRepo = gitPathParts[1]
             break
-        case { it > 3 }:
+        default:
             gitRepo = gitPathParts[gitPathParts.size()-1]
             gitPathParts.remove(gitPathParts.size()-1)
             gitFolder = gitPathParts.join('/')

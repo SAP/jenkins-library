@@ -2,11 +2,14 @@ package versioning
 
 import (
 	"bytes"
-	"github.com/SAP/jenkins-library/pkg/command"
-	"github.com/SAP/jenkins-library/pkg/log"
 	"io"
+	"io/ioutil"
+	"os"
 	"regexp"
 	"strings"
+
+	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/log"
 )
 
 type gradleExecRunner interface {
@@ -15,21 +18,37 @@ type gradleExecRunner interface {
 	RunExecutable(e string, p ...string) error
 }
 
-// GradleDescriptor holds the unique identifier combination for Gradle built Java artifacts
-type GradleDescriptor struct {
-	GroupID    string
-	ArtifactID string
-	Version    string
-	Packaging  string
-}
-
 // Gradle defines a maven artifact used for versioning
 type Gradle struct {
 	execRunner     gradleExecRunner
 	gradlePropsOut []byte
+	path           string
+	propertiesFile *PropertiesFile
+	versionField   string
+	writeFile      func(string, []byte, os.FileMode) error
 }
 
 func (g *Gradle) init() error {
+	if g.writeFile == nil {
+		g.writeFile = ioutil.WriteFile
+	}
+
+	if g.propertiesFile == nil {
+		g.propertiesFile = &PropertiesFile{
+			path:             g.path,
+			versioningScheme: g.VersioningScheme(),
+			versionField:     g.versionField,
+			writeFile:        g.writeFile,
+		}
+		err := g.propertiesFile.init()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (g *Gradle) initGetArtifact() error {
 	if g.execRunner == nil {
 		g.execRunner = &command.Command{}
 	}
@@ -54,7 +73,7 @@ func (g *Gradle) VersioningScheme() string {
 
 // GetCoordinates reads the coordinates from the maven pom.xml descriptor file
 func (g *Gradle) GetCoordinates() (Coordinates, error) {
-	result := &GradleDescriptor{}
+	result := Coordinates{}
 	var err error
 	// result.GroupID, err = g.GetGroupID()
 	// if err != nil {
@@ -62,11 +81,11 @@ func (g *Gradle) GetCoordinates() (Coordinates, error) {
 	// }
 	result.ArtifactID, err = g.GetArtifactID()
 	if err != nil {
-		return nil, err
+		return result, err
 	}
 	result.Version, err = g.GetVersion()
 	if err != nil {
-		return nil, err
+		return result, err
 	}
 	// result.Packaging, err = g.GetPackaging()
 	// if err != nil {
@@ -99,7 +118,7 @@ func (g *Gradle) GetCoordinates() (Coordinates, error) {
 
 // GetArtifactID returns the current ID of the artifact
 func (g *Gradle) GetArtifactID() (string, error) {
-	err := g.init()
+	err := g.initGetArtifact()
 	if err != nil {
 		return "", err
 	}
@@ -113,23 +132,19 @@ func (g *Gradle) GetArtifactID() (string, error) {
 
 // GetVersion returns the current version of the artifact
 func (g *Gradle) GetVersion() (string, error) {
-	versionID := "unspecified"
 	err := g.init()
 	if err != nil {
 		return "", err
 	}
 
-	r := regexp.MustCompile("(?m:^version: (.*))")
-	match := r.FindString(string(g.gradlePropsOut))
-	versionIDSlice := strings.Split(match, ` `)
-	if len(versionIDSlice) > 1 {
-		versionID = versionIDSlice[1]
-	}
-
-	return versionID, nil
+	return g.propertiesFile.GetVersion()
 }
 
 // SetVersion updates the version of the artifact
 func (g *Gradle) SetVersion(version string) error {
-	return nil
+	err := g.init()
+	if err != nil {
+		return err
+	}
+	return g.propertiesFile.SetVersion(version)
 }

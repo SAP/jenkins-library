@@ -55,7 +55,7 @@ class TemporaryCredentialsUtils implements Serializable {
         if (!systemsFileFound) {
             script.error("None of the directories ${credentialsDirectories} contains any of the files systems.yml, systems.yaml or systems.json. " +
                 "One of those files is required in order to activate the integration test credentials configured in the pipeline configuration file of this project. " +
-                "Please add the file as explained in the SAP Cloud SDK documentation.")
+                "Please add the file as explained in project 'Piper' documentation.")
         }
     }
 

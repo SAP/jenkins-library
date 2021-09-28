@@ -3,28 +3,31 @@
 package whitesource
 
 import (
-	"github.com/SAP/jenkins-library/pkg/mock"
 	"net/http"
 	"os"
+
+	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/pkg/errors"
 )
 
 func newTestScan(config *ScanOptions) *Scan {
 	return &Scan{
 		AggregateProjectName: config.ProjectName,
-		ProductVersion:       "product-version",
+		ProductVersion:       config.ProductVersion,
 	}
 }
 
 // NpmInstall records in which directory "npm install" has been invoked and for which package.json files.
 type NpmInstall struct {
-	currentDir  string
-	packageJSON []string
+	CurrentDir  string
+	PackageJSON []string
 }
 
 // DownloadedFile records what URL has been downloaded to which file.
 type DownloadedFile struct {
-	sourceURL string
-	filePath  string
+	SourceURL string
+	FilePath  string
 }
 
 // ScanUtilsMock is an implementation of the Utils interface that can be used during tests.
@@ -33,32 +36,48 @@ type ScanUtilsMock struct {
 	*mock.ExecMockRunner
 	NpmInstalledModules []NpmInstall
 	DownloadedFiles     []DownloadedFile
+	DownloadError       map[string]error
+	RemoveAllDirs       []string
+	RemoveAllError      map[string]error
 }
 
 // RemoveAll mimics os.RemoveAll().
-func (m *ScanUtilsMock) RemoveAll(_ string) error {
+func (m *ScanUtilsMock) RemoveAll(dir string) error {
 	// Can be removed once implemented in mock.FilesMock.
+	m.RemoveAllDirs = append(m.RemoveAllDirs, dir)
+	if m.RemoveAllError[dir] != nil {
+		return m.RemoveAllError[dir]
+	}
 	return nil
 }
 
 // FindPackageJSONFiles mimics npm.FindPackageJSONFiles() based on the FilesMock setup.
-func (m *ScanUtilsMock) FindPackageJSONFiles(_ *ScanOptions) ([]string, error) {
-	matches, _ := m.Glob("**/package.json")
-	return matches, nil
+func (m *ScanUtilsMock) FindPackageJSONFiles(options *ScanOptions) ([]string, error) {
+	unfilteredMatches, _ := m.Glob("**/package.json")
+	return piperutils.ExcludeFiles(unfilteredMatches, options.BuildDescriptorExcludeList)
 }
 
 // InstallAllNPMDependencies mimics npm.InstallAllNPMDependencies() and records the "npm install".
 func (m *ScanUtilsMock) InstallAllNPMDependencies(_ *ScanOptions, packageJSONs []string) error {
 	m.NpmInstalledModules = append(m.NpmInstalledModules, NpmInstall{
-		currentDir:  m.CurrentDir,
-		packageJSON: packageJSONs,
+		CurrentDir:  m.CurrentDir,
+		PackageJSON: packageJSONs,
 	})
 	return nil
 }
 
 // DownloadFile mimics http.Downloader and records the downloaded file.
 func (m *ScanUtilsMock) DownloadFile(url, filename string, _ http.Header, _ []*http.Cookie) error {
-	m.DownloadedFiles = append(m.DownloadedFiles, DownloadedFile{sourceURL: url, filePath: filename})
+	if url == "errorCopyFile" {
+		return errors.New("unable to copy content from url to file")
+	}
+	if url == "error404NotFound" {
+		return errors.New("returned with response 404 Not Found")
+	}
+	if m.DownloadError[url] != nil {
+		return m.DownloadError[url]
+	}
+	m.DownloadedFiles = append(m.DownloadedFiles, DownloadedFile{SourceURL: url, FilePath: filename})
 	return nil
 }
 

@@ -1,11 +1,33 @@
 package cmd
 
 import (
+	"errors"
 	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
-	"os"
+	"net/http"
 	"testing"
 )
+
+type mavenMockUtils struct {
+	shouldFail     bool
+	requestedUrls  []string
+	requestedFiles []string
+	*mock.FilesMock
+	*mock.ExecMockRunner
+}
+
+func (m *mavenMockUtils) DownloadFile(_, _ string, _ http.Header, _ []*http.Cookie) error {
+	return errors.New("Test should not download files.")
+}
+
+func newMavenMockUtils() mavenMockUtils {
+	utils := mavenMockUtils{
+		shouldFail:     false,
+		FilesMock:      &mock.FilesMock{},
+		ExecMockRunner: &mock.ExecMockRunner{},
+	}
+	return utils
+}
 
 func TestMavenExecute(t *testing.T) {
 	t.Run("mavenExecute should write output file", func(t *testing.T) {
@@ -16,23 +38,12 @@ func TestMavenExecute(t *testing.T) {
 			ReturnStdout:                true,
 		}
 
-		mockRunner := mock.ExecMockRunner{}
-		mockRunner.StdoutReturn = map[string]string{}
-		mockRunner.StdoutReturn[""] = "test output"
-
-		var outputFile string
-		var output []byte
-
-		oldWriteFile := writeFile
-		writeFile = func(filename string, data []byte, perm os.FileMode) error {
-			outputFile = filename
-			output = data
-			return nil
-		}
-		defer func() { writeFile = oldWriteFile }()
+		mockUtils := newMavenMockUtils()
+		mockUtils.StdoutReturn = map[string]string{}
+		mockUtils.StdoutReturn[""] = "test output"
 
 		// test
-		err := runMavenExecute(config, &mockRunner)
+		err := runMavenExecute(config, &mockUtils)
 
 		// assert
 		expectedParams := []string{
@@ -40,12 +51,17 @@ func TestMavenExecute(t *testing.T) {
 		}
 
 		assert.NoError(t, err)
-		if assert.Equal(t, 1, len(mockRunner.Calls)) {
-			assert.Equal(t, "mvn", mockRunner.Calls[0].Exec)
-			assert.Equal(t, expectedParams, mockRunner.Calls[0].Params)
+		if assert.Equal(t, 1, len(mockUtils.Calls)) {
+			assert.Equal(t, "mvn", mockUtils.Calls[0].Exec)
+			assert.Equal(t, expectedParams, mockUtils.Calls[0].Params)
 		}
+
+		outputFileExists, _ := mockUtils.FileExists(".pipeline/maven_output.txt")
+		assert.True(t, outputFileExists)
+
+		output, _ := mockUtils.FileRead(".pipeline/maven_output.txt")
+
 		assert.Equal(t, "test output", string(output))
-		assert.Equal(t, ".pipeline/maven_output.txt", outputFile)
 	})
 
 	t.Run("mavenExecute should NOT write output file", func(t *testing.T) {
@@ -55,23 +71,10 @@ func TestMavenExecute(t *testing.T) {
 			LogSuccessfulMavenTransfers: true,
 		}
 
-		mockRunner := mock.ExecMockRunner{}
-		mockRunner.StdoutReturn = map[string]string{}
-		mockRunner.StdoutReturn[""] = "test output"
-
-		var outputFile string
-		var output []byte
-
-		oldWriteFile := writeFile
-		writeFile = func(filename string, data []byte, perm os.FileMode) error {
-			outputFile = filename
-			output = data
-			return nil
-		}
-		defer func() { writeFile = oldWriteFile }()
+		mockUtils := newMavenMockUtils()
 
 		// test
-		err := runMavenExecute(config, &mockRunner)
+		err := runMavenExecute(config, &mockUtils)
 
 		// assert
 		expectedParams := []string{
@@ -79,11 +82,12 @@ func TestMavenExecute(t *testing.T) {
 		}
 
 		assert.NoError(t, err)
-		if assert.Equal(t, 1, len(mockRunner.Calls)) {
-			assert.Equal(t, "mvn", mockRunner.Calls[0].Exec)
-			assert.Equal(t, expectedParams, mockRunner.Calls[0].Params)
+		if assert.Equal(t, 1, len(mockUtils.Calls)) {
+			assert.Equal(t, "mvn", mockUtils.Calls[0].Exec)
+			assert.Equal(t, expectedParams, mockUtils.Calls[0].Params)
 		}
-		assert.Equal(t, "", string(output))
-		assert.Equal(t, "", outputFile)
+
+		outputFileExists, _ := mockUtils.FileExists(".pipeline/maven_output.txt")
+		assert.False(t, outputFileExists)
 	})
 }

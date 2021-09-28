@@ -7,6 +7,7 @@ import (
 )
 
 func TestGctsCreateRepositoryCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := GctsCreateRepositoryCommand()
 

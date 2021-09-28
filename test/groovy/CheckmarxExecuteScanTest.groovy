@@ -57,6 +57,8 @@ class CheckmarxExecuteScanTest extends BasePiperTest {
         shellCallRule.setReturnValue('./piper getConfig --contextConfig --stepMetadata \'.pipeline/tmp/metadata/checkmarx.yaml\'', '{"checkmarxCredentialsId": "idOfCxCredential", "verbose": false}')
 
         helper.registerAllowedMethod('findFiles', [Map.class], {return null})
+        helper.registerAllowedMethod("writePipelineEnv", [Map.class], {m -> return })
+        helper.registerAllowedMethod("readPipelineEnv", [Map.class], {m -> return })
     }
 
     @Test

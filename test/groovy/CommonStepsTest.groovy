@@ -55,7 +55,7 @@ public class CommonStepsTest extends BasePiperTest{
             'piperPipeline',
             'prepareDefaultValues',
             'runClosures',
-            'setupCommonPipelineEnvironment'
+            'setupCommonPipelineEnvironment',
         ]
 
         List steps = getSteps().stream()
@@ -114,17 +114,21 @@ public class CommonStepsTest extends BasePiperTest{
         'abapAddonAssemblyKitReleasePackages', //implementing new golang pattern without fields
         'abapAddonAssemblyKitReserveNextPackages', //implementing new golang pattern without fields
         'abapEnvironmentAssemblePackages', //implementing new golang pattern without fields
+        'abapEnvironmentAssembleConfirm', //implementing new golang pattern without fields
         'abapEnvironmentCheckoutBranch', //implementing new golang pattern without fields
         'abapEnvironmentCloneGitRepo', //implementing new golang pattern without fields
         'abapEnvironmentPullGitRepo', //implementing new golang pattern without fields
         'abapEnvironmentPipeline', // special step (infrastructure)
         'abapEnvironmentRunATCCheck', //implementing new golang pattern without fields
+        'abapEnvironmentRunAUnitTest', //implementing new golang pattern without fields
+        'abapEnvironmentCreateSystem', //implementing new golang pattern without fields
         'artifactPrepareVersion',
         'cloudFoundryCreateService', //implementing new golang pattern without fields
         'cloudFoundryCreateServiceKey', //implementing new golang pattern without fields
         'cloudFoundryCreateSpace', //implementing new golang pattern without fields
         'cloudFoundryDeleteService', //implementing new golang pattern without fields
         'cloudFoundryDeleteSpace', //implementing new golang pattern without fields
+        'cnbBuild', //implementing new golang pattern without fields
         'durationMeasure', // only expects parameters via signature
         'prepareDefaultValues', // special step (infrastructure)
         'piperPipeline', // special step (infrastructure)
@@ -138,8 +142,10 @@ public class CommonStepsTest extends BasePiperTest{
         'buildSetResult',
         'runClosures',
         'checkmarxExecuteScan', //implementing new golang pattern without fields
+        'githubCreateIssue', //implementing new golang pattern without fields
         'githubPublishRelease', //implementing new golang pattern without fields
         'githubCheckBranchProtection', //implementing new golang pattern without fields
+        'githubCommentIssue', //implementing new golang pattern without fields
         'githubSetCommitStatus', //implementing new golang pattern without fields
         'kubernetesDeploy', //implementing new golang pattern without fields
         'piperExecuteBin', //implementing new golang pattern without fields
@@ -155,6 +161,7 @@ public class CommonStepsTest extends BasePiperTest{
         'mtaBuild', //implementing new golang pattern without fields
         'nexusUpload', //implementing new golang pattern without fields
         'piperPipelineStageArtifactDeployment', //stage without step flags
+        'pipelineCreateScanSummary', //stage without step flags
         'sonarExecuteScan', //implementing new golang pattern without fields
         'gctsCreateRepository', //implementing new golang pattern without fields
         'gctsRollback', //implementing new golang pattern without fields
@@ -165,7 +172,33 @@ public class CommonStepsTest extends BasePiperTest{
         'containerSaveImage', //implementing new golang pattern without fields
         'detectExecuteScan', //implementing new golang pattern without fields
         'kanikoExecute', //implementing new golang pattern without fields
-        'gitopsUpdateDeployment' //implementing new golang pattern without fields
+        'karmaExecuteTests', //implementing new golang pattern without fields
+        'gitopsUpdateDeployment', //implementing new golang pattern without fields
+        'vaultRotateSecretId', //implementing new golang pattern without fields
+        'deployIntegrationArtifact', //implementing new golang pattern without fields
+        'newmanExecute', //implementing new golang pattern without fields
+        'terraformExecute', //implementing new golang pattern without fields
+        'whitesourceExecuteScan', //implementing new golang pattern without fields
+        'uiVeri5ExecuteTests', //implementing new golang pattern without fields
+        'integrationArtifactDeploy', //implementing new golang pattern without fields
+        'integrationArtifactUpdateConfiguration', //implementing new golang pattern without fields
+        'integrationArtifactGetMplStatus', //implementing new golang pattern without fields
+        'integrationArtifactGetServiceEndpoint', //implementing new golang pattern without fields
+        'integrationArtifactDownload', //implementing new golang pattern without fields
+        'integrationArtifactUpload', //implementing new golang pattern without fields
+        'integrationArtifactTriggerIntegrationTest', //implementing new golang pattern without fields
+        'integrationArtifactUnDeploy', //implementing new golang pattern without fields
+        'integrationArtifactResource', //implementing new golang pattern without fields
+        'containerExecuteStructureTests', //implementing new golang pattern without fields
+        'transportRequestUploadSOLMAN', //implementing new golang pattern without fields
+        'transportRequestReqIDFromGit', //implementing new golang pattern without fields
+        'transportRequestDocIDFromGit', //implementing new golang pattern without fields
+        'gaugeExecuteTests', //implementing new golang pattern without fields
+        'batsExecuteTests', //implementing new golang pattern without fields
+        'transportRequestUploadRFC', //implementing new golang pattern without fields
+        'writePipelineEnv', //implementing new golang pattern without fields
+        'readPipelineEnv', //implementing new golang pattern without fields
+        'transportRequestUploadCTS', //implementing new golang pattern without fields
     ]
 
     @Test

@@ -76,7 +76,7 @@ repositories:
 			StatusCode: 200,
 		}
 
-		err := runAbapEnvironmentCloneGitRepo(&config, nil, &autils, client)
+		err := runAbapEnvironmentCloneGitRepo(&config, &autils, client)
 		assert.NoError(t, err, "Did not expect error")
 		assert.Equal(t, 0, len(client.BodyList), "Not all requests were done")
 	})
@@ -110,9 +110,9 @@ repositories:
 			StatusCode: 200,
 		}
 
-		err := runAbapEnvironmentCloneGitRepo(&config, nil, &autils, client)
+		err := runAbapEnvironmentCloneGitRepo(&config, &autils, client)
 		if assert.Error(t, err, "Expected error") {
-			assert.Equal(t, "Clone of '"+config.RepositoryName+"' with branch '"+config.BranchName+"' failed on the ABAP System: Request to ABAP System not successful", err.Error(), "Expected different error message")
+			assert.Equal(t, "Clone of '"+config.RepositoryName+"', branch '"+config.BranchName+"' failed on the ABAP System: Request to ABAP System not successful", err.Error(), "Expected different error message")
 		}
 
 	})
@@ -127,6 +127,29 @@ func TestCloneStepErrorMessages(t *testing.T) {
 		autils.ReturnedConnectionDetailsHTTP.URL = "https://example.com"
 		autils.ReturnedConnectionDetailsHTTP.XCsrfToken = "xcsrftoken"
 
+		dir, errDir := ioutil.TempDir("", "test read addon descriptor")
+		if errDir != nil {
+			t.Fatal("Failed to create temporary directory")
+		}
+		oldCWD, _ := os.Getwd()
+		_ = os.Chdir(dir)
+		// clean up tmp dir
+		defer func() {
+			_ = os.Chdir(oldCWD)
+			_ = os.RemoveAll(dir)
+		}()
+
+		body := `---
+repositories:
+- name: /DMO/REPO_A
+  tag: v-1.0.1-build-0001
+  branch: branchA
+  version: 1.0.1
+  commitID: ABCD1234
+`
+		file, _ := os.Create("filename.yaml")
+		file.Write([]byte(body))
+
 		config := abapEnvironmentCloneGitRepoOptions{
 			CfAPIEndpoint:     "https://api.endpoint.com",
 			CfOrg:             "testOrg",
@@ -135,8 +158,7 @@ func TestCloneStepErrorMessages(t *testing.T) {
 			CfServiceKeyName:  "testServiceKey",
 			Username:          "testUser",
 			Password:          "testPassword",
-			RepositoryName:    "testRepo1",
-			BranchName:        "testBranch1",
+			Repositories:      "filename.yaml",
 		}
 
 		client := &abaputils.ClientMock{
@@ -149,9 +171,9 @@ func TestCloneStepErrorMessages(t *testing.T) {
 			StatusCode: 200,
 		}
 
-		err := runAbapEnvironmentCloneGitRepo(&config, nil, &autils, client)
+		err := runAbapEnvironmentCloneGitRepo(&config, &autils, client)
 		if assert.Error(t, err, "Expected error") {
-			assert.Equal(t, "Clone of '"+config.RepositoryName+"' with branch '"+config.BranchName+"' failed on the ABAP System", err.Error(), "Expected different error message")
+			assert.Equal(t, "Clone of '/DMO/REPO_A', branch 'branchA', commit 'ABCD1234' failed on the ABAP System", err.Error(), "Expected different error message")
 		}
 	})
 
@@ -185,9 +207,9 @@ func TestCloneStepErrorMessages(t *testing.T) {
 			StatusCode: 200,
 		}
 
-		err := runAbapEnvironmentCloneGitRepo(&config, nil, &autils, client)
+		err := runAbapEnvironmentCloneGitRepo(&config, &autils, client)
 		if assert.Error(t, err, "Expected error") {
-			assert.Equal(t, "Clone of '"+config.RepositoryName+"' with branch '"+config.BranchName+"' failed on the ABAP System: Request to ABAP System not successful", err.Error(), "Expected different error message")
+			assert.Equal(t, "Clone of '"+config.RepositoryName+"', branch '"+config.BranchName+"' failed on the ABAP System: Request to ABAP System not successful", err.Error(), "Expected different error message")
 		}
 	})
 
@@ -220,9 +242,9 @@ func TestCloneStepErrorMessages(t *testing.T) {
 			StatusCode: 200,
 		}
 
-		err := runAbapEnvironmentCloneGitRepo(&config, nil, &autils, client)
+		err := runAbapEnvironmentCloneGitRepo(&config, &autils, client)
 		if assert.Error(t, err, "Expected error") {
-			assert.Equal(t, "Clone of '"+config.RepositoryName+"' with branch '"+config.BranchName+"' failed on the ABAP System: Request to ABAP System not successful", err.Error(), "Expected different error message")
+			assert.Equal(t, "Clone of '"+config.RepositoryName+"', branch '"+config.BranchName+"' failed on the ABAP System: Request to ABAP System not successful", err.Error(), "Expected different error message")
 		}
 	})
 
@@ -256,7 +278,7 @@ func TestCloneStepErrorMessages(t *testing.T) {
 			StatusCode: 200,
 		}
 
-		err := runAbapEnvironmentCloneGitRepo(&config, nil, &autils, client)
+		err := runAbapEnvironmentCloneGitRepo(&config, &autils, client)
 		if assert.Error(t, err, "Expected error") {
 			assert.Equal(t, "Something failed during the clone: Could not find filename.yaml", err.Error(), "Expected different error message")
 		}

@@ -6,6 +6,7 @@ metadata:
     and many other programming languages for security flaws based on a set of provided rules/queries that can be customized and extended.
 
     This step by default enforces a specific audit baseline for findings and therefore ensures that:
+
     * No 'To Verify' High and Medium issues exist in your project
     * Total number of High and Medium 'Confirmed' or 'Urgent' issues is zero
     * 10% of all Low issues are 'Confirmed' or 'Not Exploitable'
@@ -29,7 +30,7 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-        default: false
+        default: true
       - name: filterPattern
         type: string
         description: The filter pattern used to zip the files relevant for scanning, patterns can be negated by setting an exclamation mark in front i.e. `!test/*.js` would avoid adding any javascript files located in the test directory
@@ -72,6 +73,14 @@ spec:
           - STAGES
           - STEPS
         default: true
+      - name: maxRetries
+        type: int
+        description: Maximum number of HTTP request retries upon intermittend connetion interrupts
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: 3
       - name: password
         type: string
         description: The password to authenticate
@@ -86,10 +95,8 @@ spec:
             type: secret
             param: password
           - type: vaultSecret
-            paths:
-              - $(vaultPath)/checkmarx
-              - $(vaultBasePath)/$(vaultPipelineName)/checkmarx
-              - $(vaultBasePath)/GROUP-SECRETS/checkmarx
+            name: checkmarxVaultSecretName
+            default: checkmarx
       - name: preset
         type: string
         description: The preset to use for scanning, if not set explicitly the step will attempt to look up the project's setting based on the availability of `checkmarxCredentialsId`
@@ -113,7 +120,6 @@ spec:
       - name: pullRequestName
         type: string
         description: Used to supply the name for the newly created PR project branch when being used in pull request scenarios
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -169,10 +175,8 @@ spec:
             type: secret
             param: username
           - type: vaultSecret
-            paths:
-              - $(vaultPath)/checkmarx
-              - $(vaultBasePath)/$(vaultPipelineName)/checkmarx
-              - $(vaultBasePath)/GROUP-SECRETS/checkmarx
+            name: checkmarxVaultSecretName
+            default: checkmarx
       - name: verifyOnly
         type: bool
         description: Whether the step shall only apply verification checks or whether it does a full scan and check cycle
@@ -226,47 +230,90 @@ spec:
       - name: vulnerabilityThresholdUnit
         type: string
         description: The unit for the threshold to apply.
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
         default: percentage
+      - name: isOptimizedAndScheduled
+        type: bool
+        description: Whether the pipeline runs in optimized mode and the current execution is a scheduled one
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/isOptimizedAndScheduled
+        scope:
+          - PARAMETERS
   outputs:
     resources:
       - name: influx
         type: influx
         params:
+          - name: step_data
+            fields:
+              - name: checkmarx
+                type: bool
           - name: checkmarx_data
             fields:
               - name: high_issues
-              - name: high_not_false_positive
+                type: int
+              - name: high_not_false_postive
+                type: int
               - name: high_not_exploitable
+                type: int
               - name: high_confirmed
+                type: int
               - name: high_urgent
+                type: int
               - name: high_proposed_not_exploitable
+                type: int
               - name: high_to_verify
+                type: int
               - name: medium_issues
-              - name: medium_not_false_positive
+                type: int
+              - name: medium_not_false_postive
+                type: int
               - name: medium_not_exploitable
+                type: int
               - name: medium_confirmed
+                type: int
               - name: medium_urgent
+                type: int
               - name: medium_proposed_not_exploitable
+                type: int
               - name: medium_to_verify
+                type: int
               - name: low_issues
-              - name: low_not_false_positive
+                type: int
+              - name: low_not_false_postive
+                type: int
               - name: low_not_exploitable
+                type: int
               - name: low_confirmed
+                type: int
               - name: low_urgent
+                type: int
               - name: low_proposed_not_exploitable
+                type: int
               - name: low_to_verify
+                type: int
               - name: information_issues
-              - name: information_not_false_positive
+                type: int
+              - name: information_not_false_postive
+                type: int
               - name: information_not_exploitable
+                type: int
               - name: information_confirmed
+                type: int
               - name: information_urgent
+                type: int
               - name: information_proposed_not_exploitable
+                type: int
               - name: information_to_verify
+                type: int
+              - name: lines_of_code_scanned
+                type: int
+              - name: files_scanned
+                type: int
               - name: initiator_name
               - name: owner
               - name: scan_id
@@ -276,8 +323,6 @@ spec:
               - name: team_full_path_on_report_date
               - name: scan_start
               - name: scan_time
-              - name: lines_of_code_scanned
-              - name: files_scanned
               - name: checkmarx_version
               - name: scan_type
               - name: preset

@@ -88,4 +88,3 @@ spec:
   containers:
     - name: mvn
       image: maven:3.6-jdk-8
-      imagePullPolicy: Never

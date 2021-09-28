@@ -19,7 +19,7 @@ import groovy.transform.Field
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 /**
- * Execute static code checks for Maven based projects. This stage enforces SAP Cloud SDK specific PMD rulesets as well as SpotBugs include filter.
+ * Execute static code checks for Maven based projects.
  *
  */
 @GenerateDocumentation

@@ -6,6 +6,14 @@ metadata:
 
     The Fortify step triggers a scan locally on your Jenkins within a docker container so finally you have to supply a docker image with a Fortify SCA
     and Java plus Maven or alternatively Python installed into it for being able to perform any scans.
+    !!! hint "Scanning MTA projects"
+        Build type `maven` requires a so called aggregator pom which includes all modules to be scanned. If used in a mta-project which includes non-java submodules as maven dependency (e.g. node via frontend-maven-plugin), exclude those by specifying java path explicitly, e.g. `java/**/src/main/java/**/*`.
+
+    Besides triggering a scan the step verifies the results after they have been uploaded and processed by the Fortify SSC. By default the following KPIs are enforced:
+    * All issues must be audited from the Corporate Security Requirements folder.
+    * All issues must be audited from the Audit All folder.
+    * At least one issue per category must be audited from the Spot Checks of Each Category folder.
+    * Nothing needs to be audited from the Optional folder.
 
 spec:
   inputs:
@@ -29,6 +37,13 @@ spec:
       - name: opensourceConfiguration
         type: stash
     params:
+      - name: additionalScanParameters
+        description: List of additional scan parameters to be used for Fortify sourceanalyzer command execution.
+        type: "[]string"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: authToken
         type: string
         description: "The FortifyToken to use for authentication"
@@ -42,10 +57,28 @@ spec:
           - name: fortifyCredentialsId
             type: secret
           - type: vaultSecret
-            paths:
-              - $(vaultPath)/fortify
-              - $(vaultBasePath)/$(vaultPipelineName)/fortify
-              - $(vaultBasePath)/GROUP-SECRETS/fortify
+            name: fortifyVaultSecretName
+            default: fortify
+      - name: buildDescriptorExcludeList
+        type: "[]string"
+        description: "List of build descriptors and therefore modules to exclude from the scan and assessment activities."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: ["unit-tests/pom.xml", "integration-tests/pom.xml"]
+      - name: customScanVersion
+        type: string
+        description: Custom version of the Fortify project used as source.
+        longDescription: |-
+          Defines a custom version for the Fortify scan which deviates from the typical versioning pattern using [`version`](#version) and [`versioningModel`](#versioningModel).
+          It allows to set non-numeric versions as well and supersedes the value of [`version`](#version) which is calculated automatically.
+          The parameter is also used by other scan steps (e.g. Detect, Sonar, WhiteSource) and thus allows a common custom version across scan tools.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: githubToken
         description: "GitHub personal access token as per
           https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line"
@@ -56,9 +89,14 @@ spec:
           - STEPS
         type: string
         secret: true
+        aliases:
+          - name: access_token
         resourceRef:
           - name: githubTokenCredentialsId
             type: secret
+          - type: vaultSecret
+            default: github
+            name: githubVaultSecretName
       - name: autoCreate
         type: bool
         description:
@@ -137,6 +175,23 @@ spec:
           - STAGES
           - STEPS
         default: true
+      - name: version
+        aliases:
+          - name: fortifyProjectVersion
+            deprecated: true
+        type: string
+        description: Version used in conjunction with [`versioningModel`](#versioningModel) to identify the Fortify project to be created and used for results aggregation.
+        longDescription: |-
+          Version used in conjunction with [`versioningModel`](#versioningModel) to identify the Fortify project to be created and used for results aggregation.
+          This is usually determined automatically based on the information in the buildTool specific build descriptor file.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: artifactVersion
       - name: buildDescriptorFile
         type: string
         conditions:
@@ -279,8 +334,9 @@ spec:
         description:
           "A list of source directories to scan. Wildcards can be used, e.g., `'src/main/java/**/*'`.
           If `'translate'` is set, this will ignored. The default value for `buildTool: 'maven'` is
-          ['**/*.xml', '**/*.html', '**/*.jsp', '**/*.js', '**/src/main/resources/**/*', '**/src/main/java/**/*'], for
-          `buildTool: 'pip'` it is ['./**/*']."
+          `['**/*.xml', '**/*.html', '**/*.jsp', '**/*.js', '**/src/main/resources/**/*', '**/src/main/java/**/*',
+          '**/target/main/java/**/*', '**/target/main/resources/**/*', '**/target/generated-sources/**/*']`, for
+          `buildTool: 'pip'` it is `['./**/*']`."
         scope:
           - PARAMETERS
           - STAGES
@@ -289,7 +345,8 @@ spec:
         type: "[]string"
         description:
           "A list of directories/files to be excluded from the scan. Wildcards can be used, e.g.,
-          `'**/Test.java'`. If `translate` is set, this will ignored."
+          `'**/Test.java'`. If `translate` is set, this will ignored. The default value for `buildTool: 'maven'` is
+          `['**/src/test/**/*']`, for `buildTool: 'pip'` it is `['./**/tests/**/*', './**/setup.py']`."
         scope:
           - PARAMETERS
           - STAGES
@@ -530,18 +587,33 @@ spec:
           - STAGES
           - STEPS
         default: false
+      - name: installArtifacts
+        type: bool
+        description:
+          "If enabled, it will install all artifacts to the local maven repository to make them available before running Fortify.
+          This is required if any maven module has dependencies to other modules in the repository and they were not installed before."
+        scope:
+          - GENERAL
+          - STEPS
+          - STAGES
+          - PARAMETERS
   containers:
-    - image: "<<please bring your own fortify image>>"
-      workingDir: "/home/piper"
+    - image: ""
   outputs:
     resources:
       - name: influx
         type: influx
         params:
+          - name: step_data
+            fields:
+              - name: fortify
+                type: bool
           - name: fortify_data
             fields:
               - name: projectName
               - name: projectVersion
+              - name: projectVersionId
+                type: int64
               - name: violations
                 type: int
               - name: corporateTotal

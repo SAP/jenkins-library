@@ -2,7 +2,7 @@
 
 Follow this guided tour to become familiar with the basics of using project "Piper".
 
-The public sample application [cloud-cf-helloworld-nodejs][cloud-cf-helloworld-nodejs] will be enriched with a pipeline which syncs the sources, builds these as MTA and deploys the result into a Cloud Foundry environment. The application contains a simple `nodejs` application. Deployed as web service, it serves static data.
+The public sample application [cloud-cf-helloworld-nodejs][cloud-cf-helloworld-nodejs] will be enriched with a pipeline which syncs the sources, builds these as multitarget applications and deploys the result into a Cloud Foundry environment. The application contains a simple `nodejs` application. Deployed as web service, it serves static data.
 
 **Recommendation:** We recommend to clone the sample application [cloud-cf-helloworld-nodejs][cloud-cf-helloworld-nodejs] and execute the instructions on your own repository. See **(Optional) Sample Application**.
 
@@ -50,13 +50,14 @@ Copy the sources of the application into your own Git repository. While we will 
 
 1. Create an organization on GitHub, if you haven't any yet. See [Creating a new organization][github-create-org].
 1. [Duplicate][github-duplicate-repo] the repository [cloud-cf-helloworld-nodejs][cloud-cf-helloworld-nodejs] into your GitHub organization. [Make this repository private][github-set-repo-visible]. **Note:** Forked public repositories cannot be made private.
-1. Get an account and space in the Cloud Foundry environment. For the deployment of the application you need access to a space on the Cloud Foundry environment of the SAP Cloud Platform. If you haven't any yet, get a [Trial Account][sap-cp-trial].
+1. Get an account and space in the Cloud Foundry environment. For the deployment of the application you need access to a space on the Cloud Foundry environment of the SAP Business Technology Platform (SAP BTP). If you haven't any yet, get a [Trial Account][sap-cp-trial].
 1. Select the `1_REST_persist_in_Memory` branch of your [cloud-cf-helloworld-nodejs] fork. Other branches might work as well, but this one is tested.
 
 ## Create Your First Pipeline
 
 1. Get your application repository in place.
 1. Create a new file with the name `Jenkinsfile` in the root level of your repository and enter the following code:
+
    ```
    @Library('piper-lib-os') _
    node() {
@@ -66,6 +67,7 @@ Copy the sources of the application into your own Git repository. While we will 
        }
    }
    ```
+
    The "prepare" step synchronizes the repository and initializes the project specific settings. For more information about Jenkinsfiles and pipelines, see [Using a Jenkinsfile][jenkins-io-jenkinsfile].
 
 1. Save your changes to your remote repository.
@@ -106,14 +108,17 @@ For additional information about multibranch pipelines, please refer to the [Jen
 ## Add a Build Step
 
 1. In your `Jenkinsfile`, add the following code snippet:
+
    ```
    stage('build') {
        mtaBuild script: this
    }
    ```
-   The `mtaBuild` step calls a build tool to build a multi-target application (MTA). The tool consumes an MTA descriptor that contains the metadata of all entities which comprise an application or are used by one during deployment or runtime, and the dependencies between them. For more information about MTAs, see [sap.com][sap].
+
+The `mtaBuild` step calls a build tool to build a multitarget application (MTA). The tool consumes an MTA descriptor that contains the metadata of all entities which comprise an application or are used by one during deployment or runtime, and the dependencies between them. For more information about MTAs, see [sap.com][sap].
 
 1. Create the MTA descriptor file with the name `mta.yaml` in the root level of the repository. Insert the following code:
+
    ```
    _schema-version: 2.1.0
    ID: com.sap.piper.node.hello.world
@@ -127,12 +132,14 @@ For additional information about multibranch pipelines, please refer to the [Jen
    ```
 
 1. Configure the step to build an MTA for the Cloud Foundry environment. Create the configuration file `.pipeline/config.yml` relative to the root level of the repository and insert the following content:
+
    ```
    general:
    steps:
      mtaBuild:
        buildTarget: 'CF'
    ```
+
    For additional information about the configuration, have a look at the [Common Configuration Guide][resources-configuration] and the [MTA build step documentation][resources-step-mtabuild].
 
 1. Save your changes to your remote repository.
@@ -141,15 +148,18 @@ For additional information about multibranch pipelines, please refer to the [Jen
 
 ## Add a Deploy Step
 
-1.  In your `Jenkinsfile`, add the following code snippet:
+1. In your `Jenkinsfile`, add the following code snippet:
+
    ```
    stage('deploy') {
        cloudFoundryDeploy script: this
    }
    ```
-   The `cloudFoundryDeploy`  step calls the Cloud Foundry command line client to deploy the built MTA into SAP Cloud Platform.
+
+The `cloudFoundryDeploy`  step calls the Cloud Foundry command line client to deploy the built MTA into SAP BTP.
 
 1. To configure the step to deploy into the Cloud Foundry environment, in your repository, open the `.pipeline/config.yml` and add the following content:
+
    ```
      cloudFoundryDeploy:
        deployTool: 'mtaDeployPlugin'
@@ -159,6 +169,7 @@ For additional information about multibranch pipelines, please refer to the [Jen
          space: '<your-space>'
          credentialsId: 'CF_CREDENTIALSID'
    ```
+
    **Note:** look after the indentation of the step within the YAML. Specify the `organisation` and `space` properties. For more information about the configuration, see the [Common Configuration Guide][resources-configuration] and [cloudFoundryDeploy][resources-step-cloudFoundryDeploy].
 1. The key `CF_CREDENTIALSID` refers to a user-password credential you must create in Jenkins: In Jenkins, choose **Credentials** from the main menu and add a **Username with Password** entry.
    <p align="center">
@@ -178,9 +189,9 @@ If your pipeline fails, compare its files to the final [Jenkinsfile][guidedtour-
 
 ## Open Application
 
-Your application has been deployed into your space in the Cloud Foundry space on SAP Cloud Platform. Login to SAP Cloud Platform and navigate into you space.   **Result:** Your space contains the application `piper.node.hello.world`, the state of the application is `Started`.
+Your application has been deployed into your space in the Cloud Foundry space on SAP BTP. Login to SAP BTP and navigate into you space.   **Result:** Your space contains the application `piper.node.hello.world`, the state of the application is `Started`.
    <p align="center">
-   ![Deployed Application](images/SCPDeployApp-1.png "SAP Cloud Platform")
+  ![Deployed Application](images/SCPDeployApp-1.png "SAP Business Technology Platform")
    </p>
 
 Open the application name to get into the `Application Overview`. Open the **Application Route** and add `/users` to the URL. **Result:** The application returns a list of user data.
@@ -188,13 +199,10 @@ Open the application name to get into the `Application Overview`. Open the **App
 ## What's Next
 
 You are now familiar with the basics of using project "Piper". Through the concept of pipeline as code, project "Piper" and Jenkins pipelines are extremely powerful. While Jenkins pipelines offer a full set of common programming features, project "Piper" adds SAP-specific flavors. Have a look at the different **Scenarios**  to understand how to easily integrate SAP systems with defaults.
-Dive into the ready-made continuous delivery pipelines: the **General Purpose Pipeline**
-and **SAP Cloud SDK Pipeline** help you quickly build and deliver your apps.
+Dive into the ready-made continuous delivery pipeline: the **General Purpose Pipeline** helps you to quickly build and deliver your apps.
 Browse the steadily increasing list of features you can implement through the project "Piper" **Steps**.
 
 The **Configuration** pattern supports simple pipelines that can be reused by multiple applications. To understand the principles of inheritance and customization, have a look at the the [configuration][resources-configuration] documentation.
-
-Please also consult the blog post on setting up [Continuous Delivery for S/4HANA extensions][sap-blog-ci-cd] and get tons of informations around the application development with the [S/4HANA Cloud SDK][sap-blog-s4-sdk-first-steps].
 
 [guidedtour-my-own-jenkins]:         myownjenkins.md
 [guidedtour-sample.config]:          samples/cloud-cf-helloworld-nodejs/pipeline/config.yml
@@ -207,8 +215,6 @@ Please also consult the blog post on setting up [Continuous Delivery for S/4HANA
 
 [sap]:                               https://www.sap.com
 [sap-cp-trial]:                      https://account.hanatrial.ondemand.com
-[sap-blog-s4-sdk-first-steps]:       https://blogs.sap.com/2017/05/10/first-steps-with-sap-s4hana-cloud-sdk/
-[sap-blog-ci-cd]:                    https://blogs.sap.com/2017/09/20/continuous-integration-and-delivery/
 
 [devops-docker-images-cxs-guide]:    https://github.com/SAP/devops-docker-cx-server/blob/master/docs/operations/cx-server-operations-guide.md
 

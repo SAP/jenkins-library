@@ -4,13 +4,14 @@ package mock
 
 import (
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/bmatcuk/doublestar"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"github.com/bmatcuk/doublestar"
 )
 
 var dirContent []byte
@@ -46,11 +47,15 @@ func (p *fileProperties) isDir() bool {
 
 //FilesMock implements the functions from piperutils.Files with an in-memory file system.
 type FilesMock struct {
-	files        map[string]*fileProperties
-	writtenFiles []string
-	removedFiles []string
-	CurrentDir   string
-	Separator    string
+	files            map[string]*fileProperties
+	writtenFiles     []string
+	copiedFiles      map[string]string
+	removedFiles     []string
+	CurrentDir       string
+	Separator        string
+	FileExistsErrors map[string]error
+	FileWriteError   error
+	FileWriteErrors  map[string]error
 }
 
 func (f *FilesMock) init() {
@@ -60,12 +65,16 @@ func (f *FilesMock) init() {
 	if f.Separator == "" {
 		f.Separator = string(os.PathSeparator)
 	}
+	if f.copiedFiles == nil {
+		f.copiedFiles = map[string]string{}
+	}
 }
 
 // toAbsPath checks if the given path is relative, and if so converts it to an absolute path considering the
 // current directory of the FilesMock.
 // Relative segments such as "../" are currently NOT supported.
 func (f *FilesMock) toAbsPath(path string) string {
+	path = filepath.FromSlash(path)
 	if path == "." {
 		return f.Separator + f.CurrentDir
 	}
@@ -133,9 +142,18 @@ func (f *FilesMock) HasWrittenFile(path string) bool {
 	return piperutils.ContainsString(f.writtenFiles, f.toAbsPath(path))
 }
 
+// HasCopiedFile returns true if the virtual file system at one point contained an entry for the given source and destination,
+// and it was written via CopyFile().
+func (f *FilesMock) HasCopiedFile(src string, dest string) bool {
+	return f.copiedFiles[f.toAbsPath(src)] == f.toAbsPath(dest)
+}
+
 // FileExists returns true if file content has been associated with the given path, false otherwise.
 // Only relative paths are supported.
 func (f *FilesMock) FileExists(path string) (bool, error) {
+	if f.FileExistsErrors[path] != nil {
+		return false, f.FileExistsErrors[path]
+	}
 	if f.files == nil {
 		return false, nil
 	}
@@ -186,6 +204,7 @@ func (f *FilesMock) Copy(src, dst string) (int64, error) {
 		return 0, fmt.Errorf("cannot copy '%s': %w", src, os.ErrNotExist)
 	}
 	f.AddFileWithMode(dst, *props.content, props.mode)
+	f.copiedFiles[f.toAbsPath(src)] = f.toAbsPath(dst)
 	return int64(len(*props.content)), nil
 }
 
@@ -206,13 +225,21 @@ func (f *FilesMock) FileRead(path string) ([]byte, error) {
 
 // FileWrite just forwards to AddFile(), i.e. the content is associated with the given path.
 func (f *FilesMock) FileWrite(path string, content []byte, mode os.FileMode) error {
+	if f.FileWriteError != nil {
+		return f.FileWriteError
+	}
+	if f.FileWriteErrors[path] != nil {
+		return f.FileWriteErrors[path]
+	}
 	f.init()
-	// NOTE: FilesMock could be extended to have a set of paths for which FileWrite should fail.
-	// This is why AddFile() exists separately, to differentiate the notion of setting up the mocking
-	// versus implementing the methods from Files.
 	f.writtenFiles = append(f.writtenFiles, f.toAbsPath(path))
 	f.AddFileWithMode(path, content, mode)
 	return nil
+}
+
+// RemoveAll is a proxy for FileRemove
+func (f *FilesMock) RemoveAll(path string) error {
+	return f.FileRemove(path)
 }
 
 // FileRemove deletes the association of the given path with any content and records the removal of the file.
@@ -288,6 +315,21 @@ func (f *FilesMock) FileRename(oldPath, newPath string) error {
 	return nil
 }
 
+// TempDir create a temp-styled directory in the in-memory, so that this path is established to exist.
+func (f *FilesMock) TempDir(_, pattern string) (string, error) {
+	tmpDir := "/tmp/test"
+
+	if pattern != "" {
+		tmpDir = fmt.Sprintf("/tmp/%stest", pattern)
+	}
+
+	err := f.MkdirAll(tmpDir, 0755)
+	if err != nil {
+		return "", err
+	}
+	return tmpDir, nil
+}
+
 // MkdirAll creates a directory in the in-memory file system, so that this path is established to exist.
 func (f *FilesMock) MkdirAll(path string, mode os.FileMode) error {
 	// NOTE: FilesMock could be extended to have a set of paths for which MkdirAll should fail.
@@ -325,6 +367,7 @@ func (f *FilesMock) Getwd() (string, error) {
 // The directory needs to exist according to the files and directories via AddFile() and AddDirectory().
 // The implementation does not support relative path components such as "..".
 func (f *FilesMock) Chdir(path string) error {
+	path = filepath.FromSlash(path)
 	if path == "." || path == "."+f.Separator {
 		return nil
 	}

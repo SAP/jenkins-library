@@ -1,0 +1,152 @@
+metadata:
+  name: transportRequestUploadCTS
+  aliases:
+    - name: transportRequestUploadFile
+  description: This step uploads an UI5 application to the SAPUI5 ABAP repository.
+  longDescription: |
+    This step uploads an UI5 application from your project folder to the SAPUI5 ABAP repository of the SAPUI5 ABAP back-end infrastructure using the SAPUI5 Repository OData service.
+    It processes the results of the `ui5 build` command of the SAPUI5 toolset.
+spec:
+  inputs:
+    secrets:
+      - name: uploadCredentialsId
+        description: Jenkins 'Username with password' credentials ID containing user and password to authenticate against the ABAP system.
+        type: jenkins
+        aliases:
+          - name: changeManagement/credentialsId
+    params:
+      - name: description
+        type: string
+        description: "The description of the application. The description is only taken into account for a new upload. In case of an update the description will not be updated."
+        aliases:
+          - name: applicationDescription
+        default: "Deployed with Piper based on SAP Fiori tools"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: endpoint
+        type: string
+        description: "The ODATA service endpoint: https://<host>:<port>"
+        aliases:
+          - name: changeManagement/endpoint
+          - name: changeManagement/cts/endpoint
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: client
+        type: string
+        aliases:
+          - name: changeManagement/client
+          - name: changeManagement/cts/client
+        description: "The ABAP client"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: username
+        type: string
+        mandatory: true
+        description: "Service user for uploading to the SAPUI5 ABAP repository"
+        secret: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: password
+        type: string
+        mandatory: true
+        description: "Service user password for uploading to the SAPUI5 ABAP repository"
+        secret: true
+        scope:
+          - PARAMETERS
+      - name: applicationName
+        type: string
+        mandatory: true
+        description: "Name of the UI5 application"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: abapPackage
+        type: string
+        mandatory: true
+        description: "ABAP package name of the UI5 application"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: osDeployUser
+        type: string
+        default: 'node'
+        description: "Docker image user performing the deployment"
+        aliases:
+          - name: changeManagement/osDeployUser
+          - name: changeManagement/cts/osDeployUser
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: deployConfigFile
+        default: 'ui5-deploy.yaml'
+        type: string
+        aliases:
+          - name: changeManagement/deployConfigFile
+          - name: changeManagement/cts/deployConfigFile
+        description: "Configuration file for the fiori deployment"
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: transportRequestId
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/transportRequestId
+        type: string
+        mandatory: true
+        description: "ID of the transport request to which the UI5 application is uploaded"
+        scope:
+          - PARAMETERS
+      - name: deployToolDependencies
+        type: "[]string"
+        default: ['@ui5/cli', '@sap/ux-ui5-tooling', '@ui5/logger', '@ui5/fs']
+        description: "List of additional dependencies to fiori related packages.
+           By default a standard node docker image is used on which the dependencies are installed.
+           Provide an empty list, in case your docker image already contains the required dependencies"
+        aliases:
+          - name: changeManagement/deployToolDependencies
+          - name: changeManagement/cts/deployToolDependencies
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+      - name: npmInstallOpts
+        type: "[]string"
+        description: "List of additional installation options for the npm install call. `-g`, `--global` is always assumed. Can be used for e.g. providing custom registries (`--registry https://your.registry.com`) or for providing the verbose flag (`--verbose`) for troubleshooting"
+        aliases:
+          - name: changeManagement/npmInstallOpts
+          - name: changeManagement/cts/npmInstallOpts
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+          - GENERAL
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: custom/transportRequestId
+  containers:
+    - name: fiori-client
+      image: node

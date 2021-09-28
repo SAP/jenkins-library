@@ -5,21 +5,13 @@
 ## Prerequisites
 
 * **static check result files** - To use this step, there must be static check result files available.
-* installed plugins:
-  * [pmd](https://plugins.jenkins.io/pmd)
-  * [dry](https://plugins.jenkins.io/dry)
-  * [findbugs](https://plugins.jenkins.io/findbugs)
-  * [checkstyle](https://plugins.jenkins.io/checkstyle)
-  * [warnings](https://plugins.jenkins.io/warnings)
-  * [core](https://plugins.jenkins.io/core)
+* installed [warnings-ng](https://plugins.jenkins.io/warnings-ng/) plugin
 
 ## ${docGenParameters}
 
 ### aggregation
 
-| parameter | mandatory | default | possible values |
-| ----------|-----------|---------|-----------------|
-| thresholds | no | none | see [thresholds](#thresholds) |
+deprecated, do not use
 
 ### tasks
 
@@ -30,7 +22,7 @@
 | high | no | `'FIXME'` |  |
 | normal | no | `'TODO,REVISE,XXX'` |  |
 | low | no |  |  |
-| thresholds | no | none | see [thresholds](#thresholds) |
+| qualityGates | no | `[[threshold: 1, type: 'TOTAL_HIGH', unstable: false], [threshold: 1, type: 'TOTAL_ERROR', unstable: false]]` | see [QualityGates](#qualitygates) |
 
 ### pmd
 
@@ -38,7 +30,7 @@
 | ----------|-----------|---------|-----------------|
 | pattern | no | `'**/target/pmd.xml'` |  |
 | archive | no | `true` | `true`, `false` |
-| thresholds | no | none | see [thresholds](#thresholds) |
+| qualityGates | no | `[[threshold: 1, type: 'TOTAL_HIGH', unstable: false], [threshold: 1, type: 'TOTAL_ERROR', unstable: false]]` | see [QualityGates](#qualitygates) |
 
 ### cpd
 
@@ -46,7 +38,7 @@
 | ----------|-----------|---------|-----------------|
 | pattern | no | `'**/target/cpd.xml'` |  |
 | archive | no | `true` | `true`, `false` |
-| thresholds | no | none | see [thresholds](#thresholds) |
+| qualityGates | no | `[[threshold: 1, type: 'TOTAL_HIGH', unstable: false], [threshold: 1, type: 'TOTAL_ERROR', unstable: false]]` | see [QualityGates](#qualitygates) |
 
 ### findbugs
 
@@ -54,7 +46,7 @@
 | ----------|-----------|---------|-----------------|
 | pattern | no | `'**/target/findbugsXml.xml, **/target/findbugs.xml'` |  |
 | archive | no | `true` | true, false |
-| thresholds | no | none | see [thresholds](#thresholds) |
+| qualityGates | no | `[[threshold: 1, type: 'TOTAL_HIGH', unstable: false], [threshold: 1, type: 'TOTAL_ERROR', unstable: false]]` | see [QualityGates](#qualitygates) |
 
 ### checkstyle
 
@@ -62,7 +54,7 @@
 | ----------|-----------|---------|-----------------|
 | pattern | no | `'**/target/checkstyle-result.xml'` |  |
 | archive | no | `true` | `true`, `false` |
-| thresholds | no | none | see [thresholds](#thresholds) |
+| qualityGates | no | `[[threshold: 1, type: 'TOTAL_HIGH', unstable: false], [threshold: 1, type: 'TOTAL_ERROR', unstable: false]]` | see [QualityGates](#qualitygates) |
 
 ### eslint
 
@@ -70,7 +62,7 @@
 | ----------|-----------|---------|-----------------|
 | pattern | no | `'**/eslint.jslint.xml'` |  |
 | archive | no | `true` | `true`, `false` |
-| thresholds | no | none | see [thresholds](#thresholds) |
+| qualityGates | no | `[[threshold: 1, type: 'TOTAL_HIGH', unstable: false], [threshold: 1, type: 'TOTAL_ERROR', unstable: false]]` | see [QualityGates](#qualitygates) |
 
 ### pylint
 
@@ -78,39 +70,45 @@
 | ----------|-----------|---------|-----------------|
 | pattern | no | `'**/pylint.log'` |  |
 | archive | no | `true` | `true`, `false` |
-| thresholds | no | none | see [thresholds](#thresholds) |
+| qualityGates | no | `[[threshold: 1, type: 'TOTAL_HIGH', unstable: false], [threshold: 1, type: 'TOTAL_ERROR', unstable: false]]` | see [QualityGates](#qualitygates) |
 
 ## ${docGenConfiguration}
 
 ## ${docJenkinsPluginDependencies}
 
-### Thresholds
+### QualityGates
 
-It is possible to define thresholds to fail the build on a certain count of findings. To achieve this, just define your thresholds a followed for the specific check tool:
+It is possible to define quality gates to set the build result to `FAILURE` (not stop the build) on a certain count of findings. To achieve this, just define your quality gates as followed for the specific check tool:
 
 ```groovy
-thresholds: [fail: [all: 999, low: 99, normal: 9, high: 0]]
+qualityGates: [
+  [threshold: 1, type: 'TOTAL_HIGH', unstable: false],
+  [threshold: 10, type: 'TOTAL_NORMAL', unstable: false],
+  [threshold: 100, type: 'TOTAL_LOW', unstable: false],
+  [threshold: 1000, type: 'TOTAL', unstable: false],
+]
 ```
 
-This way, the jenkins will fail the build on 1 high issue, 10 normal issues, 100 low issues or a total issue count of 1000.
+This way, the quality gate will fail on 1 high issue, 10 normal issues, 100 low issues or a total issue count of 1000.
 
-The `thresholds` parameter can be set for `aggregation`, `tasks`, `pmd`, `cpd`, `findbugs`, `checkstyle`, `eslint` and `pylint`.
+The `qualityGates` parameter can be set for `tasks`, `pmd`, `cpd`, `findbugs`, `checkstyle`, `eslint` and `pylint`.
 
 ```groovy
 checksPublishResults(
     tasks: true,
-    pmd: [pattern: '**/target/pmd-results.xml', thresholds: [fail: [low: 100]]],
+    pmd: [pattern: '**/target/pmd-results.xml', qualityGates: [[threshold: 101, type: 'TOTAL_LOW', unstable: true]]],
     cpd: [archive: false],
-    aggregation: [thresholds: [fail: [high: 0]]],
     archive: true
 )
 ```
+
+See also the [official plugin documentation](https://github.com/jenkinsci/warnings-ng-plugin/blob/master/doc/Documentation.md#quality-gate-configuration) for further information.
 
 ![StaticChecks Thresholds](../images/StaticChecks_Threshold.png)
 
 ## Side effects
 
-If both ESLint and PyLint results are published, they are not correctly aggregated in the aggregator plugin.
+none
 
 ## Exceptions
 
@@ -120,12 +118,12 @@ none
 
 ```groovy
 // publish java results from pmd, cpd, checkstyle & findbugs
-checksPublishResults archive: true, pmd: true, cpd: true, findbugs: true, checkstyle: true, aggregation: [thresholds: [fail: [high: 0]]]
+checksPublishResults archive: true, pmd: true, cpd: true, findbugs: true, checkstyle: true
 ```
 
 ```groovy
 // publish javascript results from ESLint
-checksPublishResults archive: true, eslint: [pattern: '**/result-file-with-fancy-name.xml'], aggregation: [thresholds: [fail: [high: 0, normal: 10]]]
+checksPublishResults archive: true, eslint: [pattern: '**/result-file-with-fancy-name.xml']
 ```
 
 ```groovy

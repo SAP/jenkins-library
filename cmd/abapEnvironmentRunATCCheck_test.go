@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/xml"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -236,18 +237,18 @@ func TestParseATCResult(t *testing.T) {
 		bodyString := `<?xml version="1.0" encoding="UTF-8"?>
 		<checkstyle>
 			<file name="testFile">
-				<error message="testMessage">
+				<error message="testMessage1" source="sourceTester" line="1" severity="error">
 				</error>
-				<error message="testMessage2">
+				<error message="testMessage2" source="sourceTester" line="2" severity="info">
 				</error>
 			</file>
 			<file name="testFile2">
-				<error message="testMessage3">
+			<error message="testMessage" source="sourceTester" line="1" severity="error">
 				</error>
 			</file>
 		</checkstyle>`
 		body := []byte(bodyString)
-		err = parseATCResult(body, "ATCResults.xml")
+		err = parseATCResult(body, "ATCResults.xml", false)
 		assert.Equal(t, nil, err)
 	})
 	t.Run("succes case: test parsing empty XML result", func(t *testing.T) {
@@ -266,14 +267,14 @@ func TestParseATCResult(t *testing.T) {
 		<checkstyle>
 		</checkstyle>`
 		body := []byte(bodyString)
-		err = parseATCResult(body, "ATCResults.xml")
+		err = parseATCResult(body, "ATCResults.xml", false)
 		assert.Equal(t, nil, err)
 	})
 	t.Run("failure case: parsing empty xml", func(t *testing.T) {
 		var bodyString string
 		body := []byte(bodyString)
 
-		err := parseATCResult(body, "ATCResults.xml")
+		err := parseATCResult(body, "ATCResults.xml", false)
 		assert.EqualError(t, err, "Parsing ATC result failed: Body is empty, can't parse empty body")
 	})
 	t.Run("failure case: html response", func(t *testing.T) {
@@ -290,7 +291,7 @@ func TestParseATCResult(t *testing.T) {
 		}()
 		bodyString := `<html><head><title>HTMLTestResponse</title</head></html>`
 		body := []byte(bodyString)
-		err = parseATCResult(body, "ATCResults.xml")
+		err = parseATCResult(body, "ATCResults.xml", false)
 		assert.EqualError(t, err, "The Software Component could not be checked. Please make sure the respective Software Component has been cloned successfully on the system")
 	})
 }
@@ -313,7 +314,7 @@ func TestBuildATCCheckBody(t *testing.T) {
 		assert.EqualError(t, err, "Error while parsing ATC run config. Please provide the packages and/or the software components to be checked! No Package or Software Component specified. Please provide either one or both of them")
 	})
 	t.Run("success case: Test build body with example yaml config", func(t *testing.T) {
-		expectedcheckvariantstring := ""
+		expectedcheckvariantstring := " checkVariant=\"SAP_CLOUD_PLATFORM_ATC_DEFAULT\""
 		expectedpackagestring := "<obj:packages><obj:package value=\"testPackage\" includeSubpackages=\"true\"/><obj:package value=\"testPackage2\" includeSubpackages=\"false\"/></obj:packages>"
 		expectedsoftwarecomponentstring := "<obj:softwarecomponents><obj:softwarecomponent value=\"testSoftwareComponent\"/><obj:softwarecomponent value=\"testSoftwareComponent2\"/></obj:softwarecomponents>"
 
@@ -345,7 +346,7 @@ func TestBuildATCCheckBody(t *testing.T) {
 		assert.Equal(t, nil, err)
 	})
 	t.Run("failure case: Test build body with example yaml config with only packages and no software components", func(t *testing.T) {
-		expectedcheckvariantstring := ""
+		expectedcheckvariantstring := " checkVariant=\"SAP_CLOUD_PLATFORM_ATC_DEFAULT\""
 		expectedpackagestring := `<obj:packages><obj:package value="testPackage" includeSubpackages="true"/><obj:package value="testPackage2" includeSubpackages="false"/></obj:packages>`
 		expectedsoftwarecomponentstring := ""
 
@@ -374,7 +375,7 @@ func TestBuildATCCheckBody(t *testing.T) {
 
 	})
 	t.Run("success case: Test build body with example yaml config with no packages and only software components", func(t *testing.T) {
-		expectedcheckvariantstring := ""
+		expectedcheckvariantstring := " checkVariant=\"SAP_CLOUD_PLATFORM_ATC_DEFAULT\""
 		expectedpackagestring := ""
 		expectedsoftwarecomponentstring := `<obj:softwarecomponents><obj:softwarecomponent value="testSoftwareComponent"/><obj:softwarecomponent value="testSoftwareComponent2"/></obj:softwarecomponents>`
 
@@ -432,5 +433,33 @@ func TestBuildATCCheckBody(t *testing.T) {
 		assert.Equal(t, expectedpackagestring, packageString)
 		assert.Equal(t, expectedsoftwarecomponentstring, softwarecomponentString)
 		assert.Equal(t, nil, err)
+	})
+}
+
+func TestGenerateHTMLDocument(t *testing.T) {
+	//Failure case is not needed --> all failing cases would be depended on parsedXML *Result which is covered in TestParseATCResult
+	t.Run("success case: html response", func(t *testing.T) {
+		expectedResult := "<!DOCTYPE html><html lang=\"en\" xmlns=\"http://www.w3.org/1999/xhtml\"><head><title>ATC Results</title><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" /><style>table,th,td {border: 1px solid black;border-collapse:collapse;}th,td{padding: 5px;text-align:left;font-size:medium;}</style></head><body><h1 style=\"text-align:left;font-size:large\">ATC Results</h1><table style=\"width:100%\"><tr><th>Severity</th><th>File</th><th>Message</th><th>Line</th><th>Checked by</th></tr><tr style=\"background-color: rgba(227,85,0)\"><td>error</td><td>testFile2</td><td>testMessage</td><td style=\"text-align:center\">1</td><td>sourceTester</td></tr><tr style=\"background-color: rgba(255,175,0, 0.75)\"><td>warning</td><td>testFile</td><td>testMessage2</td><td style=\"text-align:center\">2</td><td>sourceTester</td></tr><tr style=\"background-color: rgba(255,175,0, 0.2)\"><td>info</td><td>testFile</td><td>testMessage1</td><td style=\"text-align:center\">1</td><td>sourceTester</td></tr></table></body></html>"
+
+		bodyString := `<?xml version="1.0" encoding="UTF-8"?>
+		<checkstyle>
+			<file name="testFile">
+				<error message="testMessage1" source="sourceTester" line="1" severity="info">
+				</error>
+				<error message="testMessage2" source="sourceTester" line="2" severity="warning">
+				</error>
+			</file>
+			<file name="testFile2">
+			<error message="testMessage" source="sourceTester" line="1" severity="error">
+				</error>
+			</file>
+		</checkstyle>`
+
+		parsedXML := new(Result)
+		err := xml.Unmarshal([]byte(bodyString), &parsedXML)
+		if assert.NoError(t, err) {
+			htmlDocumentResult := generateHTMLDocument(parsedXML)
+			assert.Equal(t, expectedResult, htmlDocumentResult)
+		}
 	})
 }

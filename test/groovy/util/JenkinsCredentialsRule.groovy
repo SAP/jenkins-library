@@ -1,6 +1,7 @@
 package util
 
 import com.lesfurets.jenkins.unit.BasePipelineTest
+import groovy.json.JsonSlurper
 import org.jenkinsci.plugins.credentialsbinding.impl.CredentialNotFoundException
 import org.junit.rules.TestRule
 import org.junit.runner.Description
@@ -27,9 +28,9 @@ class JenkinsCredentialsRule implements TestRule {
         return this
     }
 
-    JenkinsCredentialsRule withCredentials(String credentialsId, String token) {
-        credentials.put(credentialsId, [token: token])
-        return this
+    JenkinsCredentialsRule withCredentials(String credentialsId, String secretTextOrFilePath) {
+            credentials.put(credentialsId, [token: secretTextOrFilePath])
+            return this
     }
 
     JenkinsCredentialsRule reset(){
@@ -67,6 +68,15 @@ class JenkinsCredentialsRule implements TestRule {
                                     "Could not find credentials entry with ID '${m.credentialsId}'")
                     })
 
+                testInstance.helper.registerAllowedMethod('file', [Map.class],
+                    { m ->
+                        if (credentials.keySet().contains(m.credentialsId)) { bindingTypes[m.credentialsId] = 'file'; return m }
+                        // this is what really happens in case of an unknown credentials id,
+                        // checked with reality using credentials plugin 2.1.18.
+                        throw new CredentialNotFoundException(
+                            "Could not find credentials entry with ID '${m.credentialsId}'")
+                    })
+
                 testInstance.helper.registerAllowedMethod('withCredentials', [List, Closure], { config, closure ->
                     // there can be multiple credentials defined for the closure; collecting the necessary binding
                     // preparations and destructions before executing closure
@@ -97,7 +107,17 @@ class JenkinsCredentialsRule implements TestRule {
                             destructions.add({
                                 binding.setProperty(tokenVariable, null)
                             })
-                        } else {
+                        }
+                        else if (credentialsBindingType == "file") {
+                            fileContentVariable = cred.variable
+                            preparations.add({
+                                binding.setProperty(fileContentVariable, creds?.token)
+                            })
+                            destructions.add({
+                                binding.setProperty(fileContentVariable, null)
+                            })
+                        }
+                        else {
                             throw new RuntimeException("Unknown binding type")
                         }
                     }

@@ -7,7 +7,7 @@ import static com.sap.piper.Prerequisites.checkScript
 @Field Set GENERAL_CONFIG_KEYS = []
 @Field STAGE_STEP_KEYS = [
     /** Creates a SAP Cloud Platform ABAP Environment instance via the cloud foundry command line interface */
-    'cloudFoundryCreateService',
+    'abapEnvironmentCreateSystem',
     /** Creates Communication Arrangements for ABAP Environment instance via the cloud foundry command line interface */
     'cloudFoundryCreateServiceKey'
 ]
@@ -21,8 +21,7 @@ void call(Map parameters = [:]) {
     def stageName = parameters.stageName?:env.STAGE_NAME
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
-        cloudFoundryCreateService script: parameters.script
-        input message: "Steampunk system ready? Please make sure that you received the confirmation email before proceeding!"
+        abapEnvironmentCreateSystem script: parameters.script
         cloudFoundryCreateServiceKey script: parameters.script
     }
 

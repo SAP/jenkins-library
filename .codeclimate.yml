@@ -14,15 +14,15 @@ plugins:
       editorconfig: .editorconfig
     # https://docs.codeclimate.com/docs/advanced-configuration#section-exclude-patterns
     exclude_patterns:
-    - "documentation/**/images/"
-    - "cfg/id_rsa.enc"
-    - "**/testdata/**"
+      - "documentation/**/images/"
+      - "cfg/id_rsa.enc"
+      - "**/testdata/**"
   fixme:
     enabled: true
     config:
       strings:
-      - TODO
-      - FIXME
+        - TODO
+        - FIXME
   gofmt:
     enabled: true
   golint:
@@ -35,10 +35,33 @@ plugins:
       # https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md#md013---line-length
       MD013:
         enabled: false
+      # https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md#md024
+      MD024:
+        enabled: false
+      # https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md#md033---inline-html
+      MD033:
+        enabled: false
+      # https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md#md036
+      MD036:
+        enabled: false
+      # https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md#md041
+      MD041:
+        enabled: false
+      # TODO: fix in separate PR
+      # https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md#md004
+      MD004:
+        enabled: false
+      # https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md#md040
+      MD040:
+        enabled: false
+      # https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md#md046
+      MD046:
+        enabled: false
   shellcheck:
     enabled: true
 exclude_patterns:
   - "**/*_generated.go"
+  - "**/mocks/*.go"
   # default excludes are overwritten, add them again
   # https://docs.codeclimate.com/docs/excluding-files-and-folders#section-auto-generated-file-and-folder-exclusions
   - "**/*_test.go"

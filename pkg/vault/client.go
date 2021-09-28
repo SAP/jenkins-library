@@ -1,10 +1,12 @@
 package vault
 
 import (
+	"encoding/json"
 	"fmt"
 	"path"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/hashicorp/vault/api"
@@ -13,48 +15,62 @@ import (
 // Client handles communication with Vault
 type Client struct {
 	lClient logicalClient
+	config  *Config
+}
+
+// Config contains the vault client configuration
+type Config struct {
+	*api.Config
+	AppRoleMountPoint string
+	Namespace         string
 }
 
 // logicalClient interface for mocking
 type logicalClient interface {
 	Read(string) (*api.Secret, error)
+	Write(string, map[string]interface{}) (*api.Secret, error)
 }
 
 // NewClient instantiates a Client and sets the specified token
-func NewClient(config *api.Config, token, namespace string) (Client, error) {
+func NewClient(config *Config, token string) (Client, error) {
 	if config == nil {
-		config = api.DefaultConfig()
+		config = &Config{Config: api.DefaultConfig()}
 	}
-	client, err := api.NewClient(config)
+	client, err := api.NewClient(config.Config)
 	if err != nil {
 		return Client{}, err
 	}
 
-	if namespace != "" {
-		client.SetNamespace(namespace)
+	if config.Namespace != "" {
+		client.SetNamespace(config.Namespace)
 	}
 
 	client.SetToken(token)
-	return Client{client.Logical()}, nil
+	log.Entry().Debugf("Login to vault %s in namespace %s successfull", config.Address, config.Namespace)
+	return Client{client.Logical(), config}, nil
 }
 
 // NewClientWithAppRole instantiates a new client and obtains a token via the AppRole auth method
-func NewClientWithAppRole(config *api.Config, roleID, secretID, namespace string) (Client, error) {
+func NewClientWithAppRole(config *Config, roleID, secretID string) (Client, error) {
 	if config == nil {
-		config = api.DefaultConfig()
+		config = &Config{Config: api.DefaultConfig()}
 	}
 
-	client, err := api.NewClient(config)
+	if config.AppRoleMountPoint == "" {
+		config.AppRoleMountPoint = "auth/approle"
+	}
+
+	client, err := api.NewClient(config.Config)
 	if err != nil {
 		return Client{}, err
 	}
 
-	if namespace != "" {
-		client.SetNamespace(namespace)
+	if config.Namespace != "" {
+		client.SetNamespace(config.Namespace)
 	}
 
 	log.Entry().Debug("Using approle login")
-	result, err := client.Logical().Write("auth/approle/login", map[string]interface{}{
+	result, err := client.Logical().Write(path.Join(config.AppRoleMountPoint, "/login"), map[string]interface{}{
 		"role_id":   roleID,
 		"secret_id": secretID,
 	})
@@ -68,8 +84,7 @@ func NewClientWithAppRole(config *api.Config, roleID, secretID, namespace string
 		return Client{}, fmt.Errorf("Could not obtain token from approle with role_id %s", roleID)
 	}
 
-	log.Entry().Debugf("Login to vault %s in namespace %s successfull", config.Address, namespace)
-	return NewClient(config, authInfo.ClientToken, namespace)
+	return NewClient(config, authInfo.ClientToken)
 }
 
 // GetSecret uses the given path to fetch a secret from vault
@@ -124,12 +139,187 @@ func (v Client) GetKvSecret(path string) (map[string]string, error) {
 	secretData := make(map[string]string, len(data))
 	for k, v := range data {
 		valueStr, ok := v.(string)
-		if !ok {
-			return nil, fmt.Errorf("Expected secret value to be a string but got %T instead", v)
+		if ok {
+			secretData[k] = valueStr
 		}
-		secretData[k] = valueStr
 	}
 	return secretData, nil
+}
+
+// WriteKvSecret writes secret to kv engine
+func (v Client) WriteKvSecret(path string, newSecret map[string]string) error {
+	oldSecret, err := v.GetKvSecret(path)
+	if err != nil {
+		return err
+	}
+	secret := make(map[string]interface{}, len(oldSecret))
+	for k, v := range oldSecret {
+		secret[k] = v
+	}
+	for k, v := range newSecret {
+		secret[k] = v
+	}
+	path = sanitizePath(path)
+	mountpath, version, err := v.getKvInfo(path)
+	if err != nil {
+		return err
+	}
+	if version == 2 {
+		path = addPrefixToKvPath(path, mountpath, "data")
+		secret = map[string]interface{}{"data": secret}
+	} else if version != 1 {
+		return fmt.Errorf("KV Engine in version %d is currently not supported", version)
+	}
+
+	_, err = v.lClient.Write(path, secret)
+	return err
+}
+
+// GenerateNewAppRoleSecret creates a new secret-id
+func (v *Client) GenerateNewAppRoleSecret(secretID, appRoleName string) (string, error) {
+	appRolePath := v.getAppRolePath(appRoleName)
+	secretIDData, err := v.lookupSecretID(secretID, appRolePath)
+	if err != nil {
+		return "", err
+	}
+
+	reqPath := sanitizePath(path.Join(appRolePath, "/secret-id"))
+
+	// we preserve metadata which was attached to the secret-id
+	json, err := json.Marshal(secretIDData["metadata"])
+	if err != nil {
+		return "", err
+	}
+	secret, err := v.lClient.Write(reqPath, map[string]interface{}{
+		"metadata": string(json),
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	if secret == nil || secret.Data == nil {
+		return "", fmt.Errorf("Could not generate new approle secret-id for approle path %s", reqPath)
+	}
+
+	secretIDRaw, ok := secret.Data["secret_id"]
+	if !ok {
+		return "", fmt.Errorf("Vault response for path %s did not contain a new secret-id", reqPath)
+	}
+
+	newSecretID, ok := secretIDRaw.(string)
+	if !ok {
+		return "", fmt.Errorf("New secret-id from approle path %s has an unexpected type %T expected 'string'", reqPath, secretIDRaw)
+	}
+
+	return newSecretID, nil
+}
+
+// GetAppRoleSecretIDTtl returns the remaining time until the given secret-id expires
+func (v *Client) GetAppRoleSecretIDTtl(secretID, roleName string) (time.Duration, error) {
+	appRolePath := v.getAppRolePath(roleName)
+	data, err := v.lookupSecretID(secretID, appRolePath)
+	if err != nil {
+		return 0, err
+	}
+
+	if data == nil || data["expiration_time"] == nil {
+		return 0, fmt.Errorf("Could not load secret-id information from path %s", appRolePath)
+	}
+
+	expiration, ok := data["expiration_time"].(string)
+	if !ok || expiration == "" {
+		return 0, fmt.Errorf("Could not handle get expiration time for secret-id from path %s", appRolePath)
+	}
+
+	expirationDate, err := time.Parse(time.RFC3339, expiration)
+
+	if err != nil {
+		return 0, err
+	}
+
+	ttl := expirationDate.Sub(time.Now())
+	if ttl < 0 {
+		return 0, nil
+	}
+
+	return ttl, nil
+}
+
+// RevokeToken revokes the token which is currently used.
+// The client can't be used anymore after this function was called.
+func (v Client) RevokeToken() error {
+	_, err := v.lClient.Write("auth/token/revoke-self", map[string]interface{}{})
+	return err
+}
+
+// MustRevokeToken same as RevokeToken but the programm is terminated with an error if this fails.
+// Should be used in defer statements only.
+func (v Client) MustRevokeToken() {
+	if err := v.RevokeToken(); err != nil {
+		log.Entry().WithError(err).Fatal("Could not revoke token")
+	}
+}
+
+// GetAppRoleName returns the AppRole role name which was used to authenticate.
+// Returns "" when AppRole authentication wasn't used
+func (v *Client) GetAppRoleName() (string, error) {
+	const lookupPath = "auth/token/lookup-self"
+	secret, err := v.GetSecret(lookupPath)
+	if err != nil {
+		return "", err
+	}
+
+	if secret.Data == nil {
+		return "", fmt.Errorf("Could not lookup token information: %s", lookupPath)
+	}
+
+	meta, ok := secret.Data["meta"]
+
+	if !ok {
+		return "", fmt.Errorf("Token info did not contain metadata %s", lookupPath)
+	}
+
+	metaMap, ok := meta.(map[string]interface{})
+
+	if !ok {
+		return "", fmt.Errorf("Token info field 'meta' is not a map: %s", lookupPath)
+	}
+
+	roleName := metaMap["role_name"]
+
+	if roleName == nil {
+		return "", nil
+	}
+
+	roleNameStr, ok := roleName.(string)
+	if !ok {
+		// when approle authentication is not used vault admins can use the role_name field with other type
+		// so no error in this case
+		return "", nil
+	}
+
+	return roleNameStr, nil
+}
+
+// SetAppRoleMountPoint sets the path under which the approle auth backend is mounted
+func (v *Client) SetAppRoleMountPoint(appRoleMountpoint string) {
+	v.config.AppRoleMountPoint = appRoleMountpoint
+}
+
+func (v *Client) getAppRolePath(roleName string) string {
+	appRoleMountPoint := v.config.AppRoleMountPoint
+	if appRoleMountPoint == "" {
+		appRoleMountPoint = "auth/approle"
+	}
+	return path.Join(appRoleMountPoint, "role", roleName)
+}
+
+func sanitizePath(path string) string {
+	path = strings.TrimSpace(path)
+	path = strings.TrimPrefix(path, "/")
+	path = strings.TrimSuffix(path, "/")
+	return path
 }
 
 func addPrefixToKvPath(p, mountPath, apiPrefix string) string {
@@ -180,9 +370,14 @@ func (v *Client) getKvInfo(path string) (string, int, error) {
 	return mountPath, vNumber, nil
 }
 
-func sanitizePath(path string) string {
-	path = strings.TrimSpace(path)
-	path = strings.TrimPrefix(path, "/")
-	path = strings.TrimSuffix(path, "/")
-	return path
+func (v *Client) lookupSecretID(secretID, appRolePath string) (map[string]interface{}, error) {
+	reqPath := sanitizePath(path.Join(appRolePath, "/secret-id/lookup"))
+	secret, err := v.lClient.Write(reqPath, map[string]interface{}{
+		"secret_id": secretID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return secret.Data, nil
 }

@@ -6,13 +6,20 @@ metadata:
 
     It can for example be used for GitOps scenarios where the update of the manifests triggers an update of the corresponding deployment in Kubernetes.
 
-    As of today, it supports the update of deployment yaml files via kubectl patch. The container inside the yaml must be described within the following hierarchy: {"spec":{"template":{"spec":{"containers":[{...}]}}}}
+    As of today, it supports the update of deployment yaml files via kubectl patch and update a whole helm template.
+    For kubectl the container inside the yaml must be described within the following hierarchy: `{"spec":{"template":{"spec":{"containers":[{...}]}}}}`
+    For helm the whole template is generated into a file and uploaded into the repository.
+
+
 spec:
   inputs:
     secrets:
       - name: gitHttpsCredentialsId
         description: Jenkins 'Username with password' credentials ID containing username/password for http access to your git repository.
         type: jenkins
+    resources:
+      - name: deployDescriptor
+        type: stash
     params:
       - name: branchName
         description: The name of the branch where the changes should get pushed into.
@@ -22,15 +29,15 @@ spec:
           - STEPS
         type: string
         default: master
+        mandatory: true
       - name: commitMessage
         description: The commit message of the commit that will be done to do the changes.
+        longDescription: If the commit message is empty a default message in the form "Updated _containerName_ to version _containerImage_" will be used.
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
         type: string
-        mandatory: true
-        default: Updated {{containerName}} to version {{containerImage}}
       - name: serverUrl
         aliases:
           - name: githubServerUrl
@@ -84,11 +91,11 @@ spec:
           - STAGES
           - STEPS
         type: string
-        mandatory: true
       - name: containerRegistryUrl
         aliases:
           - name: dockerRegistryUrl
         type: string
+        mandatory: true
         description: http(s) url of the Container registry where the image is located
         scope:
           - GENERAL
@@ -104,6 +111,7 @@ spec:
             deprecated: true
           - name: containerImage
         type: string
+        mandatory: true
         description: Container image name with version tag to annotate in the deployment configuration.
         scope:
           - PARAMETERS
@@ -112,9 +120,62 @@ spec:
         resourceRef:
           - name: commonPipelineEnvironment
             param: container/imageNameTag
+      - name: chartPath
+        aliases:
+          - name: helmChartPath
+        type: string
+        description: Defines the chart path for deployments using helm.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: helmValues
+        type: "[]string"
+        description: List of helm values as YAML file reference or URL (as per helm parameter description for `-f` / `--values`)
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: deploymentName
+        aliases:
+          - name: helmDeploymentName
+        type: string
+        description: Defines the name of the deployment.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      #        default: deployment
+      - name: tool
+        type: string
+        description: Defines the tool which should be used to update the deployment description.
+        mandatory: true
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: kubectl
+        possibleValues:
+          - kubectl
+          - helm
   containers:
-    - image: dtzar/helm-kubectl:2.12.1
+    - image: dtzar/helm-kubectl:3.3.4
       workingDir: /config
       options:
         - name: -u
           value: "0"
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: tool
+              value: helm
+    - image: dtzar/helm-kubectl:2.17.0
+      workingDir: /config
+      options:
+        - name: -u
+          value: "0"
+      conditions:
+        - conditionRef: strings-equal
+          params:
+            - name: tool
+              value: kubectl

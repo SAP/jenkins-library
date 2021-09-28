@@ -63,12 +63,11 @@ general:
   productiveBranch: 'master'
   whitesource:
     serviceUrl: 'https://saas.whitesourcesoftware.com/api'
+  dockerPullImage: true
+  sidecarPullImage: true
 
 #Steps Specific Configuration
 steps:
-  abapEnvironmentPullGitRepo:
-    dockerImage: 'ppiper/cf-cli'
-    dockerWorkspace: '/home/piper'
   artifactSetVersion:
     timestampTemplate: '%Y%m%d%H%M%S'
     tagPrefix: 'build_'
@@ -113,11 +112,7 @@ steps:
       - 'tests'
     testPackage: 'piper-bats'
   checksPublishResults:
-    aggregation:
-      active: true
-      thresholds:
-        fail:
-          high: '0'
+    failOnError: false
     tasks:
       pattern: '**/*.java'
       low: ''
@@ -125,51 +120,79 @@ steps:
       high: 'FIXME'
       archive: true
       active: false
-      thresholds:
-        fail:
-          high: '0'
+      qualityGates:
+        - threshold: 1
+          type: 'TOTAL_HIGH'
+          unstable: false
+        - threshold: 1
+          type: 'TOTAL_ERROR'
+          unstable: false
     pmd:
       pattern: '**/target/pmd.xml'
       archive: true
       active: false
-      thresholds:
-        fail:
-          high: '0'
+      qualityGates:
+        - threshold: 1
+          type: 'TOTAL_HIGH'
+          unstable: false
+        - threshold: 1
+          type: 'TOTAL_ERROR'
+          unstable: false
     cpd:
       pattern: '**/target/cpd.xml'
       archive: true
       active: false
-      thresholds:
-        fail:
-          high: '0'
+      qualityGates:
+        - threshold: 1
+          type: 'TOTAL_HIGH'
+          unstable: false
+        - threshold: 1
+          type: 'TOTAL_ERROR'
+          unstable: false
     findbugs:
       pattern: '**/target/findbugsXml.xml, **/target/findbugs.xml'
       archive: true
       active: false
-      thresholds:
-        fail:
-          high: '0'
+      qualityGates:
+        - threshold: 1
+          type: 'TOTAL_HIGH'
+          unstable: false
+        - threshold: 1
+          type: 'TOTAL_ERROR'
+          unstable: false
     checkstyle:
       pattern: '**/target/checkstyle-result.xml'
       archive: true
       active: false
-      thresholds:
-        fail:
-          high: '0'
+      qualityGates:
+        - threshold: 1
+          type: 'TOTAL_HIGH'
+          unstable: false
+        - threshold: 1
+          type: 'TOTAL_ERROR'
+          unstable: false
     eslint:
       pattern: '**/eslint.xml'
       archive: true
       active: false
-      thresholds:
-        fail:
-          high: '0'
+      qualityGates:
+        - threshold: 1
+          type: 'TOTAL_HIGH'
+          unstable: false
+        - threshold: 1
+          type: 'TOTAL_ERROR'
+          unstable: false
     pylint:
       pattern: '**/pylint.log'
       archive: true
       active: false
-      thresholds:
-        fail:
-          high: '0'
+      qualityGates:
+        - threshold: 1
+          type: 'TOTAL_HIGH'
+          unstable: false
+        - threshold: 1
+          type: 'TOTAL_ERROR'
+          unstable: false
     archive: false
   cloudFoundryDeploy:
     cloudFoundry:
@@ -188,10 +211,10 @@ steps:
       - 'deployDescriptor'
       - 'pipelineConfigAndTests'
     cf_native:
-      dockerImage: 'ppiper/cf-cli'
+      dockerImage: 'ppiper/cf-cli:6'
       dockerWorkspace: '/home/piper'
     mtaDeployPlugin:
-      dockerImage: 'ppiper/cf-cli'
+      dockerImage: 'ppiper/cf-cli:6'
       dockerWorkspace: '/home/piper'
     mta:
       deployTool: 'mtaDeployPlugin'
@@ -203,27 +226,11 @@ steps:
       deployTool: 'cf_native'
     kaniko:
       deployTool: 'cf_native'
-  containerExecuteStructureTests:
-    containerCommand: '/busybox/tail -f /dev/null'
-    containerShell: '/busybox/sh'
-    dockerImage: 'ppiper/container-structure-test'
-    dockerOptions: "-u 0 --entrypoint=''"
-    failOnError: true
-    stashContent:
-      - 'tests'
-    testReportFilePath: 'cst-report.json'
-  cloudFoundryCreateServiceKey:
-    dockerImage: 'ppiper/cf-cli'
-    dockerWorkspace: '/home/piper'
   debugReportArchive:
     shareConfidentialInformation: false
   dockerExecute:
-    dockerPullImage: true
-    sidecarPullImage: true
     stashContent: []
   dockerExecuteOnKubernetes:
-    dockerPullImage: true
-    sidecarPullImage: true
     stashContent: []
     stashIncludes:
       workspace: '**/*'
@@ -240,6 +247,9 @@ steps:
       - 'invalid'
       - 'question'
       - 'wontfix'
+  gatlingExecuteTests:
+    stashContent:
+      - 'source'
   gaugeExecuteTests:
     buildTool: 'maven'
     dockerEnvVars:
@@ -272,10 +282,6 @@ steps:
       runCommand: 'bundle install && bundle exec gauge run'
       testOptions: 'specs'
   hadolintExecute:
-    configurationFile: '.hadolint.yaml'
-    configurationUrl: ''
-    dockerFile: './Dockerfile'
-    dockerImage: 'hadolint/hadolint:latest-debian'
     qualityGates:
       - threshold: 1
         type: 'TOTAL_ERROR'
@@ -336,94 +342,21 @@ steps:
     neo:
       size: 'lite'
       credentialsId: 'CI_CREDENTIALS_ID'
+      credentialType: 'UsernamePassword'
+      portalLandscape: "cloudnwcportal"
   multicloudDeploy:
     cfTargets: []
     neoTargets: []
     enableZeroDowntimeDeployment: false
     parallelExecution: false
-  newmanExecute:
-    dockerImage: 'node:lts-stretch'
-    failOnError: true
-    newmanCollection: '**/*.postman_collection.json'
-    newmanEnvironment: ''
-    newmanGlobals: ''
-    newmanInstallCommand: 'npm install newman newman-reporter-html --global --quiet'
-    newmanRunCommand: "run '${config.newmanCollection}' --environment '${config.newmanEnvironment}' --globals '${config.newmanGlobals}' --reporters junit,html --reporter-junit-export 'target/newman/TEST-${collectionDisplayName}.xml' --reporter-html-export 'target/newman/TEST-${collectionDisplayName}.html'"
-    stashContent:
-      - 'tests'
   npmExecute:
     dockerImage: 'node:lts-stretch'
+  npmExecuteScripts:
+    install: true
   whitesourceExecuteScan:
-    createProductFromPipeline: true
-    emailAddressesOfInitialProductAdmins: []
-    buildDescriptorExcludeList: []
-    parallelLimit: 15
-    licensingVulnerabilities: true
-    securityVulnerabilities: true
-    cvssSeverityLimit: -1
-    reporting: true
     vulnerabilityReportFileName: 'piper_whitesource_vulnerability_report'
-    vulnerabilityReportTitle: 'WhiteSource Security Vulnerability Report'
-    projectNames: []
-    jreDownloadUrl: 'https://github.com/SAP/SapMachine/releases/download/sapmachine-11.0.2/sapmachine-jre-11.0.2_linux-x64_bin.tar.gz'
-    agentFileName: 'wss-unified-agent.jar'
-    agentDownloadUrl: 'https://github.com/whitesource/unified-agent-distribution/releases/latest/download/${config.agentFileName}'
-    agentParameters: ''
-    configFilePath: './wss-unified-agent.config'
-    mta:
-      stashContent:
-        - 'buildDescriptor'
-        - 'opensourceConfiguration'
-    maven:
-      buildDescriptorFile: './pom.xml'
-      dockerImage: 'maven:3.5-jdk-8'
-      dockerWorkspace: '/home/java'
-      stashContent:
-        - 'buildDescriptor'
-        - 'opensourceConfiguration'
-    npm:
-      buildDescriptorFile: './package.json'
-      dockerImage: 'node:lts-stretch'
-      dockerWorkspace: '/home/node'
-      stashContent:
-        - 'buildDescriptor'
-        - 'opensourceConfiguration'
-    pip:
-      buildDescriptorFile: './setup.py'
-      dockerImage: 'python:3.7.2-stretch'
-      dockerWorkspace: '/home/python'
-      stashContent:
-        - 'buildDescriptor'
-        - 'opensourceConfiguration'
-    golang:
-      buildDescriptorFile: './Gopkg.toml'
-      dockerImage: 'golang:1.12-stretch'
-      dockerWorkspace: '/home/dep'
-      stashContent:
-        - 'buildDescriptor'
-        - 'opensourceConfiguration'
-        - 'checkmarx'
-      additionalInstallCommand: >-
-        curl --fail https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-        && mkdir -p \$GOPATH/src/${config.whitesource.projectName.substring(0, config.whitesource.projectName.lastIndexOf('/'))}
-        && ln -s \$(pwd) \$GOPATH/src/${config.whitesource.projectName}
-        && cd \$GOPATH/src/${config.whitesource.projectName} && dep ensure
-    dub:
-      buildDescriptorFile: './dub.json'
-      dockerImage: 'buildpack-deps:stretch-curl'
-      dockerWorkspace: '/home/dub'
-      stashContent:
-        - 'buildDescriptor'
-        - 'checkmarx'
-    sbt:
-      buildDescriptorFile: './build.sbt'
-      dockerImage: 'hseeberger/scala-sbt:8u181_2.12.8_1.2.8'
-      dockerWorkspace: '/home/scala'
-      stashContent:
-        - 'buildDescriptor'
-        - 'opensourceConfiguration'
-    verbose: false
-    timeout: 0
+    stashExcludes:
+      stashBack: '.pipeline/** whitesourceExecuteScan_*.* whitesource-reports/**'
   pipelineExecute:
     branch: 'master'
     path: 'Jenkinsfile'
@@ -431,9 +364,10 @@ steps:
   pipelineRestartSteps:
     sendMail: true
     timeoutInSeconds: 900
+    stepMessage: 'Do you want to restart?'
   pipelineStashFilesAfterBuild:
     stashIncludes:
-      buildResult: '**/target/*.war, **/target/*.jar, **/*.mtar'
+      buildResult: '**/target/*.war, **/target/*.jar, **/*.mtar, **/*.jar.original'
       checkmarx: '**/*.js, **/*.scala, **/*.py, **/*.go, **/*.d, **/*.di, **/*.xml, **/*.html'
       classFiles: '**/target/classes/**/*.class, **/target/test-classes/**/*.class'
       sonar: '**/jacoco*.exec, **/sonar-project.properties'
@@ -496,7 +430,7 @@ steps:
       dockerName: 'bundler'
       dockerWorkspace: ''
   slackSendNotification:
-    color: "${buildStatus == 'SUCCESS'?'#008000':'#E60000'}"
+    color: "${['SUCCESS': '#8cc04f', 'FAILURE': '#d54c53', 'ABORTED': '#949393', 'UNSTABLE': '#f6b44b', 'PAUSED': '#24b0d5', 'UNKNOWN': '#d54cc4'].get(buildStatus, '#d54cc4')}"
     defaultMessage: "${buildStatus}: Job ${env.JOB_NAME} <${env.BUILD_URL}|#${env.BUILD_NUMBER}>"
   snykExecute:
     buildDescriptorFile: './package.json'
@@ -580,16 +514,8 @@ steps:
       verbose: false
   transportRequestRelease:
       verbose: false
-  uiVeri5ExecuteTests:
-    failOnError: false
-    dockerEnvVars: {}
-    installCommand: 'npm install @ui5/uiveri5 --global --quiet'
-    seleniumPort: 4444
-    stashContent:
-      - 'buildDescriptor'
-      - 'tests'
-    testOptions: ''
-    runCommand: "uiveri5 --seleniumAddress='http://${config.seleniumHost}:${config.seleniumPort}/wd/hub'"
+  transportRequestUploadRFC:
+    credentialsId: 'RFC_CREDENTIALS_ID'
   writeTemporaryCredentials:
     credentialsDirectories:
       - './'
@@ -607,9 +533,17 @@ steps:
     deployIdLogPattern: '^.*"xs bg-deploy -i (.*) -a .*".*$'
     loginOpts: ''
     deployOpts: ''
+    dockerPullImage: false
     docker:
       dockerImage: ''
       dockerPullImage: false
     mode: 'DEPLOY'
     action: 'NONE'
     xsSessionFile: '.xsconfig'
+  piperPipelineStageInit:
+    stepMappings:
+      checkmarx: 'checkmarxExecuteScan'
+      fortify: 'fortifyExecuteScan'
+      karma: 'karmaExecuteTests'
+      whitesource: 'whitesourceExecuteScan'
+    labelPrefix: pr_

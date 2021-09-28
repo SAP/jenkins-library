@@ -127,14 +127,25 @@ spec:
           - STEPS
       - name: customVersioningScheme
         type: string
-        description: "For `buildTool: custom`: Defines the versioning scheme to be used (possible options `pep440`, `maven`, `semver2`)."
+        description: "For `buildTool: custom`: Defines the versioning scheme to be used."
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
+        possibleValues:
+          - maven
+          - pep440
+          - semver2
       - name: dockerVersionSource
         type: string
         description: "For `buildTool: docker`: Defines the source of the version. Can be `FROM`, any supported _buildTool_ or an environment variable name."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+      - name: fetchCoordinates
+        type: bool
+        description: If set to `true` the step will retreive artifact coordinates and store them in the common pipeline environment.
         scope:
           - PARAMETERS
           - STAGES
@@ -187,10 +198,8 @@ spec:
             type: secret
             param: password
           - type: vaultSecret
-            paths:
-              - $(vaultPath)/gitHttpsCredential
-              - $(vaultBasePath)/$(vaultPipelineName)/gitHttpsCredential
-              - $(vaultBasePath)/GROUP-SECRETS/gitHttpsCredential
+            name: gitHttpsCredentialVaultSecretName
+            default: gitHttpsCredential
       - name: projectSettingsFile
         aliases:
           - name: maven/projectSettingsFile
@@ -236,14 +245,11 @@ spec:
             type: secret
             param: username
           - type: vaultSecret
-            paths:
-              - $(vaultPath)/gitHttpsCredential
-              - $(vaultBasePath)/$(vaultPipelineName)/gitHttpsCredential
-              - $(vaultBasePath)/GROUP-SECRETS/gitHttpsCredential
+            name: gitHttpsCredentialVaultSecretName
+            default: gitHttpsCredential
       - name: versioningTemplate
         type: string
         description: "DEPRECATED: Defines the template for the automatic version which will be created"
-        mandatory: false
         scope:
           - PARAMETERS
           - STAGES
@@ -270,11 +276,14 @@ spec:
         params:
           - name: artifactVersion
           - name: originalArtifactVersion
+          - name: artifactId
+          - name: groupId
+          - name: packaging
           - name: git/commitId
+          - name: git/headCommitId
           - name: git/commitMessage
   containers:
     - image: maven:3.6-jdk-8
-      imagePullPolicy: Never
       conditions:
         - conditionRef: strings-equal
           params:

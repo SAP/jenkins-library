@@ -9,6 +9,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/yaml"
 	"github.com/stretchr/testify/assert"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 )
@@ -263,6 +264,7 @@ func TestCfDeployment(t *testing.T) {
 
 				withLoginAndLogout(t, func(t *testing.T) {
 					assert.Equal(t, []mock.ExecCall{
+						{Exec: "cf", Params: []string{"version"}},
 						{Exec: "cf", Params: []string{"plugins"}},
 						{Exec: "cf", Params: []string{"push", "-f", "manifest.yml"}},
 					}, s.Calls)
@@ -288,7 +290,7 @@ func TestCfDeployment(t *testing.T) {
 		}()
 
 		_now = func() time.Time {
-			// There was the big eclise in Karlsruhe
+			// There was the big eclipse in Karlsruhe
 			return time.Date(1999, time.August, 11, 12, 32, 0, 0, time.UTC)
 		}
 
@@ -296,6 +298,7 @@ func TestCfDeployment(t *testing.T) {
 
 		config.DeployTool = "cf_native"
 		config.ArtifactVersion = "0.1.2"
+		config.CommitHash = "123456"
 
 		influxData := cloudFoundryDeployInflux{}
 
@@ -308,6 +311,7 @@ func TestCfDeployment(t *testing.T) {
 			expected.deployment_data.fields.artifactURL = "n/a"
 			expected.deployment_data.fields.deployTime = "AUG 11 1999 12:32:00"
 			expected.deployment_data.fields.jobTrigger = "n/a"
+			expected.deployment_data.fields.commitHash = "123456"
 
 			expected.deployment_data.tags.artifactVersion = "0.1.2"
 			expected.deployment_data.tags.deployUser = "me"
@@ -341,6 +345,7 @@ func TestCfDeployment(t *testing.T) {
 
 			withLoginAndLogout(t, func(t *testing.T) {
 				assert.Equal(t, []mock.ExecCall{
+					{Exec: "cf", Params: []string{"version"}},
 					{Exec: "cf", Params: []string{"plugins"}},
 					{Exec: "cf", Params: []string{"push",
 						"testAppName",
@@ -380,6 +385,7 @@ func TestCfDeployment(t *testing.T) {
 				withLoginAndLogout(t, func(t *testing.T) {
 
 					assert.Equal(t, []mock.ExecCall{
+						{Exec: "cf", Params: []string{"version"}},
 						{Exec: "cf", Params: []string{"plugins"}},
 						{Exec: "cf", Params: []string{"push",
 							"testAppName",
@@ -427,6 +433,7 @@ func TestCfDeployment(t *testing.T) {
 				withLoginAndLogout(t, func(t *testing.T) {
 
 					assert.Equal(t, []mock.ExecCall{
+						{Exec: "cf", Params: []string{"version"}},
 						{Exec: "cf", Params: []string{"plugins"}},
 						{Exec: "cf", Params: []string{
 							"blue-green-deploy",
@@ -469,6 +476,7 @@ func TestCfDeployment(t *testing.T) {
 				withLoginAndLogout(t, func(t *testing.T) {
 
 					assert.Equal(t, []mock.ExecCall{
+						{Exec: "cf", Params: []string{"version"}},
 						{Exec: "cf", Params: []string{"plugins"}},
 						{Exec: "cf", Params: []string{
 							"push",
@@ -528,6 +536,7 @@ func TestCfDeployment(t *testing.T) {
 				withLoginAndLogout(t, func(t *testing.T) {
 
 					assert.Equal(t, []mock.ExecCall{
+						{Exec: "cf", Params: []string{"version"}},
 						{Exec: "cf", Params: []string{"plugins"}},
 						{Exec: "cf", Params: []string{
 							"blue-green-deploy",
@@ -609,6 +618,7 @@ func TestCfDeployment(t *testing.T) {
 				withLoginAndLogout(t, func(t *testing.T) {
 
 					assert.Equal(t, []mock.ExecCall{
+						{Exec: "cf", Params: []string{"version"}},
 						{Exec: "cf", Params: []string{"plugins"}},
 						{Exec: "cf", Params: []string{
 							"push",
@@ -635,7 +645,7 @@ func TestCfDeployment(t *testing.T) {
 
 		s := mock.ExecMockRunner{}
 
-		s.ShouldFailOnCommand = map[string]error{"cf.*": fmt.Errorf("cf deploy failed")}
+		s.ShouldFailOnCommand = map[string]error{"cf.*deploy.*": fmt.Errorf("cf deploy failed")}
 		err := runCloudFoundryDeploy(&config, nil, nil, &s)
 
 		if assert.EqualError(t, err, "cf deploy failed") {
@@ -679,7 +689,10 @@ func TestCfDeployment(t *testing.T) {
 			t.Run("check shell calls", func(t *testing.T) {
 
 				// no calls to the cf client in this case
-				assert.Empty(t, s.Calls)
+				assert.Equal(t,
+					[]mock.ExecCall{
+						{Exec: "cf", Params: []string{"version"}},
+					}, s.Calls)
 				// no logout
 				assert.False(t, logoutCalled)
 			})
@@ -711,6 +724,7 @@ func TestCfDeployment(t *testing.T) {
 				withLoginAndLogout(t, func(t *testing.T) {
 
 					assert.Equal(t, []mock.ExecCall{
+						{Exec: "cf", Params: []string{"version"}},
 						{Exec: "cf", Params: []string{"plugins"}},
 						{Exec: "cf", Params: []string{
 							"push",
@@ -795,6 +809,7 @@ func TestCfDeployment(t *testing.T) {
 				withLoginAndLogout(t, func(t *testing.T) {
 
 					assert.Equal(t, []mock.ExecCall{
+						{Exec: "cf", Params: []string{"version"}},
 						{Exec: "cf", Params: []string{"plugins"}},
 						{Exec: "cf", Params: []string{
 							"bg-deploy",
@@ -865,6 +880,7 @@ func TestCfDeployment(t *testing.T) {
 					// Revisit: we don't verify a log message in case of a non existing vars file
 
 					assert.Equal(t, []mock.ExecCall{
+						{Exec: "cf", Params: []string{"version"}},
 						{Exec: "cf", Params: []string{"plugins"}},
 						{Exec: "cf", Params: []string{
 							"push",
@@ -945,6 +961,7 @@ func TestCfDeployment(t *testing.T) {
 					// Revisit: we don't verify a log message in case of a non existing vars file
 
 					assert.Equal(t, []mock.ExecCall{
+						{Exec: "cf", Params: []string{"version"}},
 						{Exec: "cf", Params: []string{"plugins"}},
 						{Exec: "cf", Params: []string{
 							"push",
@@ -995,6 +1012,7 @@ func TestCfDeployment(t *testing.T) {
 				withLoginAndLogout(t, func(t *testing.T) {
 
 					assert.Equal(t, s.Calls, []mock.ExecCall{
+						{Exec: "cf", Params: []string{"version"}},
 						{Exec: "cf", Params: []string{"plugins"}},
 						{Exec: "cf", Params: []string{"deploy", "xyz.mtar", "-f"}}})
 
@@ -1110,7 +1128,7 @@ func TestSmokeTestScriptHandling(t *testing.T) {
 
 			assert.Equal(t, []string{
 				"--smoke-test",
-				"/home/me/mySmokeTestScript.sh",
+				filepath.FromSlash("/home/me/mySmokeTestScript.sh"),
 			}, parts)
 		}
 	})
@@ -1146,7 +1164,7 @@ func TestSmokeTestScriptHandling(t *testing.T) {
 
 			assert.Equal(t, []string{
 				"--smoke-test",
-				"/home/me/blueGreenCheckScript.sh",
+				filepath.FromSlash("/home/me/blueGreenCheckScript.sh"),
 			}, parts)
 		}
 	})
@@ -1216,7 +1234,7 @@ func TestDefaultManifestVariableFilesHandling(t *testing.T) {
 func TestExtensionDescriptorsWithMinusE(t *testing.T) {
 
 	t.Run("ExtensionDescriptorsWithMinusE", func(t *testing.T) {
-		extDesc := handleMtaExtensionDescriptors("-e 1.yaml -e 2.yaml")
+		extDesc, _ := handleMtaExtensionDescriptors("-e 1.yaml -e 2.yaml")
 		assert.Equal(t, []string{
 			"-e",
 			"1.yaml",
@@ -1226,7 +1244,7 @@ func TestExtensionDescriptorsWithMinusE(t *testing.T) {
 	})
 
 	t.Run("ExtensionDescriptorsFirstOneWithoutMinusE", func(t *testing.T) {
-		extDesc := handleMtaExtensionDescriptors("1.yaml -e 2.yaml")
+		extDesc, _ := handleMtaExtensionDescriptors("1.yaml -e 2.yaml")
 		assert.Equal(t, []string{
 			"-e",
 			"1.yaml",
@@ -1236,7 +1254,7 @@ func TestExtensionDescriptorsWithMinusE(t *testing.T) {
 	})
 
 	t.Run("NoExtensionDescriptors", func(t *testing.T) {
-		extDesc := handleMtaExtensionDescriptors("")
+		extDesc, _ := handleMtaExtensionDescriptors("")
 		assert.Equal(t, []string{}, extDesc)
 	})
 }
@@ -1276,4 +1294,89 @@ func TestAppNameChecks(t *testing.T) {
 		assert.EqualError(t, err, "Your application name 'my_invalid_app_name' contains a '_' (underscore) which is not allowed, only letters, dashes and numbers can be used. Please change the name to fit this requirement(s). For more details please visit https://docs.cloudfoundry.org/devguide/deploy-apps/deploy-app.html#basic-settings.")
 	})
 
+}
+
+func TestMtaExtensionCredentials(t *testing.T) {
+
+	content := []byte(`'_schema-version: '3.1'
+	ID: test.ext
+	extends: test
+	parameters
+		test-credentials1: "<%= testCred1 %>"
+		test-credentials2: "<%= testCred2 %>"`)
+
+	filesMock := mock.FilesMock{}
+	filesMock.AddDir("/home/me")
+	filesMock.Chdir("/home/me")
+	filesMock.AddFile("mtaext1.mtaext", content)
+	filesMock.AddFile("mtaext2.mtaext", content)
+	filesMock.AddFile("mtaext3.mtaext", content)
+	fileUtils = &filesMock
+
+	_environ = func() []string {
+		return []string{
+			"MY_CRED_ENV_VAR1=******",
+			"MY_CRED_ENV_VAR2=++++++",
+		}
+	}
+
+	defer func() {
+		fileUtils = piperutils.Files{}
+		_environ = os.Environ
+	}()
+
+	t.Run("extension file does not exist", func(t *testing.T) {
+		err := handleMtaExtensionCredentials("mtaextDoesNotExist.mtaext", map[string]interface{}{})
+		assert.EqualError(t, err, "Cannot handle credentials for mta extension file 'mtaextDoesNotExist.mtaext': could not read 'mtaextDoesNotExist.mtaext'")
+	})
+
+	t.Run("credential cannot be retrieved", func(t *testing.T) {
+
+		err := handleMtaExtensionCredentials(
+			"mtaext1.mtaext",
+			map[string]interface{}{
+				"testCred1": "myCredEnvVar1NotDefined",
+				"testCred2": "myCredEnvVar2NotDefined",
+			},
+		)
+		assert.EqualError(t, err, "Cannot handle mta extension credentials: No credentials found for '[myCredEnvVar1NotDefined myCredEnvVar2NotDefined]'/'[MY_CRED_ENV_VAR1_NOT_DEFINED MY_CRED_ENV_VAR2_NOT_DEFINED]'. Are these credentials maintained?")
+	})
+
+	t.Run("irrelevant credentials does not cause failures", func(t *testing.T) {
+
+		err := handleMtaExtensionCredentials(
+			"mtaext2.mtaext",
+			map[string]interface{}{
+				"testCred1":       "myCredEnvVar1",
+				"testCred2":       "myCredEnvVar2",
+				"testCredNotUsed": "myCredEnvVarWhichDoesNotExist", //<-- This here is not used.
+			},
+		)
+		assert.NoError(t, err)
+	})
+
+	t.Run("replace straight forward", func(t *testing.T) {
+		mtaFileName := "mtaext3.mtaext"
+		err := handleMtaExtensionCredentials(
+			mtaFileName,
+			map[string]interface{}{
+				"testCred1": "myCredEnvVar1",
+				"testCred2": "myCredEnvVar2",
+			},
+		)
+		if assert.NoError(t, err) {
+			b, e := fileUtils.FileRead(mtaFileName)
+			if e != nil {
+				assert.Fail(t, "Cannot read mta extension file: %v", e)
+			}
+			content := string(b)
+			assert.Contains(t, content, "test-credentials1: \"******\"")
+			assert.Contains(t, content, "test-credentials2: \"++++++\"")
+		}
+	})
+}
+
+func TestEnvVarKeyModification(t *testing.T) {
+	envVarCompatibleKey := toEnvVarKey("Mta.ExtensionCredential~Credential_Id1")
+	assert.Equal(t, "MTA_EXTENSION_CREDENTIAL_CREDENTIAL_ID1", envVarCompatibleKey)
 }

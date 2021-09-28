@@ -21,21 +21,10 @@ import static org.junit.Assert.assertNotNull
 import static org.junit.Assert.assertNull
 import static org.junit.Assert.assertThat
 
-import com.sap.piper.GitUtils
-
 class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
 
-
-    def GitUtils gitUtilsMock = new GitUtils() {
-        boolean insideWorkTree() {
-           return true
-        }
-        String getGitCommitIdOrNull() {
-            return '0123456789012345678901234567890123456789'
-        }
-    }
-
     def usedConfigFile
+    def pipelineAndTestStashIncludes
 
     private JenkinsStepRule stepRule = new JenkinsStepRule(this)
     private JenkinsWriteFileRule writeFileRule = new JenkinsWriteFileRule(this)
@@ -73,14 +62,33 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
             Yaml yamlParser = new Yaml()
             if (parameters.text) {
                 return yamlParser.load(parameters.text)
-            } else if(parameters.file) {
-                if(parameters.file == '.pipeline/default_pipeline_environment.yml') return [default: 'config']
-                else if (parameters.file == '.pipeline/custom.yml') return [custom: 'myConfig']
+            } else if (parameters.file) {
+                switch (parameters.file) {
+                    case '.pipeline/default_pipeline_environment.yml':
+                        return [default: 'config']
+                    case '.pipeline/custom.yml':
+                        return [custom: 'myConfig']
+                    case 'pipeline_config.yml':
+                        usedConfigFile = parameters.file
+                        return [
+                            general: [
+                                productiveBranch: 'main'
+                            ],
+                            steps: [
+                                mavenExecute: [
+                                    dockerImage: 'my-custom-maven-docker']
+                            ]
+                        ]
+                }
             } else {
                 throw new IllegalArgumentException("Key 'text' and 'file' are both missing in map ${m}.")
             }
             usedConfigFile = parameters.file
             return yamlParser.load(examplePipelineConfig)
+        })
+
+        helper.registerAllowedMethod("stash", [Map], { Map params ->
+            pipelineAndTestStashIncludes = params.includes
         })
 
         Utils.metaClass.echo = { def m -> }
@@ -99,12 +107,13 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
             return path.endsWith('.pipeline/config.yml')
         })
 
-        stepRule.step.setupCommonPipelineEnvironment(script: nullScript, gitUtils: gitUtilsMock)
+        stepRule.step.setupCommonPipelineEnvironment(script: nullScript)
 
         assertEquals('.pipeline/config.yml', usedConfigFile)
         assertNotNull(nullScript.commonPipelineEnvironment.configuration)
         assertEquals('develop', nullScript.commonPipelineEnvironment.configuration.general.productiveBranch)
         assertEquals('my-maven-docker', nullScript.commonPipelineEnvironment.configuration.steps.mavenExecute.dockerImage)
+        assertEquals('.pipeline/**', pipelineAndTestStashIncludes)
     }
 
     @Test
@@ -114,12 +123,29 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
             return path.endsWith('.pipeline/config.yaml')
         })
 
-        stepRule.step.setupCommonPipelineEnvironment(script: nullScript, gitUtils: gitUtilsMock)
+        stepRule.step.setupCommonPipelineEnvironment(script: nullScript)
 
         assertEquals('.pipeline/config.yaml', usedConfigFile)
         assertNotNull(nullScript.commonPipelineEnvironment.configuration)
         assertEquals('develop', nullScript.commonPipelineEnvironment.configuration.general.productiveBranch)
         assertEquals('my-maven-docker', nullScript.commonPipelineEnvironment.configuration.steps.mavenExecute.dockerImage)
+        assertEquals('.pipeline/**', pipelineAndTestStashIncludes)
+    }
+
+    @Test
+    void testWorksAlsoWithCustomConfig() throws Exception {
+
+        helper.registerAllowedMethod("fileExists", [String], { String path ->
+            return path.endsWith('pipeline_config.yml')
+        })
+
+        stepRule.step.setupCommonPipelineEnvironment(script: nullScript, configFile: 'pipeline_config.yml')
+
+        assertEquals('pipeline_config.yml', usedConfigFile)
+        assertNotNull(nullScript.commonPipelineEnvironment.configuration)
+        assertEquals('main', nullScript.commonPipelineEnvironment.configuration.general.productiveBranch)
+        assertEquals('my-custom-maven-docker', nullScript.commonPipelineEnvironment.configuration.steps.mavenExecute.dockerImage)
+        assertEquals('.pipeline/**, pipeline_config.yml', pipelineAndTestStashIncludes)
     }
 
     @Test
@@ -145,8 +171,7 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
 
         stepRule.step.setupCommonPipelineEnvironment(
             script: nullScript,
-            customDefaults: 'notFound.yml',
-            gitUtils: gitUtilsMock
+            customDefaults: 'notFound.yml'
         )
     }
 
@@ -179,8 +204,7 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
 
         stepRule.step.setupCommonPipelineEnvironment(
             script: nullScript,
-            configFile: '.pipeline/config-with-custom-defaults.yml',
-            gitUtils: gitUtilsMock
+            configFile: '.pipeline/config-with-custom-defaults.yml'
         )
 
         assertEquals('WARNING: Ignoring invalid entry in custom defaults from files: \'\' \n' +
@@ -229,7 +253,6 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
             script: nullScript,
             customDefaults: 'custom.yml',
             configFile: '.pipeline/config-with-custom-defaults.yml',
-            gitUtils: gitUtilsMock,
         )
         assertEquals("custom: 'myRemoteConfig'", writeFileRule.files['.pipeline/custom_default_from_url_0.yml'])
         assertEquals('myRemoteConfig', DefaultValueCache.instance.defaultValues['custom'])
@@ -273,37 +296,29 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
     }
 
     @Test
-    void "Set git commit id"() {
+    void "Set scmInfo parameter sets commit id"() {
         helper.registerAllowedMethod("fileExists", [String], { String path ->
             return path.endsWith('.pipeline/config.yml')
         })
 
-        stepRule.step.setupCommonPipelineEnvironment(script: nullScript, gitUtils: gitUtilsMock)
-        assertThat(nullScript.commonPipelineEnvironment.gitCommitId, is('0123456789012345678901234567890123456789'))
+        def dummyScmInfo = [GIT_COMMIT: 'dummy_git_commit_id', GIT_URL: 'https://github.com/testOrg/testRepo.git']
+
+        stepRule.step.setupCommonPipelineEnvironment(script: nullScript, scmInfo: dummyScmInfo)
+        assertThat(nullScript.commonPipelineEnvironment.gitCommitId, is('dummy_git_commit_id'))
     }
 
     @Test
-    void "No git url passed as parameter yields empty git urls"() {
+    void "No scmInfo passed as parameter yields empty git info"() {
         helper.registerAllowedMethod("fileExists", [String], { String path ->
             return path.endsWith('.pipeline/config.yml')
         })
 
-        stepRule.step.setupCommonPipelineEnvironment(script: nullScript, gitUtils: gitUtilsMock)
+        stepRule.step.setupCommonPipelineEnvironment(script: nullScript)
+        assertNull(nullScript.commonPipelineEnvironment.gitCommitId)
         assertNull(nullScript.commonPipelineEnvironment.getGitSshUrl())
         assertNull(nullScript.commonPipelineEnvironment.getGitHttpsUrl())
         assertNull(nullScript.commonPipelineEnvironment.getGithubOrg())
         assertNull(nullScript.commonPipelineEnvironment.getGithubRepo())
-    }
-
-    @Test
-    void setGitUrlTest() {
-        helper.registerAllowedMethod("fileExists", [String], { String path ->
-            return path.endsWith('.pipeline/config.yml')
-        })
-
-        stepRule.step.setupCommonPipelineEnvironment(script: nullScript, gitUrl: "https://myGit.tdl/myRepo", gitUtils: gitUtilsMock)
-        assertNotNull(nullScript.commonPipelineEnvironment.gitSshUrl)
-        assertNotNull(nullScript.commonPipelineEnvironment.gitHttpsUrl)
     }
 
     @Test
@@ -316,6 +331,7 @@ class SetupCommonPipelineEnvironmentTest extends BasePiperTest {
             [GIT_URL: 'ssh://git@github.com/testOrg/testRepo.git', expectedSsh: 'ssh://git@github.com/testOrg/testRepo.git', expectedHttp: 'https://github.com/testOrg/testRepo.git', expectedOrg: 'testOrg', expectedRepo: 'testRepo'],
             [GIT_URL: 'ssh://git@github.com:7777/testOrg/testRepo.git', expectedSsh: 'ssh://git@github.com:7777/testOrg/testRepo.git', expectedHttp: 'https://github.com/testOrg/testRepo.git', expectedOrg: 'testOrg', expectedRepo: 'testRepo'],
             [GIT_URL: 'ssh://git@github.com/path/to/testOrg/testRepo.git', expectedSsh: 'ssh://git@github.com/path/to/testOrg/testRepo.git', expectedHttp: 'https://github.com/path/to/testOrg/testRepo.git', expectedOrg: 'path/to/testOrg', expectedRepo: 'testRepo'],
+            [GIT_URL: 'ssh://git@github.com/path/testOrg/testRepo.git', expectedSsh: 'ssh://git@github.com/path/testOrg/testRepo.git', expectedHttp: 'https://github.com/path/testOrg/testRepo.git', expectedOrg: 'path/testOrg', expectedRepo: 'testRepo'],
             [GIT_URL: 'ssh://git@github.com/testRepo.git', expectedSsh: 'ssh://git@github.com/testRepo.git', expectedHttp: 'https://github.com/testRepo.git', expectedOrg: 'N/A', expectedRepo: 'testRepo'],
         ]
 

@@ -1,12 +1,16 @@
 package maven
 
 import (
+	"encoding/xml"
 	"fmt"
-	piperhttp "github.com/SAP/jenkins-library/pkg/http"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"os"
+	"strings"
 	"testing"
+
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
+	"github.com/SAP/jenkins-library/pkg/mock"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSettings(t *testing.T) {
@@ -26,60 +30,56 @@ func TestSettings(t *testing.T) {
 
 	t.Run("Settings file source location not provided", func(t *testing.T) {
 
-		httpClient := httpMock{}
-		fileUtils := fileUtilsMock{}
+		utilsMock := newSettingsDownloadTestUtilsBundle()
 
-		err := downloadAndCopySettingsFile("", "foo", &fileUtils, &httpClient)
+		err := downloadAndCopySettingsFile("", "foo", utilsMock)
 
 		assert.EqualError(t, err, "Settings file source location not provided")
 	})
 
 	t.Run("Settings file destination location not provided", func(t *testing.T) {
 
-		httpClient := httpMock{}
-		fileUtils := fileUtilsMock{}
+		utilsMock := newSettingsDownloadTestUtilsBundle()
 
-		err := downloadAndCopySettingsFile("/opt/sap/maven/global-settings.xml", "", &fileUtils, &httpClient)
+		err := downloadAndCopySettingsFile("/opt/sap/maven/global-settings.xml", "", utilsMock)
 
 		assert.EqualError(t, err, "Settings file destination location not provided")
 	})
 
 	t.Run("Retrieve settings files", func(t *testing.T) {
 
-		httpClient := httpMock{}
-		fileUtils := fileUtilsMock{existingFiles: map[string]string{
-			"/opt/sap/maven/global-settings.xml":  "",
-			"/opt/sap/maven/project-settings.xml": "",
-		}}
+		utilsMock := newSettingsDownloadTestUtilsBundle()
 
-		err := DownloadAndCopySettingsFiles("/opt/sap/maven/global-settings.xml", "/opt/sap/maven/project-settings.xml", &fileUtils, &httpClient)
+		utilsMock.AddFile("/opt/sap/maven/global-settings.xml", []byte(""))
+		utilsMock.AddFile("/opt/sap/maven/project-settings.xml", []byte(""))
+
+		err := DownloadAndCopySettingsFiles("/opt/sap/maven/global-settings.xml", "/opt/sap/maven/project-settings.xml", utilsMock)
 
 		if assert.NoError(t, err) {
-			assert.Equal(t, "/usr/share/maven/conf/settings.xml", fileUtils.copiedFiles["/opt/sap/maven/global-settings.xml"])
-			assert.Equal(t, "/home/me/.m2/settings.xml", fileUtils.copiedFiles["/opt/sap/maven/project-settings.xml"])
+			assert.True(t, utilsMock.HasCopiedFile("/opt/sap/maven/global-settings.xml", "/usr/share/maven/conf/settings.xml"))
+			assert.True(t, utilsMock.HasCopiedFile("/opt/sap/maven/project-settings.xml", "/home/me/.m2/settings.xml"))
 		}
 
-		assert.Empty(t, httpClient.downloadedFiles)
+		assert.Empty(t, utilsMock.downloadedFiles)
 	})
 
 	t.Run("Retrieve settings file via http", func(t *testing.T) {
 
-		httpClient := httpMock{}
-		fileUtils := fileUtilsMock{}
+		utilsMock := newSettingsDownloadTestUtilsBundle()
 
-		err := downloadAndCopySettingsFile("https://example.org/maven/global-settings.xml", "/usr/share/maven/conf/settings.xml", &fileUtils, &httpClient)
+		err := downloadAndCopySettingsFile("https://example.org/maven/global-settings.xml", "/usr/share/maven/conf/settings.xml", utilsMock)
 
 		if assert.NoError(t, err) {
-			assert.Equal(t, "/usr/share/maven/conf/settings.xml", httpClient.downloadedFiles["https://example.org/maven/global-settings.xml"])
+			assert.Equal(t, "/usr/share/maven/conf/settings.xml", utilsMock.downloadedFiles["https://example.org/maven/global-settings.xml"])
 		}
 	})
 
 	t.Run("Retrieve settings file via http - received error from downloader", func(t *testing.T) {
 
-		httpClient := httpMock{expectedError: fmt.Errorf("Download failed")}
-		fileUtils := fileUtilsMock{}
+		utilsMock := newSettingsDownloadTestUtilsBundle()
+		utilsMock.expectedError = fmt.Errorf("Download failed")
 
-		err := downloadAndCopySettingsFile("https://example.org/maven/global-settings.xml", "/usr/share/maven/conf/settings.xml", &fileUtils, &httpClient)
+		err := downloadAndCopySettingsFile("https://example.org/maven/global-settings.xml", "/usr/share/maven/conf/settings.xml", utilsMock)
 
 		if assert.Error(t, err) {
 			assert.Contains(t, err.Error(), "failed to download maven settings from URL")
@@ -88,26 +88,124 @@ func TestSettings(t *testing.T) {
 
 	t.Run("Retrieve project settings file - file not found", func(t *testing.T) {
 
-		httpClient := httpMock{}
-		fileUtils := fileUtilsMock{}
+		utilsMock := newSettingsDownloadTestUtilsBundle()
 
-		err := downloadAndCopySettingsFile("/opt/sap/maven/project-settings.xml", "/home/me/.m2/settings.xml", &fileUtils, &httpClient)
+		err := downloadAndCopySettingsFile("/opt/sap/maven/project-settings.xml", "/home/me/.m2/settings.xml", utilsMock)
 
 		if assert.Error(t, err) {
-			assert.Contains(t, err.Error(), "Source file '/opt/sap/maven/project-settings.xml' does not exist")
+			assert.Contains(t, err.Error(), "cannot copy '/opt/sap/maven/project-settings.xml': file does not exist")
+		}
+	})
+
+	t.Run("create new Project settings file", func(t *testing.T) {
+
+		utilsMock := newSettingsDownloadTestUtilsBundle()
+
+		projectSettingsFilePath, err := CreateNewProjectSettingsXML("dummyRepoId", "dummyRepoUser", "dummyRepoPassword", utilsMock)
+		if assert.NoError(t, err) {
+			projectSettingsContent, _ := utilsMock.FileRead(projectSettingsFilePath)
+			var projectSettings Settings
+
+			err = xml.Unmarshal(projectSettingsContent, &projectSettings)
+
+			if assert.NoError(t, err) {
+				assert.Equal(t, projectSettings.Servers.ServerType[0].ID, "dummyRepoId")
+				assert.Equal(t, projectSettings.Servers.ServerType[0].Username, "dummyRepoUser")
+				assert.Equal(t, projectSettings.Servers.ServerType[0].ID, "dummyRepoId")
+			}
+
+		}
+	})
+
+	t.Run("update server tag in existing settings file", func(t *testing.T) {
+
+		utilsMock := newSettingsDownloadTestUtilsBundle()
+		var projectSettings Settings
+		projectSettings.Xsi = "http://www.w3.org/2001/XMLSchema-instance"
+		projectSettings.SchemaLocation = "http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd"
+		projectSettings.Servers.ServerType = []Server{
+			{
+				ID:       "dummyRepoId1",
+				Username: "dummyRepoUser1",
+				Password: "dummyRepoId1",
+			},
+		}
+		settingsXml, err := xml.MarshalIndent(projectSettings, "", "    ")
+		settingsXmlString := string(settingsXml)
+		Replacer := strings.NewReplacer("&#xA;", "", "&#x9;", "")
+		settingsXmlString = Replacer.Replace(settingsXmlString)
+
+		xmlstring := []byte(xml.Header + settingsXmlString)
+
+		utilsMock.FileWrite(".pipeline/mavenProjectSettings", xmlstring, 0777)
+
+		projectSettingsFilePath, err := UpdateProjectSettingsXML(".pipeline/mavenProjectSettings", "dummyRepoId2", "dummyRepoUser2", "dummyRepoPassword2", utilsMock)
+		if assert.NoError(t, err) {
+			projectSettingsContent, _ := utilsMock.FileRead(projectSettingsFilePath)
+			var projectSettings Settings
+
+			err = xml.Unmarshal(projectSettingsContent, &projectSettings)
+
+			if assert.NoError(t, err) {
+				assert.Equal(t, projectSettings.Servers.ServerType[1].ID, "dummyRepoId2")
+				assert.Equal(t, projectSettings.Servers.ServerType[1].Username, "dummyRepoUser2")
+				assert.Equal(t, projectSettings.Servers.ServerType[1].ID, "dummyRepoId2")
+			}
+
+		}
+	})
+
+	t.Run("update active profile tag in existing settings file", func(t *testing.T) {
+
+		utilsMock := newSettingsDownloadTestUtilsBundle()
+		var projectSettings Settings
+		projectSettings.Xsi = "http://www.w3.org/2001/XMLSchema-instance"
+		projectSettings.SchemaLocation = "http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd"
+		projectSettings.ActiveProfiles.ActiveProfile = []string{"dummyProfile"}
+		settingsXml, err := xml.MarshalIndent(projectSettings, "", "    ")
+		settingsXmlString := string(settingsXml)
+		Replacer := strings.NewReplacer("&#xA;", "", "&#x9;", "")
+		settingsXmlString = Replacer.Replace(settingsXmlString)
+
+		xmlstring := []byte(xml.Header + settingsXmlString)
+
+		destination, _ := getGlobalSettingsFileDest()
+
+		utilsMock.FileWrite("/usr/share/maven/conf/settings.xml", xmlstring, 0777)
+
+		err = UpdateActiveProfileInSettingsXML([]string{"newProfile"}, utilsMock)
+
+		if assert.NoError(t, err) {
+			projectSettingsContent, _ := utilsMock.FileRead(destination)
+			var projectSettings Settings
+
+			err = xml.Unmarshal(projectSettingsContent, &projectSettings)
+
+			if assert.NoError(t, err) {
+				assert.Equal(t, projectSettings.ActiveProfiles.ActiveProfile[0], "newProfile")
+			}
+
 		}
 	})
 }
 
-type httpMock struct {
+func newSettingsDownloadTestUtilsBundle() *settingsDownloadTestUtils {
+	utilsBundle := settingsDownloadTestUtils{
+		FilesMock: &mock.FilesMock{},
+	}
+	return &utilsBundle
+}
+
+type settingsDownloadTestUtils struct {
+	*mock.FilesMock
 	expectedError   error
 	downloadedFiles map[string]string // src, dest
 }
 
-func (c *httpMock) SetOptions(options piperhttp.ClientOptions) {
+func (c *settingsDownloadTestUtils) SetOptions(options piperhttp.ClientOptions) {
 }
 
-func (c *httpMock) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+func (c *settingsDownloadTestUtils) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
 
 	if c.expectedError != nil {
 		return c.expectedError
@@ -118,71 +216,4 @@ func (c *httpMock) DownloadFile(url, filename string, header http.Header, cookie
 	}
 	c.downloadedFiles[url] = filename
 	return nil
-}
-
-type fileUtilsMock struct {
-	existingFiles map[string]string
-	writtenFiles  map[string]string
-	copiedFiles   map[string]string
-}
-
-func (f *fileUtilsMock) FileExists(path string) (bool, error) {
-
-	if _, ok := f.existingFiles[path]; ok {
-		return true, nil
-	}
-	return false, nil
-}
-
-func (f *fileUtilsMock) Copy(src, dest string) (int64, error) {
-
-	exists, err := f.FileExists(src)
-
-	if err != nil {
-		return 0, err
-	}
-
-	if !exists {
-		return 0, fmt.Errorf("Source file '"+src+"' does not exist", src)
-	}
-
-	if f.copiedFiles == nil {
-		f.copiedFiles = make(map[string]string)
-	}
-	f.copiedFiles[src] = dest
-
-	return 0, nil
-}
-
-func (f *fileUtilsMock) FileRead(path string) ([]byte, error) {
-	return []byte(f.existingFiles[path]), nil
-}
-
-func (f *fileUtilsMock) FileWrite(path string, content []byte, perm os.FileMode) error {
-
-	if f.writtenFiles == nil {
-		f.writtenFiles = make(map[string]string)
-	}
-
-	if _, ok := f.writtenFiles[path]; ok {
-		delete(f.writtenFiles, path)
-	}
-	f.writtenFiles[path] = string(content)
-	return nil
-}
-
-func (f *fileUtilsMock) MkdirAll(path string, perm os.FileMode) error {
-	return nil
-}
-
-func (f *fileUtilsMock) Chmod(path string, mode os.FileMode) error {
-	return fmt.Errorf("not implemented. func is only present in order to fullfil the interface contract. Needs to be ajusted in case it gets used.")
-}
-
-func (f *fileUtilsMock) Abs(path string) (string, error) {
-	return "", fmt.Errorf("not implemented. func is only present in order to fullfil the interface contract. Needs to be ajusted in case it gets used.")
-}
-
-func (f *fileUtilsMock) Glob(pattern string) (matches []string, err error) {
-	return nil, fmt.Errorf("not implemented. func is only present in order to fullfil the interface contract. Needs to be ajusted in case it gets used.")
 }

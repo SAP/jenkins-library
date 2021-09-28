@@ -11,37 +11,40 @@ import (
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/piperenv"
+	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
 
 type cloudFoundryDeployOptions struct {
-	APIEndpoint              string   `json:"apiEndpoint,omitempty"`
-	AppName                  string   `json:"appName,omitempty"`
-	ArtifactVersion          string   `json:"artifactVersion,omitempty"`
-	CfHome                   string   `json:"cfHome,omitempty"`
-	CfNativeDeployParameters string   `json:"cfNativeDeployParameters,omitempty"`
-	CfPluginHome             string   `json:"cfPluginHome,omitempty"`
-	DeployDockerImage        string   `json:"deployDockerImage,omitempty"`
-	DeployTool               string   `json:"deployTool,omitempty"`
-	BuildTool                string   `json:"buildTool,omitempty"`
-	DeployType               string   `json:"deployType,omitempty"`
-	DockerPassword           string   `json:"dockerPassword,omitempty"`
-	DockerUsername           string   `json:"dockerUsername,omitempty"`
-	KeepOldInstance          bool     `json:"keepOldInstance,omitempty"`
-	LoginParameters          string   `json:"loginParameters,omitempty"`
-	Manifest                 string   `json:"manifest,omitempty"`
-	ManifestVariables        []string `json:"manifestVariables,omitempty"`
-	ManifestVariablesFiles   []string `json:"manifestVariablesFiles,omitempty"`
-	MtaDeployParameters      string   `json:"mtaDeployParameters,omitempty"`
-	MtaExtensionDescriptor   string   `json:"mtaExtensionDescriptor,omitempty"`
-	MtaPath                  string   `json:"mtaPath,omitempty"`
-	Org                      string   `json:"org,omitempty"`
-	Password                 string   `json:"password,omitempty"`
-	SmokeTestScript          string   `json:"smokeTestScript,omitempty"`
-	SmokeTestStatusCode      int      `json:"smokeTestStatusCode,omitempty"`
-	Space                    string   `json:"space,omitempty"`
-	Username                 string   `json:"username,omitempty"`
+	APIEndpoint              string                 `json:"apiEndpoint,omitempty"`
+	AppName                  string                 `json:"appName,omitempty"`
+	ArtifactVersion          string                 `json:"artifactVersion,omitempty"`
+	CommitHash               string                 `json:"commitHash,omitempty"`
+	CfHome                   string                 `json:"cfHome,omitempty"`
+	CfNativeDeployParameters string                 `json:"cfNativeDeployParameters,omitempty"`
+	CfPluginHome             string                 `json:"cfPluginHome,omitempty"`
+	DeployDockerImage        string                 `json:"deployDockerImage,omitempty"`
+	DeployTool               string                 `json:"deployTool,omitempty"`
+	BuildTool                string                 `json:"buildTool,omitempty"`
+	DeployType               string                 `json:"deployType,omitempty"`
+	DockerPassword           string                 `json:"dockerPassword,omitempty"`
+	DockerUsername           string                 `json:"dockerUsername,omitempty"`
+	KeepOldInstance          bool                   `json:"keepOldInstance,omitempty"`
+	LoginParameters          string                 `json:"loginParameters,omitempty"`
+	Manifest                 string                 `json:"manifest,omitempty"`
+	ManifestVariables        []string               `json:"manifestVariables,omitempty"`
+	ManifestVariablesFiles   []string               `json:"manifestVariablesFiles,omitempty"`
+	MtaDeployParameters      string                 `json:"mtaDeployParameters,omitempty"`
+	MtaExtensionDescriptor   string                 `json:"mtaExtensionDescriptor,omitempty"`
+	MtaExtensionCredentials  map[string]interface{} `json:"mtaExtensionCredentials,omitempty"`
+	MtaPath                  string                 `json:"mtaPath,omitempty"`
+	Org                      string                 `json:"org,omitempty"`
+	Password                 string                 `json:"password,omitempty"`
+	SmokeTestScript          string                 `json:"smokeTestScript,omitempty"`
+	SmokeTestStatusCode      int                    `json:"smokeTestStatusCode,omitempty"`
+	Space                    string                 `json:"space,omitempty"`
+	Username                 string                 `json:"username,omitempty"`
 }
 
 type cloudFoundryDeployInflux struct {
@@ -49,6 +52,7 @@ type cloudFoundryDeployInflux struct {
 		fields struct {
 			artifactURL string
 			deployTime  string
+			commitHash  string
 			jobTrigger  string
 		}
 		tags struct {
@@ -71,6 +75,7 @@ func (i *cloudFoundryDeployInflux) persist(path, resourceName string) {
 	}{
 		{valType: config.InfluxField, measurement: "deployment_data", name: "artifactUrl", value: i.deployment_data.fields.artifactURL},
 		{valType: config.InfluxField, measurement: "deployment_data", name: "deployTime", value: i.deployment_data.fields.deployTime},
+		{valType: config.InfluxField, measurement: "deployment_data", name: "commitHash", value: i.deployment_data.fields.commitHash},
 		{valType: config.InfluxField, measurement: "deployment_data", name: "jobTrigger", value: i.deployment_data.fields.jobTrigger},
 		{valType: config.InfluxTag, measurement: "deployment_data", name: "artifactVersion", value: i.deployment_data.tags.artifactVersion},
 		{valType: config.InfluxTag, measurement: "deployment_data", name: "deployUser", value: i.deployment_data.tags.deployUser},
@@ -101,6 +106,7 @@ func CloudFoundryDeployCommand() *cobra.Command {
 	var stepConfig cloudFoundryDeployOptions
 	var startTime time.Time
 	var influx cloudFoundryDeployInflux
+	var logCollector *log.CollectorHook
 
 	var createCloudFoundryDeployCmd = &cobra.Command{
 		Use:   STEP_NAME,
@@ -110,6 +116,8 @@ func CloudFoundryDeployCommand() *cobra.Command {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
+
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
@@ -130,6 +138,11 @@ func CloudFoundryDeployCommand() *cobra.Command {
 				log.RegisterHook(&sentryHook)
 			}
 
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
+				log.RegisterHook(logCollector)
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -141,10 +154,20 @@ func CloudFoundryDeployCommand() *cobra.Command {
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
+				if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunk.Send(&telemetryData, logCollector)
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize(GeneralConfig.NoTelemetry, STEP_NAME)
+			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunk.Initialize(GeneralConfig.CorrelationID,
+					GeneralConfig.HookConfig.SplunkConfig.Dsn,
+					GeneralConfig.HookConfig.SplunkConfig.Token,
+					GeneralConfig.HookConfig.SplunkConfig.Index,
+					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+			}
 			cloudFoundryDeploy(stepConfig, &telemetryData, &influx)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -159,6 +182,7 @@ func addCloudFoundryDeployFlags(cmd *cobra.Command, stepConfig *cloudFoundryDepl
 	cmd.Flags().StringVar(&stepConfig.APIEndpoint, "apiEndpoint", `https://api.cf.eu10.hana.ondemand.com`, "Cloud Foundry API endpoint")
 	cmd.Flags().StringVar(&stepConfig.AppName, "appName", os.Getenv("PIPER_appName"), "Defines the name of the application to be deployed to the Cloud Foundry space")
 	cmd.Flags().StringVar(&stepConfig.ArtifactVersion, "artifactVersion", os.Getenv("PIPER_artifactVersion"), "The artifact version, used for influx reporting")
+	cmd.Flags().StringVar(&stepConfig.CommitHash, "commitHash", os.Getenv("PIPER_commitHash"), "The commit hash, used for influx reporting")
 	cmd.Flags().StringVar(&stepConfig.CfHome, "cfHome", os.Getenv("PIPER_cfHome"), "The cf home folder used by the cf cli. If not provided the default assumed by the cf cli is used.")
 	cmd.Flags().StringVar(&stepConfig.CfNativeDeployParameters, "cfNativeDeployParameters", os.Getenv("PIPER_cfNativeDeployParameters"), "Additional parameters passed to cf native deployment command")
 	cmd.Flags().StringVar(&stepConfig.CfPluginHome, "cfPluginHome", os.Getenv("PIPER_cfPluginHome"), "The cf plugin home folder used by the cf cli. If not provided the default assumed by the cf cli is used.")
@@ -175,6 +199,7 @@ func addCloudFoundryDeployFlags(cmd *cobra.Command, stepConfig *cloudFoundryDepl
 	cmd.Flags().StringSliceVar(&stepConfig.ManifestVariablesFiles, "manifestVariablesFiles", []string{`manifest-variables.yml`}, "path(s) of the Yaml file(s) containing the variable values to use as a replacement in the manifest file. The order of the files is relevant in case there are conflicting variable names and values within variable files. In such a case, the values of the last file win.")
 	cmd.Flags().StringVar(&stepConfig.MtaDeployParameters, "mtaDeployParameters", `-f`, "Additional parameters passed to mta deployment command")
 	cmd.Flags().StringVar(&stepConfig.MtaExtensionDescriptor, "mtaExtensionDescriptor", os.Getenv("PIPER_mtaExtensionDescriptor"), "Defines additional extension descriptor file for deployment with the mtaDeployPlugin")
+
 	cmd.Flags().StringVar(&stepConfig.MtaPath, "mtaPath", os.Getenv("PIPER_mtaPath"), "Defines the path to *.mtar for deployment with the mtaDeployPlugin")
 	cmd.Flags().StringVar(&stepConfig.Org, "org", os.Getenv("PIPER_org"), "Cloud Foundry target organization.")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password")
@@ -194,11 +219,16 @@ func addCloudFoundryDeployFlags(cmd *cobra.Command, stepConfig *cloudFoundryDepl
 func cloudFoundryDeployMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:    "cloudFoundryDeploy",
-			Aliases: []config.Alias{},
+			Name:        "cloudFoundryDeploy",
+			Aliases:     []config.Alias{},
+			Description: "Deploys an application to Cloud Foundry",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				Secrets: []config.StepSecrets{
+					{Name: "cfCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing user and password to authenticate to the Cloud Foundry API.", Type: "jenkins", Aliases: []config.Alias{{Name: "cloudFoundry/credentialsId", Deprecated: false}}},
+					{Name: "dockerCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing user and password to authenticate to the Docker registry.", Type: "jenkins"},
+				},
 				Parameters: []config.StepParameters{
 					{
 						Name:        "apiEndpoint",
@@ -207,6 +237,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "cfApiEndpoint"}, {Name: "cloudFoundry/apiEndpoint"}},
+						Default:     `https://api.cf.eu10.hana.ondemand.com`,
 					},
 					{
 						Name:        "appName",
@@ -215,6 +246,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cfAppName"}, {Name: "cloudFoundry/appName"}},
+						Default:     os.Getenv("PIPER_appName"),
 					},
 					{
 						Name: "artifactVersion",
@@ -228,6 +260,21 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_artifactVersion"),
+					},
+					{
+						Name: "commitHash",
+						ResourceRef: []config.ResourceReference{
+							{
+								Name:  "commonPipelineEnvironment",
+								Param: "git/headCommitId",
+							},
+						},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:      "string",
+						Mandatory: false,
+						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_commitHash"),
 					},
 					{
 						Name:        "cfHome",
@@ -236,6 +283,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_cfHome"),
 					},
 					{
 						Name:        "cfNativeDeployParameters",
@@ -244,6 +292,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_cfNativeDeployParameters"),
 					},
 					{
 						Name:        "cfPluginHome",
@@ -252,6 +301,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_cfPluginHome"),
 					},
 					{
 						Name:        "deployDockerImage",
@@ -260,6 +310,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_deployDockerImage"),
 					},
 					{
 						Name:        "deployTool",
@@ -268,6 +319,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_deployTool"),
 					},
 					{
 						Name: "buildTool",
@@ -281,6 +333,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_buildTool"),
 					},
 					{
 						Name:        "deployType",
@@ -289,6 +342,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `standard`,
 					},
 					{
 						Name: "dockerPassword",
@@ -303,6 +357,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_dockerPassword"),
 					},
 					{
 						Name: "dockerUsername",
@@ -317,6 +372,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_dockerUsername"),
 					},
 					{
 						Name:        "keepOldInstance",
@@ -325,6 +381,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "bool",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     false,
 					},
 					{
 						Name:        "loginParameters",
@@ -333,6 +390,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_loginParameters"),
 					},
 					{
 						Name:        "manifest",
@@ -341,6 +399,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cfManifest"}, {Name: "cloudFoundry/manifest"}},
+						Default:     os.Getenv("PIPER_manifest"),
 					},
 					{
 						Name:        "manifestVariables",
@@ -349,6 +408,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cfManifestVariables"}, {Name: "cloudFoundry/manifestVariables"}},
+						Default:     []string{},
 					},
 					{
 						Name:        "manifestVariablesFiles",
@@ -357,6 +417,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "[]string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cfManifestVariablesFiles"}, {Name: "cloudFoundry/manifestVariablesFiles"}},
+						Default:     []string{`manifest-variables.yml`},
 					},
 					{
 						Name:        "mtaDeployParameters",
@@ -365,6 +426,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `-f`,
 					},
 					{
 						Name:        "mtaExtensionDescriptor",
@@ -373,6 +435,15 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "cloudFoundry/mtaExtensionDescriptor"}},
+						Default:     os.Getenv("PIPER_mtaExtensionDescriptor"),
+					},
+					{
+						Name:        "mtaExtensionCredentials",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
+						Type:        "map[string]interface{}",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "cloudFoundry/mtaExtensionCredentials"}},
 					},
 					{
 						Name: "mtaPath",
@@ -386,6 +457,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_mtaPath"),
 					},
 					{
 						Name:        "org",
@@ -394,6 +466,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "cfOrg"}, {Name: "cloudFoundry/org"}},
+						Default:     os.Getenv("PIPER_org"),
 					},
 					{
 						Name: "password",
@@ -405,15 +478,16 @@ func cloudFoundryDeployMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/cloudfoundry-$(cfOrg)-$(cfSpace)", "$(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(cfOrg)-$(cfSpace)", "$(vaultBasePath)/GROUP-SECRETS/cloudfoundry-$(cfOrg)-$(cfSpace)"},
-								Type:  "vaultSecret",
+								Name:    "cloudfoundryVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "cloudfoundry-$(org)-$(space)",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_password"),
 					},
 					{
 						Name:        "smokeTestScript",
@@ -422,6 +496,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `blueGreenCheckScript.sh`,
 					},
 					{
 						Name:        "smokeTestStatusCode",
@@ -430,6 +505,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "int",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     200,
 					},
 					{
 						Name:        "space",
@@ -438,6 +514,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{{Name: "cfSpace"}, {Name: "cloudFoundry/space"}},
+						Default:     os.Getenv("PIPER_space"),
 					},
 					{
 						Name: "username",
@@ -449,15 +526,30 @@ func cloudFoundryDeployMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/cloudfoundry-$(cfOrg)-$(cfSpace)", "$(vaultBasePath)/$(vaultPipelineName)/cloudfoundry-$(cfOrg)-$(cfSpace)", "$(vaultBasePath)/GROUP-SECRETS/cloudfoundry-$(cfOrg)-$(cfSpace)"},
-								Type:  "vaultSecret",
+								Name:    "cloudfoundryVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "cloudfoundry-$(org)-$(space)",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
 						Aliases:   []config.Alias{},
+						Default:   os.Getenv("PIPER_username"),
+					},
+				},
+			},
+			Containers: []config.Container{
+				{Name: "cfDeploy", Image: "ppiper/cf-cli:6"},
+			},
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{
+						Name: "influx",
+						Type: "influx",
+						Parameters: []map[string]interface{}{
+							{"Name": "deployment_data"}, {"fields": []map[string]string{{"name": "artifactUrl"}, {"name": "deployTime"}, {"name": "commitHash"}, {"name": "jobTrigger"}}}, {"tags": []map[string]string{{"name": "artifactVersion"}, {"name": "deployUser"}, {"name": "deployResult"}, {"name": "cfApiEndpoint"}, {"name": "cfOrg"}, {"name": "cfSpace"}}},
+						},
 					},
 				},
 			},

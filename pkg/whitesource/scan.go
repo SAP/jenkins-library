@@ -2,10 +2,12 @@ package whitesource
 
 import (
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
+	"sort"
 	"strings"
 	"time"
+
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 // Scan stores information about scanned WhiteSource projects (modules).
@@ -28,17 +30,30 @@ func (s *Scan) init() {
 	}
 }
 
+func (s *Scan) versionSuffix() string {
+	return " - " + s.ProductVersion
+}
+
 // AppendScannedProject checks that no Project with the same name is already contained in the list of scanned projects,
 // and appends a new Project with the given name. The global product version is appended to the name.
 func (s *Scan) AppendScannedProject(projectName string) error {
-	return s.AppendScannedProjectVersion(projectName + " - " + s.ProductVersion)
+	if len(projectName) == 0 {
+		return fmt.Errorf("projectName must not be empty")
+	}
+	if strings.HasSuffix(projectName, s.versionSuffix()) {
+		return fmt.Errorf("projectName is not expected to include the product version already")
+	}
+	return s.AppendScannedProjectVersion(projectName + s.versionSuffix())
 }
 
 // AppendScannedProjectVersion checks that no Project with the same name is already contained in the list of scanned
 // projects,  and appends a new Project with the given name (which is expected to include the product version).
 func (s *Scan) AppendScannedProjectVersion(projectName string) error {
-	if !strings.HasSuffix(projectName, " - "+s.ProductVersion) {
+	if !strings.HasSuffix(projectName, s.versionSuffix()) {
 		return fmt.Errorf("projectName is expected to include the product version")
+	}
+	if len(projectName) == len(s.versionSuffix()) {
+		return fmt.Errorf("projectName consists only of the product version")
 	}
 	s.init()
 	_, exists := s.scannedProjects[projectName]
@@ -65,6 +80,18 @@ func (s *Scan) ScannedProjects() []Project {
 		projects = append(projects, project)
 	}
 	return projects
+}
+
+// ScannedProjectNames returns a sorted list of all scanned project names
+func (s *Scan) ScannedProjectNames() []string {
+	projectNames := []string{}
+	for _, project := range s.ScannedProjects() {
+		projectNames = append(projectNames, project.Name)
+	}
+	// Sorting helps the list become stable across pipeline runs (and in the unit tests),
+	// as the order in which we travers map keys is not deterministic.
+	sort.Strings(projectNames)
+	return projectNames
 }
 
 // ScanTime returns the time at which the respective WhiteSource Project was scanned, or the the

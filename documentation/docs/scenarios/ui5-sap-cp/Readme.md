@@ -1,11 +1,11 @@
-# Build and Deploy SAPUI5/SAP Fiori Applications on SAP Cloud Platform
+# Build and Deploy SAPUI5/SAP Fiori Applications on SAP Business Technology Platform (SAP BTP)
 
-Build an application based on SAPUI5 or SAP Fiori with Jenkins and deploy the build result into an SAP Cloud Platform account in the Cloud Foundry environment. Optionally, deploy the build result into the Neo environment.
+Build an application based on SAPUI5 or SAP Fiori with Jenkins and deploy the build result into an SAP BTP account in the SAP BTP, Cloud Foundry environment. Optionally, deploy the build result into the Neo environment.
 
 ## Prerequisites
 
-* You have an account on SAP Cloud Platform in the Cloud Foundry environment. See [Accounts](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/8ed4a705efa0431b910056c0acdbf377.html).
-* You have set up Project “Piper”. See [Guided Tour](https://sap.github.io/jenkins-library/guidedtour/).
+* You have an account on SAP BTP in the Cloud Foundry environment. See [Accounts](https://help.sap.com/viewer/65de2977205c403bbc107264b8eccf4b/Cloud/en-US/8ed4a705efa0431b910056c0acdbf377.html).
+* You have set up project “Piper”. See [Guided Tour](https://sap.github.io/jenkins-library/guidedtour/).
 
 ### Project Prerequisites
 
@@ -21,10 +21,11 @@ On the project level, provide and adjust the following template:
 
 This scenario combines various different steps to create a complete pipeline.
 
-In this scenario, we want to show how to build an application based on SAPUI5 or SAP Fiori by using the multi-target application (MTA) concept, and how to deploy the build result into an SAP Cloud Platform account in the Cloud Foundry environment. This document comprises the [mtaBuild](../../../steps/mtaBuild/) and the [cloudFoundryDeploy](../../../steps/cloudFoundryDeploy/) steps.
+In this scenario, we want to show how to build an application based on SAPUI5 or SAP Fiori by using the multitarget application (MTA) concept, and how to deploy the build result into an SAP BTP account in the Cloud Foundry environment. This document comprises the [mtaBuild](../../../steps/mtaBuild/) and the [cloudFoundryDeploy](../../../steps/cloudFoundryDeploy/) steps.
 
 ![This pipeline in Jenkins Blue Ocean](images/pipeline.jpg)
-###### Screenshot: Build and Deploy Process in Jenkins
+
+**Screenshot: Build and Deploy Process in Jenkins**
 
 ## Example
 
@@ -38,7 +39,7 @@ Following the convention for pipeline definitions, use a `Jenkinsfile` which res
 fioriOnCloudPlatformPipeline script:this
 ```
 
-[fioriOnCloudPlatformPipeline](https://sap.github.io/jenkins-library/steps/fioriOnCloudPlatformPipeline) is a so called _scenario step_ that wraps mainly the [MTA Build](https://sap.github.io/jenkins-library/steps/mtaBuild/) step and the [SAP Cloud Platform Deployment](https://sap.github.io/jenkins-library/steps/cloudFoundryDeploy/) step.
+[fioriOnCloudPlatformPipeline](https://sap.github.io/jenkins-library/steps/fioriOnCloudPlatformPipeline) is a so called _scenario step_ that wraps mainly the [mtaBuild](https://sap.github.io/jenkins-library/steps/mtaBuild/) step and the [cloudFoundryDeploy](https://sap.github.io/jenkins-library/steps/cloudFoundryDeploy/) step.
 
 ### Scenario Configuration
 
@@ -75,7 +76,7 @@ steps:
 
 For the detailed description of the relevant parameters, see:
 
-* [fioriOnCloudPlatformPipeline](../../../steps/fioriOnCloudPlatformPipeline/)
-* [mtaBuild](../../../steps/mtaBuild/)
-* [cloudFoundryDeploy](../../../steps/cloudFoundryDeploy/)
-* [neoDeploy](../../../steps/neoDeploy/)
+* [fioriOnCloudPlatformPipeline](https://sap.github.io/jenkins-library/steps/fioriOnCloudPlatformPipeline/)
+* [mtaBuild](https://sap.github.io/jenkins-library/steps/mtaBuild/)
+* [cloudFoundryDeploy](https://sap.github.io/jenkins-library/steps/cloudFoundryDeploy/)
+* [neoDeploy](https://sap.github.io/jenkins-library/steps/neoDeploy/)

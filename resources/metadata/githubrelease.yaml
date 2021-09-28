@@ -28,7 +28,7 @@ spec:
         type: bool
         default: false
       - name: addDeltaToLastRelease
-        description: "If set to `true`, a link will be added to the relese information that brings up all commits since the last release."
+        description: "If set to `true`, a link will be added to the release information that brings up all commits since the last release."
         scope:
           - PARAMETERS
           - STAGES
@@ -132,6 +132,7 @@ spec:
       - name: token
         aliases:
           - name: githubToken
+          - name: access_token
         description: "GitHub personal access token as per https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line"
         scope:
           - GENERAL
@@ -144,6 +145,9 @@ spec:
         resourceRef:
           - name: githubTokenCredentialsId
             type: secret
+          - type: vaultSecret
+            default: github
+            name: githubVaultSecretName
       - name: uploadUrl
         aliases:
           - name: githubUploadUrl

@@ -173,17 +173,17 @@ class DockerExecuteTest extends BasePiperTest {
         [
             steps: [
                 dockerExecute: [
-                    dockerRegistry: 'https://registry.example.org',
-                    dockerRegistryCredentials: 'mySecrets',
-                    dockerSidecarRegistry: 'https://sidecarregistry.example.org',
-                    dockerSidecarRegistryCredentials: 'mySidecarRegistryCredentials',
+                    dockerRegistryUrl: 'https://registry.example.org',
+                    dockerRegistryCredentialsId: 'mySecrets',
+                    sidecarRegistryUrl: 'https://sidecarregistry.example.org',
+                    sidecarRegistryCredentialsId: 'mySidecarRegistryCredentials',
                 ]
             ]
         ]
         stepRule.step.dockerExecute(
             script: nullScript,
             dockerImage: 'maven:3.5-jdk-8-alpine',
-            dockerRegistryCredentials: 'mySecrets',
+            dockerRegistryCredentialsId: 'mySecrets',
             sidecarImage: 'ubuntu',
         ) {
             bodyExecuted = true
@@ -210,14 +210,14 @@ class DockerExecuteTest extends BasePiperTest {
         [
             steps: [
                 dockerExecute: [
-                    dockerRegistry: 'https://registry.example.org',
+                    dockerRegistryUrl: 'https://registry.example.org',
                 ]
             ]
         ]
         stepRule.step.dockerExecute(
             script: nullScript,
             dockerImage: 'maven:3.5-jdk-8-alpine',
-            dockerRegistryCredentials: 'mySecrets',
+            dockerRegistryCredentialsId: 'mySecrets',
             sidecarImage: 'ubuntu',
         ) {
             bodyExecuted = true
@@ -239,12 +239,12 @@ class DockerExecuteTest extends BasePiperTest {
     }
 
     @Test
-    void testPullWithoutCredentialsHappensWithoutRegistryCall() {
+    void testPullWithRegistryOnlyAndNoCredentials() {
         nullScript.commonPipelineEnvironment.configuration =
         [
             steps: [
                 dockerExecute: [
-                    dockerRegistry: 'https://registry.example.org',
+                    dockerRegistryUrl: 'https://registry.example.org',
                 ]
             ]
         ]
@@ -256,7 +256,11 @@ class DockerExecuteTest extends BasePiperTest {
         }
         // from getting an empty list we derive withRegistry has not been called
         // if it would have been called we would have the registry provided above.
-        assertThat(docker.registriesWithCredentials, is([]))
+        assertThat(docker.registriesWithCredentials, is([
+            [
+                registry: 'https://registry.example.org',
+            ]
+        ]))
         assertThat(docker.imagePullCount, is(1))
         assertThat(bodyExecuted, is(true))
     }
@@ -268,8 +272,8 @@ class DockerExecuteTest extends BasePiperTest {
         [
             steps: [
                 dockerExecute: [
-                    dockerRegistry: 'https://registry.example.org',
-                    dockerRegistryCredentials: 'mySecrets',
+                    dockerRegistryUrl: 'https://registry.example.org',
+                    dockerRegistryCredentialsId: 'mySecrets',
                 ]
             ]
         ]
@@ -477,6 +481,11 @@ class DockerExecuteTest extends BasePiperTest {
 
         void withRegistry(String  registry, String credentialsId, Closure c) {
             this.registriesWithCredentials << [registry: registry, credentialsId: credentialsId]
+            c()
+        }
+
+        void withRegistry(String  registry, Closure c) {
+            this.registriesWithCredentials << [registry: registry]
             c()
         }
 

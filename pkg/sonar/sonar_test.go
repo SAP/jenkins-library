@@ -1,6 +1,7 @@
 package sonar
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -25,8 +26,9 @@ func TestReadTaskReport(t *testing.T) {
 		result, err := ReadTaskReport("./testData/missing")
 		// assert
 		assert.Empty(t, result.ProjectKey)
-		assert.Error(t, err)
-		assert.EqualError(t, err, "open testData/missing/.scannerwork/report-task.txt: no such file or directory")
+		assert.True(t,
+			(filepath.FromSlash("open testData/missing/.scannerwork/report-task.txt: The system cannot find the path specified.") == err.Error()) ||
+				(filepath.FromSlash("open testData/missing/.scannerwork/report-task.txt: no such file or directory") == err.Error()))
 	})
 
 	t.Run("invalid file", func(t *testing.T) {
@@ -34,7 +36,6 @@ func TestReadTaskReport(t *testing.T) {
 		result, err := ReadTaskReport("./testData/invalid")
 		// assert
 		assert.Empty(t, result.ProjectKey)
-		assert.Error(t, err)
-		assert.EqualError(t, err, "decode testData/invalid/.scannerwork/report-task.txt: missing required key projectKey")
+		assert.EqualError(t, err, filepath.FromSlash("decode testData/invalid/.scannerwork/report-task.txt: missing required key projectKey"))
 	})
 }

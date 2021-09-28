@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"errors"
+	"net/http"
 	"os"
 	"testing"
 
@@ -13,6 +15,9 @@ import (
 func TestRunMavenStaticCodeChecks(t *testing.T) {
 	t.Run("should run spotBugs and pmd with all configured options", func(t *testing.T) {
 		utils := newMavenStaticCodeChecksTestUtilsBundle()
+		utils.FilesMock.AddFile("unit-tests/pom.xml", []byte(`<project> </project>`))
+		utils.FilesMock.AddFile("integration-tests/pom.xml", []byte(`<project> </project>`))
+
 		config := mavenExecuteStaticCodeChecksOptions{
 			SpotBugs:                  true,
 			Pmd:                       true,
@@ -33,7 +38,7 @@ func TestRunMavenStaticCodeChecks(t *testing.T) {
 				"-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn",
 				"--batch-mode",
 				"com.github.spotbugs:spotbugs-maven-plugin:4.1.4:check",
-				"org.apache.maven.plugins:maven-pmd-plugin:3.13.0:check",
+				"org.apache.maven.plugins:maven-pmd-plugin:3.14.0:check",
 			},
 		}
 
@@ -69,7 +74,7 @@ func TestGetPmdMavenParameters(t *testing.T) {
 			PmdMaxAllowedViolations: 5,
 		}
 		expected := maven.ExecuteOptions{
-			Goals:   []string{"org.apache.maven.plugins:maven-pmd-plugin:3.13.0:check"},
+			Goals:   []string{"org.apache.maven.plugins:maven-pmd-plugin:3.14.0:check"},
 			Defines: []string{"-Dpmd.maxAllowedViolations=5", "-Dpmd.failurePriority=2"},
 		}
 
@@ -82,7 +87,7 @@ func TestGetPmdMavenParameters(t *testing.T) {
 			PmdMaxAllowedViolations: 5,
 		}
 		expected := maven.ExecuteOptions{
-			Goals:   []string{"org.apache.maven.plugins:maven-pmd-plugin:3.13.0:check"},
+			Goals:   []string{"org.apache.maven.plugins:maven-pmd-plugin:3.14.0:check"},
 			Defines: []string{"-Dpmd.maxAllowedViolations=5"},
 		}
 
@@ -91,7 +96,7 @@ func TestGetPmdMavenParameters(t *testing.T) {
 	t.Run("should return maven goal only", func(t *testing.T) {
 		config := mavenExecuteStaticCodeChecksOptions{}
 		expected := maven.ExecuteOptions{
-			Goals: []string{"org.apache.maven.plugins:maven-pmd-plugin:3.13.0:check"}}
+			Goals: []string{"org.apache.maven.plugins:maven-pmd-plugin:3.14.0:check"}}
 
 		assert.Equal(t, &expected, getPmdMavenParameters(&config))
 	})
@@ -124,6 +129,10 @@ func TestGetSpotBugsMavenParameters(t *testing.T) {
 type mavenStaticCodeChecksTestUtilsBundle struct {
 	*mock.ExecMockRunner
 	*mock.FilesMock
+}
+
+func (m mavenStaticCodeChecksTestUtilsBundle) DownloadFile(url, filename string, header http.Header, cookies []*http.Cookie) error {
+	return errors.New("Test should not download files.")
 }
 
 func newMavenStaticCodeChecksTestUtilsBundle() mavenStaticCodeChecksTestUtilsBundle {

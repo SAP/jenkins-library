@@ -17,7 +17,7 @@ type mavenMockRunner struct {
 	expression          string
 }
 
-func (m *mavenMockRunner) Evaluate(opts *maven.EvaluateOptions, expression string, runner mavenExecRunner) (string, error) {
+func (m *mavenMockRunner) Evaluate(opts *maven.EvaluateOptions, expression string, utils maven.Utils) (string, error) {
 	m.opts = opts
 	m.expression = expression
 	if len(m.evaluateErrorString) > 0 {
@@ -26,7 +26,7 @@ func (m *mavenMockRunner) Evaluate(opts *maven.EvaluateOptions, expression strin
 	return m.stdout, nil
 }
 
-func (m *mavenMockRunner) Execute(opts *maven.ExecuteOptions, runner mavenExecRunner) (string, error) {
+func (m *mavenMockRunner) Execute(opts *maven.ExecuteOptions, utils maven.Utils) (string, error) {
 	m.execOpts = opts
 	if len(m.executeErrorString) > 0 {
 		return "", fmt.Errorf(m.executeErrorString)

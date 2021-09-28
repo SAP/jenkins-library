@@ -1,47 +1,20 @@
 package cmd
 
 import (
-	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/maven"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"io"
 	"strconv"
 )
 
-type mavenStaticCodeChecksUtils interface {
-	Stdout(out io.Writer)
-	Stderr(err io.Writer)
-	RunExecutable(e string, p ...string) error
-
-	FileExists(filename string) (bool, error)
-}
-
-type mavenStaticCodeChecksUtilsBundle struct {
-	*command.Command
-	*piperutils.Files
-}
-
-func newStaticCodeChecksUtils() mavenStaticCodeChecksUtils {
-	utils := mavenStaticCodeChecksUtilsBundle{
-		Command: &command.Command{},
-		Files:   &piperutils.Files{},
-	}
-	utils.Stdout(log.Writer())
-	utils.Stderr(log.Writer())
-	return &utils
-}
-
 func mavenExecuteStaticCodeChecks(config mavenExecuteStaticCodeChecksOptions, telemetryData *telemetry.CustomData) {
-	utils := newStaticCodeChecksUtils()
-	err := runMavenStaticCodeChecks(&config, telemetryData, utils)
+	err := runMavenStaticCodeChecks(&config, telemetryData, maven.NewUtilsBundle())
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runMavenStaticCodeChecks(config *mavenExecuteStaticCodeChecksOptions, telemetryData *telemetry.CustomData, utils mavenStaticCodeChecksUtils) error {
+func runMavenStaticCodeChecks(config *mavenExecuteStaticCodeChecksOptions, telemetryData *telemetry.CustomData, utils maven.Utils) error {
 	var defines []string
 	var goals []string
 
@@ -51,17 +24,17 @@ func runMavenStaticCodeChecks(config *mavenExecuteStaticCodeChecksOptions, telem
 	}
 
 	if config.InstallArtifacts {
-		err := maven.InstallMavenArtifacts(utils, &maven.EvaluateOptions{
+		err := maven.InstallMavenArtifacts(&maven.EvaluateOptions{
 			M2Path:              config.M2Path,
 			ProjectSettingsFile: config.ProjectSettingsFile,
 			GlobalSettingsFile:  config.GlobalSettingsFile,
-		})
+		}, utils)
 		if err != nil {
 			return err
 		}
 	}
 
-	if testModulesExcludes := maven.GetTestModulesExcludes(); testModulesExcludes != nil {
+	if testModulesExcludes := maven.GetTestModulesExcludes(utils); testModulesExcludes != nil {
 		defines = append(defines, testModulesExcludes...)
 	}
 	if config.MavenModulesExcludes != nil {
@@ -127,7 +100,7 @@ func getPmdMavenParameters(config *mavenExecuteStaticCodeChecksOptions) *maven.E
 
 	mavenOptions := maven.ExecuteOptions{
 		// check goal executes pmd goal first and fails the build if any violations were found
-		Goals:   []string{"org.apache.maven.plugins:maven-pmd-plugin:3.13.0:check"},
+		Goals:   []string{"org.apache.maven.plugins:maven-pmd-plugin:3.14.0:check"},
 		Defines: defines,
 	}
 

@@ -2,6 +2,7 @@ package fortify
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -35,6 +36,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
+
+// ReportsDirectory defines the subfolder for the Fortify reports which are generated
+const ReportsDirectory = "fortify"
 
 // System is the interface abstraction of a specific SystemInstance
 type System interface {
@@ -84,11 +88,12 @@ func NewSystemInstance(serverURL, apiEndpoint, authToken string, timeout time.Du
 	dateTimeFormat := models.Iso8601MilliDateTime{}
 	format.Add("datetime", &dateTimeFormat, models.IsDateTime)
 	clientInstance := ff.NewHTTPClientWithConfig(format, createTransportConfig(serverURL, apiEndpoint))
+	encodedAuthToken := base64EndodePlainToken(authToken)
 	httpClientInstance := &piperHttp.Client{}
-	httpClientOptions := piperHttp.ClientOptions{Token: "FortifyToken " + authToken, TransportTimeout: timeout}
+	httpClientOptions := piperHttp.ClientOptions{Token: "FortifyToken " + encodedAuthToken, TransportTimeout: timeout}
 	httpClientInstance.SetOptions(httpClientOptions)
 
-	return NewSystemInstanceForClient(clientInstance, httpClientInstance, serverURL, authToken, timeout)
+	return NewSystemInstanceForClient(clientInstance, httpClientInstance, serverURL, encodedAuthToken, timeout)
 }
 
 func createTransportConfig(serverURL, apiEndpoint string) *ff.TransportConfig {
@@ -127,6 +132,14 @@ func splitHostAndEndpoint(urlWithoutScheme string) (host, endpoint string) {
 	return
 }
 
+func base64EndodePlainToken(authToken string) (encodedAuthToken string) {
+	isEncoded := strings.Index(authToken, "-") < 0
+	if isEncoded {
+		return authToken
+	}
+	return base64.StdEncoding.EncodeToString([]byte(authToken))
+}
+
 // NewSystemInstanceForClient - creates a new SystemInstance
 func NewSystemInstanceForClient(clientInstance *ff.Fortify, httpClientInstance *piperHttp.Client, serverURL, authToken string, requestTimeout time.Duration) *SystemInstance {
 	return &SystemInstance{
@@ -148,9 +161,8 @@ func (sys *SystemInstance) AuthenticateRequest(req runtime.ClientRequest, format
 // GetProjectByName returns the project identified by the name provided
 // autoCreate and projectVersion parameters only used if autoCreate=true
 func (sys *SystemInstance) GetProjectByName(projectName string, autoCreate bool, projectVersionName string) (*models.Project, error) {
-	nameParam := fmt.Sprintf("name=%v", projectName)
-	fullText := true
-	params := &project_controller.ListProjectParams{Q: &nameParam, Fulltextsearch: &fullText}
+	nameParam := fmt.Sprintf(`name:"%v"`, projectName)
+	params := &project_controller.ListProjectParams{Q: &nameParam}
 	params.WithTimeout(sys.timeout)
 	result, err := sys.client.ProjectController.ListProject(params, sys)
 	if err != nil {
@@ -164,6 +176,7 @@ func (sys *SystemInstance) GetProjectByName(projectName string, autoCreate bool,
 
 	// Project with specified name was NOT found, check if autoCreate flag is set, if not stop otherwise create it automatically
 	if !autoCreate {
+		log.SetErrorCategory(log.ErrorConfiguration)
 		return nil, fmt.Errorf("Project with name %v not found in backend and automatic creation not enabled", projectName)
 	}
 
@@ -180,8 +193,7 @@ func (sys *SystemInstance) GetProjectByName(projectName string, autoCreate bool,
 // projectName parameter is only used if autoCreate=true
 func (sys *SystemInstance) GetProjectVersionDetailsByProjectIDAndVersionName(id int64, versionName string, autoCreate bool, projectName string) (*models.ProjectVersion, error) {
 	nameParam := fmt.Sprintf("name=%v", versionName)
-	fullText := true
-	params := &project_version_of_project_controller.ListProjectVersionOfProjectParams{ParentID: id, Q: &nameParam, Fulltextsearch: &fullText}
+	params := &project_version_of_project_controller.ListProjectVersionOfProjectParams{ParentID: id, Q: &nameParam}
 	params.WithTimeout(sys.timeout)
 	result, err := sys.client.ProjectVersionOfProjectController.ListProjectVersionOfProject(params, sys)
 	if err != nil {
@@ -194,6 +206,7 @@ func (sys *SystemInstance) GetProjectVersionDetailsByProjectIDAndVersionName(id 
 	}
 	// projectVersion not found for specified project id and name, check if autoCreate is enabled
 	if !autoCreate {
+		log.SetErrorCategory(log.ErrorConfiguration)
 		return nil, errors.New(fmt.Sprintf("Project version with name %v not found in project with ID %v and automatic creation not enabled", versionName, id))
 	}
 
@@ -341,7 +354,6 @@ func (sys *SystemInstance) ProjectVersionCopyFromPartial(sourceID, targetID int6
 		PreviousProjectVersionID:    &sourceID,
 		CopyAnalysisProcessingRules: &enable,
 		CopyBugTrackerConfiguration: &enable,
-		CopyCurrentStateFpr:         &enable,
 		CopyCustomTags:              &enable,
 	}
 	params := &project_version_controller.CopyProjectVersionParams{Resource: &settings}
@@ -355,11 +367,9 @@ func (sys *SystemInstance) ProjectVersionCopyFromPartial(sourceID, targetID int6
 
 // ProjectVersionCopyCurrentState copies the project version state of sourceID into the new project version addressed by targetID
 func (sys *SystemInstance) ProjectVersionCopyCurrentState(sourceID, targetID int64) error {
-	enable := true
 	settings := models.ProjectVersionCopyCurrentStateRequest{
 		ProjectVersionID:         &targetID,
 		PreviousProjectVersionID: &sourceID,
-		CopyCurrentStateFpr:      &enable,
 	}
 	params := &project_version_controller.CopyCurrentStateForProjectVersionParams{Resource: &settings}
 	params.WithTimeout(sys.timeout)

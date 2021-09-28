@@ -7,6 +7,7 @@ import (
 )
 
 func TestAbapEnvironmentPullGitRepoCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := AbapEnvironmentPullGitRepoCommand()
 

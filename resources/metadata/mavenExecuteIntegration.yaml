@@ -32,6 +32,15 @@ spec:
           - STEPS
           - STAGES
         default: "1C"
+      - name: goal
+        type: string
+        description:
+          "The name of the Maven goal to execute."
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+        default: "test"
       - name: installArtifacts
         type: bool
         description:
@@ -42,7 +51,7 @@ spec:
           - STEPS
           - STAGES
           - PARAMETERS
-
+        default: true
       # Global maven settings, should be added to all maven steps
       - name: projectSettingsFile
         type: string
@@ -90,7 +99,6 @@ spec:
   containers:
     - name: mvn
       image: maven:3.6-jdk-8
-      imagePullPolicy: Never
 
   # This declaration is necessary in order to return any sidecar configuration in the context config.
   sidecars:

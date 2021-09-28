@@ -2,12 +2,11 @@
 
 The pipeline consists of a sequence of stages where each contains a number of individual steps.
 
-
-### First step: Pull Request Pipeline
+## First step: Pull Request Pipeline
 
 In order to validate pull-requests to your GitHub repository you need to perform two simple steps:
 
-#### 1. Create Pipeline configuration
+### 1. Create Pipeline configuration
 
 Create a file `.pipeline/config.yml` in your repository (typically in `master` branch) with the following content:
 
@@ -28,7 +27,7 @@ general:
 
     If your build tool is not in the list you can still use further options as described for [Pull-Request Voting Stage](prvoting.md)
 
-#### 2. Create Jenkinsfile
+### 2. Create Jenkinsfile
 
 Create a file called `Jenkinsfile` in the root of your repository (typically in `master` branch) with the following content:
 
@@ -49,7 +48,7 @@ piperPipeline script: this
 
     You find more details about the custom defaults in the [configuration section](../configuration.md)
 
-### Second step: Prepare pipeline for your main branch.
+## Second step: Prepare pipeline for your main branch
 
 Extend your configuration to also contain git ssh credentials information.
 
@@ -65,7 +64,7 @@ general:
     The pointer to the Jenkins credentials containing your ssh private key is an important part of the pipeline run.
     The credentials are for example required to push automatic versioning information to your GitHub repository.
 
-### Subsequent steps: Configure individual stages
+## Subsequent steps: Configure individual stages
 
 The stages of the pipeline can be configured individually.
 As a general rule of thumb, only stages with an existing configuration are executed.
@@ -76,7 +75,7 @@ If no dedicated configuration is required for a step, the precence of relevant f
 
 The pipeline comprises following stages:
 
-#### Init
+### Init
 
 This stage takes care that the pipeline is initialized correctly.
 It will for example:
@@ -88,7 +87,7 @@ It will for example:
 
 You find details about this stage on  [**Init Stage** Details](init.md)
 
-#### Pull-Request Voting
+### Pull-Request Voting
 
 This stage is responsible for validating pull-requests, see also above.
 
@@ -110,40 +109,45 @@ In this stage additional unit-like tests are executed which should not run durin
 Currently, this stage holds the execution of a Karma runner which allows for
 
 * qUnit tests
-* OPA5 (One Page Acceptance tests) for SAP UI5
+* OPA5 (One Page Acceptance tests) for SAPUI5
 
 You find details about this stage on the page [**Additional Unit Tests**](additionalunittests.md).
 
 ### Integration
 
-In the [Integration stage](integration.md) a custom integration test script can be executed.
+The [Integration stage](integration.md) allows to run test based on maven, npm, or a custom integration test script.
+If more flexibility is required, consider using the [stage extension mechanism](../extensibility.md).
+
+You find details about this stage on the page [**Integration**](integration.md).
 
 ### Acceptance
 
-Default implementation will come soon ...
+In this stage the application/service is typically deployed and automated acceptance tests are executed.
 
-Currently custom logic can be added using the [stage extension mechanism](../extensibility.md).
+This is to make sure that
+
+* new functionality is tested end-to-end
+* there is no end-to-end regression in existing functionality
+
+You find details about this stage on the page [**Acceptance**](acceptance.md).
 
 ### Security
 
-Default implementation will come soon ...
+This stage can run security checks using Checkmarx, Synopsys Detect, Fortify and WhiteSource.
 
-Currently custom logic can be added using the [stage extension mechanism](../extensibility.md).
-
+You find details about this stage on the page [**Security**](security.md).
 
 ### Performance
 
-Default implementation will come soon ...
+The stage will execute a Gatling test, if the step `gatlingExecuteTests` is configured.
 
-Currently custom logic can be added using the [stage extension mechanism](../extensibility.md).
-
+You find details about this stage on the page [**Performance**](performance.md).
 
 ### Compliance
 
-Default implementation will come soon ...
+The stage will execute a SonarQube scan, if the step `sonarExecuteSan` is configured.
 
-Currently custom logic can be added using the [stage extension mechanism](../extensibility.md).
-
+You find details about this stage on the page [**Compliance**](compliance.md).
 
 ### Confirm
 
@@ -151,13 +155,12 @@ The [Confirm stage](confirm.md), if executed, stops the pipeline execution and a
 
 ### Promote
 
-Default implementation will come soon ...
+This stage is responsible to promote build artifacts to an artifact repository / container registry where they can be used from production deployments.
 
-Currently custom logic can be added using the [stage extension mechanism](../extensibility.md).
-
+You find details about this stage on the page [**Promote**](promote.md).
 
 ### Release
 
-Default implementation will come soon ...
+This stage is responsible to release/deploy artifacts into your productive landscape.
 
-Currently custom logic can be added using the [stage extension mechanism](../extensibility.md).
+You find details about this stage on the page [**Release**](release.md).

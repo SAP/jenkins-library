@@ -64,6 +64,18 @@ func TestGetArtifact(t *testing.T) {
 		assert.EqualError(t, err, "no build descriptor available, supported: [VERSION version.txt go.mod]")
 	})
 
+	t.Run("gradle", func(t *testing.T) {
+		gradle, err := GetArtifact("gradle", "", &Options{VersionField: "theversion"}, nil)
+
+		assert.NoError(t, err)
+
+		theType, ok := gradle.(*Gradle)
+		assert.True(t, ok)
+		assert.Equal(t, "gradle.properties", theType.path)
+		assert.Equal(t, "theversion", theType.versionField)
+		assert.Equal(t, "semver2", gradle.VersioningScheme())
+	})
+
 	t.Run("maven", func(t *testing.T) {
 		opts := Options{
 			ProjectSettingsFile: "projectsettings.xml",
@@ -106,6 +118,18 @@ func TestGetArtifact(t *testing.T) {
 		assert.Equal(t, "semver2", npm.VersioningScheme())
 	})
 
+	t.Run("yarn", func(t *testing.T) {
+		npm, err := GetArtifact("yarn", "", &Options{VersionField: "theversion"}, nil)
+
+		assert.NoError(t, err)
+
+		theType, ok := npm.(*JSONfile)
+		assert.True(t, ok)
+		assert.Equal(t, "package.json", theType.path)
+		assert.Equal(t, "version", theType.versionField)
+		assert.Equal(t, "semver2", npm.VersioningScheme())
+	})
+
 	t.Run("pip", func(t *testing.T) {
 		fileExists = func(string) (bool, error) { return true, nil }
 		pip, err := GetArtifact("pip", "", &Options{}, nil)
@@ -114,7 +138,7 @@ func TestGetArtifact(t *testing.T) {
 
 		theType, ok := pip.(*Pip)
 		assert.True(t, ok)
-		assert.Equal(t, "version.txt", theType.path)
+		assert.Equal(t, "setup.py", theType.path)
 		assert.Equal(t, "pep440", pip.VersioningScheme())
 	})
 
@@ -122,7 +146,7 @@ func TestGetArtifact(t *testing.T) {
 		fileExists = func(string) (bool, error) { return false, nil }
 		_, err := GetArtifact("pip", "", &Options{}, nil)
 
-		assert.EqualError(t, err, "no build descriptor available, supported: [version.txt VERSION setup.py]")
+		assert.EqualError(t, err, "no build descriptor available, supported: [setup.py version.txt VERSION]")
 	})
 
 	t.Run("sbt", func(t *testing.T) {
@@ -166,13 +190,15 @@ func TestCustomArtifact(t *testing.T) {
 	}
 
 	for _, test := range tt {
-		res, err := customArtifact(test.file, test.field, test.section, test.scheme)
+		t.Run(test.file, func(t *testing.T) {
+			res, err := customArtifact(test.file, test.field, test.section, test.scheme)
+			if len(test.expectedErr) == 0 {
+				assert.NoError(t, err)
+				assert.Equal(t, test.expected, res)
+			} else {
+				assert.EqualError(t, err, test.expectedErr)
+			}
+		})
 
-		if len(test.expectedErr) == 0 {
-			assert.NoError(t, err)
-			assert.Equal(t, test.expected, res)
-		} else {
-			assert.EqualError(t, err, test.expectedErr)
-		}
 	}
 }

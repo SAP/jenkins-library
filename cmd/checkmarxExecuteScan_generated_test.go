@@ -7,6 +7,7 @@ import (
 )
 
 func TestCheckmarxExecuteScanCommand(t *testing.T) {
+	t.Parallel()
 
 	testCmd := CheckmarxExecuteScanCommand()
 

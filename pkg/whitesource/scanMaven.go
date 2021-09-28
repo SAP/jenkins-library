@@ -29,12 +29,12 @@ func (s *Scan) ExecuteMavenScanForPomFile(config *ScanOptions, utils Utils, pomP
 	}
 
 	if config.InstallArtifacts {
-		err := maven.InstallMavenArtifacts(utils, &maven.EvaluateOptions{
+		err := maven.InstallMavenArtifacts(&maven.EvaluateOptions{
 			M2Path:              config.M2Path,
 			ProjectSettingsFile: config.ProjectSettingsFile,
 			GlobalSettingsFile:  config.GlobalSettingsFile,
 			PomPath:             pomPath,
-		})
+		}, utils)
 		if err != nil {
 			return err
 		}
@@ -66,6 +66,7 @@ func (s *Scan) generateMavenWhitesourceDefines(config *ScanOptions) []string {
 		"-Dorg.whitesource.product=" + config.ProductName,
 		"-Dorg.whitesource.checkPolicies=true",
 		"-Dorg.whitesource.failOnError=true",
+		"-Dorg.whitesource.forceUpdate=true",
 	}
 
 	// Aggregate all modules into one WhiteSource project, if user specified the 'projectName' parameter.

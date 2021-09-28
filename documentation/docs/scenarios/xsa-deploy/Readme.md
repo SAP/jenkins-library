@@ -6,7 +6,7 @@ Build an application based on SAPUI5 or SAP Fiori with Jenkins and deploy the bu
 
 * [Docker environment](https://docs.docker.com/get-started/)
 * All artifacts referenced during the build are available either on Service Market Place or via public repositories.
-* You have set up Project “Piper”. See [guided tour](https://sap.github.io/jenkins-library/guidedtour/).
+* You have set up project “Piper”. See [guided tour](https://sap.github.io/jenkins-library/guidedtour/).
 * Docker image for xs deployment is locally available. Due to legal reasons, there is no pre-build Docker image. How to create the Docker image is explained [here][devops-docker-images-xs-deploy-readme].
 
 ### Project Prerequisites
@@ -18,10 +18,11 @@ For details see: [XSA developer quick start guide](https://help.sap.com/viewer/4
 
 This scenario combines various different steps to create a complete pipeline.
 
-In this scenario, we want to show how to build a Multitarget Application (MTA) and deploy the build result into an on-prem SAP HANA XS advances system. This document comprises the [mtaBuild](https://sap.github.io/jenkins-library/steps/mtaBuild/) and the [xsDeploy](https://sap.github.io/jenkins-library/steps/xsDeploy/) steps.
+In this scenario, we want to show how to build a multitarget application (MTA) and deploy the build result into an on-prem SAP HANA XS advances system. This document comprises the [mtaBuild](https://sap.github.io/jenkins-library/steps/mtaBuild/) and the [xsDeploy](https://sap.github.io/jenkins-library/steps/xsDeploy/) steps.
 
 ![This pipeline in Jenkins Blue Ocean](images/pipeline.jpg)
-###### Screenshot: Build and Deploy Process in Jenkins
+
+**Screenshot: Build and Deploy Process in Jenkins**
 
 ## Example
 
@@ -88,7 +89,7 @@ steps:
 
 | Parameter          | Description |
 | -------------------|-------------|
-| `credentialsId` | The Jenkins credentials that contain user and password required for the deployment on SAP Cloud Platform.|
+| `credentialsId` | The Jenkins credentials that contain user and password required for the deployment on SAP BTP.|
 | `mode`          | DeployMode. See [stepDocu](../../../steps/xsDeploy) for more details. |
 | `org`           | The org. See [stepDocu](../../../steps/xsDeploy) for more details. |
 | `space`         | The space. See [stepDocu](../../../steps/xsDeploy) for more details. |

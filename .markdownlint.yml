@@ -1,24 +1,13 @@
 default: true
 
 # ignore
-MD013: false #line-length
-MD033: false #no-inline-html
+MD013: false  # line-length
+MD024: false  # no-duplicate-heading/no-duplicate-header
+MD033: false  # no-inline-html
+MD036: false  # no-emphasis-as-heading/no-emphasis-as-header
+MD041: false  # first-line-heading/first-line-h1
 
 # TODO: fix in separate PR
-MD001: false #heading-increment/header-increment
-MD004: false #ul-style
-MD012: false #no-multiple-blanks
-MD007: false #ul-indent
-MD022: false #blanks-around-headings/blanks-around-headers
-MD024: false #no-duplicate-heading/no-duplicate-header
-MD026: false #no-trailing-punctuation
-MD030: false #list-marker-space
-MD031: false #blanks-around-fences
-MD032: false #blanks-around-lists
-MD036: false #no-emphasis-as-heading/no-emphasis-as-header
-MD038: false #no-space-in-code
-MD039: false #no-space-in-links
-MD040: false #fenced-code-language
-MD042: false #no-empty-links
-MD041: false #first-line-heading/first-line-h1
-MD046: false #code-block-style
+MD004: false  # ul-style
+MD040: false  # fenced-code-language
+MD046: false  # code-block-style

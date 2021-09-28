@@ -2,11 +2,13 @@ package checkmarx
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -165,28 +167,41 @@ func TestGetTeams(t *testing.T) {
 	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/checkmarx_test")
 	opts := piperHttp.ClientOptions{}
 	t.Run("test success", func(t *testing.T) {
-		myTestClient := senderMock{responseBody: `[{"id":"1", "fullName":"Team1"}, {"id":"2", "fullName":"Team2"}, {"id":"3", "fullName":"Team3"}]`, httpStatusCode: 200}
+		myTestClient := senderMock{responseBody: `[{"id":"1", "fullName":"Team1"}, {"id":2, "fullName":"Team2"}, {"id":3, "fullName":"Team3"}, {"id":4, "fullName":"/Team/4"}]`, httpStatusCode: 200}
 		sys := SystemInstance{serverURL: "https://cx.server.com", client: &myTestClient, logger: logger}
 		myTestClient.SetOptions(opts)
 
 		teams := sys.GetTeams()
 
 		assert.Equal(t, "https://cx.server.com/cxrestapi/auth/teams", myTestClient.urlCalled, "Called url incorrect")
-		assert.Equal(t, 3, len(teams), "Number of Teams incorrect")
+		assert.Equal(t, 4, len(teams), "Number of Teams incorrect")
 		assert.Equal(t, "Team1", teams[0].FullName, "Team name 1 incorrect")
 		assert.Equal(t, "Team2", teams[1].FullName, "Team name 2 incorrect")
 		assert.Equal(t, "Team3", teams[2].FullName, "Team name 3 incorrect")
+		assert.Equal(t, "/Team/4", teams[3].FullName, "Team name 4 incorrect")
 
 		t.Run("test filter teams by name", func(t *testing.T) {
 			team2 := sys.FilterTeamByName(teams, "Team2")
 			assert.Equal(t, "Team2", team2.FullName, "Team name incorrect")
-			assert.Equal(t, "2", team2.ID, "Team id incorrect")
+			assert.Equal(t, json.RawMessage([]byte(strconv.Itoa(2))), team2.ID, "Team id incorrect")
+		})
+
+		t.Run("test filter teams by name with backslash/forward slash", func(t *testing.T) {
+			team4 := sys.FilterTeamByName(teams, "\\Team\\4")
+			assert.Equal(t, "/Team/4", team4.FullName, "Team name incorrect")
+			assert.Equal(t, json.RawMessage([]byte(strconv.Itoa(4))), team4.ID, "Team id incorrect")
 		})
 
 		t.Run("test Filter teams by ID", func(t *testing.T) {
-			team1 := sys.FilterTeamByID(teams, "1")
+			team1 := sys.FilterTeamByID(teams, json.RawMessage(`"1"`))
 			assert.Equal(t, "Team1", team1.FullName, "Team name incorrect")
-			assert.Equal(t, "1", team1.ID, "Team id incorrect")
+			assert.Equal(t, json.RawMessage(`"1"`), team1.ID, "Team id incorrect")
+		})
+
+		t.Run("test Filter teams by numeric ID", func(t *testing.T) {
+			team3 := sys.FilterTeamByID(teams, json.RawMessage(`3`))
+			assert.Equal(t, "Team3", team3.FullName, "Team name incorrect")
+			assert.Equal(t, json.RawMessage(`3`), team3.ID, "Team id incorrect")
 		})
 
 		t.Run("test fail Filter teams by name", func(t *testing.T) {

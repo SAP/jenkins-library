@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/SAP/jenkins-library/pkg/command"
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/SAP/jenkins-library/pkg/piperutils"
-	"github.com/bmatcuk/doublestar"
 	"io"
 	"path/filepath"
 	"strings"
+
+	"github.com/SAP/jenkins-library/pkg/command"
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 )
 
 // Execute struct holds utils to enable mocking and common parameters
@@ -24,9 +24,11 @@ type Executor interface {
 	FindPackageJSONFiles() []string
 	FindPackageJSONFilesWithExcludes(excludeList []string) ([]string, error)
 	FindPackageJSONFilesWithScript(packageJSONFiles []string, script string) ([]string, error)
-	RunScriptsInAllPackages(runScripts []string, runOptions []string, scriptOptions []string, virtualFrameBuffer bool, excludeList []string) error
+	RunScriptsInAllPackages(runScripts []string, runOptions []string, scriptOptions []string, virtualFrameBuffer bool, excludeList []string, packagesList []string) error
 	InstallAllDependencies(packageJSONFiles []string) error
+	PublishAllPackages(packageJSONFiles []string, registry, username, password string) error
 	SetNpmRegistries() error
+	CreateBOM(packageJSONFiles []string) error
 }
 
 // ExecutorOptions holds common parameters for functions of Executor
@@ -118,10 +120,17 @@ func registryRequiresConfiguration(preConfiguredRegistry, url string) bool {
 }
 
 // RunScriptsInAllPackages runs all scripts defined in ExecuteOptions.RunScripts
-func (exec *Execute) RunScriptsInAllPackages(runScripts []string, runOptions []string, scriptOptions []string, virtualFrameBuffer bool, excludeList []string) error {
-	packageJSONFiles, err := exec.FindPackageJSONFilesWithExcludes(excludeList)
-	if err != nil {
-		return err
+func (exec *Execute) RunScriptsInAllPackages(runScripts []string, runOptions []string, scriptOptions []string, virtualFrameBuffer bool, excludeList []string, packagesList []string) error {
+	var packageJSONFiles []string
+	var err error
+
+	if len(packagesList) > 0 {
+		packageJSONFiles = packagesList
+	} else {
+		packageJSONFiles, err = exec.FindPackageJSONFilesWithExcludes(excludeList)
+		if err != nil {
+			return err
+		}
 	}
 
 	execRunner := exec.Utils.GetExecRunner()
@@ -213,25 +222,12 @@ func (exec *Execute) FindPackageJSONFilesWithExcludes(excludeList []string) ([]s
 	genExclude := "**/gen/**"
 	excludeList = append(excludeList, nodeModulesExclude, genExclude)
 
-	var packageJSONFiles []string
+	packageJSONFiles, err := piperutils.ExcludeFiles(unfilteredListOfPackageJSONFiles, excludeList)
+	if err != nil {
+		return nil, err
+	}
 
-	for _, file := range unfilteredListOfPackageJSONFiles {
-		excludePackage := false
-		for _, exclude := range excludeList {
-			matched, err := doublestar.PathMatch(exclude, file)
-			if err != nil {
-				return nil, fmt.Errorf("failed to match file %s to pattern %s: %w", file, exclude, err)
-			}
-			if matched {
-				excludePackage = true
-				break
-			}
-		}
-		if excludePackage {
-			continue
-		}
-
-		packageJSONFiles = append(packageJSONFiles, file)
+	for _, file := range packageJSONFiles {
 		log.Entry().Info("Discovered package.json file " + file)
 	}
 	return packageJSONFiles, nil
@@ -269,7 +265,15 @@ func (exec *Execute) FindPackageJSONFilesWithScript(packageJSONFiles []string, s
 // InstallAllDependencies executes npm or yarn Install for all package.json fileUtils defined in packageJSONFiles
 func (exec *Execute) InstallAllDependencies(packageJSONFiles []string) error {
 	for _, packageJSON := range packageJSONFiles {
-		err := exec.install(packageJSON)
+		fileExists, err := exec.Utils.FileExists(packageJSON)
+		if err != nil {
+			return fmt.Errorf("cannot check if '%s' exists: %w", packageJSON, err)
+		}
+		if !fileExists {
+			return fmt.Errorf("package.json file '%s' not found: %w", packageJSON, err)
+		}
+
+		err = exec.install(packageJSON)
 		if err != nil {
 			return err
 		}
@@ -343,4 +347,52 @@ func (exec *Execute) checkIfLockFilesExist() (bool, bool, error) {
 		return false, false, err
 	}
 	return packageLockExists, yarnLockExists, nil
+}
+
+// CreateBOM generates BOM file using CycloneDX from all package.json files
+func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
+	execRunner := exec.Utils.GetExecRunner()
+	// Install CycloneDX Node.js module locally without saving in package.json
+	err := execRunner.RunExecutable("npm", "install", "@cyclonedx/bom", "--no-save")
+	if err != nil {
+		return err
+	}
+	if len(packageJSONFiles) > 0 {
+		path := filepath.Dir(packageJSONFiles[0])
+		createBOMConfig := []string{
+			// https://github.com/CycloneDX/cyclonedx-node-module does not contain schema parameter hence bom creation fails
+			//"--schema", "1.2", // Target schema version
+			"--include-license-text", "false",
+			"--include-dev", "false", // Include devDependencies
+			"--output", "bom.xml",
+		}
+
+		params := []string{
+			"cyclonedx-bom",
+			path,
+		}
+		params = append(params, createBOMConfig...)
+		// Generate BOM from first package.json
+		err := execRunner.RunExecutable("npx", params...)
+		if err != nil {
+			return err
+		}
+
+		// Merge BOM(s) into the current BOM
+		for _, packageJSONFile := range packageJSONFiles[1:] {
+			path := filepath.Dir(packageJSONFile)
+			params = []string{
+				"cyclonedx-bom",
+				path,
+				"--append",
+				"bom.xml",
+			}
+			params = append(params, createBOMConfig...)
+			err := execRunner.RunExecutable("npx", params...)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

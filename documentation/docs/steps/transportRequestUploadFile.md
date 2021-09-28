@@ -2,11 +2,42 @@
 
 ## ${docGenDescription}
 
-CTS upload is currently not supported. We are working on a new way to handle CTS uploads.
+**Note:** This step is deprecated. Use the transport type specific steps instead.
 
-## Prerequisites
+| Type  | Step |
+| ------------- | ------------- |
+| SOLMAN  | [transportRequestUploadSOLMAN](transportRequestUploadSOLMAN.md)  |
+| RFC  | [transportRequestUploadRFC](transportRequestUploadRFC.md)  |
+| CTS  | [transportRequestUploadCTS](transportRequestUploadCTS.md)  |
 
-* **[Change Management Client 2.0.0 or compatible version](http://central.maven.org/maven2/com/sap/devops/cmclient/dist.cli/)** - available for download on Maven Central. **Note:** This is only required if you don't use a Docker-based environment.
+You can keep most of the step specific configuration parameters in your configuration file `config.yml` untouched. The new steps support the old naming convention. However, it is recommended to adjust your parameters to the new steps.
+
+Following parameters are not supported anymore. Adjust as indicated.
+
+| Unsupported Parameter | Change Notice |
+| ------------- | ------------- |
+| changeManagement/`<type>`/docker/envVars | Use `dockerEnvVars` instead. |
+| changeManagement/`<type>`/docker/image | Use `dockerImage` instead. |
+| changeManagement/`<type>`/docker/options | Use `dockerOptions` instead. |
+| changeManagement/`<type>`/docker/pullImage | Use `dockerPullImage` instead. |
+| changeManagement/git/format | This parameter has been dropped. Make sure that your change document IDs and transport request IDs are part of the Git commit message body. |
+
+```yaml
+general:
+  changeManagement:
+    type: 'RFC'
+# old
+    rfc:
+      docker:
+        image: 'my/rfc-client'
+
+#new
+steps:
+  transportRequestUploadRFC:
+    dockerImage: 'my/rfc-client'
+```
+
+**Note:** The new steps do not comprise the retrieval of the change document ID and the transport request ID from the Git repository. Use the steps [transportRequestDocIDFromGit](transportRequestDocIDFromGit.md) and [transportRequestReqIDFromGit](transportRequestReqIDFromGit.md) instead.
 
 ## ${docGenParameters}
 
@@ -66,8 +97,10 @@ The parameters can also be provided when the step is invoked. For examples see b
 
 ## CTS Uploads
 
-In order to be able to upload the application, it is required to build the application, e.g. via `npmExecute`
-or `mtaBuild`. The content of the app needs to be provided in a folder named `dist` in the root level of the project.
+In order to be able to upload the application, it is required to build the application, e.g. via [npmExecuteScripts](npmExecuteScripts.md). The content of the app needs to be provided in a folder named `dist` in the root level of the project.
+
+**Note:** Do not use the `mtaBuild` step. The MTA Build Tool `mta` is dedicated to the SAP Business Technology Platform. It does neither create the expected `dist` folder nor the compliant content.
+
 Although the name of the step `transportRequestUploadFile` might suggest something else, in this case a folder needs
 to be provided. The application, which is provided in the `dist` folder is zipped and uploaded by the fiori toolset
 used for performing the upload.

@@ -31,6 +31,11 @@ type stepInfo struct {
 	StepFunc         string
 	StepName         string
 	StepSecrets      []string
+	Containers       []config.Container
+	Sidecars         []config.Container
+	Outputs          config.StepOutputs
+	Resources        []config.StepResources
+	Secrets          []config.StepSecrets
 }
 
 //StepGoTemplate ...
@@ -55,6 +60,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	{{ end -}}
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/spf13/cobra"
 )
 
@@ -81,6 +87,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 	var startTime time.Time
 	{{- range $notused, $oRes := .OutputResources }}
 	var {{ index $oRes "name" }} {{ index $oRes "objectname" }}{{ end }}
+	var logCollector *log.CollectorHook
 
 	var {{.CreateCmdVar}} = &cobra.Command{
 		Use:   STEP_NAME,
@@ -90,6 +97,8 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.Verbose)
+
+			{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.GitHubAccessTokens = {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}ResolveAccessTokens({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID, Path: path}
@@ -108,6 +117,11 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 				log.RegisterHook(&sentryHook)
 			}
 
+			if len({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				logCollector = &log.CollectorHook{CorrelationID: {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID}
+				log.RegisterHook(logCollector)
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -120,10 +134,20 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
+				if len({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+					splunk.Send(&telemetryData, logCollector)
+				}
 			}
 			log.DeferExitHandler(handler)
 			defer handler()
 			telemetry.Initialize({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.NoTelemetry, STEP_NAME)
+			if len({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
+				splunk.Initialize({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID,
+				{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.Dsn,
+				{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.Token,
+				{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.Index,
+				{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.SendLogs)
+			}
 			{{.StepName}}(stepConfig, &telemetryData{{ range $notused, $oRes := .OutputResources}}, &{{ index $oRes "name" }}{{ end }})
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
@@ -136,7 +160,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 
 func {{.FlagsFunc}}(cmd *cobra.Command, stepConfig *{{.StepName}}Options) {
 	{{- range $key, $value := uniqueName .StepParameters }}
-	cmd.Flags().{{ $value.Type | flagType }}(&stepConfig.{{ $value.Name | golangName }}, "{{ $value.Name }}", {{ $value.Default }}, "{{ $value.Description }}"){{ end }}
+	{{ if isCLIParam $value.Type }}cmd.Flags().{{ $value.Type | flagType }}(&stepConfig.{{ $value.Name | golangName }}, "{{ $value.Name }}", {{ $value.Default }}, "{{ $value.Description }}"){{end}}{{ end }}
 	{{- printf "\n" }}
 	{{- range $key, $value := .StepParameters }}{{ if $value.Mandatory }}
 	cmd.MarkFlagRequired("{{ $value.Name }}"){{ end }}{{ end }}
@@ -148,11 +172,11 @@ func {{.FlagsFunc}}(cmd *cobra.Command, stepConfig *{{.StepName}}Options) {
 								{{- if .Param }}
 								Param: "{{ .Param }}",
 								{{- end }}
-								{{- if  gt (len .Paths) 0 }}
-								Paths:  []string{{ "{" }}{{ range $_, $path := .Paths }}"{{$path}}",{{ end }}{{"}"}},
-								{{- end }}
 								{{- if .Type }}
 								Type: "{{ .Type }}",
+								{{- if .Default }}
+								Default: "{{ .Default }}",
+								{{- end}}
 								{{- end }}
 							{{ "}" }},
 							{{- nindent 24 ""}}
@@ -164,9 +188,32 @@ func {{ .StepName }}Metadata() config.StepData {
 		Metadata: config.StepMetadata{
 			Name:    "{{ .StepName }}",
 			Aliases: []config.Alias{{ "{" }}{{ range $notused, $alias := .StepAliases }}{{ "{" }}Name: "{{ $alias.Name }}", Deprecated: {{ $alias.Deprecated }}{{ "}" }},{{ end }}{{ "}" }},
+			Description: "{{ .Short }}",
 		},
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
+				{{ if .Secrets -}}
+				Secrets: []config.StepSecrets{
+					{{- range $secrets := .Secrets }}
+					{
+						{{- if $secrets.Name -}} Name: "{{$secrets.Name}}",{{- end }}
+						{{- if $secrets.Description -}} Description: "{{$secrets.Description}}",{{- end }}
+						{{- if $secrets.Type -}} Type: "{{$secrets.Type}}",{{- end }}
+						{{- if $secrets.Aliases -}} Aliases: []config.Alias{ {{- range $i, $a := $secrets.Aliases }} {Name: "{{$a.Name}}", Deprecated: {{$a.Deprecated}}}, {{ end -}}  },{{- end }}
+					}, {{ end }}
+				},
+				{{ end -}}
+				{{ if .Resources -}}
+				Resources: []config.StepResources{
+					{{- range $resource := .Resources }}
+					{
+						{{- if $resource.Name -}} Name: "{{$resource.Name}}",{{- end }}
+						{{- if $resource.Description -}} Description: "{{$resource.Description}}",{{- end }}
+						{{- if $resource.Type -}} Type: "{{$resource.Type}}",{{- end }}
+						{{- if $resource.Conditions -}} Conditions: []config.Condition{ {{- range $i, $cond := $resource.Conditions }} {ConditionRef: "{{$cond.ConditionRef}}", Params: []config.Param{ {{- range $j, $p := $cond.Params}} { Name: "{{$p.Name}}", Value: "{{$p.Value}}" }, {{end -}} } }, {{ end -}} },{{ end }}
+					},{{- end }}
+				},
+				{{ end -}}
 				Parameters: []config.StepParameters{
 					{{- range $key, $value := .StepParameters }}
 					{
@@ -176,9 +223,55 @@ func {{ .StepName }}Metadata() config.StepData {
 						Type:      "{{ $value.Type }}",
 						Mandatory: {{ $value.Mandatory }},
 						Aliases:   []config.Alias{{ "{" }}{{ range $notused, $alias := $value.Aliases }}{{ "{" }}Name: "{{ $alias.Name }}"{{ "}" }},{{ end }}{{ "}" }},
+						{{ if $value.Default -}} Default:   {{ $value.Default }}, {{- end}}{{ if $value.Conditions }}
+						Conditions: []config.Condition{ {{- range $i, $cond := $value.Conditions }} {ConditionRef: "{{$cond.ConditionRef}}", Params: []config.Param{ {{- range $j, $p := $cond.Params}} { Name: "{{$p.Name}}", Value: "{{$p.Value}}" }, {{end -}} } }, {{ end -}} },{{- end }}
 					},{{ end }}
 				},
 			},
+			{{ if .Containers -}}
+			Containers: []config.Container{
+				{{- range $container := .Containers }}
+				{
+					{{- if $container.Name -}} Name: "{{$container.Name}}",{{- end }}
+					{{- if $container.Image -}} Image: "{{$container.Image}}",{{- end }}
+					{{- if $container.EnvVars -}} EnvVars: []config.EnvVar{ {{- range $i, $env := $container.EnvVars }} {Name: "{{$env.Name}}", Value: "{{$env.Value}}"}, {{ end -}}  },{{- end }}
+					{{- if $container.WorkingDir -}} WorkingDir: "{{$container.WorkingDir}}",{{- end }}
+					{{- if $container.Options -}} Options: []config.Option{ {{- range $i, $option := $container.Options }} {Name: "{{$option.Name}}", Value: "{{$option.Value}}"}, {{ end -}} },{{ end }}
+					{{- if $container.Conditions -}} Conditions: []config.Condition{ {{- range $i, $cond := $container.Conditions }} {ConditionRef: "{{$cond.ConditionRef}}", Params: []config.Param{ {{- range $j, $p := $cond.Params}} { Name: "{{$p.Name}}", Value: "{{$p.Value}}" }, {{end -}} } }, {{ end -}} },{{ end }}
+				}, {{ end }}
+			},
+			{{ end -}}
+			{{ if .Sidecars -}}
+			Sidecars: []config.Container{
+				{{- range $container := .Sidecars }}
+				{
+					{{- if $container.Name -}} Name: "{{$container.Name}}", {{- end }}
+					{{- if $container.Image -}} Image: "{{$container.Image}}", {{- end }}
+					{{- if $container.EnvVars -}} EnvVars: []config.EnvVar{ {{- range $i, $env := $container.EnvVars }} {Name: "{{$env.Name}}", Value: "{{$env.Value}}"}, {{ end -}}  }, {{- end }}
+					{{- if $container.WorkingDir -}} WorkingDir: "{{$container.WorkingDir}}", {{- end }}
+					{{- if $container.Options -}} Options: []config.Option{ {{- range $i, $option := $container.Options }} {Name: "{{$option.Name}}", Value: "{{$option.Value}}"}, {{ end -}} }, {{- end }}
+					{{- if $container.Conditions -}} Conditions: []config.Condition{ {{- range $i, $cond := $container.Conditions }} {ConditionRef: "{{$cond.ConditionRef}}", Params: []config.Param{ {{- range $j, $p := $cond.Params}} { Name: "{{$p.Name}}", Value: "{{$p.Value}}" }, {{end -}} } }, {{ end -}} }, {{- end }}
+				}, {{ end }}
+			},
+			{{ end -}}
+			{{- if .Outputs.Resources -}}
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{{- range $res := .Outputs.Resources }}
+					{
+						{{ if $res.Name }}Name: "{{$res.Name}}", {{- end }}
+						{{ if $res.Type }}Type: "{{$res.Type}}", {{- end }}
+						{{ if $res.Parameters }}Parameters: []map[string]interface{}{ {{- end -}}
+						{{ range $i, $p := $res.Parameters }}
+							{{ if $p.name}}{"Name": "{{$p.name}}"},{{ end -}}
+							{{ if $p.fields}}{"fields": []map[string]string{ {{- range $j, $f := $p.fields}} {"name": "{{$f.name}}"}, {{end -}} } },{{ end -}}
+							{{ if $p.tags}}{"tags": []map[string]string{ {{- range $j, $t := $p.tags}} {"name": "{{$t.name}}"}, {{end -}} } },{{ end -}}
+						{{ end }}
+						{{ if $res.Parameters -}} }, {{- end }}
+						{{- if $res.Conditions -}} Conditions: []config.Condition{ {{- range $i, $cond := $res.Conditions }} {ConditionRef: "{{$cond.ConditionRef}}", Params: []config.Param{ {{- range $j, $p := $cond.Params}} { Name: "{{$p.Name}}", Value: "{{$p.Value}}" }, {{end -}} } }, {{ end -}} },{{ end }}
+					}, {{- end }}
+				},
+			}, {{- end }}
 		},
 	}
 	return theMetaData
@@ -195,6 +288,7 @@ import (
 )
 
 func Test{{.CobraCmdFuncName}}(t *testing.T) {
+	t.Parallel()
 
 	testCmd := {{.CobraCmdFuncName}}()
 
@@ -308,6 +402,7 @@ func TestRun{{.StepName | title}}(t *testing.T) {
 	t.Parallel()
 
 	t.Run("happy path", func(t *testing.T) {
+		t.Parallel()
 		// init
 		config := {{.StepName}}Options{}
 
@@ -322,6 +417,7 @@ func TestRun{{.StepName | title}}(t *testing.T) {
 	})
 
 	t.Run("error path", func(t *testing.T) {
+		t.Parallel()
 		// init
 		config := {{.StepName}}Options{}
 
@@ -336,9 +432,26 @@ func TestRun{{.StepName | title}}(t *testing.T) {
 }
 `
 
+const metadataGeneratedFileName = "metadata_generated.go"
+const metadataGeneratedTemplate = `// Code generated by piper's step-generator. DO NOT EDIT.
+
+package cmd
+
+import "github.com/SAP/jenkins-library/pkg/config"
+
+// GetStepMetadata return a map with all the step metadata mapped to their stepName
+func GetAllStepMetadata() map[string]config.StepData {
+	return map[string]config.StepData{
+		{{range $stepName := .Steps }} "{{$stepName}}": {{$stepName}}Metadata(),
+		{{end}}
+	}
+}
+`
+
 // ProcessMetaFiles generates step coding based on step configuration provided in yaml files
 func ProcessMetaFiles(metadataFiles []string, targetDir string, stepHelperData StepHelperData) error {
 
+	allSteps := struct{ Steps []string }{}
 	for key := range metadataFiles {
 
 		var stepData config.StepData
@@ -354,7 +467,9 @@ func ProcessMetaFiles(metadataFiles []string, targetDir string, stepHelperData S
 		err = stepData.ReadPipelineStepData(metadataFile)
 		checkError(err)
 
-		fmt.Printf("Step name: %v\n", stepData.Metadata.Name)
+		stepName := stepData.Metadata.Name
+		fmt.Printf("Step name: %v\n", stepName)
+		allSteps.Steps = append(allSteps.Steps, stepName)
 
 		osImport := false
 		osImport, err = setDefaultParameters(&stepData)
@@ -364,27 +479,32 @@ func ProcessMetaFiles(metadataFiles []string, targetDir string, stepHelperData S
 		checkError(err)
 
 		step := stepTemplate(myStepInfo, "step", stepGoTemplate)
-		err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_generated.go", stepData.Metadata.Name)), step, 0644)
+		err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_generated.go", stepName)), step, 0644)
 		checkError(err)
 
 		test := stepTemplate(myStepInfo, "stepTest", stepTestGoTemplate)
-		err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_generated_test.go", stepData.Metadata.Name)), test, 0644)
+		err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_generated_test.go", stepName)), test, 0644)
 		checkError(err)
 
-		exists, _ := piperutils.FileExists(filepath.Join(targetDir, fmt.Sprintf("%v.go", stepData.Metadata.Name)))
+		exists, _ := piperutils.FileExists(filepath.Join(targetDir, fmt.Sprintf("%v.go", stepName)))
 		if !exists {
 			impl := stepImplementation(myStepInfo, "impl", stepGoImplementationTemplate)
-			err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v.go", stepData.Metadata.Name)), impl, 0644)
+			err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v.go", stepName)), impl, 0644)
 			checkError(err)
 		}
 
-		exists, _ = piperutils.FileExists(filepath.Join(targetDir, fmt.Sprintf("%v_test.go", stepData.Metadata.Name)))
+		exists, _ = piperutils.FileExists(filepath.Join(targetDir, fmt.Sprintf("%v_test.go", stepName)))
 		if !exists {
 			impl := stepImplementation(myStepInfo, "implTest", stepGoImplementationTestTemplate)
-			err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_test.go", stepData.Metadata.Name)), impl, 0644)
+			err = stepHelperData.WriteFile(filepath.Join(targetDir, fmt.Sprintf("%v_test.go", stepName)), impl, 0644)
 			checkError(err)
 		}
 	}
+	// expose metadata functions
+	code := generateCode(allSteps, "metadata", metadataGeneratedTemplate, nil)
+	err := stepHelperData.WriteFile(filepath.Join(targetDir, metadataGeneratedFileName), code, 0644)
+	checkError(err)
+
 	return nil
 }
 
@@ -414,6 +534,10 @@ func setDefaultParameters(stepData *config.StepData) (bool, error) {
 			case "[]string":
 				// ToDo: Check if default should be read from env
 				param.Default = "[]string{}"
+			case "map[string]interface{}":
+				// Currently we don't need to set a default here since in this case the default
+				// is never used. Needs to be changed in case we enable cli parameter handling
+				// for that type.
 			default:
 				return false, fmt.Errorf("Meta data type not set or not known: '%v'", param.Type)
 			}
@@ -431,6 +555,10 @@ func setDefaultParameters(stepData *config.StepData) (bool, error) {
 				param.Default = fmt.Sprintf("`%v`", param.Default)
 			case "[]string":
 				param.Default = fmt.Sprintf("[]string{`%v`}", strings.Join(getStringSliceFromInterface(param.Default), "`, `"))
+			case "map[string]interface{}":
+				// Currently we don't need to set a default here since in this case the default
+				// is never used. Needs to be changed in case we enable cli parameter handling
+				// for that type.
 			default:
 				return false, fmt.Errorf("Meta data type not set or not known: '%v'", param.Type)
 			}
@@ -457,6 +585,11 @@ func getStepInfo(stepData *config.StepData, osImport bool, exportPrefix string) 
 			OutputResources:  oRes,
 			ExportPrefix:     exportPrefix,
 			StepSecrets:      getSecretFields(stepData),
+			Containers:       stepData.Spec.Containers,
+			Sidecars:         stepData.Spec.Sidecars,
+			Outputs:          stepData.Spec.Outputs,
+			Resources:        stepData.Spec.Inputs.Resources,
+			Secrets:          stepData.Spec.Inputs.Secrets,
 		},
 		err
 }
@@ -558,6 +691,10 @@ func MetadataFiles(sourceDirectory string) ([]string, error) {
 	return metadataFiles, nil
 }
 
+func isCLIParam(myType string) bool {
+	return myType != "map[string]interface{}"
+}
+
 func stepTemplate(myStepInfo stepInfo, templateName, goTemplate string) []byte {
 	funcMap := sprig.HermeticTxtFuncMap()
 	funcMap["flagType"] = flagType
@@ -565,6 +702,7 @@ func stepTemplate(myStepInfo stepInfo, templateName, goTemplate string) []byte {
 	funcMap["title"] = strings.Title
 	funcMap["longName"] = longName
 	funcMap["uniqueName"] = mustUniqName
+	funcMap["isCLIParam"] = isCLIParam
 
 	return generateCode(myStepInfo, templateName, goTemplate, funcMap)
 }
@@ -577,12 +715,12 @@ func stepImplementation(myStepInfo stepInfo, templateName, goTemplate string) []
 	return generateCode(myStepInfo, templateName, goTemplate, funcMap)
 }
 
-func generateCode(myStepInfo stepInfo, templateName, goTemplate string, funcMap template.FuncMap) []byte {
+func generateCode(dataObject interface{}, templateName, goTemplate string, funcMap template.FuncMap) []byte {
 	tmpl, err := template.New(templateName).Funcs(funcMap).Parse(goTemplate)
 	checkError(err)
 
 	var generatedCode bytes.Buffer
-	err = tmpl.Execute(&generatedCode, myStepInfo)
+	err = tmpl.Execute(&generatedCode, dataObject)
 	checkError(err)
 
 	return generatedCode.Bytes()
