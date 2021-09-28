@@ -49,6 +49,7 @@ func TestAdoptStageNameFromParametersJSON(t *testing.T) {
 	for _, test := range tt {
 		t.Run(test.name, func(t *testing.T) {
 			// init
+			stageNameEnvKey := "STAGE_NAME"
 			GeneralConfig.StageName = test.stageNameArg
 
 			resetValue := os.Getenv(stageNameEnvKey)
