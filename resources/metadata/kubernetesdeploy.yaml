@@ -284,6 +284,7 @@ spec:
         description: Defines optional tiller namespace for deployments using helm.
         scope:
           - PARAMETERS
+          - STAGES
           - STEPS
       - name: dockerConfigJSON
         type: string
