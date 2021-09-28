@@ -20,12 +20,13 @@ import static org.junit.Assert.assertTrue
 class PiperPipelineStageInitTest extends BasePiperTest {
     private JenkinsStepRule jsr = new JenkinsStepRule(this)
     private JenkinsLoggingRule jlr = new JenkinsLoggingRule(this)
+    private JenkinsReadYamlRule jryr = new JenkinsReadYamlRule(this)
     private ExpectedException thrown = new ExpectedException()
 
     @Rule
     public RuleChain rules = Rules
         .getCommonRules(this)
-        .around(new JenkinsReadYamlRule(this))
+        .around(jryr)
         .around(thrown)
         .around(jlr)
         .around(jsr)
@@ -125,7 +126,24 @@ class PiperPipelineStageInitTest extends BasePiperTest {
 
         assertThat(stepsCalled, hasItems('checkout', 'setupCommonPipelineEnvironment', 'piperInitRunStageConfiguration', 'artifactPrepareVersion', 'pipelineStashFilesBeforeBuild'))
         assertThat(stepsCalled, not(hasItems('slackSendNotification')))
+        assertThat(nullScript.commonPipelineEnvironment.configuration.stageStashes.Init.unstash, is([]))
+    }
 
+    @Test
+    void testCustomStashSettings() {
+        jryr.registerYaml('customStashSettings.yml',"Init: \n  unstash: source")
+
+        jsr.step.piperPipelineStageInit(
+            script: nullScript,
+            juStabUtils: utils,
+            buildTool: 'maven',
+            customStashSettings: 'customStashSettings.yml',
+            stashSettings: 'com.sap.piper/pipeline/stashSettings.yml'
+        )
+
+        assertThat(stepsCalled, hasItems('checkout', 'setupCommonPipelineEnvironment', 'piperInitRunStageConfiguration', 'artifactPrepareVersion', 'pipelineStashFilesBeforeBuild'))
+        assertThat(stepsCalled, not(hasItems('slackSendNotification')))
+        assertThat(nullScript.commonPipelineEnvironment.configuration.stageStashes.Init.unstash, is("source"))
     }
 
     @Test

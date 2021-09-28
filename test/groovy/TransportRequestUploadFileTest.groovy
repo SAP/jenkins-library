@@ -62,45 +62,59 @@ public class TransportRequestUploadFileTest extends BasePiperTest {
     @Test
     public void changeDocumentIdNotProvidedSOLMANTest() {
 
-        // we expect the failure only for SOLMAN (which is the default).
-        // Use case for CTS without change document id is checked by the
-        // straight forward test case for CTS
+        def calledWithParameters = null
+
+        helper.registerAllowedMethod( 'piperExecuteBin', [Map, String, String, List],
+            {
+                params, stepName, metaData, creds ->
+                    if(stepName.equals("transportRequestDocIDFromGit")) {
+                        calledWithParameters = params
+                    }
+            }
+        )
 
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage("Change document id not provided (parameter: 'changeDocumentId' provided to the step call or via commit history).")
 
-        ChangeManagement cm = new ChangeManagement(nullScript) {
-            String getChangeDocumentId(
-                                       String from,
-                                       String to,
-                                       String pattern,
-                                       String format
-                                    ) {
-                                        throw new ChangeManagementException('Cannot retrieve changeId from git commits.')
-                                      }
-        }
+        stepRule.step.transportRequestUploadFile(script: nullScript, transportRequestId: '001', applicationId: 'app', filePath: '/path', 
+            changeManagement: [
+                type: 'SOLMAN',
+                endpoint: 'https://example.org/cm',
+                clientOpts: '--client opts'
+            ],
+            credentialsId: 'CM'
+        )
 
-        stepRule.step.transportRequestUploadFile(script: nullScript, transportRequestId: '001', applicationId: 'app', filePath: '/path', cmUtils: cm)
+        assert calledWithParameters != null
     }
 
     @Test
     public void transportRequestIdNotProvidedTest() {
 
-        ChangeManagement cm = new ChangeManagement(nullScript) {
-            String getTransportRequestId(
-                                       String from,
-                                       String to,
-                                       String pattern,
-                                       String format
-                                    ) {
-                                        throw new ChangeManagementException('Cannot retrieve transport request id from git commits.')
-                                    }
-        }
+        def calledWithParameters = null
+
+        helper.registerAllowedMethod( 'piperExecuteBin', [Map, String, String, List],
+            {
+                params, stepName, metaData, creds ->
+                    if(stepName.equals("transportRequestReqIDFromGit")) {
+                        calledWithParameters = params
+                    }
+            }
+        )
 
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage("Transport request id not provided (parameter: 'transportRequestId' provided to the step call or via commit history).")
 
-        stepRule.step.transportRequestUploadFile(script: nullScript, changeDocumentId: '001', applicationId: 'app', filePath: '/path', cmUtils: cm)
+        stepRule.step.transportRequestUploadFile(script: nullScript, changeDocumentId: '001', applicationId: 'app', filePath: '/path', 
+            changeManagement: [
+                type: 'SOLMAN',
+                endpoint: 'https://example.org/cm',
+                clientOpts: '--client opts'
+            ],
+            credentialsId: 'CM'
+        )
+
+        assert calledWithParameters != null
     }
 
     @Test
