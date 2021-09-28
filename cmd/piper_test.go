@@ -7,17 +7,26 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
-	"github.com/SAP/jenkins-library/pkg/log"
-
-	"github.com/SAP/jenkins-library/pkg/config"
-	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/ghodss/yaml"
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/SAP/jenkins-library/pkg/config"
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/mock"
 )
+
+func resetEnv(e []string) {
+	for _, val := range e {
+		tmp := strings.Split(val, "=")
+		os.Setenv(tmp[0], tmp[1])
+	}
+}
 
 func TestAddRootFlags(t *testing.T) {
 	var testRootCmd = &cobra.Command{Use: "test", Short: "This is just a test"}
@@ -49,21 +58,15 @@ func TestAdoptStageNameFromParametersJSON(t *testing.T) {
 	for _, test := range tt {
 		t.Run(test.name, func(t *testing.T) {
 			// init
+			defer resetEnv(os.Environ())
+			os.Clearenv()
 
 			//mock Jenkins env
-			jenkinsHomeResetValue := os.Getenv("JENKINS_HOME")
-			defer func() { os.Setenv("JENKINS_HOME", jenkinsHomeResetValue) }()
 			os.Setenv("JENKINS_HOME", "anything")
+			require.NotEmpty(t, os.Getenv("JENKINS_HOME"))
+			os.Setenv("STAGE_NAME", test.stageNameEnv)
 
 			GeneralConfig.StageName = test.stageNameArg
-
-			resetValue := os.Getenv("STAGE_NAME")
-			defer func() { _ = os.Setenv("STAGE_NAME", resetValue) }()
-
-			err := os.Setenv("STAGE_NAME", test.stageNameEnv)
-			if err != nil {
-				t.Fatalf("could not set env var %s", "STAGE_NAME")
-			}
 
 			if test.stageNameJSON != "" {
 				GeneralConfig.ParametersJSON = fmt.Sprintf("{\"stageName\":\"%s\"}", test.stageNameJSON)

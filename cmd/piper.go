@@ -242,16 +242,21 @@ func initStageName(outputToLog bool) {
 	}
 
 	// Use stageName from ENV as fall-back, for when extracting it from parametersJSON fails below
-	provider, _ := orchestrator.NewOrchestratorSpecificConfigProvider()
-	GeneralConfig.StageName = provider.GetStageName()
-	stageNameSource = "env variable"
+	provider, err := orchestrator.NewOrchestratorSpecificConfigProvider()
+	if err != nil {
+		log.Entry().WithError(err).Warning("Cannot infer stage name from CI environment")
+		return
+	} else {
+		stageNameSource = "env variable"
+		GeneralConfig.StageName = provider.GetStageName()
+	}
 
 	if len(GeneralConfig.ParametersJSON) == 0 {
 		return
 	}
 
 	var params map[string]interface{}
-	err := json.Unmarshal([]byte(GeneralConfig.ParametersJSON), &params)
+	err = json.Unmarshal([]byte(GeneralConfig.ParametersJSON), &params)
 	if err != nil {
 		if outputToLog {
 			log.Entry().Infof("Failed to extract 'stageName' from parametersJSON: %v", err)
