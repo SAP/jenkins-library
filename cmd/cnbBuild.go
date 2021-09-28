@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/SAP/jenkins-library/pkg/certutils"
 	"github.com/SAP/jenkins-library/pkg/cnbutils"
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/docker"
@@ -301,7 +302,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 	}
 
 	if len(config.CustomTLSCertificateLinks) > 0 {
-		err := certificateUpdate(config.CustomTLSCertificateLinks, httpClient, utils, "/etc/ssl/certs/ca-certificates.crt")
+		err := certutils.CertificateUpdate(config.CustomTLSCertificateLinks, httpClient, utils, "/etc/ssl/certs/ca-certificates.crt")
 		if err != nil {
 			return errors.Wrap(err, "failed to update certificates")
 		}
