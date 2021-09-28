@@ -1,7 +1,6 @@
 import static com.sap.piper.Prerequisites.checkScript
 
 import com.sap.piper.GenerateDocumentation
-import com.sap.piper.GitUtils
 import com.sap.piper.Utils
 import groovy.transform.Field
 import hudson.AbortException
@@ -86,9 +85,9 @@ void call(parameters = [:]) {
         def script = checkScript(this, parameters) ?: this
         String stageName = parameters.stageName ?: env.STAGE_NAME
 
-        GitUtils gitUtils = parameters?.gitUtils ?: new GitUtils()
+//        GitUtils gitUtils = parameters?.gitUtils ?: new GitUtils()
 
-        ChangeManagement cm = parameters?.cmUtils ?: new ChangeManagement(script, gitUtils)
+//        ChangeManagement cm = parameters?.cmUtils ?: new ChangeManagement(script, gitUtils)
 
         ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
             .loadStepDefaults([:], stageName)
@@ -120,7 +119,7 @@ void call(parameters = [:]) {
             stepParam1: parameters?.script == null
         ], configuration)
 
-        def changeId = getChangeDocumentId(cm, script, configuration)
+        def changeId = getChangeDocumentId(script, configuration)
 
         configuration = configHelper.mixin([changeDocumentId: changeId?.trim() ?: null], ['changeDocumentId'] as Set)
                                     .withMandatoryProperty('changeDocumentId',
@@ -144,9 +143,9 @@ void call(parameters = [:]) {
 
         paramsUpload = addDockerParams(script, paramsUpload, configuration.changeManagement.solman?.docker)
 
-        isInDevelopment = isChangeInDevelopment(paramsUpload)
+        isChangeInDevelopment(paramsUpload)
 
-        if(isInDevelopment) {
+        if(script.commonPipelineEnvironment.getValue('isChangeInDevelopment')) {
             echo "[INFO] Change '${changeId}' is in status 'in development'."
         } else {
             if(configuration.failIfStatusIsNotInDevelopment.toBoolean()) {
