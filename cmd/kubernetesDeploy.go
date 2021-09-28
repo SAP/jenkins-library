@@ -80,7 +80,7 @@ func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, s
 	if config.DeployTool == "helm" && len(config.TillerNamespace) > 0 {
 		helmEnv = append(helmEnv, fmt.Sprintf("TILLER_NAMESPACE=%v", config.TillerNamespace))
 	}
-	log.Entry().Debugf("Helm SetEnv: %v", helmEnv)
+	log.Entry().Infof("Helm SetEnv: %v", helmEnv)
 	command.SetEnv(helmEnv)
 	command.Stdout(stdout)
 
@@ -304,7 +304,7 @@ func defineKubeSecretParams(config kubernetesDeployOptions, containerRegistry st
 			"generic",
 			config.ContainerRegistrySecret,
 			fmt.Sprintf("--from-file=.dockerconfigjson=%v", config.DockerConfigJSON),
-			"--type=Opaque",
+			"--type=kubernetes.io/dockerconfigjson",
 		)
 	}
 	return append(
