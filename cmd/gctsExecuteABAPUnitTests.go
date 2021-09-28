@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -270,7 +271,10 @@ func convertAtcToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client pipe
 
 		for _, atcworklist := range object.Findings.Finding {
 
-			location := html.UnescapeString(atcworklist.Location)
+			location, pathErr := url.PathUnescape(atcworklist.Location)
+			if pathErr != nil {
+
+			}
 
 			if len(atcworklist.Atcfinding) > 0 {
 
