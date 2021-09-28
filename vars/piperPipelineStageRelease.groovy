@@ -62,14 +62,6 @@ void call(Map parameters = [:]) {
         utils.pushToSWA([step: STEP_NAME], config)
 
 
-            files, errf := ioutil.ReadDir(".")
-            if errf != nil {
-                panic(errf)
-            }
-            fmt.Println("Here are the files in RELEASE 11111111:")
-            for _, f := range files {
-                fmt.Println(f.Name())
-            }
         // Prefer the newer multicloudDeploy step if it is configured as it is more capable
         if (config.multicloudDeploy) {
             durationMeasure(script: script, measurementName: 'deploy_release_multicloud_duration') {
