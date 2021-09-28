@@ -60,7 +60,7 @@ You can use this step for gCTS as of SAP S/4HANA 2020.`,
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			validation, err := validation.New()
+			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
 			if err != nil {
 				return err
 			}

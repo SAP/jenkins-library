@@ -77,7 +77,7 @@ It is primarily made for the transportRequestUploadSOLMAN step to provide the ch
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			validation, err := validation.New()
+			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
 			if err != nil {
 				return err
 			}
