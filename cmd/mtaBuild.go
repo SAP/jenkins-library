@@ -247,7 +247,7 @@ func runMtaBuild(config mtaBuildOptions,
 		if (len(config.MtaDeploymentRepositoryPassword) > 0) && (len(config.MtaDeploymentRepositoryUser) > 0) &&
 			(len(config.MtaDeploymentRepositoryURL) > 0) {
 			if (len(config.MtarGroup) > 0) && (len(config.Version) > 0) {
-				/* downloadClient := &piperhttp.Client{} */
+				httpClient := &piperhttp.Client{}
 
 				credentialsEncoded := "Basic " + base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", config.MtaDeploymentRepositoryUser, config.MtaDeploymentRepositoryPassword)))
 				headers := http.Header{}
@@ -266,17 +266,22 @@ func runMtaBuild(config mtaBuildOptions,
 
 				log.Entry().Infof("pushing mtar artifact to repository : %s", config.MtaDeploymentRepositoryURL)
 
-				/* _, httpErr := downloadClient.UploadRequest(http.MethodPut, config.MtaDeploymentRepositoryURL, mtarName, mtarName, headers, nil) */
-				var uploadCall []string
+				/* _, httpErr := httpClient.UploadRequest(http.MethodPut, config.MtaDeploymentRepositoryURL, mtarName, mtarName, headers, nil) */
+				data, err := os.Open(mtarName)
+				if err != nil {
+					return errors.Wrap(err, "failed to open mtar archive for upload")
+				}
+				_, httpErr := httpClient.SendRequest("PUT", config.MtaDeploymentRepositoryURL, data, headers, nil)
+				/* var uploadCall []string
 
 				uploadCall = append(uploadCall, "curl", "--upload-file", mtarName, "-u", config.MtaDeploymentRepositoryUser+":"+config.MtaDeploymentRepositoryPassword, config.MtaDeploymentRepositoryURL)
 				if err := utils.RunExecutable(uploadCall[0], uploadCall[1:]...); err != nil {
 					log.SetErrorCategory(log.ErrorBuild)
 					return errors.Wrap(err, "failed to upload mtar to repository")
-				}
-				/* if httpErr != nil {
-					return errors.Wrap(err, "failed to upload mtar to repository")
 				} */
+				if httpErr != nil {
+					return errors.Wrap(err, "failed to upload mtar to repository")
+				}
 			} else {
 				return errors.New("mtarGroup, version not found and must be present")
 
