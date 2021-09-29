@@ -1,7 +1,6 @@
 import com.sap.piper.BashUtils
 import com.sap.piper.CfManifestUtils
 import com.sap.piper.ConfigurationHelper
-import com.sap.piper.GenerateDocumentation
 import com.sap.piper.JenkinsUtils
 import com.sap.piper.Utils
 import groovy.transform.Field
@@ -189,7 +188,6 @@ import static com.sap.piper.Prerequisites.checkScript
 /**
  * Deploys an application to a test or production space within Cloud Foundry.
  */
-@GenerateDocumentation
 void call(Map parameters = [:]) {
 
     handlePipelineStepErrors (stepName: STEP_NAME, stepParameters: parameters) {

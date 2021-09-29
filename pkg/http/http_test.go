@@ -2,6 +2,8 @@ package http
 
 import (
 	"bytes"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/xml"
 	"errors"
@@ -36,7 +38,7 @@ func TestSend(t *testing.T) {
 		defer httpmock.DeactivateAndReset()
 		httpmock.RegisterResponder(http.MethodGet, testURL, httpmock.NewStringResponder(200, `OK`))
 		client := Client{}
-		client.SetOptions(ClientOptions{UseDefaultTransport: true})
+		client.SetOptions(ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
 		// when
 		response, err := client.Send(request)
 		// then
@@ -49,7 +51,7 @@ func TestSend(t *testing.T) {
 		defer httpmock.DeactivateAndReset()
 		httpmock.RegisterResponder(http.MethodGet, testURL, httpmock.NewErrorResponder(errors.New("failure")))
 		client := Client{}
-		client.SetOptions(ClientOptions{UseDefaultTransport: true})
+		client.SetOptions(ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
 		// when
 		response, err := client.Send(request)
 		// then
@@ -67,7 +69,7 @@ func TestDefaultTransport(t *testing.T) {
 		httpmock.RegisterResponder(http.MethodGet, testURL, httpmock.NewStringResponder(200, `OK`))
 
 		client := Client{}
-		client.SetOptions(ClientOptions{UseDefaultTransport: true})
+		client.SetOptions(ClientOptions{MaxRetries: -1, UseDefaultTransport: true})
 		// test
 		response, err := client.SendRequest("GET", testURL, nil, nil, nil)
 		// assert
@@ -175,7 +177,7 @@ func TestSendRequest(t *testing.T) {
 
 func TestSetOptions(t *testing.T) {
 	c := Client{}
-	opts := ClientOptions{TransportTimeout: 10, MaxRequestDuration: 5, Username: "TestUser", Password: "TestPassword", Token: "TestToken", Logger: log.Entry().WithField("package", "github.com/SAP/jenkins-library/pkg/http")}
+	opts := ClientOptions{MaxRetries: -1, TransportTimeout: 10, MaxRequestDuration: 5, Username: "TestUser", Password: "TestPassword", Token: "TestToken", Logger: log.Entry().WithField("package", "github.com/SAP/jenkins-library/pkg/http")}
 	c.SetOptions(opts)
 
 	assert.Equal(t, opts.TransportTimeout, c.transportTimeout)
@@ -257,12 +259,12 @@ func TestUploadRequest(t *testing.T) {
 		cookies       []*http.Cookie
 		expected      string
 	}{
-		{clientOptions: ClientOptions{}, method: "PUT", expected: "OK"},
-		{clientOptions: ClientOptions{}, method: "POST", expected: "OK"},
-		{clientOptions: ClientOptions{}, method: "POST", header: map[string][]string{"Testheader": {"Test1", "Test2"}}, expected: "OK"},
-		{clientOptions: ClientOptions{}, cookies: []*http.Cookie{{Name: "TestCookie1", Value: "TestValue1"}, {Name: "TestCookie2", Value: "TestValue2"}}, method: "POST", expected: "OK"},
-		{clientOptions: ClientOptions{Username: "TestUser", Password: "TestPwd"}, method: "POST", expected: "OK"},
-		{clientOptions: ClientOptions{Username: "UserOnly", Password: ""}, method: "POST", expected: "OK"},
+		{clientOptions: ClientOptions{MaxRetries: -1}, method: "PUT", expected: "OK"},
+		{clientOptions: ClientOptions{MaxRetries: -1}, method: "POST", expected: "OK"},
+		{clientOptions: ClientOptions{MaxRetries: -1}, method: "POST", header: map[string][]string{"Testheader": {"Test1", "Test2"}}, expected: "OK"},
+		{clientOptions: ClientOptions{MaxRetries: -1}, cookies: []*http.Cookie{{Name: "TestCookie1", Value: "TestValue1"}, {Name: "TestCookie2", Value: "TestValue2"}}, method: "POST", expected: "OK"},
+		{clientOptions: ClientOptions{MaxRetries: -1, Username: "TestUser", Password: "TestPwd"}, method: "POST", expected: "OK"},
+		{clientOptions: ClientOptions{MaxRetries: -1, Username: "UserOnly", Password: ""}, method: "POST", expected: "OK"},
 	}
 
 	client := Client{logger: log.Entry().WithField("package", "SAP/jenkins-library/pkg/http")}
@@ -393,6 +395,28 @@ func TestTransportSkipVerification(t *testing.T) {
 			assert.NoError(t, err)
 		}
 	}
+}
+
+func TestTransportWithCertifacteAdded(t *testing.T) {
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		io.WriteString(w, "Hello")
+	}))
+	defer server.Close()
+
+	certs := x509.NewCertPool()
+	for _, c := range server.TLS.Certificates {
+		roots, err := x509.ParseCertificates(c.Certificate[len(c.Certificate)-1])
+		if err != nil {
+			println("error parsing server's root cert: %v", err)
+		}
+		for _, root := range roots {
+			certs.AddCert(root)
+		}
+	}
+	client := http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{RootCAs: certs, InsecureSkipVerify: false}}}
+	_, err := client.Get(server.URL)
+	// assert
+	assert.NoError(t, err)
 }
 
 func TestMaxRetries(t *testing.T) {

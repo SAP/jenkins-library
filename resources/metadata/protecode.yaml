@@ -13,7 +13,7 @@ spec:
         description: Jenkins 'Username with password' credentials ID containing username and password to authenticate to the Protecode system.
         type: jenkins
       - name: dockerConfigJsonCredentialsId
-        description: Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)). You can create it like explained in the Docker Success Center in the article about [how to generate a new auth in the config.json file](https://success.docker.com/article/generate-new-auth-in-config-json-file).
+        description: Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)). You can create it like explained in [Prerequisites](https://www.project-piper.io/steps/protecodeExecuteScan/#prerequisites).
         type: jenkins
         aliases:
           - name: dockerCredentialsId
@@ -75,10 +75,8 @@ spec:
           - name: dockerConfigJsonCredentialsId
             type: secret
           - type: vaultSecretFile
-            paths:
-              - $(vaultPath)/docker-config
-              - $(vaultBasePath)/$(vaultPipelineName)/docker-config
-              - $(vaultBasePath)/GROUP-SECRETS/docker-config
+            name: dockerConfigFileVaultSecretName
+            default: docker-config
       - name: cleanupMode
         type: string
         description: Decides which parts are removed from the Protecode backend after the scan
@@ -152,9 +150,20 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: reuseExisting
+      - name: verifyOnly
+        aliases:
+          - name: reuseExisting
+            deprecated: true
         type: bool
-        description: Whether to reuse an existing product instead of creating a new one
+        description: Whether the step shall only apply verification checks or whether it does a full scan and check cycle
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: false
+      - name: replaceProductId
+        type: int
+        description: Specify <replaceProductId> which application binary will be replaced and rescanned and product id remains unchanged. By using this parameter, Protecode avoids creating multiple same products. Note this will affect results and feeds.
         scope:
           - PARAMETERS
           - STAGES
@@ -176,10 +185,8 @@ spec:
             type: secret
             param: username
           - type: vaultSecret
-            paths:
-              - $(vaultPath)/protecode
-              - $(vaultBasePath)/$(vaultPipelineName)/protecode
-              - $(vaultBasePath)/GROUP-SECRETS/protecode
+            name: protecodeVaultSecretName
+            default: protecode
       - name: password
         type: string
         description: Password which is used for the user
@@ -194,11 +201,12 @@ spec:
             type: secret
             param: password
           - type: vaultSecret
-            paths:
-              - $(vaultPath)/protecode
-              - $(vaultBasePath)/$(vaultPipelineName)/protecode
-              - $(vaultBasePath)/GROUP-SECRETS/protecode
-      - name: artifactVersion
+            name: protecodeVaultSecretName
+            default: protecode
+      - name: version
+        aliases:
+          - name: artifactVersion
+            deprecated: true
         type: string
         description: The version of the artifact to allow identification in protecode backend
         resourceRef:

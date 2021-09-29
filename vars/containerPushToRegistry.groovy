@@ -38,8 +38,12 @@ import static com.sap.piper.Prerequisites.checkScript
     'sourceImage',
     /** Defines a registry url from where the image should optionally be pulled from, incl. the protocol like `https://my.registry.com`*/
     'sourceRegistryUrl',
+    /** Defines the id of the Jenkins username/password credentials containing the credentials for the source Docker registry. */
+    'sourceCredentialsId',
     /** Defines if the image should be tagged as `latest`*/
-    'tagLatest'
+    'tagLatest',
+    /** Defines if the image should be tagged with the artifact version */
+    'tagArtifactVersion'
 ])
 @Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
@@ -66,6 +70,7 @@ void call(Map parameters = [:]) {
             .mixin(parameters, PARAMETER_KEYS)
             .addIfEmpty('sourceImage', script.commonPipelineEnvironment.getValue('containerImage'))
             .addIfEmpty('sourceRegistryUrl', script.commonPipelineEnvironment.getValue('containerRegistryUrl'))
+            .mixin(artifactVersion: script.commonPipelineEnvironment.getArtifactVersion())
             .withMandatoryProperty('dockerCredentialsId')
             .withMandatoryProperty('dockerRegistryUrl')
             .use()
@@ -95,7 +100,10 @@ void call(Map parameters = [:]) {
             if (config.sourceRegistry && config.sourceImage) {
 
                 def sourceBuildImage = docker.image(config.sourceImage)
-                docker.withRegistry(config.sourceRegistryUrl) {
+                docker.withRegistry(
+                    config.sourceRegistryUrl,
+                    config.sourceCredentialsId
+                ) {
                     sourceBuildImage.pull()
                 }
                 sh "docker tag ${config.sourceRegistry}/${config.sourceImage} ${config.dockerImage}"
@@ -108,6 +116,8 @@ void call(Map parameters = [:]) {
                 config.dockerBuildImage.push()
                 if (config.tagLatest)
                     config.dockerBuildImage.push('latest')
+                if (config.tagArtifactVersion )
+                    config.dockerBuildImage.push(config.artifactVersion)
             }
         } else {
             //handling for Kubernetes case
@@ -121,6 +131,10 @@ void call(Map parameters = [:]) {
                     if (config.tagLatest) {
                         def latestImage = "${config.dockerImage.split(':')[0]}:latest"
                         dockerUtils.moveImage([image: config.sourceImage, registryUrl: config.sourceRegistryUrl], [image: latestImage, registryUrl: config.dockerRegistryUrl, credentialsId: config.dockerCredentialsId])
+                    }
+                    if (config.tagArtifactVersion) {
+                        def imageName = "${config.dockerImage.split(':')[0]}:${config.artifactVersion}"
+                        dockerUtils.moveImage([image: config.sourceImage, registryUrl: config.sourceRegistryUrl], [image: imageName, registryUrl: config.dockerRegistryUrl, credentialsId: config.dockerCredentialsId])
                     }
                 } else {
                     error "[${STEP_NAME}] Running on Kubernetes: Only moving images from one registry to another supported."

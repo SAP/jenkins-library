@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/http"
+	"net/url"
 	"os"
 	"reflect"
 	"strings"
 
-	"github.com/SAP/jenkins-library/pkg/http"
+	piperhttp "github.com/SAP/jenkins-library/pkg/http"
 	"github.com/SAP/jenkins-library/pkg/log"
 
 	"github.com/ghodss/yaml"
@@ -23,17 +25,18 @@ type Config struct {
 	General          map[string]interface{}            `json:"general"`
 	Stages           map[string]map[string]interface{} `json:"stages"`
 	Steps            map[string]map[string]interface{} `json:"steps"`
-	Hooks            *json.RawMessage                  `json:"hooks,omitempty"`
+	Hooks            map[string]interface{}            `json:"hooks,omitempty"`
 	defaults         PipelineDefaults
 	initialized      bool
-	openFile         func(s string) (io.ReadCloser, error)
+	accessTokens     map[string]string
+	openFile         func(s string, t map[string]string) (io.ReadCloser, error)
 	vaultCredentials VaultCredentials
 }
 
 // StepConfig defines the structure for merged step configuration
 type StepConfig struct {
 	Config     map[string]interface{}
-	HookConfig *json.RawMessage
+	HookConfig map[string]interface{}
 }
 
 // ReadConfig loads config and returns its content
@@ -59,33 +62,33 @@ func (c *Config) ApplyAliasConfig(parameters []StepParameters, secrets []StepSec
 		c.copyStepAliasConfig(stepName, stepAliases)
 	}
 	for _, p := range parameters {
-		c.General = setParamValueFromAlias(c.General, filters.General, p.Name, p.Aliases)
+		c.General = setParamValueFromAlias(stepName, c.General, filters.General, p.Name, p.Aliases)
 		if c.Stages[stageName] != nil {
-			c.Stages[stageName] = setParamValueFromAlias(c.Stages[stageName], filters.Stages, p.Name, p.Aliases)
+			c.Stages[stageName] = setParamValueFromAlias(stepName, c.Stages[stageName], filters.Stages, p.Name, p.Aliases)
 		}
 		if c.Steps[stepName] != nil {
-			c.Steps[stepName] = setParamValueFromAlias(c.Steps[stepName], filters.Steps, p.Name, p.Aliases)
+			c.Steps[stepName] = setParamValueFromAlias(stepName, c.Steps[stepName], filters.Steps, p.Name, p.Aliases)
 		}
 	}
 	for _, s := range secrets {
-		c.General = setParamValueFromAlias(c.General, filters.General, s.Name, s.Aliases)
+		c.General = setParamValueFromAlias(stepName, c.General, filters.General, s.Name, s.Aliases)
 		if c.Stages[stageName] != nil {
-			c.Stages[stageName] = setParamValueFromAlias(c.Stages[stageName], filters.Stages, s.Name, s.Aliases)
+			c.Stages[stageName] = setParamValueFromAlias(stepName, c.Stages[stageName], filters.Stages, s.Name, s.Aliases)
 		}
 		if c.Steps[stepName] != nil {
-			c.Steps[stepName] = setParamValueFromAlias(c.Steps[stepName], filters.Steps, s.Name, s.Aliases)
+			c.Steps[stepName] = setParamValueFromAlias(stepName, c.Steps[stepName], filters.Steps, s.Name, s.Aliases)
 		}
 	}
 }
 
-func setParamValueFromAlias(configMap map[string]interface{}, filter []string, name string, aliases []Alias) map[string]interface{} {
+func setParamValueFromAlias(stepName string, configMap map[string]interface{}, filter []string, name string, aliases []Alias) map[string]interface{} {
 	if configMap != nil && configMap[name] == nil && sliceContains(filter, name) {
 		for _, a := range aliases {
 			aliasVal := getDeepAliasValue(configMap, a.Name)
 			if aliasVal != nil {
 				configMap[name] = aliasVal
 				if a.Deprecated {
-					log.Entry().WithField("package", "SAP/jenkins-library/pkg/config").Warningf("DEPRECATION NOTICE: old step config key '%v' used. Please switch to '%v'!", a.Name, name)
+					log.Entry().Warningf("[WARNING] The parameter '%v' is DEPRECATED, use '%v' instead. (%v/%v)", a.Name, name, log.LibraryName, stepName)
 				}
 			}
 			if configMap[name] != nil {
@@ -147,7 +150,7 @@ func (c *Config) InitializeConfig(configuration io.ReadCloser, defaults []io.Rea
 			c.openFile = OpenPiperFile
 		}
 		for _, f := range c.CustomDefaults {
-			fc, err := c.openFile(f)
+			fc, err := c.openFile(f, c.accessTokens)
 			if err != nil {
 				return errors.Wrapf(err, "getting default '%v' failed", f)
 			}
@@ -179,22 +182,18 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 	// initialize with defaults from step.yaml
 	stepConfig.mixInStepDefaults(parameters)
 
+	// merge parameters provided by Piper environment
+	stepConfig.mixIn(envParameters, filters.All)
+
 	// read defaults & merge general -> steps (-> general -> steps ...)
 	for _, def := range c.defaults.Defaults {
 		def.ApplyAliasConfig(parameters, secrets, filters, stageName, stepName, stepAliases)
 		stepConfig.mixIn(def.General, filters.General)
 		stepConfig.mixIn(def.Steps[stepName], filters.Steps)
 		stepConfig.mixIn(def.Stages[stageName], filters.Steps)
-		stepConfig.mixinVaultConfig(def.General, def.Steps[stepName], def.Stages[stageName])
-
-		// process hook configuration - this is only supported via defaults
-		if stepConfig.HookConfig == nil {
-			stepConfig.HookConfig = def.Hooks
-		}
+		stepConfig.mixinVaultConfig(parameters, def.General, def.Steps[stepName], def.Stages[stageName])
+		stepConfig.mixInHookConfig(def.Hooks)
 	}
-
-	// merge parameters provided by Piper environment
-	stepConfig.mixIn(envParameters, filters.All)
 
 	// read config & merge - general -> steps -> stages
 	stepConfig.mixIn(c.General, filters.General)
@@ -213,10 +212,10 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		} else {
 			//apply aliases
 			for _, p := range parameters {
-				params = setParamValueFromAlias(params, filters.Parameters, p.Name, p.Aliases)
+				params = setParamValueFromAlias(stepName, params, filters.Parameters, p.Name, p.Aliases)
 			}
 			for _, s := range secrets {
-				params = setParamValueFromAlias(params, filters.Parameters, s.Name, s.Aliases)
+				params = setParamValueFromAlias(stepName, params, filters.Parameters, s.Name, s.Aliases)
 			}
 
 			stepConfig.mixIn(params, filters.Parameters)
@@ -234,7 +233,7 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		log.Entry().Warnf("invalid value for parameter verbose: '%v'", stepConfig.Config["verbose"])
 	}
 
-	stepConfig.mixinVaultConfig(c.General, c.Steps[stepName], c.Stages[stageName])
+	stepConfig.mixinVaultConfig(parameters, c.General, c.Steps[stepName], c.Stages[stageName])
 	// check whether vault should be skipped
 	if skip, ok := stepConfig.Config["skipVault"].(bool); !ok || !skip {
 		// fetch secrets from vault
@@ -245,20 +244,26 @@ func (c *Config) GetStepConfig(flagValues map[string]interface{}, paramJSON stri
 		if vaultClient != nil {
 			defer vaultClient.MustRevokeToken()
 			resolveAllVaultReferences(&stepConfig, vaultClient, parameters)
+			resolveVaultTestCredentials(&stepConfig, vaultClient)
 		}
 	}
 
 	// finally do the condition evaluation post processing
 	for _, p := range parameters {
 		if len(p.Conditions) > 0 {
-			cp := p.Conditions[0].Params[0]
-			dependentValue := stepConfig.Config[cp.Name]
-			if cmp.Equal(dependentValue, cp.Value) && stepConfig.Config[p.Name] == nil {
-				subMap, ok := stepConfig.Config[dependentValue.(string)].(map[string]interface{})
-				if ok && subMap[p.Name] != nil {
-					stepConfig.Config[p.Name] = subMap[p.Name]
-				} else {
-					stepConfig.Config[p.Name] = p.Default
+			for _, cond := range p.Conditions {
+				for _, param := range cond.Params {
+					// retrieve configuration value of condition parameter
+					dependentValue := stepConfig.Config[param.Name]
+					// check if configuration of condition parameter matches the value
+					// so far string-equals condition is assumed here
+					// if so and if no config applied yet, then try to apply the value
+					if cmp.Equal(dependentValue, param.Value) && stepConfig.Config[p.Name] == nil {
+						subMap, ok := stepConfig.Config[dependentValue.(string)].(map[string]interface{})
+						if ok && subMap[p.Name] != nil {
+							stepConfig.Config[p.Name] = subMap[p.Name]
+						}
+					}
 				}
 			}
 		}
@@ -298,6 +303,18 @@ func GetStepConfigWithJSON(flagValues map[string]interface{}, stepConfigJSON str
 	return stepConfig
 }
 
+func (c *Config) GetStageConfig(paramJSON string, configuration io.ReadCloser, defaults []io.ReadCloser, ignoreCustomDefaults bool, acceptedParams []string, stageName string) (StepConfig, error) {
+
+	filters := StepFilters{
+		General:    acceptedParams,
+		Steps:      []string{},
+		Stages:     acceptedParams,
+		Parameters: acceptedParams,
+		Env:        []string{},
+	}
+	return c.GetStepConfig(map[string]interface{}{}, paramJSON, configuration, defaults, ignoreCustomDefaults, filters, []StepParameters{}, []StepSecrets{}, map[string]interface{}{}, stageName, "", []Alias{})
+}
+
 // GetJSON returns JSON representation of an object
 func GetJSON(data interface{}) (string, error) {
 
@@ -309,14 +326,31 @@ func GetJSON(data interface{}) (string, error) {
 }
 
 // OpenPiperFile provides functionality to retrieve configuration via file or http
-func OpenPiperFile(name string) (io.ReadCloser, error) {
+func OpenPiperFile(name string, accessTokens map[string]string) (io.ReadCloser, error) {
 	if !strings.HasPrefix(name, "http://") && !strings.HasPrefix(name, "https://") {
 		return os.Open(name)
 	}
 
-	// support http(s) urls next to file path - url cannot be protected
-	client := http.Client{}
-	response, err := client.SendRequest("GET", name, nil, nil, nil)
+	return httpReadFile(name, accessTokens)
+}
+
+func httpReadFile(name string, accessTokens map[string]string) (io.ReadCloser, error) {
+
+	u, err := url.Parse(name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read url: %w", err)
+	}
+
+	// support http(s) urls next to file path
+	client := piperhttp.Client{}
+
+	var header http.Header
+	if len(accessTokens[u.Host]) > 0 {
+		client.SetOptions(piperhttp.ClientOptions{Token: fmt.Sprintf("token %v", accessTokens[u.Host])})
+		header = map[string][]string{"Accept": {"application/vnd.github.v3.raw"}}
+	}
+
+	response, err := client.SendRequest("GET", name, nil, header, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -342,14 +376,34 @@ func (s *StepConfig) mixIn(mergeData map[string]interface{}, filter []string) {
 	s.Config = merge(s.Config, filterMap(mergeData, filter))
 }
 
+func (s *StepConfig) mixInHookConfig(mergeData map[string]interface{}) {
+
+	if s.HookConfig == nil {
+		s.HookConfig = map[string]interface{}{}
+	}
+
+	s.HookConfig = merge(s.HookConfig, mergeData)
+}
+
 func (s *StepConfig) mixInStepDefaults(stepParams []StepParameters) {
 	if s.Config == nil {
 		s.Config = map[string]interface{}{}
 	}
 
+	// conditional defaults need to be written to a sub map
+	// in order to prevent a "last one wins" situation
+	// this is then considered at the end of GetStepConfig once the complete configuration is known
 	for _, p := range stepParams {
 		if p.Default != nil {
-			s.Config[p.Name] = p.Default
+			if len(p.Conditions) == 0 {
+				s.Config[p.Name] = p.Default
+			} else {
+				for _, cond := range p.Conditions {
+					for _, param := range cond.Params {
+						s.Config[param.Value] = map[string]interface{}{p.Name: p.Default}
+					}
+				}
+			}
 		}
 	}
 }

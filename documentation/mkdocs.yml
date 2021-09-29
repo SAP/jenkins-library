@@ -12,6 +12,7 @@ nav:
         - 'ABAP Environment pipeline':
             - 'Introduction': pipelines/abapEnvironment/introduction.md
             - 'Configuration': pipelines/abapEnvironment/configuration.md
+            - 'Extensibility': pipelines/abapEnvironment/extensibility.md
             - 'Stages':
               - 'Initial Checks': pipelines/abapEnvironment/stages/initialChecks.md
               - 'Prepare System': pipelines/abapEnvironment/stages/prepareSystem.md
@@ -45,8 +46,8 @@ nav:
         - 'Integrate SAP Cloud Platform Transport Management Into Your CI/CD Pipeline': scenarios/TMS_Extension.md
         - 'Build and Deploy SAP Fiori Applications on SAP HANA Extended Application Services, Advanced Model': scenarios/xsa-deploy/Readme.md
         - 'Build an SAP Fiori Application and Attach It to a Transport Request on an ABAP System': scenarios/upload-to-transportrequest/Readme.md
-        - 'Build and Publish Add-on Products on SAP Cloud Platform ABAP Environment': scenarios/abapEnvironmentAddons.md
-        - 'Continuous Testing on SAP Cloud Platform ABAP Environment': scenarios/abapEnvironmentTest.md
+        - 'Build and Publish Add-on Products on SAP BTP, ABAP Environment': scenarios/abapEnvironmentAddons.md
+        - 'Continuous Testing on SAP BTP, ABAP Environment': scenarios/abapEnvironmentTest.md
     - Extensibility: extensibility.md
     - 'Library steps':
         - abapAddonAssemblyKitCheckCVs: steps/abapAddonAssemblyKitCheckCVs.md
@@ -74,6 +75,7 @@ nav:
         - cloudFoundryCreateServiceKey: steps/cloudFoundryCreateServiceKey.md
         - cloudFoundryDeleteService: steps/cloudFoundryDeleteService.md
         - cloudFoundryDeploy: steps/cloudFoundryDeploy.md
+        - cnbBuild: steps/cnbBuild.md
         - commonPipelineEnvironment: steps/commonPipelineEnvironment.md
         - containerExecuteStructureTests: steps/containerExecuteStructureTests.md
         - containerPushToRegistry: steps/containerPushToRegistry.md
@@ -97,6 +99,7 @@ nav:
         - githubCreatePullRequest: steps/githubCreatePullRequest.md
         - githubPublishRelease: steps/githubPublishRelease.md
         - githubSetCommitStatus: steps/githubSetCommitStatus.md
+        - gitopsUpdateDeployment: steps/gitopsUpdateDeployment.md
         - hadolintExecute: steps/hadolintExecute.md
         - handlePipelineStepErrors: steps/handlePipelineStepErrors.md
         - healthExecuteCheck: steps/healthExecuteCheck.md
@@ -105,6 +108,8 @@ nav:
         - integrationArtifactDownload: steps/integrationArtifactDownload.md
         - integrationArtifactGetMplStatus: steps/integrationArtifactGetMplStatus.md
         - integrationArtifactGetServiceEndpoint: steps/integrationArtifactGetServiceEndpoint.md
+        - integrationArtifactResource: steps/integrationArtifactResource.md
+        - integrationArtifactUnDeploy: steps/integrationArtifactUnDeploy.md
         - integrationArtifactUpdateConfiguration: steps/integrationArtifactUpdateConfiguration.md
         - integrationArtifactUpload: steps/integrationArtifactUpload.md
         - jenkinsMaterializeLog: steps/jenkinsMaterializeLog.md
@@ -143,8 +148,12 @@ nav:
         - testsPublishResults: steps/testsPublishResults.md
         - tmsUpload: steps/tmsUpload.md
         - transportRequestCreate: steps/transportRequestCreate.md
+        - transportRequestDocIDFromGit: steps/transportRequestDocIDFromGit.md
         - transportRequestRelease:  steps/transportRequestRelease.md
-        - transportRequestUploadFile: steps/transportRequestUploadFile.md
+        - transportRequestReqIDFromGit: steps/transportRequestReqIDFromGit.md
+        - transportRequestUploadCTS: steps/transportRequestUploadCTS.md
+        - transportRequestUploadRFC: steps/transportRequestUploadRFC.md
+        - transportRequestUploadSOLMAN: steps/transportRequestUploadSOLMAN.md
         - uiVeri5ExecuteTests: steps/uiVeri5ExecuteTests.md
         - vaultRotateSecretId: steps/vaultRotateSecretId.md
         - whitesourceExecuteScan: steps/whitesourceExecuteScan.md
@@ -153,6 +162,7 @@ nav:
     - 'Library Steps (deprecated)':
         - artifactSetVersion: steps/artifactSetVersion.md
         - npmExecute: steps/npmExecute.md
+        - transportRequestUploadFile: steps/transportRequestUploadFile.md
     - 'Command line tool': cli/index.md
 
 theme:

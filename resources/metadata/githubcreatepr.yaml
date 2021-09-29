@@ -118,10 +118,8 @@ spec:
           - name: githubTokenCredentialsId
             type: secret
           - type: vaultSecret
-            paths:
-            - $(vaultPath)/github
-            - $(vaultBasePath)/$(vaultPipelineName)/github
-            - $(vaultBasePath)/GROUP-SECRETS/github
+            default: github
+            name: githubVaultSecretName
       - name: labels
         description: Labels to be added to the pull request.
         scope:
