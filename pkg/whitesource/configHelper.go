@@ -179,7 +179,7 @@ func (c *ConfigOptions) addBuildToolDefaults(config *ScanOptions, utils Utils) e
 			{Name: "gradle.downloadMissingDependencies", Value: true},
 			{Name: "gradle.localRepositoryPath", Value: ".gradle"},
 			{Name: "excludes", Value: "**/*sources.jar **/*javadoc.jar"},
-      {Name: "ignoreSourceFiles", Value: false},
+                        {Name: "ignoreSourceFiles", Value: false},
 		},
 		"maven": {
 			{Name: "ignoreSourceFiles", Value: true, Force: true},
