@@ -342,6 +342,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
+						Default:     `protecodescan_vulns.json`,
 					},
 					{
 						Name:        "fetchUrl",
