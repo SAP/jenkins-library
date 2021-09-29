@@ -85,7 +85,7 @@ void call(parameters = [:]) {
         def script = checkScript(this, parameters) ?: this
         String stageName = parameters.stageName ?: env.STAGE_NAME
 
-        addPipelineWarning(script, "Deprecation Warning", "The step ${stepName} is deprecated. Follow the documentation for options.")
+        addPipelineWarning(script, "Deprecation Warning", "The step ${STEP_NAME} is deprecated. Follow the documentation for options.")
 
         ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
             .loadStepDefaults([:], stageName)
