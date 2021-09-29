@@ -263,6 +263,8 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		return errors.New("containerRegistryUrl, containerImageName and containerImageTag must be present")
 	}
 
+	utils.AppendEnv(os.Environ())
+
 	err = utils.RunExecutable(detectorPath, "-buildpacks", buildpacksPath, "-order", orderPath)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
