@@ -59,9 +59,9 @@ class PiperPipelineStageReleaseTest extends BasePiperTest {
         })
 
         helper.registerAllowedMethod('kubernetesDeploy', [Map.class], {m ->
-                    stepsCalled.add('kubernetesDeploy')
-                    stepParameters.kubernetesDeploy = m
-                })
+            stepsCalled.add('kubernetesDeploy')
+            stepParameters.kubernetesDeploy = m
+        })
 
         helper.registerAllowedMethod('npmExecuteEndToEndTests', [Map.class], {m ->
             stepsCalled.add('npmExecuteEndToEndTests')
