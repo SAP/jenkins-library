@@ -301,6 +301,7 @@ spec:
             type: secret
           - type: vaultSecretFile
             name: dockerConfigFileVaultSecretName
+            default: docker-config
   containers:
     - image: dtzar/helm-kubectl:3.4.1
       workingDir: /config
