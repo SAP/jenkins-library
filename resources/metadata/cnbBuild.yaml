@@ -55,6 +55,13 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
+      - name: buildEnvVars
+        type: "[]string"
+        description: List of custom environment variables used during a build in the form of 'KEY=VALUE'.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
       - name: path
         type: string
         description: The path should either point to a directory with your sources or an artifact in zip format.

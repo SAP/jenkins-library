@@ -52,8 +52,8 @@ func TestRunCnbBuild(t *testing.T) {
 		assert.Equal(t, "/cnb/lifecycle/detector", runner.Calls[0].Exec)
 		assert.Equal(t, "/cnb/lifecycle/builder", runner.Calls[1].Exec)
 		assert.Equal(t, "/cnb/lifecycle/exporter", runner.Calls[2].Exec)
-		assert.Equal(t, []string{"-buildpacks", "/cnb/buildpacks", "-order", "/cnb/order.toml"}, runner.Calls[0].Params)
-		assert.Equal(t, []string{"-buildpacks", "/cnb/buildpacks"}, runner.Calls[1].Params)
+		assert.Equal(t, []string{"-buildpacks", "/cnb/buildpacks", "-order", "/cnb/order.toml", "-platform", "/platform"}, runner.Calls[0].Params)
+		assert.Equal(t, []string{"-buildpacks", "/cnb/buildpacks", "-platform", "/platform"}, runner.Calls[1].Params)
 		assert.Equal(t, []string{fmt.Sprintf("%s/%s:%s", registry, config.ContainerImageName, config.ContainerImageTag), fmt.Sprintf("%s/%s:latest", registry, config.ContainerImageName)}, runner.Calls[2].Params)
 	})
 
@@ -79,12 +79,12 @@ func TestRunCnbBuild(t *testing.T) {
 		assert.Equal(t, "/cnb/lifecycle/detector", runner.Calls[0].Exec)
 		assert.Equal(t, "/cnb/lifecycle/builder", runner.Calls[1].Exec)
 		assert.Equal(t, "/cnb/lifecycle/exporter", runner.Calls[2].Exec)
-		assert.Equal(t, []string{"-buildpacks", "/cnb/buildpacks", "-order", "/cnb/order.toml"}, runner.Calls[0].Params)
-		assert.Equal(t, []string{"-buildpacks", "/cnb/buildpacks"}, runner.Calls[1].Params)
+		assert.Equal(t, []string{"-buildpacks", "/cnb/buildpacks", "-order", "/cnb/order.toml", "-platform", "/platform"}, runner.Calls[0].Params)
+		assert.Equal(t, []string{"-buildpacks", "/cnb/buildpacks", "-platform", "/platform"}, runner.Calls[1].Params)
 		assert.Equal(t, []string{fmt.Sprintf("%s/%s:%s", registry, config.ContainerImageName, config.ContainerImageTag), fmt.Sprintf("%s/%s:latest", registry, config.ContainerImageName)}, runner.Calls[2].Params)
 	})
 
-	t.Run("success case (custom buildpacks)", func(t *testing.T) {
+	t.Run("success case (custom buildpacks and custom env variables)", func(t *testing.T) {
 		t.Parallel()
 		registry := "some-registry"
 		config := cnbBuildOptions{
@@ -93,6 +93,7 @@ func TestRunCnbBuild(t *testing.T) {
 			ContainerRegistryURL: registry,
 			DockerConfigJSON:     "/path/to/config.json",
 			Buildpacks:           []string{"test"},
+			BuildEnvVars:         []string{"FOO=BAR"},
 		}
 
 		utils := newCnbBuildTestsUtils()
@@ -107,8 +108,8 @@ func TestRunCnbBuild(t *testing.T) {
 		assert.Equal(t, "/cnb/lifecycle/detector", runner.Calls[0].Exec)
 		assert.Equal(t, "/cnb/lifecycle/builder", runner.Calls[1].Exec)
 		assert.Equal(t, "/cnb/lifecycle/exporter", runner.Calls[2].Exec)
-		assert.Equal(t, []string{"-buildpacks", "/tmp/buildpacks", "-order", "/tmp/buildpacks/order.toml"}, runner.Calls[0].Params)
-		assert.Equal(t, []string{"-buildpacks", "/tmp/buildpacks"}, runner.Calls[1].Params)
+		assert.Equal(t, []string{"-buildpacks", "/tmp/buildpacks", "-order", "/tmp/buildpacks/order.toml", "-platform", "/tmp/platform"}, runner.Calls[0].Params)
+		assert.Equal(t, []string{"-buildpacks", "/tmp/buildpacks", "-platform", "/tmp/platform"}, runner.Calls[1].Params)
 		assert.Equal(t, []string{fmt.Sprintf("%s/%s:%s", registry, config.ContainerImageName, config.ContainerImageTag), fmt.Sprintf("%s/%s:latest", registry, config.ContainerImageName)}, runner.Calls[2].Params)
 	})
 
