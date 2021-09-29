@@ -167,6 +167,17 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		return errors.New("the provided dockerImage is not a valid builder")
 	}
 
+	platformPath := "/platform"
+	if config.BuildEnvVars != nil && len(config.BuildEnvVars) > 0 {
+		log.Entry().Infof("Setting custom environment variables: '%v'", config.BuildEnvVars)
+		platformPath = "/tmp/platform"
+		err = cnbutils.CreateEnvFiles(utils, platformPath, config.BuildEnvVars)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return errors.Wrap(err, "failed to write environment variables to files")
+		}
+	}
+
 	dockerConfig := &configfile.ConfigFile{}
 	dockerConfigJSON := []byte(`{"auths":{}}`)
 	if len(config.DockerConfigJSON) > 0 {
@@ -228,7 +239,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 	var buildpacksPath = "/cnb/buildpacks"
 	var orderPath = "/cnb/order.toml"
 
-	if config.Buildpacks != nil && len(config.Buildpacks) != 0 {
+	if config.Buildpacks != nil && len(config.Buildpacks) > 0 {
 		log.Entry().Infof("Setting custom buildpacks: '%v'", config.Buildpacks)
 		buildpacksPath, orderPath, err = setCustomBuildpacks(config.Buildpacks, utils)
 		defer utils.RemoveAll(buildpacksPath)
@@ -263,15 +274,13 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		return errors.New("containerRegistryUrl, containerImageName and containerImageTag must be present")
 	}
 
-	utils.AppendEnv(os.Environ())
-
-	err = utils.RunExecutable(detectorPath, "-buildpacks", buildpacksPath, "-order", orderPath)
+	err = utils.RunExecutable(detectorPath, "-buildpacks", buildpacksPath, "-order", orderPath, "-platform", platformPath)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
 		return errors.Wrapf(err, "execution of '%s' failed", detectorPath)
 	}
 
-	err = utils.RunExecutable(builderPath, "-buildpacks", buildpacksPath)
+	err = utils.RunExecutable(builderPath, "-buildpacks", buildpacksPath, "-platform", platformPath)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
 		return errors.Wrapf(err, "execution of '%s' failed", builderPath)
