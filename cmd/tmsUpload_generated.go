@@ -17,6 +17,7 @@ import (
 )
 
 type tmsUploadOptions struct {
+	ServiceKey        string `json:"serviceKey,omitempty"`
 	CustomDescription string `json:"customDescription,omitempty"`
 	NamedUser         string `json:"namedUser,omitempty"`
 	NodeName          string `json:"nodeName,omitempty"`
@@ -142,6 +143,7 @@ For more information, see [official documentation of SAP Cloud Transport Managem
 }
 
 func addTmsUploadFlags(cmd *cobra.Command, stepConfig *tmsUploadOptions) {
+	cmd.Flags().StringVar(&stepConfig.ServiceKey, "serviceKey", os.Getenv("PIPER_serviceKey"), "Temporal parameter for passing TMS service key.")
 	cmd.Flags().StringVar(&stepConfig.CustomDescription, "customDescription", os.Getenv("PIPER_customDescription"), "Can be used as the description of a transport request. Will overwrite the default, which is corresponding Git commit-ID.")
 	cmd.Flags().StringVar(&stepConfig.NamedUser, "namedUser", `Piper-Pipeline`, "Defines the named user to execute transport request with. The default value is 'Piper-Pipeline'.")
 	cmd.Flags().StringVar(&stepConfig.NodeName, "nodeName", os.Getenv("PIPER_nodeName"), "Defines the name of the node to which the *.mtar file should be uploaded.")
@@ -149,6 +151,7 @@ func addTmsUploadFlags(cmd *cobra.Command, stepConfig *tmsUploadOptions) {
 	cmd.Flags().StringVar(&stepConfig.MtaVersion, "mtaVersion", `*`, "Defines the version of the MTA for which the MTA extension descriptor will be used. You can use an asterisk (*) to accept any MTA version, or use a specific version compliant with SemVer 2.0, e.g. 1.0.0 (see semver.org). If the parameter is not configured, an asterisk is used.")
 	cmd.Flags().StringVar(&stepConfig.Proxy, "proxy", os.Getenv("PIPER_proxy"), "Proxy which should be used for the communication with the Transport Management Service Backend.")
 
+	cmd.MarkFlagRequired("serviceKey")
 	cmd.MarkFlagRequired("nodeName")
 	cmd.MarkFlagRequired("mtaPath")
 }
@@ -164,12 +167,21 @@ func tmsUploadMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "credentialsId", Description: "Jenkins 'Secret key' credentials ID containing service key for SAP Cloud Transport management service.", Type: "jenkins"},
+					{Name: "credentialsId", Description: "Jenkins 'Secret text' credentials ID containing service key for SAP Cloud Transport management service.", Type: "jenkins"},
 				},
 				Resources: []config.StepResources{
 					{Name: "buildResult", Type: "stash"},
 				},
 				Parameters: []config.StepParameters{
+					{
+						Name:        "serviceKey",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STEPS"},
+						Type:        "string",
+						Mandatory:   true,
+						Aliases:     []config.Alias{},
+						Default:     os.Getenv("PIPER_serviceKey"),
+					},
 					{
 						Name:        "customDescription",
 						ResourceRef: []config.ResourceReference{},

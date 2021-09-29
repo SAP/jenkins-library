@@ -14,12 +14,19 @@ spec:
   inputs:
     secrets:
       - name: credentialsId
-        description: Jenkins 'Secret key' credentials ID containing service key for SAP Cloud Transport management service.
+        description: Jenkins 'Secret text' credentials ID containing service key for SAP Cloud Transport management service.
         type: jenkins
     resources:
       - name: buildResult
         type: stash
     params:
+      - name: serviceKey
+        type: string
+        description: Temporal parameter for passing TMS service key.
+        scope:
+          - PARAMETERS
+          - STEPS
+        mandatory: true
       - name: customDescription
         type: string
         description: Can be used as the description of a transport request. Will overwrite the default, which is corresponding Git commit-ID.
