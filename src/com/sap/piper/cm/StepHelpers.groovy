@@ -106,7 +106,7 @@ public class StepHelpers {
             "to: ${configuration.changeManagement.git.to}]." +
             "transportRequestLabel: '${configuration.changeManagement.transportRequestLabel}']."
 
-        script.transportRequestReqIDFromGit(script: this,
+        script.transportRequestReqIDFromGit(script: script,
             gitFrom: configuration.changeManagement.git.from,
             gitTo: configuration.changeManagement.git.to,
             transportRequestLabel: configuration.changeManagement.transportRequestLabel
@@ -148,7 +148,7 @@ public class StepHelpers {
             "to: ${configuration.changeManagement.git.to}, " +
             "changeDocumentLabel: '${configuration.changeManagement.changeDocumentLabel}']."
 
-        script.transportRequestDocIDFromGit(script: this,
+        script.transportRequestDocIDFromGit(script: script,
             gitFrom: configuration.changeManagement.git.from,
             gitTo: configuration.changeManagement.git.to,
             changeDocumentLabel: configuration.changeManagement.changeDocumentLabel

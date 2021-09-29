@@ -242,7 +242,6 @@ void call(Map parameters = [:]) {
 
                         Map paramsUpload = [
                             script: script,
-                            cmClientOpts: configuration.changeManagement.clientOpts?: [:],
                             filePath: configuration.filePath,
                             uploadCredentialsId: configuration.changeManagement.credentialsId,
                             endpoint: configuration.changeManagement.endpoint,
@@ -251,6 +250,9 @@ void call(Map parameters = [:]) {
                             transportRequestId: configuration.transportRequestId
                             ]
 
+                        if(configuration.changeManagement.clientOpts) {
+                            paramsUpload.cmClientOpts = configuration.changeManagement.clientOpts
+                        }
                         paramsUpload = addDockerParams(script, paramsUpload, configuration.changeManagement.solman?.docker)
 
                         transportRequestUploadSOLMAN(paramsUpload)
