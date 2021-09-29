@@ -24,6 +24,39 @@ type StepConditions struct {
 	Conditions map[string]map[string]interface{} `json:"stepConditions,omitempty"`
 }
 
+type PipelineDefinitionV1 struct {
+	APIVersion string   `json:"apiVersion"`
+	Kind       string   `json:"kind"`
+	Metadata   Metadata `json:"metadata"`
+	Spec       Spec     `json:"spec"`
+}
+
+type Metadata struct {
+	Name        string `json:"name,omitempty"`
+	DisplayName string `json:"displayName,omitempty"`
+	Description string `json:"description,omitempty"`
+}
+
+type Spec struct {
+	Stages []Stage `json:"stages"`
+}
+
+type Stage struct {
+	Name              string          `json:"name,omitempty"`
+	DisplayName       string          `json:"displayName,omitempty"`
+	Description       string          `json:"description,omitempty"`
+	Conditions        []StepCondition `json:"conditions,omitempty"`
+	OrchestratorLimit []string        `json:"orchestratorLimit,omitempty"`
+}
+
+type StepCondition struct {
+	Config                map[string][]string `json:"config,omitempty"`
+	ConfigKeys            []string            `json:"configKeys,omitempty"`
+	FilePattern           string              `json:"filePattern,omitempty"`
+	FilePatternFromConfig string              `json:"filePatternFromConfig,omitempty"`
+	NpmScripts            []string            `json:"npmScripts,omitempty"`
+}
+
 // InitRunConfig ...
 func (r *RunConfig) InitRunConfig(config *Config, filters map[string]StepFilters, parameters map[string][]StepParameters,
 	secrets map[string][]StepSecrets, stepAliases map[string][]Alias, glob func(pattern string) (matches []string, err error),
