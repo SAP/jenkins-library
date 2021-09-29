@@ -100,22 +100,13 @@ func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, s
 			secretsData = fmt.Sprintf(",imagePullSecrets[0].name=%v", config.ContainerRegistrySecret)
 		}
 	} else {
-		files, errf := ioutil.ReadDir(".")
-		if errf != nil {
-			panic(errf)
+		content, errF := ioutil.ReadFile(config.DockerConfigJSON)
+		if errF != nil {
+			log.Entry().WithError(err).Fatal(errF)
 		}
-		fmt.Println("Here are the files in this directory 444444444:")
-		for _, f := range files {
-			fmt.Println(f.Name())
-		}
-
-		//content, errF := ioutil.ReadFile(config.DockerConfigJSON)
-		//if errF != nil {
-		//	log.Entry().WithError(err).Fatal(errF)
-		//}
-		//text := string(content)
-		//println("Contents of docker config")
-		//println(text)
+		text := string(content)
+		println("Contents of docker config")
+		println(text)
 		var dockerRegistrySecret bytes.Buffer
 		command.Stdout(&dockerRegistrySecret)
 		kubeSecretParams := defineKubeSecretParams(config, containerRegistry)
