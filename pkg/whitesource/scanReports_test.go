@@ -78,7 +78,7 @@ func TestDownloadReports(t *testing.T) {
 		// test
 		paths, err := scan.DownloadReports(options, utils, system)
 		// assert
-		assert.EqualError(t, err, "no project with token '' found in Whitesource")
+		assert.EqualError(t, err, "unable to download vulnerability report from url: no project with token '' found in Whitesource")
 		assert.Nil(t, paths)
 	})
 	t.Run("multiple scanned projects", func(t *testing.T) {

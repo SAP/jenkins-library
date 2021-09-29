@@ -39,35 +39,33 @@ func runAbapEnvironmentCreateSystem(config *abapEnvironmentCreateSystemOptions, 
 			Password:        config.Password,
 			ServiceManifest: config.ServiceManifest,
 		}
-		runCloudFoundryCreateService(&createServiceConfig, telemetryData, cf)
-	} else {
-		// if no manifest file is provided, it is created with the provided config values
-		manifestYAML, err := generateManifestYAML(config)
+		return runCloudFoundryCreateService(&createServiceConfig, telemetryData, cf)
+	}
+	// if no manifest file is provided, it is created with the provided config values
+	manifestYAML, err := generateManifestYAML(config)
 
-		// writing the yaml into a temporary file
-		path, _ := os.Getwd()
-		path = path + "/generated_service_manifest-" + u.getUUID() + ".yml"
-		log.Entry().Debugf("Path: %s", path)
-		err = ioutil.WriteFile(path, manifestYAML, 0644)
-		if err != nil {
-			return fmt.Errorf("%s: %w", "Could not generate manifest file for the cloud foundry cli", err)
-		}
-
-		defer os.Remove(path)
-
-		// Calling cloudFoundryCreateService with the respective parameters
-		createServiceConfig := cloudFoundryCreateServiceOptions{
-			CfAPIEndpoint:   config.CfAPIEndpoint,
-			CfOrg:           config.CfOrg,
-			CfSpace:         config.CfSpace,
-			Username:        config.Username,
-			Password:        config.Password,
-			ServiceManifest: path,
-		}
-		runCloudFoundryCreateService(&createServiceConfig, telemetryData, cf)
+	// writing the yaml into a temporary file
+	path, _ := os.Getwd()
+	path = path + "/generated_service_manifest-" + u.getUUID() + ".yml"
+	log.Entry().Debugf("Path: %s", path)
+	err = ioutil.WriteFile(path, manifestYAML, 0644)
+	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
+		return fmt.Errorf("%s: %w", "Could not generate manifest file for the cloud foundry cli", err)
 	}
 
-	return nil
+	defer os.Remove(path)
+
+	// Calling cloudFoundryCreateService with the respective parameters
+	createServiceConfig := cloudFoundryCreateServiceOptions{
+		CfAPIEndpoint:   config.CfAPIEndpoint,
+		CfOrg:           config.CfOrg,
+		CfSpace:         config.CfSpace,
+		Username:        config.Username,
+		Password:        config.Password,
+		ServiceManifest: path,
+	}
+	return runCloudFoundryCreateService(&createServiceConfig, telemetryData, cf)
 }
 
 func generateManifestYAML(config *abapEnvironmentCreateSystemOptions) ([]byte, error) {
@@ -77,6 +75,7 @@ func generateManifestYAML(config *abapEnvironmentCreateSystemOptions) ([]byte, e
 	if config.AddonDescriptorFileName != "" && config.IncludeAddon {
 		descriptor, err := abaputils.ReadAddonDescriptor(config.AddonDescriptorFileName)
 		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
 			return nil, fmt.Errorf("Cloud not read addonProduct and addonVersion from %s: %w", config.AddonDescriptorFileName, err)
 		}
 		addonProduct = descriptor.AddonProduct
@@ -100,6 +99,7 @@ func generateManifestYAML(config *abapEnvironmentCreateSystemOptions) ([]byte, e
 	serviceParametersString := string(serviceParameters)
 	log.Entry().Debugf("Service Parameters: %s", serviceParametersString)
 	if err != nil {
+		log.SetErrorCategory(log.ErrorConfiguration)
 		return nil, fmt.Errorf("Could not generate parameter string for the cloud foundry cli: %w", err)
 	}
 

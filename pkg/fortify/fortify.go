@@ -37,6 +37,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// ReportsDirectory defines the subfolder for the Fortify reports which are generated
+const ReportsDirectory = "fortify"
+
 // System is the interface abstraction of a specific SystemInstance
 type System interface {
 	GetProjectByName(name string, autoCreate bool, projectVersion string) (*models.Project, error)
@@ -158,7 +161,7 @@ func (sys *SystemInstance) AuthenticateRequest(req runtime.ClientRequest, format
 // GetProjectByName returns the project identified by the name provided
 // autoCreate and projectVersion parameters only used if autoCreate=true
 func (sys *SystemInstance) GetProjectByName(projectName string, autoCreate bool, projectVersionName string) (*models.Project, error) {
-	nameParam := fmt.Sprintf("name=%v", projectName)
+	nameParam := fmt.Sprintf(`name:"%v"`, projectName)
 	params := &project_controller.ListProjectParams{Q: &nameParam}
 	params.WithTimeout(sys.timeout)
 	result, err := sys.client.ProjectController.ListProject(params, sys)

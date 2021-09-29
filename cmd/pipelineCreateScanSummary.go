@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -44,6 +45,7 @@ func runPipelineCreateScanSummary(config *pipelineCreateScanSummaryOptions, tele
 
 	scanReports := []reporting.ScanReport{}
 	for _, report := range reports {
+		log.Entry().Debugf("reading file %v", report)
 		reportContent, err := utils.FileRead(report)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
@@ -57,6 +59,9 @@ func runPipelineCreateScanSummary(config *pipelineCreateScanSummaryOptions, tele
 	}
 
 	output := []byte{}
+	if len(config.PipelineLink) > 0 {
+		output = []byte(fmt.Sprintf("## Pipeline Source for Details\n\nAs listed results might be incomplete, it is crucial that you check the detailed [pipeline](%v) status.\n\n", config.PipelineLink))
+	}
 	for _, scanReport := range scanReports {
 		if (config.FailedOnly && !scanReport.SuccessfulScan) || !config.FailedOnly {
 			mdReport, _ := scanReport.ToMarkdown()

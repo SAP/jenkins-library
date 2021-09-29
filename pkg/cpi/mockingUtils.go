@@ -14,9 +14,9 @@ import (
 //GetCPIFunctionMockResponse -Generate mock response payload for different CPI functions
 func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, error) {
 	switch functionName {
-	case "IntegrationArtifactDeploy":
+	case "IntegrationArtifactDeploy", "PositiveAndUnDeployIntegrationDesigntimeArtifact":
 		return GetEmptyHTTPResponseBodyAndErrorNil()
-	case "FailIntegrationDesigntimeArtifactDeployment":
+	case "FailIntegrationDesigntimeArtifactDeployment", "FailedIntegrationRuntimeArtifactUnDeployment":
 		return GetNegativeCaseHTTPResponseBodyAndErrorNil()
 	case "IntegrationArtifactUpdateConfiguration":
 		if testType == "Positive" {
@@ -48,6 +48,17 @@ func GetCPIFunctionMockResponse(functionName, testType string) (*http.Response, 
 		return GetIntegrationArtifactDeployStatusMockResponse(testType)
 	case "GetIntegrationArtifactDeployErrorDetails":
 		return GetIntegrationArtifactDeployErrorDetailsMockResponse(testType)
+	case "TriggerIntegrationTest":
+		return TriggerIntegrationTestMockResponse(testType)
+	case "IntegrationArtifactGetMplStatusError":
+		return GetIntegrationArtifactDeployErrorStatusMockResponseBody()
+	case "IntegrationArtifactResourceCreate":
+		if testType == "Negative" {
+			return GetRespBodyHTTPStatusServiceErrorResponse()
+		}
+		return GetRespBodyHTTPStatusCreated()
+	case "IntegrationArtifactResourceUpdate", "IntegrationArtifactResourceDelete":
+		return GetRespBodyHTTPStatusOK()
 	default:
 		res := http.Response{
 			StatusCode: 404,
@@ -161,6 +172,26 @@ func GetIntegrationArtifactGetServiceEndpointCommandMockResponse(testCaseType st
 	return &res, errors.New("Unable to get integration flow service endpoint, Response Status code:400")
 }
 
+//TriggerIntegrationTestMockResponse
+func TriggerIntegrationTestMockResponse(testCaseType string) (*http.Response, error) {
+	if testCaseType == "Positive" {
+		return &http.Response{
+			StatusCode: 200,
+		}, nil
+	}
+	res := http.Response{
+		StatusCode: 400,
+		Body: ioutil.NopCloser(bytes.NewReader([]byte(`{
+					"code": "Bad Request",
+					"message": {
+					"@lang": "en",
+					"#text": "invalid"
+					}
+				}`))),
+	}
+	return &res, errors.New("Unable to trigger integration test, Response Status code:400")
+}
+
 //GetIntegrationArtifactGetServiceEndpointPositiveCaseRespBody -Provide http respose body for positive case
 func GetIntegrationArtifactGetServiceEndpointPositiveCaseRespBody() (*http.Response, error) {
 
@@ -237,7 +268,7 @@ func GetRespBodyHTTPStatusServiceErrorResponse() (*http.Response, error) {
 		StatusCode: 500,
 		Body:       ioutil.NopCloser(bytes.NewReader([]byte(``))),
 	}
-	return &resp, errors.New("Internal error")
+	return &resp, errors.New("401 Unauthorized")
 }
 
 //IntegrationArtifactDownloadCommandMockResponse -Provide http respose body
@@ -391,12 +422,12 @@ func GetCPIFunctionNameByURLCheck(url, method, testType string) string {
 	case "https://demo/api/v1/IntegrationDesigntimeArtifacts(Id='flow4',Version='1.0.4')":
 		return GetFunctionNameByTestTypeAndMethod(method, testType)
 
-	case "https://demo/api/v1/IntegrationDesigntimeArtifactSaveAsVersion?Id='flow4'&SaveAsVersion='1.0.4'":
+	case "https://demo/api/v1/IntegrationDesigntimeArtifacts(Id='flow4',Version='Active')":
 		return GetFunctionNameByTestTypeAndMethod(method, testType)
 
 	case "https://demo/api/v1/IntegrationDesigntimeArtifacts":
 		return GetFunctionNameByTestTypeAndMethod(method, testType)
-	case "https://demo/api/v1/DeployIntegrationDesigntimeArtifact?Id='flow1'&Version='1.0.1'":
+	case "https://demo/api/v1/DeployIntegrationDesigntimeArtifact?Id='flow1'&Version='Active'":
 		return GetFunctionNameByTestTypeAndMethod(method, testType)
 	case "https://demo/api/v1/IntegrationRuntimeArtifacts('flow1')":
 		return "GetIntegrationArtifactDeployStatus"
@@ -426,10 +457,9 @@ func GetFunctionNameByTestTypeAndMethod(method, testType string) string {
 		if method == "GET" {
 			return "GetIntegrationDesigntimeArtifact"
 		}
-		if method == "POST" {
+		if method == "PUT" {
 			return "UploadIntegrationDesigntimeArtifactNegative"
 		}
-
 	case "NegativeAndUpdateIntegrationDesigntimeArtifactResBody":
 		if method == "GET" {
 			return "GetIntegrationDesigntimeArtifact"
@@ -465,7 +495,7 @@ func GetFunctionNamePositiveAndCreateIntegrationDesigntimeArtifactResBody(method
 	if method == "GET" {
 		return "GetIntegrationDesigntimeArtifact"
 	}
-	if method == "POST" {
+	if method == "PUT" {
 		return "UploadIntegrationDesigntimeArtifact"
 	}
 	return ""

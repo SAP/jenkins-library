@@ -2,8 +2,9 @@ package cmd
 
 import (
 	"errors"
-	"github.com/SAP/jenkins-library/pkg/mock"
 	"testing"
+
+	"github.com/SAP/jenkins-library/pkg/mock"
 
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/stretchr/testify/assert"
@@ -11,7 +12,7 @@ import (
 
 func TestRunKarma(t *testing.T) {
 	t.Run("success case", func(t *testing.T) {
-		opts := karmaExecuteTestsOptions{ModulePath: "./test", InstallCommand: "npm install test", RunCommand: "npm run test"}
+		opts := karmaExecuteTestsOptions{Modules: []string{"./test"}, InstallCommand: "npm install test", RunCommand: "npm run test"}
 
 		e := mock.ExecMockRunner{}
 		runKarma(opts, &e)
@@ -28,7 +29,7 @@ func TestRunKarma(t *testing.T) {
 		var hasFailed bool
 		log.Entry().Logger.ExitFunc = func(int) { hasFailed = true }
 
-		opts := karmaExecuteTestsOptions{ModulePath: "./test", InstallCommand: "fail install test", RunCommand: "npm run test"}
+		opts := karmaExecuteTestsOptions{Modules: []string{"./test"}, InstallCommand: "fail install test", RunCommand: "npm run test"}
 
 		e := mock.ExecMockRunner{ShouldFailOnCommand: map[string]error{"fail install test": errors.New("error case")}}
 		runKarma(opts, &e)
@@ -39,7 +40,7 @@ func TestRunKarma(t *testing.T) {
 		var hasFailed bool
 		log.Entry().Logger.ExitFunc = func(int) { hasFailed = true }
 
-		opts := karmaExecuteTestsOptions{ModulePath: "./test", InstallCommand: "npm install test", RunCommand: "npm run test"}
+		opts := karmaExecuteTestsOptions{Modules: []string{"./test"}, InstallCommand: "npm install test", RunCommand: "npm run test"}
 
 		e := mock.ExecMockRunner{ShouldFailOnCommand: map[string]error{"npm install test": errors.New("error case")}}
 		runKarma(opts, &e)

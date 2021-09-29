@@ -2,6 +2,7 @@ package whitesource
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -79,6 +80,18 @@ func (s *Scan) ScannedProjects() []Project {
 		projects = append(projects, project)
 	}
 	return projects
+}
+
+// ScannedProjectNames returns a sorted list of all scanned project names
+func (s *Scan) ScannedProjectNames() []string {
+	projectNames := []string{}
+	for _, project := range s.ScannedProjects() {
+		projectNames = append(projectNames, project.Name)
+	}
+	// Sorting helps the list become stable across pipeline runs (and in the unit tests),
+	// as the order in which we travers map keys is not deterministic.
+	sort.Strings(projectNames)
+	return projectNames
 }
 
 // ScanTime returns the time at which the respective WhiteSource Project was scanned, or the the

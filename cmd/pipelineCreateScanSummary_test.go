@@ -71,6 +71,26 @@ func TestRunPipelineCreateScanSummary(t *testing.T) {
 		assert.Contains(t, fileContentString, "Title Scan 3")
 	})
 
+	t.Run("success - with source link", func(t *testing.T) {
+		t.Parallel()
+
+		config := pipelineCreateScanSummaryOptions{
+			OutputFilePath: "scanSummary.md",
+			PipelineLink:   "https://test.com/link",
+		}
+
+		utils := newPipelineCreateScanSummaryTestsUtils()
+
+		err := runPipelineCreateScanSummary(&config, nil, utils)
+
+		assert.NoError(t, err)
+		reportExists, _ := utils.FileExists("scanSummary.md")
+		assert.True(t, reportExists)
+		fileContent, _ := utils.FileRead("scanSummary.md")
+		fileContentString := string(fileContent)
+		assert.Contains(t, fileContentString, "https://test.com/link")
+	})
+
 	t.Run("error - read file", func(t *testing.T) {
 		t.Skip()
 		//ToDo

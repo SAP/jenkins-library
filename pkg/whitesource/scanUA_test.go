@@ -2,12 +2,11 @@ package whitesource
 
 import (
 	"fmt"
+	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/stretchr/testify/assert"
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/SAP/jenkins-library/pkg/log"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestExecuteUAScan(t *testing.T) {
@@ -291,6 +290,28 @@ func TestDownloadAgent(t *testing.T) {
 		err := downloadAgent(&config, utilsMock)
 		assert.Contains(t, fmt.Sprint(err), "failed to download unified agent from URL")
 	})
+	t.Run("error - download with retry unable to copy content from file", func(t *testing.T) {
+		config := ScanOptions{
+			AgentDownloadURL: "errorCopyFile", // Misusing this ScanOptions to tell DownloadFile Mock to raise an error
+			AgentFileName:    "unified-agent.jar",
+		}
+		utilsMock := NewScanUtilsMock()
+		utilsMock.DownloadError = map[string]error{"https://download.ua.org/agent.jar": fmt.Errorf("unable to copy content from url to file")}
+
+		err := downloadAgent(&config, utilsMock)
+		assert.Contains(t, fmt.Sprint(err), "unable to copy content from url to file")
+	})
+	t.Run("error - download with retry not found 404", func(t *testing.T) {
+		config := ScanOptions{
+			AgentDownloadURL: "error404NotFound", // Misusing this ScanOptions to tell DownloadFile Mock to raise an error
+			AgentFileName:    "unified-agent.jar",
+		}
+		utilsMock := NewScanUtilsMock()
+		utilsMock.DownloadError = map[string]error{"https://download.ua.org/agent.jar": fmt.Errorf("returned with response 404 Not Found")}
+
+		err := downloadAgent(&config, utilsMock)
+		assert.Contains(t, fmt.Sprint(err), "returned with response 404 Not Found")
+	})
 }
 
 func TestDownloadJre(t *testing.T) {
@@ -348,6 +369,18 @@ func TestDownloadJre(t *testing.T) {
 
 		_, err := downloadJre(&config, utilsMock)
 		assert.Contains(t, fmt.Sprint(err), "failed to download jre from URL")
+	})
+
+	t.Run("error - download with retry", func(t *testing.T) {
+		config := ScanOptions{
+			JreDownloadURL: "errorCopyFile",
+		}
+		utilsMock := NewScanUtilsMock()
+		utilsMock.ShouldFailOnCommand = map[string]error{"java": fmt.Errorf("failed to run java")}
+		//utilsMock.DownloadError = map[string]error{"https://download.jre.org/jvm.jar": fmt.Errorf("failed to download file")}
+
+		_, err := downloadJre(&config, utilsMock)
+		assert.Contains(t, fmt.Sprint(err), "unable to copy content from url to file")
 	})
 
 	t.Run("error - tar execution", func(t *testing.T) {

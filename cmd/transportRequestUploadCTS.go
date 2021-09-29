@@ -46,7 +46,9 @@ func newTransportRequestUploadCTSUtils() transportRequestUploadUtils {
 	return &utils
 }
 
-func transportRequestUploadCTS(config transportRequestUploadCTSOptions, telemetryData *telemetry.CustomData) {
+func transportRequestUploadCTS(config transportRequestUploadCTSOptions,
+	telemetryData *telemetry.CustomData,
+	commonPipelineEnvironment *transportRequestUploadCTSCommonPipelineEnvironment) {
 	// Utils can be used wherever the command.ExecRunner interface is expected.
 	// It can also be used for example as a mavenExecRunner.
 	utils := newTransportRequestUploadCTSUtils()
@@ -57,7 +59,7 @@ func transportRequestUploadCTS(config transportRequestUploadCTSOptions, telemetr
 
 	// Error situations should be bubbled up until they reach the line below which will then stop execution
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
-	err := runTransportRequestUploadCTS(&config, &cts.UploadAction{}, telemetryData, utils)
+	err := runTransportRequestUploadCTS(&config, &cts.UploadAction{}, telemetryData, utils, commonPipelineEnvironment)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
@@ -67,7 +69,8 @@ func runTransportRequestUploadCTS(
 	config *transportRequestUploadCTSOptions,
 	action UploadAction,
 	telemetryData *telemetry.CustomData,
-	cmd command.ShellRunner) error {
+	cmd command.ShellRunner,
+	commonPipelineEnvironment *transportRequestUploadCTSCommonPipelineEnvironment) error {
 
 	log.Entry().Debugf("Entering 'runTransportRequestUpload' with config: %v", config)
 
@@ -91,5 +94,15 @@ func runTransportRequestUploadCTS(
 	action.WithConfigFile(config.DeployConfigFile)
 	action.WithDeployUser(config.OsDeployUser)
 
-	return action.Perform(cmd)
+	commonPipelineEnvironment.custom.transportRequestID = config.TransportRequestID
+
+	err := action.Perform(cmd)
+
+	if err == nil {
+		log.Entry().Infof("Upload of application '%s' to CTS succeeded (TransportRequestId: '%s').",
+			config.ApplicationName,
+			config.TransportRequestID,
+		)
+	}
+	return err
 }

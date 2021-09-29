@@ -1,14 +1,16 @@
 metadata:
-    name: abapAddonAssemblyKitCheckPV
-    description: This step checks the validity of a Addon Product Version.
-    longDescription: |
-      This step checks whether the Addon Product Version in the addonDescriptorFileName does exist or is a valid successor of an existing Product Version.
-      It resolves the dotted version string into version, support package stack level and patch level and writes it to the commonPipelineEnvironment.
+  name: abapAddonAssemblyKitCheckPV
+  description: This step checks the validity of a Addon Product Version.
+  longDescription: |
+    This step checks by calling AAKaaS whether the Addon Product Version in the addonDescriptor configuration file specified via addonDescriptorFileName (e.g. addon.yml) does exist or is a valid successor of an existing Product Version.
+    It resolves the dotted version string into version, support package stack level and patch level and writes it to the addonDescriptor structure in the Piper commonPipelineEnvironment for usage of subsequent pipeline steps.
+    <br />
+    For Terminology refer to the [Scenario Description](https://www.project-piper.io/scenarios/abapEnvironmentAddons/).
 spec:
   inputs:
     secrets:
       - name: abapAddonAssemblyKitCredentialsId
-        description: Credential stored in Jenkins for the Addon Assembly Kit as a Service (AAKaaS) system
+        description: CredentialsId stored in Jenkins for the Addon Assembly Kit as a Service (AAKaaS) system
         type: jenkins
     params:
       - name: abapAddonAssemblyKitEndpoint
