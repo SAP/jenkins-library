@@ -291,6 +291,8 @@ spec:
         description: Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).
         scope:
           - PARAMETERS
+          - STAGES
+          - STEPS
         secret: true
         resourceRef:
           - name: commonPipelineEnvironment
@@ -299,6 +301,7 @@ spec:
             type: secret
           - type: vaultSecretFile
             name: dockerConfigFileVaultSecretName
+            default: docker-config
   containers:
     - image: dtzar/helm-kubectl:3.4.1
       workingDir: /config
