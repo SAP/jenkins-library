@@ -258,7 +258,6 @@ void call(Map parameters = [:], body) {
             config.containerMap = [(config.get('dockerImage')): config.containerName]
             config.containerCommands = config.containerCommand ? [(config.get('dockerImage')): config.containerCommand] : null
         }
-
         executeOnPod(config, utils, body, script)
     }
 }

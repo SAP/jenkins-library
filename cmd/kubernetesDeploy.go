@@ -80,7 +80,7 @@ func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, s
 	if config.DeployTool == "helm" && len(config.TillerNamespace) > 0 {
 		helmEnv = append(helmEnv, fmt.Sprintf("TILLER_NAMESPACE=%v", config.TillerNamespace))
 	}
-	log.Entry().Infof("Helm SetEnv: %v", helmEnv)
+	log.Entry().Debugf("Helm SetEnv: %v", helmEnv)
 	command.SetEnv(helmEnv)
 	command.Stdout(stdout)
 
@@ -91,8 +91,6 @@ func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, s
 		}
 	}
 
-	println("This is the docker config JSON: 3333333: ")
-	println(config.DockerConfigJSON)
 	var secretsData string
 	if len(config.DockerConfigJSON) == 0 && (len(config.ContainerRegistryUser) == 0 || len(config.ContainerRegistryPassword) == 0) {
 		log.Entry().Info("No container registry credentials or docker config.json file provided or credentials incomplete: skipping secret creation")
@@ -100,18 +98,11 @@ func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, s
 			secretsData = fmt.Sprintf(",imagePullSecrets[0].name=%v", config.ContainerRegistrySecret)
 		}
 	} else {
-		content, errF := ioutil.ReadFile(config.DockerConfigJSON)
-		if errF != nil {
-			log.Entry().WithError(err).Fatal(errF)
-		}
-		text := string(content)
-		println("Contents of docker config")
-		println(text)
 		var dockerRegistrySecret bytes.Buffer
 		command.Stdout(&dockerRegistrySecret)
 		kubeSecretParams := defineKubeSecretParams(config, containerRegistry)
 		log.Entry().Infof("Calling kubectl create secret --dry-run=true ...")
-		log.Entry().Infof("kubectl parameters %v", kubeSecretParams)
+		log.Entry().Debugf("kubectl parameters %v", kubeSecretParams)
 		if err := command.RunExecutable("kubectl", kubeSecretParams...); err != nil {
 			log.Entry().WithError(err).Fatal("Retrieving Docker config via kubectl failed")
 		}
