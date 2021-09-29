@@ -16,6 +16,11 @@ type RunConfig struct {
 	OpenFile        func(s string, t map[string]string) (io.ReadCloser, error)
 }
 
+type RunConfigV1 struct {
+	RunConfig
+	PipelineConfig PipelineDefinitionV1
+}
+
 type StageConfig struct {
 	Stages map[string]StepConditions `json:"stages,omitempty"`
 }
@@ -29,6 +34,8 @@ type PipelineDefinitionV1 struct {
 	Kind       string   `json:"kind"`
 	Metadata   Metadata `json:"metadata"`
 	Spec       Spec     `json:"spec"`
+	openFile   func(s string, t map[string]string) (io.ReadCloser, error)
+	runSteps   map[string]map[string]bool
 }
 
 type Metadata struct {
@@ -42,19 +49,46 @@ type Spec struct {
 }
 
 type Stage struct {
-	Name              string          `json:"name,omitempty"`
-	DisplayName       string          `json:"displayName,omitempty"`
-	Description       string          `json:"description,omitempty"`
-	Conditions        []StepCondition `json:"conditions,omitempty"`
-	OrchestratorLimit []string        `json:"orchestratorLimit,omitempty"`
+	Name        string `json:"name,omitempty"`
+	DisplayName string `json:"displayName,omitempty"`
+	Description string `json:"description,omitempty"`
+	Steps       []Step `json:"steps,omitempty"`
+}
+
+type Step struct {
+	Name          string          `json:"name,omitempty"`
+	Description   string          `json:"description,omitempty"`
+	Conditions    []StepCondition `json:"condition,omitempty"`
+	Orchestrators []string        `json:"orchestrators,omitempty"`
 }
 
 type StepCondition struct {
 	Config                map[string][]string `json:"config,omitempty"`
-	ConfigKeys            []string            `json:"configKeys,omitempty"`
+	ConfigKey             string              `json:"configKey,omitempty"`
+	Default               bool                `json:"default,omitempty"`
 	FilePattern           string              `json:"filePattern,omitempty"`
 	FilePatternFromConfig string              `json:"filePatternFromConfig,omitempty"`
-	NpmScripts            []string            `json:"npmScripts,omitempty"`
+	NpmScript             string              `json:"npmScript,omitempty"`
+}
+
+func (r *RunConfigV1) InitRunConfigV1(config *Config, filters map[string]StepFilters, parameters map[string][]StepParameters,
+	secrets map[string][]StepSecrets, stepAliases map[string][]Alias, glob func(pattern string) (matches []string, err error),
+	openFile func(s string, t map[string]string) (io.ReadCloser, error)) error {
+	r.OpenFile = openFile
+	r.RunSteps = map[string]map[string]bool{}
+
+	if len(r.PipelineConfig.Spec.Stages) == 0 {
+		if err := r.loadConditions(); err != nil {
+			return errors.Wrap(err, "failed to load pipeline run conditions")
+		}
+	}
+
+	err := r.evaluateConditionsV1(config, filters, parameters, secrets, stepAliases, glob)
+	if err != nil {
+		return errors.Wrap(err, "failed to evaluate step conditions: %v")
+	}
+
+	return nil
 }
 
 // InitRunConfig ...

@@ -17,6 +17,60 @@ const (
 	npmScriptsCondition            = "npmScripts"
 )
 
+// EvaluateConditionsV2 validates stage conditions and updates runSteps in runConfig according to V1 schema
+func (r *RunConfigV1) evaluateConditionsV1(config *Config, filters map[string]StepFilters, parameters map[string][]StepParameters,
+	secrets map[string][]StepSecrets, stepAliases map[string][]Alias, glob func(pattern string) (matches []string, err error)) error {
+	for _, stage := range r.PipelineConfig.Spec.Stages {
+		runStep := map[string]bool{}
+		for _, step := range stage.Steps {
+			stepActive := false
+			stepConfig, err := r.getStepConfig(config, stageName, stepName, filters, parameters, secrets, stepAliases)
+			if err != nil {
+				return err
+			}
+
+			if active, ok := stepConfig.Config[step.Name].(bool); ok {
+				// respect explicit activation/de-activation if available
+				stepActive = active
+			} else {
+				for _, condition := range step.Conditions {
+					var err error
+					switch condition {
+					case configCondition:
+						if stepActive, err = checkConfig(condition, stepConfig, stepName); err != nil {
+							return errors.Wrapf(err, "error: check config condition failed")
+						}
+					case configKeysCondition:
+						if stepActive, err = checkConfigKeys(condition, stepConfig, stepName); err != nil {
+							return errors.Wrapf(err, "error: check configKeys condition failed")
+						}
+					case filePatternFromConfigCondition:
+						if stepActive, err = checkForFilesWithPatternFromConfig(condition, stepConfig, stepName, glob); err != nil {
+							return errors.Wrapf(err, "error: check filePatternFromConfig condition failed")
+						}
+					case filePatternCondition:
+						if stepActive, err = checkForFilesWithPattern(condition, stepConfig, stepName, glob); err != nil {
+							return errors.Wrapf(err, "error: check filePattern condition failed")
+						}
+					case npmScriptsCondition:
+						if stepActive, err = checkForNpmScriptsInPackages(condition, stepConfig, stepName, glob, r.OpenFile); err != nil {
+							return errors.Wrapf(err, "error: check npmScripts condition failed")
+						}
+					default:
+						return errors.Errorf("unknown condition %s", conditionName)
+					}
+					if stepActive {
+						break
+					}
+				}
+			}
+			runStep[stepName] = stepActive
+			r.RunSteps[stageName] = runStep
+		}
+	}
+	return nil
+}
+
 // EvaluateConditions validates stage conditions and updates runSteps in runConfig
 func (r *RunConfig) evaluateConditions(config *Config, filters map[string]StepFilters, parameters map[string][]StepParameters,
 	secrets map[string][]StepSecrets, stepAliases map[string][]Alias, glob func(pattern string) (matches []string, err error)) error {
@@ -105,6 +159,13 @@ func checkConfig(condition interface{}, config StepConfig, stepName string) (boo
 		return false, errors.Errorf("error: condidiion type invalid: %T, possible types: string, map[string]interface{}", condition)
 	}
 
+	return false, nil
+}
+
+func checkConfigKey(configKey string, config StepConfig, stepName string) (bool, error) {
+	if configValue := stepConfigLookup(config.Config, stepName, configKey); configValue != nil {
+		return true, nil
+	}
 	return false, nil
 }
 
