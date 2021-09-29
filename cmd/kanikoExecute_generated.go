@@ -78,6 +78,8 @@ func KanikoExecuteCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
@@ -159,7 +161,7 @@ func kanikoExecuteMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "dockerConfigJsonCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)). You can create it like explained in the Docker Success Center in the article about [how to generate a new auth in the config.json file](https://success.docker.com/article/generate-new-auth-in-config-json-file).", Type: "jenkins"},
+					{Name: "dockerConfigJsonCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)). You can create it like explained in the [protocodeExecuteScan Prerequisites section](https://www.project-piper.io/steps/protecodeExecuteScan/#prerequisites).", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{
@@ -258,12 +260,12 @@ func kanikoExecuteMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/docker-config", "$(vaultBasePath)/$(vaultPipelineName)/docker-config", "$(vaultBasePath)/GROUP-SECRETS/docker-config"},
-								Type:  "vaultSecretFile",
+								Name:    "dockerConfigFileVaultSecretName",
+								Type:    "vaultSecretFile",
+								Default: "docker-config",
 							},
 						},
-						Scope:     []string{"PARAMETERS"},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
@@ -281,7 +283,7 @@ func kanikoExecuteMetadata() config.StepData {
 				},
 			},
 			Containers: []config.Container{
-				{Image: "gcr.io/kaniko-project/executor:v1.3.0-debug", Options: []config.Option{{Name: "-u", Value: "0"}, {Name: "--entrypoint", Value: "''"}}},
+				{Image: "gcr.io/kaniko-project/executor:v1.3.0-debug", Options: []config.Option{{Name: "-u", Value: "0"}, {Name: "--entrypoint", Value: ""}}},
 			},
 			Outputs: config.StepOutputs{
 				Resources: []config.StepResources{

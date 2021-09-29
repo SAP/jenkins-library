@@ -74,6 +74,48 @@ spec:
           - STAGES
           - PARAMETERS
         default: false
+      - name: publish
+        type: bool
+        description: Configures npm to publish the artifact to a repository.
+        scope:
+          - STEPS
+          - STAGES
+          - PARAMETERS
+      - name: repositoryUrl
+        type: string
+        description: Url to the repository to which the project artifacts should be published.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/repositoryUrl
+      - name: repositoryPassword
+        type: string
+        description: Password for the repository to which the project artifacts should be published.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/repositoryPassword
+      - name: repositoryUsername
+        type: string
+        description: Username for the repository to which the project artifacts should be published.
+        scope:
+          - GENERAL
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        secret: true
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/repositoryUsername
   containers:
     - name: node
-      image: node:12-buster
+      image: node:lts-stretch

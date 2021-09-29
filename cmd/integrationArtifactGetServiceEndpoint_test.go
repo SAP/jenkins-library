@@ -35,13 +35,12 @@ func TestRunIntegrationArtifactGetServiceEndpoint(t *testing.T) {
 		config := integrationArtifactGetServiceEndpointOptions{
 			APIServiceKey:     apiServiceKey,
 			IntegrationFlowID: "CPI_IFlow_Call_using_Cert",
-			Platform:          "cf",
 		}
 
 		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactGetServiceEndpoint", ResponseBody: ``, TestType: "PositiveAndGetetIntegrationArtifactGetServiceResBody"}
 		seOut := integrationArtifactGetServiceEndpointCommonPipelineEnvironment{}
 		err := runIntegrationArtifactGetServiceEndpoint(&config, nil, &httpClient, &seOut)
-		assert.EqualValues(t, seOut.custom.iFlowServiceEndpoint, "https://demo.cfapps.sap.hana.ondemand.com/http/testwithcert")
+		assert.EqualValues(t, seOut.custom.integrationFlowServiceEndpoint, "https://demo.cfapps.sap.hana.ondemand.com/http/testwithcert")
 
 		if assert.NoError(t, err) {
 
@@ -68,14 +67,13 @@ func TestRunIntegrationArtifactGetServiceEndpoint(t *testing.T) {
 		config := integrationArtifactGetServiceEndpointOptions{
 			APIServiceKey:     apiServiceKey,
 			IntegrationFlowID: "CPI_IFlow_Call_using_Cert",
-			Platform:          "cf",
 		}
 
 		httpClient := httpMockCpis{CPIFunction: "IntegrationArtifactGetServiceEndpoint", ResponseBody: ``, TestType: "Negative"}
 
 		seOut := integrationArtifactGetServiceEndpointCommonPipelineEnvironment{}
 		err := runIntegrationArtifactGetServiceEndpoint(&config, nil, &httpClient, &seOut)
-		assert.EqualValues(t, seOut.custom.iFlowServiceEndpoint, "")
+		assert.EqualValues(t, seOut.custom.integrationFlowServiceEndpoint, "")
 		assert.EqualError(t, err, "HTTP GET request to https://demo/api/v1/ServiceEndpoints?$expand=EntryPoints failed with error: Unable to get integration flow service endpoint, Response Status code:400")
 	})
 

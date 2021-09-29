@@ -30,6 +30,7 @@ type mavenBuildOptions struct {
 	AltDeploymentRepositoryID       string   `json:"altDeploymentRepositoryID,omitempty"`
 	CustomTLSCertificateLinks       []string `json:"customTlsCertificateLinks,omitempty"`
 	Publish                         bool     `json:"publish,omitempty"`
+	JavaCaCertFilePath              string   `json:"javaCaCertFilePath,omitempty"`
 }
 
 // MavenBuildCommand This step will install the maven project into the local maven repository.
@@ -51,6 +52,8 @@ supports ci friendly versioning by flattening the pom before installing.`,
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
+
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
@@ -123,6 +126,7 @@ func addMavenBuildFlags(cmd *cobra.Command, stepConfig *mavenBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.AltDeploymentRepositoryID, "altDeploymentRepositoryID", os.Getenv("PIPER_altDeploymentRepositoryID"), "Id for the alternative deployment repository to which the project artifacts should be deployed ( other than those specified in <distributionManagement> ). This id will be updated in settings.xml and will be used as a flag with DaltDeploymentRepository along with mavenAltDeploymentRepositoryUrl during maven deploy . When no settings.xml is provided a new one is created corresponding with <servers> tag")
 	cmd.Flags().StringSliceVar(&stepConfig.CustomTLSCertificateLinks, "customTlsCertificateLinks", []string{}, "List of download links to custom TLS certificates. This is required to ensure trusted connections to instances with repositories (like nexus) when publish flag is set to true.")
 	cmd.Flags().BoolVar(&stepConfig.Publish, "publish", false, "Configures maven to run the deploy plugin to publish artifacts to a repository.")
+	cmd.Flags().StringVar(&stepConfig.JavaCaCertFilePath, "javaCaCertFilePath", os.Getenv("PIPER_javaCaCertFilePath"), "path to the cacerts file used by Java. When maven publish is set to True and customTlsCertificateLinks (to deploy the artifact to a repository with a self signed cert) are provided to trust the self signed certs, Piper will extend the existing Java cacerts to include the new self signed certs. if not provided Piper will search for the cacerts in $JAVA_HOME/jre/lib/security/cacerts")
 
 }
 
@@ -240,9 +244,9 @@ func mavenBuildMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/alt-deployment-repository-passowrd", "$(vaultBasePath)/$(vaultPipelineName)/alt-deployment-repository-passowrd", "$(vaultBasePath)/GROUP-SECRETS/alt-deployment-repository-passowrd"},
-								Type:  "vaultSecretFile",
+								Name:    "altDeploymentRepositoryPasswordFileVaultSecretName",
+								Type:    "vaultSecretFile",
+								Default: "alt-deployment-repository-passowrd",
 							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
@@ -310,6 +314,15 @@ func mavenBuildMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{{Name: "maven/publish"}},
 						Default:     false,
+					},
+					{
+						Name:        "javaCaCertFilePath",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
+						Type:        "string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{{Name: "maven/javaCaCertFilePath"}},
+						Default:     os.Getenv("PIPER_javaCaCertFilePath"),
 					},
 				},
 			},

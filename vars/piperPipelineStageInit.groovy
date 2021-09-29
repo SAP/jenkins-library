@@ -56,6 +56,10 @@ import static com.sap.piper.Prerequisites.checkScript
      */
     'stashSettings',
     /**
+    * Works as the stashSettings parameter, but allows the use of a stash settings file that is not available as a library resource.
+    */
+    'customStashSettings',
+    /**
      * Whether verbose output should be produced.
      * @possibleValues `true`, `false`
      */
@@ -84,6 +88,10 @@ import static com.sap.piper.Prerequisites.checkScript
      * @possibleValues `true`, `false`
      */
     'skipCheckout',
+    /**
+    * Mandatory if you skip the checkout. Then you need to unstash your workspace to get the e.g. configuration.
+    */
+    'stashContent',
     /**
      * Optional path to the pipeline configuration file defining project specific settings.
      */
@@ -136,6 +144,13 @@ void call(Map parameters = [:]) {
         if (!skipCheckout) {
             scmInfo = checkout(parameters.checkoutMap ?: scm)
         }
+        else {
+            def stashContent = parameters.stashContent
+            if(stashContent == null || stashContent.size() == 0) {
+                error "[${STEP_NAME}] needs stashes if you skip checkout"
+            }
+            utils.unstashAll(stashContent)
+        }
 
         setupCommonPipelineEnvironment(script: script, customDefaults: parameters.customDefaults, scmInfo: scmInfo,
             configFile: parameters.configFile, customDefaultsFromFiles: parameters.customDefaultsFromFiles)
@@ -168,7 +183,7 @@ void call(Map parameters = [:]) {
             ContainerMap.instance.initFromResource(script, config.containerMapResource, buildTool)
         }
 
-        initStashConfiguration(script, config.stashSettings, config.verbose ?: false)
+        initStashConfiguration(script, config.stashSettings, config.customStashSettings, config.verbose ?: false)
 
         if (config.verbose) {
             echo "piper-lib-os  configuration: ${script.commonPipelineEnvironment.configuration}"
@@ -257,8 +272,13 @@ private String checkBuildTool(config) {
     return buildTool
 }
 
-private void initStashConfiguration (script, stashSettings, verbose) {
-    Map stashConfiguration = readYaml(text: libraryResource(stashSettings))
+private void initStashConfiguration (script, stashSettings, customStashSettings, verbose) {
+    Map stashConfiguration = null
+    if (customStashSettings){
+        stashConfiguration = readYaml(file: customStashSettings)
+    }else{
+        stashConfiguration = readYaml(text: libraryResource(stashSettings))
+    }
     if (verbose) echo "Stash config: ${stashConfiguration}"
     script.commonPipelineEnvironment.configuration.stageStashes = stashConfiguration
 }

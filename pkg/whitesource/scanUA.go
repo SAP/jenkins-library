@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"sync"
 
 	"github.com/SAP/jenkins-library/pkg/log"
@@ -177,6 +178,17 @@ func downloadAgent(config *ScanOptions, utils Utils) error {
 	if !exists {
 		err := utils.DownloadFile(config.AgentDownloadURL, agentFile, nil, nil)
 		if err != nil {
+			// we check if the copy error occurs and retry the download
+			// if the copy error did not happen, we rerun the whole download mechanism once
+			if strings.Contains(err.Error(), "unable to copy content from url to file") || strings.Contains(err.Error(), "returned with response 404 Not Found") {
+				// retry the download once again
+				log.Entry().Warnf("[Retry] Previous download failed due to %v", err)
+				err = nil // reset error to nil
+				err = utils.DownloadFile(config.AgentDownloadURL, agentFile, nil, nil)
+			}
+		}
+
+		if err != nil {
 			return errors.Wrapf(err, "failed to download unified agent from URL '%s' to file '%s'", config.AgentDownloadURL, agentFile)
 		}
 	}
@@ -193,7 +205,18 @@ func downloadJre(config *ScanOptions, utils Utils) (string, error) {
 	javaPath := "java"
 	if err != nil {
 		log.Entry().Infof("No Java installation found, downloading JVM from %v", config.JreDownloadURL)
-		err := utils.DownloadFile(config.JreDownloadURL, jvmTarGz, nil, nil)
+		err = utils.DownloadFile(config.JreDownloadURL, jvmTarGz, nil, nil)
+		if err != nil {
+			// we check if the copy error occurs and retry the download
+			// if the copy error did not happen, we rerun the whole download mechanism once
+			if strings.Contains(err.Error(), "unable to copy content from url to file") {
+				// retry the download once again
+				log.Entry().Warnf("Previous Download failed due to %v", err)
+				err = nil
+				err = utils.DownloadFile(config.JreDownloadURL, jvmTarGz, nil, nil)
+			}
+		}
+
 		if err != nil {
 			return "", errors.Wrapf(err, "failed to download jre from URL '%s'", config.JreDownloadURL)
 		}

@@ -19,12 +19,12 @@ import (
 type integrationArtifactGetMplStatusOptions struct {
 	APIServiceKey     string `json:"apiServiceKey,omitempty"`
 	IntegrationFlowID string `json:"integrationFlowId,omitempty"`
-	Platform          string `json:"platform,omitempty"`
 }
 
 type integrationArtifactGetMplStatusCommonPipelineEnvironment struct {
 	custom struct {
-		iFlowMplStatus string
+		integrationFlowMplStatus string
+		integrationFlowMplError  string
 	}
 }
 
@@ -34,7 +34,8 @@ func (p *integrationArtifactGetMplStatusCommonPipelineEnvironment) persist(path,
 		name     string
 		value    interface{}
 	}{
-		{category: "custom", name: "iFlowMplStatus", value: p.custom.iFlowMplStatus},
+		{category: "custom", name: "integrationFlowMplStatus", value: p.custom.integrationFlowMplStatus},
+		{category: "custom", name: "integrationFlowMplError", value: p.custom.integrationFlowMplError},
 	}
 
 	errCount := 0
@@ -68,6 +69,8 @@ func IntegrationArtifactGetMplStatusCommand() *cobra.Command {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
+
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
 
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
@@ -126,9 +129,8 @@ func IntegrationArtifactGetMplStatusCommand() *cobra.Command {
 }
 
 func addIntegrationArtifactGetMplStatusFlags(cmd *cobra.Command, stepConfig *integrationArtifactGetMplStatusOptions) {
-	cmd.Flags().StringVar(&stepConfig.APIServiceKey, "apiServiceKey", os.Getenv("PIPER_apiServiceKey"), "Service key JSON string to access the Cloud Integration API")
+	cmd.Flags().StringVar(&stepConfig.APIServiceKey, "apiServiceKey", os.Getenv("PIPER_apiServiceKey"), "Service key JSON string to access the Process Integration Runtime service instance of plan 'api'")
 	cmd.Flags().StringVar(&stepConfig.IntegrationFlowID, "integrationFlowId", os.Getenv("PIPER_integrationFlowId"), "Specifies the ID of the Integration Flow artifact")
-	cmd.Flags().StringVar(&stepConfig.Platform, "platform", os.Getenv("PIPER_platform"), "Specifies the running platform of the SAP Cloud platform integraion service")
 
 	cmd.MarkFlagRequired("apiServiceKey")
 	cmd.MarkFlagRequired("integrationFlowId")
@@ -145,7 +147,7 @@ func integrationArtifactGetMplStatusMetadata() config.StepData {
 		Spec: config.StepSpec{
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
-					{Name: "cpiApiServiceKeyCredentialsId", Description: "Jenkins credential ID for secret text containing the service key to the SAP Cloud Integration API", Type: "jenkins"},
+					{Name: "cpiApiServiceKeyCredentialsId", Description: "Jenkins secret text credential ID containing the service key to the Process Integration Runtime service instance of plan 'api'", Type: "jenkins"},
 				},
 				Parameters: []config.StepParameters{
 					{
@@ -166,20 +168,11 @@ func integrationArtifactGetMplStatusMetadata() config.StepData {
 					{
 						Name:        "integrationFlowId",
 						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
 						Aliases:     []config.Alias{},
 						Default:     os.Getenv("PIPER_integrationFlowId"),
-					},
-					{
-						Name:        "platform",
-						ResourceRef: []config.ResourceReference{},
-						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
-						Type:        "string",
-						Mandatory:   false,
-						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_platform"),
 					},
 				},
 			},
@@ -189,7 +182,8 @@ func integrationArtifactGetMplStatusMetadata() config.StepData {
 						Name: "commonPipelineEnvironment",
 						Type: "piperEnvironment",
 						Parameters: []map[string]interface{}{
-							{"Name": "custom/iFlowMplStatus"},
+							{"Name": "custom/integrationFlowMplStatus"},
+							{"Name": "custom/integrationFlowMplError"},
 						},
 					},
 				},

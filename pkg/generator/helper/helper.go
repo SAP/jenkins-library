@@ -98,6 +98,8 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.Verbose)
 
+			{{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.GitHubAccessTokens = {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}ResolveAccessTokens({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.GitHubTokens)
+
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
@@ -170,11 +172,11 @@ func {{.FlagsFunc}}(cmd *cobra.Command, stepConfig *{{.StepName}}Options) {
 								{{- if .Param }}
 								Param: "{{ .Param }}",
 								{{- end }}
-								{{- if  gt (len .Paths) 0 }}
-								Paths:  []string{{ "{" }}{{ range $_, $path := .Paths }}"{{$path}}",{{ end }}{{"}"}},
-								{{- end }}
 								{{- if .Type }}
 								Type: "{{ .Type }}",
+								{{- if .Default }}
+								Default: "{{ .Default }}",
+								{{- end}}
 								{{- end }}
 							{{ "}" }},
 							{{- nindent 24 ""}}

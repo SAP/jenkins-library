@@ -26,6 +26,7 @@ type Executor interface {
 	FindPackageJSONFilesWithScript(packageJSONFiles []string, script string) ([]string, error)
 	RunScriptsInAllPackages(runScripts []string, runOptions []string, scriptOptions []string, virtualFrameBuffer bool, excludeList []string, packagesList []string) error
 	InstallAllDependencies(packageJSONFiles []string) error
+	PublishAllPackages(packageJSONFiles []string, registry, username, password string) error
 	SetNpmRegistries() error
 	CreateBOM(packageJSONFiles []string) error
 }
@@ -359,7 +360,8 @@ func (exec *Execute) CreateBOM(packageJSONFiles []string) error {
 	if len(packageJSONFiles) > 0 {
 		path := filepath.Dir(packageJSONFiles[0])
 		createBOMConfig := []string{
-			"--schema", "1.2", // Target schema version
+			// https://github.com/CycloneDX/cyclonedx-node-module does not contain schema parameter hence bom creation fails
+			//"--schema", "1.2", // Target schema version
 			"--include-license-text", "false",
 			"--include-dev", "false", // Include devDependencies
 			"--output", "bom.xml",

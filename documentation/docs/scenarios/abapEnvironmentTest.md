@@ -43,4 +43,8 @@ During the pipeline configuration, you will specify the service plan, which will
 
 ## Configuration
 
-Please refer to the [configuration page](../pipelines/abapEnvironment/configuration.md) or have a look at these examples: Running ATC checks on a [transient system](https://github.com/SAP-samples/abap-platform-ci-cd-samples/tree/atc-transient) or running ATC checks on a [static system](https://github.com/SAP-samples/abap-platform-ci-cd-samples/tree/atc-static).
+Please refer to the [configuration page](../pipelines/abapEnvironment/configuration.md).
+
+## Example
+
+Please have a look at the configuration examples to run ATC checks on a [transient system](https://github.com/SAP-samples/abap-platform-ci-cd-samples/tree/atc-transient) or on a [permanent system](https://github.com/SAP-samples/abap-platform-ci-cd-samples/tree/atc-static).

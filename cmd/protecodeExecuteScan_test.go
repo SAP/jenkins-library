@@ -258,17 +258,25 @@ func TestUploadScanOrDeclareFetch(t *testing.T) {
 		fetchURL string
 		filePath string
 		prName   string
+		prID     int
 		want     int
 	}{
-		{false, "test", "group1", "/api/fetch/", "", "", 4711},
-		{false, "test", "group1", "", path, "", 4711},
-		{false, "test", "group1", "", path, "PR_4711", 4711},
+		{false, "test", "group1", "/api/fetch/", "", "", -1, 4711},
+		{true, "test", "group1", "/api/fetch/", "", "", -1, 4711},
+		{false, "test", "group1", "/api/fetch/", "", "", 4711, 4711},
+		{false, "test", "group1", "/api/fetch/", "", "", 0, 4711},
+
+		{false, "test", "group1", "", path, "", -1, 4711},
+		{true, "test", "group1", "", path, "", -1, 4711},
+		{false, "test", "group1", "", path, "PR_4711", 4711, 4711},
+		{false, "test", "group1", "", path, "", 0, 4711},
 	}
 
 	for _, c := range cases {
 		// test
 		config := protecodeExecuteScanOptions{VerifyOnly: c.reuse, CleanupMode: c.clean, Group: c.group, FetchURL: c.fetchURL, FilePath: c.filePath}
-		got := uploadScanOrDeclareFetch(config, pc, fileName)
+		// got := uploadScanOrDeclareFetch(config, 0, pc, fileName)
+		got := uploadScanOrDeclareFetch(config, c.prID, pc, fileName)
 		// assert
 		assert.Equal(t, c.want, got)
 	}

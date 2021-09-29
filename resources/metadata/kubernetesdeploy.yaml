@@ -245,10 +245,8 @@ spec:
           - name: kubeConfigFileCredentialsId
             type: secret
           - type: vaultSecretFile
-            paths:
-              - $(vaultPath)/kube-config
-              - $(vaultBasePath)/$(vaultPipelineName)/kube-config
-              - $(vaultBasePath)/GROUP-SECRETS/kube-config
+            name: kubeConfigFileSecretName
+            default: kube-config
       - name: kubeContext
         type: string
         description: Defines the context to use from the \"kubeconfig\" file.
@@ -300,10 +298,8 @@ spec:
           - name: dockerConfigJsonCredentialsId
             type: secret
           - type: vaultSecretFile
-            paths:
-              - $(vaultPath)/docker-config
-              - $(vaultBasePath)/$(vaultPipelineName)/docker-config
-              - $(vaultBasePath)/GROUP-SECRETS/docker-config
+            name: dockerConfigFileVaultSecretName
+            default: docker-config
   containers:
     - image: dtzar/helm-kubectl:3.4.1
       workingDir: /config
@@ -315,7 +311,7 @@ spec:
           params:
             - name: deployTool
               value: helm3
-    - image: dtzar/helm-kubectl:2.12.1
+    - image: dtzar/helm-kubectl:2.17.0
       workingDir: /config
       options:
         - name: -u
@@ -325,7 +321,7 @@ spec:
           params:
             - name: deployTool
               value: helm
-    - image: dtzar/helm-kubectl:2.12.1
+    - image: dtzar/helm-kubectl:2.17.0
       workingDir: /config
       options:
         - name: -u

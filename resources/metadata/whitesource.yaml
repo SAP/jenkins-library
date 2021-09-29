@@ -292,6 +292,9 @@ spec:
       - name: scanImage
         type: string
         description: "For `buildTool: docker`: Defines the docker image which should be scanned."
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/imageNameTag
         scope:
           - PARAMETERS
           - STAGES
@@ -307,6 +310,9 @@ spec:
       - name: scanImageRegistryUrl
         type: string
         description: "For `buildTool: docker`: Defines the registry where the scanImage is located."
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: container/registryUrl
         scope:
           - PARAMETERS
           - STAGES
@@ -354,10 +360,8 @@ spec:
           - name: userTokenCredentialsId
             type: secret
           - type: vaultSecret
-            paths:
-              - $(vaultPath)/whitesource
-              - $(vaultBasePath)/$(vaultPipelineName)/whitesource
-              - $(vaultBasePath)/GROUP-SECRETS/whitesource
+            name: whitesourceVaultSecret
+            default: whitesource
       - name: versioningModel
         type: string
         description: "The default project versioning model used in case `projectVersion` parameter is

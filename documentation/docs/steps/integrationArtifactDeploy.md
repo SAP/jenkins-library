@@ -26,6 +26,4 @@ steps:
   integrationArtifactDeploy:
     cpiApiServiceKeyCredentialsId: 'MY_API_SERVICE_KEY'
     integrationFlowId: 'MY_INTEGRATION_FLOW_NAME'
-    integrationFlowVersion: 'MY_INTEGRATION_FLOW_VERSION'
-    platform: cf
 ```

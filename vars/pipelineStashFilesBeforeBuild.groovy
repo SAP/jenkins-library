@@ -12,7 +12,7 @@ import groovy.transform.Field
 @Field Set STEP_CONFIG_KEYS = [
     /**
      * By default certain files are excluded from stashing (e.g. `.git` folder).
-     * Details can be found as per [Pipeline basic step `stash](https://jenkins.io/doc/pipeline/steps/workflow-basic-steps/#stash-stash-some-files-to-be-used-later-in-the-build).
+     * Details can be found as per [Pipeline basic step `stash`](https://jenkins.io/doc/pipeline/steps/workflow-basic-steps/#stash-stash-some-files-to-be-used-later-in-the-build).
      * This parameter allows to provide a list of stash names for which the standard exclude behavior should be switched off.
      * This will allow you to also stash directories like `.git`.
      */

@@ -32,6 +32,7 @@ type protecodeExecuteScanOptions struct {
 	FetchURL                    string `json:"fetchUrl,omitempty"`
 	Group                       string `json:"group,omitempty"`
 	VerifyOnly                  bool   `json:"verifyOnly,omitempty"`
+	ReplaceProductID            int    `json:"replaceProductId,omitempty"`
 	Username                    string `json:"username,omitempty"`
 	Password                    string `json:"password,omitempty"`
 	Version                     string `json:"version,omitempty"`
@@ -111,6 +112,8 @@ func ProtecodeExecuteScanCommand() *cobra.Command {
 			log.SetStepName(STEP_NAME)
 			log.SetVerbose(GeneralConfig.Verbose)
 
+			GeneralConfig.GitHubAccessTokens = ResolveAccessTokens(GeneralConfig.GitHubTokens)
+
 			path, _ := os.Getwd()
 			fatalHook := &log.FatalHook{CorrelationID: GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
@@ -185,6 +188,7 @@ func addProtecodeExecuteScanFlags(cmd *cobra.Command, stepConfig *protecodeExecu
 	cmd.Flags().StringVar(&stepConfig.FetchURL, "fetchUrl", os.Getenv("PIPER_fetchUrl"), "The URL to fetch the file or image to scan with Protecode.")
 	cmd.Flags().StringVar(&stepConfig.Group, "group", os.Getenv("PIPER_group"), "The Protecode group ID of your team")
 	cmd.Flags().BoolVar(&stepConfig.VerifyOnly, "verifyOnly", false, "Whether the step shall only apply verification checks or whether it does a full scan and check cycle")
+	cmd.Flags().IntVar(&stepConfig.ReplaceProductID, "replaceProductId", 0, "Specify <replaceProductId> which application binary will be replaced and rescanned and product id remains unchanged. By using this parameter, Protecode avoids creating multiple same products. Note this will affect results and feeds.")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User which is used for the protecode scan")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password which is used for the user")
 	cmd.Flags().StringVar(&stepConfig.Version, "version", os.Getenv("PIPER_version"), "The version of the artifact to allow identification in protecode backend")
@@ -208,7 +212,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 			Inputs: config.StepInputs{
 				Secrets: []config.StepSecrets{
 					{Name: "protecodeCredentialsId", Description: "Jenkins 'Username with password' credentials ID containing username and password to authenticate to the Protecode system.", Type: "jenkins"},
-					{Name: "dockerConfigJsonCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)). You can create it like explained in the Docker Success Center in the article about [how to generate a new auth in the config.json file](https://success.docker.com/article/generate-new-auth-in-config-json-file).", Type: "jenkins", Aliases: []config.Alias{{Name: "dockerCredentialsId", Deprecated: true}}},
+					{Name: "dockerConfigJsonCredentialsId", Description: "Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)). You can create it like explained in [Prerequisites](https://www.project-piper.io/steps/protecodeExecuteScan/#prerequisites).", Type: "jenkins", Aliases: []config.Alias{{Name: "dockerCredentialsId", Deprecated: true}}},
 				},
 				Parameters: []config.StepParameters{
 					{
@@ -266,9 +270,9 @@ func protecodeExecuteScanMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/docker-config", "$(vaultBasePath)/$(vaultPipelineName)/docker-config", "$(vaultBasePath)/GROUP-SECRETS/docker-config"},
-								Type:  "vaultSecretFile",
+								Name:    "dockerConfigFileVaultSecretName",
+								Type:    "vaultSecretFile",
+								Default: "docker-config",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -367,6 +371,15 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Default:     false,
 					},
 					{
+						Name:        "replaceProductId",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "int",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     0,
+					},
+					{
 						Name: "username",
 						ResourceRef: []config.ResourceReference{
 							{
@@ -376,9 +389,9 @@ func protecodeExecuteScanMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/protecode", "$(vaultBasePath)/$(vaultPipelineName)/protecode", "$(vaultBasePath)/GROUP-SECRETS/protecode"},
-								Type:  "vaultSecret",
+								Name:    "protecodeVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "protecode",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -397,9 +410,9 @@ func protecodeExecuteScanMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/protecode", "$(vaultBasePath)/$(vaultPipelineName)/protecode", "$(vaultBasePath)/GROUP-SECRETS/protecode"},
-								Type:  "vaultSecret",
+								Name:    "protecodeVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "protecode",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
