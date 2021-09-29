@@ -111,20 +111,12 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			fatalHook := &log.FatalHook{CorrelationID: {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID, Path: path}
 			log.RegisterHook(fatalHook)
 
-			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
+			err := {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
 			if err != nil {
-				return err
-			}
-			if err := validation.ValidateStruct(stepConfig); err != nil {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
 
-			err = {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}PrepareConfig(cmd, &metadata, STEP_NAME, &stepConfig, config.OpenPiperFile)
-			if err != nil {
-				log.SetErrorCategory(log.ErrorConfiguration)
-				return err
-			}
 			{{- range $key, $value := .StepSecrets }}
 			log.RegisterSecret(stepConfig.{{ $value | golangName  }}){{end}}
 
@@ -136,6 +128,15 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			if len({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 				logCollector = &log.CollectorHook{CorrelationID: {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
+			}
+
+			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
+			if err != nil {
+				return err
+			}
+			if err = validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
 			}
 
 			return nil
