@@ -205,16 +205,6 @@ func (c *ConfigOptions) addBuildToolDefaults(config *ScanOptions, utils Utils) e
 			{Name: "includes", Value: "**/*.py **/*.txt"},
 			{Name: "excludes", Value: "**/*sources.jar **/*javadoc.jar"},
 		},
-		"ruby": {
-			{Name: "ruby.ignoreSourceFiles", Value: true, Force: true},
-			{Name: "ruby.installMissingGems", Value: true},
-			{Name: "includes", Value: "**/*.gem **/*.rb"},
-		},
-		"rust": {
-			{Name: "cargo.resolveDependencies", Value: true, Force: true},
-			{Name: "cargo.ignoreSourceFiles", Value: true, Force: true},
-			{Name: "cargo.runPreStep", Value: true, Force: true},
-		},
 		"sbt": {
 			{Name: "sbt.resolveDependencies", Value: true, Force: true},
 			{Name: "sbt.ignoreSourceFiles", Value: true, Force: true},

@@ -531,22 +531,6 @@ spec:
           params:
             - name: buildTool
               value: pip
-    - image: ruby
-      workingDir: /tmp
-      env: []
-      conditions:
-        - conditionRef: strings-equal
-          params:
-            - name: buildTool
-              value: ruby
-    - image: rust
-      workingDir: /tmp
-      env: []
-      conditions:
-        - conditionRef: strings-equal
-          params:
-            - name: buildTool
-              value: rust
     - image: node:lts-stretch
       workingDir: /home/node
       env: []
