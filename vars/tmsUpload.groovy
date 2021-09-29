@@ -86,6 +86,15 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('credentialsId')
             .use()
 
+        if (config.useGoStep == true) {
+            List credentials = [
+                [type: 'token', id: config.credentialsId, env: []]
+            ]
+
+            piperExecuteBin(parameters, STEP_NAME, 'metadata/tms.yaml', credentials)
+            return
+        }
+
         // telemetry reporting
         new Utils().pushToSWA([
             step         : STEP_NAME,
