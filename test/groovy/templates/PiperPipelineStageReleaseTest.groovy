@@ -58,6 +58,11 @@ class PiperPipelineStageReleaseTest extends BasePiperTest {
             stepParameters.neoDeploy = m
         })
 
+        helper.registerAllowedMethod('kubernetesDeploy', [Map.class], {m ->
+                    stepsCalled.add('kubernetesDeploy')
+                    stepParameters.kubernetesDeploy = m
+                })
+
         helper.registerAllowedMethod('npmExecuteEndToEndTests', [Map.class], {m ->
             stepsCalled.add('npmExecuteEndToEndTests')
             stepParameters.npmExecuteEndToEndTests = m
@@ -76,7 +81,7 @@ class PiperPipelineStageReleaseTest extends BasePiperTest {
             script: nullScript,
             juStabUtils: utils
         )
-        assertThat(stepsCalled, not(anyOf(hasItem('cloudFoundryDeploy'), hasItem('neoDeploy'), hasItem('healthExecuteCheck'), hasItem('githubPublishRelease'))))
+        assertThat(stepsCalled, not(anyOf(hasItem('cloudFoundryDeploy'), hasItem('neoDeploy'), hasItem('kubernetesDeploy'), hasItem('healthExecuteCheck'), hasItem('githubPublishRelease'))))
     }
 
     @Test
@@ -115,6 +120,18 @@ class PiperPipelineStageReleaseTest extends BasePiperTest {
         )
 
         assertThat(stepsCalled, hasItem('neoDeploy'))
+    }
+
+    @Test
+    void testReleaseStageKubernetes() {
+
+        jsr.step.piperPipelineStageRelease(
+            script: nullScript,
+            juStabUtils: utils,
+            kubernetesDeploy: true
+        )
+
+        assertThat(stepsCalled, hasItem('kubernetesDeploy'))
     }
 
     @Test
