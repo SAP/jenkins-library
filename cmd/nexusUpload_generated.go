@@ -135,7 +135,7 @@ If an image for mavenExecute is configured, and npm packages are to be published
 
 func addNexusUploadFlags(cmd *cobra.Command, stepConfig *nexusUploadOptions) {
 	cmd.Flags().StringVar(&stepConfig.Version, "version", `nexus3`, "The Nexus Repository Manager version. Currently supported are 'nexus2' and 'nexus3'.")
-	cmd.Flags().StringVar(&stepConfig.Format, "format", os.Getenv("PIPER_format"), "The format/registry type. Currently supported are 'maven' and 'npm'.")
+	cmd.Flags().StringVar(&stepConfig.Format, "format", `maven`, "The format/registry type. Currently supported are 'maven' and 'npm'.")
 	cmd.Flags().StringVar(&stepConfig.Url, "url", os.Getenv("PIPER_url"), "URL of the nexus. The scheme part of the URL will not be considered, because only http is supported. If the 'format' option is set, the 'URL' can contain the full path including the repository ID and providing the 'npmRepository' or the 'mavenRepository' parameter(s) is not necessary.")
 	cmd.Flags().StringVar(&stepConfig.MavenRepository, "mavenRepository", os.Getenv("PIPER_mavenRepository"), "Name of the nexus repository for Maven and MTA deployments. If this is not provided, Maven and MTA deployment is implicitly disabled.")
 	cmd.Flags().StringVar(&stepConfig.NpmRepository, "npmRepository", os.Getenv("PIPER_npmRepository"), "Name of the nexus repository for npm deployments. If this is not provided, npm deployment is implicitly disabled.")
@@ -188,7 +188,7 @@ func nexusUploadMetadata() config.StepData {
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
-						Default:   os.Getenv("PIPER_format"),
+						Default:   `maven`,
 					},
 					{
 						Name: "url",

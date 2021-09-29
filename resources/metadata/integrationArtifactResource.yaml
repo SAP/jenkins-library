@@ -43,6 +43,7 @@ spec:
           - create
           - update
           - delete
+        default: create
       - name: resourcePath
         type: string
         description: Specifies integration artifact resource file relative path.

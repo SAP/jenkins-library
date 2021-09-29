@@ -95,6 +95,7 @@ spec:
           - pending
           - success
         mandatory: true
+        default: failure
       - name: targetUrl
         description: Target URL to associate the status with.
         scope:
