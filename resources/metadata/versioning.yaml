@@ -101,7 +101,6 @@ spec:
           - npm
           - pip
           - sbt
-        default: maven
       - name: commitUserName
         aliases:
           - name: gitUserName
