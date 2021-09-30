@@ -1048,13 +1048,14 @@ func convertUnitTestToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client
 						unitErr.Message = html.UnescapeString(unitErr.Message)
 
 					}
+					unitFile.Error = append(unitFile.Error, unitErr)
+					unitErr = unitError{}
 
 				} else {
-					log.Entry().Info(testMethod, "unit test was successful")
+					log.Entry().Info(testMethod.Name, "unit test was successful")
 
 				}
-				unitFile.Error = append(unitFile.Error, unitErr)
-				unitErr = unitError{}
+
 			}
 		}
 		if repositoryLayout.Layout.ReadableSource == "true" || repositoryLayout.Layout.ReadableSource == "only" || repositoryLayout.Layout.ReadableSource == "all" {
