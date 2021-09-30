@@ -184,7 +184,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 	dockerConfigJSON := []byte(`{"auths":{}}`)
 	if len(config.DockerConfigJSON) > 0 {
 		if filepath.Base(config.DockerConfigJSON) != "config.json" {
-			log.Entry().Debug("Renaming docker config file from '' to 'config.json'", filepath.Base(config.DockerConfigJSON))
+			log.Entry().Debugf("Renaming docker config file from '%s' to 'config.json'", filepath.Base(config.DockerConfigJSON))
 
 			dockerConfigFile = filepath.Join(filepath.Dir(config.DockerConfigJSON), "config.json")
 			err = utils.FileRename(config.DockerConfigJSON, dockerConfigFile)
