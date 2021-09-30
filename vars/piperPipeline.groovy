@@ -76,7 +76,7 @@ void call(parameters) {
                 }
             }
             stage('Release') {
-                /* when {allOf {branch parameters.script.commonPipelineEnvironment.getStepConfiguration('', '').productiveBranch; expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}}} */
+                when {allOf {branch parameters.script.commonPipelineEnvironment.getStepConfiguration('', '').productiveBranch; expression {return parameters.script.commonPipelineEnvironment.configuration.runStage?.get(env.STAGE_NAME)}}}
                 steps {
                     piperPipelineStageRelease script: parameters.script
                 }

@@ -15,12 +15,7 @@ import static com.sap.piper.Prerequisites.checkScript
      * Print more detailed information into the log.
      * @possibleValues `true`, `false`
      */
-    'verbose',
-    /**
-     * Toggle to activate the new go-implementation of the step. Off by default.
-     * @possibleValues true, false
-     */
-    'useGoStep'
+    'verbose'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
     /**
@@ -90,15 +85,6 @@ void call(Map parameters = [:]) {
             .withMandatoryProperty('nodeName')
             .withMandatoryProperty('credentialsId')
             .use()
-
-        if (config.useGoStep == true) {
-            List credentials = [
-            ]
-                // [type: 'token', id: config.credentialsId, env: []]
-
-            piperExecuteBin(parameters, STEP_NAME, 'metadata/tms.yaml', credentials)
-            return
-        }
 
         // telemetry reporting
         new Utils().pushToSWA([
