@@ -92,16 +92,9 @@ void call(Map parameters = [:]) {
             .use()
 
         if (config.useGoStep == true) {
-            echo 'Hey, I am in the useGoStep section!'
-            
-            // make sure that all relevant descriptors, are available in workspace
-            utils.unstashAll(config.stashContent)
-            // make sure that for further execution whole workspace, e.g. also downloaded artifacts are considered
-            config.stashContent = []
-            
             List credentials = [
-                [type: 'token', id: config.credentialsId, env: []]
             ]
+                // [type: 'token', id: config.credentialsId, env: []]
 
             piperExecuteBin(parameters, STEP_NAME, 'metadata/tms.yaml', credentials)
             return
