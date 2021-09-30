@@ -197,7 +197,7 @@ func {{ .StepName }}Metadata() config.StepData {
 					{{- range $secrets := .Secrets }}
 					{
 						{{- if $secrets.Name -}} Name: "{{$secrets.Name}}",{{- end }}
-						{{- if $secrets.Description -}} Description: "{{$secrets.Description}}",{{- end }}
+						{{- if $secrets.Description -}} Description: {{$secrets.Description | quote}},{{- end }}
 						{{- if $secrets.Type -}} Type: "{{$secrets.Type}}",{{- end }}
 						{{- if $secrets.Aliases -}} Aliases: []config.Alias{ {{- range $i, $a := $secrets.Aliases }} {Name: "{{$a.Name}}", Deprecated: {{$a.Deprecated}}}, {{ end -}}  },{{- end }}
 					}, {{ end }}
