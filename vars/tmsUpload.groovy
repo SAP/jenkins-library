@@ -15,7 +15,12 @@ import static com.sap.piper.Prerequisites.checkScript
      * Print more detailed information into the log.
      * @possibleValues `true`, `false`
      */
-    'verbose'
+    'verbose',
+    /**
+     * Toggle to activate the new go-implementation of the step. Off by default.
+     * @possibleValues true, false
+     */
+    'useGoStep'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus([
     /**
