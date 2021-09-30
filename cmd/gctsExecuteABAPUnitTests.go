@@ -517,13 +517,15 @@ func convertAtcToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client pipe
 			priority, priorityErr := strconv.Atoi(atcworklist.Priority)
 			if priorityErr == nil {
 
-				if priority < 3 {
+				switch priority {
+				case 1:
 					unitErr.Severity = "error"
-					aTC = true
-
-				} else {
-
-					unitErr.Severity = "warning"
+				case 2:
+					unitErr.Severity = "high"
+				case 3:
+					unitErr.Severity = "normal"
+				default:
+					unitErr.Severity = "low"
 				}
 
 			}
@@ -1033,7 +1035,7 @@ func convertUnitTestToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client
 					}
 
 				} else {
-					unitErr.Severity = "info"
+					unitErr.Severity = "fixed"
 					unitErr.Message = "unit test was successful"
 					unitErr.Line = ""
 
