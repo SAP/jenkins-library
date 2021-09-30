@@ -164,6 +164,7 @@ func Execute() {
 	rootCmd.AddCommand(ReadPipelineEnv())
 	rootCmd.AddCommand(InfluxWriteDataCommand())
 	rootCmd.AddCommand(CheckStepActiveCommand())
+	rootCmd.AddCommand(TmsUploadCommand())
 
 	addRootFlags(rootCmd)
 
