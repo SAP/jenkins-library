@@ -519,8 +519,10 @@ func convertAtcToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client pipe
 
 				switch priority {
 				case 1:
+					aTC = true
 					unitErr.Severity = "error"
 				case 2:
+					aTC = true
 					unitErr.Severity = "high"
 				case 3:
 					unitErr.Severity = "normal"
@@ -1018,8 +1020,21 @@ func convertUnitTestToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client
 
 				if len(testMethod.Alerts.Alert) > 0 {
 					for _, testalert := range testMethod.Alerts.Alert {
-						unitErr.Severity = "error"
-						aUnit = true
+
+						switch testalert.Severity {
+						case "fatal":
+							aUnit = true
+							unitErr.Severity = "error"
+						case "critical":
+							aUnit = true
+							unitErr.Severity = "high"
+						case "tolerable":
+							unitErr.Severity = "normal"
+						default:
+							unitErr.Severity = "low"
+
+						}
+
 						for _, detail := range testalert.Details.Detail {
 							unitErr.Message = unitErr.Message + " " + detail.AttrText
 							for _, subdetail := range detail.Details.Detail {
@@ -1035,9 +1050,7 @@ func convertUnitTestToCheckStyle(config *gctsExecuteABAPUnitTestsOptions, client
 					}
 
 				} else {
-					unitErr.Severity = "fixed"
-					unitErr.Message = "unit test was successful"
-					unitErr.Line = ""
+					log.Entry().Info(testMethod, "unit test was successful")
 
 				}
 				unitFile.Error = append(unitFile.Error, unitErr)
