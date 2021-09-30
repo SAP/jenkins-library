@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -31,10 +32,10 @@ type cnbBuildUtilsBundle struct {
 	*docker.Client
 }
 
-func setCustomBuildpacks(bpacks []string, utils cnbutils.BuildUtils) (string, string, error) {
+func setCustomBuildpacks(bpacks []string, dockerCreds string, utils cnbutils.BuildUtils) (string, string, error) {
 	buildpacksPath := "/tmp/buildpacks"
 	orderPath := "/tmp/buildpacks/order.toml"
-	newOrder, err := cnbutils.DownloadBuildpacks(buildpacksPath, bpacks, utils)
+	newOrder, err := cnbutils.DownloadBuildpacks(buildpacksPath, bpacks, dockerCreds, utils)
 	if err != nil {
 		return "", "", err
 	}
@@ -178,10 +179,24 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		}
 	}
 
+	dockerConfigFile := ""
 	dockerConfig := &configfile.ConfigFile{}
 	dockerConfigJSON := []byte(`{"auths":{}}`)
 	if len(config.DockerConfigJSON) > 0 {
-		dockerConfigJSON, err = utils.FileRead(config.DockerConfigJSON)
+		if filepath.Base(config.DockerConfigJSON) != "config.json" {
+			log.Entry().Debug("Renaming docker config file from '' to 'config.json'", filepath.Base(config.DockerConfigJSON))
+
+			dockerConfigFile = filepath.Join(filepath.Dir(config.DockerConfigJSON), "config.json")
+			err = utils.FileRename(config.DockerConfigJSON, dockerConfigFile)
+			if err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return errors.Wrapf(err, "failed to rename DockerConfigJSON file '%v'", config.DockerConfigJSON)
+			}
+		} else {
+			dockerConfigFile = config.DockerConfigJSON
+		}
+
+		dockerConfigJSON, err = utils.FileRead(dockerConfigFile)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return errors.Wrapf(err, "failed to read DockerConfigJSON file '%v'", config.DockerConfigJSON)
@@ -241,7 +256,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 
 	if config.Buildpacks != nil && len(config.Buildpacks) > 0 {
 		log.Entry().Infof("Setting custom buildpacks: '%v'", config.Buildpacks)
-		buildpacksPath, orderPath, err = setCustomBuildpacks(config.Buildpacks, utils)
+		buildpacksPath, orderPath, err = setCustomBuildpacks(config.Buildpacks, dockerConfigFile, utils)
 		defer utils.RemoveAll(buildpacksPath)
 		defer utils.RemoveAll(orderPath)
 		if err != nil {

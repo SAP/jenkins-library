@@ -84,14 +84,14 @@ func TestRunCnbBuild(t *testing.T) {
 		assert.Equal(t, []string{fmt.Sprintf("%s/%s:%s", registry, config.ContainerImageName, config.ContainerImageTag), fmt.Sprintf("%s/%s:latest", registry, config.ContainerImageName)}, runner.Calls[2].Params)
 	})
 
-	t.Run("success case (custom buildpacks and custom env variables)", func(t *testing.T) {
+	t.Run("success case (custom buildpacks and custom env variables, renaming docker conf file)", func(t *testing.T) {
 		t.Parallel()
 		registry := "some-registry"
 		config := cnbBuildOptions{
 			ContainerImageName:   "my-image",
 			ContainerImageTag:    "0.0.1",
 			ContainerRegistryURL: registry,
-			DockerConfigJSON:     "/path/to/config.json",
+			DockerConfigJSON:     "/path/to/test.json",
 			Buildpacks:           []string{"test"},
 			BuildEnvVars:         []string{"FOO=BAR"},
 		}
@@ -128,7 +128,21 @@ func TestRunCnbBuild(t *testing.T) {
 		assert.EqualError(t, err, "failed to parse DockerConfigJSON file '/path/to/config.json': json: cannot unmarshal string into Go struct field ConfigFile.auths of type types.AuthConfig")
 	})
 
-	t.Run("error case: DockerConfigJSON file not there", func(t *testing.T) {
+	t.Run("error case: DockerConfigJSON file not there (config.json)", func(t *testing.T) {
+		t.Parallel()
+		config := cnbBuildOptions{
+			ContainerImageName: "my-image",
+			DockerConfigJSON:   "not-there/config.json",
+		}
+
+		utils := newCnbBuildTestsUtils()
+		addBuilderFiles(&utils)
+
+		err := runCnbBuild(&config, nil, &utils, &commonPipelineEnvironment)
+		assert.EqualError(t, err, "failed to read DockerConfigJSON file 'not-there/config.json': could not read 'not-there/config.json'")
+	})
+
+	t.Run("error case: DockerConfigJSON file not there (not config.json)", func(t *testing.T) {
 		t.Parallel()
 		config := cnbBuildOptions{
 			ContainerImageName: "my-image",
@@ -139,7 +153,7 @@ func TestRunCnbBuild(t *testing.T) {
 		addBuilderFiles(&utils)
 
 		err := runCnbBuild(&config, nil, &utils, &commonPipelineEnvironment)
-		assert.EqualError(t, err, "failed to read DockerConfigJSON file 'not-there': could not read 'not-there'")
+		assert.EqualError(t, err, "failed to rename DockerConfigJSON file 'not-there': renaming file 'not-there' is not supported, since it does not exist, or is not a leaf-entry")
 	})
 
 	t.Run("error case: dockerImage is not a valid builder", func(t *testing.T) {
