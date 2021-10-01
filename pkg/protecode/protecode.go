@@ -87,10 +87,11 @@ type User struct {
 
 //Protecode ist the protecode client which is used by the step
 type Protecode struct {
-	serverURL string
-	client    piperHttp.Uploader
-	duration  time.Duration
-	logger    *logrus.Entry
+	serverURL    string
+	client       piperHttp.Uploader
+	duration     time.Duration
+	logger       *logrus.Entry
+	dockerConfig *DockerConfig
 }
 
 // Just calls SetOptions which makes sure logger is set.
@@ -103,11 +104,12 @@ func makeProtecode(opts Options) Protecode {
 
 //Options struct which can be used to configure the Protecode struct
 type Options struct {
-	ServerURL string
-	Duration  time.Duration
-	Username  string
-	Password  string
-	Logger    *logrus.Entry
+	ServerURL        string
+	Duration         time.Duration
+	Username         string
+	Password         string
+	Logger           *logrus.Entry
+	DockerConfigJSON string
 }
 
 //SetOptions setter function to set the internal properties of the protecode
@@ -120,6 +122,13 @@ func (pc *Protecode) SetOptions(options Options) {
 		pc.logger = options.Logger
 	} else {
 		pc.logger = log.Entry().WithField("package", "SAP/jenkins-library/pkg/protecode")
+	}
+
+	// add DockerConfig if configJSON was sent
+	if len(options.DockerConfigJSON) > 0 {
+		if config, err := NewDockerConfigFromJSON(options.DockerConfigJSON); err == nil {
+			pc.dockerConfig = &config
+		}
 	}
 
 	httpOptions := piperHttp.ClientOptions{MaxRequestDuration: options.Duration, Username: options.Username, Password: options.Password, Logger: options.Logger}
@@ -357,6 +366,35 @@ func (pc *Protecode) UploadScanFile(cleanupMode, group, filePath, fileName strin
 	//return result
 }
 
+// attaches credentials to URL only if DockerConfig exists and host has credential
+func (pc *Protecode) attachDockerAuth(protecodeURL string) string {
+	if pc.dockerConfig == nil {
+		pc.logger.Infof("attachDockerAuth: no dockerConfig, will use original url")
+		return protecodeURL
+	}
+
+	apiURL, err := url.Parse(protecodeURL)
+	if err != nil {
+		pc.logger.WithError(err).Warn("Failed to parse protecodeURL, skip adding Auth")
+		return protecodeURL
+	}
+
+	hostAuth, found := pc.dockerConfig.getHostAuth(apiURL.Hostname())
+	if found != true {
+		pc.logger.Warnf("Found no host %s in DockerConfigJSON", apiURL.Hostname())
+		return protecodeURL
+	}
+
+	encodedToken, err := hostAuth.encodedAuth()
+	if err != nil {
+		pc.logger.WithError(err).Warnf("Failed to encode Auth token for %s", apiURL.Hostname())
+	}
+
+	apiURL.User = url.User(encodedToken)
+	return apiURL.String()
+
+}
+
 // DeclareFetchURL configures the fetch url for the protecode scan
 func (pc *Protecode) DeclareFetchURL(cleanupMode, group, fetchURL string, productID int, replaceBinary bool) *ResultData {
 	deleteBinary := (cleanupMode == "binary" || cleanupMode == "complete")
@@ -373,7 +411,9 @@ func (pc *Protecode) DeclareFetchURL(cleanupMode, group, fetchURL string, produc
 	//headers := map[string][]string{"Group": {group}, "Delete-Binary": {fmt.Sprintf("%v", deleteBinary)}, "Url": {fetchURL}, "Content-Type": {"application/json"}}
 
 	protecodeURL := fmt.Sprintf("%v/api/fetch/", pc.serverURL)
-	r, statusCode, err := pc.sendAPIRequest(http.MethodPost, protecodeURL, headers)
+	// protecodeURLWithAuth should not be logged out to avoid credential leak
+	protecodeURLWithAuth := pc.attachDockerAuth(protecodeURL)
+	r, statusCode, err := pc.sendAPIRequest(http.MethodPost, protecodeURLWithAuth, headers)
 	if err != nil {
 		//TODO: bubble up error
 		pc.logger.WithError(err).Fatalf("Error during declare fetch url: %v", protecodeURL)
