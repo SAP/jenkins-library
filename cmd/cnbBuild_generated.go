@@ -21,6 +21,7 @@ type cnbBuildOptions struct {
 	ContainerImageTag    string   `json:"containerImageTag,omitempty"`
 	ContainerRegistryURL string   `json:"containerRegistryUrl,omitempty"`
 	Buildpacks           []string `json:"buildpacks,omitempty"`
+	BuildEnvVars         []string `json:"buildEnvVars,omitempty"`
 	Path                 string   `json:"path,omitempty"`
 	DockerConfigJSON     string   `json:"dockerConfigJSON,omitempty"`
 }
@@ -137,7 +138,8 @@ func addCnbBuildFlags(cmd *cobra.Command, stepConfig *cnbBuildOptions) {
 	cmd.Flags().StringVar(&stepConfig.ContainerImageTag, "containerImageTag", os.Getenv("PIPER_containerImageTag"), "Tag of the container which will be built")
 	cmd.Flags().StringVar(&stepConfig.ContainerRegistryURL, "containerRegistryUrl", os.Getenv("PIPER_containerRegistryUrl"), "Container registry where the image should be pushed to")
 	cmd.Flags().StringSliceVar(&stepConfig.Buildpacks, "buildpacks", []string{}, "List of custom buildpacks to use in the form of '<hostname>/<repo>[:<tag>]'.")
-	cmd.Flags().StringVar(&stepConfig.Path, "path", os.Getenv("PIPER_path"), "The path should either point to your sources or an artifact build before.")
+	cmd.Flags().StringSliceVar(&stepConfig.BuildEnvVars, "buildEnvVars", []string{}, "List of custom environment variables used during a build in the form of 'KEY=VALUE'.")
+	cmd.Flags().StringVar(&stepConfig.Path, "path", os.Getenv("PIPER_path"), "The path should either point to a directory with your sources or an artifact in zip format.")
 	cmd.Flags().StringVar(&stepConfig.DockerConfigJSON, "dockerConfigJSON", os.Getenv("PIPER_dockerConfigJSON"), "Path to the file `.docker/config.json` - this is typically provided by your CI/CD system. You can find more details about the Docker credentials in the [Docker documentation](https://docs.docker.com/engine/reference/commandline/login/).")
 
 	cmd.MarkFlagRequired("containerImageName")
@@ -207,6 +209,15 @@ func cnbBuildMetadata() config.StepData {
 						Default:     []string{},
 					},
 					{
+						Name:        "buildEnvVars",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
+						Type:        "[]string",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
+						Default:     []string{},
+					},
+					{
 						Name:        "path",
 						ResourceRef: []config.ResourceReference{},
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -229,9 +240,8 @@ func cnbBuildMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/docker-config", "$(vaultBasePath)/$(vaultPipelineName)/docker-config", "$(vaultBasePath)/GROUP-SECRETS/docker-config"},
-								Type:  "vaultSecretFile",
+								Name: "",
+								Type: "vaultSecretFile",
 							},
 						},
 						Scope:     []string{"PARAMETERS"},

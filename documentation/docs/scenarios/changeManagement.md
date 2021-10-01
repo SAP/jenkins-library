@@ -55,6 +55,7 @@ node() {
   stage('prepare') {
     checkout scm
     setupCommonPipelineEnvironment script:this
+    transportRequestDocIDFromGit( script: this )
     checkChangeInDevelopment script: this
   }
 
@@ -64,7 +65,7 @@ node() {
 
   stage('uploadToTransportRequest') {
     transportRequestCreate script: this
-    transportRequestUploadFile script:this
+    transportRequestUploadSOLMAN script:this
     transportRequestRelease script: this
   }
 
@@ -85,7 +86,7 @@ steps:
     buildTarget: 'NEO'
   transportRequestCreate:
     developmentSystemId: '<value for developmentSystemId>'
-  transportRequestUploadFile:
+  transportRequestUploadSOLMAN:
     applicationId: 'HCP'
 ```
 
@@ -96,5 +97,6 @@ For the detailed description of the relevant parameters, see:
 * [checkChangeInDevelopment](../../steps/checkChangeInDevelopment/)
 * [mtaBuild](../../steps/mtaBuild/)
 * [transportRequestCreate](../../steps/transportRequestCreate/)
-* [transportRequestUploadFile](../../steps/transportRequestUploadFile/)
+* [transportRequestDocIDFromGit](../../steps/transportRequestDocIDFromGit/)
+* [transportRequestUploadSOLMAN](../../steps/transportRequestUploadSOLMAN/)
 * [transportRequestRelease](../../steps/transportRequestRelease/)

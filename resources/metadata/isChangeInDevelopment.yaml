@@ -76,6 +76,13 @@ spec:
         aliases:
           - name: clientOpts
           - name: changeManagement/clientOpts
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: custom/isChangeInDevelopment
+            type: bool
   containers:
     - name: cmclient
       image: ppiper/cm-client

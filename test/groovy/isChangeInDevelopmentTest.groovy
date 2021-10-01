@@ -58,7 +58,7 @@ public class isChangeInDevelopmentTest extends BasePiperTest {
         assertThat(calledWithParameters.abc, is('CF'))
 
         assertThat(calledWithStepName, is('isChangeInDevelopment'))
-        assertThat(calledWithMetadata, is('metadata/checkChangeInDevelopment.yaml'))
+        assertThat(calledWithMetadata, is('metadata/isChangeInDevelopment.yaml'))
         assertThat(calledWithCredentials[0].size(), is(3))
         assertThat(calledWithCredentials[0], allOf(hasEntry('type','usernamePassword'), hasEntry('id','credentialsId'), hasEntry('env',['PIPER_username', 'PIPER_password'])))
     }

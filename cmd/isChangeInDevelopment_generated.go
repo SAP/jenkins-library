@@ -5,10 +5,12 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/spf13/cobra"
@@ -23,6 +25,34 @@ type isChangeInDevelopmentOptions struct {
 	CmClientOpts                   []string `json:"cmClientOpts,omitempty"`
 }
 
+type isChangeInDevelopmentCommonPipelineEnvironment struct {
+	custom struct {
+		isChangeInDevelopment bool
+	}
+}
+
+func (p *isChangeInDevelopmentCommonPipelineEnvironment) persist(path, resourceName string) {
+	content := []struct {
+		category string
+		name     string
+		value    interface{}
+	}{
+		{category: "custom", name: "isChangeInDevelopment", value: p.custom.isChangeInDevelopment},
+	}
+
+	errCount := 0
+	for _, param := range content {
+		err := piperenv.SetResourceParameter(path, resourceName, filepath.Join(param.category, param.name), param.value)
+		if err != nil {
+			log.Entry().WithError(err).Error("Error persisting piper environment.")
+			errCount++
+		}
+	}
+	if errCount > 0 {
+		log.Entry().Fatal("failed to persist Piper environment")
+	}
+}
+
 // IsChangeInDevelopmentCommand Checks if a certain change is in status 'in development'
 func IsChangeInDevelopmentCommand() *cobra.Command {
 	const STEP_NAME = "isChangeInDevelopment"
@@ -30,6 +60,7 @@ func IsChangeInDevelopmentCommand() *cobra.Command {
 	metadata := isChangeInDevelopmentMetadata()
 	var stepConfig isChangeInDevelopmentOptions
 	var startTime time.Time
+	var commonPipelineEnvironment isChangeInDevelopmentCommonPipelineEnvironment
 	var logCollector *log.CollectorHook
 
 	var createIsChangeInDevelopmentCmd = &cobra.Command{
@@ -72,6 +103,7 @@ func IsChangeInDevelopmentCommand() *cobra.Command {
 			telemetryData.ErrorCode = "1"
 			handler := func() {
 				config.RemoveVaultSecretFiles()
+				commonPipelineEnvironment.persist(GeneralConfig.EnvRootPath, "commonPipelineEnvironment")
 				telemetryData.Duration = fmt.Sprintf("%v", time.Since(startTime).Milliseconds())
 				telemetryData.ErrorCategory = log.GetErrorCategory().String()
 				telemetry.Send(&telemetryData)
@@ -89,7 +121,7 @@ func IsChangeInDevelopmentCommand() *cobra.Command {
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			isChangeInDevelopment(stepConfig, &telemetryData)
+			isChangeInDevelopment(stepConfig, &telemetryData, &commonPipelineEnvironment)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
@@ -202,6 +234,17 @@ func isChangeInDevelopmentMetadata() config.StepData {
 			},
 			Containers: []config.Container{
 				{Name: "cmclient", Image: "ppiper/cm-client"},
+			},
+			Outputs: config.StepOutputs{
+				Resources: []config.StepResources{
+					{
+						Name: "commonPipelineEnvironment",
+						Type: "piperEnvironment",
+						Parameters: []map[string]interface{}{
+							{"Name": "custom/isChangeInDevelopment"},
+						},
+					},
+				},
 			},
 		},
 	}
