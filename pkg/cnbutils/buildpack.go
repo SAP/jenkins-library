@@ -12,18 +12,18 @@ import (
 )
 
 type BuildPackMetadata struct {
-	ID          string    `json:"id,omitempty"`
-	Name        string    `json:"name,omitempty"`
-	Version     string    `json:"version,omitempty"`
-	Description string    `json:"description,omitempty"`
-	Homepage    string    `json:"homepage,omitempty"`
-	Keywords    []string  `json:"keywords,omitempty"`
-	Licenses    []License `json:"licenses,omitempty"`
+	ID          string    `toml:"id,omitempty" json:"id,omitempty" yaml:"id,omitempty"`
+	Name        string    `toml:"name,omitempty" json:"name,omitempty" yaml:"name,omitempty"`
+	Version     string    `toml:"version,omitempty" json:"version,omitempty" yaml:"version,omitempty"`
+	Description string    `toml:"description,omitempty" json:"description,omitempty" yaml:"description,omitempty"`
+	Homepage    string    `toml:"homepage,omitempty" json:"homepage,omitempty" yaml:"homepage,omitempty"`
+	Keywords    []string  `toml:"keywords,omitempty" json:"keywords,omitempty" yaml:"keywords,omitempty"`
+	Licenses    []License `toml:"licenses,omitempty" json:"licenses,omitempty" yaml:"licenses,omitempty"`
 }
 
 type License struct {
-	Type string `json:"type"`
-	URI  string `json:"uri"`
+	Type string `toml:"type" json:"type"`
+	URI  string `toml:"uri" json:"uri"`
 }
 
 func DownloadBuildpacks(path string, bpacks []string, dockerCreds string, utils BuildUtils) (Order, error) {
@@ -32,7 +32,11 @@ func DownloadBuildpacks(path string, bpacks []string, dockerCreds string, utils 
 		os.Setenv("DOCKER_CONFIG", filepath.Dir(dockerCreds))
 	}
 
-	var order Order
+	var orderEntry OrderEntry
+	order := Order{
+		Utils: utils,
+	}
+
 	for _, bpack := range bpacks {
 		var bpackMeta BuildPackMetadata
 		tempDir, err := utils.TempDir("", filepath.Base(bpack))
@@ -57,13 +61,7 @@ func DownloadBuildpacks(path string, bpacks []string, dockerCreds string, utils 
 			return Order{}, fmt.Errorf("failed unmarshal '%s' image label, error: %s", bpack, err.Error())
 		}
 		log.Entry().Debugf("Buildpack metadata: '%v'", bpackMeta)
-		order.Order = append(order.Order, OrderEntry{
-			Group: []BuildpackRef{{
-				ID:       bpackMeta.ID,
-				Version:  bpackMeta.Version,
-				Optional: false,
-			}},
-		})
+		orderEntry.Group = append(orderEntry.Group, bpackMeta)
 
 		err = copyBuildPack(filepath.Join(tempDir, "cnb/buildpacks"), path, utils)
 		if err != nil {
@@ -71,7 +69,7 @@ func DownloadBuildpacks(path string, bpacks []string, dockerCreds string, utils 
 		}
 	}
 
-	order.Utils = utils
+	order.Order = []OrderEntry{orderEntry}
 
 	return order, nil
 }
