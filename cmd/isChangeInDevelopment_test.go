@@ -119,6 +119,7 @@ func TestRunIsChangeInDevelopment(t *testing.T) {
 	t.Run("generic failure reported via error", func(t *testing.T) {
 
 		cmd := newIsChangeInDevelopmentTestsUtils()
+		cmd.ExitCode = 1 // this exit code indicates something went wrong
 		cmd.ShouldFailOnCommand = map[string]error{"cm.*": fmt.Errorf("%v", "Something went wrong")}
 		cpe := &isChangeInDevelopmentCommonPipelineEnvironment{}
 

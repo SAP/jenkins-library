@@ -100,16 +100,16 @@ func perform(config *isChangeInDevelopmentOptions, utils isChangeInDevelopmentUt
 	exitCode := utils.GetExitCode()
 
 	hint := "check log for details"
+	if err != nil {
+		hint = err.Error()
+	}
+
 	if exitCode == 0 {
 		return true, nil
 	} else if exitCode == 3 {
 		return false, nil
 	} else if exitCode == 2 {
 		hint = "invalid credentials"
-	}
-
-	if err != nil {
-		log.Entry().Errorf("cmclient fails: %s", err)
 	}
 
 	return false, fmt.Errorf("cannot retrieve change status: %s", hint)
