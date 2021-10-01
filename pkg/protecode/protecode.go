@@ -375,7 +375,7 @@ func (pc *Protecode) attachDockerAuth(protecodeURL string) string {
 
 	apiURL, err := url.Parse(protecodeURL)
 	if err != nil {
-		pc.logger.WithError(err).Warn("Failed to parse protecodeURL, skip adding Auth")
+		pc.logger.WithError(err).Warnf("Failed to parse protecodeURL %s, skip adding Auth", protecodeURL)
 		return protecodeURL
 	}
 
@@ -388,6 +388,7 @@ func (pc *Protecode) attachDockerAuth(protecodeURL string) string {
 	encodedToken, err := hostAuth.encodedAuth()
 	if err != nil {
 		pc.logger.WithError(err).Warnf("Failed to encode Auth token for %s", apiURL.Hostname())
+		return protecodeURL
 	}
 
 	apiURL.User = url.User(encodedToken)

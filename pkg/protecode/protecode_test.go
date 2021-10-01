@@ -543,15 +543,18 @@ func TestAttachDockerAuth(t *testing.T) {
 		{"https://unknown.com/api", "https://unknown.com/api"},
 	}
 
-	var pc Protecode
 	var patchedURL string
+	pc := makeProtecode(Options{DockerConfigJSON: testDockerConfigJSON})
 	for _, c := range cases {
-		pc = makeProtecode(Options{
-			ServerURL:        c.url,
-			DockerConfigJSON: testDockerConfigJSON,
-		})
-
 		patchedURL = pc.attachDockerAuth(c.url)
 		assert.Equal(t, c.expected, patchedURL)
 	}
+}
+
+func TestAttachDockerAuthWithoutConfigJSON(t *testing.T) {
+	expectedURL := "example.com"
+	pc := makeProtecode(Options{ServerURL: expectedURL})
+
+	patchedURL := pc.attachDockerAuth(expectedURL)
+	assert.Equal(t, expectedURL, patchedURL)
 }
