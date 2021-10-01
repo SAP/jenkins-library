@@ -63,7 +63,7 @@ func NewCommunicationInstance(httpClient piperHttp.Uploader, uaaUrl, clientId, c
 }
 
 func (communicationInstance *CommunicationInstance) getOAuthToken() (string, error) {
-	communicationInstance.logger.Infof("OAuth token retrieval started")
+	communicationInstance.logger.Info("OAuth token retrieval started")
 
 	if communicationInstance.isVerbose {
 		communicationInstance.logger.Infof("uaaUrl: %v, clientId: %v", communicationInstance.uaaUrl, communicationInstance.clientId)
@@ -74,14 +74,14 @@ func (communicationInstance *CommunicationInstance) getOAuthToken() (string, err
 	header.Add("Content-type", "application/x-www-form-urlencoded")
 	header.Add("authorization", "Basic "+encodedUsernameColonPassword)
 
+	// TODO: somewhere here the proxy should be considered as well
+
 	// TODO: should one need to replace '%20' with '+' for username and passowrd, as it was done in groovy?
 	urlFormData := url.Values{
 		"username":   {communicationInstance.clientId},
 		"password":   {communicationInstance.clientSecret},
 		"grant_type": {"password"},
 	}
-
-	// TODO: somewhere here the proxy should be considered as well
 
 	data, err := sendRequest(communicationInstance, http.MethodPost, "/oauth/token/?grant_type=client_credentials&response_type=token", strings.NewReader(urlFormData.Encode()), header, true)
 	if err != nil {
@@ -91,8 +91,8 @@ func (communicationInstance *CommunicationInstance) getOAuthToken() (string, err
 	var token AuthToken
 	json.Unmarshal(data, &token)
 
-	communicationInstance.logger.Infof("OAuth Token retrieved successfully")
-	return token.TokenType + " " + token.AccessToken, nil
+	communicationInstance.logger.Info("OAuth Token retrieved successfully")
+	return token.AccessToken, nil
 }
 
 func sendRequest(communicationInstance *CommunicationInstance, method, urlPathAndQuery string, body io.Reader, header http.Header, isTowardsUaa bool) ([]byte, error) {
@@ -108,7 +108,7 @@ func sendRequest(communicationInstance *CommunicationInstance, method, urlPathAn
 	if isTowardsUaa {
 		url = communicationInstance.uaaUrl
 	}
-	// TODO: remove slash from the end of the url, if it is present
+	url = strings.TrimSuffix(url, "/")
 
 	response, err := communicationInstance.httpClient.SendRequest(method, fmt.Sprintf("%v%v", url, urlPathAndQuery), requestBody, header, nil)
 

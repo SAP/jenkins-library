@@ -71,8 +71,7 @@ func tmsUpload(config tmsUploadOptions, telemetryData *telemetry.CustomData, inf
 
 	communicationInstance, err := tms.NewCommunicationInstance(client, serviceKey.Uaa.Url, serviceKey.Uaa.ClientId, serviceKey.Uaa.ClientSecret, GeneralConfig.Verbose)
 	if err != nil {
-		// TODO: is Fatalf required here? or can be simply Fatal?
-		log.Entry().WithError(err).Fatalf("Failed to prepare client for talking with TMS")
+		log.Entry().WithError(err).Fatal("Failed to prepare client for talking with TMS")
 	}
 
 	// TODO: understand, what does this influx part do
