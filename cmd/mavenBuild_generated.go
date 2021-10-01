@@ -244,9 +244,9 @@ func mavenBuildMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/alt-deployment-repository-passowrd", "$(vaultBasePath)/$(vaultPipelineName)/alt-deployment-repository-passowrd", "$(vaultBasePath)/GROUP-SECRETS/alt-deployment-repository-passowrd"},
-								Type:  "vaultSecretFile",
+								Name:    "altDeploymentRepositoryPasswordFileVaultSecretName",
+								Type:    "vaultSecretFile",
+								Default: "alt-deployment-repository-passowrd",
 							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
