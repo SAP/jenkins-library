@@ -154,6 +154,22 @@ func copyFile(source, target string, utils cnbutils.BuildUtils) error {
 	return nil
 }
 
+func prepareDockerConfig(source string, utils cnbutils.BuildUtils) (string, error) {
+	if filepath.Base(source) != "config.json" {
+		log.Entry().Debugf("Renaming docker config file from '%s' to 'config.json'", filepath.Base(source))
+
+		newPath := filepath.Join(filepath.Dir(source), "config.json")
+		err := utils.FileRename(source, newPath)
+		if err != nil {
+			return "", err
+		}
+
+		return newPath, nil
+	}
+
+	return source, nil
+}
+
 func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, utils cnbutils.BuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment) error {
 	var err error
 
@@ -183,19 +199,11 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 	dockerConfig := &configfile.ConfigFile{}
 	dockerConfigJSON := []byte(`{"auths":{}}`)
 	if len(config.DockerConfigJSON) > 0 {
-		if filepath.Base(config.DockerConfigJSON) != "config.json" {
-			log.Entry().Debugf("Renaming docker config file from '%s' to 'config.json'", filepath.Base(config.DockerConfigJSON))
-
-			dockerConfigFile = filepath.Join(filepath.Dir(config.DockerConfigJSON), "config.json")
-			err = utils.FileRename(config.DockerConfigJSON, dockerConfigFile)
-			if err != nil {
-				log.SetErrorCategory(log.ErrorConfiguration)
-				return errors.Wrapf(err, "failed to rename DockerConfigJSON file '%v'", config.DockerConfigJSON)
-			}
-		} else {
-			dockerConfigFile = config.DockerConfigJSON
+		dockerConfigFile, err = prepareDockerConfig(config.DockerConfigJSON, utils)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return errors.Wrapf(err, "failed to rename DockerConfigJSON file '%v'", config.DockerConfigJSON)
 		}
-
 		dockerConfigJSON, err = utils.FileRead(dockerConfigFile)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
