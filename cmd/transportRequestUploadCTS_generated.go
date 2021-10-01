@@ -13,6 +13,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
@@ -101,6 +102,15 @@ It processes the results of the ` + "`" + `ui5 build` + "`" + ` command of the S
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
+			}
+
+			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
+			if err != nil {
+				return err
+			}
+			if err = validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
 			}
 
 			return nil
