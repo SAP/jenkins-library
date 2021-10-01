@@ -50,6 +50,8 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
                                          ]
                                      ]
                                  ]
+        helper.registerAllowedMethod('addBadge', [Map], {return})
+        helper.registerAllowedMethod('createSummary', [Map], {return})
     }
 
     @After
