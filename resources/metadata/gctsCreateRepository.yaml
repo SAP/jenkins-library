@@ -78,6 +78,7 @@ spec:
         possibleValues:
           - SOURCE
           - TARGET
+        default: SOURCE
       - name: vSID
         type: string
         description: Virtual SID of the local repository. The vSID corresponds to the transport route that delivers content to the remote Git repository
