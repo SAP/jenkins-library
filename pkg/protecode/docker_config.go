@@ -22,7 +22,7 @@ func (ac *DockerConfigAuth) encodedAuth() (string, error) {
 }
 
 // To avoid accidental leaks in logs
-func (ac *DockerConfigAuth) String() string {
+func (ac DockerConfigAuth) String() string {
 	return fmt.Sprintf("Auth: ***")
 }
 
