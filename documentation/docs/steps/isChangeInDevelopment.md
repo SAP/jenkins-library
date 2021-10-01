@@ -23,7 +23,7 @@ If the change document is _**not**_ in status `in development` the key's value i
 
 ```groovy
 // pipeline script
-  isChangeInDevelopment( script: this, failIfStatusIsNotInDevelopment: false )
+  isChangeInDevelopment( script: this )
   ...
 ```
 
@@ -33,7 +33,7 @@ You can omit the exception by setting the configuration parameter `failIfStatusI
 // pipeline script
   isChangeInDevelopment( script: this, failIfStatusIsNotInDevelopment: false )
 
-  if(commonPipelineEnvironment.getValue( 'isChangeInDevelopment)' ) {
+  if(commonPipelineEnvironment.getValue( 'isChangeInDevelopment' ) {
     ...
   }
 ```
