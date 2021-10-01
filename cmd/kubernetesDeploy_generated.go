@@ -451,7 +451,7 @@ func kubernetesDeployMetadata() config.StepData {
 								Default: "docker-config",
 							},
 						},
-						Scope:     []string{"PARAMETERS"},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},
