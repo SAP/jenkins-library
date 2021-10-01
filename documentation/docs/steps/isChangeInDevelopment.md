@@ -56,11 +56,11 @@ general:
     endpoint: 'https://example.org/cm/solman/endpoint'
 
 steps:
+  isChangeInDevelopment:
+    dockerImage: 'ppiper/cm-client'
+
   transportRequestUploadSOLMAN:
-    changeManagement:
-      client: '001'
-    abapPackage: 'PACK'
-    applicationName: 'APPNAME'
+    dockerImage: 'ppiper/cm-client'
     applicationId: 'APPID',
     filePath: '/path/file.ext',
 ```
