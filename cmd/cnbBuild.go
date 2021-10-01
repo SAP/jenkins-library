@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -31,10 +32,10 @@ type cnbBuildUtilsBundle struct {
 	*docker.Client
 }
 
-func setCustomBuildpacks(bpacks []string, utils cnbutils.BuildUtils) (string, string, error) {
+func setCustomBuildpacks(bpacks []string, dockerCreds string, utils cnbutils.BuildUtils) (string, string, error) {
 	buildpacksPath := "/tmp/buildpacks"
 	orderPath := "/tmp/buildpacks/order.toml"
-	newOrder, err := cnbutils.DownloadBuildpacks(buildpacksPath, bpacks, utils)
+	newOrder, err := cnbutils.DownloadBuildpacks(buildpacksPath, bpacks, dockerCreds, utils)
 	if err != nil {
 		return "", "", err
 	}
@@ -153,6 +154,22 @@ func copyFile(source, target string, utils cnbutils.BuildUtils) error {
 	return nil
 }
 
+func prepareDockerConfig(source string, utils cnbutils.BuildUtils) (string, error) {
+	if filepath.Base(source) != "config.json" {
+		log.Entry().Debugf("Renaming docker config file from '%s' to 'config.json'", filepath.Base(source))
+
+		newPath := filepath.Join(filepath.Dir(source), "config.json")
+		err := utils.FileRename(source, newPath)
+		if err != nil {
+			return "", err
+		}
+
+		return newPath, nil
+	}
+
+	return source, nil
+}
+
 func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, utils cnbutils.BuildUtils, commonPipelineEnvironment *cnbBuildCommonPipelineEnvironment) error {
 	var err error
 
@@ -178,10 +195,16 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		}
 	}
 
+	dockerConfigFile := ""
 	dockerConfig := &configfile.ConfigFile{}
 	dockerConfigJSON := []byte(`{"auths":{}}`)
 	if len(config.DockerConfigJSON) > 0 {
-		dockerConfigJSON, err = utils.FileRead(config.DockerConfigJSON)
+		dockerConfigFile, err = prepareDockerConfig(config.DockerConfigJSON, utils)
+		if err != nil {
+			log.SetErrorCategory(log.ErrorConfiguration)
+			return errors.Wrapf(err, "failed to rename DockerConfigJSON file '%v'", config.DockerConfigJSON)
+		}
+		dockerConfigJSON, err = utils.FileRead(dockerConfigFile)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorConfiguration)
 			return errors.Wrapf(err, "failed to read DockerConfigJSON file '%v'", config.DockerConfigJSON)
@@ -241,7 +264,7 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 
 	if config.Buildpacks != nil && len(config.Buildpacks) > 0 {
 		log.Entry().Infof("Setting custom buildpacks: '%v'", config.Buildpacks)
-		buildpacksPath, orderPath, err = setCustomBuildpacks(config.Buildpacks, utils)
+		buildpacksPath, orderPath, err = setCustomBuildpacks(config.Buildpacks, dockerConfigFile, utils)
 		defer utils.RemoveAll(buildpacksPath)
 		defer utils.RemoveAll(orderPath)
 		if err != nil {
