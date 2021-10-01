@@ -368,8 +368,6 @@ private String stashWorkspace(config, prefix, boolean chown = false, boolean sta
             def fsGroup = securityContext?.fsGroup ?: 1000
             sh """#!${config.containerShell ?: '/bin/sh'}
 chown -R ${runAsUser}:${fsGroup} ."""
-            sh "ls -la ."
-            sh "ls -la ruby-library/target/rubygems-jruby9-exec-maven-plugin/gems/minitest-5.14.2/"
         }
 
         def includes, excludes
@@ -418,8 +416,7 @@ private void unstashWorkspace(config, prefix) {
     try {
         unstash "${prefix}-${config.uniqueId}"
     } catch (AbortException | IOException e) {
-        echo "${e.getMessage()}"
-        throw e
+        echo "${e.getMessage()}\n${e.getCause()}"
     } catch (Throwable e) {
         echo "Unstash workspace failed with throwable ${e.getMessage()}"
         throw e
