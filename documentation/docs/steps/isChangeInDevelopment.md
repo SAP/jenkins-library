@@ -10,7 +10,9 @@
 
 ## Specifying the Change Document
 
-Specify the ID of the change document by [parameter](transportRequestUploadSOLMAN#By-Step-Parameter) or [common pipeline environment](transportRequestUploadSOLMAN#Common-Pipeline-Environment).
+The target of the status check is a change document, identified by an identifier (ID).
+
+Specify the ID by [parameter](transportRequestUploadSOLMAN#By-Step-Parameter) or [common pipeline environment](transportRequestUploadSOLMAN#Common-Pipeline-Environment).
 
 ## Return Value
 

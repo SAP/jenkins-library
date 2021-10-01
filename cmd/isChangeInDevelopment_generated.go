@@ -35,7 +35,7 @@ func IsChangeInDevelopmentCommand() *cobra.Command {
 	var createIsChangeInDevelopmentCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Checks if a certain change is in status 'in development'",
-		Long:  `"Checks if a certain change is in status 'in development'"`,
+		Long:  `Checks if a certain change is in status 'in development'`,
 		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			startTime = time.Now()
 			log.SetStepName(STEP_NAME)
