@@ -136,6 +136,7 @@ spec:
           - maven
           - pep440
           - semver2
+        default: maven
       - name: dockerVersionSource
         type: string
         description: "For `buildTool: docker`: Defines the source of the version. Can be `FROM`, any supported _buildTool_ or an environment variable name."
