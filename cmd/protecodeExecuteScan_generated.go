@@ -13,6 +13,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
@@ -22,7 +23,7 @@ type protecodeExecuteScanOptions struct {
 	ScanImage                   string `json:"scanImage,omitempty"`
 	DockerRegistryURL           string `json:"dockerRegistryUrl,omitempty"`
 	DockerConfigJSON            string `json:"dockerConfigJSON,omitempty"`
-	CleanupMode                 string `json:"cleanupMode,omitempty"`
+	CleanupMode                 string `json:"cleanupMode,omitempty" validate:"oneof=none binary complete"`
 	FilePath                    string `json:"filePath,omitempty"`
 	IncludeLayers               bool   `json:"includeLayers,omitempty"`
 	TimeoutMinutes              string `json:"timeoutMinutes,omitempty"`
@@ -134,6 +135,15 @@ func ProtecodeExecuteScanCommand() *cobra.Command {
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
+			}
+
+			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
+			if err != nil {
+				return err
+			}
+			if err = validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
 			}
 
 			return nil
