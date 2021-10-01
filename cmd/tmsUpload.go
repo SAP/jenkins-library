@@ -12,13 +12,13 @@ import (
 )
 
 type uaa struct {
-	url          string
-	clinetid     string
-	clientsecret string
+	Url          string `json:"url"`
+	ClientId     string `json:"clientid"`
+	ClientSecret string `json:"clientsecret"`
 }
 
 type serviceKey struct {
-	uaa uaa
+	Uaa uaa `json:"uaa"`
 }
 
 type tmsUploadUtils interface {
@@ -69,8 +69,9 @@ func tmsUpload(config tmsUploadOptions, telemetryData *telemetry.CustomData, inf
 	var serviceKey serviceKey
 	json.Unmarshal([]byte(config.ServiceKey), &serviceKey)
 
-	communicationInstance, err := tms.NewCommunicationInstance(client, serviceKey.uaa.url, serviceKey.uaa.clinetid, serviceKey.uaa.clientsecret, GeneralConfig.Verbose)
+	communicationInstance, err := tms.NewCommunicationInstance(client, serviceKey.Uaa.Url, serviceKey.Uaa.ClientId, serviceKey.Uaa.ClientSecret, GeneralConfig.Verbose)
 	if err != nil {
+		// TODO: is Fatalf required here? or can be simply Fatal?
 		log.Entry().WithError(err).Fatalf("Failed to prepare client for talking with TMS")
 	}
 

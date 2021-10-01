@@ -17,7 +17,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// TODO: is it a correct structure?
 // AuthToken - structure to store OAuth token
 type AuthToken struct {
 	TokenType   string `json:"token_type"`
@@ -73,7 +72,7 @@ func (communicationInstance *CommunicationInstance) getOAuthToken() (string, err
 	encodedUsernameColonPassword := b64.StdEncoding.EncodeToString([]byte(communicationInstance.clientId + ":" + communicationInstance.clientSecret))
 	header := http.Header{}
 	header.Add("Content-type", "application/x-www-form-urlencoded")
-	header.Add("authorization", encodedUsernameColonPassword)
+	header.Add("authorization", "Basic "+encodedUsernameColonPassword)
 
 	// TODO: should one need to replace '%20' with '+' for username and passowrd, as it was done in groovy?
 	urlFormData := url.Values{
