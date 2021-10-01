@@ -38,6 +38,7 @@ type CommunicationInstance struct {
 // NewCommunicationInstance returns CommunicationInstance structure with http client prepared for communication with TMS backend
 func NewCommunicationInstance(httpClient piperHttp.Uploader, uaaUrl, clientId, clientSecret string, isVerbose bool) (*CommunicationInstance, error) {
 	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/tms")
+
 	communicationInstance := &CommunicationInstance{
 		uaaUrl:       uaaUrl,
 		clientId:     clientId,

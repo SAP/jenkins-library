@@ -20,13 +20,17 @@ spec:
       - name: buildResult
         type: stash
     params:
-      - name: serviceKey
+      - name: tmsServiceKey
         type: string
-        description: Temporal parameter for passing TMS service key.
+        description: Service key JSON string to access the SAP Cloud Transport Management service instance APIs
         scope:
           - PARAMETERS
-          - STEPS
         mandatory: true
+        secret: true
+        resourceRef:
+          - name: credentialsId
+            type: secret
+            param: tmsServiceKey
       - name: customDescription
         type: string
         description: Can be used as the description of a transport request. Will overwrite the default, which is corresponding Git commit-ID.

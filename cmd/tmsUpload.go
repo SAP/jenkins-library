@@ -65,9 +65,10 @@ func tmsUpload(config tmsUploadOptions, telemetryData *telemetry.CustomData, inf
 
 	// TODO: any options to set for the client? (see checkmarxExecuteScan.go)
 
-	// TODO: how to read credentials by their id from jenkins?
-	var serviceKey serviceKey
-	json.Unmarshal([]byte(config.ServiceKey), &serviceKey)
+	serviceKey, err := unmarshalServiceKey(config.TmsServiceKey)
+	if err != nil {
+		log.Entry().WithError(err).Fatal("Failed to unmarshal serviceKey")
+	}
 
 	communicationInstance, err := tms.NewCommunicationInstance(client, serviceKey.Uaa.Url, serviceKey.Uaa.ClientId, serviceKey.Uaa.ClientSecret, GeneralConfig.Verbose)
 	if err != nil {
@@ -104,4 +105,16 @@ func runTmsUpload(config tmsUploadOptions, sys tms.CommunicationInstance) error 
 	*/
 
 	return nil
+}
+
+func unmarshalServiceKey(serviceKeyJson string) (serviceKey serviceKey, err error) {
+	log.Entry().Info("Unmarshalling serviceKey")
+	err = json.Unmarshal([]byte(serviceKeyJson), &serviceKey)
+	if err != nil {
+		// TODO: is it safe to return the error for unmarshalling service key? would not it expose the key data?
+		return
+	}
+
+	log.Entry().Info("serviceKey unmarshalled successfully")
+	return
 }
