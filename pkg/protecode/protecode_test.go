@@ -532,3 +532,26 @@ func TestDeleteScanSuccess(t *testing.T) {
 		}
 	}
 }
+
+func TestAttachDockerAuth(t *testing.T) {
+	testDockerConfigJSON := `{"auths": {"example.com": {"auth": "dXNlcjE6cGFzczEK"}}}`
+
+	cases := []struct {
+		url, expected string
+	}{
+		{"https://example.com/api", "https://user1%3Apass1%0A@example.com/api"},
+		{"https://unknown.com/api", "https://unknown.com/api"},
+	}
+
+	var pc Protecode
+	var patchedURL string
+	for _, c := range cases {
+		pc = makeProtecode(Options{
+			ServerURL:        c.url,
+			DockerConfigJSON: testDockerConfigJSON,
+		})
+
+		patchedURL = pc.attachDockerAuth(c.url)
+		assert.Equal(t, c.expected, patchedURL)
+	}
+}
