@@ -13,6 +13,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
@@ -38,7 +39,7 @@ type checkmarxExecuteScanOptions struct {
 	VulnerabilityThresholdHigh    int    `json:"vulnerabilityThresholdHigh,omitempty"`
 	VulnerabilityThresholdLow     int    `json:"vulnerabilityThresholdLow,omitempty"`
 	VulnerabilityThresholdMedium  int    `json:"vulnerabilityThresholdMedium,omitempty"`
-	VulnerabilityThresholdResult  string `json:"vulnerabilityThresholdResult,omitempty"`
+	VulnerabilityThresholdResult  string `json:"vulnerabilityThresholdResult,omitempty" validate:"oneof=FAILURE"`
 	VulnerabilityThresholdUnit    string `json:"vulnerabilityThresholdUnit,omitempty"`
 	IsOptimizedAndScheduled       bool   `json:"isOptimizedAndScheduled,omitempty"`
 }
@@ -221,6 +222,15 @@ thresholds instead of ` + "`" + `percentage` + "`" + ` whereas we strongly recom
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
+			}
+
+			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
+			if err != nil {
+				return err
+			}
+			if err = validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
 			}
 
 			return nil
