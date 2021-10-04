@@ -15,7 +15,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type checkChangeInDevelopmentOptions struct {
+type isChangeInDevelopmentOptions struct {
 	Endpoint                       string   `json:"endpoint,omitempty"`
 	Username                       string   `json:"username,omitempty"`
 	Password                       string   `json:"password,omitempty"`
@@ -24,16 +24,16 @@ type checkChangeInDevelopmentOptions struct {
 	ClientOpts                     []string `json:"clientOpts,omitempty"`
 }
 
-// CheckChangeInDevelopmentCommand Checks if a certain change is in status 'in development'
-func CheckChangeInDevelopmentCommand() *cobra.Command {
-	const STEP_NAME = "checkChangeInDevelopment"
+// IsChangeInDevelopmentCommand Checks if a certain change is in status 'in development'
+func IsChangeInDevelopmentCommand() *cobra.Command {
+	const STEP_NAME = "isChangeInDevelopment"
 
-	metadata := checkChangeInDevelopmentMetadata()
-	var stepConfig checkChangeInDevelopmentOptions
+	metadata := isChangeInDevelopmentMetadata()
+	var stepConfig isChangeInDevelopmentOptions
 	var startTime time.Time
 	var logCollector *log.CollectorHook
 
-	var createCheckChangeInDevelopmentCmd = &cobra.Command{
+	var createIsChangeInDevelopmentCmd = &cobra.Command{
 		Use:   STEP_NAME,
 		Short: "Checks if a certain change is in status 'in development'",
 		Long:  `"Checks if a certain change is in status 'in development'"`,
@@ -99,17 +99,17 @@ func CheckChangeInDevelopmentCommand() *cobra.Command {
 					GeneralConfig.HookConfig.SplunkConfig.Index,
 					GeneralConfig.HookConfig.SplunkConfig.SendLogs)
 			}
-			checkChangeInDevelopment(stepConfig, &telemetryData)
+			isChangeInDevelopment(stepConfig, &telemetryData)
 			telemetryData.ErrorCode = "0"
 			log.Entry().Info("SUCCESS")
 		},
 	}
 
-	addCheckChangeInDevelopmentFlags(createCheckChangeInDevelopmentCmd, &stepConfig)
-	return createCheckChangeInDevelopmentCmd
+	addIsChangeInDevelopmentFlags(createIsChangeInDevelopmentCmd, &stepConfig)
+	return createIsChangeInDevelopmentCmd
 }
 
-func addCheckChangeInDevelopmentFlags(cmd *cobra.Command, stepConfig *checkChangeInDevelopmentOptions) {
+func addIsChangeInDevelopmentFlags(cmd *cobra.Command, stepConfig *isChangeInDevelopmentOptions) {
 	cmd.Flags().StringVar(&stepConfig.Endpoint, "endpoint", os.Getenv("PIPER_endpoint"), "The service endpoint")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "The user")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "The password")
@@ -124,10 +124,10 @@ func addCheckChangeInDevelopmentFlags(cmd *cobra.Command, stepConfig *checkChang
 }
 
 // retrieve step metadata
-func checkChangeInDevelopmentMetadata() config.StepData {
+func isChangeInDevelopmentMetadata() config.StepData {
 	var theMetaData = config.StepData{
 		Metadata: config.StepMetadata{
-			Name:        "checkChangeInDevelopment",
+			Name:        "isChangeInDevelopment",
 			Aliases:     []config.Alias{},
 			Description: "Checks if a certain change is in status 'in development'",
 		},

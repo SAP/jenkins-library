@@ -7,22 +7,22 @@ import (
 	"testing"
 )
 
-type checkChangeInDevelopmentMockUtils struct {
+type isChangeInDevelopmentMockUtils struct {
 	*mock.ExecMockRunner
 }
 
-func newCheckChangeInDevelopmentTestsUtils() checkChangeInDevelopmentMockUtils {
-	utils := checkChangeInDevelopmentMockUtils{
+func newIsChangeInDevelopmentTestsUtils() isChangeInDevelopmentMockUtils {
+	utils := isChangeInDevelopmentMockUtils{
 		ExecMockRunner: &mock.ExecMockRunner{},
 	}
 	return utils
 }
 
-func TestRunCheckChangeInDevelopment(t *testing.T) {
+func TestRunIsChangeInDevelopment(t *testing.T) {
 
 	t.Parallel()
 
-	config := checkChangeInDevelopmentOptions{
+	config := isChangeInDevelopmentOptions{
 		Endpoint:                       "https://example.org/cm",
 		Username:                       "me",
 		Password:                       "****",
@@ -46,10 +46,10 @@ func TestRunCheckChangeInDevelopment(t *testing.T) {
 
 	t.Run("change found and in status IN_DEVELOPMENT", func(t *testing.T) {
 
-		cmd := newCheckChangeInDevelopmentTestsUtils()
+		cmd := newIsChangeInDevelopmentTestsUtils()
 		cmd.ExitCode = 0 // this exit code represents a change in status IN_DEVELOPMENT
 
-		err := runCheckChangeInDevelopment(&config, nil, cmd)
+		err := runIsChangeInDevelopment(&config, nil, cmd)
 
 		if assert.NoError(t, err) {
 			assert.Equal(t, []string{"CMCLIENT_OPTS=-Dabc=123 -Ddef=456"}, cmd.Env)
@@ -59,25 +59,25 @@ func TestRunCheckChangeInDevelopment(t *testing.T) {
 
 	t.Run("change found and not in status IN_DEVELOPMENT", func(t *testing.T) {
 
-		cmd := newCheckChangeInDevelopmentTestsUtils()
+		cmd := newIsChangeInDevelopmentTestsUtils()
 		cmd.ExitCode = 3 // this exit code represents a change which is not in status IN_DEVELOPMENT
 
-		err := runCheckChangeInDevelopment(&config, nil, cmd)
+		err := runIsChangeInDevelopment(&config, nil, cmd)
 
-		if assert.EqualError(t, err, "Change '12345678' is not in status 'in development'") {
+		if assert.EqualError(t, err, "change '12345678' is not in status 'in development'") {
 			assert.Equal(t, []mock.ExecCall{expectedShellCall}, cmd.Calls)
 		}
 	})
 
 	t.Run("change found and not in status IN_DEVELOPMENT, but we don't fail", func(t *testing.T) {
 
-		cmd := newCheckChangeInDevelopmentTestsUtils()
+		cmd := newIsChangeInDevelopmentTestsUtils()
 		cmd.ExitCode = 3 // this exit code represents a change which is not in status IN_DEVELOPMENT
 
 		myConfig := config
 		myConfig.FailIfStatusIsNotInDevelopment = false // needs to be explicitly configured
 
-		err := runCheckChangeInDevelopment(&myConfig, nil, cmd)
+		err := runIsChangeInDevelopment(&myConfig, nil, cmd)
 
 		if assert.NoError(t, err) {
 			assert.Equal(t, []mock.ExecCall{expectedShellCall}, cmd.Calls)
@@ -86,36 +86,36 @@ func TestRunCheckChangeInDevelopment(t *testing.T) {
 
 	t.Run("invalid credentials", func(t *testing.T) {
 
-		cmd := newCheckChangeInDevelopmentTestsUtils()
+		cmd := newIsChangeInDevelopmentTestsUtils()
 		cmd.ExitCode = 2 // this exit code represents invalid credentials
 
-		err := runCheckChangeInDevelopment(&config, nil, cmd)
+		err := runIsChangeInDevelopment(&config, nil, cmd)
 
-		if assert.EqualError(t, err, "Cannot retrieve change status: Invalid credentials") {
+		if assert.EqualError(t, err, "cannot retrieve change status: Invalid credentials") {
 			assert.Equal(t, []mock.ExecCall{expectedShellCall}, cmd.Calls)
 		}
 	})
 
 	t.Run("generic failure reported via exit code", func(t *testing.T) {
 
-		cmd := newCheckChangeInDevelopmentTestsUtils()
+		cmd := newIsChangeInDevelopmentTestsUtils()
 		cmd.ExitCode = 1 // this exit code indicates something went wrong
 
-		err := runCheckChangeInDevelopment(&config, nil, cmd)
+		err := runIsChangeInDevelopment(&config, nil, cmd)
 
-		if assert.EqualError(t, err, "Cannot retrieve change status: Check log for details") {
+		if assert.EqualError(t, err, "cannot retrieve change status: Check log for details") {
 			assert.Equal(t, []mock.ExecCall{expectedShellCall}, cmd.Calls)
 		}
 	})
 
 	t.Run("generic failure reported via error", func(t *testing.T) {
 
-		cmd := newCheckChangeInDevelopmentTestsUtils()
+		cmd := newIsChangeInDevelopmentTestsUtils()
 		cmd.ShouldFailOnCommand = map[string]error{"cm.*": fmt.Errorf("%v", "Something went wrong")}
 
-		err := runCheckChangeInDevelopment(&config, nil, cmd)
+		err := runIsChangeInDevelopment(&config, nil, cmd)
 
-		if assert.EqualError(t, err, "Cannot retrieve change status: Something went wrong") {
+		if assert.EqualError(t, err, "cannot retrieve change status: Something went wrong") {
 			assert.Equal(t, []mock.ExecCall{expectedShellCall}, cmd.Calls)
 		}
 	})
