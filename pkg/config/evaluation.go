@@ -2,9 +2,12 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"path"
 	"strings"
+
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 
 	"github.com/pkg/errors"
 )
@@ -17,14 +20,16 @@ const (
 	npmScriptsCondition            = "npmScripts"
 )
 
-// EvaluateConditionsV2 validates stage conditions and updates runSteps in runConfig according to V1 schema
+// EvaluateConditionsV1 validates stage conditions and updates runSteps in runConfig according to V1 schema
+/*
 func (r *RunConfigV1) evaluateConditionsV1(config *Config, filters map[string]StepFilters, parameters map[string][]StepParameters,
 	secrets map[string][]StepSecrets, stepAliases map[string][]Alias, glob func(pattern string) (matches []string, err error)) error {
 	for _, stage := range r.PipelineConfig.Spec.Stages {
 		runStep := map[string]bool{}
 		for _, step := range stage.Steps {
 			stepActive := false
-			stepConfig, err := r.getStepConfig(config, stageName, stepName, filters, parameters, secrets, stepAliases)
+			//ToDo: check which stage name to use: name or displayName?
+			stepConfig, err := r.getStepConfig(config, stage.DisplayName, step.Name, filters, parameters, secrets, stepAliases)
 			if err != nil {
 				return err
 			}
@@ -34,6 +39,17 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, filters map[string]St
 				stepActive = active
 			} else {
 				for _, condition := range step.Conditions {
+					if condition.Config != nil {
+
+					}
+
+					if condition.ConfigKey != nil {
+
+					}
+
+					if condition.Default != nil {
+
+					}
 					var err error
 					switch condition {
 					case configCondition:
@@ -69,6 +85,76 @@ func (r *RunConfigV1) evaluateConditionsV1(config *Config, filters map[string]St
 		}
 	}
 	return nil
+}
+*/
+
+func (s *StepCondition) evaluateV1(config StepConfig, utils piperutils.FileUtils) (bool, error) {
+
+	// only the first condition will be evaluated.
+	// if multiple conditions should be checked they need to provided via the Conditions list
+	// ToDo: perform error handling to check that only one condition is allowed?
+	if s.Config != nil {
+
+		if len(s.Config) > 1 {
+			return false, errors.Errorf("only one config key allowed per condition but %v provided", len(s.Config))
+		}
+
+		for param, activationValues := range s.Config {
+			for _, activationValue := range activationValues {
+				if activationValue == config.Config[param] {
+					return true, nil
+				}
+			}
+			// for loop will only cover first entry since we throw an error in case there is more than one config key defined already above
+			return false, nil
+		}
+	}
+
+	if len(s.ConfigKey) > 0 {
+		if configValue := config.Config[s.ConfigKey]; configValue != nil {
+			return true, nil
+		}
+		return false, nil
+	}
+
+	if len(s.FilePattern) > 0 {
+		files, err := utils.Glob(s.FilePattern)
+		if err != nil {
+			return false, errors.Wrap(err, "failed to check filePattern condition")
+		}
+		if len(files) > 0 {
+			return true, nil
+		}
+		return false, nil
+	}
+
+	if len(s.FilePatternFromConfig) > 0 {
+
+		configValue := fmt.Sprint(config.Config[s.FilePatternFromConfig])
+		if len(configValue) == 0 {
+			return false, nil
+		}
+		files, err := utils.Glob(configValue)
+		if err != nil {
+			return false, errors.Wrap(err, "failed to check filePatternFromConfig condition")
+		}
+		if len(files) > 0 {
+			return true, nil
+		}
+		return false, nil
+	}
+
+	if len(s.NpmScript) > 0 {
+		//ToDo: add logic for NpmScript condition
+	}
+
+	// needs to be checked last:
+	// if none of the other conditions matches, step will be active unless set to inactive
+	if s.Inactive == true {
+		return false, nil
+	} else {
+		return true, nil
+	}
 }
 
 // EvaluateConditions validates stage conditions and updates runSteps in runConfig

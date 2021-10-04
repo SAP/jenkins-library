@@ -2,11 +2,13 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"strings"
 	"testing"
 
+	"github.com/SAP/jenkins-library/pkg/mock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -40,6 +42,124 @@ func evaluateConditionsOpenFileMock(name string, _ map[string]string) (io.ReadCl
 		fileContent = ioutil.NopCloser(strings.NewReader("{}"))
 	}
 	return fileContent, nil
+}
+
+func TestEvaluateConditionsV1(t *testing.T) {
+	tt := []struct {
+		name          string
+		config        StepConfig
+		stepCondition StepCondition
+		expected      bool
+		expectedError error
+	}{
+		{
+			name: "Config condition - true",
+			config: StepConfig{Config: map[string]interface{}{
+				"deployTool": "helm3",
+			}},
+			stepCondition: StepCondition{Config: map[string][]interface{}{"deployTool": {"helm", "helm3", "kubectl"}}},
+			expected:      true,
+		},
+		{
+			name: "Config condition - false",
+			config: StepConfig{Config: map[string]interface{}{
+				"deployTool":        "notsupported",
+				"dockerRegistryUrl": "https://my.docker.registry.url",
+				"newmanCollection":  "**/*.postman_collection.json",
+			}},
+			stepCondition: StepCondition{Config: map[string][]interface{}{"deployTool": {"helm", "helm3", "kubectl"}}},
+			expected:      false,
+		},
+		{
+			name: "Config condition - integer - true",
+			config: StepConfig{Config: map[string]interface{}{
+				"executors":         1,
+				"dockerRegistryUrl": "https://my.docker.registry.url",
+				"newmanCollection":  "**/*.postman_collection.json",
+			}},
+			stepCondition: StepCondition{Config: map[string][]interface{}{"executors": {1}}},
+			expected:      true,
+		},
+		{
+			name: "Config condition - wrong condition definition",
+			config: StepConfig{Config: map[string]interface{}{
+				"deployTool":        "helm3",
+				"dockerRegistryUrl": "https://my.docker.registry.url",
+				"newmanCollection":  "**/*.postman_collection.json",
+			}},
+			stepCondition: StepCondition{Config: map[string][]interface{}{"deployTool": {"helm", "helm3", "kubectl"}, "deployTool2": {"myTool"}}},
+			expectedError: fmt.Errorf("only one config key allowed per condition but 2 provided"),
+		},
+		{
+			name: "ConfigKey condition - true",
+			config: StepConfig{Config: map[string]interface{}{
+				"dockerRegistryUrl": "https://my.docker.registry.url",
+			}},
+			stepCondition: StepCondition{ConfigKey: "dockerRegistryUrl"},
+			expected:      true,
+		},
+		{
+			name:          "ConfigKey condition - false",
+			config:        StepConfig{Config: map[string]interface{}{}},
+			stepCondition: StepCondition{ConfigKey: "dockerRegistryUrl"},
+			expected:      false,
+		},
+		{
+			name:          "FilePattern condition - true",
+			config:        StepConfig{Config: map[string]interface{}{}},
+			stepCondition: StepCondition{FilePattern: "**/conf.js"},
+			expected:      true,
+		},
+		{
+			name:          "FilePattern condition - false",
+			config:        StepConfig{Config: map[string]interface{}{}},
+			stepCondition: StepCondition{FilePattern: "**/confx.js"},
+			expected:      false,
+		},
+		{
+			name: "FilePatternFromConfig condition - true",
+			config: StepConfig{Config: map[string]interface{}{
+				"newmanCollection": "**/*.postman_collection.json",
+			}},
+			stepCondition: StepCondition{FilePatternFromConfig: "newmanCollection"},
+			expected:      true,
+		},
+		{
+			name: "FilePatternFromConfig condition - false",
+			config: StepConfig{Config: map[string]interface{}{
+				"newmanCollection": "**/*.postmanx_collection.json",
+			}},
+			stepCondition: StepCondition{FilePatternFromConfig: "newmanCollection"},
+			expected:      false,
+		},
+		{
+			name:          "Inactive condition - false",
+			config:        StepConfig{Config: map[string]interface{}{}},
+			stepCondition: StepCondition{Inactive: true},
+			expected:      false,
+		},
+		{
+			name:     "No condition - true",
+			config:   StepConfig{Config: map[string]interface{}{}},
+			expected: true,
+		},
+	}
+
+	filesMock := mock.FilesMock{}
+	filesMock.AddFile("conf.js", []byte("//test"))
+	filesMock.AddFile("my.postman_collection.json", []byte("{}"))
+
+	for _, test := range tt {
+		t.Run(test.name, func(t *testing.T) {
+			active, err := test.stepCondition.evaluateV1(test.config, &filesMock)
+			if test.expectedError == nil {
+				assert.NoError(t, err)
+			} else {
+				assert.EqualError(t, err, fmt.Sprint(test.expectedError))
+			}
+			assert.Equal(t, test.expected, active)
+		})
+	}
 }
 
 func Test_evaluateConditions(t *testing.T) {

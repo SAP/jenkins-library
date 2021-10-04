@@ -4,6 +4,7 @@ import (
 	"io"
 	"io/ioutil"
 
+	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 )
@@ -14,6 +15,7 @@ type RunConfig struct {
 	StageConfig     StageConfig
 	RunSteps        map[string]map[string]bool
 	OpenFile        func(s string, t map[string]string) (io.ReadCloser, error)
+	FileUtils       *piperutils.Files
 }
 
 type RunConfigV1 struct {
@@ -63,12 +65,12 @@ type Step struct {
 }
 
 type StepCondition struct {
-	Config                map[string][]string `json:"config,omitempty"`
-	ConfigKey             string              `json:"configKey,omitempty"`
-	Default               bool                `json:"default,omitempty"`
-	FilePattern           string              `json:"filePattern,omitempty"`
-	FilePatternFromConfig string              `json:"filePatternFromConfig,omitempty"`
-	NpmScript             string              `json:"npmScript,omitempty"`
+	Config                map[string][]interface{} `json:"config,omitempty"`
+	ConfigKey             string                   `json:"configKey,omitempty"`
+	FilePattern           string                   `json:"filePattern,omitempty"`
+	FilePatternFromConfig string                   `json:"filePatternFromConfig,omitempty"`
+	Inactive              bool                     `json:"inactive,omitempty"`
+	NpmScript             string                   `json:"npmScript,omitempty"`
 }
 
 func (r *RunConfigV1) InitRunConfigV1(config *Config, filters map[string]StepFilters, parameters map[string][]StepParameters,
@@ -83,10 +85,10 @@ func (r *RunConfigV1) InitRunConfigV1(config *Config, filters map[string]StepFil
 		}
 	}
 
-	err := r.evaluateConditionsV1(config, filters, parameters, secrets, stepAliases, glob)
-	if err != nil {
-		return errors.Wrap(err, "failed to evaluate step conditions: %v")
-	}
+	//err := r.evaluateConditionsV1(config, filters, parameters, secrets, stepAliases, glob)
+	//if err != nil {
+	//	return errors.Wrap(err, "failed to evaluate step conditions: %v")
+	//}
 
 	return nil
 }
