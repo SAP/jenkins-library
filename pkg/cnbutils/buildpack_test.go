@@ -16,7 +16,7 @@ var mockUtils = MockUtils{
 func TestBuildpackDownload(t *testing.T) {
 	t.Run("successfully downloads a buildpack", func(t *testing.T) {
 		mockUtils.AddDir("/tmp/testtest")
-		_, err := DownloadBuildpacks("/test", []string{"test"}, mockUtils)
+		_, err := DownloadBuildpacks("/test", []string{"test"}, "/test/config.json", mockUtils)
 
 		assert.NoError(t, err)
 		assert.True(t, mockUtils.HasRemovedFile("/tmp/testtest"))

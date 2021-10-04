@@ -13,6 +13,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
@@ -21,7 +22,7 @@ type mtaBuildOptions struct {
 	MtarGroup                       string   `json:"mtarGroup,omitempty"`
 	Version                         string   `json:"version,omitempty"`
 	Extensions                      string   `json:"extensions,omitempty"`
-	Platform                        string   `json:"platform,omitempty"`
+	Platform                        string   `json:"platform,omitempty" validate:"oneof=CF NEO XSA"`
 	ApplicationName                 string   `json:"applicationName,omitempty"`
 	Source                          string   `json:"source,omitempty"`
 	Target                          string   `json:"target,omitempty"`
@@ -107,6 +108,15 @@ func MtaBuildCommand() *cobra.Command {
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
+			}
+
+			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
+			if err != nil {
+				return err
+			}
+			if err = validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
 			}
 
 			return nil
