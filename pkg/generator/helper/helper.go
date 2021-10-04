@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -280,7 +278,7 @@ func {{ .StepName }}Metadata() config.StepData {
 						{{ if $res.Type }}Type: {{ $res.Type | quote }}, {{- end }}
 						{{ if $res.Parameters }}Parameters: []map[string]interface{}{ {{- end -}}
 						{{ range $i, $p := $res.Parameters }}
-							{{ if $p.name}}{"Name": {{ $p.Name | quote }}},{{ end -}}
+							{{ if $p.name}}{"Name": {{ $p.name | quote }}},{{ end -}}
 							{{ if $p.fields}}{"fields": []map[string]string{ {{- range $j, $f := $p.fields}} {"name": {{ $f.name | quote }}}, {{end -}} } },{{ end -}}
 							{{ if $p.tags}}{"tags": []map[string]string{ {{- range $j, $t := $p.tags}} {"name": {{ $t.name | quote }}}, {{end -}} } },{{ end -}}
 						{{ end }}
@@ -525,20 +523,13 @@ func ProcessMetaFiles(metadataFiles []string, targetDir string, stepHelperData S
 			checkError(err)
 		}
 	}
+
 	// expose metadata functions
-	code := generateCode(allSteps, "metadata", metadataGeneratedTemplate, nil)
+	code := generateCode(allSteps, "metadata", metadataGeneratedTemplate, sprig.HermeticTxtFuncMap())
 	err := stepHelperData.WriteFile(filepath.Join(targetDir, metadataGeneratedFileName), code, 0644)
 	checkError(err)
 
 	return nil
-}
-
-func openMetaFile(name string) (io.ReadCloser, error) {
-	return os.Open(name)
-}
-
-func fileWriter(filename string, data []byte, perm os.FileMode) error {
-	return ioutil.WriteFile(filename, data, perm)
 }
 
 func setDefaultParameters(stepData *config.StepData) (bool, error) {
