@@ -101,8 +101,6 @@ func TestRunGaugeExecuteTests(t *testing.T) {
 		err := runGaugeExecuteTests(&allFineConfig, nil, &mockUtils)
 		assert.True(t, errors.Is(err, ErrorGaugeRun))
 
-		assert.Equal(t, err.Error(), ErrorGaugeRun.Error())
-
 		assert.Equal(t, len(mockUtils.ExecMockRunner.Calls), 3)
 
 		assert.Equal(t, mockUtils.ExecMockRunner.Calls[0].Exec, "npm")
