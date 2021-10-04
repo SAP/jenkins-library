@@ -2,6 +2,7 @@ package helper
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -61,6 +62,7 @@ import (
 	{{ end -}}
 	"github.com/SAP/jenkins-library/pkg/telemetry"
 	"github.com/SAP/jenkins-library/pkg/splunk"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
@@ -68,7 +70,12 @@ type {{ .StepName }}Options struct {
 	{{- $names := list ""}}
 	{{- range $key, $value := uniqueName .StepParameters }}
 	{{ if ne (has $value.Name $names) true -}}
-	{{ $names | last }}{{ $value.Name | golangName }} {{ $value.Type }} ` + "`json:\"{{$value.Name}},omitempty\"`" + `
+	{{ $names | last }}{{ $value.Name | golangName }} {{ $value.Type }} ` + "`json:\"{{$value.Name}},omitempty\"" +
+	"{{ if or $value.PossibleValues $value.MandatoryIf}} validate:\"" +
+	"{{ if $value.PossibleValues }}oneof={{ range $i,$a := $value.PossibleValues }}{{if gt $i 0 }} {{ end }}{{.}}{{ end }}{{ end }}" +
+	"{{ if and $value.PossibleValues $value.MandatoryIf }},{{ end }}" +
+	"{{ if $value.MandatoryIf }}required_if={{ range $i,$a := $value.MandatoryIf }}{{ if gt $i 0 }} {{ end }}{{ $a.Name | title }} {{ $a.Value }}{{ end }}{{ end }}" +
+	"\"{{ end }}`" + `
 	{{- else -}}
 	{{- $names = append $names $value.Name }} {{ end -}}
 	{{ end }}
@@ -109,6 +116,7 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 				log.SetErrorCategory(log.ErrorConfiguration)
 				return err
 			}
+
 			{{- range $key, $value := .StepSecrets }}
 			log.RegisterSecret(stepConfig.{{ $value | golangName  }}){{end}}
 
@@ -120,6 +128,15 @@ func {{.CobraCmdFuncName}}() *cobra.Command {
 			if len({{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 				logCollector = &log.CollectorHook{CorrelationID: {{if .ExportPrefix}}{{ .ExportPrefix }}.{{end}}GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
+			}
+
+			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
+			if err != nil {
+				return err
+			}
+			if err = validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
 			}
 
 			return nil
@@ -197,7 +214,7 @@ func {{ .StepName }}Metadata() config.StepData {
 					{{- range $secrets := .Secrets }}
 					{
 						{{- if $secrets.Name -}} Name: "{{$secrets.Name}}",{{- end }}
-						{{- if $secrets.Description -}} Description: "{{$secrets.Description}}",{{- end }}
+						{{- if $secrets.Description -}} Description: {{$secrets.Description | quote}},{{- end }}
 						{{- if $secrets.Type -}} Type: "{{$secrets.Type}}",{{- end }}
 						{{- if $secrets.Aliases -}} Aliases: []config.Alias{ {{- range $i, $a := $secrets.Aliases }} {Name: "{{$a.Name}}", Deprecated: {{$a.Deprecated}}}, {{ end -}}  },{{- end }}
 					}, {{ end }}
@@ -470,6 +487,14 @@ func ProcessMetaFiles(metadataFiles []string, targetDir string, stepHelperData S
 		stepName := stepData.Metadata.Name
 		fmt.Printf("Step name: %v\n", stepName)
 		allSteps.Steps = append(allSteps.Steps, stepName)
+
+		for _, parameter := range stepData.Spec.Inputs.Parameters {
+			for _, mandatoryIfCase := range parameter.MandatoryIf {
+				if mandatoryIfCase.Name == "" || mandatoryIfCase.Value == "" {
+					return errors.New("invalid mandatoryIf option")
+				}
+			}
+		}
 
 		osImport := false
 		osImport, err = setDefaultParameters(&stepData)
