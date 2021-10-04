@@ -6,7 +6,30 @@ spec:
   inputs:
     secrets:
       - name: dockerConfigJsonCredentialsId
-        description: Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)). You can create it like explained in the Docker Success Center in the article about [how to generate a new auth in the config.json file](https://success.docker.com/article/generate-new-auth-in-config-json-file).
+        description: |
+          Jenkins 'Secret file' credentials ID containing Docker config.json (with registry credential(s)) in the following format:
+
+          ```json
+          {
+              "auths": {
+                      "$server": {
+                              "auth": "base64($username + ':' + $password)"
+                      }
+              }
+          }
+          ```
+
+          Example:
+
+          ```json
+          {
+              "auths": {
+                      "example.com": {
+                              "auth": "dXNlcm5hbWU6cGFzc3dvcmQ="
+                      }
+              }
+          }
+          ```
         type: jenkins
     params:
       - name: containerImageName
@@ -86,6 +109,13 @@ spec:
               - $(vaultPath)/docker-config
               - $(vaultBasePath)/$(vaultPipelineName)/docker-config
               - $(vaultBasePath)/GROUP-SECRETS/docker-config
+      - name: customTlsCertificateLinks
+        type: "[]string"
+        description: List containing download links of custom TLS certificates. This is required to ensure trusted connections to registries with custom certificates.
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
   outputs:
     resources:
       - name: commonPipelineEnvironment
