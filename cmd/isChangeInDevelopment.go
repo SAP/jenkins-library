@@ -5,7 +5,6 @@ import (
 	"github.com/SAP/jenkins-library/pkg/command"
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
-	"github.com/pkg/errors"
 	"strings"
 )
 
@@ -38,7 +37,9 @@ func newIsChangeInDevelopmentUtils() isChangeInDevelopmentUtils {
 	return &utils
 }
 
-func isChangeInDevelopment(config isChangeInDevelopmentOptions, telemetryData *telemetry.CustomData) {
+func isChangeInDevelopment(config isChangeInDevelopmentOptions,
+	telemetryData *telemetry.CustomData,
+	commonPipelineEnvironment *isChangeInDevelopmentCommonPipelineEnvironment) {
 	// Utils can be used wherever the command.ExecRunner interface is expected.
 	// It can also be used for example as a mavenExecRunner.
 	utils := newIsChangeInDevelopmentUtils()
@@ -49,20 +50,26 @@ func isChangeInDevelopment(config isChangeInDevelopmentOptions, telemetryData *t
 
 	// Error situations should be bubbled up until they reach the line below which will then stop execution
 	// through the log.Entry().Fatal() call leading to an os.Exit(1) in the end.
-	err := runIsChangeInDevelopment(&config, telemetryData, utils)
+	err := runIsChangeInDevelopment(&config, telemetryData, utils, commonPipelineEnvironment)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("step execution failed")
 	}
 }
 
-func runIsChangeInDevelopment(config *isChangeInDevelopmentOptions, telemetryData *telemetry.CustomData, utils isChangeInDevelopmentUtils) error {
+func runIsChangeInDevelopment(config *isChangeInDevelopmentOptions,
+	telemetryData *telemetry.CustomData,
+	utils isChangeInDevelopmentUtils,
+	commonPipelineEnvironment *isChangeInDevelopmentCommonPipelineEnvironment) error {
 
 	log.Entry().Infof("Checking change status for change '%s'", config.ChangeDocumentID)
 
 	isInDevelopment, err := perform(config, utils)
+
 	if err != nil {
 		return err
 	}
+
+	commonPipelineEnvironment.custom.isChangeInDevelopment = isInDevelopment
 
 	if isInDevelopment {
 		log.Entry().Infof("Change '%s' is in status 'in development'.", config.ChangeDocumentID)
@@ -77,8 +84,8 @@ func runIsChangeInDevelopment(config *isChangeInDevelopmentOptions, telemetryDat
 
 func perform(config *isChangeInDevelopmentOptions, utils isChangeInDevelopmentUtils) (bool, error) {
 
-	if len(config.ClientOpts) > 0 {
-		utils.AppendEnv([]string{fmt.Sprintf("CMCLIENT_OPTS=%s", strings.Join(config.ClientOpts, " "))})
+	if len(config.CmClientOpts) > 0 {
+		utils.AppendEnv([]string{fmt.Sprintf("CMCLIENT_OPTS=%s", strings.Join(config.CmClientOpts, " "))})
 	}
 
 	err := utils.RunExecutable("cmclient",
@@ -90,19 +97,19 @@ func perform(config *isChangeInDevelopmentOptions, utils isChangeInDevelopmentUt
 		"--change-id", config.ChangeDocumentID,
 		"--return-code")
 
-	if err != nil {
-		return false, errors.Wrap(err, "cannot retrieve change status")
-	}
-
 	exitCode := utils.GetExitCode()
 
-	hint := "Check log for details"
+	hint := "check log for details"
+	if err != nil {
+		hint = err.Error()
+	}
+
 	if exitCode == 0 {
 		return true, nil
 	} else if exitCode == 3 {
 		return false, nil
 	} else if exitCode == 2 {
-		hint = "Invalid credentials"
+		hint = "invalid credentials"
 	}
 
 	return false, fmt.Errorf("cannot retrieve change status: %s", hint)

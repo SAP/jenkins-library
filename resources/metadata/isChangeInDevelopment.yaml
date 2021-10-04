@@ -6,6 +6,12 @@ metadata:
 
 spec:
   inputs:
+    secrets:
+      - name: credentialsId
+        description: Jenkins 'Username with password' credentials ID containing user and password to authenticate against the ABAP backend
+        type: jenkins
+        aliases:
+          - name: changeManagement/credentialsId
     params:
       - name: endpoint
         type: string
@@ -21,29 +27,37 @@ spec:
       - name: username
         type: string
         mandatory: true
-        description: "The user"
+        description: "Service user to authenticate against the ABAP backend"
         secret: true
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
           - GENERAL
+        resourceRef:
+          - name: credentialsId
+            type: secret
+            param: username
       - name: password
         type: string
         mandatory: true
-        description: "The password"
+        description: "Service user password to authenticate against the ABAP backend"
         secret: true
         scope:
           - PARAMETERS
-          - GENERAL
+        resourceRef:
+          - name: credentialsId
+            type: secret
+            param: password
       - name: changeDocumentId
+        resourceRef:
+          - name: commonPipelineEnvironment
+            param: custom/changeDocumentId
         type: string
         mandatory: true
-        description: "The change document which should be checked for the status"
+        description: "ID of the change document to be checked for the status"
         scope:
           - PARAMETERS
-          - STAGES
-          - STEPS
       - name: failIfStatusIsNotInDevelopment
         type: bool
         default: true
@@ -52,10 +66,23 @@ spec:
           - PARAMETERS
           - STAGES
           - STEPS
-      - name: clientOpts
+      - name: cmClientOpts
         type: "[]string"
         description: "additional options passed to cm client, e.g. for troubleshooting"
         scope:
           - PARAMETERS
           - STAGES
           - STEPS
+        aliases:
+          - name: clientOpts
+          - name: changeManagement/clientOpts
+  outputs:
+    resources:
+      - name: commonPipelineEnvironment
+        type: piperEnvironment
+        params:
+          - name: custom/isChangeInDevelopment
+            type: bool
+  containers:
+    - name: cmclient
+      image: ppiper/cm-client
