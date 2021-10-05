@@ -1,7 +1,6 @@
 import static com.sap.piper.Prerequisites.checkScript
 
 import com.sap.piper.GenerateDocumentation
-import com.sap.piper.GitUtils
 import com.sap.piper.Utils
 import groovy.transform.Field
 import hudson.AbortException
@@ -86,9 +85,7 @@ void call(parameters = [:]) {
         def script = checkScript(this, parameters) ?: this
         String stageName = parameters.stageName ?: env.STAGE_NAME
 
-        GitUtils gitUtils = parameters?.gitUtils ?: new GitUtils()
-
-        ChangeManagement cm = parameters?.cmUtils ?: new ChangeManagement(script, gitUtils)
+        addPipelineWarning(script, "Deprecation Warning", "The step ${STEP_NAME} is deprecated. Follow the documentation for options.")
 
         ConfigurationHelper configHelper = ConfigurationHelper.newInstance(this)
             .loadStepDefaults([:], stageName)
@@ -120,7 +117,7 @@ void call(parameters = [:]) {
             stepParam1: parameters?.script == null
         ], configuration)
 
-        def changeId = getChangeDocumentId(cm, script, configuration)
+        def changeId = getChangeDocumentId(script, configuration)
 
         configuration = configHelper.mixin([changeDocumentId: changeId?.trim() ?: null], ['changeDocumentId'] as Set)
                                     .withMandatoryProperty('changeDocumentId',
@@ -133,21 +130,20 @@ void call(parameters = [:]) {
 
         echo "[INFO] Checking if change document '${configuration.changeDocumentId}' is in development."
 
-        try {
+        Map paramsUpload = [
+            script: script,
+            changeDocumentId: configuration.changeDocumentId,
+            endpoint: configuration.changeManagement.endpoint,
+            cmClientOpts: configuration.changeManagement.clientOpts?: [:],
+            credentialsId: configuration.changeManagement.credentialsId,
+            failIfStatusIsNotInDevelopment: configuration.failIfStatusIsNotInDevelopment
+            ]
 
-            isInDevelopment = cm.isChangeInDevelopment(
-                configuration.changeManagement.solman.docker,
-                configuration.changeDocumentId,
-                configuration.changeManagement.endpoint,
-                configuration.changeManagement.credentialsId,
-                configuration.changeManagement.clientOpts)
+        paramsUpload = addDockerParams(script, paramsUpload, configuration.changeManagement.solman?.docker)
 
-        } catch(ChangeManagementException ex) {
-            throw new AbortException(ex.getMessage())
-        }
+        isChangeInDevelopment(paramsUpload)
 
-
-        if(isInDevelopment) {
+        if(script.commonPipelineEnvironment.getValue('isChangeInDevelopment')) {
             echo "[INFO] Change '${changeId}' is in status 'in development'."
         } else {
             if(configuration.failIfStatusIsNotInDevelopment.toBoolean()) {
@@ -158,4 +154,36 @@ void call(parameters = [:]) {
             }
         }
     }
+}
+
+Map addDockerParams(Script script, Map parameters, Map docker) {
+
+    if(docker) {
+        if(docker.image) {
+            parameters.dockerImage = docker.image
+        }
+        if(docker.options) {
+            parameters.dockerOptions = docker.options
+        }
+        if(docker.envVars) {
+            parameters.dockerEnvVars = docker.envVars
+        }
+        if(docker.pullImage != null) {
+            parameters.put('dockerPullImage', docker.pullImage)
+        }
+    }
+    return parameters
+}
+
+static void addPipelineWarning(Script script, String heading, String message) {
+    script.echo '[WARNING] ' + message
+    script.addBadge(icon: "warning.gif", text: message)
+
+    String html =
+        """
+            <h2>$heading</h2>
+            <p>$message</p>
+            """
+
+    script.createSummary(icon: "warning.gif", text: html)
 }

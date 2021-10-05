@@ -139,7 +139,7 @@ func Execute() {
 	rootCmd.AddCommand(CloudFoundryCreateSpaceCommand())
 	rootCmd.AddCommand(CloudFoundryDeleteSpaceCommand())
 	rootCmd.AddCommand(VaultRotateSecretIdCommand())
-	rootCmd.AddCommand(CheckChangeInDevelopmentCommand())
+	rootCmd.AddCommand(IsChangeInDevelopmentCommand())
 	rootCmd.AddCommand(TransportRequestUploadCTSCommand())
 	rootCmd.AddCommand(TransportRequestUploadRFCCommand())
 	rootCmd.AddCommand(NewmanExecuteCommand())
