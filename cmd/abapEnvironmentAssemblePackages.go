@@ -174,6 +174,10 @@ func (br *buildWithRepository) start() error {
 				Value:   br.repo.Namespace,
 			},
 			{
+				ValueID: "PACKAGE_TYPE",
+				Value:   br.repo.PackageType,
+			},
+			{
 				ValueID: "PACKAGE_NAME_" + br.repo.PackageType,
 				Value:   br.repo.PackageName,
 			},
