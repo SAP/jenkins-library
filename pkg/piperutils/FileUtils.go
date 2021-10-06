@@ -192,16 +192,22 @@ func Unzip(src, dest string) ([]string, error) {
 
 // Untar will decompress a gzipped archive and then untar it, moving all files and folders
 // within the tgz file (parameter 1) to an output directory (parameter 2).
+// some tar like the one created from npm have an addtional package folder which need to be removed during untar
+// stripComponent level acts the same like in the tar cli with level 1 corresponding to elimination of parent folder
+// stripComponentLevel = 1 -> parentFolder/someFile.Txt -> someFile.Txt
+// stripComponentLevel = 2 -> parentFolder/childFolder/someFile.Txt -> someFile.Txt
+// when stripCompenent in 0 the untar will retain the original tar folder structure
+// when stripCompmenet is greater than 0 the expectation is all files must be under that level folder and if not there is a hard check and failure condition
 
-func Untar(src string, dest string) error {
+func Untar(src string, dest string, stripComponentLevel int) error {
 	file, err := os.Open(src)
 	if err != nil {
 		fmt.Errorf("unable to open src: %v", err)
 	}
-	return untar(file, dest)
+	return untar(file, dest, stripComponentLevel)
 }
 
-func untar(r io.Reader, dir string) (err error) {
+func untar(r io.Reader, dir string, level int) (err error) {
 	madeDir := map[string]bool{}
 
 	zr, err := gzip.NewReader(r)
@@ -221,6 +227,18 @@ func untar(r io.Reader, dir string) (err error) {
 			return fmt.Errorf("tar contained invalid name error %q", f.Name)
 		}
 		rel := filepath.FromSlash(f.Name)
+
+		// when level X folder(s) needs to be removed we first check that the rel path must have atleast X or greater than X pathseperatorserr
+		// or else we might end in index out of range
+		if level > 0 {
+			if strings.Count(rel, string(os.PathSeparator)) >= level {
+				relSplit := strings.SplitN(rel, string(os.PathSeparator), level+1)
+				rel = relSplit[level]
+			} else {
+				return fmt.Errorf("files %q in tarball archive not under level %v", f.Name, level)
+			}
+		}
+
 		abs := filepath.Join(dir, rel)
 
 		fi := f.FileInfo()
