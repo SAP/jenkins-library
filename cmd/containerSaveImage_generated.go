@@ -139,7 +139,7 @@ func containerSaveImageMetadata() config.StepData {
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "dockerRegistryUrl"}},
+						Aliases:   []config.Alias{{Name: "dockerRegistryUrl", Deprecated: false}},
 						Default:   os.Getenv("PIPER_containerRegistryUrl"),
 					},
 					{
@@ -153,7 +153,7 @@ func containerSaveImageMetadata() config.StepData {
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "dockerImage"}, {Name: "scanImage"}},
+						Aliases:   []config.Alias{{Name: "dockerImage", Deprecated: false}, {Name: "scanImage", Deprecated: false}},
 						Default:   os.Getenv("PIPER_containerImage"),
 					},
 					{

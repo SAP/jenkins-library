@@ -293,7 +293,7 @@ func gctsDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "map[string]interface{}",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "gctsRepositoryConfigurations"}},
+						Aliases:     []config.Alias{{Name: "gctsRepositoryConfigurations", Deprecated: false}},
 					},
 				},
 			},

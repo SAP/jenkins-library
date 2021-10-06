@@ -190,7 +190,7 @@ func githubPublishReleaseMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "githubApiUrl"}},
+						Aliases:     []config.Alias{{Name: "githubApiUrl", Deprecated: false}},
 						Default:     `https://api.github.com`,
 					},
 					{
@@ -240,7 +240,7 @@ func githubPublishReleaseMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "githubOrg"}},
+						Aliases:   []config.Alias{{Name: "githubOrg", Deprecated: false}},
 						Default:   os.Getenv("PIPER_owner"),
 					},
 					{
@@ -272,7 +272,7 @@ func githubPublishReleaseMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "githubRepo"}},
+						Aliases:   []config.Alias{{Name: "githubRepo", Deprecated: false}},
 						Default:   os.Getenv("PIPER_repository"),
 					},
 					{
@@ -281,7 +281,7 @@ func githubPublishReleaseMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "githubServerUrl"}},
+						Aliases:     []config.Alias{{Name: "githubServerUrl", Deprecated: false}},
 						Default:     `https://github.com`,
 					},
 					{
@@ -301,7 +301,7 @@ func githubPublishReleaseMetadata() config.StepData {
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "githubToken"}, {Name: "access_token"}},
+						Aliases:   []config.Alias{{Name: "githubToken", Deprecated: false}, {Name: "access_token", Deprecated: false}},
 						Default:   os.Getenv("PIPER_token"),
 					},
 					{
@@ -310,7 +310,7 @@ func githubPublishReleaseMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "githubUploadUrl"}},
+						Aliases:     []config.Alias{{Name: "githubUploadUrl", Deprecated: false}},
 						Default:     `https://uploads.github.com`,
 					},
 					{

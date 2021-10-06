@@ -246,7 +246,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "cfApiEndpoint"}, {Name: "cloudFoundry/apiEndpoint"}},
+						Aliases:     []config.Alias{{Name: "cfApiEndpoint", Deprecated: false}, {Name: "cloudFoundry/apiEndpoint", Deprecated: false}},
 						Default:     `https://api.cf.eu10.hana.ondemand.com`,
 					},
 					{
@@ -255,7 +255,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "cfAppName"}, {Name: "cloudFoundry/appName"}},
+						Aliases:     []config.Alias{{Name: "cfAppName", Deprecated: false}, {Name: "cloudFoundry/appName", Deprecated: false}},
 						Default:     os.Getenv("PIPER_appName"),
 					},
 					{
@@ -408,7 +408,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "cfManifest"}, {Name: "cloudFoundry/manifest"}},
+						Aliases:     []config.Alias{{Name: "cfManifest", Deprecated: false}, {Name: "cloudFoundry/manifest", Deprecated: false}},
 						Default:     os.Getenv("PIPER_manifest"),
 					},
 					{
@@ -417,7 +417,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "[]string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "cfManifestVariables"}, {Name: "cloudFoundry/manifestVariables"}},
+						Aliases:     []config.Alias{{Name: "cfManifestVariables", Deprecated: false}, {Name: "cloudFoundry/manifestVariables", Deprecated: false}},
 						Default:     []string{},
 					},
 					{
@@ -426,7 +426,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "[]string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "cfManifestVariablesFiles"}, {Name: "cloudFoundry/manifestVariablesFiles"}},
+						Aliases:     []config.Alias{{Name: "cfManifestVariablesFiles", Deprecated: false}, {Name: "cloudFoundry/manifestVariablesFiles", Deprecated: false}},
 						Default:     []string{`manifest-variables.yml`},
 					},
 					{
@@ -444,7 +444,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/mtaExtensionDescriptor"}},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/mtaExtensionDescriptor", Deprecated: false}},
 						Default:     os.Getenv("PIPER_mtaExtensionDescriptor"),
 					},
 					{
@@ -453,7 +453,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "map[string]interface{}",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/mtaExtensionCredentials"}},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/mtaExtensionCredentials", Deprecated: false}},
 					},
 					{
 						Name: "mtaPath",
@@ -475,7 +475,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "cfOrg"}, {Name: "cloudFoundry/org"}},
+						Aliases:     []config.Alias{{Name: "cfOrg", Deprecated: false}, {Name: "cloudFoundry/org", Deprecated: false}},
 						Default:     os.Getenv("PIPER_org"),
 					},
 					{
@@ -523,7 +523,7 @@ func cloudFoundryDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "cfSpace"}, {Name: "cloudFoundry/space"}},
+						Aliases:     []config.Alias{{Name: "cfSpace", Deprecated: false}, {Name: "cloudFoundry/space", Deprecated: false}},
 						Default:     os.Getenv("PIPER_space"),
 					},
 					{

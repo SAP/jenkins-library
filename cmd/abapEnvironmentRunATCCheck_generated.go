@@ -168,7 +168,7 @@ func abapEnvironmentRunATCCheckMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/apiEndpoint"}},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/apiEndpoint", Deprecated: false}},
 						Default:     os.Getenv("PIPER_cfApiEndpoint"),
 					},
 					{
@@ -177,7 +177,7 @@ func abapEnvironmentRunATCCheckMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/org"}},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/org", Deprecated: false}},
 						Default:     os.Getenv("PIPER_cfOrg"),
 					},
 					{
@@ -186,7 +186,7 @@ func abapEnvironmentRunATCCheckMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceInstance"}},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceInstance", Deprecated: false}},
 						Default:     os.Getenv("PIPER_cfServiceInstance"),
 					},
 					{
@@ -195,7 +195,7 @@ func abapEnvironmentRunATCCheckMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceKey"}, {Name: "cloudFoundry/serviceKeyName"}, {Name: "cfServiceKey"}},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceKey", Deprecated: false}, {Name: "cloudFoundry/serviceKeyName", Deprecated: false}, {Name: "cfServiceKey", Deprecated: false}},
 						Default:     os.Getenv("PIPER_cfServiceKeyName"),
 					},
 					{
@@ -204,7 +204,7 @@ func abapEnvironmentRunATCCheckMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/space"}},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/space", Deprecated: false}},
 						Default:     os.Getenv("PIPER_cfSpace"),
 					},
 					{

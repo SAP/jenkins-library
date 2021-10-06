@@ -284,7 +284,7 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "gitUserName"}},
+						Aliases:     []config.Alias{{Name: "gitUserName", Deprecated: false}},
 						Default:     `Project Piper`,
 					},
 					{
@@ -347,7 +347,7 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile"}},
+						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile", Deprecated: false}},
 						Default:     os.Getenv("PIPER_globalSettingsFile"),
 					},
 					{
@@ -365,7 +365,7 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
+						Aliases:     []config.Alias{{Name: "maven/m2Path", Deprecated: false}},
 						Default:     os.Getenv("PIPER_m2Path"),
 					},
 					{
@@ -395,7 +395,7 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile"}},
+						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile", Deprecated: false}},
 						Default:     os.Getenv("PIPER_projectSettingsFile"),
 					},
 					{

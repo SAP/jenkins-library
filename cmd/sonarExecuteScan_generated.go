@@ -244,7 +244,7 @@ func sonarExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "host"}, {Name: "sonarServerUrl"}},
+						Aliases:     []config.Alias{{Name: "host", Deprecated: false}, {Name: "sonarServerUrl", Deprecated: false}},
 						Default:     os.Getenv("PIPER_serverUrl"),
 					},
 					{
@@ -264,7 +264,7 @@ func sonarExecuteScanMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "sonarToken"}},
+						Aliases:   []config.Alias{{Name: "sonarToken", Deprecated: false}},
 						Default:   os.Getenv("PIPER_token"),
 					},
 					{
@@ -314,7 +314,7 @@ func sonarExecuteScanMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "projectVersion"}},
+						Aliases:   []config.Alias{{Name: "projectVersion", Deprecated: true}},
 						Default:   os.Getenv("PIPER_version"),
 					},
 					{
@@ -368,7 +368,7 @@ func sonarExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "sonarProperties"}},
+						Aliases:     []config.Alias{{Name: "sonarProperties", Deprecated: true}},
 						Default:     []string{},
 					},
 					{
@@ -436,7 +436,7 @@ func sonarExecuteScanMetadata() config.StepData {
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "githubOrg"}},
+						Aliases:   []config.Alias{{Name: "githubOrg", Deprecated: false}},
 						Default:   os.Getenv("PIPER_owner"),
 					},
 					{
@@ -450,7 +450,7 @@ func sonarExecuteScanMetadata() config.StepData {
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "githubRepo"}},
+						Aliases:   []config.Alias{{Name: "githubRepo", Deprecated: false}},
 						Default:   os.Getenv("PIPER_repository"),
 					},
 					{
@@ -470,7 +470,7 @@ func sonarExecuteScanMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "access_token"}},
+						Aliases:   []config.Alias{{Name: "access_token", Deprecated: false}},
 						Default:   os.Getenv("PIPER_githubToken"),
 					},
 					{
@@ -506,7 +506,7 @@ func sonarExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
+						Aliases:     []config.Alias{{Name: "maven/m2Path", Deprecated: false}},
 						Default:     os.Getenv("PIPER_m2Path"),
 					},
 				},

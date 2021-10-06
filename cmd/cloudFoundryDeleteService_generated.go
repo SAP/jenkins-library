@@ -147,7 +147,7 @@ func cloudFoundryDeleteServiceMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/apiEndpoint"}},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/apiEndpoint", Deprecated: false}},
 						Default:     os.Getenv("PIPER_cfApiEndpoint"),
 					},
 					{
@@ -198,7 +198,7 @@ func cloudFoundryDeleteServiceMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/org"}},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/org", Deprecated: false}},
 						Default:     os.Getenv("PIPER_cfOrg"),
 					},
 					{
@@ -207,7 +207,7 @@ func cloudFoundryDeleteServiceMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/space"}},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/space", Deprecated: false}},
 						Default:     os.Getenv("PIPER_cfSpace"),
 					},
 					{
@@ -216,7 +216,7 @@ func cloudFoundryDeleteServiceMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceInstance"}},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceInstance", Deprecated: false}},
 						Default:     os.Getenv("PIPER_cfServiceInstance"),
 					},
 					{
@@ -225,7 +225,7 @@ func cloudFoundryDeleteServiceMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/cfDeleteServiceKeys"}},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/cfDeleteServiceKeys", Deprecated: false}},
 						Default:     false,
 					},
 				},

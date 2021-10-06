@@ -229,7 +229,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "protecodeExcludeCVEs"}},
+						Aliases:     []config.Alias{{Name: "protecodeExcludeCVEs", Deprecated: false}},
 						Default:     ``,
 					},
 					{
@@ -238,7 +238,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "protecodeFailOnSevereVulnerabilities"}},
+						Aliases:     []config.Alias{{Name: "protecodeFailOnSevereVulnerabilities", Deprecated: false}},
 						Default:     true,
 					},
 					{
@@ -252,7 +252,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "dockerImage"}},
+						Aliases:   []config.Alias{{Name: "dockerImage", Deprecated: false}},
 						Default:   os.Getenv("PIPER_scanImage"),
 					},
 					{
@@ -322,7 +322,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "protecodeTimeoutMinutes"}},
+						Aliases:     []config.Alias{{Name: "protecodeTimeoutMinutes", Deprecated: false}},
 						Default:     `60`,
 					},
 					{
@@ -331,7 +331,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "protecodeServerUrl"}},
+						Aliases:     []config.Alias{{Name: "protecodeServerUrl", Deprecated: false}},
 						Default:     os.Getenv("PIPER_serverUrl"),
 					},
 					{
@@ -358,7 +358,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "protecodeGroup"}},
+						Aliases:     []config.Alias{{Name: "protecodeGroup", Deprecated: false}},
 						Default:     os.Getenv("PIPER_group"),
 					},
 					{
@@ -367,7 +367,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "bool",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "reuseExisting"}},
+						Aliases:     []config.Alias{{Name: "reuseExisting", Deprecated: true}},
 						Default:     false,
 					},
 					{
@@ -397,7 +397,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "user"}},
+						Aliases:   []config.Alias{{Name: "user", Deprecated: true}},
 						Default:   os.Getenv("PIPER_username"),
 					},
 					{
@@ -432,7 +432,7 @@ func protecodeExecuteScanMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "artifactVersion"}},
+						Aliases:   []config.Alias{{Name: "artifactVersion", Deprecated: true}},
 						Default:   os.Getenv("PIPER_version"),
 					},
 					{

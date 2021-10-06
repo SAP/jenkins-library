@@ -175,7 +175,7 @@ func mavenExecuteIntegrationMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile"}},
+						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile", Deprecated: false}},
 						Default:     os.Getenv("PIPER_projectSettingsFile"),
 					},
 					{
@@ -184,7 +184,7 @@ func mavenExecuteIntegrationMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile"}},
+						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile", Deprecated: false}},
 						Default:     os.Getenv("PIPER_globalSettingsFile"),
 					},
 					{
@@ -193,7 +193,7 @@ func mavenExecuteIntegrationMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
+						Aliases:     []config.Alias{{Name: "maven/m2Path", Deprecated: false}},
 						Default:     os.Getenv("PIPER_m2Path"),
 					},
 					{
@@ -202,7 +202,7 @@ func mavenExecuteIntegrationMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "bool",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/logSuccessfulMavenTransfers"}},
+						Aliases:     []config.Alias{{Name: "maven/logSuccessfulMavenTransfers", Deprecated: false}},
 						Default:     false,
 					},
 				},

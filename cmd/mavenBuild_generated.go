@@ -196,7 +196,7 @@ func mavenBuildMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile"}},
+						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile", Deprecated: false}},
 						Default:     os.Getenv("PIPER_projectSettingsFile"),
 					},
 					{
@@ -210,7 +210,7 @@ func mavenBuildMetadata() config.StepData {
 						Scope:     []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "maven/globalSettingsFile"}},
+						Aliases:   []config.Alias{{Name: "maven/globalSettingsFile", Deprecated: false}},
 						Default:   os.Getenv("PIPER_globalSettingsFile"),
 					},
 					{
@@ -219,7 +219,7 @@ func mavenBuildMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
+						Aliases:     []config.Alias{{Name: "maven/m2Path", Deprecated: false}},
 						Default:     os.Getenv("PIPER_m2Path"),
 					},
 					{
@@ -228,7 +228,7 @@ func mavenBuildMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "bool",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/logSuccessfulMavenTransfers"}},
+						Aliases:     []config.Alias{{Name: "maven/logSuccessfulMavenTransfers", Deprecated: false}},
 						Default:     false,
 					},
 					{
@@ -237,7 +237,7 @@ func mavenBuildMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "bool",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/createBOM"}},
+						Aliases:     []config.Alias{{Name: "maven/createBOM", Deprecated: false}},
 						Default:     false,
 					},
 					{
@@ -322,7 +322,7 @@ func mavenBuildMetadata() config.StepData {
 						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:        "bool",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/publish"}},
+						Aliases:     []config.Alias{{Name: "maven/publish", Deprecated: false}},
 						Default:     false,
 					},
 					{
@@ -331,7 +331,7 @@ func mavenBuildMetadata() config.StepData {
 						Scope:       []string{"STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/javaCaCertFilePath"}},
+						Aliases:     []config.Alias{{Name: "maven/javaCaCertFilePath", Deprecated: false}},
 						Default:     os.Getenv("PIPER_javaCaCertFilePath"),
 					},
 				},

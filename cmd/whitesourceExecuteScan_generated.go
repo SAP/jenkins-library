@@ -466,7 +466,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "whitesource/jreDownloadUrl"}},
+						Aliases:     []config.Alias{{Name: "whitesource/jreDownloadUrl", Deprecated: true}},
 						Default:     `https://github.com/SAP/SapMachine/releases/download/sapmachine-11.0.2/sapmachine-jre-11.0.2_linux-x64_bin.tar.gz`,
 					},
 					{
@@ -489,7 +489,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "whitesourceOrgToken"}, {Name: "whitesource/orgToken"}},
+						Aliases:   []config.Alias{{Name: "whitesourceOrgToken", Deprecated: false}, {Name: "whitesource/orgToken", Deprecated: true}},
 						Default:   os.Getenv("PIPER_orgToken"),
 					},
 					{
@@ -498,7 +498,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "whitesourceProductName"}, {Name: "whitesource/productName"}},
+						Aliases:     []config.Alias{{Name: "whitesourceProductName", Deprecated: false}, {Name: "whitesource/productName", Deprecated: true}},
 						Default:     os.Getenv("PIPER_productName"),
 					},
 					{
@@ -507,7 +507,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "whitesourceProductToken"}, {Name: "whitesource/productToken"}},
+						Aliases:     []config.Alias{{Name: "whitesourceProductToken", Deprecated: false}, {Name: "whitesource/productToken", Deprecated: true}},
 						Default:     os.Getenv("PIPER_productToken"),
 					},
 					{
@@ -521,7 +521,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
-						Aliases:   []config.Alias{{Name: "productVersion"}, {Name: "whitesourceProductVersion"}, {Name: "whitesource/productVersion"}},
+						Aliases:   []config.Alias{{Name: "productVersion", Deprecated: false}, {Name: "whitesourceProductVersion", Deprecated: false}, {Name: "whitesource/productVersion", Deprecated: true}},
 						Default:   os.Getenv("PIPER_version"),
 					},
 					{
@@ -530,7 +530,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "whitesourceProjectName"}},
+						Aliases:     []config.Alias{{Name: "whitesourceProjectName", Deprecated: false}},
 						Default:     os.Getenv("PIPER_projectName"),
 					},
 					{
@@ -603,7 +603,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "whitesourceServiceUrl"}, {Name: "whitesource/serviceUrl"}},
+						Aliases:     []config.Alias{{Name: "whitesourceServiceUrl", Deprecated: false}, {Name: "whitesource/serviceUrl", Deprecated: true}},
 						Default:     `https://saas.whitesourcesoftware.com/api`,
 					},
 					{
@@ -641,7 +641,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "defaultVersioningModel"}},
+						Aliases:     []config.Alias{{Name: "defaultVersioningModel", Deprecated: false}},
 						Default:     `major`,
 					},
 					{
@@ -668,7 +668,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile"}},
+						Aliases:     []config.Alias{{Name: "maven/projectSettingsFile", Deprecated: false}},
 						Default:     os.Getenv("PIPER_projectSettingsFile"),
 					},
 					{
@@ -677,7 +677,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile"}},
+						Aliases:     []config.Alias{{Name: "maven/globalSettingsFile", Deprecated: false}},
 						Default:     os.Getenv("PIPER_globalSettingsFile"),
 					},
 					{
@@ -686,7 +686,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Scope:       []string{"GENERAL", "STEPS", "STAGES", "PARAMETERS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "maven/m2Path"}},
+						Aliases:     []config.Alias{{Name: "maven/m2Path", Deprecated: false}},
 						Default:     os.Getenv("PIPER_m2Path"),
 					},
 					{
@@ -704,7 +704,7 @@ func whitesourceExecuteScanMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "GENERAL", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "npm/defaultNpmRegistry"}},
+						Aliases:     []config.Alias{{Name: "npm/defaultNpmRegistry", Deprecated: false}},
 						Default:     os.Getenv("PIPER_defaultNpmRegistry"),
 					},
 				},

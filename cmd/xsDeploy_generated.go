@@ -200,7 +200,7 @@ func xsDeployMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "deployIdLogPattern"}},
+						Aliases:     []config.Alias{{Name: "deployIdLogPattern", Deprecated: false}},
 						Default:     `^.*xs bg-deploy -i (.*) -a.*$`,
 					},
 					{
@@ -270,7 +270,7 @@ func xsDeployMetadata() config.StepData {
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: true,
-						Aliases:   []config.Alias{{Name: "user"}},
+						Aliases:   []config.Alias{{Name: "user", Deprecated: true}},
 						Default:   os.Getenv("PIPER_username"),
 					},
 					{

@@ -166,7 +166,7 @@ func abapEnvironmentCreateSystemMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/apiEndpoint"}},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/apiEndpoint", Deprecated: false}},
 						Default:     `https://api.cf.eu10.hana.ondemand.com`,
 					},
 					{
@@ -217,7 +217,7 @@ func abapEnvironmentCreateSystemMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/org"}},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/org", Deprecated: false}},
 						Default:     os.Getenv("PIPER_cfOrg"),
 					},
 					{
@@ -226,7 +226,7 @@ func abapEnvironmentCreateSystemMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/space"}},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/space", Deprecated: false}},
 						Default:     os.Getenv("PIPER_cfSpace"),
 					},
 					{
@@ -235,7 +235,7 @@ func abapEnvironmentCreateSystemMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/service"}},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/service", Deprecated: false}},
 						Default:     os.Getenv("PIPER_cfService"),
 					},
 					{
@@ -244,7 +244,7 @@ func abapEnvironmentCreateSystemMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/servicePlan"}},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/servicePlan", Deprecated: false}},
 						Default:     os.Getenv("PIPER_cfServicePlan"),
 					},
 					{
@@ -253,7 +253,7 @@ func abapEnvironmentCreateSystemMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceInstance"}},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceInstance", Deprecated: false}},
 						Default:     os.Getenv("PIPER_cfServiceInstance"),
 					},
 					{
@@ -262,7 +262,7 @@ func abapEnvironmentCreateSystemMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceManifest"}, {Name: "cfServiceManifest"}},
+						Aliases:     []config.Alias{{Name: "cloudFoundry/serviceManifest", Deprecated: false}, {Name: "cfServiceManifest", Deprecated: false}},
 						Default:     os.Getenv("PIPER_serviceManifest"),
 					},
 					{

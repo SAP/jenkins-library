@@ -175,7 +175,7 @@ func isChangeInDevelopmentMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS", "GENERAL"},
 						Type:        "string",
 						Mandatory:   true,
-						Aliases:     []config.Alias{{Name: "changeManagement/endpoint"}},
+						Aliases:     []config.Alias{{Name: "changeManagement/endpoint", Deprecated: false}},
 						Default:     os.Getenv("PIPER_endpoint"),
 					},
 					{
@@ -237,7 +237,7 @@ func isChangeInDevelopmentMetadata() config.StepData {
 						Scope:       []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:        "[]string",
 						Mandatory:   false,
-						Aliases:     []config.Alias{{Name: "clientOpts"}, {Name: "changeManagement/clientOpts"}},
+						Aliases:     []config.Alias{{Name: "clientOpts", Deprecated: false}, {Name: "changeManagement/clientOpts", Deprecated: false}},
 						Default:     []string{},
 					},
 				},
