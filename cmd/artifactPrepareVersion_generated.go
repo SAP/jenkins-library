@@ -13,15 +13,16 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
 type artifactPrepareVersionOptions struct {
-	BuildTool              string `json:"buildTool,omitempty"`
+	BuildTool              string `json:"buildTool,omitempty" validate:"oneof=custom docker dub golang maven mta npm pip sbt"`
 	CommitUserName         string `json:"commitUserName,omitempty"`
 	CustomVersionField     string `json:"customVersionField,omitempty"`
 	CustomVersionSection   string `json:"customVersionSection,omitempty"`
-	CustomVersioningScheme string `json:"customVersioningScheme,omitempty"`
+	CustomVersioningScheme string `json:"customVersioningScheme,omitempty" validate:"oneof=maven pep440 semver2"`
 	DockerVersionSource    string `json:"dockerVersionSource,omitempty"`
 	FetchCoordinates       bool   `json:"fetchCoordinates,omitempty"`
 	FilePath               string `json:"filePath,omitempty"`
@@ -35,7 +36,7 @@ type artifactPrepareVersionOptions struct {
 	UnixTimestamp          bool   `json:"unixTimestamp,omitempty"`
 	Username               string `json:"username,omitempty"`
 	VersioningTemplate     string `json:"versioningTemplate,omitempty"`
-	VersioningType         string `json:"versioningType,omitempty"`
+	VersioningType         string `json:"versioningType,omitempty" validate:"oneof=cloud cloud_noTag library"`
 }
 
 type artifactPrepareVersionCommonPipelineEnvironment struct {
@@ -185,6 +186,15 @@ Define ` + "`" + `buildTool: custom` + "`" + `, ` + "`" + `filePath: <path to yo
 				log.RegisterHook(logCollector)
 			}
 
+			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
+			if err != nil {
+				return err
+			}
+			if err = validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -225,7 +235,7 @@ func addArtifactPrepareVersionFlags(cmd *cobra.Command, stepConfig *artifactPrep
 	cmd.Flags().StringVar(&stepConfig.CommitUserName, "commitUserName", `Project Piper`, "Defines the user name which appears in version control for the versioning update (in case `versioningType: cloud`).")
 	cmd.Flags().StringVar(&stepConfig.CustomVersionField, "customVersionField", os.Getenv("PIPER_customVersionField"), "For `buildTool: custom`: Defines the field which contains the version in the descriptor file.")
 	cmd.Flags().StringVar(&stepConfig.CustomVersionSection, "customVersionSection", os.Getenv("PIPER_customVersionSection"), "For `buildTool: custom`: Defines the section for version retrieval in vase a *.ini/*.cfg file is used.")
-	cmd.Flags().StringVar(&stepConfig.CustomVersioningScheme, "customVersioningScheme", os.Getenv("PIPER_customVersioningScheme"), "For `buildTool: custom`: Defines the versioning scheme to be used.")
+	cmd.Flags().StringVar(&stepConfig.CustomVersioningScheme, "customVersioningScheme", `maven`, "For `buildTool: custom`: Defines the versioning scheme to be used.")
 	cmd.Flags().StringVar(&stepConfig.DockerVersionSource, "dockerVersionSource", os.Getenv("PIPER_dockerVersionSource"), "For `buildTool: docker`: Defines the source of the version. Can be `FROM`, any supported _buildTool_ or an environment variable name.")
 	cmd.Flags().BoolVar(&stepConfig.FetchCoordinates, "fetchCoordinates", false, "If set to `true` the step will retreive artifact coordinates and store them in the common pipeline environment.")
 	cmd.Flags().StringVar(&stepConfig.FilePath, "filePath", os.Getenv("PIPER_filePath"), "Defines a custom path to the descriptor file. Build tool specific defaults are used (e.g. `maven: pom.xml`, `npm: package.json`, `mta: mta.yaml`).")
@@ -302,7 +312,7 @@ func artifactPrepareVersionMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_customVersioningScheme"),
+						Default:     `maven`,
 					},
 					{
 						Name:        "dockerVersionSource",
@@ -368,9 +378,9 @@ func artifactPrepareVersionMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/gitHttpsCredential", "$(vaultBasePath)/$(vaultPipelineName)/gitHttpsCredential", "$(vaultBasePath)/GROUP-SECRETS/gitHttpsCredential"},
-								Type:  "vaultSecret",
+								Name:    "gitHttpsCredentialVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "gitHttpsCredential",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -425,9 +435,9 @@ func artifactPrepareVersionMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/gitHttpsCredential", "$(vaultBasePath)/$(vaultPipelineName)/gitHttpsCredential", "$(vaultBasePath)/GROUP-SECRETS/gitHttpsCredential"},
-								Type:  "vaultSecret",
+								Name:    "gitHttpsCredentialVaultSecretName",
+								Type:    "vaultSecret",
+								Default: "gitHttpsCredential",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},

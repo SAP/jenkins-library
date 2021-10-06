@@ -12,6 +12,7 @@ import (
 
 	"github.com/SAP/jenkins-library/pkg/config"
 	"github.com/SAP/jenkins-library/pkg/log"
+	"github.com/SAP/jenkins-library/pkg/orchestrator"
 	"github.com/SAP/jenkins-library/pkg/piperutils"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -138,7 +139,7 @@ func Execute() {
 	rootCmd.AddCommand(CloudFoundryCreateSpaceCommand())
 	rootCmd.AddCommand(CloudFoundryDeleteSpaceCommand())
 	rootCmd.AddCommand(VaultRotateSecretIdCommand())
-	rootCmd.AddCommand(CheckChangeInDevelopmentCommand())
+	rootCmd.AddCommand(IsChangeInDevelopmentCommand())
 	rootCmd.AddCommand(TransportRequestUploadCTSCommand())
 	rootCmd.AddCommand(TransportRequestUploadRFCCommand())
 	rootCmd.AddCommand(NewmanExecuteCommand())
@@ -163,6 +164,7 @@ func Execute() {
 	rootCmd.AddCommand(WritePipelineEnv())
 	rootCmd.AddCommand(ReadPipelineEnv())
 	rootCmd.AddCommand(InfluxWriteDataCommand())
+	rootCmd.AddCommand(AbapEnvironmentRunAUnitTestCommand())
 	rootCmd.AddCommand(CheckStepActiveCommand())
 	rootCmd.AddCommand(TmsUploadCommand())
 
@@ -223,10 +225,8 @@ func AccessTokensFromEnvJSON(env string) []string {
 	return accessTokens
 }
 
-const stageNameEnvKey = "STAGE_NAME"
-
 // initStageName initializes GeneralConfig.StageName from either GeneralConfig.ParametersJSON
-// or the environment variable 'STAGE_NAME', unless it has been provided as command line option.
+// or the environment variable (orchestrator specific), unless it has been provided as command line option.
 // Log output needs to be suppressed via outputToLog by the getConfig step.
 func initStageName(outputToLog bool) {
 	var stageNameSource string
@@ -243,15 +243,20 @@ func initStageName(outputToLog bool) {
 	}
 
 	// Use stageName from ENV as fall-back, for when extracting it from parametersJSON fails below
-	GeneralConfig.StageName = os.Getenv(stageNameEnvKey)
-	stageNameSource = fmt.Sprintf("env variable '%s'", stageNameEnvKey)
+	provider, err := orchestrator.NewOrchestratorSpecificConfigProvider()
+	if err != nil {
+		log.Entry().WithError(err).Warning("Cannot infer stage name from CI environment")
+	} else {
+		stageNameSource = "env variable"
+		GeneralConfig.StageName = provider.GetStageName()
+	}
 
 	if len(GeneralConfig.ParametersJSON) == 0 {
 		return
 	}
 
 	var params map[string]interface{}
-	err := json.Unmarshal([]byte(GeneralConfig.ParametersJSON), &params)
+	err = json.Unmarshal([]byte(GeneralConfig.ParametersJSON), &params)
 	if err != nil {
 		if outputToLog {
 			log.Entry().Infof("Failed to extract 'stageName' from parametersJSON: %v", err)

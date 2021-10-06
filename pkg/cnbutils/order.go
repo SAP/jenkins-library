@@ -12,13 +12,7 @@ type Order struct {
 }
 
 type OrderEntry struct {
-	Group []BuildpackRef `toml:"group" json:"group"`
-}
-
-type BuildpackRef struct {
-	ID       string `toml:"id"`
-	Version  string `toml:"version"`
-	Optional bool   `toml:"optional,omitempty" json:"optional,omitempty" yaml:"optional,omitempty"`
+	Group []BuildPackMetadata `toml:"group" json:"group"`
 }
 
 func (o Order) Save(path string) error {

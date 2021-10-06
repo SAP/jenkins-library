@@ -11,6 +11,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
@@ -25,7 +26,7 @@ type kubernetesDeployOptions struct {
 	ContainerRegistrySecret    string   `json:"containerRegistrySecret,omitempty"`
 	CreateDockerRegistrySecret bool     `json:"createDockerRegistrySecret,omitempty"`
 	DeploymentName             string   `json:"deploymentName,omitempty"`
-	DeployTool                 string   `json:"deployTool,omitempty"`
+	DeployTool                 string   `json:"deployTool,omitempty" validate:"oneof=kubectl helm helm3"`
 	ForceUpdates               bool     `json:"forceUpdates,omitempty"`
 	HelmDeployWaitSeconds      int      `json:"helmDeployWaitSeconds,omitempty"`
 	HelmValues                 []string `json:"helmValues,omitempty"`
@@ -100,6 +101,15 @@ helm upgrade <deploymentName> <chartPath> --install --force --namespace <namespa
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
+			}
+
+			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
+			if err != nil {
+				return err
+			}
+			if err = validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
 			}
 
 			return nil
@@ -370,9 +380,9 @@ func kubernetesDeployMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/kube-config", "$(vaultBasePath)/$(vaultPipelineName)/kube-config", "$(vaultBasePath)/GROUP-SECRETS/kube-config"},
-								Type:  "vaultSecretFile",
+								Name:    "kubeConfigFileSecretName",
+								Type:    "vaultSecretFile",
+								Default: "kube-config",
 							},
 						},
 						Scope:     []string{"GENERAL", "PARAMETERS", "STAGES", "STEPS"},
@@ -436,12 +446,12 @@ func kubernetesDeployMetadata() config.StepData {
 							},
 
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/docker-config", "$(vaultBasePath)/$(vaultPipelineName)/docker-config", "$(vaultBasePath)/GROUP-SECRETS/docker-config"},
-								Type:  "vaultSecretFile",
+								Name:    "dockerConfigFileVaultSecretName",
+								Type:    "vaultSecretFile",
+								Default: "docker-config",
 							},
 						},
-						Scope:     []string{"PARAMETERS"},
+						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
 						Type:      "string",
 						Mandatory: false,
 						Aliases:   []config.Alias{},

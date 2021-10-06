@@ -11,11 +11,12 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
 type vaultRotateSecretIdOptions struct {
-	SecretStore                          string `json:"secretStore,omitempty"`
+	SecretStore                          string `json:"secretStore,omitempty" validate:"oneof=jenkins ado"`
 	JenkinsURL                           string `json:"jenkinsUrl,omitempty"`
 	JenkinsCredentialDomain              string `json:"jenkinsCredentialDomain,omitempty"`
 	JenkinsUsername                      string `json:"jenkinsUsername,omitempty"`
@@ -25,7 +26,7 @@ type vaultRotateSecretIdOptions struct {
 	VaultNamespace                       string `json:"vaultNamespace,omitempty"`
 	DaysBeforeExpiry                     int    `json:"daysBeforeExpiry,omitempty"`
 	AdoOrganization                      string `json:"adoOrganization,omitempty"`
-	AdoPersonalAccessToken               string `json:"adoPersonalAccessToken,omitempty"`
+	AdoPersonalAccessToken               string `json:"adoPersonalAccessToken,omitempty" validate:"required_if=SecretStore ado"`
 	AdoProject                           string `json:"adoProject,omitempty"`
 	AdoPipelineID                        int    `json:"adoPipelineId,omitempty"`
 }
@@ -72,6 +73,15 @@ func VaultRotateSecretIdCommand() *cobra.Command {
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
+			}
+
+			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
+			if err != nil {
+				return err
+			}
+			if err = validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
 			}
 
 			return nil
@@ -151,9 +161,9 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Name: "jenkinsUrl",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/jenkins", "$(vaultBasePath)/$(vaultPipelineName)/jenkins", "$(vaultBasePath)/GROUP-SECRETS/jenkins"},
-								Type:  "vaultSecret",
+								Name:    "jenkinsVaultSecret",
+								Type:    "vaultSecret",
+								Default: "jenkins",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -175,9 +185,9 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Name: "jenkinsUsername",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/jenkins", "$(vaultBasePath)/$(vaultPipelineName)/jenkins", "$(vaultBasePath)/GROUP-SECRETS/jenkins"},
-								Type:  "vaultSecret",
+								Name:    "jenkinsVaultSecret",
+								Type:    "vaultSecret",
+								Default: "jenkins",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -190,9 +200,9 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Name: "jenkinsToken",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/jenkins", "$(vaultBasePath)/$(vaultPipelineName)/jenkins", "$(vaultBasePath)/GROUP-SECRETS/jenkins"},
-								Type:  "vaultSecret",
+								Name:    "jenkinsVaultSecret",
+								Type:    "vaultSecret",
+								Default: "jenkins",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},
@@ -250,9 +260,8 @@ func vaultRotateSecretIdMetadata() config.StepData {
 						Name: "adoPersonalAccessToken",
 						ResourceRef: []config.ResourceReference{
 							{
-								Name:  "",
-								Paths: []string{"$(vaultPath)/jenkins", "$(vaultBasePath)/$(vaultPipelineName)/jenkins", "$(vaultBasePath)/GROUP-SECRETS/jenkins"},
-								Type:  "vaultSecret",
+								Name: "",
+								Type: "vaultSecret",
 							},
 						},
 						Scope:     []string{"PARAMETERS", "STAGES", "STEPS"},

@@ -360,10 +360,8 @@ spec:
           - name: userTokenCredentialsId
             type: secret
           - type: vaultSecret
-            paths:
-              - $(vaultPath)/whitesource
-              - $(vaultBasePath)/$(vaultPipelineName)/whitesource
-              - $(vaultBasePath)/GROUP-SECRETS/whitesource
+            name: whitesourceVaultSecret
+            default: whitesource
       - name: versioningModel
         type: string
         description: "The default project versioning model used in case `projectVersion` parameter is
