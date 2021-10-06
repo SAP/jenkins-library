@@ -398,7 +398,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 		}, e.Calls[1].Params, "Wrong upgrade parameters")
 	})
 
-	t.Run("test helm - fails without image information", func(t *testing.T) {
+	t.Run("test helm3 - fails without image information", func(t *testing.T) {
 		opts := kubernetesDeployOptions{
 			ContainerRegistryURL:    "https://my.registry:55555",
 			ContainerRegistrySecret: "testSecret",
