@@ -257,6 +257,28 @@ func TestRunKubernetesDeploy(t *testing.T) {
 		}, e.Calls[2].Params, "Wrong upgrade parameters")
 	})
 
+	t.Run("test helm - fails without image information", func(t *testing.T) {
+		opts := kubernetesDeployOptions{
+			ContainerRegistryURL:    "https://my.registry:55555",
+			ContainerRegistrySecret: "testSecret",
+			ChartPath:               "path/to/chart",
+			DeploymentName:          "deploymentName",
+			DeployTool:              "helm",
+			ForceUpdates:            true,
+			HelmDeployWaitSeconds:   400,
+			IngressHosts:            []string{},
+			AdditionalParameters:    []string{"--testParam", "testValue"},
+			KubeContext:             "testCluster",
+			Namespace:               "deploymentNamespace",
+		}
+		e := mock.ExecMockRunner{}
+
+		var stdout bytes.Buffer
+
+		err := runKubernetesDeploy(opts, &e, &stdout)
+		assert.EqualError(t, err, "Image information not given. Please either set containerImageName, containerImageTag, and containerRegistryURL, or set image and containerRegistryURL.")
+	})
+
 	t.Run("test helm v3", func(t *testing.T) {
 		opts := kubernetesDeployOptions{
 			ContainerRegistryURL:      "https://my.registry:55555",
@@ -374,6 +396,28 @@ func TestRunKubernetesDeploy(t *testing.T) {
 			"--testParam",
 			"testValue",
 		}, e.Calls[1].Params, "Wrong upgrade parameters")
+	})
+
+	t.Run("test helm - fails without image information", func(t *testing.T) {
+		opts := kubernetesDeployOptions{
+			ContainerRegistryURL:    "https://my.registry:55555",
+			ContainerRegistrySecret: "testSecret",
+			ChartPath:               "path/to/chart",
+			DeploymentName:          "deploymentName",
+			DeployTool:              "helm3",
+			ForceUpdates:            true,
+			HelmDeployWaitSeconds:   400,
+			IngressHosts:            []string{},
+			AdditionalParameters:    []string{"--testParam", "testValue"},
+			KubeContext:             "testCluster",
+			Namespace:               "deploymentNamespace",
+		}
+		e := mock.ExecMockRunner{}
+
+		var stdout bytes.Buffer
+
+		err := runKubernetesDeploy(opts, &e, &stdout)
+		assert.EqualError(t, err, "Image information not given. Please either set containerImageName, containerImageTag, and containerRegistryURL, or set image and containerRegistryURL.")
 	})
 
 	t.Run("test helm v3 - keep failed deployments", func(t *testing.T) {
@@ -809,6 +853,33 @@ spec:
 			"--filename",
 			opts.AppTemplate,
 		}, e.Calls[0].Params, "kubectl parameters incorrect")
+	})
+
+	t.Run("test kubectl - fails without image information", func(t *testing.T) {
+		dir, err := ioutil.TempDir("", "")
+		defer os.RemoveAll(dir) // clean up
+		assert.NoError(t, err, "Error when creating temp dir")
+
+		opts := kubernetesDeployOptions{
+			APIServer:                 "https://my.api.server",
+			AppTemplate:               filepath.Join(dir, "test.yaml"),
+			ContainerRegistryURL:      "https://my.registry:55555",
+			ContainerRegistryUser:     "registryUser",
+			ContainerRegistryPassword: "********",
+			ContainerRegistrySecret:   "regSecret",
+			DeployTool:                "kubectl",
+			KubeConfig:                "This is my kubeconfig",
+			Namespace:                 "deploymentNamespace",
+		}
+
+
+		ioutil.WriteFile(opts.AppTemplate, []byte("testYaml"), 0755)
+		e := mock.ExecMockRunner{}
+
+		var stdout bytes.Buffer
+
+		err = runKubernetesDeploy(opts, &e, &stdout)
+		assert.EqualError(t, err, "Image information not given. Please either set containerImageName, containerImageTag, and containerRegistryURL, or set image and containerRegistryURL.")
 	})
 }
 
