@@ -17,14 +17,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// AuthToken - structure to store OAuth token
 type AuthToken struct {
 	TokenType   string `json:"token_type"`
 	AccessToken string `json:"access_token"`
 	ExpiresIn   int    `json:"expires_in"`
 }
 
-// CommunicationInstance - structure to store data and objects (including http client) required for communication with TMS backend
 type CommunicationInstance struct {
 	uaaUrl       string
 	tmsUrl       string
@@ -72,8 +70,8 @@ func (communicationInstance *CommunicationInstance) getOAuthToken() (string, err
 
 	encodedUsernameColonPassword := b64.StdEncoding.EncodeToString([]byte(communicationInstance.clientId + ":" + communicationInstance.clientSecret))
 	header := http.Header{}
-	header.Add("Content-type", "application/x-www-form-urlencoded")
-	header.Add("authorization", "Basic "+encodedUsernameColonPassword)
+	header.Add("Content-Type", "application/x-www-form-urlencoded")
+	header.Add("Authorization", "Basic "+encodedUsernameColonPassword)
 
 	// TODO: somewhere here the proxy should be considered as well
 
