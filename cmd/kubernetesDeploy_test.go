@@ -823,7 +823,7 @@ spec:
 			Namespace:                 "deploymentNamespace",
 		}
 
-		ioutil.WriteFile(opts.AppTemplate, []byte("testYaml"), 0755)
+		ioutil.WriteFile(opts.AppTemplate, []byte("image: <image-name>"), 0755)
 
 		e := mock.ExecMockRunner{
 			ShouldFailOnCommand: map[string]error{},
@@ -832,13 +832,9 @@ spec:
 		runKubernetesDeploy(opts, &e, &stdout)
 
 		assert.Equal(t, "kubectl", e.Calls[0].Exec, "Wrong apply command")
-		assert.Equal(t, []string{
-			"--insecure-skip-tls-verify=true",
-			fmt.Sprintf("--namespace=%v", opts.Namespace),
-			"apply",
-			"--filename",
-			opts.AppTemplate,
-		}, e.Calls[0].Params, "kubectl parameters incorrect")
+
+		appTemplateFileContents, err := ioutil.ReadFile(opts.AppTemplate)
+		assert.Contains(t, string(appTemplateFileContents), "image: my.registry:55555/path/to/Image:latest", "kubectl parameters incorrect")
 	})
 
 	t.Run("test kubectl - fails without image information", func(t *testing.T) {

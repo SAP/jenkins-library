@@ -254,7 +254,7 @@ func runKubectlDeploy(config kubernetesDeployOptions, command command.ExecRunner
 	if len(config.Image) > 0 {
 		fullImage = config.Image
 	} else if len(config.ContainerImageName) > 0 && len(config.ContainerImageTag) > 0 {
-		fullImage = containerRegistry + "/" + config.ContainerImageName + ":" + config.ContainerImageTag
+		fullImage = config.ContainerImageName + ":" + config.ContainerImageTag
 	} else {
 		return fmt.Errorf("image information not given - please either set image or containerImageName and containerImageTag")
 	}
