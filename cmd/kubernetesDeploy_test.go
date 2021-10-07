@@ -276,7 +276,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 		var stdout bytes.Buffer
 
 		err := runKubernetesDeploy(opts, &e, &stdout)
-		assert.EqualError(t, err, "Image information not given. Please either set containerImageName, containerImageTag, and containerRegistryURL, or set image and containerRegistryURL.")
+		assert.EqualError(t, err, "image information not given - please either set containerImageName, containerImageTag, and containerRegistryURL, or set image and containerRegistryURL")
 	})
 
 	t.Run("test helm v3", func(t *testing.T) {
@@ -417,7 +417,7 @@ func TestRunKubernetesDeploy(t *testing.T) {
 		var stdout bytes.Buffer
 
 		err := runKubernetesDeploy(opts, &e, &stdout)
-		assert.EqualError(t, err, "Image information not given. Please either set containerImageName, containerImageTag, and containerRegistryURL, or set image and containerRegistryURL.")
+		assert.EqualError(t, err, "image information not given - please either set containerImageName, containerImageTag, and containerRegistryURL, or set image and containerRegistryURL")
 	})
 
 	t.Run("test helm v3 - keep failed deployments", func(t *testing.T) {
@@ -878,7 +878,7 @@ spec:
 		var stdout bytes.Buffer
 
 		err = runKubernetesDeploy(opts, &e, &stdout)
-		assert.EqualError(t, err, "Image information not given. Please either set containerImageName, containerImageTag, and containerRegistryURL, or set image and containerRegistryURL.")
+		assert.EqualError(t, err, "image information not given - please either set containerImageName, containerImageTag, and containerRegistryURL, or set image and containerRegistryURL")
 	})
 }
 
