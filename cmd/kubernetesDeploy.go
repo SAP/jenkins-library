@@ -76,7 +76,7 @@ func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, s
 			log.Entry().WithError(err).Fatalf("Container image '%v' incorrect", config.Image)
 		}
 	} else {
-		return fmt.Errorf("image information not given - please either set containerImageName, containerImageTag, and containerRegistryURL, or set image and containerRegistryURL")
+		return fmt.Errorf("image information not given - please either set image or containerImageName and containerImageTag")
 	}
 	helmLogFields := map[string]interface{}{}
 	helmLogFields["Chart Path"] = config.ChartPath
@@ -254,7 +254,7 @@ func runKubectlDeploy(config kubernetesDeployOptions, command command.ExecRunner
 	} else if len(config.Image) > 0 {
 		fullImage = config.Image
 	} else {
-		return fmt.Errorf("image information not given - please either set containerImageName, containerImageTag, and containerRegistryURL, or set image and containerRegistryURL")
+		return fmt.Errorf("image information not given - please either set image or containerImageName and containerImageTag")
 	}
 
 	// Update image name in deployment yaml, expects placeholder like 'image: <image-name>'
