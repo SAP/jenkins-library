@@ -9,7 +9,7 @@ metadata:
 
     !!! note "Prerequisites"
     * You have subscribed to and set up TMS, as described in [Initial Setup](https://help.sap.com/viewer/7f7160ec0d8546c6b3eab72fb5ad6fd8/Cloud/en-US/66fd7283c62f48adb23c56fb48c84a60.html), which includes the configuration of a node to be used for uploading an MTA file.
-    * A corresponding service key has been created, as described in [Set Up the Environment to Transport Content Archives directly in an Application](https://help.sap.com/viewer/7f7160ec0d8546c6b3eab72fb5ad6fd8/Cloud/en-US/8d9490792ed14f1bbf8a6ac08a6bca64.html). This service key (JSON) must be stored as a secret text within the Jenkins secure store.
+    * A corresponding service key has been created, as described in [Set Up the Environment to Transport Content Archives directly in an Application](https://help.sap.com/viewer/7f7160ec0d8546c6b3eab72fb5ad6fd8/Cloud/en-US/8d9490792ed14f1bbf8a6ac08a6bca64.html). This service key (JSON) must be stored as a secret text within the Jenkins secure store or provided as value of tmsServiceKey parameter.
 spec:
   inputs:
     secrets:
@@ -22,9 +22,10 @@ spec:
     params:
       - name: tmsServiceKey
         type: string
-        description: Service key JSON string to access the SAP Cloud Transport Management service instance APIs
+        description: Service key JSON string to access the SAP Cloud Transport Management service instance APIs.
         scope:
           - PARAMETERS
+          - STEPS
         mandatory: true
         secret: true
         resourceRef:
@@ -53,7 +54,7 @@ spec:
         mandatory: true
       - name: mtaPath
         type: string
-        description: Defines the relative path to *.mtar for the upload to the SAP Cloud Transport Management Service. If not specified, it will use the mtar file created in mtaBuild.
+        description: Defines the relative path to *.mtar file for the upload to the SAP Cloud Transport Management Service. If not specified, it will use the *.mtar file created in mtaBuild.
         scope:
           - PARAMETERS
           - STEPS
@@ -65,15 +66,16 @@ spec:
         scope:
           - PARAMETERS
           - STEPS
+      # TODO: make it generatable with the type map[string]string
       #- name: nodeExtDescriptorMapping
-      #  type: "map[string]string"
+      #  type: map[string]string
       #  description: "Available only for transports in Cloud Foundry environment. Defines a mapping between a transport node name and an MTA extension descriptor file path that you want to use for the transport node, e.g. nodeExtDescriptorMapping: [nodeName: 'example.mtaext', nodeName2: 'example2.mtaext', …]."
       #  scope:
       #    - PARAMETERS
       #    - STEPS
       - name: proxy
         type: string
-        description: Proxy which should be used for the communication with the Transport Management Service Backend.
+        description: Proxy which should be used for the communication with the SAP Cloud Transport Management service backend.
         scope:
           - PARAMETERS
           - STEPS

@@ -2,6 +2,7 @@ package tms
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -16,16 +17,20 @@ import (
 )
 
 type uploaderMock struct {
-	token          string
-	httpMethod     string
-	httpStatusCode int
-	urlCalled      string
-	requestBody    string
-	responseBody   string
-	header         http.Header
+	token                    string
+	httpMethod               string
+	httpStatusCode           int
+	urlCalled                string
+	requestBody              string
+	responseBody             string
+	header                   http.Header
+	isTechnicalErrorExpected bool
 }
 
 func (um *uploaderMock) SendRequest(method, url string, body io.Reader, header http.Header, cookies []*http.Cookie) (*http.Response, error) {
+	if um.isTechnicalErrorExpected {
+		return nil, errors.New("Provoked technical error")
+	}
 	um.httpMethod = method
 	um.urlCalled = url
 	um.header = header
@@ -159,6 +164,17 @@ func TestSendRequest(t *testing.T) {
 		assert.Error(t, err, "Error expected, but none occurred")
 		assert.Equal(t, "https://tms.dummy.sap.com/test", uploaderMock.urlCalled, "Called url incorrect")
 		assert.Equal(t, "unexpected positive HTTP status code 201, while it was expected 200", err.Error(), "Error text incorrect")
+	})
+
+	t.Run("test technical error", func(t *testing.T) {
+		uploaderMock := uploaderMock{isTechnicalErrorExpected: true}
+		communicationInstance := CommunicationInstance{uaaUrl: "https://dummy.sap.com", tmsUrl: "https://tms.dummy.sap.com", httpClient: &uploaderMock, logger: logger, isVerbose: false}
+
+		data, err := sendRequest(&communicationInstance, http.MethodGet, "/test", nil, nil, http.StatusOK, false)
+
+		assert.Error(t, err, "Error expected, but none occurred")
+		assert.Nil(t, data, "Nil result expected, but was not")
+		assert.Equal(t, "Provoked technical error", err.Error(), "Error text incorrect")
 	})
 
 }
