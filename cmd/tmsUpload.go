@@ -56,18 +56,14 @@ func newTmsUploadUtils() tmsUploadUtils {
 func tmsUpload(config tmsUploadOptions, telemetryData *telemetry.CustomData, influx *tmsUploadInflux) {
 	// Utils can be used wherever the command.ExecRunner interface is expected.
 	// It can also be used for example as a mavenExecRunner.
-	// TODO: do we need it?
-	/*
-		utils := newTmsUploadUtils()
-	*/
+	// utils := newTmsUploadUtils()
 
 	client := &piperHttp.Client{}
-
-	// TODO: any options to set for the client? (see checkmarxExecuteScan.go)
+	// TODO: any options to set for the client? (see e.g. checkmarxExecuteScan.go)
 
 	serviceKey, err := unmarshalServiceKey(config.TmsServiceKey)
 	if err != nil {
-		log.Entry().WithError(err).Fatal("Failed to unmarshal serviceKey")
+		log.Entry().WithError(err).Fatal("Failed to unmarshal TMS service key")
 	}
 
 	communicationInstance, err := tms.NewCommunicationInstance(client, serviceKey.Uaa.Url, serviceKey.Uaa.ClientId, serviceKey.Uaa.ClientSecret, GeneralConfig.Verbose)
@@ -86,6 +82,7 @@ func tmsUpload(config tmsUploadOptions, telemetryData *telemetry.CustomData, inf
 
 // TODO: understand the idea of CommunicationInterface
 func runTmsUpload(config tmsUploadOptions, communicationInterface tms.CommunicationInterface) error {
+	// TODO: provide TMS upload logic here
 	/*
 		log.Entry().WithField("LogField", "Log field content").Info("This is just a demo for a simple step.")
 
@@ -108,13 +105,9 @@ func runTmsUpload(config tmsUploadOptions, communicationInterface tms.Communicat
 }
 
 func unmarshalServiceKey(serviceKeyJson string) (serviceKey serviceKey, err error) {
-	log.Entry().Info("Unmarshalling serviceKey")
 	err = json.Unmarshal([]byte(serviceKeyJson), &serviceKey)
 	if err != nil {
-		// TODO: is it safe to return the error for unmarshalling service key? would not it expose the key data?
 		return
 	}
-
-	log.Entry().Info("serviceKey unmarshalled successfully")
 	return
 }

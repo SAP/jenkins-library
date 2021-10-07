@@ -35,7 +35,7 @@ func (um *uploaderMock) SendRequest(method, url string, body io.Reader, header h
 		um.requestBody = buf.String()
 	}
 	var httpError error
-	if um.httpStatusCode > 399 {
+	if um.httpStatusCode >= 300 {
 		httpError = fmt.Errorf("http error %v", um.httpStatusCode)
 	}
 	return &http.Response{StatusCode: um.httpStatusCode, Body: ioutil.NopCloser(strings.NewReader(um.responseBody))}, httpError
@@ -66,7 +66,7 @@ func (um *uploaderMock) SetOptions(options piperHttp.ClientOptions) {
 func TestGetOAuthToken(t *testing.T) {
 	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/tms_test")
 	t.Run("test success", func(t *testing.T) {
-		uploaderMock := uploaderMock{responseBody: `{"token_type":"bearer","access_token":"testOAuthToken","expires_in":54321}`, httpStatusCode: 200}
+		uploaderMock := uploaderMock{responseBody: `{"token_type":"bearer","access_token":"testOAuthToken","expires_in":54321}`, httpStatusCode: http.StatusOK}
 		communicationInstance := CommunicationInstance{uaaUrl: "https://dummy.sap.com", clientId: "testClientId", clientSecret: "testClientSecret", httpClient: &uploaderMock, logger: logger, isVerbose: false}
 
 		token, err := communicationInstance.getOAuthToken()
@@ -82,7 +82,7 @@ func TestGetOAuthToken(t *testing.T) {
 	})
 
 	t.Run("test error", func(t *testing.T) {
-		uploaderMock := uploaderMock{responseBody: `Bad request provided`, httpStatusCode: 400}
+		uploaderMock := uploaderMock{responseBody: `Bad request provided`, httpStatusCode: http.StatusBadRequest}
 		communicationInstance := CommunicationInstance{uaaUrl: "https://dummy.sap.com", clientId: "testClientId", clientSecret: "testClientSecret", httpClient: &uploaderMock, logger: logger, isVerbose: false}
 
 		_, err := communicationInstance.getOAuthToken()
@@ -100,7 +100,7 @@ func TestGetOAuthToken(t *testing.T) {
 func TestSendRequest(t *testing.T) {
 	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/tms_test")
 	t.Run("test success against uaa", func(t *testing.T) {
-		uploaderMock := uploaderMock{responseBody: `{"someKey": "someValue"}`, httpStatusCode: 200}
+		uploaderMock := uploaderMock{responseBody: `{"someKey": "someValue"}`, httpStatusCode: http.StatusOK}
 		communicationInstance := CommunicationInstance{uaaUrl: "https://dummy.sap.com", tmsUrl: "https://tms.dummy.sap.com", httpClient: &uploaderMock, logger: logger, isVerbose: false}
 
 		urlFormData := url.Values{
@@ -108,7 +108,7 @@ func TestSendRequest(t *testing.T) {
 		}
 		header := http.Header{}
 		header.Add("Authorization", "Basic dGVzdENsaWVudElkOnRlc3RDbGllbnRTZWNyZXQ=")
-		data, err := sendRequest(&communicationInstance, http.MethodPost, "/test/?param1=value1", strings.NewReader(urlFormData.Encode()), header, true)
+		data, err := sendRequest(&communicationInstance, http.MethodPost, "/test/?param1=value1", strings.NewReader(urlFormData.Encode()), header, http.StatusOK, true)
 
 		assert.NoError(t, err, "Error occurred, but none expected")
 		assert.Equal(t, "https://dummy.sap.com/test/?param1=value1", uploaderMock.urlCalled, "Called url incorrect")
@@ -120,41 +120,52 @@ func TestSendRequest(t *testing.T) {
 	})
 
 	t.Run("test success against tms", func(t *testing.T) {
-		uploaderMock := uploaderMock{responseBody: `{"someKey": "someValue"}`, httpStatusCode: 200}
+		uploaderMock := uploaderMock{responseBody: `{"someKey": "someValue"}`, httpStatusCode: http.StatusOK}
 		communicationInstance := CommunicationInstance{uaaUrl: "https://dummy.sap.com", tmsUrl: "https://tms.dummy.sap.com", httpClient: &uploaderMock, logger: logger, isVerbose: false}
 
-		_, err := sendRequest(&communicationInstance, http.MethodGet, "/test", nil, nil, false)
+		_, err := sendRequest(&communicationInstance, http.MethodGet, "/test", nil, nil, http.StatusOK, false)
 
 		assert.NoError(t, err, "Error occurred, but none expected")
 		assert.Equal(t, "https://tms.dummy.sap.com/test", uploaderMock.urlCalled, "Called url incorrect")
 	})
 
 	t.Run("test success with trimming url slash in the end", func(t *testing.T) {
-		uploaderMock := uploaderMock{responseBody: `{"someKey": "someValue"}`, httpStatusCode: 200}
+		uploaderMock := uploaderMock{responseBody: `{"someKey": "someValue"}`, httpStatusCode: http.StatusOK}
 		communicationInstance := CommunicationInstance{uaaUrl: "https://dummy.sap.com/", tmsUrl: "https://tms.dummy.sap.com/", httpClient: &uploaderMock, logger: logger, isVerbose: false}
 
-		_, err := sendRequest(&communicationInstance, http.MethodGet, "/test", nil, nil, false)
+		_, err := sendRequest(&communicationInstance, http.MethodGet, "/test", nil, nil, http.StatusOK, false)
 
 		assert.NoError(t, err, "Error occurred, but none expected")
 		assert.Equal(t, "https://tms.dummy.sap.com/test", uploaderMock.urlCalled, "Called url incorrect")
 	})
 
 	t.Run("test error", func(t *testing.T) {
-		uploaderMock := uploaderMock{responseBody: `{"someKey": "someValue"}`, httpStatusCode: 400}
+		uploaderMock := uploaderMock{responseBody: `{"someKey": "someValue"}`, httpStatusCode: http.StatusBadRequest}
 		communicationInstance := CommunicationInstance{uaaUrl: "https://dummy.sap.com", tmsUrl: "https://tms.dummy.sap.com", httpClient: &uploaderMock, logger: logger, isVerbose: false}
 
-		_, err := sendRequest(&communicationInstance, http.MethodGet, "/test", nil, nil, false)
+		_, err := sendRequest(&communicationInstance, http.MethodGet, "/test", nil, nil, http.StatusOK, false)
 
 		assert.Error(t, err, "Error expected, but none occurred")
 		assert.Equal(t, "https://tms.dummy.sap.com/test", uploaderMock.urlCalled, "Called url incorrect")
 		assert.Equal(t, "http error 400", err.Error(), "Error text incorrect")
 	})
 
+	t.Run("test error due unexpected positive http status code", func(t *testing.T) {
+		uploaderMock := uploaderMock{responseBody: `{"someKey": "someValue"}`, httpStatusCode: http.StatusCreated}
+		communicationInstance := CommunicationInstance{uaaUrl: "https://dummy.sap.com", tmsUrl: "https://tms.dummy.sap.com", httpClient: &uploaderMock, logger: logger, isVerbose: false}
+
+		_, err := sendRequest(&communicationInstance, http.MethodPost, "/test", nil, nil, http.StatusOK, false)
+
+		assert.Error(t, err, "Error expected, but none occurred")
+		assert.Equal(t, "https://tms.dummy.sap.com/test", uploaderMock.urlCalled, "Called url incorrect")
+		assert.Equal(t, "unexpected positive HTTP status code 201, while it was expected 200", err.Error(), "Error text incorrect")
+	})
+
 }
 
 func TestNewCommunicationInstance(t *testing.T) {
 	t.Run("test success", func(t *testing.T) {
-		uploaderMock := uploaderMock{responseBody: `{"token_type":"bearer","access_token":"testOAuthToken","expires_in":54321}`, httpStatusCode: 200}
+		uploaderMock := uploaderMock{responseBody: `{"token_type":"bearer","access_token":"testOAuthToken","expires_in":54321}`, httpStatusCode: http.StatusOK}
 		communicationInstance, err := NewCommunicationInstance(&uploaderMock, "https://dummy.sap.com", "testClientId", "testClientSecret", false)
 
 		assert.NoError(t, err, "Error occurred, but none expected")
@@ -166,12 +177,10 @@ func TestNewCommunicationInstance(t *testing.T) {
 	})
 
 	t.Run("test error", func(t *testing.T) {
-		uploaderMock := uploaderMock{responseBody: `Bad request provided`, httpStatusCode: 400}
+		uploaderMock := uploaderMock{responseBody: `Bad request provided`, httpStatusCode: http.StatusBadRequest}
 		_, err := NewCommunicationInstance(&uploaderMock, "https://dummy.sap.com", "testClientId", "testClientSecret", false)
 
 		assert.Error(t, err, "Error expected, but none occurred")
-
-		// TODO: either print the response body or provide it within the error
 		assert.Equal(t, "Error fetching OAuth token: http error 400", err.Error(), "Error text incorrect")
 	})
 

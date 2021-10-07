@@ -85,7 +85,7 @@ func (communicationInstance *CommunicationInstance) getOAuthToken() (string, err
 		"grant_type": {"password"},
 	}
 
-	data, err := sendRequest(communicationInstance, http.MethodPost, "/oauth/token/?grant_type=client_credentials&response_type=token", strings.NewReader(urlFormData.Encode()), header, true)
+	data, err := sendRequest(communicationInstance, http.MethodPost, "/oauth/token/?grant_type=client_credentials&response_type=token", strings.NewReader(urlFormData.Encode()), header, http.StatusOK, true)
 	if err != nil {
 		return "", err
 	}
@@ -97,7 +97,7 @@ func (communicationInstance *CommunicationInstance) getOAuthToken() (string, err
 	return token.AccessToken, nil
 }
 
-func sendRequest(communicationInstance *CommunicationInstance, method, urlPathAndQuery string, body io.Reader, header http.Header, isTowardsUaa bool) ([]byte, error) {
+func sendRequest(communicationInstance *CommunicationInstance, method, urlPathAndQuery string, body io.Reader, header http.Header, expectedStatusCode int, isTowardsUaa bool) ([]byte, error) {
 	var requestBody io.Reader
 	if body != nil {
 		closer := ioutil.NopCloser(body)
@@ -114,11 +114,15 @@ func sendRequest(communicationInstance *CommunicationInstance, method, urlPathAn
 
 	response, err := communicationInstance.httpClient.SendRequest(method, fmt.Sprintf("%v%v", url, urlPathAndQuery), requestBody, header, nil)
 
-	// TODO: how to check for accepted status code?
+	// err is not nil for HTTP status codes >= 300
 	if err != nil {
 		communicationInstance.logger.Errorf("HTTP request failed with error: %s", err)
-		communicationInstance.logResponseStatusCodeAndBody(response)
+		communicationInstance.logResponseBody(response)
 		return nil, err
+	}
+
+	if response.StatusCode != expectedStatusCode {
+		return nil, fmt.Errorf("unexpected positive HTTP status code %v, while it was expected %v", response.StatusCode, expectedStatusCode)
 	}
 
 	data, _ := ioutil.ReadAll(response.Body)
@@ -129,14 +133,10 @@ func sendRequest(communicationInstance *CommunicationInstance, method, urlPathAn
 	return data, nil
 }
 
-func (communicationInstance *CommunicationInstance) logResponseStatusCodeAndBody(response *http.Response) {
-	if response != nil {
-		communicationInstance.logger.Errorf("HTTP status code: %v", response.StatusCode)
-
-		if response.Body != nil {
-			data, _ := ioutil.ReadAll(response.Body)
-			communicationInstance.logger.Errorf("Response body: %s", data)
-			response.Body.Close()
-		}
+func (communicationInstance *CommunicationInstance) logResponseBody(response *http.Response) {
+	if response != nil && response.Body != nil {
+		data, _ := ioutil.ReadAll(response.Body)
+		communicationInstance.logger.Errorf("Response body: %s", data)
+		response.Body.Close()
 	}
 }
