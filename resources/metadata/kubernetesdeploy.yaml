@@ -100,7 +100,7 @@ spec:
         aliases:
           - name: dockerImageName
         type: string
-        description: Name of the container which will be built - will be used instead of parameter `containerImage`
+        description: Name of the container which will be built - will be used together with `containerImageTag` instead of parameter `containerImage`
         scope:
           - GENERAL
           - PARAMETERS
@@ -110,7 +110,7 @@ spec:
         aliases:
           - name: artifactVersion
         type: string
-        description: Tag of the container which will be built - will be used instead of parameter `containerImage`
+        description: Tag of the container which will be built - will be used together with `containerImageName` instead of parameter `containerImage`
         scope:
           - GENERAL
           - PARAMETERS
