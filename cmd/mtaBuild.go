@@ -209,7 +209,8 @@ func runMtaBuild(config mtaBuildOptions,
 	}
 
 	if config.Jobs != "" {
-		call = append(call, "-m=verbose -j="+config.Jobs)
+		call = append(call, "-m=verbose")
+		call = append(call, "-j="+config.Jobs)
 	}
 
 	if err = addNpmBinToPath(utils); err != nil {
