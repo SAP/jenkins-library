@@ -872,7 +872,6 @@ spec:
 			Namespace:                 "deploymentNamespace",
 		}
 
-
 		ioutil.WriteFile(opts.AppTemplate, []byte("testYaml"), 0755)
 		e := mock.ExecMockRunner{}
 
