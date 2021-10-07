@@ -78,7 +78,6 @@ func (communicationInstance *CommunicationInstance) getOAuthToken() (string, err
 
 	// TODO: somewhere here the proxy should be considered as well
 
-	// TODO: should one need to replace '%20' with '+' for username and passowrd, as it was done in groovy?
 	urlFormData := url.Values{
 		"username":   {communicationInstance.clientId},
 		"password":   {communicationInstance.clientSecret},

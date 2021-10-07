@@ -144,6 +144,20 @@ func TestSendRequest(t *testing.T) {
 		assert.Equal(t, "https://tms.dummy.sap.com/test", uploaderMock.urlCalled, "Called url incorrect")
 	})
 
+	t.Run("test success with body values containing spaces", func(t *testing.T) {
+		uploaderMock := uploaderMock{responseBody: `{"someKey": "someValue"}`, httpStatusCode: http.StatusOK}
+		communicationInstance := CommunicationInstance{uaaUrl: "https://dummy.sap.com", tmsUrl: "https://tms.dummy.sap.com", httpClient: &uploaderMock, logger: logger, isVerbose: false}
+
+		urlFormData := url.Values{
+			"key1": {"value with spaces"},
+		}
+		_, err := sendRequest(&communicationInstance, http.MethodPost, "/test/?param1=value1", strings.NewReader(urlFormData.Encode()), nil, http.StatusOK, true)
+
+		assert.NoError(t, err, "Error occurred, but none expected")
+		assert.Equal(t, "https://dummy.sap.com/test/?param1=value1", uploaderMock.urlCalled, "Called url incorrect")
+		assert.Equal(t, "key1=value+with+spaces", uploaderMock.requestBody, "Request body incorrect")
+	})
+
 	t.Run("test error", func(t *testing.T) {
 		uploaderMock := uploaderMock{responseBody: `{"someKey": "someValue"}`, httpStatusCode: http.StatusBadRequest}
 		communicationInstance := CommunicationInstance{uaaUrl: "https://dummy.sap.com", tmsUrl: "https://tms.dummy.sap.com", httpClient: &uploaderMock, logger: logger, isVerbose: false}
