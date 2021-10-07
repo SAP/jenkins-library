@@ -67,14 +67,15 @@ func runHelmDeploy(config kubernetesDeployOptions, command command.ExecRunner, s
 	//support either image or containerImageName and containerImageTag
 	containerImageName := ""
 	containerImageTag := ""
-	if len(config.ContainerImageName) > 0 && len(config.ContainerImageTag) > 0 {
-		containerImageName = config.ContainerImageName
-		containerImageTag = config.ContainerImageTag
-	} else if len(config.Image) > 0 {
+
+	if len(config.Image) > 0 {
 		containerImageName, containerImageTag, err = splitFullImageName(config.Image)
 		if err != nil {
 			log.Entry().WithError(err).Fatalf("Container image '%v' incorrect", config.Image)
 		}
+	} else if len(config.ContainerImageName) > 0 && len(config.ContainerImageTag) > 0 {
+		containerImageName = config.ContainerImageName
+		containerImageTag = config.ContainerImageTag
 	} else {
 		return fmt.Errorf("image information not given - please either set image or containerImageName and containerImageTag")
 	}
@@ -249,10 +250,11 @@ func runKubectlDeploy(config kubernetesDeployOptions, command command.ExecRunner
 
 	//support either image or containerImageName and containerImageTag
 	fullImage := ""
-	if len(config.ContainerImageName) > 0 && len(config.ContainerImageTag) > 0 {
-		fullImage = containerRegistry + "/" + config.ContainerImageName + ":" + config.ContainerImageTag
-	} else if len(config.Image) > 0 {
+
+	if len(config.Image) > 0 {
 		fullImage = config.Image
+	} else if len(config.ContainerImageName) > 0 && len(config.ContainerImageTag) > 0 {
+		fullImage = containerRegistry + "/" + config.ContainerImageName + ":" + config.ContainerImageTag
 	} else {
 		return fmt.Errorf("image information not given - please either set image or containerImageName and containerImageTag")
 	}
