@@ -2,34 +2,28 @@
 
 ## ${docGenDescription}
 
-## Prerequisites
+## Migration Guide
 
-* No prerequisites
+**Note:** This step has been deprecated. Use the new step [isChangeInDevelopment](isChangeInDevelopment.md) instead.
 
-**Note:** This step is deprecated. Use the [isChangeInDevelopment](isChangeInDevelopment.md) instead.
+Adjust your parameters to the naming convention of the new step.
+Adjust the unsupported parameters as indicated in the table below:
 
-You can keep most of the step specific configuration parameters in your configuration file `config.yml` untouched. The new step support the old naming convention. However, it is recommended to adjust your parameters to the new steps.
-
-Following parameters are not supported anymore. Adjust as indicated.
-
-| Unsupported Parameter | Change Notice |
+| Unsupported Parameter | New Parameter |
 | ------------- | ------------- |
-| changeManagement/`<type>`/docker/envVars | Use `dockerEnvVars` instead. |
-| changeManagement/`<type>`/docker/image | Use `dockerImage` instead. |
-| changeManagement/`<type>`/docker/options | Use `dockerOptions` instead. |
-| changeManagement/`<type>`/docker/pullImage | Use `dockerPullImage` instead. |
-| changeManagement/git/format | This parameter has been dropped. Make sure that your change document IDs and transport request IDs are part of the Git commit message body. |
+| changeManagement/type | This parameter has been removed. `SOLMAN` is the only backend type supported. |
+| changeManagement/`<type>`/docker/envVars | `dockerEnvVars` |
+| changeManagement/`<type>`/docker/image | `dockerImage` |
+| changeManagement/`<type>`/docker/options | `dockerOptions` |
+| changeManagement/`<type>`/docker/pullImage | `dockerPullImage` |
+| changeManagement/git/format | This parameter has been removed. Make sure that the IDS of your change document and transport request are part of the Git commit message body. |
+
+Your config.yml file should look as follows:
 
 ```yaml
 general:
-  changeManagement:
-    type: 'SOLMAN'
-# old
-    solman:
-      docker:
-        image: 'ppiper/cm-client'
 
-#new
+# new naming convention
 steps:
   isChangeInDevelopment:
     dockerImage: 'ppiper/cm-client'
