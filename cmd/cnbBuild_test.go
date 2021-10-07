@@ -126,6 +126,7 @@ func TestRunCnbBuild(t *testing.T) {
 		defer server.Close()
 
 		caCertsFile := "/etc/ssl/certs/ca-certificates.crt"
+		caCertsTmpFile := "/tmp/ca-certificates.crt"
 		registry := "some-registry"
 		config := cnbBuildOptions{
 			ContainerImageName:        "my-image",
@@ -144,13 +145,14 @@ func TestRunCnbBuild(t *testing.T) {
 		err := runCnbBuild(&config, &telemetry.CustomData{}, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
 		assert.NoError(t, err)
 
-		result, err := utils.FilesMock.FileRead(caCertsFile)
+		result, err := utils.FilesMock.FileRead(caCertsTmpFile)
 		assert.NoError(t, err)
 		assert.Equal(t, "test\ntestCert\ntestCert\n", string(result))
 
 		assert.NoError(t, err)
 		runner := utils.ExecMockRunner
 		assert.Contains(t, runner.Env, "CNB_REGISTRY_AUTH={\"my-registry\":\"Basic dXNlcjpwYXNz\"}")
+		assert.Contains(t, runner.Env, fmt.Sprintf("SSL_CERT_FILE=%s", caCertsTmpFile))
 		assert.Equal(t, "/cnb/lifecycle/detector", runner.Calls[0].Exec)
 		assert.Equal(t, "/cnb/lifecycle/builder", runner.Calls[1].Exec)
 		assert.Equal(t, "/cnb/lifecycle/exporter", runner.Calls[2].Exec)
@@ -210,5 +212,26 @@ func TestRunCnbBuild(t *testing.T) {
 
 		err := runCnbBuild(&config, nil, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
 		assert.EqualError(t, err, "the provided dockerImage is not a valid builder")
+	})
+
+	t.Run("error case: builder image does not contain tls certificates", func(t *testing.T) {
+		t.Parallel()
+
+		registry := "some-registry"
+		config := cnbBuildOptions{
+			ContainerImageName:        "my-image",
+			ContainerImageTag:         "0.0.1",
+			ContainerRegistryURL:      registry,
+			DockerConfigJSON:          "/path/to/config.json",
+			Buildpacks:                []string{"test"},
+			CustomTLSCertificateLinks: []string{"http://example.com/certs.pem"},
+		}
+
+		utils := newCnbBuildTestsUtils()
+		utils.FilesMock.AddFile(config.DockerConfigJSON, []byte(`{"auths":{"my-registry":{"auth":"dXNlcjpwYXNz"}}}`))
+		addBuilderFiles(&utils)
+
+		err := runCnbBuild(&config, nil, &utils, &commonPipelineEnvironment, &piperhttp.Client{})
+		assert.EqualError(t, err, "failed to copy certificates: cannot copy '/etc/ssl/certs/ca-certificates.crt': file does not exist")
 	})
 }
