@@ -209,7 +209,7 @@ func runMtaBuild(config mtaBuildOptions,
 	}
 
 	if config.Jobs != "" {
-		call = append(call, "-m -j=", config.Jobs)
+		call = append(call, "-m -j="+config.Jobs)
 	}
 
 	if err = addNpmBinToPath(utils); err != nil {
