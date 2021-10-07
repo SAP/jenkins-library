@@ -33,6 +33,9 @@ type CommunicationInstance struct {
 	isVerbose    bool
 }
 
+type CommunicationInterface interface {
+}
+
 // NewCommunicationInstance returns CommunicationInstance structure with http client prepared for communication with TMS backend
 func NewCommunicationInstance(httpClient piperHttp.Uploader, uaaUrl, clientId, clientSecret string, isVerbose bool) (*CommunicationInstance, error) {
 	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/tms")
@@ -113,8 +116,8 @@ func sendRequest(communicationInstance *CommunicationInstance, method, urlPathAn
 
 	// TODO: how to check for accepted status code?
 	if err != nil {
-		communicationInstance.recordResponseDetailsInErrorCase(response)
 		communicationInstance.logger.Errorf("HTTP request failed with error: %s", err)
+		communicationInstance.logResponseStatusCodeAndBody(response)
 		return nil, err
 	}
 
@@ -126,10 +129,14 @@ func sendRequest(communicationInstance *CommunicationInstance, method, urlPathAn
 	return data, nil
 }
 
-func (communicationInstance *CommunicationInstance) recordResponseDetailsInErrorCase(response *http.Response) {
-	if response != nil && response.Body != nil {
-		data, _ := ioutil.ReadAll(response.Body)
-		communicationInstance.logger.Errorf("Response body: %s", data)
-		response.Body.Close()
+func (communicationInstance *CommunicationInstance) logResponseStatusCodeAndBody(response *http.Response) {
+	if response != nil {
+		communicationInstance.logger.Errorf("HTTP status code: %v", response.StatusCode)
+
+		if response.Body != nil {
+			data, _ := ioutil.ReadAll(response.Body)
+			communicationInstance.logger.Errorf("Response body: %s", data)
+			response.Body.Close()
+		}
 	}
 }

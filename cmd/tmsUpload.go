@@ -78,14 +78,14 @@ func tmsUpload(config tmsUploadOptions, telemetryData *telemetry.CustomData, inf
 	// TODO: understand, what does this influx part do
 	influx.step_data.fields.tms = false
 
-	// TODO: understand, why the variable is passed with asterisk
-	if err := runTmsUpload(config, *communicationInstance); err != nil {
+	if err := runTmsUpload(config, communicationInstance); err != nil {
 		log.Entry().WithError(err).Fatal("Failed to run tmsUpload step")
 	}
 	influx.step_data.fields.tms = true
 }
 
-func runTmsUpload(config tmsUploadOptions, sys tms.CommunicationInstance) error {
+// TODO: understand the idea of CommunicationInterface
+func runTmsUpload(config tmsUploadOptions, communicationInterface tms.CommunicationInterface) error {
 	/*
 		log.Entry().WithField("LogField", "Log field content").Info("This is just a demo for a simple step.")
 
