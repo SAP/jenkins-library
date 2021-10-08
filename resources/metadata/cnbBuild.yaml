@@ -120,9 +120,9 @@ spec:
         type: "[]string"
         description: List of tags which will be additionally pushed to the registry, e.g. "latest".
         scope:
-           - PARAMETERS
-           - STAGES
-           - STEPS
+          - PARAMETERS
+          - STAGES
+          - STEPS
   outputs:
     resources:
       - name: commonPipelineEnvironment
