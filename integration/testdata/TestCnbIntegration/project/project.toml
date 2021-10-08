@@ -1,0 +1,16 @@
+[project]
+id = "io.buildpacks.my-app"
+version = "0.1"
+
+[build]
+include = [
+    "*.js",
+    "package.json"
+]
+
+[[build.env]]
+name = "BP_NODE_VERSION"
+value = "15.14.0"
+
+[[build.buildpacks]]
+id = "paketo-buildpacks/nodejs"
