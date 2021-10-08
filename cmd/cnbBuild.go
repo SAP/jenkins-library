@@ -302,10 +302,16 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 	}
 
 	if len(config.CustomTLSCertificateLinks) > 0 {
-		err := certutils.CertificateUpdate(config.CustomTLSCertificateLinks, httpClient, utils, "/etc/ssl/certs/ca-certificates.crt")
+		caCertificates := "/tmp/ca-certificates.crt"
+		_, err := utils.Copy("/etc/ssl/certs/ca-certificates.crt", caCertificates)
+		if err != nil {
+			return errors.Wrap(err, "failed to copy certificates")
+		}
+		err = certutils.CertificateUpdate(config.CustomTLSCertificateLinks, httpClient, utils, caCertificates)
 		if err != nil {
 			return errors.Wrap(err, "failed to update certificates")
 		}
+		utils.AppendEnv([]string{fmt.Sprintf("SSL_CERT_FILE=%s", caCertificates)})
 	} else {
 		log.Entry().Info("skipping updation of certificates")
 	}
