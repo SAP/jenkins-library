@@ -24,8 +24,8 @@ type AuthToken struct {
 }
 
 type CommunicationInstance struct {
-	uaaUrl       string
 	tmsUrl       string
+	uaaUrl       string
 	clientId     string
 	clientSecret string
 	httpClient   piperHttp.Uploader
@@ -33,14 +33,21 @@ type CommunicationInstance struct {
 	isVerbose    bool
 }
 
+type Node struct {
+	Id   int    `json:"id"`
+	Name string `json:"name"`
+}
+
 type CommunicationInterface interface {
+	GetNodes() ([]Node, error)
 }
 
 // NewCommunicationInstance returns CommunicationInstance structure with http client prepared for communication with TMS backend
-func NewCommunicationInstance(httpClient piperHttp.Uploader, uaaUrl, clientId, clientSecret string, isVerbose bool) (*CommunicationInstance, error) {
+func NewCommunicationInstance(httpClient piperHttp.Uploader, tmsUrl, uaaUrl, clientId, clientSecret string, isVerbose bool) (*CommunicationInstance, error) {
 	logger := log.Entry().WithField("package", "SAP/jenkins-library/pkg/tms")
 
 	communicationInstance := &CommunicationInstance{
+		tmsUrl:       tmsUrl,
 		uaaUrl:       uaaUrl,
 		clientId:     clientId,
 		clientSecret: clientSecret,
@@ -93,7 +100,7 @@ func (communicationInstance *CommunicationInstance) getOAuthToken() (string, err
 	json.Unmarshal(data, &token)
 
 	communicationInstance.logger.Info("OAuth Token retrieved successfully")
-	return token.AccessToken, nil
+	return token.TokenType + " " + token.AccessToken, nil
 }
 
 func sendRequest(communicationInstance *CommunicationInstance, method, urlPathAndQuery string, body io.Reader, header http.Header, expectedStatusCode int, isTowardsUaa bool) ([]byte, error) {
@@ -125,7 +132,7 @@ func sendRequest(communicationInstance *CommunicationInstance, method, urlPathAn
 	}
 
 	data, _ := ioutil.ReadAll(response.Body)
-	if !isTowardsUaa {
+	if !isTowardsUaa && communicationInstance.isVerbose {
 		communicationInstance.logger.Debugf("Valid response body: %v", string(data))
 	}
 	defer response.Body.Close()
@@ -138,4 +145,29 @@ func (communicationInstance *CommunicationInstance) logResponseBody(response *ht
 		communicationInstance.logger.Errorf("Response body: %s", data)
 		response.Body.Close()
 	}
+}
+
+func (communicationInstance *CommunicationInstance) GetNodes() ([]Node, error) {
+	if communicationInstance.isVerbose {
+		communicationInstance.logger.Info("Obtaining nodes started")
+		communicationInstance.logger.Infof("tmsUrl: %v", communicationInstance.tmsUrl)
+	}
+
+	header := http.Header{}
+	header.Add("Content-Type", "application/json")
+
+	// TODO: somewhere here the proxy should be considered as well
+
+	var nodes []Node
+	var data []byte
+	data, err := sendRequest(communicationInstance, http.MethodGet, "/v2/nodes", nil, header, http.StatusOK, false)
+	if err != nil {
+		return nodes, err
+	}
+
+	json.Unmarshal(data, &nodes)
+	if communicationInstance.isVerbose {
+		communicationInstance.logger.Info("Nodes obtained successfully")
+	}
+	return nodes, nil
 }

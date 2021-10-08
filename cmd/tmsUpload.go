@@ -18,7 +18,8 @@ type uaa struct {
 }
 
 type serviceKey struct {
-	Uaa uaa `json:"uaa"`
+	Uaa uaa    `json:"uaa"`
+	Uri string `json:"uri"`
 }
 
 type tmsUploadUtils interface {
@@ -66,7 +67,7 @@ func tmsUpload(config tmsUploadOptions, telemetryData *telemetry.CustomData, inf
 		log.Entry().WithError(err).Fatal("Failed to unmarshal TMS service key")
 	}
 
-	communicationInstance, err := tms.NewCommunicationInstance(client, serviceKey.Uaa.Url, serviceKey.Uaa.ClientId, serviceKey.Uaa.ClientSecret, GeneralConfig.Verbose)
+	communicationInstance, err := tms.NewCommunicationInstance(client, serviceKey.Uri, serviceKey.Uaa.Url, serviceKey.Uaa.ClientId, serviceKey.Uaa.ClientSecret, GeneralConfig.Verbose)
 	if err != nil {
 		log.Entry().WithError(err).Fatal("Failed to prepare client for talking with TMS")
 	}
@@ -81,7 +82,7 @@ func tmsUpload(config tmsUploadOptions, telemetryData *telemetry.CustomData, inf
 }
 
 // TODO: understand the idea of CommunicationInterface
-func runTmsUpload(config tmsUploadOptions, communicationInterface tms.CommunicationInterface) error {
+func runTmsUpload(config tmsUploadOptions, communicationInstance tms.CommunicationInterface) error {
 	// TODO: provide TMS upload logic here
 	/*
 		log.Entry().WithField("LogField", "Log field content").Info("This is just a demo for a simple step.")
@@ -100,6 +101,9 @@ func runTmsUpload(config tmsUploadOptions, communicationInterface tms.Communicat
 			return fmt.Errorf("cannot run without important file")
 		}
 	*/
+
+	// TODO: this is very simple for now - just to make the communication instance working towards TMS backend
+	communicationInstance.GetNodes()
 
 	return nil
 }

@@ -83,7 +83,7 @@ func TestGetOAuthToken(t *testing.T) {
 		assert.Equal(t, []string{"application/x-www-form-urlencoded"}, uploaderMock.header[http.CanonicalHeaderKey("content-type")], "Content-Type header incorrect")
 		assert.Equal(t, []string{"Basic dGVzdENsaWVudElkOnRlc3RDbGllbnRTZWNyZXQ="}, uploaderMock.header[http.CanonicalHeaderKey("authorization")], "Authorizatoin header incorrect")
 		assert.Equal(t, "grant_type=password&password=testClientSecret&username=testClientId", uploaderMock.requestBody, "Request body incorrect")
-		assert.Equal(t, "testOAuthToken", token, "Token incorrect")
+		assert.Equal(t, "bearer testOAuthToken", token, "Obtained token incorrect")
 	})
 
 	t.Run("test error", func(t *testing.T) {
@@ -196,19 +196,19 @@ func TestSendRequest(t *testing.T) {
 func TestNewCommunicationInstance(t *testing.T) {
 	t.Run("test success", func(t *testing.T) {
 		uploaderMock := uploaderMock{responseBody: `{"token_type":"bearer","access_token":"testOAuthToken","expires_in":54321}`, httpStatusCode: http.StatusOK}
-		communicationInstance, err := NewCommunicationInstance(&uploaderMock, "https://dummy.sap.com", "testClientId", "testClientSecret", false)
+		communicationInstance, err := NewCommunicationInstance(&uploaderMock, "https://tms.dummy.sap.com", "https://dummy.sap.com", "testClientId", "testClientSecret", false)
 
 		assert.NoError(t, err, "Error occurred, but none expected")
 		assert.Equal(t, "https://dummy.sap.com", communicationInstance.uaaUrl, "uaaUrl field of communication instance incorrect")
 		assert.Equal(t, "testClientId", communicationInstance.clientId, "clientId field of communication instance incorrect")
 		assert.Equal(t, "testClientSecret", communicationInstance.clientSecret, "clientSecret field of communication instance incorrect")
 		assert.Equal(t, false, communicationInstance.isVerbose, "isVerbose field of communication instance incorrect")
-		assert.Equal(t, "testOAuthToken", uploaderMock.token, "Obtained token incorrect")
+		assert.Equal(t, "bearer testOAuthToken", uploaderMock.token, "Obtained token incorrect")
 	})
 
 	t.Run("test error", func(t *testing.T) {
 		uploaderMock := uploaderMock{responseBody: `Bad request provided`, httpStatusCode: http.StatusBadRequest}
-		_, err := NewCommunicationInstance(&uploaderMock, "https://dummy.sap.com", "testClientId", "testClientSecret", false)
+		_, err := NewCommunicationInstance(&uploaderMock, "https://tms.dummy.sap.com", "https://dummy.sap.com", "testClientId", "testClientSecret", false)
 
 		assert.Error(t, err, "Error expected, but none occurred")
 		assert.Equal(t, "Error fetching OAuth token: http error 400", err.Error(), "Error text incorrect")
