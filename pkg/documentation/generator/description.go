@@ -6,13 +6,15 @@ import (
 	"github.com/SAP/jenkins-library/pkg/config"
 )
 
-const configRecommendation = "We recommend to define values of [step parameters](#parameters) via [config.yml file](../configuration.md). In this case, calling the step is reduced to one simple line.<br />Calling the step can be done either via the Jenkins library step or on the [command line](../cli/index.md)."
+const configRecommendation = "We recommend to define values of [step parameters](#parameters) via [.pipeline/config.yml file](../configuration.md).<br />In this case, calling the step is essentially reduced to defining the step name.<br />Calling the step can be done either in an orchestrator specific way (e.g. via a Jenkins library step) or on the command line."
 
 const (
 	headlineDescription     = "## Description\n\n"
 	headlineUsage           = "## Usage\n\n"
-	headlineJenkinsPipeline = "### Jenkins Pipeline\n\n"
-	headlineCommandLine     = "### Command Line\n\n"
+	headlineJenkinsPipeline = "    === Jenkins\n\n"
+	headlineCommandLine     = "    === Command Line\n\n"
+	headlineAzure           = "    === Azure\n\n"
+	spacingTabBox           = "        "
 )
 
 // defaultBinaryName is the name of the local binary that is used for sample generation.
@@ -45,10 +47,32 @@ func createDescriptionSection(stepData *config.StepData) string {
 	description += headlineDescription + stepData.Metadata.LongDescription + "\n\n"
 	description += headlineUsage
 	description += configRecommendation + "\n\n"
+	description += `!!! tip ""` + "\n\n"
+	// add Jenkins-specific information
 	description += headlineJenkinsPipeline
-	description += fmt.Sprintf("```groovy\nlibrary('%s')\n\n%v script: this\n```\n\n", libraryName, stepData.Metadata.Name)
+	description += fmt.Sprintf("%v```groovy\n", spacingTabBox)
+	description += fmt.Sprintf("%vlibrary('%s')\n\n", spacingTabBox, libraryName)
+	description += fmt.Sprintf("%v%v script: this\n", spacingTabBox, stepData.Metadata.Name)
+	description += fmt.Sprintf("%v```\n\n", spacingTabBox)
+
+	// add Azure-specific information if activated
+	if includeAzure {
+		description += headlineAzure
+		description += fmt.Sprintf("%v```\n", spacingTabBox)
+		description += fmt.Sprintf("%vsteps:\n", spacingTabBox)
+		description += fmt.Sprintf("%v  - task: piper@1\n", spacingTabBox)
+		description += fmt.Sprintf("%v    name: %v\n", spacingTabBox, stepData.Metadata.Name)
+		description += fmt.Sprintf("%v    inputs:\n", spacingTabBox)
+		description += fmt.Sprintf("%v      stepName: %v\n", spacingTabBox, stepData.Metadata.Name)
+		description += fmt.Sprintf("%v```\n\n", spacingTabBox)
+	}
+
+	// add command line information
 	description += headlineCommandLine
-	description += fmt.Sprintf("```sh\n%s %v\n```\n\n", binaryName, stepData.Metadata.Name)
+	description += fmt.Sprintf("%v```sh\n", spacingTabBox)
+	description += fmt.Sprintf("%v%s %v\n", spacingTabBox, binaryName, stepData.Metadata.Name)
+	description += fmt.Sprintf("%v```\n\n", spacingTabBox)
+
 	description += stepOutputs(stepData)
 	return description
 }
