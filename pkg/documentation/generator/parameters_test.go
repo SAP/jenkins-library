@@ -60,7 +60,6 @@ func TestParameterFurtherInfo(t *testing.T) {
 	}{
 		{paramName: "verbose", stepParams: []string{}, stepData: nil, contains: "activates debug output"},
 		{paramName: "script", stepParams: []string{}, stepData: nil, contains: "reference to Jenkins main pipeline script"},
-		{paramName: "contextTest", stepParams: []string{}, stepData: &config.StepData{}, contains: "Jenkins only", notContains: []string{"pipeline script", "id of credentials"}},
 		{paramName: "noop", stepParams: []string{"noop"}, stepData: &config.StepData{Spec: config.StepSpec{Inputs: config.StepInputs{Parameters: []config.StepParameters{}}}}, contains: ""},
 		{
 			paramName: "testCredentialId",
