@@ -18,13 +18,14 @@ import (
 )
 
 type tmsUploadOptions struct {
-	TmsServiceKey     string `json:"tmsServiceKey,omitempty"`
-	CustomDescription string `json:"customDescription,omitempty"`
-	NamedUser         string `json:"namedUser,omitempty"`
-	NodeName          string `json:"nodeName,omitempty"`
-	MtaPath           string `json:"mtaPath,omitempty"`
-	MtaVersion        string `json:"mtaVersion,omitempty"`
-	Proxy             string `json:"proxy,omitempty"`
+	TmsServiceKey            string                 `json:"tmsServiceKey,omitempty"`
+	CustomDescription        string                 `json:"customDescription,omitempty"`
+	NamedUser                string                 `json:"namedUser,omitempty"`
+	NodeName                 string                 `json:"nodeName,omitempty"`
+	MtaPath                  string                 `json:"mtaPath,omitempty"`
+	MtaVersion               string                 `json:"mtaVersion,omitempty"`
+	NodeExtDescriptorMapping map[string]interface{} `json:"nodeExtDescriptorMapping,omitempty"`
+	Proxy                    string                 `json:"proxy,omitempty"`
 }
 
 type tmsUploadInflux struct {
@@ -160,6 +161,7 @@ func addTmsUploadFlags(cmd *cobra.Command, stepConfig *tmsUploadOptions) {
 	cmd.Flags().StringVar(&stepConfig.NodeName, "nodeName", os.Getenv("PIPER_nodeName"), "Defines the name of the node to which the *.mtar file should be uploaded.")
 	cmd.Flags().StringVar(&stepConfig.MtaPath, "mtaPath", os.Getenv("PIPER_mtaPath"), "Defines the relative path to *.mtar file for the upload to the SAP Cloud Transport Management Service. If not specified, it will use the *.mtar file created in mtaBuild.")
 	cmd.Flags().StringVar(&stepConfig.MtaVersion, "mtaVersion", `*`, "Defines the version of the MTA for which the MTA extension descriptor will be used. You can use an asterisk (*) to accept any MTA version, or use a specific version compliant with SemVer 2.0, e.g. 1.0.0 (see semver.org). If the parameter is not configured, an asterisk is used.")
+
 	cmd.Flags().StringVar(&stepConfig.Proxy, "proxy", os.Getenv("PIPER_proxy"), "Proxy which should be used for the communication with the SAP Cloud Transport Management service backend.")
 
 	cmd.MarkFlagRequired("tmsServiceKey")
@@ -243,6 +245,14 @@ func tmsUploadMetadata() config.StepData {
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
 						Default:     `*`,
+					},
+					{
+						Name:        "nodeExtDescriptorMapping",
+						ResourceRef: []config.ResourceReference{},
+						Scope:       []string{"PARAMETERS", "STEPS"},
+						Type:        "map[string]interface{}",
+						Mandatory:   false,
+						Aliases:     []config.Alias{},
 					},
 					{
 						Name:        "proxy",

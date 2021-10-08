@@ -66,13 +66,12 @@ spec:
         scope:
           - PARAMETERS
           - STEPS
-      # TODO: make it generatable with the type map[string]string
-      #- name: nodeExtDescriptorMapping
-      #  type: map[string]string
-      #  description: "Available only for transports in Cloud Foundry environment. Defines a mapping between a transport node name and an MTA extension descriptor file path that you want to use for the transport node, e.g. nodeExtDescriptorMapping: [nodeName: 'example.mtaext', nodeName2: 'example2.mtaext', …]."
-      #  scope:
-      #    - PARAMETERS
-      #    - STEPS
+      - name: nodeExtDescriptorMapping
+        type: map[string]interface{}
+        description: 'Available only for transports in Cloud Foundry environment. Defines a mapping between a transport node name and an MTA extension descriptor file path that you want to use for the transport node, e.g. nodeExtDescriptorMapping: [nodeName: "example.mtaext", nodeName2: "example2.mtaext", …].'
+        scope:
+          - PARAMETERS
+          - STEPS
       - name: proxy
         type: string
         description: Proxy which should be used for the communication with the SAP Cloud Transport Management service backend.
