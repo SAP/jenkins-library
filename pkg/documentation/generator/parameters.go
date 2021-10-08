@@ -20,7 +20,7 @@ func createParametersSection(stepData *config.StepData) string {
 	parameters += createParameterOverview(stepData, false)
 
 	parameters += "### Overview - Execution Environment\n\n"
-	parameters += "These parameters are relevant for orchestrator usage and not considered when using the command line option.\n\n"
+	parameters += "!!! note \"Orchestrator-specific only\"\n\n    These parameters are relevant for orchestrator usage and not considered when using the command line option.\n\n"
 	parameters += createParameterOverview(stepData, true)
 
 	// sort parameters alphabetically
