@@ -302,10 +302,16 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 	}
 
 	if len(config.CustomTLSCertificateLinks) > 0 {
-		err := certutils.CertificateUpdate(config.CustomTLSCertificateLinks, httpClient, utils, "/etc/ssl/certs/ca-certificates.crt")
+		caCertificates := "/tmp/ca-certificates.crt"
+		_, err := utils.Copy("/etc/ssl/certs/ca-certificates.crt", caCertificates)
+		if err != nil {
+			return errors.Wrap(err, "failed to copy certificates")
+		}
+		err = certutils.CertificateUpdate(config.CustomTLSCertificateLinks, httpClient, utils, caCertificates)
 		if err != nil {
 			return errors.Wrap(err, "failed to update certificates")
 		}
+		utils.AppendEnv([]string{fmt.Sprintf("SSL_CERT_FILE=%s", caCertificates)})
 	} else {
 		log.Entry().Info("skipping updation of certificates")
 	}
@@ -322,8 +328,19 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 		return errors.Wrapf(err, "execution of '%s' failed", builderPath)
 	}
 
+	targets := []string{
+		fmt.Sprintf("%s:%s", containerImage, containerImageTag),
+	}
+
+	for _, tag := range config.AdditionalTags {
+		target := fmt.Sprintf("%s:%s", containerImage, tag)
+		if !piperutils.ContainsString(targets, target) {
+			targets = append(targets, target)
+		}
+	}
+
 	utils.AppendEnv([]string{fmt.Sprintf("CNB_REGISTRY_AUTH=%s", string(cnbRegistryAuth))})
-	err = utils.RunExecutable(exporterPath, fmt.Sprintf("%s:%s", containerImage, containerImageTag), fmt.Sprintf("%s:latest", containerImage))
+	err = utils.RunExecutable(exporterPath, targets...)
 	if err != nil {
 		log.SetErrorCategory(log.ErrorBuild)
 		return errors.Wrapf(err, "execution of '%s' failed", exporterPath)
