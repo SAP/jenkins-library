@@ -6,6 +6,10 @@ import (
 
 type JenkinsConfigProvider struct{}
 
+func (a *JenkinsConfigProvider) GetStageName() string {
+	return os.Getenv("STAGE_NAME")
+}
+
 func (j *JenkinsConfigProvider) GetBranch() string {
 	return os.Getenv("GIT_BRANCH")
 }

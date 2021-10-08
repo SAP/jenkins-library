@@ -1,6 +1,7 @@
 package protecode
 
 import (
+	"strconv"
 	"testing"
 
 	"bytes"
@@ -156,7 +157,8 @@ func TestLoadExistingProductSuccess(t *testing.T) {
 
 		response := ProductData{
 			Products: []Product{
-				{ProductID: 1}},
+				{ProductID: 1, FileName: "file_1.zip"},
+			},
 		}
 
 		var b bytes.Buffer
@@ -169,13 +171,14 @@ func TestLoadExistingProductSuccess(t *testing.T) {
 	cases := []struct {
 		pc             Protecode
 		protecodeGroup string
+		fileName       string
 		want           int
 	}{
-		{makeProtecode(Options{ServerURL: server.URL}), "group", 1},
+		{makeProtecode(Options{ServerURL: server.URL}), "group", "file_1.zip", 1},
 	}
 	for _, c := range cases {
 
-		got := c.pc.LoadExistingProduct(c.protecodeGroup)
+		got := c.pc.LoadExistingProduct(c.protecodeGroup, c.fileName)
 		assert.Equal(t, c.want, got)
 	}
 }
@@ -310,18 +313,35 @@ func TestDeclareFetchURLSuccess(t *testing.T) {
 		cleanupMode    string
 		protecodeGroup string
 		fetchURL       string
-		want           string
+		productID      int
+		replaceBinary  bool
+		want           int
 	}{
-		{"binary", "group1", "dummy", "/api/fetch/"},
-		{"Test", "group2", "dummy", "/api/fetch/"},
+		{"binary", "group1", "/api/fetch/", 1, true, 111},
+		{"binary", "group1", "/api/fetch/", -1, true, 111},
+		{"binary", "group1", "/api/fetch/", 0, true, 111},
+
+		{"binary", "group1", "/api/fetch/", 1, false, 111},
+		{"binary", "group1", "/api/fetch/", -1, false, 111},
+		{"binary", "group1", "/api/fetch/", 0, false, 111},
 	}
 	for _, c := range cases {
 
-		pc.DeclareFetchURL(c.cleanupMode, c.protecodeGroup, c.fetchURL)
-		assert.Equal(t, requestURI, c.want)
+		// pc.DeclareFetchURL(c.cleanupMode, c.protecodeGroup, c.fetchURL)
+		got := pc.DeclareFetchURL(c.cleanupMode, c.protecodeGroup, c.fetchURL, c.productID, c.replaceBinary)
+
+		assert.Equal(t, requestURI, "/api/fetch/")
+		assert.Equal(t, got.Result.ProductID, c.want)
+		assert.Equal(t, got.Result.Status, "")
+
 		assert.Contains(t, passedHeaders, "Group")
 		assert.Contains(t, passedHeaders, "Delete-Binary")
 		assert.Contains(t, passedHeaders, "Url")
+
+		if c.replaceBinary {
+			assert.Contains(t, passedHeaders, "Replace")
+		}
+
 	}
 }
 
@@ -342,7 +362,7 @@ func TestUploadScanFileSuccess(t *testing.T) {
 			}
 		}
 
-		response := Result{ProductID: 111, ReportURL: requestURI}
+		response := new(ResultData)
 
 		err := req.ParseMultipartForm(4096)
 		if err != nil {
@@ -358,9 +378,27 @@ func TestUploadScanFileSuccess(t *testing.T) {
 			t.FailNow()
 		}
 
+		// When replace binary option is true then mock server should return same product id with http status code 201 (not 200)
+		if strReplaceID, isExist := passedHeaders["Replace"]; isExist {
+			// convert string to int
+			intReplaceID, _ := strconv.Atoi(strReplaceID[0])
+
+			response.Result.ProductID = intReplaceID
+			response.Result.ReportURL = requestURI
+
+			rw.WriteHeader(201)
+
+		} else {
+			response.Result.ProductID = 112
+			response.Result.ReportURL = requestURI
+
+			rw.WriteHeader(200)
+		}
+
 		var b bytes.Buffer
 		json.NewEncoder(&b).Encode(&response)
 		rw.Write([]byte(b.Bytes()))
+
 	}))
 	// Close the server when test finishes
 	defer server.Close()
@@ -380,19 +418,36 @@ func TestUploadScanFileSuccess(t *testing.T) {
 	cases := []struct {
 		cleanupMode    string
 		protecodeGroup string
-		fileName       string
-		want           string
+		filePath       string
+		productID      int
+		replaceBinary  bool
+		want           int
 	}{
-		{"binary", "group1", testFile.Name(), "/api/upload/dummy"},
-		{"Test", "group2", testFile.Name(), "/api/upload/dummy"},
+		{"binary", "group1", testFile.Name(), 1, true, 1},
+		{"binary", "group1", testFile.Name(), 0, true, 0},
+		{"binary", "group1", testFile.Name(), -1, true, -1},
+
+		{"binary", "group1", testFile.Name(), 1, false, 112},
+		{"binary", "group1", testFile.Name(), 0, false, 112},
+		{"binary", "group1", testFile.Name(), -1, false, 112},
+
+		// {"binary", "group1", testFile.Name(), "/api/upload/dummy"},
+		// {"Test", "group2", testFile.Name(), "/api/upload/dummy"},
 	}
 	for _, c := range cases {
 
-		pc.UploadScanFile(c.cleanupMode, c.protecodeGroup, c.fileName, "dummy")
-		assert.Equal(t, requestURI, c.want)
+		got := pc.UploadScanFile(c.cleanupMode, c.protecodeGroup, c.filePath, "dummy.tar", c.productID, c.replaceBinary)
+
+		assert.Equal(t, requestURI, "/api/upload/dummy.tar")
 		assert.Contains(t, passedHeaders, "Group")
 		assert.Contains(t, passedHeaders, "Delete-Binary")
 		assert.Equal(t, fileContents, passedFileContents, "Uploaded file incorrect")
+		assert.Equal(t, c.want, got.Result.ProductID)
+		assert.Equal(t, "", got.Result.Status)
+
+		if c.replaceBinary {
+			assert.Contains(t, passedHeaders, "Replace")
+		}
 	}
 }
 

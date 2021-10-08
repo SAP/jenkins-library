@@ -7,6 +7,10 @@ import (
 
 type GitHubActionsConfigProvider struct{}
 
+func (g *GitHubActionsConfigProvider) GetStageName() string {
+	return "GITHUB_WORKFLOW" //TODO: is there something like is "stage" in GH Actions?
+}
+
 func (g *GitHubActionsConfigProvider) GetBranch() string {
 	return strings.TrimPrefix(os.Getenv("GITHUB_REF"), "refs/heads/")
 }

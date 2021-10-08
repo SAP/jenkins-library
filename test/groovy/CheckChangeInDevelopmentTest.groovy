@@ -1,3 +1,6 @@
+import static org.hamcrest.Matchers.*
+import static org.junit.Assert.assertThat
+
 import org.junit.Before
 import org.junit.After
 import org.junit.Rule
@@ -37,6 +40,18 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
     @Before
     public void setup() {
         Utils.metaClass.echo = { def m -> }
+
+        nullScript.commonPipelineEnvironment.configuration = [general:
+                                     [changeManagement:
+                                         [
+                                          credentialsId: 'CM',
+                                          type: 'SOLMAN',
+                                          endpoint: 'https://example.org/cm'
+                                         ]
+                                     ]
+                                 ]
+        helper.registerAllowedMethod('addBadge', [Map], {return})
+        helper.registerAllowedMethod('createSummary', [Map], {return})
     }
 
     @After
@@ -50,27 +65,22 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
     @Test
     public void changeIsInStatusDevelopmentTest() {
 
-        ChangeManagement cm = getChangeManagementUtils(true)
+        def calledWithParameters,
+            calledWithStepName
+
+        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
+            params, stepName, metaData, creds ->
+                if(stepName.equals("isChangeInDevelopment")) {
+                    nullScript.commonPipelineEnvironment.setValue('isChangeInDevelopment', true)
+                }
+            })
+
         stepRule.step.checkChangeInDevelopment(
             script: nullScript,
-            cmUtils: cm,
-            changeManagement: [
-                type: 'SOLMAN',
-                endpoint: 'https://example.org/cm'],
+            changeDocumentId: '001',
             failIfStatusIsNotInDevelopment: true)
 
-        assert cmUtilReceivedParams == [
-            docker: [
-                image: 'ppiper/cm-client',
-                options:[],
-                envVars:[:],
-                pullImage:true,
-            ],
-            changeId: '001',
-            endpoint: 'https://example.org/cm',
-            credentialsId: 'CM',
-            cmclientOpts: ''
-        ]
+        assertThat(nullScript.commonPipelineEnvironment.getValue('isChangeInDevelopment'), is(true))
 
         // no exception in thrown, so the change is in status 'in development'.
     }
@@ -81,65 +91,64 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
         thrown.expect(AbortException)
         thrown.expectMessage("Change '001' is not in status 'in development'")
 
-        ChangeManagement cm = getChangeManagementUtils(false)
+        def calledWithParameters,
+            calledWithStepName
+
+        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
+            params, stepName, metaData, creds ->
+                if(stepName.equals("isChangeInDevelopment")) {
+                    nullScript.commonPipelineEnvironment.setValue('isChangeInDevelopment', false)
+                }
+            })
+
         stepRule.step.checkChangeInDevelopment(
             script: nullScript,
-            cmUtils: cm,
-            changeManagement: [type: 'SOLMAN',
-                               endpoint: 'https://example.org/cm'])
+            changeDocumentId: '001',
+            failIfStatusIsNotInDevelopment: true)
     }
 
     @Test
     public void changeIsNotInStatusDevelopmentButWeWouldLikeToSkipFailureTest() {
 
-        ChangeManagement cm = getChangeManagementUtils(false)
-        boolean inDevelopment = stepRule.step.checkChangeInDevelopment(
-                                    script: nullScript,
-                                    cmUtils: cm,
-                                    changeManagement: [endpoint: 'https://example.org/cm'],
-                                    failIfStatusIsNotInDevelopment: false)
-        assert !inDevelopment
-    }
+        def calledWithParameters,
+            calledWithStepName
 
-    @Test
-    public void changeDocumentIdRetrievalFailsTest() {
-
-        thrown.expect(IllegalArgumentException)
-        thrown.expectMessage("No changeDocumentId provided. Neither via parameter 'changeDocumentId' nor via " +
-                             "label 'ChangeDocument\\s?:' in commit range [from: origin/master, to: HEAD].")
-
-        ChangeManagement cm = new ChangeManagement(nullScript, null) {
-
-            String getChangeDocumentId(
-                String filter,
-                String from,
-                String to,
-                String format) {
-                throw new ChangeManagementException('Something went wrong')
-            }
-        }
+        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
+            params, stepName, metaData, creds ->
+                if(stepName.equals("isChangeInDevelopment")) {
+                    nullScript.commonPipelineEnvironment.setValue('isChangeInDevelopment', false)
+                }
+            })
 
         stepRule.step.checkChangeInDevelopment(
-            script: nullScript,
-            cmUtils: cm,
-            changeManagement: [type: 'SOLMAN',
-                               endpoint: 'https://example.org/cm'])
+                                    script: nullScript,
+                                    changeDocumentId: '001',
+                                    failIfStatusIsNotInDevelopment: false)
+
+        assertThat(nullScript.commonPipelineEnvironment.getValue('isChangeInDevelopment'), is(false))
     }
 
     @Test
     public void nullChangeDocumentIdTest() {
 
         thrown.expect(IllegalArgumentException)
-        thrown.expectMessage("No changeDocumentId provided. Neither via parameter 'changeDocumentId' " +
-                             "nor via label 'ChangeDocument\\s?:' in commit range " +
-                             "[from: origin/master, to: HEAD].")
+        thrown.expectMessage("No changeDocumentId provided. Neither via parameter 'changeDocumentId' nor via " +
+                             "label 'ChangeDocument\\s?:' in commit range [from: origin/master, to: HEAD].")
 
-        ChangeManagement cm = getChangeManagementUtils(false, null)
+        def calledWithParameters,
+            calledWithStepName
+
+        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
+            params, stepName, metaData, creds ->
+                if(stepName.equals("transportRequestDocIDFromGit")) {
+                    calledWithParameters = params
+                }
+            })
+
         stepRule.step.checkChangeInDevelopment(
-            script: nullScript,
-            cmUtils: cm,
-            changeManagement: [endpoint: 'https://example.org/cm',
-                               type: 'SOLMAN'])
+            script: nullScript)
+
+        assertThat(calledWithParameters,is(not(null)))
     }
 
     @Test
@@ -150,12 +159,21 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
                              "nor via label 'ChangeDocument\\s?:' in commit range " +
                              "[from: origin/master, to: HEAD].")
 
-        ChangeManagement cm = getChangeManagementUtils(false, '')
+        def calledWithParameters,
+            calledWithStepName
+
+        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
+            params, stepName, metaData, creds ->
+                if(stepName.equals("transportRequestDocIDFromGit")) {
+                    calledWithParameters = params
+                    nullScript.commonPipelineEnvironment.setValue('changeDocumentId', '')
+                }
+            })
+
         stepRule.step.checkChangeInDevelopment(
-            script: nullScript,
-            cmUtils: cm,
-            changeManagement: [type: 'SOLMAN',
-                               endpoint: 'https://example.org/cm'])
+            script: nullScript)
+
+        assertThat(calledWithParameters,is(not(null)))
     }
 
     @Test
@@ -172,41 +190,25 @@ class CheckChangeInDevelopmentTest extends BasePiperTest {
     @Test
     public void stageConfigIsNotConsideredWithParamKeysTest() {
 
-        nullScript.commonPipelineEnvironment.configuration = [stages:[foo:[changeDocumentId:'12345']]]
-        ChangeManagement cm = getChangeManagementUtils(true, '')
+        nullScript.commonPipelineEnvironment.configuration.stages = [foo:[changeDocumentId:'12345']]
 
         thrown.expect(IllegalArgumentException)
         thrown.expectMessage('No changeDocumentId provided.')
 
+        def calledWithParameters,
+            calledWithStepName
+
+        helper.registerAllowedMethod('piperExecuteBin', [Map, String, String, List], {
+            params, stepName, metaData, creds ->
+                if(stepName.equals("transportRequestDocIDFromGit")) {
+                    calledWithParameters = params
+                }
+            })
+
         stepRule.step.checkChangeInDevelopment(
             script: nullScript,
-            cmUtils: cm,
-            changeManagement: [type: BackendType.SOLMAN,
-                               endpoint: 'https://example.org/cm'],
             stageName: 'foo')
-    }
 
-    private ChangeManagement getChangeManagementUtils(boolean inDevelopment, String changeDocumentId = '001') {
-
-        return new ChangeManagement(nullScript, null) {
-
-            String getChangeDocumentId(
-                String filter,
-                String from,
-                String to,
-                String format) {
-                return changeDocumentId
-            }
-
-            boolean isChangeInDevelopment(Map docker, String changeId, String endpoint, String credentialsId, String cmclientOpts) {
-                cmUtilReceivedParams.docker = docker
-                cmUtilReceivedParams.changeId = changeId
-                cmUtilReceivedParams.endpoint = endpoint
-                cmUtilReceivedParams.credentialsId = credentialsId
-                cmUtilReceivedParams.cmclientOpts = cmclientOpts
-
-                return inDevelopment
-            }
-        }
+        assertThat(calledWithParameters,is(not(null)))
     }
 }

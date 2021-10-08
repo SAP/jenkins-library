@@ -23,10 +23,14 @@ require (
 	github.com/go-openapi/spec v0.19.9 // indirect
 	github.com/go-openapi/strfmt v0.19.5
 	github.com/go-openapi/validate v0.19.11 // indirect
+	github.com/go-playground/locales v0.14.0
+	github.com/go-playground/universal-translator v0.18.0
+	github.com/go-playground/validator/v10 v10.9.0
 	github.com/google/go-cmp v0.5.4
 	github.com/google/go-containerregistry v0.1.3
 	github.com/google/go-github/v32 v32.1.0
 	github.com/google/uuid v1.1.2
+	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/hashicorp/go-retryablehttp v0.6.7
 	github.com/hashicorp/vault v1.7.2
 	github.com/hashicorp/vault/api v1.1.0
@@ -38,14 +42,16 @@ require (
 	github.com/magicsong/color-glog v0.0.1 // indirect
 	github.com/magicsong/sonargo v0.0.1
 	github.com/mailru/easyjson v0.7.6 // indirect
+	github.com/microsoft/azure-devops-go-api/azuredevops v1.0.0-b5
 	github.com/motemen/go-nuts v0.0.0-20200601065735-3df31f16cb2f
+	github.com/pelletier/go-toml v1.9.3
 	github.com/piper-validation/fortify-client-go v0.0.0-20210114140201-1261216783c6
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.7.0
 	github.com/smartystreets/assertions v1.0.0 // indirect
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.5
-	github.com/stretchr/testify v1.6.1
+	github.com/stretchr/testify v1.7.0
 	github.com/testcontainers/testcontainers-go v0.5.1
 	golang.org/x/mod v0.3.0
 	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43
