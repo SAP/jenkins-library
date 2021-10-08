@@ -343,6 +343,8 @@ func runCnbBuild(config *cnbBuildOptions, telemetryData *telemetry.CustomData, u
 	if config.Buildpacks != nil && len(config.Buildpacks) > 0 {
 		log.Entry().Infof("Setting custom buildpacks: '%v'", config.Buildpacks)
 		buildpacksPath, orderPath, err = setCustomBuildpacks(config.Buildpacks, dockerConfigFile, utils)
+		defer utils.RemoveAll(buildpacksPath)
+		defer utils.RemoveAll(orderPath)
 		if err != nil {
 			log.SetErrorCategory(log.ErrorBuild)
 			return errors.Wrapf(err, "Setting custom buildpacks: %v", config.Buildpacks)
