@@ -90,6 +90,30 @@ id = "paketo-buildpacks/nodejs"
 		assert.False(t, t5)
 	})
 
+	t.Run("fails with inline buildpack", func(t *testing.T) {
+		projectToml := `[project]
+id = "io.buildpacks.my-app"
+version = "0.1"
+
+[[build.buildpacks]]
+id = "test/inline"
+	[build.buildpacks.script]
+	api = "0.5"
+	shell = "/bin/bash"
+	inline = "date"
+`
+		utils := cnbutils.MockUtils{
+			FilesMock: &mock.FilesMock{},
+		}
+
+		utils.AddFile("project.toml", []byte(projectToml))
+
+		_, err := ParseDescriptor("project.toml", utils, &piperhttp.Client{})
+
+		assert.Error(t, err)
+		assert.Equal(t, "inline buildpacks are not supported", err.Error())
+	})
+
 	t.Run("fails with file not found", func(t *testing.T) {
 		utils := cnbutils.MockUtils{
 			FilesMock: &mock.FilesMock{},

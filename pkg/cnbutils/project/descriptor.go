@@ -13,10 +13,16 @@ import (
 	ignore "github.com/sabhiram/go-gitignore"
 )
 
+type script struct {
+	API    string `toml:"api"`
+	Inline string `toml:"inline"`
+	Shell  string `toml:"shell"`
+}
 type buildpack struct {
 	ID      string `toml:"id"`
 	Version string `toml:"version"`
 	URI     string `toml:"uri"`
+	Script  script `toml:"script"`
 }
 
 type envVar struct {
@@ -98,6 +104,10 @@ func (b *build) searchBuildpacks(httpClient piperhttp.Sender) ([]string, error) 
 	var bpackImg []string
 
 	for _, bpack := range b.Buildpacks {
+		if bpack.Script != (script{}) {
+			return nil, errors.New("inline buildpacks are not supported")
+		}
+
 		if bpack.URI != "" {
 			log.Entry().Debugf("Adding buildpack using URI: %s", bpack.URI)
 			bpackImg = append(bpackImg, bpack.URI)
