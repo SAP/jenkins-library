@@ -20,6 +20,7 @@ void call(Map parameters = [:]) {
     def script = checkScript(this, parameters) ?: this
     def stageName = parameters.stageName?:env.STAGE_NAME
 
+    /*
     // load default & individual configuration
     Map config = ConfigurationHelper.newInstance(this)
         .loadStepDefaults([:], stageName)
@@ -27,6 +28,7 @@ void call(Map parameters = [:]) {
         .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
         .mixin(arguments, PARAMETER_KEYS)
         .use()
+        */
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
         if (config.host == "") {

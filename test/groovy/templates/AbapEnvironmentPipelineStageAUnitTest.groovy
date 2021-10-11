@@ -33,6 +33,7 @@ class abapEnvironmentPipelineStageAUnitTest extends BasePiperTest {
             return body()
         })
         helper.registerAllowedMethod('abapEnvironmentRunAUnitTest', [Map.class], {m -> stepsCalled.add('abapEnvironmentRunAUnitTest')})
+        helper.registerAllowedMethod('cloudFoundryCreateServiceKey', [Map.class], {m -> stepsCalled.add('cloudFoundryCreateServiceKey')})
     }
 
     @Test
