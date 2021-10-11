@@ -4,28 +4,28 @@ This stage contains of two sub stages, `ATC` and `AUnit` which can execute ATC c
 By default this stage will not run any of the two sub stages `ATC` and `AUnit` if they are not configured. Please keep in mind that the `ATC` and `AUnit` stages need to be configured independently.
 Below sections contain more information on the usage and configuration of the `ATC` and `AUnit` stages.
 
-# ATC
+## ATC
 
 In this stage, ATC checks can be executed using abapEnvironmentRunATCCheck. The step can receive software components or packages. The results are returned in the checkstyle format. With the use of a pipeline extension, quality gates can be configured (see [step documentation](https://sap.github.io/jenkins-library/steps/abapEnvironmentRunATCCheck/) or the "Extensions" section in the [configuration](../configuration.md)).
 
-## Steps
+### Steps
 
 The following steps are executed in this stage:
 
 - [abapEnvironmentRunATCCheck](../../../steps/abapEnvironmentRunATCCheck.md)
 
-## Stage Parameters
+### Stage Parameters
 
 There are no specifc stage parameters.
 
-## Stage Activation
+### Stage Activation
 
 This stage will be active, if the stage configuration in the `config.yml` contains entries for this stage.
 Please keep in mind that the configuration for the `ATC` stage needs to be subsequent to the `Test` stages hirarchy.
 
-## Configuration Example
+### Configuration Example
 
-### config.yml
+#### config.yml
 
 ```yaml
 general:
@@ -40,7 +40,7 @@ stages:
     atcConfig: 'atcConfig.yml'
 ```
 
-### atcConfig.yml
+#### atcConfig.yml
 
 ```yaml
 atcobjects:
@@ -48,7 +48,7 @@ atcobjects:
     - name: "/DMO/SWC"
 ```
 
-### ATC.groovy
+#### ATC.groovy
 
 ```groovy
 void call(Map params) {
@@ -70,28 +70,28 @@ return this
 
 Please note, this file belongs in the extensions folder: `.pipeline/extensions/ATC.groovy`
 
-# AUnit
+## AUnit
 
 This stage will trigger an AUnit test run an on SAP BTP ABAP Environment system using the abapEnvironmentRunAUnitTest step.
 
-## Steps
+### Steps
 
 The following steps are executed in this stage:
 
 - [abapEnvironmentRunAUnitTest](../../../steps/abapEnvironmentRunAUnitTest.md)
 
-## Stage Parameters
+### Stage Parameters
 
 There are no specifc stage parameters.
 
-## Stage Activation
+### Stage Activation
 
 This stage will be active, if the stage configuration in the `config.yml` contains entries for this stage.
 Please keep in mind that the configuration for the `AUnit` stage needs to be subsequent to the `Test` stages hirarchy.
 
-## Configuration Example
+### Configuration Example
 
-### config.yml
+#### config.yml
 
 ```yaml
 general:
@@ -108,11 +108,10 @@ stages:
   #ATC:
   #  atcConfig: 'atcConfig.yml'
 ```
-### atcConfig.yml
+#### aunitConfig.yml
 
 ```yaml
 atcobjects:
   softwarecomponent:
     - name: "/DMO/SWC"
 ```
-
