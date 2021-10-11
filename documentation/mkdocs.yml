@@ -151,7 +151,7 @@ nav:
         - transportRequestDocIDFromGit: steps/transportRequestDocIDFromGit.md
         - transportRequestRelease:  steps/transportRequestRelease.md
         - transportRequestReqIDFromGit: steps/transportRequestReqIDFromGit.md
-        - transportRequestUploadFile: steps/transportRequestUploadFile.md
+        - transportRequestUploadCTS: steps/transportRequestUploadCTS.md
         - transportRequestUploadRFC: steps/transportRequestUploadRFC.md
         - transportRequestUploadSOLMAN: steps/transportRequestUploadSOLMAN.md
         - uiVeri5ExecuteTests: steps/uiVeri5ExecuteTests.md
@@ -162,6 +162,7 @@ nav:
     - 'Library Steps (deprecated)':
         - artifactSetVersion: steps/artifactSetVersion.md
         - npmExecute: steps/npmExecute.md
+        - transportRequestUploadFile: steps/transportRequestUploadFile.md
     - 'Command line tool': cli/index.md
 
 theme:

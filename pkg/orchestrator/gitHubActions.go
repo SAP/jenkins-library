@@ -25,6 +25,9 @@ func (a *GitHubActionsConfigProvider) GetPipelineStartTime() string {
 	log.Entry().Infof("GetPipelineStartTime() for GitHub Actions not yet implemented.")
 	return "n/a"
 }
+func (g *GitHubActionsConfigProvider) GetStageName() string {
+	return "GITHUB_WORKFLOW" //TODO: is there something like is "stage" in GH Actions?
+}
 
 func (g *GitHubActionsConfigProvider) GetBranch() string {
 	return strings.TrimPrefix(getEnv("GITHUB_REF", "n/a"), "refs/heads/")

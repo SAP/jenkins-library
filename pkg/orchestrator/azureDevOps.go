@@ -84,6 +84,10 @@ func (a *AzureDevOpsConfigProvider) GetBuildId() string {
 	return getEnv("BUILD_BUILDID", "n/a")
 }
 
+func (a *AzureDevOpsConfigProvider) GetStageName() string {
+	return os.Getenv("SYSTEM_STAGEDISPLAYNAME")
+}
+
 func (a *AzureDevOpsConfigProvider) GetBranch() string {
 	tmp := getEnv("BUILD_SOURCEBRANCH", "n/a")
 	return strings.TrimPrefix(tmp, "refs/heads/")

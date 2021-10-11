@@ -348,60 +348,16 @@ class BuildExecuteTest extends BasePiperTest {
 
     @Test
     void testKaniko() {
-        def kanikoParams = [:]
+        def buildToolCalled = false
         helper.registerAllowedMethod('kanikoExecute', [Map.class], { m ->
-            kanikoParams = m
+            buildToolCalled = true
             return
         })
-
         stepRule.step.buildExecute(
             script: nullScript,
             buildTool: 'kaniko',
-            dockerImageName: 'path/to/myImage',
-            dockerImageTag: 'myTag',
-            dockerRegistryUrl: 'https://my.registry:55555'
         )
-
-        assertThat(kanikoParams.containerImageNameAndTag.toString(), is('my.registry:55555/path/to/myImage:myTag'))
-    }
-
-    @Test
-    void testKanikoNoPush() {
-        def kanikoParams = [:]
-        helper.registerAllowedMethod('kanikoExecute', [Map.class], { m ->
-            kanikoParams = m
-            return
-        })
-
-        stepRule.step.buildExecute(
-            script: nullScript,
-            buildTool: 'kaniko',
-            dockerImageName: 'path/to/myImage',
-            dockerImageTag: 'myTag',
-            dockerRegistryUrl: ''
-        )
-
-        assertThat(kanikoParams.containerImageNameAndTag, is(''))
-    }
-
-    @Test
-    void testSwitchToKaniko() {
-        shellCallRule.setReturnValue('docker ps -q > /dev/null', 1)
-        def kanikoParams = [:]
-        helper.registerAllowedMethod('kanikoExecute', [Map.class], { m ->
-            kanikoParams = m
-            return
-        })
-
-        stepRule.step.buildExecute(
-            script: nullScript,
-            buildTool: 'kaniko',
-            dockerImageName: 'path/to/myImage',
-            dockerImageTag: 'myTag',
-            dockerRegistryUrl: 'https://my.registry:55555'
-        )
-
-        assertThat(kanikoParams.containerImageNameAndTag.toString(), is('my.registry:55555/path/to/myImage:myTag'))
+        assertThat(buildToolCalled, is(true))
     }
 
 }

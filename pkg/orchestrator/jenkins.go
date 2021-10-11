@@ -5,6 +5,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/pkg/errors"
 	"io/ioutil"
+	"os"
 )
 
 type JenkinsConfigProvider struct{}
@@ -25,7 +26,7 @@ func (j *JenkinsConfigProvider) GetLog() ([]byte, error) {
 	//	* Problem of authentication, do we have credentials available in vault?
 	//	* ...
 	// How to get step specific data? As it is shown in Blue Ocean?
-	
+
 	URL := j.GetBuildUrl() + "consoleText"
 
 	client := &piperHttp.Client{}
@@ -69,6 +70,10 @@ func (j *JenkinsConfigProvider) getJenkinsHome() string {
 
 func (j *JenkinsConfigProvider) GetBuildNumber() string {
 	return getEnv("BUILD_NUMBER", "n/a")
+}
+
+func (a *JenkinsConfigProvider) GetStageName() string {
+	return os.Getenv("STAGE_NAME")
 }
 
 func (j *JenkinsConfigProvider) GetBranch() string {

@@ -154,6 +154,39 @@ func TestSettings(t *testing.T) {
 
 		}
 	})
+
+	t.Run("update active profile tag in existing settings file", func(t *testing.T) {
+
+		utilsMock := newSettingsDownloadTestUtilsBundle()
+		var projectSettings Settings
+		projectSettings.Xsi = "http://www.w3.org/2001/XMLSchema-instance"
+		projectSettings.SchemaLocation = "http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd"
+		projectSettings.ActiveProfiles.ActiveProfile = []string{"dummyProfile"}
+		settingsXml, err := xml.MarshalIndent(projectSettings, "", "    ")
+		settingsXmlString := string(settingsXml)
+		Replacer := strings.NewReplacer("&#xA;", "", "&#x9;", "")
+		settingsXmlString = Replacer.Replace(settingsXmlString)
+
+		xmlstring := []byte(xml.Header + settingsXmlString)
+
+		destination, _ := getGlobalSettingsFileDest()
+
+		utilsMock.FileWrite("/usr/share/maven/conf/settings.xml", xmlstring, 0777)
+
+		err = UpdateActiveProfileInSettingsXML([]string{"newProfile"}, utilsMock)
+
+		if assert.NoError(t, err) {
+			projectSettingsContent, _ := utilsMock.FileRead(destination)
+			var projectSettings Settings
+
+			err = xml.Unmarshal(projectSettingsContent, &projectSettings)
+
+			if assert.NoError(t, err) {
+				assert.Equal(t, projectSettings.ActiveProfiles.ActiveProfile[0], "newProfile")
+			}
+
+		}
+	})
 }
 
 func newSettingsDownloadTestUtilsBundle() *settingsDownloadTestUtils {

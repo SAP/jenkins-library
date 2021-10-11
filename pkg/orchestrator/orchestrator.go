@@ -20,6 +20,7 @@ const (
 type OrchestratorSpecificConfigProviding interface {
 	OrchestratorType() string
 	OrchestratorVersion() string
+	GetStageName() string
 	GetBranch() string
 	GetBuildUrl() string
 	GetCommit() string
