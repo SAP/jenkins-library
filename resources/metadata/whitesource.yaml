@@ -210,6 +210,9 @@ spec:
         resourceRef:
           - name: orgAdminUserTokenCredentialsId
             type: secret
+          - type: vaultSecret
+            name: whitesourceVaultSecret
+            default: whitesource
       - name: productName
         aliases:
           - name: whitesourceProductName
