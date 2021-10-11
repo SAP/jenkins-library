@@ -129,6 +129,15 @@ spec:
         type: string
         default: https://github.com
         mandatory: true
+      - name: tagPrefix
+        type: string
+        description: "Defines a prefix to be added to the tag."
+        scope:
+          - PARAMETERS
+          - STAGES
+          - STEPS
+        default: ""
+        mandatory: true
       - name: token
         aliases:
           - name: githubToken
