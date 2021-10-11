@@ -140,6 +140,7 @@ class AbapEnvironmentPipelineTest extends BasePiperTest {
         helper.registerAllowedMethod('input', [Map], {m -> return null})
 
         /*needed for parallel tests*/
+        helper.registerAllowedMethod("pipeline", [Closure.class], { it -> it() })
         //helper.registerAllowedMethod('parallel', [Closure], {c -> c()})
         //helper.registerAllowedMethod('parallel', [Map], {m -> m()})
         //helper.registerAllowedMethod('parallel', [Map.class], {m -> m()})
