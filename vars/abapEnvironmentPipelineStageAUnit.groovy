@@ -14,6 +14,7 @@ import static com.sap.piper.Prerequisites.checkScript
     'cloudFoundryCreateServiceKey'
 ]
 @Field Set STEP_CONFIG_KEYS = GENERAL_CONFIG_KEYS.plus(STAGE_STEP_KEYS)
+@Field Set PARAMETER_KEYS = STEP_CONFIG_KEYS
 
 void call(Map parameters = [:]) {
     def script = checkScript(this, parameters) ?: this
@@ -24,6 +25,7 @@ void call(Map parameters = [:]) {
         .loadStepDefaults([:], stageName)
         .mixinStepConfig(script.commonPipelineEnvironment, STEP_CONFIG_KEYS)
         .mixinStageConfig(script.commonPipelineEnvironment, stageName, STEP_CONFIG_KEYS)
+        .mixin(parameters, PARAMETER_KEYS)
         .use()
 
     piperStageWrapper (script: script, stageName: stageName, stashContent: [], stageLocking: false) {
