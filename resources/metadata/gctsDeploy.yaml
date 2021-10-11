@@ -90,6 +90,7 @@ spec:
         possibleValues:
           - SOURCE
           - TARGET
+        default: SOURCE
       - name: vSID
         type: string
         description: Virtual SID of the local repository. The vSID corresponds to the transport route that delivers content to the remote Git repository. For more information, see [Background Information - vSID](https://help.sap.com/viewer/4a368c163b08418890a406d413933ba7/latest/en-US/8edc17edfc374908bd8a1615ea5ab7b7.html) on SAP Help Portal.

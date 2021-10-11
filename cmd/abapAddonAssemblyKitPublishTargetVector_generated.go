@@ -11,6 +11,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/log"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
@@ -18,7 +19,7 @@ type abapAddonAssemblyKitPublishTargetVectorOptions struct {
 	AbapAddonAssemblyKitEndpoint string `json:"abapAddonAssemblyKitEndpoint,omitempty"`
 	Username                     string `json:"username,omitempty"`
 	Password                     string `json:"password,omitempty"`
-	TargetVectorScope            string `json:"targetVectorScope,omitempty"`
+	TargetVectorScope            string `json:"targetVectorScope,omitempty" validate:"oneof=T P"`
 	AddonDescriptor              string `json:"addonDescriptor,omitempty"`
 }
 
@@ -67,6 +68,15 @@ For Terminology refer to the [Scenario Description](https://www.project-piper.io
 				log.RegisterHook(logCollector)
 			}
 
+			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
+			if err != nil {
+				return err
+			}
+			if err = validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
+			}
+
 			return nil
 		},
 		Run: func(_ *cobra.Command, _ []string) {
@@ -105,7 +115,7 @@ func addAbapAddonAssemblyKitPublishTargetVectorFlags(cmd *cobra.Command, stepCon
 	cmd.Flags().StringVar(&stepConfig.AbapAddonAssemblyKitEndpoint, "abapAddonAssemblyKitEndpoint", `https://apps.support.sap.com`, "Base URL to the Addon Assembly Kit as a Service (AAKaaS) system")
 	cmd.Flags().StringVar(&stepConfig.Username, "username", os.Getenv("PIPER_username"), "User for the Addon Assembly Kit as a Service (AAKaaS) system")
 	cmd.Flags().StringVar(&stepConfig.Password, "password", os.Getenv("PIPER_password"), "Password for the Addon Assembly Kit as a Service (AAKaaS) system")
-	cmd.Flags().StringVar(&stepConfig.TargetVectorScope, "targetVectorScope", os.Getenv("PIPER_targetVectorScope"), "Determines whether the Target Vector is published to the productive ('P') or test ('T') environment")
+	cmd.Flags().StringVar(&stepConfig.TargetVectorScope, "targetVectorScope", `T`, "Determines whether the Target Vector is published to the productive ('P') or test ('T') environment")
 	cmd.Flags().StringVar(&stepConfig.AddonDescriptor, "addonDescriptor", os.Getenv("PIPER_addonDescriptor"), "Structure in the commonPipelineEnvironment containing information about the Product Version and corresponding Software Component Versions")
 
 	cmd.MarkFlagRequired("abapAddonAssemblyKitEndpoint")
@@ -162,7 +172,7 @@ func abapAddonAssemblyKitPublishTargetVectorMetadata() config.StepData {
 						Type:        "string",
 						Mandatory:   false,
 						Aliases:     []config.Alias{},
-						Default:     os.Getenv("PIPER_targetVectorScope"),
+						Default:     `T`,
 					},
 					{
 						Name: "addonDescriptor",

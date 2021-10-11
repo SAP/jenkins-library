@@ -13,6 +13,7 @@ import (
 	"github.com/SAP/jenkins-library/pkg/piperenv"
 	"github.com/SAP/jenkins-library/pkg/splunk"
 	"github.com/SAP/jenkins-library/pkg/telemetry"
+	"github.com/SAP/jenkins-library/pkg/validation"
 	"github.com/spf13/cobra"
 )
 
@@ -51,7 +52,7 @@ type whitesourceExecuteScanOptions struct {
 	Timeout                              int      `json:"timeout,omitempty"`
 	UserToken                            string   `json:"userToken,omitempty"`
 	VersioningModel                      string   `json:"versioningModel,omitempty"`
-	VulnerabilityReportFormat            string   `json:"vulnerabilityReportFormat,omitempty"`
+	VulnerabilityReportFormat            string   `json:"vulnerabilityReportFormat,omitempty" validate:"oneof=xlsx json xml"`
 	VulnerabilityReportTitle             string   `json:"vulnerabilityReportTitle,omitempty"`
 	ProjectSettingsFile                  string   `json:"projectSettingsFile,omitempty"`
 	GlobalSettingsFile                   string   `json:"globalSettingsFile,omitempty"`
@@ -186,6 +187,15 @@ The step uses the so-called WhiteSource Unified Agent. For details please refer 
 			if len(GeneralConfig.HookConfig.SplunkConfig.Dsn) > 0 {
 				logCollector = &log.CollectorHook{CorrelationID: GeneralConfig.CorrelationID}
 				log.RegisterHook(logCollector)
+			}
+
+			validation, err := validation.New(validation.WithJSONNamesForStructFields(), validation.WithPredefinedErrorMessages())
+			if err != nil {
+				return err
+			}
+			if err = validation.ValidateStruct(stepConfig); err != nil {
+				log.SetErrorCategory(log.ErrorConfiguration)
+				return err
 			}
 
 			return nil
