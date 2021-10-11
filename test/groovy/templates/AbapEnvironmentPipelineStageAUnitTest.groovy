@@ -42,7 +42,7 @@ class abapEnvironmentPipelineStageAUnitTest extends BasePiperTest {
         nullScript.commonPipelineEnvironment.configuration.runStage = [
             'AUnit': true
         ]
-        jsr.step.abapEnvironmentPipelineStageAUnit(script: nullScript)
+        jsr.step.abapEnvironmentPipelineStageAUnit(script: nullScript,  host: '')
 
         assertThat(stepsCalled, hasItems('abapEnvironmentRunAUnitTest'))
     }
