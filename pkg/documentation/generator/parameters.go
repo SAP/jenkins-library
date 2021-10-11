@@ -16,8 +16,12 @@ func createParametersSection(stepData *config.StepData) string {
 
 	// sort parameters alphabetically with mandatory parameters first
 	sortStepParameters(stepData, true)
-	parameters += "### Overview\n\n"
-	parameters += createParameterOverview(stepData)
+	parameters += "### Overview - Step\n\n"
+	parameters += createParameterOverview(stepData, false)
+
+	parameters += "### Overview - Execution Environment\n\n"
+	parameters += "!!! note \"Orchestrator-specific only\"\n\n    These parameters are relevant for orchestrator usage and not considered when using the command line option.\n\n"
+	parameters += createParameterOverview(stepData, true)
 
 	// sort parameters alphabetically
 	sortStepParameters(stepData, false)
@@ -27,12 +31,15 @@ func createParametersSection(stepData *config.StepData) string {
 	return parameters
 }
 
-func createParameterOverview(stepData *config.StepData) string {
+func createParameterOverview(stepData *config.StepData, executionEnvironment bool) string {
 	var table = "| Name | Mandatory | Additional information |\n"
 	table += "| ---- | --------- | ---------------------- |\n"
 
 	for _, param := range stepData.Spec.Inputs.Parameters {
-		table += fmt.Sprintf("| [%v](#%v) | %v | %v |\n", param.Name, strings.ToLower(param.Name), ifThenElse(param.Mandatory, "**yes**", "no"), parameterFurtherInfo(param.Name, stepData))
+		furtherInfo, err := parameterFurtherInfo(param.Name, stepData, executionEnvironment)
+		if err == nil {
+			table += fmt.Sprintf("| [%v](#%v) | %v | %v |\n", param.Name, strings.ToLower(param.Name), ifThenElse(param.Mandatory, "**yes**", "no"), furtherInfo)
+		}
 	}
 
 	table += "\n"
@@ -40,29 +47,33 @@ func createParameterOverview(stepData *config.StepData) string {
 	return table
 }
 
-func parameterFurtherInfo(paramName string, stepData *config.StepData) string {
+func parameterFurtherInfo(paramName string, stepData *config.StepData, executionEnvironment bool) (string, error) {
 
 	// handle general parameters
 	// ToDo: add special handling once we have more than one general parameter to consider
 	if paramName == "verbose" {
-		return "activates debug output"
+		return checkParameterInfo("activates debug output", true, executionEnvironment)
 	}
 
 	if paramName == "script" {
-		return "[![Jenkins only](https://img.shields.io/badge/-Jenkins%20only-yellowgreen)](#) reference to Jenkins main pipeline script"
+		return checkParameterInfo("[![Jenkins only](https://img.shields.io/badge/-Jenkins%20only-yellowgreen)](#) reference to Jenkins main pipeline script", true, executionEnvironment)
 	}
 
-	// handle Jenkins-specific parameters
+	// handle non-step parameters (e.g. Jenkins-specific parameters as well as execution environment parameters)
+	jenkinsParams := []string{"containerCommand", "containerName", "containerShell", "dockerVolumeBind", "dockerWorkspace", "sidecarReadyCommand", "sidecarWorkspace", "stashContent"}
 	if !contains(stepParameterNames, paramName) {
 		for _, secret := range stepData.Spec.Inputs.Secrets {
 			if paramName == secret.Name && secret.Type == "jenkins" {
-				return "[![Jenkins only](https://img.shields.io/badge/-Jenkins%20only-yellowgreen)](#) id of credentials ([using credentials](https://www.jenkins.io/doc/book/using/using-credentials/))"
+				return checkParameterInfo("[![Jenkins only](https://img.shields.io/badge/-Jenkins%20only-yellowgreen)](#) id of credentials ([using credentials](https://www.jenkins.io/doc/book/using/using-credentials/))", true, executionEnvironment)
 			}
 		}
-		return "[![Jenkins only](https://img.shields.io/badge/-Jenkins%20only-yellowgreen)](#)"
+		if contains(jenkinsParams, paramName) {
+			return checkParameterInfo("[![Jenkins only](https://img.shields.io/badge/-Jenkins%20only-yellowgreen)](#)", false, executionEnvironment)
+		}
+		return checkParameterInfo("", false, executionEnvironment)
 	}
 
-	// handle Secrets
+	// handle step-parameters (incl. secrets)
 	for _, param := range stepData.Spec.Inputs.Parameters {
 		if paramName == param.Name {
 			if param.Secret {
@@ -76,12 +87,23 @@ func parameterFurtherInfo(paramName string, stepData *config.StepData) string {
 						secretInfo += fmt.Sprintf(" ([`%v`](#%v))", res.Name, strings.ToLower(res.Name))
 					}
 				}
-				return secretInfo
+				return checkParameterInfo(secretInfo, true, executionEnvironment)
 			}
-			return ""
+			return checkParameterInfo("", true, executionEnvironment)
 		}
 	}
-	return ""
+	return checkParameterInfo("", true, executionEnvironment)
+}
+
+func checkParameterInfo(furtherInfo string, stepParam bool, executionEnvironment bool) (string, error) {
+	if stepParam && !executionEnvironment || !stepParam && executionEnvironment {
+		return furtherInfo, nil
+	}
+
+	if executionEnvironment {
+		return "", fmt.Errorf("step parameter not relevant as execution environment parameter")
+	}
+	return "", fmt.Errorf("execution environment parameter not relevant as step parameter")
 }
 
 func createParameterDetails(stepData *config.StepData) string {
